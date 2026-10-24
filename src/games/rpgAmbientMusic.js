@@ -1,7 +1,7 @@
 /**
  * Musiques d'ambiance — Le Sablier (mode Histoire, les Tours de Bab El).
  *
- * Cinq ambiances, une par tour, toutes **synthétisées en WebAudio** : zéro
+ * Une ambiance par tour, toutes **synthétisées en WebAudio** : zéro
  * fichier à charger (convention du dépôt, voir `cityRushAudio.js` et `rpgAudio.js`),
  * donc rien ne se charge en silence et le bundle ne grossit pas.
  *
@@ -35,6 +35,7 @@ export const RPG_AMBIENT_BPM = Object.freeze({
   'tour-du-fjord': 84,     // vent du nord, pas cadencé d'une garde
   'tour-du-soleil-rouge': 88, // martial, koto et braises du mont ardent
   'tour-de-la-necropole': 64, // funéraire, sistre et murmure des tombes
+  'tour-du-sablier-renverse': 72, // solennel, grains de sable et cloche du retournement
 });
 export const RPG_AMBIENT_DEFAULT_BPM = 78;
 
@@ -129,6 +130,16 @@ const NECROPOLE_CHORDS = Object.freeze([
   Object.freeze({ root: 47, intervals: Object.freeze([0, 4, 7, 10]) }), // B7
 ]);
 
+// Tour du Sablier renversé : une grille qui « se renverse » — Em7 · B7 ·
+// Cmaj7 · Am, la tonique bascule d'un pôle à l'autre comme le sable
+// change de chambre à chaque retournement.
+const SABLIER_CHORDS = Object.freeze([
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 3, 7, 10]) }), // Em7
+  Object.freeze({ root: 47, intervals: Object.freeze([0, 4, 7, 10]) }), // B7
+  Object.freeze({ root: 48, intervals: Object.freeze([0, 4, 7, 11]) }), // Cmaj7
+  Object.freeze({ root: 45, intervals: Object.freeze([0, 3, 7, 12]) }), // Am
+]);
+
 // ── Mélodies d'ambiance (quelques notes éparses, jamais envahissantes) ─
 // Elles n'entrent qu'aux mesures 5-8 pour que le début de boucle serve
 // d'intro, et elles restent clairsemées (max une note tous les 2 temps).
@@ -180,6 +191,16 @@ const NECROPOLE_LEAD = Object.freeze([
   Object.freeze([null, 57, null, null, 56, null, 53, null]),
   Object.freeze([null, 52, null, 53, null, null, null, 52]),
   Object.freeze([null, 50, null, null, 52, null, null, null]),
+]);
+
+// Le Sablier renversé : une mélodie en miroir — elle descend pendant deux
+// mesures, puis remonte pendant deux mesures, comme le sable qui change
+// de chambre. Des notes hautes et rares : des grains comptés un à un.
+const SABLIER_LEAD = Object.freeze([
+  Object.freeze([null, 76, null, 74, null, null, 71, null]),
+  Object.freeze([null, 69, null, null, 71, null, 74, null]),
+  Object.freeze([null, 76, null, 79, null, null, 76, null]),
+  Object.freeze([null, null, 74, null, null, 69, null, null]),
 ]);
 
 // ── Classe principale ─────────────────────────────────────────────────
@@ -461,6 +482,7 @@ export class RpgAmbientMusic {
       case 'tour-du-fjord':    this.playFjord(step, time); return;
       case 'tour-du-soleil-rouge': this.playSoleilRouge(step, time); return;
       case 'tour-de-la-necropole': this.playNecropole(step, time); return;
+      case 'tour-du-sablier-renverse': this.playSablierRenverse(step, time); return;
       default:                 this.playListes(step, time); return;
     }
   }
@@ -924,6 +946,60 @@ export class RpgAmbientMusic {
       }
     }
   }
+
+  // ── Tour du Sablier renversé : grains comptés et cloche du retournement ─
+  playSablierRenverse(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = SABLIER_CHORDS[Math.floor(bar / 2) % SABLIER_CHORDS.length];
+    const stepLength = 60 / RPG_AMBIENT_BPM['tour-du-sablier-renverse'] / 4;
+
+    // Bourdon solennel des deux chambres : la fondamentale grave et sa
+    // quinte tenue, comme un verre épais qui résonne.
+    if (beat === 0) {
+      this.tone(midiToFrequency(chord.root - 12), time, stepLength * STEPS_PER_BAR * 2,
+        'sine', 0.07, { filter: 220, attack: 1.0, destination: this.droneBus });
+      this.tone(midiToFrequency(chord.root - 5), time, stepLength * STEPS_PER_BAR * 2,
+        'triangle', 0.038, { filter: 420, attack: 0.9, destination: this.droneBus });
+    }
+
+    // Le tic-tac du retournement : aigu puis grave, toujours dans le même
+    // sens — le sable ne remonte jamais tout seul.
+    if (beat === 0 || beat === 8) {
+      this.tone(this.tockToggle ? 620 : 880, time, 0.05, 'triangle', 0.04, { filter: 1700, attack: 0.003 });
+      this.tockToggle = !this.tockToggle;
+    }
+
+    // La cloche du retournement : un coup grave toutes les deux mesures,
+    // et son écho d'octave au changement de grille.
+    if (beat === 0 && bar % 2 === 0) {
+      this.bell(chord.root + 12, time, stepLength * 7, 0.055);
+    }
+    if (beat === 0 && bar % 4 === 0) {
+      this.bell(chord.root + 24, time, stepLength * 5, 0.04);
+    }
+
+    // Les grains de sable : souffle très aigu et bref sur les contretemps,
+    // déterministe comme la gratte de plume des Listes — un filet fin qui
+    // ne s'interrompt jamais pendant la boucle.
+    if (beat % 2 === 1 && (step * 5 + bar) % 3 !== 0) {
+      this.filteredNoise(time, 0.045, 0.018, {
+        type: 'highpass', frequency: 6400, q: 1.2, attack: 0.002, destination: this.musicBus,
+      });
+    }
+
+    // Mélodie en miroir aux mesures 5-8 : elle descend, puis remonte —
+    // le retournement s'entend.
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = SABLIER_LEAD[(bar - 4) % SABLIER_LEAD.length][beat / 2];
+      if (note) {
+        this.bell(note, time, stepLength * 3, 0.045);
+        this.tone(midiToFrequency(note - 12), time + 0.05, stepLength * 2, 'sine', 0.02, {
+          filter: 1200, attack: 0.14,
+        });
+      }
+    }
+  }
 }
 
 /** Mapping pratique : tourId → { bpm, nom } (utile pour les tests et l'UI). */
@@ -967,6 +1043,11 @@ export const RPG_AMBIENT_THEMES = Object.freeze({
     nom: 'Le jugement de la nécropole',
     bpm: RPG_AMBIENT_BPM['tour-de-la-necropole'],
     ambiance: 'Sistre funéraire, cloches de bronze et murmure des tombes — la balance des heures.',
+  }),
+  'tour-du-sablier-renverse': Object.freeze({
+    nom: 'Le retournement du Sablier',
+    bpm: RPG_AMBIENT_BPM['tour-du-sablier-renverse'],
+    ambiance: 'Grains de sable comptés un à un, tic-tac qui bascule et cloche du retournement — sept maîtres revenus à leur sommet.',
   }),
 });
 

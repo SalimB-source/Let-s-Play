@@ -22,6 +22,7 @@ réactif de *Clair Obscur*.
 | [`11-bible-visuelle.md`](11-bible-visuelle.md) | Portraits canoniques, continuité des personnages, état de réalisation, sauvegarde et vérifications |
 | [`19-animations.md`](19-animations.md) | **Catalogue des animations à créer** : 80 idées classées par scène (table, tour, cartes, éléments, combat, mots-clés, Souk, PvP), avec durées, priorité, coût et conventions d'intégration |
 | [`20-profil-joueur-xp.md`](20-profil-joueur-xp.md) | Le **profil du joueur** : la barre d’XP (courbe `26 × niveau^1,62`, 60 niveaux), les dix gestes qui la font monter, les rangs de Bab El, et le **booster offert à chaque palier** — tiré au hasard, sans un crédit dépensé |
+| [`21-tour-du-sablier-renverse.md`](21-tour-du-sablier-renverse.md) | La **Tour du Sablier renversé** : la tour d’épreuves terminale du Jeu Solo — sept étages de types différents (les cinq couleurs, la Course, le tricolore), l’IA au niveau **Sablier** avec les **meilleures cartes** de chaque identité, sans plafond de mythiques |
 
 ## La décision de conception
 

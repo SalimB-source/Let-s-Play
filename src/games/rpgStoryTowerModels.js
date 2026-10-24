@@ -17,6 +17,7 @@ export const RPG_STORY_TOWER_THEMES = Object.freeze({
   'tour-du-fjord': Object.freeze({ stone: '#6e889e', dark: '#3e536b', tile: '#527eaa', ground: '#394e67', accent: '#acdfff', fill: '#8dbbff', particles: '#e7f7ff' }),
   'tour-du-soleil-rouge': Object.freeze({ stone: '#8f2d22', dark: '#3a1410', tile: '#1f2d3d', ground: '#42322a', accent: '#e85d43', fill: '#ff9d7a', particles: '#ff6242' }),
   'tour-de-la-necropole': Object.freeze({ stone: '#28232e', dark: '#17121c', tile: '#4a3866', ground: '#1f1b24', accent: '#e5b73e', fill: '#8c6ebd', particles: '#d4af37' }),
+  'tour-du-sablier-renverse': Object.freeze({ stone: '#57406b', dark: '#2c2138', tile: '#7a4a8c', ground: '#33283f', accent: '#f0c46a', fill: '#b79ce8', particles: '#ffd98a' }),
 });
 
 function randomFrom(seed) {
@@ -538,6 +539,53 @@ function buildCorsaires(k) {
   // Une étrave et son beaupré donnent sa silhouette de navire à la base.
   k.mesh(k.geometry('etrave', () => new THREE.ConeGeometry(0.62, 1.55, 4)), m.dark,
     [0, 0.74, 1.35], [0.8, 0.55, 1.2], [Math.PI / 2, 0, 0]);
+  // Le grand mât de vigie : il porte la tour à la hauteur des autres
+  // maquettes — vergue, nid-de-pie et grande voile crème, coiffés d'or.
+  k.cylinder(m.wood, 0, 4.9, 0, 0.05, 3.4, 0.55, 10);
+  k.box(m.wood, 0, 6.05, 0, 1.5, 0.05, 0.05);
+  k.cylinder(m.wood, 0, 5.72, 0, 0.17, 0.2, 1.25, 12);
+  k.mesh(k.geometry('corsaire-voile', () => new THREE.ConeGeometry(0.44, 0.9, 3)), m.cream,
+    [0.52, 5.15, 0], [2.1, 1.45, 0.16], [0, 0, Math.PI / 2]);
+  k.finial(0, 6.6, 0, 0.8);
+}
+
+function buildSablierRenverse(k) {
+  const { materials: m } = k;
+  k.feature('sablier-geant'); k.feature('chambres-inversees'); k.feature('anneau-des-cinq-couleurs');
+  // La silhouette d'un sablier : large en bas, étranglée à la taille,
+  // renflée au-dessus — les deux chambres de verre devenues des étages.
+  // Sept paliers montent ainsi, un par gardien de la tour.
+  k.roundTier(0.34, 1.3, 1.3);
+  k.roundTier(1.64, 1.05, 1.25);
+  k.roundTier(2.89, 0.74, 1.1);
+  k.roundTier(3.99, 0.98, 1.15);
+  k.roundTier(5.14, 0.66, 1.0);
+  k.dome(0, 6.2, 0, 0.8, 0.75);
+  // L'anneau d'or du retournement, incliné à la taille de la tour, et
+  // ses cinq gemmes — une par couleur vaincue en montant : le Sable
+  // crème, la Braise rouge, l'Eau turquoise, la Neige de glace et les
+  // Ténèbres violettes.
+  k.ring(m.gold, 0, 3.95, 0, 1.28, 0.03, [1.25, 0.15, 0.2]);
+  const gemmes = [m.cream, m.red, m.teal, m.ice, m.tile];
+  for (let i = 0; i < 5; i += 1) {
+    const angle = (i * Math.PI * 2) / 5 + 0.35;
+    k.sphere(gemmes[i], Math.sin(angle) * 1.08, 3.45, Math.cos(angle) * 1.08, [0.1, 0.13, 0.1]);
+    k.cylinder(m.gold, Math.sin(angle) * 1.08, 3.3, Math.cos(angle) * 1.08, 0.018, 0.18, 1, 8);
+  }
+  // Le sablier géant du parvis : le vrai, celui qui s'est renversé.
+  // Deux cônes de sable crème et le filet qui tombe encore.
+  const glass = k.group(1.18, 1.62, 1.02, -0.3);
+  const profile = [[0.4, -0.8], [0.42, -0.65], [0.29, -0.3], [0.07, 0], [0.29, 0.3], [0.42, 0.65], [0.4, 0.8]];
+  k.mesh(new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r * 1.15, y * 1.15)), 24), m.glass, [0, 0, 0], [1, 1, 1], [0, 0, 0], glass);
+  for (const y of [-0.97, 0.97]) {
+    k.cylinder(m.gold, 0, y, 0, 0.56, 0.1, 1, 24, glass);
+    k.ring(m.gold, 0, y, 0, 0.56, 0.04, [Math.PI / 2, 0, 0], glass);
+  }
+  for (const x of [-0.49, 0.49]) for (const z of [-0.28, 0.28]) k.cylinder(m.gold, x, 0, z, 0.028, 1.95, 1, 8, glass);
+  const sand = k.geometry('sand-cone-sablier', () => new THREE.ConeGeometry(1, 1, 16));
+  k.mesh(sand, m.cream, [0, -0.7, 0], [0.39, 0.38, 0.39], [0, 0, 0], glass);
+  k.mesh(sand, m.cream, [0, 0.48, 0], [0.38, 0.6, 0.38], [0, 0, Math.PI], glass);
+  k.cylinder(m.cream, 0, -0.16, 0, 0.015, 0.62, 1, 8, glass);
 }
 
 const BUILDERS = {
@@ -549,6 +597,7 @@ const BUILDERS = {
   'tour-du-fjord': buildFjord,
   'tour-du-soleil-rouge': buildSoleilRouge,
   'tour-de-la-necropole': buildNecropole,
+  'tour-du-sablier-renverse': buildSablierRenverse,
 };
 
 /** Une maquette autonome. L'identifiant inconnu ne produit pas une autre tour. */

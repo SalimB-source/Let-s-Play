@@ -77,6 +77,16 @@ export const RPG_STORY_DECKS = {
   'chacals-du-seuil': composerDeck(RPG_RECETTES_HISTOIRE['chacals-du-seuil'], CATALOGUE_DU_COMPOSEUR),
   'balance-des-heures': RPG_DECK_TENEBRES_BASE,
   'juges-de-la-necropole': composerDeck(RPG_RECETTES_HISTOIRE['juges-de-la-necropole'], CATALOGUE_DU_COMPOSEUR),
+  // Tour du Sablier renversé — les paquets « absolus » : les meilleures
+  // cartes de chaque identité, sans plafond de rareté (voir les recettes).
+  // Un paquet par étage, une identité différente à chaque marche.
+  'veilleurs-absolus': composerDeck(RPG_RECETTES_HISTOIRE['veilleurs-absolus'], CATALOGUE_DU_COMPOSEUR),
+  'flamme-absolue': composerDeck(RPG_RECETTES_HISTOIRE['flamme-absolue'], CATALOGUE_DU_COMPOSEUR),
+  'maree-absolue': composerDeck(RPG_RECETTES_HISTOIRE['maree-absolue'], CATALOGUE_DU_COMPOSEUR),
+  'hiver-absolu': composerDeck(RPG_RECETTES_HISTOIRE['hiver-absolu'], CATALOGUE_DU_COMPOSEUR),
+  'jugement-absolu': composerDeck(RPG_RECETTES_HISTOIRE['jugement-absolu'], CATALOGUE_DU_COMPOSEUR),
+  'course-absolue': composerDeck(RPG_RECETTES_HISTOIRE['course-absolue'], CATALOGUE_DU_COMPOSEUR),
+  'le-sablier': composerDeck(RPG_RECETTES_HISTOIRE['le-sablier'], CATALOGUE_DU_COMPOSEUR),
 };
 
 /** Les tours, de la plus basse à la plus haute. */
@@ -441,6 +451,91 @@ export const RPG_STORY_TOURS = [
         puissance: 7,
         ia: { niveau: 'veilleur', style: 'controle' },
         note: 'Le tribunal d’ébène au sommet des catacombes. Les créatures jugées trop lourdes sont exilées sans retour.',
+      },
+    ],
+  },
+  {
+    // La tour d'épreuves terminale du Jeu Solo (hors récit « La Dernière
+    // Liste ») : sept étages, sept identités différentes — les cinq
+    // couleurs pures, la Course Sable + Eau, puis le tricolore du sommet.
+    // Chaque gardien joue au niveau `sablier` (le plus fort de `rpgAI.js`)
+    // avec un paquet « absolu » : les meilleures cartes de son identité,
+    // sans plafond de mythiques ni de rares. Les puissances (8 à 14)
+    // prolongent l'échelle des autres tours, qui plafonnent à 7.
+    id: 'tour-du-sablier-renverse',
+    nom: 'La Tour du Sablier renversé',
+    miniature: 'tour-du-sablier-renverse.jpg',
+    resume: 'Quand le Sablier se renverse, les maîtres de Bab El reviennent à leur sommet. Sept étages, sept manières de perdre : chaque gardien joue le meilleur de son art, sans retenue — et au dernier palier, le Sablier lui-même tient les trois couleurs du temps.',
+    etages: [
+      {
+        id: 'sablier-1',
+        nom: 'La Dame aux ailes d’or',
+        fonction: 'Maîtresse absolue du Sable',
+        deck: 'veilleurs-absolus',
+        avatar: 'dame-aux-ailes-d-or',
+        puissance: 8,
+        ia: { niveau: 'sablier', style: 'prudent' },
+        note: 'Le désert à son sommet : Salem, Tarek et Tin Hinan derrière la même muraille. Elle bloque, elle soigne, elle équipe — et chaque échange la sert.',
+      },
+      {
+        id: 'sablier-2',
+        nom: 'Kagutsuchi, la Flamme originelle',
+        fonction: 'Maître absolu de la Braise',
+        deck: 'flamme-absolue',
+        avatar: 'kagutsuchi-flamme-originelle',
+        puissance: 9,
+        ia: { niveau: 'sablier', style: 'agressif' },
+        note: 'Treize mythiques de Braise dans un seul paquet : Orochi, Susanoo, les ifrits et le Daimyō. La course commence au premier mana et ne s’arrête pas.',
+      },
+      {
+        id: 'sablier-3',
+        nom: 'Jörmungandr, le Serpent des marées',
+        fonction: 'Maître absolu de l’Eau',
+        deck: 'maree-absolue',
+        avatar: 'jormungandr',
+        puissance: 10,
+        ia: { niveau: 'sablier', style: 'controle' },
+        note: 'Il contre ce qui compte, renvoie ce qui gêne, puis lâche les bêtes du fond — Léviathan, Kraken et Bakunawa répondent au même appel.',
+      },
+      {
+        id: 'sablier-4',
+        nom: 'La Dame des Neuf Mondes',
+        fonction: 'Maîtresse absolue de la Neige',
+        deck: 'hiver-absolu',
+        avatar: 'dame-des-neuf-mondes',
+        puissance: 11,
+        ia: { niveau: 'sablier', style: 'equilibre' },
+        note: 'Les six figures du Nord en une seule main : le Père des corbeaux compte vos cartes, le Marteau attend, et le Serpent du monde ignore vos sorts.',
+      },
+      {
+        id: 'sablier-5',
+        nom: 'Le Passeur au masque de chacal',
+        fonction: 'Maître absolu des Ténèbres',
+        deck: 'jugement-absolu',
+        avatar: 'passeur-au-masque-de-chacal',
+        puissance: 12,
+        ia: { niveau: 'sablier', style: 'controle' },
+        note: 'Le Prix se paie dès le premier tour et le Tribut ne rend rien. La Dévoreuse exile, la Dernière Pesée conclut : pesé, jugé, terminé.',
+      },
+      {
+        id: 'sablier-6',
+        nom: 'Le Chasseur d’Ocracoke',
+        fonction: 'Maître absolu de la Course',
+        deck: 'course-absolue',
+        avatar: 'le-chasseur-d-ocracoke',
+        puissance: 13,
+        ia: { niveau: 'sablier', style: 'agressif' },
+        note: 'La Régence revenue à son sommet : chaque arrivée aborde, chaque prise paie, et le meilleur du Sable et de l’Eau navigue sous la même lettre de marque.',
+      },
+      {
+        id: 'sablier-7',
+        nom: 'Le Sablier',
+        fonction: 'Celui qui compte les heures',
+        deck: 'le-sablier',
+        avatar: null,
+        puissance: 14,
+        ia: { niveau: 'sablier', style: 'equilibre' },
+        note: 'Il n’a ni visage ni manière : Sable, Braise et Ténèbres dans un seul paquet, plus de vingt mythiques, et quatre coups d’avance sur tout ce que vous jouez. Le sable tombe pour vous.',
       },
     ],
   },

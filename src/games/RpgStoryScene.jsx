@@ -38,6 +38,7 @@ const LIBELLE_NIVEAU_IA = Object.freeze({
   recit: 'Initiation',
   normale: 'Gardien',
   veilleur: 'Veilleur',
+  sablier: 'Sablier — maître absolu',
 });
 
 export function StoryPortrait({ personnageId, cardArt, className = '' }) {

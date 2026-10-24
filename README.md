@@ -8826,3 +8826,56 @@ source), `npm run check:rpg-souk`, `npm run check:rpg` (915 tests) et
 montant **rendu par le geste** — exact — et un solde qui monte d'autant, un
 paquet de palier pouvant rendre ses doublons par-dessus. Conception :
 `docs/rpg/20-profil-joueur-xp.md`.
+
+## Le Sablier : la Tour du Sablier renversé — sept étages, sept types, les meilleures cartes
+
+Le Jeu Solo compte une neuvième tour, **la Tour du Sablier renversé**, la tour
+d'épreuves terminale des Tours de Bab El. Son principe tient en une phrase :
+quand le Sablier se renverse, les maîtres reviennent à leur sommet — **chaque
+étage est un type de duel différent, l'IA y joue au plus haut niveau du jeu et
+elle a les meilleures cartes de son identité**.
+
+- **Sept étages, sept identités.** Les cinq couleurs pures d'abord — la Dame
+  aux ailes d'or (Sable, prudent), Kagutsuchi (Braise, agressif), Jörmungandr
+  (Eau, contrôle), la Dame des Neuf Mondes (Neige, équilibré), le Passeur au
+  masque de chacal (Ténèbres, contrôle) — puis la **Course Sable + Eau** du
+  Chasseur d'Ocracoke (agressif), et au sommet **le Sablier lui-même**, sans
+  visage, seul paquet **tricolore** de la campagne (Sable + Braise +
+  Ténèbres, équilibré). Aucun paquet, aucune identité, aucune manière
+  (identité × style) ne se répète ; chaque étage reçoit aussi sur **son**
+  terrain (Erg, Cour de l'Empereur, Ruines de Tipaza, Village Viking, Palais
+  du Pharaon, Navire Pirate, Table des Heures).
+- **Les meilleures cartes, sans plafond.** Les sept recettes « absolues » de
+  `rpgDeckRecipes.js` sont les seules de l'Histoire sans `mythiquesMax` ni
+  `raresMax` : le composeur prend littéralement le sommet du catalogue —
+  13 mythiques pour la Flamme absolue, les six figures du Nord réunies pour
+  l'Hiver absolu, **21 mythiques sur 30 cartes** pour le Sablier. La signature
+  ne garde que l'ouverture (les petits coûts des premiers tours), et les
+  listes restent légales (30 cartes, 1 à 3 couleurs, mythiques à un
+  exemplaire) : ce sont des decks composés comme les autres, pas des listes
+  de triche.
+- **Un nouveau niveau d'IA : `sablier`.** Au-dessus du Veilleur — profondeur
+  de recherche 4 (contre 3), largeur 5 (contre 4), prescience, aucune erreur,
+  réflexion visible portée à 1380–1900 ms. La recherche reste bornée et ne
+  lit que l'information publique ; les puissances affichées prolongent
+  l'échelle historique : **8 à 14**, quand toutes les autres tours plafonnent
+  à 7.
+- **Le tour complet d'une tour** : maquette 3D en silhouette de sablier
+  (pierre améthyste, anneau d'or aux cinq gemmes, sablier géant du parvis),
+  peinture de repli `public/sablier-tours/tour-du-sablier-renverse.jpg`,
+  ambiance WebAudio « Le retournement du Sablier » (72 BPM, grains comptés et
+  mélodie en miroir), crédits et butin de tour au barème commun. Le récit
+  « La Dernière Liste » n'est pas touché : huit actes, comme avant. Au
+  passage, la Tour des Corsaires reçoit le grand mât de vigie qui la porte à
+  la hauteur des autres maquettes.
+- **Équilibre mesuré, pas promis.** En parties complètes simulées par le
+  moteur (joueur = Veilleur avec le deck de départ, 8 parties par étage), les
+  anciens sommets gagnent 59 % de leurs duels, la nouvelle tour **68 %** —
+  la plus difficile du jeu, et battable : ses paquets sont lourds, une
+  ouverture agressive peut passer avant les figures.
+
+Contrôles : `npm run check:rpg` (la tour et ses types dans
+`tests/rpg-story.test.js`, le niveau `sablier` dans `tests/rpg-ia.test.js`, la
+maquette et l'ambiance dans leurs suites, plus la couverture générique des
+decks composés, des plateaux, des crédits et des boosters). Conception :
+`docs/rpg/21-tour-du-sablier-renverse.md`.
