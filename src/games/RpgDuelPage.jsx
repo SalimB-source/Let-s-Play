@@ -2288,7 +2288,8 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
 export function RpgMassFreezeFx({ effet }) {
   if (!effet) return null;
   const { type, camp, token } = effet;
-  const label = type === 'brume' ? 'Brume du fjord — souffle léger'
+  const label = effet.carteId === 'valkyrie-des-glaces' ? 'Valkyrie des glaces — vent froid'
+    : type === 'brume' ? 'Brume du fjord — souffle léger'
     : type === 'blizzard' ? 'Hurlement du blizzard — souffle froid'
     : type === 'geant' ? 'Géant des banquises — souffle polaire'
     : 'Verglas — souffle givrant';
@@ -8912,7 +8913,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const arrivee = carte.arrivee;
     const estMasseGel = (effet?.cible === 'toutes-creatures' && (effet?.gel || effet?.gelChance))
       || (arrivee?.type === 'gel' && arrivee?.cible === 'toutes-creatures')
-      || ['verglas', 'brume-du-fjord', 'hurlement-du-blizzard', 'geant-des-banquises'].includes(id);
+      || ['verglas', 'brume-du-fjord', 'hurlement-du-blizzard', 'geant-des-banquises', 'valkyrie-des-glaces'].includes(id);
     if (!estMasseGel) return;
     let type = 'verglas';
     if (id === 'brume-du-fjord') type = 'brume';
@@ -9168,9 +9169,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const sonEau = rpgWaterSoundFor(carte, 'arrival');
         if (sonEau) jouerSfx(sonEau);
       }
-      if (carte?.arrivee?.type === 'gel' && carte?.arrivee?.cible === 'toutes-creatures') {
-        declencherGelMasse(carte, 'joueur');
-      }
+      // Le filtre inclut aussi le vent d’arrivée de la Valkyrie (sans gel).
+      declencherGelMasse(carte, 'joueur');
       signalerTutoriel('creature-jouee', { cardId: carteId, entiteId: res.entite?.id });
       // La créature attend sa victime : la table s'allume, la main est close.
       if (res.arriveeEnAttente) setCibleEnCours(carteId);
@@ -10214,7 +10214,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           annoncerMagieSorcier(carteReponse, describeAnnouncedMagicTarget(
             carteReponse, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
           ));
-        } else if (carteReponse?.arrivee?.type === 'gel' && carteReponse?.arrivee?.cible === 'toutes-creatures') {
+        } else {
           declencherGelMasse(carteReponse, 'sorcier');
         }
         animerModificationsChamp(champAvantReponse, [], debutJournalReponse);
@@ -10558,7 +10558,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Une créature ou une arme annoncée, elle, reste une carte posée : rien à
     // annoncer dans la zone des sorts.
     if (res.ok && carteAnnoncee?.kind === 'magie') annoncerMagieSorcier(carteAnnoncee, cibleAnnoncee);
-    if (res.ok && carteAnnoncee?.arrivee?.type === 'gel' && carteAnnoncee?.arrivee?.cible === 'toutes-creatures') {
+    if (res.ok && carteAnnoncee?.kind !== 'magie') {
       declencherGelMasse(carteAnnoncee, 'sorcier');
     }
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
