@@ -12074,15 +12074,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-                  {mythiqueJouable && (
-                    <span className="rpg-mythique-flammes" aria-hidden="true">
-                      <img src={`${import.meta.env.BASE_URL}flames/flame-07-bottom.png`} className="rpg-mythique-flamme rpg-mythique-flamme--bottom" alt="" loading="lazy" draggable={false} />
-                      <img src={`${import.meta.env.BASE_URL}flames/flame-01-top-left.png`} className="rpg-mythique-flamme rpg-mythique-flamme--top" alt="" loading="lazy" draggable={false} />
-                      <img src={`${import.meta.env.BASE_URL}flames/flame-04-mid-left.png`} className="rpg-mythique-flamme rpg-mythique-flamme--left" alt="" loading="lazy" draggable={false} />
-                      <img src={`${import.meta.env.BASE_URL}flames/flame-06-mid-right.png`} className="rpg-mythique-flamme rpg-mythique-flamme--right" alt="" loading="lazy" draggable={false} />
-                      <img src={`${import.meta.env.BASE_URL}flames/flame-02-top-mid.png`} className="rpg-mythique-flamme rpg-mythique-flamme--top-mid" alt="" loading="lazy" draggable={false} />
-                    </span>
-                  )}
                   <CardElementBadge carte={carte} />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
