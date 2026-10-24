@@ -496,6 +496,12 @@
 @media (prefers-reduced-motion: reduce) {
   .rpg-niveau-toast { animation: none; }
 }
+/* La fiche d'une carte consultée au clic droit ou à l'appui long passe
+   toujours au-dessus de la cérémonie du paquet offert (10045). */
+.rpg-battle .rpg-souk__ceremonie ~ .rpg-card-peek,
+.rpg-battle:has([data-souk-ceremonie]) .rpg-card-peek {
+  z-index: 10060;
+}
 
 /* ── L'onglet du menu : l'emblème, le niveau, et la barre en miniature ────── */
 .rpg-mode-menu__switch button.rpg-mode-menu__profil {

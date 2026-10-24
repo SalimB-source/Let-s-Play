@@ -48,7 +48,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
   const exemplaires = detail.exemplaires ?? 1;
   return (
     <article
-      inert={!visible}
+      inert={!visible || undefined}
       aria-hidden={!visible || undefined}
       aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${detail.doublon ? `, doublon remboursé ${detail.remboursement} crédits` : ', nouvelle carte'}`}
       title={`${carte.name} — clic droit pour ouvrir la fiche`}

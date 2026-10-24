@@ -7251,8 +7251,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * dessus d'un cimetière, au catalogue et dans la liste d'un deck. */
   const demarrerAppuiLongCarte = (event) => {
     const hote = event.target?.closest?.('[data-card-id]');
+    if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
     const carte = cardById(hote?.dataset?.cardId);
-    if (!hote || !carte) return;
+    if (!carte) return;
     // Un second doigt, une souris ou un clic droit ne doit pas désarmer l'appui
     // déjà en cours du premier doigt : seul un geste qui armerait vraiment un
     // appui long reprend la main.
@@ -7347,17 +7348,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const surMenuContextuel = (event) => {
     event.preventDefault();
     const hote = event.target?.closest?.('[data-card-id]');
+    if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
     const carte = cardById(hote?.dataset?.cardId);
-    if (!hote || !carte) return;
+    if (!carte) return;
     // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
     carteSourceApercuRef.current = hote;
+    const dansCeremonieSouk = Boolean(hote.closest?.('[data-souk-ceremonie]'));
     ouvrirApercuCatalogue(carte, {
       armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
       furie: etatFurieDepuisHote(hote),
       effetsEpuises: effetsEpuisesDepuisHote(hote),
       // Le capteur d'Abordage dit qui il détient : la fiche empilera les deux.
       prisonniere: hote.dataset.prisonniere ?? null,
-      surface: SURFACE_FICHE[ecran] ?? 'LE SABLIER',
+      surface: dansCeremonieSouk ? 'LE SOUK' : (SURFACE_FICHE[ecran] ?? 'LE SABLIER'),
     });
   };
   // Le plateau se floute derrière la carte consultée, elle seule reste nette :

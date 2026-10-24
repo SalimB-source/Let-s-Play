@@ -4542,6 +4542,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
     max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
+/* Quand un booster est ouvert (au Souk comme pour un paquet offert par un
+   niveau à z-index 10045), la fiche du clic droit et l'aperçu d'appui long
+   passent par-dessus la cérémonie pour rester lisibles. */
+.rpg-souk__ceremonie ~ .rpg-card-peek,
+.rpg-battle:has([data-souk-ceremonie]) .rpg-card-peek {
+  z-index: 10060;
+}
 .rpg-card-peek__backdrop {
   position: absolute;
   z-index: 0;
