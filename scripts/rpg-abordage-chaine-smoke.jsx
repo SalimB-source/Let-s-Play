@@ -5,9 +5,14 @@
 import React, { act } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createRoot } from 'react-dom/client';
-import { ChaineAbordage, FantomeCarteDetruite, vecteurVersCapteur } from '../src/games/RpgDuelPage.jsx';
+import {
+  ChaineAbordage,
+  elementCapteurPourAnimation,
+  FantomeCarteDetruite,
+  vecteurVersCapteur,
+} from '../src/games/RpgDuelPage.jsx';
 
-export { vecteurVersCapteur };
+export { elementCapteurPourAnimation, vecteurVersCapteur };
 
 const PRISE = {
   entityId: 'entite-prise',

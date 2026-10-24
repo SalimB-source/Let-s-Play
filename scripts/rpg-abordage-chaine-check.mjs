@@ -38,9 +38,14 @@ Object.defineProperty(globalThis, 'navigator', { value: window.navigator, config
 globalThis.HTMLElement = window.HTMLElement;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-const { rendreFantome, rendreChaine, rendreMorte, vecteurVersCapteur, monterFantomeDevantTableVide } = await import(
-  '../node_modules/.cache/rpg-abordage-chaine/rpg-abordage-chaine-smoke.js'
-);
+const {
+  rendreFantome,
+  rendreChaine,
+  rendreMorte,
+  elementCapteurPourAnimation,
+  vecteurVersCapteur,
+  monterFantomeDevantTableVide,
+} = await import('../node_modules/.cache/rpg-abordage-chaine/rpg-abordage-chaine-smoke.js');
 
 const documentDe = (html) => new JSDOM(`<!doctype html><html><body>${html}</body></html>`).window.document;
 
@@ -221,6 +226,31 @@ assert.equal(vecteurVersCapteur({ table, capteurId: 'entite-pas-encore-la', effe
   'un capteur absent ne donne aucun vecteur — jamais un repli au centre');
 assert.equal(vecteurVersCapteur({ table: null, capteurId: 'entite-capteur', effet }), null,
   'sans table, aucune mesure');
+
+// Une mort ordinaire n'a ni capteur ni emplacement. Les replis de mesure
+// doivent alors valoir `null`, pas le `false` d'une condition `&&` : ce
+// booléen cassait `getBoundingClientRect()` et laissait le combat ouvert.
+const sansCapteur = elementCapteurPourAnimation({ table });
+assert.equal(sansCapteur, null, 'une destruction sans capteur n’a aucune destination à mesurer');
+assert.doesNotThrow(() => sansCapteur?.getBoundingClientRect(),
+  'l’absence de capteur ne peut plus interrompre la résolution du combat');
+assert.equal(elementCapteurPourAnimation({ table, capteurId: 'entite-capteur' }), capteur,
+  'le capteur déjà rendu reste la destination prioritaire');
+
+const slots = window.document.createElement('div');
+slots.className = 'rpg-creature-slots--sorcier';
+slots.innerHTML = '<div data-creature-slot="4"></div>';
+table.append(slots);
+const slot = slots.firstElementChild;
+const rangee = window.document.querySelector('.card-row--ennemi');
+const versSlot = elementCapteurPourAnimation({
+  table, capteurId: 'entite-pas-encore-la', capteurVivant: { emplacement: 3 },
+});
+assert.equal(versSlot, slot,
+  `un capteur pas encore rendu vise sa case connue (reçu : ${versSlot?.outerHTML})`);
+assert.equal(elementCapteurPourAnimation({
+  table, capteurId: 'entite-pas-encore-la', capteurVivant: {},
+}), rangee, 'sans case connue, le dernier repli est bien la rangée');
 
 // ── 2 bis. Le geste réel : le capteur arrive APRÈS le fantôme ─────────────
 // C'est exactement la prise du sorcier : l'action se résout sans que sa
