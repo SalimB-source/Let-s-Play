@@ -6,12 +6,14 @@ import { JSDOM } from 'jsdom';
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 assert.match(css, /@property --rpg-frontiere\s*\{[^}]*syntax: '<percentage>';[^}]*inherits: true;/s);
 assert.match(css, /transition: --rpg-frontiere 900ms/);
-assert.match(css, /--rpg-fondu: 2%;/, 'le mélange reste contenu à 4 % de la hauteur totale');
-assert.match(css, /mask-image: linear-gradient\(to bottom,[^}]*var\(--rpg-frontiere, 50%\)/);
+const decoupeAdverse = css.match(/\.rpg-plateau-moitie--adverse\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(decoupeAdverse, /clip-path: inset\(0 0 calc\(100% - var\(--rpg-frontiere, 50%\)\) 0\);/);
+assert.doesNotMatch(decoupeAdverse, /mask-image/, 'la frontière n’utilise plus de masque dégradé');
+assert.doesNotMatch(css, /--rpg-fondu/, 'aucun fondu ne brouille la séparation des plateaux');
+assert.match(css, /\.rpg-plateau-lisere\s*\{[^}]*top: var\(--rpg-frontiere, 50%\);[^}]*height: 2px;[^}]*background: #f0cf78;/s,
+  'un filet doré de 2 px suit la frontière mobile');
 assert.match(css, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.card-table--decoupee,[^}]*transition: none;/s);
 assert.match(css, /\.card-table\[data-territoire-termine\] \.rpg-plateau-lisere \{ opacity: 0; \}/);
-assert.match(css, /\.card-table--decoupee\[data-territoire-termine\] \{ --rpg-fondu: 0%; \}/);
-assert.match(css, /data-plateau-joueur="cour-de-l-empereur"[^}]*--rpg-conquete-rgb: 245, 91, 53;/s);
 const previousEnv = process.env.NODE_ENV;
 await build({ logLevel: 'error', build: { ssr: 'scripts/rpg-territoire-smoke.jsx', outDir: 'node_modules/.cache/rpg-territoire', emptyOutDir: true } });
 if (previousEnv === undefined) delete process.env.NODE_ENV;
