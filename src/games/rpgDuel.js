@@ -3091,6 +3091,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
           && !tenterEsquive(duel, entite, sourceType))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId
+          && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
           && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
       for (const cible of cibles) gelerEntite(duel, cible);
@@ -3678,6 +3679,7 @@ export function arriveeCiblePortee(carte) {
     if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
     return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   }
+  if (arrivee.type === 'gel') return arrivee.cible === 'creature' ? 'ennemi' : null;
   if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
   if (arrivee.type === 'donne') return 'allie';
   if (arrivee.type === 'bouclier' && arrivee.cible === 'creature-amie' && arrivee.choisirCible) return 'allie';
@@ -3865,6 +3867,20 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
         return { ok: false, raison: 'cible' };
       }
+    }
+  }
+  if (carte.arrivee?.type === 'gel' && carte.arrivee.cible === 'creature') {
+    // Le Corbeau de givre : le cri désigne une créature adverse, et le froid
+    // ne mord que sous son seuil de coût (`coutMax`). Sans désignation, la
+    // pose n'est refusée que s'il reste une cible légale — la page désigne
+    // alors sur la table (`cibleDifferee`).
+    const adversaires = duel[autre(cote)].creatures;
+    const cible = adversaires.find((entite) => entite.id === cibleId);
+    if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (cible && !cibleRespecteCoutMax(carte, cible)) return { ok: false, raison: 'cible' };
+    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
+      return { ok: false, raison: 'cible' };
     }
   }
   if (carte.arrivee?.type === 'exil') {

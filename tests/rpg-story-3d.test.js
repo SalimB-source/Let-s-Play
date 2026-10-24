@@ -14,6 +14,7 @@ const FEATURES = {
   'tour-du-fjord': ['corniches-gelees', 'cristaux-de-glace', 'drakkar'],
   'tour-du-soleil-rouge': ['toits-recourbes', 'torii-ecarlate', 'bannieres-samourai'],
   'tour-de-la-necropole': ['obelisques', 'colonnes-de-lotus', 'sarcophage'],
+  'tour-du-corbeau': ['arbre-des-corbeaux', 'neige-noire', 'cercle-de-plumes'],
   'tour-du-sablier-renverse': ['sablier-geant', 'chambres-inversees', 'anneau-des-cinq-couleurs'],
 };
 

@@ -58,7 +58,13 @@ libre n'a pas de tour, donc pas de boucle. Le rendu est vérifié par
 `npm run check:rpg-ambient-ui`, qui rend la page et compte les nœuds audio
 réellement planifiés.
 
-## Les cinq ambiances
+## Les cinq ambiances d'origine
+
+Les cinq premières tours ont leur fiche ci-dessous. Les tours ouvertes depuis
+(les Corsaires, le Soleil rouge, la Nécropole, le Corbeau, le Sablier renversé)
+suivent le même contrat — une boucle par tour, un thème déclaré dans
+`RPG_AMBIENT_THEMES` — et se lisent dans le code ; celle du **Corbeau** est
+détaillée au dossier 22, §5.
 
 ### 1. La Tour des Listes — *Le Grand Horloger compte ses noms*
 - **BPM** : 78

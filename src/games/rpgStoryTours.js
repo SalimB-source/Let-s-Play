@@ -77,6 +77,12 @@ export const RPG_STORY_DECKS = {
   'chacals-du-seuil': composerDeck(RPG_RECETTES_HISTOIRE['chacals-du-seuil'], CATALOGUE_DU_COMPOSEUR),
   'balance-des-heures': RPG_DECK_TENEBRES_BASE,
   'juges-de-la-necropole': composerDeck(RPG_RECETTES_HISTOIRE['juges-de-la-necropole'], CATALOGUE_DU_COMPOSEUR),
+  // Tour du Corbeau — le set hybride Neige + Ténèbres : la neige qui pèse
+  // les âmes (doc 22). Quatre étages, quatre paquets, une seule identité.
+  'corbeaux-du-givre': composerDeck(RPG_RECETTES_HISTOIRE['corbeaux-du-givre'], CATALOGUE_DU_COMPOSEUR),
+  'serment-des-neuf-nuits': composerDeck(RPG_RECETTES_HISTOIRE['serment-des-neuf-nuits'], CATALOGUE_DU_COMPOSEUR),
+  'veille-du-corbeau': composerDeck(RPG_RECETTES_HISTOIRE['veille-du-corbeau'], CATALOGUE_DU_COMPOSEUR),
+  'maitre-des-corbeaux': composerDeck(RPG_RECETTES_HISTOIRE['maitre-des-corbeaux'], CATALOGUE_DU_COMPOSEUR),
   // Tour du Sablier renversé — les paquets « absolus » : les meilleures
   // cartes de chaque identité, sans plafond de rareté (voir les recettes).
   // Un paquet par étage, une identité différente à chaque marche.
@@ -451,6 +457,59 @@ export const RPG_STORY_TOURS = [
         puissance: 7,
         ia: { niveau: 'veilleur', style: 'controle' },
         note: 'Le tribunal d’ébène au sommet des catacombes. Les créatures jugées trop lourdes sont exilées sans retour.',
+      },
+    ],
+  },
+  {
+    // La Tour du Corbeau — le set hybride Neige + Ténèbres (doc 22). Le Père
+    // des corbeaux de la Tour du Fjord s'y retourne : la neige entre dans la
+    // nuit, et chaque étage demande les deux couleurs à la fois. Tour libre,
+    // hors récit, comme celle du Sablier renversé : elle n'ajoute ni acte ni
+    // scène, seulement ses quatre duels.
+    id: 'tour-du-corbeau',
+    nom: 'La Tour du Corbeau',
+    miniature: 'tour-du-corbeau.jpg',
+    resume: 'Là où la neige tombe sur la balance, un corbeau se pose sur chaque nom. La glace n’y blanchit plus : elle noircit. Quatre étages pour apprendre que le Nord et la Nuit ne font qu’un seul hiver — et qu’au sommet, le Père des corbeaux a changé d’œil.',
+    etages: [
+      {
+        id: 'corbeau-1',
+        nom: 'La Vigie des neuf nuits',
+        fonction: 'Sentinelle du seuil noir',
+        deck: 'corbeaux-du-givre',
+        avatar: 'corbeau-de-givre',
+        puissance: 4,
+        ia: { niveau: 'normale', style: 'prudent' },
+        note: 'Elle laisse la neige faire le travail : chaque corbeau qui se pose fige une créature de coût 3 ou moins, et la muraille attend que vous ayez froid.',
+      },
+      {
+        id: 'corbeau-2',
+        nom: 'La Veilleuse au corbeau noir',
+        fonction: 'Greffière des morts sans nom',
+        deck: 'serment-des-neuf-nuits',
+        avatar: 'veilleuse-au-corbeau-noir',
+        puissance: 5,
+        ia: { niveau: 'veilleur', style: 'controle' },
+        note: 'Elle compte à voix basse : le Tribut prend deux PV à chaque contact de ses berserks, qui ouvrent le combat par leur Provocation.',
+      },
+      {
+        id: 'corbeau-3',
+        nom: 'La Valkyrie des neuf nuits',
+        fonction: 'Porteuse du corbeau de minuit',
+        deck: 'veille-du-corbeau',
+        avatar: 'valkyrie-des-neuf-nuits',
+        puissance: 6,
+        ia: { niveau: 'veilleur', style: 'agressif' },
+        note: 'Envol, Furie et exil dans la même main : elle emporte les petites créatures avant qu’elles ne servent, puis frappe sans être bloquée.',
+      },
+      {
+        id: 'corbeau-4',
+        nom: 'Le Maître des corbeaux',
+        fonction: 'Celui qui tient la neige et la nuit',
+        deck: 'maitre-des-corbeaux',
+        avatar: 'maitre-des-corbeaux',
+        puissance: 7,
+        ia: { niveau: 'sablier', style: 'equilibre' },
+        note: '**boss** : le Père des corbeaux retourné. Cinq figures mythiques des deux identités, le gel et l’exil, et un œil dans la nuit qui n’oublie aucun de vos noms.',
       },
     ],
   },

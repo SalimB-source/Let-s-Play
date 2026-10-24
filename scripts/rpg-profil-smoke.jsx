@@ -33,6 +33,7 @@ import {
 import { RPG_DUEL_CARDS, carteJouableSansTerrain } from '../src/games/rpgCards.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
+import { RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const setterValeur = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
@@ -322,7 +323,7 @@ export async function checkRpgProfilEcran(assert) {
 
     // ── Le visage et la table : deux bandeaux, un choix chacun ──────────────
     assert.equal(nombre('[data-profil-avatars]', 'profilAvatars'), 12, 'douze visages du récit');
-    assert.equal(nombre('[data-profil-plateaux]', 'profilPlateaux'), 12, 'douze tables, plus celle du deck');
+    assert.equal(nombre('[data-profil-plateaux]', 'profilPlateaux'), RPG_PLATEAUX.length, 'les tables du catalogue, plus celle du deck');
     assert.match(texte(noeud('[data-profil-plateau="erg-du-sahara"]')), /L’Erg du Sahara/,
       'chaque tuile porte le nom de sa table, peint sur sa vignette');
     assert.match(texte(noeud('[data-profil-plateau="cour-de-l-empereur"]')), /La Cour de l’Empereur/,
@@ -357,17 +358,17 @@ export async function checkRpgProfilEcran(assert) {
     await act(async () => noeud('[data-profil-avatar="yamina"]').click());
     assert.equal(bourse.profil.avatar, 'yamina', 'et le visage revient d’un clic');
 
-    const table = noeud('[data-profil-plateau="fjord-des-neuf-hivers"]');
+    const table = noeud('[data-profil-plateau="village-viking"]');
     await act(async () => table.click());
-    assert.equal(bourse.profil.plateau, 'fjord-des-neuf-hivers', 'la table choisie est retenue');
-    assert.ok(noeud('[id="rpg-profil-table"]').textContent.includes('Le Fjord des Neuf Hivers'),
+    assert.equal(bourse.profil.plateau, 'village-viking', 'la table choisie est retenue');
+    assert.ok(noeud('[id="rpg-profil-table"]').textContent.includes('Le Village Viking'),
       'et l’étiquette de la table nomme le choix, même tuile hors de vue');
     assert.ok(table.classList.contains('is-choisi'), 'et se marque');
     assert.equal(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'), false, 'le deck ne décide plus');
     await act(async () => noeud('[data-profil-plateau-auto]').click());
     assert.equal(bourse.profil.plateau, null, '« au gré du deck » rend la main au deck');
-    await act(async () => noeud('[data-profil-plateau="fjord-des-neuf-hivers"]').click());
-    assert.equal(bourse.profil.plateau, 'fjord-des-neuf-hivers', 'et le joueur la reprend');
+    await act(async () => noeud('[data-profil-plateau="village-viking"]').click());
+    assert.equal(bourse.profil.plateau, 'village-viking', 'et le joueur la reprend');
 
     // ── L'appareil garde le profil ──────────────────────────────────────────
     const ecrit = JSON.parse(window.localStorage.getItem(RPG_PROFIL_STORAGE_KEY) ?? 'null');
@@ -376,7 +377,7 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(ecrit.pseudo, 'Salem l’arpenteur');
     assert.equal(ecrit.embleme, embleme.id);
     assert.equal(ecrit.avatar, 'yamina', 'le visage est écrit sur l’appareil');
-    assert.equal(ecrit.plateau, 'fjord-des-neuf-hivers', 'et la table aussi');
+    assert.equal(ecrit.plateau, 'village-viking', 'et la table aussi');
     assert.equal(ecrit.boostersOfferts, bourse.profil.boostersOfferts, 'et les paquets offerts aussi');
 
     const xpAvantRemontage = bourse.profil.xp;
@@ -394,7 +395,7 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(donnee('[data-profil-pseudo]', 'profilPseudo'), 'Salem l’arpenteur', 'le nom survit');
     assert.equal(donnee('[data-profil-medaille]', 'profilMedaille'), 'yamina', 'le visage survit au remontage');
     assert.ok(noeud(`[data-profil-embleme="${embleme.id}"]`).classList.contains('is-choisi'), 'l’emblème aussi');
-    assert.ok(noeud('[data-profil-plateau="fjord-des-neuf-hivers"]').classList.contains('is-choisi'), 'et la table aussi');
+    assert.ok(noeud('[data-profil-plateau="village-viking"]').classList.contains('is-choisi'), 'et la table aussi');
     assert.equal(bourse2.boostersEnAttente, 0, 'aucune dette ne renaît au remontage');
     assert.equal(noeud('[data-souk-ceremonie]'), null, 'et aucune cérémonie ne se rouvre toute seule');
 

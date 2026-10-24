@@ -35,6 +35,7 @@ export const RPG_AMBIENT_BPM = Object.freeze({
   'tour-du-fjord': 84,     // vent du nord, pas cadencé d'une garde
   'tour-du-soleil-rouge': 88, // martial, koto et braises du mont ardent
   'tour-de-la-necropole': 64, // funéraire, sistre et murmure des tombes
+  'tour-du-corbeau': 68,   // la neige tombe dans le noir : lent, ailes et givre
   'tour-du-sablier-renverse': 72, // solennel, grains de sable et cloche du retournement
 });
 export const RPG_AMBIENT_DEFAULT_BPM = 78;
@@ -130,6 +131,16 @@ const NECROPOLE_CHORDS = Object.freeze([
   Object.freeze({ root: 47, intervals: Object.freeze([0, 4, 7, 10]) }), // B7
 ]);
 
+// Tour du Corbeau : le Nord (mineur naturel, quinte ouverte) rencontre la
+// Nuit (seconde mineure, triton). La grille penche d'un demi-ton à chaque
+// mesure, comme un corbeau qui change de branche sans jamais s'envoler.
+const CORBEAU_CHORDS = Object.freeze([
+  Object.freeze({ root: 38, intervals: Object.freeze([0, 3, 7, 10]) }), // Dm7
+  Object.freeze({ root: 39, intervals: Object.freeze([0, 3, 6, 10]) }), // Ebm7
+  Object.freeze({ root: 41, intervals: Object.freeze([0, 3, 7, 10]) }), // Fm7
+  Object.freeze({ root: 40, intervals: Object.freeze([0, 6, 7, 11]) }), // Emaj7♭5
+]);
+
 // Tour du Sablier renversé : une grille qui « se renverse » — Em7 · B7 ·
 // Cmaj7 · Am, la tonique bascule d'un pôle à l'autre comme le sable
 // change de chambre à chaque retournement.
@@ -201,6 +212,15 @@ const SABLIER_LEAD = Object.freeze([
   Object.freeze([null, 69, null, null, 71, null, 74, null]),
   Object.freeze([null, 76, null, 79, null, null, 76, null]),
   Object.freeze([null, null, 74, null, null, 69, null, null]),
+]);
+
+// Le Corbeau : trois notes de complainte qui tournent, puis se taisent —
+// une aile, un œil, un nom. Rien d'autre : la nuit fait le reste.
+const CORBEAU_LEAD = Object.freeze([
+  Object.freeze([null, 69, null, null, 70, null, 74, null]),
+  Object.freeze([null, 72, null, null, 70, null, null, null]),
+  Object.freeze([null, 69, null, 67, null, null, 63, null]),
+  Object.freeze([null, null, 62, null, null, null, null, null]),
 ]);
 
 // ── Classe principale ─────────────────────────────────────────────────
@@ -482,6 +502,7 @@ export class RpgAmbientMusic {
       case 'tour-du-fjord':    this.playFjord(step, time); return;
       case 'tour-du-soleil-rouge': this.playSoleilRouge(step, time); return;
       case 'tour-de-la-necropole': this.playNecropole(step, time); return;
+      case 'tour-du-corbeau':  this.playCorbeau(step, time); return;
       case 'tour-du-sablier-renverse': this.playSablierRenverse(step, time); return;
       default:                 this.playListes(step, time); return;
     }
@@ -947,6 +968,60 @@ export class RpgAmbientMusic {
     }
   }
 
+  // ── Tour du Corbeau : ailes, givre et nuit qui tombe ─
+  playCorbeau(step, time) {
+    const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
+    const beat = step % STEPS_PER_BAR;
+    const chord = CORBEAU_CHORDS[Math.floor(bar / 2) % CORBEAU_CHORDS.length];
+    const stepLength = 60 / RPG_AMBIENT_BPM['tour-du-corbeau'] / 4;
+
+    // Le bourdon du Nord, très grave, et la nappe de nuit une quinte au-dessus :
+    // deux tenues qui ne se quittent jamais.
+    if (beat === 0) {
+      this.tone(midiToFrequency(chord.root - 12), time, stepLength * STEPS_PER_BAR * 2,
+        'sine', 0.075, { filter: 200, attack: 1.1, destination: this.droneBus });
+      this.tone(midiToFrequency(chord.root - 5), time, stepLength * STEPS_PER_BAR * 2,
+        'triangle', 0.04, { filter: 390, attack: 0.9, destination: this.droneBus });
+      // Le souffle de la clairière : de l'air froid, jamais du vent fort.
+      this.filteredNoise(time, stepLength * STEPS_PER_BAR * 2, 0.028, {
+        type: 'lowpass', frequency: 420, q: 1.2, attack: 1.6, destination: this.droneBus,
+      });
+    }
+
+    // L'aile : deux froissements d'étoffe au début de chaque mesure, comme un
+    // corbeau qui se pose et replie ses plumes.
+    if (beat === 0 || beat === 6) {
+      this.filteredNoise(time, 0.09, 0.04, {
+        type: 'bandpass', frequency: 1500, q: 2.2, attack: 0.004, destination: this.musicBus,
+      });
+    }
+
+    // Le croassement, très bas et mat, une fois par deux mesures — un
+    // triangle filtré, jamais un cri strident.
+    if (beat === 12 && bar % 2 === 0) {
+      this.tone(146, time, 0.16, 'triangle', 0.045, { filter: 700, filterTo: 320, attack: 0.01 });
+      this.tone(138, time + 0.05, 0.12, 'triangle', 0.025, { filter: 600, attack: 0.01 });
+    }
+
+    // Le givre qui tombe : un grain clair, très bref, sur les contretemps.
+    if (beat % 4 === 2) {
+      this.bell(chord.root + 36, time, stepLength * 1.4, 0.02);
+    }
+
+    // La complainte des neuf nuits, aux mesures 5-8.
+    if (bar >= 4 && beat % 2 === 0) {
+      const note = CORBEAU_LEAD[(bar - 4) % CORBEAU_LEAD.length][beat / 2];
+      if (note) {
+        this.tone(midiToFrequency(note), time, stepLength * 3, 'triangle', 0.045, {
+          filter: 1000, filterTo: 460, attack: 0.24, destination: this.musicBus,
+        });
+        this.tone(midiToFrequency(note - 12), time + 0.06, stepLength * 2.2, 'sine', 0.022, {
+          filter: 900, attack: 0.18,
+        });
+      }
+    }
+  }
+
   // ── Tour du Sablier renversé : grains comptés et cloche du retournement ─
   playSablierRenverse(step, time) {
     const bar = Math.floor(step / STEPS_PER_BAR) % BARS_PER_LOOP;
@@ -1043,6 +1118,11 @@ export const RPG_AMBIENT_THEMES = Object.freeze({
     nom: 'Le jugement de la nécropole',
     bpm: RPG_AMBIENT_BPM['tour-de-la-necropole'],
     ambiance: 'Sistre funéraire, cloches de bronze et murmure des tombes — la balance des heures.',
+  }),
+  'tour-du-corbeau': Object.freeze({
+    nom: 'La neige tombe dans le noir',
+    bpm: RPG_AMBIENT_BPM['tour-du-corbeau'],
+    ambiance: 'Bourdon du Nord, ailes repliées, croassement mat et givre qui tombe — le seuil des neuf nuits.',
   }),
   'tour-du-sablier-renverse': Object.freeze({
     nom: 'Le retournement du Sablier',

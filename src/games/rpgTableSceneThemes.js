@@ -258,6 +258,20 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 56, color: '#e2fffb', size: 0.042, opacity: 0.55, vx: 0.01, vy: 0.12, sway: 0.16, swayHz: 0.5, z: 1, zSpread: 0.7 }),
     overlay: { kind: 'caustiques', color: '#8fffe8', opacity: 0.17, speed: 0.035, scale: 2.4 },
   }),
+  // Le Cercle des corbeaux : la clairière des neuf nuits, vue de dessus. Aucun
+  // objet 3D — les pierres levées, les plumes, la souche et le corbeau de garde
+  // sont peints aux bords, et le cercle du centre reste libre pour les cartes.
+  // Deux lumières seulement : la lanterne de fer au verre cassé, tout en haut à
+  // droite, et le brasero éteint dont les braises se rallument parfois.
+  'cercle-des-corbeaux': theme({
+    key: '#dfe9ff', keyIntensity: 0.46, ambientIntensity: 0.52, keyDirection: [-0.35, 0.8, 1], relief: 1.25, roughness: 0.66,
+    lights: [
+      light({ color: '#ffcf8a', intensity: 1.9, distance: 3.4, x: 0.72, y: 0.78, z: 0.85, flicker: 0.34 }),
+      light({ color: '#ff8a4c', intensity: 1.4, distance: 3, x: 0.74, y: -0.8, z: 0.6, flicker: 0.3, pulse: 0.18, pulseHz: 0.08 }),
+    ],
+    particles: motes({ count: 76, color: '#dfe8ff', size: 0.026, opacity: 0.66, vx: 0.06, vy: -0.2, sway: 0.22, swayHz: 0.34, z: 1.15, zSpread: 0.9 }),
+    overlay: { kind: 'ombre', color: '#0b1020', opacity: 0.2, speed: 0.008, scale: 2.6 },
+  }),
   // Le lac de glace du ciel : l'aurore glisse, la poudre scintille.
   'iles-celestes': theme({
     ambient: '#eaf4ff', key: '#e8f4ff', keyIntensity: 0.44, relief: 1.1, roughness: 0.35,

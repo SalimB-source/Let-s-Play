@@ -62,6 +62,9 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
   // inhabituelles (Mousse, Raïs, Brûlot…) restent au Souk, le rayon Sable,
   // jusqu'à l'entrée dédiée de la Régence (doc 17 §15).
   .filter((carte) => carte.set !== 'lettres-de-marque')
+  // Le Corbeau des neuf nuits (doc 22) est le set du dernier sommet : même
+  // ses communes se découvrent étage par étage, jamais offertes d'entrée.
+  .filter((carte) => carte.set !== 'corbeau-des-neuf-nuits')
   .map((carte) => carte.id);
 
 /**
@@ -125,6 +128,13 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
   'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
+  // Tour du Corbeau — le set hybride Neige + Ténèbres (doc 22). La neige
+  // d'abord (le corbeau de givre), la nuit ensuite (la veilleuse), les deux
+  // au sommet : la Valkyrie des neuf nuits et le Maître des corbeaux.
+  'corbeau-1': ['corbeau-de-givre'],
+  'corbeau-2': ['veilleuse-au-corbeau-noir', 'berserk-du-crepuscule'],
+  'corbeau-3': ['valkyrie-des-neuf-nuits', 'neige-noire'],
+  'corbeau-4': ['maitre-des-corbeaux'],
 };
 
 /** Ne garde que des identifiants de cartes connus, sans doublon, ordre préservé. */

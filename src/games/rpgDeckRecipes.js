@@ -615,4 +615,85 @@ export const RPG_RECETTES_HISTOIRE = {
       ['sahir-des-braises', 1],
     ],
   },
+  /**
+   * La Tour du Corbeau (doc 22) — le seul set hybride Neige + Ténèbres du
+   * jeu. Quatre paquets montent la rampe du seuil au Trône des corbeaux :
+   * la neige d'abord, la nuit ensuite, les deux au sommet. Comme pour les
+   * autres tours, `mythiquesMax` et `raresMax` comptent **par famille** :
+   * le premier étage ménage ses figures, le dernier les aligne toutes.
+   */
+  'corbeaux-du-givre': {
+    identite: ['neige', 'tenebres'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 1,
+    raresMax: 5,
+    signature: [
+      ['corbeau-de-givre', 2],
+      ['eirik-du-premier-serment', 1],
+      ['chacal-du-seuil', 2],
+      ['guerrier-au-bouclier-rond', 2],
+    ],
+  },
+  'serment-des-neuf-nuits': {
+    identite: ['neige', 'tenebres'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 2,
+    raresMax: 7,
+    signature: [
+      ['veilleuse-au-corbeau-noir', 2],
+      ['berserk-du-crepuscule', 2],
+      ['valkyrie-au-corbeau', 1],
+      ['pretre-de-la-bouche', 2],
+      ['corbeau-de-givre', 2],
+    ],
+  },
+  'veille-du-corbeau': {
+    identite: ['neige', 'tenebres'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    mythiquesMax: 3,
+    raresMax: 9,
+    signature: [
+      ['valkyrie-des-neuf-nuits', 2],
+      ['neige-noire', 2],
+      ['berserk-du-crepuscule', 2],
+      ['celle-qui-pese', 1],
+      ['maitre-du-marteau', 1],
+    ],
+  },
+  /**
+   * Le Maître des corbeaux (Corbeau 4 — le sommet) : le Père des corbeaux
+   * retourné, la neige et la nuit dans le même oiseau. Cinq figures
+   * mythiques et les meilleures rares des deux identités, sans retenue.
+   */
+  'maitre-des-corbeaux': {
+    identite: ['neige', 'tenebres'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    // Quatre figures du Nord dans la famille des créatures, plus la
+    // Dernière Pesée que le remplissage des sorts s'accorde : cinq mythiques
+    // au total, le maximum que le mode Histoire s'autorise avant les paquets
+    // « absolus » de la Tour du Sablier renversé.
+    mythiquesMax: 4,
+    raresMax: 12,
+    signature: [
+      ['maitre-des-corbeaux', 1],
+      ['pere-des-corbeaux', 1],
+      ['valkyrie-des-neuf-nuits', 2],
+      ['neige-noire', 2],
+      ['berserk-du-crepuscule', 2],
+      ['maitre-du-marteau', 1],
+      ['dame-des-neuf-mondes', 1],
+    ],
+  },
 };

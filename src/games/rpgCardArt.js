@@ -67,6 +67,15 @@ const CARD_ART_CACHE_VERSIONS = {
   yamina: 'heros-nihonga-algerien-v1',
   tarek: 'heros-nihonga-algerien-v1',
   boualem: 'heros-nihonga-algerien-v1',
+  // Le Corbeau des neuf nuits — le set hybride Neige + Ténèbres (doc 22).
+  // Cinq peintures neuves et la figure retournée du Père des corbeaux :
+  // toutes partagent la révision du set, décidée ici une seule fois.
+  'corbeau-de-givre': 'corbeau-neuf-nuits-v1',
+  'veilleuse-au-corbeau-noir': 'corbeau-neuf-nuits-v1',
+  'berserk-du-crepuscule': 'corbeau-neuf-nuits-v1',
+  'valkyrie-des-neuf-nuits': 'corbeau-neuf-nuits-v1',
+  'neige-noire': 'corbeau-neuf-nuits-v1',
+  'maitre-des-corbeaux': 'corbeau-neuf-nuits-v1',
   // Le Serpent du monde garde la facture nihonga, mais sa composition est
   // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
   // Sa révision dédiée l’emporte sur celle du set Neige.
