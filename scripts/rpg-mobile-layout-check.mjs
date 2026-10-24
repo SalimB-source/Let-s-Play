@@ -130,6 +130,38 @@ try {
     assert.equal(main.muettes, 0, `${width}: chaque carte visible de la main répond au doigt, en son centre`);
     assert.ok(main.tient, `${width}: chaque carte de la main garde une largeur touchable (${main.largeurs.join(' × ')})`);
     assert.ok(main.premiereVisible, `${width}: la première carte de la main reste atteignable`);
+    // La main du sorcier : elle s'affiche au doigt, en dos de cartes (le
+    // nombre les accompagne), tient dans la bande de navigation — au-dessus
+    // de la plaque du sorcier — et ne prend aucun toucher.
+    const mainAdverse = await page.evaluate(() => {
+      const fan = document.querySelector('.rpg-hidden-hand');
+      if (!fan) return { present: false };
+      const box = fan.getBoundingClientRect();
+      const plateau = document.querySelector('.rpg-wizard-plate--ennemi').getBoundingClientRect();
+      const cartes = [...fan.querySelectorAll('.rpg-hidden-hand__card')].map((carte) => carte.getBoundingClientRect());
+      const nombre = Number((fan.querySelector('.rpg-hidden-hand__count')?.textContent ?? '').replace(/\D+/g, ''));
+      const dessous = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return {
+        present: true,
+        visible: getComputedStyle(fan).display !== 'none' && box.width > 0 && box.height > 0,
+        cartes: cartes.length,
+        nombre,
+        // Le 4:3 des dos du doigt : la largeur, puis la hauteur qui la suit.
+        format: cartes.every((carte) => Math.abs(carte.width / carte.height - 1 / 1.3) < .02),
+        dansLaBande: box.top >= document.querySelector('.rpg-duel-nav').getBoundingClientRect().top - 1
+          && box.bottom <= plateau.top + 1,
+        prendPasLeToucher: !dessous?.closest('.rpg-hidden-hand'),
+      };
+    });
+    assert.ok(mainAdverse.present && mainAdverse.visible,
+      `${width}: la main du sorcier s'affiche, face cachée, au doigt`);
+    assert.ok(mainAdverse.cartes === Math.min(mainAdverse.nombre, 7) && mainAdverse.cartes <= 7,
+      `${width}: l'éventail montre un dos par carte annoncée (${mainAdverse.cartes} pour ${mainAdverse.nombre}), sept au plus`);
+    assert.ok(mainAdverse.format, `${width}: les dos du sorcier gardent le format du dos de carte`);
+    assert.ok(mainAdverse.dansLaBande,
+      `${width}: la main du sorcier tient dans la bande de navigation, au-dessus de sa plaque`);
+    assert.ok(mainAdverse.prendPasLeToucher,
+      `${width}: la main du sorcier ne capte aucun toucher`);
     assert.ok(result.rail.top >= result.table.top - 1 && result.rail.bottom <= result.hand.top + 1,
       `${width}: le rail du tour tient dans la bande de jeu, au-dessus de la main`);
     assert.ok(result.phases.height > 0 && result.phases.bottom <= result.attackAll.top
