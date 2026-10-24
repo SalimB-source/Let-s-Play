@@ -3703,6 +3703,111 @@ function MonteeDeNiveau({ montee, profil, cardArt, onFermer, onPlaySfx }) {
   );
 }
 
+/**
+ * La barre d'XP de l'écran de fin de duel — celle qui **monte**.
+ *
+ * Elle part du total d'avant la partie (`depart`) et rejoint celui du moment
+ * (`arrivee`) en une seconde et demie : les cartes posées pendant le duel, puis
+ * la victoire, puis le butin de la tour quand il tombe. Un palier franchi se
+ * voit donc passer — la piste se remplit, se vide, le niveau s'incrémente — au
+ * lieu d'apparaître d'un coup.
+ *
+ * La valeur affichée est **le seul état local** : le profil, lui, est déjà
+ * écrit quand l'écran s'ouvre. Rien ici ne décide d'un gain, ni n'ouvre un
+ * paquet : la barre raconte ce que `useSablierBourse.js` a versé.
+ */
+export function BarreXpFinDeDuel({ depart = 0, arrivee = 0, legende = null }) {
+  const cible = Math.max(0, Math.floor(Number(arrivee) || 0));
+  const base = Math.max(0, Math.min(cible, Math.floor(Number(depart) || 0)));
+  const [valeur, setValeur] = useState(base);
+  // La valeur réellement peinte, lisible dans le rappel de la trame suivante :
+  // une cible qui bouge en cours de montée (la victoire arrive après la carte)
+  // repart de là, jamais du début.
+  const valeurRef = useRef(base);
+  const trameRef = useRef(null);
+  useEffect(() => {
+    const depuis = valeurRef.current;
+    if (depuis === cible) return undefined;
+    const reduire = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    if (reduire || typeof requestAnimationFrame !== 'function') {
+      valeurRef.current = cible;
+      setValeur(cible);
+      return undefined;
+    }
+    const distance = Math.abs(cible - depuis);
+    const duree = Math.min(2200, Math.max(650, 380 + distance * 14));
+    const horloge = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const debut = horloge();
+    const pas = () => {
+      const avance = Math.min(1, (horloge() - debut) / duree);
+      // Départ franc, arrivée douce : l'œil suit le chiffre jusqu'au bout.
+      const doux = 1 - (1 - avance) ** 3;
+      const courante = Math.round(depuis + (cible - depuis) * doux);
+      valeurRef.current = courante;
+      setValeur(courante);
+      if (avance < 1) trameRef.current = requestAnimationFrame(pas);
+      else trameRef.current = null;
+    };
+    trameRef.current = requestAnimationFrame(pas);
+    return () => {
+      if (trameRef.current) cancelAnimationFrame(trameRef.current);
+      trameRef.current = null;
+    };
+  }, [cible]);
+
+  const barre = progressionDeXp(valeur);
+  const gain = Math.max(0, cible - base);
+  const niveauDepart = progressionDeXp(base).niveau;
+  const palier = barre.niveau > niveauDepart;
+  return (
+    <div
+      className="rpg-overlay__xp"
+      data-xp-fin-de-duel
+      data-xp-depart={base}
+      data-xp-cible={cible}
+      data-xp-valeur={valeur}
+      data-xp-gain={gain}
+    >
+      {/* La montée change à chaque trame : elle ne s'annonce donc pas. Le
+          lecteur d'écran reçoit une seule phrase, stable, avec le total. */}
+      <span className="rpg-overlay__xp-annonce" role="status" aria-live="polite">
+        {`+${xpLisible(gain)} XP — niveau ${barre.niveau}`}
+        {palier ? ', un paquet s’ouvre' : ''}
+      </span>
+      <div className="rpg-overlay__xp-tete" aria-hidden="true">
+        <span className={`rpg-overlay__xp-niveau${palier ? ' is-palier' : ''}`} data-xp-niveau={barre.niveau}>
+          Niveau {barre.niveau}
+        </span>
+        <span className="rpg-overlay__xp-gain" data-xp-gain-ligne>
+          ✦ +{xpLisible(gain)} XP
+        </span>
+      </div>
+      {/* La piste est un `progressbar` complet ; le chiffre est écrit dessous,
+          donc la montée ne passe jamais par la couleur seule (dossier 04, §6). */}
+      <div
+        className="rpg-overlay__xp-piste"
+        role="progressbar"
+        aria-valuenow={barre.into}
+        aria-valuemin={0}
+        aria-valuemax={barre.maximal ? barre.into : barre.need}
+        aria-label={barre.maximal
+          ? `Expérience : niveau ${barre.niveau}, niveau maximal atteint`
+          : `Expérience : ${barre.into} XP sur ${barre.need} pour le niveau ${barre.niveau + 1}`}
+        data-xp-percent={barre.percent}
+        data-xp-restant={barre.reste}
+      >
+        <i style={{ width: `${barre.percent}%` }} />
+      </div>
+      <p className="rpg-overlay__xp-lecture" aria-hidden="true">
+        {barre.maximal ? 'Niveau maximal' : `${xpLisible(barre.into)} / ${xpLisible(barre.need)} XP`}
+        {palier ? ` — niveau ${barre.niveau} atteint, un paquet s’ouvre !` : ''}
+      </p>
+      {legende ? <p className="rpg-overlay__xp-legende" aria-hidden="true">{legende}</p> : null}
+    </div>
+  );
+}
+
 function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
@@ -6185,6 +6290,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // qui laissait un combat fantôme sur la table et figeait les cartes dans
   // leur dernier état (créatures mortes comprises).
   const sessionDuelRef = useRef(0);
+  // Le total d'XP **avant la partie** : l'écran de fin fait monter la barre de
+  // ce total-là jusqu'à celui du moment — les cartes posées pendant le duel,
+  // la victoire, le butin de tour. Le témoin porte la session : « Rejouer » et
+  // « Étage suivant » repartent d'un total neuf, et un duel repris au
+  // chargement part de l'XP déjà acquis (aucune barre à faire monter).
+  const xpProfilRef = useRef(profilJoueur?.xp ?? 0);
+  xpProfilRef.current = profilJoueur?.xp ?? 0;
+  const xpAvantDuelRef = useRef({ session: sessionDuelRef.current, xp: profilJoueur?.xp ?? 0 });
   const later = (fn, ms) => {
     const session = sessionDuelRef.current;
     const id = window.setTimeout(() => {
@@ -6380,6 +6493,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // une attaque du sorcier encore en vol atterrissait sur la table neuve.
     sessionDuelRef.current += 1;
     annulerMinuteriesDuTour();
+    // La barre de fin de duel part d'ici : c'est l'XP du joueur au moment où
+    // la table se met en place, avant la première carte posée.
+    xpAvantDuelRef.current = { session: sessionDuelRef.current, xp: xpProfilRef.current };
     const tutoriel = options.tutoriel === true ? tutorielParId(options.tutorielId) : null;
     const modeTutoriel = Boolean(tutoriel);
     const deckEssai = deckManaEssaiParId(options.essaiManaId);
@@ -6651,6 +6767,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : 'egalite')
     : null;
   const vainqueur = vainqueurPvp ?? (duel ? rpgVainqueur(duel) : null);
+  // L'XP de la partie qui vient de se terminer : la barre de fin monte du
+  // total d'avant le duel à celui du moment. Elle vaut pour la victoire comme
+  // pour la défaite — perdre ne remet pas l'XP des cartes posées —, et jamais
+  // en ligne : un duel en réseau ne verse rien.
+  const xpAvantDuel = xpAvantDuelRef.current;
+  const xpFinDeDuel = !modePvp && vainqueur && xpAvantDuel?.session === sessionDuelRef.current
+    ? {
+      depart: xpAvantDuel.xp,
+      arrivee: Math.max(xpAvantDuel.xp, Math.floor(Number(profilJoueur?.xp) || 0)),
+    }
+    : null;
   const territoire = territoireDuDuel(duel, vainqueur);
   // Un nouveau duel repart avec la musique du joueur. Dans la bande neutre,
   // le dernier camp ayant franchi 60/40 conserve la main (hystérésis).
@@ -7507,6 +7634,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }
 
   if (ecran !== 'partie') {
+    // Une partie n'est **reprenable** que tant qu'elle n'a pas de vainqueur :
+    // un duel terminé n'a plus rien à reprendre, et son bouton vert n'a rien à
+    // faire sous l'étagère des tours — « Retour aux tours » ramène au menu, pas
+    // à une table finie. Le duel reste en mémoire pour son bilan et sa
+    // cérémonie de palier ; il ne se propose simplement plus.
+    const partieReprenable = Boolean(duel) && !vainqueur;
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
@@ -7520,7 +7653,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onStartTutorial={demarrerTutoriel}
           onStartCardGuide={() => setEcran('guide')}
           onResumeGame={reprendrePartie}
-          hasGame={Boolean(duel)}
+          hasGame={partieReprenable}
           progressionHistoire={progressionHistoire}
           onStartEtage={demarrerEtage}
           onResetHistoire={() => {
@@ -7535,7 +7668,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onJournalRecit={ouvrirJournal}
           onRestartRecit={nouveauRecit}
           sauvegardeHistoireOk={sauvegardeHistoireOk}
-          duelEnCours={Boolean(duel && !rpgVainqueur(duel))}
+          duelEnCours={partieReprenable}
           campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
@@ -11997,15 +12130,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     ? 'duel libre gagné'
                     : annonceGain.premiere ? 'premier déblayage de l’étage' : 'étage rejoué'}
                 </span>
-                {/* La barre d'XP monte avec les crédits : la victoire dit les
-                    deux, et annonce le palier quand il vient de sonner — le
-                    paquet offert s'ouvre par-dessus la table. */}
-                {annonceGain.xp > 0 && (
-                  <span className="rpg-overlay__gain rpg-overlay__gain--xp" data-victoire-xp-ligne>
-                    ✦ +{xpLisible(annonceGain.xp)} XP
-                    {annonceGain.niveaux > 0 && ` — niveau ${barreXp.niveau} atteint, un paquet s’ouvre !`}
-                  </span>
-                )}
                 {annonceGain.butin > 0 && (
                   <span className="rpg-overlay__gain rpg-overlay__gain--butin">
                     <RpgCreditIcon anime />
@@ -12013,6 +12137,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </span>
                 )}
               </p>
+            )}
+            {/* La barre d'XP, sous les crédits : elle monte du total d'avant la
+                partie à celui d'aujourd'hui, et annonce le palier quand il
+                vient de sonner — le paquet offert s'ouvre par-dessus la table.
+                En défaite elle montre quand même ce que les cartes ont versé :
+                perdre ne retire pas l'XP déjà gagnée. */}
+            {xpFinDeDuel && xpFinDeDuel.arrivee > xpFinDeDuel.depart && (
+              <BarreXpFinDeDuel
+                depart={xpFinDeDuel.depart}
+                arrivee={xpFinDeDuel.arrivee}
+                legende={vainqueur === 'joueur'
+                  ? 'Les cartes posées, la victoire et son butin : la barre monte.'
+                  : vainqueur === 'sorcier'
+                    ? 'Duel perdu — les cartes posées comptent quand même.'
+                    : 'Double chute — les cartes posées comptent quand même.'}
+              />
             )}
             {modePvp ? (
               <div className="rpg-overlay__actions">

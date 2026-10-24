@@ -2047,6 +2047,133 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-weight: 700;
 }
 
+/* ── La barre d'XP de fin de duel ───────────────────────────────────────────
+   Elle monte du total d'avant la partie à celui du moment (victoire comme
+   défaite) : le niveau à gauche, le gain à droite, la piste au milieu, et la
+   lecture chiffrée dessous — la progression ne passe jamais par la couleur
+   seule (dossier 04, §6). L'animation de la piste est portée par la trame
+   (`BarreXpFinDeDuel`), pas par une transition : un palier franchi se voit
+   passer, la piste se remplit puis repart de zéro au niveau suivant. */
+.rpg-overlay__xp {
+  display: grid;
+  gap: 7px;
+  width: min(340px, 78vw);
+  margin-top: 2px;
+  justify-items: stretch;
+  animation: rpg-overlay-xp-arrivee .5s ease-out both;
+}
+
+/* La phrase stable du lecteur d'écran : la montée, elle, ne s'annonce pas. */
+.rpg-overlay__xp-annonce {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rpg-overlay__xp-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font: 700 10.5px/1.4 var(--mono, ui-monospace, monospace);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.rpg-overlay__xp-niveau { color: rgba(247, 237, 218, .8); }
+.rpg-overlay__xp-niveau.is-palier {
+  color: #fff8e6;
+  animation: rpg-overlay-xp-palier .9s ease-out both;
+}
+
+.rpg-overlay__xp-gain {
+  color: var(--yellow);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  text-shadow: 0 0 12px rgba(255, 231, 175, .35);
+  animation: rpg-overlay-xp-gain .55s ease-out both;
+}
+
+.rpg-overlay__xp-piste {
+  position: relative;
+  height: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(232, 194, 113, .42);
+  border-radius: 999px;
+  background: rgba(8, 7, 9, .85);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .55);
+}
+
+.rpg-overlay__xp-piste i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(166, 106, 32, .95), #ffe7af);
+  box-shadow: 0 0 14px rgba(255, 231, 175, .5);
+}
+
+/* Un reflet qui court sur le remplissage : la barre respire quand elle monte. */
+.rpg-overlay__xp-piste i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 248, 230, .55), transparent);
+  background-size: 220% 100%;
+  animation: rpg-overlay-xp-reflet 1.6s linear infinite;
+}
+
+.rpg-overlay__xp-lecture,
+.rpg-overlay__xp-legende {
+  margin: 0;
+  max-width: none;
+  color: rgba(247, 237, 218, .62);
+  font: 700 10.5px/1.35 var(--mono, ui-monospace, monospace);
+  letter-spacing: .06em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-overlay__xp-legende {
+  color: rgba(247, 237, 218, .46);
+  font-weight: 500;
+  letter-spacing: .03em;
+}
+
+@keyframes rpg-overlay-xp-arrivee {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes rpg-overlay-xp-gain {
+  from { opacity: 0; transform: scale(.86); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes rpg-overlay-xp-palier {
+  0% { text-shadow: 0 0 0 rgba(255, 248, 230, 0); }
+  35% { text-shadow: 0 0 16px rgba(255, 248, 230, .95); }
+  100% { text-shadow: 0 0 0 rgba(255, 248, 230, 0); }
+}
+
+@keyframes rpg-overlay-xp-reflet {
+  from { background-position: 140% 0; }
+  to { background-position: -140% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-overlay__xp,
+  .rpg-overlay__xp-gain,
+  .rpg-overlay__xp-niveau.is-palier { animation: none; }
+  .rpg-overlay__xp-piste i::after { animation: none; opacity: 0; }
+}
+
 /* ── Bilan et suite ──────────────────────────────────────────────────────── */
 .rpg-outro,
 .rpg-docs {

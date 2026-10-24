@@ -245,7 +245,12 @@ Campagne → scène avant → bouton Commencer le duel → duel existant
    un seul effet les traite, personne d'autre ne les distribue.
 3. Les boutons « Étage suivant », « Rejouer » et « Retour aux tours » passent
    par ce contrôleur en campagne. Le résultat générique ne doit pas couvrir
-   la scène ni permettre de sauter un choix non résolu.
+   la scène ni permettre de sauter un choix non résolu. Une fois le duel
+   terminé, « Retour aux tours » ramène à l'étagère **sans** le bouton vert
+   « Reprendre le duel en cours » : une partie qui a un vainqueur n'est plus
+   reprenable, et le menu ne lui réserve plus sa place (`.rpg-mode-menu--reprise`).
+   Le duel reste en mémoire — c'est lui qui porte le bilan et la cérémonie du
+   paquet de palier.
 4. Les transitions vérifient l'étage et la session de duel attendus ; un
    callback tardif d'un ancien combat ne peut pas avancer un nouveau récit.
    Annuler les minuteries du tour quand on quitte son contexte, en réutilisant
