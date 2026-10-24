@@ -265,11 +265,30 @@ assert.match(hookCode, /verserXp\(/, 'les gains hors duel — quête, Cachet, le
 assert.match(pageCode, /setAnnonceGain\(\{[\s\S]{0,400}?xp: paiement\.xp/, 'la victoire annonce l’XP gagnée');
 assert.match(pageCode, /data-victoire-xp=\{annonceGain\.xp \?\? 0\} data-victoire-niveaux=\{annonceGain\.niveaux \?\? 0\}/,
   'et l’écran de fin la montre, avec les paliers qui ont sonné');
-assert.match(pageCode, /className="rpg-overlay__gain rpg-overlay__gain--xp" data-victoire-xp-ligne/,
-  'dans sa propre pastille, à côté des crédits');
-assert.match(pageCode, /\{annonceGain\.xp > 0 && \(/, 'qui ne s’affiche que si quelque chose a été versé');
-assert.match(pageCode, /niveau \$\{barreXp\.niveau\} atteint, un paquet s’ouvre/,
-  'et qui promet le paquet quand un palier vient de sonner');
+// L'écran de fin porte une vraie barre : elle monte du total d'avant la partie
+// à celui du moment, et se voit donc franchir un palier.
+assert.match(pageCode, /function BarreXpFinDeDuel\(\{ depart = 0, arrivee = 0, legende = null \}\)/,
+  'la barre de fin de duel est son propre composant');
+assert.match(pageCode, /const xpAvantDuelRef = useRef\(\{ session: sessionDuelRef\.current, xp: profilJoueur\?\.xp \?\? 0 \}\)/,
+  'elle part de l’XP d’avant la partie');
+assert.match(pageCode, /xpAvantDuelRef\.current = \{ session: sessionDuelRef\.current, xp: xpProfilRef\.current \};/,
+  'que chaque nouvelle partie remet à l’heure');
+assert.match(pageCode, /const xpFinDeDuel = !modePvp && vainqueur && xpAvantDuel\?\.session === sessionDuelRef\.current/,
+  'elle vaut pour la victoire comme pour la défaite — jamais en ligne');
+assert.match(pageCode, /<BarreXpFinDeDuel\s+depart=\{xpFinDeDuel\.depart\}\s+arrivee=\{xpFinDeDuel\.arrivee\}/,
+  'et c’est l’écran de fin qui la monte');
+assert.match(pageCode, /if \(depuis === cible\) return undefined;/,
+  'sans rien animer quand rien n’a bougé');
+assert.match(pageCode, /trameRef\.current = requestAnimationFrame\(pas\);/,
+  'la montée se joue trame par trame, pas d’un coup');
+assert.match(pageCode, /\(prefers-reduced-motion: reduce\)/,
+  'et respecte le réglage « réduire les animations »');
+assert.match(pageCode, /niveau \$\{barre\.niveau\} atteint, un paquet s’ouvre/,
+  'elle promet le paquet quand un palier vient de sonner');
+assert.match(pageCode, /data-xp-gain=\{gain\}/, 'et annonce le gain de la partie');
+assert.match(cssMenu, /\.rpg-overlay__xp-piste \{/, 'la piste de la barre a son style');
+assert.match(cssMenu, /@media \(prefers-reduced-motion: reduce\) \{\n  \.rpg-overlay__xp,/,
+  'dont une version sans animation');
 
 // 7. La cérémonie passe au-dessus de la table, et l'annonce seule existe aussi.
 assert.match(pageCode, /function MonteeDeNiveau\(\{ montee, profil, cardArt, onFermer, onPlaySfx \}\)/,

@@ -50,8 +50,11 @@ Ce que le joueur voit, dans l'ordre :
    une barre d'XP miniature, et une pastille quand un paquet attend ;
 2. **la carte de profil**, dépouillée (§6) : l'emblème, le pseudo, le niveau,
    sa barre d'XP et les six emblèmes — rien d'autre ;
-3. **la victoire** qui annonce les deux monnaies : « +50 crédits » et
-   « ✦ +70 XP — niveau 3 atteint, un paquet s'ouvre ! » ;
+3. **la fin du duel** qui annonce les deux monnaies : « +50 crédits », puis
+   une **barre d'XP qui monte** du total d'avant la partie à celui du moment —
+   « ✦ +70 XP », « NIVEAU 3 », et, si un palier vient de sonner, « niveau 3
+   atteint, un paquet s'ouvre ! ». La défaite a la sienne : les cartes posées
+   pendant le duel comptent quand même ;
 4. **la cérémonie** du paquet offert — la même qu'au Souk, avec son sachet, ses
    cinq cartes face cachée et son bouton « Tout ranger ».
 
@@ -369,8 +372,9 @@ en 64 s, arrêté par `prefers-reduced-motion`) et l'éclipse.
 | `src/games/rpg-piste-gains.css` | la piste et ses colonnes, le sachet et son dos de carte, le cadenas, la coche — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
 | `src/games/RpgStoryBabEl.jsx` | **le seuil de Bab El** : l'histoire de la cité, montrée à un nouveau joueur au lancement du mode Histoire |
 | `src/games/rpg-story-bab-el.css` | le seuil : le keyart en fond, le voile, la carte de texte |
-| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, la ligne d'XP de la victoire, les cadres du médaillon, la ligne du titre |
-| `src/games/RpgDuelPage.jsx` | l'onglet Profil, la branche `screen === 'profil'`, `MonteeDeNiveau`, l'XP dans l'overlay de victoire |
+| `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, les cadres du médaillon, la ligne du titre |
+| `src/games/rpg-battle.css` | l'overlay de fin de duel, dont la barre d'XP qui monte (`BarreXpFinDeDuel`) |
+| `src/games/RpgDuelPage.jsx` | l'onglet Profil, la branche `screen === 'profil'`, `MonteeDeNiveau`, `BarreXpFinDeDuel` |
 | `tests/rpg-profil.test.js` | la courbe, la dette, le barème, la fusion, le paquet offert, les visages et les tables |
 | `tests/rpg-profil-gains.test.js` | les catalogues de gains, la forme de la piste, ses états, son filet, et ce qui se porte |
 | `scripts/rpg-profil-check.mjs` | l'écran monté dans jsdom + la vraie page, et les gardes de source |
@@ -605,9 +609,13 @@ Marques de vérification dans le DOM : `data-profil`, `data-profil-niveau`,
 **Retirées** : `data-profil-rang`, `-sync`, `-courbe`, `-bareme`, `-stat` et
 `-journal` — `scripts/rpg-profil-check.mjs` vérifie maintenant leur **absence**.
 Sur la page : `data-profil-onglet`, `data-profil-xp-onglet`,
-`data-profil-pastille`, `data-victoire-xp`, `data-victoire-niveaux`,
-`data-niveau-toast`, `data-niveau-dus`, `data-souk-ceremonie-offert`,
-`data-souk-ceremonie-niveau`.
+`data-profil-pastille`, `data-victoire-gain`, `data-victoire-butin`,
+`data-victoire-xp`, `data-victoire-niveaux`, `data-xp-fin-de-duel`
+(avec `data-xp-depart`, `data-xp-cible`, `data-xp-valeur`, `data-xp-gain`),
+`data-xp-niveau`, `data-xp-percent`, `data-xp-gain-ligne`, `data-niveau-toast`,
+`data-niveau-dus`, `data-souk-ceremonie-offert`, `data-souk-ceremonie-niveau`.
+**Retirée** : `data-victoire-xp-ligne` — la pastille d'XP de la victoire est
+remplacée par la barre de `BarreXpFinDeDuel`.
 
 ### 6.3 Le seuil de Bab El — l'histoire au lancement du mode Histoire
 
@@ -631,6 +639,37 @@ neuf, et « Plus tard » ramène le seuil la fois suivante.
 - **le franchissement** — « Commencer la campagne » appelle `ouvrirRecit()` :
   le récit naît, la première scène enchaîne, et le seuil ne revient plus.
   « Plus tard » n'écrit rien : la progression reste vide, et le seuil attendra.
+
+## 6.4 La barre d'XP de fin de duel
+
+L'overlay de fin de duel ne se contente plus d'annoncer un montant : il
+**montre** la barre monter. `BarreXpFinDeDuel` (dans `RpgDuelPage.jsx`, jamais
+dans `rpgProfil.js`) reçoit deux totaux et rien d'autre :
+
+- `depart` — l'XP du joueur au moment où la table s'est mise en place, notée
+  par `nouvellePartie` dans `xpAvantDuelRef` (`{ session, xp }`) ;
+- `arrivee` — l'XP du profil au moment de la fin, relue à chaque rendu.
+
+Le témoin porte la **session** du duel : « Rejouer », « Étage suivant » et
+« Nouvelle partie » incrémentent `sessionDuelRef`, donc la barre repart d'un
+total neuf, et un duel repris au chargement part de l'XP déjà acquis (aucune
+montée à raconter). La barre est donc valable **victoire comme défaite** — une
+défaite ne retire pas l'XP des cartes posées —, et jamais en ligne : un duel
+PvP ne verse rien.
+
+La montée se joue **trame par trame** (`requestAnimationFrame`, 650 ms à
+2,2 s selon la distance), avec une courbe qui arrive en douceur : un palier
+franchi se voit donc passer (la piste se remplit, se vide, le niveau
+s'incrémente, « niveau N atteint, un paquet s'ouvre ! » s'affiche) au lieu
+d'apparaître d'un coup. Une cible qui bouge en cours de route — la victoire est
+versée après la carte — repart de la valeur affichée, jamais du début.
+
+Trois gardes d'accessibilité : la piste reste un `progressbar` complet
+(`aria-valuenow` / `aria-valuemin` / `aria-valuemax`), la lecture chiffrée est
+écrite sous la barre (« 58 / 246 XP »), et la montée **ne s'annonce pas** —
+`role="status"` porte une phrase stable (« +70 XP — niveau 3, un paquet
+s'ouvre »), le reste est `aria-hidden`. `prefers-reduced-motion: reduce` pose le
+total final tout de suite et coupe le reflet de la piste.
 
 ## 7. Les deux visages d'une montée de niveau
 
