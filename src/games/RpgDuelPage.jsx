@@ -4832,7 +4832,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
-                  const exemplaires = nombreExemplaires(collection, carte.id);
+                  // Le stock se lit dans le portefeuille du Souk : une carte
+                  // rachetée à l'étal y compte deux copies, et le catalogue doit
+                  // dire la même chose que l'étal — deux pastilles, un seul chiffre.
+                  const exemplaires = nombreExemplaires(collection, carte.id, portefeuille?.exemplaires);
                   // Le sceau de la famille au coin libre de la vignette : c'est
                   // là qu'on feuillette la collection, et c'est là qu'il faut
                   // repérer un sort sans ouvrir sa fiche.

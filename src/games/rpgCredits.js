@@ -22,9 +22,9 @@
  *    par `tests/rpg-credits.test.js`.
  */
 
-import { cardById, cardRarityInfo } from './rpgCards.js';
+import { cardById, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
-import { normaliserCollection } from './rpgCollection.js';
+import { lireExemplaire, normaliserCollection } from './rpgCollection.js';
 import { tourHistoireParId } from './rpgStoryTours.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
@@ -83,9 +83,11 @@ export const GAINS = Object.freeze({
 /** Le portefeuille d'un joueur neuf. `tutoriels` retient les leçons dont la
  *  récompense a déjà été encaissée : une leçon se rejoue, mais ne se paie
  *  qu'une fois. `toursPayees` retient de même les tours dont le butin a déjà
- *  été versé : les étages se rejouent, le butin ne tombe qu'une fois. */
+ *  été versé : les étages se rejouent, le butin ne tombe qu'une fois.
+ *  `exemplaires` compte les copies achetées à l'unité à l'étal du Souk — voir
+ *  `normaliserExemplaires`. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], etal: etalVide(), majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], exemplaires: {}, etal: etalVide(), majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
@@ -97,6 +99,103 @@ function entierPositif(valeur) {
 /** L'étal de cartes à l'unité avant sa première ouverture. */
 export function etalVide() {
   return { jour: null, cartes: [], achetees: [], rafraichissements: 0, majLe: null };
+}
+
+/**
+ * Le **stock d'exemplaires** achetés à l'unité : `{ id: nombre }`, où `nombre`
+ * est le nombre **total** de copies acquises, borné par le quota de rareté
+ * (`cardCopyLimit`). Le champ n'est pas une seconde collection : `cartes`
+ * répond à « est-ce que je la possède ? » (donc « est-ce que je peux la jouer
+ * au deck ? »), `exemplaires` répond à « combien de copies ai-je payées ? ».
+ *
+ * Quatre règles rendent la lecture sûre :
+ *
+ * - **une carte possédée sans entrée explicite compte pour un exemplaire** :
+ *   c'est ce que valaient toutes les sauvegardes avant l'étal, aucune ne peut
+ *   donc maigrir ;
+ * - **un exemplaire unique n'est pas écrit** : la valeur implicite est `1`, ce
+ *   qui rend la normalisation idempotente et le `jsonb` du compte minuscule ;
+ * - **le quota borne le stock** : une mythique — unique dans un deck — ne peut
+ *   jamais compter deux copies ;
+ * - **le stock ne déborde pas de la possession** : une entrée qui ne
+ *   correspond à aucune carte du portefeuille est jetée, un compteur ne peut
+ *   donc pas faire exister une carte.
+ */
+export function normaliserExemplaires(value, cartes = []) {
+  const possedees = new Set(normaliserCollection(cartes));
+  const brut = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const comptes = {};
+  for (const [id, nombre] of Object.entries(brut)) {
+    if (!possedees.has(id)) continue;
+    const carte = cardById(id);
+    const limite = carte ? cardCopyLimit(carte) : null;
+    // Aucun quota pour les terrains (`Infinity`) : ils ne se vendent pas à
+    // l'unité et n'ont donc pas de stock à compter.
+    if (!carte || !Number.isFinite(limite)) continue;
+    // Le quota borne d'abord, l'implicite ensuite : cinq copies d'une mythique
+    // ramenées à une ne s'écrivent pas, `1` étant déjà la valeur par défaut.
+    const copies = Math.min(entierPositif(nombre), limite);
+    if (copies <= 1) continue;
+    comptes[id] = copies;
+  }
+  return comptes;
+}
+
+/** Le stock d'exemplaires d'un portefeuille, normalisé sur ses propres cartes. */
+export function exemplairesDuPortefeuille(portefeuille) {
+  const base = normaliserPortefeuille(portefeuille);
+  return normaliserExemplaires(base.exemplaires, base.cartes);
+}
+
+/**
+ * Ajoute **une** copie d'une carte au portefeuille : l'union sur `cartes` (la
+ * possession) et le compteur d'`exemplaires` (le stock) se font ensemble, pour
+ * qu'un achat à l'unité ne puisse jamais débiter une copie sans la ranger.
+ *
+ * Le quota de rareté borne le stock : `ajoute: false` quand il est atteint, et
+ * le portefeuille rendu est alors **identique** — un geste rejoué ne crée ni
+ * copie ni dépense de plus. La première copie n'est pas écrite (`1` est la
+ * valeur implicite) ; la seconde, si.
+ */
+export function ajouterExemplaireAuPortefeuille(portefeuille, cardId, { possedee = null } = {}) {
+  const base = normaliserPortefeuille(portefeuille);
+  const carte = cardById(cardId);
+  const limite = cardCopyLimit(carte);
+  if (!carte || !Number.isFinite(limite)) return { portefeuille: base, ajoute: false, total: 0 };
+  // La possession s'apprécie sur la collection du joueur quand l'appelant la
+  // connaît (une carte héritée des Tours n'est pas dans `base.cartes`, qui ne
+  // porte que les cartes du Souk) ; sinon sur le portefeuille lui-même.
+  const possedeeAvant = possedee === null ? base.cartes.includes(cardId) : Boolean(possedee);
+  const comptes = normaliserExemplaires(base.exemplaires, base.cartes);
+  const avant = lireExemplaire(comptes, cardId, possedeeAvant);
+  const total = Math.min(avant + 1, limite);
+  if (total === avant) return { portefeuille: base, ajoute: false, total: avant };
+  const cartes = normaliserCollection([...base.cartes, cardId]);
+  return {
+    portefeuille: {
+      ...base,
+      cartes,
+      exemplaires: normaliserExemplaires({ ...comptes, [cardId]: total }, cartes),
+      majLe: new Date().toISOString(),
+    },
+    ajoute: true,
+    total,
+  };
+}
+
+/**
+ * Fusion des stocks entre deux appareils : le **maximum** copie par copie,
+ * jamais la somme (deux appareils qui achètent le même exemplaire ne créent pas
+ * deux exemplaires) ni la valeur du plus récent.
+ */
+export function fusionnerExemplaires(local, distant, cartes = []) {
+  const ici = normaliserExemplaires(local, cartes);
+  const la = normaliserExemplaires(distant, cartes);
+  const fusion = { ...ici };
+  for (const [id, nombre] of Object.entries(la)) {
+    fusion[id] = Math.max(fusion[id] ?? 0, nombre);
+  }
+  return normaliserExemplaires(fusion, cartes);
 }
 
 /** Identifiants vendables à l'unité, sans doublon et avec une mémoire bornée. */
@@ -160,6 +259,7 @@ export function normaliserPortefeuille(value) {
     journal: normaliserJournal(brut.journal),
     tutoriels: normaliserTutoriels(brut.tutoriels),
     toursPayees: normaliserToursPayees(brut.toursPayees),
+    exemplaires: normaliserExemplaires(brut.exemplaires, normaliserCollection(brut.cartes)),
     etal: normaliserEtal(brut.etal),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
@@ -438,10 +538,11 @@ export function paquetsAvantMythique(portefeuille, { aDesMythiques = true, seuil
 export function fusionnerPortefeuilles(local, distant) {
   const ici = normaliserPortefeuille(local);
   const la = normaliserPortefeuille(distant);
+  const cartes = normaliserCollection([...ici.cartes, ...la.cartes]);
   const fusion = {
     version: 1,
     credits: Math.max(ici.credits, la.credits),
-    cartes: normaliserCollection([...ici.cartes, ...la.cartes]),
+    cartes,
     ouvertures: Math.max(ici.ouvertures, la.ouvertures),
     pitie: Math.max(ici.pitie, la.pitie),
     // Les deux journaux, du plus récent au plus ancien : `normaliserJournal`
@@ -449,6 +550,9 @@ export function fusionnerPortefeuilles(local, distant) {
     journal: normaliserJournal([...ici.journal, ...la.journal]),
     tutoriels: normaliserTutoriels([...ici.tutoriels, ...la.tutoriels]),
     toursPayees: normaliserToursPayees([...ici.toursPayees, ...la.toursPayees]),
+    // Le stock d'exemplaires se fusionne sur les cartes déjà réunies : un
+    // appareil en retard ne peut pas faire redescendre une carte de 2 à 1.
+    exemplaires: fusionnerExemplaires(ici.exemplaires, la.exemplaires, cartes),
     etal: fusionnerEtals(ici.etal, la.etal),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };

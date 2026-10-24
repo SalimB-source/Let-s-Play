@@ -170,14 +170,24 @@ assert.match(decks, /bourse: chargerPortefeuille\(\),\n    quetes: chargerEtatQu
   'l’autre hook transporte l’économie sans la modifier');
 
 // 7 bis. L’étal et les pastilles partagent les règles, sans prix recopiés.
-assert.match(ecranCode, /import \{ SOUK_DIRECT_REGLES, prixCarteDirecte \} from '\.\/rpgSoukDirect\.js';/,
-  'le format et les prix de l’étal viennent de son module de règles');
+assert.match(ecranCode, /import \{ SOUK_DIRECT_REGLES, vueCarteDeEtal \} from '\.\/rpgSoukDirect\.js';/,
+  'le format, les prix et l’état d’une carte de l’étal viennent de son module de règles');
 assert.ok(!/\b(150|300)\b/.test(ecranCode), 'aucun prix de carte à l’unité n’est écrit en dur dans l’écran');
+assert.match(ecranCode, /const vue = vueCarteDeEtal\(\{ id, collection, exemplaires, acheteAujourdhui, credits \}\)/,
+  'la carte de l’étal relit la vue pure : elle ne décide ni du quota ni du stock');
+// Le bug d’origine : un « déjà possédée » affiché sur une carte à un seul
+// exemplaire, alors qu’il restait sa seconde copie à acheter. L’écran ne doit
+// plus jamais trancher la possession pour un bouton — seul le quota le fait.
+assert.ok(!/Déjà possédée/.test(ecranCode),
+  'plus de « déjà possédée » : l’étal dit l’exemplaire manquant ou le quota atteint');
+assert.match(ecranCode, /etat === 'complet'/,
+  'et le seul refus de possession qui reste s’appelle « complet »');
 const badge = lire('src/games/RpgCardCopyBadge.jsx');
 assert.ok(badge.includes('data-card-copies={exemplaires}'), 'la pastille expose le nombre d’exemplaires');
+assert.ok(badge.includes('data-card-copies-max'), 'et le quota qui le borne, pour qu’un « 1/2 » se lise');
 assert.ok(badge.includes('aria-label={libelle}'), 'et le vocalise pour les lecteurs d’écran');
-assert.match(page, /const exemplaires = nombreExemplaires\(collection, carte\.id\)/,
-  'le catalogue lit le stock avec la règle de collection');
+assert.match(page, /const exemplaires = nombreExemplaires\(collection, carte\.id, portefeuille\?\.exemplaires\)/,
+  'le catalogue lit le même stock que l’étal, au même endroit');
 assert.match(page, /<RpgCardCopyBadge nombre=\{exemplaires\} className="rpg-card-catalogue__copies" \/>/,
   'chaque vignette du catalogue porte sa pastille');
 const colonnesMarche = [...css.matchAll(/\.rpg-souk__direct-cartes\s*\{([^}]*)\}/g)]

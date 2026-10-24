@@ -294,17 +294,46 @@ export function exemplairesPossedables(collection, cardId) {
 }
 
 /**
+ * Lecture unique du stock : combien de copies d'une carte le compteur
+ * `portefeuille.exemplaires` (`rpgCredits.js`) déclare-t-il ?
+ *
+ * - non possédée → `0`, et aucune comptabilité ne s'invente ;
+ * - possédée sans entrée explicite → `1` : c'est la valeur de toutes les
+ *   sauvegardes antérieures à l'étal, donc aucune collection ne maigrit ;
+ * - toujours borné par le quota de rareté : une mythique compte une copie,
+ *   même si une sauvegarde retouchée en déclare cinq. Les terrains n'ont pas
+ *   de quota (`Infinity`) et gardent le nombre déclaré.
+ */
+export function lireExemplaire(comptes, cardId, possedee = true) {
+  if (!possedee) return 0;
+  const brut = comptes && typeof comptes === 'object' ? comptes : {};
+  const carte = cardById(cardId);
+  if (!carte) return 0;
+  const limite = cardCopyLimit(carte);
+  const nombre = Math.floor(Number(brut[cardId]));
+  const declare = Number.isFinite(nombre) && nombre > 0 ? nombre : 1;
+  return Number.isFinite(limite) ? Math.min(declare, limite) : declare;
+}
+
+/**
  * Nombre d'exemplaires réellement acquis, pour les pastilles du catalogue et
  * du Souk. La dotation de départ est un playset : ses cartes sont utilisables
- * jusqu'à leur limite de deck. Chaque autre carte possédée correspond à une
- * acquisition unique (les doublons de booster sont remboursés, pas stockés).
+ * jusqu'à leur limite de deck. Ailleurs, le stock se lit dans le compteur du
+ * portefeuille (`exemplaires`, voir `lireExemplaire`) : une carte achetée deux
+ * fois à l'étal compte deux copies, une carte sortie une fois en compte une.
+ *
+ * Appelé sans compteur — c'est le cas des écrans qui ne connaissent que la
+ * collection — la lecture reste celle d'avant l'étal : une acquisition par
+ * carte, les doublons de booster étant remboursés et non stockés (doc 13, D4).
  *
  * Cette lecture est volontairement distincte d'`exemplairesPossedables`, qui
- * décrit le plafond de deck après déblocage et non le stock acquis.
+ * décrit le plafond de deck après déblocage et non le stock acquis : posséder
+ * une carte ouvre son playset entier à l'atelier, sans qu'il faille racheter
+ * chaque copie.
  */
-export function nombreExemplaires(collection, cardId) {
+export function nombreExemplaires(collection, cardId, comptes = null) {
   if (!possedeCarte(collection, cardId)) return 0;
-  if (!COLLECTION_DEPART.includes(cardId)) return 1;
+  if (!COLLECTION_DEPART.includes(cardId)) return lireExemplaire(comptes, cardId);
   const limite = cardCopyLimit(cardById(cardId));
   return Number.isFinite(limite) ? limite : 1;
 }

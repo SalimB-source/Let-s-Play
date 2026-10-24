@@ -14,6 +14,7 @@ import {
   chargerCollectionDistante,
   collectionJoueur,
   exemplairesPossedables,
+  lireExemplaire,
   nombreExemplaires,
   figerAcquisitions,
   fusionnerAcquisitions,
@@ -237,6 +238,30 @@ test('nombreExemplaires compte le stock acquis pour les pastilles', () => {
   assert.equal(nombreExemplaires(avecAcquisitions, 'scribe-de-la-liste'), 1, 'une rare acquise compte pour une aussi');
   assert.equal(nombreExemplaires(avecAcquisitions, 'chien-du-guet'), 2, 'la dotation ne perd pas ses exemplaires');
 });
+
+test('le compteur d’exemplaires de l’étal remonte dans la pastille', () => {
+  const avecAcquisitions = fusionnerCollections(COLLECTION_DEPART, ['kraken', 'scribe-de-la-liste']);
+  const comptes = { 'scribe-de-la-liste': 2, kraken: 2 };
+  assert.equal(nombreExemplaires(avecAcquisitions, 'scribe-de-la-liste', comptes), 2,
+    'rachetée à l’étal : la rare compte deux copies');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'kraken', comptes), 1,
+    'la mythique reste bornée à son quota, compteur mentant ou non');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'tarek', { tarek: 2 }), 0,
+    'un compteur ne rend pas possédée une carte absente de la collection');
+  assert.equal(nombreExemplaires(avecAcquisitions, 'chien-du-guet', { 'chien-du-guet': 9 }), 2,
+    'la dotation garde son playset, sans se laisser décréter un stock');
+  assert.equal(lireExemplaire(null, 'kraken', true), 1, 'sans compteur, la lecture reste celle d’avant l’étal');
+  assert.equal(lireExemplareSafe(), 0, 'une carte inconnue du catalogue n’a pas de stock');
+});
+
+/** `lireExemplaire` sur un identifiant hors catalogue : la tolérance, pas une exception. */
+function lireExemplareSafe() {
+  try {
+    return lireExemplaire({ 'carte-inconnue': 3 }, 'carte-inconnue', true);
+  } catch {
+    return 'une exception';
+  }
+}
 
 // ── Cache des apports du compte ──────────────────────────────────────────────
 

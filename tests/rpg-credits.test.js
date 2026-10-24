@@ -6,7 +6,10 @@ import {
   JOURNAL_MAX,
   RPG_BOURSE_STORAGE_KEY,
   ajouterCartesAuPortefeuille,
+  ajouterExemplaireAuPortefeuille,
   chargerPortefeuille,
+  exemplairesDuPortefeuille,
+  fusionnerExemplaires,
   crediterCredits,
   creditsDeDoublons,
   creditsDeVictoire,
@@ -15,6 +18,7 @@ import {
   fusionnerPortefeuilles,
   gainsDeTour,
   normaliserJournal,
+  normaliserExemplaires,
   normaliserPortefeuille,
   normaliserToursPayees,
   noterOuvertureJournal,
@@ -338,4 +342,85 @@ test('une ouverture avec cartes entre au journal, une ouverture sans cartes non'
   assert.equal(avec.journal[0].coffret, true, 'un paquet de coffret se reconnaît');
   assert.equal(avec.journal[0].mythique, true);
   assert.equal(avec.pitie, 0, 'et la pitié repart, comme avant');
+});
+
+// ── Le stock d'exemplaires de l'étal ─────────────────────────────────────────
+//
+// `cartes` répond à « est-ce que je la possède ? », `exemplaires` à « combien de
+// copies ai-je payées ? ». Les deux doivent survivre au stockage, à la fusion
+// entre appareils et à une sauvegarde retouchée — sans jamais rendre une carte
+// jouable ou invisible : la possession ne se discute pas avec un compteur.
+
+test('le stock d’exemplaires part vide et se normalise sans bruit', () => {
+  assert.deepEqual(portefeuilleVide().exemplaires, {}, 'un joueur neuf n’a aucune copie rachetée');
+  assert.deepEqual(normaliserExemplaires('pas un objet', []), {});
+  assert.deepEqual(normaliserExemplaires([2, 3], []), {}, 'un tableau n’est pas un compteur');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 'deux' }, ['tarek']), {}, 'une valeur illisible tombe');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 1 }, ['tarek']), {},
+    'le premier exemplaire est la valeur implicite : il ne s’écrit pas');
+  assert.deepEqual(normaliserExemplaires({ 'tarek': 2 }, []), {},
+    'un compteur ne peut pas faire exister une carte');
+  assert.deepEqual(normaliserExemplaires({ 'carte-inconnue': 2 }, ['carte-inconnue']), {},
+    'et une carte hors catalogue n’a pas de stock');
+});
+
+test('le quota de rareté borne le stock, la mythique reste unique', () => {
+  let p = portefeuilleVide();
+  const premiere = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(premiere.ajoute, true);
+  assert.equal(premiere.total, 1);
+  assert.deepEqual(premiere.portefeuille.cartes, ['scribe-de-la-liste'], 'la copie range aussi la carte');
+  assert.deepEqual(premiere.portefeuille.exemplaires, {}, 'et laisse le premier exemplaire implicite');
+  p = premiere.portefeuille;
+  const seconde = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(seconde.ajoute, true, 'une rare a droit à un second exemplaire');
+  assert.equal(seconde.total, 2);
+  assert.deepEqual(seconde.portefeuille.exemplaires, { 'scribe-de-la-liste': 2 });
+  p = seconde.portefeuille;
+  const avant = JSON.stringify(p);
+  const troisieme = ajouterExemplaireAuPortefeuille(p, 'scribe-de-la-liste');
+  assert.equal(troisieme.ajoute, false, 'le troisième est hors quota');
+  assert.equal(troisieme.total, 2);
+  assert.equal(JSON.stringify(troisieme.portefeuille), avant, 'et le portefeuille ne bouge pas d’un octet');
+  // Une mythique déclarée à cinq copies par une sauvegarde retouchée : la borne
+  // du catalogue gagne, toujours.
+  const triche = normaliserPortefeuille({ cartes: ['tarek'], exemplaires: { tarek: 5 } });
+  assert.deepEqual(triche.exemplaires, {}, 'tarek est mythique : une seule copie, donc rien d’écrit');
+});
+
+test('la possession d’un appareil ne dépend pas du compteur de l’autre', () => {
+  // Une rare, quota de deux copies : `tarek` est mythique et ne serait jamais
+  // écrit, ce qui est exactement la règle à vérifier ailleurs.
+  assert.deepEqual(fusionnerExemplaires(
+    { 'scribe-de-la-liste': 2 }, { 'scribe-de-la-liste': 1 }, ['scribe-de-la-liste'],
+  ), { 'scribe-de-la-liste': 2 }, 'le maximum gagne, jamais la somme ni le plus récent');
+  assert.deepEqual(fusionnerExemplaires({}, { 'scribe-de-la-liste': 2 }, ['scribe-de-la-liste']),
+    { 'scribe-de-la-liste': 2 });
+  assert.deepEqual(fusionnerExemplaires({ 'scribe-de-la-liste': 2 }, {}, []), {},
+    'une carte que la fusion ne connaît pas perd son compteur, pas sa possession');
+  const local = normaliserPortefeuille({ cartes: ['scribe-de-la-liste'], exemplaires: { 'scribe-de-la-liste': 2 } });
+  const enRetard = normaliserPortefeuille({ cartes: ['scribe-de-la-liste'] });
+  const fusion = fusionnerPortefeuilles(local, enRetard).portefeuille;
+  assert.deepEqual(fusion.exemplaires, { 'scribe-de-la-liste': 2 },
+    'un appareil en retard ne fait pas redescendre une carte de 2 à 1');
+});
+
+test('le stock traverse le stockage local comme le reste du portefeuille', () => {
+  const stockage = stockageEnMemoire();
+  avecStockage({ value: stockage.stockage.value }, () => {
+    const trop = ajouterExemplaireAuPortefeuille(
+      ajouterCartesAuPortefeuille(portefeuilleVide(), ['kraken']), 'kraken', { possedee: true },
+    );
+    assert.equal(trop.ajoute, false, 'une mythique possédée n’a plus de copie à vendre');
+    assert.equal(trop.total, 1, 'et son stock reste au quota, sans écriture');
+    const avecSeconde = ajouterExemplaireAuPortefeuille(
+      ajouterCartesAuPortefeuille(portefeuilleVide(), ['scribe-de-la-liste']), 'scribe-de-la-liste', { possedee: true },
+    );
+    assert.equal(avecSeconde.total, 2);
+    assert.equal(sauverPortefeuille(avecSeconde.portefeuille), true);
+    const relu = chargerPortefeuille();
+    assert.deepEqual(relu.exemplaires, { 'scribe-de-la-liste': 2 }, 'la relecture retrouve le stock');
+    assert.deepEqual(exemplairesDuPortefeuille(relu), { 'scribe-de-la-liste': 2 });
+    assert.deepEqual(exemplairesDuPortefeuille(null), {}, 'un portefeuille absent ne dit rien');
+  });
 });

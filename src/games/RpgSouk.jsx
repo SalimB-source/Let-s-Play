@@ -24,15 +24,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
-import { GAINS, creditsLisible, paquetsAvantMythique } from './rpgCredits.js';
+import { GAINS, creditsLisible, exemplairesDuPortefeuille, paquetsAvantMythique } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
-import { cardById, cardRarityInfo, cardTypeLine } from './rpgCards.js';
-import { nombreExemplaires } from './rpgCollection.js';
-import { SOUK_DIRECT_REGLES, prixCarteDirecte } from './rpgSoukDirect.js';
+import { cardById, cardTypeLine } from './rpgCards.js';
+import { SOUK_DIRECT_REGLES, vueCarteDeEtal } from './rpgSoukDirect.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
@@ -259,22 +258,51 @@ function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt }) 
   );
 }
 
-/** Une carte de l'étal quotidien : sa face, son stock et son prix à l'unité. */
-function CarteDeLEtal({ id, collection, possedee, achetee, credits, cardArt, onAcheter }) {
+/** L'ordinal d'une copie, tel qu'il se lit sur une pastille de comptoir. */
+function copieLisible(nombre) {
+  return nombre <= 1 ? '1ᵉʳ' : `${nombre}ᵉ`;
+}
+
+/**
+ * Une carte de l'étal quotidien : sa face, son stock et son prix à l'unité.
+ *
+ * L'état de la carte ne se devine pas ici — il se lit dans la règle pure
+ * (`vueCarteDeEtal`) : « disponible » veut dire qu'**il manque une copie**, la
+ * première ou la seconde ; « complet » veut dire que le quota du deck est
+ * atteint et qu'il n'y a plus rien à acheter. Un joueur qui possède une carte
+ * en un seul exemplaire ne voit donc plus « déjà obtenue » : il voit le
+ * deuxième exemplaire en vente, ou la raison pour laquelle il n'est pas en vente.
+ */
+function CarteDeLEtal({
+  id, collection, exemplaires, acheteAujourdhui, credits, cardArt, onAcheter,
+}) {
   const carte = cardById(id);
   if (!carte) return null;
-  const rarete = cardRarityInfo(carte);
-  const prix = prixCarteDirecte(carte);
-  const exemplaires = nombreExemplaires(collection, id);
-  const assez = credits >= prix;
-  const etat = achetee ? 'achetee' : possedee ? 'possedee' : !assez ? 'sans-solde' : 'disponible';
-  const titre = achetee
-    ? `${carte.name} a rejoint votre collection en un exemplaire`
-    : possedee
-      ? `${carte.name} est déjà dans votre collection`
-      : !assez
-        ? `Il manque ${creditsLisible(prix - credits)} crédits`
-        : `Acheter un exemplaire de ${carte.name} pour ${prix} crédits`;
+  const vue = vueCarteDeEtal({ id, collection, exemplaires, acheteAujourdhui, credits });
+  if (!vue) return null;
+  const {
+    rarete, prix, etat, manquante, acquis, limite, reste, manque,
+  } = vue;
+  const unique = limite <= 1;
+  const copie = `${copieLisible(acquis)} exemplaire${acquis > 1 ? 's' : ''}`;
+  const titre = etat === 'achetee'
+    ? `${carte.name} · ${copie} en collection — la copie suivante sera en vente quand la carte reparaîtra à l’étal`
+    : etat === 'complet'
+      ? unique
+        ? `${carte.name} est une carte unique dans un deck : un exemplaire suffit et ${carte.name} en compte un`
+        : `${carte.name} est au complet : ${acquis} exemplaires sur ${limite}, le quota du deck`
+      : etat === 'sans-solde'
+        ? `Il manque ${creditsLisible(manque)} crédits`
+        : manquante
+          ? `Acheter le ${copieLisible(acquis + 1)} exemplaire de ${carte.name} pour ${creditsLisible(prix)} crédits`
+          : `Acheter le ${copieLisible(acquis + 1)} exemplaire de ${carte.name} pour ${creditsLisible(prix)} crédits — votre collection le compterait ${acquis + 1} sur ${limite}`;
+  const note = etat === 'achetee'
+    ? `Achetée aujourd'hui · ${acquis}/${limite}`
+    : etat === 'complet'
+      ? unique ? 'Unique au deck · déjà en collection' : `Quota du deck atteint · ${acquis}/${limite}`
+      : manquante
+        ? 'Carte absente de votre collection'
+        : `Il vous manque le ${copieLisible(acquis + 1)} exemplaire · ${acquis}/${limite}`;
   return (
     <li
       className={`rpg-souk__direct-carte is-${rarete.key} is-${etat}`}
@@ -288,11 +316,18 @@ function CarteDeLEtal({ id, collection, possedee, achetee, credits, cardArt, onA
       <div className="rpg-souk__direct-art">
         <img src={cardArt?.(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
         <span className="rpg-souk__direct-rarete">{rarete.label}</span>
-        <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__direct-copies" />
+        <RpgCardCopyBadge
+          nombre={acquis}
+          limite={limite}
+          className="rpg-souk__direct-copies"
+        />
       </div>
       <div className="rpg-souk__direct-corps">
         <h4>{carte.name}</h4>
         <p>{cardTypeLine(carte)}</p>
+        <p className="rpg-souk__direct-stock" data-souk-direct-stock={etat} data-souk-direct-reste={reste}>
+          {note}
+        </p>
       </div>
       <button
         type="button"
@@ -303,15 +338,17 @@ function CarteDeLEtal({ id, collection, possedee, achetee, credits, cardArt, onA
         aria-label={titre}
         onClick={() => onAcheter?.(carte.id)}
       >
-        {achetee ? 'Achetée · 1 exemplaire' : possedee ? 'Déjà possédée' : (
+        {etat === 'achetee' ? 'Achetée aujourd’hui' : etat === 'complet' ? (unique ? 'Déjà en collection' : `Complet · ${acquis}/${limite}`) : (
           <>
-            Acheter · {creditsLisible(prix)} <RpgCreditIcon />
-            <span className="sr-only">crédits, un exemplaire</span>
+            {manquante ? 'Acheter' : `Acheter le ${copieLisible(acquis + 1)}`} · {creditsLisible(prix)} <RpgCreditIcon />
+            <span className="sr-only">
+              {`crédits, ${manquante ? 'le premier exemplaire qui vous manque' : `le ${copieLisible(acquis + 1)} exemplaire sur ${limite}`}`}
+            </span>
           </>
         )}
       </button>
       {etat === 'sans-solde' && (
-        <p className="rpg-souk__direct-refus">Il manque {creditsLisible(prix - credits)} <RpgCreditIcon /></p>
+        <p className="rpg-souk__direct-refus">Il manque {creditsLisible(manque)} <RpgCreditIcon /></p>
       )}
     </li>
   );
@@ -386,8 +423,17 @@ export default function RpgSouk({
   const jouees = portefeuille?.ouvertures ?? 0;
   const etal = portefeuille?.etal ?? { jour: quetes?.jour ?? null, cartes: [], achetees: [], rafraichissements: 0 };
   const offresDirect = Array.isArray(etal.cartes) ? etal.cartes : [];
+  // Deux lectures distinctes, et c'est voulu : `collectionDirect` répond à
+  // « est-ce que je la possède ? » (donc : puis-je la jouer), le compteur
+  // d'`exemplaires` répond à « combien de copies ai-je payées ? » (donc :
+  // l'étal a-t-il encore une copie à me vendre). L'écran ne fait que les relire.
   const collectionDirect = Array.isArray(collection) ? collection : (portefeuille?.cartes ?? []);
-  const possedeesDirect = new Set(collectionDirect);
+  // Le lecteur unique (`exemplairesDuPortefeuille`) re-normalise le compteur :
+  // une sauvegarde retouchée qui prétendrait « 3/2 » ne remplira pas la pastille.
+  const exemplairesDirect = exemplairesDuPortefeuille(portefeuille);
+  const cartesCompletes = offresDirect.filter((id) => vueCarteDeEtal({
+    id, collection: collectionDirect, exemplaires: exemplairesDirect, credits,
+  })?.complet).length;
   const rafraichissementUtilise = etal.rafraichissements >= SOUK_DIRECT_REGLES.rafraichissementsParJour;
   const sync = statutSync === 'synchronise'
     ? '☁ Synchronisé avec votre compte'
@@ -410,12 +456,22 @@ export default function RpgSouk({
   const acheterDansEtal = (cardId) => {
     const resultat = onAcheterCarteDirecte?.(cardId);
     if (resultat?.ok) {
-      setEtalMessage({ ok: true, texte: `${resultat.carte.name} rejoint votre collection — 1 exemplaire.` });
-      onPlaySfx?.(resultat.carte.rarity === 'mythique' ? 'victoire' : 'card_draw');
+      const { acquis = 1, limite = 1, complet = false } = resultat;
+      const stock = limite > 1 ? `${acquis}/${limite} exemplaires` : `${acquis} exemplaire`;
+      setEtalMessage({
+        ok: true,
+        texte: resultat.carte.name
+          ? `${resultat.carte.name} rejoint votre collection — ${stock}${complet ? ', la carte est au quota du deck.' : '.'}`
+          : `Un exemplaire de plus — ${stock}.`,
+      });
+      onPlaySfx?.(resultat.carte?.rarity === 'mythique' ? 'victoire' : 'card_draw');
       return;
     }
     const messages = {
-      'deja-achetee': 'Cette carte a déjà été achetée dans cet étal.',
+      'deja-achetee': 'Cette carte a déjà été achetée dans cet étal aujourd’hui. Revenez quand elle y reparaîtra pour la copie suivante.',
+      'quota-atteint': 'Votre collection a déjà tous les exemplaires que le deck autorise pour cette carte.',
+      // Raison d'une sauvegarde antérieure à la règle du stock : le message
+      // reste traduit pour ne jamais afficher un code en clair.
       'deja-possedee': 'Cette carte est déjà dans votre collection.',
       'solde-insuffisant': 'Votre bourse ne contient pas assez de crédits.',
       'hors-etal': 'Cette carte ne fait plus partie de la sélection du jour.',
@@ -593,8 +649,15 @@ export default function RpgSouk({
           </button>
         </div>
         <p className="rpg-souk__direct-resume">
-          Choisissez exactement la carte qu’il vous manque. Chaque achat ajoute <strong>un seul exemplaire</strong> à votre collection.
+          Choisissez exactement ce qu’il vous manque. Chaque achat ajoute <strong>un exemplaire</strong>, jusqu’au quota du deck — {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> la première copie d’une rare, {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> sa seconde, et une mythique reste unique.
         </p>
+        {cartesCompletes > 0 && (
+          <p className="rpg-souk__direct-complet" data-souk-direct-complet={cartesCompletes} role="status">
+            {cartesCompletes === offresDirect.length
+              ? 'Aucune copie à vendre aujourd’hui : les cinq cartes sont au quota. Le rafraîchir en amène cinq autres.'
+              : `${cartesCompletes} carte${cartesCompletes > 1 ? 's' : ''} du jour${cartesCompletes > 1 ? ' sont' : ' est'} déjà au quota du deck — rien de plus à payer sur ${cartesCompletes > 1 ? 'lesquelles' : 'laquelle'}.`}
+          </p>
+        )}
         {offresDirect.length ? (
           <ul className="rpg-souk__direct-cartes" data-souk-direct-cartes={offresDirect.length}>
             {offresDirect.map((id) => (
@@ -602,8 +665,8 @@ export default function RpgSouk({
                 key={`${etal.jour}-${etal.rafraichissements}-${id}`}
                 id={id}
                 collection={collectionDirect}
-                possedee={possedeesDirect.has(id)}
-                achetee={etal.achetees?.includes(id) ?? false}
+                exemplaires={exemplairesDirect}
+                acheteAujourdhui={etal.achetees?.includes(id) ?? false}
                 credits={credits}
                 cardArt={cardArt}
                 onAcheter={acheterDansEtal}
