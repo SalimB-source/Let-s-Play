@@ -7,7 +7,7 @@
  *
  *   - la route passe bien par l'écran d'entrée, et le duel reste paresseux
  *     (rien des ~740 Ko de `RpgDuelPage` n'est téléchargé avant le choix) ;
- *   - les deux portes existent : téléchargement Windows et navigateur ;
+ *   - les trois portes existent : téléchargements Windows et Android, et navigateur ;
  *   - l'écran s'efface là où il n'a rien à proposer (coque PC, APK, téléphone,
  *     choix retenu) — sinon il barrerait la route de joueurs qui n'ont pas de
  *     choix à faire ;
@@ -40,14 +40,17 @@ assert.doesNotMatch(routeur, /const RpgDuelPage = lazy/,
   'le duel ne doit plus être importé directement par le routeur');
 ok('route → RpgEntryChoice (paresseux), duel tiré seulement après le choix');
 
-console.log('2. Les deux portes');
+console.log('2. Les trois portes');
 const entree = lire('src/games/RpgEntryChoice.jsx');
 assert.match(entree, /Télécharger pour Windows/, 'porte Windows absente');
+assert.match(entree, /Télécharger sur Android/, 'porte Android absente');
 assert.match(entree, /Jouer dans le navigateur/, 'porte navigateur absente');
+assert.match(entree, /releases\/tag\/apk/, 'lien de repli de téléchargement Android absent');
+assert.match(entree, /browser_download_url/, 'le bouton Android ne pointe pas sur l’APK publiée');
 assert.match(entree, /const RpgDuelPage = lazy\(\(\) => importerAvecReprise\(\(\) => import\('\.\/RpgDuelPage'\)\)\);/,
   'le duel doit être tiré par l’écran d’entrée, pas avant, et retenté en cas de coupure');
 assert.match(entree, /import '\.\/rpg-entry-choice\.css';/, 'feuille de style non importée');
-ok('deux portes, duel paresseux, styles importés');
+ok('trois portes, lien APK Android, duel paresseux, styles importés');
 
 console.log('3. Lien de téléchargement permanent');
 assert.match(

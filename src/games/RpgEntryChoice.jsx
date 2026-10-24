@@ -18,7 +18,9 @@ import {
  *   1. **Télécharger la version PC** — l'installeur Windows publié par la coque
  *      `desktop/` (GitHub Release sur le tag `desktop`). Le jeu tourne alors
  *      installé sur le PC, rendu par la carte graphique, jouable hors ligne ;
- *   2. **Jouer dans le navigateur** — le duel web habituel, immédiat.
+ *   2. **Télécharger sur Android** — l'APK Let's Play, publiée dans la Release
+ *      `apk` (le lien retombe sur la page de la Release si l'API est indisponible) ;
+ *   3. **Jouer dans le navigateur** — le duel web habituel, immédiat.
  *
  * Le duel lui-même reste un chunk paresseux : tant que le joueur n'a pas
  * choisi le navigateur, les ~740 Ko de `RpgDuelPage` ne sont pas téléchargés —
@@ -48,8 +50,11 @@ export const ENTREE_CHOIX_CLE = 'letsplay_sablier_entree_v1';
  * build de `main`, les noms d'assets fixes (`…-setup.exe`) ne changent jamais. */
 export const SABLIER_RELEASE_URL = 'https://github.com/SalimB-source/Let-s-Play/releases/tag/desktop';
 export const SABLIER_SETUP_URL = 'https://github.com/SalimB-source/Let-s-Play/releases/download/desktop/le-sablier-de-bab-el-setup.exe';
-/** API publique (CORS ouvert) : version et poids de l'installeur, affichés sous
- * le bouton quand la Release existe ; silencieux sinon. */
+/** Release APK mise à jour à chaque build Android ; lien de repli vers sa page. */
+export const SABLIER_ANDROID_RELEASE_URL = 'https://github.com/SalimB-source/Let-s-Play/releases/tag/apk';
+const SABLIER_ANDROID_RELEASE_API = 'https://api.github.com/repos/SalimB-source/Let-s-Play/releases/tags/apk';
+/** API publique (CORS ouvert) : version et poids des installeurs, affichés sous
+ * leur bouton quand les Releases existent ; silencieux sinon. */
 const SABLIER_RELEASE_API = 'https://api.github.com/repos/SalimB-source/Let-s-Play/releases/tags/desktop';
 
 /** Vrai quand l'écran d'entrée n'a rien à proposer : coque PC, APK, téléphone. */
@@ -73,6 +78,14 @@ function LogoWindows() {
   );
 }
 
+function LogoAndroid() {
+  return (
+    <svg className="rpg-entry-choice__logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7.1 4.4 5.7 2.2l.8-.5L8 4a11.2 11.2 0 0 1 8 0l1.5-2.3.8.5-1.4 2.2A7.4 7.4 0 0 1 20 10H4a7.4 7.4 0 0 1 3.1-5.6ZM8 7a.8.8 0 1 0 0-1.6A.8.8 0 0 0 8 7Zm8 0a.8.8 0 1 0 0-1.6.8.8 0 0 0 0 1.6ZM4 11h16v7a2 2 0 0 1-2 2h-1v2h-2v-2H9v2H7v-2H6a2 2 0 0 1-2-2v-7Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 function LogoNavigateur() {
   return (
     <svg className="rpg-entry-choice__logo" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -85,6 +98,7 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const [montreEcran, setMontreEcran] = useState(() => !ecranInutile());
   const [retenir, setRetenir] = useState(false);
   const [meta, setMeta] = useState(null);
+  const [androidMeta, setAndroidMeta] = useState(null);
   const [estWindows, setEstWindows] = useState(true);
   const themeRef = useRef(null);
 
@@ -119,6 +133,26 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   }, []);
 
   // Version et poids de l'installeur, quand la Release existe déjà.
+  useEffect(() => {
+    let vivant = true;
+    fetch(SABLIER_ANDROID_RELEASE_API, { headers: { accept: 'application/vnd.github+json' } })
+      .then((reponse) => (reponse.ok ? reponse.json() : null))
+      .then((release) => {
+        if (!vivant || !release) return;
+        const asset = (release.assets || []).find((a) => /\.apk$/i.test(a.name || ''));
+        if (asset) {
+          setAndroidMeta({
+            url: asset.browser_download_url || SABLIER_ANDROID_RELEASE_URL,
+            version: release.name || release.tag_name || '',
+            mo: Math.max(1, Math.round(asset.size / 1048576)),
+          });
+        }
+      })
+      .catch(() => { /* le lien de repli vers la Release reste disponible */ });
+    return () => { vivant = false; };
+  }, []);
+
+  // Version et poids de l'installeur Windows, quand la Release existe déjà.
   useEffect(() => {
     let vivant = true;
     fetch(SABLIER_RELEASE_API, { headers: { accept: 'application/vnd.github+json' } })
@@ -167,8 +201,8 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
         <p className="rpg-entry-choice__surtitre">Let’s Play · arcade</p>
         <h1 className="rpg-entry-choice__titre">Le Sablier de Bab El</h1>
         <p className="rpg-entry-choice__accroche">
-          Le RPG de cartes tour par tour de la maison. Choisissez comment y entrer :
-          installé sur votre PC, ou tout de suite dans ce navigateur.
+          Le RPG de cartes tour par tour de la maison. Téléchargez-le sur PC ou Android,
+          ou jouez tout de suite dans ce navigateur.
         </p>
 
         <div className="rpg-entry-choice__choix">
@@ -187,6 +221,24 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
               {meta
                 ? `${meta.version}${meta.mo ? ` · ${meta.mo} Mo` : ''} · Windows 10/11`
                 : 'Windows 10/11 · installeur officiel'}
+            </span>
+          </a>
+
+          <a
+            className="rpg-entry-choice__option rpg-entry-choice__option--android"
+            href={androidMeta?.url || SABLIER_ANDROID_RELEASE_URL}
+            rel="noopener"
+          >
+            <LogoAndroid />
+            <span className="rpg-entry-choice__option-titre">Télécharger sur Android</span>
+            <span className="rpg-entry-choice__option-texte">
+              Installez l’application sur votre téléphone Android. Autorisez l’installation
+              depuis cette source si Android le demande.
+            </span>
+            <span className="rpg-entry-choice__option-meta">
+              {androidMeta
+                ? `${androidMeta.version} · ${androidMeta.mo} Mo · APK Android`
+                : 'APK officielle · toutes les versions'}
             </span>
           </a>
 
