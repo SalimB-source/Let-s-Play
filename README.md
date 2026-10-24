@@ -6739,8 +6739,10 @@ d'une carte du champ de bataille —, chevauchées de 26 px, bord de 4 px et ray
 de 9 px, l'écart et l'inclinaison de chaque carte (`--card-angle`, `--card-rise`)
 restant ceux de la page. Sept cartes tiennent ainsi sur ≈ 390 px, dans la bande
 libre au-dessus de la première rangée ennemie ; sous 620 px de large elles
-retombent à 52 × 67. La rangée reste inerte (`pointer-events: none`) et, au
-doigt, elle reste cachée : le compte vit déjà ailleurs.
+retombent à 52 × 67. La rangée reste inerte (`pointer-events: none`). Au
+doigt, elle n'est plus effacée : elle revient **dans la bande de navigation**,
+à l'échelle de cette rangée — voir « Le Sablier au doigt : la main du sorcier
+face cachée » dans `docs/rpg/mobile-layout.md`.
 
 **3. « Confirmer l'attaque » et « Résoudre le combat » changent de camp.** Les
 deux commandes vivaient dans une barre flottante posée au milieu de la table
