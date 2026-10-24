@@ -38,7 +38,8 @@ export async function checkTerritoire(assert) {
     assert.equal(table.dataset.plateauAdversaire, 'table-des-heures');
     const joueur = table.querySelector('.rpg-plateau-moitie--joueur');
     const adverse = table.querySelector('.rpg-plateau-moitie--adverse');
-    assert.equal(joueur.nextElementSibling, adverse, 'le masque adverse se peint au-dessus du joueur');
+    assert.equal(joueur.nextElementSibling, adverse, 'le terrain adverse se peint au-dessus du joueur');
+    assert.ok(table.querySelector('.rpg-plateau-lisere'), 'le trait doré marque la frontière des plateaux');
     const champ = table.querySelector('.rpg-hand');
     table = await rendre(25, 15);
     verifier(table, 65, 35, 'joueur');

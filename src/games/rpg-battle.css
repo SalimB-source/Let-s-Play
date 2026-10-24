@@ -2687,24 +2687,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── La conquête : deux peintures, une frontière mobile ────────────────────
-   Propriété typée : le masque ET le halo héritent du même pourcentage animé,
-   sans boucle JS ni état de jeu supplémentaire. La peinture du joueur reste
-   pleine sous celle du sorcier : aucun trou dans le fondu. Sans @property,
-   la position finale reste correcte, seule l'interpolation est absente. */
+   La propriété typée anime ensemble la découpe nette du terrain adverse et le
+   trait doré qui marque la frontière — sans boucle JS ni état de jeu ajouté.
+   Sans @property, la position finale reste correcte ; seule l'interpolation
+   est absente. */
 @property --rpg-frontiere {
   syntax: '<percentage>';
   inherits: true;
   initial-value: 50%;
 }
 .card-table--decoupee {
-  --rpg-conquete-rgb: 217, 180, 91;
-  --rpg-fondu: 2%;
   transition: --rpg-frontiere 900ms cubic-bezier(.22, .61, .36, 1);
-}
-.card-table--decoupee[data-territoire-termine] { --rpg-fondu: 0%; }
-.card-table--decoupee[data-plateau-joueur="cour-de-l-empereur"][data-territoire-dominant="joueur"],
-.card-table--decoupee[data-plateau-adversaire="cour-de-l-empereur"][data-territoire-dominant="sorcier"] {
-  --rpg-conquete-rgb: 245, 91, 53;
 }
 /* Le double agrandi du sanctuaire ne doit pas dépasser les territoires. */
 .card-table--decoupee.card-table--plateau-cour-de-l-empereur::before { content: none; }
@@ -2717,12 +2710,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   pointer-events: none;
 }
 .rpg-plateau-moitie--adverse {
-  -webkit-mask-image: linear-gradient(to bottom,
-    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 2%)),
-    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 2%)));
-  mask-image: linear-gradient(to bottom,
-    #000 calc(var(--rpg-frontiere, 50%) - var(--rpg-fondu, 2%)),
-    transparent calc(var(--rpg-frontiere, 50%) + var(--rpg-fondu, 2%)));
+  -webkit-clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0);
+  clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0);
 }
 .rpg-plateau-moitie--joueur { background-position: center; }
 .rpg-plateau-moitie--plateau-table-des-heures { background-color: #1c1006; }
@@ -2738,21 +2727,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-palais-du-pharaon { background-color: #d9c4a0; }
 .rpg-plateau-moitie--plateau-navire-pirate { background-color: #9b6c3e; }
 
-/* Frontière diffuse, sous les cartes : pas de trait dur ni de losange.
-   La cour japonaise teinte le halo de braise lorsqu'elle prend l'avantage. */
+/* La découpe reste franche : un filet doré, fin et lumineux, suit la frontière
+   sans recouvrir les illustrations ni gêner les cartes. */
 .rpg-plateau-lisere {
   position: absolute;
   left: 0;
   right: 0;
   top: var(--rpg-frontiere, 50%);
   z-index: -1;
-  height: 36px;
+  height: 2px;
   transform: translateY(-50%);
   pointer-events: none;
-  opacity: .55;
-  background: radial-gradient(ellipse at center,
-    rgba(var(--rpg-conquete-rgb), .5),
-    rgba(var(--rpg-conquete-rgb), .12) 40%, transparent 72%);
+  opacity: .98;
+  background: #f0cf78;
+  box-shadow: 0 0 0 1px rgba(35, 23, 8, .78), 0 0 10px rgba(240, 207, 120, .72);
   transition: opacity 900ms ease;
 }
 .card-table[data-territoire-termine] .rpg-plateau-lisere { opacity: 0; }

@@ -10869,8 +10869,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             décor que le temps de l'aperçu, flou (voir `rpg-battle.css`).
             `aria-hidden` : il ne montre rien que la table ne montre déjà. */}
         <span className="rpg-plateau-fond" aria-hidden="true" />
-        {/* Les peintures restent plein cadre : seul le masque du terrain adverse
-            avance ou recule. Le joueur reste dessous pour un fondu sans trou.
+        {/* Les peintures restent plein cadre : la découpe franche du terrain
+            adverse suit la frontière du territoire, marquée par un trait doré.
             Aucun déplacement des cartes, des zones de dépôt ou des commandes. */}
         {plateauDecoupe && (
           <>

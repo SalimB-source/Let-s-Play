@@ -981,12 +981,15 @@ assert.match(choixPlateauPartie, /rng,/,
   'les plateaux restent résolus par le générateur aléatoire du duel');
 assert.match(battlePage, /setPlateauAdverseId\(resolutionPlateaux\.adversaire\.plateau\.id\)/,
   'la moitié haute de la table reçoit le plateau du deck adverse : un terrain par camp');
-assert.match(battleCss, /\.rpg-plateau-moitie--adverse \{[^}]*mask-image: linear-gradient\(to bottom,[^}]*var\(--rpg-frontiere, 50%\)/,
-  'la peinture adverse suit la frontière mobile par un masque fondu');
+const decoupeTerrainAdverse = battleCss.match(/\.rpg-plateau-moitie--adverse\s*\{[^}]*\}/)?.[0] ?? '';
+assert.match(decoupeTerrainAdverse, /clip-path: inset\(0 0 calc\(100% - var\(--rpg-frontiere, 50%\)\) 0\);/,
+  'le terrain adverse suit la frontière par une découpe franche');
+assert.doesNotMatch(decoupeTerrainAdverse, /mask-image/,
+  'la séparation des plateaux ne repose plus sur un masque');
 assert.match(battleCss, /@property --rpg-frontiere \{[^}]*inherits: true;/,
-  'la frontière est animable et partagée par les peintures et le halo');
-assert.match(battleCss, /\.rpg-plateau-lisere \{[\s\S]*?top: var\(--rpg-frontiere, 50%\);/,
-  'le halo suit la frontière sans déplacer les zones de jeu');
+  'la frontière est animable et partagée par les peintures et le trait doré');
+assert.match(battleCss, /\.rpg-plateau-lisere \{[\s\S]*?top: var\(--rpg-frontiere, 50%\);[\s\S]*?background: #f0cf78;/,
+  'le trait doré suit la frontière sans déplacer les zones de jeu');
 assert.doesNotMatch(battlePage, /choixPlateau|onSelectPlateau|[cs]hargerChoixPlateau|sauverChoixPlateau|RPG_PLATEAU_ALEATOIRE|plateauPrecedent/,
   'le joueur ne choisit plus son plateau : ni verrou, ni pastille aléatoire, ni sauvegarde sur l’appareil');
 assert.doesNotMatch(battlePage, /rpg-mode-menu__boards|rpg-board-choice|rpg-board-grid/,
