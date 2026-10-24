@@ -96,13 +96,16 @@ export const RPG_CORBEAU_MAGIES = [
     id: 'neige-noire',
     name: 'Neige noire',
     kind: 'magie',
-    cost: 5,
+    cost: 6,
     rarity: 'rare',
     prixPv: 3,
     typeLine: 'Sorcellerie — Neige · Ténèbres',
     cibles: ['soi'],
-    effet: { type: 'gel', cible: 'toutes-creatures' },
-    text: 'Payez 3 PV : la neige noire tombe sur le champ de bataille — toutes les créatures adverses sont gelées : ni attaque ni blocage jusqu’à la fin de leur prochain tour.',
+    // La vague brise les petites créatures du camp adverse, puis fige ce qui
+    // reste : le froid prend ce que la glace n'a pas cassé. Un seul camp est
+    // visé — la Neige noire ne tombe jamais sur les siens.
+    effet: { type: 'destruction-coutmax', coutMax: 3, cible: 'creatures-adverses', gel: true },
+    text: 'Payez 3 PV : la neige noire tombe sur la table adverse. Les créatures adverses de coût 3 ou moins sont détruites ; toutes les survivantes sont gelées — ni attaque ni blocage jusqu’à la fin de leur prochain tour.',
     flavor: 'Le givre a la couleur de l’encre, et la nuit, celle du deuil.',
   }),
 ];

@@ -2504,22 +2504,42 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'destruction-coutmax': {
-      // Détruit toutes les créatures (des deux camps, sauf la source) dont le
-      // coût en mana est <= effet.coutMax. Les morts sont retirées ensemble,
+      // Détruit toutes les créatures dont le coût en mana est <= effet.coutMax.
+      // Sans borne, la vague prend les deux camps sauf sa source (Celui qui
+      // juge) ; `cible: 'creatures-adverses'` la borne au camp adverse — la
+      // Neige noire ne brise pas les siens. Les morts sont retirées ensemble,
       // avant leurs déclenchements : les jetons et réanimations produits
       // ensuite échappent à cette vague.
+      const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
       const declenchements = [];
-      const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
-        .filter((entite) => entite.id !== sauf
-          && !rpgEstProtegee(entite, sourceElement)
-          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          && (duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax
-          && !tenterEsquive(duel, entite, sourceType))
-        .map((entite) => ({ camp, entite })));
+      const victimes = [];
+      const epargnees = [];
+      for (const camp of camps) {
+        for (const entite of duel[camp].creatures) {
+          // La source ne se vise jamais elle-même (Celui qui juge).
+          if (entite.id === sauf) continue;
+          // La protection de couleur et le Serpent du monde écartent la vague.
+          if (rpgEstProtegee(entite, sourceElement)
+            || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
+          // Un sort esquivé est annulé EN ENTIER sur cette créature : ni
+          // destruction, ni gel — un seul jet, comme pour les dégâts de zone.
+          if (tenterEsquive(duel, entite, sourceType)) continue;
+          if ((duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax) {
+            victimes.push({ camp, entite });
+          } else {
+            epargnees.push({ camp, entite });
+          }
+        }
+      }
       for (const { camp, entite } of victimes) {
         enterrer(duel, camp, entite, sourceElement, declenchements);
       }
       for (const declencher of declenchements) declencher();
+      // Le gel tombe sur ce qui **reste** : une créature brisée n'a plus rien
+      // à figer. Il suit la même vague, donc les mêmes protections.
+      if (effet.gel) {
+        for (const { entite } of epargnees) gelerEntite(duel, entite);
+      }
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
       return;
