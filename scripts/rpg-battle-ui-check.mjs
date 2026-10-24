@@ -1237,6 +1237,14 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hover-card-preview--annonce\s
   'l’aperçu annoncé reste visible sur tactile, alors que les tooltips au survol sont masqués');
 assert.match(mobileCss, /\.rpg-battle--touch \.rpg-annonce-sort__pass,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__respond,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-preview,[\s\S]*?\.rpg-battle--touch \.rpg-annonce-sort__compact-pass \{ min-height: 44px; \}/,
   'Répondre, Laisser passer et leurs commandes compactes gardent une zone tactile de 44 px sur mobile');
+// Victoire : pas de voile noir plein écran, le plateau final reste visible.
+assert.match(battlePage, /vainqueur === 'joueur' \? ' rpg-overlay--win' : ' rpg-overlay--loss'/,
+  'l’écran de fin distingue la victoire (panneau) de la défaite et de la double chute (voile)');
+assert.match(battleCss, /\.rpg-overlay--win\s*\{[^}]*inset:\s*auto;[^}]*left:\s*50%;[^}]*top:\s*50%;[^}]*backdrop-filter:\s*none;/s,
+  'en victoire, l’annonce est un panneau centré et borné, sans voile ni flou plein écran : le plateau reste visible autour');
+assert.match(battleCss, /\.rpg-overlay\s*\{[^}]*inset:\s*0;[^}]*background:\s*rgba\(4, 4, 10, \.86\);/s,
+  'la défaite et la double chute gardent leur voile plein écran d’origine');
+
 // Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
 assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
   'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
