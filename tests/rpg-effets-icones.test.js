@@ -31,9 +31,9 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
 
 test('le sprite porte les 30 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 31 depuis la Contre-attaque (`i-contre-attaque`) : chaque symbole est
+  // 32 depuis le Coup critique (`i-coup-critique`) : chaque symbole est
   // référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 31);
+  assert.equal(symboles.length, 32);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -101,7 +101,7 @@ test('le sprite porte les 30 symboles validés, un par effet', () => {
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
-  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Overkill', 'Furie 3']);
+  assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 2'],
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque'],
@@ -109,8 +109,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
     'le Maître ne porte que Furie 3 et Tenacité : Overkill et Envol sont prêtés par la Furie');
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
-  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les sorts de Braise'],
-    'Envol et protection limitée aux sorts, sans aucune Résonance');
+  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les magies et les sorcelleries'],
+    'Envol et protection contre tous les sorts, sans Résonance');
   assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
     'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
@@ -124,7 +124,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
 test('les pastilles nomment l’effet signé des sorts', () => {
   assert.deepEqual(pastillesDe('ecueil'), ['Contresort']);
   assert.deepEqual(pastillesDe('reanimation'), ['Réanimation']);
-  assert.deepEqual(pastillesDe('bakunawa'), ['Blocage interdit']);
+  assert.deepEqual(pastillesDe('bakunawa'), [], 'Bakunawa arrive en combat, sans pastille de blocage');
   assert.deepEqual(pastillesDe('mur-de-boucliers'), ['Overkill', 'Renfort +2/0'],
     'un sort qui prête Overkill porte le mot-clé accordé et son effet chiffré');
 });
@@ -280,10 +280,10 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
     'une pastille qui ne nomme pas la phrase ne la cache pas');
 
   const jarl = effetsDetailles(cardById('jarl-au-marteau-de-guerre'));
-  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['overkill', 'furie']);
+  assert.deepEqual(jarl.pastilles.map((pastille) => pastille.cle), ['provocation', 'overkill', 'furie']);
   assert.equal(jarl.pastilles.find((pastille) => pastille.cle === 'furie').description,
-    'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +3/+0.',
-    'la fiche dit seulement « Furie 3. » : la pastille explique l’état, en une phrase');
+    'Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +2/+0.',
+    'la fiche dit seulement « Furie 2. » : la pastille explique l’état, en une phrase');
   assert.equal(jarl.pastilles.find((pastille) => pastille.cle === 'overkill').description,
     'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.');
   assert.equal(jarl.texte, '', 'les mots-clés sobres ne laissent aucun pavé de règle sur la face');
@@ -350,7 +350,9 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
   assert.match(pastillesCss, /\.rpg-card-icone\[data-effet='protection'\] \{[^}]*border-color: var\(--rpg-protection-couleur/s,
     'le tour du cercle de l’icône prend la même couleur');
 
-  assert.deepEqual(couleursProtectionCarte(cardById('valkyrie-des-glaces')), ['braise']);
+  assert.deepEqual(couleursProtectionCarte(cardById('valkyrie-des-glaces')), [],
+    'Valkyrie protège désormais contre tous les sorts, pas seulement la Braise');
+  assert.equal(cardById('valkyrie-des-glaces').protectionSorts, true, 'protection générique contre les sorts');
   assert.deepEqual(couleursProtectionCarte(cardById('jitte-d-amayas')), ['tenebres'],
     'une protection donnée par une arme suit la même palette');
   assert.deepEqual(couleursProtectionCarte(cardById('serpent-du-monde')), [],

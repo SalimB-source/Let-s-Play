@@ -19,10 +19,19 @@ function duelTest(rng = () => 0.5) {
   }
   return duel;
 }
-function jouer(duel, cote, id) {
+function jouer(duel, cote, id, cibleId = null) {
   duel[cote].main.push(id);
-  const resultat = rpgJouerCreature(duel, cote, id);
-  assert.equal(resultat.ok, true, id);
+  let resultat = rpgJouerCreature(duel, cote, id, cibleId);
+  if (!resultat.ok && resultat.raison === 'cible') {
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    const carte = cardById(id);
+    if (carte?.arrivee?.type === 'degats' && carte.arrivee.cible === 'creature') {
+      const adversaires = duel[adv].creatures;
+      const cible = adversaires[adversaires.length - 1] ?? adversaires[0];
+      if (cible) resultat = rpgJouerCreature(duel, cote, id, cible.id);
+    }
+  }
+  assert.equal(resultat.ok, true, `${id} ${resultat.raison ?? ''}`.trim());
   if (id === 'seigneur-des-machoires') Object.assign(resultat.entite, { tenaciteDisponible: false, tribut: 0 });
   return resultat.entite;
 }
@@ -102,18 +111,20 @@ test('le starter met en avant Harakiri, Résonance samouraï et la Bannière ave
 
 test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   const valeurs = { commune: 1, inhabituelle: 1, rare: 1, mythique: 1 };
-  // Deux exceptions assumées : Orochi (ses héritiers remplacent la frappe) et
-  // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Harakiri.
-  const sansHarakiri = ['orochi', 'ashigaru-des-braises'];
+  // Quatre exceptions assumées : Orochi (ses héritiers remplacent la frappe),
+  // l'Ashigaru des braises, redevenu un simple corps de 1 mana sans Harakiri,
+  // l'Oni de la fournaise, désormais 4/5 avec dégâts à l'arrivée à la place,
+  // et Kagutsuchi, 2/6 avec Coup critique au lieu de Harakiri.
+  const sansHarakiri = ['orochi', 'ashigaru-des-braises', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle'];
   for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((c) => !['magie', 'terrain'].includes(c.kind))) {
     assert.equal(carte.honneur, sansHarakiri.includes(carte.id) ? 0 : valeurs[carte.rarity], carte.id);
     if (sansHarakiri.includes(carte.id)) assert.doesNotMatch(carte.text, /Harakiri/);
     else assert.match(carte.text, /Harakiri/);
-    // Deux arrivées dans le set : l'exil de Susanoo et les deux Samouraïs du
-    // Daimyō. La bannière du Daimyō est un déclenché d'attaque, pas un des
+    // Trois arrivées dans le set : l'exil de Susanoo, les deux Samouraïs du
+    // Daimyō et les dégâts de l'Oni de la fournaise. La bannière du Daimyō est un déclenché d'attaque, pas un des
     // « anciens effets dispersés » que le set a retirés (ni combat, ni esquive
     // sauf l'Esquive assumée de l'Onna-musha).
-    if (!['susanoo', 'daimyo-du-soleil-rouge'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
+    if (!['susanoo', 'daimyo-du-soleil-rouge', 'oni-de-la-fournaise'].includes(carte.id)) assert.equal(carte.arrivee, undefined);
     if (carte.id !== 'orochi') assert.equal(carte.destruction, undefined);
     assert.equal(carte.combat, undefined);
     // Deux Esquives assumées : l'Onna-musha et Tojiro, le pourfendeur.
@@ -126,8 +137,11 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   assert.equal(kagutsuchiCarte.resonanceTribu, undefined);
   assert.doesNotMatch(kagutsuchiCarte.text, /Résonance samouraï/);
   assert.equal(kagutsuchiCarte.coupRapide, true);
-  assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [6, 5]);
+  assert.deepEqual(kagutsuchiCarte.coupCritique, { chance: 0.3, fois: 4 });
+  assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [2, 6]);
+  assert.equal(kagutsuchiCarte.honneur, 0);
   assert.match(kagutsuchiCarte.text, /Coup rapide — /);
+  assert.match(kagutsuchiCarte.text, /Coup critique/);
 });
 
 test('le rōnin garde Rapidité et le tengu combine Envol et Résonance', () => {
@@ -222,8 +236,8 @@ test('Harakiri tire au hasard parmi tous les adversaires vivants, jamais les all
 });
 
 test('Harakiri inflige 1 dégât quelle que soit la rareté et fonctionne dans les deux camps', () => {
-  // L'Ashigaru des braises n'a plus de Harakiri : sa mort ne frappe personne (montant 0).
-  for (const [id, montant] of [['ashigaru-des-braises', 0], ['hatamoto-des-cendres', 1], ['ronin-du-soleil-rouge', 1], ['samourai-du-torii', 1], ['oni-de-la-fournaise', 1]]) {
+  // L'Ashigaru des braises et l'Oni de la fournaise n'ont plus de Harakiri : leur mort ne frappe personne (montant 0).
+  for (const [id, montant] of [['ashigaru-des-braises', 0], ['oni-de-la-fournaise', 0], ['hatamoto-des-cendres', 1], ['ronin-du-soleil-rouge', 1], ['samourai-du-torii', 1]]) {
     for (const cote of ['joueur', 'sorcier']) {
       const duel = duelTest();
       const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
@@ -239,10 +253,10 @@ test('sans créature adverse, Harakiri frappe le sorcier adverse', () => {
   for (const cote of ['joueur', 'sorcier']) {
     const duel = duelTest();
     const adverse = cote === 'joueur' ? 'sorcier' : 'joueur';
-    const oni = jouer(duel, cote, 'oni-de-la-fournaise');
-    rpgBlesserCreature(duel, cote, oni.id, 20, 'eau');
+    const hatamoto = jouer(duel, cote, 'hatamoto-des-cendres');
+    rpgBlesserCreature(duel, cote, hatamoto.id, 20, 'eau');
     assert.equal(duel[adverse].pv, 24);
-    assert.match(duel.log.at(-1), /Harakiri : Oni de la fournaise inflige 1 dégât au sorcier/);
+    assert.match(duel.log.at(-1), /Harakiri : Hatamoto des cendres inflige 1 dégât au sorcier/);
   }
 });
 
@@ -353,7 +367,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
     const versionsSpecifiques = {
       'susanoo': 'susanoo-kaiga-couleurs-v1',
       'orochi': 'orochi-kaiga-vert-rouge-v2',
-      'tojiro-le-pourfendeur': 'tojiro-photorealiste-v1',
+      'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
       'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
       'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
       'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
@@ -392,7 +406,7 @@ test('les actions d’état déclenchent Harakiri une seule fois pour une créat
 
 test('Harakiri fonctionne aussi après un aller-retour JSON de la partie', () => {
   let duel = duelTest();
-  const mort = jouer(duel, 'joueur', 'oni-de-la-fournaise');
+  const mort = jouer(duel, 'joueur', 'hatamoto-des-cendres');
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
   duel = JSON.parse(JSON.stringify(duel));
   rpgBlesserCreature(duel, 'joueur', mort.id, 20, 'eau');

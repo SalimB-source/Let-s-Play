@@ -76,6 +76,8 @@ export const RPG_MAIN_DEPART = 5;
 export const RPG_ESQUIVE_CHANCE = 0.3;
 export const RPG_COULEURS = RPG_ELEMENTS;
 export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
+export const RPG_COUP_CRITIQUE_CHANCE = 0.3;
+export const RPG_COUP_CRITIQUE_FOIS = 4;
 
 /**
  * Les six phases d'un tour, dans l'ordre. Le moteur les enregistre dans
@@ -1222,6 +1224,7 @@ function creerEntiteCreature(carte) {
     coutBonusArme: 0,
     rapidite: Boolean(carte.rapidite),
     coupRapide: Boolean(carte.coupRapide),
+    coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
     provocation: Boolean(carte.provocation),
     envol: Boolean(carte.envol),
     infiltration: Boolean(carte.infiltration),
@@ -1236,6 +1239,7 @@ function creerEntiteCreature(carte) {
     // boucliers) sans écraser l'Overkill imprimé ou celui d'une arme.
     overkill: Boolean(carte.overkill),
     overkillTemporaire: 0,
+    coupRapideTemporaire: 0,
     // Protection contre les magies rapides et les sorcelleries (le Serpent du
     // monde) : aucun sort ne peut la cibler ni la blesser — les capacités,
     // armes et attaques passent normalement.
@@ -2152,6 +2156,15 @@ function annulerBonusTemporaires(duel, tourFerme) {
           // avec le renfort temporaire d'un sort.
           || Boolean(gainsFurieActifs(duel, entite)?.overkill);
       }
+      if (entry.coupRapide) {
+        entite.coupRapideTemporaire = Math.max(
+          0,
+          (entite.coupRapideTemporaire ?? entry.coupRapide) - entry.coupRapide,
+        );
+        entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide)
+          || Boolean(armeCarteDe(entite)?.donne?.coupRapide)
+          || entite.coupRapideTemporaire > 0;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -2914,6 +2927,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       const bonusOverkill = effet.overkill ? 1 : 0;
+      const bonusCoupRapide = effet.coupRapide ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -2926,7 +2940,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.overkill = true;
           if (temporaire) entite.overkillTemporaire = (entite.overkillTemporaire ?? 0) + bonusOverkill;
         }
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, tour: duel.tour });
+        if (bonusCoupRapide) {
+          entite.coupRapide = true;
+          if (temporaire) entite.coupRapideTemporaire = (entite.coupRapideTemporaire ?? 0) + bonusCoupRapide;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -3064,11 +3082,33 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // La plupart des vagues « toutes-creatures » sont hostiles. Ifrit
       // al-Ahmar déclare explicitement `inclutAllies` : sa vague balaie les
       // deux camps et ne s'épargne pas elle-même.
-      const cibles = effet.cible === 'toutes-creatures'
+      let cibles = effet.cible === 'toutes-creatures'
         ? (effet.inclutAllies
           ? [cote, adv].flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId).map((entite) => ({ entite, camp: adv }));
+      // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
+      // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
+      // la seconde est choisie automatiquement parmi les créatures adverses
+      // restantes — la plus menaçante d’abord, à défaut une au hasard. Si
+      // l’arrivée est résolue sans cible (IA automatique), on pioche jusqu’à
+      // `nombre` cibles adverses au hasard.
+      if (Number.isFinite(effet.nombre) && effet.nombre > 1 && effet.cible === 'creature') {
+        const deja = new Set(cibles.map(({ entite }) => entite.id));
+        const besoin = Math.max(0, Math.floor(effet.nombre) - cibles.length);
+        if (besoin > 0) {
+          const restantes = duel[adv].creatures.filter((entite) => !deja.has(entite.id));
+          // Si aucune cible initiale (résolution automatique sans désignation),
+          // on complète jusqu’à `nombre` avec les adversaires disponibles.
+          const aCompleter = cibles.length === 0 ? Math.floor(effet.nombre) : besoin;
+          // Tri par menace (approximation simple : atk + def) pour la seconde
+          // cible, comme le ferait l’IA pour la première.
+          restantes.sort((a, b) => (b.atk + b.def) - (a.atk + a.def));
+          for (let i = 0; i < Math.min(aCompleter, restantes.length); i += 1) {
+            cibles.push({ entite: restantes[i], camp: adv });
+          }
+        }
+      }
       // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
@@ -5157,6 +5197,15 @@ export function rpgLancerAttaque(
   // s'arrête là, il n'est ni bloqué, ni échangé, et ne touche pas le sorcier
   // (`attaquantsArretes`).
   const rngCombat = hasardParDuel.get(duel) ?? Math.random;
+  const forceCombatAvecCritique = (entite) => {
+    const base = forceCombat(entite);
+    if (!base || !entite.coupCritique) return { force: base, critique: false, fois: 1 };
+    const cfg = entite.coupCritique;
+    const chance = cfg?.chance ?? RPG_COUP_CRITIQUE_CHANCE;
+    const fois = cfg?.fois ?? RPG_COUP_CRITIQUE_FOIS;
+    if (rngCombat() < chance) return { force: base * fois, critique: true, fois };
+    return { force: base, critique: false, fois: 1 };
+  };
   const frappesRapides = [];
   for (const attaquant of attaquants) {
     const cibleRapideId = ciblesRapides[attaquant.id];
@@ -5166,6 +5215,19 @@ export function rpgLancerAttaque(
     // La Traque du Chasseur : sa frappe rapide contre une proie de la course
     // porte le +N/+0 — un attaquant gelé, lui, ne frappe de toute façon pas.
     const traque = cible && !estGelee(attaquant) ? bonusTraquePirates(attaquant, cible) : 0;
+    let degatsRapide = forceCombat(attaquant) + traque;
+    let critiqueRapide = false;
+    let critiqueRapideFois = 1;
+    if (!rate && cible && !estGelee(attaquant) && attaquant.coupCritique) {
+      const cfg = attaquant.coupCritique;
+      const chance = cfg?.chance ?? RPG_COUP_CRITIQUE_CHANCE;
+      const fois = cfg?.fois ?? RPG_COUP_CRITIQUE_FOIS;
+      if (rngCombat() < chance) {
+        degatsRapide *= fois;
+        critiqueRapide = true;
+        critiqueRapideFois = fois;
+      }
+    }
     frappesRapides.push(!cible
       ? { attaquantId: attaquant.id, attaquant: attaquant.name, cibleId: cibleRapideId, cible: null, degats: 0, annule: true }
       : rate
@@ -5175,14 +5237,16 @@ export function rpgLancerAttaque(
           attaquant: attaquant.name,
           cibleId: cible.id,
           cible: cible.name,
-          degats: forceCombat(attaquant) + traque,
+          degats: degatsRapide,
           traque,
+          critique: critiqueRapide,
+          critiqueFois: critiqueRapideFois,
         });
     if (!cible || rate) continue;
     degatsAvantCombat.push({
       cote: adv,
       entiteId: cible.id,
-      amount: forceCombat(attaquant) + traque,
+      amount: degatsRapide,
       sourceElement: cardColors(duelCardById(attaquant.carteId)),
       sourceType: 'attaque',
       sourceCote: cote, sourceId: attaquant.id,
@@ -5230,20 +5294,28 @@ export function rpgLancerAttaque(
   ]));
 
   // Prépare et valide toutes les répartitions avant de modifier la partie.
+  const forcesAttaquant = new Map();
+  const critiquesAttaquant = new Map();
+  for (const attaquant of attaquantsApresCapacites) {
+    const res = forceCombatAvecCritique(attaquant);
+    forcesAttaquant.set(attaquant.id, res.force);
+    if (res.critique) critiquesAttaquant.set(attaquant.id, res);
+  }
   const repartitionFinale = {};
   for (const attaquant of attaquantsApresCapacites) {
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) continue;
+    const forceAttaquant = forcesAttaquant.get(attaquant.id) ?? forceCombat(attaquant);
     if (idsBloqueurs.length === 1) {
-      repartitionFinale[attaquant.id] = { [idsBloqueurs[0]]: forceCombat(attaquant) };
+      repartitionFinale[attaquant.id] = { [idsBloqueurs[0]]: forceAttaquant };
       continue;
     }
 
     const saisie = repartitions?.[attaquant.id];
     const distribution = {};
     if (saisie == null) {
-      const quotient = Math.floor(forceCombat(attaquant) / idsBloqueurs.length);
-      let reste = forceCombat(attaquant) - quotient * idsBloqueurs.length;
+      const quotient = Math.floor(forceAttaquant / idsBloqueurs.length);
+      let reste = forceAttaquant - quotient * idsBloqueurs.length;
       for (const bloqueurId of idsBloqueurs) {
         distribution[bloqueurId] = quotient + (reste > 0 ? 1 : 0);
         reste -= reste > 0 ? 1 : 0;
@@ -5261,7 +5333,7 @@ export function rpgLancerAttaque(
         }
         distribution[bloqueurId] = amount;
       }
-      if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== forceCombat(attaquant)) {
+      if (Object.values(distribution).reduce((total, amount) => total + amount, 0) !== forceAttaquant) {
         annulerBanniere();
         return { ok: false, raison: 'repartition' };
       }
@@ -5309,18 +5381,31 @@ export function rpgLancerAttaque(
       // Un attaquant déclaré bloqué le reste même si ses bloqueurs sont tombés
       // sous les capacités préalables : seul le passage libre frappe le sorcier.
       if (!attaquantsDejaBloques.has(attaquant.id)) {
-        coupsSorcier.push({ attaquantId: attaquant.id, amount: forceCombat(attaquant) });
+        const forceDirect = forcesAttaquant.get(attaquant.id) ?? forceCombatAvecCritique(attaquant).force;
+        coupsSorcier.push({ attaquantId: attaquant.id, amount: forceDirect });
+        if (critiquesAttaquant.has(attaquant.id)) {
+          const info = critiquesAttaquant.get(attaquant.id);
+          duel.log.push(`Coup critique : ${attaquant.name} frappe ${info.fois} fois !`);
+        }
       }
       continue;
     }
 
     const bloqueurs = idsBloqueurs.map((id) => bloqueursDisponiblesPourValidation.find((entite) => entite.id === id)).filter(Boolean);
+    if (critiquesAttaquant.has(attaquant.id)) {
+      const info = critiquesAttaquant.get(attaquant.id);
+      duel.log.push(`Coup critique : ${attaquant.name} frappe ${info.fois} fois !`);
+    }
     const carteAttaquant = duelCardById(attaquant.carteId);
     const couleursAttaquant = cardColors(carteAttaquant);
     for (const bloqueur of bloqueurs) {
       const carteBloqueur = duelCardById(bloqueur.carteId);
       const couleursBloqueur = cardColors(carteBloqueur);
-      const forceBloqueur = estGelee(bloqueur) ? 0 : bloqueur.atk;
+      const resBloqueur = forceCombatAvecCritique(bloqueur);
+      const forceBloqueur = resBloqueur.force;
+      if (resBloqueur.critique) {
+        duel.log.push(`Coup critique : ${bloqueur.name} frappe ${attaquant.name} ${resBloqueur.fois} fois !`);
+      }
 
       enregistrerDegatsCombat(
         degatsCombat,
@@ -5371,7 +5456,8 @@ export function rpgLancerAttaque(
     if (attaquant.overkill) {
       const encaissable = bloqueurs.reduce((total, bloqueur) => total
         + Math.max(0, bloqueur.pv + (bloqueur.bouclier ?? 0)), 0);
-      const exces = Math.max(0, forceCombat(attaquant) + bonusTraque - encaissable);
+      const forceOverkill = forcesAttaquant.get(attaquant.id) ?? forceCombat(attaquant);
+      const exces = Math.max(0, forceOverkill + bonusTraque - encaissable);
       if (exces > 0) {
         coupsSorcier.push({ attaquantId: attaquant.id, amount: exces, overkill: attaquant.name });
       }
@@ -5408,7 +5494,7 @@ export function rpgLancerAttaque(
       ? `${coup.attaquant} ne trouve plus sa cible : son Coup rapide est annulé.`
       : coup.rate
         ? `${coup.attaquant} rate son Coup rapide contre ${coup.cible}.`
-        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}.`);
+        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}${coup.critique ? ` — Coup critique ×${coup.critiqueFois} !` : ''}.`);
   }
   for (const traque of traquesCombat) {
     duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);

@@ -25,6 +25,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
   <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
+  <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
   <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
   <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
@@ -93,6 +94,7 @@ export const EFFET_ICONE = {
   envol: 'i-envol',
   rapidite: 'i-rapidite',
   coupRapide: 'i-coup-rapide',
+  coupCritique: 'i-coup-critique',
   traque: 'i-coup-rapide',
   traquePirates: 'i-coup-rapide',
   provocation: 'i-provocation',
@@ -150,7 +152,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'envol', 'infiltration', 'rapidite', 'coupRapide', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
+  'envol', 'infiltration', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'visages', 'cargaison',
@@ -193,6 +195,7 @@ export const EFFET_LIBELLES = {
   envol: 'Envol',
   rapidite: 'Rapidité',
   coupRapide: 'Coup rapide',
+  coupCritique: 'Coup critique',
   traque: 'Traque',
   traquePirates: 'Traque',
   provocation: 'Provocation',
@@ -252,6 +255,7 @@ export function pastillesPourCarte(carte) {
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
+  if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
   // L'Overkill peut être imprimé, prêté par une arme, accordé par un sort
@@ -410,6 +414,7 @@ const MOTIFS_LIGNE = [
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
   ['coupRapide', /\bcoup rapide/iu],
+  ['coupCritique', /\bcoup critique/iu],
   ['provocation', /\bprovocation\b/iu],
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
@@ -539,6 +544,7 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+  coupCritique: 'En combat, 30 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
@@ -581,6 +587,7 @@ export const EFFET_DEFINITIONS = {
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
 const LIBELLES_IMPRIMES = [
   ['coupRapide', 'Coup rapide'],
+  ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
   ['provocation', 'Provocation'],
   ['overkill', 'Overkill'],

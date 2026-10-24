@@ -106,28 +106,23 @@ test('journal : Yamina soigne ses créatures blessées — chacune la sienne, et
     'seule la créature réellement soignée s’illumine');
 });
 
-test('journal : la Valkyrie des glaces soigne à son arrivée, y compris par la pose différée de la table', () => {
+test('journal : la Valkyrie des glaces inflige 1 dégât à toutes et peut geler (pose différée)', () => {
   for (const cote of ['joueur', 'sorcier']) {
-    const duel = duelClassique();
+    const adv = cote === 'joueur' ? 'sorcier' : 'joueur';
+    const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0 });
     duel.tour = cote;
     donnerMana(duel, cote, 12);
-    donner(duel, cote, 'chien-du-guet');
-    const chien = rpgJouerCreature(duel, cote, 'chien-du-guet').entite;
-    assert.equal(rpgBlesserCreature(duel, cote, chien.id, 1, 'braise').ok, true);
-    assert.deepEqual([chien.pv, chien.def, chien.pvMax], [1, 1, 2]);
-    rpgConsommerSoins(duel);
-    donnerMana(duel, cote, 12);
+    donnerMana(duel, adv, 12);
+    // Une créature adverse à blesser/geler
+    donner(duel, adv, 'chien-du-guet');
+    const chien = rpgJouerCreature(duel, adv, 'chien-du-guet').entite;
+    const pvAvant = chien.pv;
     donner(duel, cote, 'valkyrie-des-glaces');
-    // `cibleDifferee: true` est exactement la voie de pose de l'interface :
-    // le soin collectif ne désigne rien, il doit donc se résoudre avec la pose.
     const pose = rpgJouerCreature(duel, cote, 'valkyrie-des-glaces', null, { cibleDifferee: true });
     assert.equal(pose.ok, true);
-    assert.equal(pose.arriveeEnAttente, undefined, 'le soin collectif n’attend aucune cible');
-    assert.deepEqual([chien.pv, chien.def, chien.pvMax], [2, 2, 2],
-      `${cote} : la créature blessée regagne ses PV et sa défense affichée`);
-    assert.deepEqual(rpgConsommerSoins(duel), [{ cote, entityId: chien.id, montant: 1 }]);
-    assert.ok(duel.log.includes('Valkyrie des glaces : Chien du guet +1.'),
-      'le journal nomme le soin réellement appliqué');
+    assert.equal(pose.arriveeEnAttente, undefined, 'la vague ne désigne rien, elle se résout avec la pose');
+    assert.equal(chien.pv, pvAvant - 1, `${cote} : l’adverse encaisse 1 dégât`);
+    assert.ok(chien.gelToursRestants >= 1, 'avec rng=0 le gel à 25% prend');
   }
 });
 
