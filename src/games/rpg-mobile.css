@@ -179,6 +179,25 @@
   overscroll-behavior: contain;
   background-blend-mode: normal;
 }
+/* Annonce d'une magie : la fiche reste au centre, mais prend moins de place
+   sur téléphone, y compris en paysage quand le viewport dépasse 560 px. Le
+   sélecteur commun garde exactement le même gabarit pour les deux camps. */
+.rpg-battle--touch .rpg-spell-played-stack { gap: 6px; padding: 8px; }
+.rpg-battle--touch .rpg-spell-played {
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 6px;
+  width: min(260px, calc(100vw - 24px));
+  min-height: 0;
+  padding: 5px 8px 5px 5px;
+}
+.rpg-battle--touch .rpg-spell-played__art { width: 38px; height: 48px; }
+.rpg-battle--touch .rpg-spell-played__details > strong { font-size: 12px; }
+.rpg-battle--touch .rpg-spell-played__details > p { font-size: 8px; }
+.rpg-battle--touch .rpg-spell-played__target { gap: 4px; margin-top: 2px; }
+.rpg-battle--touch .rpg-spell-played__target > img { width: 18px; height: 23px; }
+.rpg-battle--touch .rpg-spell-played__target-mark { width: 18px; height: 18px; font-size: 13px; }
+.rpg-battle--touch .rpg-spell-played__target b { font-size: 9px; }
+
 /* `dvh` suit les barres mobiles qui apparaissent et disparaissent, et peut
    donc redimensionner les cartes en plein duel. On fixe l'échelle sur la
    petite hauteur de viewport (`svh`) : elle ne bouge pas tant que le
