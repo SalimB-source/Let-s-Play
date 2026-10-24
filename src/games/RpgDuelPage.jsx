@@ -7250,7 +7250,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * `data-card-id`, en main, sur la table, dans un rail de terrains, sur le
    * dessus d'un cimetière, au catalogue et dans la liste d'un deck. */
   const demarrerAppuiLongCarte = (event) => {
-    const hote = event.target?.closest?.('[data-card-id]');
+    const hote = event.target?.closest?.('[data-card-id]')
+      ?? event.target?.closest?.('.rpg-souk__carte-place')?.querySelector?.('[data-souk-carte][data-card-id]');
     if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
     const carte = cardById(hote?.dataset?.cardId);
     if (!carte) return;
@@ -7347,7 +7348,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // jusqu'ici.
   const surMenuContextuel = (event) => {
     event.preventDefault();
-    const hote = event.target?.closest?.('[data-card-id]');
+    const hote = event.target?.closest?.('[data-card-id]')
+      ?? event.target?.closest?.('.rpg-souk__carte-place')?.querySelector?.('[data-souk-carte][data-card-id]');
     if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
     const carte = cardById(hote?.dataset?.cardId);
     if (!carte) return;

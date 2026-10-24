@@ -45,12 +45,18 @@ test('Booster : aucun voile noir 3D sur les cartes ouvertes (.rpg-souk__carte ne
 
 test('Booster : le clic droit atteint toujours la carte ouverte et sa fiche passe au-dessus de la cérémonie', () => {
   const volume = blocRegle(soukCss, /(?:^|\n)\.rpg-souk__carte-volume\s*\{([^}]*)\}/);
-  assert.match(volume, /pointer-events:\s*none\s*;/,
-    'les sous-couches 3D laissent <article data-card-id> capter 100 % des clics droits');
+  assert.doesNotMatch(volume, /pointer-events:\s*none/,
+    '.rpg-souk__carte-volume doit rester cliquable : sinon le compositeur 3D traverse la coque transparente .rpg-souk__carte');
 
   const verso = blocRegle(soukCss, /(?:^|\n)\.rpg-souk__carte-verso\s*\{([^}]*)\}/);
   assert.match(verso, /pointer-events:\s*none\s*;/,
     'le verso décoratif ne vole jamais le clic droit aux cartes révélées');
+
+  assert.match(
+    soukCss,
+    /\[data-souk-phase=['"]termine['"]\]\s+\.rpg-souk__carte-retourne\.is-revelee\s*\{[^}]*transform-style:\s*flat\s*;/,
+    'une fois retournées, les cartes sortent du preserve-3d parent pour un hit-testing 2D/3D sans ambiguïté',
+  );
 
   assert.match(
     soukCss,

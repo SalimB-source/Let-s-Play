@@ -952,7 +952,6 @@
   border: 1px solid rgba(235, 215, 176, .22);
   border-radius: inherit;
   background: rgba(12, 10, 12, .82);
-  pointer-events: none;
   transform-style: preserve-3d;
   transform: rotateX(5deg) rotateY(calc((var(--rang, 0) - 2) * 1.5deg));
   transform-origin: 50% 55%;
@@ -1316,6 +1315,19 @@
 .rpg-souk__carte-verso { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
 .rpg-souk__carte-retourne > .rpg-souk__carte { animation: none; transform: translateZ(.1px); }
 .rpg-souk__carte-retourne:not(.is-revelee) > .rpg-souk__carte { pointer-events: none; }
+/* Une fois les retournements achevés, on retire le preserve-3d parent et le
+   verso caché pour que le hit-testing navigateur (clic droit, survol, appui
+   long) touche directement la carte révélée sans ambiguïté de profondeur 3D. */
+[data-souk-phase='termine'] .rpg-souk__carte-retourne.is-revelee {
+  transform-style: flat;
+  transform: none;
+}
+[data-souk-phase='termine'] .rpg-souk__carte-retourne.is-revelee > .rpg-souk__carte {
+  transform: none;
+}
+[data-souk-phase='termine'] .rpg-souk__carte-verso {
+  display: none;
+}
 .rpg-souk__carte-verso {
   display: grid;
   padding: 10px;
