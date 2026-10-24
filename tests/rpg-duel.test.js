@@ -1548,15 +1548,20 @@ test('la désignation différée revalide sa cible : camp, protection, attente c
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok, true,
     'une cible légale finit par refermer l’attente');
 
-  // L’exil du Susanoo, lui, choisit dans les deux camps — mais jamais lui-même.
+  // L’exil du Susanoo, lui, choisit dans les deux camps parmi les créatures de
+  // coût 5 ou plus — mais jamais lui-même, ni une créature de coût inférieur à 5.
+  donner(duel, 'joueur', 'oni-de-la-fournaise');
+  const oni = rpgJouerCreature(duel, 'joueur', 'oni-de-la-fournaise').entite;
   donner(duel, 'joueur', 'susanoo');
   const susanoo = rpgJouerCreature(duel, 'joueur', 'susanoo', null, { cibleDifferee: true });
   assert.equal(susanoo.arriveeEnAttente, true, 'le Susanoo se pose, puis désigne son exil');
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', susanoo.entite.id).raison, 'cible',
     'la créature qui porte l’arrivée ne se désigne pas elle-même');
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', pose.entite.id).ok, true,
-    'en revanche, elle peut exiler une autre créature — ici la Vipère du même camp');
-  assert.equal(duel.joueur.creatures.includes(pose.entite), false, 'la Vipère choisie est retirée de la partie');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', pose.entite.id).raison, 'cible',
+    'une créature de coût inférieur à 5 (la Vipère, coût 3) est refusée');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', oni.id).ok, true,
+    'en revanche, elle peut exiler une autre créature de coût 5 ou plus — ici l’Oni du même camp');
+  assert.equal(duel.joueur.creatures.includes(oni), false, 'l’Oni choisi est retiré de la partie');
 });
 
 test('le Cavalier doit choisir une créature adverse et combat mutuellement à son arrivée', () => {

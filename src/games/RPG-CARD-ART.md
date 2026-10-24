@@ -351,10 +351,10 @@ préconstruit, qui conserve 40 cartes, 17 créatures, 7 magies et 16 terrains.
 
 ### Susanoo — mythique
 
-Créature légendaire Braise — Kami · Tempête, coût 5, force/défense 6/3,
-Harakiri 3. À son arrivée, son contrôleur choisit une créature de l’un ou
-l’autre camp et la retire de la partie. L’exil n’est pas une mort : ni
-Harakiri, ni création de jetons, ni retour programmé ne se déclenchent.
+Créature légendaire Braise — Kami · Tempête, coût 6, force/défense 5/3,
+Harakiri 1. À son arrivée, son contrôleur choisit une créature de coût 5 ou
+plus de l’un ou l’autre camp et la retire de la partie. L’exil n’est pas une
+mort : ni Harakiri, ni création de jetons, ni retour programmé ne se déclenchent.
 La cible ne rejoint ni la main ni le cimetière ; les armes attachées sont
 mises au cimetière et les auras de la créature quittant le jeu disparaissent.
 La protection et le contresort de Boualem s’appliquent aux capacités ciblées.

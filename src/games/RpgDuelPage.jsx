@@ -9605,7 +9605,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (rpgEstProtegee(entite, cardColors(carteSource))
       // Le Serpent du monde : aucun sort ne peut le viser.
       || (carteSource?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteSource)))
-      // Le Père des corbeaux : l'exil ne soulève que les coûts de 3 ou moins.
+      // Le Père des corbeaux (coût 3 ou moins) et Susanoo (coût 5 ou plus) :
+      // l'exil vérifie le seuil de coût de la cible.
       || !cibleRespecteCoutMax(carteSource, entite)) {
       jouerSfx('erreur');
       force();

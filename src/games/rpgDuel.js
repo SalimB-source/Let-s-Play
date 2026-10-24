@@ -2527,12 +2527,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'exil': {
       for (const campCible of [adv, cote]) {
         const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
-        if (!victime) continue;
+        if (!victime || victime.id === sauf) continue;
         if (rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
-        // `coutMax` (le Père des corbeaux) : les corbeaux ne soulèvent que les
-        // créatures de coût 3 ou moins — au-delà, la cible est illégale.
-        if (Number.isFinite(effet.coutMax)
-          && (duelCardById(victime.carteId)?.cost ?? 0) > effet.coutMax) return;
+        // `coutMax` (le Père des corbeaux) et `coutMin` (Susanoo) : la cible
+        // doit respecter le seuil de coût déclaré — sinon elle est illégale.
+        if (!cibleRespecteCoutMax({ arrivee: effet }, victime)) return;
         duel[campCible].creatures = duel[campCible].creatures.filter((entite) => entite.id !== victime.id);
         // Toute sortie de table ouvre la cale (set Lettres de Marque) : même
         // retirée de la partie, la créature rend son prisonnier.
@@ -3714,13 +3713,15 @@ function campsDePortee(cote, portee) {
 }
 
 /** Reste-t-il, sur la table, une créature que cette arrivée peut désigner ? */
-/** `coutMax` (le Père des corbeaux) : la cible d'une arrivée doit coûter au
- *  plus ce seuil — sans seuil déclaré, tout coût convient. */
+/** `coutMax` (le Père des corbeaux) et `coutMin` (Susanoo) : la cible d'une
+ *  arrivée doit respecter le seuil de coût déclaré — sans seuil, tout coût convient. */
 export function cibleRespecteCoutMax(carte, entite) {
-  if (!Number.isFinite(carte?.arrivee?.coutMax)) return true;
-  // Un Grappin porté alourdit sa cible face aux plafonds de coût, comme
+  const cout = rpgCoutEntite(entite);
+  // Un Grappin porté alourdit sa cible face aux seuils de coût, comme
   // face aux seuils de prise.
-  return rpgCoutEntite(entite) <= carte.arrivee.coutMax;
+  if (Number.isFinite(carte?.arrivee?.coutMax) && cout > carte.arrivee.coutMax) return false;
+  if (Number.isFinite(carte?.arrivee?.coutMin) && cout < carte.arrivee.coutMin) return false;
+  return true;
 }
 
 /**
@@ -4142,10 +4143,9 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
   // ne peut pas se retourner contre la créature qu'il vient de poser.
   if (cible.id === entite.id) return { ok: false, raison: 'cible' };
-  // Le Père des corbeaux : ses corbeaux ne soulèvent que les créatures de
-  // coût 3 ou moins — une cible trop lourde reste illégale, l'attente ouverte.
-  if (Number.isFinite(carte.arrivee?.coutMax)
-    && (duelCardById(cible.carteId)?.cost ?? 0) > carte.arrivee.coutMax) {
+  // Le Père des corbeaux (coût 3 ou moins) et Susanoo (coût 5 ou plus) :
+  // une cible hors seuil reste illégale, l'attente reste ouverte.
+  if (!cibleRespecteCoutMax(carte, cible)) {
     return { ok: false, raison: 'cible' };
   }
   if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };

@@ -420,11 +420,11 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     })?.cibleId ?? null;
   }
   if (carte?.arrivee?.type === 'exil') {
-    // `coutMax` (le Père des corbeaux) : les cibles trop chères sont illégales.
-    const coutMax = Number.isFinite(carte.arrivee.coutMax) ? carte.arrivee.coutMax : Infinity;
+    // `coutMax` (le Père des corbeaux) et `coutMin` (Susanoo) : seules les
+    // créatures qui respectent le seuil de coût sont des cibles légales.
     const couleurs = cardColors(carte);
     const legale = (entite) => !estProtegee(entite, couleurs)
-      && (duelCardById(entite.carteId)?.cost ?? 0) <= coutMax;
+      && moteur.cibleRespecteCoutMax(carte, entite);
     const adverse = duel[autre(cote)].creatures.filter(legale)
       .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
       .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
