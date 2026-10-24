@@ -58,7 +58,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}
       data-souk-carte-rarete={rarete.key}
       data-souk-carte-remboursement={detail.remboursement}
-      style={{ '--rang': index }}
+      style={{ '--rang': index % 5 }}
     >
       <div className="rpg-souk__carte-volume">
         <div className="rpg-souk__carte-art">

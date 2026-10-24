@@ -74,3 +74,9 @@ test('Booster : le clic droit atteint toujours la carte ouverte et sa fiche pass
   assert.ok(zPeekBattle > zOffert, `rpg-battle.css élève .rpg-card-peek (${zPeekBattle}) au-dessus de ${zOffert}`);
   assert.ok(zPeekProfil > zOffert, `rpg-profil.css élève .rpg-card-peek (${zPeekProfil}) au-dessus de ${zOffert}`);
 });
+
+test('Booster : les cartes gagnées s’affichent sur 5 colonnes', () => {
+  const grille = blocRegle(soukCss, /(?:^|\n)\.rpg-souk__ceremonie-cartes\s*\{([^}]*)\}/);
+  assert.match(grille, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)\s*;/,
+    'les 5 cartes d’un paquet s’alignent sur 5 colonnes');
+});

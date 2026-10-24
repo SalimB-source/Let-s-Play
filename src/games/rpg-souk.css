@@ -909,7 +909,7 @@
 }
 .rpg-souk__ceremonie-corps {
   position: relative;
-  width: min(100%, 1020px);
+  width: min(100%, 1120px);
   display: grid;
   gap: clamp(12px, 1.6vw, 18px);
   padding: clamp(14px, 2vw, 24px);
@@ -923,8 +923,8 @@
 .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 7px; color: rgba(247, 237, 218, .44); font: 700 9px/1.45 var(--mono, monospace); letter-spacing: .04em; }
 .rpg-souk__ceremonie-cartes {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(9px, 1.4vw, 14px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(8px, 1.2vw, 14px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1123,9 +1123,18 @@
   .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
   .rpg-souk__journal-cartes { grid-column: 1 / -1; }
   .rpg-souk__journal-notes { grid-column: 1 / -1; }
-  /* Trois colonnes sur téléphone aussi : seules les gouttières se resserrent,
-     les cartes nues gardent leur lecture en rangées de trois. */
-  .rpg-souk__ceremonie-cartes { gap: 8px; }
+  /* Cinq colonnes alignent le paquet entier sur une seule rangée : sur petit
+     écran les gouttières et tampons se resserrent sans déborder. */
+  .rpg-souk__ceremonie-cartes { gap: 5px; }
+  .rpg-souk__carte-copies { top: 4px; right: 4px; }
+  .rpg-souk__carte-tampon {
+    bottom: 5px;
+    max-width: calc(100% - 4px);
+    min-height: 24px;
+    padding: 3px 5px;
+    font-size: 6.5px !important;
+    letter-spacing: .03em;
+  }
   .rpg-souk__ceremonie-pied .rpg-menu-button { flex: 1 1 100%; }
 }
 /* Un seul paquet de front : les prix et les boutons gardent leur taille au
