@@ -101,10 +101,17 @@ decks de la tour et se révèlent en montant.
   `public/plateau-cercle-des-corbeaux.jpg`, 4K 3:2), vu de dessus, le cercle
   de pierres vide au centre. Les quatre étages s'y battent ; sa vignette de
   profil est générée par `tools/make-profil-vignettes.mjs`.
-- **Musique** (`rpgAmbientMusic.js`) : « La neige tombe dans le noir », 68 BPM
-  — bourdon du Nord, froissements d'ailes, croassement mat une mesure sur
-  deux, grains de givre, et une complainte de quatre notes qui tourne puis se
-  tait.
+- **Musique de duel** (`rpgPlateauMusic.js`) : le plateau joue
+  `public/raspberrymusic - A Vikings.mp3` — une seule piste viking en boucle,
+  pour les quatre étages et pour le plateau quand le profil le choisit. Le
+  relais de conquête 60/40 s'applique comme aux autres plateaux : face à une
+  table sans piste, c'est le Cercle qui fournit la musique.
+- **Ambiance de tour** (`rpgAmbientMusic.js`) : « La neige tombe dans le noir »,
+  68 BPM — bourdon du Nord, froissements d'ailes, croassement mat une mesure
+  sur deux, grains de givre, et une complainte de quatre notes qui tourne puis
+  se tait. Elle reste l'identité sonore de la tour et s'écoute dans la salle
+  d'écoute ; en duel, elle s'efface devant la piste du plateau pour ne pas
+  jouer deux musiques à la fois.
 - **Récompenses** : le barème commun des tours libres (50 ◈ par étage, 200 ◈
   pour la tour), aucune carte exclusive. L'enjeu est le set lui-même et le
   retournement de sa figure.
@@ -119,14 +126,18 @@ decks de la tour et se révèlent en montant.
 | `src/games/rpgStoryTours.js` | les paquets de campagne et les quatre étages de la tour |
 | `src/games/rpgCollection.js` | l'exclusion de la dotation et les quatre révélations |
 | `src/games/rpgPlateaux.js` | Le Cercle des corbeaux et la correspondance des quatre decks |
+| `src/games/rpgPlateauMusic.js` | la piste MP3 du Cercle des corbeaux |
 | `src/games/rpgStoryTowerModels.js` | la maquette 3D et son thème |
 | `src/games/rpgAmbientMusic.js` | l'ambiance de la tour |
+| `public/raspberrymusic - A Vikings.mp3` | la piste viking du plateau |
+| `tests/rpg-ambient-music.test.js` | le branchement de la piste et le fichier livré |
 | `src/games/rpgCardArt.js` | la révision de cache `corbeau-neuf-nuits-v1` |
 | `public/cards/*.jpg` | les six peintures plein art 1024×1280 |
 | `tests/rpg-corbeau.test.js` | le set, la tour, les révélations et les règles en jeu |
 
 ```bash
-npm run check:rpg-corbeau      # le set, la tour, les révélations et les règles en jeu
+npm run check:rpg-corbeau      # le set, la tour, les révélations, la piste et les règles en jeu
+npm run check:rpg-conquete-music # le branchement audio et le relais de conquête
 npm run check:rpg              # toute la suite du Sablier (tours, decks, plateaux, sets)
 npm run check:rpg-decks        # les recettes et « les meilleures d'abord »
 npm run check:rpg-story-ui     # la galerie des tours et la page de chaque tour

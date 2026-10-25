@@ -15,14 +15,19 @@ puis reprend au retour dans les menus.
 
 En partie (`ecran === 'partie'`), les plateaux qui ont une piste dédiée
 utilisent leur MP3 via `RpgPlateauMusic`. La Nécropole des dalles, le plateau
-égyptien, joue `public/Egypt.mp3`. Les autres terrains peuvent rester sans
-piste propre ; les boucles synthétisées en WebAudio des Tours de Bab El
+égyptien, joue `public/Egypt.mp3` ; **le Cercle des corbeaux**, la clairière
+de la Tour du Corbeau, joue `public/raspberrymusic - A Vikings.mp3` (une seule
+piste, en boucle). Les autres terrains peuvent rester sans piste propre ; les
+boucles synthétisées en WebAudio des Tours de Bab El
 (`src/games/rpgAmbientMusic.js`) prennent le relais en mode Histoire.
 
 Chacune des **Tours de Bab El** dispose de sa propre boucle musicale
 d'ambiance, intégralement **synthétisée en WebAudio** (`src/games/rpgAmbientMusic.js`).
 Lorsqu'un plateau possède une piste dédiée, elle remplace la boucle de la Tour
-pour éviter de faire jouer deux musiques en même temps.
+pour éviter de faire jouer deux musiques en même temps : ainsi « La neige tombe
+dans le noir » (Tour du Corbeau, 68 BPM) reste l'identité de la tour — on
+l'écoute dans la salle d'écoute — mais se tait pendant les duels joués au
+Cercle des corbeaux, où le MP3 viking prend la main.
 
 La classe `RpgAmbientMusic` suit le même contrat de cycle de vie que la bande-son
 de *Vice City Rush* (`cityRushAudio.js`) :

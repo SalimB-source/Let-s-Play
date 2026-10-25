@@ -254,6 +254,52 @@ test('La Nécropole des dalles, plateau égyptien, joue « Egypt.mp3 »', () => 
   assert.ok(existsSync(new URL('../public/Egypt.mp3', import.meta.url)), 'Egypt.mp3 doit être livré dans public/');
 });
 
+test('Le Cercle des corbeaux joue « raspberrymusic - A Vikings.mp3 »', async () => {
+  const plateauId = 'cercle-des-corbeaux';
+  const fichier = 'raspberrymusic - A Vikings.mp3';
+  const urlDisque = new URL(`../public/${fichier}`, import.meta.url);
+  assert.equal(plateauParId(plateauId)?.nom, 'Le Cercle des corbeaux');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'la clairière doit être traitée comme musicale');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/${fichier}`);
+  assert.ok(existsSync(urlDisque), 'la piste viking doit être livrée dans public/');
+  assert.ok(readFileSync(urlDisque).length > 1_000_000, 'le MP3 livré n’est pas un fichier vide');
+
+  // Le nom contient des espaces : le lecteur doit quand même retrouver sa
+  // source et la jouer en boucle, sans récréer un second Audio à chaque rendu.
+  const precedentWindow = globalThis.window;
+  class FauxAudioCorbeau {
+    constructor(src) {
+      this.src = src;
+      this.loop = false;
+      this.preload = 'none';
+      this.volume = 1;
+      this.muted = false;
+      this.paused = true;
+      this.currentTime = 0;
+    }
+    play() { this.paused = false; return Promise.resolve(); }
+    pause() { this.paused = true; }
+    removeAttribute() { this.src = ''; }
+    load() {}
+  }
+  globalThis.window = { location: { href: 'http://localhost/' }, Audio: FauxAudioCorbeau };
+  try {
+    const lecteur = new RpgPlateauMusic();
+    lecteur.setPlateau(plateauId, { reroll: true });
+    assert.equal(lecteur.musicFile, `/${fichier}`);
+    await lecteur.start();
+    assert.equal(lecteur.running, true);
+    assert.equal(lecteur.audio.loop, true);
+    assert.equal(lecteur.audio.src, `/${fichier}`);
+    await lecteur.start();
+    assert.equal(lecteur.audio.src, `/${fichier}`, 'le nom à espaces ne déclenche pas un rechargement');
+    lecteur.destroy();
+    assert.equal(lecteur.audio, null);
+  } finally {
+    globalThis.window = precedentWindow;
+  }
+});
+
 test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
   const plateauId = 'erg-du-sahara';
   const fichier = 'ArabianMeditativeFantasyCover.mp3';

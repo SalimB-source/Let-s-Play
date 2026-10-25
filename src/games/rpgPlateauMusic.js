@@ -40,8 +40,13 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   'iles-celestes': RPG_SNOW_MUSIC_FILES,
   // La Nécropole des dalles, plateau égyptien de la Balance des Heures.
   'necropole-des-dalles': `${RPG_PUBLIC_BASE}Egypt.mp3`,
-  // Le Palais du Pharaon reste sans piste dédiée : en Histoire, la boucle
-  // d'ambiance de la tour prend le relais (`RpgAmbientMusic`).
+  // Le Cercle des corbeaux, la clairière de la Tour du Corbeau : une seule
+  // piste viking, livrée sous son nom d'origine. Elle remplace la boucle
+  // synthétisée de la tour pendant les duels des quatre étages.
+  'cercle-des-corbeaux': `${RPG_PUBLIC_BASE}raspberrymusic - A Vikings.mp3`,
+  // Le Palais du Pharaon et le Sablier renversé restent sans piste dédiée :
+  // en Histoire, la boucle d'ambiance de la tour prend le relais
+  // (`RpgAmbientMusic`) quand aucun des deux camps n'a de musique.
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));
 
