@@ -45,11 +45,12 @@
  * échantillonne dix mille ouvertures semées pour vérifier les taux.
  */
 
-import { carteJouableSansTerrain, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardRarityInfo } from './rpgCards.js';
+import { carteJouableSansTerrain, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
 import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, cartesReveleesParEtage, collectionJoueur, nombreExemplaires } from './rpgCollection.js';
 import { RPG_STORY_TOURS, etageHistoireParId, tousLesEtages } from './rpgStoryTours.js';
 import {
   ajouterCartesAuPortefeuille,
+  ajouterExemplaireAuPortefeuille,
   creditsDeDoublons,
   depenserCredits,
   enregistrerOuverture,
@@ -470,16 +471,26 @@ function detaillerTirage(cartes, collection, comptes = null) {
   const possedees = new Set(collection ?? []);
   const details = cartes.map((id) => {
     const carte = cardById(id);
-    const doublon = possedees.has(id);
+    const exemplairesAvant = nombreExemplaires([...collection], id, comptes);
+    const doublon = exemplairesAvant > 0;
+    const limite = cardCopyLimit(carte) ?? 1;
+    // Le second exemplaire se garde : il complète le playset et n'est pas
+    // remboursé. Seul l'exemplaire au-delà du quota de deck (3e et plus)
+    // rapporte des crédits au barème des doublons (doc 13, D4).
+    const remboursable = doublon && exemplairesAvant >= limite;
+    // Stock après rangement de cette carte : 1 pour une nouvelle acquisition,
+    // le quota monté d'un cran pour le second exemplaire conservé, et le
+    // playset (ou le stock déjà écrit) pour une carte déjà complète.
+    const exemplairesApres = doublon
+      ? Math.min(exemplairesAvant + 1, limite)
+      : nombreExemplaires([...collection, id], id, comptes);
     return {
       id,
       carte,
       rarete: cardRarityInfo(carte).key,
       doublon,
-      remboursement: doublon ? creditsDeDoublons([id]) : 0,
-      // Stock après rangement de cette carte : la pastille de la cérémonie
-      // affiche ainsi 1 pour une nouvelle acquisition, sans relire le stockage.
-      exemplaires: nombreExemplaires([...possedees, id], id, comptes),
+      remboursement: remboursable ? creditsDeDoublons([id]) : 0,
+      exemplaires: exemplairesApres,
     };
   });
   return { details, remboursement: details.reduce((somme, carte) => somme + carte.remboursement, 0) };
@@ -510,6 +521,15 @@ function ouvrirUnPaquet({ portefeuille, rayonId, progression = null, collection 
   const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, base.exemplaires);
   let apres = achat.portefeuille;
   apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
+  // Le second exemplaire d'une carte se garde (il complète le playset) : on le
+  // note au stock d'exemplaires pour que le suivant (3e et au-delà) soit le
+  // premier remboursé. Un exemplaire déjà au quota ne bouge pas.
+  for (const detail of details) {
+    if (detail.doublon && detail.remboursement === 0) {
+      const suite = ajouterExemplaireAuPortefeuille(apres, detail.id);
+      if (suite.ajoute) apres = suite.portefeuille;
+    }
+  }
   apres = enregistrerOuverture(apres, {
     mythique: tirage.mythique,
     aDesMythiques: vivierRayon(rayonId, progression).some((id) => cardById(id)?.rarity === 'mythique'),
@@ -583,6 +603,15 @@ export function ouvrirCoffret({ portefeuille, rayonId, progression = null, colle
     const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, base.exemplaires);
     for (const carte of details) possedees.add(carte.id);
     apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
+    // Le second exemplaire d'une carte se garde (il complète le playset) : on le
+    // note au stock d'exemplaires pour que le suivant (3e et au-delà) soit le
+    // premier remboursé.
+    for (const detail of details) {
+      if (detail.doublon && detail.remboursement === 0) {
+        const suite = ajouterExemplaireAuPortefeuille(apres, detail.id);
+        if (suite.ajoute) apres = suite.portefeuille;
+      }
+    }
     apres = enregistrerOuverture(apres, {
       mythique: tirage.mythique,
       aDesMythiques,

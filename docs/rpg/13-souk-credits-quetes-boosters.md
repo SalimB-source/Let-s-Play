@@ -185,8 +185,12 @@ supplément.
 
 ### D4 — Le doublon n'est pas une punition
 
-Une carte déjà possédée est **estampillée** à l'ouverture (« déjà possédée ») et
-rend des crédits au barème :
+Une carte déjà possédée est **estampillée** à l'ouverture (« déjà possédée »).
+Son deuxième exemplaire complète le playset autorisé en deck et se garde sans
+remboursement ; seuls les exemplaires au-delà de ce quota (3e et plus pour une
+carte à deux exemplaires, tout doublon pour une mythique à exemplaire unique,
+et tout doublon de commune ou de dotation dont le playset est acquis dès la
+possession) rendent des crédits au barème :
 
 | Rareté du doublon | Remboursement |
 | --- | --- |

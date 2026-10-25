@@ -243,6 +243,47 @@ test('un paquet de doublons n’enrichit jamais son acheteur', () => {
   assert.ok(pire < 140, 'un paquet entièrement fait de doublons ne rembourse jamais son prix');
 });
 
+test('le deuxième exemplaire d’une carte possédée se garde sans remboursement', () => {
+  // `samourai-du-torii` : rare non-dotation, deux exemplaires max en deck.
+  // La graine 81 le fait sortir dans le paquet (déterministe).
+  const cible = 'samourai-du-torii';
+  const tirage = ouvrirBooster({
+    portefeuille: journalier(100000),
+    rayonId: 'souk',
+    collection: [cible],
+    rng: rngSeme(81),
+  });
+  assert.equal(tirage.ok, true);
+  const detail = tirage.tirage.details.find((carte) => carte.id === cible);
+  assert.ok(detail, 'la cible est bien dans le paquet');
+  assert.equal(detail.doublon, true, 'déjà possédée');
+  assert.equal(detail.remboursement, 0, 'le deuxième exemplaire n’est pas remboursé');
+  assert.equal(detail.exemplaires, 2, 'le stock passe à deux exemplaires');
+  assert.equal(tirage.tirage.remboursement, 0, 'aucun crédit rendu pour ce paquet');
+  assert.equal(tirage.portefeuille.credits, 100000 - 140, 'le solde est juste débité du prix');
+  assert.equal(tirage.portefeuille.exemplaires[cible], 2, 'l’exemplaire conservé est écrit au stock');
+});
+
+test('le troisième exemplaire d’une carte complète est remboursé au barème', () => {
+  const cible = 'samourai-du-torii';
+  // Le stock déclare déjà deux exemplaires : la carte est complète.
+  const portefeuille = { ...journalier(100000), cartes: [cible], exemplaires: { [cible]: 2 } };
+  const tirage = ouvrirBooster({
+    portefeuille,
+    rayonId: 'souk',
+    collection: [cible],
+    rng: rngSeme(81),
+  });
+  assert.equal(tirage.ok, true);
+  const detail = tirage.tirage.details.find((carte) => carte.id === cible);
+  assert.ok(detail);
+  assert.equal(detail.doublon, true);
+  assert.equal(detail.remboursement, BAREME_DOUBLON.rare, 'le troisième exemplaire est remboursé au barème rare');
+  assert.equal(detail.exemplaires, 2, 'le stock reste bloqué au quota de deck');
+  assert.equal(tirage.tirage.remboursement, BAREME_DOUBLON.rare);
+  assert.equal(tirage.portefeuille.credits, 100000 - 140 + BAREME_DOUBLON.rare);
+});
+
 test('sans solde, ou sur un ancien rayon, l’achat ne touche à rien', () => {
   const pauvre = ouvrirBooster({ portefeuille: journalier(139), rayonId: 'souk' });
   assert.equal(pauvre.ok, false);
