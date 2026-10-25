@@ -365,6 +365,9 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
     const plateau = plateauDeDeck(etage.deck);
     assert.equal(plateau.motif, 'deck', `${etage.deck} a son plateau attitré`);
     assert.ok(RPG_PLATEAUX.some((entry) => entry.id === plateau.plateau.id), `${etage.deck} : plateau livré`);
+    // La tour a sa propre table : la Fosse de l'Oubliée, le fond du puits.
+    // Les six paquets s'y battent, comme les sept du Sablier dans sa chambre.
+    assert.equal(plateau.plateau.id, 'fosse-de-l-oubliee', `${etage.deck} se bat dans la Fosse`);
     if (etage.avatar) {
       assert.ok(existsSync(CHEMIN(`cards/${cardArtId(etage.avatar)}.jpg`)),
         `${etage.id} : le portrait ${etage.avatar} est livré`);

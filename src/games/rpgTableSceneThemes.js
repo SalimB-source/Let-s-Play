@@ -290,6 +290,24 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 84, color: '#ffdca4', size: 0.026, opacity: 0.62, vx: 0.03, vy: -0.24, sway: 0.26, swayHz: 0.3, z: 1.1, zSpread: 0.85 }),
     overlay: { kind: 'ombre', color: '#2a1c3c', opacity: 0.16, speed: 0.007, scale: 2.2 },
   }),
+  // La Fosse de l'Oubliée : le fond du puits sous la tour, vu de dessus. Aucun
+  // objet 3D — la chaîne, la cloche fêlée, les parchemins et la tache d'encre
+  // sont peints aux bords, et le dallage du centre reste libre pour les cartes.
+  // Deux lumières froides seulement : la blancheur qui tombe du haut du puits
+  // et les braises violettes qui couvent dans la tache d'encre, en bas à
+  // droite. La brume remonte lentement du sol au lieu de retomber.
+  'fosse-de-l-oubliee': theme({
+    ambient: '#cfd6ea', ambientIntensity: 0.56, key: '#e6ecff', keyIntensity: 0.46,
+    keyDirection: [-0.4, -0.75, 0.85], relief: 1.55, roughness: 0.72,
+    lights: [
+      // La clarté du puits, très haute, presque immobile.
+      light({ color: '#dfe8ff', intensity: 1.9, distance: 4.8, x: 0.05, y: 0.86, z: 1.4, pulse: 0.12, pulseHz: 0.05 }),
+      // Les braises violettes de l'encre, en bas à droite : elles respirent.
+      light({ color: '#9d6bff', intensity: 1.6, distance: 3.4, x: 0.72, y: -0.74, z: 0.5, flicker: 0.22, pulse: 0.2, pulseHz: 0.11 }),
+    ],
+    particles: motes({ count: 72, color: '#c9b6ff', size: 0.028, opacity: 0.5, vx: 0.02, vy: -0.14, sway: 0.28, swayHz: 0.22, z: 0.85, zSpread: 0.8 }),
+    overlay: { kind: 'ombre', color: '#150f24', opacity: 0.2, speed: 0.006, scale: 2.4 },
+  }),
   // Le lac de glace du ciel : l'aurore glisse, la poudre scintille.
   'iles-celestes': theme({
     ambient: '#eaf4ff', key: '#e8f4ff', keyIntensity: 0.44, relief: 1.1, roughness: 0.35,

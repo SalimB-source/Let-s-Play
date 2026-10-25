@@ -169,6 +169,19 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-sablier-renverse.jpg',
     resume: 'L’intérieur du grand sablier retourné, vu de dessus à 90° : le dallage circulaire d’albâtre et de sable poli, entièrement nu au centre pour poser les cartes, que borde un anneau de laiton lisse où sont sertis des cabochons de verre coloré — crème, ambre, rouge, turquoise, glace et violet. Autour de la bague, des arcs d’orrery de laiton s’ouvrent vers les bords ; des éclats de verre, du sable d’or renversé et des traces de pas de pierre se sont répandus sur les dalles, et trois sables — safran, braise et nuit — remontent du sol vers la taille de l’heure, en spirales près de la gauche et de la droite. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
   },
+  // Le terrain de la Tour Oubliée : la Fosse de l'Oubliée, le fond du puits
+  // sous la tour, vu de dessus. Ses six étages s'y battent tous — comme le
+  // Cercle des corbeaux pour la Tour du Corbeau et le Sablier pour la tour
+  // terminale. Le dallage circulaire reste nu au centre, cerclé de ses anneaux
+  // de fer ; la chaîne rouillée, la cloche fêlée et la tache d'encre sont
+  // peintes aux bords. La brume violette monte des deux coins bas.
+  {
+    id: 'fosse-de-l-oubliee',
+    nom: 'La Fosse de l’Oubliée',
+    lieu: 'Sous la Tour Oubliée, le fond du puits comblé de dalles',
+    fichier: 'plateau-fosse-de-l-oubliee.jpg',
+    resume: 'Le fond d’un puits de pierre, vu de dessus à 90° par une nuit froide : un dallage circulaire de basalte noir et de calcaire pâle, fendu, suintant d’humidité, entièrement nu au centre pour poser les cartes, que cerclent des anneaux de pierre et quatre pitons de fer scellés dans les dalles. Aux bords seulement : la chaîne rouillée lovée dans l’angle haut gauche, la cloche de bronze fêlée couchée sur le flanc à droite, des lambeaux de parchemin vierge éparpillés, une tache d’encre séchée, et les parois du puits qui remontent en courbe sur le pourtour du cadre. Une brume violette rampe depuis les deux angles bas ; la lumière tombe de très haut, froide et blafarde. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -259,15 +272,16 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'jugement-absolu': 'sablier-renverse',
   'course-absolue': 'sablier-renverse',
   'le-sablier': 'sablier-renverse',
-  // La Tour Oubliée : ses six paquets se battent sur les dalles de la
-  // Nécropole, seule table assez sombre pour les morts sans sépulture. La tour
-  // n'a pas de plateau dédié — elle est l'anti-décor, la fosse sous la table.
-  'horde-des-fosses': 'necropole-des-dalles',
-  'cour-de-sang': 'necropole-des-dalles',
-  'cauchemars-du-gourara': 'necropole-des-dalles',
-  'cauchemars-du-registre': 'necropole-des-dalles',
-  'bestiaire-oublie': 'necropole-des-dalles',
-  'le-roi-sans-nom': 'necropole-des-dalles',
+  // La Tour Oubliée : ses six paquets se battent tous dans la Fosse de
+  // l'Oubliée, le fond du puits sous la tour. Comme pour le Sablier renversé,
+  // la table ne change plus de camp : on est chez l'Oubliée du premier au
+  // dernier palier.
+  'horde-des-fosses': 'fosse-de-l-oubliee',
+  'cour-de-sang': 'fosse-de-l-oubliee',
+  'cauchemars-du-gourara': 'fosse-de-l-oubliee',
+  'cauchemars-du-registre': 'fosse-de-l-oubliee',
+  'bestiaire-oublie': 'fosse-de-l-oubliee',
+  'le-roi-sans-nom': 'fosse-de-l-oubliee',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */

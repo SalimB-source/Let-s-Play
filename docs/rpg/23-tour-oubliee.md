@@ -276,8 +276,20 @@ mythiques uniques, une couleur).
 - **`src/games/rpgStoryTowerModels.js`** : maquette 3D (fosse sans fond, chaînes
   rompues, cloche fêlée, encre du registre) et thème de pierre unique.
 - **`src/games/rpgAmbientMusic.js`** : 62 BPM, thème « Le registre effacé ».
-- **`src/games/rpgPlateaux.js`** : les six paquets se battent sur les dalles de
-  la Nécropole (la tour est l'anti-décor : la fosse sous la table).
+- **`src/games/rpgPlateaux.js`** : **la Fosse de l'Oubliée**, plateau dédié
+  (`plateau-fosse-de-l-oubliee.jpg`, 3840×2560 en 3:2). Les six paquets s'y
+  battent tous : la table ne change plus de camp, comme dans la chambre du
+  Sablier. Le dallage circulaire reste nu au centre ; la chaîne rouillée, la
+  cloche fêlée, les parchemins vierges, la tache d'encre et les pitons de fer
+  sont peints aux bords. Vignette de profil livrée
+  (`public/profil/plateaux/fosse-de-l-oubliee.webp`, 13,9 Ko, produite par
+  `tools/make-profil-vignettes.mjs`).
+- **`src/games/rpgTableSceneThemes.js`** : décor 3D de la Fosse — aucun objet
+  maquetté, deux lumières (la clarté froide qui tombe du haut du puits, les
+  braises violettes de la tache d'encre), brume qui **monte** du sol et voile
+  d'ombre pourpre. Aucune piste musicale dédiée : en Histoire, la boucle
+  d'ambiance de la tour (62 BPM) prend le relais, comme pour le Sablier et le
+  Palais du Pharaon.
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
