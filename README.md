@@ -5461,9 +5461,10 @@ sur sa tuile — plus « au gré du deck » (dossier 20 §6.1).
   soleil. Le tribunal du sommet (`juges-de-la-necropole`) siège au **Palais du
   Pharaon**, dans la salle du trône — le dedans après le dehors, le dallage
   d'albâtre, le trône et les colonnes de lotus, sans rien qui encombre le
-  centre. Aucun des deux n'a encore de piste musicale dédiée : la Tour de la
-  Nécropole garde son ambiance, le duel libre reste silencieux sur ces deux
-  tables.
+  centre. La Nécropole des dalles joue désormais `public/Egypt.mp3` ; le
+  Palais du Pharaon n'a pas de piste dédiée. Si aucun des deux camps n'a de
+  musique de plateau, l'ambiance synthétique de la Tour prend le relais en
+  Histoire, et le duel libre reste silencieux.
 - **La Terre de Damnation a été retirée.** La Cour des Djinns et les paquets
   de Braise se jouent désormais sur la Table des Heures.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
@@ -8663,9 +8664,9 @@ La victoire suit le même calcul et donne donc la musique au vainqueur.
 - Chaque morceau est choisi une seule fois par terrain pendant le duel et
   reprend à sa position précédente quand son camp revient. Les terrains
   partageant le même fichier ne lancent jamais deux copies simultanées.
-- Si un terrain n’a pas de piste dédiée (Nécropole ou Palais), l’autre camp
-  fournit la musique. Si aucun n’en a, l’ambiance de tour reste disponible en
-  Histoire ; le duel libre reste silencieux, comme avant.
+- Si un terrain n’a pas de piste dédiée (comme le Palais du Pharaon), l’autre
+  camp fournit la musique. Si aucun n’en a, l’ambiance de tour reste disponible
+  en Histoire ; le duel libre reste silencieux, comme avant.
 - Volume, son coupé, pause d’onglet et démontage s’appliquent aux deux pistes,
   y compris pendant un fondu. Une mise à jour PvP dans un onglet masqué ne
   relance pas l’audio. Un refus d’autoplay garde l’ancien thème ; le prochain
