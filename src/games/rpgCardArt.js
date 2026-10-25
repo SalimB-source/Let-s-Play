@@ -8,6 +8,7 @@
  */
 
 import { cardArtId, cardById } from './rpgCards.js';
+import { RPG_TOUR_OUBLIEE_SET_ID } from './rpgTourOubliee.js';
 
 const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
@@ -141,10 +142,20 @@ const CARD_ART_CACHE_VERSIONS = {
  * version à chaque repeint du set.
  */
 const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
+/**
+ * La Tour Oubliée a d'abord été peinte en encrage BD, puis entièrement
+ * reprise en peinture réaliste sombre (façon Souls) : la `?v=` change donc
+ * l'URL de chaque peinture du set, et aucun cache ne peut resservir l'ancienne
+ * direction artistique sous le même nom de fichier. Incrémenter à chaque
+ * nouvelle passe sur le set.
+ */
+const SET_TOUR_OUBLIEE_ART_VERSION = 'souls-realiste-v1';
 export const cardArt = (id) => {
   const artId = cardArtId(id);
+  const carte = cardById(artId);
   const revision = CARD_ART_CACHE_VERSIONS[artId]
-    ?? (cardById(artId)?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
+    ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined)
+    ?? (carte?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
   return `${CARD_ART_BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 

@@ -281,7 +281,15 @@ mythiques uniques, une couleur).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
-  *État au 25/10* : **les 24 peintures et la miniature sont livrées.**
+  *État au 25/10 — **deuxième direction artistique**.* Le set a d'abord été
+  peint en encrage BD ; il est **entièrement repeint en peinture réaliste
+  sombre, façon Elden Ring / Dark Souls** : rendu à l'huile, clair-obscur
+  marqué, palette désaturée (gris cendré, bleu ardoise, violet meurtri, ambre
+  sale), brume atmosphérique, aucun trait d'encre ni aplat de BD. La révision de
+  cache `SET_TOUR_OUBLIEE_ART_VERSION = 'souls-realiste-v1'` (dans
+  `rpgCardArt.js`) change l'URL de chaque peinture pour qu'aucun navigateur ne
+  resserve l'ancienne passe. **À incrémenter à chaque nouvelle direction
+  artistique du set.**
 
   **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
   aucune bordure, aucun liseré, aucune marge intégrée à l'image, le cadre étant
