@@ -14,6 +14,11 @@
  *    de volume et se tait si WebAudio manque ou si le joueur coupe le son.
  */
 
+import { RPG_DWARF_DIALOGUE_SFX } from './rpgDwarfAudio.js';
+
+/** Tonnerre partagé par l'Éclair du marteau et l'arrivée du Maître. */
+export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';
+
 const SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const MASTER_VOLUME = 0.22;
 const REVERB_SECONDS = 0.68;
@@ -41,9 +46,11 @@ const GAME_LOST_SAMPLE_URL = new URL('./assets/game-lost.mp3', import.meta.url);
 const HIT_SAMPLE_URL = new URL('./assets/hit.wav', import.meta.url);
 const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.url);
 const PIRATE_DIALOGUE_SAMPLE_URL = new URL('./assets/pirate-dialogue-alright.wav', import.meta.url);
+const DWARF_DIALOGUE_SAMPLE_URL = new URL('./assets/dwarf-dialogue-my-axe-shall-speak-for-me.wav', import.meta.url);
 const CHAIN_RATTLE_SAMPLE_URL = new URL('./assets/chain-rattle.wav', import.meta.url);
 const DOCK_SOUND_SAMPLE_URL = new URL('./assets/dock-sound.mp3', import.meta.url);
 const COLD_WIND_SAMPLE_URL = new URL('./assets/cold-wind.wav', import.meta.url);
+const FOUDRE_MARTEAU_SAMPLE_URL = new URL('./assets/thunder-spark-transition-full.mp3', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
@@ -60,9 +67,11 @@ const GAME_LOST_VOLUME = 0.6;
 const HIT_VOLUME = 0.62;
 const PIRATE_AHOY_VOLUME = 0.62;
 const PIRATE_DIALOGUE_VOLUME = 0.62;
+const DWARF_DIALOGUE_VOLUME = 0.62;
 const CHAIN_RATTLE_VOLUME = 0.62;
 const DOCK_SOUND_VOLUME = 0.62;
 const COLD_WIND_VOLUME = 0.58;
+const FOUDRE_MARTEAU_VOLUME = 0.58;
 
 /** Le cliquetis de chaînes joué lorsqu'une créature avec Abordage kidnappe une créature en cale. */
 export const RPG_ABORDAGE_SFX = 'abordage';
@@ -116,7 +125,7 @@ const tone = (wave, note, at, dur, g = 0.5, options = {}) => ({
 });
 
 /**
- * Le catalogue du duel : les onze échantillons fournis plus le seul bruitage
+ * Le catalogue du duel : les échantillons fournis plus le seul bruitage
  * encore synthétisé, le survol. Les entrées `sample` documentent la durée et
  * le gain de chaque fichier ; leur lecture passe par les éléments `<audio>`
  * de `RpgAudioPlayer`.
@@ -151,11 +160,15 @@ const RPG_SFX_TABLE = {
   // L'autre accueil pirate, joué une arrivée sur deux : « Alright »
   // (Pirate_Dialogue_Alright.wav, 0,779 s — PCM 16 bits, 44,1 kHz, stéréo).
   pirate_dialogue: [{ kind: 'sample', at: 0, dur: 0.779, g: 1 }],
+  // « My axe shall speak for me » pour quatre guerriers du Nord (2,259 s).
+  [RPG_DWARF_DIALOGUE_SFX]: [{ kind: 'sample', at: 0, dur: 2.259, g: 1 }],
   // Un navire (type imprimé « Navire ») accoste : l'ambiance du quai
   // (Dock Sound_320k.mp3 — MPEG-1 Layer III, 320 kbps CBR, 48 kHz).
   navire_arrivee: [{ kind: 'sample', at: 0, dur: 2.352, g: 1 }],
   // Souffle froid du gel de masse : vent hivernal (cold-wind.wav, 2s, CC0/Pixabay).
   cold_wind: [{ kind: 'sample', at: 0, dur: 2.0, g: 1 }],
+  // Thunder Spark Transition (MPEG-1 Layer III, 320 kbps, 44.1 kHz, 3.422 s).
+  [RPG_FOUDRE_MARTEAU_SFX]: [{ kind: 'sample', at: 0, dur: 3.422, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
@@ -219,9 +232,11 @@ export class RpgAudioPlayer {
     this.hitAudio = null;
     this.pirateAhoyAudio = null;
     this.pirateDialogueAudio = null;
+    this.dwarfDialogueAudio = null;
     this.chainRattleAudio = null;
     this.dockSoundAudio = null;
     this.coldWindAudio = null;
+    this.foudreMarteauAudio = null;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -273,6 +288,9 @@ export class RpgAudioPlayer {
         this.pirateDialogueAudio = new AudioCtor(PIRATE_DIALOGUE_SAMPLE_URL.href);
         this.pirateDialogueAudio.preload = 'auto';
         this.pirateDialogueAudio.volume = PIRATE_DIALOGUE_VOLUME;
+        this.dwarfDialogueAudio = new AudioCtor(DWARF_DIALOGUE_SAMPLE_URL.href);
+        this.dwarfDialogueAudio.preload = 'auto';
+        this.dwarfDialogueAudio.volume = DWARF_DIALOGUE_VOLUME;
         this.chainRattleAudio = new AudioCtor(CHAIN_RATTLE_SAMPLE_URL.href);
         this.chainRattleAudio.preload = 'auto';
         this.chainRattleAudio.volume = CHAIN_RATTLE_VOLUME;
@@ -282,6 +300,9 @@ export class RpgAudioPlayer {
         this.coldWindAudio = new AudioCtor(COLD_WIND_SAMPLE_URL.href);
         this.coldWindAudio.preload = 'auto';
         this.coldWindAudio.volume = COLD_WIND_VOLUME;
+        this.foudreMarteauAudio = new AudioCtor(FOUDRE_MARTEAU_SAMPLE_URL.href);
+        this.foudreMarteauAudio.preload = 'auto';
+        this.foudreMarteauAudio.volume = FOUDRE_MARTEAU_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -386,9 +407,11 @@ export class RpgAudioPlayer {
       [this.hitAudio, HIT_VOLUME],
       [this.pirateAhoyAudio, PIRATE_AHOY_VOLUME],
       [this.pirateDialogueAudio, PIRATE_DIALOGUE_VOLUME],
+      [this.dwarfDialogueAudio, DWARF_DIALOGUE_VOLUME],
       [this.chainRattleAudio, CHAIN_RATTLE_VOLUME],
       [this.dockSoundAudio, DOCK_SOUND_VOLUME],
       [this.coldWindAudio, COLD_WIND_VOLUME],
+      [this.foudreMarteauAudio, FOUDRE_MARTEAU_VOLUME],
     ];
     for (const [audio, base] of samples) {
       if (!audio) continue;
@@ -419,7 +442,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === 'navire_arrivee' || name === 'cold_wind') {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === RPG_DWARF_DIALOGUE_SFX || name === 'navire_arrivee' || name === 'cold_wind' || name === RPG_FOUDRE_MARTEAU_SFX) {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -430,7 +453,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -738,6 +761,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.pirateDialogueAudio = null;
+    if (this.dwarfDialogueAudio) {
+      try {
+        this.dwarfDialogueAudio.pause?.();
+        this.dwarfDialogueAudio.removeAttribute?.('src');
+        this.dwarfDialogueAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.dwarfDialogueAudio = null;
     if (this.chainRattleAudio) {
       try {
         this.chainRattleAudio.pause?.();
@@ -762,6 +793,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.coldWindAudio = null;
+    if (this.foudreMarteauAudio) {
+      try {
+        this.foudreMarteauAudio.pause?.();
+        this.foudreMarteauAudio.removeAttribute?.('src');
+        this.foudreMarteauAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.foudreMarteauAudio = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }

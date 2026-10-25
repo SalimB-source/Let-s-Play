@@ -1,12 +1,13 @@
 /**
- * Arrivées en jeu des pirates et des navires — journaux audio du moteur et
- * routage des échantillons par `RpgAudioPlayer`.
+ * Arrivées en jeu des pirates, des navires et des guerriers du Nord — journaux
+ * audio du moteur et routage des échantillons par `RpgAudioPlayer`.
  *
  * Une créature jouée depuis la main et qui entre en jeu est classée une seule
  * fois : les navires (type imprimé « Navire », tous sets confondus) vont au
  * journal `navire_arrivee`, les autres créatures pirates du set Lettres de
- * Marque au journal `pirate_arrivee`. Les jetons, réanimations et retours de
- * cale ne sont pas des arrivées : aucun journal ne les mentionne.
+ * Marque au journal pirate, et quatre cartes nordiques au journal de la voix
+ * naine. Les jetons, réanimations et retours de cale ne sont pas des arrivées :
+ * aucun journal ne les mentionne.
  *
  * L'accueil pirate a deux voix jouées en alternance d'une arrivée à l'autre :
  * le cri « Ahoy ! » (`pirate_arrivee`) puis le dialogue « Alright »
@@ -25,11 +26,13 @@ import {
   RpgAudioPlayer,
   rpgSonArriveePirate,
 } from '../src/games/rpgAudio.js';
+import { RPG_DWARF_DIALOGUE_SFX, RPG_DWARF_DIALOGUE_CARD_IDS, rpgDwarfSoundFor } from '../src/games/rpgDwarfAudio.js';
 import { rpgEstCartePirate } from '../src/games/rpgLettresDeMarque.js';
 import { cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
 import {
   rpgConsommerArriveesNavire,
   rpgConsommerArriveesPirate,
+  rpgConsommerArriveesDwarf,
   rpgJouerCreature,
   rpgNouveauDuel,
 } from '../src/games/rpgDuel.js';
@@ -52,7 +55,7 @@ function donner(duel, cote, carteId) {
   duel[cote].main.push(carteId);
 }
 
-test('les deux échantillons d’arrivée sont livrés avec le jeu, octet pour octet', () => {
+test('les dialogues d’arrivée sont livrés avec le jeu, octet pour octet', () => {
   const dock = readFileSync(new URL('../src/games/assets/dock-sound.mp3', import.meta.url));
   assert.equal(dock.byteLength, 94125,
     'Dock Sound_320k.mp3 est conservé intact dans src/games/assets/dock-sound.mp3');
@@ -65,6 +68,12 @@ test('les deux échantillons d’arrivée sont livrés avec le jeu, octet pour o
   // Même contenu que le fichier déposé dans public/ : aucun ré-encodage.
   const publicAlright = readFileSync(new URL('../public/Pirate_Dialogue_Alright.wav', import.meta.url));
   assert.ok(alright.equals(publicAlright), 'la copie du jeu est identique octet pour octet à public/');
+
+  const dwarf = readFileSync(new URL('../src/games/assets/dwarf-dialogue-my-axe-shall-speak-for-me.wav', import.meta.url));
+  assert.equal(dwarf.byteLength, 460252,
+    'Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav est conservé intact');
+  const publicDwarf = readFileSync(new URL('../public/Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav', import.meta.url));
+  assert.ok(dwarf.equals(publicDwarf), 'la voix naine est identique octet pour octet au fichier fourni');
 });
 
 test('les deux accueils pirates alternent d’une arrivée à l’autre', () => {
@@ -87,6 +96,23 @@ test('les prédicats identifient les pirates et les navires', () => {
   assert.equal(cardHasPrintedType(cardById('cotre-de-course'), 'Navire'), true);
   assert.equal(cardHasPrintedType(cardById('drakkar-a-tete-de-dragon'), 'Navire'), true);
   assert.equal(cardHasPrintedType(cardById('mousse-des-galiotes'), 'Navire'), false);
+});
+
+test('la voix naine est réservée aux quatre guerriers désignés', () => {
+  assert.deepEqual([...RPG_DWARF_DIALOGUE_CARD_IDS], [
+    'guerrier-au-bouclier-rond',
+    'berserk-des-trois-hivers',
+    'jarl-au-marteau-de-guerre',
+    'berserk-du-crepuscule',
+  ]);
+  for (const cardId of RPG_DWARF_DIALOGUE_CARD_IDS) {
+    assert.equal(rpgDwarfSoundFor(cardId, 'arrival'), RPG_DWARF_DIALOGUE_SFX, `${cardId} reçoit le dialogue`);
+    assert.equal(rpgDwarfSoundFor(cardById(cardId), 'arrival'), RPG_DWARF_DIALOGUE_SFX,
+      `${cardId} est reconnu depuis sa fiche`);
+    assert.equal(rpgDwarfSoundFor(cardId, 'spell'), null, 'le son n’est pas un bruitage de sort');
+  }
+  assert.equal(rpgDwarfSoundFor('loup-des-neiges', 'arrival'), null,
+    'les autres créatures neigeuses restent sans cette réplique');
 });
 
 test('une pirate non-navire journalise une arrivée pirate, jamais une arrivée navire', () => {
@@ -140,6 +166,24 @@ test('une créature ordinaire d’un autre set ne déclenche aucun journal d’a
   assert.deepEqual(rpgConsommerArriveesNavire(duel), []);
 });
 
+test('les quatre guerriers désignés journalisent leur voix naine, pour les deux camps', () => {
+  for (const [index, carteId] of RPG_DWARF_DIALOGUE_CARD_IDS.entries()) {
+    const cote = index % 2 === 0 ? 'joueur' : 'sorcier';
+    const duel = duelDeTest();
+    donner(duel, cote, carteId);
+    const pose = rpgJouerCreature(duel, cote, carteId);
+    assert.equal(pose.ok, true, `${carteId} entre en jeu`);
+    assert.deepEqual(rpgConsommerArriveesDwarf(duel), [{
+      entityId: pose.entite.id,
+      carteId,
+      cote,
+    }]);
+    assert.deepEqual(rpgConsommerArriveesDwarf(duel), [], 'le journal se vide après consommation');
+    assert.deepEqual(rpgConsommerArriveesPirate(duel), []);
+    assert.deepEqual(rpgConsommerArriveesNavire(duel), []);
+  }
+});
+
 test('La Barbe-Rousse journalise son arrivée, mais pas le jeton Corsaire qu’elle crée', () => {
   const duel = duelDeTest();
   donner(duel, 'joueur', 'la-barbe-rousse');
@@ -172,9 +216,10 @@ test('le sorcier adverse journalise aussi ses arrivées, du bon côté', () => {
   assert.deepEqual(rpgConsommerArriveesPirate(duel), []);
 });
 
-test('RpgAudioPlayer route les quatre échantillons maritimes vers les bons fichiers', () => {
+test('RpgAudioPlayer route les dialogues d’arrivée et d’abordage vers les bons fichiers', () => {
   assert.ok(RPG_SFX_NAMES.includes('pirate_arrivee'));
   assert.ok(RPG_SFX_NAMES.includes('pirate_dialogue'));
+  assert.ok(RPG_SFX_NAMES.includes(RPG_DWARF_DIALOGUE_SFX));
   assert.ok(RPG_SFX_NAMES.includes('navire_arrivee'));
   assert.ok(RPG_SFX_NAMES.includes('abordage'));
 
@@ -221,28 +266,33 @@ test('RpgAudioPlayer route les quatre échantillons maritimes vers les bons fich
     player.unlock();
     assert.match(player.pirateAhoyAudio.src, /pirate-ahoy\.mp3$/);
     assert.match(player.pirateDialogueAudio.src, /pirate-dialogue-alright\.wav$/);
+    assert.match(player.dwarfDialogueAudio.src, /dwarf-dialogue-my-axe-shall-speak-for-me\.wav$/);
     assert.match(player.dockSoundAudio.src, /dock-sound\.mp3$/);
     assert.match(player.chainRattleAudio.src, /chain-rattle\.wav$/);
 
     player.play(RPG_PIRATE_ARRIVEE_SFX);
     player.play(RPG_PIRATE_DIALOGUE_SFX);
+    player.play(RPG_DWARF_DIALOGUE_SFX);
     player.play(RPG_NAVIRE_ARRIVEE_SFX);
     player.play(RPG_ABORDAGE_SFX);
     const fichiers = lectures.map((l) => l.src.split('/').pop());
     assert.deepEqual(fichiers, [
-      'pirate-ahoy.mp3', 'pirate-dialogue-alright.wav', 'dock-sound.mp3', 'chain-rattle.wav',
+      'pirate-ahoy.mp3', 'pirate-dialogue-alright.wav', 'dwarf-dialogue-my-axe-shall-speak-for-me.wav',
+      'dock-sound.mp3', 'chain-rattle.wav',
     ]);
 
     player.setMuted(true);
     const avantMute = lectures.length;
     player.play(RPG_PIRATE_ARRIVEE_SFX);
     player.play(RPG_PIRATE_DIALOGUE_SFX);
+    player.play(RPG_DWARF_DIALOGUE_SFX);
     player.play(RPG_NAVIRE_ARRIVEE_SFX);
     assert.equal(lectures.length, avantMute, 'muet : aucun son d’arrivée supplémentaire');
 
     player.destroy();
     assert.equal(player.pirateAhoyAudio, null);
     assert.equal(player.pirateDialogueAudio, null);
+    assert.equal(player.dwarfDialogueAudio, null);
     assert.equal(player.dockSoundAudio, null);
     assert.equal(player.chainRattleAudio, null);
   } finally {
