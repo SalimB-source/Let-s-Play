@@ -617,8 +617,9 @@ quelque chose attend (une réclamation, une mythique promise à 0 paquet).
 1. **La bourse** — le solde `◈ 1 240`, la série de jours joués, et le compte à
    rebours du cycle (« le cycle se referme dans 7 h 12 »).
 2. **Les quêtes du jour** — trois cartes, une barre de progression par quête,
-   la récompense, le bouton **Réclamer** (désactivé et expliqué si l'objectif
-   n'est pas atteint), puis le **Cachet du cycle** quand les trois sont prises.
+   la récompense, le bouton **Réclamer** (**secondaire** et désactivé tant que
+   l'objectif n'est pas atteint, avec ce qu'il reste écrit dessous), puis le
+   **Cachet du cycle** quand les trois sont prises.
 3. **Le comptoir** — un seul booster en volume (un sachet scellé de trois
    quarts, au laiton du Souk) qui **est lui-même le bouton d'achat**, avec une
    ligne de taux, « N cartes sur M vous manquent encore », et le motif du refus
@@ -707,7 +708,10 @@ porte la pastille des réclamations dues.
 
 Trois détails tenus au passage : le bouton **Réclamer** est désactivé tant que
 l'objectif n'est pas atteint, et il écrit ce qu'il reste (« Il reste 4 à
-faire ») ; le compte à rebours du cycle se rafraîchit tout seul, sans dépendre
+faire ») ; dans cet état il est **secondaire** — même gabarit, même cible de
+doigt, mais sans l'or du bouton primaire, qui n'apparaît qu'une fois la
+récompense réellement due (`data-souk-reclamer-etat` vaut `attente`, puis
+`pret`) ; le compte à rebours du cycle se rafraîchit tout seul, sans dépendre
 d'une animation ; et l'écran **ne touche à aucun stockage** — il reçoit des états
 et rend des gestes, tout passe par `useSablierBourse`.
 

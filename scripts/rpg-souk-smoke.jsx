@@ -316,6 +316,11 @@ export async function checkRpgSoukEcran(assert) {
       const bouton = noeud(`[data-souk-reclamer="${quete.id}"]`);
       assert.ok(bouton, `${quete.id} a son bouton Réclamer`);
       assert.ok(bouton.disabled, 'désactivé tant que l’objectif n’est pas atteint');
+      assert.ok(bouton.classList.contains('rpg-menu-button--secondary'),
+        'et il est en état secondaire : le laiton n’est pas encore dû');
+      assert.ok(!bouton.classList.contains('rpg-menu-button--primary'),
+        'donc pas en primaire avant l’objectif');
+      assert.equal(bouton.dataset.soukReclamerEtat, 'attente', 'son état se lit dans le DOM');
       assert.match(bouton.title, /^Il reste \d+/, 'et il dit ce qu’il reste');
       assert.ok(noeud(`[data-souk-quete="${quete.id}"] [data-souk-reste]`) !== null,
         'la carte écrit aussi ce qu’il reste');      const recompense = noeud(`[data-souk-quete="${quete.id}"] .rpg-souk__recompense`);
@@ -339,6 +344,12 @@ export async function checkRpgSoukEcran(assert) {
     assert.equal(donnee(`[data-souk-quete="${premiere.id}"]`, 'soukQueteEtat'), 'terminee');
     assert.equal(noeud(`[data-souk-reclamer="${premiere.id}"]`).disabled, false,
       'le bouton s’active quand l’objectif est atteint');
+    assert.ok(noeud(`[data-souk-reclamer="${premiere.id}"]`).classList.contains('rpg-menu-button--primary'),
+      'et il passe en primaire : la récompense est due');
+    assert.ok(!noeud(`[data-souk-reclamer="${premiere.id}"]`).classList.contains('rpg-menu-button--secondary'),
+      'il quitte l’état secondaire');
+    assert.equal(noeud(`[data-souk-reclamer="${premiere.id}"]`).dataset.soukReclamerEtat, 'pret',
+      'son état le dit aussi');
     assert.match(noeud(`[data-souk-reclamer="${premiere.id}"]`).textContent, new RegExp(String(premiere.recompense)),
       'et il annonce le montant qu’il paie');
     // Le panneau de l'onglet Jouer voit la même barre se remplir, et propose

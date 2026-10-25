@@ -6843,6 +6843,28 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-menu-button--primary { background: linear-gradient(135deg, #e5c06b, #b77d32); border-color: #f0d994; color: #21170d; box-shadow: 0 8px 28px rgba(197, 139, 53, .2); }
 .rpg-menu-button--primary:hover,
 .rpg-menu-button--primary:focus-visible { background: linear-gradient(135deg, #ffdda0, #d99d48); color: #1c130b; }
+/* Le bouton secondaire : même gabarit, même cible de doigt, mais il ne porte
+   pas l'appel du laiton. C'est l'état d'un geste qui existe et qui attend —
+   par exemple « Réclamer » tant que l'objectif de la quête n'est pas atteint.
+   Le survol ne l'allume pas comme un primaire : il l'éclaire d'un cran. */
+.rpg-menu-button--secondary {
+  border-color: rgba(232, 194, 113, .34);
+  background: rgba(255, 255, 255, .04);
+  color: rgba(244, 221, 176, .82);
+  box-shadow: none;
+}
+.rpg-menu-button--secondary:hover:not(:disabled),
+.rpg-menu-button--secondary:focus-visible:not(:disabled) {
+  background-color: rgba(92, 59, 28, .58);
+  color: #f7e6c3;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .22);
+}
+.rpg-menu-button--secondary:disabled,
+.rpg-menu-button--secondary[disabled] {
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
 /* Le bouton « Mode histoire » se distingue du duel : bleu clair, pas le laiton. */
 .rpg-menu-button--primary.rpg-menu-button--histoire {
   background: linear-gradient(135deg, #bfe2f7, #6fb3dc);

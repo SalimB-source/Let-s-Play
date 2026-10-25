@@ -159,13 +159,17 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx, onCelebrate }) {
           +{quete.recompense} <RpgCreditIcon />
           <span className="sr-only">crédits</span>
         </span>
+        {/* Pas encore achevée, le bouton est **secondaire** : il garde sa place
+            et son gabarit de doigt, mais l’or du primaire reste réservé au
+            moment où la récompense est réellement due. */}
         {reclamee ? (
           <span className="rpg-souk__pris">Réclamée</span>
         ) : (
           <button
             type="button"
-            className="rpg-menu-button rpg-menu-button--primary"
+            className={`rpg-menu-button ${terminee ? 'rpg-menu-button--primary' : 'rpg-menu-button--secondary'}`}
             data-souk-reclamer={id}
+            data-souk-reclamer-etat={terminee ? 'pret' : 'attente'}
             disabled={!terminee}
             title={terminee ? `Encaisser ${quete.recompense} crédits` : `Il reste ${reste} à faire`}
             onClick={reclamer}

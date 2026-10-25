@@ -171,6 +171,15 @@
   transform: none;
   box-shadow: none;
 }
+/* Une quête pas encore achevée garde un bouton **secondaire** lisible : il
+   n'appelle pas, mais on doit voir qu'il est là et lire ce qu'il attend. Le
+   gris du désactivé générique l'effacerait. */
+.rpg-souk .rpg-souk__quete-pied .rpg-menu-button--secondary:disabled,
+.rpg-souk .rpg-souk__quete-pied .rpg-menu-button--secondary[disabled] {
+  border-color: rgba(235, 215, 176, .28);
+  background: rgba(255, 255, 255, .045);
+  color: rgba(247, 237, 218, .62);
+}
 .rpg-souk__pris { color: rgba(247, 237, 218, .5); font: 800 9px/1.4 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; }
 .rpg-souk__quete-note { margin: 0; color: rgba(247, 237, 218, .46); font: 700 9.5px/1.4 var(--mono, monospace); letter-spacing: .06em; }
 
