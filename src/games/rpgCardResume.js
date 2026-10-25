@@ -39,7 +39,7 @@ const RACCOURCIS = [
   [/Mur\s*[-—:]\s*Cette créature ne peut pas attaquer et ne peut pas être équipée\.?/gu, 'Mur : ne peut pas attaquer.'],
   [/Doit bloquer\s*[-—:]\s*Cette créature doit bloquer une créature attaquante adverse chaque tour si possible\.?/gu, 'Doit bloquer.'],
   [/Priorité d[’']attaque rapide\s*[-—:]\s*Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent\.?/gu, 'Attire les attaques rapides.'],
-  [/Coup rapide\s*[-—:]\s*Sélectionné[e]? pour attaquer,[^.]*\./gu, 'Coup rapide : frappe avant le combat.'],
+  [/Coup rapide\s*[-—:]\s*Sélectionné[e]? pour attaquer,[^.]*\./gu, 'Coup rapide : peut attaquer n’importe quelle créature adverse.'],
   [/Contre-attaque\s*[-—:]\s*Quand une créature adverse le frappe avec Coup rapide ou le cible avec une capacité, Eirik lui inflige ses dégâts d[’']attaque ; quand c[’']est un sort qui le cible, la riposte frappe le sorcier adverse\.?/gu, 'Contre-attaque : riposte aux coups et aux sorts.'],
 ];
 
