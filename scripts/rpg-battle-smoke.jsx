@@ -330,8 +330,10 @@ export async function checkRpgBattle(assert) {
   await act(async () => { cavalierCatalogue.querySelector('[data-catalogue-open]').click(); });
   const apercuCavalierCatalogue = container.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
   assert.ok(apercuCavalierCatalogue, 'le clic sur une carte du catalogue ouvre sa fiche en grand');
-  assert.equal(apercuCavalierCatalogue.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '5',
-    'la fiche du Cavalier montre son coût de cinq manas');
+  assert.equal(apercuCavalierCatalogue.querySelector('.rpg-hover-card-preview__cost'), null,
+    'l’aperçu n’affiche plus le coût : il se lit sur la face de la carte');
+  assert.equal(apercuCavalierCatalogue.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Cavalier amazigh du Désert',
+    'la fiche porte le nom de la carte');
   await act(async () => {
     [...container.querySelectorAll('.rpg-mode-menu__switch button')]
       .find((button) => button.textContent.includes('Deck')).click();
@@ -522,9 +524,9 @@ export async function checkRpgBattle(assert) {
   assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /Terrain/,
     'l’aperçu concis affiche le type de la carte');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__cost'), null,
-    'un terrain conserve la règle de ne pas afficher de coût');
-  assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules'), null,
-    'l’aperçu n’imprime plus la règle : la production de mana se lit sur la face');
+    'l’aperçu n’affiche plus de coût, pour aucun type de carte');
+  assert.match(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /mana ⏳/,
+    'l’aperçu écrit ce que fait la carte : la production de mana, avec son icône');
   assert.match(apercuTerrainSurvol.getAttribute('aria-label'), /mana sable/,
     'le texte accessible conserve le nom de la couleur de mana');
   assert.equal(apercuTerrainSurvol.querySelector('.rpg-hover-card-preview__stats'), null,
@@ -720,15 +722,17 @@ export async function checkRpgBattle(assert) {
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__pastilles .rpg-pastille__explication'), null,
     'aucune explication ne s’écrit sous un mot-clé');
   assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__rules'), null,
-    'l’aperçu n’imprime plus le bloc « Effets » : la règle se lit au survol des mots-clés');
+    'une créature 100 % mots-clés génériques n’écrit aucune description : ses pastilles suffisent');
   assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__hint')?.textContent ?? '', /Survolez un mot-clé pour lire son effet/,
     'l’indication de survol accompagne les mots-clés');
-  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type'), null,
-    'l’aperçu d’une créature n’imprime pas de ligne de type');
+  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__name')?.textContent, 'Fennec des décombres',
+    'l’aperçu porte le nom de la carte');
+  assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__type')?.textContent ?? '', /Fennec/,
+    'l’aperçu affiche le type de la créature');
   assert.match(apercuFennecSurvol.getAttribute('aria-label') ?? '', /Fennec/,
     'le type de la créature reste dans le libellé accessible de l’aperçu');
-  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost b')?.textContent, '2',
-    'l’aperçu affiche le coût');
+  assert.equal(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__cost'), null,
+    'l’aperçu n’affiche plus le coût');
   assert.match(apercuFennecSurvol.querySelector('.rpg-hover-card-preview__pastilles')?.textContent ?? '', /Rapidité.*Butin/,
     'l’aperçu affiche les effets importants');
   const statsApercu = apercuFennecSurvol.querySelector('.rpg-hover-card-preview__face .rpg-card__foot');
@@ -1466,8 +1470,8 @@ export async function checkRpgBattle(assert) {
   const apercuAmayas = protectionContainer.querySelector('.rpg-hover-card-preview:not(.is-spell-preview)');
   assert.equal(apercuAmayas?.querySelector('.rpg-card-protection--braise, .rpg-card-stat-boost'), null,
     'l’aperçu de la créature n’affiche pas d’icône d’effet');
-  assert.equal(apercuAmayas?.querySelector('.rpg-hover-card-preview__rules'), null,
-    'l’aperçu de la créature n’imprime plus la règle');
+  assert.match(apercuAmayas?.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il meurt : piochez une carte/,
+    'l’aperçu écrit ce que fait la créature : la pioche à sa mort');
   assert.ok(apercuAmayas?.querySelector('.rpg-hover-card-preview__pastilles .rpg-pastille[data-pastille="protection"]'),
     'la protection reste lisible en mot-clé survolable');
   assert.match(apercuAmayas?.querySelector('.rpg-hover-card-preview__hint')?.textContent ?? '', /Survolez un mot-clé/,

@@ -216,10 +216,10 @@ const apercuDom = (html) => {
     const furie = racine.querySelector('.rpg-pastille[data-pastille="furie"]');
     assert.ok(furie, 'la Furie du Guerrier reste rendue');
     assert.equal(furie.classList.contains('is-epuisee'), false, 'seul le Bouclier est grisé');
-    // L'aperçu n'imprime plus de ligne de règle : l'état « bouclier tombé »
-    // se lit sur la pastille grise, sa description reste dans son libellé.
-    assert.equal(racine.querySelector('.rpg-hover-card-preview__rules'), null,
-      'l’aperçu n’imprime plus la règle du bouclier, seulement sa pastille grisée');
+    // La description du Guerrier reste écrite : la phrase du bouclier est ce
+    // que la carte fait (l'état « tombé » grise la pastille et le libellé).
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : il reçoit un bouclier de 1/,
+      'l’aperçu écrit ce que fait le Guerrier : le bouclier reçu à son arrivée');
   } finally {
     dom.window.close();
   }
@@ -249,10 +249,10 @@ const apercuDom = (html) => {
   const { dom, racine } = apercuDom(apercus.salemEpuise);
   try {
     assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier');
-    // L'aperçu du Salem n'imprime plus ses phrases : l'état « bouclier » reste
-    // annoncé dans le libellé accessible du volet, sans règle écrite.
-    assert.equal(racine.querySelector('.rpg-hover-card-preview__rules'), null,
-      'les phrases du bouclier de lumière ne s’impriment plus dans l’aperçu');
+    // Les phrases propres du Salem restent écrites : elles décrivent son
+    // bouclier de lumière, au-delà du mot-clé Rapidité porté en pastille.
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /bouclier de lumière/,
+      'l’aperçu écrit le bouclier de lumière du Salem');
     assert.match(racine.getAttribute('aria-label') ?? '', /[Bb]ouclier/,
       'et le libellé du volet reste celui qui nomme le bouclier de lumière');
   } finally {

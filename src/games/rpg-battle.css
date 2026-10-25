@@ -4471,7 +4471,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline-offset: 1px;
 }
 .rpg-hover-card-preview__type,
-.rpg-hover-card-preview__cost,
 .rpg-hover-card-preview__stats {
   display: flex;
   align-items: baseline;
@@ -4489,9 +4488,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: rgba(5, 8, 11, .3);
   color: #f7dba9;
 }
-.rpg-hover-card-preview__cost { justify-content: flex-start; color: #f3e7cc; }
-.rpg-hover-card-preview__cost b { color: #ffe9a0; font: 900 18px/1 var(--mono, monospace); }
-.rpg-hover-card-preview__cost small { color: rgba(255, 240, 207, .94); font: 700 11px/1.25 var(--mono, monospace); }
 /* Une vraie petite carte d'arme (illustration, coût, nom et effet) dans la
    fiche du porteur. Le survol reste compact ; la fiche ouverte montre le texte
    entier et peut défiler. Plusieurs armes tiennent côte à côte si possible. */
@@ -4558,10 +4554,42 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .04em;
   text-align: right;
 }
+/* L'aperçu rapide porte le nom de la carte : il reste plus discret que le
+   titre d'une fiche ouverte, la pastille des mots-clés gardant la place. */
+.rpg-hover-card-preview--texte-seul .rpg-hover-card-preview__name {
+  font-size: 19px;
+}
 /* La consigne suit le geste : la souris survole, le doigt touche. */
 .rpg-hover-card-preview__hint-tactile { display: none; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
+/* La description écrite : ce que fait la carte — hors les phrases des
+   mots-clés génériques, qui vivent dans leurs pastilles et leur bulle. */
+.rpg-hover-card-preview__rules {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  max-height: min(32vh, 11em);
+  margin: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 214, 172, .35) transparent;
+  padding-right: 4px;
+  color: #fff8e8;
+  font: 500 14px/1.45 Georgia, serif;
+}
+.rpg-hover-card-preview__rules::-webkit-scrollbar { width: 6px; }
+.rpg-hover-card-preview__rules::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: rgba(236, 214, 172, .35);
+}
+.rpg-hover-card-preview__rules > span {
+  display: block;
+  padding-left: 7px;
+  border-left: 1px solid rgba(237, 203, 139, .38);
+}
 .rpg-hover-card-preview__stats { justify-content: flex-start; color: #ffe9a0; font-size: 18px; font-weight: 900; white-space: nowrap; }
 .rpg-hover-card-preview__stats span { color: #e1cb9c; }
 .rpg-hover-card-preview__furie {
@@ -4596,9 +4624,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hover-card-preview__details { gap: 6px; padding: 8px 10px; }
   .rpg-hover-card-preview__type,
-  .rpg-hover-card-preview__cost { font-size: 12px; }
-  .rpg-hover-card-preview__cost b { font-size: 13px; }
-  .rpg-hover-card-preview__cost small { font-size: 9px; }
+  .rpg-hover-card-preview__rules { font-size: 12px; }
   .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 7px; }
   .rpg-hover-card-preview__weapon-art { flex-basis: 46px; width: 46px; border-width: 3px; }
   .rpg-hover-card-preview__weapon strong { font-size: 11px; }
@@ -4778,8 +4804,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 800 12px/1.35 var(--mono, monospace);
   letter-spacing: .05em;
 }
-.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost { font-size: 16px; }
-.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost b { font-size: 22px; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__stats { font-size: 21px; }
 
 /* Le bas du volet : « Fermer la fiche ». La fiche ne montre qu'une carte —
@@ -4821,7 +4845,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { gap: 7px; padding: 8px 12px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__name { font-size: 20px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__type { font-size: 13px; line-height: 1.45; }
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__cost b { font-size: 17px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__stats { font-size: 17px; }
 }
 
@@ -8537,7 +8560,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 13px;
   line-height: 1.15;
 }
-.rpg-hover-card-preview__cost b { font-size: 18px; }
 .rpg-hover-card-preview__stats { font-size: 18px; }
 .rpg-card-catalogue__cost { width: var(--rpg-card-marker-size, 24px); font-size: 17px; }
 .rpg-card-catalogue__meta b { font-size: 10px; }
@@ -8565,7 +8587,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     font-size: 9.5px;
     line-height: 1.1;
   }
-  .rpg-hover-card-preview__cost b { font-size: 14px; }
   .rpg-hover-card-preview__stats { font-size: 14px; }
   .rpg-card-catalogue__cost { width: var(--rpg-card-marker-size, 24px); font-size: 16px; }
   .rpg-card-catalogue__meta b { font-size: 9px; }
@@ -8825,12 +8846,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 15px;
   line-height: 1.25;
 }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost {
-  gap: 8px;
-  font-size: 15px;
-}
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 18px; }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 11px; }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target {
   gap: 8px;
   min-height: 32px;
@@ -9028,9 +9043,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hover-card-preview__eyebrow { font-size: 8px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type { font-size: 12px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 5px; font-size: 11px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 14px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 20px; height: 26px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
     width: 20px;
