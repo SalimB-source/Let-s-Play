@@ -317,7 +317,7 @@ La nouvelle montagne est une variante commune de Montagne : même mana Braise,
 mais une peinture autonome. Elle remplace huit Montagnes uniquement dans le
 préconstruit Soleil rouge ; les anciens terrains ne sont pas repeints.
 Le Sabre maudit est une arme rare à 4 mana, attachée à une créature alliée via
-le ciblage des magies : +5/-2 et Coup rapide permanents tant que le porteur
+le ciblage des magies : +5/-2 et une Attaque ciblée permanente tant que le porteur
 reste en jeu. Il quitte le jeu avec lui (mort ou renvoi en main), au cimetière.
 Deux sabres remplacent un exemplaire de Frappe d’iaijutsu et un des Feux de
 kitsune : le deck reste à quarante cartes et seize terrains. Le terrain est

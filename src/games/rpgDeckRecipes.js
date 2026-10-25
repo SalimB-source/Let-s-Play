@@ -209,7 +209,7 @@ export const RPG_RECETTES_DECKS = {
    * marque ; le Grand Débarquement arme les cales pleines), la prise paie (Négociant), la Cargaison
    * assure (Galion) et la Mousse des galiotes hisse la voile dès le premier
    * mana. Le
-   * Hollandais volant — vaisseau fantôme au Coup rapide et à l'Abordage 3 —
+   * Hollandais volant — vaisseau fantôme à l’Attaque ciblée et à l'Abordage 3 —
    * hante la flotte en second grand voilier, aux côtés du Galion. L'Eau qui
    * amollit la prise vient du catalogue (Sonneur fêlé, Ressac, Lame de mer,
    * Bâton des citernes) ; le remplissage choisit les meilleures cartes

@@ -3649,7 +3649,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played__target b { overflow: hidden; color: #fff0c6; font: 700 10px/1.1 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Lueur rouge = « visée » ──────────────────────────────────────────────────
-   Toute créature ciblée par une attaque (Coup rapide), une magie, une
+   Toute créature ciblée par une attaque ciblée, une magie, une
    sorcellerie ou n'importe quel effet de carte s'allume en rouge, quel que
    soit son camp : on voit immédiatement qui va être frappé. Le rouge est
    celui du combat déjà employé pour la créature engagée (`is-attacked
@@ -10882,7 +10882,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-partie-rapide__deck { transition: none; }
 }
 
-/* ── Texte flottant « MISS » au-dessus de la créature qui rate son Coup rapide ── */
+/* ── Texte flottant « MISS » au-dessus de la créature qui rate son Attaque ciblée ── */
 .rpg-card.is-miss {
   overflow: visible;
   z-index: 8;

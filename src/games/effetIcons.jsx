@@ -315,7 +315,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
   if (entite) {
     if (entite.infiltration) ajouter('infiltration', 'Infiltration');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
-    if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Coup rapide');
+    if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
     if (entite.provocation) ajouter('provocation', 'Provocation');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
     if (entite.overkill) ajouter('overkill', 'Overkill');

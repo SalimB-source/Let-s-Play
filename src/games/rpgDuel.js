@@ -1225,7 +1225,7 @@ function creerEntiteCreature(carte) {
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
     // Contre-attaque (Tojiro, Eirik) : la créature rend chaque coup porté
-    // CONTRE elle — Coup rapide, capacité qui la cible, sort qui la désigne —
+    // CONTRE elle — Attaque ciblée, capacité qui la cible, sort qui la désigne —
     // même quand une Esquive a annulé les blessures.
     contreAttaque: Boolean(carte.contreAttaque),
     // Le surcoût du porteur d’une arme (le Grappin d’abordage) : le mana déjà
@@ -1768,7 +1768,7 @@ function tenterEsquive(duel, entite, sourceType) {
 
 /**
  * La Contre-attaque est une riposte IMMÉDIATE, sans jet de dés. Elle frappe
- * la créature qui a porté le coup (un Coup rapide, une
+ * la créature qui a porté le coup (une attaque ciblée, une
  * capacité qui le ciblait) ou, pour un sort, le sorcier qui l'a lancé — la
  * magie se paie sur le visage du lanceur.
  *
@@ -1819,7 +1819,7 @@ function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
  *  les capacités de destruction des créatures.
  *
- *  Rend les Esquives réussies contre des ATTAQUES (hors Coup rapide, traité
+ *  Rend les Esquives réussies contre des ATTAQUES (hors Attaque ciblée, traitée
  *  par l'appelant) : l'appelant y lit les Contre-attaques à déclencher une
  *  fois l'échange terminé. */
 function appliquerDegatsDeCombatSimultanes(duel, coups) {
@@ -1843,7 +1843,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
     }
     if (tenterEsquive(duel, entite, coup.sourceType)) {
       // Une attaque esquivée reste une attaque portée : Contre-attaque se
-      // déclenche. Les Coup rapide sont déjà comptés par `rpgLancerAttaque`
+      // déclenche. Les attaques ciblées sont déjà comptées par `rpgLancerAttaque`
       // (`rapide`), pour ne pas riposter deux fois.
       if (!coup.rapide && coup.sourceType === 'attaque' && coup.sourceCote && coup.sourceId) {
         esquivesContre.push({
@@ -2630,7 +2630,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       porteur.pv += effet.def ?? 0;
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
-      duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : +${effet.atk}/${effet.def}, Coup rapide.`);
+      duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : +${effet.atk}/${effet.def}, Attaque ciblée.`);
       return;
     }
     case 'transfert': {
@@ -4472,7 +4472,7 @@ const peutBloquerPourResolution = (entite) => entite && !estSite(entite) && !ent
 
 /**
  * Qui peut bloquer qui :
- * — Coup rapide : l'attaquant qui frappe une créature (`frappeRapide` vrai)
+ * — Attaque ciblée : l'attaquant qui frappe une créature (`frappeRapide` vrai)
  *   voit son attaque s'arrêter sur sa frappe — il n'y a plus rien à bloquer ;
  * — Infiltration : l'attaquant ne peut pas être bloqué du tout, par personne.
  *   Elle peut être permanente (imprimée, ou conférée par l'arme portée) ou
@@ -4562,7 +4562,7 @@ export function rpgProvocationValide(
  * à un attaquant qu'elle peut légalement bloquer. Le moteur ne complète pas
  * l'affectation à sa place : sans cette déclaration, le combat n'est pas
  * recevable. Une créature marquée qui n'a aucun blocage légal (Envol,
- * Infiltration, Protection, frappe de Coup rapide déjà dirigée contre une
+ * Infiltration, Protection, frappe d’Attaque ciblée déjà dirigée contre une
  * créature…) n'a évidemment rien à déclarer.
  */
 export function rpgBlocageForceValide(
@@ -4974,7 +4974,7 @@ export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
  * bloqueurs (répartition égale par défaut si aucune n'est fournie).
  * `blocages === null` laisse l'IA affecter automatiquement ses bloqueurs.
  *
- * `ciblesAttaque` porte le CHOIX du Coup rapide, attaquant par attaquant :
+ * `ciblesAttaque` porte le CHOIX de l’Attaque ciblée, attaquant par attaquant :
  * l'identifiant d'une créature adverse à frapper — la frappe tombe avant les
  * blessures de combat, l'attaque s'arrête là et l'attaquant n'est alors ni
  * bloqué ni porté sur le sorcier — ou rien du tout, et l'attaquant attaque
@@ -5057,7 +5057,7 @@ export function rpgLancerAttaque(
     || Object.keys(ciblesRapides).some((id) => !ids.includes(id))) {
     return { ok: false, raison: 'cible' };
   }
-  // Le Coup rapide est un CHOIX, attaquant par attaquant : frapper une créature
+  // L’Attaque ciblée est un CHOIX, attaquant par attaquant : frapper une créature
   // adverse — l'attaque s'arrête alors sur cette frappe — ou attaquer
   // normalement, vers le sorcier. Sans cible désignée il n'y a rien à frapper,
   // et la déclaration reste parfaitement légale : l'attaquant rejoint la vague
@@ -5204,7 +5204,7 @@ export function rpgLancerAttaque(
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
   const degatsAvantCombat = [];
-  // Le Coup rapide frappe AVANT les blessures de combat : la créature désignée à
+  // L’Attaque ciblée frappe AVANT les blessures de combat : la créature désignée à
   // la déclaration encaisse les dégâts d'attaque, sans riposte, avec 30 % de
   // chances de rater sa cible (alors qu'attaquer l'adversaire normalement touche
   // à 100 %). C'est un choix — et il coupe court : l'attaquant qui a frappé
@@ -5505,15 +5505,15 @@ export function rpgLancerAttaque(
   }
   for (const coup of resume.coupsRapides) {
     duel.log.push(coup.annule
-      ? `${coup.attaquant} ne trouve plus sa cible : son Coup rapide est annulé.`
+      ? `${coup.attaquant} ne trouve plus sa cible : son Attaque ciblée est annulée.`
       : coup.rate
-        ? `${coup.attaquant} rate son Coup rapide contre ${coup.cible}.`
-        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Coup rapide${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}${coup.critique ? ` — Coup critique ×${coup.critiqueFois} !` : ''}.`);
+        ? `${coup.attaquant} rate son Attaque ciblée contre ${coup.cible}.`
+        : `${coup.attaquant} inflige ${coup.degats} dégâts à ${coup.cible} avec Attaque ciblée${coup.traque ? ` (Traque +${coup.traque}/+0)` : ''}${coup.critique ? ` — Coup critique ×${coup.critiqueFois} !` : ''}.`);
   }
   for (const traque of traquesCombat) {
     duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);
   }
-  // Contre-attaque : la cible d'un Coup rapide rend le coup, qu'elle ait
+  // Contre-attaque : la cible d’une attaque ciblée rend le coup, qu'elle ait
   // encaissé la frappe ou qu'elle l'ait esquivée — seule une frappe RATÉE ne
   // lui laisse rien à rendre. La cible tombée sous le coup, elle, ne riposte
   // plus (`riposteDeContreAttaque` lit ses PV). La riposte est résolue après
@@ -5533,7 +5533,7 @@ export function rpgLancerAttaque(
     duel.log.push('Le grand voile blanc absorbe les dégâts de combat.');
   }
   // Bilan des blessures portées par chaque attaquant, armes du Sable
-  // comprises : le Coup rapide compte, la riposte des bloqueurs non
+  // comprises : l’Attaque ciblée compte, la riposte des bloqueurs non
   // (`coupsNormaux` contient les deux sens), et le Grand Voile blanc efface
   // tout ce qui visait le sorcier.
   const ajouterBlessure = (carnet, id, montant) => carnet.set(id, (carnet.get(id) ?? 0) + Math.max(0, Number(montant) || 0));
@@ -5581,7 +5581,7 @@ export function rpgLancerAttaque(
 /**
  * Résolution d'une attaque qui n'a pas été bloquée par une créature — le
  * raccourci d'une attaque isolée (les scénarios sans interface s'en servent).
- * Le Coup rapide garde son choix : avec `cibleCreatureId`, la créature frappe
+ * L’Attaque ciblée garde son choix : avec `cibleCreatureId`, la créature frappe
  * la créature désignée et son attaque s'arrête là (`rpgLancerAttaque`) ;
  * sans cible, elle attaque le sorcier comme n'importe quelle créature.
  */
@@ -5606,7 +5606,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     return { ok: false, raison: 'blocage-force' };
   }
   // L'attaque directe est une attaque comme une autre : la bannière grandit
-  // l'attaquant avant sa frappe. Le Coup rapide, plus haut, est passé par
+  // l'attaquant avant sa frappe. L’Attaque ciblée, plus haut, est passée par
   // `rpgLancerAttaque` et a déjà reçu son déclenchement.
   appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
@@ -5620,7 +5620,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
   }
   // L'arme du Sable emporte ses déclencheurs : « attaque » et « blesse le
-  // sorcier » (le Coup rapide, plus haut, est passé par `rpgLancerAttaque`,
+  // sorcier » (l’Attaque ciblée, plus haut, est passée par `rpgLancerAttaque`,
   // qui les a déjà réglés).
   declencherArmesAttaquants(duel, cote, [{
     id: attaquant.id,

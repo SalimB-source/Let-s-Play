@@ -255,13 +255,13 @@ reste posé, avec son illustration finale.
 | Raïs de la galiote | **Sable + Eau** | 2 | 2/2 | commune | **Abordage 1** — le poisson-pilote du set |
 | Pilote de la Carreira | Eau | 2 | 2/1 | inhabituelle | arrivée : la **prochaine créature jouée ce tour** gagne **Abordage** (seuil : son coût − 1) — il lit la route pour elle |
 | Le Brûlot | **Braise** | 2 | 1/1 | commune | à sa mort en combat : **2 dégâts à la créature qui l’a détruit** — la seule flamme du set |
-| Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Coup rapide** |
+| Tercio de cuivre | Sable | 3 | 1/4 | commune | le mur du convoi, **Attaque ciblée** |
 | Cotre de course | **Sable + Eau** | 3 | 3/1 | inhabituelle | **Rapidité + Abordage 2** — l’éclaireur qui monte le premier |
 | Le Renégat | **Sable + Eau** | 3 | 3/3 | inhabituelle | **Rapidité + Butin** — l’Anglais sous pavillon d’Alger |
 | Négociant des prises | Sable | 2 | 1/1 | rare | chaque créature **prise en cale** par qui que ce soit : **piochez 1** |
-| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Coup rapide**, **Abordage 4**, **Cargaison 1** — le trésor assuré qui prend aussi à l’abordage |
-| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Coup rapide**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme photoréaliste, bois usé, lune et embruns |
-| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Coup rapide ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
+| Galion de la flotte | **Sable + Eau** | 5 | 2/5 | rare | **Attaque ciblée**, **Abordage 4**, **Cargaison 1** — le trésor assuré qui prend aussi à l’abordage |
+| La légende du Hollandais volant *(jadis « La Vengeance de la reine Anne » — même identifiant)* | **Sable + Eau** | 4 | 2/4 | rare | **Attaque ciblée**, **Abordage 3** ; cale occupée : +2/+0 et **Butin** — vaisseau fantôme photoréaliste, bois usé, lune et embruns |
+| Le Chasseur d’Ocracoke | **Sable + Eau** | 6 | 3/6 | **mythique** | Rapidité, Attaque ciblée ; **Traque** (+3/+0 contre Abordage/Butin/cale occupée) et **Prime** contre la course — plus d’Insaisissable |
 | La Source de Bimini | **Eau + Sable** | 3 | — | **mythique** | **Site**, 3 Heures ; soin total, +3/+3, Protection contre les sorts et Tenacité |
 | Le Trésor de Lima | **Sable + Eau** | 2 | — | rare | **Site**, 2 Heures ; piochez 2 cartes |
 | La Barbe-Rousse | **Sable + Eau** | 6 | 4/5 | **mythique** | **Abordage 5** ; arrivée : **1 jeton Corsaire** 2/1 |
@@ -386,7 +386,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({

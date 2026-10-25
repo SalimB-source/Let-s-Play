@@ -150,7 +150,7 @@ function estGelee(entite) {
 /** Infiltration : inbloquable, par personne — permanente (imprimée ou par
  *  l'arme portée) ou accordée jusqu'à la fin du tour.
  *  Envol : seul un bloqueur volant arrête un volant.
- *  Coup rapide : un attaquant qui frappe une créature voit son attaque
+ *  Attaque ciblée : un attaquant qui frappe une créature voit son attaque
  *  s'arrêter — personne ne se met en travers de cette frappe-là. */
 function peutBloquerAttaquant(bloqueur, attaquant, frappePrecoce = false) {
   if (!bloqueur || !attaquant) return false;
@@ -590,7 +590,7 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
 }
 
 /**
- * Le Coup rapide est un choix, attaquant par attaquant : frapper une créature
+ * L’Attaque ciblée est un choix, attaquant par attaquant : frapper une créature
  * adverse — l'attaque s'arrête là, sans riposte ni blocage — ou attaquer
  * normalement, vers le sorcier. L'IA ne s'arrête que sur ce qu'elle abat : une
  * créature retirée de la table vaut plus que les dégâts rendus au visage.
@@ -897,7 +897,7 @@ function peutAttaquerUtile(entite) {
 /**
  * Dégâts au visage garantis quel que soit le blocage adverse : chaque
  * bloqueur ne peut encaisser qu’un attaquant, donc les K plus gros coups
- * peuvent être retenus — le reste passe. Le Coup rapide, lui, ne détourne des
+ * peuvent être retenus — le reste passe. L’Attaque ciblée, elle, ne détourne des
  * dégâts que si l’IA choisit la frappe (`choisirCiblesRapidesIA`) : ce calcul
  * majore donc légèrement les dégâts quand un rapide peut abattre une créature.
  */
@@ -958,7 +958,7 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   const enCourse = menaceAdverse >= (duel[cote].pv ?? 0) + (duel[cote].bouclier ?? 0);
 
   const evaluation = (ensemble) => {
-    // Le Coup rapide choisit : la frappe sur une créature (valeur comptée à
+    // L’Attaque ciblée choisit : la frappe sur une créature (valeur comptée à
     // part) arrête l'attaque — ni blocage, ni dégâts au visage —, et l'attaquant
     // qui s'en passe combat comme les autres.
     const ciblesRapides = choisirCiblesRapidesIA(duel, cote, ensemble.map((entite) => entite.id), options);

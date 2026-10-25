@@ -1015,7 +1015,7 @@ function effetsAccordesParArme(arme) {
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
   if (donne.bouclier) effets.push(`Bouclier ${donne.bouclier}`);
-  if (donne.coupRapide) effets.push('Coup rapide');
+  if (donne.coupRapide) effets.push('Attaque ciblée');
   if (donne.esquive) effets.push('Esquive');
   if (donne.immunite) effets.push(`Immunité contre ${ELEMENT_LABELS[donne.immunite] ?? donne.immunite}`);
   if (donne.furie) effets.push(`Furie ${donne.furie}`);
@@ -2353,7 +2353,7 @@ export function TableCard({
   actionFx = null,
   // `{ montant, token }` le temps de l'éclat d'un soin (`EclatSoin`), sinon null.
   soin = null,
-  // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Coup rapide.
+  // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Attaque ciblée.
   miss = null,
   // `{ montant, restant, lumiere, token }` le temps du choc d'un bouclier qui
   // vient d'absorber un coup (`ImpactBouclier`), sinon null.
@@ -2540,7 +2540,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : toutes vos autres créatures gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${visageActuel ? `, deux visages : ${visageActuel.nom} pour ce tour (${visageActuel.atk ?? 0}/${visageActuel.def ?? 0}${visageActuel.provocation ? ', Provocation' : ''}), elle change au début de chaque tour` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? ', Coup rapide : peut frapper une créature adverse avant le combat avec 30 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Coup rapide ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par Coup rapide, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les autres créatures de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : toutes vos autres créatures gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${visageActuel ? `, deux visages : ${visageActuel.nom} pour ce tour (${visageActuel.atk ?? 0}/${visageActuel.def ?? 0}${visageActuel.provocation ? ', Provocation' : ''}), elle change au début de chaque tour` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? ', Attaque ciblée : peut frapper une créature adverse avant le combat avec 30 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? `, bouclier ${entite.bouclier}` : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img
@@ -9965,7 +9965,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       force();
       return;
     }
-    // Déclaration d'attaque en cours : la frappe du Coup rapide ne tombe qu'à
+    // Déclaration d'attaque en cours : la frappe de l’Attaque ciblée ne tombe qu'à
     // la résolution du combat — ici, seul le retour de sélection se fait
     // entendre. Cliquer une proie légale la désigne au premier attaquant qui en
     // a besoin ; un second clic sur la même créature retire sa désignation :
@@ -10016,7 +10016,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
 
     jouerSfx('attackers_confirm');
-    // Le Coup rapide est un choix : seules les proies réellement désignées
+    // L’Attaque ciblée est un choix : seules les proies réellement désignées
     // arrêtent leur attaquant, les autres créatures partent vers le sorcier.
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
       const attaquant = duel.joueur.creatures.find((entite) => entite.id === id);
@@ -10145,7 +10145,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (!monTour) return;
     // Pendant la déclaration d'attaque, désigner le sorcier est le geste du
-    // Coup rapide qui y renonce : les proies désignées s'effacent et toutes les
+    // Attaque ciblée qui y renonce : les proies désignées s'effacent et toutes les
     // créatures déclarées attaquent normalement.
     if (phase && Object.keys(ciblesAttaque).length) {
       jouerSfx('annuler');
@@ -10175,7 +10175,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const bloqueur = duel.joueur.creatures.find((entite) => entite.id === bloqueurId && !entite.attaquee);
     if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
-    // Un attaquant qui frappe une créature au Coup rapide n'est pas bloquable :
+    // Un attaquant qui frappe une créature à l’Attaque ciblée n'est pas bloquable :
     // sa frappe a clos son attaque.
     const frappeRapide = Boolean(combatEntrant?.ciblesAttaque?.[attaquantId]);
     if (!retireDeCetteAttaque && !rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide)) {
@@ -10775,7 +10775,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(combatEntrant?.attaquants ?? []),
     ...Object.values(combatEntrant?.blocages ?? {}).flat(),
     ...Object.values(combatEntrant?.ciblesAttaque ?? {}),
-    // La proie d'un Coup rapide brille en rouge dès sa désignation, avant le
+    // La proie d’une attaque ciblée brille en rouge dès sa désignation, avant le
     // lancement de l'attaque : sa pile doit se déplier comme les autres.
     ...Object.values(ciblesAttaque),
     ...(sortJoue?.cible?.targetIds ?? []),
@@ -10958,7 +10958,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       cle: `attaque:${cibleAttaqueEnCours ?? 'aucune'}:${attaquants.length}`,
                       classe: 'rpg-attack-prompt',
                       texte: cibleAttaqueEnCours
-                        ? 'Coup rapide — choisissez une cible ou confirmez l’attaque'
+                        ? 'Attaque ciblée — choisissez une cible ou confirmez l’attaque'
                         : attaquants.length > 0
                           ? `${attaquants.length} attaquant${attaquants.length > 1 ? 's' : ''} choisi${attaquants.length > 1 ? 's' : ''} — confirmez l’attaque`
                           : 'Choisissez vos créatures attaquantes',

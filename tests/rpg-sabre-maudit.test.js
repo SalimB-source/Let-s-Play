@@ -42,7 +42,7 @@ test('l’arme applique +1/+0, reste attachée et persiste entre les tours', () 
   assert.equal(armer(duel, porteur).ok, true);
   assert.deepEqual([porteur.atk, porteur.def, porteur.pvMax], [3, 4, 4]);
   assert.equal(porteur.coupRapide, true);
-  assert.equal(porteur.ready, false, 'Coup rapide ne donne pas Rapidité');
+  assert.equal(porteur.ready, false, 'Attaque ciblée ne donne pas Rapidité');
   assert.deepEqual(porteur.armes, ['sabre-maudit']);
   assert.ok(!duel.joueur.cimetiere.includes('sabre-maudit'));
   rpgFinDeTour(duel);
@@ -96,12 +96,12 @@ test('sans créature désignée, le porteur du Sabre maudit attaque le sorcier d
   porteur.ready = true;
   const pvSorcier = duel.sorcier.pv;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] }).ok, true,
-    'le Coup rapide n’impose plus de cible');
+    'l’Attaque ciblée n’impose plus de cible');
   assert.equal(duel.sorcier.pv, pvSorcier - 3, 'la force augmentée part au visage');
   assert.equal(duel.sorcier.creatures.includes(cible), true, 'la créature écartée reste en jeu');
 });
 
-test('l’attaque directe du sorcier reconnaît aussi Coup rapide accordé par une arme', () => {
+test('l’attaque directe du sorcier reconnaît aussi Attaque ciblée accordée par une arme', () => {
   const duel = partie();
   const porteur = poser(duel, 'joueur', 'momie-de-lin');
   const cible = poser(duel, 'sorcier', 'chien-du-guet');

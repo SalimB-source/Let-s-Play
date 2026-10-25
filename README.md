@@ -5871,7 +5871,7 @@ voir son propre champ de bataille.
 - **On peut déplier.** Toucher le compteur ×N déplie le groupe, et une puce ×N
   placée dans la rangée permet de le replier. Surtout, tout groupe dont un
   exemplaire participe à l'**action en cours** — attaquants déclarés, combat
-  entrant, blocages assignés, cible de sort, coup rapide, bloqueur sélectionné,
+  entrant, blocages assignés, cible de sort, attaque ciblée, bloqueur sélectionné,
   effet visuel — **se déplie seul**, pour que les flèches de blocage, les halos
   de cible et les effets de destruction trouvent leur carte.
 - **Un exemplaire masqué emprunte la place de sa pile** dans l'instantané du
@@ -6550,7 +6550,7 @@ leurs exemplaires.
 | --- | --- | --- |
 | **Veilleurs du Désert** | Butin, protection, équipements et récupération de cartes | Takouba de Tin Hinan |
 | **Cour des Djinns** | dégâts en vagues, effets à la mort, retour différé d’Anqa, Harakiri et Résonance samouraï | Anqa des braises |
-| **Sentiers de cendre** | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
+| **Sentiers de cendre** | Pétra et mana bicolore, Butin, équipements, Attaque ciblée | Fériel |
 | **Marée des abysses** | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
 | **Serment des Neuf Hivers** | Furie, Résonance, gel et contrôle du combat | Maître du marteau |
 | **Serment du Soleil rouge** | Harakiri, Résonance samouraï et Bannière du Daimyō | Kagutsuchi, flamme originelle |
@@ -7838,11 +7838,11 @@ fichiers (`rpg-mobile.css`, la tranche `HoverCardPreview` de `RpgDuelPage.jsx`) 
 navigateur, absent de cet environnement — la géométrie de la pastille est donc
 donnée par le calcul ci-dessus, pas par une mesure d'écran.
 
-## Le Sablier : le Coup rapide est un choix, et une seule phase d'attaque par tour
+## Le Sablier : l’Attaque ciblée est un choix, et une seule phase d'attaque par tour
 
 Deux règles du duel ont changé d'un même geste, à la demande du jeu :
 
-1. **Le Coup rapide s'arrête sur sa frappe.** Une créature adverse désignée
+1. **L’Attaque ciblée s'arrête sur sa frappe.** Une créature adverse désignée
    a **30 % de chances d'être manquée** ; même si la frappe échoue, l'attaque
    s'arrête là. Dirigée vers le sorcier adverse, elle n'a pas de jet d'échec
    (**100 % de précision**), mais les bloqueurs s'appliquent normalement.

@@ -39,7 +39,7 @@
  * Et le marqueur du Chasseur d’Ocracoke :
  *   - `traquePirates: N` — la Traque : quand le Chasseur attaque une créature
  *     avec Abordage, Butin ou une cale occupée, il gagne +N/+0 contre elle
- *     pour ce combat (Coup rapide, combat bloqué et duel de créatures —
+ *     pour ce combat (Attaque ciblée, combat bloqué et duel de créatures —
  *     jamais contre le sorcier) ; sa Prime (`primeChasseur`) paie en sus la
  *     destruction d’une telle proie.
  *
@@ -157,7 +157,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({
@@ -218,7 +218,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     abordage: 4,
     cargaison: 1,
     typeLine: 'Créature — Navire · Galion',
-    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 4 — quand le Galion arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 4 — quand le Galion arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.',
     flavor: 'L’argent voyage en convoi ; le roi voyage en prière.',
   }),
   // L’identifiant historique demeure (collections et decks sauvegardés) :
@@ -238,7 +238,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     abordage: 3,
     caleComble: { atk: 2, butin: true },
     typeLine: 'Créature légendaire — Navire · Vaisseau fantôme',
-    text: 'Coup rapide — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 3 — quand le Hollandais arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, le Hollandais gagne +2/+0 et Butin.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 3 — quand le Hollandais arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, le Hollandais gagne +2/+0 et Butin.',
     flavor: 'Il ne cherche plus un port : il embarque ceux que la mer a oublié de rendre.',
   }),
   carte({
@@ -256,7 +256,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     traquePirates: 3,
     primeChasseur: true,
     typeLine: 'Créature légendaire — Humain · Chasseur de pirates',
-    text: 'Rapidité. Coup rapide — quand il frappe une créature avant le combat, il a 30 % de chances de rater ; il touche à 100 % contre l’adversaire. Traque — quand le Chasseur attaque une créature avec Abordage, Butin ou une cale occupée, il gagne +3/+0 contre elle pour ce combat. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
+    text: 'Rapidité. Attaque ciblée — quand il frappe une créature avant le combat, il a 30 % de chances de rater ; il touche à 100 % contre l’adversaire. Traque — quand le Chasseur attaque une créature avec Abordage, Butin ou une cale occupée, il gagne +3/+0 contre elle pour ce combat. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
     flavor: 'Dans les brumes d’Ocracoke, il reconnaît un pirate au silence qui précède son tir.',
   }),
   carte({

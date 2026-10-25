@@ -4,7 +4,7 @@
  *
  * Les boucliers actuels viennent des arrivées (le Guerrier au bouclier rond),
  * des sorts (la Parade de verre) et des boucliers de lumière (Salem). La Lance
- * de givre ne donne plus de bouclier : elle donne +1/+0 et Coup rapide.
+ * de givre ne donne plus de bouclier : elle donne +1/+0 et Attaque ciblée.
  *
  * Sur la table, une égide animée cerne toute créature protégée — glacée pour
  * un bouclier ordinaire, dorée pour un bouclier de lumière. Quand un coup
@@ -27,14 +27,14 @@ const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url)
 const iconesCss = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
 const reglesCss = readFileSync(new URL('../src/games/rpg-card-rules.css', import.meta.url), 'utf8');
 
-// ── 1. La Lance de givre actuelle : +1/+0 et Coup rapide, sans bouclier ─────
+// ── 1. La Lance de givre actuelle : +1/+0 et Attaque ciblée, sans bouclier ─────
 const lance = armeById('lance-de-givre');
 assert.ok(lance, 'la Lance de givre est bien au catalogue des armes');
 assert.deepEqual(lance.bonus, { atk: 1, def: 0 }, 'elle donne exactement +1/+0');
-assert.equal(lance.donne?.coupRapide, true, 'elle donne Coup rapide');
+assert.equal(lance.donne?.coupRapide, true, 'elle donne Attaque ciblée');
 assert.equal(lance.donne?.envol, undefined, 'son ancien Envol est retiré');
 assert.equal(lance.donne?.bouclier, undefined, 'elle ne donne aucun bouclier');
-assert.match(lance.text, /\+1\/\+0 et Coup rapide/, 'son texte annonce ses deux dons');
+assert.match(lance.text, /\+1\/\+0 et Attaque ciblée/, 'son texte annonce ses deux dons');
 assert.doesNotMatch(lance.text, /bouclier/i, 'aucun bouclier dans son texte');
 
 // ── 2. Les états visuels, rendus pour de vrai ───────────────────────────────
@@ -108,7 +108,7 @@ const apercuDom = (html) => {
     assert.equal(racine.querySelector('.rpg-bouclier-egide'), null, 'aucune égide pour la Lance');
     assert.equal(racine.querySelector('.rpg-card-icone[data-effet="bouclier"]'), null,
       'et aucune icône Bouclier prêtée par l’arme');
-    assert.ok(racine.querySelector('.rpg-card-icone[data-effet="coupRapide"]'), 'le Coup rapide donné, lui, est bien là');
+    assert.ok(racine.querySelector('.rpg-card-icone[data-effet="coupRapide"]'), 'l’Attaque ciblée donnée, elle, est bien là');
     assert.equal(racine.querySelector('.rpg-card-icone[data-effet="envol"]'), null, 'l’ancien Envol n’est plus prêté');
   } finally {
     dom.window.close();
@@ -329,4 +329,4 @@ assert.match(iconesCss, /\.rpg-card-icone\.is-epuisee \{[\s\S]*?filter: grayscal
 assert.match(reglesCss, /\.rpg-card-rules__ligne--epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
   'la ligne de règle dépensée se grise entièrement');
 
-console.log('✓ Bouclier animé : la Lance de givre donne +1/+0 et Coup rapide sans bouclier ; les boucliers du Guerrier, de la Parade et de Salem veillent et encaissent, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');
+console.log('✓ Bouclier animé : la Lance de givre donne +1/+0 et Attaque ciblée sans bouclier ; les boucliers du Guerrier, de la Parade et de Salem veillent et encaissent, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');

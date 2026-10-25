@@ -259,7 +259,7 @@ créatures.
 |---|---|---|
 | Veilleurs du Désert | Butin, protection, pioche de Tislit, équipements et récupération de cartes | Takouba de Tin Hinan |
 | Cour des Djinns | dégâts en vagues, effets à la mort, retour différé d'Anqa, Harakiri et Résonance samouraï | Anqa des braises |
-| Sentiers de cendre | Pétra et mana bicolore, Butin, équipements, Coup rapide | Fériel |
+| Sentiers de cendre | Pétra et mana bicolore, Butin, équipements, Attaque ciblée | Fériel |
 | Marée des abysses | contresorts, rebonds, Vipère de verre et serpents du Bâton des citernes | Léviathan |
 | Serment des Neuf Hivers | Furie, appel viking, gel et contrôle du combat | Valkyrie des glaces ; Maître du marteau |
 | Serment du Soleil rouge | Harakiri, Résonance samouraï et Bannière du Daimyō | Daimyō du Soleil rouge ; Kagutsuchi, Flamme originelle |

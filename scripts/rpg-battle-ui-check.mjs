@@ -232,12 +232,12 @@ assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*gri
   'chaque effet occupe sa propre ligne dans l’aperçu au survol');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
-// Le Coup rapide frappe avant les blessures de combat : la cible encaisse
+// L’Attaque ciblée frappe avant les blessures de combat : la cible encaisse
 // l'attaque de la créature (`degatsAvantCombat`), sans riposte, et le résumé
 // du combat relate chaque frappe.
 assert.match(duelEngine, /const cibleRapideId = ciblesRapides\[attaquant\.id\];[\s\S]*?frappesRapides\.push\([\s\S]*?degats: forceCombat\(attaquant\),[\s\S]*?degatsAvantCombat\.push\(\{\s*cote: adv,\s*entiteId: cible\.id,\s*amount: forceCombat\(attaquant\),[\s\S]*?coupsRapides: frappesRapides,[\s\S]*?for \(const coup of resume\.coupsRapides\)/s,
-  'le Coup rapide inflige l’attaque de la créature choisie, sans combat de riposte');
-// Le Coup rapide se CHOISIT : une frappe sur une créature clôt l’attaque de
+  'l’Attaque ciblée inflige l’attaque de la créature choisie, sans combat de riposte');
+// L’Attaque ciblée se CHOISIT : une frappe sur une créature clôt l’attaque de
 // l’attaquant — `attaquantsArretes` l’écarte du blocage, des blessures de
 // combat et du sorcier —, sinon il attaque normalement, sans cible exigée.
 assert.match(duelEngine, /const attaquantsArretes = new Set\(frappesRapides\s*\n?\s*\.filter\(\(frappe\) => !frappe\.annule\)/,
@@ -262,13 +262,13 @@ assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Le moteur 
   'la défense ne transmet pas de partage figé avant les capacités');
 assert.match(battlePage, /attaquantsVivants,\s*blocages,\s*null, \/\/ Ne pas figer/,
   'l’attaque du joueur ne transmet pas de partage figé avant les capacités');
-// La cible du Coup rapide reste un CHOIX : l’invitation à désigner se déduit
+// La cible de l’Attaque ciblée reste un CHOIX : l’invitation à désigner se déduit
 // de la sélection, le bouton de confirmation ne dépend que des attaquants, et
 // un second clic sur la même créature retire la désignation.
 assert.match(battlePage, /const cibleAttaqueEnCours = phase \? prochainCoupRapideSansCible\(attaquants\) : null;/,
   'la proie invitée se déduit de la sélection d’attaquants, sans état de ciblage séparé');
 assert.match(battlePage, /disabled=\{!attaquants\.length\} onClick=\{\(\) => lancerAttaque\(\)\}/,
-  'la confirmation ne réclame plus la cible d’un Coup rapide : elle part vers le sorcier sans proie');
+  'la confirmation ne réclame plus la cible d’une attaque ciblée : elle part vers le sorcier sans proie');
 assert.match(battlePage, /const dejaVisee = candidats\.find\(\(candidate\) => ciblesAttaque\[candidate\.id\] === entite\.id\);[\s\S]*?if \(dejaVisee\) delete cibles\[dejaVisee\.id\];\s*\n\s*else cibles\[libre\.id\] = entite\.id;/,
   'un second clic sur la même créature retire la désignation de la proie');
 // Une seule phase d’attaque par tour : le moteur refuse la seconde déclaration
@@ -288,7 +288,7 @@ assert.match(battleCss, /\.rpg-phase-step\.is-jouee\s*\{[^}]*color:/s,
   'l’étape d’attaque jouée se range au lieu de s’allumer');
 assert.match(battlePage, /disabled=\{!monTour \|\| attaqueJouee \|\| !prets\.length \|\| Boolean\(combatEntrant\) \|\| Boolean\(sacrificeEnCours\) \|\| defausseOuverte\}/,
   '« Attaquer avec tous » se verrouille une fois la phase d’attaque du tour jouée');
-// Lueur rouge « visée » : la victime d'un Coup rapide, la cible d'une magie,
+// Lueur rouge « visée » : la victime d’une attaque ciblée, la cible d'une magie,
 // d'une sorcellerie ou de tout autre effet de carte portent le même rouge, de
 // l'annonce du sorcier jusqu'à la résolution — on sait toujours qui va être
 // frappé. La pulsation passe par `box-shadow` et cède la place aux
@@ -302,7 +302,7 @@ assert.match(battleCss, /\.rpg-wizard-plate\.is-spell-target\s*\{[^}]*outline:\s
 assert.match(battlePage, /spellTarget=\{Boolean\(sortJoue\?\.cible\.targetIds\.includes\(entite\.id\)\) \|\| idsVisesParAnnonce\.has\(entite\.id\)\}/,
   'la carte annoncée par le sorcier allume sa cible en rouge dès la fenêtre de réponse');
 assert.match(battlePage, /Object\.values\(combatEntrant\?\.ciblesAttaque \?\? \{\}\)\.includes\(entite\.id\) \|\| Object\.values\(ciblesAttaque\)\.includes\(entite\.id\)/,
-  'la proie d’un Coup rapide brille dès sa désignation, avant même l’attaque lancée');
+  'la proie d’une attaque ciblée brille dès sa désignation, avant même l’attaque lancée');
 assert.match(battlePage, /rpg-wizard-plate--joueur\$\{sortJoue\?\.cible\.targetPlate === 'joueur' \|\| annonceViseVotrePlate \? ' is-spell-target' : ''\}/,
   'votre plaque s’allume en rouge quand l’annonce du sorcier vous vise');
 assert.match(battlePage, /CombatActionIcon type="attack-all"/,
@@ -432,7 +432,7 @@ assert.match(battleCss, /\.rpg-terrain\s*\{\s*width:\s*clamp\(74px, 6\.6vw, 96px
 assert.match(battlePage, /const malInvocation = cote === 'joueur' && playerTurn && !entite\.ready/,
   'le gris du mal d’invocation dépend bien du tour du joueur propriétaire');
 assert.match(battlePage, /rpgChoisirBloqueurs\(duel, 'joueur', ids, ciblesFinales\)/,
-  'le sorcier choisit ses bloqueurs après la déclaration, hors attaquants du Coup rapide');
+  'le sorcier choisit ses bloqueurs après la déclaration, hors attaquants de l’Attaque ciblée');
 assert.match(battlePage, /if \(!attaquantsBloques\.length\) \{[\s\S]*?resoudreAttaqueJoueur\(combat\);[\s\S]*?return;/,
   'une attaque sans bloqueur est résolue immédiatement, sans étape d’acceptation');
 assert.match(battlePage, /const resoudreAttaqueJoueur = \(combat = combatEntrant\)/,
@@ -1615,7 +1615,7 @@ assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__compteurs\s*\{[^
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Coup rapide de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, créatures avec Envol surélevées et animées d’un léger mouvement latéral sur le plateau, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Attaque ciblée de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, créatures avec Envol surélevées et animées d’un léger mouvement latéral sur le plateau, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '

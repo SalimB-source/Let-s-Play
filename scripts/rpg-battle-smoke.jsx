@@ -240,8 +240,8 @@ export async function checkRpgBattle(assert) {
     'le catalogue affiche le nouveau coût de quatre pour Fériel');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__meta b')?.textContent ?? '', /3\s*·\s*🛡\s*2/,
     'le catalogue affiche les statistiques 3/2 de Fériel');
-  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Coup rapide/s,
-    'le catalogue décrit Rapidité et le ciblage du Coup rapide');
+  assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__rules')?.textContent ?? '', /Rapidité.*Attaque ciblée/s,
+    'le catalogue décrit Rapidité et le ciblage de l’Attaque ciblée');
   const traitCatalogue = container.querySelector('.rpg-card-catalogue__card[data-card-id="trait-de-braise"]');
   assert.match(traitCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/trait-de-braise\.jpg\?v=trait-feu-sorcier-appeure-v1$/,
@@ -1606,7 +1606,7 @@ export async function checkRpgBattle(assert) {
   await act(async () => { petraRoot.unmount(); });
   petraContainer.remove();
 
-  // ── Fériel : Rapidité puis choix manuel de la cible du Coup rapide ──
+  // ── Fériel : Rapidité puis choix manuel de la cible de l’Attaque ciblée ──
   const ferielContainer = document.createElement('div');
   document.body.appendChild(ferielContainer);
   const ferielRoot = createRoot(ferielContainer);
@@ -1654,9 +1654,9 @@ export async function checkRpgBattle(assert) {
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
   assert.equal(confirmerFeriel.disabled, false,
-    'la frappe du Coup rapide est un choix : la confirmation n’exige aucune cible');
+    'la frappe de l’Attaque ciblée est un choix : la confirmation n’exige aucune cible');
   assert.ok(ferielContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
-    'les cibles légales du Coup rapide s’allument sur la table, sans consigne écrite');
+    'les cibles légales de l’Attaque ciblée s’allument sur la table, sans consigne écrite');
   const chienCibleFeriel = [...ferielContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.dataset.cardId === 'chien-du-guet');
   assert.ok(chienCibleFeriel?.classList.contains('is-ciblable'), 'le Chien adverse est présenté comme cible légale');
@@ -1672,11 +1672,11 @@ export async function checkRpgBattle(assert) {
   assert.ok(ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]'),
     'Fériel reste en jeu car la créature ciblée ne riposte pas');
   assert.equal(ferielContainer.querySelector('.rpg-card--ennemi[data-card-id="chien-du-guet"]'), null,
-    'le Coup rapide inflige les 4 dégâts d’attaque et détruit le Chien 2/2');
+    'l’Attaque ciblée inflige les 4 dégâts d’attaque et détruit le Chien 2/2');
   assert.equal(ferielContainer.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim(), pvSorcierFeriel,
     'l’attaque s’arrête sur la frappe : le sorcier ne perd aucun point de vie');
   assert.match(ferielContainer.querySelector('.rpg-log')?.textContent ?? '',
-    /FÉRIEL inflige 4 dégâts à Chien du guet avec Coup rapide/i,
+    /FÉRIEL inflige 4 dégâts à Chien du guet avec Attaque ciblée/i,
     'le journal du duel annonce le montant et la cible de l’attaque ciblée');
   // Une seule phase d’attaque par tour : l’étape du rail se range, et
   // « Attaquer avec tous » se verrouille jusqu’au prochain tour.

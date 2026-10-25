@@ -112,7 +112,7 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   assert.equal(armeById('lance-de-givre').donne.envol, undefined);
   assert.equal(armeById('lance-de-givre').donne.bouclier, undefined,
     'la Lance ne donne plus de bouclier');
-  assert.match(armeById('lance-de-givre').text, /\+1\/\+0 et Coup rapide/);
+  assert.match(armeById('lance-de-givre').text, /\+1\/\+0 et Attaque ciblée/);
   assert.doesNotMatch(armeById('lance-de-givre').text, /bouclier/i);
   assert.equal(armeById('armure-de-cendres').rarity, 'mythique');
   assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 3, def: 3 });
@@ -285,13 +285,13 @@ test('activer le Bâton pour 3 manas appelle un autre serpent — jamais hors de
 /** Reste-t-il de quoi payer la moindre chose ? (mana du joueur épuisé ou non). */
 const rpgPeutPayerMana = (duel) => Object.values(duel.joueur.mana).some((n) => n > 0);
 
-test('la Lance de givre donne +1/+0 et Coup rapide au porteur, sans Envol ni bouclier', () => {
+test('la Lance de givre donne +1/+0 et Attaque ciblée au porteur, sans Envol ni bouclier', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
   equiper(duel, 'joueur', 'lance-de-givre', dune);
   assert.equal(dune.atk, 3, '2 + 1 d’attaque');
   assert.deepEqual([dune.def, dune.pv, dune.pvMax], [4, 4, 4], 'la défense et les PV ne changent pas');
-  assert.equal(dune.coupRapide, true, 'la Lance confère bien Coup rapide');
+  assert.equal(dune.coupRapide, true, 'la Lance confère bien Attaque ciblée');
   assert.equal(dune.envol, false, 'l’ancien Envol est retiré');
   assert.equal(dune.bouclier ?? 0, 0, 'la Lance ne dresse aucun bouclier');
   assert.equal(dune.arme.bouclier, undefined, 'aucun point de bouclier ne vit sur l’arme');
@@ -339,7 +339,7 @@ test('une seconde arme envoie la première au cimetière et retire son bonus', (
   const duel = duelVide();
   const chien = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'takouba-des-pistes', chien); // → 4/2
-  equiper(duel, 'joueur', 'lance-de-givre', chien); // +1/+0 et Coup rapide, la Takouba tombe
+  equiper(duel, 'joueur', 'lance-de-givre', chien); // +1/+0 et Attaque ciblée, la Takouba tombe
   assert.equal(chien.arme.carteId, 'lance-de-givre');
   assert.equal(chien.atk, 3, 'le +2 de la Takouba est parti, le +1 de la Lance est là');
   assert.deepEqual([chien.def, chien.pv, chien.pvMax], [2, 2, 2],

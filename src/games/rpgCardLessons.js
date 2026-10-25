@@ -15,7 +15,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Types de cartes',
     cardIds: ['takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre'],
     title: 'Les armes équipent vos créatures',
-    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Coup rapide ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
+    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Attaque ciblée ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
   },
   {
     id: 'terrain-hybride',
@@ -29,7 +29,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['sabre-maudit', 'samourai-du-torii'],
     title: 'Une arme reste attachée à son porteur',
-    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Coup rapide, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
+    text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
     id: 'rituel-ephemere',
@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment'],
     title: 'Contre-attaque : le coup se paie',
-    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Coup rapide, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
+    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
   },
   {
     id: 'envol',
@@ -224,8 +224,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'coup-rapide',
     section: 'Capacités des créatures',
     cardIds: ['feriel', 'djinn-de-foudre'],
-    title: 'Coup rapide vise avant les blessures de combat',
-    text: 'Quand vous sélectionnez une créature avec Coup rapide comme attaquant, vous pouvez désigner une créature adverse : Coup rapide lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 30 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Sans créature désignée, elle attaque l’adversaire normalement avec 100 % de chances de toucher : elle peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne ne s’interpose. Le choix se fait avant de confirmer l’attaque ; sans proie désignée, elle part vers le sorcier.',
+    title: 'Attaque ciblée vise avant les blessures de combat',
+    text: 'Quand vous sélectionnez une créature avec Attaque ciblée comme attaquant, vous pouvez désigner une créature adverse : l’attaque ciblée lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 30 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Sans créature désignée, elle attaque l’adversaire normalement avec 100 % de chances de toucher : elle peut être bloquée, échange ses dégâts de combat, ou frappe le sorcier si personne ne s’interpose. Le choix se fait avant de confirmer l’attaque ; sans proie désignée, elle part vers le sorcier.',
   },
   {
     id: 'capacite-de-combat',

@@ -261,7 +261,7 @@ test('l’icône d’une ligne de règle est celle que la phrase annonce', () =>
 
 test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte de l’aperçu', () => {
   const feriel = effetsDetailles(cardById('feriel'));
-  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Rapidité', 'Coup rapide']);
+  assert.deepEqual(feriel.pastilles.map((pastille) => pastille.label), ['Rapidité', 'Attaque ciblée']);
   assert.equal(feriel.pastilles[0].description, 'Peut attaquer le tour où elle arrive.',
     '« Rapidité. » ne s’explique pas sur la fiche : le glossaire prend le relais');
   assert.match(feriel.pastilles[1].description, /^Sélectionnée pour attaquer, Fériel peut frapper.*Si vous ne désignez personne, elle attaque normalement\.$/u,
