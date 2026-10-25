@@ -600,7 +600,11 @@ export function ouvrirCoffret({ portefeuille, rayonId, progression = null, colle
       pitie: forcer ? TAUX.pitie : apres.pitie,
     });
     if (!tirage.ok) break;
-    const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, base.exemplaires);
+    // Le stock se lit **au fil du coffret**, pas sur l'instantané d'avant
+    // achat : un doublon tombé dans un paquet précédent a déjà monté le
+    // compteur, et le suivant — au-delà du quota — doit être remboursé au
+    // barème comme il le serait dans un paquet acheté seul (doc 13, D4).
+    const { details, remboursement } = detaillerTirage(tirage.cartes, possedees, apres.exemplaires);
     for (const carte of details) possedees.add(carte.id);
     apres = ajouterCartesAuPortefeuille(apres, tirage.cartes);
     // Le second exemplaire d'une carte se garde (il complète le playset) : on le
