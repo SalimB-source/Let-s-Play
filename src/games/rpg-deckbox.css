@@ -460,6 +460,7 @@
 .rpg-deck-filter__chip:focus-visible { outline: 2px solid #f0d994; outline-offset: 2px; }
 .rpg-deck-filter__emblems { display: inline-flex; align-items: center; gap: 2px; }
 .rpg-deck-filter__emblems svg { display: block; width: 14px; height: 14px; fill: currentColor; }
+.rpg-emblem { fill: currentColor; }
 .rpg-emblem--sable { color: #e5bf69; }
 .rpg-emblem--braise { color: #ee7f55; }
 .rpg-emblem--eau { color: #70c6ea; }
