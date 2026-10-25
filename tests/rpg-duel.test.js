@@ -501,9 +501,12 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.equal(valkyrie.protection, undefined, 'la protection ne couvre plus les créatures de Braise');
   assert.equal(valkyrie.protectionSorts, true);
   assert.equal(valkyrie.protectionSortsContre, undefined);
-  assert.deepEqual(valkyrie.arrivee, { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.25 });
+  assert.deepEqual(valkyrie.arrivee, {
+    type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, gelChance: 0.25,
+  }, 'sa vague balaie les deux camps, le sien compris');
   assert.equal(arriveeCiblePortee(valkyrie), null, 'sa vague collective ne demande aucune cible');
   assert.match(valkyrie.text, /Protection contre les sorts/);
+  assert.match(valkyrie.text, /toutes les créatures, elle comprise/);
   assert.match(valkyrie.text, /25 % de chances de geler/);
   assert.doesNotMatch(valkyrie.text, /Résonance|soignez chacune/);
 
@@ -2914,18 +2917,19 @@ test('la Valkyrie des glaces protège contre tous les sorts', () => {
   donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', 'valkyrie-des-glaces');
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
+  assert.equal(valkyrie.pv, 4, 'sa propre vague la blesse de 1 : elle entre en 4/5');
   assert.equal(rpgEstProtegee(valkyrie, ['braise']), false, 'les attaques et capacités de Braise passent');
   const capacite = rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, ['braise'], null, 'capacite');
   assert.equal(capacite.recus, 1, 'une capacité de Braise n’est pas un sort');
-  assert.equal(valkyrie.pv, 4);
+  assert.equal(valkyrie.pv, 3);
   donner(duel, 'joueur', 'trait-de-braise');
   const sort = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', valkyrie.id);
   assert.equal(sort.raison, 'protection');
-  assert.equal(valkyrie.pv, 4, 'le sort de Braise ne la blesse pas');
+  assert.equal(valkyrie.pv, 3, 'le sort de Braise ne la blesse pas');
   assert.ok(duel.joueur.main.includes('trait-de-braise'));
   const autreElement = rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, ['eau'], null, 'magie');
   assert.equal(autreElement.recus, 0, 'une magie d’Eau est aussi protégée');
-  assert.equal(valkyrie.pv, 4);
+  assert.equal(valkyrie.pv, 3);
   assert.equal(valkyrie.protectionSorts, true);
 });
 
@@ -4152,9 +4156,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     'aucune créature terrestre ne peut bloquer la Valkyrie');
 
   // Valkyrie des glaces : plus de Résonance ni de soin. Elle entre
-  // sans désignation à ses statistiques imprimées 5/5, et son arrivée inflige
-  // 1 dégât à toutes les créatures avec 25 % de chances de gel.
-  // La Furie du loup reste donc active — la Valkyrie ne soigne plus.
+  // sans désignation et son arrivée inflige 1 dégât à **toutes** les
+  // créatures, son propre camp compris, avec 25 % de chances de gel.
+  // Le Loup allié, déjà à 1 PV, tombe donc avec la vague.
   rpgBlesserCreature(duel, 'joueur', loup.id, 1, 'braise');
   assert.deepEqual(
     [loup.atk, loup.pv, loup.pvMax, loup.furieDeclenchee],
@@ -4163,22 +4167,24 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   );
   donner(duel, 'joueur', 'valkyrie-des-glaces');
   const duneAvantGlace = dune.pv;
+  const corbeauAvantGlace = valkyrie.pv;
   const glace = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces');
   assert.equal(glace.ok, true, 'sa vague ne demande aucune cible');
   assert.deepEqual(
     [glace.entite.atk, glace.entite.def, glace.entite.pv, glace.entite.pvMax, glace.entite.envol],
-    [5, 5, 5, 5, true],
-    'la Valkyrie des glaces entre en 5/5 : aucune des deux valkyries n’émet de Résonance',
+    [5, 4, 4, 5, true],
+    'la Valkyrie entre en 5/5 puis encaisse son propre vent : elle reste à 4 PV',
   );
   assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0);
   assert.equal(rpgEstProtegee(glace.entite, ['braise']), false, 'les créatures de Braise ne sont plus bloquées');
   assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['braise']), true, 'les sorts de Braise sont bloqués');
   assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['eau']), true, 'désormais tous les sorts sont bloqués');
-  assert.deepEqual(
-    [loup.atk, loup.pv, loup.pvMax, loup.furieDeclenchee, loup.furieBonusAtk],
-    [3, 1, 2, true, 1],
-    'la Valkyrie n’a pas soigné : le Loup reste en Furie',
-  );
+  assert.equal(duel.joueur.creatures.includes(loup), false,
+    'la vague emporte le Loup allié à 1 PV');
+  assert.equal(duel.joueur.cimetiere.includes('loup-des-neiges'), true,
+    'le Loup allié rejoint le cimetière');
+  assert.equal(valkyrie.pv, corbeauAvantGlace - 1,
+    'la Valkyrie au corbeau, alliée, perd aussi 1 PV : la sienne ne soigne plus');
   assert.equal(dune.pv, duneAvantGlace - 1, 'la vague de la Valkyrie blesse la Dune de 1');
 
   // Géant des banquises : à l'arrivée, il gèle toutes les créatures adverses.
@@ -4186,7 +4192,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
   const chienGeant = duel.sorcier.creatures.at(-1);
   donner(duel, 'joueur', 'geant-des-banquises');
-  rpgJouerCreature(duel, 'joueur', 'geant-des-banquises');
+  const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
   assert.equal(duel.sorcier.creatures.includes(chienGeant), true,
     'le pas du Géant ne blesse plus personne : le Chien reste en jeu');
   assert.equal(chienGeant.gelToursRestants > 0, true, 'mais le Chien est gelé par l’arrivée du Géant');
@@ -4242,13 +4248,15 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
     'bloqué, le Berserk ne touche pas le sorcier');
 
-  // Magies : sorcelleries et magies rapides.
+  // Magies : sorcelleries et magies rapides. Le Mur de boucliers se vérifie
+  // sur la Valkyrie au corbeau, toujours en jeu (le Loup allié est tombé sous
+  // le vent froid de la Valkyrie des glaces).
   donner(duel, 'joueur', 'mur-de-boucliers');
-  const loupAvantMur = { atk: loup.atk, def: loup.def, pv: loup.pv, overkill: loup.overkill };
+  const corbeauAvantMur = { atk: valkyrie.atk, def: valkyrie.def, pv: valkyrie.pv, overkill: valkyrie.overkill };
   assert.equal(rpgLancerMagie(duel, 'joueur', 'mur-de-boucliers').ok, true);
   assert.deepEqual(
-    { atk: loup.atk, def: loup.def, pv: loup.pv, overkill: loup.overkill },
-    { ...loupAvantMur, atk: loupAvantMur.atk + 2, overkill: true },
+    { atk: valkyrie.atk, def: valkyrie.def, pv: valkyrie.pv, overkill: valkyrie.overkill },
+    { ...corbeauAvantMur, atk: corbeauAvantMur.atk + 2, overkill: true },
     'le Mur de boucliers donne +2/+0 et Overkill, sans toucher à la défense',
   );
 
@@ -4273,7 +4281,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     [true, 2],
     'à 2 PV, toujours sous sa DEF de base 4, le Berserk reste en Furie',
   );
-  assert.equal(loup.pv, loup.pvMax, 'les créatures intactes restent plafonnées à leurs PV max');
+  assert.equal(geant.pv, geant.pvMax, 'les créatures intactes restent plafonnées à leurs PV max');
   assert.equal(dune.pv, pvDuneAvantFestin, 'les créatures adverses ne sont pas soignées');
 
   donner(duel, 'sorcier', 'dune-marchante');

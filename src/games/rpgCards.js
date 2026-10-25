@@ -719,8 +719,11 @@ export const RPG_CREATURE_CARDS = [
     art: 'valkyrie-des-glaces',
     envol: true,
     protectionSorts: true,
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.25 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser. Quand elle arrive : elle inflige 1 dégât à toutes les créatures et a 25 % de chances de geler chacune d’elles.',
+    // `inclutAllies` : le vent froid balaie la table entière, le camp de la
+    // Valkyrie compris — elle encaisse donc son propre dégât, comme l’Ifrit
+    // al-Ahmar, et court la même chance de gel que les autres créatures.
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, gelChance: 0.25 },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser. Quand elle arrive : elle inflige 1 dégât à toutes les créatures, elle comprise, et a 25 % de chances de geler chacune d’elles.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {

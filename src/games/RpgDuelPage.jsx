@@ -2288,26 +2288,29 @@ export function EclairDuMarteau({ effet, onTermine = null }) {
 
 export function RpgMassFreezeFx({ effet }) {
   if (!effet) return null;
-  const { type, camp, token } = effet;
+  const { type, camp, token, touteLaTable } = effet;
   const label = effet.carteId === 'valkyrie-des-glaces' ? 'Valkyrie des glaces — vent froid'
     : type === 'brume' ? 'Brume du fjord — souffle léger'
     : type === 'blizzard' ? 'Hurlement du blizzard — souffle froid'
     : type === 'geant' ? 'Géant des banquises — souffle polaire'
     : 'Verglas — souffle givrant';
   const intensity = type === 'brume' ? 'light' : 'heavy';
-  // camp = lanceur ; le souffle descend sur les créatures de l'adversaire
+  // camp = lanceur ; le souffle descend sur les créatures de l'adversaire —
+  // sauf quand l'effet inclut les alliés (Valkyrie des glaces) : la brume
+  // couvre alors la table entière, son propre camp compris.
   const target = camp === 'joueur' ? 'ennemi' : 'joueur';
   const count = intensity === 'light' ? 5 : 8;
   const iceCount = intensity === 'light' ? 3 : 5;
   return (
     <div
       key={`cold-breath-${token}`}
-      className={`rpg-cold-breath rpg-cold-breath--${target} rpg-cold-breath--${intensity} rpg-cold-breath--${type} rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
+      className={`rpg-cold-breath ${touteLaTable ? 'rpg-mass-freeze--table' : `rpg-cold-breath--${target}`} rpg-cold-breath--${intensity} rpg-cold-breath--${type} rpg-mass-freeze rpg-mass-freeze--${type} rpg-mass-freeze--${camp}`}
       data-rpg-cold-breath={type}
       data-rpg-mass-freeze={type}
       data-rpg-mass-freeze-camp={camp}
+      data-rpg-mass-freeze-table={touteLaTable ? 'deux-camps' : undefined}
       role="status"
-      aria-label={label}
+      aria-label={touteLaTable ? `${label} — sur toute la table` : label}
     >
       <span className="rpg-cold-breath__flow rpg-mass-freeze__veil" aria-hidden="true" />
       <span className="rpg-cold-breath__particles rpg-mass-freeze__snow" aria-hidden="true">
@@ -8973,6 +8976,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       || (arrivee?.type === 'gel' && arrivee?.cible === 'toutes-creatures')
       || ['verglas', 'brume-du-fjord', 'hurlement-du-blizzard', 'geant-des-banquises', 'valkyrie-des-glaces'].includes(id);
     if (!estMasseGel) return;
+    // `inclutAllies` — le vent froid de la Valkyrie des glaces balaie les DEUX
+    // camps : le souffle couvre alors toute la table, pas seulement la ligne
+    // d’en face (les autres gels de masse restent hostiles à un camp).
+    const touteLaTable = Boolean(
+      (effet?.cible === 'toutes-creatures' && effet?.inclutAllies)
+      || (arrivee?.cible === 'toutes-creatures' && arrivee?.inclutAllies),
+    );
     let type = 'verglas';
     if (id === 'brume-du-fjord') type = 'brume';
     else if (id === 'hurlement-du-blizzard') type = 'blizzard';
@@ -8984,7 +8994,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     else type = 'geant';
     const token = ++sequenceGelMasseRef.current;
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
-    setGelMasseFx({ type, camp, token, carteId: id });
+    setGelMasseFx({ type, camp, token, carteId: id, touteLaTable });
     // Son de vent froid — réel échantillon CC0 (cold-wind.wav), pas de synthèse
     jouerSfx('cold_wind');
     const duree = type === 'brume' ? 2800 : type === 'blizzard' ? 3200 : type === 'geant' ? 3400 : 3000;
