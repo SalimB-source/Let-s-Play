@@ -26,6 +26,17 @@ test('chaque camp impose son thème, avec repli quand le terrain est sans piste'
   assert.equal(plateauMusicalDuCamp('joueur', 'palais-du-pharaon', 'palais-du-pharaon'), 'palais-du-pharaon');
 });
 
+test('le Cercle des corbeaux fournit sa piste même quand la conquête donne la main à l’adversaire', () => {
+  const CORBEAU = 'cercle-des-corbeaux';
+  const SABLIER = 'sablier-renverse';
+  assert.equal(plateauMusicalDuCamp('joueur', CORBEAU, SABLIER), CORBEAU);
+  assert.equal(plateauMusicalDuCamp('sorcier', CORBEAU, SABLIER), CORBEAU,
+    'le camp adverse sans piste reprend la musique du Cercle');
+  assert.equal(plateauMusicalDuCamp('sorcier', MER, CORBEAU), CORBEAU);
+  assert.equal(plateauMusicalDuCamp('joueur', SABLIER, 'palais-du-pharaon'), SABLIER,
+    'deux plateaux sans piste restent silencieux');
+});
+
 function installerAudio(t) {
   const avant = globalThis.window;
   const pistes = [];

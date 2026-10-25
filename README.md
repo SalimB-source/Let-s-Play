@@ -5465,6 +5465,15 @@ sur sa tuile — plus « au gré du deck » (dossier 20 §6.1).
   Palais du Pharaon n'a pas de piste dédiée. Si aucun des deux camps n'a de
   musique de plateau, l'ambiance synthétique de la Tour prend le relais en
   Histoire, et le duel libre reste silencieux.
+- **Le Cercle des corbeaux a sa piste.** Les quatre étages de la Tour du
+  Corbeau — et le plateau quand le profil le choisit — jouent
+  `public/raspberrymusic - A Vikings.mp3`, un seul MP3 en boucle déclaré dans
+  `RPG_PLATEAU_MUSIC_FILES`. Le relais de conquête 60/40 le traite comme les
+  autres plateaux musicaux : face au Sablier renversé ou au Palais du Pharaon,
+  qui n'ont pas de piste, c'est le Cercle qui fournit la musique. En Histoire,
+  la boucle synthétisée « La neige tombe dans le noir » s'efface pendant le
+  duel ; elle reste l'ambiance de la tour dans la salle d'écoute. La piste est
+  aussi présentée dans `sons-du-sablier.html`.
 - **La Terre de Damnation a été retirée.** La Cour des Djinns et les paquets
   de Braise se jouent désormais sur la Table des Heures.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
@@ -8664,9 +8673,11 @@ La victoire suit le même calcul et donne donc la musique au vainqueur.
 - Chaque morceau est choisi une seule fois par terrain pendant le duel et
   reprend à sa position précédente quand son camp revient. Les terrains
   partageant le même fichier ne lancent jamais deux copies simultanées.
-- Si un terrain n’a pas de piste dédiée (comme le Palais du Pharaon), l’autre
-  camp fournit la musique. Si aucun n’en a, l’ambiance de tour reste disponible
-  en Histoire ; le duel libre reste silencieux, comme avant.
+- Si un terrain n’a pas de piste dédiée (le Palais du Pharaon, le Sablier
+  renversé), l’autre camp fournit la musique — le Cercle des corbeaux joue
+  alors `raspberrymusic - A Vikings.mp3` même quand la conquête donne la main
+  à l’adversaire. Si aucun n’en a, l’ambiance de tour reste disponible en
+  Histoire ; le duel libre reste silencieux, comme avant.
 - Volume, son coupé, pause d’onglet et démontage s’appliquent aux deux pistes,
   y compris pendant un fondu. Une mise à jour PvP dans un onglet masqué ne
   relance pas l’audio. Un refus d’autoplay garde l’ancien thème ; le prochain

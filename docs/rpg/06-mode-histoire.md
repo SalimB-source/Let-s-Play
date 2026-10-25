@@ -123,7 +123,9 @@ seul set hybride **Neige + Ténèbres** du jeu (fiche complète :
   clairière des neuf nuits vue de dessus, le cercle de pierres vide au centre.
 - Maquette 3D : cercle de pierres levées et plumes, tour de pierre sombre en
   trois paliers coiffés de neige, tronc noir, nid de givre et corbeaux de garde.
-- Ambiance : « La neige tombe dans le noir », 68 BPM (`playCorbeau`).
+- Ambiance : « La neige tombe dans le noir », 68 BPM (`playCorbeau`) ; pendant
+  les duels, c'est la piste du plateau qui joue —
+  `public/raspberrymusic - A Vikings.mp3` — et la boucle synthétisée se tait.
 - Le set ne rejoint pas la dotation de départ : ses six cartes se révèlent
   étage par étage, puis s'achètent au Souk.
 

@@ -107,13 +107,13 @@
   <p class="sous-titre">
     Répertoire complet de la bande-son du jeu : musiques de plateaux (fichiers), échantillons
     WAV/MP3 — les seuls bruitages encore joués par le duel, plus le bip de survol, dernier son
-    synthétisé conservé — et les sept ambiances des Tours de Bab El (<code>rpgAmbientMusic.js</code>).
+    synthétisé conservé — et les dix ambiances des Tours de Bab El (<code>rpgAmbientMusic.js</code>).
     Cliquez pour écouter — la synthèse se réveille au premier geste, comme en jeu.
   </p>
   <nav class="toc">
     <a href="#musiques">♪ Musiques de plateaux</a>
     <a href="#autres-pistes">+ Pistes du dépôt</a>
-    <a href="#ambiances">🏰 Ambiances des 7 Tours</a>
+    <a href="#ambiances">🏰 Ambiances des 10 Tours</a>
     <a href="#echantillons">▶ Échantillons (fichiers)</a>
     <a href="#synthese">✦ Survol — dernier son synthétisé</a>
     <a href="#annexe">⚠ Annexe</a>
@@ -144,7 +144,7 @@
   </section>
 
   <section id="ambiances">
-    <h2>🏰 Ambiances des Tours de Bab El <span class="compte">7 boucles · mode Histoire</span></h2>
+    <h2>🏰 Ambiances des Tours de Bab El <span class="compte">10 boucles · mode Histoire</span></h2>
     <p class="intro">
       Une boucle de 8 mesures par tour, entièrement synthétisée en WebAudio — aucun fichier
       (<code>src/games/rpgAmbientMusic.js</code>). En jeu, elles tournent doucement sous les
@@ -188,7 +188,7 @@
     <div class="note">
       <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
-      <code>src/games/rpgAmbientMusic.js</code> (7 ambiances des Tours),
+      <code>src/games/rpgAmbientMusic.js</code> (10 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
       (routage élémentaire : souffle de feu réservé aux sorts et effets qui blessent, Eau → vague,
       attaques de créatures → frappe commune ; l'acier du Samouraï et le tonnerre du marteau ont été
@@ -223,6 +223,9 @@ const MUSIQUES = [
   { plateau: 'Les Abysses Phosphorescentes', fichier: './public/audio/deep-sea-underwater-ambience.mp3',
     code: 'audio/deep-sea-underwater-ambience.mp3',
     desc: 'Ambiance sous-marine — la faille luminescente, variante des Ruines.' },
+  { plateau: 'Le Cercle des corbeaux', fichier: './public/raspberrymusic - A Vikings.mp3',
+    code: 'raspberrymusic - A Vikings.mp3',
+    desc: 'A Vikings, de raspberrymusic — la clairière des neuf nuits : les quatre étages de la Tour du Corbeau, et le plateau quand le profil le choisit.' },
 ];
 
 const AUTRES = [
@@ -255,7 +258,7 @@ function carteAudio(item, extraMeta = '') {
 const lm = $('#liste-musiques');
 MUSIQUES.forEach(m => lm.appendChild(carteAudio(m)));
 AUTRES.filter(a => a.branche).forEach(a => lm.appendChild(carteAudio(a, a.meta ?? 'Tirage au lancement · ')));
-$('#compte-musiques').textContent = `${lm.children.length} pistes · 8 plateaux couverts + le thème principal`;
+$('#compte-musiques').textContent = `${lm.children.length} pistes · les plateaux musicaux + le thème principal`;
 
 const la = $('#liste-autres');
 AUTRES.filter(a => !a.branche).forEach(a => la.appendChild(carteAudio(a, '')));
@@ -267,9 +270,12 @@ const TOURS = [
   { id: 'tour-du-souk',         titre: '2 · La Tour du Souk' },
   { id: 'tour-des-sables',      titre: '3 · La Tour des Sables' },
   { id: 'tour-des-abysses',     titre: '4 · La Tour des Abysses' },
-  { id: 'tour-du-fjord',        titre: '5 · La Tour du Fjord' },
-  { id: 'tour-du-soleil-rouge', titre: '6 · La Tour du Soleil rouge' },
-  { id: 'tour-de-la-necropole', titre: '7 · La Tour de la Nécropole' },
+  { id: 'tour-des-corsaires',   titre: '5 · La Tour des Corsaires' },
+  { id: 'tour-du-fjord',        titre: '6 · La Tour du Fjord' },
+  { id: 'tour-du-soleil-rouge', titre: '7 · La Tour du Soleil rouge' },
+  { id: 'tour-de-la-necropole', titre: '8 · La Tour de la Nécropole' },
+  { id: 'tour-du-corbeau',      titre: '9 · La Tour du Corbeau' },
+  { id: 'tour-du-sablier-renverse', titre: '10 · La Tour du Sablier renversé' },
 ];
 const ambient = new RpgAmbientMusic();
 let tourEnCours = null;
@@ -415,7 +421,7 @@ $('#stop-tout').addEventListener('click', () => {
   statut.textContent = 'Tout est arrêté.';
 });
 
-const total = MUSIQUES.length + AUTRES.length + 7 + ECHANTILLONS.length + compteSynth;
+const total = MUSIQUES.length + AUTRES.length + TOURS.length + ECHANTILLONS.length + compteSynth;
 $('#total-global').textContent = `${total} sons indexés`;
 // Première interaction : réveille le contexte WebAudio (comme en jeu).
 window.addEventListener('pointerdown', () => player.unlock(), { once: true });

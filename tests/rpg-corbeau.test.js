@@ -53,6 +53,7 @@ import {
   possedeCarte,
 } from '../src/games/rpgCollection.js';
 import { RPG_AMBIENT_BPM, RPG_AMBIENT_THEMES } from '../src/games/rpgAmbientMusic.js';
+import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { RPG_STORY_TOWER_THEMES } from '../src/games/rpgStoryTowerModels.js';
 import {
   rpgAttaquerSorcier,
@@ -250,6 +251,11 @@ test('la tour se bat dans son propre cercle, et partout en Neige + Ténèbres', 
     assert.equal(resolution.motif, 'deck', 'la correspondance est explicite, pas une couleur dominante');
   }
   assert.ok(RPG_STORY_TOWER_THEMES['tour-du-corbeau'], 'la tour a sa maquette');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has('cercle-des-corbeaux'), 'le plateau est musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES['cercle-des-corbeaux'], '/raspberrymusic - A Vikings.mp3',
+    'la clairière joue la piste viking livrée dans public/');
+  assert.ok(existsSync(new URL('../public/raspberrymusic - A Vikings.mp3', import.meta.url)),
+    'le MP3 du Cercle des corbeaux est bien livré');
   assert.ok(RPG_AMBIENT_THEMES['tour-du-corbeau'], 'la tour a son ambiance');
   assert.ok(RPG_AMBIENT_BPM['tour-du-corbeau'] >= 55 && RPG_AMBIENT_BPM['tour-du-corbeau'] <= 110,
     'un tempo d’ambiance, pas de course');
