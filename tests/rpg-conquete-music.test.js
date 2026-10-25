@@ -20,9 +20,10 @@ test('20 points d’écart : seuils inclusifs 60/40 et hystérésis dans la band
 test('chaque camp impose son thème, avec repli quand le terrain est sans piste', () => {
   assert.equal(plateauMusicalDuCamp('sorcier', JAPON, MER), MER);
   assert.equal(plateauMusicalDuCamp('joueur', JAPON, MER), JAPON);
-  assert.equal(plateauMusicalDuCamp('sorcier', JAPON, 'necropole-des-dalles'), JAPON);
-  assert.equal(plateauMusicalDuCamp('joueur', 'necropole-des-dalles', MER), MER);
-  assert.equal(plateauMusicalDuCamp('sorcier', 'necropole-des-dalles', 'palais-du-pharaon'), 'palais-du-pharaon');
+  assert.equal(plateauMusicalDuCamp('sorcier', JAPON, 'necropole-des-dalles'), 'necropole-des-dalles');
+  assert.equal(plateauMusicalDuCamp('joueur', 'necropole-des-dalles', MER), 'necropole-des-dalles');
+  assert.equal(plateauMusicalDuCamp('sorcier', 'necropole-des-dalles', 'palais-du-pharaon'), 'necropole-des-dalles');
+  assert.equal(plateauMusicalDuCamp('joueur', 'palais-du-pharaon', 'palais-du-pharaon'), 'palais-du-pharaon');
 });
 
 function installerAudio(t) {

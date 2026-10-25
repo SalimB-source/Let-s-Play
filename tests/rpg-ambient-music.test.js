@@ -246,6 +246,14 @@ test('La Table des Heures, plateau de base aux bougies, joue « Acoustic Guitar 
   assert.ok(existsSync(new URL('../public/Acoustic Guitar Solo (Cover).mp3', import.meta.url)));
 });
 
+test('La Nécropole des dalles, plateau égyptien, joue « Egypt.mp3 »', () => {
+  const plateauId = 'necropole-des-dalles';
+  assert.equal(plateauParId(plateauId)?.nom, 'La Nécropole des dalles');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau égyptien doit être traité comme musical');
+  assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], '/Egypt.mp3');
+  assert.ok(existsSync(new URL('../public/Egypt.mp3', import.meta.url)), 'Egypt.mp3 doit être livré dans public/');
+});
+
 test('L’Erg du Sahara joue « Arabian Meditative Fantasy »', () => {
   const plateauId = 'erg-du-sahara';
   const fichier = 'ArabianMeditativeFantasyCover.mp3';
