@@ -9,7 +9,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import {
   RPG_AMBIENT_BPM,
   RPG_AMBIENT_THEMES,
@@ -252,6 +253,45 @@ test('La Nécropole des dalles, plateau égyptien, joue « Egypt.mp3 »', () => 
   assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), 'le plateau égyptien doit être traité comme musical');
   assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], '/Egypt.mp3');
   assert.ok(existsSync(new URL('../public/Egypt.mp3', import.meta.url)), 'Egypt.mp3 doit être livré dans public/');
+});
+
+/**
+ * Une piste ne se déclare pas : elle se **livre**. Le chemin d'une entrée de
+ * `RPG_PLATEAU_MUSIC_FILES` est une URL servie par Vite, donc résolue depuis
+ * `public/` — jamais depuis la racine du dépôt. Un MP3 posé à la racine est
+ * invisible du jeu *et* du build : il pèse ses mégaoctets dans le dépôt pour
+ * rien. Ce garde-fou a été ajouté après que les deux « Sceau de Sang » ont été
+ * livrés au mauvais endroit, puis dupliqués dans `public/`.
+ */
+test('chaque piste déclarée existe vraiment sous public/, et aucun audio ne traîne à la racine', () => {
+  const racine = fileURLToPath(new URL('..', import.meta.url));
+  const fichierDe = (url) => {
+    assert.equal(url.startsWith('/'), true, `${url} : un chemin servi commence par « / »`);
+    return new URL(`../public${url}`, import.meta.url);
+  };
+  const pistes = [];
+  for (const [plateauId, valeur] of Object.entries(RPG_PLATEAU_MUSIC_FILES)) {
+    for (const url of Array.isArray(valeur) ? valeur : [valeur]) {
+      assert.ok(existsSync(fichierDe(url)),
+        `${plateauId} : la piste ${url} doit être livrée dans public/`);
+      pistes.push(url);
+    }
+  }
+  assert.ok(existsSync(fichierDe(RPG_MAIN_THEME_FILE)), 'le thème principal est livré dans public/');
+
+  // Aucun fichier audio à la racine du dépôt, sauf la source conservée du bruit
+  // de quai (`src/games/assets/dock-sound.mp3`), qui documente sa provenance.
+  const sources = new Set(['Dock Sound_320k.mp3']);
+  const intrus = readdirSync(racine, { withFileTypes: true })
+    .filter((entree) => entree.isFile() && /\.(mp3|wav|ogg|m4a|flac)$/i.test(entree.name))
+    .map((entree) => entree.name)
+    .filter((nom) => !sources.has(nom));
+  assert.deepEqual(intrus, [],
+    `ces audio doivent vivre sous public/ (ou être supprimés) : ${intrus.join(', ')}`);
+
+  // Deux plateaux qui partagent une piste la partagent vraiment : c'est une
+  // intention, pas un oubli de copier-coller.
+  assert.equal(new Set(pistes).size >= 8, true, 'le catalogue garde ses pistes distinctes');
 });
 
 test('Le Cimetière des noms effacés et la Fosse jouent « Le Sceau de Sang »', async (t) => {
