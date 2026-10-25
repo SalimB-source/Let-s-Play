@@ -200,7 +200,7 @@ assert.match(engine, /appliquer\(duel, cote, effetArriveePourCible\(carte, cible
 
 // ── 4. La table : la foudre s’allume sur la créature touchée ───────────────
 assert.match(page, /const DUREE_ECLAIR_MARTEAU = 950;/, 'la foudre dure 950 ms');
-assert.match(page, /import \{ blessureDuMarteau, rpgFoudreSoundFor \} from '\.\/rpgFoudreAudio\.js';/,
+assert.match(page, /import \{ blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor \} from '\.\/rpgFoudreAudio\.js';/,
   'la table reconnaît le marteau par son module, pas par un nom en dur');
 assert.match(page, /const idsFoudroyees = new Set\(blessuresNouvelles\s*\n?\s*\.filter\(\(blessure\) => blessureDuMarteau\(blessure\)\)/s,
   'seules les blessures toutes neuves du marteau comptent');
@@ -226,21 +226,36 @@ assert.match(page, /\{eclairsMarteau\.map\(\(effet\) => \(\s*<EclairDuMarteau\s+
 assert.match(page, /onTermine=\{\(effectId\) => setEclairsMarteau\(\(current\) => current\.filter\(\(autre\) => autre\.effectId !== effectId\)\)\}/,
   'chacune s’éteint à sa dernière image');
 
-// ── 5. Le son : le routage historique reste muet ───────────────────────────
+// ── 5. Le son : un même sample pour le sort et l'arrivée ───────────────────
 assert.match(foudreAudio, /export const ECLAIR_DU_MARTEAU_ID = 'eclair-du-marteau';/,
   'le sort du marteau est nommé une seule fois');
 assert.match(foudreAudio, /export const MAITRE_DU_MARTEAU_ID = 'maitre-du-marteau';/,
   'le Maître partage le même registre de sources');
 assert.match(foudreAudio, /const CARTES_FOUDRE_MARTEAU = new Set\(\[ECLAIR_DU_MARTEAU_ID, MAITRE_DU_MARTEAU_ID\]\);/,
-  'les deux cartes — et elles seules — sont reconnues');
+  'les deux cartes — et elles seules — sont reconnues pour la foudre visuelle');
 assert.match(foudreAudio, /return CARTES_FOUDRE_MARTEAU\.has\(blessure\?\.sourceCarteId\);/,
   'la blessure du marteau se reconnaît à sa carte, pas à sa couleur');
-assert.match(foudreAudio, /export function rpgFoudreSoundFor\(cardOrId, action\) \{[\s\S]*?return null;\s*\}/,
-  'le tonnerre synthétisé a été retiré : le routage ne propose plus de bruitage propre');
-assert.doesNotMatch(audio, /foudre_marteau/, 'le catalogue audio ne contient plus le coup de tonnerre retiré');
+assert.match(foudreAudio, /card\.id === ECLAIR_DU_MARTEAU_ID && action === 'spell'\) return RPG_FOUDRE_MARTEAU_SFX;/,
+  'Éclair du marteau déclenche le sample au lancement du sort');
+assert.match(foudreAudio, /card\.id === MAITRE_DU_MARTEAU_ID && action === 'arrival'\) return RPG_FOUDRE_MARTEAU_SFX;/,
+  'le Maître déclenche le même sample à son arrivée');
+assert.match(audio, /export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';/,
+  'le catalogue nomme le bruitage de tonnerre');
+assert.match(audio, /thunder-spark-transition-full\.mp3/,
+  'le lecteur charge le sample Thunder Spark fourni');
+assert.match(audio, /\[RPG_FOUDRE_MARTEAU_SFX\]: \[\{ kind: 'sample', at: 0, dur: 3\.422, g: 1 \}\]/,
+  'le tonnerre est un échantillon de 3,422 secondes, pas une synthèse');
 assert.match(page, /\?\? rpgFoudreSoundFor\(carte, 'spell'\)\s*\n?\s*\?\? rpgWaterSoundFor\(carte, 'spell'\)/,
-  'la page garde le point de routage, puis retombe sur les sons communs');
+  'la page route le sort avant les sons communs');
+assert.match(page, /const sonFoudre = rpgFoudreSoundFor\(carte, 'arrival'\)/,
+  'la pose locale du Maître joue le son d’arrivée');
+assert.match(page, /rpgFoudreSoundFor\(carteAnnoncee, 'arrival'\)/,
+  'la résolution d’une annonce adverse du Maître joue le son d’arrivée');
+assert.match(page, /rpgFoudreSoundFor\(MAITRE_DU_MARTEAU_ID, 'arrival'\)/,
+  'les retours du Maître par Tenacité rejouent le son d’arrivée');
+assert.match(page, /rpgFoudreSoundFor\(cardById\(entite\.carteId\), 'arrival'\)/,
+  'un instantané PvP joue aussi le son du Maître adverse');
 assert.match(page, /if \(nom === 'foudre_marteau'\) \{\s*\n\s*const maintenant = Date\.now\(\);\s*\n\s*if \(maintenant - dernierSonFoudreRef\.current < 700\) return;/,
-  'la garde historique resterait sans effet si le tonnerre revenait');
+  'un garde évite de doubler le tonnerre sur un même geste');
 
-console.log('✓ Foudre des marteaux : quand le sort ou les 3 dégâts d’arrivée du Maître touchent une créature, seul l’éclair descend du ciel jusqu’à son point d’impact — flash, onde, dix étincelles, fissures sous la carte — puis cinq arcs résiduels s’éteignent, la victime convulsant au même rythme (impact à 28 %) : 950 ms sur l’emplacement relevé, sans aucun marteau dessiné, sans capter de geste, sans retenir la mort, silencieuse en mouvement réduit, et pour ces deux cartes seules — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');
+console.log('✓ Foudre des marteaux : quand le sort ou les 3 dégâts d’arrivée du Maître touchent une créature, seul l’éclair descend du ciel jusqu’à son point d’impact — flash, onde, dix étincelles, fissures sous la carte — puis cinq arcs résiduels s’éteignent, la victime convulsant au même rythme (impact à 28 %) : 950 ms sur l’emplacement relevé, sans aucun marteau dessiné, sans capter de geste, sans retenir la mort, immobile quand les animations sont réduites, et pour ces deux cartes seules — le journal nomme le coup, la Neige ordinaire ne fait pas tomber le ciel');

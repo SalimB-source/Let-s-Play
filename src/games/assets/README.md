@@ -59,6 +59,31 @@ tête de dragon). A ship that also belongs to the pirate set plays the dock
 sound only — never both arrival sounds. Tokens, reanimations and prisoners
 returning from a hold are not arrivals and stay silent.
 
+## Voix des guerriers du Nord: `dwarf-dialogue-my-axe-shall-speak-for-me.wav`
+
+`dwarf-dialogue-my-axe-shall-speak-for-me.wav` is the user-supplied
+`public/Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav`, copied byte-for-byte
+with no re-encoding (WAV PCM, stereo, 16-bit, 44.1 kHz, 2.259 seconds,
+460,252 bytes).
+
+It plays on creature arrival for **Guerrier au bouclier rond**, **Berserk des
+trois hivers**, **Jarl au marteau de guerre** and **Berserk du crépuscule**.
+The same line is used for all four cards in solo and PvP; previews and unrelated
+creatures do not trigger it.
+
+## Foudre des marteaux: `thunder-spark-transition-full.mp3`
+
+`thunder-spark-transition-full.mp3` is a byte-for-byte game copy of the
+user-provided `public/26509 Thunder spark transition-full.mp3` (MP3 MPEG-1
+Layer III, 320 kbps, 44.1 kHz, 3.422 seconds, 136,880 bytes). The original is
+kept in `public/`; no re-encoding or editing was applied.
+
+It plays as the `foudre_marteau` SFX for **Éclair du marteau**
+(`eclair-du-marteau`) when cast and for the arrival effect of **Maître du
+marteau** (`maitre-du-marteau`). Both sides use the same sound. A returning
+Maître triggers it again with its Tenacité arrival effect; the PvP snapshot
+route also recognizes the opponent's arrival.
+
 ## Cold wind mass freeze: `cold-wind.wav`
 
 `cold-wind.wav` is a real recorded wind sample, not synthesized.

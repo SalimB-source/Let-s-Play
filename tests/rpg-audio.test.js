@@ -16,6 +16,7 @@ import {
   RPG_PIRATE_ARRIVEE_SFX,
   RPG_PIRATE_DIALOGUE_SFX,
   RPG_SFX_NAMES,
+  RPG_FOUDRE_MARTEAU_SFX,
   RpgAudioPlayer,
 } from '../src/games/rpgAudio.js';
 
@@ -31,8 +32,8 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
     'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'hover',
-    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'player_attack_hit', 'victoire',
-    'water_wave',
+    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
+    'foudre_marteau', 'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
   for (const name of RPG_SFX_NAMES) {
     const sequence = rpgSfx(name);
@@ -79,6 +80,20 @@ test('le dialogue « Alright » est le second accueil pirate, en alternance avec
   assert.equal(rpgSonArriveePirate(-1), RPG_PIRATE_DIALOGUE_SFX);
 });
 
+test('la voix naine des guerriers du Nord est un échantillon fourni', () => {
+  assert.ok(RPG_SFX_NAMES.includes('dwarf_dialogue'));
+  assert.deepEqual(rpgSfx('dwarf_dialogue'), [{ kind: 'sample', at: 0, dur: 2.259, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/dwarf-dialogue-my-axe-shall-speak-for-me.wav', import.meta.url)));
+});
+
+test('Thunder Spark est un sample partagé par les deux marteaux', () => {
+  assert.equal(RPG_FOUDRE_MARTEAU_SFX, 'foudre_marteau');
+  assert.ok(RPG_SFX_NAMES.includes(RPG_FOUDRE_MARTEAU_SFX));
+  assert.deepEqual(rpgSfx(RPG_FOUDRE_MARTEAU_SFX), [{ kind: 'sample', at: 0, dur: 3.422, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/thunder-spark-transition-full.mp3', import.meta.url)),
+    'Thunder Spark Transition voyage dans src/games/assets');
+});
+
 test('la victoire est la fanfare fournie, livrée avec le jeu', () => {
   assert.ok(RPG_SFX_NAMES.includes('victoire'));
   assert.deepEqual(rpgSfx('victoire'), [{ kind: 'sample', at: 0, dur: 4.624, g: 1 }]);
@@ -102,7 +117,7 @@ test('toutes les synthèses retirées restent muettes — le survol est la seule
     'mana', 'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long',
     'soin_vie', 'soin_vie_adverse', 'bouclier', 'attaque_declaree', 'attaque_confirmee',
     'blocage', 'choc_lames', 'sword', 'combat', 'coup_rapide',
-    'impact', 'contresort', 'foudre_marteau', 'menu', 'select', 'erreur', 'pile', 'annuler',
+    'impact', 'contresort', 'menu', 'select', 'erreur', 'pile', 'annuler',
   ];
   for (const name of retires) {
     assert.ok(!RPG_SFX_NAMES.includes(name), `${name} n'est plus déclaré au catalogue`);

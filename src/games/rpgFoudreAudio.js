@@ -1,13 +1,13 @@
 /**
  * Routage du bruitage et reconnaissance visuelle de la foudre du Sablier.
  *
- * Le catalogue synthétique a été retiré : ni l'Éclair du marteau ni l'arrivée
- * du Maître n'ont de bruitage propre. La lecture visuelle, elle, est partagée
- * par les deux cartes. Le journal des blessures nomme leur source pour que la
- * table fasse tomber le même éclair sur la créature touchée — le sort comme
- * les 3 dégâts que le Maître inflige en arrivant, jamais la Neige ordinaire.
+ * Le Thunder Spark Transition accompagne le sort Éclair du marteau et
+ * l'effet d'arrivée du Maître du marteau. Le journal des blessures nomme
+ * toujours la carte source pour que la table fasse tomber le même éclair sur
+ * la créature touchée — jamais pour la Neige ordinaire.
  */
 import { cardById } from './rpgCards.js';
+import { RPG_FOUDRE_MARTEAU_SFX } from './rpgAudio.js';
 
 /** Le sort dont le coup fait tomber la foudre sur une créature. */
 export const ECLAIR_DU_MARTEAU_ID = 'eclair-du-marteau';
@@ -21,15 +21,12 @@ function resolveCard(cardOrId) {
   return typeof cardOrId === 'string' ? cardById(cardOrId) : cardOrId;
 }
 
-/**
- * Le tonnerre synthétisé a quitté le jeu : aucune carte n'a de bruitage de
- * foudre, et `null` est retourné partout. La chaîne de la page retombe alors
- * sur les sons communs, silencieux eux aussi tant qu'aucun échantillon n'est
- * fourni. Cette coupure audio ne retire évidemment rien à l'animation.
- */
+/** Route le même échantillon vers le sort et l'effet d'arrivée du Maître. */
 export function rpgFoudreSoundFor(cardOrId, action) {
   const card = resolveCard(cardOrId);
   if (!card || !action) return null;
+  if (card.id === ECLAIR_DU_MARTEAU_ID && action === 'spell') return RPG_FOUDRE_MARTEAU_SFX;
+  if (card.id === MAITRE_DU_MARTEAU_ID && action === 'arrival') return RPG_FOUDRE_MARTEAU_SFX;
   return null;
 }
 

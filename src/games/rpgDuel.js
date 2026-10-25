@@ -39,6 +39,7 @@ import {
   couleurEngagement,
 } from './rpgAI.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
+import { rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import {
   RPG_MANA_ESSAI_CARTES_EXCLUES,
   RPG_MANA_ESSAI_CHAMP_MAX,
@@ -182,20 +183,18 @@ export function rpgConsommerPrisesEnCale(duel) {
   return journal;
 }
 
-// Les arrivées sonores des créatures maritimes : des journaux audio hors
-// état JSON, sur le modèle des prises en cale. Quand une créature jouée depuis
-// la main entre en jeu via `rpgJouerCreature`, le moteur la classe une seule
-// fois : un **navire** — type imprimé « Navire », quel que soit son set — est
-// accueilli par l'ambiance de quai (`navire_arrivee`) ; toute autre créature
-// pirate du set Lettres de Marque l'est par un accueil alterné entre le cri
-// « Ahoy ! » (`pirate_arrivee`) et le dialogue « Alright »
-// (`pirate_dialogue`). Le type Navire prime : un navire pirate ne fait jamais
-// retentir les deux sons. Ni les jetons (nés d'un effet), ni les réanimations,
-// ni les détenues rendues en jeu par l'ouverture d'une cale ne passent par ce
-// journal : le moteur précise lui-même que ces retours ne sont pas des
-// arrivées. La page consomme les journaux à chaque rendu.
+// Les arrivées sonores des créatures : des journaux audio hors état JSON, sur
+// le modèle des prises en cale. Une créature jouée depuis la main entre dans
+// un seul journal : les navires (type imprimé « Navire ») pour l'ambiance de
+// quai, les pirates non-navires pour leur accueil alterné, et les quatre
+// guerriers du Nord concernés pour la voix naine. Le type Navire prime toujours
+// sur le set pirate. Ni les jetons, ni les réanimations, ni les détenues
+// rendues en jeu par l'ouverture d'une cale ne passent par ces journaux : le
+// moteur précise lui-même que ces retours ne sont pas des arrivées. La page
+// consomme les journaux à chaque rendu.
 const arriveesPirateAudioParDuel = new WeakMap();
 const arriveesNavireAudioParDuel = new WeakMap();
+const arriveesDwarfAudioParDuel = new WeakMap();
 
 /** Les arrivées de pirates survenues depuis le dernier relevé — le journal se vide. */
 export function rpgConsommerArriveesPirate(duel) {
@@ -213,6 +212,14 @@ export function rpgConsommerArriveesNavire(duel) {
   return journal;
 }
 
+/** Les arrivées des quatre créatures saluées par la voix naine. */
+export function rpgConsommerArriveesDwarf(duel) {
+  if (!duel) return [];
+  const journal = arriveesDwarfAudioParDuel.get(duel) ?? [];
+  arriveesDwarfAudioParDuel.delete(duel);
+  return journal;
+}
+
 function journaliserArriveeCreature(duel, cote, entite) {
   const carte = duelCardById(entite.carteId);
   const evenement = { entityId: entite.id, carteId: entite.carteId, cote };
@@ -224,6 +231,10 @@ function journaliserArriveeCreature(duel, cote, entite) {
     const journal = arriveesPirateAudioParDuel.get(duel) ?? [];
     journal.push(evenement);
     arriveesPirateAudioParDuel.set(duel, journal);
+  } else if (rpgDwarfSoundFor(carte, 'arrival')) {
+    const journal = arriveesDwarfAudioParDuel.get(duel) ?? [];
+    journal.push(evenement);
+    arriveesDwarfAudioParDuel.set(duel, journal);
   }
 }
 

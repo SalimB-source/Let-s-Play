@@ -83,9 +83,10 @@ import {
   rpgSonArriveePirate,
 } from './rpgAudio.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
+import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
-import { blessureDuMarteau, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
+import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
@@ -166,6 +167,7 @@ import {
   rpgConsommerPrisesEnCale,
   rpgConsommerArriveesPirate,
   rpgConsommerArriveesNavire,
+  rpgConsommerArriveesDwarf,
   rpgConsommerSoins,
   rpgJouerCreature,
   rpgAppliquerBannieresAttaque,
@@ -5415,14 +5417,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
     if (nouvellesCreaturesAdverses.length) {
       jouerSfx('card_place');
+      const sonFoudre = nouvellesCreaturesAdverses
+        .map((entite) => rpgFoudreSoundFor(cardById(entite.carteId), 'arrival'))
+        .find(Boolean);
       const sonFeu = rpgFireSoundFor(cardById(nouvellesCreaturesAdverses[0].carteId), 'arrival');
-      if (sonFeu) jouerSfx(sonFeu);
+      if (sonFoudre) jouerSfx(sonFoudre);
+      else if (sonFeu) jouerSfx(sonFeu);
       // Les journaux WeakMap du moteur ne traversent pas l'instantané PvP :
       // l'arrivée d'une créature adverse s'y constate par différence de champ.
       for (const entite of nouvellesCreaturesAdverses) {
         const carteNouvelle = cardById(entite.carteId);
         if (cardHasPrintedType(carteNouvelle, 'Navire')) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
         else if (rpgEstCartePirate(carteNouvelle)) jouerArriveePirate();
+        else if (rpgDwarfSoundFor(carteNouvelle, 'arrival')) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
       }
     }
 
@@ -5846,8 +5853,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la destruction). Le souffle n'appartient d'ailleurs qu'aux blessures —
   // les attaques de créatures partagent toutes `player_attack_hit`.
   const dernierSonFeuRef = useRef(0);
-  // Même garde pour `foudre_marteau`, devenu silencieux avec le retrait du
-  // catalogue synthétique : le test ne coûte rien si le tonnerre revenait.
+  // Même garde pour le tonnerre du marteau : le lancement du sort et son
+  // impact peuvent être relevés par le même geste, sans double lecture.
   const dernierSonFoudreRef = useRef(0);
   const dernierSonFroidRef = useRef(0);
   // La position du journal des blessures déjà animée : une brûlure ancienne ne
@@ -6167,8 +6174,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
   });
 
-  // ── Arrivées en jeu : accueil alterné (« Ahoy ! » / « Alright ») pour les
-  //    pirates, ambiance de quai pour les navires ──
+  // ── Arrivées en jeu : accueil alterné pour les pirates, quai pour les
+  //    navires, et réplique naine pour quatre guerriers du Nord ──
   const arriveesDuelRef = useRef(null);
   useEffect(() => {
     const duelCourant = duelRef.current;
@@ -6176,12 +6183,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // aucune arrivée survenue avant le montage ne doit sonner en différé.
     const navires = rpgConsommerArriveesNavire(duelCourant);
     const pirates = rpgConsommerArriveesPirate(duelCourant);
+    const nains = rpgConsommerArriveesDwarf(duelCourant);
     if (arriveesDuelRef.current !== duelCourant || ecran !== 'partie') {
       arriveesDuelRef.current = duelCourant;
       return;
     }
     if (navires.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
     if (pirates.length) jouerArriveePirate(pirates.length);
+    if (nains.length) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
   });
 
   // Compteur de séquence pour les animations de pioche.
@@ -8438,6 +8447,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
+    // Le Maître frappe à chaque arrivée réelle, y compris sa renaissance par
+    // Tenacité. Comparer les identifiants d'entité couvre ces retours sans
+    // confondre son effet avec une créature déjà installée.
+    const idsAvantChamp = new Set((avant ?? []).map((entite) => entite.entityId));
+    const maitreArrive = [
+      ...(duel?.joueur?.creatures ?? []),
+      ...(duel?.sorcier?.creatures ?? []),
+    ].some((entite) => entite.carteId === MAITRE_DU_MARTEAU_ID && !idsAvantChamp.has(entite.id));
+    if (maitreArrive) {
+      const sonArrivee = rpgFoudreSoundFor(MAITRE_DU_MARTEAU_ID, 'arrival');
+      if (sonArrivee) jouerSfx(sonArrivee);
+    }
     // Le journal des blessures avance à chaque action animée, même sans carte
     // à l'écran : une brûlure non jouée ne doit pas se rallumer plus tard.
     const positionBlessures = journalBlessuresRef.current.duel === duel
@@ -9221,11 +9242,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         res.sacrificeId ? [res.sacrificeId] : []);
       jouerSfx('card_place');
-      const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
-      if (sonEffetBraise) jouerSfx(sonEffetBraise);
+      const sonFoudre = rpgFoudreSoundFor(carte, 'arrival');
+      if (sonFoudre) jouerSfx(sonFoudre);
       else {
-        const sonEau = rpgWaterSoundFor(carte, 'arrival');
-        if (sonEau) jouerSfx(sonEau);
+        const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
+        if (sonEffetBraise) jouerSfx(sonEffetBraise);
+        else {
+          const sonEau = rpgWaterSoundFor(carte, 'arrival');
+          if (sonEau) jouerSfx(sonEau);
+        }
       }
       // Le filtre inclut aussi le vent d’arrivée de la Valkyrie (sans gel).
       declencherGelMasse(carte, 'joueur');
@@ -10605,6 +10630,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         : rpgFoudreSoundFor(carteAnnoncee, 'spell')
           ?? rpgWaterSoundFor(carteAnnoncee, 'spell')
           ?? rpgFireSoundFor(carteAnnoncee, 'spell')
+          ?? rpgFoudreSoundFor(carteAnnoncee, 'arrival')
           ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
     }
