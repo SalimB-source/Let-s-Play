@@ -308,6 +308,23 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 72, color: '#c9b6ff', size: 0.028, opacity: 0.5, vx: 0.02, vy: -0.14, sway: 0.28, swayHz: 0.22, z: 0.85, zSpread: 0.8 }),
     overlay: { kind: 'ombre', color: '#150f24', opacity: 0.2, speed: 0.006, scale: 2.4 },
   }),
+  // Le Cimetière des noms effacés : la même tour, mais dehors. Aucun objet 3D —
+  // les tombes, les cyprès, la grille et la lampe sont peints aux bords, et
+  // l'aire de terre battue du centre reste libre pour les cartes. La lune
+  // éclaire en biais, la lampe à huile vacille en bas à droite, et la brume
+  // rampe le long du muret.
+  'cimetiere-des-noms-effaces': theme({
+    ambient: '#c8d2e8', ambientIntensity: 0.55, key: '#e9eeff', keyIntensity: 0.47,
+    keyDirection: [-0.72, 0.5, 0.9], relief: 1.35, roughness: 0.9,
+    lights: [
+      // La lampe à huile posée contre le muret, qui respire comme une flamme.
+      light({ color: '#ffb45e', intensity: 2.1, distance: 3.6, x: 0.42, y: -0.6, z: 0.55, flicker: 0.3 }),
+      // La lune, froide et lente, qui prend la moitié haute du cimetière.
+      light({ color: '#cfdcff', intensity: 1.7, distance: 5, x: -0.35, y: 0.72, z: 1.25, pulse: 0.14, pulseHz: 0.04 }),
+    ],
+    particles: motes({ count: 68, color: '#d6dcff', size: 0.026, opacity: 0.46, vx: 0.14, vy: -0.06, sway: 0.24, swayHz: 0.2, z: 0.9, zSpread: 0.75 }),
+    overlay: { kind: 'ombre', color: '#121a2c', opacity: 0.17, speed: 0.009, scale: 2.2 },
+  }),
   // Le lac de glace du ciel : l'aurore glisse, la poudre scintille.
   'iles-celestes': theme({
     ambient: '#eaf4ff', key: '#e8f4ff', keyIntensity: 0.44, relief: 1.1, roughness: 0.35,

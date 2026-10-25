@@ -67,7 +67,12 @@ import {
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { RPG_NIVEAUX_IA, rpgProfilIA } from '../src/games/rpgAI.js';
 import { RPG_AMBIENT_BPM } from '../src/games/rpgAmbientMusic.js';
-import { plateauDeDeck } from '../src/games/rpgPlateaux.js';
+import {
+  plateauDeDeck,
+  plateauParId,
+  resoudrePlateauxDuDuel,
+  varianteFantaisisteDe,
+} from '../src/games/rpgPlateaux.js';
 import { RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 
 const CHEMIN = (relatif) => fileURLToPath(new URL(`../public/${relatif}`, import.meta.url));
@@ -390,6 +395,35 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
 });
 
 // ── 4. L'économie ───────────────────────────────────────────────────────────
+
+test('la tour a deux tables : la Fosse, et le cimetière des noms effacés', () => {
+  // La Fosse est la table de la tour ; le cimetière en est le double, ouvert par
+  // le tirage fantaisiste comme l'Erg s'ouvre sur le désert de verre.
+  const fosse = plateauParId('fosse-de-l-oubliee');
+  const cimetiere = plateauParId('cimetiere-des-noms-effaces');
+  assert.ok(fosse && cimetiere, 'les deux tables de la tour sont au catalogue');
+  assert.notEqual(fosse.fichier, cimetiere.fichier, 'chacune a son propre fond');
+  assert.equal(varianteFantaisisteDe('fosse-de-l-oubliee').id, 'cimetiere-des-noms-effaces');
+  assert.equal(varianteFantaisisteDe('cimetiere-des-noms-effaces'), null,
+    'un cimetière n’a pas de double au second degré');
+  // Le cimetière reste dehors : son résumé parle de tombes, pas de puits.
+  assert.match(cimetiere.resume, /tombes|stèles/i, 'le cimetière annonce ses tombes');
+  assert.match(cimetiere.resume, /sans inscription|sans texte|effac/i,
+    'ses pierres sont nues — aucun nom, aucun caractère');
+  // Sans l'option, les deux camps de la tour restent dans la Fosse ; avec elle,
+  // le second tirage peut sortir parmi les tombes.
+  const dedans = resoudrePlateauxDuDuel({ deckJoueur: 'horde-des-fosses', deckAdverse: 'le-roi-sans-nom' });
+  assert.equal(dedans.joueur.plateau.id, 'fosse-de-l-oubliee');
+  assert.equal(dedans.decouper, false, 'les deux camps de la tour partagent la même table');
+  const dehors = resoudrePlateauxDuDuel({
+    deckJoueur: 'horde-des-fosses',
+    deckAdverse: 'cour-des-djinns',
+    variantesFantaisistes: true,
+    rng: () => 0.9,
+  });
+  assert.equal(dehors.joueur.plateau.id, 'cimetiere-des-noms-effaces');
+  assert.equal(dehors.joueur.variante, true);
+});
 
 test('le barème de l’étage remplace le barème global, sans toucher aux autres tours', () => {
   assert.equal(recompenseEtage('oubliee-6', { premiere: true }), 1500);

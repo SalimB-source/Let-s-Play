@@ -182,6 +182,17 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-fosse-de-l-oubliee.jpg',
     resume: 'Le fond d’un puits de pierre, vu de dessus à 90° par une nuit froide : un dallage circulaire de basalte noir et de calcaire pâle, fendu, suintant d’humidité, entièrement nu au centre pour poser les cartes, que cerclent des anneaux de pierre et quatre pitons de fer scellés dans les dalles. Aux bords seulement : la chaîne rouillée lovée dans l’angle haut gauche, la cloche de bronze fêlée couchée sur le flanc à droite, des lambeaux de parchemin vierge éparpillés, une tache d’encre séchée, et les parois du puits qui remontent en courbe sur le pourtour du cadre. Une brume violette rampe depuis les deux angles bas ; la lumière tombe de très haut, froide et blafarde. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
   },
+  // L'autre face de la Tour Oubliée : le cimetière où la tour a été effacée du
+  // registre. Même arène, dehors — le cercle de terre battue au milieu des
+  // tombes, sous la lune. Les trois premières cryptes s'y ouvrent ; les trois
+  // dernières descendent dans la Fosse (`fosse-de-l-oubliee`).
+  {
+    id: 'cimetiere-des-noms-effaces',
+    nom: 'Le Cimetière des noms effacés',
+    lieu: 'Autour de la Tour Oubliée, le cimetière des morts sans registre',
+    fichier: 'plateau-cimetiere-des-noms-effaces.jpg',
+    resume: 'Un cimetière de nuit, vu de dessus à 90° : une grande aire circulaire de terre battue et de dalles brisées, entièrement nue au centre pour poser les cartes, qu’entoure un muret de pierres sèches. Autour du muret seulement : les tombes blanchies à coupole, les stèles nues penchées, deux cyprès noirs dont l’ombre s’allonge, la grille de fer rouillée, les palmes sèches, quelques lambeaux de parchemin vierge et une lampe à huile restée allumée. La lune éclaire le sol en biais ; une brume violette rampe le long du mur. Les pierres sont parfaitement lisses et sans inscription. Le milieu du cimetière reste vide : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -308,6 +319,9 @@ export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'erg-du-sahara': 'desert-de-verre',
   'ruines-de-tipaza': 'abysses-phosphorescentes',
   'village-viking': 'iles-celestes',
+  // La Tour Oubliée a deux visages : le fond du puits, et le cimetière où son
+  // nom a été effacé. Le second tirage peut ouvrir la table dehors.
+  'fosse-de-l-oubliee': 'cimetiere-des-noms-effaces',
 };
 
 /** Le motif d'une moitié de table imposée par la carte de profil. */

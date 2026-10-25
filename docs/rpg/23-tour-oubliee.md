@@ -284,12 +284,24 @@ mythiques uniques, une couleur).
   sont peints aux bords. Vignette de profil livrée
   (`public/profil/plateaux/fosse-de-l-oubliee.webp`, 13,9 Ko, produite par
   `tools/make-profil-vignettes.mjs`).
+- **`public/plateau-cimetiere-des-noms-effaces.jpg`** : **le second plateau de la
+  tour**, dehors — l'aire circulaire de terre battue au milieu des tombes
+  blanchies, des stèles nues, des cyprès et de la grille rouillée. 3840×2560 en
+  3:2, même direction artistique. Il est branché comme **double merveilleux** de
+  la Fosse (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`) : quand la partie autorise les
+  variantes (`variantesPlateaux`, actif sur la route du jeu), le second tirage
+  peut ouvrir la table parmi les tombes. La tour garde ainsi deux visages : le
+  fond du puits et le cimetière où son nom a été effacé.
 - **`src/games/rpgTableSceneThemes.js`** : décor 3D de la Fosse — aucun objet
   maquetté, deux lumières (la clarté froide qui tombe du haut du puits, les
   braises violettes de la tache d'encre), brume qui **monte** du sol et voile
   d'ombre pourpre. Aucune piste musicale dédiée : en Histoire, la boucle
   d'ambiance de la tour (62 BPM) prend le relais, comme pour le Sablier et le
   Palais du Pharaon.
+- **Cimetière des noms effacés** : décor 3D propre — la lampe à huile qui
+  vacille contre le muret, la lune froide qui prend la moitié haute, poussière
+  portée par le vent et voile d'ombre bleu nuit. Vignette de profil livrée
+  (`public/profil/plateaux/cimetiere-des-noms-effaces.webp`).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
