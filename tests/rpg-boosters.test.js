@@ -16,7 +16,9 @@ import {
   tourIntroduction,
   vivierRayon,
 } from '../src/games/rpgBoosters.js';
-import { RPG_DUEL_CARDS, cardById, cardColors, carteJouableSansTerrain } from '../src/games/rpgCards.js';
+import {
+  RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, carteJouableSansTerrain,
+} from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, RPG_REVELATIONS_PAR_ETAGE, collectionJoueur, nombreExemplaires } from '../src/games/rpgCollection.js';
 import { tousLesEtages } from '../src/games/rpgStoryTours.js';
 import { BAREME_DOUBLON, noterOuvertureJournal, portefeuilleVide } from '../src/games/rpgCredits.js';
@@ -37,13 +39,11 @@ const bandesDe = (cartIds) => {
 };
 const PAQUET_DE = Object.fromEntries(RAYONS.map((rayon) => [rayon.id, rayon]));
 
-// ── Les trois paquets ────────────────────────────────────────────────────────
+// ── Un seul paquet ───────────────────────────────────────────────────────────
 
-test('trois paquets en vente, chacun avec ses couleurs, dès le départ', () => {
-  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk', 'banquise', 'citerne']);
-  assert.deepEqual(PAQUET_DE.souk.couleur, ['sable', 'braise']);
-  assert.deepEqual(PAQUET_DE.banquise.couleur, ['neige', 'tenebres']);
-  assert.deepEqual(PAQUET_DE.citerne.couleur, ['eau', 'braise']);
+test('un seul paquet en vente, toutes les couleurs et toutes les cartes, dès le départ', () => {
+  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk'], 'les boosters sont fondus en un seul paquet');
+  assert.deepEqual(PAQUET_DE.souk.couleur, RPG_ELEMENTS, 'le paquet unique couvre toutes les couleurs');
   for (const rayon of RAYONS) {
     assert.equal(rayon.prix, 140, 'une journée de jeu vaut deux paquets');
     assert.equal(cardById(rayon.vitrine)?.rarity, 'mythique', `${rayon.id} montre une vraie mythique`);
@@ -54,26 +54,23 @@ test('trois paquets en vente, chacun avec ses couleurs, dès le départ', () => 
   assert.equal(COFFRET.taille, 10);
   assert.equal(rayonParId('souk').nom, 'Souk');
   assert.equal(rayonParId('inconnu'), null);
-  // Le journal d'un appareil garde ses anciennes ouvertures : lisibles, plus vendues.
-  assert.equal(rayonParId('braise').nom, 'Braise');
-  assert.equal(rayonOuvert('braise'), false);
-  assert.deepEqual(vivierRayon('braise'), []);
-  assert.equal(prixCoffret('braise'), null);
+  // Le journal d'un appareil garde ses anciennes ouvertures : lisibles, plus vendues
+  // — les quatre rayons monochromes d'origine, et les deux paquets mélangés
+  // (Banquise, Citerne) qui les ont remplacés avant d'être fondus à leur tour.
+  for (const [id, nom] of [['braise', 'Braise'], ['sable', 'Sable'], ['eau', 'Eau'], ['neige', 'Neige'], ['banquise', 'Banquise'], ['citerne', 'Citerne']]) {
+    assert.equal(rayonParId(id).nom, nom);
+    assert.equal(rayonOuvert(id), false, `${id} ne se vend plus`);
+    assert.deepEqual(vivierRayon(id), []);
+    assert.equal(prixCoffret(id), null);
+    assert.equal(etatRayon(id, COMPLET), null, 'un ancien rayon n’est plus une étagère');
+  }
   assert.equal(etatRayons(progression()).length, RAYONS.length);
-  assert.equal(etatRayon('braise', COMPLET), null, 'un ancien rayon n’est plus une étagère');
 });
 
-test('chaque carte jouable est vendue dans un seul paquet, sans oubli ni doublon', () => {
-  const tous = RAYONS.flatMap((rayon) => vivierRayon(rayon.id));
-  assert.equal(new Set(tous).size, tous.length, 'aucune carte dans deux paquets');
-  assert.deepEqual([...new Set(tous)].sort(), jouables().sort(), 'toute carte jouable est dans un paquet');
-  for (const rayon of RAYONS) {
-    for (const id of vivierRayon(rayon.id)) {
-      const couleurs = cardColors(id);
-      assert.ok(couleurs.some((couleur) => rayon.couleur.includes(couleur)),
-        `${id} (${couleurs.join('/')}) est dans le paquet ${rayon.id}`);
-    }
-  }
+test('chaque carte jouable est vendue dans l’unique paquet, sans oubli ni doublon', () => {
+  const vivier = vivierRayon('souk');
+  assert.equal(new Set(vivier).size, vivier.length, 'aucune carte en double dans le vivier');
+  assert.deepEqual([...vivier].sort(), jouables().sort(), 'toute carte jouable est dans le paquet du Souk');
 });
 
 test('les cartes ne dépendent plus de la progression : tout le catalogue est au vivier', () => {
@@ -82,12 +79,10 @@ test('les cartes ne dépendent plus de la progression : tout le catalogue est au
   }
   assert.equal(carteAuVivier('carte-qui-nexiste-pas'), false);
   // Le vivier ne change pas selon la progression.
-  for (const rayon of RAYONS) {
-    assert.deepEqual(vivierRayon(rayon.id), vivierRayon(rayon.id, COMPLET));
-  }
+  assert.deepEqual(vivierRayon('souk'), vivierRayon('souk', COMPLET));
 });
 
-test('une future carte jouable rejoint automatiquement son paquet', () => {
+test('une future carte jouable, de n’importe quelle couleur, rejoint le paquet unique', () => {
   const nouvelle = {
     id: 'carte-future-sable',
     name: 'Carte future',
@@ -98,21 +93,31 @@ test('une future carte jouable rejoint automatiquement son paquet', () => {
     rarity: 'commune',
     kind: 'creature',
   };
-  RPG_DUEL_CARDS.push(nouvelle);
+  const autre = {
+    id: 'carte-future-neige',
+    name: 'Carte future (Neige)',
+    element: 'neige',
+    cost: 2,
+    atk: 2,
+    def: 2,
+    rarity: 'commune',
+    kind: 'creature',
+  };
+  RPG_DUEL_CARDS.push(nouvelle, autre);
   try {
-    assert.ok(vivierRayon('souk').includes('carte-future-sable'), 'entre dans le paquet de sa couleur');
-    assert.equal(vivierRayon('banquise').includes('carte-future-sable'), false);
+    assert.ok(vivierRayon('souk').includes('carte-future-sable'), 'une carte Sable entre dans le paquet unique');
+    assert.ok(vivierRayon('souk').includes('carte-future-neige'), 'une carte Neige aussi : un seul vivier, toutes les couleurs');
   } finally {
     RPG_DUEL_CARDS.splice(RPG_DUEL_CARDS.indexOf(nouvelle), 1);
+    RPG_DUEL_CARDS.splice(RPG_DUEL_CARDS.indexOf(autre), 1);
   }
 });
 
-test('une carte sans couleur reconnue tombe dans le premier paquet, jamais hors vente', () => {
+test('une carte sans couleur reconnue tombe dans le paquet, jamais hors vente', () => {
   const orpheline = { id: 'carte-sans-couleur', name: 'Orpheline', element: 'inconnu', cost: 1, atk: 1, def: 1, rarity: 'commune', kind: 'creature' };
   RPG_DUEL_CARDS.push(orpheline);
   try {
-    assert.ok(vivierRayon(RAYONS[0].id).includes('carte-sans-couleur'));
-    for (const rayon of RAYONS.slice(1)) assert.equal(vivierRayon(rayon.id).includes('carte-sans-couleur'), false);
+    assert.ok(vivierRayon('souk').includes('carte-sans-couleur'));
   } finally {
     RPG_DUEL_CARDS.splice(RPG_DUEL_CARDS.indexOf(orpheline), 1);
   }
@@ -130,20 +135,18 @@ test('les cartes hors dotation gardent leur étage de révélation pour l’affi
 
 // ── Le tirage ────────────────────────────────────────────────────────────────
 
-test('un paquet fait cinq cartes distinctes, du bon paquet, avec exactement une rare', () => {
-  for (const rayon of RAYONS) {
-    const vivier = vivierRayon(rayon.id);
-    const rng = rngSeme(11);
-    for (let index = 0; index < 200; index += 1) {
-      const tirage = ouvrirBooster({ portefeuille: journalier(10000), rayonId: rayon.id, progression: COMPLET, rng });
-      assert.equal(tirage.ok, true);
-      assert.equal(tirage.tirage.cartes.length, TAUX.cartes);
-      assert.equal(new Set(tirage.tirage.cartes).size, TAUX.cartes, 'jamais deux fois la même carte');
-      for (const id of tirage.tirage.cartes) assert.ok(vivier.includes(id), `${id} est bien dans ${rayon.id}`);
-      assert.equal(tirage.tirage.details[3].rarete, 'rare', 'la quatrième carte est la rare garantie');
-      assert.equal(tirage.tirage.details.filter((carte) => carte.rarete === 'rare').length, 1,
-        'un paquet contient exactement une rare');
-    }
+test('un paquet fait cinq cartes distinctes, toutes couleurs mêlées, avec exactement une rare', () => {
+  const vivier = vivierRayon('souk');
+  const rng = rngSeme(11);
+  for (let index = 0; index < 200; index += 1) {
+    const tirage = ouvrirBooster({ portefeuille: journalier(10000), rayonId: 'souk', progression: COMPLET, rng });
+    assert.equal(tirage.ok, true);
+    assert.equal(tirage.tirage.cartes.length, TAUX.cartes);
+    assert.equal(new Set(tirage.tirage.cartes).size, TAUX.cartes, 'jamais deux fois la même carte');
+    for (const id of tirage.tirage.cartes) assert.ok(vivier.includes(id), `${id} est bien dans le vivier du Souk`);
+    assert.equal(tirage.tirage.details[3].rarete, 'rare', 'la quatrième carte est la rare garantie');
+    assert.equal(tirage.tirage.details.filter((carte) => carte.rarete === 'rare').length, 1,
+      'un paquet contient exactement une rare');
   }
 });
 
@@ -155,7 +158,10 @@ test('la garantie des nouvelles ne sert pas toujours la même carte', () => {
   const possedees = vivier.filter((id) => !neuves.includes(id));
   const portefeuille = journalier(100000);
   const tiragesNeufs = new Set();
-  for (let graine = 1; graine <= 40; graine += 1) {
+  // Le vivier fusionné est bien plus vaste qu'un rayon à deux couleurs : la
+  // rare neuve se noie dans une bande de rares beaucoup plus large, et il faut
+  // davantage de tirages pour voir la variété promise se révéler.
+  for (let graine = 1; graine <= 150; graine += 1) {
     const tirage = ouvrirBooster({ portefeuille, rayonId: 'souk', collection: possedees, rng: rngSeme(graine * 7919) });
     assert.equal(tirage.ok, true);
     const servies = tirage.tirage.cartes.filter((id) => !possedees.includes(id));
@@ -205,7 +211,7 @@ test('les taux annoncés tiennent sur dix mille ouvertures semées', () => {
 
 test('ouvrir un paquet débite le solde, range les cartes et rembourse les doublons', () => {
   const depart = journalier(500);
-  const tirage = ouvrirBooster({ portefeuille: depart, rayonId: 'banquise', rng: rngSeme(9) });
+  const tirage = ouvrirBooster({ portefeuille: depart, rayonId: 'souk', rng: rngSeme(9) });
   assert.equal(tirage.ok, true);
   const remboursement = tirage.tirage.remboursement;
   assert.equal(remboursement, tirage.tirage.details.reduce((somme, carte) => somme + carte.remboursement, 0));
@@ -223,16 +229,14 @@ test('ouvrir un paquet débite le solde, range les cartes et rembourse les doubl
 });
 
 test('un paquet de doublons n’enrichit jamais son acheteur', () => {
-  for (const rayon of RAYONS) {
-    const vivier = vivierRayon(rayon.id);
-    let bourse = journalier(100000);
-    for (let graine = 1; graine <= 30; graine += 1) {
-      const avant = bourse.credits;
-      const achat = ouvrirBooster({ portefeuille: bourse, rayonId: rayon.id, collection: vivier, rng: rngSeme(graine) });
-      assert.equal(achat.ok, true);
-      assert.ok(achat.portefeuille.credits < avant, `le paquet ${rayon.id} ${graine} ne rapporte pas de crédits`);
-      bourse = achat.portefeuille;
-    }
+  const vivier = vivierRayon('souk');
+  let bourse = journalier(100000);
+  for (let graine = 1; graine <= 30; graine += 1) {
+    const avant = bourse.credits;
+    const achat = ouvrirBooster({ portefeuille: bourse, rayonId: 'souk', collection: vivier, rng: rngSeme(graine) });
+    assert.equal(achat.ok, true);
+    assert.ok(achat.portefeuille.credits < avant, `le paquet du Souk ${graine} ne rapporte pas de crédits`);
+    bourse = achat.portefeuille;
   }
   const pire = BAREME_DOUBLON.inhabituelle * 3 + BAREME_DOUBLON.rare + BAREME_DOUBLON.mythique;
   assert.equal(pire, 112);
@@ -248,9 +252,11 @@ test('sans solde, ou sur un ancien rayon, l’achat ne touche à rien', () => {
 
   const inconnu = ouvrirBooster({ portefeuille: journalier(10000), rayonId: 'etagere-fantome' });
   assert.equal(inconnu.raison, 'rayon-inconnu');
-  const ancien = ouvrirBooster({ portefeuille: journalier(10000), rayonId: 'braise', progression: COMPLET });
-  assert.equal(ancien.raison, 'rayon-inconnu', 'un ancien rayon ne se vend plus');
-  assert.equal(ancien.portefeuille.credits, 10000);
+  for (const id of ['braise', 'banquise', 'citerne']) {
+    const ancien = ouvrirBooster({ portefeuille: journalier(10000), rayonId: id, progression: COMPLET });
+    assert.equal(ancien.raison, 'rayon-inconnu', `l’ancien rayon ${id} ne se vend plus`);
+    assert.equal(ancien.portefeuille.credits, 10000);
+  }
 });
 
 test('le coffret vend dix paquets avec la remise, et une mythique assurée', () => {
@@ -274,11 +280,11 @@ test('le coffret vend dix paquets avec la remise, et une mythique assurée', () 
 
 test('chaque paquet acheté laisse une trace au journal, doublons compris', () => {
   const rng = rngSeme(20260301);
-  const apres = ouvrirBooster({ portefeuille: journalier(10000), rayonId: 'citerne', rng });
+  const apres = ouvrirBooster({ portefeuille: journalier(10000), rayonId: 'souk', rng });
   assert.equal(apres.ok, true);
   assert.equal(apres.portefeuille.journal.length, 1, 'un paquet, une entrée');
   const entree = apres.portefeuille.journal[0];
-  assert.equal(entree.rayonId, 'citerne');
+  assert.equal(entree.rayonId, 'souk');
   assert.equal(entree.cartes.length, TAUX.cartes);
   assert.equal(entree.coffret, false);
   assert.equal(entree.remboursement, apres.tirage.remboursement);

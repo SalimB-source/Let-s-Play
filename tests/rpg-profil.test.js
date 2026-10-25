@@ -433,16 +433,17 @@ test('un paquet offert fait avancer la pitié et rembourse ses doublons', () => 
   assert.ok(bourse.cartes.length > 0, 'les cartes sont rangées');
 });
 
-test('le rayon offert est tiré au hasard parmi les paquets ouverts', () => {
+test('le rayon offert sort du même tirage au hasard, même réduit à un seul paquet', () => {
+  // Les boosters sont fondus en un seul paquet : le comptoir n'a plus qu'un
+  // choix, mais le geste du hook (`tirerParmi` sur les rayons ouverts) reste
+  // le même — il ne doit pas casser avec une liste à un seul élément.
   const ouverts = rayonsOuverts(null, []);
-  assert.ok(ouverts.length >= 2, 'au moins deux paquets au comptoir');
-  // Le même geste que le hook : un seul flux de hasard, `tirerParmi` à chaque
-  // paquet. Deux tirages successifs ne tombent pas sur le même rayon à tous les
-  // coups — c'est ce que « au hasard » veut dire ici.
+  assert.equal(ouverts.length, 1, 'un seul paquet se tient désormais au comptoir');
+  assert.equal(ouverts[0].rayon.id, 'souk');
   const choix = rngSeme('paliers');
-  const vus = new Set();
-  for (let index = 0; index < 40; index += 1) {
+  for (let index = 0; index < 10; index += 1) {
     const rayon = tirerParmi(ouverts, choix);
+    assert.equal(rayon.rayon.id, 'souk', 'le seul paquet disponible est toujours celui-là');
     const offert = ouvrirBoosterOffert({
       portefeuille: portefeuilleVide(),
       rayonId: rayon.rayon.id,
@@ -450,9 +451,7 @@ test('le rayon offert est tiré au hasard parmi les paquets ouverts', () => {
     });
     assert.equal(offert.ok, true);
     assert.equal(offert.portefeuille.journal[0].rayonId, rayon.rayon.id);
-    vus.add(rayon.rayon.id);
   }
-  assert.equal(vus.size, ouverts.length, 'tous les paquets du comptoir peuvent être offerts');
 });
 
 // ── L'identité ───────────────────────────────────────────────────────────────

@@ -141,8 +141,10 @@ journal — avec `offert: true`. Seules deux choses changent : `prix: 0`, et
 `depenserCredits` n'est pas appelé (un joueur à zéro crédit reçoit son palier).
 
 Le rayon est tiré **à chaque paquet** (`tirerParmi(rayons, rng)`), pas une fois
-pour toute la montée : « au hasard » veut dire au hasard, et un double palier
-peut offrir un paquet du Souk et un de la Banquise.
+pour toute la montée — même maintenant que les boosters sont fondus en un
+**seul** paquet du Souk (toutes couleurs, toutes cartes disponibles) : le
+tirage ne casse pas avec un choix unique, il retombe simplement toujours sur
+le même paquet.
 
 ### P5 — Deux monnaies qui ne se convertissent pas
 
