@@ -9,8 +9,9 @@ import { JSDOM } from 'jsdom';
  *
  *   - **onglet Jouer** : les quatre portes forment une grille 2 × 2 (le récit et
  *     le duel en ligne en tête, la partie rapide et le tutoriel en dessous), et
- *     sur téléphone les huit onglets passent sur deux rangées au lieu de
- *     défiler hors champ (le dernier, la Messagerie, y compris) ;
+ *     sur téléphone la barre des onglets se réduit à ses icônes, côte à côte
+ *     sur une seule rangée à parts égales (les libellés restent au bureau et
+ *     dans le DOM, l'`aria-label` garde le nom audible) ;
  *   - **duel en ligne** : le salon vit dans le même cadre plein écran que le
  *     duel (barre de retour vers le hub, key art de Bab El), au lieu de se
  *     glisser sous la barre fixe du site.
@@ -65,13 +66,14 @@ assert.match(
 assert.match(actions, /rpg-menu-button__live/, 'la pastille « en ligne » signale le mode vivant');
 assert.match(actions, /<span className="sr-only">\(en ligne\)<\/span>/, 'la pastille est aussi lisible par un lecteur d’écran');
 
-// L'encadré sous les quatre portes raconte l'histoire de Bab El, à la place de l'ancien rappel des règles.
-const presentation = page.slice(
-  page.indexOf('className="rpg-flux-menu"'),
-  page.indexOf('</section>', page.indexOf('className="rpg-flux-menu"')) + '</section>'.length,
-);
+// L'encadré sous les quatre portes racontait l'histoire de Bab El, à la place
+// de l'ancien rappel des règles : le bloc « L'histoire · Bab El » est parti au
+// lancement du mode Histoire, et le récit mot pour mot vit dans `RpgStoryBabEl`
+// (monté par l'onglet Histoire avant la campagne).
+const storyBabEl = read('../src/games/RpgStoryBabEl.jsx');
+const presentation = storyBabEl;
 for (const repere of ['Bab El', 'Astrolabe', 'Chambre des Heures', 'Salem', 'douze survivants', 'Yamina']) {
-  assert.ok(presentation.includes(repere), `la présentation de l’onglet Jouer mentionne « ${repere} »`);
+  assert.ok(presentation.includes(repere), `la présentation de l’histoire mentionne « ${repere} »`);
 }
 assert.doesNotMatch(presentation, /Le mana remplace les terrains/i,
   'l’ancien encadré des règles a laissé sa place à la présentation de l’histoire');
@@ -193,7 +195,7 @@ try {
   dom.window.close();
 }
 
-/* --------------------- téléphone : deux rangées d'onglets ----------------- */
+/* --------------------- téléphone : icônes seules, côte à côte ----------------- */
 
 const tel = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${tutorialCss}</style></head><body>
   <section class="rpg-mode-menu"><div class="rpg-mode-menu__content">
@@ -221,15 +223,29 @@ const tel = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${tutoria
 try {
   // jsdom n'évalue pas les media queries : on vérifie la règle elle-même, ses
   // bornes et ses déclarations, plutôt que le style calculé d'un écran large.
+  // Sur téléphone, la barre des modes ne garde que ses icônes : les libellés
+  // partent, les icônes grandissent, et les onglets se rangent côte à côte sur
+  // une seule rangée à parts égales — sans quoi ils se repliaient sur deux
+  // rangées de texte où « Paramètres » finissait hors champ.
   assert.match(
     battleCss,
-    /@media \(max-width: 700px\) \{\s*\.rpg-mode-menu__switch \{\s*display: flex;\s*flex-wrap: wrap;/,
-    'au téléphone, la barre des huit onglets passe en deux rangées (flex-wrap)',
+    /@media \(max-width: 820px\), \(hover:none\) and \(pointer:coarse\) and \(max-device-width:600px\) \{[\s\S]{0,700}?\.rpg-mode-menu__header \.rpg-mode-menu__switch \{[\s\S]{0,300}?flex-wrap: nowrap;/,
+    'sur téléphone, la barre des onglets reste sur une seule rangée (côte à côte)',
   );
   assert.match(
     battleCss,
-    /\.rpg-mode-menu__switch button,\s*\.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{\s*flex: 1 1 calc\(25% - 6px\);/,
-    'quatre onglets par rangée, à parts égales',
+    /\.rpg-mode-menu__header \.rpg-mode-menu__switch button,[\s\S]{0,400}?flex: 1 1 0;/,
+    'les onglets se partagent la barre à parts égales',
+  );
+  assert.match(
+    battleCss,
+    /\.rpg-mode-menu__header \.rpg-mode-menu__switch button span\.rpg-mode-menu__onglet-libelle,[\s\S]{0,500}?display: none;/,
+    'sur téléphone, les libellés des onglets disparaissent : seules les icônes restent',
+  );
+  assert.match(
+    battleCss,
+    /\.rpg-mode-menu__content \{ padding-top: 12px; \}/,
+    'un peu d’air en haut laisse respirer la barre de navigation avant le bord de l’écran',
   );
   // Paysage du téléphone et petites tablettes (701 – 1100 px) : la barre passe
   // sur sa deuxième ligne et S'AUTORISE À DÉFILER SUR UNE NOUVELLE RANGÉE —
@@ -438,7 +454,8 @@ try {
 
 console.log(
   'check:rpg-accueil ✓ — l’onglet Jouer range ses quatre portes en grille (récit et duel en ligne en tête), '
-  + 'la barre des huit onglets passe sur deux rangées au téléphone, le salon en ligne vit dans le cadre plein écran du jeu, '
+  + 'la barre des onglets se réduit à ses icônes côte à côte au téléphone (libellés au bureau, aria-label partout), '
+  + 'le salon en ligne vit dans le cadre plein écran du jeu, '
   + 'et les sept autres onglets reprennent cette même scène : artwork tamisé, gouttière unique, retour au menu rangé. '
   + 'Le salon choisit son deck sur les coffrets du menu.',
 );

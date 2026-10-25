@@ -6515,6 +6515,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transition: background .18s ease, color .18s ease, border-color .18s ease;
 }
 .rpg-mode-menu__switch button span { margin-right: 6px; color: #e5bf69; }
+/* Le texte des onglets (`rpg-mode-menu__onglet-libelle`) reprend la couleur du
+   bouton : l'or reste réservé aux icônes, dont le span voisin. */
+.rpg-mode-menu__switch button span.rpg-mode-menu__onglet-libelle { color: inherit; }
 .rpg-mode-menu__switch button:hover,
 .rpg-mode-menu__switch button:focus-visible,
 .rpg-mode-menu__switch button.is-active {
@@ -11184,30 +11187,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #fff3e5;
 }
 
-/* ── Téléphone : les sept onglets du Sablier tiennent sur deux rangées ─────
-   En une seule rangée, la barre défilait horizontalement sans indice : sur un
-   écran de 390 px, « Paramètres » restait hors champ. Les onglets passent sur
-   deux rangées pleine largeur (4 + 3) : plus rien à faire glisser, chaque
-   mode visible d'un coup d'œil. Au-delà de 700 px, tout tient sur une ligne et
-   la règle ne s'applique plus. */
+/* ── Téléphone : la marque et les commandes du haut rétrécissent ──────────
+   La barre des modes, elle, ne porte plus que ses icônes : côte à côte sur
+   une seule rangée à parts égales, avec un peu d'air en haut avant la barre
+   (voir « ONGLETS DES MODES — TÉLÉPHONE » en fin de feuille). En deux
+   rangées de texte, les onglets se repliaient sans indice : sur un écran de
+   390 px, « Paramètres » restait hors champ. */
 @media (max-width: 700px) {
-  .rpg-mode-menu__switch {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2px;
-    padding: 0 6px 3px;
-    overflow: visible;
-  }
-  .rpg-mode-menu__switch button,
-  .rpg-mode-menu__switch button.rpg-mode-menu__souk {
-    flex: 1 1 calc(25% - 6px);
-    min-width: 0;
-    min-height: 42px;
-    padding: 0 4px;
-    gap: 4px;
-    font-size: 10px;
-  }
-  .rpg-mode-menu__switch button span { font-size: 11px; }
   .rpg-mode-menu__header { min-height: 52px; }
   .rpg-mode-menu__brand { min-height: 52px; }
   .rpg-mode-menu__brand::before { width: 28px; height: 28px; font-size: 17px; }
@@ -11658,4 +11644,73 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-cercle-magique__anneau,
   .rpg-cercle-magique__glyphe,
   .rpg-cercle-magique__etincelle { animation: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ONGLETS DES MODES — TÉLÉPHONE : ICÔNES SEULES, CÔTE À CÔTE
+   ──────────────────────────────────────────────────────────────────────────
+   Sur mobile, la barre des modes ne porte plus que ses icônes : les libellés
+   disparaissent, les icônes grandissent d'un cran, et les onglets se rangent à
+   parts égales sur une seule ligne — côte à côte, sans défilement ni retour à
+   la ligne. Les pastilles (paquet à réclamer, non-lus) restent en coin
+   d'icône : elles sont l'état de l'onglet, pas du texte. Un peu d'air en haut
+   laisse respirer la barre de navigation avant le bord de l'écran.
+
+   Les libellés restent dans le DOM : les vérifications jsdom les lisent dans
+   le `textContent`, et le bureau continue de les afficher. Chaque onglet porte
+   un `aria-label` : sans lui, un onglet réduit à son icône (masquée aux
+   lecteurs d'écran) n'aurait plus de nom accessible.
+
+   Les sélecteurs passent par `.rpg-mode-menu__header` : `rpg-profil.css` et
+   les feuilles des onglets arrivent APRÈS cette feuille dans le graphe des
+   modules, et leurs règles de même spécificité l'emporteraient sinon.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 820px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  /* Un petit peu d'espace en haut avant la barre de navigation. */
+  .rpg-mode-menu__content { padding-top: 12px; }
+
+  /* La barre : une rangée unique, les onglets côte à côte à parts égales. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch {
+    flex-wrap: nowrap;
+    gap: 2px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__messagerie {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 2px;
+    gap: 0;
+  }
+
+  /* Le texte part : seules les icônes restent. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-libelle,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-solde,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-niveau,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-xp {
+    display: none;
+  }
+
+  /* Les icônes, un cran au-dessus. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-icone {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__souk-piece { font-size: 17px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__profil-embleme { font-size: 18px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button img.rpg-mode-menu__profil-embleme { width: 26px; height: 26px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__messagerie-mark { width: 18px; height: 18px; }
+
+  /* Les pastilles d'état se posent en coin d'icône : sans texte autour, à
+     l'inline elles décentreraient l'icône dans son onglet. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__messagerie-pastille {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    margin: 0;
+  }
 }
