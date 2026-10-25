@@ -3009,12 +3009,17 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  /* L'aperçu ne récite plus la règle : seuls les mots-clés restent, en
-     pastilles, et chacun ouvre sa description au survol (bulle), au toucher
-     ou au focus clavier. L'indication « Survolez un mot-clé… » ne s'affiche
-     que si la carte en porte au moins un qui s'explique. */
-  const motsCles = effetsDetailles(carte).pastilles;
-  const aMotsClesExplicables = motsCles.some((pastille) => pastille.description);
+  /* Les mots-clés passent en pastilles et portent seuls leur description au
+     survol (bulle, toucher, clavier). La description de la carte reste écrite
+     pour tout le reste : chez les créatures, `effetsDetailles` retire les
+     phrases des mots-clés génériques (Rapidité, Attaque ciblée, Envol…) — un
+     Fennec ou une Fériel n'impriment donc que leurs pastilles, un Faussoyeur
+     écrit encore « Quand le Faussoyeur arrive : … ». Les sorts, armes, sites
+     et terrains gardent leur texte : il dit ce que fait la carte. */
+  const lecture = effetsDetailles(carte);
+  const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
+  const description = estCreature ? lecture.texte : effet;
+  const descriptionLignes = cardEffectLines(description);
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
@@ -3031,7 +3036,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
-  // l'aperçu de jeu va droit au coût et aux mots-clés.
+  // l'aperçu de jeu va droit au nom, au type, à la description et aux mots-clés.
   const estFiche = variante === 'catalogue';
   const estApercuRapide = variante === '' && !estEnFurie;
   // La petite carte montre le nom et l'effet complet de chaque arme portée.
@@ -3044,8 +3049,8 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     <>
       {variante === 'annonce' && <span className="rpg-hover-card-preview__eyebrow">CARTE ANNONCÉE</span>}
       {estFiche && <span className="rpg-hover-card-preview__eyebrow">{surface ? `${surface} · ` : ''}{carteFamille(carte).toUpperCase()}</span>}
-      {(variante === 'annonce' || estFiche) && <strong className="rpg-hover-card-preview__name">{carte.name}</strong>}
-      {(estFiche || !estCreature) && <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>}
+      <strong className="rpg-hover-card-preview__name">{carte.name}</strong>
+      <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>
       <PastillesCarte
         carte={carte}
         className="rpg-hover-card-preview__pastilles"
@@ -3057,6 +3062,15 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           <span className="rpg-hover-card-preview__hint-souris">Survolez un mot-clé pour lire son effet</span>
           <span className="rpg-hover-card-preview__hint-tactile">Touchez un mot-clé pour lire son effet</span>
         </small>
+      )}
+      {descriptionLignes.length > 0 && (
+        <div className="rpg-hover-card-preview__rules" aria-label="Effet">
+          {descriptionLignes.map((ligne, index) => (
+            <span key={`${index}-${ligne}`}>
+              <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
+            </span>
+          ))}
+        </div>
       )}
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {estEnFurie && (
@@ -3072,7 +3086,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           <span><small>CIBLE</small><b>{cibleAnnoncee.nom}</b></span>
         </div>
       )}
-      {!estTerrain && <p className="rpg-hover-card-preview__cost"><span>Coût</span><b>{carte.cost}</b>{cardColors(carte).length > 1 && <small>{cardColorCostLabel(carte)}</small>}</p>}
       {armesEquipees.length > 0 && (
         <div className="rpg-hover-card-preview__weapons" role="group" aria-label="Armes équipées">
           {armesEquipees.map((arme, index) => (
