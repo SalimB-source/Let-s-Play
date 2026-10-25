@@ -1389,11 +1389,22 @@
   transform-style: preserve-3d;
   transform: rotateY(180deg);
   transition: transform .4s cubic-bezier(.2, .65, .3, 1);
+  /* Sans ce calque promu à l'avance, certains moteurs mobiles (WebView
+     Android compris) ne composent la scène 3D qu'au premier tick du
+     retournement : la face apparaît alors un instant à sa taille brute,
+     non encore réduite dans son calque, avant de retomber à la bonne
+     taille. Le calque existe donc dès le montage, pas seulement pendant
+     le mouvement. */
+  will-change: transform;
 }
 .rpg-souk__carte-retourne.is-revelee { transform: rotateY(0); }
 .rpg-souk__carte-retourne > .rpg-souk__carte,
 .rpg-souk__carte-verso { grid-area: 1 / 1; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.rpg-souk__carte-retourne > .rpg-souk__carte { animation: none; transform: translateZ(.1px); }
+/* 1px, pas .1px : sur certains GPU mobiles à faible précision, un écart de
+   calque trop fin entre la face et le dos se confond en un seul plan — les
+   deux se chevauchent pendant le retournement et le rendu « saute » en
+   grand le temps d'un repaint. Un écart net règle le chevauchement. */
+.rpg-souk__carte-retourne > .rpg-souk__carte { animation: none; transform: translateZ(1px); }
 .rpg-souk__carte-retourne:not(.is-revelee) > .rpg-souk__carte { pointer-events: none; }
 /* Une fois les retournements achevés, on retire le preserve-3d parent et le
    verso caché pour que le hit-testing navigateur (clic droit, survol, appui
@@ -1539,7 +1550,7 @@
   .rpg-souk__ceremonie .rpg-souk__carte-flotte,
   .rpg-souk__ceremonie .rpg-souk__carte-volume,
   .rpg-souk__ceremonie [data-souk-carte-rarete] { animation: none !important; }
-  .rpg-souk__carte-retourne { transition: none; }
+  .rpg-souk__carte-retourne { transition: none; will-change: auto; }
   .rpg-souk__carte-volume,
   .rpg-souk__carte-retourne.is-revelee .rpg-souk__carte:hover .rpg-souk__carte-volume { transform: none; transition: none; }
   .rpg-souk__carte-reflet { animation: none; background-position: 130% 0; opacity: .35; }
