@@ -6594,6 +6594,34 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Le texte des onglets (`rpg-mode-menu__onglet-libelle`) reprend la couleur du
    bouton : l'or reste réservé aux icônes, dont le span voisin. */
 .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-libelle { color: inherit; }
+/* L'icône du Jeu Solo est un dessin, pas un glyphe de police : on lui donne
+   une taille de 17 px sur bureau (18 px sur téléphone, voir la règle des
+   onglets en fin de feuille) et le même alignement que ses voisins. Le SVG
+   porte son propre dégradé d'or ; le survol et l'onglet actif l'éclairent. */
+.rpg-mode-menu__switch button .rpg-mode-menu__onglet-icone--solo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 0;
+  vertical-align: -0.14em;
+}
+.rpg-solo-icon {
+  display: block;
+  width: 1em;
+  height: 1em;
+  flex: none;
+  object-fit: contain;
+  transition: filter .18s ease;
+}
+.rpg-mode-menu__switch button:hover .rpg-solo-icon,
+.rpg-mode-menu__switch button:focus-visible .rpg-solo-icon,
+.rpg-mode-menu__switch button.is-active .rpg-solo-icon {
+  filter: brightness(1.15) drop-shadow(0 0 3px rgba(255, 221, 147, .5));
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-solo-icon { transition: none; }
+}
 .rpg-mode-menu__switch button:hover,
 .rpg-mode-menu__switch button:focus-visible,
 .rpg-mode-menu__switch button.is-active {

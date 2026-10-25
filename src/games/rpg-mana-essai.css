@@ -560,13 +560,13 @@
   .rpg-card-tear-fx > b { animation: none !important; }
 }
 
-/* ── Table et main : les icônes d'effets en colonne à droite ─────────────────
+/* ── Table : les icônes d'effets en colonne à droite ──────────────────────────
    Sur la table, chaque créature posée montre ses icônes d'effets (mots-clés
    imprimés et états vivants : bouclier, esquive…) en une colonne verticale
    dans le coin haut droit, à la place du coût (qui ne s'imprime plus sur une
-   carte posée, voir `rpg-mobile.css`). En main, où le disque de coût occupe le
-   coin haut droit, la colonne descend juste dessous, sur le même axe (6 % du
-   bord droit, même largeur de repère, chaque badge centré, sans chiffre). */
+   carte posée, voir `rpg-mobile.css`). La main, elle, suit
+   `.rpg-card-icones--main` dans `effet-icons.css`, puis les mesures serrées
+   de `rpg-mobile.css` : cette feuille ne doit pas lui redonner 20 px ensuite. */
 .rpg-battle .card-row .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
   top: 5%;
   right: 6%;
@@ -589,28 +589,7 @@
 }
 /* L'icône seule, sans chiffre derrière (Harakiri, Bouclier, Esquive…) : la
    valeur reste dans l'aperçu au survol et dans le libellé de la carte. */
-.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone small,
-.rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone small {
-  display: none;
-}
-.rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
-  top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
-  right: 6%;
-  bottom: auto;
-  left: auto;
-  width: var(--rpg-card-marker-size, 28px);
-  max-width: none;
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 3px;
-}
-.rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-  justify-content: center;
-  min-width: 20px;
-  min-height: 20px;
-}
-.rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 4) {
+.rpg-battle .card-row .rpg-card .rpg-card-icones--colonne .rpg-card-icone small {
   display: none;
 }
 /* Le coin haut droit déjà pris — losanges de compteurs d'une hybride, ou

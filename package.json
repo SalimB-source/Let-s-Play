@@ -59,6 +59,8 @@
     "check:rpg-duel-nav": "node scripts/rpg-duel-nav-check.mjs",
     "check:rpg-messagerie": "node scripts/rpg-messagerie-check.mjs",
     "check:rpg-accueil": "node scripts/rpg-accueil-check.mjs",
+    "check:rpg-icone-solo": "node --test tests/rpg-icone-jeu-solo.test.js",
+    "check:rpg-icones-main-mobile": "node --test tests/rpg-icones-main-mobile.test.js",
     "check:rpg-sanctuaire": "node scripts/rpg-plateau-japon-check.mjs",
     "check:rpg-tenebres": "node scripts/rpg-plateau-tenebres-check.mjs",
     "check:rpg-pirate": "node scripts/rpg-plateau-pirate-check.mjs",
