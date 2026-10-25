@@ -8843,6 +8843,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Annonce : le texte jaune (CARTE ANNONCÉE + nom) est retiré — la carte
+   se suffit à elle-même visuellement, le détail se lit en dessous. */
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__eyebrow,
+.rpg-hover-card-preview--annonce .rpg-hover-card-preview__name {
+  display: none;
+}
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__type {
   padding: 4px 7px;
   font-size: 15px;
