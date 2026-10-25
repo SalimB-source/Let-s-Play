@@ -47,8 +47,10 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // La Tour Oubliée — le Sceau de Sang. Le cimetière et la fosse ont chacun
   // leur instrumental : on entre chez les morts sans registre sur une musique
   // de sang, et l'on descend dans la fosse sur sa variante.
-  'cimetiere-des-noms-effaces': `${RPG_AUDIO_BASE}Le Sceau de Sang (Instrumental).mp3`,
-  'fosse-de-l-oubliee': `${RPG_AUDIO_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
+  // Les deux MP3 vivent à la racine de `public/`, comme les autres pistes dont
+  // le nom contient des espaces.
+  'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
+  'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
   // Le Palais du Pharaon et le Sablier renversé restent sans piste dédiée :
   // en Histoire, la boucle d'ambiance de la tour prend le relais
   // (`RpgAmbientMusic`) quand aucun des deux camps n'a de musique.

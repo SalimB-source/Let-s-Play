@@ -305,13 +305,14 @@ mythiques uniques, une couleur).
     pourpre.
 
 - **`src/games/rpgPlateauMusic.js`** : chaque table a son instrumental,
-  **« Le Sceau de Sang »** —
-  `public/audio/Le Sceau de Sang (Instrumental).mp3` pour le cimetière,
-  `public/audio/Le Sceau de Sang (Instrumental) (1).mp3` pour la Fosse. Les deux
+  **« Le Sceau de Sang »**, à la racine de `public/` comme les autres pistes à
+  espaces —
+  `public/Le Sceau de Sang (Instrumental).mp3` pour le cimetière,
+  `public/Le Sceau de Sang (Instrumental) (1).mp3` pour la Fosse. Les deux
   plateaux sont donc **musicaux** (`RPG_PLATEAUX_MUSICAUX`) : la boucle
   d'ambiance de la tour ne démarre plus pendant leurs duels.
-  ⚠️ **Les deux MP3 doivent être déposés dans `public/audio/` sous ces noms
-  exacts** (espaces et parenthèses compris). Tant qu'ils manquent, le test
+  ⚠️ **Les deux MP3 doivent être présents dans `public/` sous ces noms exacts**
+  (espaces et parenthèses compris). Tant qu'ils manquent, le test
   `rpg-ambient-music` le signale en diagnostic et les deux tables sont muettes,
   faute de repli d'ambiance.
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),

@@ -264,13 +264,13 @@ test('Le Cimetière des noms effacés et la Fosse jouent « Le Sceau de Sang »'
   for (const [plateauId, fichier] of Object.entries(pistes)) {
     assert.ok(plateauParId(plateauId), `${plateauId} est un plateau du catalogue`);
     assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit être traité comme musical`);
-    assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/audio/${fichier}`);
-    const urlDisque = new URL(`../public/audio/${fichier}`, import.meta.url);
+    assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/${fichier}`);
+    const urlDisque = new URL(`../public/${fichier}`, import.meta.url);
     if (!existsSync(urlDisque)) {
       // Les deux MP3 sont fournis par l'auteur du jeu : tant qu'ils ne sont pas
       // déposés dans public/audio/, les deux plateaux sont muets (aucune boucle
       // d'ambiance ne prend le relais, le plateau étant déclaré musical).
-      t.diagnostic(`MP3 pas encore livré : public/audio/${fichier}`);
+      t.diagnostic(`MP3 pas encore livré : public/${fichier}`);
       continue;
     }
     const octets = readFileSync(urlDisque);
@@ -309,17 +309,17 @@ test('Le Cimetière des noms effacés et la Fosse jouent « Le Sceau de Sang »'
   try {
     const lecteur = new RpgPlateauMusic();
     lecteur.setPlateau('cimetiere-des-noms-effaces', { reroll: true });
-    assert.equal(lecteur.musicFile, '/audio/Le Sceau de Sang (Instrumental).mp3');
+    assert.equal(lecteur.musicFile, '/Le Sceau de Sang (Instrumental).mp3');
     await lecteur.start();
     assert.equal(lecteur.running, true);
     assert.equal(lecteur.audio.loop, true);
-    assert.equal(lecteur.audio.src, '/audio/Le Sceau de Sang (Instrumental).mp3');
+    assert.equal(lecteur.audio.src, '/Le Sceau de Sang (Instrumental).mp3');
     // On descend dans la fosse : la piste change, sans recréer d'Audio.
     const audioDuCimetiere = lecteur.audio;
     lecteur.setPlateau('fosse-de-l-oubliee', { reroll: true });
     await lecteur.start();
     assert.equal(lecteur.audio, audioDuCimetiere, 'le lecteur garde son Audio');
-    assert.equal(lecteur.audio.src, '/audio/Le Sceau de Sang (Instrumental) (1).mp3');
+    assert.equal(lecteur.audio.src, '/Le Sceau de Sang (Instrumental) (1).mp3');
     lecteur.destroy();
   } finally {
     globalThis.window = precedentWindow;
