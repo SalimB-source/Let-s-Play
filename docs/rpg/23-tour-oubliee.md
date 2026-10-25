@@ -291,6 +291,14 @@ mythiques uniques, une couleur).
   resserve l'ancienne passe. **À incrémenter à chaque nouvelle direction
   artistique du set.**
 
+  Avancement du repeint : **20 des 24 cartes** (les six de la Horde, les quatre
+  de la Cour de sang, les six Cauchemars — `chacal-sans-maitre`,
+  `goule-des-cimetieres`, `goule-affamee`, `bou-jeloud`, `aicha-kandicha`,
+  `teryel-aux-sept-cornes`, `l-oublie` —, `ifrit-d-encre` et
+  `encre-du-registre`), plus la miniature `tour-oubliee.jpg`. Restent
+  `aiguille-du-sabbat`, `soif-du-sabbat`, `pacte-de-l-oubliee`,
+  `reveil-de-la-horde` et `pilon-du-fossoyeur`.
+
   **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
   aucune bordure, aucun liseré, aucune marge intégrée à l'image, le cadre étant
   dessiné par le CSS du jeu (`.rpg-card`). Cinq peintures sont arrivées
