@@ -65,13 +65,18 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-mark'),
       'l’onglet porte la bulle « Let’s Talk »');
     // L’onglet doit SE LIRE : un onglet réduit à sa bulle, sans le mot, ne se
-    // reconnaît pas — la barre des modes est écrite pour six onglets et le
-    // huitième disparaissait derrière le bord de l’écran (701 – 1100 px).
+    // reconnaît pas — la barre des modes est écrite pour sept onglets et le
+    // dernier disparaissait derrière le bord de l’écran (701 – 1100 px).
     assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__onglet-libelle')?.textContent.includes('Messagerie'),
       'l’onglet Messagerie porte son libellé : un onglet sans mot ne se reconnaît pas');
     assert.ok(ongletMessagerie.querySelector('.rpg-mode-menu__messagerie-pastille') === null
       || ongletMessagerie.getAttribute('aria-label')?.includes('Messagerie'),
       'la pastille des non-lus de l’onglet est annoncée par son aria-label');
+    const ongletsSecondaires = [...node.querySelectorAll('.rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire')];
+    assert.equal(ongletsSecondaires.length, 3,
+      'Profil, Paramètres et Messagerie forment le groupe secondaire de la barre');
+    assert.equal(node.querySelectorAll('.rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire').length, 1,
+      'un seul onglet ouvre visuellement ce groupe');
     const settingsHorsPartie = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
       .find((bouton) => bouton.textContent.includes('Paramètres'));
     assert.ok(settingsHorsPartie, 'le menu principal expose Paramètres avant une partie');
@@ -113,8 +118,11 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(node.querySelector('.rpg-messagerie--ecran'),
       'l’onglet Messagerie ouvre son panneau dans le jeu, sans quitter la page');
 
+    // L'onglet Jouer est de retour : il ramène à l'accueil depuis l'écran
+    // Messagerie, puis le scénario lance un duel depuis le Deck.
     const ongletJouer = [...node.querySelectorAll('.rpg-mode-menu__switch button')]
-      .find((bouton) => bouton.textContent.includes('Jouer'));
+      .find((bouton) => bouton.getAttribute('aria-label') === 'Jouer');
+    assert.ok(ongletJouer, 'l’onglet Jouer est de retour dans la barre');
     await click(ongletJouer);
     await lancerDuelDepuisMenu(node, click);
     await passerMulligan(node, click);

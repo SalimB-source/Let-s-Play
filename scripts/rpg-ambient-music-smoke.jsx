@@ -161,7 +161,7 @@ export async function checkRpgAmbientMusic(assert) {
   assert.equal(pisteTheme.paused, false, 'le thème principal tourne dès l’arrivée hors parties');
   const lecturesThemeInitiales = pisteTheme.lectures;
 
-  await click(buttons().find((button) => button.textContent.includes('Jeu Solo')), 'entrée Jeu Solo');
+  await click(container.querySelector('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete'), 'carte Conquête');
   assert.equal(pisteTheme.paused, false, 'changer d’écran dans les menus garde le thème principal en lecture');
   assert.equal(pisteTheme.lectures, lecturesThemeInitiales, 'naviguer hors parties ne relance pas la piste depuis le début');
   await click(container.querySelector('.rpg-story-tower[data-tour="tour-des-listes"]'), 'ouverture de la Tour des Listes');

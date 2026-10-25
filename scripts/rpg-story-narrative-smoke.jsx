@@ -14,6 +14,18 @@ import { passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** La campagne s'ouvre depuis la carte « Mode histoire » de Jouer : selon la
+ *  sauvegarde, le seuil de Bab El ou une scène de récit précède l'affiche. */
+const ouvrirEcranHistoire = async (container) => {
+  await act(async () => container.querySelector('.rpg-mode-menu__hero-actions .rpg-menu-button--histoire').click());
+  if (container.querySelector('[data-bab-el-commencer]')) {
+    await act(async () => container.querySelector('[data-bab-el-commencer]').click());
+  }
+  if (!container.querySelector('[data-story-campaign]') && container.querySelector('.rpg-narrative__back')) {
+    await act(async () => container.querySelector('.rpg-narrative__back').click());
+  }
+};
+
 export async function checkRpgStoryNarrative(assert) {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -31,7 +43,7 @@ export async function checkRpgStoryNarrative(assert) {
     root = createRoot(container);
     await act(async () => root.render(<StrictMode><RpgDuelPage joueurDeck={joueurDeck} rng={() => 0} /></StrictMode>));
   };
-  const histoire = async () => click([...container.querySelectorAll('.rpg-mode-menu__switch button')].find((b) => b.textContent.includes('Histoire')));
+  const histoire = async () => ouvrirEcranHistoire(container);
   const ouvrirCampagne = async () => { await histoire(); await click(query('[data-story-campaign]')); };
   const resumerEtContinuer = async () => {
     if (query('[data-story-summary]')) await click(query('[data-story-summary]'));
@@ -198,7 +210,7 @@ export async function checkRpgStoryNarrative(assert) {
     assert.ok(query('[data-story-next-act="acte-2"]'), 'l’épilogue de l’Acte I permet d’ouvrir l’Acte II');
     assert.equal(query('.rpg-mulligan'), null);
 
-    const cartesAvantEffacement = collectionJoueur();
+    const cartesAvantEffacement = collectionJoueur({ distante: chargerCollectionDistante() });
     await click(query('.rpg-narrative__back'));
     // La campagne se découvre : à la fin de l'Acte I, l'affiche ne montre que
     // les actes atteints — les quatre suivants n'ont pas encore de titre.
@@ -273,7 +285,7 @@ export async function checkRpgStoryStorageDenied(assert) {
   const root = createRoot(container);
   try {
     await act(async () => root.render(<RpgDuelPage />));
-    await act(async () => [...container.querySelectorAll('.rpg-mode-menu__switch button')].find((b) => b.textContent.includes('Histoire')).click());
+    await ouvrirEcranHistoire(container);
     await act(async () => container.querySelector('[data-story-campaign]').click());
     assert.ok(container.querySelector('.rpg-narrative__warning'), 'le refus de stockage est annoncé');
     await act(async () => container.querySelector('[data-story-next]').click());
@@ -313,8 +325,7 @@ export async function checkRpgStoryPoses(assert) {
     if (root) await act(async () => root.unmount());
     root = createRoot(container);
     await act(async () => root.render(<RpgDuelPage />));
-    await act(async () => [...container.querySelectorAll('.rpg-mode-menu__switch button')]
-      .find((b) => b.textContent.includes('Histoire')).click());
+    await ouvrirEcranHistoire(container);
     await act(async () => container.querySelector('[data-story-campaign]').click());
     assert.ok(query('.rpg-narrative__plateau'), 'la scène est montée avec son plateau');
   };
@@ -460,8 +471,7 @@ export async function checkRpgStoryPoses(assert) {
     if (root) await act(async () => root.unmount());
     root = createRoot(container);
     await act(async () => root.render(<RpgDuelPage />));
-    await act(async () => [...container.querySelectorAll('.rpg-mode-menu__switch button')]
-      .find((b) => b.textContent.includes('Histoire')).click());
+    await ouvrirEcranHistoire(container);
     assert.ok(query('[data-campaign-livre]'), 'les actes sont montés en livre');
     assert.equal(container.querySelectorAll('[data-campaign-act]').length, 2, 'le livre n’a que les actes atteints');
     assert.equal(query('[data-campaign-page]').dataset.campaignPage, 'acte-2', 'le livre s’ouvre sur l’acte en cours');

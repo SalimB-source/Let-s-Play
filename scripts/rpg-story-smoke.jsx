@@ -34,8 +34,8 @@ export async function checkRpgStory(assert) {
     await act(async () => { });
   };
 
-  // --- Accès au Jeu Solo : la galerie des maquettes 3D ---
-  await click(buttons().find((button) => button.textContent.includes('Jeu Solo') || button.textContent.includes('Tours')), 'entrée Jeu Solo depuis le menu');
+  // --- Accès à la Conquête : la carte de Jouer ouvre la galerie des maquettes 3D ---
+  await click(container.querySelector('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete'), 'carte Conquête depuis le menu');
   assert.ok(container.querySelector('.rpg-story'), 'la carte du mode Histoire s’affiche');
   assert.equal(container.querySelectorAll('.rpg-story-tower').length, RPG_STORY_TOURS.length,
     'les tours du catalogue sont toutes présentées en maquettes 3D');
@@ -132,7 +132,7 @@ export async function checkRpgStory(assert) {
       rng={() => 0.999}
     />);
   });
-  await click(buttons().find((button) => button.textContent.includes('Jeu Solo') || button.textContent.includes('Tours')), 'entrée Jeu Solo après remontage');
+  await click(container.querySelector('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete'), 'carte Conquête après remontage');
   assert.ok(container.querySelector('.rpg-story-tower'), 'la galerie des tours est rendue après remontage');
   await ouvrirTour('tour-des-listes', 'Tour des Listes après remontage');
   assert.ok(floorById('listes-2') && !floorById('listes-2').disabled,

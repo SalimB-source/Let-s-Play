@@ -8843,7 +8843,7 @@ paquet de palier pouvant rendre ses doublons par-dessus. Conception :
 
 ## Le Sablier : la Tour du Sablier renversé — sept étages, sept types, les meilleures cartes
 
-Le Jeu Solo compte une neuvième tour, **la Tour du Sablier renversé**, la tour
+La Conquête compte une neuvième tour, **la Tour du Sablier renversé**, la tour
 d'épreuves terminale des Tours de Bab El. Son principe tient en une phrase :
 quand le Sablier se renverse, les maîtres reviennent à leur sommet — **chaque
 étage est un type de duel différent, l'IA y joue au plus haut niveau du jeu et

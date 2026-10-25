@@ -1,6 +1,6 @@
 # 22 — La Tour du Corbeau (le set Neige + Ténèbres)
 
-**Statut : codé et jouable** dans le Jeu Solo (les Tours de Bab El), entre la
+**Statut : codé et jouable** dans la Conquête (les Tours de Bab El), entre la
 Tour de la Nécropole et la Tour du Sablier renversé qui reste la tour
 d'épreuves terminale.
 
@@ -19,8 +19,8 @@ La Tour du Corbeau les fait se rencontrer dans **un seul oiseau** :
 > sommet une figure qui réunit l'Envol et la Tenacité du Nord avec le Tribut
 > et l'exil de la Balance des Heures.
 
-La tour est une **tour libre** du Jeu Solo : elle n'ajoute ni acte ni scène au
-récit « La Dernière Liste » (`rpgStoryScenes.js` reste à huit actes et 32
+La tour est une **tour libre** de la Conquête : elle n'ajoute ni acte ni scène
+au récit « La Dernière Liste » (`rpgStoryScenes.js` reste à huit actes et 32
 étages de campagne), mais elle hérite de tout l'appareil des tours — maquette
 3D, peinture de repli, musique d'ambiance, plateau dédié, révélations de
 cartes, et progression étage par étage.

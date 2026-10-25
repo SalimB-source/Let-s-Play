@@ -1,16 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="96" height="96" fill="none" role="img" aria-labelledby="titre">
-  <title id="titre">Jeu Solo — la tour au sablier</title>
+  <title id="titre">Conquête — la tour au sablier</title>
   <!-- Une tour de Bab El, un sablier gravé dedans, un seul grain au col : le -->
-  <!-- joueur grimpe seul. Le dégradé reprend l'or des onglets du Sablier. -->
+  <!-- joueur part à la conquête des étages. Le dégradé reprend l'or des onglets du Sablier. -->
   <defs>
-    <linearGradient id="sablier-jeu-solo-or" x1="5" y1="3" x2="19" y2="22" gradientUnits="userSpaceOnUse">
+    <linearGradient id="sablier-conquete-or" x1="5" y1="3" x2="19" y2="22" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#fff4ca" />
       <stop offset=".38" stop-color="#f2c566" />
       <stop offset=".72" stop-color="#d29b3f" />
       <stop offset="1" stop-color="#a66a1f" />
     </linearGradient>
   </defs>
-  <g stroke="url(#sablier-jeu-solo-or)" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
+  <g stroke="url(#sablier-conquete-or)" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round">
     <!-- Le socle et les créneaux de la tour. -->
     <path d="M5 21.4h14" />
     <path d="M7 21V5.5h2.2V3.7h2.3v1.8h1V3.7h2.3v1.8H17V21" />
@@ -21,6 +21,6 @@
     <!-- La porte voûtée, au pied de la tour. -->
     <path d="M10.4 21v-1.2a1.6 1.6 0 0 1 3.2 0V21" />
   </g>
-  <!-- Le grain unique : une seule personne face aux étages. -->
+  <!-- Le grain unique : une conquête étage après étage. -->
   <circle cx="12" cy="14.75" r=".48" fill="#fff4ca" />
 </svg>

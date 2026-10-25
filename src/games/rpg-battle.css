@@ -6555,11 +6555,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Le texte des onglets (`rpg-mode-menu__onglet-libelle`) reprend la couleur du
    bouton : l'or reste réservé aux icônes, dont le span voisin. */
 .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-libelle { color: inherit; }
-/* L'icône du Jeu Solo est un dessin, pas un glyphe de police : on lui donne
-   une taille de 17 px sur bureau (18 px sur téléphone, voir la règle des
-   onglets en fin de feuille) et le même alignement que ses voisins. Le SVG
-   porte son propre dégradé d'or ; le survol et l'onglet actif l'éclairent. */
-.rpg-mode-menu__switch button .rpg-mode-menu__onglet-icone--solo {
+/* Icône historique de l'ancien onglet Conquête : la Conquête est aujourd'hui
+   une carte de Jouer, mais ce dessin reste disponible pour les variantes qui
+   reprendraient l'icône d'onglet. Il suit la taille de ses voisins, en or. */
+.rpg-mode-menu__switch button .rpg-mode-menu__onglet-icone--conquete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -6567,7 +6566,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   line-height: 0;
   vertical-align: -0.14em;
 }
-.rpg-solo-icon {
+.rpg-conquete-icon {
   display: block;
   width: 1em;
   height: 1em;
@@ -6575,13 +6574,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   object-fit: contain;
   transition: filter .18s ease;
 }
-.rpg-mode-menu__switch button:hover .rpg-solo-icon,
-.rpg-mode-menu__switch button:focus-visible .rpg-solo-icon,
-.rpg-mode-menu__switch button.is-active .rpg-solo-icon {
+.rpg-mode-menu__switch button:hover .rpg-conquete-icon,
+.rpg-mode-menu__switch button:focus-visible .rpg-conquete-icon,
+.rpg-mode-menu__switch button.is-active .rpg-conquete-icon {
   filter: brightness(1.15) drop-shadow(0 0 3px rgba(255, 221, 147, .5));
 }
 @media (prefers-reduced-motion: reduce) {
-  .rpg-solo-icon { transition: none; }
+  .rpg-conquete-icon { transition: none; }
 }
 .rpg-mode-menu__switch button:hover,
 .rpg-mode-menu__switch button:focus-visible,
@@ -7045,17 +7044,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes dot-blink {
   0%, 100% { opacity: 1; }
   50% { opacity: .4; }
-}
-.rpg-mode-menu__secondary-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-.rpg-mode-menu__secondary-actions .rpg-menu-button {
-  min-height: 64px;
-  justify-content: flex-start;
-  padding: 12px 14px;
 }
 /* Indicateur VS entre les decks */
 .rpg-vs-indicator {
@@ -7554,7 +7542,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__hero-copy { width: 100%; padding: 22px 19px; }
   .rpg-mode-menu__hero-copy h2 { font-size: clamp(28px, 9vw, 39px); }
   .rpg-mode-menu__hero-copy p { font-size: 12px; }
-  .rpg-mode-menu__secondary-actions { grid-template-columns: 1fr; }
   .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 100px; }
   .rpg-mode-menu__loadout { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .rpg-mode-menu__loadout-heading { grid-column: auto; align-items: center; }
@@ -9792,12 +9779,32 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 6px 22px #0008; backdrop-filter: blur(14px);
 }
 .rpg-mode-menu__brand { margin-right: auto; display: flex; align-items: center; gap: 10px; }
-.rpg-mode-menu__brand::before {
-  content: '⌛'; display: grid; place-items: center; width: 36px; height: 36px;
-  border: 1px solid #d2a64e; border-radius: 50%; color: #f2c566;
-  background: radial-gradient(circle, #60431d, #17110a 72%); font-size: 20px;
+/* L'ancien disque `⌛` devient un vrai bouton : sans l'onglet Jouer, c'est lui
+   qui ramène à l'accueil depuis les autres écrans. */
+.rpg-mode-menu__accueil {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #d2a64e;
+  border-radius: 50%;
+  background: radial-gradient(circle, #60431d, #17110a 72%);
+  color: #f2c566;
   box-shadow: 0 0 15px #d29b3f55;
+  cursor: pointer;
+  transition: transform .18s ease, color .18s ease, box-shadow .18s ease;
 }
+.rpg-mode-menu__accueil .rpg-mode-icone { width: 23px; height: 23px; stroke-width: 2.6; }
+.rpg-mode-menu__accueil:hover,
+.rpg-mode-menu__accueil:focus-visible {
+  color: #ffe7af;
+  transform: scale(1.06);
+  box-shadow: 0 0 20px #e8b75588;
+  outline: none;
+}
+.rpg-mode-menu__brand-copy { display: grid; gap: 2px; min-width: 0; }
 .rpg-mode-menu__brand h1 { margin: 0; font-size: clamp(23px, 2.2vw, 30px); }
 .rpg-mode-menu__brand p, .rpg-mode-menu__brand .rpg-mode-menu__eyebrow { display: none; }
 .rpg-mode-menu__switch { order: 3; width: 100%; flex: 0 0 100%; gap: 0; margin: 0 calc(clamp(16px, 4vw, 46px) * -1); padding: 0 clamp(16px, 4vw, 46px); border: 0; border-top: 1px solid rgba(255,255,255,.08); border-radius: 0; background: rgba(10,11,12,.96); box-shadow: none; overflow-x: auto; scrollbar-width: none; }
@@ -9806,7 +9813,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__switch button.is-active { border: 0; border-bottom: 3px solid #f17c27; background: linear-gradient(0deg, #f17c271c, transparent); color: #fff2dc; }
 .rpg-mode-menu__fullscreen { order: 2; min-height: 38px; min-width: 38px; margin-left: 9px; padding: 8px; border-radius: 50%; }
 /* Le tableau de bord du Jouer garde sa colonne de quêtes ; les écrans pleine
-   largeur (`--full`, Jeu Solo) reprennent la leur — sans ce garde-fou, la
+   largeur (`--full`, la Conquête) reprennent la leur — sans ce garde-fou, la
    règle du hub écrasait `.rpg-mode-menu__play--full` et laissait les tours
    dans une colonne de 700 px, une seconde colonne vide à côté. */
 .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { grid-template-columns: minmax(0, 1.65fr) minmax(270px, .8fr); gap: 14px; align-items: stretch; }
@@ -9829,7 +9836,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
  .rpg-mode-menu__header { margin-left: -16px; margin-right: -16px; padding-left: 12px; padding-right: 12px; }
  .rpg-mode-menu__switch { margin-left: -12px; margin-right: -12px; padding: 0 8px; }
  .rpg-mode-menu__switch button { padding: 12px 10px; font-size: 11px; }
- .rpg-mode-menu__brand::before { width: 30px; height: 30px; }
+ .rpg-mode-menu__accueil { width: 30px; height: 30px; }
+ .rpg-mode-menu__accueil .rpg-mode-icone { width: 20px; height: 20px; }
  .rpg-mode-menu__hero { min-height: 390px; }
 }
 
@@ -9889,7 +9897,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Téléphone en paysage et petites tablettes — la fenêtre tactile du jeu
    (≤ 1100 px), le portrait étroit étant déjà traité ci-dessus — : la marque,
-   les huit onglets et le bouton plein écran ne tiennent jamais sur une seule
+   les sept onglets et le bouton plein écran ne tiennent jamais sur une seule
    ligne.
    Sans cette rangée de secours, les onglets débordent de l'écran (la barre
    reste en `overflow: visible` du bloc « Ajustements ») et deviennent
@@ -9897,9 +9905,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    pleine largeur d'un bord à l'autre de l'écran (mêmes retraits que le
    `padding` de l'en-tête), et ses onglets se distribuent le reste de place :
    ils tiennent tous sur une ligne dès 830 px environ. En dessous, la barre
-   **passe à la ligne** (`flex-wrap: wrap`) au lieu de défiler : le huitième
+   **passe à la ligne** (`flex-wrap: wrap`) au lieu de défiler : le dernier
    onglet — la Messagerie — restait peint hors de l'écran, invisible et
-   incliquable, sur les largeurs où les six premiers tenaient encore. Un
+   incliquable, sur les largeurs où les autres tenaient encore. Un
    onglet qu'on ne peut pas voir est un onglet qui n'existe pas. */
 @media (min-width: 701px) and (max-width: 1100px) {
  .rpg-mode-menu__header { flex-wrap: wrap; }
@@ -10631,10 +10639,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-auto-preview .rpg-hover-card-preview { display: grid !important; pointer-events: none; }
 
-/* ── Partie rapide : choisir un deck et affronter l’ordinateur ──────────────
-   Fenêtre ouverte depuis la page Jouer — le bouton remplace « Cartes & effets » :
-   elle liste les decks disponibles (RPG_DECKS + maisons jouables) et lance
-   immédiatement un duel contre l’ordinateur avec le deck choisi. */
+/* ── Jouer : choisir un deck et affronter l’ordinateur ──────────────────────
+   Fenêtre ouverte depuis la carte « Jouer » de la page Jouer (l'ancienne
+   « Partie rapide »). Elle liste les decks disponibles (RPG_DECKS + maisons
+   jouables) et lance immédiatement un duel contre l’ordinateur. */
 
 .rpg-menu-button--partie-rapide {
   background: linear-gradient(135deg, #e86a2c, #c43a12);
@@ -11146,40 +11154,94 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
+/* La grille de quatre cartes a besoin d'un peu plus de largeur que l'ancien
+   carré 2 × 2 : le bloc de copie suit, sans déborder de la colonne du héros. */
+.rpg-mode-menu--jouer .rpg-mode-menu__hero-copy { width: min(920px, 100%); }
+
 /* ══════════════════════════════════════════════════════════════════════════
    ACCUEIL DU SABLIER — LES QUATRE PORTES
    ──────────────────────────────────────────────────────────────────────────
-   L'onglet Jouer empilait quatre boutons de formats différents : « Duel en
-   ligne », seul sous la paire tutoriel / partie rapide, ressemblait à un
-   oubli. Les actions forment désormais une grille de cartes :
+   La page Jouer est l'accueil : l'onglet « Jouer » est de retour, Histoire
+   reste une carte. Quatre modes deviennent des cartes carrées, chacune avec une
+   grande icône dessinée, rangées en quatre colonnes sur PC :
 
-     récit  |  duel en ligne     ← les deux entrées de tête
-     partie rapide | tutoriel    ← les deux raccourcis
+     Mode histoire | Duel en ligne | Jouer | Conquête
 
-   Chaque carte partage la même hauteur et la même largeur. Le duel en ligne
-   prend le laiton du jeu (texte sombre) et une pastille verte « en ligne » ;
-   la partie rapide perd son aplat orange — trop bruyant à côté du bleu du
-   récit — et garde une lisière braise.
+   « Jouer » remplace « Partie rapide » et garde son action (choisir un deck
+   puis affronter l'ordinateur). « Conquête », quatrième carte, ouvre les Tours
+   de Bab El. « Apprendre à jouer » n'est plus une carte : c'est un lien texte
+   sous la grille, avec une petite icône et une flèche (voir `rpg-tutorial.css`).
+   Le carré vient de `aspect-ratio: 1` : les quatre cartes gardent le même
+   format du téléphone au grand écran.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-mode-menu__hero-actions > .rpg-menu-button {
-  min-height: 68px;
-  justify-content: flex-start;
+  position: relative;
+  min-height: 0;
+  aspect-ratio: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(6px, 1.1vw, 12px);
+  padding: clamp(10px, 1.6vw, 18px);
+  border-radius: 16px;
+  text-align: center;
+  letter-spacing: 0;
 }
-.rpg-mode-menu__secondary-actions {
-  grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 2px;
+.rpg-mode-carte__icone {
+  flex: none;
+  width: clamp(42px, 5.2vw, 64px);
+  height: clamp(42px, 5.2vw, 64px);
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .28));
 }
-.rpg-mode-menu__secondary-actions .rpg-menu-button { min-height: 62px; }
+.rpg-mode-carte .rpg-menu-button__text {
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
+}
+.rpg-mode-carte .rpg-menu-button__text strong {
+  font: 800 clamp(11px, 1.05vw, 15px)/1.2 var(--mono, monospace);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.rpg-mode-carte .rpg-menu-button__text small {
+  max-width: 20ch;
+  font-size: clamp(8px, .8vw, 10px);
+  line-height: 1.35;
+  opacity: .82;
+}
+.rpg-mode-carte .rpg-menu-button__arrow {
+  position: absolute;
+  right: 12px;
+  bottom: 8px;
+  margin-left: 0;
+  font-size: 13px;
+  opacity: .6;
+}
+/* La règle « primary » du hub pose un dégradé orange en `!important` : le
+   récit garde son bleu, sinon les deux cartes du haut se ressemblent. */
+.rpg-mode-menu__hero-actions .rpg-menu-button--histoire {
+  border-color: #dcf1fd !important;
+  background: linear-gradient(135deg, #bfe2f7, #6fb3dc) !important;
+  color: #10314a !important;
+  box-shadow: 0 10px 26px rgba(96, 165, 210, .28) !important;
+}
+.rpg-mode-menu__hero-actions .rpg-menu-button--histoire:hover,
+.rpg-mode-menu__hero-actions .rpg-menu-button--histoire:focus-visible {
+  background: linear-gradient(135deg, #dbf1ff, #8cc6e9) !important;
+  color: #0b2739 !important;
+}
 @media (max-width: 620px),
   (hover: none) and (pointer: coarse) and (orientation: portrait),
   (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
-  .rpg-mode-menu__hero-actions,
-  .rpg-mode-menu__secondary-actions {
-    grid-template-columns: minmax(0, 1fr);
+  .rpg-mode-menu__hero-actions { gap: 8px; }
+  .rpg-mode-menu__hero-actions > .rpg-menu-button {
+    gap: 6px;
+    padding: 9px 6px;
+    border-radius: 14px;
   }
+  .rpg-mode-carte__icone { width: clamp(34px, 10vw, 50px); height: clamp(34px, 10vw, 50px); }
+  .rpg-mode-carte .rpg-menu-button__text strong { font-size: 10px; }
+  .rpg-mode-carte .rpg-menu-button__text small { font-size: 8px; max-width: 17ch; }
+  .rpg-mode-carte .rpg-menu-button__arrow { right: 8px; bottom: 6px; font-size: 11px; }
 }
 
 /* Le duel en ligne : laiton plein, la couleur des actions principales du hub. */
@@ -11190,35 +11252,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #241a06;
   box-shadow: 0 10px 26px rgba(197, 139, 53, .22), inset 0 1px rgba(255, 246, 220, .5);
 }
-/* L'icône des portes : un trait de 36 px dans un médaillon, dessiné par
-   `IconePorte` — jamais un emoji, qui ne se dessine pas partout. */
-.rpg-mode-menu__hero-actions .rpg-menu-button__icon {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .08);
-  color: currentColor;
-}
-.rpg-mode-menu__hero-actions .rpg-menu-button__icon svg {
-  width: 19px;
-  height: 19px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.rpg-menu-button--en-ligne .rpg-menu-button__icon {
-  background: rgba(36, 26, 6, .16);
-  color: #2a1d07;
-}
-.rpg-menu-button--partie-rapide .rpg-menu-button__icon {
-  background: rgba(232, 106, 44, .16);
-  color: #ffb37a;
-}
+/* La grande icône de chaque carte suit l'encre du mode : aucun médaillon
+   intermédiaire, le dessin porte seul la lecture. */
+.rpg-mode-menu__hero-actions .rpg-mode-icone { color: inherit; }
 .rpg-menu-button--en-ligne .rpg-menu-button__text small { color: #46320f; opacity: .88; }
 .rpg-menu-button--en-ligne:hover,
 .rpg-menu-button--en-ligne:focus-visible {
@@ -11248,19 +11284,51 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-menu-button__live { animation: none; }
 }
 
-/* Partie rapide : une carte sombre ourlée de braise, pas un aplat orange. */
+/* « Jouer » : une carte sombre ourlée de braise, pas un aplat orange. */
 .rpg-menu-button--partie-rapide {
   border-color: rgba(232, 106, 44, .5);
   background: rgba(30, 17, 11, .8);
   color: #ffd9b8;
   box-shadow: none;
 }
-.rpg-menu-button--partie-rapide .rpg-menu-button__icon { color: #ff9a5c; }
+.rpg-menu-button--partie-rapide .rpg-mode-icone { color: #ff9a5c; }
 .rpg-menu-button--partie-rapide:hover,
 .rpg-menu-button--partie-rapide:focus-visible {
   border-color: #ffb86a;
   background: rgba(96, 44, 20, .86);
   color: #fff3e5;
+}
+
+/* « Conquête » : nuit bleutée, tour dorée — la quatrième carte des Tours. */
+.rpg-menu-button--conquete {
+  border-color: rgba(232, 194, 113, .62);
+  background: linear-gradient(155deg, rgba(27, 45, 53, .95), rgba(11, 15, 20, .97));
+  color: #f6dfb0;
+  box-shadow: 0 10px 26px rgba(18, 47, 58, .34);
+}
+.rpg-menu-button--conquete .rpg-mode-icone { color: #f2c566; }
+.rpg-menu-button--conquete .rpg-menu-button__text small { color: #e6d2a7; opacity: .82; }
+.rpg-menu-button--conquete:hover,
+.rpg-menu-button--conquete:focus-visible {
+  border-color: #f2d79a;
+  background: linear-gradient(155deg, rgba(39, 64, 73, .98), rgba(16, 22, 28, .98));
+  color: #fff3d5;
+}
+
+/* L'onglet Jouer reprend la grande icône des cartes, à la taille des autres
+   icônes de la barre. */
+.rpg-mode-menu__switch button .rpg-mode-menu__onglet-icone--jouer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  line-height: 0;
+  vertical-align: -0.14em;
+}
+.rpg-mode-menu__onglet-icone--jouer .rpg-mode-icone {
+  display: block;
+  width: 1em;
+  height: 1em;
 }
 
 /* ── Téléphone : la marque et les commandes du haut rétrécissent ──────────
@@ -11272,7 +11340,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 700px) {
   .rpg-mode-menu__header { min-height: 52px; }
   .rpg-mode-menu__brand { min-height: 52px; }
-  .rpg-mode-menu__brand::before { width: 28px; height: 28px; font-size: 17px; }
+  .rpg-mode-menu__accueil { width: 28px; height: 28px; }
+  .rpg-mode-menu__accueil .rpg-mode-icone { width: 18px; height: 18px; }
   .rpg-mode-menu__brand h1 { font-size: 21px; }
   .rpg-mode-menu__fullscreen { min-height: 34px; min-width: 34px; padding: 7px; }
 }
@@ -11317,7 +11386,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── Le cadre plein écran des onglets ───────────────────────────────────────
    Le duel en ligne a donné le ton : une scène sombre qui occupe toute la
-   fenêtre, sa barre collée en haut, le contenu posé dessus. Les six autres
+   fenêtre, sa barre collée en haut, le contenu posé dessus. Les autres
    onglets reprennent la même scène. Jusqu'ici chacun composait sa propre
    page : le Catalogue et les Paramètres collaient aux bords de l'écran, le
    Souk flottait au-dessus de l'illustration, et la marge changeait d'un
@@ -11788,5 +11857,79 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     top: 3px;
     right: 3px;
     margin: 0;
+  }
+
+  /* Même sans libellés, le groupe Profil / Paramètres / Messagerie se voit :
+     un léger fond et un filet avant lui, sans casser le partage égal. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire {
+    background: rgba(255, 255, 255, .035);
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
+    box-shadow: inset 1px 0 0 rgba(240, 221, 183, .28);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BARRE DE NAVIGATION — PC : PLUS HAUTE, SUR SA PROPRE RANGÉE
+   ──────────────────────────────────────────────────────────────────────────
+   La barre porte sept onglets : Jouer et les trois écrans de jeu à gauche,
+   puis Profil, Paramètres et Messagerie dans un groupe séparé à droite. La
+   Conquête a quitté la barre et vit comme carte dans Jouer. Sur PC, la barre
+   quitte la ligne de la marque : une première rangée garde le sablier et les
+   commandes, la barre d'onglets prend toute la largeur en dessous. Un peu d'air
+   au-dessus du header (et sur son `top` sticky) évite qu'elle colle au bord de
+   l'écran ; les onglets gagnent en hauteur et en taille de police.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 821px) {
+  .rpg-mode-menu__content { padding-top: 12px; }
+  .rpg-mode-menu__header {
+    top: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 104px;
+    padding-top: 10px;
+    padding-bottom: 0;
+    row-gap: 10px;
+  }
+  .rpg-mode-menu__brand { margin-right: auto; }
+  .rpg-mode-menu__accueil { width: 44px; height: 44px; }
+  .rpg-mode-menu__accueil .rpg-mode-icone { width: 27px; height: 27px; }
+  .rpg-mode-menu__brand h1 { font-size: clamp(26px, 2.4vw, 34px); }
+  .rpg-mode-menu__fullscreen,
+  .rpg-mode-menu__quitter { min-width: 44px; min-height: 44px; }
+  .rpg-mode-menu__switch {
+    order: 3;
+    width: 100%;
+    flex: 0 0 100%;
+    min-height: 56px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
+  .rpg-mode-menu__switch button,
+  .rpg-mode-menu__switch button.rpg-mode-menu__souk {
+    min-height: 56px;
+    padding: 0 clamp(14px, 1.8vw, 28px);
+    font-size: clamp(13px, 1.15vw, 16px);
+  }
+  /* Groupe secondaire : un filet à gauche, de l'air avant lui, une encre plus
+     discrète. `box-shadow` plutôt qu'une bordure : le thème des onglets remet
+     `border: 0` sur l'onglet actif, le filet doit rester visible dans ce cas. */
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
+    margin-left: auto;
+    padding-left: clamp(24px, 3vw, 48px);
+    box-shadow: -1px 0 0 rgba(240, 221, 183, .3);
+  }
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire {
+    color: rgba(219, 211, 196, .62);
+  }
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire span.rpg-mode-menu__onglet-icone {
+    color: #c8ad76;
+  }
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire:hover,
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire:focus-visible,
+  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire.is-active {
+    color: #fff0d2;
   }
 }

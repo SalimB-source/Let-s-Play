@@ -134,9 +134,9 @@ test('après « Retour aux tours », un duel terminé ne propose plus de le repr
         });
         await act(async () => { await wait(20); });
 
-        // ── Une partie lancée depuis « Jeu Solo » : le bouton de reprise vit
-        // sur le menu tant qu'elle n'est pas finie.
-        await cliquer(boutonTexte(container, '.rpg-mode-menu__switch button', 'Jeu Solo'), 'onglet Jeu Solo');
+        // ── Une partie lancée depuis la carte « Conquête » : le bouton de
+        // reprise vit sur le menu tant qu'elle n'est pas finie.
+        await cliquer(boutonTexte(container, '.rpg-mode-menu__hero-actions .rpg-menu-button--conquete', 'Conquête'), 'carte Conquête');
         await cliquer(container.querySelector(`.rpg-story-tower[data-tour="${premiereTour.id}"]`), 'la première tour');
         await cliquer(container.querySelector(`.rpg-story-floor[data-etage="${premierEtage.id}"]`), 'le premier étage');
         await passerMulligan(container, cliquer);

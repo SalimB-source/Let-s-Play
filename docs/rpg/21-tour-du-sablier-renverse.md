@@ -1,6 +1,6 @@
 # 21 — La Tour du Sablier renversé (tour d'épreuves terminale)
 
-**Statut : codé et jouable** dans le Jeu Solo (les Tours de Bab El), après la
+**Statut : codé et jouable** dans la Conquête (les Tours de Bab El), après la
 Tour du Corbeau (dossier 22) — la dernière des neuf tours avant elle. La fiche
 ci-dessous reste la référence de design.
 
@@ -19,7 +19,7 @@ La dixième tour renverse le principe — et le Sablier avec :
 > le gardien joue **les meilleures cartes de son identité, sans aucun
 > plafond**, avec le cerveau le plus fort du jeu.
 
-La tour est une **tour d'épreuves du Jeu Solo** : elle n'ajoute ni acte ni
+La tour est une **tour d'épreuves de la Conquête** : elle n'ajoute ni acte ni
 scène au récit « La Dernière Liste » (`rpgStoryScenes.js` reste à huit actes
 et 32 étages de campagne), mais elle hérite de tout l'appareil des tours
 libres — progression étage par étage, crédits au premier déblayage, butin de
