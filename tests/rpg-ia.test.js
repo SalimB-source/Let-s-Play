@@ -108,7 +108,7 @@ test('l’IA préfère le visage létal à un kill sur le plateau', () => {
     '3 dégâts garantis sur 3 PV : le burn part au visage');
 });
 
-test('le Coup rapide choisit la cible la plus précieuse, pas la première', () => {
+test('l’Attaque ciblée choisit la cible la plus précieuse, pas la première', () => {
   const duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -673,7 +673,7 @@ test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA
   assert.equal(ifrit.pv, 2, 'la riposte 2/1 entame quand même l’Ifrit');
 });
 
-test('le Coup rapide ne désigne pas une Tour protégée contre sa couleur', () => {
+test('l’Attaque ciblée ne désigne pas une Tour protégée contre sa couleur', () => {
   // La Tour de neige est une priorité d’attaque rapide, et Fériel (3/2 Braise)
   // la tuerait : elle la frappe en premier — sauf si une protection l’en
   // empêche. C’est le cas de figure où l’ancienne heuristique désignait une
@@ -692,7 +692,7 @@ test('le Coup rapide ne désigne pas une Tour protégée contre sa couleur', () 
 
   const protegee = poser({ contre: 'braise', toursRestants: Infinity });
   assert.deepEqual(rpgCiblesAttaqueRapide(protegee.duel, 'sorcier', [protegee.feriel.id]), {},
-    'une Tour protégée contre la Braise n’est pas une cible du Coup rapide Braise');
+    'une Tour protégée contre la Braise n’est pas une cible de l’Attaque ciblée Braise');
   // Rien n’est désigné : l’attaque reste légale, Fériel attaque normalement.
   assert.equal(rpgLancerAttaque(protegee.duel, 'sorcier', [protegee.feriel.id], null, null, null, {}).ok, true);
 

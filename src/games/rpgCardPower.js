@@ -12,7 +12,7 @@
  *    la rareté dit ce que la carte vaut à la table.
  * 2. **La puissance** (`puissanceCarte`) départage les cartes d'un même
  *    palier : les chiffres (⚔ attaque, 🛡 défense), les capacités imprimées
- *    (envol, coup rapide, furie, overkill, résonance, esquive, protection, rapidité),
+ *    (envol, attaque ciblée, furie, overkill, résonance, esquive, protection, rapidité),
  *    les effets d'arrivée et le texte du sort — rapportés à ce que la carte
  *    coûte en mana. Une carte chère doit être plus forte qu'une carte bon
  *    marché pour la dépasser.
@@ -308,7 +308,7 @@ export function valeurCarte(carte) {
   if (carte.rapidite) valeur += 0.5;
   if (carte.esquive) valeur += 1.5;
   // Contre-attaque : chaque coup porté contre elle se paie — une épine dans
-  // le jeu agressif, qui décourage le Coup rapide et les sorts ciblés.
+  // le jeu agressif, qui décourage l’Attaque ciblée et les sorts ciblés.
   if (carte.contreAttaque) valeur += 2;
   if (carte.protection) valeur += 1.5;
   if (carte.furie) valeur += 0.7 + 0.55 * carte.furie;

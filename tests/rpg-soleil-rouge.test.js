@@ -140,7 +140,7 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   assert.deepEqual(kagutsuchiCarte.coupCritique, { chance: 0.3, fois: 4 });
   assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [2, 6]);
   assert.equal(kagutsuchiCarte.honneur, 0);
-  assert.match(kagutsuchiCarte.text, /Coup rapide — /);
+  assert.match(kagutsuchiCarte.text, /Attaque ciblée — /);
   assert.match(kagutsuchiCarte.text, /Coup critique/);
 });
 
@@ -939,7 +939,7 @@ test('Tojiro, le pourfendeur : 5/5 mythique à 6, Esquive et Contre-attaque', ()
   assert.equal(pastillesPourCarte(carte).some((pastille) => pastille.cle === 'contreAttaque'), true);
 });
 
-test('Contre-attaque : un Coup rapide porté contre Tojiro lui est rendu — et reste rendu s’il esquive', () => {
+test('Contre-attaque : une attaque ciblée portée contre Tojiro lui est rendue — et reste rendue s’il esquive', () => {
   const duel = duelTest();
   const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
   const djinn = jouer(duel, 'joueur', 'djinn-de-foudre');
@@ -947,11 +947,11 @@ test('Contre-attaque : un Coup rapide porté contre Tojiro lui est rendu — et 
   assert.equal(rpgLancerAttaque(duel, 'joueur', [djinn.id], {}, null, null, { [djinn.id]: tojiro.id }).ok, true);
   assert.equal(tojiro.pv, 3, 'la frappe rapide de 2 passe');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === djinn.id), false,
-    'Tojiro rend 5 dégâts au Coup rapide et le tue');
+    'Tojiro rend 5 dégâts à l’Attaque ciblée et la tue');
   assert.ok(duel.log.some((ligne) => /Contre-attaque : Tojiro, le pourfendeur rend son coup/.test(ligne)));
 
   // Esquive réussie : la frappe ne porte pas, la riposte part quand même. Le
-  // premier jet (0,5) laisse le Coup rapide toucher, le second (0,1) réussit
+  // premier jet (0,5) laisse l’Attaque ciblée toucher, le second (0,1) réussit
   // l'Esquive de Tojiro — un seul jet à 0,1 aurait fait RATER la frappe.
   let jets = [];
   const duelEsquive = duelTest(() => (jets.length ? jets.shift() : 0.5));
@@ -960,7 +960,7 @@ test('Contre-attaque : un Coup rapide porté contre Tojiro lui est rendu — et 
   djinnEsquive.ready = true;
   jets = [0.5, 0.1];
   rpgLancerAttaque(duelEsquive, 'joueur', [djinnEsquive.id], {}, null, null, { [djinnEsquive.id]: tojiroEsquive.id });
-  assert.equal(tojiroEsquive.pv, 5, 'le Coup rapide est esquivé');
+  assert.equal(tojiroEsquive.pv, 5, 'l’attaque ciblée est esquivée');
   assert.equal(duelEsquive.joueur.creatures.some((entite) => entite.id === djinnEsquive.id), false,
     'la Contre-attaque frappe malgré l’Esquive');
 });

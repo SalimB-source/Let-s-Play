@@ -969,19 +969,19 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
 
   assert.deepEqual(libellesPastilles('rais-de-la-galiote'), ['Abordage 1'], 'le Raïs porte la pastille Abordage 1');
   assert.deepEqual(libellesPastilles('la-barbe-rousse').slice(0, 1), ['Abordage 5'], 'l’amirale porte Abordage 5');
-  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Coup rapide', 'Abordage 4', 'Cargaison 1'],
-    'le Galion 2/5 porte Coup rapide, Abordage 4 et Cargaison 1');
+  assert.deepEqual(libellesPastilles('galion-de-la-flotte'), ['Attaque ciblée', 'Abordage 4', 'Cargaison 1'],
+    'le Galion 2/5 porte Attaque ciblée, Abordage 4 et Cargaison 1');
   assert.equal(galion.atk, 2, 'le Galion est un 2/5');
   assert.equal(galion.def, 5);
-  assert.deepEqual(libellesPastilles('le-chasseur-d-ocracoke'), ['Rapidité', 'Coup rapide', 'Traque 3'],
+  assert.deepEqual(libellesPastilles('le-chasseur-d-ocracoke'), ['Rapidité', 'Attaque ciblée', 'Traque 3'],
     'le Chasseur porte la pastille de sa Traque');
   assert.ok(libellesPastilles('le-grand-debarquement').includes('Overkill'),
     'le Grand Débarquement annonce l’Overkill sur sa face');
   assert.deepEqual(libellesPastilles('negociant-des-ranscons'), ['Prise 1'], 'le Négociant porte la pastille Prise');
   assert.ok(libellesPastilles('grappin-d-abordage').includes('Abordage'),
     'le Grappin porte la pastille Abordage — dynamique, sans chiffre imprimé');
-  assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Coup rapide'],
-    'le Tercio 1/4 porte la pastille Coup rapide');
+  assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Attaque ciblée'],
+    'le Tercio 1/4 porte la pastille Attaque ciblée');
   assert.equal(cardById('tercio-de-cuivre').atk, 1, 'le Tercio est un 1/4');
   assert.ok(libellesPastilles('pilote-de-la-carreira').includes('Abordage'),
     'le Pilote annonce sur sa face l’Abordage qu’il offre à la prochaine pose');
@@ -1003,7 +1003,7 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
     'cargaison', 'la ligne de règle se lit Cargaison');
 });
 
-test('La légende du Hollandais volant (ex-Vengeance) : 2/4 avec Coup rapide, +2/+0 et Butin uniquement quand sa cale est occupée', () => {
+test('La légende du Hollandais volant (ex-Vengeance) : 2/4 avec Attaque ciblée, +2/+0 et Butin uniquement quand sa cale est occupée', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 12);
   mana(duel, 'sorcier', 12);
@@ -1015,7 +1015,7 @@ test('La légende du Hollandais volant (ex-Vengeance) : 2/4 avec Coup rapide, +2
   const hollandais = jouer(duel, 'joueur', 'la-vengeance-de-la-reine-anne', mousse.id).entite;
 
   assert.equal(hollandais.pvMax, 4, 'le vaisseau fantôme est un 2/4');
-  assert.equal(hollandais.coupRapide, true, 'avec Coup rapide');
+  assert.equal(hollandais.coupRapide, true, 'avec Attaque ciblée');
   assert.equal(hollandais.enCale?.carteId, 'mousse-des-galiotes', 'il garde son Abordage 3');
   assert.equal(hollandais.atk, 4, 'la cale comble donne +2 attaque');
   assert.equal(hollandais.butin, true, 'la cale comble donne Butin');

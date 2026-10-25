@@ -195,7 +195,7 @@ export const EFFET_LIBELLES = {
   contreAttaque: 'Contre-attaque',
   envol: 'Envol',
   rapidite: 'Rapidité',
-  coupRapide: 'Coup rapide',
+  coupRapide: 'Attaque ciblée',
   coupCritique: 'Coup critique',
   traque: 'Traque',
   traquePirates: 'Traque',
@@ -255,7 +255,7 @@ export function pastillesPourCarte(carte) {
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
-  if (carte.coupRapide) ajouter('coupRapide', 'Coup rapide');
+  if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
@@ -414,7 +414,7 @@ const MOTIFS_LIGNE = [
   ['contreAttaque', /\bcontre[- ]attaque/iu],
   ['envol', /\benvol\b/iu],
   ['rapidite', /\brapidité/iu],
-  ['coupRapide', /\bcoup rapide/iu],
+  ['coupRapide', /\battaque ciblée/iu],
   ['coupCritique', /\bcoup critique/iu],
   ['provocation', /\bprovocation\b/iu],
   ['overkill', /\boverkill\b/iu],
@@ -535,7 +535,7 @@ export function iconePourLigne(carte, ligne = '') {
    mot, parce que le volet ne se survole pas. Ailleurs (grille du catalogue,
    guide), elle reste une puce et son détail s’ouvre au survol (ou au toucher).
    Le texte imprimé de la carte prime toujours : quand
-   la fiche écrit « Coup rapide — … », c’est cette phrase qui remplit la bulle.
+   la fiche écrit « Attaque ciblée — … », c’est cette phrase qui remplit la bulle.
    Le glossaire ci-dessous ne sert que lorsque la carte nomme le mot-clé sans
    l’expliquer (« Rapidité. ») ou ne le nomme pas du tout (Exil, Contresort…). */
 
@@ -551,7 +551,7 @@ export const EFFET_DEFINITIONS = {
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
-  contreAttaque: 'Quand une créature adverse la frappe avec Coup rapide ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort qui la cible, la riposte frappe le sorcier adverse. Une Esquive réussie ne l’empêche pas de riposter.',
+  contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort qui la cible, la riposte frappe le sorcier adverse. Une Esquive réussie ne l’empêche pas de riposter.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
@@ -587,7 +587,7 @@ export const EFFET_DEFINITIONS = {
 
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
 const LIBELLES_IMPRIMES = [
-  ['coupRapide', 'Coup rapide'],
+  ['coupRapide', 'Attaque ciblée'],
   ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
   ['provocation', 'Provocation'],
@@ -613,7 +613,7 @@ const LIBELLES_IMPRIMES = [
 /**
  * Un mot-clé imprimé **en tête de phrase**, suivi soit d’un point
  * (« Rapidité. »), soit d’un tiret qui ouvre son explication
- * (« Coup rapide — … »). Le mot-clé cité au milieu d’une phrase (« sa Furie 3
+ * (« Attaque ciblée — … »). Le mot-clé cité au milieu d’une phrase (« sa Furie 3
  * s’enflamme ») n’est pas une tête de section : il reste dans le texte.
  */
 const TETE_DE_SECTION = new RegExp(
@@ -687,7 +687,7 @@ export function definitionPastille(pastille) {
  * montre la pastille fermée, puis la règle entière de la carte dans son bloc
  * « Effets » (`HoverCardPreview`, `effetIcons.jsx`).
  *
- * - « Coup rapide — Sélectionnée pour attaquer… » : la section court jusqu’à
+ * - « Attaque ciblée — Sélectionnée pour attaquer… » : la section court jusqu’à
  *   la fin de sa phrase (et des phrases qui la précisent, « Si vous ne
  *   désignez personne… ») ; elle devient l’explication de la pastille Coup
  *   rapide et quitte le texte ;

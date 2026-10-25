@@ -4,17 +4,16 @@
  * Le sprite (26 symboles validés) s'injecte **une fois** par surface avec
  * `<EffetsSprite />` ; ensuite chaque icône n'est qu'un `<use>` sans coût.
  * Deux grammaires, comme sur la preview validée :
- * - les **pastilles** (`<PastillesCarte />`) : les mots-clés passifs d'une
- *   fiche, icône + libellé, sous la ligne de type — le mot seul, son
- *   explication restant dans la bulle du survol ;
+ * - les **pastilles** (`<PastillesCarte />`) : les mots-clés d'une fiche,
+ *   icône + libellé, sous la ligne de type — l'aperçu n'imprime plus la
+ *   règle : **chaque mot-clé porte son « ? » et ouvre sa bulle au survol**
+ *   (au toucher et au focus clavier aussi) ;
  * - les **badges** (`<IconesCarte />`) : l'icône seule, posée sur les faces
  *   de cartes (table, main, catalogue) où il n'y a pas la place du mot ;
  * - l'**interlignage** : une icône devant chaque ligne de règle (voir
- *   `RpgCardRules.jsx`, qui s'appuie sur `iconePourLigne`).
- *
- * Accessibilité : les icônes doublent l'information, elles ne la remplacent
- * jamais — le libellé reste porté par l'`aria-label` du groupe et le texte de
- * règle reste écrit à côté.
+ *   `RpgCardRules.jsx`, qui s'appuie sur `iconePourLigne`) — réservé aux
+ *   surfaces de lecture (grille du catalogue, guide), où le texte reste
+ *   écrit en entier.
  */
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -197,34 +196,30 @@ function BulleEffet({ id, ancre, titre, description }) {
  * elle ouvre la bulle de ce que fait son effet. Le toucher ne traverse pas :
  * il n'ouvre ni ne referme la fiche qui l'accueille.
  *
- * Le mot seul s'écrit sur la pastille : son explication reste dans la bulle,
- * et la règle imprimée de la carte reste dans son texte — un aperçu les écrit
- * tous les deux, sans déplier quoi que ce soit sous le mot-clé.
- *
- * `muette` : la pastille ne nomme plus que son effet. C'est ce que veut un
- * aperçu de carte — son volet ne reçoit pas la souris (il est posé sur les
- * cartes qu'il recouvre), et la règle imprimée se lit entière juste dessous :
- * ni bulle, ni focus, ni explication à chercher.
+ * Le mot seul s'écrit sur la pastille : son explication reste dans la bulle.
+ * Un « ? » cerclé au bout du mot — et le curseur d'aide — annoncent que la
+ * description se lit au survol : l'aperçu d'une carte n'imprime plus la règle,
+ * ses mots-clés sont la seule porte vers elle.
  */
-export function PastilleEffet({ pastille, epuise = false, inactif = false, muette = false }) {
+export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
   const id = useId();
   const ancreRef = useRef(null);
   const [survolee, setSurvolee] = useState(false);
   const [epinglee, setEpinglee] = useState(false);
   const texte = pastilleTexte(pastille);
   const explication = pastille.description ? String(pastille.description) : '';
-  const ouverte = !muette && Boolean(explication) && (survolee || epinglee);
+  const ouverte = Boolean(explication) && (survolee || epinglee);
   const mentionEtat = epuise
     ? (pastille.cle === 'tenacite' ? 'déjà utilisée' : pastille.cle === 'bouclier' ? 'tombé' : 'déjà utilisé')
     : inactif ? 'Furie non active' : '';
   return (
     <span
       ref={ancreRef}
-      className={`rpg-pastille${epuise ? ' is-epuisee' : ''}${inactif ? ' is-inactif' : ''}${!muette && explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
+      className={`rpg-pastille${epuise ? ' is-epuisee' : ''}${inactif ? ' is-inactif' : ''}${explication ? ' rpg-pastille--explicable' : ''}${ouverte ? ' is-ouverte' : ''}`}
       role="listitem"
-      tabIndex={!muette && explication ? 0 : undefined}
+      tabIndex={explication ? 0 : undefined}
       aria-describedby={ouverte ? id : undefined}
-      aria-label={!muette && explication
+      aria-label={explication
         ? `${texte}${mentionEtat ? ` — ${mentionEtat}` : ''} : ${explication}`
         : undefined}
       data-pastille={pastille.cle}
@@ -233,19 +228,18 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false, muett
       data-protection-contre={pastille.contres?.length ? pastille.contres.join(' ') : undefined}
       style={styleProtectionPastille(pastille)}
       // La souris ouvre au survol ; le doigt, lui, ouvre et referme d'un toucher
-      // (son survol émulé ne doit pas laisser la bulle collée). Une pastille
-      // muette ne capte aucun geste : elle n'a rien à ouvrir.
-      onPointerEnter={muette ? undefined : (event) => { if (event.pointerType === 'mouse') setSurvolee(true); }}
-      onPointerLeave={muette ? undefined : (event) => { if (event.pointerType === 'mouse') { setSurvolee(false); setEpinglee(false); } }}
-      onFocus={muette ? undefined : (event) => { if (event.currentTarget.matches?.(':focus-visible')) setSurvolee(true); }}
-      onBlur={muette ? undefined : () => { setSurvolee(false); setEpinglee(false); }}
-      onPointerDown={muette ? undefined : (event) => event.stopPropagation()}
-      onClick={muette ? undefined : (event) => {
+      // (son survol émulé ne doit pas laisser la bulle collée).
+      onPointerEnter={(event) => { if (event.pointerType === 'mouse') setSurvolee(true); }}
+      onPointerLeave={(event) => { if (event.pointerType === 'mouse') { setSurvolee(false); setEpinglee(false); } }}
+      onFocus={(event) => { if (event.currentTarget.matches?.(':focus-visible')) setSurvolee(true); }}
+      onBlur={() => { setSurvolee(false); setEpinglee(false); }}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
         event.stopPropagation();
         event.preventDefault();
         setEpinglee((valeur) => !valeur);
       }}
-      onKeyDown={muette ? undefined : (event) => {
+      onKeyDown={(event) => {
         if (event.key === 'Escape' && ouverte) {
           event.stopPropagation();
           setSurvolee(false);
@@ -265,8 +259,8 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false, muett
  * À poser sous la ligne de type (fiche, aperçu, catalogue, guide). Chaque
  * pastille dit ce qu'elle fait au survol — le texte imprimé de la carte
  * d'abord, le glossaire à défaut (`effetsDetailles`). `pastilles` permet de
- * passer une lecture déjà faite ; `muettes` les réduit au mot seul, sans
- * bulle à ouvrir (voir `PastilleEffet`).
+ * passer une lecture déjà faite. Les aperçus de carte n'impriment plus le
+ * texte de règle : leurs pastilles sont la seule façon d'y lire un effet.
  */
 export function PastillesCarte({
   carte,
@@ -276,7 +270,6 @@ export function PastillesCarte({
   // `null` : hors de la table, les gains conditionnels ne sont pas encore là.
   // Une preview en Furie passe explicitement la liste vide pour les réveiller.
   effetsInactifs = null,
-  muettes = false,
 }) {
   const pastilles = lues ?? effetsDetailles(carte).pastilles;
   const epuises = new Set(effetsEpuises ?? []);
@@ -294,7 +287,6 @@ export function PastillesCarte({
           pastille={pastille}
           epuise={epuises.has(pastille.cle)}
           inactif={inactifs.has(pastille.cle)}
-          muette={muettes}
         />
       ))}
     </span>
@@ -315,7 +307,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
   if (entite) {
     if (entite.infiltration) ajouter('infiltration', 'Infiltration');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
-    if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Coup rapide');
+    if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
     if (entite.provocation) ajouter('provocation', 'Provocation');
     if (entite.rapidite && !carte?.rapidite) ajouter('rapidite', 'Rapidité');
     if (entite.overkill) ajouter('overkill', 'Overkill');

@@ -13,7 +13,7 @@ Honneur compris).
 | Kenshi de la forge | 3 mana 1/3 | **3 mana 1/2** | 2,93 → 2,60 |
 | Onna-musha des cendres | 4 mana 3/3 | **4 mana 3/3 + Esquive** *(effet alternatif — buff)* | 2,23 → 2,60 |
 | Feux de kitsune | 3 mana | **4 mana** (écho conservé) | 1,57 → 1,18 |
-| Sabre maudit | +5/-2 · Coup rapide | **+4/-2** · Coup rapide conservé | 1,20 → 1,00 |
+| Sabre maudit | +5/-2 · Attaque ciblée | **+4/-2** · Attaque ciblée conservée | 1,20 → 1,00 |
 | Ashigaru, Hatamoto, Rōnin, Daimyō, Oni, Cavalier, Kagutsuchi, Orochi | — | inchangés | dans la bande |
 | Frappe d’iaijutsu, Serment de la forge, terrains | — | inchangés | parité inter-sets |
 
@@ -122,7 +122,7 @@ magies ne s’esquivent jamais. Le champ est un booléen, sans chiffre.
   }),
 ```
 
-## 7. Sabre maudit — +4/-2 (Coup rapide conservé)
+## 7. Sabre maudit — +4/-2 (Attaque ciblée conservée)
 
 **Changement :** `atk: 5 → 4` dans l’effet, et le même chiffre dans le texte
 imprimé.
@@ -134,7 +134,7 @@ imprimé.
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true },
-    text: 'Arme — Le porteur gagne +4/-2 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher s’il attaque l’adversaire) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    text: 'Arme — Le porteur gagne +4/-2 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher s’il attaque l’adversaire) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
 ```

@@ -167,12 +167,38 @@
   transition: border-color .12s ease, background-color .12s ease;
 }
 
+/* L'indicateur de survol : un « ? » cerclé au bout du mot. Il vit en CSS, hors
+   du texte — le libellé lu par les tests et les lecteurs d'écran reste le mot
+   seul (la description complète est dans l'`aria-label` de la pastille). */
+.rpg-pastille--explicable::after {
+  content: "?";
+  content: "?" / "";
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin-right: -3px;
+  border: 1px solid rgba(237, 203, 139, .5);
+  border-radius: 50%;
+  font: 800 9px/1 var(--sans, system-ui, sans-serif);
+  color: #edcb8b;
+  background: rgba(237, 203, 139, .1);
+  transition: inherit;
+}
+
 .rpg-pastille--explicable:hover,
 .rpg-pastille--explicable.is-ouverte,
 .rpg-pastille--explicable:focus-visible {
   border-color: rgba(255, 222, 150, .95);
   background: rgba(40, 28, 10, .82);
   outline: none;
+}
+
+.rpg-pastille--explicable:hover::after,
+.rpg-pastille--explicable.is-ouverte::after,
+.rpg-pastille--explicable:focus-visible::after {
+  border-color: rgba(255, 222, 150, .95);
+  color: #ffeec2;
 }
 
 /* Une Protection élémentaire écrit aussi son nom dans la couleur repoussée,
@@ -219,13 +245,19 @@
   filter: grayscale(1);
 }
 
-/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre : ses
-   pastilles n'ont rien à ouvrir — l'aperçu n'écrit aucune explication sous le
-   mot — et restent donc inertes, y compris dans les volets lisibles
-   (`is-interactif`, appui long, fiche, annonce), où seule la colonne d'infos
-   capte la souris. */
+/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre :
+   inerte à sa pose, il devient lisible après un temps de station (`is-interactif`)
+   — alors sa colonne d'infos, et chaque mot-clé explicable dedans, capte la
+   souris pour ouvrir sa bulle. Les volets de lecture posés sur un voile (appui
+   long, fiche du catalogue, annonce, effet activé) rendent leurs mots-clés
+   survolables d'emblée : la règle ne s'y imprime plus, le mot-clé est la seule
+   porte vers elle. */
 .rpg-hover-card-preview .rpg-pastille { pointer-events: none; }
-.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details { pointer-events: auto; }
+.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details,
+.rpg-hover-card-preview.is-interactif .rpg-pastille--explicable,
+.rpg-card-peek .rpg-hover-card-preview .rpg-pastille--explicable,
+.rpg-annonce-sort .rpg-hover-card-preview .rpg-pastille--explicable,
+.rpg-auto-preview .rpg-hover-card-preview .rpg-pastille--explicable { pointer-events: auto; }
 
 .rpg-pastille-bulle {
   position: fixed;

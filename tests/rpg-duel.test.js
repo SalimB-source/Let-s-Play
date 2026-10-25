@@ -1644,12 +1644,12 @@ test('Rapidité permet au Fennec d’attaquer dès son tour de pose', () => {
   assert.equal(fennec.attaquee, true, 'l’attaque immédiate est bien consommée pour le tour');
 });
 
-test('le Djinn de foudre gagne Rapidité en plus de son Coup rapide', () => {
+test('le Djinn de foudre gagne Rapidité en plus de son Attaque ciblée', () => {
   const djinn = cardById('djinn-de-foudre');
   assert.deepEqual({ cost: djinn.cost, atk: djinn.atk, def: djinn.def, rapidite: djinn.rapidite, coupRapide: djinn.coupRapide }, {
     cost: 2, atk: 2, def: 1, rapidite: true, coupRapide: true,
   });
-  assert.match(djinn.text, /^Rapidité.*Coup rapide — /);
+  assert.match(djinn.text, /^Rapidité.*Attaque ciblée — /);
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -1660,18 +1660,18 @@ test('le Djinn de foudre gagne Rapidité en plus de son Coup rapide', () => {
   assert.equal(entite.ready, true, 'le Djinn est prêt dès son arrivée malgré le mal d’invocation habituel');
 });
 
-test('Fériel est une mythique 4 mana 3/2 avec Rapidité et Coup rapide', () => {
+test('Fériel est une mythique 4 mana 3/2 avec Rapidité et Attaque ciblée', () => {
   const feriel = cardById('feriel');
   assert.deepEqual({ cost: feriel.cost, atk: feriel.atk, def: feriel.def, rarity: feriel.rarity, rapidite: feriel.rapidite, coupRapide: feriel.coupRapide }, {
     cost: 4, atk: 3, def: 2, rarity: 'mythique', rapidite: true, coupRapide: true,
   });
   assert.equal(feriel.arrivee, undefined, 'son ancien effet de dégâts à l’arrivée est retiré');
   assert.match(feriel.text, /Rapidité/);
-  assert.match(feriel.text, /Coup rapide.*sélectionnée pour attaquer.*créature adverse.*dégâts d’attaque/i);
+  assert.match(feriel.text, /Attaque ciblée.*sélectionnée pour attaquer.*créature adverse.*dégâts d’attaque/i);
   assert.equal(cardArtId(feriel), 'feriel', 'Fériel utilise sa nouvelle illustration dédiée');
 });
 
-test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête là', () => {
+test('l’Attaque ciblée frappe la créature désignée, et l’attaque s’arrête là', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1686,7 +1686,7 @@ test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête 
   const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: fennec.id });
   assert.equal(res.ok, true);
   assert.equal(fennec.pv, 2, 'les 3 dégâts d’attaque pleins entament le Fennec de 5 PV');
-  assert.equal(feriel.pv, 2, 'la créature visée ne riposte pas contre le Coup rapide');
+  assert.equal(feriel.pv, 2, 'la créature visée ne riposte pas contre l’Attaque ciblée');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’arrête sur la frappe : le sorcier ne prend rien');
   assert.equal(res.resume.frappeSorcier, 0);
   assert.deepEqual(res.resume.paires, [], 'aucun combat de blocage : la frappe a clos l’attaque');
@@ -1696,7 +1696,7 @@ test('le Coup rapide frappe la créature désignée, et l’attaque s’arrête 
   ]);
 });
 
-test('le Coup rapide a 30 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+test('l’Attaque ciblée a 30 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
   assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.30);
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
@@ -1716,12 +1716,12 @@ test('le Coup rapide a 30 % de chances de rater une créature, mais touche toujo
   const pvSorcierAvant = duelRate.sorcier.pv;
   const resRate = rpgLancerAttaque(duelRate, 'joueur', [ferielRate.id], {}, null, null, { [ferielRate.id]: fennecRate.id });
   assert.equal(resRate.ok, true);
-  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.30 marque le Coup rapide comme raté');
+  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.30 marque l’attaque ciblée comme ratée');
   assert.equal(resRate.resume.coupsRapides[0].degats, 0, 'aucun dégât infligé en cas d’échec');
   assert.equal(fennecRate.pv, fennecRate.pvMax, 'la créature ciblée reste indemne');
   assert.equal(duelRate.sorcier.pv, pvSorcierAvant, 'l’attaque s’arrête quand même : le sorcier ne prend rien');
   assert.equal(ferielRate.attaquee, true, 'l’attaquant est engagé malgré le raté');
-  assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Coup rapide contre Fennec des décombres')));
+  assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Attaque ciblée contre Fennec des décombres')));
 
   // Jet >= 0.30 : la frappe rapide touche sa cible.
   const duelTouche = duelDeBase({ rng: () => 0.30 });
@@ -1748,7 +1748,7 @@ test('le Coup rapide a 30 % de chances de rater une créature, mais touche toujo
   assert.equal(duelSorcier.sorcier.pv, pvAdvAvant - 3, 'l’attaque sur l’adversaire touche toujours à 100 %');
 });
 
-test('sans créature désignée, le Coup rapide attaque le sorcier comme n’importe quel attaquant', () => {
+test('sans créature désignée, l’Attaque ciblée attaque le sorcier comme n’importe quel attaquant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1767,7 +1767,7 @@ test('sans créature désignée, le Coup rapide attaque le sorcier comme n’imp
   assert.equal(feriel.attaquee, true, 'l’attaque est consommée comme les autres');
 });
 
-test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel attaquant', () => {
+test('une attaque ciblée qui ne frappe personne est bloquée comme n’importe quel attaquant', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1795,7 +1795,7 @@ test('un Coup rapide qui ne frappe personne est bloqué comme n’importe quel a
     'le blocage est compté dans le résumé du combat');
 });
 
-test('la frappe du Coup rapide n’est pas bloquable : l’attaquant s’arrête dessus', () => {
+test('la frappe de l’Attaque ciblée n’est pas bloquable : l’attaquant s’arrête dessus', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1876,7 +1876,7 @@ test('Provocation : deux provocateurs pour un seul bloqueur n’exigent que le m
   ), true, 'un bloqueur ne peut pas couvrir deux provocateurs : le maximum possible suffit');
 });
 
-test('l’IA abat d’un Coup rapide la créature qu’elle peut tuer, et son attaque s’arrête', () => {
+test('l’IA abat d’une attaque ciblée la créature qu’elle peut tuer, et son attaque s’arrête', () => {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.999 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -1900,7 +1900,7 @@ test('l’IA ne s’arrête pas sur une créature qu’elle ne tue pas : elle at
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   Object.assign(chien, { pv: 5, def: 5, pvMax: 5 });
   // Le Chien s’est déjà engagé à l’attaque : il ne peut plus bloquer, et rien
-  // ne se met devant le Coup rapide — l’IA doit donc choisir sa cible.
+  // ne se met devant l’Attaque ciblée — l’IA doit donc choisir sa cible.
   chien.attaquee = true;
   donner(duel, 'sorcier', 'feriel');
   const feriel = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
@@ -4227,7 +4227,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   donner(duel, 'joueur', 'berserk-des-trois-hivers');
   const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
   assert.equal(cardById('berserk-des-trois-hivers').coupRapide, undefined,
-    'Coup rapide a quitté la fiche');
+    'Attaque ciblée a quitté la fiche');
   assert.equal(berserk.provocation, true, 'l’entité porte Provocation');
   berserk.ready = true;
   const pvSorcierAvantBerserk = duel.sorcier.pv;
@@ -4886,7 +4886,7 @@ test('gel en réponse : les autres attaquants infligent encore leurs blessures',
   assert.equal(res.resume.frappeSorcier, attaquants[1].atk);
 });
 
-test('gel en réponse : le Coup rapide ne blesse plus sa cible', () => {
+test('gel en réponse : l’Attaque ciblée ne blesse plus sa cible', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'sorcier', 20);
   donnerMana(duel, 'joueur', 20);
@@ -4928,7 +4928,7 @@ test('gel : animation, état persistant, accessibilité et résolution dans les 
     'les deux camps résolvent une attaque déjà déclarée malgré un gel en réponse');
 });
 
-test('Coup rapide raté : affiche un texte « MISS » façon RPG au-dessus de la carte qui attaque', () => {
+test('Attaque ciblée ratée : affiche un texte « MISS » façon RPG au-dessus de la carte qui attaque', () => {
   const battlePage = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const battleCss = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
   assert.match(battlePage, /className="rpg-card__miss" aria-hidden="true">\s*MISS\s*<\/span>/);

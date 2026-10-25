@@ -128,7 +128,7 @@ exception demandée).
 | Prêtre de la bouche | 2 | 2/2 | inhabituelle | 2 | à l'arrivée : transfert 1 |
 | Nom effacé _(sorcellerie)_ | 2 | — | inhabituelle | 2 | l'adversaire défausse 1 carte |
 | Offrande de lin _(sorcellerie)_ | 2 | — | commune | 2 | +1/+0 à toutes vos créatures jusqu'à la fin du tour |
-| Uræus du seuil | 3 | 2/1 | inhabituelle | 2 | **Coup rapide** — contrôle des créatures |
+| Uræus du seuil | 3 | 2/1 | inhabituelle | 2 | **Attaque ciblée** — contrôle des créatures |
 | Momie de lin | 3 | 2/4 | commune | 2 | à sa mort : crée 1 Shabti 1/1 |
 | Ibis des comptes | 3 | 2/2 | inhabituelle | 2 | **Envol** ; à l'arrivée : piochez 1 puis défaussez 1 |
 | Khopesh d'or _(arme)_ | 3 | +2/+1 | rare | 1 | le porteur gagne **Tribut 1** ; à sa mort, revient avec 1 DEF |
@@ -222,7 +222,7 @@ export const RPG_TENEBRES_CREATURES = [
     id: 'ureus-du-seuil', name: 'Uræus du seuil',
     cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher le sorcier adverse) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -474,8 +474,8 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 | Carte | Identifiant | Couleur(s) | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|---|
 | **Le Passeur au masque de chacal** _(Anubis)_ | `passeur-au-masque-de-chacal` | Ténèbres | 6 | 5/5 | Arrivée : réanime la dernière créature de votre cimetière |
-| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Coup rapide** (30 % contre une créature, 100 % contre le sorcier) ; arrivée : piochez 2 cartes |
-| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Coup rapide** (30 % contre une créature, 100 % contre le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
+| **Le Maître des hiéroglyphes** _(Thot)_ | `maitre-des-hieroglyphes` | Ténèbres | 5 | 3/5 | **Envol**, **Attaque ciblée** (30 % contre une créature, 100 % contre le sorcier) ; arrivée : piochez 2 cartes |
+| **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Attaque ciblée** (30 % contre une créature, 100 % contre le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
 | **Le Seigneur des mâchoires** _(Sobek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** |
@@ -531,7 +531,7 @@ pour finir. Le Khopesh d’or conserve Tribut ; les figures des autres couleurs
 ne changent pas. Les coûts, raretés et listes de decks restent inchangés. L’Uræus du seuil
 passe de 3/2 à 2/1 ; les autres statistiques restent inchangées.
 
-- **Uræus du seuil** remplace Tribut 1 par **Coup rapide** : il peut employer
+- **Uræus du seuil** remplace Tribut 1 par **Attaque ciblée** : il peut employer
   son attaque contre une créature sans riposte, au lieu de toucher le sorcier.
 - **Celle qui pèse** remplace Tribut 1 par une défausse adverse à l’arrivée,
   choisie par la victime. Sans carte en main adverse, cet effet ne fait rien.
@@ -539,7 +539,7 @@ passe de 3/2 à 2/1 ; les autres statistiques restent inchangées.
   à l’arrivée : la dernière créature du cimetière revient, si le champ a une
   place libre. Il reste une menace de reconstruction plutôt qu’un finisseur
   supplémentaire par transfert de vie.
-- **Le Maître des hiéroglyphes** perd Tribut 1, gagne Envol et Coup rapide et conserve
+- **Le Maître des hiéroglyphes** perd Tribut 1, gagne Envol et Attaque ciblée et conserve
   la pioche de deux cartes à l’arrivée : son rôle est de renouveler la main.
 
 Cette répartition distingue combat, défausse, réanimation et pioche, en plus

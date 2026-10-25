@@ -3,7 +3,7 @@
  *
  * Dessiné dans l'esprit des Equipment de Magic (`docs/rpg/14-equipements-du-sable.md`)
  * et traduit dans le moteur du Sablier : les mots-clés donnés (Rapidité,
- * Esquive, Coup rapide), les déclencheurs du porteur — `porteurAttaque`,
+ * Esquive, Attaque ciblée), les déclencheurs du porteur — `porteurAttaque`,
  * `porteurBlesse`, `porteurBlesseCreature`, `porteurBlesseSorcier` — le
  * déclencheur de mort `porteurMeurt`, les compteurs dépensables de la Jitte
  * et l'arme vivante qui apporte son propre porteur.
@@ -141,15 +141,15 @@ test('la Cuirasse de sel donne +0/+3 et Esquive contre les attaques comme contre
   assert.equal(porteur.pv, 2, 'à 30 %, l’Esquive échoue et la magie retire ses 3 points');
 });
 
-test('le Javelot du beffroi donne le Coup rapide, que le remplacement retire', () => {
+test('le Javelot du beffroi donne l’Attaque ciblée, que le remplacement retire', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'javelot-du-beffroi', porteur);
-  assert.equal(porteur.coupRapide, true, 'le porteur gagne le Coup rapide');
+  assert.equal(porteur.coupRapide, true, 'le porteur gagne l’Attaque ciblée');
   assert.equal(porteur.atk, 4, '+2/+0');
   // Une seconde arme envoie la première au cimetière : le mot-clé repart.
   equiper(duel, 'joueur', 'sandales-de-tislit', porteur);
-  assert.equal(porteur.coupRapide, false, 'le Coup rapide appartenait au Javelot');
+  assert.equal(porteur.coupRapide, false, 'l’Attaque ciblée appartenait au Javelot');
   assert.ok(duel.joueur.cimetiere.includes('javelot-du-beffroi'),
     'le Javelot remplacé rejoint le cimetière');
 });
@@ -302,23 +302,23 @@ test('une arme sans arme vivante refuse toujours de se jouer sans créature', ()
 
 // ── La mythique ─────────────────────────────────────────────────────────────
 
-test('la Takouba de Tin Hinan : le Coup rapide frappe une créature et pioche, sans chien', () => {
+test('la Takouba de Tin Hinan : l’Attaque ciblée frappe une créature et pioche, sans chien', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   const mur = poser(duel, 'sorcier', 'dune-marchante'); // 2/5
-  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur); // → 5/4, Coup rapide
+  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur); // → 5/4, Attaque ciblée
   assert.equal(porteur.coupRapide, true);
-  assert.equal(porteur.infiltration, false, 'elle se fait bloquer : le Coup rapide est la voie');
+  assert.equal(porteur.infiltration, false, 'elle se fait bloquer : l’Attaque ciblée est la voie');
   assert.equal(rpgPeutBloquerAttaquant(mur, porteur), true);
 
   rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
   const pvMur = mur.pv;
   const pvSorcier = duel.sorcier.pv;
-  // Coup rapide sur le mur : l'attaque s'arrête sur la frappe.
+  // Attaque ciblée sur le mur : l'attaque s'arrête sur la frappe.
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, [], { [porteur.id]: mur.id });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
-  assert.equal(mur.pv, pvMur - porteur.atk, 'le Coup rapide a frappé le mur');
+  assert.equal(mur.pv, pvMur - porteur.atk, 'l’Attaque ciblée a frappé le mur');
   assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour une créature blessée');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’est arrêtée : le sorcier ne prend rien');
   assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,

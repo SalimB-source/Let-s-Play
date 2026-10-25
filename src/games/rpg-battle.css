@@ -3649,7 +3649,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played__target b { overflow: hidden; color: #fff0c6; font: 700 10px/1.1 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Lueur rouge = « visée » ──────────────────────────────────────────────────
-   Toute créature ciblée par une attaque (Coup rapide), une magie, une
+   Toute créature ciblée par une attaque ciblée, une magie, une
    sorcellerie ou n'importe quel effet de carte s'allume en rouge, quel que
    soit son camp : on voit immédiatement qui va être frappé. Le rouge est
    celui du combat déjà employé pour la créature engagée (`is-attacked
@@ -4548,49 +4548,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 400 10px/1.25 Georgia, serif;
 }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__weapon small { display: block; overflow: visible; }
-/* Les mots-clés d'un aperçu restent des pastilles fermées : le mot seul, comme
-   sur les cartes en main et au catalogue. Aucune explication ne s'écrit dessous
-   — la règle imprimée de la carte se lit entière dans le bloc « Effets ». */
-.rpg-hover-card-preview__resume {
-  margin: 0;
-  padding: 8px 10px;
-  border-left: 2px solid rgba(237, 203, 139, .72);
-  border-radius: 4px;
-  background: rgba(237, 203, 139, .11);
-  color: #fff2cf;
-  font: 600 13px/1.4 Georgia, serif;
-}
-.rpg-hover-card-preview__resume strong {
-  color: #ffe9a0;
-  font: 800 10px/1 var(--sans, system-ui, sans-serif);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-.rpg-hover-card-preview__rules {
-  display: grid;
-  align-content: start;
-  gap: 7px;
-  max-height: min(32vh, 11em);
-  margin: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(236, 214, 172, .35) transparent;
-  scrollbar-gutter: stable;
-  padding-right: 4px;
-  color: #fff8e8;
-  font: 500 14px/1.45 Georgia, serif;
-}
-.rpg-hover-card-preview__rules::-webkit-scrollbar { width: 6px; }
-.rpg-hover-card-preview__rules::-webkit-scrollbar-thumb {
-  border-radius: 6px;
-  background: rgba(236, 214, 172, .35);
-}
-.rpg-hover-card-preview__rules:focus-visible {
-  outline: 1px solid rgba(236, 214, 172, .5);
-  outline-offset: 1px;
-}
+/* L'aperçu n'imprime plus la règle : ses mots-clés — seuls contenus de la
+   colonne d'infos, avec coût, armes et statistiques — portent chacun leur
+   « ? » et ouvrent leur description au survol (voir `effet-icons.css`). */
 .rpg-hover-card-preview__hint {
   margin: -2px 0 0;
   color: rgba(255, 240, 200, .58);
@@ -4598,17 +4558,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .04em;
   text-align: right;
 }
-.rpg-hover-card-preview__rules > span {
-  display: block;
-  padding-left: 7px;
-  border-left: 1px solid rgba(237, 203, 139, .38);
-}
-/* Les bonus directs de l'équipement sont mêlés aux effets de la créature,
-   mais gardent une encre bleue pour qu'on reconnaisse leur provenance. */
-.rpg-hover-card-preview__rules > .rpg-hover-card-preview__rule--equipment {
-  color: #83caff;
-  border-left-color: rgba(105, 190, 255, .72);
-}
+/* La consigne suit le geste : la souris survole, le doigt touche. */
+.rpg-hover-card-preview__hint-tactile { display: none; }
+.rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
+.rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
 .rpg-hover-card-preview__stats { justify-content: flex-start; color: #ffe9a0; font-size: 18px; font-weight: 900; white-space: nowrap; }
 .rpg-hover-card-preview__stats span { color: #e1cb9c; }
 .rpg-hover-card-preview__furie {
@@ -4643,9 +4596,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-hover-card-preview__details { gap: 6px; padding: 8px 10px; }
   .rpg-hover-card-preview__type,
-  .rpg-hover-card-preview__cost,
-  .rpg-hover-card-preview__rules,
-  .rpg-hover-card-preview__resume { font-size: 12px; }
+  .rpg-hover-card-preview__cost { font-size: 12px; }
   .rpg-hover-card-preview__cost b { font-size: 13px; }
   .rpg-hover-card-preview__cost small { font-size: 9px; }
   .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 7px; }
@@ -4721,8 +4672,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: none;
   pointer-events: auto;
 }
-.rpg-card-peek .rpg-hover-card-preview__details,
-.rpg-card-peek .rpg-hover-card-preview__rules {
+.rpg-card-peek .rpg-hover-card-preview__details {
   pointer-events: auto;
 }
 
@@ -4828,17 +4778,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 800 12px/1.35 var(--mono, monospace);
   letter-spacing: .05em;
 }
-.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__rules {
-  gap: 9px;
-  max-height: none;
-  overflow: visible;
-  font-size: 15px;
-  line-height: 1.55;
-}
-.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__resume {
-  font-size: 14px;
-  line-height: 1.5;
-}
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost { font-size: 16px; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost b { font-size: 22px; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__stats { font-size: 21px; }
@@ -4881,8 +4820,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { gap: 7px; padding: 8px 12px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__name { font-size: 20px; }
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__type,
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__rules { font-size: 13px; line-height: 1.45; }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__type { font-size: 13px; line-height: 1.45; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__cost b { font-size: 17px; }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__stats { font-size: 17px; }
 }
@@ -8893,13 +8831,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 18px; }
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 11px; }
-.rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
-  gap: 7px;
-  max-height: min(24dvh, 13em);
-  overflow-y: auto;
-  font-size: 14px;
-  line-height: 1.45;
-}
 .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target {
   gap: 8px;
   min-height: 32px;
@@ -9100,11 +9031,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost { gap: 5px; font-size: 11px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost b { font-size: 14px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__cost small { font-size: 9px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules {
-    max-height: min(18dvh, 9em);
-    font-size: 10px;
-    line-height: 1.35;
-  }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target > img { width: 20px; height: 26px; }
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__target .rpg-spell-played__target-mark {
     width: 20px;
@@ -9138,7 +9064,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (max-height: 520px) {
   .rpg-hover-card-preview--annonce .rpg-hover-card-preview__details { gap: 5px; padding: 7px 9px; }
-  .rpg-hover-card-preview--annonce .rpg-hover-card-preview__rules { max-height: 14dvh; }
   .rpg-annonce-sort__controls { gap: 6px; }
   .rpg-annonce-sort__pass,
   .rpg-annonce-sort__respond,
@@ -10910,7 +10835,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-partie-rapide__deck { transition: none; }
 }
 
-/* ── Texte flottant « MISS » au-dessus de la créature qui rate son Coup rapide ── */
+/* ── Texte flottant « MISS » au-dessus de la créature qui rate son Attaque ciblée ── */
 .rpg-card.is-miss {
   overflow: visible;
   z-index: 8;

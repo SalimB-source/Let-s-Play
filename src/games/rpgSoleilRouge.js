@@ -126,7 +126,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
     coupCritique: { chance: 0.3, fois: 4 },
-    text: 'Coup rapide — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 30 % de chances de frapper 4 fois la créature adverse.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 30 % de chances de frapper 4 fois la créature adverse.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -149,7 +149,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
   }),
   // Le pourfendeur : la carte « duel » du set. Il ne cherche pas le contact —
-  // il le rend. Contre-attaque lit les coups portés CONTRE lui (Coup rapide,
+  // il le rend. Contre-attaque lit les coups portés CONTRE lui (Attaque ciblée,
   // capacité qui le cible) et les sorts qui le désignent ; Esquive ne l'empêche
   // jamais de riposter, elle ne fait que lui épargner les dégâts (voir
   // `riposteDeContreAttaque` dans `rpgDuel.js`).
@@ -159,7 +159,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Humain · Samouraï',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Coup rapide ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
@@ -183,7 +183,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Coup rapide : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement (100 % de chances de toucher l’adversaire). Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement (100 % de chances de toucher l’adversaire). Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -210,7 +210,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
-    text: 'Vos créatures gagnent +2/+1 et Coup rapide (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour.',
+    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];

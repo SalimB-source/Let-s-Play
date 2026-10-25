@@ -626,7 +626,7 @@ test('Offrande de lin : 2 mana et 1 PV pour +1/+0 et Tribut 1 jusqu’à la fin 
   assert.equal(chacal.tribut, 1, 'le Tribut retombe à sa valeur imprimée');
 });
 
-test('le Maître des hiéroglyphes gagne Envol et Coup rapide sans perdre sa pioche', () => {
+test('le Maître des hiéroglyphes gagne Envol et Attaque ciblée sans perdre sa pioche', () => {
   const carte = cardById('maitre-des-hieroglyphes');
   assert.equal(carte.envol, true);
   assert.match(carte.text, /Envol/);
@@ -635,7 +635,7 @@ test('le Maître des hiéroglyphes gagne Envol et Coup rapide sans perdre sa pio
   assert.equal(carte.cost, 5);
   assert.equal(carte.atk, 3);
   assert.equal(carte.def, 5);
-  assert.match(carte.text, /Coup rapide/);
+  assert.match(carte.text, /Attaque ciblée/);
   const duel = nouveau();
   installerMana(duel);
   const cible = poserTenebres(duel, 'momie-de-lin');

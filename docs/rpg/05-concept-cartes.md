@@ -227,7 +227,7 @@ valkyries n'émettent plus de Résonance viking.
 
 - **Eirik du Premier Serment** (1 mana, 2/2, mythique, Contre-attaque) — une
   créature légendaire de type Guerrier viking. Une créature qui le frappe avec
-  Coup rapide ou le cible avec une capacité encaisse ses 2 dégâts d’attaque ;
+  Attaque ciblée ou le cible avec une capacité encaisse ses 2 dégâts d’attaque ;
   un sort qui le cible fait riposter sur le sorcier adverse. Sa rareté le
   limite à un exemplaire par deck ; il est révélé au premier étage du Fjord.
 - **Furie X** (Loup des neiges 1 ; Valkyrie au corbeau, Guerrier au bouclier
@@ -269,12 +269,12 @@ et non la seule ligne adverse.
 Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
 par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant
 le tour suivant (`duel.attaqueJouee`, posé par `rpgLancerAttaque` sur une
-déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Coup rapide**
+déclaration acceptée et remis à `null` par `rpgFinDeTour`). Et **Attaque ciblée**
 (Fériel, le Djinn de foudre, et les armes qui le donnent) : déclaré
 attaquant, le porteur **peut** frapper une créature adverse de votre choix —
 elle a **30 % de chances d'être manquée** — sans riposte, avant les blessures
 de combat, et **son attaque s'arrête là**, même si la frappe rate : ni blocage,
-ni échange, ni dégâts au sorcier. Dirigé vers le sorcier adverse, le Coup rapide
+ni échange, ni dégâts au sorcier. Dirigée vers le sorcier adverse, l’attaque ciblée
 le touche avec **100 % de précision** ; les bloqueurs s'appliquent normalement.
 Sans proie désignée, le porteur attaque normalement.
 
@@ -609,7 +609,7 @@ est unique :
   renvoi en main, exil), l'arme part au cimetière — un jeton qui cesse
   d'exister l'entraîne avec lui ;
 - le porteur gagne les bonus imprimés (**+X/+Y**) et les mots-clés donnés
-  (`donne` : Coup rapide, Rapidité, immunité contre une couleur) **tant que
+  (`donne` : Attaque ciblée, Rapidité, immunité contre une couleur) **tant que
   l'arme est attachée** ; le retrait se fait sans tuer, avec le plancher de
   1 PV du patron Résonance. La **Rapidité** accordée désactive le mal
   d'invocation du porteur, dans les deux sens ;
@@ -624,7 +624,7 @@ Quatre armes forment le prototype — une par élément, des effets **mixtes
 |---|---|---|---|
 | Takouba des pistes | Sable (commune) | 3 | **+2/+0 et Infiltration** : le porteur ne peut pas être bloqué, par personne — l'arme de départ, offerte dès la première collection, est devenue une arme d'assaut pur (aucune défense ajoutée). |
 | Bâton des citernes | Eau (rare) | 4 | +1/+2 ; à son arrivée et pour **3 manas** (capacité activée au tour du contrôleur) : un jeton **Serpent des citernes** 3/1 Rapidité, **détruit à la fin du tour** de sa création. |
-| Lance de givre | Neige (rare) | 3 | **+1/+0 et Coup rapide** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
+| Lance de givre | Neige (rare) | 3 | **+1/+0 et Attaque ciblée** au porteur, tant que la Lance reste attachée ; elle ne donne aucun bouclier. |
 | Armure de cendres | Braise (**mythique**, unique dans un deck) | 4 | **+3/+3, Rapidité** et **immunité contre la Braise** : le porteur ne peut pas être ciblé par la Braise et n'en reçoit aucun dégât (protection pilotée par `rpgEstProtegee`). |
 
 Le serpent des citernes est le deuxième jeton du catalogue
@@ -688,7 +688,7 @@ quand une créature dotée du Butin **touche le sorcier adverse en combat**, son
 contrôleur **pioche une carte puis en défausse une**.
 
 - le déclenchement exige une **blessure de combat au sorcier** : une créature
-  bloquée qui n'a pas le champ libre ne butine rien ; le coup rapide porté à
+  bloquée qui n'a pas le champ libre ne butine rien ; l’attaque ciblée portée à
   une créature non plus ; le Grand Voile blanc, qui avale les coups, l'annule ;
 - c'est le même chemin que les déclencheurs d'armes du Sable : les bilans de
   combat (`rpgLancerAttaque`, `rpgAttaquerSorcier`) disent qui a frappé le
@@ -707,11 +707,11 @@ contrôleur **pioche une carte puis en défausse une**.
   **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
 - son icône est la **besace percée** (`#effet-butin` du sprite
   `preview-effets-icone.html`), pastille sous la ligne de type. Dans un aperçu
-  de carte, la pastille reste **fermée** (`muettes`, `effetIcons.jsx`) : elle
-  nomme le mot-clé, sans bulle à ouvrir ni explication à écrire dessous. La
-  règle imprimée de la carte se lit entière dans le bloc « Effets », juste
-  sous les pastilles (`HoverCardPreview`, `RpgDuelPage.jsx`) — l'aperçu montre
-  donc la carte telle qu'elle s'imprime.
+  de carte, la pastille porte un **« ? » cerclé** et ouvre sa **bulle** au
+  survol (au toucher comme au clavier) : l'aperçu n'imprime plus la règle, ses
+  mots-clés survolables sont la seule porte vers elle — une indication
+  « Survolez un mot-clé pour lire son effet » l'accompagne
+  (`HoverCardPreview`, `RpgDuelPage.jsx`).
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
 son Esquive a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**

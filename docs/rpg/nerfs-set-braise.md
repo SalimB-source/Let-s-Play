@@ -14,7 +14,7 @@
 |---|---|---|---|
 | **Anqa des braises** (mythique) | 4 mana 4/4 Envol · revient après **2** tours | **5 mana** · revient après **4** tours | ~3,55 → ~2,95 |
 | **Djinn du souk** (mythique) | 5 mana 3/3 · détruit un terrain adverse au hasard | **5 mana 5/4** (effet gardé) | 1,88 → 2,60 |
-| **Fériel** (héros mythique) | 4 mana 3/1 · Rapidité + Coup rapide | **4 mana 4/3** | 1,85 → 2,68 |
+| **Fériel** (héros mythique) | 4 mana 3/1 · Rapidité + Attaque ciblée | **4 mana 4/3** | 1,85 → 2,68 |
 | **Braisier du souk** (rare) | 3 mana 1/1 · 1 dégât aux créatures adverses | **3 mana 2/2** · + 1 dégât **au sorcier adverse** | 1,40 → 2,58 |
 | **Armure de cendres** (arme) | 3 mana +3/+3 · Rapidité · Immunité Braise | **4 mana** (package gardé) | 3,13 → 2,35 |
 | Ghul des cendres, Sahir, Ifrit des ergs, Ifrit al-Ahmar, Trait de braise, Nuage de cendres, Vent rouge, Djinn de foudre, terrains | — | **inchangés** | déjà justes |
@@ -69,7 +69,7 @@ taille de légende.
 ## 3. Fériel — 4/3
 
 **Changement :** corps `3/1 → 4/3`. La lame de verre frappait trop légère
-pour une mythique ; en 4/3 Rapidité + Coup rapide, elle devient le miroir
+pour une mythique ; en 4/3 Rapidité + Attaque ciblée, elle devient le miroir
 agressif de Salem (4/3 défensif).
 
 ```js
@@ -85,7 +85,7 @@ agressif de Salem (4/3 défensif).
   art: 'feriel',
   rapidite: true,
   coupRapide: true,
-  text: 'Rapidité. Coup rapide — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+  text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   flavor: 'Le verre se souvient du feu.',
 }
 ```

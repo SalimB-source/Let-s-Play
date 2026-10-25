@@ -343,7 +343,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--equipe .rpg-card[data-card-id="chien-du-guet"]',
         eyebrow: 'RÈGLE · ATTAQUE ET BLOCAGE',
         title: 'Attaquer n’est pas bloquer',
-        text: 'Une créature déclarée attaquante ne peut pas bloquer pendant le tour adverse. Une créature qui bloque ne va pas jusqu’au sorcier : elle arrête l’attaquant. Les capacités comptent : Envol impose un bloqueur volant, Infiltration empêche tout blocage, Coup rapide frappe une créature avant le combat.',
+        text: 'Une créature déclarée attaquante ne peut pas bloquer pendant le tour adverse. Une créature qui bloque ne va pas jusqu’au sorcier : elle arrête l’attaquant. Les capacités comptent : Envol impose un bloqueur volant, Infiltration empêche tout blocage, Attaque ciblée frappe une créature avant le combat.',
         nextLabel: 'Terminer le tutoriel',
         side: 'top',
       },

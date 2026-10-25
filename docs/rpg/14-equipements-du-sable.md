@@ -48,14 +48,14 @@ meilleures raisons d'attaquer.
 |---|---|---|---|---|---|
 | 1 | Sandales de Tislit | commune | 1 | +0/+1 | Rapidité |
 | 2 | Cuirasse de sel | commune | 2 | +0/+3 | Esquive (30 %) |
-| 3 | Javelot du beffroi | commune | 2 | +2/+0 | Coup rapide |
+| 3 | Javelot du beffroi | commune | 2 | +2/+0 | Attaque ciblée |
 | 4 | Licou du chien de sable | inhabituelle | 1 | **+1/−1** | Quand le porteur meurt : piochez 2 |
 | 5 | Boussole du Hoggar | inhabituelle | 2 | +1/+1 | Attaque → lit le dessus du deck, garde les terrains |
 | 6 | Harnais du méhari | inhabituelle | 3 | +2/+2 | Attaque → 1 mana de sable |
 | 7 | Masque du guetteur | rare | 2 | +1/+1 | Blesse le sorcier → pioche 2, défausse 1 |
 | 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
-| 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Coup rapide + deux déclencheurs de combat |
+| 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Attaque ciblée + deux déclencheurs de combat |
 
 ---
 
@@ -92,7 +92,7 @@ difficile à tuer au combat — et donne enfin une cible d'équipement aux créa
 
 ### 3. Javelot du beffroi — commune — 2
 
-> **Arme — Javelot.** Le porteur gagne +2/+0 et **Coup rapide** : 30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
+> **Arme — Javelot.** Le porteur gagne +2/+0 et **Attaque ciblée** : 30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
 >
 > *« Il ne vise pas l'homme. Il vise la fenêtre derrière lui. »*
 
@@ -101,7 +101,7 @@ pose que `esquive`, `envol`, `infiltration` et `rapidite` ; il faut lui ajouter
 `coupRapide` (et le retirer dans `retirerArme`). Le reste du moteur lit déjà
 `entite.coupRapide` (`rpgChoisirAttaquants`, `rpgAttaquerSorcier`).
 
-Pourquoi c'est intéressant : le Sable n'avait accès au Coup rapide que par le
+Pourquoi c'est intéressant : le Sable n'avait accès à l’Attaque ciblée que par le
 Djinn de foudre. Le Javelot pose la question à chaque attaque : **frapper la
 créature de votre choix** — ses dégâts d'attaque, sans riposte, et l'attaque
 s'arrête là — **ou viser le sorcier**, en acceptant les bloqueurs. C'est la
@@ -234,7 +234,7 @@ même traitement que les jetons de Tarek.
 
 ### 10. Takouba de Tin Hinan — mythique (1 par deck) — 4
 
-> **Arme — Takouba.** Le porteur gagne +3/+2 et **Coup rapide** (30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
+> **Arme — Takouba.** Le porteur gagne +3/+2 et **Attaque ciblée** (30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
 > porteur inflige des blessures de combat à une créature, piochez une carte.
 > Quand il en inflige au sorcier adverse, créez un jeton chien de sable 1/1.**
 >
@@ -245,10 +245,10 @@ Le cycle des *Swords of X and Y*, en une seule carte-matière : la pioche
 (l'information) et le jeton (la lignée), les deux obsessions du Sable, sur le
 même déclencheur.
 
-**Pourquoi le Coup rapide et pas l'Infiltration.** La première version donnait
+**Pourquoi l’Attaque ciblée et pas l'Infiltration.** La première version donnait
 l'Infiltration : c'était une erreur. Un porteur inbloquable ne blesse **jamais**
 une créature au combat, donc la moitié de la carte — la pioche — ne partait
-jamais. Le Coup rapide, lui, ouvre les deux : la frappe précoce pique la
+jamais. L’Attaque ciblée, elle, ouvre les deux : la frappe précoce pique la
 créature désignée (pioche) et **arrête là** l'attaque du porteur ; l'attaque
 ordinaire, elle, passe par les bloqueurs et frappe le sorcier (chien de sable).
 Les deux effets demandent donc deux attaques — deux tours —, jamais le même : la
