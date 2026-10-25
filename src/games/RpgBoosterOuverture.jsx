@@ -50,7 +50,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
     <article
       inert={!visible || undefined}
       aria-hidden={!visible || undefined}
-      aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${detail.doublon ? `, doublon remboursé ${detail.remboursement} crédits` : ', nouvelle carte'}`}
+      aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${detail.doublon ? (detail.remboursement > 0 ? `, doublon remboursé ${detail.remboursement} crédits` : ', déjà possédée') : ', nouvelle carte'}`}
       title={`${carte.name} — clic droit pour ouvrir la fiche`}
       className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'}`}
       data-card-id={carte.id}
@@ -68,10 +68,14 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
         <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__carte-copies" />
         <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>
           {detail.doublon ? (
-            <>
-              +{detail.remboursement} <RpgCreditIcon />
-              <span className="sr-only">crédits remboursés pour ce doublon</span>
-            </>
+            detail.remboursement > 0 ? (
+              <>
+                +{detail.remboursement} <RpgCreditIcon />
+                <span className="sr-only">crédits remboursés pour ce doublon</span>
+              </>
+            ) : (
+              'Déjà possédée'
+            )
           ) : 'Nouvelle'}
         </p>
       </div>
