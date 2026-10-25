@@ -578,6 +578,35 @@
 .rpg-souk__paquet:hover .rpg-souk__paquet-ombre,
 .rpg-souk__paquet:focus-visible .rpg-souk__paquet-ombre { width: calc(var(--pw) * .92); opacity: .78; }
 
+/* Le paquet suit le pointeur : tant que la souris bouge dessus, son tilt
+   remplace la pose fixe du survol — `--tilt-x/-y` viennent de la souris,
+   posés en JS image par image (`requestAnimationFrame`), et la transition
+   courte garde le geste nerveux sans saccade. La souris relâchée (`is-pointe`
+   retiré), le paquet revient à sa pose fixe par la transition plus lente du
+   survol normal. */
+.rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(calc(var(--pw) * -.06)) scale(1.05);
+  transition: transform .09s linear;
+}
+.rpg-souk__paquet.is-pointe .rpg-souk__paquet-ombre {
+  width: calc(var(--pw) * .9);
+  opacity: .82;
+  transform: translateX(calc(-50% + (var(--tilt-y, 0deg) / 1deg) * -.6px));
+}
+/* Un reflet de verre qui glisse exactement sous le pointeur — la carte
+   « sent » la souris, elle ne se contente pas de pencher. */
+.rpg-souk__paquet-face--avant::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(220px circle at var(--glare-x, 50%) var(--glare-y, 30%), rgba(255, 255, 255, .65), transparent 62%);
+  opacity: 0;
+  transition: opacity .25s ease;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+.rpg-souk__paquet.is-pointe .rpg-souk__paquet-face--avant::before { opacity: 1; }
+
 /* Les faces : le sachet est un pavé mince, ses chants sont la tranche. */
 .rpg-souk__paquet-face {
   position: absolute;
@@ -1329,6 +1358,10 @@
   .rpg-souk__paquet-face--avant::after { animation: none; background-position: 45% 0; }
   .rpg-souk__paquet-corps,
   .rpg-souk__paquet-ombre { transition: none; }
+  /* Le paquet ne suit plus le pointeur : la souris reste sans effet, le
+     script ne pose même plus les variables de tilt (voir RpgSouk.jsx). */
+  .rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg); }
+  .rpg-souk__paquet-face--avant::before { display: none; }
   /* L'appel du comptoir et les cachets du calendrier se posent sans bouger. */
   .rpg-souk__paquet-prix,
   .rpg-souk__paquet-prix::after,

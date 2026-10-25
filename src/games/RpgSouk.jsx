@@ -24,7 +24,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
-import { GAINS, creditsLisible, exemplairesDuPortefeuille, paquetsAvantMythique } from './rpgCredits.js';
+import { GAINS, creditsLisible, exemplairesDuPortefeuille } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
@@ -79,27 +79,6 @@ function useResteDuCycle() {
     return () => clearInterval(battement);
   }, []);
   return secondes;
-}
-
-/**
- * La ligne de taux du comptoir : ce qu'on y trouve, ce qui est garanti, et la
- * promesse des mythiques. Le chiffre de pitié est celui du portefeuille — il
- * ne se promet que si le vivier garde encore une mythique à donner.
- */
-function ligneDeTaux(etat, portefeuille) {
-  const chance = Math.round(TAUX.mythique * 100);
-  const avant = paquetsAvantMythique(portefeuille, {
-    aDesMythiques: etat.mythiques > 0,
-    seuil: TAUX.pitie,
-  });
-  const morceaux = [
-    `${TAUX.cartes} cartes`,
-    `${TAUX.rareGarantie} rare${TAUX.rareGarantie > 1 ? 's' : ''} garantie${TAUX.rareGarantie > 1 ? 's' : ''}`,
-    etat.mythiques
-      ? (avant === 0 ? 'mythique au prochain paquet' : `${chance} % de mythique · assurée dans ${avant}`)
-      : 'aucune mythique au vivier',
-  ];
-  return morceaux.join(' · ');
 }
 
 /** Le sceau de cire qui s'abat quand un Cachet est encaissé — pur décor. */
@@ -201,25 +180,84 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx, onCelebrate }) {
  * le bouton porte un nom lisible (« Ouvrir le paquet du Souk · 140 crédits »)
  * et se désactive avec son motif quand l'achat est refusé.
  */
+/**
+ * Le paquet suit le pointeur : un petit tilt 3D qui glisse sous la souris,
+ * comme un objet qu'on retournerait dans la main. `prefers-reduced-motion`
+ * le coupe net — le paquet garde alors sa pose fixe, celle du survol CSS.
+ */
+function useBoosterSuitLaSouris() {
+  const boutonRef = useRef(null);
+  const frameRef = useRef(0);
+  const reduitMouvement = useRef(
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 30, actif: false });
+
+  const suivre = (event) => {
+    if (reduitMouvement.current) return;
+    const noeud = boutonRef.current;
+    if (!noeud) return;
+    const rect = noeud.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const x = (event.clientX - rect.left) / rect.width;
+    const y = (event.clientY - rect.top) / rect.height;
+    const clampe = Math.max(0, Math.min(1, x));
+    const clampeY = Math.max(0, Math.min(1, y));
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    frameRef.current = requestAnimationFrame(() => {
+      setTilt({
+        rx: (0.5 - clampeY) * 24,
+        ry: (clampe - 0.5) * 34,
+        gx: clampe * 100,
+        gy: clampeY * 100,
+        actif: true,
+      });
+    });
+  };
+
+  const relacher = () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    setTilt((etat) => ({ ...etat, rx: 0, ry: 0, actif: false }));
+  };
+
+  return { boutonRef, tilt, suivre, relacher };
+}
+
 function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt }) {
   const cible = rayon.couleur ? `le paquet ${rayon.nom}` : `le paquet du ${rayon.nom}`;
   const nom = `Ouvrir ${cible} · ${prix} crédits`;
   // La vitrine montre une mythique du vivier : c'est l'appât du paquet, pas un
   // droit de tirage. Le paquet mélangé montre celle du Djinn du Souk.
   const mythiqueId = rayon.vitrine ?? null;
+  const { boutonRef, tilt, suivre, relacher } = useBoosterSuitLaSouris();
   return (
     <button
       type="button"
-      className={`rpg-souk__paquet${ferme ? ' is-ferme' : ''}`}
+      ref={boutonRef}
+      className={`rpg-souk__paquet${ferme ? ' is-ferme' : ''}${tilt.actif ? ' is-pointe' : ''}`}
       data-souk-ouvrir={rayon.id}
       data-souk-paquet={rayon.couleur ?? 'souk'}
       disabled={Boolean(refus)}
       title={refus ?? nom}
       aria-label={nom}
       onClick={() => { onOuvrir?.(rayon.id); }}
+      onMouseMove={suivre}
+      onMouseLeave={relacher}
+      onBlur={relacher}
     >
       <span className="rpg-souk__paquet-ombre" aria-hidden="true" />
-      <span className="rpg-souk__paquet-scene" style={{ '--i': index }} aria-hidden="true">
+      <span
+        className="rpg-souk__paquet-scene"
+        style={{
+          '--i': index,
+          '--tilt-x': `${tilt.rx}deg`,
+          '--tilt-y': `${tilt.ry}deg`,
+          '--glare-x': `${tilt.gx}%`,
+          '--glare-y': `${tilt.gy}%`,
+        }}
+        aria-hidden="true"
+      >
         <span className="rpg-souk__paquet-sway">
           <span className="rpg-souk__paquet-corps">
             <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dos" />
@@ -537,33 +575,22 @@ export default function RpgSouk({
         </p>
       )}
 
-      <section className="rpg-souk__section" aria-labelledby="souk-quetes-titre">
-        <div className="rpg-souk__section-tete">
-          <h3 id="souk-quetes-titre">Les quêtes du jour</h3>
-          <p>{jour ? `Journée du ${jour}` : 'La journée s’ouvre au premier duel.'}</p>
-        </div>
-        {liste.length ? (
-          <ul className="rpg-souk__quetes" data-souk-quetes={liste.length}>
-            {liste.map((id) => (
-              <CarteQuete key={id} id={id} etatQuetes={quetes} onReclamer={onReclamerQuete} onPlaySfx={onPlaySfx} onCelebrate={celebrate} />
-            ))}
-          </ul>
-        ) : (
-          <p className="rpg-souk__vide" data-souk-quetes="vide">
-            Le marchand prépare la journée. Elle s’ouvrira au prochain retour dans le jeu.
-          </p>
-        )}
-      </section>
-
+      {/* Le Souk ouvre sur ce qu'on y achète : le paquet d'abord, les cartes du
+          jour juste après. Les quêtes, les Cachets et le journal suivent plus
+          bas — on vient d'abord ici pour dépenser, pas pour cocher une liste. */}
       <section className="rpg-souk__section rpg-souk__section--rayons" aria-labelledby="souk-rayons-titre">
         <div className="rpg-souk__section-tete">
           <h3 id="souk-rayons-titre">Les boosters</h3>
           <p data-souk-rayons={ouverts > 0 ? 'ouvert' : 'ferme'}>
             {ouverts > 0
-              ? 'Toutes les couleurs entrées dans la ville, mélangées au hasard'
+              ? 'Toutes les cartes du jeu, mélangées dans un seul paquet'
               : 'Le comptoir ouvrira à votre première victoire'}
           </p>
         </div>
+        {/* Le paquet se suffit à lui-même : son nom, son prix et ce qu'il
+            garantit sont déjà écrits sur le sachet (`PaquetDuRayon`). Aucune
+            fiche de détails ne s'étale plus dessous — seul un refus (rayon
+            fermé, bourse trop légère) s'explique, parce qu'il empêche un geste. */}
         <ul className="rpg-souk__rayons" data-souk-rayons-nombre={rayons.length}>
           {rayons.map((etat, index) => {
             const ferme = raisonFermeture(etat);
@@ -573,17 +600,10 @@ export default function RpgSouk({
             return (
               <li
                 key={etat.rayon.id}
-                className={`rpg-souk__rayon rpg-souk__rayon--${etat.rayon.couleur ?? 'souk'}${etat.ouvert ? '' : ' is-ferme'}${etat.complet ? ' is-complet' : ''}`}
+                className={`rpg-souk__rayon rpg-souk__rayon--${etat.rayon.id}${etat.ouvert ? '' : ' is-ferme'}${etat.complet ? ' is-complet' : ''}`}
                 data-souk-rayon={etat.rayon.id}
                 data-souk-rayon-etat={ferme ? 'ferme' : refus ? 'sans-solde' : 'ouvert'}
               >
-                <header>
-                  <h4>{etat.rayon.titre ?? etat.rayon.nom}</h4>
-                  <span className="rpg-souk__rayon-etat" aria-hidden="true">
-                    {etat.ouvert ? 'Ouvert' : 'Fermé'}
-                  </span>
-                </header>
-                <p className="rpg-souk__rayon-texte">{etat.rayon.texte}</p>
                 <PaquetDuRayon
                   rayon={etat.rayon}
                   index={index}
@@ -593,12 +613,6 @@ export default function RpgSouk({
                   cardArt={cardArt}
                   onOuvrir={onOuvrirBooster}
                 />
-                <p className="rpg-souk__rayon-taux" data-souk-rayon-taux>{ligneDeTaux(etat, portefeuille)}</p>
-                <p className="rpg-souk__rayon-reste" data-souk-rayon-reste={etat.nouvelles}>
-                  {etat.complet
-                    ? `Aucune des ${etat.taille} cartes du vivier ne vous manque — les doublons y paient encore.`
-                    : `${etat.nouvelles} carte${etat.nouvelles > 1 ? 's' : ''} sur ${etat.taille} vous manque${etat.nouvelles > 1 ? 'nt' : ''} encore.`}
-                </p>
                 <footer>
                   {refus && (
                     <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>
@@ -689,6 +703,24 @@ export default function RpgSouk({
           <span>{rafraichissementUtilise ? 'Nouvelle sélection et rafraîchissement disponibles demain.' : 'Un rafraîchissement gratuit reste disponible aujourd’hui.'}</span>
           <span>Clic droit ou appui long sur une carte pour l’agrandir.</span>
         </footer>
+      </section>
+
+      <section className="rpg-souk__section" aria-labelledby="souk-quetes-titre">
+        <div className="rpg-souk__section-tete">
+          <h3 id="souk-quetes-titre">Les quêtes du jour</h3>
+          <p>{jour ? `Journée du ${jour}` : 'La journée s’ouvre au premier duel.'}</p>
+        </div>
+        {liste.length ? (
+          <ul className="rpg-souk__quetes" data-souk-quetes={liste.length}>
+            {liste.map((id) => (
+              <CarteQuete key={id} id={id} etatQuetes={quetes} onReclamer={onReclamerQuete} onPlaySfx={onPlaySfx} onCelebrate={celebrate} />
+            ))}
+          </ul>
+        ) : (
+          <p className="rpg-souk__vide" data-souk-quetes="vide">
+            Le marchand prépare la journée. Elle s’ouvrira au prochain retour dans le jeu.
+          </p>
+        )}
       </section>
 
       <section className="rpg-souk__cachet" data-souk-cachet={cachet}>

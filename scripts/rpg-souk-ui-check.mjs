@@ -101,12 +101,19 @@ for (const marque of [
   'data-souk-progres', 'data-souk-reclamer=', 'data-souk-reste', 'data-souk-attente',
   'data-souk-cachet', 'data-souk-cachet-reclamer', 'data-souk-retour',
   'data-souk-semaine', 'data-souk-semaine-reclamer', 'data-souk-journal', 'data-souk-journal-ligne',
-  'data-souk-rayons', 'data-souk-rayon=', 'data-souk-rayon-etat', 'data-souk-rayon-taux',
-  'data-souk-rayon-reste', 'data-souk-rayon-refus', 'data-souk-ouvrir=', 'data-souk-coffret=',
+  'data-souk-rayons', 'data-souk-rayon=', 'data-souk-rayon-etat',
+  'data-souk-rayon-refus', 'data-souk-ouvrir=', 'data-souk-coffret=',
   'data-souk-direct', 'data-souk-direct-carte=', 'data-souk-direct-acheter=', 'data-souk-direct-rafraichir',
   'data-card-id={carte.id}',
 ]) {
   assert.ok(ecran.includes(marque), `l’écran expose ${marque}`);
+}
+// Un seul paquet, et plus aucune fiche de détails en dessous : ni la ligne de
+// taux, ni le compte des cartes manquantes, ni la phrase de présentation du
+// rayon. Le sachet (`PaquetDuRayon`) porte déjà son nom, son prix et ce qu'il
+// garantit — seul un refus (rayon fermé, bourse trop légère) s'explique encore.
+for (const marque of ['data-souk-rayon-taux', 'data-souk-rayon-reste', 'rpg-souk__rayon-texte']) {
+  assert.ok(!ecran.includes(marque), `l’écran n’écrit plus ${marque} sous le paquet`);
 }
 // Le bouton Réclamer est désactivé tant que l’objectif n’est pas atteint, et le
 // dit : c’est la règle D7 du dossier, et elle se vérifie à l’œil. Un achat
@@ -128,8 +135,8 @@ assert.match(css, /\.rpg-souk__quete-pied \.rpg-menu-button--secondary:disabled/
   'et le Souk la garde lisible quand elle est désactivée');
 assert.match(ecran, /disabled=\{Boolean\(refus\)\}/, 'le bouton Ouvrir est désactivé quand l’achat est refusé');
 assert.match(ecran, /Il manque \$\{creditsLisible\(etat\.prix - credits\)\}/, 'et il dit combien il manque');
-assert.match(ecran, /import \{[^}]*GAINS[^}]*paquetsAvantMythique[^}]*\} from '\.\/rpgCredits\.js';/,
-  'le montant du Cachet et la pitié viennent du barème, pas d’un chiffre écrit ici');
+assert.match(ecran, /import \{ GAINS, creditsLisible, exemplairesDuPortefeuille \} from '\.\/rpgCredits\.js';/,
+  'le montant du Cachet vient du barème, pas d’un chiffre écrit ici');
 
 // 5. La cérémonie d'ouverture est son propre composant, monté par l'écran.
 const ceremonie = lire('src/games/RpgBoosterOuverture.jsx');

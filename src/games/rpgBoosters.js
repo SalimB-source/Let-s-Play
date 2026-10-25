@@ -77,8 +77,9 @@ export const TAUX = Object.freeze({
 export const COFFRET = Object.freeze({ taille: 10, remise: 0.1, mythiqueAssuree: true });
 
 /**
- * Le comptoir du Souk : **un seul paquet**, toutes couleurs ouvertes. Le prix
- * garde la promesse du dossier 13 — une journée de jeu vaut deux paquets.
+ * Le comptoir du Souk : **un seul paquet, un seul rayon**, toutes les couleurs
+ * et toutes les cartes disponibles mêlées dans le même vivier. Le prix garde
+ * la promesse du dossier 13 — une journée de jeu vaut deux paquets.
  * `vitrine` est l'illustration de la mythique montrée sur le sachet ; c'est
  * un appât, pas un droit de tirage.
  */
@@ -87,41 +88,26 @@ export const RAYONS = Object.freeze([
     id: 'souk',
     nom: 'Souk',
     titre: 'Le paquet du Souk',
-    couleur: ['sable', 'braise'],
+    couleur: [...RPG_ELEMENTS],
     prix: 140,
     vitrine: 'ifrit-des-ergs',
-    texte: 'Les cartes Sable et Braise — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
-  },
-  {
-    id: 'banquise',
-    nom: 'Banquise',
-    titre: 'Le paquet de la Banquise',
-    couleur: ['neige', 'tenebres'],
-    prix: 140,
-    vitrine: 'pere-des-corbeaux',
-    texte: 'Les cartes Neige et Ténèbres — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
-  },
-  {
-    id: 'citerne',
-    nom: 'Citerne',
-    titre: 'Le paquet de la Citerne',
-    couleur: ['eau', 'braise'],
-    prix: 140,
-    vitrine: 'kraken',
-    texte: 'Les cartes Eau et Braise — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
+    texte: 'Toutes les couleurs de Bab El, mêlées dans un seul paquet — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
   },
 ]);
 
 /**
  * Les rayons d'avant le mélange. Ils ne se vendent plus, mais le journal d'un
- * appareil les reconnaît encore : une ouverture de Braise a bien eu lieu, et
- * elle ne doit pas disparaître de la mémoire du joueur.
+ * appareil les reconnaît encore : une ouverture de Braise, de Banquise ou de
+ * Citerne a bien eu lieu, et elle ne doit pas disparaître de la mémoire du
+ * joueur.
  */
 const RAYONS_ANCIENS = Object.freeze([
   { id: 'braise', nom: 'Braise' },
   { id: 'sable', nom: 'Sable' },
   { id: 'eau', nom: 'Eau' },
   { id: 'neige', nom: 'Neige' },
+  { id: 'banquise', nom: 'Banquise' },
+  { id: 'citerne', nom: 'Citerne' },
 ]);
 
 /** Le rayon réellement en vente (`null` : pas un rayon du comptoir). */
