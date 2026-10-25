@@ -298,9 +298,22 @@ mythiques uniques, une couleur).
   fichier (via `jpeg-js`, dépendance de test) et refuse plus de 20 % de pixels
   clairs.
 
-  **Pas un caractère.** Aucune peinture ne porte de texte, de calligraphie, ni
-  de caractère arabe — les glyphes du registre restent abstraits. La consigne
-  est répétée dans chaque prompt et vaut pour les prochaines vagues.
+  **Pas un caractère.** Aucune peinture ne doit porter de texte lisible ni de
+  calligraphie **arabe** (consigne du 25/10) : la stèle du Portefaix cousu, les
+  dalles de la Goule des cimetières et les papiers du Charognard étaient
+  gravés de versets — les glyphes du registre restent désormais abstraits.
+  Audit des 22 peintures livrées :
+
+  | peinture | verdict |
+  |---|---|
+  | `portefaix-cousu` | **à refaire** — stèle couverte de calligraphie arabe |
+  | `goule-des-cimetieres` | **à refaire** — trois dalles gravées de versets |
+  | `chacal-sans-maitre` | refait — parchemin redevenu blanc |
+  | `charognard-du-puits`, `mange-souvenirs`, `l-oublie`, `encre-du-registre` | griffures illisibles, aucun caractère reconnaissable (à nettoyer si l'on veut zéro écriture) |
+  | les 15 autres | aucune écriture |
+
+  La consigne « pas un caractère » est répétée dans chaque prompt et vaut pour
+  toutes les vagues suivantes.
 
 ### Tests
 - **`tests/rpg-tour-oubliee.test.js`** *(neuf)* : intégrité du set, absence de
