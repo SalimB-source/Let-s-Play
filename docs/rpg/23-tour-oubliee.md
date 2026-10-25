@@ -291,13 +291,14 @@ mythiques uniques, une couleur).
   resserve l'ancienne passe. **À incrémenter à chaque nouvelle direction
   artistique du set.**
 
-  Avancement du repeint : **20 des 24 cartes** (les six de la Horde, les quatre
-  de la Cour de sang, les six Cauchemars — `chacal-sans-maitre`,
-  `goule-des-cimetieres`, `goule-affamee`, `bou-jeloud`, `aicha-kandicha`,
-  `teryel-aux-sept-cornes`, `l-oublie` —, `ifrit-d-encre` et
-  `encre-du-registre`), plus la miniature `tour-oubliee.jpg`. Restent
-  `aiguille-du-sabbat`, `soif-du-sabbat`, `pacte-de-l-oubliee`,
-  `reveil-de-la-horde` et `pilon-du-fossoyeur`.
+  **Le set est repeint à 100 %** : les 24 cartes et la miniature de la tour
+  sont dans la nouvelle direction artistique.
+
+  Décision de repaint sur l'Ifrit d'encre (retour du 25/10) : la première
+  version « djinn sortant d'un vase » a été rejetée. La peinture définitive
+  montre un ifrit **debout, à proportion humaine**, qui traverse une archive en
+  feu — plus de lampe, de vase ni de génie qui s'échappe. Même consigne pour
+  les prochaines passes : aucun contenant magique, aucun cliché du génie.
 
   **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
   aucune bordure, aucun liseré, aucune marge intégrée à l'image, le cadre étant
