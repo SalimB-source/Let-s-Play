@@ -3105,7 +3105,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       )}
       {regleLongue && resume && !estApercuRapide && (
         <p className="rpg-hover-card-preview__resume" role="note" aria-label="Résumé">
-          <strong>En bref</strong> — {resume}
+          {resume}
         </p>
       )}
       {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
