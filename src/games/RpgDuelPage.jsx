@@ -90,6 +90,7 @@ import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSo
 import RpgDeckAtelier from './RpgDeckAtelier.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
+import { regleCarteLongue, resumeCarte } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
 import { effetsEpuisesPourEntite, effetsFurieInactifs } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
@@ -3024,6 +3025,16 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
   // l'aperçu de jeu va droit au coût et aux effets.
   const estFiche = variante === 'catalogue';
+  const estApercuRapide = variante === '' && !estEnFurie;
+  /* La preview ne récite plus toute la règle : au-delà d'une certaine
+     longueur, elle imprime une phrase « en bref » et garde la règle entière
+     dans un bloc qui défile juste dessous. Le catalogue et l'appui long sont
+     des surfaces de lecture : leur bloc se parcourt aussi au clavier.
+     L'aperçu rapide (survol souris, « texte-seul ») se contente du bref : il
+     ne récite pas trois phrases sous le curseur. */
+  const regleLongue = regleCarteLongue(carte);
+  const resume = regleLongue ? resumeCarte(carte) : '';
+  const lectureClavier = estFiche || variante === 'appui-long';
   // La petite carte montre le nom et l'effet complet de chaque arme portée.
   // Ses bonus directs **ouvrent** aussi le texte d'effet de la créature : en
   // bleu, sans répéter le nom, avant les propres lignes de la créature.
@@ -3092,25 +3103,43 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           </figure>
         </div>
       )}
+      {regleLongue && resume && !estApercuRapide && (
+        <p className="rpg-hover-card-preview__resume" role="note" aria-label="Résumé">
+          <strong>En bref</strong> — {resume}
+        </p>
+      )}
       {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
-        <div className="rpg-hover-card-preview__rules" aria-label="Effets">
-          {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
-              porteur devient, avant les effets propres de sa carte. */}
-          {effetsArmesEquipees.map((ligne, index) => (
-            <span
-              key={`equipement-${index}-${ligne}`}
-              className="rpg-hover-card-preview__rule--equipment"
-              data-effet-equipement
-            >
-              {ligne}
-            </span>
-          ))}
-          {effets.map((ligne, index) => (
-            <span key={`${index}-${ligne}`}>
-              <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
-            </span>
-          ))}
+        <div
+          className="rpg-hover-card-preview__rules"
+          aria-label="Effets"
+          tabIndex={lectureClavier && (effets.length > 1 || regleLongue) ? 0 : undefined}
+        >
+          {estApercuRapide && regleLongue && resume ? (
+            <span>{resume}</span>
+          ) : (
+            <>
+              {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
+                  porteur devient, avant les effets propres de sa carte. */}
+              {effetsArmesEquipees.map((ligne, index) => (
+                <span
+                  key={`equipement-${index}-${ligne}`}
+                  className="rpg-hover-card-preview__rule--equipment"
+                  data-effet-equipement
+                >
+                  {ligne}
+                </span>
+              ))}
+              {effets.map((ligne, index) => (
+                <span key={`${index}-${ligne}`}>
+                  <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
+                </span>
+              ))}
+            </>
+          )}
         </div>
+      )}
+      {estApercuRapide && regleLongue && (
+        <small className="rpg-hover-card-preview__hint" aria-hidden="true">Clic droit pour la fiche complète</small>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
       {modifCarte && !carteEstArme(carte) && (
@@ -3120,14 +3149,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       )}
     </>
   );
-  // Le survol à la souris reste un aperçu « texte-seul » : seul l'encadré de
-  // texte (coût, mots-clés, effets) s'affiche, compact, sous le curseur.
-  // L'appui long au doigt, lui, montre la carte entière — sa face illustrée
-  // comprise, comme la fiche — son volet sombre isolant déjà la lecture du
-  // plateau. Une Furie déclenchée a changé de peinture, et ce changement se
-  // voit dès la preview, où qu'elle s'ouvre. La fiche du catalogue, l'annonce
-  // et les présentations centrées (magie jouée, effet activé) gardent la leur.
-  const estApercuRapide = variante === '' && !estEnFurie;
   // L'Abordage se lit dans les détails : la créature captive est montrée en
   // vignette, comme une arme portée, sans doubler la face principale.
   const face = (
@@ -3470,7 +3491,7 @@ function SpellAnnouncement({ annonce, camp = 'joueur' }) {
             le même sort qui retombe, pas une nouvelle magie. */}
         <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
-        <p>{carte.text}</p>
+        <p>{regleCarteLongue(carte) ? resumeCarte(carte, 92) : carte.text}</p>
         <div className="rpg-spell-played__target">
           {(annonce.cible.illustrationUrl || annonce.cible.illustrationId)
             ? <img src={annonce.cible.illustrationUrl ?? cardArt(annonce.cible.illustrationId)} alt="" />

@@ -3516,10 +3516,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-spell-confirm h2 { margin: 0; color: #ffe8b0; font: 700 clamp(19px, 3vw, 25px)/1.15 Georgia, serif; text-wrap: balance; }
 .rpg-spell-confirm__type { margin: 0; padding: 6px 9px; border-block: 1px solid rgba(226, 190, 119, .35); color: #f1d5a1; font: 700 12px/1.2 Georgia, serif; }
+.rpg-spell-confirm {
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 .rpg-spell-confirm__rules {
   display: grid;
   gap: 8px;
   margin: 0;
+  max-height: min(40vh, 14em);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(101, 78, 42, .35) transparent;
   padding: 12px;
   border: 1px solid rgba(223, 196, 143, .34);
   border-radius: 9px;
@@ -4434,12 +4444,26 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   gap: 8px;
   min-width: 0;
   max-height: calc(100vh - 24px);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 214, 172, .42) transparent;
+  scrollbar-gutter: stable;
   padding: 12px 16px;
   border: 1px solid rgba(236, 214, 172, .2);
   border-radius: 8px;
   background: rgba(5, 8, 11, .8);
   text-shadow: 0 2px 4px rgba(0, 0, 0, .96);
+}
+.rpg-hover-card-preview__details::-webkit-scrollbar { width: 6px; }
+.rpg-hover-card-preview__details::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: rgba(236, 214, 172, .42);
+}
+.rpg-hover-card-preview__details:focus-visible {
+  outline: 1px solid rgba(236, 214, 172, .5);
+  outline-offset: 1px;
 }
 .rpg-hover-card-preview__type,
 .rpg-hover-card-preview__cost,
@@ -4522,15 +4546,52 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Les mots-clés d'un aperçu restent des pastilles fermées : le mot seul, comme
    sur les cartes en main et au catalogue. Aucune explication ne s'écrit dessous
    — la règle imprimée de la carte se lit entière dans le bloc « Effets ». */
+.rpg-hover-card-preview__resume {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(237, 203, 139, .72);
+  border-radius: 4px;
+  background: rgba(237, 203, 139, .11);
+  color: #fff2cf;
+  font: 600 13px/1.4 Georgia, serif;
+}
+.rpg-hover-card-preview__resume strong {
+  color: #ffe9a0;
+  font: 800 10px/1 var(--sans, system-ui, sans-serif);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
 .rpg-hover-card-preview__rules {
   display: grid;
   align-content: start;
   gap: 7px;
-  max-height: 11em;
+  max-height: min(32vh, 11em);
   margin: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(236, 214, 172, .35) transparent;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
   color: #fff8e8;
   font: 500 14px/1.45 Georgia, serif;
+}
+.rpg-hover-card-preview__rules::-webkit-scrollbar { width: 6px; }
+.rpg-hover-card-preview__rules::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: rgba(236, 214, 172, .35);
+}
+.rpg-hover-card-preview__rules:focus-visible {
+  outline: 1px solid rgba(236, 214, 172, .5);
+  outline-offset: 1px;
+}
+.rpg-hover-card-preview__hint {
+  margin: -2px 0 0;
+  color: rgba(255, 240, 200, .58);
+  font: 600 10px/1.2 var(--sans, system-ui, sans-serif);
+  letter-spacing: .04em;
+  text-align: right;
 }
 .rpg-hover-card-preview__rules > span {
   display: block;
@@ -4578,7 +4639,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__details { gap: 6px; padding: 8px 10px; }
   .rpg-hover-card-preview__type,
   .rpg-hover-card-preview__cost,
-  .rpg-hover-card-preview__rules { font-size: 12px; }
+  .rpg-hover-card-preview__rules,
+  .rpg-hover-card-preview__resume { font-size: 12px; }
   .rpg-hover-card-preview__cost b { font-size: 13px; }
   .rpg-hover-card-preview__cost small { font-size: 9px; }
   .rpg-hover-card-preview__weapon { flex-basis: 100%; gap: 7px; }
@@ -4652,6 +4714,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: min(680px, 100%);
   max-height: none;
   animation: none;
+  pointer-events: auto;
+}
+.rpg-card-peek .rpg-hover-card-preview__details,
+.rpg-card-peek .rpg-hover-card-preview__rules {
+  pointer-events: auto;
 }
 
 /* Paysage de téléphone (et APK) : le volet tient dans la hauteur disponible, au
@@ -4762,6 +4829,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   overflow: visible;
   font-size: 15px;
   line-height: 1.55;
+}
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__resume {
+  font-size: 14px;
+  line-height: 1.5;
 }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost { font-size: 16px; }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__cost b { font-size: 22px; }
