@@ -556,7 +556,8 @@ export const RPG_CREATURE_CARDS = [
     art: 'ifrit-des-ergs',
     rapidite: true,
     overkill: true,
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
+    ephemere: true,
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse. Détruit à la fin du tour.',
     flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
   },
   {
