@@ -131,8 +131,8 @@ decks de la tour et se révèlent en montant.
 | `src/games/rpgAmbientMusic.js` | l'ambiance de la tour |
 | `public/raspberrymusic - A Vikings.mp3` | la piste viking du plateau |
 | `tests/rpg-ambient-music.test.js` | le branchement de la piste et le fichier livré |
-| `src/games/rpgCardArt.js` | la révision de cache `corbeau-neuf-nuits-v1` |
-| `public/cards/*.jpg` | les six peintures plein art 1024×1280 |
+| `src/games/rpgCardArt.js` | la révision de cache `corbeau-neuf-nuits-v1` et celles des deux faces de Furie |
+| `public/cards/*.jpg` | les six peintures plein art 1024×1280, plus les deux faces de Furie `berserk-du-crepuscule-furie.jpg` et `valkyrie-des-neuf-nuits-furie.jpg` (révisions `corbeau-furie-crepuscule-v1` / `corbeau-furie-neuf-nuits-v1`) |
 | `tests/rpg-corbeau.test.js` | le set, la tour, les révélations et les règles en jeu |
 
 ```bash

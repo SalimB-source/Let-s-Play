@@ -167,6 +167,11 @@ matière de toile —, et la Neige comme les Ténèbres n'y dessinent jamais un
 badge : la lumière froide vient de la neige, la nuit du fond. Aucune image ne
 porte de texte, de cadre ni d'interface.
 
+Deux de ces six cartes portent la Furie et reçoivent donc, en plus de leur
+peinture intacte, une **face de Furie** au même ratio et dans la même
+composition, ensanglantée et enragée : `berserk-du-crepuscule-furie.jpg` et
+`valkyrie-des-neuf-nuits-furie.jpg` (voir la dérogation Furie plus bas).
+
 ## État des sept magies reprises en plein art 4:5
 
 Sept sorts du catalogue portaient une illustration prêtée, ou un cadrage qui
@@ -431,13 +436,32 @@ vitesse. Elle brandit son épée ensanglantée, le visage couvert de sang, tandi
 que son corbeau noir descend en vol à ses côtés ; le champ de bataille reste
 lointain sous les nuages. Sa face intacte et l’appel de Viking ne changent pas.
 
+Le **Corbeau des neuf nuits** fournit enfin les deux derniers doubles de Furie
+du catalogue, sur le même principe : même composition que la peinture intacte,
+seulement marquée par le combat, au format exact 1024×1280 et sous une
+révision dédiée à chacune.
+
+- **Berserk du crépuscule** (`berserk-du-crepuscule-furie.jpg`, révision
+  `corbeau-furie-crepuscule-v1`) — le même berserker sur la grève, face au
+  dernier rouge du jour ; le visage est passé en furie, la peau de loup
+  déchirée et souillée, le torse et les bras couverts de sang, le bouclier
+  rond fendu sur son bord et la hache noircie de gore. Le ciel violet, les
+  montagnes et les corbeaux restent identiques.
+- **Valkyrie des neuf nuits** (`valkyrie-des-neuf-nuits-furie.jpg`, révision
+  `corbeau-furie-neuf-nuits-v1`) — la même Valkyrie sur la glace, sous la même
+  aurore ; elle hurle, le visage et l’armure de fer sanglants, une épaulière
+  brisée, le manteau de plumes arraché par endroits, la lance dressée d’une
+  main plus ferme et le bouclier au corbeau éclaboussé. La neige, la spirale
+  de corbeaux et les pins enneigés ne bougent pas.
+
 En jeu, tant que la Furie est active, la peinture alternative pleine page
 s’affiche sans cadre, sur la table comme dans la preview ; une **vignette
 rouge animée** serre alors les bords de la face des deux côtés (elle devient
 statique si les mouvements réduits sont demandés). Quand l’état retombe, la
 face intacte et son cadre reviennent. Les faces intactes rejoignent le
 garde-fou `PLEIN_ART_45`, et `check:rpg-furie-preview` mesure les fichiers
-des six porteurs tout en rendant les deux états.
+des huit porteurs — dont les deux du Corbeau — tout en rendant les deux
+états.
 
 ## Dérogation : les équipements du Sable en nihonga coloré (octobre 2026)
 

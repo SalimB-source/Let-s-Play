@@ -53,6 +53,7 @@ import {
   possedeCarte,
 } from '../src/games/rpgCollection.js';
 import { RPG_AMBIENT_BPM, RPG_AMBIENT_THEMES } from '../src/games/rpgAmbientMusic.js';
+import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
 import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { RPG_STORY_TOWER_THEMES } from '../src/games/rpgStoryTowerModels.js';
 import {
@@ -160,6 +161,29 @@ test('les cartes du Corbeau réunissent les vocabulaires imprimés des deux coul
   assert.deepEqual(neige.effet, { type: 'destruction-coutmax', coutMax: 3, cible: 'creatures-adverses', gel: true },
     'la vague brise les coûts de 3 ou moins, puis fige les survivantes — d’un seul côté');
   assert.doesNotMatch(neige.text, /dégâts? nus?/i, 'aucune carte du set ne frappe nu');
+});
+
+test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peinture en Furie', () => {
+  // Les deux cartes du set hybride qui portent la Furie ont leur visuel
+  // alternatif : tant que l’état est déclenché, la table et la preview
+  // affichent `*-furie.jpg`, daté sous sa propre révision pour qu’aucun cache
+  // ne resserve la face calme.
+  const portraits = [
+    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-v1'],
+    ['valkyrie-des-neuf-nuits', 'corbeau-furie-neuf-nuits-v1'],
+  ];
+  for (const [carteId, revision] of portraits) {
+    const carte = cardById(carteId);
+    assert.equal(carte.furie, 2, `${carteId} porte bien la Furie 2`);
+    assert.equal(cardArtFurie(carte),
+      `/cards/${carteId}-furie.jpg?v=${revision}`,
+      `${carteId} affiche sa peinture furie, datée sous ${revision}`);
+    assert.match(cardArt(carte), new RegExp(`^/cards/${carteId}\\.jpg\\?v=corbeau-neuf-nuits-v1$`),
+      `${carteId} garde sa peinture intacte, sous la révision du set`);
+    assert.ok(existsSync(fileURLToPath(
+      new URL(`../public/cards/${carteId}-furie.jpg`, import.meta.url),
+    )), `${carteId}-furie.jpg est livré avec le jeu`);
+  }
 });
 
 // ── 2. La tour ──────────────────────────────────────────────────────────────

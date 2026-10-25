@@ -119,6 +119,13 @@ const CARD_ART_CACHE_VERSIONS = {
   // La Valkyrie repart de sa scène d'origine : enragée et ensanglantée, elle
   // vole dans le ciel et fond sur sa cible avec son corbeau noir, épée levée.
   'valkyrie-au-corbeau-furie': 'valkyrie-vol-plongeon-enragee-v4',
+  // Le Corbeau des neuf nuits prête à son tour sa face de Furie à deux de ses
+  // cartes — le Berserk du crépuscule et la Valkyrie des neuf nuits. Chacune
+  // reprend trait pour trait la composition de sa peinture intacte, mais
+  // ensanglantée et enragée ; deux révisions dédiées, comme pour les porteurs
+  // du Serment, afin qu’aucun cache ne resserve la face calme.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
   // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
   // d’électricité fonçant sur une cible pour l’Éclair, soldats gelés dans la
   // brume pour la Brume du fjord et grizzli prisonnier de la glace pour le
