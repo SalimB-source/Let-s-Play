@@ -688,18 +688,21 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
 
   // La Valkyrie des glaces ne protège que contre les sorts de Braise :
   // la frappe et l’explosion du Brûlot sont des blessures de combat/capacité,
-  // elles passent donc normalement (1 + 2 dégâts sur ses 5 PV).
-  const protegee = duelVide();
+  // elles passent donc normalement (1 + 2 dégâts). Son propre vent froid
+  // l’entame d’un point à l’arrivée : elle entre à 4 PV, tombe à 1.
+  // Le hasard est fixé à 0,5 : elle n’est pas gelée par sa propre vague.
+  const protegee = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
   mana(protegee, 'joueur', 12);
   mana(protegee, 'sorcier', 12);
   donner(protegee, 'joueur', 'valkyrie-des-glaces');
   const valkyrie = jouer(protegee, 'joueur', 'valkyrie-des-glaces').entite;
+  assert.equal(valkyrie.pv, 4, 'sa vague l’a blessée de 1 à l’arrivée');
   donner(protegee, 'sorcier', 'le-brulot');
   const brulotProtege = jouer(protegee, 'sorcier', 'le-brulot').entite;
   pret(valkyrie);
   rpgAttaquerCreature(protegee, 'joueur', valkyrie.id, brulotProtege.id);
   assert.equal(protegee.sorcier.cimetiere.includes('le-brulot'), true);
-  assert.equal(valkyrie.pv, 2, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
+  assert.equal(valkyrie.pv, 1, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
 
   // Morte par magie : le tueur est inconnu, rien ne se déclenche.
   const magie = duelVide();

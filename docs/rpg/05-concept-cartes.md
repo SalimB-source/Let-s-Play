@@ -256,8 +256,15 @@ valkyries n'émettent plus de Résonance viking.
   l'attaque peut passer.
 
 Les créatures du Nord gardent leurs capacités propres (Provocation du
-Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, soin d'arrivée
-de la Valkyrie des glaces).
+Berserk, Envol des valkyries, bouclier d'arrivée du Guerrier, vent froid
+d'arrivée de la Valkyrie des glaces).
+
+Le **vent froid** de la Valkyrie des glaces ne choisit pas son camp : 1 dégât
+à **toutes** les créatures de la table, les siennes comprises — elle encaisse
+son propre point de dégât et court la même chance de gel (25 %) que les
+autres. C'est le même drapeau `inclutAllies` que l'Ifrit al-Ahmar ; la
+brume de l'animation couvre donc les deux rangées (`rpg-mass-freeze--table`)
+et non la seule ligne adverse.
 
 Deux règles encadrent ces attaques. **Une seule phase d'attaque par tour**, et
 par camp : une fois le combat déclaré et résolu, il n'y en a pas de second avant
