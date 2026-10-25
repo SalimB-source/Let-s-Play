@@ -317,6 +317,22 @@ test('le coffret vend dix paquets avec la remise, et une mythique assurée', () 
   assert.deepEqual(pauvre.paquets, []);
 });
 
+test('dans un coffret, le doublon d’un paquet précédent se rembourse au barème', () => {
+  // `samourai-du-torii` : rare hors dotation possédée en un seul exemplaire.
+  // La graine 42 la fait sortir dans deux paquets du coffret — le second est
+  // le troisième exemplaire, il se rembourse au barème comme il le ferait
+  // dans un paquet acheté seul (doc 13, D4), et le stock reste au quota.
+  const cible = 'samourai-du-torii';
+  const depart = { ...journalier(100000), cartes: [cible], exemplaires: { [cible]: 1 } };
+  const coffret = ouvrirCoffret({ portefeuille: depart, rayonId: 'souk', collection: [cible], rng: rngSeme(42) });
+  assert.equal(coffret.ok, true);
+  const details = coffret.paquets.flatMap((paquet) => paquet.details).filter((carte) => carte.id === cible);
+  assert.equal(details.length, 2, 'la rare tombe dans deux paquets du coffret');
+  assert.equal(details[0].remboursement, 0, 'le deuxième exemplaire se garde, il complète le playset');
+  assert.equal(details[1].remboursement, BAREME_DOUBLON.rare, 'le troisième exemplaire se rembourse au barème rare');
+  assert.equal(coffret.portefeuille.exemplaires[cible], 2, 'le stock reste bloqué au quota de deck');
+});
+
 // ── Le journal des ouvertures ────────────────────────────────────────────────
 
 test('chaque paquet acheté laisse une trace au journal, doublons compris', () => {
