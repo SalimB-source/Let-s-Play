@@ -16,6 +16,7 @@ const FEATURES = {
   'tour-de-la-necropole': ['obelisques', 'colonnes-de-lotus', 'sarcophage'],
   'tour-du-corbeau': ['arbre-des-corbeaux', 'neige-noire', 'cercle-de-plumes'],
   'tour-du-sablier-renverse': ['sablier-geant', 'chambres-inversees', 'anneau-des-cinq-couleurs'],
+  'tour-oubliee': ['fosse-sans-fond', 'chaines-rompues', 'cloche-felee', 'encre-du-registre'],
 };
 
 function resources(model) {

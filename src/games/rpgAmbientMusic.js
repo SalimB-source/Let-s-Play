@@ -37,6 +37,7 @@ export const RPG_AMBIENT_BPM = Object.freeze({
   'tour-de-la-necropole': 64, // funéraire, sistre et murmure des tombes
   'tour-du-corbeau': 68,   // la neige tombe dans le noir : lent, ailes et givre
   'tour-du-sablier-renverse': 72, // solennel, grains de sable et cloche du retournement
+  'tour-oubliee': 62, // le registre effacé : bourdon grave, gouttes, cloche fêlée
 });
 export const RPG_AMBIENT_DEFAULT_BPM = 78;
 
@@ -1128,6 +1129,11 @@ export const RPG_AMBIENT_THEMES = Object.freeze({
     nom: 'Le retournement du Sablier',
     bpm: RPG_AMBIENT_BPM['tour-du-sablier-renverse'],
     ambiance: 'Grains de sable comptés un à un, tic-tac qui bascule et cloche du retournement — sept maîtres revenus à leur sommet.',
+  }),
+  'tour-oubliee': Object.freeze({
+    nom: 'Le registre effacé',
+    bpm: RPG_AMBIENT_BPM['tour-oubliee'],
+    ambiance: 'Bourdon grave sous la pierre, gouttes d’encre, cloche fêlée et chuchotis de noms qu’on n’écrit plus — la tour que la Chambre a oubliée.',
   }),
 });
 

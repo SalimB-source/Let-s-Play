@@ -371,6 +371,38 @@ const etatManaEssai = (couleurs) => ({ manaMax: manaVide(), manaSources: [], cou
 export const rpgSorcierPv = (puissance = 0) =>
   RPG_PV_SORCIER_BASE + RPG_PV_SORCIER_PAR_PUISSANCE * Math.max(0, puissance);
 
+/**
+ * Les **atouts** d'un sorcier d'étage — le « pacte » de la Tour Oubliée.
+ *
+ * Un étage peut déclarer `atouts: { pv, mana, main, bouclier }` : des PV de
+ * départ supplémentaires, des sources de mana permanentes offertes, des cartes
+ * en main de plus au premier tour, et un bouclier initial. Tout est **affiché
+ * sur la fiche d'étage** — aucun atout caché — et **borné** : même une faute de
+ * frappe dans les données ne peut pas produire un duel absurde. Les valeurs
+ * absentes ou illisibles valent zéro.
+ */
+export const RPG_ATOUTS_MAX = Object.freeze({ pv: 20, mana: 3, main: 3, bouclier: 10 });
+
+export function rpgAtoutsSorcier(atouts = null) {
+  const borne = (valeur, cle) => {
+    const nombre = Math.floor(Number(valeur));
+    if (!Number.isFinite(nombre) || nombre <= 0) return 0;
+    return Math.min(nombre, RPG_ATOUTS_MAX[cle]);
+  };
+  return {
+    pv: borne(atouts?.pv, 'pv'),
+    mana: borne(atouts?.mana, 'mana'),
+    main: borne(atouts?.main, 'main'),
+    bouclier: borne(atouts?.bouclier, 'bouclier'),
+  };
+}
+
+/** Les atouts valent-ils quelque chose ? (pour l'affichage et les tests) */
+export function rpgAtoutsActifs(atouts = null) {
+  const normalises = rpgAtoutsSorcier(atouts);
+  return Object.values(normalises).some((valeur) => valeur > 0);
+}
+
 /** Mélange de Fisher-Yates ; le même tirage sert à l'ouverture et au mulligan. */
 function melangerDeck(deck, rng = Math.random) {
   const d = [...deck];
@@ -396,24 +428,28 @@ export function rpgReglerHasard(duel, rng = Math.random) {
  * `sorcierIA` : profil de l'IA ({ niveau, style }) — voir rpgAI.js. Chaque
  * sorcier du mode Histoire peut porter le sien.
  */
-export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false } = {}) {
+export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuissance = 0, sorcierIA = null, rng = Math.random, modeMana = null, joueurCouleurs = null, sorcierCouleurs = null, pvp = false, sorcierAtouts = null } = {}) {
   const essaiMana = modeMana === RPG_MODE_MANA_ESSAI;
   const identiteJoueur = essaiMana ? couleursManaEssai(joueurDeck, joueurCouleurs) : null;
   const identiteSorcier = essaiMana ? couleursManaEssai(sorcierDeck, sorcierCouleurs) : null;
+  const atouts = pvp ? rpgAtoutsSorcier(null) : rpgAtoutsSorcier(sorcierAtouts);
   const duel = {
     ...(essaiMana ? { modeMana: RPG_MODE_MANA_ESSAI, manaEssaiDemarre: false } : {}),
     ...(pvp ? { pvp: true } : {}),
     tour: 'joueur',
     joueur: { pv: RPG_PV_JOUEUR, pvMax: RPG_PV_JOUEUR, degatsRecus: 0, mana: manaVide(), ...(essaiMana ? etatManaEssai(identiteJoueur) : {}), bouclier: 0, terrainPose: false, deck: melangerDeck(joueurDeck, rng), main: [], creatures: [], terrains: [], cimetiere: [], retoursProgrammes: [], bonusTemporaires: [], degatsEchos: [] },
     sorcier: {
-      pv: rpgSorcierPv(sorcierPuissance),
-      pvMax: rpgSorcierPv(sorcierPuissance),
+      pv: rpgSorcierPv(sorcierPuissance) + atouts.pv,
+      pvMax: rpgSorcierPv(sorcierPuissance) + atouts.pv,
       degatsRecus: 0,
       puissance: sorcierPuissance,
       ia: sorcierIA,
+      // Les atouts restent sur l'état du sorcier : l'interface les affiche, et
+      // une partie sauvegardée ne peut pas « perdre » son pacte en route.
+      ...(atouts.pv || atouts.mana || atouts.main || atouts.bouclier ? { atouts } : {}),
       mana: manaVide(),
       ...(essaiMana ? etatManaEssai(identiteSorcier) : {}),
-      bouclier: 0,
+      bouclier: atouts.bouclier,
       terrainPose: false,
       deck: melangerDeck(sorcierDeck, rng),
       main: [],
@@ -454,6 +490,22 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     rpgPiocher(duel, 'joueur');
     rpgPiocher(duel, 'sorcier');
   }
+  // Le pacte de l'étage : cartes de départ supplémentaires côté sorcier, puis
+  // sources de mana permanentes offertes. Une source offerte compte dans le
+  // plafond de dix, exactement comme celles de la rampe.
+  for (let i = 0; i < atouts.main; i += 1) rpgPiocher(duel, 'sorcier');
+  if (essaiMana && atouts.mana && identiteSorcier.length) {
+    const couleurAtout = identiteSorcier[0];
+    const offertes = Math.min(atouts.mana, RPG_MANA_ESSAI_MAX - totalCapaciteMana(duel.sorcier));
+    duel.sorcier.manaMax[couleurAtout] += offertes;
+    duel.sorcier.mana[couleurAtout] += offertes;
+    for (let i = 0; i < offertes; i += 1) duel.sorcier.manaSources.push(couleurAtout);
+    if (offertes) {
+      duel.log.push(`Le pacte de l’étage offre ${offertes} mana permanent${offertes > 1 ? 's' : ''} au sorcier.`);
+    }
+  }
+  if (atouts.pv) duel.log.push(`Le pacte de l’étage accorde ${atouts.pv} PV au sorcier.`);
+  if (atouts.bouclier) duel.log.push(`Le pacte de l’étage pose un bouclier de ${atouts.bouclier} sur le sorcier.`);
   // Témoin de la main de départ : le mulligan n'est légal que tant qu'elle est
   // intacte (et il la conserve, puisque l'on pioche autant qu'on écarte).
   duel.mainDepart = { joueur: duel.joueur.main.length, sorcier: duel.sorcier.main.length };

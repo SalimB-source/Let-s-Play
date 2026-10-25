@@ -8,13 +8,18 @@
  *
  * Profils (le crochet du mode Histoire : chaque sorcier d’une tour peut
  * porter le sien) :
- *  - niveau : 'recit' | 'normale' | 'veilleur' | 'sablier'
+ *  - niveau : 'recit' | 'normale' | 'veilleur' | 'sablier' | 'oubliee'
  *      · récit    → se trompe volontairement (cibles et blocages approximatifs)
  *      · normale  → anticipe un coup et compare les séquences avec le moteur
  *      · veilleur → explore plus de réponses, anticipe trois coups, cherche le létal et garde son burn
  *      · sablier  → le niveau de la Tour du Sablier renversé : quatre coups
  *        d'avance, plus de réponses explorées à chaque pas, aucune erreur —
  *        le meilleur cerveau du jeu, réservé aux maîtres absolus.
+ *      · oubliee  → le cerveau de L'Oublié, et de lui seul : cinq coups
+ *        d'avance, une réponse de plus à chaque pas. Il reste borné (la
+ *        recherche ne doit jamais figer le navigateur) : c'est la seule marche
+ *        au-dessus du Sablier, et elle n'existe que pour le dernier étage de la
+ *        Tour Oubliée.
  *  - style  : 'agressif' | 'equilibre' | 'prudent' | 'controle'
  *      · biaise attaques, blocages, priorité du burn et du contrôle du plateau.
  */
@@ -38,7 +43,7 @@ import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 // solvabilité réelle avec exactement les mêmes règles de paiement que le jeu.
 import * as moteur from './rpgDuel.js';
 
-export const RPG_NIVEAUX_IA = ['recit', 'normale', 'veilleur', 'sablier'];
+export const RPG_NIVEAUX_IA = ['recit', 'normale', 'veilleur', 'sablier', 'oubliee'];
 export const RPG_STYLES_IA = ['agressif', 'equilibre', 'prudent', 'controle'];
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
@@ -53,13 +58,16 @@ export function rpgProfilIA(ia = null) {
     /** Probabilité de rater volontairement le « bon » coup (niveau Récit). */
     tauxErreur: niveau === 'recit' ? 0.4 : 0,
     /** Les niveaux Veilleur et Sablier calculent les lignes létales et ménagent leur burn. */
-    prescience: niveau === 'veilleur' || niveau === 'sablier',
+    prescience: niveau === 'veilleur' || niveau === 'sablier' || niveau === 'oubliee',
     /** Le niveau Normal anticipe un coup ; le Veilleur prépare une séquence
-     *  de trois, le Sablier une séquence de quatre. */
-    profondeur: niveau === 'sablier' ? 4 : niveau === 'veilleur' ? 3 : niveau === 'normale' ? 2 : 0,
+     *  de trois, le Sablier une séquence de quatre, L'Oublié une de cinq. */
+    profondeur: niveau === 'oubliee' ? 5
+      : niveau === 'sablier' ? 4 : niveau === 'veilleur' ? 3 : niveau === 'normale' ? 2 : 0,
     /** Largeur bornée : plus fort en Veilleur, plus large encore en Sablier,
-     *  sans bloquer le navigateur (la recherche reste bornée par le mana). */
-    largeur: niveau === 'sablier' ? 5 : niveau === 'veilleur' ? 4 : niveau === 'normale' ? 3 : 1,
+     *  et un cran de plus pour L'Oublié — sans bloquer le navigateur (la
+     *  recherche reste bornée par le mana). */
+    largeur: niveau === 'oubliee' ? 6
+      : niveau === 'sablier' ? 5 : niveau === 'veilleur' ? 4 : niveau === 'normale' ? 3 : 1,
   };
 }
 
@@ -70,14 +78,15 @@ export function rpgProfilIA(ia = null) {
  */
 export function rpgDelaiReflexionIA(duel, cote = 'sorcier') {
   const profil = rpgProfilIA(duel?.[cote]?.ia ?? null);
-  const base = profil.niveau === 'sablier' ? 1380 : profil.niveau === 'veilleur' ? 1120 : profil.niveau === 'normale' ? 760 : 480;
+  const base = profil.niveau === 'oubliee' ? 1620
+    : profil.niveau === 'sablier' ? 1380 : profil.niveau === 'veilleur' ? 1120 : profil.niveau === 'normale' ? 760 : 480;
   const adversaire = autre(cote);
   const creatures = (duel?.[cote]?.creatures?.length ?? 0)
     + (duel?.[adversaire]?.creatures?.length ?? 0);
   const cartesEnMain = Math.min(5, duel?.[cote]?.main?.length ?? 0);
   // Le Sablier compte ses grains un à un : sa réflexion visible dépasse le
   // plafond des autres niveaux, le temps de lire la menace qu'il prépare.
-  const plafond = profil.niveau === 'sablier' ? 1900 : 1550;
+  const plafond = profil.niveau === 'oubliee' ? 2200 : profil.niveau === 'sablier' ? 1900 : 1550;
   return Math.min(plafond, base + Math.min(300, creatures * 42 + cartesEnMain * 18));
 }
 

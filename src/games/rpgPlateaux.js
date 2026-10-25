@@ -259,6 +259,15 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'jugement-absolu': 'sablier-renverse',
   'course-absolue': 'sablier-renverse',
   'le-sablier': 'sablier-renverse',
+  // La Tour Oubliée : ses six paquets se battent sur les dalles de la
+  // Nécropole, seule table assez sombre pour les morts sans sépulture. La tour
+  // n'a pas de plateau dédié — elle est l'anti-décor, la fosse sous la table.
+  'horde-des-fosses': 'necropole-des-dalles',
+  'cour-de-sang': 'necropole-des-dalles',
+  'cauchemars-du-gourara': 'necropole-des-dalles',
+  'cauchemars-du-registre': 'necropole-des-dalles',
+  'bestiaire-oublie': 'necropole-des-dalles',
+  'le-roi-sans-nom': 'necropole-des-dalles',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */

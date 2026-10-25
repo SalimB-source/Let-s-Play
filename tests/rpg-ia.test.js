@@ -248,7 +248,7 @@ test('le sorcier conclut avec son burn plutôt que de chipoter', () => {
 // ── Profils (crochets du mode Histoire) ─────────────────────────────────────
 
 test('les profils IA se normalisent et couvrent niveaux et styles', () => {
-  assert.deepEqual(RPG_NIVEAUX_IA, ['recit', 'normale', 'veilleur', 'sablier']);
+  assert.deepEqual(RPG_NIVEAUX_IA, ['recit', 'normale', 'veilleur', 'sablier', 'oubliee']);
   assert.deepEqual(RPG_STYLES_IA, ['agressif', 'equilibre', 'prudent', 'controle']);
   const defaut = rpgProfilIA(null);
   assert.equal(defaut.niveau, 'normale');
@@ -270,6 +270,13 @@ test('les profils IA se normalisent et couvrent niveaux et styles', () => {
   assert.ok(sablier.largeur > rpgProfilIA({ niveau: 'veilleur' }).largeur);
   assert.equal(sablier.prescience, true);
   assert.equal(sablier.tauxErreur, 0);
+  // L'Oublié (Tour Oubliée) est la seule marche au-dessus du Sablier : un coup
+  // de plus, une réponse de plus, et les mêmes garanties.
+  const oubliee = rpgProfilIA({ niveau: 'oubliee' });
+  assert.equal(oubliee.profondeur, 5);
+  assert.ok(oubliee.largeur > sablier.largeur);
+  assert.equal(oubliee.prescience, true);
+  assert.equal(oubliee.tauxErreur, 0);
 });
 
 test('le Veilleur réfléchit plus longtemps quand le plateau et sa main sont chargés', () => {

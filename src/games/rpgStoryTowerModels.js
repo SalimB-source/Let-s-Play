@@ -19,6 +19,10 @@ export const RPG_STORY_TOWER_THEMES = Object.freeze({
   'tour-de-la-necropole': Object.freeze({ stone: '#28232e', dark: '#17121c', tile: '#4a3866', ground: '#1f1b24', accent: '#e5b73e', fill: '#8c6ebd', particles: '#d4af37' }),
   'tour-du-corbeau': Object.freeze({ stone: '#4b5666', dark: '#1b2230', tile: '#2c3550', ground: '#232936', accent: '#b9c9e0', fill: '#8fa6c9', particles: '#e6eefc' }),
   'tour-du-sablier-renverse': Object.freeze({ stone: '#57406b', dark: '#2c2138', tile: '#7a4a8c', ground: '#33283f', accent: '#f0c46a', fill: '#b79ce8', particles: '#ffd98a' }),
+  // La Tour Oubliée : la pierre des fosses, l'encre séchée et l'or terni du
+  // registre. C'est la seule tour dont la pierre ne reçoit aucune lumière
+  // chaude — elle est plus sombre que la Nécropole, et plus froide.
+  'tour-oubliee': Object.freeze({ stone: '#3b3140', dark: '#1a1620', tile: '#5b3f7a', ground: '#2a2431', accent: '#c9b37a', fill: '#b9a0e0', particles: '#e8d3a0' }),
 });
 
 function randomFrom(seed) {
@@ -657,6 +661,91 @@ function buildSablierRenverse(k) {
   k.cylinder(m.cream, 0, -0.16, 0, 0.015, 0.62, 1, 8, glass);
 }
 
+
+/**
+ * La Tour Oubliée : une tour fendue, bâtie sur une fosse qu'on n'a jamais
+ * rebouchée. Trois paliers qui ne s'alignent plus, des chaînes rompues, une
+ * cloche fêlée et l'encre du registre qui coule le long des pierres.
+ */
+function buildOubliee(k) {
+  const { materials: m } = k;
+  k.feature('fosse-sans-fond');
+  k.feature('chaines-rompues');
+  k.feature('cloche-felee');
+  k.feature('encre-du-registre');
+
+  const chainon = k.geometry('chainon-oublie', () => new THREE.TorusGeometry(0.07, 0.014, 5, 12));
+  const goutte = k.geometry('goutte-encre', () => new THREE.SphereGeometry(1, 8, 6));
+
+  // La fosse : un puits noir cerclé de dalles, d'où sortent les morts sans nom.
+  k.cylinder(m.dark, 0, 0.3, 0, 1.5, 0.12, 1, 32);
+  k.ring(m.gold, 0, 0.375, 0, 1.46, 0.022);
+  for (let i = 0; i < 12; i += 1) {
+    const angle = (i + 0.5) * Math.PI * 2 / 12;
+    const x = Math.sin(angle) * 1.58, z = Math.cos(angle) * 1.58;
+    k.box(m.stone, x, 0.36 + (i % 3) * 0.02, z, 0.34, 0.14 + (i % 2) * 0.05, 0.22, angle);
+  }
+  // Trois dalles brisées, plantées dans la fosse.
+  for (const [x, z, yaw, hauteur] of [[-0.86, 0.42, 0.4, 0.62], [0.72, -0.54, -0.7, 0.48], [0.2, 0.92, 1.2, 0.36]]) {
+    k.box(m.stone, x, 0.44 + hauteur / 2, z, 0.2, hauteur, 0.34, yaw);
+    k.box(m.dark, x, 0.44 + hauteur - 0.02, z, 0.22, 0.05, 0.36, yaw);
+  }
+
+  // Trois paliers fendus : chacun glisse d'un côté, comme si la tour avait
+  // oublié de rester droite. `ruined` éteint la frise de zellige.
+  k.squareTier(0.34, 1.62, 1.34, { ruined: true });
+  k.squareTier(1.72, 1.24, 1.26, { x: 0.11, z: -0.07, ruined: true });
+  k.squareTier(3.02, 0.94, 1.16, { x: -0.07, z: 0.09, ruined: true });
+
+  // Les chaînes rompues : cinq maillons pendent du deuxième palier, et deux
+  // sont tombés dans la fosse.
+  for (let i = 0; i < 5; i += 1) {
+    const angle = (i * 0.9) + 0.35;
+    const x = Math.sin(angle) * 0.66, z = Math.cos(angle) * 0.66;
+    for (let j = 0; j < 4; j += 1) {
+      k.mesh(chainon, m.gold, [x, 3.0 - j * 0.13, z], [1, 1, 1], [j % 2 ? Math.PI / 2 : 0, angle, 0]);
+    }
+  }
+  for (const [x, z] of [[-1.12, -0.5], [1.02, 0.72]]) {
+    k.mesh(chainon, m.dark, [x, 0.42, z], [1.1, 1.1, 1.1], [Math.PI / 2, 0.4, 0.2]);
+    k.mesh(chainon, m.dark, [x + 0.13, 0.42, z + 0.06], [1.1, 1.1, 1.1], [0.2, 0.9, 0]);
+  }
+
+  // La cloche fêlée : fendue jusqu'au battant, elle ne sonne plus qu'un nom.
+  const cloche = k.group(0.06, 4.18, -0.05, 0.32);
+  k.cylinder(m.gold, 0, 0.46, 0, 0.42, 0.86, 0.62, 20, cloche);
+  k.ring(m.gold, 0, 0.9, 0, 0.26, 0.03, [Math.PI / 2, 0, 0], cloche);
+  k.ring(m.gold, 0, 0.04, 0, 0.44, 0.035, [Math.PI / 2, 0, 0], cloche);
+  k.box(m.dark, 0.3, 0.52, 0.16, 0.055, 0.74, 0.06, 0.5, cloche);
+  k.sphere(m.gold, 0, 0.1, 0, [0.09, 0.12, 0.09], cloche);
+  // Le beffroi qui la tient : quatre montants, un toit de pierre.
+  for (const [dx, dz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    k.box(m.wood, dx * 0.34, 4.62, dz * 0.34, 0.08, 1.0, 0.08);
+  }
+  k.box(m.stone, 0, 5.16, 0, 0.9, 0.1, 0.9);
+  k.cylinder(m.dark, 0, 5.42, 0, 0.5, 0.42, 0.15, 8);
+  k.finial(0, 5.66, 0, 0.9);
+
+  // L'encre du registre : elle coule du beffroi jusqu'à la fosse le long des
+  // pierres, en trois rigoles et quelques gouttes suspendues.
+  for (const [x, z, yaw, largeur] of [[0.62, 0.5, 0.5, 0.26], [-0.54, 0.44, -0.4, 0.2], [0.1, -0.68, 0.05, 0.3]]) {
+    k.ribbon(m.dark, x, 2.6, z, largeur, 4.4, yaw);
+  }
+  for (const [x, y, z, taille] of [[0.62, 3.9, 0.52, 0.05], [0.64, 3.1, 0.54, 0.035], [-0.52, 2.3, 0.46, 0.04], [0.12, 1.5, -0.7, 0.045]]) {
+    k.mesh(goutte, m.dark, [x, y, z], [taille, taille * 1.6, taille]);
+  }
+
+  // Les feuillets arrachés au registre, cloués au premier palier.
+  for (let i = 0; i < 3; i += 1) {
+    const yaw = 0.4 + i * 0.22;
+    k.ribbon(m.cream, -0.72 + i * 0.06, 1.9 - i * 0.16, 0.66, 0.24, 0.3, yaw, true);
+  }
+
+  // Deux fenêtres allumées suffisent : la tour est vide, pas éteinte.
+  k.window(0.55, 1.92, 0.72, 0.26, 0.44, 0.28);
+  k.window(-0.36, 4.02, 0.62, 0.22, 0.36, -0.2);
+}
+
 const BUILDERS = {
   'tour-des-listes': buildLists,
   'tour-du-souk': buildSouk,
@@ -668,6 +757,7 @@ const BUILDERS = {
   'tour-de-la-necropole': buildNecropole,
   'tour-du-corbeau': buildCorbeau,
   'tour-du-sablier-renverse': buildSablierRenverse,
+  'tour-oubliee': buildOubliee,
 };
 
 /** Une maquette autonome. L'identifiant inconnu ne produit pas une autre tour. */

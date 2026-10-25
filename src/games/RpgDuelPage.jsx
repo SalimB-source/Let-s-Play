@@ -50,6 +50,7 @@ import {
   etageEstDebloque,
   etageEstVaincu,
   resumeTourHistoire,
+  tourEstDebloquee,
 } from './rpgStory.js';
 import {
   deckHistoire,
@@ -110,7 +111,7 @@ import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
-import { GAINS, creditsLisible, gainsDeTour } from './rpgCredits.js';
+import { GAINS, creditsLisible, gainsDeTour, recompenseEtage } from './rpgCredits.js';
 import { glypheEmbleme, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
@@ -4346,6 +4347,9 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         {tourLibre.etages.map((etage, index) => {
                           const vaincu = etageEstVaincu(progressionHistoire, etage.id);
                           const debloque = etageEstDebloque(progressionHistoire, etage.id); // Progression dans les tours
+                          const pacte = libellePacteEtage(etage.atouts);
+                          const primeEtage = recompenseEtage(etage.id, { premiere: true });
+                          const rejoueEtage = recompenseEtage(etage.id, { premiere: false });
                           return (
                             <li key={etage.id}>
                               <button
@@ -4359,6 +4363,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                                 <span className="rpg-story-floor__copy">
                                   <strong>{etage.nom}</strong>
                                   <small>{etage.note}</small>
+                                  {pacte && <small className="rpg-story-floor__pacte" data-etage-pacte={etage.id}>{pacte}</small>}
                                 </span>
                                 <span className="rpg-story-floor__badge">
                                   {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
@@ -4366,8 +4371,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                                 <span className="rpg-story-floor__gain" data-etage-gain={etage.id}>
                                   <RpgCreditIcon />
                                   {vaincu
-                                    ? <>+{creditsLisible(GAINS.etagePremiere)} crédits gagnés · rejeu +{creditsLisible(GAINS.etageRejoue)}</>
-                                    : <>+{creditsLisible(GAINS.etagePremiere)} crédits au premier déblayage</>}
+                                    ? <>+{creditsLisible(primeEtage)} crédits gagnés · rejeu +{creditsLisible(rejoueEtage)}</>
+                                    : <>+{creditsLisible(primeEtage)} crédits au premier déblayage</>}
                                 </span>
                               </button>
                             </li>
@@ -4405,6 +4410,8 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <div className="rpg-story__tours">
                   {RPG_STORY_TOURS.map((tour) => {
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
+                    const ouverte = tourEstDebloquee(progressionHistoire, tour.id);
+                    const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : null;
                     // Ce que la tour rapporte — étages et butin du sommet — et
                     // ce qui est déjà en poche : les deux se lisent sur la carte.
                     const gains = gainsDeTour(tour.id, {
@@ -4415,9 +4422,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                       <button
                         key={tour.id}
                         type="button"
-                        className="rpg-story-tower"
+                        className={`rpg-story-tower${ouverte ? '' : ' is-verrouillee'}`}
                         data-tour={tour.id}
                         data-tour-libre={tour.id}
+                        data-tour-verrouillee={ouverte ? 'non' : 'oui'}
+                        disabled={!ouverte}
+                        title={ouverte ? undefined : `Verrouillée — terminez ${prerequis?.nom ?? 'la tour précédente'}`}
                         onClick={() => { play('select'); setTourLibreOuverteId(tour.id); }}
                       >
                         <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
@@ -4440,7 +4450,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           <span className="rpg-story-tower__progress" aria-hidden="true">
                             <span style={{ width: `${resume.total ? (resume.vaincus / resume.total) * 100 : 0}%` }} />
                           </span>
-                          <span className="rpg-story-tower__cta">Voir les étages <span aria-hidden="true">→</span></span>
+                          <span className="rpg-story-tower__cta">
+                            {ouverte
+                              ? <>Voir les étages <span aria-hidden="true">→</span></>
+                              : <>Verrouillée — terminez {prerequis?.nom ?? 'la tour précédente'} <span aria-hidden="true">🔒</span></>}
+                          </span>
                         </span>
                       </button>
                     );
@@ -5292,6 +5306,17 @@ const HorlogePvp = memo(function HorlogePvp({ echeance, statut, vainqueur, pvpRe
     </span>
   );
 });
+
+/** Le pacte d'un étage, en clair : « Pacte : +12 PV · +1 mana · +1 carte ». */
+function libellePacteEtage(atouts) {
+  if (!atouts) return '';
+  const morceaux = [];
+  if (atouts.pv) morceaux.push(`+${atouts.pv} PV`);
+  if (atouts.mana) morceaux.push(`+${atouts.mana} mana${atouts.mana > 1 ? 's' : ''}`);
+  if (atouts.main) morceaux.push(`+${atouts.main} carte${atouts.main > 1 ? 's' : ''}`);
+  if (atouts.bouclier) morceaux.push(`bouclier ${atouts.bouclier}`);
+  return morceaux.length ? `Pacte : ${morceaux.join(' · ')}` : '';
+}
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
   const modePvp = Boolean(pvp);
@@ -6620,6 +6645,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Les étages gardent leur profil progressif ; le tutoriel conserve son
       // profil par défaut et n'est pas forcé au niveau Veilleur.
       sorcierIA: etageCourant ? etageCourant.ia : modeTutoriel ? undefined : { niveau: 'veilleur', style: 'equilibre' },
+      // Le pacte de la Tour Oubliée : PV, mana, main et bouclier de départ.
+      // Les autres étages n'en déclarent pas — `rpgAtoutsSorcier` les ramène à zéro.
+      sorcierAtouts: modeTutoriel ? null : etageCourant?.atouts ?? null,
       modeMana: RPG_MODE_MANA_ESSAI,
       joueurCouleurs: deckEssai?.elements,
       sorcierCouleurs: adversaireEssai?.elements,

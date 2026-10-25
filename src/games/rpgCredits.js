@@ -25,7 +25,7 @@
 import { RARETES_A_LETAL, cardById, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
 import { rayonParId } from './rpgBoosters.js';
 import { lireExemplaire, normaliserCollection } from './rpgCollection.js';
-import { tourHistoireParId } from './rpgStoryTours.js';
+import { etageHistoireParId, tourHistoireParId } from './rpgStoryTours.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 
 /**
@@ -354,15 +354,39 @@ export function noterOuvertureJournal(portefeuille, { rayonId, cartes, mythique 
 }
 
 /**
+ * Le barème d'un étage : `{ premiere, rejoue }`. Un étage peut déclarer son
+ * propre barème (`recompense` dans `rpgStoryTours.js`) — c'est ainsi que la
+ * Tour Oubliée paie 1 500 crédits au sommet. Sans déclaration, l'étage suit le
+ * barème global `GAINS` ; un identifiant inconnu aussi.
+ */
+export function recompenseEtage(etageId, { premiere = true } = {}) {
+  const etage = typeof etageId === 'string' ? etageHistoireParId(etageId)?.etage ?? null : null;
+  const bareme = etage?.recompense ?? null;
+  const montant = premiere ? bareme?.premiere : bareme?.rejoue;
+  const defaut = premiere ? GAINS.etagePremiere : GAINS.etageRejoue;
+  const nombre = Math.floor(Number(montant));
+  return Number.isFinite(nombre) && nombre >= 0 ? nombre : defaut;
+}
+
+/**
  * Ce que vaut une victoire. `premiere` ne vaut que pour un étage (Histoire ou
  * Tours) : c'est le premier déblayage qui paie, la reprise paie le duel.
- * Une défaite — ou un mode inconnu — ne rend rien.
+ * `etageId` fait lire le barème propre à l'étage (`recompenseEtage`) — les
+ * étages sans barème gardent `GAINS`. Une défaite — ou un mode inconnu — ne
+ * rend rien.
  */
-export function creditsDeVictoire({ mode = 'libre', premiere = false } = {}) {
+export function creditsDeVictoire({ mode = 'libre', premiere = false, etageId = null } = {}) {
   if (mode === 'histoire' || mode === 'tours') {
-    return premiere ? GAINS.etagePremiere : GAINS.etageRejoue;
+    return recompenseEtage(etageId, { premiere });
   }
   return mode === 'libre' ? GAINS.duelLibre : 0;
+}
+
+/** Le butin d'une tour : celui qu'elle déclare, sinon `GAINS.tourTerminee`. */
+export function butinDeTour(tourId) {
+  const declare = tourHistoireParId(tourId)?.butin;
+  const nombre = Math.floor(Number(declare));
+  return Number.isFinite(nombre) && nombre >= 0 ? nombre : GAINS.tourTerminee;
 }
 
 /** Le remboursement d'une liste de doublons (identifiants inconnus : 0). */
@@ -415,12 +439,12 @@ export function reclamerRecompenseTutoriel(portefeuille, tutorielId, montant) {
  * `'deja-payee'` quand le butin est déjà en poche — un refus rend le
  * portefeuille normalisé, jamais crédité.
  */
-export function reclamerButinTour(portefeuille, tourId, montant = GAINS.tourTerminee) {
+export function reclamerButinTour(portefeuille, tourId, montant = null) {
   const base = normaliserPortefeuille(portefeuille);
   const id = typeof tourId === 'string' ? tourId.trim() : '';
   if (!id || !tourHistoireParId(id)) return { ok: false, raison: 'tour-inconnue', portefeuille: base, gain: 0 };
   if (base.toursPayees.includes(id)) return { ok: false, raison: 'deja-payee', portefeuille: base, gain: 0 };
-  const paiement = crediterCredits(base, montant);
+  const paiement = crediterCredits(base, montant ?? butinDeTour(id));
   if (!paiement.gain) return { ok: false, raison: 'montant-invalide', portefeuille: base, gain: 0 };
   return {
     ok: true,
@@ -449,15 +473,15 @@ export function gainsDeTour(tourId, { etagesVaincus = null, toursPayees = null }
   const vaincus = new Set(Array.isArray(etagesVaincus) ? etagesVaincus : []);
   const etages = tour.etages.map((etage) => ({
     id: etage.id,
-    premiere: GAINS.etagePremiere,
-    rejoue: GAINS.etageRejoue,
+    premiere: recompenseEtage(etage.id, { premiere: true }),
+    rejoue: recompenseEtage(etage.id, { premiere: false }),
     gagne: vaincus.has(etage.id),
   }));
-  const butin = GAINS.tourTerminee;
+  const butin = butinDeTour(tour.id);
   const butinGagne = normaliserToursPayees(toursPayees).includes(tour.id);
-  const dejaGagne = etages.filter((etage) => etage.gagne).length * GAINS.etagePremiere
+  const dejaGagne = etages.filter((etage) => etage.gagne).reduce((somme, etage) => somme + etage.premiere, 0)
     + (butinGagne ? butin : 0);
-  const total = etages.length * GAINS.etagePremiere + butin;
+  const total = etages.reduce((somme, etage) => somme + etage.premiere, 0) + butin;
   return {
     tourId: tour.id,
     etages,
