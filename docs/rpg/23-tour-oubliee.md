@@ -281,42 +281,40 @@ mythiques uniques, une couleur).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
-  *État au 25/10* : 22 des 24 peintures livrées, plus la miniature
-  `tour-oubliee.jpg` (1376×768, paysage). Manquent `aiguille-du-sabbat` et
-  `pacte-de-l-oubliee`, dont les deux générations ont été bloquées par la
-  modération (aiguille plantée dans une poupée, sang versé sur un pacte) et qui
-  attendent une reformulation.
+  *État au 25/10* : **les 24 peintures et la miniature sont livrées.**
 
   **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
-  aucune bordure, aucun liseré, aucune marge blanche intégrée à l'image, le
-  cadre étant dessiné par le CSS du jeu (`.rpg-card`). Trois peintures de la
-  première vague (`chacal-sans-maitre`, `goule-affamee`, `bou-jeloud`) sont
-  arrivées avec une bordure blanche : elles ont été repeintes. Deux autres
-  (`reveil-de-la-horde`, `pilon-du-fossoyeur`) avaient une marge blanche de
-  ~25 px, retirée au recadrage. Le test
-  « les peintures du set sont plein cadre » mesure les quatre bords de chaque
-  fichier (via `jpeg-js`, dépendance de test) et refuse plus de 20 % de pixels
-  clairs.
+  aucune bordure, aucun liseré, aucune marge intégrée à l'image, le cadre étant
+  dessiné par le CSS du jeu (`.rpg-card`). Cinq peintures sont arrivées
+  encadrées et ont été reprises : `chacal-sans-maitre`, `goule-affamee`,
+  `bou-jeloud` et `portefaix-cousu` (bordure **blanche** de 39 à 43 px, plus un
+  liseré noir résiduel pour le dernier — recadrage de 12 px), `reveil-de-la-horde`
+  et `pilon-du-fossoyeur` (marge blanche de ~25 px, recadrées).
+
+  Le test « les peintures du set sont plein cadre » mesure les quatre bords de
+  chaque fichier (via `jpeg-js`, dépendance de test) : refus au-delà de 20 % de
+  pixels clairs, et refus de tout pourtour **uni** (écart-type de luminance
+  inférieur à 4) qui tranche de plus de 22 points avec l'anneau situé 34 px plus
+  loin — la signature d'une bande de cadre blanche **ou noire**.
 
   **Pas un caractère.** Aucune peinture ne doit porter de texte lisible ni de
   calligraphie **arabe** (consigne du 25/10) : la stèle du Portefaix cousu, les
   dalles de la Goule des cimetières et les papiers du Charognard étaient
   gravés de versets — les glyphes du registre restent désormais abstraits.
-  Audit des 22 peintures livrées :
+  Audit des 24 peintures livrées :
 
   | peinture | verdict |
   |---|---|
-  | `portefaix-cousu` | **à refaire** — stèle couverte de calligraphie arabe |
-  | `goule-des-cimetieres` | **à refaire** — trois dalles gravées de versets |
-  | `chacal-sans-maitre` | refait — parchemin redevenu blanc |
-  | `charognard-du-puits`, `mange-souvenirs`, `l-oublie`, `encre-du-registre` | griffures illisibles, aucun caractère reconnaissable (à nettoyer si l'on veut zéro écriture) |
-  | les 15 autres | aucune écriture |
+  | `portefaix-cousu` · `goule-des-cimetieres` | **repeints** — la stèle portée par le premier et les trois dalles de la seconde étaient gravées de versets ; le bloc de pierre est désormais nu et les dalles lisses |
+  | `chacal-sans-maitre` | repeint — parchemin redevenu blanc |
+  | `charognard-du-puits`, `mange-souvenirs`, `l-oublie`, `encre-du-registre` | griffures illisibles, aucun caractère reconnaissable |
+  | les 18 autres | aucune écriture |
 
   La consigne « pas un caractère » est répétée dans chaque prompt et vaut pour
   toutes les vagues suivantes.
 
 ### Tests
-- **`tests/rpg-tour-oubliee.test.js`** *(neuf)* : intégrité du set, absence de
+- **`tests/rpg-tour-oubliee.test.js`** *(quatorze)* : intégrité du set, absence de
   catalogue, paquets valides et conversion neutre, rampe, pactes bornés et
   appliqués, verrou de tour, barème et butin uniques, refus en deck de joueur.
 - Mis à jour : `tests/rpg-story.test.js` (le Sablier n'est plus la dernière

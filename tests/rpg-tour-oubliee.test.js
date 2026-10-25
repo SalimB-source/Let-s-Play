@@ -112,18 +112,39 @@ test('chaque carte du set a sa peinture plein art livrée dans public/cards/', (
 
 /**
  * Les peintures du set sont **plein cadre** : l'image occupe toute la carte et
- * le cadre est dessiné par le CSS du jeu. Une peinture qui arrive avec sa
- * propre bordure blanche (le travers classique des générateurs d'images)
- * laisserait un liseré clair tout autour de la vignette — refusé.
- * On échantillonne les quatre bords et on mesure la part de pixels clairs.
+ * le cadre est dessiné par le CSS du jeu (`.rpg-card`, `.rpg-hand__card`). Une
+ * peinture qui arrive avec sa propre bordure — blanche comme noire, c'est le
+ * travers classique des générateurs d'images — laisse un liseré tout autour de
+ * la vignette. On mesure donc les quatre bords :
+ *
+ *  - la part de pixels clairs sur les quatre côtés (bordure blanche) ;
+ *  - la platitude du pourtour (écart-type de la luminance) comparée à un
+ *    anneau situé 34 px plus loin : un pourtour parfaitement uni qui tranche
+ *    avec l'intérieur est une bande de cadre, quelle que soit sa couleur.
  */
-function partDeBlancSurLesBords(chemin) {
+function bordureDeLaPeinture(chemin) {
   const { data, width, height } = jpeg.decode(readFileSync(chemin), { useTArray: true });
+  const luminance = (x, y) => {
+    const i = (y * width + x) * 4;
+    return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  };
   const clair = (x, y) => {
     const i = (y * width + x) * 4;
     return data[i] > 205 && data[i + 1] > 200 && data[i + 2] > 190;
   };
-  const mesure = (bord) => {
+  const anneau = (marge) => {
+    const points = [];
+    for (let x = 0; x < width; x += 2) points.push([x, marge], [x, height - 1 - marge]);
+    for (let y = 0; y < height; y += 2) points.push([marge, y], [width - 1 - marge, y]);
+    return points;
+  };
+  const statistiques = (points) => {
+    const valeurs = points.map(([x, y]) => luminance(x, y));
+    const moyenne = valeurs.reduce((a, b) => a + b, 0) / valeurs.length;
+    const ecart = Math.sqrt(valeurs.reduce((a, b) => a + (b - moyenne) ** 2, 0) / valeurs.length);
+    return { moyenne, ecart };
+  };
+  const partClaire = (bord) => {
     let clairs = 0;
     let total = 0;
     if (bord === 'gauche' || bord === 'droite') {
@@ -143,25 +164,26 @@ function partDeBlancSurLesBords(chemin) {
     }
     return clairs / total;
   };
-  return { gauche: mesure('gauche'), haut: mesure('haut'), droite: mesure('droite'), bas: mesure('bas') };
+  return {
+    clair: ['gauche', 'haut', 'droite', 'bas'].map(partClaire),
+    bord: statistiques(anneau(1)),
+    interieur: statistiques(anneau(34)),
+  };
 }
 
-test('les peintures du set sont plein cadre : aucune bordure blanche intégrée à l’image', () => {
-  for (const carte of [...RPG_TOUR_OUBLIEE_CARTES, ...RPG_TOUR_OUBLIEE_JETONS]) {
-    const chemin = CHEMIN(`cards/${cardArtId(carte)}.jpg`);
-    if (!existsSync(chemin)) continue; // la vague de peinture est suivie par le test précédent
-    const bords = partDeBlancSurLesBords(chemin);
-    for (const [nom, part] of Object.entries(bords)) {
-      assert.ok(part < 0.2,
-        `${carte.id} : bord ${nom} à ${Math.round(part * 100)} % de blanc — la peinture doit aller à fond perdu`);
+test('les peintures du set sont plein cadre : ni bordure blanche, ni bande noire', () => {
+  const peintures = [...RPG_TOUR_OUBLIEE_CARTES, ...RPG_TOUR_OUBLIEE_JETONS]
+    .map((carte) => [`cards/${cardArtId(carte)}.jpg`, carte.id])
+    .filter(([relatif]) => existsSync(CHEMIN(relatif)))
+    .concat([['sablier-tours/tour-oubliee.jpg', 'tour-oubliee']]);
+  for (const [relatif, id] of peintures) {
+    const mesure = bordureDeLaPeinture(CHEMIN(relatif));
+    for (const part of mesure.clair) {
+      assert.ok(part < 0.2, `${id} : liseré blanc sur un bord (${Math.round(part * 100)} %)`);
     }
-  }
-  // La miniature de la tour suit la même règle.
-  const miniature = CHEMIN('sablier-tours/tour-oubliee.jpg');
-  if (existsSync(miniature)) {
-    for (const [nom, part] of Object.entries(partDeBlancSurLesBords(miniature))) {
-      assert.ok(part < 0.2, `tour-oubliee.jpg : bord ${nom} à ${Math.round(part * 100)} % de blanc`);
-    }
+    const plate = mesure.bord.ecart < 4 && Math.abs(mesure.bord.moyenne - mesure.interieur.moyenne) > 22;
+    assert.equal(plate, false,
+      `${id} : bande de cadre unie sur le pourtour (luminance ${Math.round(mesure.bord.moyenne)} contre ${Math.round(mesure.interieur.moyenne)} à l’intérieur)`);
   }
 });
 
