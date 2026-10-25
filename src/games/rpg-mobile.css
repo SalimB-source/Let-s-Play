@@ -1510,34 +1510,44 @@
 .rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
 
+/* Les badges d'effets de la main : une carte mobile fait moins de 90 px. La
+   colonne passe à 14 px, le badge à 12 px et son glyphe à 8 px — assez pour
+   lire le mot-clé sans manger l'illustration. `rpg-mana-essai.css` ne doit plus
+   redonner les 20 px du bureau après ces règles (voir son commentaire). */
 @media (max-width: 620px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
   .rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
     top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
+    width: 14px;
     gap: 2px;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-    min-width: 14px;
-    min-height: 14px;
-    padding: 1.5px;
+    min-width: 12px;
+    min-height: 12px;
+    padding: 1px;
+    border-width: 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
   }
 }
 
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
   top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
+  width: 14px;
   gap: 2px;
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-  min-width: 14px;
-  min-height: 14px;
-  padding: 1.5px;
+  min-width: 12px;
+  min-height: 12px;
+  padding: 1px;
+  border-width: 1px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 
 /* ── Performance GPU, rail droit épuré & aperçu latéralisé anti-occultation ──

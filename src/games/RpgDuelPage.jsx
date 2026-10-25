@@ -108,6 +108,7 @@ import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgSoloIcon from './RpgSoloIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import { GAINS, creditsLisible, gainsDeTour } from './rpgCredits.js';
@@ -4143,7 +4144,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <span className="rpg-mode-menu__onglet-libelle">Histoire</span>
             </button>
             <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} aria-label="Jeu Solo" onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">🗼</span>
+              {/* La tour au sablier remplace l'ancien emoji : un dessin stable
+                  sur mobile, et qui parle des Tours de Bab El. */}
+              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__onglet-icone--solo" aria-hidden="true">
+                <RpgSoloIcon />
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Jeu Solo</span>
             </button>
             <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} aria-label="Deck" onClick={() => { play('menu'); onChangeScreen('decks'); }}>
