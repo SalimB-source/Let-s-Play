@@ -126,14 +126,16 @@ assert.match(battlePage, /function cardEffectLines\(text\)[\s\S]*?\.split\(/,
   'les effets des cartes sont séparés pour les afficher sur plusieurs lignes');
 assert.match(confirmSortSource, /rpg-spell-confirm__rules[\s\S]*?effets\.map/,
   'chaque effet occupe une ligne dans la confirmation de sort');
-assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?effets\.map/,
-  'chaque effet occupe une ligne dans l’aperçu au survol');
+assert.doesNotMatch(hoverPreviewSource, /rpg-hover-card-preview__rules/,
+  'l’aperçu n’imprime plus de bloc de règles : ses mots-clés portent la règle');
+assert.match(hoverPreviewSource, /aMotsClesExplicables && \([\s\S]*?Survolez un mot-clé pour lire son effet/s,
+  'l’aperçu indique que chaque mot-clé s’explique au survol');
 assert.match(hoverPreviewSource, /armesEquipees\.map\(\(arme, index\) => \([\s\S]*?data-arme-equipee=\{arme\.id\}[\s\S]*?src=\{cardArt\(arme\)\}[\s\S]*?<strong>\{arme\.name\}<\/strong>[\s\S]*?<small>\{arme\.text\}<\/small>/,
   'la créature montre une petite carte par arme équipée, avec illustration, nom et effet');
 assert.match(battleCss, /\.rpg-hover-card-preview--catalogue \.rpg-hover-card-preview__weapon small\s*\{[^}]*overflow:\s*visible;/,
   'la fiche ouverte révèle le texte complet de chaque arme');
-assert.match(hoverPreviewSource, /rpg-hover-card-preview__rules[\s\S]*?rpg-hover-card-preview__rule--equipment[\s\S]*?effets\.map/,
-  'la ligne bleue de l’équipement ouvre la zone d’effets, avant les effets propres de la carte');
+assert.doesNotMatch(hoverPreviewSource, /rpg-hover-card-preview__rule--equipment/,
+  'plus de ligne bleue d’équipement : le bonus se lit sur la miniature de l’arme et dans le libellé accessible');
 assert.match(tableCardSource, /<CardElementBadge carte=\{carte\} \/>[\s\S]*?rpg-card__compteurs\$\{hybride \? ' rpg-card__compteurs--hybride' : ''\}[\s\S]*?<CompteurCarte type="heures"[\s\S]*?<CompteurCarte type="sable"/,
   'les compteurs d’Heures et de sable restent accessibles, sous le coût d’une hybride et sous la couleur d’une mono');
 assert.match(compteursSource, /data-compteur=\{type\}/,
@@ -228,8 +230,10 @@ assert.match(battlePage, /style=\{apercuSurvol\.style\}\s+panelRef=\{panelRef\}/
   'l’aperçu du survol est mesuré par son panneau');
 assert.doesNotMatch(battlePage, /variante="mulligan"/,
   'aucun aperçu rapide au survol n’est rendu dans le mulligan');
-assert.match(battleCss, /\.rpg-hover-card-preview__rules\s*\{[^}]*display:\s*grid;[^}]*gap:\s*7px;[\s\S]*?\.rpg-hover-card-preview__rules > span\s*\{\s*display:\s*block;/s,
-  'chaque effet occupe sa propre ligne dans l’aperçu au survol');
+assert.match(battleCss, /\.rpg-hover-card-preview__hint-tactile \{ display: none; \}[\s\S]*?\.rpg-battle--touch \.rpg-hover-card-preview__hint-tactile \{ display: inline; \}/s,
+  'l’indication des mots-clés suit le geste : la souris survole, le doigt touche');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview__rules/,
+  'plus aucun style de bloc de règles dans l’aperçu');
 assert.match(duelEngine, /ready: Boolean\(carte\.rapidite\)/,
   'la Rapidité rend la créature prête dès son arrivée, sans badge d’effet sur la carte');
 // L’Attaque ciblée frappe avant les blessures de combat : la cible encaisse
@@ -1615,7 +1619,7 @@ assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-card__compteurs\s*\{[^
 
 console.log(
   'check:rpg-ui ✓ — aperçu au survol agrandi sans fond principal ni grand cadre ni son ombre, seul l’encadré des infos garde son fond sombre lisible, clic-action direct (poser la carte, attaquer, engager les terrains) avec confirmation des magies avant lancement et aperçu des magies jouées, '
-  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Attaque ciblée de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, créatures avec Envol surélevées et animées d’un léger mouvement latéral sur le plateau, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, effets séparés ligne par ligne dans les aperçus, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
+  + 'icônes flamme/goutte/sablier, protection contre une couleur limitée au tour de pose et au suivant adverse, Rapidité du Fennec et de Fériel, Attaque ciblée de Fériel avec cible choisie et dégâts sans riposte, Envol de l’Anqa réservé aux bloqueurs volants dans l’IA comme à la main, créatures avec Envol surélevées et animées d’un léger mouvement latéral sur le plateau, icônes d’effets absentes des cartes en main, au catalogue, sur table et dans les aperçus, aperçus réduits aux mots-clés, chacun ouvrant sa description au survol, terrain Désert illustré, cadres pilotés par l’élément (bleu Eau, beige Sable, rouge Braise, bleu glacé Neige, mythiques mono brillantes de leurs couleurs, hybrides à deux aplats diagonaux sans reflet), terrains agrandis, couleur à gauche et coût à droite, badge élémentaire hybride distinct du coût sans icônes de couleur, '
   + 'icône rouge d’attaque globale, icône de confirmation bleu clair, bouton Déclarer l’attaque retiré, type « Type », coût et ATQ/DÉF agrandis, mal d’invocation grisé pour les créatures non rapides, blessures tachées de sang et défense rouge, '
   + 'terrains engagés sans bord tronqué, deck et cimetière du joueur à gauche, vol de carte depuis la main, secousse d’écran sur impact direct et vignette rouge si le joueur est touché, '
   + 'attaque groupée avant confirmation, attaques sans bloqueur résolues automatiquement, faces full art, terrains sans coût, tour, halo jaune et paiement automatique, '

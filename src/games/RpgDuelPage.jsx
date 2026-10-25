@@ -93,7 +93,7 @@ import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { regleCarteLongue, resumeCarte } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
-import { effetsEpuisesPourEntite, effetsFurieInactifs } from './effetIcons.js';
+import { effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -3007,11 +3007,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
   const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  // Les mots-clés passent en pastilles — le mot seul, sous la ligne de type,
-  // comme sur les cartes en main et au catalogue. L'aperçu n'écrit aucune
-  // explication sous le mot : la règle imprimée de la carte se lit entière
-  // dans le bloc « Effets », juste en dessous.
-  const effets = cardEffectLines(effet);
+  /* L'aperçu ne récite plus la règle : seuls les mots-clés restent, en
+     pastilles, et chacun ouvre sa description au survol (bulle), au toucher
+     ou au focus clavier. L'indication « Survolez un mot-clé… » ne s'affiche
+     que si la carte en porte au moins un qui s'explique. */
+  const motsCles = effetsDetailles(carte).pastilles;
+  const aMotsClesExplicables = motsCles.some((pastille) => pastille.description);
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
@@ -3028,21 +3029,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
   // comme une fiche de collection — sur-titre, nom, famille, couleur — là où
-  // l'aperçu de jeu va droit au coût et aux effets.
+  // l'aperçu de jeu va droit au coût et aux mots-clés.
   const estFiche = variante === 'catalogue';
   const estApercuRapide = variante === '' && !estEnFurie;
-  /* La preview ne récite plus toute la règle : au-delà d'une certaine
-     longueur, elle imprime une phrase « en bref » et garde la règle entière
-     dans un bloc qui défile juste dessous. Le catalogue et l'appui long sont
-     des surfaces de lecture : leur bloc se parcourt aussi au clavier.
-     L'aperçu rapide (survol souris, « texte-seul ») se contente du bref : il
-     ne récite pas trois phrases sous le curseur. */
-  const regleLongue = regleCarteLongue(carte);
-  const resume = regleLongue ? resumeCarte(carte) : '';
-  const lectureClavier = estFiche || variante === 'appui-long';
   // La petite carte montre le nom et l'effet complet de chaque arme portée.
-  // Ses bonus directs **ouvrent** aussi le texte d'effet de la créature : en
-  // bleu, sans répéter le nom, avant les propres lignes de la créature.
+  // Ses bonus directs restent annoncés dans le libellé accessible de l'aperçu
+  // (`effets d'équipement …`) : la fiche, elle, n'imprime plus que la carte.
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const prisonniereCarte = prisonniere && prisonniere.id !== carte.id ? prisonniere : null;
@@ -3057,8 +3049,13 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         className="rpg-hover-card-preview__pastilles"
         effetsEpuises={effetsEpuisesActifs}
         effetsInactifs={effetsInactifsActifs}
-        muettes
       />
+      {aMotsClesExplicables && (
+        <small className="rpg-hover-card-preview__hint" aria-hidden="true">
+          <span className="rpg-hover-card-preview__hint-souris">Survolez un mot-clé pour lire son effet</span>
+          <span className="rpg-hover-card-preview__hint-tactile">Touchez un mot-clé pour lire son effet</span>
+        </small>
+      )}
       {estFiche && <p className="rpg-hover-card-preview__color">{cardColorLine(carte)}</p>}
       {estEnFurie && (
         <p className="rpg-hover-card-preview__furie" data-furie-declenchee="true">
@@ -3107,44 +3104,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             </figcaption>
           </figure>
         </div>
-      )}
-      {regleLongue && resume && !estApercuRapide && (
-        <p className="rpg-hover-card-preview__resume" role="note" aria-label="Résumé">
-          {resume}
-        </p>
-      )}
-      {(effets.length > 0 || effetsArmesEquipees.length > 0) && (
-        <div
-          className="rpg-hover-card-preview__rules"
-          aria-label="Effets"
-          tabIndex={lectureClavier && (effets.length > 1 || regleLongue) ? 0 : undefined}
-        >
-          {estApercuRapide && regleLongue && resume ? (
-            <span>{resume}</span>
-          ) : (
-            <>
-              {/* La ligne bleue de l'équipement passe en tête : elle dit ce que le
-                  porteur devient, avant les effets propres de sa carte. */}
-              {effetsArmesEquipees.map((ligne, index) => (
-                <span
-                  key={`equipement-${index}-${ligne}`}
-                  className="rpg-hover-card-preview__rule--equipment"
-                  data-effet-equipement
-                >
-                  {ligne}
-                </span>
-              ))}
-              {effets.map((ligne, index) => (
-                <span key={`${index}-${ligne}`}>
-                  <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
-                </span>
-              ))}
-            </>
-          )}
-        </div>
-      )}
-      {estApercuRapide && regleLongue && (
-        <small className="rpg-hover-card-preview__hint" aria-hidden="true">Clic droit pour la fiche complète</small>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
       {modifCarte && !carteEstArme(carte) && (
@@ -3258,9 +3217,10 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
 
 /** La fiche d'une carte : une carte **cliquée** s'ouvre en grand sur le même
  * volet sombre que l'appui long — l'illustration entière dans son cadre
- * d'élément, puis le nom, la famille, la couleur, le coût, les effets ligne par
- * ligne et les statistiques. Elle est née au catalogue, où le clic l'ouvre
- * depuis toujours, et c'est aussi elle que le **clic droit** ouvre partout
+ * d'élément, puis le nom, la famille, la couleur, le coût, les mots-clés en
+ * pastilles (chacun ouvre sa description au survol) et les statistiques. Elle
+ * est née au catalogue, où le clic l'ouvre depuis toujours, et c'est aussi
+ * elle que le **clic droit** ouvre partout
  * ailleurs dans le jeu (`surMenuContextuel`) : la table du duel, la liste d'un
  * deck, le guide. Consulter ne joue rien : le clic ne touche ni aux filtres ni
  * à la grille, ne quitte pas l'onglet, et ne déclare aucune attaque. Le volet,

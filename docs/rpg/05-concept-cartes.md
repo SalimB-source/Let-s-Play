@@ -707,11 +707,11 @@ contrôleur **pioche une carte puis en défausse une**.
   **+1,2** dans la formule de puissance (`rpgCardPower.js`) ;
 - son icône est la **besace percée** (`#effet-butin` du sprite
   `preview-effets-icone.html`), pastille sous la ligne de type. Dans un aperçu
-  de carte, la pastille reste **fermée** (`muettes`, `effetIcons.jsx`) : elle
-  nomme le mot-clé, sans bulle à ouvrir ni explication à écrire dessous. La
-  règle imprimée de la carte se lit entière dans le bloc « Effets », juste
-  sous les pastilles (`HoverCardPreview`, `RpgDuelPage.jsx`) — l'aperçu montre
-  donc la carte telle qu'elle s'imprime.
+  de carte, la pastille porte un **« ? » cerclé** et ouvre sa **bulle** au
+  survol (au toucher comme au clavier) : l'aperçu n'imprime plus la règle, ses
+  mots-clés survolables sont la seule porte vers elle — une indication
+  « Survolez un mot-clé pour lire son effet » l'accompagne
+  (`HoverCardPreview`, `RpgDuelPage.jsx`).
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
 son Esquive a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**

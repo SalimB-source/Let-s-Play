@@ -377,12 +377,8 @@ async function scenarioCreatureArmee(assert, disposition) {
     await survoler(armee);
     const apercu = container.querySelector('.rpg-hover-card-preview');
     assert.ok(apercu, `[${disposition}] survoler la créature armée ouvre son aperçu`);
-    const ligne = apercu.querySelector('[data-effet-equipement]');
-    assert.ok(ligne, `[${disposition}] l’aperçu ajoute les bonus à la zone d’effets`);
-    assert.match(ligne.textContent, /Bonus d’équipement : \+2\/\+0.*Infiltration/u,
-      `[${disposition}] l’effet bleu donne les stats et le mot-clé : « ${ligne.textContent} »`);
-    assert.ok(ligne.classList.contains('rpg-hover-card-preview__rule--equipment'),
-      `[${disposition}] les effets d’équipement ont leur style bleu`);
+    assert.equal(apercu.querySelector('[data-effet-equipement]'), null,
+      `[${disposition}] l’aperçu n’imprime plus de ligne d’effets bleue : le bonus se lit sur la miniature de l’arme`);
     const miniature = apercu.querySelector('[data-arme-equipee="takouba-des-pistes"]');
     assert.ok(miniature, `[${disposition}] l’aperçu du porteur contient une petite carte d’arme`);
     assert.match(miniature.querySelector('img')?.getAttribute('src') ?? '', /takouba-des-pistes/u,

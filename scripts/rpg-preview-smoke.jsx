@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
+import { effetsDetailles } from '../src/games/effetIcons.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
 import { crediterCredits, portefeuilleVide, sauverPortefeuille } from '../src/games/rpgCredits.js';
 import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
@@ -161,23 +162,39 @@ export async function checkRpgPreviewActions(assert) {
     assert.match(fiche().querySelector('.rpg-hover-card-preview__color').textContent, /Sable · Désert/u,
       'la fiche écrit la couleur comme la grille du catalogue');
     // Les deux capacités du Fennec sont des mots-clés : la fiche les nomme en
-    // pastilles fermées — le mot seul, comme sur la carte en main — et la règle
-    // imprimée se lit entière dans le bloc « Effets », juste dessous.
+    // pastilles — le mot seul, son « ? » de survol au bout — et chacune ouvre
+    // sa bulle : plus aucune règle imprimée dans la fiche.
     const pastillesFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')];
     assert.deepEqual(pastillesFiche.map((pastille) => pastille.textContent),
       ['Rapidité', 'Butin'], 'les deux capacités du Fennec sont nommées en pastilles, sans explication dessous');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__pastilles .rpg-pastille__explication'), null,
       'aucune explication ne s’écrit sous un mot-clé');
-    assert.equal(pastillesFiche[1].getAttribute('aria-label'), null,
-      'la pastille ne nomme que son mot-clé : la règle se lit dans le bloc « Effets »');
-    assert.equal(fiche().querySelector('.rpg-hover-card-preview__pastilles .rpg-pastille[tabindex]'), null,
-      'rien n’attend un survol ni un focus : une fiche se lit d’emblée');
-    const reglesFiche = [...fiche().querySelectorAll('.rpg-hover-card-preview__rules > span')]
-      .map((ligne) => ligne.textContent);
-    assert.match(reglesFiche.join(' '), /Rapidité — Cette créature.*Butin — Quand/u,
-      'la règle imprimée de la carte reste entière dans le bloc « Effets »');
+    assert.match(pastillesFiche[1].getAttribute('aria-label') ?? '', /Quand cette créature touche le sorcier adverse/,
+      'la pastille annonce sa description complète aux lecteurs d’écran');
+    assert.equal(pastillesFiche[0].getAttribute('tabindex'), '0',
+      'le mot-clé attend le survol, le toucher ou le focus clavier');
+    assert.equal(fiche().querySelector('.rpg-hover-card-preview__rules'), null,
+      'la fiche n’imprime plus la règle : les mots-clés la portent seuls');
+    assert.match(fiche().querySelector('.rpg-hover-card-preview__hint')?.textContent ?? '', /Survolez un mot-clé pour lire son effet/,
+      'la fiche indique que chaque mot-clé s’explique au survol');
     assert.equal(document.querySelector('.rpg-pastille-bulle'), null,
-      'aucune bulle n’est ouverte : la fiche ne cache rien sous une pastille');
+      'aucune bulle n’est ouverte tant qu’aucun mot-clé n’est survolé');
+    await act(async () => {
+      const entre = new window.MouseEvent('pointerover', { bubbles: true, relatedTarget: document.body });
+      Object.defineProperty(entre, 'pointerType', { value: 'mouse' });
+      pastillesFiche[1].dispatchEvent(entre);
+    });
+    const bulleFiche = document.querySelector('.rpg-pastille-bulle');
+    assert.ok(bulleFiche, 'survoler le mot-clé de la fiche ouvre sa bulle');
+    assert.match(bulleFiche?.textContent ?? '', /Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une\./u,
+      'la bulle porte la description complète de l’effet');
+    await act(async () => {
+      const sortie = new window.MouseEvent('pointerout', { bubbles: true, relatedTarget: document.body });
+      Object.defineProperty(sortie, 'pointerType', { value: 'mouse' });
+      pastillesFiche[1].dispatchEvent(sortie);
+    });
+    assert.equal(document.querySelector('.rpg-pastille-bulle'), null,
+      'la bulle se referme quand la souris quitte le mot-clé');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__stat--atk .rpg-stat-value')?.textContent, '3',
       'la fiche imprime l’attaque sur la carte');
     assert.equal(fiche().querySelector('.rpg-hover-card-preview__face .rpg-card__pt .rpg-stat-value')?.textContent, '1',
@@ -520,17 +537,16 @@ export async function checkRpgPreviewActions(assert) {
     const creatureAppui = ['creature', 'hero'].includes(attendue.kind);
     assert.equal(Boolean(typeAppui), !creatureAppui,
       'le volet imprime la ligne de type des magies et des terrains, et la tait pour une créature');
-    const glyphesMana = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️' };
-    const texteAttendu = attendue.kind === 'terrain'
-      ? attendue.text?.replace(/\b(braise|eau|sable|neige)\b/giu, (couleur) => glyphesMana[couleur.toLowerCase()])
-      : attendue.text;
-    const lignesAttendues = texteAttendu && texteAttendu !== '—'
-      ? texteAttendu.split(/\n+|(?<=[.!?])\s+/u).map((ligne) => ligne.trim()).filter(Boolean)
-      : [];
+    assert.equal(apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules').length, 0,
+      'l’aperçu au doigt n’imprime plus la règle : ses mots-clés la portent');
+    const pastillesAttendues = effetsDetailles(attendue).pastilles
+      .map((pastille) => (pastille.valeur != null && !pastille.valeurMasquee
+        ? `${pastille.label} ${pastille.valeur}`
+        : pastille.label));
     assert.deepEqual(
-      [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules > span')].map((node) => node.textContent),
-      lignesAttendues,
-      'les effets de la carte tiennent dans l’aperçu, un par ligne');
+      [...apercuAppui.querySelectorAll('.rpg-hover-card-preview__pastilles .rpg-pastille')].map((node) => node.textContent),
+      pastillesAttendues,
+      'les mots-clés de la carte tiennent seuls dans l’aperçu, en pastilles fermées');
     // L'aperçu au doigt montre la carte elle-même : sa face illustrée ouvre le
     // volet — cadre de famille, coût, statistiques imprimées — comme la fiche.
     const faceAppui = apercuAppui.querySelector('.rpg-hover-card-preview__face');
