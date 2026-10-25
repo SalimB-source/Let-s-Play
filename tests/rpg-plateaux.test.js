@@ -760,3 +760,50 @@ test('la page passe le choix du profil aux deux résolutions de table', () => {
     'la partie lancée reçoit le choix — sauf le tutoriel, qui impose sa table');
   assert.match(page, /\n      plateauChoisi: plateauChoisiDuProfil,\n/, 'le duel en ligne aussi');
 });
+
+test('la Tour du Sablier renversé a son plateau : la chambre de verre du sablier retourné', () => {
+  const sablier = plateauParId('sablier-renverse');
+  assert.ok(sablier, 'Le Sablier renversé fait partie des plateaux');
+  assert.equal(sablier.fichier, 'plateau-sablier-renverse.jpg');
+  assert.match(sablier.nom, /sablier/i);
+  assert.match(sablier.lieu, /tour|verre|Bab El/i);
+  for (const motif of ['albâtre', 'laiton', 'cabochons', 'verre', 'safran', 'braise', 'nuit', 'orrery']) {
+    assert.match(sablier.resume, new RegExp(motif, 'i'), `le résumé du sablier mentionne ${motif}`);
+  }
+  assert.match(sablier.resume, /milieu du plateau reste vide/i,
+    'le centre du plateau reste libre pour les cartes');
+  const taille = tailleJpeg(new URL(`../public/${sablier.fichier}`, import.meta.url));
+  assert.deepEqual(taille, { width: 3840, height: 2560 }, 'fond livré en 4K au ratio 3:2');
+  // La tour terminale est elle-même le plateau : ses sept étages s'y battent.
+  const paquets = [
+    'veilleurs-absolus', 'flamme-absolue', 'maree-absolue', 'hiver-absolu',
+    'jugement-absolu', 'course-absolue', 'le-sablier',
+  ];
+  for (const paquet of paquets) {
+    assert.equal(RPG_PLATEAUX_PAR_DECK[paquet], 'sablier-renverse', `${paquet} se bat dans le sablier`);
+    assert.equal(plateauDeDeck(paquet).plateau.id, 'sablier-renverse');
+    assert.equal(plateauDeDeck(paquet).motif, 'deck', `${paquet} : le plateau vient du deck, pas de la couleur`);
+  }
+  // Aucun autre deck ne l’emprunte : la chambre de verre reste celle de la tour.
+  const autres = Object.entries(RPG_PLATEAUX_PAR_DECK)
+    .filter(([cle]) => !paquets.includes(cle))
+    .filter(([, plateau]) => plateau === 'sablier-renverse');
+  assert.deepEqual(autres, [], 'aucun autre deck ne reçoit dans le sablier');
+  // Terrain unique : pas de double merveilleux, le tirage n’est jamais consommé.
+  assert.equal(varianteFantaisisteDe('sablier-renverse'), null);
+  let appels = 0;
+  const resolution = resoudrePlateauxDuDuel({
+    deckJoueur: 'veilleurs-absolus',
+    deckAdverse: 'le-sablier',
+    variantesFantaisistes: true,
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(appels, 0, 'aucun tirage : le sablier n’a pas de variante fantaisiste');
+  assert.equal(resolution.joueur.plateau.id, 'sablier-renverse');
+  assert.equal(resolution.adversaire.plateau.id, 'sablier-renverse');
+  assert.equal(resolution.decouper, false, 'les deux moitiés sont le même terrain : la table reste d’un seul tenant');
+  // Sa vignette de profil est livrée, comme celles des autres terrains.
+  assert.ok(existsSync(new URL('../public/profil/plateaux/sablier-renverse.webp', import.meta.url)),
+    'la vignette du sablier est livrée dans public/profil/plateaux/');
+  assert.equal(vignettePlateauRelative(sablier), 'profil/plateaux/sablier-renverse.webp');
+});

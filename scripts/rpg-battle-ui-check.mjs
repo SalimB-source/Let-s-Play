@@ -1055,6 +1055,13 @@ assert.match(plateauxSource, /'corbeaux-du-givre': 'cercle-des-corbeaux'/,
   'les quatre paquets du Corbeau se battent dans la clairière des neuf nuits');
 assert.match(battleCss, /\.card-table--plateau-cercle-des-corbeaux\s*\{[^}]*background-color:/s,
   'la neige de la clairière a sa propre couleur de repli');
+// La chambre de verre du sablier retourné, terrain de la tour terminale.
+assert.match(plateauxSource, /id: 'sablier-renverse'[\s\S]*?fichier: 'plateau-sablier-renverse\.jpg'/,
+  'le Sablier renversé est un plateau déclaré, avec sa peinture dans public/');
+assert.match(plateauxSource, /'le-sablier': 'sablier-renverse'/,
+  'le sommet de la tour terminale reçoit dans le sablier retourné');
+assert.match(battleCss, /\.card-table--plateau-sablier-renverse\s*\{[^}]*background-color:/s,
+  'l’albâtre du sablier a sa propre couleur de repli');
 // Les Ténèbres : deux terrains, le désert du Nil et la salle du trône.
 assert.match(plateauxSource, /id: 'necropole-des-dalles'[\s\S]*?fichier: 'plateau-necropole-des-dalles\.jpg'/,
   'la Nécropole des dalles est un plateau déclaré, avec sa peinture égyptienne dans public/');

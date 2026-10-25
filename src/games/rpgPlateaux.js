@@ -157,6 +157,18 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-cercle-des-corbeaux.jpg',
     resume: 'Une clairière sous la neige, vue de dessus par une nuit sans lune : le sol de givre bleui et la neige fraîche, et, au centre, le grand cercle de pierres levées, vide, que borde une couronne de plumes noires. Tout autour, les bouleaux noirs chargés de givre et leurs branches nues, le corbeau perché sur la souche, les neuf pierres levées aux runes gravées, une lanterne de fer au verre cassé, la corde lovée et un brasero éteint. Le milieu de la clairière reste nu : c’est là que les cartes se posent.',
   },
+  // Le terrain de la Tour du Sablier renversé : l'intérieur du grand sablier
+  // retourné, vu de dessus. Ses sept étages s'y battent tous — la tour est
+  // elle-même le plateau, comme la clairière l'est pour la Tour du Corbeau.
+  // Le dallage d'albâtre reste nu au centre, et les trois sables — safran,
+  // braise, nuit — remontent du sol vers la taille de verre.
+  {
+    id: 'sablier-renverse',
+    nom: 'Le Sablier renversé',
+    lieu: 'Les Tours de Bab El, la chambre de verre de la tour terminale',
+    fichier: 'plateau-sablier-renverse.jpg',
+    resume: 'L’intérieur du grand sablier retourné, vu de dessus à 90° : le dallage circulaire d’albâtre et de sable poli, entièrement nu au centre pour poser les cartes, que borde un anneau de laiton lisse où sont sertis des cabochons de verre coloré — crème, ambre, rouge, turquoise, glace et violet. Autour de la bague, des arcs d’orrery de laiton s’ouvrent vers les bords ; des éclats de verre, du sable d’or renversé et des traces de pas de pierre se sont répandus sur les dalles, et trois sables — safran, braise et nuit — remontent du sol vers la taille de l’heure, en spirales près de la gauche et de la droite. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -235,17 +247,18 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'serment-des-neuf-nuits': 'cercle-des-corbeaux',
   'veille-du-corbeau': 'cercle-des-corbeaux',
   'maitre-des-corbeaux': 'cercle-des-corbeaux',
-  // La Tour du Sablier renversé : chaque étage « absolu » reçoit dans la
-  // maison de son identité — sept étages, sept terrains différents. Le
-  // Sablier tricolore du sommet tient la Table des Heures, la table
-  // d'origine de Bab El : c'est chez lui que tout a commencé.
-  'veilleurs-absolus': 'erg-du-sahara',
-  'flamme-absolue': 'cour-de-l-empereur',
-  'maree-absolue': 'ruines-de-tipaza',
-  'hiver-absolu': 'village-viking',
-  'jugement-absolu': 'palais-du-pharaon',
-  'course-absolue': 'navire-pirate',
-  'le-sablier': 'table-des-heures',
+  // La Tour du Sablier renversé : la tour terminale est **elle-même** le
+  // plateau. Ses sept étages se battent tous dans le grand sablier retourné,
+  // la chambre de verre où les maîtres reviennent à leur sommet — les sept
+  // identités de la montée restent, mais la table ne change plus de camp :
+  // on est chez le Sablier du premier au dernier palier.
+  'veilleurs-absolus': 'sablier-renverse',
+  'flamme-absolue': 'sablier-renverse',
+  'maree-absolue': 'sablier-renverse',
+  'hiver-absolu': 'sablier-renverse',
+  'jugement-absolu': 'sablier-renverse',
+  'course-absolue': 'sablier-renverse',
+  'le-sablier': 'sablier-renverse',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */

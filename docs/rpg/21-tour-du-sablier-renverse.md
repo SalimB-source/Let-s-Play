@@ -40,10 +40,35 @@ la tour, maquette 3D, musique d'ambiance, peinture de repli.
 « Différent type » est pris au pied de la lettre, et vérifié par
 `tests/rpg-story.test.js` : sept paquets distincts, sept identités
 chromatiques distinctes (les cinq couleurs pures, l'hybride de la Course,
-puis le seul tricolore de la campagne), les quatre styles tactiques sur la
-montée, et sept terrains de duel différents (`rpgPlateaux.js` : Erg, Cour de
-l'Empereur, Ruines de Tipaza, Village Viking, Palais du Pharaon, Navire
-Pirate, Table des Heures).
+puis le seul tricolore de la campagne) et les quatre styles tactiques sur la
+montée.
+
+### Le plateau de la tour — Le Sablier renversé
+
+Contrairement aux autres tours, qui reçoivent chacune sur **un** terrain
+attitré (`village-viking` pour le Fjord, `cercle-des-corbeaux` pour le
+Corbeau…), la tour terminale n'empruntait jusqu'ici les terrains de ses
+identités : Erg pour la Dame aux ailes d'or, Cour de l'Empereur pour
+Kagutsuchi, etc. Elle a désormais **son propre plateau**, et ses sept étages
+s'y battent tous :
+
+- **Le Sablier renversé** (`sablier-renverse`, `public/plateau-sablier-renverse.jpg`,
+  4K 3:2) — l'intérieur du grand sablier retourné, vu de dessus à 90° : le
+  dallage circulaire d'albâtre et de sable poli, **nu au centre** pour y poser
+  les cartes, bordé d'un anneau de laiton lisse où sont sertis des cabochons de
+  verre coloré (crème, ambre, rouge, turquoise, glace, violet), et d'arcs
+  d'orrery de laiton ouverts vers les bords ; sur les dalles, les éclats de
+  verre et le sable d'or du sablier renversé ;
+- trois sables — safran, braise, nuit — **remontent** du sol vers la taille de
+  l'heure, en spirales près des bords : le sablier est retourné, et les trois
+  couleurs du gardien du sommet traversent tous les étages ;
+- même traitement que les autres terrains : couleur de repli dans
+  `rpg-battle.css`, décor 3D (`rpgTableSceneThemes.js`), vignette de la carte
+  de profil (`public/profil/plateaux/sablier-renverse.webp`), et aucune
+  variante fantaisiste — `resoudrePlateauxDuDuel` n'y consomme aucun tirage.
+
+Les deux moitiés de la table portent donc le même terrain d'un bout à l'autre
+de la tour : la table reste d'un seul tenant, chez le Sablier.
 
 Les six premiers gardiens portent le portrait de leur figure mythique —
 elle joue dans leur paquet. Le Sablier, au sommet, n'a pas de visage
@@ -143,7 +168,11 @@ pas fermé.
 - `src/games/rpgStoryTours.js` — la tour, ses sept étages, ses sept paquets.
 - `src/games/rpgDeckRecipes.js` — les sept recettes « absolues » sans plafond.
 - `src/games/rpgAI.js` — le niveau `sablier`.
-- `src/games/rpgPlateaux.js` — un terrain attitré par étage.
+- `src/games/rpgPlateaux.js` — le plateau de la tour (`sablier-renverse`),
+  terrain attitré de ses sept étages.
+- `public/plateau-sablier-renverse.jpg` — la peinture 4K du plateau (et sa
+  vignette `public/profil/plateaux/sablier-renverse.webp`).
+- `src/games/rpgTableSceneThemes.js` — l'éclairage 3D de la chambre de verre.
 - `src/games/rpgStoryTowerModels.js` — la maquette 3D (et le grand mât qui
   porte la Tour des Corsaires à la hauteur des autres).
 - `src/games/rpgAmbientMusic.js` — l'ambiance « Le retournement du Sablier ».
