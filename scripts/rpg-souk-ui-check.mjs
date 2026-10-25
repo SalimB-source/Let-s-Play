@@ -113,6 +113,19 @@ for (const marque of [
 // refusé (rayon fermé, solde insuffisant) s’explique de la même façon.
 assert.match(ecran, /disabled=\{!terminee\}/, 'le bouton Réclamer est désactivé avant l’objectif');
 assert.match(ecran, /title=\{terminee \? .* : `Il reste \$\{reste\} à faire`\}/, 'et il écrit ce qu’il reste');
+// Tant que l’objectif n’est pas atteint, le bouton est **secondaire** : le
+// laiton du primaire est réservé au moment où la récompense est due.
+assert.match(
+  ecran,
+  /className=\{`rpg-menu-button \$\{terminee \? 'rpg-menu-button--primary' : 'rpg-menu-button--secondary'\}`\}/,
+  'le bouton Réclamer est secondaire tant que la quête n’est pas achevée',
+);
+assert.match(ecran, /data-souk-reclamer-etat=\{terminee \? 'pret' : 'attente'\}/,
+  'et son état se lit dans le DOM');
+assert.ok(cssMenu.includes('.rpg-menu-button--secondary {'),
+  'la variante secondaire existe dans la feuille des boutons du menu');
+assert.match(css, /\.rpg-souk__quete-pied \.rpg-menu-button--secondary:disabled/,
+  'et le Souk la garde lisible quand elle est désactivée');
 assert.match(ecran, /disabled=\{Boolean\(refus\)\}/, 'le bouton Ouvrir est désactivé quand l’achat est refusé');
 assert.match(ecran, /Il manque \$\{creditsLisible\(etat\.prix - credits\)\}/, 'et il dit combien il manque');
 assert.match(ecran, /import \{[^}]*GAINS[^}]*paquetsAvantMythique[^}]*\} from '\.\/rpgCredits\.js';/,
