@@ -304,9 +304,16 @@ mythiques uniques, une couleur).
     violettes de la tache d'encre, brume qui **monte** du sol et voile d'ombre
     pourpre.
 
-  Aucune piste musicale dédiée à l'une ou l'autre : en Histoire, la boucle
-  d'ambiance de la tour (62 BPM) prend le relais, comme pour le Sablier et le
-  Palais du Pharaon.
+- **`src/games/rpgPlateauMusic.js`** : chaque table a son instrumental,
+  **« Le Sceau de Sang »** —
+  `public/audio/Le Sceau de Sang (Instrumental).mp3` pour le cimetière,
+  `public/audio/Le Sceau de Sang (Instrumental) (1).mp3` pour la Fosse. Les deux
+  plateaux sont donc **musicaux** (`RPG_PLATEAUX_MUSICAUX`) : la boucle
+  d'ambiance de la tour ne démarre plus pendant leurs duels.
+  ⚠️ **Les deux MP3 doivent être déposés dans `public/audio/` sous ces noms
+  exacts** (espaces et parenthèses compris). Tant qu'ils manquent, le test
+  `rpg-ambient-music` le signale en diagnostic et les deux tables sont muettes,
+  faute de repli d'ambiance.
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
