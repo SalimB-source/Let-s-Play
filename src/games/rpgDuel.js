@@ -1312,6 +1312,9 @@ function creerEntiteCreature(carte) {
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
     // les retirer (remplacement) ou faire tomber l'arme au cimetière.
     arme: null,
+    // Éphémère (Ifrit des ergs, jetons Serpent) : détruit à la fin du tour qui
+    // l'a vu naître. Le drapeau `detruireFinDuTour` est lu par `detruireEphemeres`.
+    detruireFinDuTour: Boolean(carte.ephemere || carte.detruireFinDuTour),
   };
 }
 
