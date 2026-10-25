@@ -14,7 +14,9 @@
  * la face intacte et son double ensanglanté partagent le format 4:5 de la
  * carte et, sauf la face de base du Berserk repeinte calme et sans sang,
  * une même révision de cache. Le Loup des neiges garde son huile :
- * même meute, chef ensanglanté. Une vignette rouge animée serre les bords de
+ * même meute, chef ensanglanté, et le Corbeau des neuf nuits donne les deux
+ * faces de Furie de son Berserk du crépuscule et de sa Valkyrie des neuf nuits.
+ * Une vignette rouge animée serre les bords de
  * la créature en Furie, sur la table comme dans sa preview.
  */
 import assert from 'node:assert/strict';
@@ -32,6 +34,12 @@ const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
 const REVISION_BERSERK_BASE = 'berserk-meme-visage-sans-sang-v1';
 const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
 const REVISION_VALKYRIE_FURIE = 'valkyrie-vol-plongeon-enragee-v4';
+// Le Corbeau des neuf nuits : deux cartes du set hybride portent la Furie et
+// ont leur propre double ensanglanté, daté séparément.
+const REVISIONS_CORBEAU_FURIE = {
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
+};
 const CARTES_PHOTOREALISTES = [
   'guerrier-au-bouclier-rond',
   'berserk-des-trois-hivers',
@@ -82,7 +90,7 @@ try {
   assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
     'sous sa révision photoréaliste, pour écarter l’ancien visuel du cache');
   assert.ok(aUnCadre(faceNormale), 'et son cadre d’élément');
-  assert.deepEqual(statsDe(normal), ['2', '5'], 'les statistiques imprimées restent celles de la carte neuve');
+  assert.deepEqual(statsDe(normal), ['3', '5'], 'les statistiques imprimées restent celles de la carte neuve');
   assert.equal(normal.querySelector('.rpg-hover-card-preview__furie'), null,
     'aucune Furie n’est annoncée tant que ses PV atteignent sa DEF de base');
   assert.equal(normal.querySelector('.rpg-furie-vignette'), null,
@@ -167,7 +175,8 @@ try {
 
 // ── 2. Chaque carte à Furie a sa peinture alternative ──────────────────────
 const cartesFurie = RPG_DUEL_CARDS.filter((carte) => carte.furie);
-assert.equal(cartesFurie.length, 6, 'cinq humains et le Loup portent la Furie');
+assert.equal(cartesFurie.length, 8,
+  'quatre humains, le Loup, la Valkyrie au corbeau, le Berserk du crépuscule et la Valkyrie des neuf nuits portent la Furie');
 for (const carte of cartesFurie) {
   const artId = carte.art ?? carte.id;
   assert.ok(existsSync(new URL(`../public/cards/${artId}-furie.jpg`, import.meta.url)),
@@ -211,6 +220,18 @@ assert.deepEqual(dimensionsJpeg(valkyrieFurie), [1024, 1280],
 assert.match(artSource, new RegExp(`'valkyrie-au-corbeau-furie': '${REVISION_VALKYRIE_FURIE}'`),
   `valkyrie-au-corbeau-furie.jpg est daté sous ${REVISION_VALKYRIE_FURIE}`);
 
+// Le Corbeau des neuf nuits donne lui aussi ses deux faces de Furie : chacune
+// reprend la composition de sa peinture intacte, ensanglantée et enragée, au
+// format exact de la face et sous sa propre révision.
+for (const [illustration, revision] of Object.entries(REVISIONS_CORBEAU_FURIE)) {
+  const url = new URL(`../public/cards/${illustration}.jpg`, import.meta.url);
+  assert.ok(existsSync(url), `${illustration}.jpg est livré avec le jeu`);
+  assert.deepEqual(dimensionsJpeg(url), [1024, 1280],
+    `${illustration}.jpg est au format exact 4:5 de la face`);
+  assert.match(artSource, new RegExp(`'${illustration}': '${revision}'`),
+    `${illustration}.jpg est daté sous ${revision}`);
+}
+
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
 assert.match(glossaire, /Tant que sa défense actuelle est inférieure à sa DEF de base/,
   'le glossaire compare les PV à la DEF imprimée, pas au plafond renforcé');
@@ -230,10 +251,12 @@ assert.match(page, /furie: etatFurieDepuisHote\(hote\),/,
   'le clic droit transmet la Furie à la fiche');
 assert.equal([...page.matchAll(/statsFurie=\{apercuSurvol\.furie\}/g)].length, 2,
   'les deux rendus du survol (menu et duel) branchent la Furie');
-assert.equal([...page.matchAll(/statsFurie=\{apercuAppuiFurie\}/g)].length, 2,
-  'les deux rendus de l’appui long aussi');
-assert.equal([...page.matchAll(/statsFurie=\{apercuCatalogueFurie\}/g)].length, 2,
-  'et les deux rendus de la fiche');
+// Trois surfaces de duel se partagent désormais la page (menu, duel local et
+// salon en ligne) : chacune branche la Furie de l’appui long et de la fiche.
+assert.equal([...page.matchAll(/statsFurie=\{apercuAppuiFurie\}/g)].length, 3,
+  'les trois rendus de l’appui long branchent la Furie');
+assert.equal([...page.matchAll(/statsFurie=\{apercuCatalogueFurie\}/g)].length, 3,
+  'et les trois rendus de la fiche');
 assert.match(page, /src=\{estEnFurie \? cardArtFurie\(carte\) : cardArt\(carte\)\}/,
   'la face de l’aperçu choisit la peinture selon l’état, comme la table');
 assert.match(css, /\.rpg-hover-card-preview__face\.is-furie\s*\{\s*border-width:\s*0;\s*background-image:\s*none;\s*\}/,
@@ -255,4 +278,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau et le Loup ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
+console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule et la Valkyrie des neuf nuits ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
