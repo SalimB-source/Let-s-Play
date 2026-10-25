@@ -281,18 +281,26 @@ mythiques uniques, une couleur).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.
-  *État au 25/10* : livrées — `rodeur-des-fosses`, `portefaix-cousu`,
-  `charognard-du-puits`, `mange-souvenirs`, `noye-du-puits`,
-  `chauve-souris-du-seuil`, `buveur-de-nuits`, `dame-aux-crocs-longs`.
-  Reste à peindre : `colosse-des-charognes`, `chacal-sans-maitre`,
-  `goule-des-cimetieres`, `goule-affamee`, `bou-jeloud`, `aicha-kandicha`,
-  `teryel-aux-sept-cornes`, `l-oublie`, `comte-des-mille-dents`,
-  `ifrit-d-encre`, `encre-du-registre`, `aiguille-du-sabbat`,
-  `soif-du-sabbat`, `pacte-de-l-oubliee`, `reveil-de-la-horde`,
-  `pilon-du-fossoyeur`, plus la miniature `tour-oubliee.jpg`. Le set reste
-  jouable entre-temps (les règles ne dépendent pas des peintures), mais une
-  carte sans fichier s'affiche sans image : les deux tests d'art restent rouges
-  tant que la vague n'est pas terminée.
+  *État au 25/10* : 22 des 24 peintures livrées, plus la miniature
+  `tour-oubliee.jpg` (1376×768, paysage). Manquent `aiguille-du-sabbat` et
+  `pacte-de-l-oubliee`, dont les deux générations ont été bloquées par la
+  modération (aiguille plantée dans une poupée, sang versé sur un pacte) et qui
+  attendent une reformulation.
+
+  **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
+  aucune bordure, aucun liseré, aucune marge blanche intégrée à l'image, le
+  cadre étant dessiné par le CSS du jeu (`.rpg-card`). Trois peintures de la
+  première vague (`chacal-sans-maitre`, `goule-affamee`, `bou-jeloud`) sont
+  arrivées avec une bordure blanche : elles ont été repeintes. Deux autres
+  (`reveil-de-la-horde`, `pilon-du-fossoyeur`) avaient une marge blanche de
+  ~25 px, retirée au recadrage. Le test
+  « les peintures du set sont plein cadre » mesure les quatre bords de chaque
+  fichier (via `jpeg-js`, dépendance de test) et refuse plus de 20 % de pixels
+  clairs.
+
+  **Pas un caractère.** Aucune peinture ne porte de texte, de calligraphie, ni
+  de caractère arabe — les glyphes du registre restent abstraits. La consigne
+  est répétée dans chaque prompt et vaut pour les prochaines vagues.
 
 ### Tests
 - **`tests/rpg-tour-oubliee.test.js`** *(neuf)* : intégrité du set, absence de

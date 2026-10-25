@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import jpeg from 'jpeg-js';
 
 import {
   RPG_DUEL_CARDS,
@@ -106,6 +107,61 @@ test('chaque carte du set a sa peinture plein art livrée dans public/cards/', (
   for (const carte of [...RPG_TOUR_OUBLIEE_CARTES, ...RPG_TOUR_OUBLIEE_JETONS]) {
     assert.ok(existsSync(CHEMIN(`cards/${cardArtId(carte)}.jpg`)),
       `${carte.id} : la peinture ${cardArtId(carte)}.jpg est livrée`);
+  }
+});
+
+/**
+ * Les peintures du set sont **plein cadre** : l'image occupe toute la carte et
+ * le cadre est dessiné par le CSS du jeu. Une peinture qui arrive avec sa
+ * propre bordure blanche (le travers classique des générateurs d'images)
+ * laisserait un liseré clair tout autour de la vignette — refusé.
+ * On échantillonne les quatre bords et on mesure la part de pixels clairs.
+ */
+function partDeBlancSurLesBords(chemin) {
+  const { data, width, height } = jpeg.decode(readFileSync(chemin), { useTArray: true });
+  const clair = (x, y) => {
+    const i = (y * width + x) * 4;
+    return data[i] > 205 && data[i + 1] > 200 && data[i + 2] > 190;
+  };
+  const mesure = (bord) => {
+    let clairs = 0;
+    let total = 0;
+    if (bord === 'gauche' || bord === 'droite') {
+      for (let y = 0; y < height; y += 3) {
+        for (let d = 0; d < 4; d += 1) {
+          total += 1;
+          if (clair(bord === 'gauche' ? d : width - 1 - d, y)) clairs += 1;
+        }
+      }
+    } else {
+      for (let x = 0; x < width; x += 3) {
+        for (let d = 0; d < 4; d += 1) {
+          total += 1;
+          if (clair(x, bord === 'haut' ? d : height - 1 - d)) clairs += 1;
+        }
+      }
+    }
+    return clairs / total;
+  };
+  return { gauche: mesure('gauche'), haut: mesure('haut'), droite: mesure('droite'), bas: mesure('bas') };
+}
+
+test('les peintures du set sont plein cadre : aucune bordure blanche intégrée à l’image', () => {
+  for (const carte of [...RPG_TOUR_OUBLIEE_CARTES, ...RPG_TOUR_OUBLIEE_JETONS]) {
+    const chemin = CHEMIN(`cards/${cardArtId(carte)}.jpg`);
+    if (!existsSync(chemin)) continue; // la vague de peinture est suivie par le test précédent
+    const bords = partDeBlancSurLesBords(chemin);
+    for (const [nom, part] of Object.entries(bords)) {
+      assert.ok(part < 0.2,
+        `${carte.id} : bord ${nom} à ${Math.round(part * 100)} % de blanc — la peinture doit aller à fond perdu`);
+    }
+  }
+  // La miniature de la tour suit la même règle.
+  const miniature = CHEMIN('sablier-tours/tour-oubliee.jpg');
+  if (existsSync(miniature)) {
+    for (const [nom, part] of Object.entries(partDeBlancSurLesBords(miniature))) {
+      assert.ok(part < 0.2, `tour-oubliee.jpg : bord ${nom} à ${Math.round(part * 100)} % de blanc`);
+    }
   }
 });
 

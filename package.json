@@ -172,6 +172,7 @@
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
     "@vitejs/plugin-react": "latest",
+    "jpeg-js": "^0.4.4",
     "jsdom": "^30.1.1",
     "playwright": "^1.64.0",
     "react": "latest",
