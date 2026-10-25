@@ -4126,17 +4126,24 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </span>
               )}
             </button>
-            <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
-              <span aria-hidden="true">⚔</span> Jouer
+            {/* Les six onglets simples portent icône et libellé dans des
+                spans : sur téléphone, le CSS retire le texte et ne garde que
+                l'icône (l'`aria-label` garde le nom audible). */}
+            <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} aria-label="Jouer" onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">⚔</span>
+              <span className="rpg-mode-menu__onglet-libelle">Jouer</span>
             </button>
-            <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
-              <span aria-hidden="true">⌛</span> Histoire
+            <button type="button" className={screen === 'histoire' ? 'is-active' : ''} aria-current={screen === 'histoire' ? 'page' : undefined} aria-label="Histoire" onClick={() => { play('menu'); onChangeScreen('histoire'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">⌛</span>
+              <span className="rpg-mode-menu__onglet-libelle">Histoire</span>
             </button>
-            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('tours'); }}>
-              <span aria-hidden="true">🗼</span> Jeu Solo
+            <button type="button" className={screen === 'tours' ? 'is-active' : ''} aria-current={screen === 'tours' ? 'page' : undefined} aria-label="Jeu Solo" onClick={() => { play('menu'); onChangeScreen('tours'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">🗼</span>
+              <span className="rpg-mode-menu__onglet-libelle">Jeu Solo</span>
             </button>
-            <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('decks'); }}>
-              <span aria-hidden="true">▤</span> Deck
+            <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} aria-label="Deck" onClick={() => { play('menu'); onChangeScreen('decks'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">▤</span>
+              <span className="rpg-mode-menu__onglet-libelle">Deck</span>
             </button>
             {/* Le jeton de la bourse vit sur l'onglet du Souk : le solde ◈ et
                 ce qui attend d'être réclamé sont lisibles sans ouvrir l'écran,
@@ -4160,11 +4167,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 </span>
               )}
             </button>
-            <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
-              <span aria-hidden="true">▧</span> Catalogue
+            <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} aria-label="Catalogue" onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">▧</span>
+              <span className="rpg-mode-menu__onglet-libelle">Catalogue</span>
             </button>
-            <button type="button" className={screen === 'parametres' ? 'is-active' : ''} aria-current={screen === 'parametres' ? 'page' : undefined} onClick={() => { play('menu'); onChangeScreen('parametres'); }}>
-              <span aria-hidden="true">⚙</span> Paramètres
+            <button type="button" className={screen === 'parametres' ? 'is-active' : ''} aria-current={screen === 'parametres' ? 'page' : undefined} aria-label="Paramètres" onClick={() => { play('menu'); onChangeScreen('parametres'); }}>
+              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">⚙</span>
+              <span className="rpg-mode-menu__onglet-libelle">Paramètres</span>
             </button>
             {/* La messagerie a son onglet, comme le Souk ou le Catalogue : la
                 fenêtre sociale du site flotte en bas de l’écran, mais le jeu
