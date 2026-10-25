@@ -272,6 +272,24 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 76, color: '#dfe8ff', size: 0.026, opacity: 0.66, vx: 0.06, vy: -0.2, sway: 0.22, swayHz: 0.34, z: 1.15, zSpread: 0.9 }),
     overlay: { kind: 'ombre', color: '#0b1020', opacity: 0.2, speed: 0.008, scale: 2.6 },
   }),
+  // Le Sablier renversé : la chambre de verre de la tour terminale. Aucun
+  // objet 3D — les paliers de pierre, la bague de laiton et ses cinq gemmes
+  // sont peints aux bords, et le dallage du centre reste libre pour les cartes.
+  // L'albâtre chaud monte du sol, la taille de verre refroidit le haut du
+  // cadre, et les trois sables remontent lentement vers l'heure.
+  'sablier-renverse': theme({
+    ambient: '#f6e7cf', key: '#ffd9a1', keyIntensity: 0.5, ambientIntensity: 0.56,
+    keyDirection: [-0.3, -0.6, 0.9], relief: 1.3, roughness: 0.55,
+    lights: [
+      // Le feu du sable, qui monte du dallage et respire avec l'heure.
+      light({ color: '#ffc46a', intensity: 2.2, distance: 4.2, x: -0.62, y: -0.72, z: 0.55, pulse: 0.26, pulseHz: 0.07 }),
+      // La lueur violette de la chambre haute, froide et lente.
+      light({ color: '#a98cff', intensity: 1.7, distance: 4.6, x: 0.66, y: 0.74, z: 0.95, pulse: 0.22, pulseHz: 0.05 }),
+    ],
+    // Les grains remontent : le sablier est retourné, le sable défie la gravité.
+    particles: motes({ count: 84, color: '#ffdca4', size: 0.026, opacity: 0.62, vx: 0.03, vy: -0.24, sway: 0.26, swayHz: 0.3, z: 1.1, zSpread: 0.85 }),
+    overlay: { kind: 'ombre', color: '#2a1c3c', opacity: 0.16, speed: 0.007, scale: 2.2 },
+  }),
   // Le lac de glace du ciel : l'aurore glisse, la poudre scintille.
   'iles-celestes': theme({
     ambient: '#eaf4ff', key: '#e8f4ff', keyIntensity: 0.44, relief: 1.1, roughness: 0.35,

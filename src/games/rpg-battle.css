@@ -2710,6 +2710,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-cercle-des-corbeaux {
   background-color: #33405c;
 }
+/* La chambre de verre du sablier retourné : l'albâtre chaud du dallage, sous
+   les trois sables de la tour terminale. */
+.card-table--plateau-sablier-renverse {
+  background-color: #6b5a72;
+}
 
 /* ── La conquête : deux peintures, une frontière mobile ────────────────────
    La propriété typée anime ensemble la découpe nette du terrain adverse et le
