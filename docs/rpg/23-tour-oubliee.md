@@ -276,32 +276,37 @@ mythiques uniques, une couleur).
 - **`src/games/rpgStoryTowerModels.js`** : maquette 3D (fosse sans fond, chaînes
   rompues, cloche fêlée, encre du registre) et thème de pierre unique.
 - **`src/games/rpgAmbientMusic.js`** : 62 BPM, thème « Le registre effacé ».
-- **`src/games/rpgPlateaux.js`** : **la Fosse de l'Oubliée**, plateau dédié
-  (`plateau-fosse-de-l-oubliee.jpg`, 3840×2560 en 3:2). Les six paquets s'y
-  battent tous : la table ne change plus de camp, comme dans la chambre du
-  Sablier. Le dallage circulaire reste nu au centre ; la chaîne rouillée, la
-  cloche fêlée, les parchemins vierges, la tache d'encre et les pitons de fer
-  sont peints aux bords. Vignette de profil livrée
-  (`public/profil/plateaux/fosse-de-l-oubliee.webp`, 13,9 Ko, produite par
-  `tools/make-profil-vignettes.mjs`).
-- **`public/plateau-cimetiere-des-noms-effaces.jpg`** : **le second plateau de la
-  tour**, dehors — l'aire circulaire de terre battue au milieu des tombes
-  blanchies, des stèles nues, des cyprès et de la grille rouillée. 3840×2560 en
-  3:2, même direction artistique. Il est branché comme **double merveilleux** de
-  la Fosse (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`) : quand la partie autorise les
-  variantes (`variantesPlateaux`, actif sur la route du jeu), le second tirage
-  peut ouvrir la table parmi les tombes. La tour garde ainsi deux visages : le
-  fond du puits et le cimetière où son nom a été effacé.
-- **`src/games/rpgTableSceneThemes.js`** : décor 3D de la Fosse — aucun objet
-  maquetté, deux lumières (la clarté froide qui tombe du haut du puits, les
-  braises violettes de la tache d'encre), brume qui **monte** du sol et voile
-  d'ombre pourpre. Aucune piste musicale dédiée : en Histoire, la boucle
+- **`src/games/rpgPlateaux.js`** — la tour a **deux tables**, dans cet ordre :
+
+  1. **Le Cimetière des noms effacés** (`plateau-cimetiere-des-noms-effaces.jpg`,
+     3840×2560 en 3:2) est la **table attitrée** des six paquets. L'aire
+     circulaire de terre battue reste nue au centre ; les tombes blanchies, les
+     stèles sans inscription, les cyprès, la grille rouillée, la lampe à huile
+     et la brume sont aux bords. C'est la nécropole que la tour a effacée du
+     registre — le dehors de la tour.
+  2. **La Fosse de l'Oubliée** (`plateau-fosse-de-l-oubliee.jpg`) est son
+     **double merveilleux** : quand la partie autorise les variantes
+     (`variantesPlateaux`, actif sur la route du jeu), le second tirage peut
+     faire descendre les duellistes au fond du puits — dallage de basalte nu,
+     chaîne rouillée, cloche fêlée, parchemins vierges, tache d'encre et pitons
+     de fer aux bords.
+
+  Dans les deux cas la table ne change plus de camp, comme dans la chambre du
+  Sablier. Vignettes de profil livrées
+  (`public/profil/plateaux/{cimetiere-des-noms-effaces,fosse-de-l-oubliee}.webp`,
+  produites par `tools/make-profil-vignettes.mjs`).
+- **`src/games/rpgTableSceneThemes.js`** : un décor 3D par table, aucun objet
+  maquetté dans les deux cas (tout est peint aux bords, le centre reste libre).
+  - **Cimetière** — la lampe à huile qui vacille contre le muret, la lune froide
+    qui prend la moitié haute, poussière portée par le vent, voile d'ombre bleu
+    nuit.
+  - **Fosse** — la clarté froide qui tombe du haut du puits, les braises
+    violettes de la tache d'encre, brume qui **monte** du sol et voile d'ombre
+    pourpre.
+
+  Aucune piste musicale dédiée à l'une ou l'autre : en Histoire, la boucle
   d'ambiance de la tour (62 BPM) prend le relais, comme pour le Sablier et le
   Palais du Pharaon.
-- **Cimetière des noms effacés** : décor 3D propre — la lampe à huile qui
-  vacille contre le muret, la lune froide qui prend la moitié haute, poussière
-  portée par le vent et voile d'ombre bleu nuit. Vignette de profil livrée
-  (`public/profil/plateaux/cimetiere-des-noms-effaces.webp`).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.

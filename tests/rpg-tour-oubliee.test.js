@@ -370,9 +370,10 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
     const plateau = plateauDeDeck(etage.deck);
     assert.equal(plateau.motif, 'deck', `${etage.deck} a son plateau attitré`);
     assert.ok(RPG_PLATEAUX.some((entry) => entry.id === plateau.plateau.id), `${etage.deck} : plateau livré`);
-    // La tour a sa propre table : la Fosse de l'Oubliée, le fond du puits.
-    // Les six paquets s'y battent, comme les sept du Sablier dans sa chambre.
-    assert.equal(plateau.plateau.id, 'fosse-de-l-oubliee', `${etage.deck} se bat dans la Fosse`);
+    // La tour a sa propre table : le Cimetière des noms effacés, la nécropole
+    // de plein air dressée autour d'elle. Les six paquets s'y battent, comme
+    // les sept du Sablier dans sa chambre de verre.
+    assert.equal(plateau.plateau.id, 'cimetiere-des-noms-effaces', `${etage.deck} se bat au cimetière`);
     if (etage.avatar) {
       assert.ok(existsSync(CHEMIN(`cards/${cardArtId(etage.avatar)}.jpg`)),
         `${etage.id} : le portrait ${etage.avatar} est livré`);
@@ -396,33 +397,33 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
 
 // ── 4. L'économie ───────────────────────────────────────────────────────────
 
-test('la tour a deux tables : la Fosse, et le cimetière des noms effacés', () => {
-  // La Fosse est la table de la tour ; le cimetière en est le double, ouvert par
+test('la tour a deux tables : le cimetière des noms effacés, et la Fosse', () => {
+  // Le cimetière est la table de la tour ; la Fosse en est le double, ouvert par
   // le tirage fantaisiste comme l'Erg s'ouvre sur le désert de verre.
   const fosse = plateauParId('fosse-de-l-oubliee');
   const cimetiere = plateauParId('cimetiere-des-noms-effaces');
   assert.ok(fosse && cimetiere, 'les deux tables de la tour sont au catalogue');
   assert.notEqual(fosse.fichier, cimetiere.fichier, 'chacune a son propre fond');
-  assert.equal(varianteFantaisisteDe('fosse-de-l-oubliee').id, 'cimetiere-des-noms-effaces');
-  assert.equal(varianteFantaisisteDe('cimetiere-des-noms-effaces'), null,
-    'un cimetière n’a pas de double au second degré');
+  assert.equal(varianteFantaisisteDe('cimetiere-des-noms-effaces').id, 'fosse-de-l-oubliee');
+  assert.equal(varianteFantaisisteDe('fosse-de-l-oubliee'), null,
+    'la Fosse n’a pas de double au second degré');
   // Le cimetière reste dehors : son résumé parle de tombes, pas de puits.
   assert.match(cimetiere.resume, /tombes|stèles/i, 'le cimetière annonce ses tombes');
   assert.match(cimetiere.resume, /sans inscription|sans texte|effac/i,
     'ses pierres sont nues — aucun nom, aucun caractère');
-  // Sans l'option, les deux camps de la tour restent dans la Fosse ; avec elle,
-  // le second tirage peut sortir parmi les tombes.
-  const dedans = resoudrePlateauxDuDuel({ deckJoueur: 'horde-des-fosses', deckAdverse: 'le-roi-sans-nom' });
-  assert.equal(dedans.joueur.plateau.id, 'fosse-de-l-oubliee');
-  assert.equal(dedans.decouper, false, 'les deux camps de la tour partagent la même table');
-  const dehors = resoudrePlateauxDuDuel({
+  // Sans l'option, les deux camps de la tour restent au cimetière ; avec elle,
+  // le second tirage peut les faire descendre dans la Fosse.
+  const dehors = resoudrePlateauxDuDuel({ deckJoueur: 'horde-des-fosses', deckAdverse: 'le-roi-sans-nom' });
+  assert.equal(dehors.joueur.plateau.id, 'cimetiere-des-noms-effaces');
+  assert.equal(dehors.decouper, false, 'les deux camps de la tour partagent la même table');
+  const dedans = resoudrePlateauxDuDuel({
     deckJoueur: 'horde-des-fosses',
     deckAdverse: 'cour-des-djinns',
     variantesFantaisistes: true,
     rng: () => 0.9,
   });
-  assert.equal(dehors.joueur.plateau.id, 'cimetiere-des-noms-effaces');
-  assert.equal(dehors.joueur.variante, true);
+  assert.equal(dedans.joueur.plateau.id, 'fosse-de-l-oubliee');
+  assert.equal(dedans.joueur.variante, true);
 });
 
 test('le barème de l’étage remplace le barème global, sans toucher aux autres tours', () => {
