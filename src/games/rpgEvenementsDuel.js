@@ -113,7 +113,13 @@ export function normaliserEvenementDuel(evenement) {
 export function creditsDeLEvenement(evenement) {
   const normalise = normaliserEvenementDuel(evenement);
   if (!normalise || !EVENEMENTS_PAYANTS.includes(normalise.type)) return 0;
-  return creditsDeVictoire({ mode: normalise.mode, premiere: normalise.premiere });
+  // `etageId` fait lire le barème propre à l'étage (Tour Oubliée) ; sans lui,
+  // le barème global `GAINS` s'applique comme avant.
+  return creditsDeVictoire({
+    mode: normalise.mode,
+    premiere: normalise.premiere,
+    etageId: normalise.etageId ?? null,
+  });
 }
 
 /**

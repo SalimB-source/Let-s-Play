@@ -70,11 +70,29 @@ export function etageEstVaincu(progression, etageId) {
 }
 
 /**
- * L'étage est-il jouable ? Premier étage de sa tour : toujours. Sinon :
- * l'étage précédent de la même tour doit être déblayé.
+ * La tour est-elle ouverte ? Toutes les tours le sont d'emblée, sauf celles qui
+ * déclarent une condition `deblocage.tour` — la Tour Oubliée, qui n'ouvre
+ * qu'une fois les sept maîtres du Sablier renversé vaincus.
+ */
+export function tourEstDebloquee(progression, tourId) {
+  const tour = tourHistoireParId(tourId);
+  if (!tour) return false;
+  const requis = tour.deblocage?.tour;
+  if (!requis) return true;
+  const tourRequis = tourHistoireParId(requis);
+  if (!tourRequis) return false;
+  return tourRequis.etages.every((etage) => etageEstVaincu(progression, etage.id));
+}
+
+/**
+ * L'étage est-il jouable ? La tour doit être ouverte ; ensuite, le premier
+ * étage de sa tour est toujours accessible, sinon l'étage précédent de la même
+ * tour doit être déblayé.
  */
 export function etageEstDebloque(progression, etageId) {
-  if (!etageHistoireParId(etageId)) return false;
+  const histoire = etageHistoireParId(etageId);
+  if (!histoire) return false;
+  if (!tourEstDebloquee(progression, histoire.tour.id)) return false;
   const precedent = etagePrecedent(etageId);
   if (!precedent) return true;
   return etageEstVaincu(progression, precedent.id);

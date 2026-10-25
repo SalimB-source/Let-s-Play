@@ -524,6 +524,10 @@ test('chaque terrain classique a son double merveilleux, sauf la piste caravani�
     'erg-du-sahara': 'desert-de-verre',
     'ruines-de-tipaza': 'abysses-phosphorescentes',
     'village-viking': 'iles-celestes',
+    // La Tour Oubliée a deux visages : le cimetière où son nom a été effacé —
+    // sa table attitrée — et le fond du puits. Le second tirage fait descendre
+    // les duellistes dans la Fosse.
+    'cimetiere-des-noms-effaces': 'fosse-de-l-oubliee',
   });
   for (const [classiqueId, varianteId] of Object.entries(RPG_PLATEAUX_VARIANTES_FANTAISISTES)) {
     const classique = plateauParId(classiqueId);

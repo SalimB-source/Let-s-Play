@@ -176,7 +176,11 @@ test('la Tour de la Nécropole fait peser les Ténèbres : quatre étages mono-T
 test('la Tour du Sablier renversé aligne sept étages de types différents, au-dessus de toutes les tours', () => {
   const tour = tourHistoireParId('tour-du-sablier-renverse');
   assert.ok(tour, 'la Tour du Sablier renversé fait partie des tours de Bab El');
-  assert.equal(RPG_STORY_TOURS.at(-1).id, tour.id, 'elle se dresse après toutes les autres');
+  // Depuis la Tour Oubliée (dossier 23), le Sablier n'est plus la dernière
+  // carte de la galerie : c'est l'avant-dernière, et la tour secrète se dresse
+  // après lui, comme l'épreuve d'après le sommet.
+  assert.equal(RPG_STORY_TOURS.at(-2).id, tour.id, 'elle se dresse après les neuf tours du récit');
+  assert.equal(RPG_STORY_TOURS.at(-1).id, 'tour-oubliee', 'la Tour Oubliée la suit');
   assert.equal(tour.etages.length, 7, 'sept étages');
   assert.match(tour.resume, /Sablier|sept|maîtres/i, 'son résumé annonce le retour des maîtres');
 
@@ -185,7 +189,7 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
   const puissances = tour.etages.map((etage) => etage.puissance);
   assert.deepEqual(puissances, [8, 9, 10, 11, 12, 13, 14]);
   const maxAutres = Math.max(...tousLesEtages()
-    .filter(({ tour: autre }) => autre.id !== tour.id)
+    .filter(({ tour: autre }) => autre.id !== tour.id && autre.id !== 'tour-oubliee')
     .map(({ etage }) => etage.puissance));
   assert.ok(puissances[0] > maxAutres, `son premier étage (${puissances[0]}) dépasse le boss le plus fort des autres tours (${maxAutres})`);
 

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   BAREME_DOUBLON,
   GAINS,
+  butinDeTour,
+  recompenseEtage,
   JOURNAL_MAX,
   RPG_BOURSE_STORAGE_KEY,
   ajouterCartesAuPortefeuille,
@@ -144,7 +146,12 @@ test('la fusion des appareils unit les butins déjà versés', () => {
 test('gainsDeTour affiche le barème de chaque étage, le butin et ce qui est en poche', () => {
   for (const tour of RPG_STORY_TOURS) {
     const affiche = gainsDeTour(tour.id);
-    assert.equal(affiche.total, tour.etages.length * GAINS.etagePremiere + GAINS.tourTerminee,
+    // Chaque étage peut déclarer son propre barème (`recompense`), et la tour
+    // son propre butin : la Tour Oubliée paie 1 500 crédits au sommet et 600 de
+    // butin, les autres gardent `GAINS`.
+    const promis = tour.etages.reduce((somme, etage) => somme + recompenseEtage(etage.id, { premiere: true }), 0)
+      + butinDeTour(tour.id);
+    assert.equal(affiche.total, promis,
       `${tour.nom} : le total promet chaque étage au premier déblayage, plus le butin`);
     assert.equal(affiche.dejaGagne, 0, 'rien de gagné sans progression');
     assert.equal(affiche.reste, affiche.total);
@@ -152,8 +159,8 @@ test('gainsDeTour affiche le barème de chaque étage, le butin et ce qui est en
     assert.equal(affiche.butinGagne, false);
     assert.equal(affiche.etages.length, tour.etages.length);
     for (const etage of affiche.etages) {
-      assert.equal(etage.premiere, GAINS.etagePremiere);
-      assert.equal(etage.rejoue, GAINS.etageRejoue);
+      assert.equal(etage.premiere, recompenseEtage(etage.id, { premiere: true }));
+      assert.equal(etage.rejoue, recompenseEtage(etage.id, { premiere: false }));
       assert.equal(etage.gagne, false);
     }
   }

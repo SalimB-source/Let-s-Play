@@ -191,8 +191,8 @@ test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peintu
 test('la Tour du Corbeau dresse quatre étages hybrides avant la tour du Sablier renversé', () => {
   const tour = tourHistoireParId('tour-du-corbeau');
   assert.ok(tour, 'la tour fait partie des Tours de Bab El');
-  assert.equal(RPG_STORY_TOURS.at(-1).id, 'tour-du-sablier-renverse',
-    'le Sablier renversé reste la tour terminale');
+  assert.equal(RPG_STORY_TOURS.at(-2).id, 'tour-du-sablier-renverse',
+    'le Sablier renversé reste la dernière tour du récit, la Tour Oubliée n’étant qu’un épilogue secret');
   const position = RPG_STORY_TOURS.findIndex((candidate) => candidate.id === tour.id);
   assert.equal(RPG_STORY_TOURS[position + 1].id, 'tour-du-sablier-renverse',
     'la Tour du Corbeau se dresse juste avant elle');

@@ -21,6 +21,14 @@ import {
   RPG_LETTRES_DE_MARQUE_JETONS,
   RPG_LETTRES_DE_MARQUE_MAGIES,
 } from './rpgLettresDeMarque.js';
+import {
+  RPG_TOUR_OUBLIEE_ARMES,
+  RPG_TOUR_OUBLIEE_CARTES,
+  RPG_TOUR_OUBLIEE_CREATURES,
+  RPG_TOUR_OUBLIEE_JETONS,
+  RPG_TOUR_OUBLIEE_MAGIES,
+  estCarteOubliee,
+} from './rpgTourOubliee.js';
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_DECKS } from './rpgDeckRecipes.js';
 
@@ -958,13 +966,18 @@ export const RPG_TOUR_CARDS = [
 
 /** Retrouve une créature-jeton par son identifiant. */
 export function jetonById(id) {
-  return RPG_JETON_CARDS.find((card) => card.id === id) ?? null;
+  return RPG_JETON_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_OUBLIEE_JETONS.find((card) => card.id === id)
+    ?? null;
 }
 
 export function creatureById(id) {
   return RPG_CREATURE_CARDS.find((card) => card.id === id)
     ?? RPG_TOUR_CARDS.find((card) => card.id === id)
     ?? RPG_JETON_CARDS.find((card) => card.id === id)
+    // Les créatures de la Tour Oubliée : jouées par la seule IA, jamais
+    // collectionnables — elles n'entrent pas dans `RPG_DUEL_CARDS`.
+    ?? RPG_TOUR_OUBLIEE_CREATURES.find((card) => card.id === id)
     ?? null;
 }
 
@@ -1163,7 +1176,9 @@ export const RPG_HERO_CARDS = [
 ];
 
 export function heroById(id) {
-  return RPG_HERO_CARDS.find((card) => card.id === id) ?? null;
+  return RPG_HERO_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_OUBLIEE_CREATURES.find((card) => card.id === id && card.kind === 'hero')
+    ?? null;
 }
 
 /** Toute carte jouable du duel : créature ou héros. */
@@ -1973,7 +1988,9 @@ export const RPG_ARME_CARDS = [
 ];
 
 export function armeById(id) {
-  return RPG_ARME_CARDS.find((card) => card.id === id) ?? null;
+  return RPG_ARME_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_OUBLIEE_ARMES.find((card) => card.id === id)
+    ?? null;
 }
 
 /** Le catalogue complet du duel, avec un type unifié pour les filtres d’interface. */
@@ -1986,7 +2003,9 @@ export const RPG_DUEL_CARDS = [
 ];
 
 export function magieById(id) {
-  return RPG_MAGIE_CARDS.find((card) => card.id === id) ?? null;
+  return RPG_MAGIE_CARDS.find((card) => card.id === id)
+    ?? RPG_TOUR_OUBLIEE_MAGIES.find((card) => card.id === id)
+    ?? null;
 }
 
 /**
@@ -1996,13 +2015,31 @@ export function magieById(id) {
  * ni dans la collection ni dans l’atelier de decks.
  */
 const CATALOG = new Map(
-  [...RPG_DUEL_CARDS, ...RPG_JETON_CARDS]
-    .map((card) => [card.id, card]),
+  [
+    ...RPG_DUEL_CARDS,
+    ...RPG_JETON_CARDS,
+    // Le set de la Tour Oubliée est **connu du moteur mais hors catalogue** :
+    // `cardById` doit pouvoir le peindre et lire ses textes, tandis que
+    // `RPG_DUEL_CARDS` — le vivier du Souk, la collection, l'atelier de decks,
+    // l'essai mana et le PvP — l'ignore complètement.
+    ...RPG_TOUR_OUBLIEE_CARTES,
+    ...RPG_TOUR_OUBLIEE_JETONS,
+  ].map((card) => [card.id, card]),
 );
 
 /** Retrouve une carte du catalogue par son id. */
 export function cardById(id) {
   return CATALOG.get(id) ?? null;
+}
+
+/**
+ * Cette carte appartient-elle au set secret de la Tour Oubliée ? Les cartes
+ * oubliées sont peintes et jouées comme les autres, mais elles ne sont ni
+ * collectionnables, ni vendables, ni jouables par le joueur, ni admises en PvP.
+ */
+export function carteEstOubliee(cardOrId) {
+  const id = typeof cardOrId === 'string' ? cardOrId : cardOrId?.id;
+  return Boolean(id) && estCarteOubliee(id);
 }
 
 const RPG_CARD_COLORS = new Set(RPG_ELEMENTS);

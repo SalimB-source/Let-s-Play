@@ -19,6 +19,7 @@
 
 import { composerDeck } from './rpgDeckComposer.js';
 import { RPG_RECETTES_HISTOIRE } from './rpgDeckRecipes.js';
+import { RPG_TOUR_OUBLIEE, RPG_TOUR_OUBLIEE_DECKS } from './rpgTourOubliee.js';
 import {
   CATALOGUE_DU_COMPOSEUR,
   RPG_DECK_HYBRIDE_BASE,
@@ -93,6 +94,11 @@ export const RPG_STORY_DECKS = {
   'jugement-absolu': composerDeck(RPG_RECETTES_HISTOIRE['jugement-absolu'], CATALOGUE_DU_COMPOSEUR),
   'course-absolue': composerDeck(RPG_RECETTES_HISTOIRE['course-absolue'], CATALOGUE_DU_COMPOSEUR),
   'le-sablier': composerDeck(RPG_RECETTES_HISTOIRE['le-sablier'], CATALOGUE_DU_COMPOSEUR),
+  // La Tour Oubliée — le set secret de l'IA. Ces paquets ne sont pas composés :
+  // ils sont écrits à la main dans `rpgTourOubliee.js`, avec les seules cartes
+  // du set, hors catalogue. La rampe se lit dans la composition (aucune
+  // mythique à l'étage 1, les quatre au sommet).
+  ...RPG_TOUR_OUBLIEE_DECKS,
 };
 
 /** Les tours, de la plus basse à la plus haute. */
@@ -598,6 +604,10 @@ export const RPG_STORY_TOURS = [
       },
     ],
   },
+  // La onzième tour — et la dernière. Elle n'appartient pas au récit, ses
+  // cartes ne sont pas au catalogue, et elle ne s'ouvre qu'à qui a renversé le
+  // Sablier (`deblocage`, lu par `etageEstDebloque`).
+  RPG_TOUR_OUBLIEE,
 ];
 
 /** Tous les étages, dans l’ordre de gravée (tours puis étages). */

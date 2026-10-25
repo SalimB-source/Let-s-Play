@@ -44,6 +44,13 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // piste viking, livrée sous son nom d'origine. Elle remplace la boucle
   // synthétisée de la tour pendant les duels des quatre étages.
   'cercle-des-corbeaux': `${RPG_PUBLIC_BASE}raspberrymusic - A Vikings.mp3`,
+  // La Tour Oubliée — le Sceau de Sang. Le cimetière et la fosse ont chacun
+  // leur instrumental : on entre chez les morts sans registre sur une musique
+  // de sang, et l'on descend dans la fosse sur sa variante.
+  // Les deux MP3 vivent à la racine de `public/`, comme les autres pistes dont
+  // le nom contient des espaces.
+  'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
+  'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
   // Le Palais du Pharaon et le Sablier renversé restent sans piste dédiée :
   // en Histoire, la boucle d'ambiance de la tour prend le relais
   // (`RpgAmbientMusic`) quand aucun des deux camps n'a de musique.

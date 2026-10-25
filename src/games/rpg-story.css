@@ -1505,3 +1505,20 @@
   .rpg-narrative__stand .rpg-narrative__stand-img { animation: none; transition: none; }
   .rpg-narrative__suite { animation: none; }
 }
+
+/* Tour verrouillée — la Tour Oubliée n'ouvre qu'une fois le Sablier renversé.
+   La carte reste lisible, mais son socle s'éteint et le bouton ne répond pas. */
+.rpg-story-tower.is-verrouillee {
+  opacity: .62;
+  filter: saturate(.45);
+}
+
+.rpg-story-tower.is-verrouillee .rpg-story-tower__cta { color: rgba(214, 220, 255, .78); }
+
+/* Le pacte d'un étage — PV, mana, main et bouclier de départ. Il se lit comme
+   une clause du contrat, sous la description de l'étage. */
+.rpg-story-floor__pacte {
+  color: #d9a6ff;
+  font-size: 11.5px;
+  letter-spacing: .02em;
+}

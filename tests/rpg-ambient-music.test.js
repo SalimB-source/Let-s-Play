@@ -254,6 +254,78 @@ test('La Nécropole des dalles, plateau égyptien, joue « Egypt.mp3 »', () => 
   assert.ok(existsSync(new URL('../public/Egypt.mp3', import.meta.url)), 'Egypt.mp3 doit être livré dans public/');
 });
 
+test('Le Cimetière des noms effacés et la Fosse jouent « Le Sceau de Sang »', async (t) => {
+  // Les deux tables de la Tour Oubliée ont chacune leur instrumental : le
+  // cimetière pour la table attitrée, la fosse pour son double merveilleux.
+  const pistes = {
+    'cimetiere-des-noms-effaces': 'Le Sceau de Sang (Instrumental).mp3',
+    'fosse-de-l-oubliee': 'Le Sceau de Sang (Instrumental) (1).mp3',
+  };
+  for (const [plateauId, fichier] of Object.entries(pistes)) {
+    assert.ok(plateauParId(plateauId), `${plateauId} est un plateau du catalogue`);
+    assert.ok(RPG_PLATEAUX_MUSICAUX.has(plateauId), `${plateauId} doit être traité comme musical`);
+    assert.equal(RPG_PLATEAU_MUSIC_FILES[plateauId], `/${fichier}`);
+    const urlDisque = new URL(`../public/${fichier}`, import.meta.url);
+    if (!existsSync(urlDisque)) {
+      // Les deux MP3 sont fournis par l'auteur du jeu : tant qu'ils ne sont pas
+      // déposés dans public/audio/, les deux plateaux sont muets (aucune boucle
+      // d'ambiance ne prend le relais, le plateau étant déclaré musical).
+      t.diagnostic(`MP3 pas encore livré : public/${fichier}`);
+      continue;
+    }
+    const octets = readFileSync(urlDisque);
+    assert.ok(octets.length > 1_000_000, `${fichier} n’est pas un fichier vide`);
+    assert.ok(
+      octets.subarray(0, 3).toString('latin1') === 'ID3' || (octets[0] === 0xff && (octets[1] & 0xe0) === 0xe0),
+      `${fichier} porte bien un en-tête MP3`,
+    );
+  }
+  assert.notEqual(
+    RPG_PLATEAU_MUSIC_FILES['cimetiere-des-noms-effaces'],
+    RPG_PLATEAU_MUSIC_FILES['fosse-de-l-oubliee'],
+    'les deux tables ne partagent pas la même piste',
+  );
+
+  // Le nom contient des espaces et des parenthèses : le lecteur doit retrouver
+  // sa source telle quelle, la jouer en boucle, et ne pas la recharger quand on
+  // redemande le même plateau.
+  const precedentWindow = globalThis.window;
+  class FauxAudioSceau {
+    constructor(src) {
+      this.src = src;
+      this.loop = false;
+      this.preload = 'none';
+      this.volume = 1;
+      this.muted = false;
+      this.paused = true;
+      this.currentTime = 0;
+    }
+    play() { this.paused = false; return Promise.resolve(); }
+    pause() { this.paused = true; }
+    removeAttribute() { this.src = ''; }
+    load() {}
+  }
+  globalThis.window = { location: { href: 'http://localhost/' }, Audio: FauxAudioSceau };
+  try {
+    const lecteur = new RpgPlateauMusic();
+    lecteur.setPlateau('cimetiere-des-noms-effaces', { reroll: true });
+    assert.equal(lecteur.musicFile, '/Le Sceau de Sang (Instrumental).mp3');
+    await lecteur.start();
+    assert.equal(lecteur.running, true);
+    assert.equal(lecteur.audio.loop, true);
+    assert.equal(lecteur.audio.src, '/Le Sceau de Sang (Instrumental).mp3');
+    // On descend dans la fosse : la piste change, sans recréer d'Audio.
+    const audioDuCimetiere = lecteur.audio;
+    lecteur.setPlateau('fosse-de-l-oubliee', { reroll: true });
+    await lecteur.start();
+    assert.equal(lecteur.audio, audioDuCimetiere, 'le lecteur garde son Audio');
+    assert.equal(lecteur.audio.src, '/Le Sceau de Sang (Instrumental) (1).mp3');
+    lecteur.destroy();
+  } finally {
+    globalThis.window = precedentWindow;
+  }
+});
+
 test('Le Cercle des corbeaux joue « raspberrymusic - A Vikings.mp3 »', async () => {
   const plateauId = 'cercle-des-corbeaux';
   const fichier = 'raspberrymusic - A Vikings.mp3';

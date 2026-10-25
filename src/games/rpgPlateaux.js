@@ -169,6 +169,31 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-sablier-renverse.jpg',
     resume: 'L’intérieur du grand sablier retourné, vu de dessus à 90° : le dallage circulaire d’albâtre et de sable poli, entièrement nu au centre pour poser les cartes, que borde un anneau de laiton lisse où sont sertis des cabochons de verre coloré — crème, ambre, rouge, turquoise, glace et violet. Autour de la bague, des arcs d’orrery de laiton s’ouvrent vers les bords ; des éclats de verre, du sable d’or renversé et des traces de pas de pierre se sont répandus sur les dalles, et trois sables — safran, braise et nuit — remontent du sol vers la taille de l’heure, en spirales près de la gauche et de la droite. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
   },
+  // Le second visage de la Tour Oubliée : la Fosse, le fond du puits sous la
+  // tour, vu de dessus. Le cimetière (`cimetiere-des-noms-effaces`) est la
+  // table attitrée du set ; la Fosse s'ouvre au second tirage, quand la partie
+  // autorise les variantes — on descend sous les tombes. Le dallage circulaire
+  // reste nu au centre, cerclé de ses anneaux de fer ; la chaîne rouillée, la
+  // cloche fêlée et la tache d'encre sont peintes aux bords. La brume violette
+  // monte des deux coins bas.
+  {
+    id: 'fosse-de-l-oubliee',
+    nom: 'La Fosse de l’Oubliée',
+    lieu: 'Sous la Tour Oubliée, le fond du puits comblé de dalles',
+    fichier: 'plateau-fosse-de-l-oubliee.jpg',
+    resume: 'Le fond d’un puits de pierre, vu de dessus à 90° par une nuit froide : un dallage circulaire de basalte noir et de calcaire pâle, fendu, suintant d’humidité, entièrement nu au centre pour poser les cartes, que cerclent des anneaux de pierre et quatre pitons de fer scellés dans les dalles. Aux bords seulement : la chaîne rouillée lovée dans l’angle haut gauche, la cloche de bronze fêlée couchée sur le flanc à droite, des lambeaux de parchemin vierge éparpillés, une tache d’encre séchée, et les parois du puits qui remontent en courbe sur le pourtour du cadre. Une brume violette rampe depuis les deux angles bas ; la lumière tombe de très haut, froide et blafarde. Le milieu du plateau reste vide : c’est là que les cartes se posent.',
+  },
+  // Le terrain de la Tour Oubliée : le cimetière où la tour a été effacée du
+  // registre. Ses six étages s'y battent — le cercle de terre battue au milieu
+  // des tombes, sous la lune, comme le Cercle des corbeaux pour la Tour du
+  // Corbeau et la chambre de verre pour le Sablier.
+  {
+    id: 'cimetiere-des-noms-effaces',
+    nom: 'Le Cimetière des noms effacés',
+    lieu: 'Autour de la Tour Oubliée, le cimetière des morts sans registre',
+    fichier: 'plateau-cimetiere-des-noms-effaces.jpg',
+    resume: 'Un cimetière de nuit, vu de dessus à 90° : une grande aire circulaire de terre battue et de dalles brisées, entièrement nue au centre pour poser les cartes, qu’entoure un muret de pierres sèches. Autour du muret seulement : les tombes blanchies à coupole, les stèles nues penchées, deux cyprès noirs dont l’ombre s’allonge, la grille de fer rouillée, les palmes sèches, quelques lambeaux de parchemin vierge et une lampe à huile restée allumée. La lune éclaire le sol en biais ; une brume violette rampe le long du mur. Les pierres sont parfaitement lisses et sans inscription. Le milieu du cimetière reste vide : c’est là que les cartes se posent.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {
@@ -259,6 +284,17 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'jugement-absolu': 'sablier-renverse',
   'course-absolue': 'sablier-renverse',
   'le-sablier': 'sablier-renverse',
+  // La Tour Oubliée : ses six paquets se battent tous au Cimetière des noms
+  // effacés, la nécropole de plein air dressée autour de la tour. Comme pour le
+  // Sablier renversé, la table ne change plus de camp : on est chez l'Oubliée du
+  // premier au dernier palier. La Fosse de l'Oubliée — le fond du puits — reste
+  // le second visage de la tour, ouvert par le tirage fantaisiste.
+  'horde-des-fosses': 'cimetiere-des-noms-effaces',
+  'cour-de-sang': 'cimetiere-des-noms-effaces',
+  'cauchemars-du-gourara': 'cimetiere-des-noms-effaces',
+  'cauchemars-du-registre': 'cimetiere-des-noms-effaces',
+  'bestiaire-oublie': 'cimetiere-des-noms-effaces',
+  'le-roi-sans-nom': 'cimetiere-des-noms-effaces',
 };
 
 /** Le terrain d'une couleur de deck sans identité connue. */
@@ -285,6 +321,10 @@ export const RPG_PLATEAUX_VARIANTES_FANTAISISTES = {
   'erg-du-sahara': 'desert-de-verre',
   'ruines-de-tipaza': 'abysses-phosphorescentes',
   'village-viking': 'iles-celestes',
+  // La Tour Oubliée a deux visages : le cimetière où son nom a été effacé — sa
+  // table attitrée —, et le fond du puits sous la tour. Le second tirage peut
+  // faire descendre les duellistes dans la Fosse.
+  'cimetiere-des-noms-effaces': 'fosse-de-l-oubliee',
 };
 
 /** Le motif d'une moitié de table imposée par la carte de profil. */
