@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { JSDOM } from 'jsdom';
 
 const RACINE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const lire = (relatif) => readFileSync(join(RACINE, relatif), 'utf8');
@@ -97,7 +98,47 @@ const styles = lire('src/games/rpg-entry-choice.css');
 assert.match(styles, /url\('\.\.\/\.\.\/public\/sablier-de-bab-el-keyart\.jpg'\)/,
   'le keyart doit passer par public/ pour respecter la base du build');
 assert.match(styles, /@media \(max-width: 720px\)/, 'pas de repli une colonne');
-ok('keyart via public/ (base respectée), repli une colonne');
+
+const dom = new JSDOM(`<!doctype html><html><head><style>${styles}</style></head><body>
+  <div class="rpg-entry-choice" style="background-image:none">
+    <div class="rpg-entry-choice__carte">
+      <div class="rpg-entry-choice__choix">
+        <a class="rpg-entry-choice__option rpg-entry-choice__option--pc" href="#">
+          <svg class="rpg-entry-choice__logo"></svg>
+          <span class="rpg-entry-choice__option-titre">Télécharger pour Windows</span>
+          <span class="rpg-entry-choice__option-texte">Texte PC</span>
+          <span class="rpg-entry-choice__option-meta">Meta PC</span>
+        </a>
+        <a class="rpg-entry-choice__option rpg-entry-choice__option--android" href="#">
+          <svg class="rpg-entry-choice__logo"></svg>
+          <span class="rpg-entry-choice__option-titre">Télécharger sur Android</span>
+          <span class="rpg-entry-choice__option-texte">Texte Android</span>
+          <span class="rpg-entry-choice__option-meta">Meta Android</span>
+        </a>
+        <button type="button" class="rpg-entry-choice__option rpg-entry-choice__option--web">
+          <svg class="rpg-entry-choice__logo"></svg>
+          <span class="rpg-entry-choice__option-titre">Jouer dans le navigateur</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</body></html>`);
+const styleDe = (sel) => dom.window.getComputedStyle(dom.window.document.querySelector(sel));
+assert.equal(styleDe('.rpg-entry-choice__option--pc').backgroundColor, 'rgb(255, 255, 255)',
+  'la carte PC doit avoir un fond blanc');
+assert.equal(styleDe('.rpg-entry-choice__option--pc .rpg-entry-choice__logo').color, 'rgb(0, 120, 212)',
+  'le logo Windows de la carte PC doit être bleu');
+assert.equal(styleDe('.rpg-entry-choice__option--pc .rpg-entry-choice__option-titre').color, 'rgb(15, 23, 42)',
+  'le titre de la carte PC doit être foncé pour rester lisible sur fond blanc');
+assert.equal(styleDe('.rpg-entry-choice__option--android').backgroundColor, 'rgb(22, 138, 63)',
+  'la carte Android doit avoir un fond vert');
+assert.equal(styleDe('.rpg-entry-choice__option--android .rpg-entry-choice__logo').color, 'rgb(255, 255, 255)',
+  'le logo Android doit être blanc');
+assert.equal(styleDe('.rpg-entry-choice__option--android .rpg-entry-choice__option-titre').color, 'rgb(255, 255, 255)',
+  'le titre de la carte Android doit être blanc');
+assert.equal(styleDe('.rpg-entry-choice__option--web .rpg-entry-choice__logo').color, 'rgb(232, 183, 92)',
+  'la carte navigateur garde son logo doré');
+ok('keyart via public/, carte PC blanche + logo bleu, carte Android verte + logo blanc, repli une colonne');
 
 console.log('');
 console.log(`check:rpg-entry-choice — ${reussites} vérifications, aucune en échec.`);
