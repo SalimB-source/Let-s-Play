@@ -499,13 +499,6 @@
   height: 24px;
 }
 
-.rpg-coffret__coffre-sceau .rpg-coffret__rune {
-  width: 18px;
-  height: 24px;
-}
-
-/* ── Le dessus : le couvercle, vu de dessus ──────────────────────────────── */
-
 /* Le dessus : même principe, l'arête haute sert de charnière et la face
    s'étend vers l'arrière. C'est l'inclinaison du volume qui la rend visible. */
 .rpg-coffret__boite-face--dessus {
@@ -520,6 +513,21 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 60%),
     linear-gradient(180deg, color-mix(in srgb, var(--teinte, #e8b75c) 40%, #17120c), #0e0b07);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16);
+}
+
+/* L'intérieur : la bouche du coffre, vue dès que le couvercle bascule. Même
+   arête que lui, mais deux pixels plus bas — fermé, le couvercle la couvre. */
+.rpg-coffret__boite-face--interieur {
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--profondeur);
+  transform-origin: 50% 0;
+  transform: translateZ(calc(var(--profondeur) * -1)) rotateX(90deg) translateZ(-2px);
+  background:
+    radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--lueur, #ffe3ab) 30%, #1b1208), #0a0706 76%),
+    #070506;
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.92);
 }
 
 /* Le vernis du couvercle : un reflet large, fixe, qui accuse le relief. */
@@ -634,52 +642,78 @@
   100% { opacity: 0; transform: scale(2.6); }
 }
 
-/* La boîte : un coffret de laque, vu de trois quarts. */
+/* Le coffre de l'ouverture : **le même volume que sur l'étagère du choix**,
+   posé un peu plus grand, et qui s'ouvre. Tout l'effet est dans l'état
+   `is-ouvert` du volume — la géométrie des faces, elle, ne change pas d'un
+   pixel : c'est le coffret qu'on vient de choisir, pas une autre boîte. */
 .rpg-coffret__coffre {
-  --profondeur-coffre: clamp(34px, 4vw, 54px);
   position: relative;
-  width: clamp(232px, 30vw, 320px);
-  aspect-ratio: 1.32;
-  transform-style: preserve-3d;
-  transform: rotateX(-12deg) rotateY(-22deg);
+  width: clamp(248px, 32vw, 344px);
+  aspect-ratio: 0.94;
+  perspective: 1500px;
+  perspective-origin: 50% 42%;
+}
+
+/* L'arrivée puis le tremblement : `translate` et `scale` seuls, jamais
+   `transform` — la rotation de trois quarts vit là, et l'écraser d'un coup
+   ferait sauter le volume à plat. */
+.rpg-coffret__boite-volume.is-ouvert {
   animation:
     rpg-coffret-coffre-arrive 560ms cubic-bezier(0.2, 0.9, 0.25, 1) both,
-    rpg-coffret-coffre-tremble 180ms 700ms 2 ease-in-out;
+    rpg-coffret-coffre-tremble 170ms 660ms 3 ease-in-out;
 }
 
 @keyframes rpg-coffret-coffre-arrive {
-  from { opacity: 0; transform: rotateX(-32deg) rotateY(-50deg) scale(0.7) translateY(26px); }
-  to { opacity: 1; transform: rotateX(-12deg) rotateY(-22deg) scale(1) translateY(0); }
+  from { opacity: 0; translate: 0 30px; scale: 0.72; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
 }
 
 @keyframes rpg-coffret-coffre-tremble {
   0%, 100% { translate: 0 0; }
-  30% { translate: -2px 1px; }
-  70% { translate: 2px -1px; }
+  28% { translate: -2.5px 1px; rotate: -0.5deg; }
+  68% { translate: 2.5px -1px; rotate: 0.5deg; }
 }
 
-/* L'intérieur : noir profond, liseré d'or, et la lumière qui monte. */
-.rpg-coffret__coffre-fond {
-  position: absolute;
-  inset: 6% 4% 22%;
-  border-radius: 8px 8px 4px 4px;
-  background:
-    radial-gradient(ellipse at 50% 110%, color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent), transparent 68%),
-    linear-gradient(180deg, #140d08, #090604);
-  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.9);
+/* Le sceau de cire se fend, tourne et tombe. */
+.rpg-coffret__boite-scene--ouverture .rpg-coffret__boite-sceau {
+  animation: rpg-coffret-sceau-fend 620ms 540ms cubic-bezier(0.3, 0.7, 0.35, 1) both;
 }
 
+@keyframes rpg-coffret-sceau-fend {
+  0% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
+  32% { opacity: 1; transform: scale(1.22) rotate(-7deg); filter: brightness(1.9); }
+  100% { opacity: 0; transform: scale(0.35) rotate(26deg) translateY(-12px); filter: brightness(2.4); }
+}
+
+/* Le couvercle bascule sur son arête arrière. La face du dessus est née de
+   cette arête (`transform-origin: 50% 0` + `translateZ(-profondeur)`) : il
+   suffit de pousser la rotation au-delà de 90°, et le couvercle se dresse
+   derrière la boîte au lieu de rester posé dessus. */
+.rpg-coffret__boite-volume.is-ouvert .rpg-coffret__boite-face--dessus {
+  animation: rpg-coffret-couvercle-ouvre 860ms 860ms cubic-bezier(0.32, 1.02, 0.4, 1) both;
+}
+
+@keyframes rpg-coffret-couvercle-ouvre {
+  0% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(90deg); }
+  55% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(120deg); }
+  100% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(152deg); }
+}
+
+/* La lumière monte du fond de la boîte. Elle vit **hors** du volume : une
+   nappe floutée dans une scène `preserve-3d` traverserait le coffret au lieu
+   de l'éclairer. */
 .rpg-coffret__coffre-lumiere {
   position: absolute;
   left: 50%;
-  top: 38%;
-  width: 70%;
+  top: 26%;
+  width: 78%;
   aspect-ratio: 1;
   translate: -50% -50%;
   border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, var(--lueur, #ffe3ab) 38%, transparent 72%);
   mix-blend-mode: screen;
   opacity: 0;
+  z-index: 0;
   animation: rpg-coffret-lumiere 1200ms 880ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
@@ -693,7 +727,7 @@
 .rpg-coffret__coffre-rayons {
   position: absolute;
   left: 50%;
-  top: 32%;
+  top: 20%;
   width: 210%;
   aspect-ratio: 1;
   translate: -50% -50%;
@@ -707,6 +741,7 @@
   -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
   mix-blend-mode: screen;
   opacity: 0;
+  z-index: 0;
   animation: rpg-coffret-rayons 1500ms 960ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
@@ -716,187 +751,20 @@
   100% { opacity: 0.35; scale: 1.15; rotate: 8deg; }
 }
 
-/* Le corps — la façade de laque, ses bandes d'or, la rune et le nom. */
-.rpg-coffret__coffre-corps {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 62%;
-  display: grid;
-  place-items: center;
-  gap: 4px;
-  align-content: center;
-  border-radius: 5px 5px 12px 12px;
-  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 85%, #000);
-  background:
-    linear-gradient(178deg, rgba(255, 255, 255, 0.16), transparent 22%),
-    linear-gradient(150deg, color-mix(in srgb, var(--teinte, #e8b75c) 62%, #1b1208) 0%, #1c1209 46%, color-mix(in srgb, var(--teinte, #e8b75c) 44%, #120c06) 100%);
-  box-shadow:
-    inset 0 -14px 22px rgba(0, 0, 0, 0.55),
-    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+/* Le volume passe devant la lumière. */
+.rpg-coffret__coffre > .rpg-coffret__boite-scene {
+  position: relative;
+  z-index: 1;
 }
 
-/* La tranche du coffre : elle part de l'arête droite et file vers l'arrière.
-   Sans elle, le coffre n'était qu'un panneau incliné — pas un volume. */
-.rpg-coffret__coffre-flanc {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: var(--profondeur-coffre);
-  height: 62%;
-  transform-origin: 100% 50%;
-  transform: translateZ(calc(var(--profondeur-coffre) * -1)) rotateY(90deg);
-  border-radius: 0 0 12px 0;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.66), rgba(0, 0, 0, 0.2) 52%, rgba(0, 0, 0, 0.5)),
-    linear-gradient(180deg, color-mix(in srgb, var(--teinte, #e8b75c) 40%, #120d07), #0d0906 62%, color-mix(in srgb, var(--teinte, #e8b75c) 22%, #0a0705));
-  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.09);
-}
-
-.rpg-coffret__coffre-bande {
-  position: absolute;
-  inset: 44% 0 auto;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--lueur, #ffe3ab) 80%, transparent), transparent);
-  opacity: 0.8;
-}
-
-.rpg-coffret__coffre-rune {
-  color: color-mix(in srgb, var(--lueur, #ffe3ab) 76%, #fff);
-  opacity: 0.75;
-  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent));
-}
-
-.rpg-coffret__coffre-rune .rpg-coffret__rune {
-  width: 30px;
-  height: 38px;
-}
-
-.rpg-coffret__coffre-nom {
-  font: 700 9px/1.3 'Orbitron', system-ui, sans-serif;
-  letter-spacing: 2.2px;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--lueur, #ffe3ab) 70%, #fff);
-  opacity: 0.72;
-  text-align: center;
-  padding: 0 10px;
-}
-
-/* Le couvercle : il bascule vers l'arrière sur sa charnière. */
-.rpg-coffret__coffre-couvercle {
-  position: absolute;
-  inset: 0 -2% auto;
-  height: 42%;
-  transform-origin: 50% 100%;
-  transform-style: preserve-3d;
-  border-radius: 14px 14px 3px 3px;
-  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 90%, #000);
-  background:
-    linear-gradient(178deg, rgba(255, 255, 255, 0.24), transparent 34%),
-    linear-gradient(160deg, color-mix(in srgb, var(--teinte, #e8b75c) 74%, #241606) 0%, #221609 58%, color-mix(in srgb, var(--teinte, #e8b75c) 52%, #140d06) 100%);
-  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  animation: rpg-coffret-couvercle 820ms 900ms cubic-bezier(0.34, 1.16, 0.4, 1) both;
-}
-
-.rpg-coffret__coffre-plaque {
-  position: absolute;
-  inset: 16% 12%;
-  overflow: hidden;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 52%, transparent);
-  background: #0a0b14;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
-}
-
-.rpg-coffret__coffre-plaque img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 30%;
-  opacity: 0.94;
-}
-
-/* Le vernis qui passe sur la peinture du couvercle. */
-.rpg-coffret__coffre-plaque::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, 0.18) 50%, transparent 62%);
-}
-
-@keyframes rpg-coffret-couvercle {
-  0% { transform: rotateX(0deg); }
-  12% { transform: rotateX(4deg); }
-  100% { transform: rotateX(-112deg); }
-}
-
-/* La tranche du couvercle : elle bascule avec lui (même origine, même 3D). */
-.rpg-coffret__coffre-couvercle-flanc {
-  position: absolute;
-  right: -2%;
-  top: 0;
-  bottom: 0;
-  width: var(--profondeur-coffre);
-  transform-origin: 100% 50%;
-  transform: translateZ(calc(var(--profondeur-coffre) * -1)) rotateY(90deg);
-  border-radius: 0 3px 3px 0;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.22) 56%, rgba(0, 0, 0, 0.46)),
-    linear-gradient(180deg, color-mix(in srgb, var(--teinte, #e8b75c) 52%, #1a1209), #14100a);
-  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.12);
-}
-
-/* La fissure de lumière sous le couvercle. */
-.rpg-coffret__coffre-fissure {
-  position: absolute;
-  inset: 37% 3% auto;
-  height: 3px;
-  border-radius: 999px;
-  background: #fff;
-  box-shadow: 0 0 18px 4px var(--lueur, #ffe3ab), 0 0 46px 12px color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent);
-  opacity: 0;
-  animation: rpg-coffret-fissure 900ms 620ms ease-out both;
-}
-
-@keyframes rpg-coffret-fissure {
-  0% { opacity: 0; scale: 0.2 1; }
-  35% { opacity: 1; scale: 1 1; }
-  70% { opacity: 0.85; }
-  100% { opacity: 0.35; scale: 1.04 1; }
-}
-
-/* Le sceau de cire : il brille, se fend, puis tombe. */
-.rpg-coffret__coffre-sceau {
-  position: absolute;
-  left: 50%;
-  top: 37%;
-  translate: -50% -50%;
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  color: #1b1107;
-  background: radial-gradient(circle at 36% 28%, color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff), color-mix(in srgb, var(--teinte, #e8b75c) 46%, #1a0f04));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.45);
-  animation: rpg-coffret-sceau 620ms 600ms cubic-bezier(0.3, 0.9, 0.3, 1) both;
-}
-
-@keyframes rpg-coffret-sceau {
-  0% { transform: scale(1); opacity: 1; }
-  28% { transform: scale(1.14) rotate(-4deg); opacity: 1; filter: brightness(1.6); }
-  42% { transform: scale(1.1) rotate(2deg); opacity: 1; }
-  100% { transform: translate(10px, 46px) rotate(26deg) scale(0.82); opacity: 0; filter: brightness(1); }
-}
-
-/* Les éclats de cire et les étincelles. */
+/* Les éclats de cire et les étincelles, autour du sceau. */
 .rpg-coffret__coffre-eclats {
   position: absolute;
-  left: 50%;
-  top: 37%;
+  left: 22%;
+  top: 22%;
   width: 0;
   height: 0;
+  z-index: 2;
 }
 
 .rpg-coffret__coffre-eclats i {
@@ -974,36 +842,106 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: center;
-  gap: 12px;
+  gap: 18px 14px;
   min-height: 250px;
-  padding: 8px 0 2px;
+  padding: 12px 0 8px;
   isolation: isolate;
 }
 
+/* ── Une carte du coffret : un volume, et une lueur qui dit sa rareté ──────
 
-  35% { opacity: 1; }
-  100% { opacity: 0.4; rotate: 10deg; scale: 1.05; }
-}
+   Chaque carte est vue de trois quarts (`rotateY(13deg)`), avec une **tranche**
+   qui part de son arête droite et recule : une carte posée sur la table, pas
+   une vignette. Au survol, elle se redresse et s'avance.
+
+   Les quatre raretés ne se ressemblent plus :
+
+   - commune      — aucune lueur, un liseré neutre ;
+   - inhabituelle — un halo d'acier, à peine perceptible ;
+   - rare         — un halo froid plus large, et la carte plus grande ;
+   - mythique     — un halo d'or qui respire, la carte bien plus grande.
+
+   La peinture, elle, reste propre : la lueur est **derrière** la carte
+   (`::before`, flou), jamais un reflet qui balaie l'illustration. */
 
 .rpg-coffret__carte {
+  --largeur-carte: 100px;
+  --epaisseur-carte: 6px;
+  --bord-carte: rgba(255, 255, 255, 0.12);
+  --tranche-carte: #232838;
+  --lueur-carte: transparent;
+  --lueur-force: 0;
   position: relative;
-  width: 118px;
-  display: grid;
-  gap: 6px;
-  padding: 6px 6px 8px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: linear-gradient(170deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+  width: var(--largeur-carte);
+  perspective: 900px;
   animation: rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
   animation-delay: var(--retard, 0ms);
   will-change: transform, opacity;
 }
 
+/* La lueur de rareté : derrière, large, floue. */
+.rpg-coffret__carte::before {
+  content: '';
+  position: absolute;
+  inset: -18% -16% -12%;
+  z-index: 0;
+  border-radius: 24px;
+  background: radial-gradient(closest-side, var(--lueur-carte), transparent 78%);
+  opacity: var(--lueur-force);
+  filter: blur(12px);
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+.rpg-coffret__carte-corps {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  padding: 6px 6px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--bord-carte);
+  background:
+    linear-gradient(168deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 48%, rgba(0, 0, 0, 0.3));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.5);
+  transform-style: preserve-3d;
+  transform: rotateX(6deg) rotateY(13deg);
+  transition: transform 300ms cubic-bezier(0.2, 0.75, 0.25, 1), box-shadow 300ms ease;
+}
+
+/* La carte se redresse et s'avance sous le curseur. */
+.rpg-coffret__carte:hover .rpg-coffret__carte-corps {
+  transform: rotateX(0deg) rotateY(2deg) translateZ(26px);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.58);
+}
+
+/* La tranche : elle naît de l'arête droite, pivote puis recule — même
+   grammaire que les faces du coffret, et sa teinte suit la rareté. */
+.rpg-coffret__carte-tranche {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: var(--epaisseur-carte);
+  transform-origin: 100% 50%;
+  transform: translateZ(calc(var(--epaisseur-carte) * -1)) rotateY(90deg);
+  border-radius: 0 4px 4px 0;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.44)),
+    linear-gradient(180deg, color-mix(in srgb, var(--lueur-carte) 46%, var(--tranche-carte)), var(--tranche-carte));
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.14);
+}
+
+.rpg-coffret__carte-face {
+  display: grid;
+  gap: 6px;
+  transform: translateZ(0.6px);
+}
+
 @keyframes rpg-coffret-carte-sortie {
   0% {
     opacity: 0;
-    transform: translate(var(--depart-x, 0px), 46px) rotate(var(--inclinaison, 0deg)) scale(0.78);
+    transform: translate(var(--depart-x, 0px), 52px) rotate(var(--inclinaison, 0deg)) scale(0.74);
   }
   45% { opacity: 1; }
   100% {
@@ -1049,9 +987,15 @@
   color: #b9c0d8;
 }
 
+.rpg-coffret__carte-texte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .rpg-coffret__carte-nom {
   margin: 0;
-  font: 600 11px/1.25 'Rajdhani', 'Inter', system-ui, sans-serif;
+  font: 600 10px/1.25 'Rajdhani', 'Inter', system-ui, sans-serif;
   color: #eef1fb;
 }
 
@@ -1061,8 +1005,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  font: 600 10px/1.2 'Orbitron', system-ui, sans-serif;
-  letter-spacing: 1.2px;
+  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
   color: #98a0ba;
 }
@@ -1074,22 +1018,63 @@
   color: #e8b75c;
 }
 
-/* La rare : un liseré froid et sa taille — rien qui rayonne autour d'elle. */
-.rpg-coffret__carte--rare {
-  width: 132px;
-  border-color: rgba(120, 190, 255, 0.5);
+/* ── Les quatre raretés ──────────────────────────────────────────────────── */
+
+/* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot. */
+.rpg-coffret__carte--commune {
+  --largeur-carte: 100px;
+  --lueur-force: 0;
 }
 
-/* La mythique : plus large, dorée, elle respire. */
+/* Inhabituelle : le même gabarit, un halo d'acier à peine perceptible. */
+.rpg-coffret__carte--inhabituelle {
+  --largeur-carte: 100px;
+  --bord-carte: rgba(120, 170, 235, 0.42);
+  --tranche-carte: #22314f;
+  --lueur-carte: rgba(77, 154, 255, 0.55);
+  --lueur-force: 0.3;
+}
+
+.rpg-coffret__carte--inhabituelle .rpg-coffret__carte-rarete {
+  color: #8fb8f0;
+}
+
+/* Rare : plus grande, liseré froid, halo franc. */
+.rpg-coffret__carte--rare {
+  --largeur-carte: 152px;
+  --epaisseur-carte: 8px;
+  --bord-carte: rgba(120, 190, 255, 0.66);
+  --tranche-carte: #1d3a55;
+  --lueur-carte: rgba(96, 190, 255, 0.6);
+  --lueur-force: 0.55;
+}
+
+.rpg-coffret__carte--rare .rpg-coffret__carte-nom {
+  font-size: 12px;
+}
+
+.rpg-coffret__carte--rare .rpg-coffret__carte-rarete {
+  font-size: 10px;
+  color: #a9d8ff;
+}
+
+/* Mythique : la plus grande, l'or du coffret, et un halo qui respire. */
 .rpg-coffret__carte--mythique {
-  width: min(232px, 62vw);
-  border-color: rgba(232, 183, 92, 0.85);
-  background: #0d0a06;
-  box-shadow:
-    0 18px 42px rgba(0, 0, 0, 0.6),
-    inset 0 0 0 1px rgba(255, 233, 184, 0.25);
+  --largeur-carte: min(288px, 74vw);
+  --epaisseur-carte: 10px;
+  --bord-carte: rgba(232, 183, 92, 0.85);
+  --tranche-carte: #4a3517;
+  --lueur-carte: rgba(232, 183, 92, 0.66);
+  --lueur-force: 0.72;
   animation: rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
   animation-delay: var(--retard, 0ms);
+}
+
+.rpg-coffret__carte--mythique .rpg-coffret__carte-corps {
+  background: #0d0a06;
+  box-shadow:
+    0 20px 46px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(255, 233, 184, 0.25);
 }
 
 /* Une fois posée, la mythique flotte : `translate` est animé séparément de
@@ -1105,12 +1090,23 @@
   50% { translate: 0 -8px; }
 }
 
+/* La seule lueur qui respire : celle de la mythique. */
+.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique::before {
+  animation: rpg-coffret-mythe-lueur 4600ms ease-in-out infinite;
+}
+
+@keyframes rpg-coffret-mythe-lueur {
+  0%, 100% { opacity: 0.58; }
+  50% { opacity: 0.95; }
+}
+
 .rpg-coffret__carte--mythique .rpg-coffret__carte-nom {
-  font-size: 13px;
+  font-size: 14px;
   color: #ffe9b8;
 }
 
 .rpg-coffret__carte--mythique .rpg-coffret__carte-rarete {
+  font-size: 10px;
   color: #e8b75c;
 }
 
@@ -1188,16 +1184,36 @@
     aspect-ratio: 1.02;
   }
 
+  /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
+     reste la plus petite, la mythique tient l'écran sans le déborder. */
   .rpg-coffret__carte {
-    width: 94px;
+    --largeur-carte: 88px;
+    --epaisseur-carte: 5px;
+  }
+
+  .rpg-coffret__carte--commune,
+  .rpg-coffret__carte--inhabituelle {
+    --largeur-carte: 88px;
   }
 
   .rpg-coffret__carte--rare {
-    width: 104px;
+    --largeur-carte: 124px;
+    --epaisseur-carte: 7px;
   }
 
   .rpg-coffret__carte--mythique {
-    width: min(178px, 66vw);
+    --largeur-carte: min(232px, 78vw);
+    --epaisseur-carte: 8px;
+  }
+
+  /* Moins de bascule sur un écran étroit : une carte trop vue de côté
+     devient illisible. */
+  .rpg-coffret__carte-corps {
+    transform: rotateX(4deg) rotateY(9deg);
+  }
+
+  .rpg-coffret__coffre {
+    width: min(280px, 82vw);
   }
 
   .rpg-coffret__panneau {

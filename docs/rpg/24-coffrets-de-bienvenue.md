@@ -91,13 +91,25 @@ image différée, et la zone restait noire. Si l'URL versionnée (`?v=…`) éch
 `IllustrationCarte` retente une fois sans la version, puis affiche une plaque
 au nom de la carte — jamais un rectangle vide.
 
-Les cartes révélées, elles, ne rayonnent **pas du tout** : la rare garde son
-liseré froid, la mythique sa bordure d'or et sa taille. Ni halo, ni pulsation,
-ni reflet qui balaie l'illustration, ni éventail de rayons derrière la vague —
-la peinture est la seule chose qui brille, parce qu'elle est peinte. Le même
-choix vaut pour la cérémonie du **booster** (`rpg-souk.css`), où les lueurs
-dorée et violette qui respiraient autour des cartes ont été retirées : la
-rareté se lit à la bordure, jamais au rayonnement.
+**La peinture ne porte aucune brillance.** Pas de reflet qui balaie
+l'illustration, pas de `mix-blend-mode` sur l'image, pas de cadre hérité de
+`rpg-battle.css` : ce qui est peint reste peint. C'est la règle pour la
+cérémonie du **booster** comme pour celle du coffret.
+
+La **rareté**, elle, se lit désormais à une lueur — mais une lueur qui vit
+*derrière* la carte (`::before` flou, `aria-hidden`), jamais par-dessus :
+
+| rareté | lueur | taille de la carte |
+| --- | --- | --- |
+| commune | aucune | 100 px — la plus petite |
+| inhabituelle | halo d'acier, à peine perceptible | 100 px |
+| rare | halo froid franc | 152 px |
+| mythique | halo d'or qui respire (4,6 s) | 288 px au plus |
+
+Le contraste entre les quatre se joue donc sur **deux** axes — la taille et la
+lueur — et non plus sur la seule bordure. La commune et l'inhabituelle ont
+d'ailleurs été **réduites** (118 → 100 px) : à l'écran, treize cartes de 118 px
+mangeaient la scène et écrasaient les rares.
 
 ## 4. La cérémonie, par vagues
 
@@ -111,6 +123,29 @@ dans cet ordre :
 Chaque carte entre avec un retard croissant (`--rang`), et la barre de jalons
 indique où l'on en est. `prefers-reduced-motion` présente tout d'un coup, sans
 sortie ni flottement.
+
+Chaque carte est un **volume** : une face avant (peinture, nom, rareté) et une
+tranche à droite, née de l'arête et reculée de toute l'épaisseur — la même
+grammaire que les faces du coffret, et que les cartes du Souk. La carte est vue
+de trois quarts (`rotateX(6deg) rotateY(13deg)`) ; au survol elle se redresse
+et s'avance de 26 px. L'épaisseur de la tranche suit la rareté (6 px pour une
+commune, 10 px pour la mythique).
+
+### L'ouverture montre le même coffret
+
+L'acte zéro ne redessine pas une boîte à lui : il monte **le même volume** que
+l'étagère du choix, agrandi, et le met en état `is-ouvert`. Même composant
+(`VolumeCoffret`), mêmes trois faces, même peinture de vitrine, même jauge de
+cartes — seul l'état change :
+
+- le **sceau de cire** se fend, tourne et tombe (540 ms) ;
+- le **couvercle** bascule sur son arête arrière — la face du dessus étant née
+  de cette arête, pousser la rotation de 90° à 152° suffit à le dresser derrière
+  la boîte (860 ms) ;
+- la **lumière** monte du fond et les **rayons** s'ouvrent. Ces deux nappes
+  vivent **hors** du volume : un calque flouté posé dans une scène
+  `preserve-3d` traverserait le coffret au lieu de l'éclairer ;
+- les **éclats** de cire partent du sceau, puis l'écran blanchit.
 
 ## 5. La dotation, remplacée — pas amputée
 
