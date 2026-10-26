@@ -332,10 +332,11 @@ restent accessibles en duels libres, sans scènes de campagne pour l’instant.
   plus de PV supplémentaires — le sorcier et le joueur partent tous les deux
   à 25 PV (et peuvent monter au-dessus, les soins ouvrent la réserve), la
   difficulté passe par le deck et le profil d'IA.
-- **Pas d'obligation de grind** : les trois decks de base gagnent la première
-  tour tels quels ; les étages révèlent des cartes au Souk, ils ne commandent
-  pas la suite de l'histoire — et le Souk ne vend rien qu'une marche atteinte
-  n'a pas déjà révélé.
+- **Pas d'obligation de grind** : le deck du coffret de bienvenue
+  ([`24-coffrets-de-bienvenue.md`](24-coffrets-de-bienvenue.md)) gagne la
+  première tour tel quel ; les étages révèlent des cartes au Souk, ils ne
+  commandent pas la suite de l'histoire — et le Souk ne vend rien qu'une marche
+  atteinte n'a pas déjà révélé.
 - **Chaque sorcier a une signature lisible** (style + cartes emblématiques),
   pour que le joueur explique pourquoi il a gagné — la règle d'or de
   [`03-combat.md`](03-combat.md).

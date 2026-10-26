@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  RPG_DECKS, RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE,
+  RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE,
   RPG_DECK_HYBRIDE_BASE, RPG_DECK_MAREE_BASE, RPG_DECK_NEIGE_BASE,
   cardById, cardColors, carteJouableSansTerrain, rpgValiderDeck,
 } from '../src/games/rpgCards.js';
@@ -15,13 +15,13 @@ const seau = (c) => c.kind === 'hero' ? 'creature' : c.kind;
 test('les exports de base sont les vraies listes de trente cartes, sans conversion au lancement', () => {
   const bases = [RPG_DECK_JOUEUR_BASE, RPG_DECK_SORCIER_BASE, RPG_DECK_HYBRIDE_BASE, RPG_DECK_MAREE_BASE, RPG_DECK_NEIGE_BASE];
   for (let i = 0; i < bases.length; i += 1) {
-    assert.deepEqual(bases[i], RPG_DECKS[i].cardIds);
+    assert.deepEqual(bases[i], RPG_DECKS_ARCHETYPES[i].cardIds);
     assert.equal(bases[i].length, 30);
     assert.ok(bases[i].every((id) => carteJouableSansTerrain(cardById(id))));
   }
 });
 
-for (const deck of RPG_DECKS) {
+for (const deck of RPG_DECKS_ARCHETYPES) {
   test(`${deck.name} : recette reconstruite, courbe jouable et démarrage sans terrain`, () => {
     const recette = RPG_RECETTES_DECKS[deck.id];
     const cartes = deck.cardIds.map(cardById);

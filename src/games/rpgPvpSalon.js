@@ -27,7 +27,12 @@ export function cheminSalon() {
   return `${RPG_PVP_JEU_CHEMIN}/defi`;
 }
 
-/** Les decks du catalogue qu'un joueur peut aligner en ligne. */
+/**
+ * Les decks qu'un joueur peut aligner en ligne : **ses** decks —
+ * celui de son coffret et ceux de l'atelier. Depuis les coffrets de bienvenue,
+ * l'étagère du catalogue est vide ; l'appelant passe donc les decks de la
+ * maison (`chargerDecksMaison`).
+ */
 export function decksPourDefi(decks = RPG_DECKS) {
   return (Array.isArray(decks) ? decks : []).filter((deck) => deckEstSelectionnable(deck));
 }

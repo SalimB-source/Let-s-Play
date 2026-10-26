@@ -11,9 +11,11 @@
 ## Le parcours
 
 1. **La crate « Nouveau deck »** — un boîtier entrouvert (`.rpg-deck-choice--neuf`)
-   termine l'étagère, après les decks du catalogue et les decks maison. Un clic
-   ouvre l'atelier en création : nom proposé par défaut (il n'existe pas encore
-   sur l'étagère), cartes vides.
+   termine l'étagère, **après les decks de la maison** — le coffret de
+   bienvenue, puis ceux de l'atelier. L'étagère du catalogue est vide depuis
+   [`24-coffrets-de-bienvenue.md`](24-coffrets-de-bienvenue.md) : le joueur ne
+   reçoit plus de paquet tout fait. Un clic ouvre l'atelier en création : nom
+   proposé par défaut (il n'existe pas encore sur l'étagère), cartes vides.
 2. **L'atelier** — pleine largeur, disposé **comme le constructeur de Magic
    Arena** (voir « La disposition » plus bas) : à gauche **la collection en
    grille** de cartes illustrées, surmontée d'une barre de filtres à
@@ -45,11 +47,13 @@
    - **Copier** ouvre l'atelier en création avec les cartes du deck (copie
      **filtrée par la collection** : on n'hérite que de ce que l'on possède),
      nommé `… (copie)`.
-5. **Jouer** — un deck maison **complet** se sélectionne comme n'importe quel
-   deck du catalogue : « Sélectionner », « Jouer avec ce deck », ligne d'état,
-   plaque du duel — tout suit. **Le duel libre seulement** : le mode Histoire
-   garde les decks écrits pour chaque étage (`deckSeJoue` refuse un deck
-   maison en Histoire).
+5. **Jouer** — un deck maison **complet et possédé** se sélectionne :
+   « Sélectionner », « Jouer avec ce deck », ligne d'état, plaque du duel —
+   tout suit. La jouabilité se juge sur la collection **et** le stock de copies
+   (`deckSeJoue(deck, collection, exemplaires)`) : une carte perdue met le
+   boîtier en « DECK INCOMPLET » plutôt que de mentir. Le deck suit le joueur
+   **partout** — duel libre, Histoire, défi en ligne : ce sont les **étages**
+   qui possèdent leur propre deck, côté sorcier (`06-mode-histoire.md`).
 
 ## La création assistée
 
@@ -389,9 +393,10 @@ casse.
 - **Collection à débloquer**, pas catalogue complet d'entrée : construire un
   deck est la deuxième moitié du jeu ; la première est d'aller gagner les
   cartes dans la ville.
-- **Duel libre seulement** : les étages de l'Histoire sont calibrés (leur
-  deck adverse, leur difficulté) ; un deck maison y casserait la lecture. En
-  duel libre, c'est le joueur qui choisit son défi.
+- **Le deck du joueur partout** : duel libre, Histoire, défi en ligne — c'est
+  le même deck maison. La calibration d'un étage passe par **son** deck de
+  sorcier et par le profil d'IA (`06-mode-histoire.md`), jamais en imposant un
+  paquet au joueur.
 - **Suppression en deux temps, pierres tombales** : une suppression est
   définitive à l'échelle de l'appareil ; la confirmation sur la fiche évite
   le `window.confirm` proscrit, la liste `supprimes` évite la résurrection

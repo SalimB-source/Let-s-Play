@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
-import { RPG_DECKS, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
@@ -68,7 +68,7 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 0);
   const signature = [
@@ -86,7 +86,7 @@ test('le deck Soleil rouge est valide et concentre sa signature culturelle', () 
 });
 
 test('le starter met en avant Harakiri, Résonance samouraï et la Bannière avec le Daimyō et Kagutsuchi mythiques', () => {
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   const ids = new Set(deck.cardIds);
   for (const id of SAMOURAIS_AJOUTES) assert.equal(ids.has(id), true, `${id} anime le boîtier`);
   for (const id of ['samourai-du-torii', 'feux-de-kitsune', 'frappe-iaijutsu', 'kagutsuchi-flamme-originelle']) {
@@ -103,7 +103,7 @@ test('le starter met en avant Harakiri, Résonance samouraï et la Bannière ave
   }
 
   const listes = [
-    ...RPG_DECKS.map((starter) => starter.cardIds),
+    ...RPG_DECKS_ARCHETYPES.map((starter) => starter.cardIds),
     ...Object.values(RPG_STORY_DECKS),
   ];
   for (const liste of listes) assert.equal(liste.includes('samourai-du-daimyo'), false, 'le jeton ne figure pas dans une liste');
@@ -438,7 +438,7 @@ test('le Cavalier des deux sabres est mythique, rapide, samouraï et porte Harak
   assert.equal(carte.rapidite, true);
   assert.equal(cardReceivesResonance(carte, 'samourai'), true);
   assert.deepEqual([carte.cost, carte.atk, carte.def], [6, 5, 4]);
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'la mythique non-signature reste au Souk');
   assert.equal(COLLECTION_DEPART.includes(carte.id), false);
   assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
@@ -520,7 +520,7 @@ test('renvoyer Orochi ne crée pas de petits, et renvoyer un Petit Orochi le fai
   assert.equal(duel.sorcier.creatures.length, 1);
   assert.ok(!duel.sorcier.main.includes('petit-orochi'));
   assert.ok(!COLLECTION_DEPART.includes('petit-orochi'));
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.filter((id) => id === 'orochi').length, 0, 'Orochi reste hors du starter');
   assert.ok(carteReveleePar('orochi'), 'Orochi est accessible dans un booster');
   assert.ok(!deck.cardIds.includes('petit-orochi'));
@@ -531,7 +531,7 @@ test('Susanoo reste hors du starter : 5/3 pour 6, Harakiri et exil à l’arriv�
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 3, 1]);
   assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature', coutMin: 5 });
   assert.match(carte.text, /coût 5 ou plus/);
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.length, 30);
   assert.equal(deck.cardIds.filter((id) => id === carte.id).length, 0, 'l’autre mythique attend les boosters');
   assert.equal(COLLECTION_DEPART.includes(carte.id), false);
@@ -608,7 +608,7 @@ test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève deux Samouraïs 1/1 e
   assert.match(jeton.typeLine, /Créature-jeton — Humain · Samouraï/);
   assert.equal(cardReceivesResonance(jeton, 'samourai'), true, 'le jeton est un Samouraï');
   assert.equal(COLLECTION_DEPART.includes('samourai-du-daimyo'), false);
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.includes('samourai-du-daimyo'), false);
   // L'illustration du jeton est livrée en plein art, au ratio de la face.
   const jpg = readFileSync(new URL(`../public/cards/${cardArtId(jeton)}.jpg`, import.meta.url));
@@ -950,7 +950,7 @@ test('Tojiro, le pourfendeur : 5/5 mythique à 6, Esquive et Contre-attaque', ()
   assert.match(carte.text, /riposte frappe le sorcier adverse/);
   assert.match(carte.text, /il contre-attaque quand même/);
   assert.equal(cardReceivesResonance(carte, 'samourai'), true);
-  const deck = RPG_DECKS.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === RPG_SOLEIL_ROUGE_SET_ID);
   assert.equal(deck.cardIds.includes(carte.id), false, 'la mythique attend le Souk');
   assert.equal(carteReveleePar(carte.id).etageId, 'sables-3');
   assert.equal(pastillesPourCarte(carte).some((pastille) => pastille.cle === 'contreAttaque'), true);

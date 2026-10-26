@@ -2293,15 +2293,26 @@ export const RPG_DECK_TENEBRES_BASE = composerDeck(RPG_RECETTES_DECKS['balance-d
 /** Les Lettres de Marque — Abordage, Cale et Cargaison, avec La Barbe-Rousse comme seule mythique. */
 export const RPG_DECK_LETTRES_DE_MARQUE_BASE = composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR);
 
-/** Decks de départ. `boxArt` : l'illustration plein art (carte emblématique) imprimée
- *  sur le boîtier 3D de l'onglet Deck — un identifiant de `public/cards/`.
- *  `role` : le camp que le deck tient par défaut — `joueur` (deck de départ du joueur) ou
- *  `adversaire` (deck du sorcier en duel libre). Il ne limite rien : le joueur peut choisir
- *  n'importe quel deck complet, la Cour des Djinns comprise (voir `rpgDeckChoice.js`).
- *  `affrontement` : la phrase de la carte « ADVERSAIRE » de l'écran Jouer quand le sorcier
- *  joue ce deck (sans elle : « Affrontez <nom du deck>. »).
- *  `description` : ce que le deck joue vraiment — elle suit la recette, jamais l'inverse. */
-export const RPG_DECKS = [
+/**
+ * Les **archétypes** du jeu — les paquets qui ne sont plus sur l'étagère du
+ * joueur, mais que le sorcier, les leçons du tutoriel, le mode Histoire et les
+ * duels en ligne continuent d'aligner.
+ *
+ * Depuis les **coffrets de bienvenue** (`rpgCoffretBienvenue.js`), le joueur ne
+ * commence plus avec un deck préconstruit : il ouvre un coffret de trente
+ * cartes, joue avec, puis **compose ses propres decks** dans l'atelier au fur et
+ * à mesure que le Souk lui donne des cartes. L'étagère n'a donc plus aucun deck
+ * de base (`RPG_DECKS` est vide), mais ces huit paquets restent écrits ici :
+ * c'est le répertoire de l'IA et des leçons, pas celui du joueur.
+ *
+ * `boxArt` : l'illustration plein art du boîtier 3D — un identifiant de
+ * `public/cards/`. `role` : le camp que le paquet tient par défaut dans
+ * l'ancien catalogue — `joueur` (ex-deck de départ) ou `adversaire` (deck du
+ * sorcier en duel libre). `affrontement` : la phrase de la carte
+ * « ADVERSAIRE » quand le sorcier joue ce paquet. `description` : ce qu'il
+ * joue vraiment — elle suit la recette, jamais l'inverse.
+ */
+export const RPG_DECKS_ARCHETYPES = [
   {
     id: 'veilleurs-du-desert',
     name: 'Veilleurs du Désert',
@@ -2402,3 +2413,14 @@ export const RPG_DECKS = [
     cardIds: RPG_DECK_LETTRES_DE_MARQUE_BASE,
   },
 ];
+
+/**
+ * L'**étagère du joueur** : vide, et c'est voulu.
+ *
+ * Aucun deck n'est offert d'entrée de jeu depuis les coffrets de bienvenue —
+ * le joueur joue le deck de son coffret (enregistré comme deck de la maison à
+ * l'ouverture, `coffretEnDeckMaison`), puis ceux qu'il compose dans l'atelier
+ * avec les cartes du Souk. L'export reste : il porte la forme et la place de
+ * l'étagère dans toute l'interface (`decksTous = [...RPG_DECKS, ...decksMaison]`).
+ */
+export const RPG_DECKS = [];

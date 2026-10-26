@@ -14,6 +14,7 @@ import {
 import { RPG_STORY_TOURS, deckHistoire } from '../src/games/rpgStoryTours.js';
 import {
   RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DECK_MAREE_BASE,
   RPG_DECK_SORCIER_BASE,
   cardById,
@@ -60,8 +61,11 @@ test('la Marée des abysses garde une mythique et ouvre les autres bêtes dans l
   }
   const contres = RPG_DECK_MAREE_BASE.filter((id) => cardById(id).effet?.type === 'contresort');
   assert.ok(contres.length >= 6, 'le deck embarque plusieurs contres');
-  const entree = RPG_DECKS.find((deck) => deck.id === 'maree-des-abysses');
-  assert.ok(entree, 'le deck est dans l’étagère');
+  // Depuis les coffrets de bienvenue, la Marée n'est plus un deck de base : elle
+  // reste un archétype du répertoire (le sorcier, les leçons, la Tour des Abysses).
+  assert.deepEqual(RPG_DECKS, [], 'l’étagère n’a plus de deck de base');
+  const entree = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'maree-des-abysses');
+  assert.ok(entree, 'le deck est dans le répertoire des archétypes');
   assert.equal(entree.cardIds, RPG_DECK_MAREE_BASE);
   assert.ok(entree.cardIds.includes(entree.boxArt), 'le boîtier reprend une carte du deck');
 });

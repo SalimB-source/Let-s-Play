@@ -70,7 +70,63 @@ sortie ni flottement.
 - L'écran ne s'impose jamais à quelqu'un qui a déjà joué : un étage vaincu, des
   acquis ou une collection le ferment (`coffretBienvenueNecessaire`).
 
-## 5. Ce que les tests protègent
+## 5. Plus aucun deck de base
+
+Le coffret **remplace aussi la vieille étagère de départ**. `RPG_DECKS`
+(`rpgCards.js`) est vide : le joueur ne reçoit plus trois paquets tout faits,
+il part de son coffret, puis construit. Les huit anciens paquets restent écrits
+sous le nom **`RPG_DECKS_ARCHETYPES`** — c'est le répertoire du sorcier, des
+leçons du tutoriel et du mode Histoire ; ils ne sont plus offerts au joueur.
+
+Le parcours d'un nouveau compte, dans l'ordre :
+
+1. **l'écran des trois coffrets** (`RpgCoffretBienvenue`) — le choix est
+   définitif, enregistré sur l'appareil et dans le compte ;
+2. **`rangerCoffret`** (`useSablierBourse`) range les trente cartes dans la
+   bourse (`rangerCoffretDansPortefeuille`, `rpgCredits.js`) — possession **et**
+   stock de copies, sinon un coffret qui pose deux fois la même inhabituelle ne
+   serait jouable qu'à moitié ;
+3. **`enregistrerDeckMaison(coffretEnDeckMaison(coffret))`** pose le deck du
+   coffret dans le casier (`maison-coffret-<couleur>`) : trente cartes, jouable
+   tout de suite ;
+4. **l'atelier et le Souk** font le reste : chaque booster ouvert agrandit la
+   collection, chaque deck suivant se compose (`09-atelier-de-decks.md`).
+
+### Le rattrapage au démarrage — `rpgDeckDeDepart.js`
+
+Le casier ne doit pas laisser l'écran Jouer sans deck **sans raison**. À chaque
+montage de `useDecksSablier`, `garantirDeckDeDepart({ casier, collection })`
+passe :
+
+| situation | ce qui est posé |
+| --- | --- |
+| le coffret de l'appareil a un deck absent du casier, ses cartes sont là | `maison-coffret-<couleur>`, à l'identique |
+| le casier est **vide** et la collection tient trente cartes | `maison-de-depart`, composé par l'assistant dans les **couleurs dominantes** (deux au plus) |
+| le casier a déjà des decks | rien : le rattrapage ne double pas l'étagère |
+| collection trop mince pour trente cartes | rien : l'atelier est là pour ça |
+| identifiant dans les **pierres tombales** (`supprimes`) | rien : un deck supprimé ne ressuscite pas — et supprimer un deck n'en fait pas naître un autre |
+| la collection du coffret n'est pas encore descendue (autre appareil) | le deck composé prend le relais, sinon le coffret en dernier recours |
+
+Le deck composé passe `rpgValiderDeck` : il est valide, pas « presque ». Et le
+casier n'est écrit **qu'une fois** — réparé *et* complété ensemble, pour qu'un
+enregistrement tardif n'écrase pas le deck de départ.
+
+### Ce que cela change à l'écran
+
+- **Jouer** : plus de section « decks du catalogue ». L'étagère n'affiche que
+  les decks de la maison et le boîtier « Nouveau deck » ; sans deck, le menu
+  n'invente rien (`deckParDefaut` → `null`).
+- **La jouabilité** se juge désormais sur la collection **et le stock** :
+  `deckSeJoue(deck, collection, exemplaires)` — un deck dont une carte n'est
+  plus possédée s'affiche « DECK INCOMPLET » au lieu de mentir.
+- **Le salon PvP** (`RpgPvpSalon`) n'aligne que les decks de la maison
+  (`decksPourDefi(chargerDecksMaison())`) ; l'arbitre en ligne accepte les
+  archétypes du répertoire et, pour les decks du joueur, vérifie la possession
+  carte par carte.
+- **Le sorcier** joue toujours un archétype (`deckAdverseParDefaut` prend le
+  rôle `adversaire`, la Cour des Djinns), jamais le deck du joueur.
+
+## 6. Ce que les tests protègent
 
 `tests/rpg-coffret-bienvenue.test.js` :
 

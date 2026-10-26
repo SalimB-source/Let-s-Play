@@ -36,7 +36,7 @@ import { choisirCarteIA } from '../src/games/rpgAI.js';
 import {
   CATALOGUE_DU_COMPOSEUR,
   RPG_ARME_CARDS,
-  RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DUEL_CARDS,
   armeById,
   cardById,
@@ -138,7 +138,7 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
     'balance-des-heures': ['khopesh-d-or'],
     'lettres-de-marque': ['baton-des-citernes', 'grappin-d-abordage'],
   };
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     assert.equal(deck.cardIds.length, 30, `${deck.name} fait 30 cartes`);
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.name} reste valide`);
     const armes = [...new Set(deck.cardIds.filter((id) => armeById(id)))].sort();
@@ -149,10 +149,10 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
       `${deck.name} respecte son nombre de mythiques distinctes`);
   }
 
-  const veilleurs = RPG_DECKS.find((deck) => deck.id === 'veilleurs-du-desert');
+  const veilleurs = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'veilleurs-du-desert');
   assert.ok(veilleurs.cardIds.includes('takouba-de-tin-hinan'),
     'les Veilleurs gardent la Takouba mythique comme seule mythique');
-  const sentiers = RPG_DECKS.find((deck) => deck.id === 'sentiers-de-cendre');
+  const sentiers = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'sentiers-de-cendre');
   assert.ok(sentiers.cardIds.includes('takouba-des-pistes'),
     'les Sentiers gardent la Takouba des pistes de leur signature');
   assert.deepEqual([...new Set(sentiers.cardIds.filter((id) => cardById(id).rarity === 'mythique'))], ['feriel'],

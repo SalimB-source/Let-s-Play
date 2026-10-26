@@ -4,7 +4,7 @@ import './rpg-pvp.css';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { sendMessage } from '../messages/messagesApi';
-import { RPG_DECKS } from './rpgCards.js';
+import { chargerDecksMaison } from './rpgDeckBuilder.js';
 import { deckColors } from './rpgDeckFilter.js';
 import { DeckBox, deckColorModifier, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import {
@@ -170,7 +170,9 @@ export default function RpgPvpSalon() {
   const [busy, setBusy] = useState(false);
   const [copie, setCopie] = useState(false);
   const [saisie, setSaisie] = useState('');
-  const decks = useMemo(() => decksPourDefi(RPG_DECKS), []);
+  // Le joueur n'aligne que ses propres decks : celui du coffret, puis ceux de
+  // l'atelier. Sans deck jouable, le salon le dit au lieu d'en inventer un.
+  const decks = useMemo(() => decksPourDefi(chargerDecksMaison()), []);
   const [deckId, setDeckId] = useState(() => decks[0]?.id ?? '');
   const [amiId, setAmiId] = useState('');
   const [mode, setMode] = useState('live');

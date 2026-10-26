@@ -45,6 +45,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../auth/AuthContext';
 import {
   acheterIllustration as acheterIllustrationAuxCredits,
+  rangerCoffretDansPortefeuille,
   basculerIllustrationAffichee as basculerIllustrationAuxCredits,
   chargerPortefeuille,
   crediterCredits,
@@ -777,6 +778,22 @@ export function useSablierBourse({
   }, [appliquer, pousser]);
 
   const profil = etat.profil;
+  /**
+   * Range un **coffret de bienvenue** dans la bourse : la possession et le
+   * stock de copies, d'un seul geste, puis l'état est publié et poussé au
+   * compte. C'est ce qui rend le deck du coffret jouable tout de suite — sans
+   * ce compte, ses inhabituelles posées deux fois n'auraient qu'une copie.
+   */
+  const rangerCoffret = useCallback((coffret) => {
+    const avant = etatRef.current;
+    const maj = rangerCoffretDansPortefeuille(avant.bourse, coffret);
+    if (!maj.modifie) return maj;
+    appliquer(maj.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    onCartesRangees?.();
+    return maj;
+  }, [appliquer, pousser, onCartesRangees]);
+
   return {
     bourse: etat.bourse,
     quetes: etat.quetes,
@@ -794,6 +811,7 @@ export function useSablierBourse({
     reclamerLeCachetDeLaSemaine,
     acheterBooster,
     acheterCoffret,
+    rangerCoffret,
     acheterCarteDirecte,
     acheterIllustration,
     basculerIllustration,

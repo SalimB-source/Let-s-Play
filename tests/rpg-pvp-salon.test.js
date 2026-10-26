@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RPG_DECKS, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, rpgValiderDeck } from '../src/games/rpgCards.js';
 import {
   SALON_TEXTES,
   cheminSalon,
@@ -118,14 +118,17 @@ test('le compte à rebours reste lisible, sans échéance il ne ment pas', () =>
   assert.equal(tempsRestant('pas une date', maintenant), '—');
 });
 
-test('les decks proposés au salon sont ceux qui se jouent vraiment', () => {
-  const decks = decksPourDefi(RPG_DECKS);
+test('les decks proposés au salon sont ceux du joueur, et seulement les valides', () => {
+  // Depuis les coffrets de bienvenue, l'étagère du catalogue est vide : le
+  // salon propose les decks de la maison — celui du coffret, ceux de l'atelier.
+  assert.deepEqual(decksPourDefi(), [], 'sans deck de la maison, le salon ne propose rien');
+  const decks = decksPourDefi(RPG_DECKS_ARCHETYPES);
   assert.ok(decks.length >= 4, `${decks.length} decks seulement`);
   for (const deck of decks) {
     assert.equal(rpgValiderDeck(deck.cardIds).ok, true, `${deck.id} doit passer la validation du serveur`);
   }
   // Un deck incomplet est écarté plutôt que proposé puis refusé à l'ouverture.
-  const bancal = [...RPG_DECKS, { id: 'bancal', name: 'Bancal', cardIds: ['une-carte'] }];
+  const bancal = [...RPG_DECKS_ARCHETYPES, { id: 'bancal', name: 'Bancal', cardIds: ['une-carte'] }];
   assert.equal(decksPourDefi(bancal).some((deck) => deck.id === 'bancal'), false);
   assert.deepEqual(decksPourDefi(null), []);
 });
