@@ -160,6 +160,32 @@ changer d'URL vingt-neuf peintures pour en dater dix.
 illustrations alternatives (échelle d'XP pour les mythiques, boutique pour le
 reste).
 
+### Deuxième lot Souls : les figures du Nord et cinq magies (octobre 2026)
+
+Dix cartes de plus, sous la même marque `neige-souls-cendres-v1` :
+
+- **Eirik du premier serment** — seul sur le fjord gelé à l'aube, hache basse
+  et bouclier au dos, les seams de la glace sous ses bottes.
+- **Valkyrie des glaces** — la cavalière sur la banquise, l'aurore pâle derrière
+  elle, lance en avant.
+- **Géant des banquises** — il marche dans l'eau noire au bord de la mer prise,
+  un corps de neige tassée et de vieille glace, une épave de drakkar au premier
+  plan pour l'échelle.
+- **Drakkar à tête de dragon** — la proue sculptée sort du brouillard, givre et
+  cordages gelés, la voile sombre.
+- **Scalde des runes** — la cithare contre l'épaule, la bouche ouverte sur un
+  mot, une seule flamme à ses pieds dans la grande salle noire.
+- **Éclair du marteau**, **Mur de boucliers**, **Festin des vaillants**,
+  **Brume du fjord**, **Hurlement du blizzard** — les cinq magies passent à
+  l'huile sombre et abandonnent leurs révisions dédiées (`eclair-marteau-
+  electrique-cible-v1`, `mur-boucliers-charge-v1`, `brume-personnes-gelees-v2`,
+  `hurlement-grizzli-gele-v1`) pour la marque commune de la passe.
+
+**Deux cartes restent à reprendre**, leurs peintures lisant encore à côté :
+**Éclair du marteau** (le marteau de foudre se lit comme un simple éclair) et
+**Hurlement du blizzard** (le grizzly dans la glace ressemble à un bloc de
+verre). Elles sont peintes, mais pas définitives.
+
 ### Les deux dernières cartes du Serment (octobre 2026)
 
 - **Le Grand Hiver** (`grand-hiver.jpg`) — sorcellerie Neige à 2 manas : 1 dégât

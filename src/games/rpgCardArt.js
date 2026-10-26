@@ -15,10 +15,10 @@ const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
 /**
  * Le set Neige a été peint en plusieurs passes, et sa **passe Souls** (octobre
- * 2026) repeint dix de ses vingt-neuf cartes en huile sombre. Chaque carte
- * repeinte porte donc sa propre révision `neige-souls-cendres-v1` dans
- * `CARD_ART_CACHE_VERSIONS` : pas de version de set à maintenir, et aucune
- * peinture non repeinte ne change d'URL.
+ * 2026) repeint vingt de ses vingt-neuf cartes en huile sombre. Chaque carte
+ * repeinte porte donc sa révision `neige-souls-cendres-v1` dans
+ * `CARD_ART_CACHE_VERSIONS`, en clair : pas de version de set à maintenir, et
+ * aucune peinture non repeinte ne change d'URL.
  */
 const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 
@@ -196,24 +196,31 @@ const CARD_ART_CACHE_VERSIONS = {
   // d’électricité fonçant sur une cible pour l’Éclair, soldats gelés dans la
   // brume pour la Brume du fjord et grizzli prisonnier de la glace pour le
   // Hurlement du blizzard.
-  'mur-de-boucliers': 'mur-boucliers-charge-v1',
-  'eclair-du-marteau': 'eclair-marteau-electrique-cible-v1',
-  'brume-du-fjord': 'brume-personnes-gelees-v2',
-  'hurlement-du-blizzard': 'hurlement-grizzli-gele-v1',
   // La passe Souls du Neige — dix cartes que leur peinture d'origine rendait
   // étrangères à l'huile sombre : la mappemonde du Serpent du monde, la tour en
   // 1408×768, la Dame au fil, la Poigne, l'Appât, le Défi, le Verglas, le
   // Grand Voile, l'Embuscade et le portrait photoréaliste du Père des corbeaux.
-  'serpent-du-monde': SET_NEIGE_SOULS_VERSION,
-  'tour-de-neige': SET_NEIGE_SOULS_VERSION,
-  'dame-des-neuf-mondes': SET_NEIGE_SOULS_VERSION,
-  'pere-des-corbeaux': SET_NEIGE_SOULS_VERSION,
-  'poigne-de-givre': SET_NEIGE_SOULS_VERSION,
-  'verglas': SET_NEIGE_SOULS_VERSION,
-  'embuscade': SET_NEIGE_SOULS_VERSION,
-  'defi-du-jarl': SET_NEIGE_SOULS_VERSION,
-  'appat-de-la-meute': SET_NEIGE_SOULS_VERSION,
-  'grand-voile-blanc': SET_NEIGE_SOULS_VERSION,
+  'serpent-du-monde': 'neige-souls-cendres-v1',
+  'tour-de-neige': 'neige-souls-cendres-v1',
+  'dame-des-neuf-mondes': 'neige-souls-cendres-v1',
+  'pere-des-corbeaux': 'neige-souls-cendres-v1',
+  'poigne-de-givre': 'neige-souls-cendres-v1',
+  'verglas': 'neige-souls-cendres-v1',
+  'embuscade': 'neige-souls-cendres-v1',
+  'defi-du-jarl': 'neige-souls-cendres-v1',
+  'appat-de-la-meute': 'neige-souls-cendres-v1',
+  'grand-voile-blanc': 'neige-souls-cendres-v1',
+  // Deuxième lot : les figures du Nord et cinq magies.
+  'eirik-du-premier-serment': 'neige-souls-cendres-v1',
+  'valkyrie-des-glaces': 'neige-souls-cendres-v1',
+  'geant-des-banquises': 'neige-souls-cendres-v1',
+  'drakkar-a-tete-de-dragon': 'neige-souls-cendres-v1',
+  'scalde-des-runes': 'neige-souls-cendres-v1',
+  'eclair-du-marteau': 'neige-souls-cendres-v1',
+  'mur-de-boucliers': 'neige-souls-cendres-v1',
+  'festin-des-vaillants': 'neige-souls-cendres-v1',
+  'brume-du-fjord': 'neige-souls-cendres-v1',
+  'hurlement-du-blizzard': 'neige-souls-cendres-v1',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
   'hache-de-la-banquise': 'hache-plantee-glace-v2',

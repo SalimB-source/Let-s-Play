@@ -181,6 +181,16 @@ const DEFINITIONS = [
   ['defi-du-jarl', 'Le défi du jarl'],
   ['appat-de-la-meute', 'L’appât de la meute'],
   ['grand-voile-blanc', 'Le grand voile blanc'],
+  ['eirik-du-premier-serment', 'Eirik sur le fjord gelé'],
+  ['valkyrie-des-glaces', 'La valkyrie des glaces'],
+  ['geant-des-banquises', 'Le géant des banquises'],
+  ['drakkar-a-tete-de-dragon', 'Le drakkar à tête de dragon'],
+  ['scalde-des-runes', 'Le scalde à la cithare'],
+  ['eclair-du-marteau', 'L’éclair du marteau'],
+  ['mur-de-boucliers', 'Le mur de boucliers'],
+  ['festin-des-vaillants', 'Le festin des vaillants'],
+  ['brume-du-fjord', 'La brume du fjord'],
+  ['hurlement-du-blizzard', 'Le hurlement du blizzard'],
 ];
 
 /**

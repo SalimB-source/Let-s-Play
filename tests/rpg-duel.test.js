@@ -547,10 +547,13 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
     ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
-    ['mur-de-boucliers', 'mur-boucliers-charge-v1'],
-    ['eclair-du-marteau', 'eclair-marteau-electrique-cible-v1'],
-    ['brume-du-fjord', 'brume-personnes-gelees-v2'],
-    ['hurlement-du-blizzard', 'hurlement-grizzli-gele-v1'],
+    // La passe Souls du Neige (octobre 2026) a redaté ces quatre peintures
+    // sous la marque commune de la passe : le sujet ne change plus, c'est la
+    // facture qui les rend étrangères aux anciennes révisions dédiées.
+    ['mur-de-boucliers', 'neige-souls-cendres-v1'],
+    ['eclair-du-marteau', 'neige-souls-cendres-v1'],
+    ['brume-du-fjord', 'neige-souls-cendres-v1'],
+    ['hurlement-du-blizzard', 'neige-souls-cendres-v1'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
