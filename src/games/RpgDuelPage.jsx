@@ -12776,6 +12776,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           coffret ouvert devient un deck de la maison — trente cartes, tout de
           suite jouables — et la collection se rafraîchit sans recharger. */}
       <RpgCoffretBienvenue
+        onPlaySfx={jouerSfx}
         onOuvrir={(coffret) => {
           // Le coffret **remplace la dotation** : ses cartes et leur stock de
           // copies entrent dans la bourse, son deck devient un deck de la

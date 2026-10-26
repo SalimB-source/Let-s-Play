@@ -1,10 +1,19 @@
 /*
  * Les coffrets de bienvenue — src/games/rpg-coffret-bienvenue.css
  * --------------------------------------------------------------
- * Deux écrans, une seule grammaire : le choix (trois boîtes de couleur) puis la
- * cérémonie (les cartes entrent vague par vague). Le fond reprend le keyart du
- * Sablier, voilé comme l'écran d'entrée ; les couleurs des coffrets sont celles
- * du jeu (sable, braise, neige, eau) et ne servent qu'aux liserés.
+ * Trois écrans, une seule grammaire : le **choix** (trois boîtes de couleur),
+ * l'**ouverture** (la boîte monte au centre, le sceau casse, le couvercle
+ * bascule, la lumière jaillit) puis la **cérémonie** (les cartes entrent vague
+ * par vague, la mythique seule à la fin).
+ *
+ * Tout est en CSS : le scénario de l'ouverture est une suite de `animation`
+ * minutées (`animation-delay`), pour que le mouvement reste sur le compositeur
+ * et ne dépende d'aucun `setTimeout` intermédiaire. JavaScript ne décide que de
+ * la fin : quand la boîte a fini de s'ouvrir, la première vague prend sa place.
+ *
+ * Le fond reprend le keyart du Sablier, voilé comme l'écran d'entrée. Les
+ * couleurs des coffrets sont celles du jeu (sable, braise, neige, eau) : elles
+ * ne teintent que les liserés, la lumière et les poussières.
  */
 
 .rpg-coffret {
@@ -19,9 +28,64 @@
     linear-gradient(180deg, rgba(5, 6, 15, 0.94) 0%, rgba(5, 6, 15, 0.86) 55%, rgba(5, 6, 15, 0.96) 100%),
     url('../../public/sablier-de-bab-el-keyart.jpg') center / cover no-repeat;
   color: #e8eaf6;
+  isolation: isolate;
 }
 
+/* La teinte d'un coffret : elle colore le sceau, la lumière et les poussières. */
+.rpg-coffret[data-rpg-coffret-couleur='sable'] { --teinte: #d8bc86; --lueur: #ffe3ab; }
+.rpg-coffret[data-rpg-coffret-couleur='braise'] { --teinte: #e2724a; --lueur: #ffb279; }
+.rpg-coffret[data-rpg-coffret-couleur='neige'] { --teinte: #9fd4f2; --lueur: #dcf4ff; }
+.rpg-coffret[data-rpg-coffret-couleur='eau'] { --teinte: #4f9dd6; --lueur: #a9e0ff; }
+.rpg-coffret[data-rpg-coffret-couleur='tenebres'] { --teinte: #a98bd8; --lueur: #dcc4ff; }
+
+/* Un voile de vignette par-dessus le keyart : le centre respire, les bords
+   tombent dans le noir. */
+.rpg-coffret::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(232, 183, 92, 0.1), transparent 58%),
+    radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(2, 3, 9, 0.72) 100%);
+}
+
+/* ── La poussière dorée ──────────────────────────────────────────────────── */
+
+.rpg-coffret__poussiere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rpg-coffret__poussiere i {
+  position: absolute;
+  left: var(--grain-x, 50%);
+  top: var(--grain-y, 50%);
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--lueur, #ffe3ab);
+  opacity: 0;
+  box-shadow: 0 0 6px var(--lueur, #ffe3ab);
+  animation: rpg-coffret-grain 9s linear infinite;
+  animation-delay: calc(var(--grain, 0) * -560ms);
+}
+
+@keyframes rpg-coffret-grain {
+  0% { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.6); }
+  18% { opacity: 0.55; }
+  70% { opacity: 0.35; }
+  100% { opacity: 0; transform: translate3d(14px, -120px, 0) scale(1.1); }
+}
+
+/* ── Le panneau ──────────────────────────────────────────────────────────── */
+
 .rpg-coffret__panneau {
+  position: relative;
   width: min(1040px, 100%);
   display: grid;
   gap: 14px;
@@ -32,6 +96,22 @@
   background: linear-gradient(160deg, rgba(14, 16, 32, 0.92), rgba(7, 8, 18, 0.96));
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   text-align: center;
+  animation: rpg-coffret-panneau 620ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* Le liseré supérieur du panneau s'allume de la couleur du coffret ouvert. */
+.rpg-coffret__panneau::before {
+  content: '';
+  position: absolute;
+  inset: -1px 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teinte, #e8b75c), transparent);
+  opacity: 0.85;
+}
+
+@keyframes rpg-coffret-panneau {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: none; }
 }
 
 .rpg-coffret__sur-titre {
@@ -50,6 +130,7 @@
   gap: 10px;
   font: 800 clamp(24px, 4.4vw, 40px)/1.08 'Orbitron', system-ui, sans-serif;
   letter-spacing: 0.5px;
+  text-shadow: 0 0 26px rgba(232, 183, 92, 0.22);
 }
 
 .rpg-coffret__compte {
@@ -61,6 +142,13 @@
   font: 700 14px/1 'Orbitron', system-ui, sans-serif;
   color: #161005;
   background: #e8b75c;
+  box-shadow: 0 0 18px rgba(232, 183, 92, 0.5);
+  animation: rpg-coffret-compte 560ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes rpg-coffret-compte {
+  from { opacity: 0; transform: scale(0.4) rotate(-24deg); }
+  to { opacity: 1; transform: none; }
 }
 
 .rpg-coffret__chapeau {
@@ -68,6 +156,12 @@
   max-width: 78ch;
   font: 400 14px/1.55 'Rajdhani', 'Inter', system-ui, sans-serif;
   color: #b9c0d8;
+}
+
+.rpg-coffret__note {
+  margin: 4px 0 0;
+  font: 400 12px/1.4 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #8f97b2;
 }
 
 /* ── Le choix : trois boîtes ─────────────────────────────────────────────── */
@@ -78,6 +172,7 @@
   gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: 6px;
+  perspective: 900px;
 }
 
 .rpg-coffret__boite {
@@ -88,34 +183,95 @@
   padding: 18px 16px 16px;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.015)),
+    radial-gradient(120% 90% at 12% 0%, var(--teinte-faible, rgba(255, 255, 255, 0.1)), transparent 62%);
   color: inherit;
   font: inherit;
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  isolation: isolate;
+  transform-style: preserve-3d;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.3, 1), border-color 220ms ease, box-shadow 220ms ease;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35);
+}
+
+/* Un reflet qui balaie la boîte au survol : le vernis du coffret. */
+.rpg-coffret__boite::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%);
+  transform: translateX(-120%);
+  transition: transform 620ms cubic-bezier(0.2, 0.8, 0.3, 1);
 }
 
 .rpg-coffret__boite:hover,
 .rpg-coffret__boite:focus-visible {
-  transform: translateY(-3px);
-  border-color: rgba(232, 183, 92, 0.75);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  transform: translateY(-5px) rotateX(4deg);
+  border-color: color-mix(in srgb, var(--teinte, #e8b75c) 78%, transparent);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.5), 0 0 34px -8px var(--teinte, #e8b75c);
   outline: none;
 }
+
+.rpg-coffret__boite:hover::after,
+.rpg-coffret__boite:focus-visible::after {
+  transform: translateX(120%);
+}
+
+.rpg-coffret__boite--sable { --teinte: #d8bc86; --teinte-faible: rgba(216, 188, 134, 0.22); }
+.rpg-coffret__boite--braise { --teinte: #e2724a; --teinte-faible: rgba(226, 114, 74, 0.22); }
+.rpg-coffret__boite--neige { --teinte: #9fd4f2; --teinte-faible: rgba(159, 212, 242, 0.22); }
+.rpg-coffret__boite--eau { --teinte: #4f9dd6; --teinte-faible: rgba(79, 157, 214, 0.22); }
 
 .rpg-coffret__boite-ruban {
   position: absolute;
   inset: 0 auto 0 0;
   width: 6px;
-  background: var(--teinte, #e8b75c);
+  background: linear-gradient(180deg, var(--teinte, #e8b75c), transparent 140%);
+  box-shadow: 0 0 18px -2px var(--teinte, #e8b75c);
 }
 
-.rpg-coffret__boite--sable { --teinte: #d8bc86; }
-.rpg-coffret__boite--braise { --teinte: #e2724a; }
-.rpg-coffret__boite--neige { --teinte: #9fd4f2; }
-.rpg-coffret__boite--eau { --teinte: #4f9dd6; }
+/* Le sceau de cire, en haut à droite : la promesse qu'il n'y a qu'une ouverture. */
+.rpg-coffret__boite-sceau {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #1a1108;
+  background: radial-gradient(circle at 35% 30%, var(--teinte, #e8b75c), color-mix(in srgb, var(--teinte, #e8b75c) 55%, #120b04));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.rpg-coffret__boite:hover .rpg-coffret__boite-sceau {
+  transform: rotate(-8deg) scale(1.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 22px -2px var(--teinte, #e8b75c);
+}
+
+.rpg-coffret__boite-sceau .rpg-coffret__rune,
+.rpg-coffret__coffre-sceau .rpg-coffret__rune {
+  width: 18px;
+  height: 24px;
+}
+
+.rpg-coffret__rune {
+  display: inline-block;
+  width: 20px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
 .rpg-coffret__boite-couleur {
   font: 700 11px/1.2 'Orbitron', system-ui, sans-serif;
@@ -147,42 +303,478 @@
   color: var(--teinte, #e8b75c);
 }
 
-.rpg-coffret__note {
-  margin: 4px 0 0;
-  font: 400 12px/1.4 'Rajdhani', 'Inter', system-ui, sans-serif;
-  color: #8f97b2;
+.rpg-coffret__boite-ouvrir {
+  margin-top: 10px;
+  font: 700 11px/1 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--teinte, #e8b75c);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.rpg-coffret__boite:hover .rpg-coffret__boite-ouvrir,
+.rpg-coffret__boite:focus-visible .rpg-coffret__boite-ouvrir {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── L'ouverture : la boîte s'ouvre ──────────────────────────────────────── */
+
+.rpg-coffret--ouverture {
+  overflow: hidden;
+}
+
+.rpg-coffret__scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: min(62vh, 480px);
+  perspective: 1300px;
+  perspective-origin: 50% 42%;
+  animation: rpg-coffret-scene-entree 640ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* L'ombre au sol : elle ancre la boîte, sans `filter` sur la boîte elle-même —
+   un filtre y aplatirait la 3D et le couvercle ne basculerait plus. */
+.rpg-coffret__scene::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  width: min(420px, 62%);
+  height: 34px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.62), transparent 72%);
+  filter: blur(7px);
+  animation: rpg-coffret-sol 640ms ease-out both;
+}
+
+@keyframes rpg-coffret-sol {
+  from { opacity: 0; scale: 0.6 1; }
+  to { opacity: 1; scale: 1 1; }
+}
+
+@keyframes rpg-coffret-scene-entree {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Le halo derrière la boîte : il respire, puis s'épanouit. */
+.rpg-coffret__halo {
+  position: absolute;
+  width: min(760px, 92vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lueur, #ffe3ab) 34%, transparent), transparent 60%);
+  filter: blur(8px);
+  opacity: 0;
+  animation: rpg-coffret-halo 2000ms ease-out both;
+}
+
+@keyframes rpg-coffret-halo {
+  0% { opacity: 0; transform: scale(0.5); }
+  45% { opacity: 0.55; transform: scale(0.85); }
+  72% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.85; transform: scale(1.2); }
+}
+
+/* Trois ondes concentriques qui partent du sceau. */
+.rpg-coffret__onde {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.rpg-coffret__onde i {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 70%, transparent);
+  opacity: 0;
+  animation: rpg-coffret-onde 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.rpg-coffret__onde i:nth-child(1) { animation-delay: 780ms; }
+.rpg-coffret__onde i:nth-child(2) { animation-delay: 940ms; }
+.rpg-coffret__onde i:nth-child(3) { animation-delay: 1100ms; }
+
+@keyframes rpg-coffret-onde {
+  0% { opacity: 0.85; transform: scale(0.28); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+/* La boîte : un coffret de laque, vu de trois quarts. */
+.rpg-coffret__coffre {
+  position: relative;
+  width: clamp(232px, 30vw, 320px);
+  aspect-ratio: 1.32;
+  transform-style: preserve-3d;
+  transform: rotateX(9deg) rotateY(-19deg);
+  animation:
+    rpg-coffret-coffre-arrive 560ms cubic-bezier(0.2, 0.9, 0.25, 1) both,
+    rpg-coffret-coffre-tremble 180ms 700ms 2 ease-in-out;
+}
+
+@keyframes rpg-coffret-coffre-arrive {
+  from { opacity: 0; transform: rotateX(30deg) rotateY(-46deg) scale(0.7) translateY(26px); }
+  to { opacity: 1; transform: rotateX(9deg) rotateY(-19deg) scale(1) translateY(0); }
+}
+
+@keyframes rpg-coffret-coffre-tremble {
+  0%, 100% { translate: 0 0; }
+  30% { translate: -2px 1px; }
+  70% { translate: 2px -1px; }
+}
+
+/* L'intérieur : noir profond, liseré d'or, et la lumière qui monte. */
+.rpg-coffret__coffre-fond {
+  position: absolute;
+  inset: 6% 4% 22%;
+  border-radius: 8px 8px 4px 4px;
+  background:
+    radial-gradient(ellipse at 50% 110%, color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent), transparent 68%),
+    linear-gradient(180deg, #140d08, #090604);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.9);
+}
+
+.rpg-coffret__coffre-lumiere {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: 70%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--lueur, #ffe3ab) 38%, transparent 72%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-coffret-lumiere 1200ms 880ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-lumiere {
+  0% { opacity: 0; scale: 0.2; }
+  38% { opacity: 0.95; scale: 0.9; }
+  100% { opacity: 0.55; scale: 1.9; }
+}
+
+/* Les rayons : un éventail tournant qui sort de la boîte. */
+.rpg-coffret__coffre-rayons {
+  position: absolute;
+  left: 50%;
+  top: 32%;
+  width: 210%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--lueur, #ffe3ab) 42%, transparent) 0deg 3deg,
+    transparent 3deg 14deg
+  );
+  mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-coffret-rayons 1500ms 960ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-rayons {
+  0% { opacity: 0; scale: 0.35; rotate: -12deg; }
+  40% { opacity: 0.8; }
+  100% { opacity: 0.35; scale: 1.15; rotate: 8deg; }
+}
+
+/* Le corps — la façade de laque, ses bandes d'or, la rune et le nom. */
+.rpg-coffret__coffre-corps {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62%;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  align-content: center;
+  border-radius: 5px 5px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 85%, #000);
+  background:
+    linear-gradient(178deg, rgba(255, 255, 255, 0.16), transparent 22%),
+    linear-gradient(150deg, color-mix(in srgb, var(--teinte, #e8b75c) 62%, #1b1208) 0%, #1c1209 46%, color-mix(in srgb, var(--teinte, #e8b75c) 44%, #120c06) 100%);
+  box-shadow:
+    inset 0 -14px 22px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.rpg-coffret__coffre-bande {
+  position: absolute;
+  inset: 44% 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--lueur, #ffe3ab) 80%, transparent), transparent);
+  opacity: 0.8;
+}
+
+.rpg-coffret__coffre-rune {
+  color: color-mix(in srgb, var(--lueur, #ffe3ab) 76%, #fff);
+  opacity: 0.75;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent));
+}
+
+.rpg-coffret__coffre-rune .rpg-coffret__rune {
+  width: 30px;
+  height: 38px;
+}
+
+.rpg-coffret__coffre-nom {
+  font: 700 9px/1.3 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 2.2px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--lueur, #ffe3ab) 70%, #fff);
+  opacity: 0.72;
+  text-align: center;
+  padding: 0 10px;
+}
+
+/* Le couvercle : il bascule vers l'arrière sur sa charnière. */
+.rpg-coffret__coffre-couvercle {
+  position: absolute;
+  inset: 0 -2% auto;
+  height: 42%;
+  transform-origin: 50% 100%;
+  transform-style: preserve-3d;
+  border-radius: 14px 14px 3px 3px;
+  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 90%, #000);
+  background:
+    linear-gradient(178deg, rgba(255, 255, 255, 0.24), transparent 34%),
+    linear-gradient(160deg, color-mix(in srgb, var(--teinte, #e8b75c) 74%, #241606) 0%, #221609 58%, color-mix(in srgb, var(--teinte, #e8b75c) 52%, #140d06) 100%);
+  box-shadow: inset 0 -8px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  animation: rpg-coffret-couvercle 820ms 900ms cubic-bezier(0.34, 1.16, 0.4, 1) both;
+}
+
+.rpg-coffret__coffre-plaque {
+  position: absolute;
+  inset: 26% 18%;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 45%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+}
+
+@keyframes rpg-coffret-couvercle {
+  0% { transform: rotateX(0deg); }
+  12% { transform: rotateX(4deg); }
+  100% { transform: rotateX(-112deg); }
+}
+
+/* La fissure de lumière sous le couvercle. */
+.rpg-coffret__coffre-fissure {
+  position: absolute;
+  inset: 37% 3% auto;
+  height: 3px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 18px 4px var(--lueur, #ffe3ab), 0 0 46px 12px color-mix(in srgb, var(--lueur, #ffe3ab) 60%, transparent);
+  opacity: 0;
+  animation: rpg-coffret-fissure 900ms 620ms ease-out both;
+}
+
+@keyframes rpg-coffret-fissure {
+  0% { opacity: 0; scale: 0.2 1; }
+  35% { opacity: 1; scale: 1 1; }
+  70% { opacity: 0.85; }
+  100% { opacity: 0.35; scale: 1.04 1; }
+}
+
+/* Le sceau de cire : il brille, se fend, puis tombe. */
+.rpg-coffret__coffre-sceau {
+  position: absolute;
+  left: 50%;
+  top: 37%;
+  translate: -50% -50%;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  color: #1b1107;
+  background: radial-gradient(circle at 36% 28%, color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff), color-mix(in srgb, var(--teinte, #e8b75c) 46%, #1a0f04));
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.55), inset 0 -2px 4px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.45);
+  animation: rpg-coffret-sceau 620ms 600ms cubic-bezier(0.3, 0.9, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-sceau {
+  0% { transform: scale(1); opacity: 1; }
+  28% { transform: scale(1.14) rotate(-4deg); opacity: 1; filter: brightness(1.6); }
+  42% { transform: scale(1.1) rotate(2deg); opacity: 1; }
+  100% { transform: translate(10px, 46px) rotate(26deg) scale(0.82); opacity: 0; filter: brightness(1); }
+}
+
+/* Les éclats de cire et les étincelles. */
+.rpg-coffret__coffre-eclats {
+  position: absolute;
+  left: 50%;
+  top: 37%;
+  width: 0;
+  height: 0;
+}
+
+.rpg-coffret__coffre-eclats i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lueur, #ffe3ab);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--lueur, #ffe3ab) 70%, transparent);
+  opacity: 0;
+  animation: rpg-coffret-eclat 900ms 940ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-eclat {
+  0% { opacity: 0; transform: rotate(var(--angle)) translateY(0) scale(0.4); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--portee) * -1.7)) scale(0.2); }
+}
+
+/* L'éclat final : tout l'écran blanchit, la boîte s'efface. */
+.rpg-coffret__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, #fff 0%, var(--lueur, #ffe3ab) 34%, transparent 68%);
+  opacity: 0;
+  animation: rpg-coffret-flash 760ms 1380ms ease-out both;
+}
+
+@keyframes rpg-coffret-flash {
+  0% { opacity: 0; scale: 0.4; }
+  34% { opacity: 0.95; scale: 1; }
+  100% { opacity: 0; scale: 1.4; }
+}
+
+.rpg-coffret__passer {
+  position: absolute;
+  right: clamp(16px, 4vw, 40px);
+  bottom: clamp(16px, 4vh, 34px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 183, 92, 0.4);
+  background: rgba(8, 9, 18, 0.72);
+  color: #cfd6ea;
+  font: 600 12px/1 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: rpg-coffret-apparait 400ms 300ms ease-out both;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.rpg-coffret__passer:hover,
+.rpg-coffret__passer:focus-visible {
+  border-color: #e8b75c;
+  color: #ffe9b8;
+  outline: none;
+}
+
+@keyframes rpg-coffret-apparait {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* ── La cérémonie : les vagues ───────────────────────────────────────────── */
 
+.rpg-coffret--ceremonie {
+  overflow: auto;
+}
+
 .rpg-coffret__vague {
+  position: relative;
   width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: center;
   gap: 12px;
-  min-height: 240px;
-  padding: 6px 0 2px;
+  min-height: 250px;
+  padding: 8px 0 2px;
+  isolation: isolate;
+}
+
+/* Les rayons de la mythique, derrière la dernière vague. */
+.rpg-coffret__rayons {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(880px, 96vw);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  z-index: -1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    rgba(232, 183, 92, 0.16) 0deg 2.4deg,
+    transparent 2.4deg 12deg
+  );
+  mask-image: radial-gradient(circle, #000 8%, transparent 58%);
+  -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 58%);
+  animation: rpg-coffret-rayons-finale 4000ms ease-out both;
+}
+
+@keyframes rpg-coffret-rayons-finale {
+  0% { opacity: 0; rotate: -8deg; scale: 0.6; }
+  35% { opacity: 1; }
+  100% { opacity: 0.55; rotate: 10deg; scale: 1.05; }
 }
 
 .rpg-coffret__carte {
-  width: 128px;
+  position: relative;
+  width: 118px;
   display: grid;
   gap: 6px;
   padding: 6px 6px 8px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  animation: rpg-coffret-entree 420ms cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
-  animation-delay: calc(var(--rang, 0) * 70ms);
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+  animation: rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
+  animation-delay: var(--retard, 0ms);
+  will-change: transform, opacity;
 }
 
-.rpg-coffret__vague.is-reduit .rpg-coffret__carte {
-  animation: none;
+@keyframes rpg-coffret-carte-sortie {
+  0% {
+    opacity: 0;
+    transform: translate(var(--depart-x, 0px), 46px) rotate(var(--inclinaison, 0deg)) scale(0.78);
+  }
+  45% { opacity: 1; }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* Le reflet qui passe sur l'illustration — la carte vient d'être frappée. */
+.rpg-coffret__carte-reflet {
+  position: absolute;
+  inset: 0;
+  border-radius: 7px;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(108deg, transparent 40%, rgba(255, 255, 255, 0.34) 50%, transparent 60%);
+  background-size: 280% 100%;
+  background-position: 130% 0;
+  animation: rpg-coffret-reflet 1000ms ease-out both;
+  animation-delay: calc(var(--retard, 0ms) + 200ms);
+  mix-blend-mode: screen;
+}
+
+@keyframes rpg-coffret-reflet {
+  from { background-position: 130% 0; }
+  to { background-position: -130% 0; }
 }
 
 .rpg-coffret__carte-art {
+  position: relative;
   border-radius: 7px;
   overflow: hidden;
   aspect-ratio: 4 / 5;
@@ -221,20 +813,80 @@
   color: #e8b75c;
 }
 
-.rpg-coffret__carte[data-rpg-coffret-rarete='rare'] {
-  border-color: rgba(120, 190, 255, 0.45);
-  box-shadow: 0 0 24px rgba(80, 150, 255, 0.14);
+/* La rare : un liseré froid, et une pulsation d'éveil à l'arrivée. */
+.rpg-coffret__carte--rare {
+  width: 132px;
+  border-color: rgba(120, 190, 255, 0.5);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 26px rgba(80, 150, 255, 0.22);
+  animation:
+    rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both,
+    rpg-coffret-rare-eveil 1400ms ease-out both;
+  animation-delay: var(--retard, 0ms), calc(var(--retard, 0ms) + 160ms);
 }
 
-.rpg-coffret__carte[data-rpg-coffret-rarete='mythique'] {
-  width: min(210px, 46vw);
-  border-color: rgba(232, 183, 92, 0.8);
-  box-shadow: 0 0 48px rgba(232, 183, 92, 0.3);
+@keyframes rpg-coffret-rare-eveil {
+  0% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 0 rgba(120, 190, 255, 0); }
+  30% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 46px rgba(120, 190, 255, 0.6); }
+  100% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 26px rgba(80, 150, 255, 0.22); }
 }
 
-.rpg-coffret__carte[data-rpg-coffret-rarete='mythique'] .rpg-coffret__carte-nom {
+/* La mythique : plus large, dorée, elle respire. */
+.rpg-coffret__carte--mythique {
+  width: min(232px, 62vw);
+  border-color: rgba(232, 183, 92, 0.85);
+  background:
+    linear-gradient(170deg, rgba(232, 183, 92, 0.16), rgba(255, 255, 255, 0.03)),
+    #0d0a06;
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(232, 183, 92, 0.4),
+    inset 0 0 0 1px rgba(255, 233, 184, 0.25);
+  animation: rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
+  animation-delay: var(--retard, 0ms);
+}
+
+/* Une fois posée, la mythique flotte : `translate` est animé séparément de
+   `transform`, pour que l'entrée et le flottement ne s'écrasent pas. */
+.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique {
+  animation:
+    rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both,
+    rpg-coffret-mythe-flotte 5200ms 1200ms ease-in-out infinite;
+}
+
+@keyframes rpg-coffret-mythe-flotte {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
+.rpg-coffret__carte--mythique::after {
+  content: '';
+  position: absolute;
+  inset: -14% -10%;
+  z-index: -1;
+  border-radius: 22px;
+  background: radial-gradient(ellipse at 50% 45%, rgba(255, 216, 140, 0.5), transparent 66%);
+  opacity: 0.7;
+  animation: rpg-coffret-mythe-halo 3600ms ease-in-out infinite;
+}
+
+/* Le reflet repasse sur la mythique, lentement, pendant qu'elle flotte. */
+.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique .rpg-coffret__carte-reflet {
+  animation: rpg-coffret-reflet 3400ms 1800ms ease-in-out infinite;
+}
+
+@keyframes rpg-coffret-mythe-halo {
+  0%, 100% { opacity: 0.45; scale: 0.96; }
+  50% { opacity: 0.85; scale: 1.05; }
+}
+
+.rpg-coffret__carte--mythique .rpg-coffret__carte-nom {
   font-size: 13px;
   color: #ffe9b8;
+  text-shadow: 0 0 14px rgba(232, 183, 92, 0.5);
+}
+
+.rpg-coffret__carte--mythique .rpg-coffret__carte-rarete {
+  color: #e8b75c;
 }
 
 /* ── Les actions ─────────────────────────────────────────────────────────── */
@@ -254,31 +906,40 @@
 }
 
 .rpg-coffret__jalons i {
-  width: 22px;
+  width: 26px;
   height: 4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.16);
-  transition: background 200ms ease;
+  transition: background 240ms ease, box-shadow 240ms ease;
 }
 
 .rpg-coffret__jalons i.is-fait {
   background: #e8b75c;
+  box-shadow: 0 0 12px rgba(232, 183, 92, 0.6);
 }
 
 .rpg-coffret__suivant {
   margin-left: auto;
 }
 
-@keyframes rpg-coffret-entree {
-  from {
-    opacity: 0;
-    transform: translateY(18px) rotate(-2deg) scale(0.94);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+/* Le rideau de lumière entre deux vagues. */
+.rpg-coffret__rideau {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 248, 228, 0.95) 0%, rgba(232, 183, 92, 0.55) 30%, transparent 66%);
+  animation: rpg-coffret-rideau 460ms ease-in-out both;
 }
+
+@keyframes rpg-coffret-rideau {
+  0% { opacity: 0; scale: 0.85; }
+  45% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.12; }
+}
+
+/* ── Petits écrans ───────────────────────────────────────────────────────── */
 
 @media (max-width: 720px) {
   .rpg-coffret__boites {
@@ -286,24 +947,52 @@
   }
 
   .rpg-coffret__carte {
-    width: 96px;
+    width: 94px;
   }
 
-  .rpg-coffret__carte[data-rpg-coffret-rarete='mythique'] {
-    width: 150px;
+  .rpg-coffret__carte--rare {
+    width: 104px;
+  }
+
+  .rpg-coffret__carte--mythique {
+    width: min(178px, 66vw);
   }
 
   .rpg-coffret__panneau {
     padding: 20px 14px 24px;
   }
+
+  .rpg-coffret__scene {
+    min-height: 54vh;
+  }
 }
 
+/* ── Moins de mouvement ──────────────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
-  .rpg-coffret__carte {
+  .rpg-coffret,
+  .rpg-coffret * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .rpg-coffret__carte,
+  .rpg-coffret__carte--rare,
+  .rpg-coffret__carte--mythique,
+  .rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique {
     animation: none;
   }
 
-  .rpg-coffret__boite {
-    transition: none;
+  .rpg-coffret__poussiere {
+    display: none;
   }
+}
+
+/* `is-reduit` : le même contrat, posé par le composant quand il a lu le
+   réglage système — les cartes sont là, immobiles, tout de suite. */
+.rpg-coffret__vague.is-reduit .rpg-coffret__carte,
+.rpg-coffret__carte.is-reduit {
+  animation: none;
 }
