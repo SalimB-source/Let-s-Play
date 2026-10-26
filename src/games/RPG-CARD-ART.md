@@ -854,8 +854,34 @@ l'ouvrier et la bouche de la statue ont été reformulés (bundle de lin fermé,
 statue sans visage). La **Momie de lin** a été refusée deux fois et sera
 reprise autrement — sans forme humaine lisible, un linceul debout.
 
-Les sept anciennes peintures rejoignent `public/cards/alt/` : **cent
-trente-trois illustrations alternatives**.
+### Deuxième lot : les figures du seuil et les magies du livre
+
+- **La Momie de lin** — d'abord refusée deux fois en forme humaine : c'est
+  désormais un **linceul debout**, noué de haut en bas, sans visage et sans
+  mains, dans une niche noire. Plus effrayant ainsi, et plus juste.
+- **L'Ibis des comptes** — perché sur la table de comptage, papyrus vierges
+  empilés, une lampe basse pour tout éclairage.
+- **Celle qui pèse** — debout dans la salle à colonnes, la petite balance
+  tendue devant elle, les deux plateaux vides et de niveau.
+- **La Dévoreuse** — garde son identité : l'immense gueule qui avale, le crâne
+  étiré, pas de visage humain. Elle perd l'or, le masque de pharaon et le feu
+  bleu ; il ne reste que les orbites vides et le noir qui entre dans la gueule.
+- **Celui qui juge** — assis sur un siège de pierre, la balance de bronze
+  pendue à la main, un seul rai de jour en travers des genoux.
+- **Le Passeur au masque de chacal** — debout dans sa barque, masque craquelé
+  aux oreilles cassées, une seule toile pliée à bord, ni rive ni lanterne.
+- **Le Maître des hiéroglyphes** — le masque d'ibis en plâtre fendu sur du
+  bois noir, le calame levé, la tablette **vide**. Le nom reste, l'écriture
+  disparaît — c'est la règle du set.
+- **Papyrus** — la feuille vierge tenue à deux mains, une ligne de sang au
+  coin, le prix payé.
+- **Le Nom effacé** — la tablette grattée jusqu'à la pierre, poussière et
+  ciseau de bronze.
+- **L'Offrande de lin** — les bandes pliées sur l'autel noir, encore marquées
+  par un corps.
+
+Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent
+quarante-trois illustrations alternatives**.
 
 ## La passe des Furies (octobre 2026)
 

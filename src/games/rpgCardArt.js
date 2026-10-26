@@ -237,6 +237,19 @@ const CARD_ART_CACHE_VERSIONS = {
   'scribe-des-feuillets': 'tenebres-os-cendres-v1',
   'pretre-de-la-bouche': 'tenebres-os-cendres-v1',
   'ureus-du-seuil': 'tenebres-os-cendres-v1',
+  // Deuxième lot : les figures du seuil, les masques et les magies du livre.
+  // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
+  // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
+  'momie-de-lin': 'tenebres-os-cendres-v1',
+  'ibis-des-comptes': 'tenebres-os-cendres-v1',
+  'celle-qui-pese': 'tenebres-os-cendres-v1',
+  'la-devoreuse': 'tenebres-os-cendres-v1',
+  'celui-qui-juge': 'tenebres-os-cendres-v1',
+  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v1',
+  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v1',
+  'papyrus': 'tenebres-os-cendres-v1',
+  'nom-efface': 'tenebres-os-cendres-v1',
+  'offrande-de-lin': 'tenebres-os-cendres-v1',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le

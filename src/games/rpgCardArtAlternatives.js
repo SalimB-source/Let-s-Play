@@ -229,6 +229,16 @@ const DEFINITIONS = [
   ['scribe-des-feuillets', 'Le scribe des feuillets'],
   ['pretre-de-la-bouche', 'Le prêtre de la bouche'],
   ['ureus-du-seuil', 'L’uræus du seuil'],
+  ['momie-de-lin', 'La momie de lin'],
+  ['ibis-des-comptes', 'L’ibis des comptes'],
+  ['celle-qui-pese', 'Celle qui pèse'],
+  ['la-devoreuse', 'La Dévoreuse'],
+  ['celui-qui-juge', 'Celui qui juge'],
+  ['passeur-au-masque-de-chacal', 'Le Passeur au masque de chacal'],
+  ['maitre-des-hieroglyphes', 'Le Maître des hiéroglyphes'],
+  ['papyrus', 'Le papyrus'],
+  ['nom-efface', 'Le nom effacé'],
+  ['offrande-de-lin', 'L’offrande de lin'],
 ];
 
 /**
