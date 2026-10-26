@@ -177,6 +177,13 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
         .sort(comparerCartesParPuissance);
       if (classees.length) partielle.add(classees.at(-1).id);
     }
+    // Les paquets de la **rampe des Tours** (`rampeEtage`) sont plafonnés : un
+    // plafond peut interrompre une famille au milieu d'une carte, ce qui est
+    // exactement son travail — le paquet cède une copie plutôt que de dépasser
+    // le palier de l'étage. L'invariant du « maximum légal » vaut donc pour les
+    // compositions sans plafond de rampe.
+    const rampe = recette.mythiquesTotalMax !== undefined || recette.raresMax !== undefined;
+    if (rampe) continue;
     for (const id of horsTerrains) {
       if (signature.has(id) || partielle.has(id)) continue;
       const nombre = comptes.get(id);

@@ -326,11 +326,24 @@ test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {
   assert.equal(duel.joueur.creatures.length, 1, 'la créature est posée');
 });
 
-test('la Tour des Abysses joue le deck bleu sur ses quatre étages, avec des contres pour l’IA', () => {
+test('la Tour des Abysses joue un paquet bleu par étage, de plus en plus fourni', () => {
   const tour = RPG_STORY_TOURS.find((t) => t.id === 'tour-des-abysses');
   assert.ok(tour, 'la tour existe');
   assert.equal(tour.etages.length, 4);
-  for (const etage of tour.etages) assert.equal(etage.deck, 'maree-des-abysses');
+  // Depuis la rampe des Tours, chaque étage a **son** paquet d'Eau — fini le
+  // même deck rejoué quatre fois. La Marée reste le boîtier de l'étagère.
+  const paquets = tour.etages.map((etage) => etage.deck);
+  assert.equal(new Set(paquets).size, 4, 'quatre paquets différents');
+  const mythiques = paquets.map((deckId) => deckHistoire(deckId)
+    .filter((id) => cardById(id).rarity === 'mythique').length);
+  assert.deepEqual(mythiques, [...mythiques].sort((a, b) => a - b),
+    'la rampe monte : jamais moins de figures à l’étage suivant');
+  for (const deckId of paquets) {
+    const deck = deckHistoire(deckId);
+    assert.equal(rpgValiderDeck(deck).ok, true, `${deckId} est un deck valide`);
+    assert.deepEqual([...new Set(deck.flatMap((id) => cardColors(cardById(id))))], ['eau'],
+      `${deckId} reste cent pour cent Eau`);
+  }
   assert.equal(deckHistoire('maree-des-abysses'), RPG_DECK_MAREE_BASE);
 });
 

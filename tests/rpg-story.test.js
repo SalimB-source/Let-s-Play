@@ -224,16 +224,20 @@ test('la Tour du Sablier renversé aligne sept étages de types différents, au-
   // campagne le plus fourni d'avant, et le Sablier les écrase tous.
   const mythiques = (deckId) => deckHistoire(deckId)
     .filter((id) => cardById(id).rarity === 'mythique').length;
-  const absolus = new Set(tour.etages.map((etage) => etage.deck));
-  const maxAvant = Math.max(...Object.keys(RPG_STORY_DECKS)
-    .filter((deckId) => !absolus.has(deckId)).map(mythiques));
+  // Depuis les coffrets et la rampe des Tours, les sommets de **chaque** Tour
+  // n'ont plus de plafond non plus : le Sablier ne se distingue donc plus par
+  // un nombre de mythiques supérieur à tout le reste, mais par ses sept
+  // identités, sa puissance d'étage et son tricolore. Ce qui reste vrai et
+  // vérifiable : aucun paquet absolu n'est plafonné, et chacun aligne les
+  // figures de son identité.
   for (const etage of tour.etages) {
     const recette = RPG_RECETTES_HISTOIRE[etage.deck];
     assert.ok(recette, `${etage.deck} a sa recette`);
     assert.equal(recette.mythiquesMax, undefined, `${etage.deck} : aucun plafond de mythiques`);
     assert.equal(recette.raresMax, undefined, `${etage.deck} : aucun plafond de rares`);
-    assert.ok(mythiques(etage.deck) >= maxAvant,
-      `${etage.deck} aligne ${mythiques(etage.deck)} mythiques, au moins le maximum d'avant (${maxAvant})`);
+    assert.equal(recette.mythiquesTotalMax, undefined, `${etage.deck} : aucun plafond global de mythiques`);
+    assert.ok(mythiques(etage.deck) >= 5,
+      `${etage.deck} aligne au moins cinq figures (${mythiques(etage.deck)})`);
   }
   assert.ok(mythiques('le-sablier') >= 20, 'le Sablier verse plus de vingt mythiques dans trente cartes');
   assert.ok(deckHistoire('flamme-absolue').includes('kagutsuchi-flamme-originelle')

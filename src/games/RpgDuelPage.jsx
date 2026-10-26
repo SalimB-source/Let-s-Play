@@ -107,6 +107,8 @@ import RpgProfilJoueur from './RpgProfilJoueur.jsx';
 import RpgPisteGains from './RpgPisteGains.jsx';
 import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
+import RpgCoffretBienvenue from './RpgCoffretBienvenue.jsx';
+import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
@@ -12758,6 +12760,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       {/* Aucun paquet ne s'ouvre pendant une partie en cours : la cérémonie
           n'apparaît ici qu'une fois le duel terminé (victoire, défaite ou
           égalité), au-dessus du bilan de fin de partie. */}
+      {/* Le tout premier lancement : les trois coffrets de bienvenue. Le
+          coffret ouvert devient un deck de la maison — trente cartes, tout de
+          suite jouables — et la collection se rafraîchit sans recharger. */}
+      <RpgCoffretBienvenue
+        onOuvrir={(coffret) => {
+          enregistrerDeckMaison(coffretEnDeckMaison(coffret));
+          rafraichirCollection();
+        }}
+      />
       {!partieEnCours && (
         <MonteeDeNiveau
           montee={monteeNiveau}

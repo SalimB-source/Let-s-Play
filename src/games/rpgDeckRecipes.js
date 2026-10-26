@@ -30,6 +30,36 @@
  * contrôle de `tests/rpg-decks-puissance.test.js`, avec bien d'autres.
  */
 
+
+/**
+ * La **rampe d'un étage de Tour** — plus on monte, plus le paquet est complet.
+ *
+ * Chaque Tour a désormais un paquet par étage, et non plus un paquet recyclé :
+ * le premier étage ménage ses figures, le dernier les aligne **toutes**. Les
+ * deux plafonds du composeur (`mythiquesMax` et `raresMax`, comptés par
+ * famille) suivent la position de l'étage dans sa Tour :
+ *
+ *   - **étage 1** : aucune mythique, trois rares — on apprend ;
+ *   - **étage n** : n−1 mythiques et n+2 rares, cran par cran ;
+ *   - **sommet** : aucun plafond du tout — toutes les mythiques et toutes les
+ *     rares de l'identité, comme les paquets « absolus » de la Tour du Sablier
+ *     renversé. C'est la récompense de l'escalade, et le seul endroit du jeu où
+ *     une couleur aligne ses figures d'un coup.
+ */
+export function rampeEtage(etage, etages) {
+  const rang = Math.max(1, Number(etage) || 1);
+  const total = Math.max(rang, Number(etages) || rang);
+  if (rang >= total) return {};
+  // Les mythiques se comptent **globalement** (`mythiquesTotalMax`) : c'est le
+  // chiffre qu'on lit sur la table, toutes familles confondues — zéro figure au
+  // premier étage, une au deuxième, et toutes au sommet. Les rares, elles,
+  // gardent le plafond **par famille** (`raresMax`, créatures et sorts
+  // séparément) : le vivier d'une couleur est trop mince pour tenir trente
+  // cartes si l'on plafonne les rares en bloc, et un paquet incomplet n'est pas
+  // une rampe, c'est un bug.
+  return { mythiquesTotalMax: rang - 1, raresMax: rang + 2 };
+}
+
 /**
  * Les sept boîtiers de l'étagère (onglet Deck). Chaque recette fixe les cartes
  * signature, une seule mythique et un nombre de rares adapté aux trente cartes jouables ; les autres cartes
@@ -259,8 +289,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 4,
-    raresMax: 3,
+    ...rampeEtage(4, 5),
     signature: [
       ['feriel', 1],
       ['trait-de-braise', 2],
@@ -278,11 +307,10 @@ export const RPG_RECETTES_HISTOIRE = {
   'gardes-du-fjord': {
     identite: ['neige'],
     terrains: [],
-    creatures: 17,
-    magies: 13,
-    armes: 0,
-    mythiquesMax: 1,
-    raresMax: 7,
+    creatures: 16,
+    magies: 12,
+    armes: 2,
+    ...rampeEtage(1, 4),
     signature: [
       ['dame-des-neuf-mondes', 1],
       ['mur-de-boucliers', 2],
@@ -300,11 +328,10 @@ export const RPG_RECETTES_HISTOIRE = {
   'meute-des-neiges': {
     identite: ['neige'],
     terrains: [],
-    creatures: 18,
+    creatures: 16,
     magies: 12,
-    armes: 0,
-    mythiquesMax: 0,
-    raresMax: 7,
+    armes: 2,
+    ...rampeEtage(2, 4),
     signature: [
       ['loup-des-neiges', 2],
       ['berserk-des-trois-hivers', 2],
@@ -323,8 +350,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 2,
-    raresMax: 7,
+    ...rampeEtage(4, 4),
     signature: [
       ['pere-des-corbeaux', 1],
       ['maitre-du-marteau', 1],
@@ -344,8 +370,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 3,
-    raresMax: 4,
+    ...rampeEtage(5, 5),
     signature: [
       ['tin-hinan', 1],
       ['sahir-des-braises', 1],
@@ -362,8 +387,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 0,
-    raresMax: 7,
+    ...rampeEtage(1, 4),
     signature: [
       ['ashigaru-des-braises', 2],
       ['hatamoto-des-cendres', 2],
@@ -382,8 +406,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 0,
-    raresMax: 7,
+    ...rampeEtage(2, 4),
     signature: [
       ['ronin-du-soleil-rouge', 2],
       ['onna-musha-des-cendres', 2],
@@ -403,8 +426,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 3,
-    raresMax: 8,
+    ...rampeEtage(4, 4),
     signature: [
       ['daimyo-du-soleil-rouge', 1],
       ['kagutsuchi-flamme-originelle', 1],
@@ -424,8 +446,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 19,
     magies: 10,
     armes: 1,
-    mythiquesMax: 0,
-    raresMax: 4,
+    ...rampeEtage(1, 4),
     signature: [
       ['momie-de-lin', 2],
       ['ouvrier-du-natron', 2],
@@ -443,8 +464,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 19,
     magies: 10,
     armes: 1,
-    mythiquesMax: 0,
-    raresMax: 6,
+    ...rampeEtage(2, 4),
     signature: [
       ['chacal-du-seuil', 2],
       ['ureus-du-seuil', 2],
@@ -463,8 +483,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 19,
     magies: 10,
     armes: 1,
-    mythiquesMax: 2,
-    raresMax: 8,
+    ...rampeEtage(4, 4),
     signature: [
       ['la-devoreuse', 1],
       ['celui-qui-juge', 1],
@@ -628,8 +647,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 1,
-    raresMax: 5,
+    ...rampeEtage(1, 4),
     signature: [
       ['corbeau-de-givre', 2],
       ['eirik-du-premier-serment', 1],
@@ -643,8 +661,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 2,
-    raresMax: 7,
+    ...rampeEtage(2, 4),
     signature: [
       ['veilleuse-au-corbeau-noir', 2],
       ['berserk-du-crepuscule', 2],
@@ -659,8 +676,7 @@ export const RPG_RECETTES_HISTOIRE = {
     creatures: 20,
     magies: 10,
     armes: 0,
-    mythiquesMax: 3,
-    raresMax: 9,
+    ...rampeEtage(3, 4),
     signature: [
       ['valkyrie-des-neuf-nuits', 2],
       ['neige-noire', 2],
@@ -684,8 +700,7 @@ export const RPG_RECETTES_HISTOIRE = {
     // Dernière Pesée que le remplissage des sorts s'accorde : cinq mythiques
     // au total, le maximum que le mode Histoire s'autorise avant les paquets
     // « absolus » de la Tour du Sablier renversé.
-    mythiquesMax: 4,
-    raresMax: 12,
+    ...rampeEtage(4, 4),
     signature: [
       ['maitre-des-corbeaux', 1],
       ['pere-des-corbeaux', 1],
@@ -696,4 +711,285 @@ export const RPG_RECETTES_HISTOIRE = {
       ['dame-des-neuf-mondes', 1],
     ],
   },
+  // ── Les Tours, étage par étage — un paquet par marche ────────────────────
+  //
+  // Chaque Tour aligne désormais **son** paquet à chaque étage : la Tour des
+  // Listes n'emprunte plus celui de la Cour des Djinns, les Abysses ne jouent
+  // plus quatre fois la Marée, les Corsaires ne ressortent plus les mêmes
+  // Lettres de Marque. Les plafonds viennent de `rampeEtage` : rien en bas,
+  // tout au sommet.
+
+  /** Listes 1 — le guet de palier : des corps bon marché, aucune figure. */
+  'guetteur-de-palier': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 8,
+    armes: 2,
+    ...rampeEtage(1, 5),
+    signature: [
+      ['tislit-des-aures', 2], ['chien-du-guet', 2],
+      ['guetteur-du-beffroi', 2], ['rempart-de-dunes', 2],
+    ],
+  },
+  /** Listes 2 — la Scribe : la pioche et les guides, une première figure. */
+  'scribe-de-la-liste': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 19,
+    magies: 9,
+    armes: 2,
+    ...rampeEtage(2, 5),
+    signature: [
+      ['scribe-de-la-liste', 2], ['amayas-du-hoggar', 2],
+      ['tiziri-du-djurdjura', 2], ['chien-du-guet', 2],
+    ],
+  },
+  /** Listes 3 — le Puisatier : le Sable appelle la Braise, Bouchra ouvre. */
+  'puisatier-des-cendres': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 8,
+    armes: 2,
+    ...rampeEtage(3, 5),
+    signature: [
+      ['amani-des-ksour', 2], ['bouchra-guerriere-des-cretes', 1],
+      ['braisier-du-souk', 2], ['ghul-des-cendres', 2],
+    ],
+  },
+  /** Souk 1 — le marchand de sable : l'étal du bas, rien de rare. */
+  'marchand-de-sable': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 8,
+    armes: 2,
+    ...rampeEtage(1, 4),
+    signature: [
+      ['tislit-des-aures', 2], ['fennec-des-decombres', 2],
+      ['tempete-de-sable', 2], ['ashigaru-des-braises', 2],
+    ],
+  },
+  /** Souk 2 — la Gardienne des ksour : l'égide d'Amani et les équipements. */
+  'gardienne-des-ksour': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 19,
+    magies: 8,
+    armes: 3,
+    ...rampeEtage(2, 4),
+    signature: [
+      ['amani-des-ksour', 2], ['amayas-du-hoggar', 2],
+      ['jitte-d-amayas', 1], ['tiziri-du-djurdjura', 2],
+    ],
+  },
+  /** Souk 3 — le Djinn du tournant : la foudre et les cendres. */
+  'djinn-du-tournant': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['djinn-de-foudre', 2], ['braisier-du-souk', 2],
+      ['ghul-des-cendres', 2], ['vent-rouge', 2],
+    ],
+  },
+  /** Souk 4 — la Reine des étals : le sommet du Souk, toutes les figures. */
+  'reine-des-etals': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 9,
+    armes: 1,
+    ...rampeEtage(4, 4),
+    signature: [
+      ['feriel', 1], ['sahir-des-braises', 1],
+      ['anqa-des-braises', 1], ['tarek', 1],
+    ],
+  },
+  /** Sables 1 — le Dernier Fennec : la course du désert, sans figure. */
+  'veille-des-ergs': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 21,
+    magies: 7,
+    armes: 2,
+    ...rampeEtage(1, 3),
+    signature: [
+      ['fennec-des-decombres', 2], ['tislit-des-aures', 2],
+      ['rempart-de-dunes', 2], ['chien-du-guet', 2],
+    ],
+  },
+  /** Sables 2 — l'Ifrit des sables : le feu gagne la dune. */
+  'ifrit-des-sables': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 9,
+    armes: 1,
+    ...rampeEtage(2, 3),
+    signature: [
+      ['ifrit-des-ergs', 1], ['djinn-de-foudre', 2],
+      ['vent-rouge', 2], ['ghul-des-cendres', 2],
+    ],
+  },
+  /** Sables 3 — l'Horloger du Zénith : le sommet du Sable et de la Braise. */
+  'horloger-du-zenith': {
+    identite: ['sable', 'braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 9,
+    armes: 1,
+    ...rampeEtage(3, 3),
+    signature: [
+      ['tin-hinan', 1], ['sahir-des-braises', 1],
+      ['anqa-des-braises', 1], ['kusayla-roi-des-imazighen', 1],
+    ],
+  },
+  /** Abysses 1 — le Pêcheur de perles : les citernes, rien de mythique. */
+  'pecheur-de-perles': {
+    identite: ['eau'],
+    terrains: [],
+    creatures: 10,
+    magies: 18,
+    armes: 2,
+    ...rampeEtage(1, 4),
+    signature: [
+      ['porteuse-de-cruches', 2], ['lame-de-mer', 2], ['ecueil', 2],
+    ],
+  },
+  /** Abysses 2 — la Nageuse des puits : la Vipère et les citernes. */
+  'nageuse-des-puits': {
+    identite: ['eau'],
+    terrains: [],
+    creatures: 11,
+    magies: 17,
+    armes: 2,
+    ...rampeEtage(2, 4),
+    signature: [
+      ['veilleuse-des-citernes', 2], ['sonneur-fele', 2],
+      ['vipere-de-verre', 1], ['baton-des-citernes', 1],
+    ],
+  },
+  /** Abysses 3 — le Sonneur d'écume : les contresorts montent à la surface. */
+  'sonneur-d-ecume': {
+    identite: ['eau'],
+    terrains: [],
+    creatures: 11,
+    magies: 17,
+    armes: 2,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['sonneur-fele', 2], ['ressac', 2],
+      ['contresort-des-abimes', 2], ['leviathan', 1],
+    ],
+  },
+  /** Abysses 4 — le Dévoreur de l'abîme : le sommet de l'Eau. */
+  'devoreur-de-l-abime': {
+    identite: ['eau'],
+    terrains: [],
+    creatures: 12,
+    magies: 16,
+    armes: 2,
+    ...rampeEtage(4, 4),
+    signature: [
+      ['kraken', 1], ['leviathan', 1],
+      ['bakunawa', 1], ['jormungandr', 1],
+    ],
+  },
+  /** Corsaires 1 — l'Équipage des galiotes : l'Abordage, sans figure. */
+  'equipage-des-galiotes': {
+    identite: ['sable', 'eau'],
+    terrains: [],
+    creatures: 19,
+    magies: 9,
+    armes: 2,
+    ...rampeEtage(1, 4),
+    signature: [
+      ['mousse-des-galiotes', 2], ['rais-de-la-galiote', 2], ['haut-fond', 2],
+    ],
+  },
+  /** Corsaires 2 — le Marché des rançons : le Négociant et les coureurs. */
+  'marche-des-ranscons': {
+    identite: ['sable', 'eau'],
+    terrains: [],
+    creatures: 19,
+    magies: 9,
+    armes: 2,
+    ...rampeEtage(2, 4),
+    signature: [
+      ['negociant-des-ranscons', 1], ['cotre-de-course', 2],
+      ['le-renegat', 2], ['mousse-des-galiotes', 2],
+    ],
+  },
+  /** Corsaires 3 — la Flotte du Raïs : les galions et le débarquement. */
+  'flotte-du-rais': {
+    identite: ['sable', 'eau'],
+    terrains: [],
+    creatures: 19,
+    magies: 9,
+    armes: 2,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['rais-de-la-galiote', 2], ['galion-de-la-flotte', 2],
+      ['le-grand-debarquement', 2], ['grappin-d-abordage', 1],
+    ],
+  },
+  /** Corsaires 4 — l'Amiral des deux mers : le sommet de la course. */
+  'amiral-des-deux-mers': {
+    identite: ['sable', 'eau'],
+    terrains: [],
+    creatures: 19,
+    magies: 9,
+    armes: 2,
+    ...rampeEtage(4, 4),
+    signature: [
+      ['la-barbe-rousse', 1], ['la-barbe-noire', 1],
+      ['le-tresor-de-lima', 1], ['la-vengeance-de-la-reine-anne', 1],
+    ],
+  },
+
+  /** Fjord 3 — la Valkyrie du fjord : les corbeaux appellent les guerriers. */
+  'valkyrie-du-fjord': {
+    identite: ['neige'],
+    terrains: [],
+    creatures: 18,
+    magies: 12,
+    armes: 0,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['valkyrie-au-corbeau', 2], ['scalde-des-runes', 2],
+      ['guerrier-au-bouclier-rond', 2], ['loup-des-neiges', 2],
+    ],
+  },
+  /** Soleil 3 — le Kenshi du torii : la garde du temple, lame au clair. */
+  'kenshi-du-torii': {
+    identite: ['braise'],
+    terrains: [],
+    creatures: 20,
+    magies: 10,
+    armes: 0,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['kenshi-de-la-forge', 2], ['samourai-du-torii', 2],
+      ['onna-musha-des-cendres', 2], ['frappe-iaijutsu', 2],
+    ],
+  },
+  /** Nécropole 3 — la Peseuse des âmes : Celle qui pèse et son khopesh. */
+  'peseuse-des-ames': {
+    identite: ['tenebres'],
+    terrains: [],
+    creatures: 19,
+    magies: 10,
+    armes: 1,
+    ...rampeEtage(3, 4),
+    signature: [
+      ['celle-qui-pese', 1], ['khopesh-d-or', 1],
+      ['pretre-de-la-bouche', 2], ['momie-de-lin', 2],
+    ],
+  },
+
 };

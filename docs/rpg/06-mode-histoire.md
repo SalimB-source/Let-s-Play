@@ -166,8 +166,31 @@ seul set hybride **Neige + Ténèbres** du jeu (fiche complète :
    affichée sur le bouton d'accueil et dans l'en-tête de la campagne.
 2. **Les données des tours** — `src/games/rpgStoryTours.js` (id, nom, miniature,
    fonction, deck, puissance, ia, note, et depuis la Neige `avatar` — la figure de
-   l'étage sur la plaque du sorcier) : **dix tours, quarante-trois étages, trente decks**
-   (les archétypes existants et leurs variantes, tous à 30 cartes sans terrain validées).
+   l'étage sur la plaque du sorcier) : **onze tours, quarante-sept étages, et un
+   paquet par étage**, tous à 30 cartes sans terrain validées.
+
+   **La rampe des Tours (octobre 2026).** Chaque étage a désormais **son**
+   paquet : la Tour des Listes, le Souk et les Sables n'empruntent plus ceux du
+   catalogue, les Abysses et les Corsaires ne rejouent plus quatre fois le même,
+   et le Fjord, le Soleil rouge et la Nécropole ont leur troisième étage à eux.
+   Les recettes passent par `rampeEtage(etage, etages)` (`rpgDeckRecipes.js`) :
+
+   | Position | Mythiques (plafond global) | Rares (par famille) |
+   |---|---|---|
+   | Étage 1 | 0 | 3 |
+   | Étage n | n − 1 | n + 2 |
+   | Sommet | **aucun plafond** | **aucun plafond** |
+
+   Autrement dit le premier étage d'une tour se joue sans une seule figure, et
+   son sommet aligne **toutes les mythiques de son identité** — le même régime
+   que les paquets « absolus » de la Tour du Sablier renversé. C'est la réponse
+   au principe « l'IA a les meilleures cartes » : ce n'est plus un privilège de
+   la dernière tour, c'est la récompense de chaque escalade.
+
+   Deux conséquences pratiques, vérifiées par les tests : le nombre de figures
+   ne baisse jamais d'un étage au suivant (`tests/rpg-maree.test.js`), et chaque
+   paquet d'étage garde l'identité chromatique de sa recette
+   (`tests/rpg-decks-puissance.test.js`).
 3. **La règle de continuité entre étages** — **décision : piste A (simple) retenue
    pour l'instant**. Chaque étage est un duel autonome : deck complet, PV pleins,
    aucune ressource reportée ; seule la progression (étages déblayés) compte.

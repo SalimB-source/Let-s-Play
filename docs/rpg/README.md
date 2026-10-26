@@ -24,6 +24,7 @@ réactif de *Clair Obscur*.
 | [`20-profil-joueur-xp.md`](20-profil-joueur-xp.md) | Le **profil du joueur** : la barre d’XP (courbe `26 × niveau^1,62`, 60 niveaux), les dix gestes qui la font monter, les rangs de Bab El, et le **booster offert à chaque palier** — tiré au hasard, sans un crédit dépensé |
 | [`21-tour-du-sablier-renverse.md`](21-tour-du-sablier-renverse.md) | La **Tour du Sablier renversé** : la tour d’épreuves terminale de la Conquête — sept étages de types différents (les cinq couleurs, la Course, le tricolore), l’IA au niveau **Sablier** avec les **meilleures cartes** de chaque identité, sans plafond de mythiques |
 | [`22-tour-du-corbeau.md`](22-tour-du-corbeau.md) | La **Tour du Corbeau** : le set hybride **Neige + Ténèbres** — le Père des corbeaux retourné en Maître des corbeaux, six cartes signature, quatre étages et leur plateau |
+| [`24-coffrets-de-bienvenue.md`](24-coffrets-de-bienvenue.md) | Les **coffrets de bienvenue** : trois coffrets de couleurs différentes au tout premier lancement, une mythique et trois rares dans chacun, trente cartes jouables — et la cérémonie qui les ouvre **vague par vague** (le socle, les rares, la mythique) |
 
 ## La décision de conception
 
