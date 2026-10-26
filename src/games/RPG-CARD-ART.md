@@ -747,9 +747,47 @@ est déjà bleue, en duel comme en vignette.
 **Le Kraken** reste pour le dernier lot : la première peinture rendait un
 **serpent** — pas un tentacule. Il sera repris avec le bras seul, sans tête.
 
-Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent dix-huit
-illustrations alternatives**, dont quinze à l'échelle et cent trois en
+### Troisième lot : le verre et le ressac — le set est clos
+
+- **Le Kraken** refait : un **seul bras**, épais comme un mât, anneaux de
+  ventouses, enroulé au grand mât d'un navire en perdition. **Aucune tête,
+  aucun œil** — c'est le membre qui est terrible, pas la face.
+- **La Parade de verre** — la plaque de verre épais montée dans l'air devant
+  un combattant, la lame enfoncée dedans et arrêtée net.
+- **La Brisure de verre** — le mur de verre qui éclate vers le spectateur, les
+  silhouettes cuirassées hachées derrière.
+- **L'Écueil** — les dents de roche noire dans la houle, l'étrave déjà trop
+  près au bord du cadre.
+- **Le Contresort des abîmes** — le sort qui coule, repris au fond par une
+  main trop longue.
+- **La Marée contraire** — la mer qui recule contre elle-même, le sorcier
+  assis qui écoute.
+- **Le Ressac** — le chevalier pris par l'eau qui se retire, son épée plantée
+  dans le sable.
+- **Le Courant de retour** — le chenal noir ouvert dans le ressac, la barque
+  déjà emportée.
+
+### L'Eau est close : 27 cartes sur 27
+
+Même contrôle que pour la Neige : aucune carte de l'élément Eau ne garde son
+ancienne peinture. Les deux seules entrées Eau sans tableau sont des **jetons**
+(`serpent-des-citernes`, `marée-des-abysses`), qui n'ont jamais eu d'image de
+carte.
+
+Les dix-huit anciennes peintures rejoignent `public/cards/alt/` : **cent
+vingt-six illustrations alternatives**, dont quinze à l'échelle et cent onze en
 boutique.
+
+### Bilan du catalogue
+
+| Élément | Cartes | Repaintes |
+| --- | --- | --- |
+| Neige | 29 | 29 |
+| Eau | 27 | 27 |
+| Sable | 47 | 47 |
+
+**Cent trois cartes** sont désormais dans la même huile sombre, chacune avec son
+ancienne peinture conservée en alternative.
 
 ## La passe des Furies (octobre 2026)
 

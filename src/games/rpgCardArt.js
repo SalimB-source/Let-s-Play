@@ -252,6 +252,17 @@ const CARD_ART_CACHE_VERSIONS = {
   'sonneur-fele': 'eau-souls-bleue-v1',
   'veilleuse-des-citernes': 'eau-souls-bleue-v1',
   'silence-decume': 'eau-souls-bleue-v1',
+  // Dernier lot : les huit magies du verre et du ressac, plus le Kraken refait
+  // — la première peinture donnait un serpent enroulé au navire, pas une bête
+  // à tentacules. Le set Eau est clos : 27 cartes, toutes à l'huile.
+  'kraken': 'eau-souls-bleue-v1',
+  'parade-du-verre': 'eau-souls-bleue-v1',
+  'brisure-de-verre': 'eau-souls-bleue-v1',
+  'ecueil': 'eau-souls-bleue-v1',
+  'contresort-des-abimes': 'eau-souls-bleue-v1',
+  'maree-contraire': 'eau-souls-bleue-v1',
+  'ressac': 'eau-souls-bleue-v1',
+  'courant-de-retour': 'eau-souls-bleue-v1',
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

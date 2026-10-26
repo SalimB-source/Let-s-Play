@@ -213,6 +213,14 @@ const DEFINITIONS = [
   ['sonneur-fele', 'Le sonneur fêlé'],
   ['veilleuse-des-citernes', 'La veilleuse des citernes'],
   ['silence-decume', 'Le silence d’écume'],
+  ['kraken', 'Le Kraken'],
+  ['parade-du-verre', 'La parade de verre'],
+  ['brisure-de-verre', 'La brisure de verre'],
+  ['ecueil', 'L’écueil'],
+  ['contresort-des-abimes', 'Le contresort des abîmes'],
+  ['maree-contraire', 'La marée contraire'],
+  ['ressac', 'Le ressac'],
+  ['courant-de-retour', 'Le courant de retour'],
 ];
 
 /**
