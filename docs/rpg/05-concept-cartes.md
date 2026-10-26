@@ -304,10 +304,12 @@ sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
   est payé), puis la victime se désigne **sur la table adverse** ; la cible est
   revalidée au clic (camp, protection, disparition). Sans cible légale, la pose
   se résout sans choix et l'attente ne s'ouvre pas.
-- Sa peinture est un plein art 4:5 dédié : le roi **au pas de charge sur un
-  champ de bataille**, en **armure complète dorée et casque doré**, longs
-  cheveux gris-noir, gourde à la hanche et **guépard** à son flanc (direction
-  artistique `RPG-CARD-ART.md`). Sa révision de cache est
+- Sa peinture est un plein art 4:5 dédié, refaite dans la veine **soulslike**
+  (la seule carte du catalogue à ce registre) : le roi **à cheval** sur un champ
+  de bataille de cendre, **armure de plaque dorée complète et rongée**, **grand
+  heaume** à cimier, l'or qui **luit faiblement de l'intérieur**, une **grande
+  hache de fer noirci** levée, et le **guépard** gris de cendre qui court à sa
+  droite (direction artistique `RPG-CARD-ART.md`). Sa révision de cache est
   `aksel-roi-imazigh-v1`, déclarée dans `rpgCardArt.js`.
 
 ### Les créatures-jetons (les chiens de sable de Tarek)

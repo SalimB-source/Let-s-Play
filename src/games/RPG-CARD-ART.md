@@ -1198,23 +1198,33 @@ chandelle —, et le grand débarquement est la seule scène de foule de la pass
 
 **La carte ajoutée après la passe — le roi Aksel** (`aksel-roi-des-imazighen`,
 `public/cards/aksel-roi-des-imazighen.jpg`) : Aksel (Koceila), roi awraba du
-VII<sup>e</sup> siècle, **lancé au pas de charge sur un champ de bataille**,
-lance de fer basse, poussière sous les bottes. Il porte une **armure complète
-dorée** — cuirasse lamellaire de plaques dorées lacées de cuir, épaulières,
-vambraces, tassettes et grèves de bronze doré, usées et rayées par le combat,
-jamais un bijou — et un **casque doré** à gardes-joues, cimier court et queue
-d'étoffe indigo, dont s'échappent ses longs cheveux gris-noir ; barbe taillée,
-visage découvert. Sous l'armure, gilet d'indigo sans manches et **pantalon
-d'indigo** rentré dans les bottes ; une **gourde d'eau** ronde de terre cuite
-pend à sa hanche, et un **guépard** bondit à son flanc, collier de cuir, une
-seule queue continue. Derrière lui, la ligne des guerriers amazighs aux
-boucliers ronds avance dans la poussière, devant les bannières de la colonne
-ennemie ; lances brisées et boucliers tombés couvrent la plaine. Le fauve est
-son attribut de roi : la chasse au guépard est l'image de la vitesse et de la
-patience, jamais celle d'un trophée.
-Huile sombre, traitement de la collection, plein art 4:5 livré en 1024×1280.
-Sa révision de cache est **`aksel-roi-imazigh-v1`** — une clé dédiée, pour
-qu'un futur repeint ne date que cette carte.
+VII<sup>e</sup> siècle, **à cheval sur un champ de bataille de cendre**. La
+peinture est refaite dans la **veine soulslike** — la seule carte du catalogue à
+ce registre : ciel bas et meurtri, brume de poussière, ruine d'une arche
+colossale et arbre mort à l'horizon pour l'échelle, rangs de lanciers et de
+bannières en loques fondus dans le brouillard, squelettes, heaumes et boucliers
+brisés à demi enfouis au premier plan.
+
+- **L'armure** est une **plaque dorée complète et rongée** : épaulières
+  festonnées, cuirasse lamellaire aux plaques de laiton terni lacées de corde
+  noircie, grèves dorées, et un **grand heaume de bronze usé, à cimier et
+  gardes-joues**, dont s'échappent de longs cheveux gris-noir. L'or **luit
+  faiblement de l'intérieur**, comme des braises prises sous le métal : la
+  lumière suinte des joints et des laçages, et retombe à peine sur l'encolure du
+  cheval et la cendre autour de lui.
+- **La hache** est une grande hache de guerre ancienne, large fer d'acier noirci,
+  long fût de frêne, poignée de cuir — levée, prête à tomber.
+- **La monture** est un cheval barb obscur et nerveux, crinière tressée, sueur et
+  poussière sur le flanc, haleine fumante dans l'air froid.
+- **Le guépard** court à sa droite, pelage gris de cendre, côtes un peu visibles,
+  collier de cuir, une seule queue continue — la bête du roi, jamais un trophée.
+
+Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
+profondes et une seule lumière chaude et faible. Huile sur toile, clair-obscur
+épais, touches visibles, atmosphère âpre et monumentale ; le cavalier domine
+l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
+texte ni cadre. Sa révision de cache est **`aksel-roi-imazigh-v1`** — une clé
+dédiée, pour qu'un futur repeint ne date que cette carte.
 
 **Ce qui reste hors de la passe** : Yamina, Boualem et Fériel gardent leur
 peinture nihonga algérienne documentée plus bas.
