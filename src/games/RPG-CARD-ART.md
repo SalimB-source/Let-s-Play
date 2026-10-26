@@ -522,6 +522,14 @@ l'illustration — un bouton, une fois ; le solde court s'écrit sous le bouton
 portefeuille (`illustrations.achetees`), se fusionnent en union entre deux
 appareils, et ne redescendent jamais.
 
+> **La vitrine ne s'ouvre pas en jeu.** Sur la table d'un duel, le clic droit
+> ouvre la même fiche — mais avec `avecVitrine={false}` : ni peinture
+> alternative, ni prix, ni bouton d'achat, ni bascule. On y lit une carte avant
+> de la jouer, on n'y fait pas ses courses. Les rappels d'achat ne sont même pas
+> passés au composant — ce n'est pas un bouton caché, c'est une fiche qui ne
+> peut pas vendre. Acheter et basculer restent au **catalogue** et à la
+> **collection**.
+
 **La peinture achetée ou gagnée peut habiller la carte elle-même** : un bouton
 dans la vitrine bascule entre la peinture de la passe Souls et l'alternative
 (`illustrations.affichees`, lu par `cardArt`). C'est ce qui donne au catalogue
