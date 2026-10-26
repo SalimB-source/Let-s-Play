@@ -1219,8 +1219,11 @@ brisés à demi enfouis au premier plan.
   long fût de frêne, poignée de cuir — levée, prête à tomber.
 - **La monture** est un cheval barb obscur et nerveux, crinière tressée, sueur et
   poussière sur le flanc, haleine fumante dans l'air froid.
-- **Le guépard** court à sa droite, pelage gris de cendre, côtes un peu visibles,
-  collier de cuir, une seule queue continue — la bête du roi, jamais un trophée.
+- **Le guépard** court à sa droite, **entièrement coloré** : dos et flancs d'un
+  fauve doré chaud, poitrail, ventre et museau crème, taches noires sur tout le
+  corps, la larme noire de l'œil à la gueule, yeux ambre, queue annelée à pointe
+  crème, collier de cuir. C'est **le seul animal chaud et saturé** de l'image, et
+  il doit le rester : le champ de bataille est de cendre, la bête est vivante.
 - **Le fond est éclairé de loin en loin par la même lumière** : l'arche brisée
   garde des traces de dorure sur la pierre et son ouverture luit d'un ambre
   chaud, derrière les bannières et les squelettes à demi enfouis.

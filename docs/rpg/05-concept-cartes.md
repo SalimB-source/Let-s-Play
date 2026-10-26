@@ -309,7 +309,8 @@ sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
   de bataille de cendre, **armure de plaque dorée complète et rongée**, **tête
   nue — aucun heaume**, visage d'un homme d'environ **trente-cinq ans** aux longs
   cheveux noirs, l'or qui **luit faiblement de l'intérieur**, une **grande hache
-  de fer noirci** levée, le **guépard** gris de cendre qui court à sa droite, et
+  de fer noirci** levée, le **guépard** au pelage fauve doré, taches noires et
+  larme de l'œil, qui court à sa droite, et
   des **accents dorés dans le fond** (l'arche brisée, les bannières, les
   boucliers coulés, la poussière) sans jamais dépasser l'éclat de l'armure
   (direction artistique `RPG-CARD-ART.md`). Sa révision de cache est
