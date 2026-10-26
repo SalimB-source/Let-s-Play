@@ -795,9 +795,10 @@ lampes et les visages.
 | Bleu | × 1,36 |
 | Saturation | × 1,18 |
 
-C'est une **règle du set**, appliquée dès la peinture pour toute la suite
-(marque `eau-souls-bleue-v1`), et pas un filtre de navigateur : l'image livrée
-est déjà bleue, en duel comme en vignette.
+> **Ce virage a été retiré (octobre 2026).** Les peintures de l'Eau sont
+> revenues à leur ardoise froide ; la règle ci-dessus est conservée pour
+> mémoire, elle n'est plus appliquée. Voir « Le virage de couleur est retiré »
+> en fin de document.
 
 ### Deuxième lot : les bêtes et les gardiens
 
@@ -858,6 +859,9 @@ vingt-six illustrations alternatives**, dont quinze à l'échelle et cent onze e
 boutique.
 
 ### Le doré du Sable (octobre 2026)
+
+> **Cette teinte a été retirée (octobre 2026).** Le Sable est revenu à sa
+> lumière de cendre ; la recette ci-dessous est conservée pour mémoire.
 
 Le set Sable était peint dans la palette commune — cendre et ardoise — et se
 distinguait mal de la Neige au premier regard. Il reçoit, comme l'Eau son bleu
@@ -947,8 +951,9 @@ change de matière :
 
 - **Os et suie** : le blanc devient ivoire mort, le fond devient noir de four.
 - **Or terni** : l'or ne brille plus, il est piqué, rayé, presque du bronze.
-- **Violet de nuit** : le violet d'origine revient — c'est la couleur du set —
-  mais **comme teinte seulement**, appliquée à la peinture, jamais en CSS :
+- **Violet de nuit** — **retiré depuis (octobre 2026)**, recette gardée pour
+  mémoire : le violet d'origine revenait — c'est la couleur du set — mais
+  **comme teinte seulement**, appliquée à la peinture, jamais en CSS :
 
   | Réglage | Valeur |
   | --- | --- |
@@ -1660,3 +1665,42 @@ repli clair `#f1f3f5`) : `cardFrameStyle` y est désormais posé comme sur les
 faces du duel. `tests/rpg-cadre-filet.test.js` verrouille l'ensemble — la
 largeur, l'absence de `border-width: 0` sur les faces, la matière intacte et
 la couleur posée sur le catalogue, l'atelier et le guide.
+
+## Le virage de couleur est retiré (octobre 2026)
+
+Trois sets avaient reçu une **teinte appliquée à la peinture** après coup — pas
+un filtre CSS, l'image livrée elle-même : le doré du Sable (`#c89a50`, 18 %),
+le bleu de nuit de l'Eau (× 0,82 / × 0,96 / × 1,36 puis saturation × 1,18) et
+le violet des Ténèbres (`#5b2a86`, 18 %). Ce virage est annulé : les peintures
+sont neutres, chacune dans la lumière de sa scène.
+
+| Set | Cartes | Comment |
+| --- | --- | --- |
+| Sable | 49 | peinture d'avant teinte, reprise dans l'historique (`84e47dc^`) |
+| Eau | 10 | peinture d'avant virage (`19f5aa9^`) |
+| Ténèbres | 21 | peinture d'avant violet (`32d7fdd^`) |
+| Eau | 16 | modèle inverse de la règle du set, appris sur les dix paires ci-dessus |
+| Ténèbres | 1 | même modèle inverse (`tour-des-tenebres`, repeinte après coup) |
+
+Les 16 cartes de l'Eau du deuxième et du troisième lot n'ont pas de peinture
+d'avant virage dans l'historique : elles ont été **dévirées** par le modèle
+inverse de la règle du set, ajusté sur les dix paires (avant / après) du
+premier lot. Erreur mesurée en validation croisée : **0,89 / 255** par canal —
+invisible à l'œil.
+
+Deux remarques :
+
+- **La Barbe Noire** porte `sable-souls-cendres-v1` : sa peinture n'a jamais
+  reçu le doré (elle a été livrée après la passe), seule sa marque de cache le
+  prétendait. Le mensonge est corrigé, l'image n'a pas bougé.
+- Le Seigneur des mâchoires et la Barbe Noire vivent dans les Ténèbres avec une
+  peinture du Sable : ils gardent leur scène, simplement neutre.
+
+La marque de cache de ces peintures devient `sans-teinte-v1` (constante
+`SANS_TEINTE` dans `rpgCardArt.js`) : elle ne décrit plus une couleur de set,
+elle casse le cache des navigateurs qui ont l'ancienne version. Le **filet de
+2 px** reste, lui, la seule marque d'élément — et il ne dépend plus de la
+peinture.
+
+Les recettes de virage restent dans ce document, marquées « retiré » : elles
+sont l'historique du set, pas une consigne.
