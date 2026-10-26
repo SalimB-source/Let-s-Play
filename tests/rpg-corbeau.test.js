@@ -169,8 +169,11 @@ test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peintu
   // affichent `*-furie.jpg`, daté sous sa propre révision pour qu’aucun cache
   // ne resserve la face calme.
   const portraits = [
-    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-v1'],
-    ['valkyrie-des-neuf-nuits', 'corbeau-furie-neuf-nuits-v1'],
+    // Les deux furies ont été repeintes dans la passe Souls (octobre 2026) :
+    // même composition, mais l'huile sombre de la collection au lieu d'une
+    // facture d'une autre époque.
+    ['berserk-du-crepuscule', 'corbeau-furie-souls-v1'],
+    ['valkyrie-des-neuf-nuits', 'corbeau-furie-souls-v1'],
   ];
   for (const [carteId, revision] of portraits) {
     const carte = cardById(carteId);

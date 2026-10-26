@@ -219,6 +219,13 @@ const CARD_ART_CACHE_VERSIONS = {
   'maitre-du-marteau-furie': 'neige-furie-souls-v1',
   'loup-des-neiges-furie': 'neige-furie-loup-v1',
   'valkyrie-au-corbeau-furie': 'neige-furie-valkyrie-v1',
+  'jarl-au-marteau-de-guerre': 'neige-souls-cendres-v1',
+  'jarl-au-marteau-de-guerre-furie': 'neige-furie-souls-v1',
+  'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
+  // Les deux furies du Corbeau des neuf nuits : même scène que leur peinture
+  // intacte, marquée par le combat.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-souls-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

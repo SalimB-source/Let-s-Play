@@ -700,11 +700,17 @@ en même temps que sa furie.
 Les anciennes peintures sont archivées dans `public/cards/alt/` sous le
 préfixe `avant-souls-` : rien ne se jette.
 
-**Reste à faire** : le **Guerrier au bouclier rond** et le **Jarl au marteau de
-guerre** (leur paire est peinte, mais doit être reprise — le bouclier du
-guerrier gardait son vieux motif peint, et le marteau du Jarl se lit comme une
-hache), et les **deux furies du Corbeau des neuf nuits** (Berserk du crépuscule,
-Valkyrie des neuf nuits).
+**Le lot est clos.** Le **Jarl au marteau de guerre** a été repris deux fois :
+son arme se lisait comme une hache — c'est maintenant un **bloc de fer carré au
+bout d'un manche**, face plate et courte pointe au dos, tenu bas sur la face
+intacte et levé, ensanglanté, sur la furie. Le **Guerrier au bouclier rond**
+garde son bouclier de fer goudronné sur sa furie, sans le motif vert et blanc.
+Et les **deux furies du Corbeau des neuf nuits** — Berserk du crépuscule,
+Valkyrie des neuf nuits — sont repeintes dans l'huile sombre, même grève, même
+aurore, même spirale de corbeaux (`corbeau-furie-souls-v1`).
+
+Les sept faces de Furie du catalogue sont désormais toutes dans la même
+facture.
 
 ## Dérogation : les quatre porteurs humains de Furie en photoréaliste (octobre 2026)
 
