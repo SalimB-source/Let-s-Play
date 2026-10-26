@@ -250,6 +250,13 @@ const CARD_ART_CACHE_VERSIONS = {
   'papyrus': 'tenebres-os-cendres-v1',
   'nom-efface': 'tenebres-os-cendres-v1',
   'offrande-de-lin': 'tenebres-os-cendres-v1',
+  // Troisième lot : les trois pesées et les deux lieux. Le set Ténèbres est
+  // clos — 28 cartes jouables, toutes à l'huile.
+  'le-poids': 'tenebres-os-cendres-v1',
+  'les-feuillets': 'tenebres-os-cendres-v1',
+  'la-grande-pesee': 'tenebres-os-cendres-v1',
+  'la-derniere-pesee': 'tenebres-os-cendres-v1',
+  'tour-des-tenebres': 'tenebres-os-cendres-v1',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le

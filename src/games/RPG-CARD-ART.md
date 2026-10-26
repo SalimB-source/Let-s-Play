@@ -783,10 +783,15 @@ boutique.
 | Élément | Cartes | Dans l'huile sombre | Reste |
 | --- | --- | --- | --- |
 | Sable | 47 | 47 | — |
-| Neige | 29 | 29 | — |
-| Eau | 27 | 27 | — |
 | Braise | 32 | 32 | — |
-| Ténèbres | 29 | 6 (le Corbeau des neuf nuits) | **22** |
+| Neige | 29 | 29 | — |
+| Ténèbres | 28 | 28 | — |
+| Eau | 27 | 27 | — |
+
+**Le catalogue est entièrement repeint.** Les cinq sets tiennent désormais la
+même huile sombre, chacun avec sa marque de set : cendre et ardoise pour le
+Sable et la Neige, ambre pour la Braise, **bleu de nuit** pour l'Eau, **os et
+or terni** pour les Ténèbres.
 
 **Braise était déjà faite** : la dérogation Souls de dix-huit cartes de ce
 document (vingt-neuf au total avec les reprises) a couvert tout le set en 2025
@@ -802,10 +807,12 @@ hors du lot des cartes jouées.
 > donc sans clé du tout. Le seul état fiable est visuel, ou celui de ce
 > document.
 
-**Cent trente-cinq cartes** sont désormais dans la même huile sombre, chacune
-avec son ancienne peinture conservée en alternative. Le dernier set encore dans
-l'ancien registre est **Ténèbres** — l'Égypte de la balance : or, violet et
-lumière de musée, à reprendre en os, suie et or terni.
+**Cent soixante-deux cartes illustrées** — jetons compris — sont désormais dans
+la même huile sombre, chacune avec son ancienne peinture conservée en
+alternative. Sept d'entre elles n'ont pas de clé de cache et n'en ont pas
+besoin : leur peinture est antérieure à la convention, ou n'a jamais bougé
+(`le-brulot`, `ghul-des-cendres`, `corsaire`, `chien-de-sable`, `grand-hiver`,
+`serpent-des-citernes`, `shabti`).
 
 ## Passe des Ténèbres — l'Égypte de la balance (octobre 2026)
 
@@ -880,8 +887,32 @@ reprise autrement — sans forme humaine lisible, un linceul debout.
 - **L'Offrande de lin** — les bandes pliées sur l'autel noir, encore marquées
   par un corps.
 
-Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent
-quarante-trois illustrations alternatives**.
+### Troisième lot : les pesées et la tour — le set est clos
+
+- **Le Poids** — la balance de bronze sur la table noire, les deux plateaux
+  chargés à l'identique, le fléau parfaitement de niveau.
+- **Les Feuillets** — le registre ouvert et **trois pages arrachées** déjà
+  emportées par un courant d'air froid, la reliure tendue là où elles ont cédé.
+- **La Grande Pesée** — l'immense balance de la salle noire : un petit cœur
+  mat d'un côté, une pierre pâle de l'autre qui l'emporte, le témoin qui lève
+  la main pour arrêter le fléau.
+- **La Dernière Pesée** — la balance aux deux plateaux **vides**, et tout
+  autour d'elle le champ des armes tombées : heurts, boucliers à plat, linceuls
+  pliés, aucun corps. La pièce la plus forte du set.
+- **La Tour des Ténèbres** — la tour funéraire de pierre noire, sa face nue et
+  bandée, une seule fenêtre allumée très haut, la nécropole et le cortège au
+  pied.
+
+### Les Ténèbres sont closes : 28 cartes sur 28
+
+Contrôle fait carte par carte, comme pour la Neige et l'Eau : aucune carte
+jouable de l'élément Ténèbres ne garde son ancienne peinture. Les six entrées
+en marque `corbeau-neuf-nuits-v1` sont le **Corbeau des neuf nuits**, déjà
+traité.
+
+Les cinq anciennes peintures rejoignent `public/cards/alt/` : **cent
+quarante-huit illustrations alternatives**, dont quinze à l'échelle et cent
+trente-trois en boutique.
 
 ## La passe des Furies (octobre 2026)
 

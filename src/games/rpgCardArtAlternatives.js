@@ -239,6 +239,11 @@ const DEFINITIONS = [
   ['papyrus', 'Le papyrus'],
   ['nom-efface', 'Le nom effacé'],
   ['offrande-de-lin', 'L’offrande de lin'],
+  ['le-poids', 'Le Poids'],
+  ['les-feuillets', 'Les feuillets'],
+  ['la-grande-pesee', 'La Grande Pesée'],
+  ['la-derniere-pesee', 'La Dernière Pesée'],
+  ['tour-des-tenebres', 'La tour des ténèbres'],
 ];
 
 /**
