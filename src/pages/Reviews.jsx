@@ -100,9 +100,6 @@ export default function Reviews(){
           </div>
         </div>
         <div className="short-review-grid">
-          <div className="short-review-player hud-frame">
-            <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-          </div>
           <div className="short-review-copy">
             <span className="short-review-meta">{sr.meta}</span>
             <p className="short-review-kicker">{sr.kicker}</p>
@@ -123,6 +120,9 @@ export default function Reviews(){
               <div className="short-review-score-bar"><i style={{ width: `${shortReviewVideo.score * 10}%` }} /></div>
             </div>
             <a className="arrow-link" href={shortReviewVideo.href} target="_blank" rel="noreferrer">{sr.watch} <Arrow/></a>
+          </div>
+          <div className="short-review-player hud-frame">
+            <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
         </div>
       </section>
