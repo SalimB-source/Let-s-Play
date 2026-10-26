@@ -341,15 +341,15 @@
   transform: scale(1.06);
 }
 
-/* La peinture se fond dans la laque du coffret. */
+/* La peinture se fond dans la laque — uniquement **vers le bas**, là où le bloc
+   imprimé doit rester lisible. Plus de voile teinté sur le reste de
+   l'illustration : la peinture garde ses couleurs. */
 .rpg-coffret__boite-vitrine::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, transparent 44%, rgba(12, 10, 8, 0.5) 78%, rgba(12, 10, 8, 0.96) 100%),
-    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--teinte, #e8b75c) 24%, transparent), transparent 58%);
+  background: linear-gradient(180deg, transparent 52%, rgba(12, 10, 8, 0.46) 80%, rgba(12, 10, 8, 0.96) 100%);
 }
 
 /* Le sceau de cire, en haut à gauche, comme la marque du fabricant. */
@@ -902,18 +902,29 @@
    (`::before`, flou), jamais un reflet qui balaie l'illustration. */
 
 .rpg-coffret__carte {
-  --largeur-carte: 100px;
+  --largeur-carte: 108px;
   --epaisseur-carte: 6px;
-  --bord-carte: rgba(255, 255, 255, 0.12);
+  --bord-carte: rgba(255, 255, 255, 0.16);
   --tranche-carte: #232838;
   --lueur-carte: transparent;
   --lueur-force: 0;
   position: relative;
   width: var(--largeur-carte);
-  perspective: 900px;
   animation: rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
   animation-delay: var(--retard, 0ms);
   will-change: transform, opacity;
+}
+
+/* La perspective est portée par la **scène**, pas par la carte. C'est ce qui
+   garde la lueur `::before` dans le plan de la carte : avec la perspective sur
+   la carte elle-même, la moitié de l'illustration inclinée vers l'arrière
+   passait en profondeur derrière un halo flou, et l'art se retrouvait voilé de
+   la couleur de la rareté. */
+.rpg-coffret__carte-scene {
+  position: relative;
+  z-index: 1;
+  display: block;
+  perspective: 900px;
 }
 
 /* La lueur de rareté : derrière, large, floue. */
@@ -930,35 +941,32 @@
   transition: opacity 280ms ease;
 }
 
+/* Pas de cadre : ni marge, ni fond, ni bordure autour de l'illustration. La
+   carte EST la peinture — un anneau d'un pixel, et le nom en dessous. */
 .rpg-coffret__carte-corps {
   position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 6px;
-  padding: 6px 6px 8px;
+  display: block;
   border-radius: 10px;
-  border: 1px solid var(--bord-carte);
-  background:
-    linear-gradient(168deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 48%, rgba(0, 0, 0, 0.3));
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.5);
+  background: none;
   transform-style: preserve-3d;
   transform: rotateX(6deg) rotateY(13deg);
-  transition: transform 300ms cubic-bezier(0.2, 0.75, 0.25, 1), box-shadow 300ms ease;
+  transition: transform 300ms cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 
 /* La carte se redresse et s'avance sous le curseur. */
 .rpg-coffret__carte:hover .rpg-coffret__carte-corps {
   transform: rotateX(0deg) rotateY(2deg) translateZ(26px);
-  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.58);
 }
 
 /* La tranche : elle naît de l'arête droite, pivote puis recule — même
    grammaire que les faces du coffret, et sa teinte suit la rareté. */
+/* La tranche n'a que la hauteur de l'illustration : le nom et la rareté sont
+   posés dessous, hors du volume, comme une légende. */
 .rpg-coffret__carte-tranche {
   position: absolute;
   top: 0;
-  bottom: 0;
   right: 0;
+  height: calc(var(--largeur-carte) * 1.25);
   width: var(--epaisseur-carte);
   transform-origin: 100% 50%;
   transform: translateZ(calc(var(--epaisseur-carte) * -1)) rotateY(90deg);
@@ -971,7 +979,7 @@
 
 .rpg-coffret__carte-face {
   display: grid;
-  gap: 6px;
+  gap: 7px;
   transform: translateZ(0.6px);
 }
 
@@ -987,13 +995,18 @@
   }
 }
 
-/* Le cadre de l'illustration : une fenêtre nette, sans effet. */
+/* L'illustration, seule : un anneau de rareté, une ombre portée, et rien
+   d'autre. Aucun voile, aucun `filter`, aucun `mix-blend-mode` — la peinture
+   garde ses vraies couleurs. */
 .rpg-coffret__carte-art {
   position: relative;
-  border-radius: 7px;
+  border-radius: 10px;
   overflow: hidden;
   aspect-ratio: 4 / 5;
   background: #0b0d18;
+  box-shadow:
+    0 0 0 1px var(--bord-carte),
+    0 14px 28px rgba(0, 0, 0, 0.5);
 }
 
 .rpg-coffret__carte-art img {
@@ -1002,6 +1015,7 @@
   min-height: 100%;
   object-fit: cover;
   display: block;
+  filter: none;
 }
 
 /* La plaque de repli : jamais un rectangle noir sans un mot. */
@@ -1028,6 +1042,8 @@
   display: grid;
   gap: 3px;
   min-width: 0;
+  padding: 0 1px;
+  text-shadow: 0 1px 3px rgba(3, 5, 12, 0.85);
 }
 
 .rpg-coffret__carte-nom {
@@ -1059,13 +1075,13 @@
 
 /* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot. */
 .rpg-coffret__carte--commune {
-  --largeur-carte: 100px;
+  --largeur-carte: 108px;
   --lueur-force: 0;
 }
 
 /* Inhabituelle : le même gabarit, un halo d'acier à peine perceptible. */
 .rpg-coffret__carte--inhabituelle {
-  --largeur-carte: 100px;
+  --largeur-carte: 108px;
   --bord-carte: rgba(120, 170, 235, 0.42);
   --tranche-carte: #22314f;
   --lueur-carte: rgba(77, 154, 255, 0.55);
@@ -1078,7 +1094,7 @@
 
 /* Rare : plus grande, liseré froid, halo franc. */
 .rpg-coffret__carte--rare {
-  --largeur-carte: 152px;
+  --largeur-carte: 160px;
   --epaisseur-carte: 8px;
   --bord-carte: rgba(120, 190, 255, 0.66);
   --tranche-carte: #1d3a55;
@@ -1097,7 +1113,7 @@
 
 /* Mythique : la plus grande, l'or du coffret, et un halo qui respire. */
 .rpg-coffret__carte--mythique {
-  --largeur-carte: min(288px, 74vw);
+  --largeur-carte: min(296px, 76vw);
   --epaisseur-carte: 10px;
   --bord-carte: rgba(232, 183, 92, 0.85);
   --tranche-carte: #4a3517;
@@ -1107,11 +1123,12 @@
   animation-delay: var(--retard, 0ms);
 }
 
-.rpg-coffret__carte--mythique .rpg-coffret__carte-corps {
-  background: #0d0a06;
+/* La mythique n'a plus de plaque : c'est son anneau d'or qui la signe. */
+.rpg-coffret__carte--mythique .rpg-coffret__carte-art {
   box-shadow:
-    0 20px 46px rgba(0, 0, 0, 0.62),
-    inset 0 0 0 1px rgba(255, 233, 184, 0.25);
+    0 0 0 2px rgba(232, 183, 92, 0.9),
+    0 0 0 3px rgba(255, 233, 184, 0.28),
+    0 22px 48px rgba(0, 0, 0, 0.62);
 }
 
 /* Une fois posée, la mythique flotte : `translate` est animé séparément de
@@ -1224,22 +1241,22 @@
   /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
      reste la plus petite, la mythique tient l'écran sans le déborder. */
   .rpg-coffret__carte {
-    --largeur-carte: 88px;
+    --largeur-carte: 96px;
     --epaisseur-carte: 5px;
   }
 
   .rpg-coffret__carte--commune,
   .rpg-coffret__carte--inhabituelle {
-    --largeur-carte: 88px;
+    --largeur-carte: 96px;
   }
 
   .rpg-coffret__carte--rare {
-    --largeur-carte: 124px;
+    --largeur-carte: 132px;
     --epaisseur-carte: 7px;
   }
 
   .rpg-coffret__carte--mythique {
-    --largeur-carte: min(232px, 78vw);
+    --largeur-carte: min(240px, 80vw);
     --epaisseur-carte: 8px;
   }
 

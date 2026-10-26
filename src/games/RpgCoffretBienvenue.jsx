@@ -149,20 +149,26 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
       }}
       aria-label={`${carte.name}, ${rarete.label} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''}`}
     >
-      <div className="rpg-coffret__carte-corps">
-        {/* La tranche part de l'arête droite et recule : c'est elle qui donne
-            l'épaisseur, et sa teinte suit la rareté. */}
-        <span className="rpg-coffret__carte-tranche" aria-hidden="true" />
-        <div className="rpg-coffret__carte-face">
-          <div className="rpg-coffret__carte-art">
-            <IllustrationCarte carte={carte} />
-          </div>
-          <div className="rpg-coffret__carte-texte">
-            <p className="rpg-coffret__carte-nom">{carte.name}</p>
-            <p className="rpg-coffret__carte-rarete">
-              {rarete.label}
-              {exemplaires > 1 ? <span className="rpg-coffret__copies">×{exemplaires}</span> : null}
-            </p>
+      {/* La scène porte la perspective ; la lueur (`::before`) reste dehors,
+          dans le plan de la carte. Sans ça, les moitiés inclinées en arrière
+          passent en profondeur DERRIÈRE un halo flou — l'illustration se
+          retrouve voilée de la couleur de la rareté. */}
+      <div className="rpg-coffret__carte-scene">
+        <div className="rpg-coffret__carte-corps">
+          {/* La tranche part de l'arête droite et recule : c'est elle qui
+              donne l'épaisseur, et sa teinte suit la rareté. */}
+          <span className="rpg-coffret__carte-tranche" aria-hidden="true" />
+          <div className="rpg-coffret__carte-face">
+            <div className="rpg-coffret__carte-art">
+              <IllustrationCarte carte={carte} />
+            </div>
+            <div className="rpg-coffret__carte-texte">
+              <p className="rpg-coffret__carte-nom">{carte.name}</p>
+              <p className="rpg-coffret__carte-rarete">
+                {rarete.label}
+                {exemplaires > 1 ? <span className="rpg-coffret__copies">×{exemplaires}</span> : null}
+              </p>
+            </div>
           </div>
         </div>
       </div>

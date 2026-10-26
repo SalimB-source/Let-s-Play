@@ -124,17 +124,42 @@ cérémonie du **booster** comme pour celle du coffret.
 La **rareté**, elle, se lit désormais à une lueur — mais une lueur qui vit
 *derrière* la carte (`::before` flou, `aria-hidden`), jamais par-dessus :
 
-| rareté | lueur | taille de la carte |
-| --- | --- | --- |
-| commune | aucune | 100 px — la plus petite |
-| inhabituelle | halo d'acier, à peine perceptible | 100 px |
-| rare | halo froid franc | 152 px |
-| mythique | halo d'or qui respire (4,6 s) | 288 px au plus |
+| rareté | lueur | anneau | taille |
+| --- | --- | --- | --- |
+| commune | aucune | gris clair | 108 px |
+| inhabituelle | halo d'acier, à peine perceptible | acier | 108 px |
+| rare | halo froid franc | bleu froid | 160 px |
+| mythique | halo d'or qui respire (4,6 s) | double anneau d'or | 296 px au plus |
 
-Le contraste entre les quatre se joue donc sur **deux** axes — la taille et la
-lueur — et non plus sur la seule bordure. La commune et l'inhabituelle ont
-d'ailleurs été **réduites** (118 → 100 px) : à l'écran, treize cartes de 118 px
-mangeaient la scène et écrasaient les rares.
+Le contraste entre les quatre se joue donc sur **trois** axes — la taille, la
+lueur et l'anneau — et non sur la seule bordure.
+
+### Pas de cadre : la carte est la peinture
+
+Aucune marge, aucun fond, aucune bordure autour de l'illustration : la carte
+**est** l'image, avec un anneau d'un pixel et son nom posé dessous, hors du
+volume. La tranche n'a donc que la hauteur de l'illustration — une légende ne
+participe pas de l'épaisseur d'une carte.
+
+C'est aussi ce qui rend leurs vraies couleurs aux peintures. Deux voiles ont
+disparu :
+
+- le **fond dégradé du cadre**, qui posait un lavis blanc puis noir derrière
+  l'image — et, par un effet de bord, se retrouvait parfois devant ;
+- la **teinte radiale** de la vitrine du coffret, qui colorait le haut de la
+  peinture de la mythique pour la fondre dans la laque. Il ne reste que le
+  dégradé du bas, celui qui rend le bloc imprimé lisible.
+
+### La lueur ne doit jamais passer devant
+
+Un détail de moteur, découvert en même temps : la lueur de rareté est un
+`::before` **flou et teinté**. Tant que `perspective` était posée sur la carte
+elle-même, le `::before` et la carte vivaient dans le même contexte 3D ; les
+moitiés de carte inclinées vers l'arrière passaient en profondeur **derrière**
+le halo, et l'illustration se retrouvait voilée de la couleur de sa rareté —
+bleu sur les rares, or sur la mythique. La perspective est donc portée par
+`rpg-coffret__carte-scene`, un enfant direct, et non par la carte : la lueur
+reste dans le plan, derrière, et ne touche plus la peinture.
 
 ## 4. La cérémonie, par vagues
 
