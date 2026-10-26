@@ -11,3 +11,9 @@ set -e
   --define:process.env.NODE_ENV='"production"' \
   --define:import.meta.env='{"BASE_URL":"/public/"}' \
   --log-level=error
+
+# Version des assets dans la page : un bundle reconstruit change d'URL, donc
+# aucun cache ne peut resservir l'ancien.
+VERSION=$(date +%s)
+sed -i -E "s#\\./(bundle\\.(js|css))(\\?v=[0-9]+)?#./\\1?v=$VERSION#g" /home/user/Let-s-Play/demo-coffret/index.html
+echo "assets versionnés : v=$VERSION"

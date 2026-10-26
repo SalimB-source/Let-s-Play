@@ -1052,11 +1052,18 @@
 .rpg-souk__carte.is-nouvelle > .rpg-souk__carte-volume { border-color: rgba(231, 191, 101, .6); }
 /* Ne pas appliquer d'opacité au conteneur : cela aplatirait sa scène 3D. */
 .rpg-souk__carte.is-doublon .rpg-souk__carte-art img { opacity: .82; }
-/* ── Lueurs de rareté : la cérémonie honore ses trésors ─────────────────────
-   Rare : lueur dorée chaude (#e1b33f, or du Souk)
-   Mythique : lueur violette électrique (#a875ed, violet légendaire)
-   Le fond, la bordure et l'aura vivent sur `.rpg-souk__carte-volume` pour
-   basculer d'un seul bloc avec l'illustration : un fond peint sur `.rpg-souk__carte`
+/* ── Cadres de rareté : une teinte, pas une lueur ───────────────────────────
+   Rare : bordure dorée (#e1b33f, or du Souk)
+   Mythique : bordure violette (#a875ed)
+
+   **Aucune lueur ne pulse autour des cartes révélées** : ni `box-shadow`
+   coloré, ni aura en `::before`, ni animation de respiration. Le joueur l'a
+   demandé deux fois (« la brillance »), et c'est juste — un halo qui bat attire
+   l'œil sur le cadre au lieu de la peinture. La rareté se lit à la bordure et
+   à la taille du texte, pas au rayonnement.
+
+   Le fond et la bordure vivent sur `.rpg-souk__carte-volume` pour basculer
+   d'un seul bloc avec l'illustration : un fond peint sur `.rpg-souk__carte`
    à Z = 0 couperait en biseau la moitié haute inclinée à Z < 0 (voile noir). */
 .rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume,
 .rpg-souk__carte:has([data-souk-carte-rarete='rare']) > .rpg-souk__carte-volume {
@@ -1066,10 +1073,7 @@
     rgba(12, 10, 12, .86);
   box-shadow:
     0 0 0 1px rgba(255, 231, 175, .35) inset,
-    0 0 14px rgba(255, 215, 85, .55),
-    0 0 32px rgba(232, 179, 63, .32),
     0 10px 28px rgba(0, 0, 0, .32);
-  animation: rpg-souk-lueur-doree 2.6s ease-in-out infinite alternate;
 }
 .rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume,
 .rpg-souk__carte:has([data-souk-carte-rarete='mythique']) > .rpg-souk__carte-volume {
@@ -1079,49 +1083,12 @@
     rgba(14, 10, 18, .88);
   box-shadow:
     0 0 0 1px rgba(216, 180, 254, .38) inset,
-    0 0 16px rgba(168, 117, 237, .65),
-    0 0 36px rgba(120, 80, 210, .42),
-    0 0 58px rgba(168, 117, 237, .18),
     0 10px 28px rgba(0, 0, 0, .36);
-  animation: rpg-souk-lueur-violette 2.2s ease-in-out infinite alternate;
 }
-/* Aura diffuse derrière la carte — renforce la lueur sans masquer l'art */
-.rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume::before,
-.rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 14px;
-  z-index: -1;
-  pointer-events: none;
-  transform: translateZ(-2px);
-  filter: blur(12px);
-  opacity: .58;
-}
-.rpg-souk__carte[data-souk-carte-rarete='rare'] > .rpg-souk__carte-volume::before {
-  background: radial-gradient(60% 60% at 50% 45%, rgba(255, 215, 85, .45), transparent 72%);
-}
-.rpg-souk__carte[data-souk-carte-rarete='mythique'] > .rpg-souk__carte-volume::before {
-  background: radial-gradient(60% 60% at 50% 45%, rgba(168, 117, 237, .52), transparent 74%);
-  filter: blur(14px);
-}
+
 /* Le label de rareté porte la même teinte que sa lueur */
-.rpg-souk__carte[data-souk-carte-rarete='rare'] .rpg-souk__carte-rarete {
-  color: #ffe7af;
-  text-shadow: 0 0 10px rgba(255, 215, 85, .75), 0 0 20px rgba(232, 179, 63, .35);
-}
-.rpg-souk__carte[data-souk-carte-rarete='mythique'] .rpg-souk__carte-rarete {
-  color: #d8b4fe;
-  text-shadow: 0 0 10px rgba(168, 117, 237, .85), 0 0 22px rgba(168, 117, 237, .45);
-}
-@keyframes rpg-souk-lueur-doree {
-  0% { box-shadow: 0 0 0 1px rgba(255, 231, 175, .25) inset, 0 0 10px rgba(255, 215, 85, .42), 0 0 24px rgba(232, 179, 63, .26), 0 10px 28px rgba(0, 0, 0, .32); }
-  100% { box-shadow: 0 0 0 1px rgba(255, 231, 175, .45) inset, 0 0 18px rgba(255, 215, 85, .68), 0 0 38px rgba(232, 179, 63, .42), 0 10px 28px rgba(0, 0, 0, .32); }
-}
-@keyframes rpg-souk-lueur-violette {
-  0% { box-shadow: 0 0 0 1px rgba(216, 180, 254, .28) inset, 0 0 12px rgba(168, 117, 237, .52), 0 0 28px rgba(120, 80, 210, .34), 0 0 48px rgba(168, 117, 237, .14), 0 10px 28px rgba(0, 0, 0, .36); }
-  100% { box-shadow: 0 0 0 1px rgba(216, 180, 254, .48) inset, 0 0 20px rgba(168, 117, 237, .78), 0 0 42px rgba(120, 80, 210, .52), 0 0 68px rgba(168, 117, 237, .26), 0 10px 28px rgba(0, 0, 0, .36); }
-}
+.rpg-souk__carte[data-souk-carte-rarete='rare'] .rpg-souk__carte-rarete { color: #ffe7af; }
+.rpg-souk__carte[data-souk-carte-rarete='mythique'] .rpg-souk__carte-rarete { color: #d8b4fe; }
 /* Les fichiers source n'ont pas tous le même ratio (Léviathan notamment).
    Le cadre impose le format commun, même avant le chargement de l'image. */
 .rpg-souk__carte-art { position: absolute; inset: 0; min-width: 0; overflow: hidden; border-radius: inherit; transform: translateZ(1px); }
@@ -1470,21 +1437,7 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
-/* L'éveil — flash à la révélation : doré pour la rare, violet pour la mythique */
-.is-paquet-anime[data-souk-phase='revelation'] .is-revelee [data-souk-carte-rarete='rare'] {
-  animation: rpg-souk-rare-eveil .7s ease-out both;
-}
-.is-paquet-anime[data-souk-phase='revelation'] .is-revelee [data-souk-carte-rarete='mythique'] {
-  animation: rpg-souk-mythe-eveil .7s ease-out both;
-}
-@keyframes rpg-souk-rare-eveil {
-  0% { color: #fff9d6; text-shadow: 0 0 16px #ffd75e, 0 0 28px #e1b33f; }
-  100% { color: #ffe7af; text-shadow: 0 0 10px rgba(255, 215, 85, .75), 0 0 20px rgba(232, 179, 63, .35); }
-}
-@keyframes rpg-souk-mythe-eveil {
-  0% { color: #f3e8ff; text-shadow: 0 0 18px #c9a3ff, 0 0 30px #a875ed; }
-  100% { color: #d8b4fe; text-shadow: 0 0 10px rgba(168, 117, 237, .85), 0 0 22px rgba(168, 117, 237, .45); }
-}
+/* La révélation ne flashe plus : la carte se retourne, c'est tout. */
 
 .rpg-souk__sachet-ancre {
   position: absolute; left: 50%; top: min(50%, 190px); width: clamp(145px, 20vw, 200px); aspect-ratio: 1 / 1.48;

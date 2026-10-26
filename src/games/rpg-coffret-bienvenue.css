@@ -786,28 +786,7 @@
   isolation: isolate;
 }
 
-/* Les rayons de la mythique, derrière la dernière vague. */
-.rpg-coffret__rayons {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: min(880px, 96vw);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  z-index: -1;
-  border-radius: 50%;
-  background: repeating-conic-gradient(
-    from 0deg,
-    rgba(232, 183, 92, 0.1) 0deg 1.6deg,
-    transparent 1.6deg 14deg
-  );
-  mask-image: radial-gradient(circle, #000 6%, transparent 52%);
-  -webkit-mask-image: radial-gradient(circle, #000 6%, transparent 52%);
-  animation: rpg-coffret-rayons-finale 4000ms ease-out both;
-}
 
-@keyframes rpg-coffret-rayons-finale {
-  0% { opacity: 0; rotate: -8deg; scale: 0.6; }
   35% { opacity: 1; }
   100% { opacity: 0.4; rotate: 10deg; scale: 1.05; }
 }
@@ -839,26 +818,7 @@
   }
 }
 
-/* Le reflet qui passe sur l'illustration — la carte vient d'être frappée. */
-.rpg-coffret__carte-reflet {
-  position: absolute;
-  inset: 0;
-  border-radius: 7px;
-  overflow: hidden;
-  pointer-events: none;
-  background: linear-gradient(108deg, transparent 40%, rgba(255, 255, 255, 0.34) 50%, transparent 60%);
-  background-size: 280% 100%;
-  background-position: 130% 0;
-  animation: rpg-coffret-reflet 1000ms ease-out both;
-  animation-delay: calc(var(--retard, 0ms) + 200ms);
-  mix-blend-mode: screen;
-}
-
-@keyframes rpg-coffret-reflet {
-  from { background-position: 130% 0; }
-  to { background-position: -130% 0; }
-}
-
+/* Le cadre de l'illustration : une fenêtre nette, sans effet. */
 .rpg-coffret__carte-art {
   position: relative;
   border-radius: 7px;
@@ -870,8 +830,29 @@
 .rpg-coffret__carte-art img {
   width: 100%;
   height: 100%;
+  min-height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* La plaque de repli : jamais un rectangle noir sans un mot. */
+.rpg-coffret__illustration-manquante {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  padding: 8px;
+  background:
+    radial-gradient(120% 90% at 50% 20%, rgba(232, 183, 92, 0.16), transparent 62%),
+    #10111c;
+  text-align: center;
+}
+
+.rpg-coffret__illustration-manquante b {
+  font: 600 10px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.6px;
+  color: #b9c0d8;
 }
 
 .rpg-coffret__carte-nom {
@@ -909,9 +890,7 @@
 .rpg-coffret__carte--mythique {
   width: min(232px, 62vw);
   border-color: rgba(232, 183, 92, 0.85);
-  background:
-    linear-gradient(170deg, rgba(232, 183, 92, 0.16), rgba(255, 255, 255, 0.03)),
-    #0d0a06;
+  background: #0d0a06;
   box-shadow:
     0 18px 42px rgba(0, 0, 0, 0.6),
     inset 0 0 0 1px rgba(255, 233, 184, 0.25);
@@ -930,11 +909,6 @@
 @keyframes rpg-coffret-mythe-flotte {
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -8px; }
-}
-
-/* Le reflet repasse sur la mythique, lentement, pendant qu'elle flotte. */
-.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique .rpg-coffret__carte-reflet {
-  animation: rpg-coffret-reflet 3400ms 1800ms ease-in-out infinite;
 }
 
 .rpg-coffret__carte--mythique .rpg-coffret__carte-nom {

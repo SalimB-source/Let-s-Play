@@ -55,10 +55,19 @@ La même image est imprimée sur le couvercle du coffre qui s'ouvre, sous la
 même référence `data-rpg-coffret-vitrine` — la vitrine et l'écran ne peuvent
 pas se contredire.
 
-Les cartes révélées, elles, ne rayonnent pas : la rare garde son liseré froid,
-la mythique sa bordure d'or et sa taille, et **aucun halo** ne s'allume autour
-d'elles. Le reflet qui passe sur leur illustration est le seul éclat — il dit
-« carte fraîchement frappée », pas « carte magique ».
+Les illustrations sont chargées **sans `loading="lazy"`** : dans un calque
+`position: fixed`, un navigateur peut ne jamais déclencher le chargement d'une
+image différée, et la zone restait noire. Si l'URL versionnée (`?v=…`) échoue,
+`IllustrationCarte` retente une fois sans la version, puis affiche une plaque
+au nom de la carte — jamais un rectangle vide.
+
+Les cartes révélées, elles, ne rayonnent **pas du tout** : la rare garde son
+liseré froid, la mythique sa bordure d'or et sa taille. Ni halo, ni pulsation,
+ni reflet qui balaie l'illustration, ni éventail de rayons derrière la vague —
+la peinture est la seule chose qui brille, parce qu'elle est peinte. Le même
+choix vaut pour la cérémonie du **booster** (`rpg-souk.css`), où les lueurs
+dorée et violette qui respiraient autour des cartes ont été retirées : la
+rareté se lit à la bordure, jamais au rayonnement.
 
 ## 3. La cérémonie, par vagues
 

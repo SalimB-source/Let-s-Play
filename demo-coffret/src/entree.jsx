@@ -59,6 +59,10 @@ function Demo() {
   );
 }
 
+// L'estampille du build : elle dit d'un coup d'œil si la page tourne sur une
+// version ancienne (cache) ou sur celle qui vient d'être construite.
+window.__BUILD__ = new Date().toISOString().slice(11, 19);
+
 document.getElementById('vue-coffret')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('demo-vue', { detail: 'coffret' })));
 document.getElementById('vue-booster')?.addEventListener('click', () => window.dispatchEvent(new CustomEvent('demo-vue', { detail: 'booster' })));
 document.getElementById('rejouer')?.addEventListener('click', () => {

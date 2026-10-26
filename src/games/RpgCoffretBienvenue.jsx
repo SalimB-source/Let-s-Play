@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
-import { cardById, cardFrameClass, cardRarityInfo } from './rpgCards.js';
+import { cardById, cardRarityInfo } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
 import {
@@ -52,6 +52,51 @@ function mouvementReduit() {
 }
 
 const POUSSIERE = 16;
+
+/**
+ * L'illustration d'une carte, dans le coffret.
+ *
+ * Trois précautions, apprises à la dure :
+ *
+ *   - **rien de paresseux** (`loading="lazy"`) : dans un calque `position:
+ *     fixed`, un navigateur peut ne jamais déclencher le chargement d'une image
+ *     « différée » — la zone restait noire alors que la carte s'affichait ;
+ *   - **une reprise** : si l'URL versionnée (`?v=…`) échoue — cache, proxy —,
+ *     l'image retente une fois sans la version, plutôt que de laisser un trou ;
+ *   - **une plaque de repli** : si la peinture manque vraiment, la place garde
+ *     le nom de la carte, jamais un rectangle vide.
+ */
+function IllustrationCarte({ carte, className = '' }) {
+  const url = cardArt(carte);
+  const [src, setSrc] = useState(url);
+  const [manquante, setManquante] = useState(false);
+  useEffect(() => {
+    setSrc(url);
+    setManquante(false);
+  }, [url]);
+  if (manquante || !carte) {
+    return (
+      <span className={`rpg-coffret__illustration-manquante ${className}`} aria-hidden="true">
+        <b>{carte?.name ?? ''}</b>
+      </span>
+    );
+  }
+  return (
+    <img
+      className={className}
+      src={src}
+      alt=""
+      width="176"
+      height="220"
+      decoding="async"
+      onError={() => {
+        // Une seule reprise, sans la version : l'URL nue est celle du fichier.
+        if (src === url && url.includes('?')) setSrc(url.split('?')[0]);
+        else setManquante(true);
+      }}
+    />
+  );
+}
 
 /** La ronde de poussière dorée qui flotte derrière tous les écrans du coffret. */
 function Poussiere() {
@@ -87,7 +132,7 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
   const ecart = total > 1 ? (rang - milieu) / Math.max(1, milieu) : 0;
   return (
     <article
-      className={`rpg-coffret__carte ${cardFrameClass(carte)} rpg-coffret__carte--${rarete.key}${reduit ? ' is-reduit' : ''}`}
+      className={`rpg-coffret__carte rpg-coffret__carte--${rarete.key}${reduit ? ' is-reduit' : ''}`}
       data-rpg-coffret-carte={carte.id}
       data-rpg-coffret-rarete={rarete.key}
       style={{
@@ -99,8 +144,7 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
       aria-label={`${carte.name}, ${rarete.label} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''}`}
     >
       <div className="rpg-coffret__carte-art">
-        <img src={cardArt(carte)} alt="" width="176" height="220" loading="lazy" />
-        <span className="rpg-coffret__carte-reflet" aria-hidden="true" />
+        <IllustrationCarte carte={carte} />
       </div>
       <div className="rpg-coffret__carte-texte">
         <p className="rpg-coffret__carte-nom">{carte.name}</p>
@@ -129,7 +173,7 @@ function BoiteCoffret({ coffret, onChoisir }) {
       aria-label={`Ouvrir ${coffret.nom} — ${identite.sousTitre ?? ''} : une mythique, trois rares et vingt-six autres cartes`}
     >
       <span className="rpg-coffret__boite-vitrine">
-        {vitrine ? <img src={cardArt(vitrine)} alt="" width="176" height="220" loading="lazy" /> : null}
+        {vitrine ? <IllustrationCarte carte={vitrine} /> : null}
         <span className="rpg-coffret__boite-vitrine-mention">
           <small>Mythique</small>
           <strong>{vitrine?.name ?? ''}</strong>
@@ -359,7 +403,6 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
           className={`rpg-coffret__vague${reduit ? ' is-reduit' : ''}${mythiqueEnScene ? ' is-finale' : ''}`}
           data-rpg-coffret-vague-cartes={vagueCourante.cartes.length}
         >
-          {mythiqueEnScene && <span className="rpg-coffret__rayons" aria-hidden="true" />}
           {vagueCourante.cartes.map((ligne, index) => (
             <CarteDuCoffret
               key={ligne.id}
