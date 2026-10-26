@@ -213,7 +213,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // seule la face de Furie a changé.
   'berserk-des-trois-hivers': 'neige-souls-cendres-v1',
   'berserk-des-trois-hivers-furie': 'neige-furie-souls-v1',
-  'maitre-du-marteau': 'neige-souls-cendres-v1',
+  // Le Maître boit et rit dans sa taverne — sa face de Furie garde, elle, sa
+  // peinture de bataille, le marteau levé sous la foudre froide.
+  'maitre-du-marteau': 'neige-maitre-tavern-v1',
   'maitre-du-marteau-furie': 'neige-furie-souls-v1',
   'loup-des-neiges-furie': 'neige-furie-loup-v1',
   'valkyrie-au-corbeau-furie': 'neige-furie-valkyrie-v1',

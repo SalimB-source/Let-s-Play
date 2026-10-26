@@ -659,6 +659,23 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
+### Le Maître du marteau à la taverne (octobre 2026)
+
+Sa peinture de bataille est remplacée par une **scène de taverne** : le colosse
+roux attablé dans une halle de nuit, renversé en arrière, riant à pleine
+gueule, une **chope de bois cerclée de fer, grosse comme sa tête**, la mousse
+qui déborde sur son poignet et dans sa barbe. Une deuxième chope et une corne
+renversée sur la table, un plat d'os, le feu pour seule lumière, et son marteau
+appuyé contre le banc, hors du chemin.
+
+Sa **face de Furie garde, elle, sa peinture de bataille** — le colosse debout
+sur son rocher, marteau levé, crâne fendu et foudre froide courant sur
+l'avant-bras (révision `neige-furie-souls-v1`) : c'est le moment où le tavernier
+cesse de rire, et la table n'a plus rien à y faire.
+
+Révision de la carte de base : `neige-maitre-tavern-v1`. L'ancienne peinture de
+bataille est archivée en `avant-tavern-maitre-du-marteau.jpg`.
+
 ## La passe des Furies (octobre 2026)
 
 Les faces de Furie — l'état déclenché d'une créature blessée — étaient restées
