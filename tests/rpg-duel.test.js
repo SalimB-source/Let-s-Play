@@ -547,13 +547,15 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
     ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
-    // La passe Souls du Neige (octobre 2026) a redaté ces quatre peintures
-    // sous la marque commune de la passe : le sujet ne change plus, c'est la
-    // facture qui les rend étrangères aux anciennes révisions dédiées.
+    // La passe Souls du Neige (octobre 2026) a redaté ces peintures : deux sous
+    // la marque commune de la passe, deux reprises une seconde fois parce que
+    // leur sujet ne lisait pas (le marteau de foudre, le grizzly prisonnier).
     ['mur-de-boucliers', 'neige-souls-cendres-v1'],
-    ['eclair-du-marteau', 'neige-souls-cendres-v1'],
+    ['eclair-du-marteau', 'neige-eclair-marteau-v2'],
     ['brume-du-fjord', 'neige-souls-cendres-v1'],
-    ['hurlement-du-blizzard', 'neige-souls-cendres-v1'],
+    ['hurlement-du-blizzard', 'neige-hurlement-grizzli-v2'],
+    // Et la hache de la banquise a quitté sa révision dédiée pour la passe.
+    ['hache-de-la-banquise', 'neige-souls-cendres-v1'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);

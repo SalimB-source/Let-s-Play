@@ -191,6 +191,8 @@ const DEFINITIONS = [
   ['festin-des-vaillants', 'Le festin des vaillants'],
   ['brume-du-fjord', 'La brume du fjord'],
   ['hurlement-du-blizzard', 'Le hurlement du blizzard'],
+  ['lance-de-givre', 'La lance de givre'],
+  ['hache-de-la-banquise', 'La hache sous l’aurore'],
 ];
 
 /**

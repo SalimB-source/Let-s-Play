@@ -181,10 +181,30 @@ Dix cartes de plus, sous la même marque `neige-souls-cendres-v1` :
   electrique-cible-v1`, `mur-boucliers-charge-v1`, `brume-personnes-gelees-v2`,
   `hurlement-grizzli-gele-v1`) pour la marque commune de la passe.
 
-**Deux cartes restent à reprendre**, leurs peintures lisant encore à côté :
-**Éclair du marteau** (le marteau de foudre se lit comme un simple éclair) et
-**Hurlement du blizzard** (le grizzly dans la glace ressemble à un bloc de
-verre). Elles sont peintes, mais pas définitives.
+### Les reprises et les deux armes (octobre 2026)
+
+Trois cartes du lot ont été **reprises une seconde fois** après relecture :
+
+- **Éirik du premier serment** — sa hache avait le fer monté **au milieu du
+  manche** : ce n'était pas une hache. La nouvelle peinture donne une hache
+  danoise à un seul fût continu, fer au bout, talon bas. Révision
+  `neige-eirik-hache-v2`.
+- **Éclair du marteau** — le marteau de foudre se lisait comme un **simple
+  éclair**. Il a maintenant une tête carrée de fer et un manche, l'arc jaillit
+  des angles. Révision `neige-eclair-marteau-v2`.
+- **Hurlement du blizzard** — le grizzly prisonnier ressemblait à un **bloc de
+  verre**. C'est désormais une glace de lac **fendue de partout**, dont la bête
+  sort en forçant, l'épaule déjà libre. Révision `neige-hurlement-grizzli-v2`.
+
+Et **les deux armes** ferment le set, traitées comme des reliques — l'objet
+seul, aucune main, aucun porteur, aucune aurore colorée :
+
+- **Lance de givre** — la hampe d'frêne plantée dans la glace de nuit, le fer
+  feuille-de-saule givré sur les bords, le lacet de cuir à l'équilibre.
+- **Hache de la banquise** — la hache à douille plantée **lame en bas** dans la
+  banquise, le fût dressé et gelé, l'éclat en étoile autour de l'impact. Elle
+  abandonne sa révision dédiée (`hache-plantee-glace-v2`) pour la marque
+  commune `neige-souls-cendres-v1`.
 
 ### Les deux dernières cartes du Serment (octobre 2026)
 

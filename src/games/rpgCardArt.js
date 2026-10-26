@@ -211,19 +211,25 @@ const CARD_ART_CACHE_VERSIONS = {
   'appat-de-la-meute': 'neige-souls-cendres-v1',
   'grand-voile-blanc': 'neige-souls-cendres-v1',
   // Deuxième lot : les figures du Nord et cinq magies.
-  'eirik-du-premier-serment': 'neige-souls-cendres-v1',
+  // La hache d'Éirik avait le fer planté au milieu du manche : refaite.
+  'eirik-du-premier-serment': 'neige-eirik-hache-v2',
   'valkyrie-des-glaces': 'neige-souls-cendres-v1',
   'geant-des-banquises': 'neige-souls-cendres-v1',
   'drakkar-a-tete-de-dragon': 'neige-souls-cendres-v1',
   'scalde-des-runes': 'neige-souls-cendres-v1',
-  'eclair-du-marteau': 'neige-souls-cendres-v1',
+  // Le marteau de foudre se lisait comme un simple éclair : il a une tête.
+  'eclair-du-marteau': 'neige-eclair-marteau-v2',
   'mur-de-boucliers': 'neige-souls-cendres-v1',
   'festin-des-vaillants': 'neige-souls-cendres-v1',
   'brume-du-fjord': 'neige-souls-cendres-v1',
-  'hurlement-du-blizzard': 'neige-souls-cendres-v1',
+  // Le grizzly lisait comme un bloc de verre : c'est la glace qui casse.
+  'hurlement-du-blizzard': 'neige-hurlement-grizzli-v2',
+  // Les deux armes : la lance seule dans la glace, la hache plantée dans la
+  // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
+  'lance-de-givre': 'neige-souls-cendres-v1',
+  'hache-de-la-banquise': 'neige-souls-cendres-v1',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
-  'hache-de-la-banquise': 'hache-plantee-glace-v2',
 };
 /**
  * La Tour Oubliée a d'abord été peinte en encrage BD, puis entièrement
