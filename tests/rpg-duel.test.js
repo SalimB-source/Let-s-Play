@@ -160,6 +160,8 @@ const PLEIN_ART_45 = [
   // Le roi Kusayla, la nouvelle figure amazighe du Sable, et le guépard qu'il
   // appelle à son arrivée (créature-jeton, peinte comme les autres).
   'kusayla-roi-des-imazighen', 'guepard',
+  // Bouchra et sa chèvre de guerre, peintes au format exact de la face.
+  'bouchra-guerriere-des-cretes',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
   'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
@@ -232,8 +234,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 86,
-    'Eirik rejoint les créatures du Serment des Neuf Hivers, puis les quatre du Corbeau des neuf nuits');
+  assert.equal(RPG_CREATURE_CARDS.length, 87,
+    'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -291,6 +293,52 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'une capacité de créature riposte sur son auteur, jamais sur un sorcier');
   assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
     'le journal annonce la riposte d’Eirik');
+});
+
+test('Bouchra, guerrière des crêtes : une rare Sable 2/1 pour 3, Rapidité et Attaque ciblée', () => {
+  const carte = cardById('bouchra-guerriere-des-cretes');
+  assert.deepEqual(
+    {
+      kind: carte.kind, element: carte.element, cost: carte.cost,
+      atk: carte.atk, def: carte.def, rarity: carte.rarity, name: carte.name,
+    },
+    {
+      kind: 'creature', element: 'sable', cost: 3,
+      atk: 2, def: 1, rarity: 'rare', name: 'Bouchra, guerrière des crêtes',
+    },
+  );
+  assert.equal(carte.typeLine, 'Créature — Guerrière amazighe');
+  assert.equal(cardHasPrintedType(carte, 'guerrière'), true);
+  assert.deepEqual(cardColors(carte), ['sable'], 'elle reste mono-Sable, comme sa montagne');
+  assert.equal(carte.rapidite, true, 'sa chèvre de guerre ne connaît pas le mal d’invocation');
+  assert.equal(carte.coupRapide, true, 'son javelot frappe où elle veut');
+  assert.equal(cardCopyLimit(carte), 2, 'une rare se joue en deux exemplaires');
+  assert.equal(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id), true);
+  assert.match(carte.flavor, /chèvre|sentier/);
+  assert.equal(arriveeCiblePortee(carte), null, 'son arrivée ne désigne aucune cible : elle frappe en attaquant');
+});
+
+test('Bouchra arrive prête et frappe une créature adverse sans riposte', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'sorcier', 'porteuse-de-cruches'); // 0/3, un mur sans attaque
+  const mur = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
+
+  donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  const pose = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  assert.equal(pose.ok, true, JSON.stringify(pose));
+  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [2, 1, true],
+    'un corps 2/1 déjà prêt à attaquer');
+  assert.equal(rpgPeutAttaquer(pose.entite), true, 'Rapidité : elle attaque le tour même');
+
+  // Elle désigne le mur : 2 dégâts, et le mur 0/3 ne riposte pas.
+  rpgReglerHasard(duel, () => 0); // le javelot ne rate pas
+  const attaque = rpgAttaquerCreature(duel, 'joueur', pose.entite.id, mur.id);
+  assert.equal(attaque.ok, true, JSON.stringify(attaque));
+  assert.equal(duel.sorcier.creatures.includes(mur), true, '2 dégâts ne suffisent pas à tuer un mur de 3 PV');
+  assert.equal(mur.pv, 1, 'le mur encaisse les 2 dégâts du javelot');
+  assert.equal(pose.entite.pv, 1, 'et ne riposte pas : Bouchra reste intacte');
 });
 
 test('Le roi Kusayla : un héros Sable mythique 4/5 pour 5, Contre-attaque et le guépard qui arrive avec lui', () => {

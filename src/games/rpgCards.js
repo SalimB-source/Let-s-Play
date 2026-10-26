@@ -474,6 +474,24 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Son chant rassemble les villages avant la tempête.',
   },
   {
+    id: 'bouchra-guerriere-des-cretes',
+    name: 'Bouchra, guerrière des crêtes',
+    element: 'sable',
+    cost: 3,
+    atk: 2,
+    def: 1,
+    rarity: 'rare',
+    typeLine: 'Créature — Guerrière amazighe',
+    art: 'bouchra-guerriere-des-cretes',
+    // Elle descend la montagne avant tout le monde : sa chèvre de guerre ne
+    // connaît pas le mal d'invocation (Rapidité), et son javelot ouvre le
+    // combat à son arrivée — Attaque ciblée, comme les archers du Soleil rouge.
+    rapidite: true,
+    coupRapide: true,
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    flavor: 'La chèvre connaît chaque pierre du sentier ; elle n’a plus qu’à choisir où frapper.',
+  },
+  {
     id: 'amani-des-ksour',
     name: 'Amani, gardienne des ksour',
     element: 'sable',

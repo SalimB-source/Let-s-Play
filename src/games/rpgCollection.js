@@ -85,7 +85,9 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // découvre non plus — elles ne sont plus vendues nulle part.
   'listes-1': ['cavalier-amazigh-du-desert', 'scribe-de-la-liste'],
   'listes-2': ['braisier-du-souk'],
-  'listes-3': ['amani-des-ksour', 'tempete-de-sable', 'masque-du-guetteur'],
+  // La guerrière des crêtes descend la montagne avec les gardiennes des ksour :
+  // le Sable apprend le tempo de la chèvre de guerre.
+  'listes-3': ['amani-des-ksour', 'bouchra-guerriere-des-cretes', 'tempete-de-sable', 'masque-du-guetteur'],
   // Pétra et sa peinture alternative se débloquent ensemble à l’étage 4.
   // Pétra était un terrain : retirée avec les terrains.
   'listes-4': [],

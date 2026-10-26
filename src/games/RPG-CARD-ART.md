@@ -55,6 +55,39 @@ jouables dans un deck.
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
 
+## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
+
+La carte ajoutée au set Sable après sa passe (`bouchra-guerriere-des-cretes`,
+`public/cards/bouchra-guerriere-des-cretes.jpg`) : **Bouchra, une petite femme
+guerrière amazighe sur une chèvre de guerre, qui descend la montagne** — la
+scène est héroïque, vue en contre-plongée, et la cavalière domine l'image
+malgré sa taille.
+
+- **La cavalière** — petite et nerveuse, droite en selle, peau brune burinée,
+  pommettes hautes, menton au henné, yeux sombres fixés devant elle, un
+  demi-sourire décidé. Elle est **habillée entièrement de noir** : foulard
+  d'indigo noirci dont la queue flotte derrière elle, gilet lamellaire de cuir
+  noir sur une tunique de lin noir, large ceinture tissée noire à boucle
+  d'argent, pantalon noir serré dans des bottes de cuir noir enroulées. Le noir
+  est mat, poussiéreux, nuancé de laine, de cuir et de lin pour que les volumes
+  tiennent ; seuls le visage, les mains et le cou gardent leur peau chaude, et
+  la lumière de l'aube cerne la silhouette. Petits accents d'argent seulement :
+  créoles, fibule à l'épaule, boucle, pommeau du sabre.
+- **L'équipement** — un bouclier rond de cuir noir dans le dos, un sabre court
+  recourbé à la hanche, et un **javelot léger** en avant dans la main droite,
+  prêt à partir : c'est son Attaque ciblée, peinte dans le geste.
+- **La monture** — une grande **chèvre de guerre** à longs poils noirs et
+  fauves, cornes annelées rejetées en arrière, bride de cuir et de bronze,
+  couverture de selle tissée d'indigo, lancée sur un sentier de pierre : les
+  pierres roulent sous ses sabots, les muscles sont tendus.
+- **Le décor** — une haute pente des Aurès aux premières lueurs : cèdres,
+  genévriers, affleurements de roche, le sentier qui descend, la vallée et un
+  village fortifié dans la brume chaude tout en bas, les crêtes froides
+  prenant le premier soleil derrière elle.
+
+Plein art 4:5 livré en 1024×1280, sans texte ni cadre ; révision de cache
+**`bouchra-cretes-v1`**, déclarée dans `rpgCardArt.js`.
+
 ## Les Tours de défense
 
 Les cinq **Tours de défense** — Braise, Flots, Sable, Neige et Ténèbres — sont

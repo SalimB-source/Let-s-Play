@@ -326,6 +326,27 @@ terre, rien de plus.
   déclarée dans `rpgCardArt.js` — le guépard-jeton porte la sienne,
   `guepard-jeton-v1`.
 
+### Bouchra, la guerrière des crêtes (Sable)
+
+**Bouchra, guerrière des crêtes** (`bouchra-guerriere-des-cretes`) ajoute au
+Sable une combattante de tempo : une **rare** à **3 manas, 2/1**, ligne de type
+« Créature — Guerrière amazighe », **deux exemplaires** par deck.
+
+- **Rapidité** — sa chèvre de guerre ne connaît pas le mal d'invocation : elle
+  attaque le tour où elle arrive, comme le Djinn de foudre ou Fériel.
+- **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
+  adverse de votre choix (30 % de chances de rater, 100 % contre le sorcier) :
+  ses 2 dégâts passent **sans riposte** et son attaque s'arrête là. C'est la
+  mécanique des archers du Soleil rouge, avec un corps bon marché.
+- **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend
+  `null` — son javelot se paie en attaquant, pas en se posant.
+- Elle n'appartient à aucun boîtier de départ : elle se révèle à l'étage 3 de la
+  **Tour des Listes** (`listes-3`), avec la gardienne des ksour, puis s'achète
+  au Souk.
+- Sa peinture (plein art 4:5, révision `bouchra-cretes-v1`) la montre en noir
+  des pieds à la tête, en contre-plongée, sur sa chèvre lancée dans le sentier
+  des Aurès — direction artistique `RPG-CARD-ART.md`.
+
 ### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
 
 Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
