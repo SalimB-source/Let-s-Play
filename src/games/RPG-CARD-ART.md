@@ -795,9 +795,10 @@ lampes et les visages.
 | Bleu | × 1,36 |
 | Saturation | × 1,18 |
 
-C'est une **règle du set**, appliquée dès la peinture pour toute la suite
-(marque `eau-souls-bleue-v1`), et pas un filtre de navigateur : l'image livrée
-est déjà bleue, en duel comme en vignette.
+> **Ce virage a été retiré (octobre 2026).** Les peintures de l'Eau sont
+> revenues à leur ardoise froide ; la règle ci-dessus est conservée pour
+> mémoire, elle n'est plus appliquée. Voir « Le virage de couleur est retiré »
+> en fin de document.
 
 ### Deuxième lot : les bêtes et les gardiens
 
@@ -859,6 +860,9 @@ boutique.
 
 ### Le doré du Sable (octobre 2026)
 
+> **Cette teinte a été retirée (octobre 2026).** Le Sable est revenu à sa
+> lumière de cendre ; la recette ci-dessous est conservée pour mémoire.
+
 Le set Sable était peint dans la palette commune — cendre et ardoise — et se
 distinguait mal de la Neige au premier regard. Il reçoit, comme l'Eau son bleu
 et les Ténèbres leur violet, une **teinte de set appliquée à la peinture** :
@@ -885,9 +889,10 @@ Deux effets secondaires heureux :
 - Les héros (Salem, Tarek, Tin Hinan) gardent leur peinture nihonga — le doré
   la réchauffe sans la dénaturer.
 
-**`la-barbe-noire` vit dans les Ténèbres** : elle garde sa peinture du Sable et
-reçoit donc le doré, ce qui est cohérent — c'est un portrait de pirate, pas un
-scribe de la nécropole.
+**`la-barbe-noire` vit dans les Ténèbres** : elle garde sa peinture du Sable —
+un portrait de pirate, pas un scribe de la nécropole. Livrée après la passe
+dorée, elle n'a jamais reçu la teinte, contrairement à ce que prétendait sa
+marque de cache.
 
 Marque `sable-souls-dore-v2` sur les quarante-six cartes de la passe. Les deux
 cartes sans clé de cache (`corsaire`, `chien-de-sable`) sont dorées mais **ne
@@ -977,8 +982,9 @@ change de matière :
 
 - **Os et suie** : le blanc devient ivoire mort, le fond devient noir de four.
 - **Or terni** : l'or ne brille plus, il est piqué, rayé, presque du bronze.
-- **Violet de nuit** : le violet d'origine revient — c'est la couleur du set —
-  mais **comme teinte seulement**, appliquée à la peinture, jamais en CSS :
+- **Violet de nuit** — **retiré depuis (octobre 2026)**, recette gardée pour
+  mémoire : le violet d'origine revenait — c'est la couleur du set — mais
+  **comme teinte seulement**, appliquée à la peinture, jamais en CSS :
 
   | Réglage | Valeur |
   | --- | --- |
@@ -1651,3 +1657,94 @@ Rien n'a été repeint sur la foi de la seule planche : les cartes marquées d'u
 dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
 elles sont. Les trois images hors facture et les deux cartes trop sombres sont
 les seules candidates à une reprise, et elles attendent un arbitrage.
+
+## Le filet de couleur — 2 px, la teinte de l'élément (octobre 2026)
+
+La couleur d'élément des cartes (Sable `#d8bc86`, Braise `#e0412a`, Eau
+`#3f9fe8`, Neige `#a9e0f5`, Ténèbres `#4b2e83`, et les diagonales des
+hybrides) n'était plus lisible nulle part : l'anneau orné de 7 à 10 px avait
+été coupé par l'expérimentation « plus aucun cadre », et un Braise ressemblait
+à un Eau.
+
+Les faces des cartes portent donc désormais un **filet de 2 px** — et rien
+d'autre. Ce n'est pas un retour de l'anneau : le motif (résille de Bab El,
+zellige des mythiques) est coupé, parce qu'à cette épaisseur il n'est plus
+qu'un bruit de pixels. Seule la matière reste — aplat pour une mono, deux
+aplats en diagonale pour une hybride, dégradé pour une mythique mono — et
+c'est elle qui nomme l'élément d'un coup d'œil.
+
+L'épaisseur tient dans une variable, `--rpg-card-filet: 2px` (`rpg-battle.css`,
+en tête), et les trois feuilles qui peignent des faces la reprennent :
+
+| Feuille | Faces |
+|---|---|
+| `rpg-battle.css` | main, table, terrains, aperçu au survol, paquet, mulligan, destruction, sort joué, catalogue |
+| `rpg-card-guide.css` | l'exemple du guide |
+| `rpg-deck-atelier.css` | la vignette de l'atelier de deck et celle de l'assistant de deck |
+| `rpg-mobile.css` | les mêmes faces au doigt — le retrait du cadre sur mobile/APK n'a plus lieu d'être |
+
+Le filet ne mange pas l'illustration : chaque face est en `border-box`, elle
+garde sa largeur, son 4:5 et sa mesure, et le plein art reste plein cadre
+jusqu'au filet. Le liseré noir de 2 px (`outline`) qui détache les cartes du
+bois ne bouge pas.
+
+**Sens de la diagonale des hybrides.** Une carte à deux couleurs est coupée par
+la diagonale qui monte du **coin bas-gauche au coin haut-droit** : la première
+couleur court donc du coin bas-gauche, le long du bord gauche et du bord haut,
+jusqu'au coin haut-droit ; la seconde tient le coin bas-droit. Cette diagonale
+passe **exactement** par les deux coins, sur une face en 4:5 comme sur une
+pastille, parce que le dégradé est décrit avec des mots-clés de coin
+(`to bottom right`) et non avec un angle : un `135deg` ne traverse les coins que
+sur un carré — sur une face 4:5, la séparation tombait à 10 % des bords et la
+première couleur n'atteignait jamais son coin. Les arrêts restent nets (50/50,
+et 33/33/33 ou 25 × 4 pour les combinaisons à trois et quatre éléments). La
+pastille de coût hybride (`cardHybridGradient`) suit la même diagonale.
+
+Une face échappe volontairement au filet : la **Furie déclenchée**, dont la
+peinture alternative occupe toute la face sans être rognée.
+
+Le catalogue ne recevait pas la couleur de son élément (il retombait sur le
+repli clair `#f1f3f5`) : `cardFrameStyle` y est désormais posé comme sur les
+faces du duel. `tests/rpg-cadre-filet.test.js` verrouille l'ensemble — la
+largeur, l'absence de `border-width: 0` sur les faces, la matière intacte et
+la couleur posée sur le catalogue, l'atelier et le guide.
+
+## Le virage de couleur est retiré (octobre 2026)
+
+Trois sets avaient reçu une **teinte appliquée à la peinture** après coup — pas
+un filtre CSS, l'image livrée elle-même : le doré du Sable (`#c89a50`, 18 %),
+le bleu de nuit de l'Eau (× 0,82 / × 0,96 / × 1,36 puis saturation × 1,18) et
+le violet des Ténèbres (`#5b2a86`, 18 %). Les trois sont retirés, chacun par la
+voie qui lui convenait.
+
+| Set | Cartes | Comment |
+| --- | --- | --- |
+| Sable | 49 | désaturation mesurée carte par carte (`scripts/retirer-filtre-dore-sable.sh`, marque `sable-souls-desore-v3`) |
+| Eau | 10 | peinture d'avant virage, reprise dans l'historique (`19f5aa9^`) |
+| Ténèbres | 21 | peinture d'avant violet (`32d7fdd^`) |
+| Eau | 16 | modèle inverse de la règle du set, appris sur les dix paires ci-dessus |
+| Ténèbres | 1 | même modèle inverse (`tour-des-tenebres`, repeinte après la teinte) |
+
+Le Sable a sa propre section plus haut (« Le doré retiré ») : sa correction est
+une mesure par image, plafonnée, qui protège les scènes volontairement chaudes
+(forge, torche).
+
+Les 16 cartes de l'Eau du deuxième et du troisième lot n'ont pas de peinture
+d'avant virage dans l'historique : elles ont été **dévirées** par le modèle
+inverse de la règle du set, ajusté sur les dix paires (avant / après) du
+premier lot. Erreur mesurée en validation croisée : **0,89 / 255** par canal —
+invisible à l'œil.
+
+**Les couleurs d'élément ne vivent plus dans la peinture.** Le bleu de l'Eau,
+le violet des Ténèbres et le doré du Sable ont quitté les images ; c'est le
+**filet de 2 px** de chaque carte qui nomme son élément, et lui seul. Les
+peintures, elles, retournent à la lumière de leur scène.
+
+Pour l'Eau et les Ténèbres, la marque de cache devient `sans-teinte-v1`
+(constante `SANS_TEINTE` dans `rpgCardArt.js`) : elle ne décrit plus une
+couleur de set, elle casse le cache des navigateurs qui ont l'ancienne version.
+C'est la seule marque du catalogue qui ne nomme pas une peinture mais un
+**état** — « cette peinture est neutre ».
+
+Les recettes de virage restent dans ce document, marquées « retiré » : elles
+sont l'historique du set, pas une consigne.

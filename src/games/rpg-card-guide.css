@@ -263,21 +263,15 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   EXPÉRIMENTATION — PLUS AUCUN CADRE DE CARTE (test visuel, à jeter)
-   Jumeau du bloc de fin de `rpg-battle.css` : l'exemple du guide perd son
-   anneau lui aussi. Seule la première couche — le dégradé de la face, celle
-   qui habille la padding-box — est conservée, pour que l'exemple garde son
-   fond au lieu de retomber sur son aplat. Pour revenir en arrière : supprimer
-   ce bloc.
+   LE FILET DE COULEUR — 2 px (jumeau du bloc de fin de `rpg-battle.css`)
+   ──────────────────────────────────────────────────────────────────────────
+   L'exemple du guide porte le même filet que les faces du duel : 2 px de la
+   couleur de la carte, sans le motif — à cette épaisseur, une résille n'est
+   qu'un bruit de pixels. La matière reste celle du gabarit déclaré plus haut :
+   aplat pour une mono, diagonale pour une hybride, dégradé pour une mythique.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-card-guide__example[class*="rpg-card--frame-"] {
-  border-width: 0 !important;
-  animation: none !important;
-  background-image: linear-gradient(155deg, #1e1c1c, #0d0d13) !important;
-  background-origin: padding-box !important;
-  background-clip: padding-box !important;
-  background-size: 100% 100% !important;
-  background-repeat: no-repeat !important;
-  background-position: 0 0 !important;
-  background-color: transparent !important;
+  border-width: var(--rpg-card-filet, 2px) !important;
+  --rpg-frame-motif: none;
+  --rpg-frame-motif-size: 0 0;
 }

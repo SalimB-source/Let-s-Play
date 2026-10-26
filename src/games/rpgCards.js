@@ -2118,8 +2118,9 @@ export function cardColors(cardOrId) {
 /** Bandes nettes, une par élément, pour les coûts hybrides.
  *  L'ordre suit le même canon que le cadre de la carte (braise, eau, sable,
  *  neige) : la couleur du coût et celle de la carte se lisent dans le même
- *  sens, de la moitié haute gauche à la basse droite. Une carte mono n'a pas
- *  besoin de ce dégradé. */
+ *  sens — la première couleur en haut à gauche, séparée de la suivante par la
+ *  diagonale qui monte du coin bas-gauche au coin haut-droit. Une carte mono
+ *  n'a pas besoin de ce dégradé. */
 export function cardHybridGradient(cardOrId) {
   const couleurs = cardColors(cardOrId).slice().sort(
     (a, b) => CARD_FRAME_COLOR_ORDER.indexOf(a) - CARD_FRAME_COLOR_ORDER.indexOf(b),
@@ -2130,7 +2131,10 @@ export function cardHybridGradient(cardOrId) {
     const teinte = CARD_FRAME_COLORS[couleur]?.color ?? CARD_FRAME_COLORS.sable.color;
     return `${teinte} ${Math.round(index * part)}% ${Math.round((index + 1) * part)}%`;
   });
-  return `linear-gradient(135deg, ${bandes.join(', ')})`;
+  // Même diagonale que le cadre (`to bottom right` dans `rpg-battle.css`) :
+  // les mots-clés de coin passent par les coins quelle que soit la forme de
+  // la pastille, là où un angle fixe ne les atteint que sur un carré.
+  return `linear-gradient(to bottom right, ${bandes.join(', ')})`;
 }
 
 /** Groupe renforcé par une source de Résonance. Le groupe est le **type

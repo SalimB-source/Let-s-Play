@@ -47,6 +47,11 @@
   /* Flou du plateau derrière une carte consultée (appui long, fiche, sort joué) :
      assez pour que le décor s'efface, assez peu pour qu'on le devine encore. */
   --rpg-plateau-flou: 3px;
+  /* L'épaisseur du filet de couleur : la seule épaisseur de cadre qui reste
+     (voir « LE FILET DE COULEUR » en fin de feuille). Deux pixels, partout, du
+     plateau à la vignette de l'atelier : c'est assez pour nommer l'élément
+     d'un coup d'œil, trop peu pour manger l'illustration. */
+  --rpg-card-filet: 2px;
   --rpg-card-border: clamp(7.2px, 0.768vw, 9.6px);
   --rpg-card-border-large: clamp(9.6px, 1.088vw, 12.8px);
   --rpg-card-border-small: clamp(6.4px, 0.544vw, 6.8px);
@@ -8454,90 +8459,98 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    et mythiques. Le reflet ne vit plus que dans le guide : l'atelier de deck,
    lui aussi passé à « plus aucun cadre », n'anime plus ses vignettes. */
 
-/* Hybrides : deux aplats francs, chacun la moitié de la diagonale.
-   L'angle et les arrêts identiques sur toutes les faces dessinent la même
-   séparation dans l'anneau (pas de teinte mélangée, ni balayage brillant).
-   Les combinaisons de 3 ou 4 éléments, prévues pour de futures cartes,
-   partagent de la même façon la diagonale en 3 ou 4 aplats. */
+/* Hybrides : deux aplats francs, séparés par la diagonale qui monte du coin
+   bas-gauche au coin haut-droit. La première couleur court donc du coin
+   bas-gauche, le long du bord gauche et du bord haut, jusqu'au coin haut-droit.
+   Les **mots-clés de coin** (`to bottom right`) sont indispensables : un angle
+   fixe (`135deg`) ne traverse les coins que sur un carré, or une face de carte
+   est en 4:5 — la séparation tombait à 10 % des bords, et la première couleur
+   n'atteignait jamais son coin. Avec un mot-clé de coin, la perpendiculaire de
+   l'axe du dégradé passe exactement par les deux coins opposés, quelle que soit
+   la taille de la face (main, table, aperçu, catalogue, atelier, guide).
+   Les arrêts restent identiques sur toutes les faces : même séparation dans
+   l'anneau, pas de teinte mélangée ni de balayage brillant. Les combinaisons de
+   3 ou 4 éléments, prévues pour de futures cartes, partagent de la même façon
+   la diagonale en 3 ou 4 aplats. */
 .rpg-card--frame-hybride-braise-eau {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #3f9fe8 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #3f9fe8 50%);
 }
 .rpg-card--frame-hybride-braise-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #d8bc86 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #d8bc86 50%);
 }
 .rpg-card--frame-hybride-braise-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-eau-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #d8bc86 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #d8bc86 50%);
 }
 .rpg-card--frame-hybride-eau-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-braise-eau-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #d8bc86 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #d8bc86 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-braise-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
 }
 /* Ténèbres : cinquième couleur du banc d'essai — chaque combinaison qui la
    contient partage le cadre avec son violet de balance (doc 16). */
 .rpg-card--frame-hybride-braise-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-eau-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #a9e0f5 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #a9e0f5 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-braise-eau-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-eau-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-eau-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-eau-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-eau-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 20%, #3f9fe8 20% 40%, #d8bc86 40% 60%, #a9e0f5 60% 80%, #4b2e83 80%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 20%, #3f9fe8 20% 40%, #d8bc86 40% 60%, #a9e0f5 60% 80%, #4b2e83 80%);
 }
 
 /* Mythique : le zellige de Bab El (une étoile à huit pointes) distingue la
@@ -10010,44 +10023,59 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   EXPÉRIMENTATION — PLUS AUCUN CADRE DE CARTE (test visuel, à jeter)
+   LE FILET DE COULEUR — 2 px, la teinte de l'élément (voir `--rpg-card-filet`)
    ──────────────────────────────────────────────────────────────────────────
-   Tout l'ornement des faces du Sablier tient dans l'anneau de bordure : le
-   bord transparent, le fond de la face peint sur la padding-box, puis le motif
-   et la matière de l'élément sur la border-box. On ne garde ici que la face —
-   `border-width: 0` et `background-image: none` — et l'illustration, absolue
-   et en `inset: 0`, gagne la place de l'anneau.
+   Tout l'ornement des faces du Sablier tient dans l'anneau de bordure : le bord
+   transparent, le fond de la face peint sur la padding-box, puis le motif et la
+   matière de l'élément sur la border-box. L'essai « plus aucun cadre » avait
+   ramené cet anneau à zéro (`border-width: 0`), et les cartes avaient perdu
+   leur seule marque d'élément : un Braise et un Eau se ressemblaient.
 
-   Les `!important` sont volontaires : cet essai est jetable et doit l'emporter
-   sur les dizaines de `border-width` dispersés plus haut (annonce, palettes,
-   paliers `vw`, mobile). Rien d'autre n'est touché — pastilles, badges, liserés
-   de sélection, halos d'état et ombres restent exactement où ils étaient.
+   On garde donc **le filet, et rien que le filet** : 2 px de la couleur de la
+   carte, là où le cadre orné en posait sept à dix. Le motif (résille, zellige)
+   est coupé — dans 2 px, il ne serait plus qu'un bruit de pixels — mais la
+   matière reste : aplat pour une mono, diagonale franche pour une hybride,
+   dégradé pour les mythiques mono. C'est la couleur qui distingue, pas
+   l'ornement.
 
-   Pour revenir en arrière : supprimer ce bloc (et les deux jumeaux en fin de
-   `rpg-deck-atelier.css` et de `rpg-card-guide.css`). Rien d'autre n'a bougé.
+   Les `!important` restent : cette règle doit l'emporter sur les dizaines de
+   `border-width` dispersés plus haut (annonce, palettes, paliers `vw`, mobile).
+   Rien d'autre n'est touché — pastilles, badges, liserés de sélection, halos
+   d'état et ombres restent exactement où ils étaient.
 
-   L'animation, elle, n'est PAS coupée : `animation: none !important` emportait
-   toutes les animations de la carte — l'arrivée en jeu, le bond d'attaque, le
-   choc de blocage et la lévitation de l'Envol. Le balayage brillant n'a de
-   toute façon plus d'anneau à parcourir : `background-image: none` le rend
-   invisible sans rien arrêter.
+   Les deux jumeaux vivent en fin de `rpg-deck-atelier.css` (la vignette de
+   l'atelier) et de `rpg-card-guide.css` (l'exemple du guide) : mêmes 2 px, même
+   couleur, même silence du motif.
+
+   Le panneau `.rpg-hover-card-preview` n'est **pas** dans la liste : il porte
+   aussi la classe du cadre (pour l'inclinaison) mais ne déclare aucune
+   bordure — la seule face de l'aperçu, c'est `__face`, qui, elle, est bien
+   peinte par la pile de fonds. Lui donner 2 px y dessinerait un liseré crème
+   (`currentColor`) autour de la fiche.
+
+   L'animation, elle, n'est pas touchée : `animation: none !important` emportait
+   les animations de la carte — arrivée en jeu, bond d'attaque, choc de blocage,
+   lévitation de l'Envol.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-card[class*="rpg-card--frame-"],
 .rpg-hand__card[class*="rpg-card--frame-"],
 .rpg-terrain[class*="rpg-card--frame-"],
-.rpg-hover-card-preview[class*="rpg-card--frame-"],
 .rpg-hover-card-preview__face[class*="rpg-card--frame-"],
 .rpg-spell-played__art[class*="rpg-card--frame-"],
 .rpg-card-destruction-fx[class*="rpg-card--frame-"],
 .rpg-card-pile__card--top[class*="rpg-card--frame-"],
 .rpg-mulligan__card[class*="rpg-card--frame-"],
 .rpg-card-catalogue__art[class*="rpg-card--frame-"] {
-  border-width: 0 !important;
-  background-image: none !important;
+  border-width: var(--rpg-card-filet, 2px) !important;
+  border-style: solid !important;
+  /* Le fond et la matière de l'anneau reviennent (ils sont déclarés par les
+     règles « cadres ornés » plus haut) ; seul le motif se tait. */
+  --rpg-frame-motif: none;
+  --rpg-frame-motif-size: 0 0;
 }
 
-/* La teinte de matière des mythiques ne servait qu'à teindre l'anneau :
-   sans anneau, elle ne peindrait plus qu'un aplat derrière l'illustration. */
+/* La teinte de matière d'une mythique ne teintait que son anneau : à 2 px, elle
+   reste utile dans le filet, donc plus d'aplat derrière l'illustration. */
 .rpg-card--mythique[class*="rpg-card--frame-"] {
   background-color: transparent !important;
 }
@@ -10055,8 +10083,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
    cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
    « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
-   Sans cadre, elle deviendrait la dernière trace de la couleur de l'élément :
-   on la retire donc partout, comme le fait déjà la feuille tactile. Le
+   Le filet de 2 px dit déjà l'élément : une seconde trace colorée un cran plus
+   loin ne serait qu'un doublon, on la laisse donc coupée partout, comme le fait
+   déjà la feuille tactile. Le
    compteur ×N et la pastille d'engagement restent — ce sont eux qui disent
    la pile. L'engagement partiel garde sa bague, qui dit un état.
    (Deux règles à retirer si l'on veut garder la profondeur des piles.) */

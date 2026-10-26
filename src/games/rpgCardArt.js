@@ -22,6 +22,22 @@ const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
  */
 const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 
+/**
+ * `sans-teinte-v1` — les peintures dont la **teinte de set** a été retirée.
+ *
+ * Deux sets portaient un virage de couleur appliqué à la peinture (pas en CSS) :
+ * le bleu de nuit de l'Eau et le violet des Ténèbres. Le virage est annulé : ces
+ * cartes sont revenues à leur peinture d'avant teinte. La marque ne décrit donc
+ * plus une couleur de set, elle dit « cette peinture est neutre », et elle sert
+ * surtout à casser le cache des navigateurs qui ont l'ancienne version.
+ *
+ * Le doré du Sable, lui, est retiré par mesure carte par carte
+ * (`scripts/retirer-filtre-dore-sable.sh`, marque `sable-souls-desore-v3`).
+ * Le filet de 2 px reste, lui, la seule marque d'élément — il ne dépend plus de
+ * la peinture.
+ */
+const SANS_TEINTE = 'sans-teinte-v1';
+
 const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
@@ -237,79 +253,78 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
   // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
-  // la suie et à l'or terni. Puis `-v2` : le violet d'origine revient, mais
-  // **comme teinte de set seulement** — un mélange de 18 % de #5b2a86 en mode
-  // blend, saturation × 1,03, appliqué à la peinture et non en CSS. Assez pour
-  // teinter les ombres, trop peu pour lilas les blancs. Les six cartes du
-  // Corbeau des neuf nuits ne le reçoivent pas : elles portent leur propre
-  // marque et restent franchement froides.
-  'khopesh-d-or': 'tenebres-os-cendres-v2',
-  'chacal-du-seuil': 'tenebres-os-cendres-v2',
-  'ouvrier-du-natron': 'tenebres-os-cendres-v2',
-  'gardienne-de-la-balance': 'tenebres-os-cendres-v2',
-  'scribe-des-feuillets': 'tenebres-os-cendres-v2',
-  'pretre-de-la-bouche': 'tenebres-os-cendres-v2',
-  'ureus-du-seuil': 'tenebres-os-cendres-v2',
+  // la suie et à l'or terni. Le violet de set — un mélange de 18 % de #5b2a86
+  // appliqué à la peinture — a ensuite été **retiré** : ces cartes sont
+  // revenues à l'os et à la suie, sans virage. Les six cartes du Corbeau des
+  // neuf nuits, elles, n'ont jamais reçu de teinte.
+  'khopesh-d-or': SANS_TEINTE,
+  'chacal-du-seuil': SANS_TEINTE,
+  'ouvrier-du-natron': SANS_TEINTE,
+  'gardienne-de-la-balance': SANS_TEINTE,
+  'scribe-des-feuillets': SANS_TEINTE,
+  'pretre-de-la-bouche': SANS_TEINTE,
+  'ureus-du-seuil': SANS_TEINTE,
   // Deuxième lot : les figures du seuil, les masques et les magies du livre.
   // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
   // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
-  'momie-de-lin': 'tenebres-os-cendres-v2',
-  'ibis-des-comptes': 'tenebres-os-cendres-v2',
-  'celle-qui-pese': 'tenebres-os-cendres-v2',
-  'la-devoreuse': 'tenebres-os-cendres-v2',
-  'celui-qui-juge': 'tenebres-os-cendres-v2',
-  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v2',
-  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v2',
-  'papyrus': 'tenebres-os-cendres-v2',
-  'nom-efface': 'tenebres-os-cendres-v2',
-  'offrande-de-lin': 'tenebres-os-cendres-v2',
+  'momie-de-lin': SANS_TEINTE,
+  'ibis-des-comptes': SANS_TEINTE,
+  'celle-qui-pese': SANS_TEINTE,
+  'la-devoreuse': SANS_TEINTE,
+  'celui-qui-juge': SANS_TEINTE,
+  'passeur-au-masque-de-chacal': SANS_TEINTE,
+  'maitre-des-hieroglyphes': SANS_TEINTE,
+  'papyrus': SANS_TEINTE,
+  'nom-efface': SANS_TEINTE,
+  'offrande-de-lin': SANS_TEINTE,
   // Troisième lot : les trois pesées et les deux lieux. Le set Ténèbres est
   // clos — 28 cartes jouables, toutes à l'huile.
-  'le-poids': 'tenebres-os-cendres-v2',
-  'les-feuillets': 'tenebres-os-cendres-v2',
-  'la-grande-pesee': 'tenebres-os-cendres-v2',
-  'la-derniere-pesee': 'tenebres-os-cendres-v2',
-  'tour-des-tenebres': 'tenebres-os-cendres-v2',
+  'le-poids': SANS_TEINTE,
+  'les-feuillets': SANS_TEINTE,
+  'la-grande-pesee': SANS_TEINTE,
+  'la-derniere-pesee': SANS_TEINTE,
+  'tour-des-tenebres': SANS_TEINTE,
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
-  // lot entier est viré au **bleu de nuit** — l'Eau doit se distinguer de la
-  // Neige au premier regard, sinon les deux sets se confondent en gris.
-  'yamina': 'eau-souls-bleue-v1',
-  'boualem': 'eau-souls-bleue-v1',
-  'baton-des-citernes': 'eau-souls-bleue-v1',
-  'porteuse-de-cruches': 'eau-souls-bleue-v1',
-  'pilote-de-la-carreira': 'eau-souls-bleue-v1',
-  'source-de-bimini': 'eau-souls-bleue-v1',
-  'haut-fond': 'eau-souls-bleue-v1',
-  'lame-de-mer': 'eau-souls-bleue-v1',
-  'le-routier': 'eau-souls-bleue-v1',
-  'eau-de-la-source': 'eau-souls-bleue-v1',
+  // lot avait été viré au bleu de nuit pour distinguer l'Eau de la Neige ; le
+  // virage est **retiré**, les peintures reviennent à l'ardoise froide.
+  'yamina': SANS_TEINTE,
+  'boualem': SANS_TEINTE,
+  'baton-des-citernes': SANS_TEINTE,
+  'porteuse-de-cruches': SANS_TEINTE,
+  'pilote-de-la-carreira': SANS_TEINTE,
+  'source-de-bimini': SANS_TEINTE,
+  'haut-fond': SANS_TEINTE,
+  'lame-de-mer': SANS_TEINTE,
+  'le-routier': SANS_TEINTE,
+  'eau-de-la-source': SANS_TEINTE,
   // Les bêtes et les gardiens — deuxième lot : les unes étaient trop claires,
-  // les autres carrément absentes du registre. Toutes au bleu de nuit.
-  'leviathan': 'eau-souls-bleue-v1',
-  'bakunawa': 'eau-souls-bleue-v1',
-  'jormungandr': 'eau-souls-bleue-v1',
+  // les autres carrément absentes du registre. Leur bleu de nuit a été retiré
+  // comme celui du premier lot : ce sont des peintures neutres, dévirées.
+  'leviathan': SANS_TEINTE,
+  'bakunawa': SANS_TEINTE,
+  'jormungandr': SANS_TEINTE,
   // Le Seigneur des mâchoires est repeint en figure du Nil (Sabek, le
   // souverain crocodile) : révision dédiée, la peinture du village inondé
   // reste l'illustration alternative.
   'seigneur-des-machoires': 'tenebres-seigneur-machoires-nil-v2',
-  'vipere-de-verre': 'eau-souls-bleue-v1',
-  'tour-des-flots': 'eau-souls-bleue-v1',
-  'sonneur-fele': 'eau-souls-bleue-v1',
-  'veilleuse-des-citernes': 'eau-souls-bleue-v1',
-  'silence-decume': 'eau-souls-bleue-v1',
+  'vipere-de-verre': SANS_TEINTE,
+  'tour-des-flots': SANS_TEINTE,
+  'sonneur-fele': SANS_TEINTE,
+  'veilleuse-des-citernes': SANS_TEINTE,
+  'silence-decume': SANS_TEINTE,
   // Dernier lot : les huit magies du verre et du ressac, plus le Kraken refait
   // — la première peinture donnait un serpent enroulé au navire, pas une bête
   // à tentacules. Le set Eau est clos : 27 cartes, toutes à l'huile.
-  'kraken': 'eau-souls-bleue-v1',
-  'parade-du-verre': 'eau-souls-bleue-v1',
-  'brisure-de-verre': 'eau-souls-bleue-v1',
-  'ecueil': 'eau-souls-bleue-v1',
-  'contresort-des-abimes': 'eau-souls-bleue-v1',
-  'maree-contraire': 'eau-souls-bleue-v1',
-  'ressac': 'eau-souls-bleue-v1',
-  'courant-de-retour': 'eau-souls-bleue-v1',
+  'kraken': SANS_TEINTE,
+  'parade-du-verre': SANS_TEINTE,
+  'brisure-de-verre': SANS_TEINTE,
+  'ecueil': SANS_TEINTE,
+  'contresort-des-abimes': SANS_TEINTE,
+  'maree-contraire': SANS_TEINTE,
+  'ressac': SANS_TEINTE,
+  'courant-de-retour': SANS_TEINTE,
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

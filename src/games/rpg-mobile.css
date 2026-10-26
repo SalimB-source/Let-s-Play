@@ -1383,37 +1383,30 @@
 }
 
 /* ── Sans cadre, au doigt : la main, les cartes posées et les terrains ───────
-   L'anneau coloré des cartes (voir les gabarits en tête de `rpg-battle.css`)
-   est calé sur la **largeur** de la carte : `clamp(4px, 1.76vw, 8px)` vaut son
-   plafond de 8 px dès 455 px de fenêtre, donc sur tout téléphone en paysage.
-   Aux 62 px d'une carte en main sur un 844 × 390 (cinq cartes), cela fait
-   16 px — un quart de la carte —, et 41 % d'une carte à 39 px quand la main
-   s'allonge à huit. Les terrains du rail portent le petit gabarit
-   (`clamp(6.4px, 0.544vw, 6.8px)`) : 6,8 px sur une vignette de 40 px, un quart
-   de la face là encore. Sur ces trois familles de faces **en jeu**, l'anneau
-   mangeait l'illustration que le full art venait justement d'élargir, pour une
-   couleur d'élément que la pastille de la carte annonce déjà.
+   L'anneau orné des cartes (voir les gabarits en tête de `rpg-battle.css`)
+   était calé sur la **largeur** de la carte : `clamp(4px, 1.76vw, 8px)` valait
+   son plafond de 8 px dès 455 px de fenêtre, donc sur tout téléphone en
+   paysage — 16 px sur une carte en main de 62 px, un quart de la face. La
+   feuille tactile le retirait donc entièrement, et les cartes perdaient leur
+   seule marque d'élément.
 
-   Elles s'en passent donc : bord à zéro, et aucune couche de fond — matière,
-   résille gravée, diagonale des hybrides, reflet des mythiques. La main et la
-   table sont en full art (`.rpg-card--img`, `.rpg-hand__card--img` :
-   l'illustration est posée `inset: 0`) ; le terrain, lui, est son image même
-   (`.rpg-terrain img`, 100 %). Chacune gagne donc exactement l'anneau. Le
-   liseré noir des cartes reste (`outline: 2px solid #000`, `rpg-battle.css`),
-   c'est lui qui les détache du bois ; le terrain n'en a jamais eu — sa
-   vignette se détache par sa propre ombre portée.
+   Le filet de 2 px (`--rpg-card-filet`, `rpg-battle.css`) rend ce retrait
+   inutile : il tient dans une vignette de 40 px comme dans une carte de 168 px,
+   et il est le même partout — main, table, terrains, catalogue, aperçus,
+   mulligan, guide et atelier. Seul le motif se tait : dans 2 px, une résille
+   n'est plus qu'un bruit de pixels. La couleur, elle, reste.
 
    Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
    `border-box`, chaque face garde sa largeur, son 4:5 et sa mesure
    (`--duel-card` pour la main, `--rpg-field-card` pour la table, les 40/48 px
-   du rail pour les terrains) — c'est l'illustration qui grandit, pas la face.
-   Le retrait s'étend aux faces de lecture et de repérage dans la règle
-   commune de fin de feuille : catalogue, aperçus, mulligan, guide et atelier. */
+   du rail pour les terrains). Le liseré noir des cartes reste
+   (`outline: 2px solid #000`), c'est lui qui les détache du bois. */
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .card-row .rpg-card,
 .rpg-battle--touch .rpg-terrain {
-  border-width: 0;
-  background-image: none;
+  border-width: var(--rpg-card-filet, 2px);
+  --rpg-frame-motif: none;
+  --rpg-frame-motif-size: 0 0;
 }
 
 /* ── Les piles, au doigt : plus d'ombre de pile ─────────────────────────────
@@ -1447,12 +1440,14 @@
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge { width: 16px; border-width: 1.5px; font-size: 10px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge__pip { border-width: 1.5px; }
 
-/* Toutes les faces, y compris catalogue, mulligan, aperçus et atelier :
-   pas de cadre sur mobile/APK. Les pastilles et les états interactifs restent.
-   La spécificité couvre aussi les variantes ornées et les cartes annoncées. */
+/* Toutes les faces, y compris catalogue, mulligan, aperçus et atelier : le
+   même filet de 2 px qu'au clavier, à la couleur de l'élément. Les pastilles et
+   les états interactifs restent. La spécificité couvre aussi les variantes
+   ornées et les cartes annoncées. */
 .rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
-  border-width: 0;
-  background-image: none;
+  border-width: var(--rpg-card-filet, 2px);
+  --rpg-frame-motif: none;
+  --rpg-frame-motif-size: 0 0;
 }
 
 /* Les repères suivent la largeur réelle de chaque créature, pas le viewport.
