@@ -307,10 +307,13 @@ sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
 - Sa peinture est un plein art 4:5 dédié, refaite dans la veine **soulslike**
   (la seule carte du catalogue à ce registre) : le roi **à cheval** sur un champ
   de bataille de cendre, **armure de plaque dorée complète et rongée**, **grand
-  heaume** à cimier, l'or qui **luit faiblement de l'intérieur**, une **grande
-  hache de fer noirci** levée, et le **guépard** gris de cendre qui court à sa
-  droite (direction artistique `RPG-CARD-ART.md`). Sa révision de cache est
-  `aksel-roi-imazigh-v1`, déclarée dans `rpgCardArt.js`.
+  heaume** à cimier **porté haut — le visage reste découvert**, l'or qui **luit
+  faiblement de l'intérieur**, une **grande hache de fer noirci** levée, le
+  **guépard** gris de cendre qui court à sa droite, et des **accents dorés dans
+  le fond** (l'arche brisée, les bannières, les boucliers coulés, la poussière)
+  sans jamais dépasser l'éclat de l'armure (direction artistique
+  `RPG-CARD-ART.md`). Sa révision de cache est `aksel-roi-imazigh-v1`, déclarée
+  dans `rpgCardArt.js`.
 
 ### Les créatures-jetons (les chiens de sable de Tarek)
 

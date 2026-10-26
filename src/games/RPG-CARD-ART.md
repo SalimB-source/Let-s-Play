@@ -1208,7 +1208,9 @@ brisés à demi enfouis au premier plan.
 - **L'armure** est une **plaque dorée complète et rongée** : épaulières
   festonnées, cuirasse lamellaire aux plaques de laiton terni lacées de corde
   noircie, grèves dorées, et un **grand heaume de bronze usé, à cimier et
-  gardes-joues**, dont s'échappent de longs cheveux gris-noir. L'or **luit
+  gardes-joues, porté haut : le visage reste entièrement découvert** — joues
+  burinées, regard sombre, barbe grisonnante — et de longs cheveux gris-noir
+  s'en échappent et balaient les épaules. L'or **luit
   faiblement de l'intérieur**, comme des braises prises sous le métal : la
   lumière suinte des joints et des laçages, et retombe à peine sur l'encolure du
   cheval et la cendre autour de lui.
@@ -1218,6 +1220,13 @@ brisés à demi enfouis au premier plan.
   poussière sur le flanc, haleine fumante dans l'air froid.
 - **Le guépard** court à sa droite, pelage gris de cendre, côtes un peu visibles,
   collier de cuir, une seule queue continue — la bête du roi, jamais un trophée.
+- **Les repères du fond portent l'accent doré** : l'arche brisée garde des traces
+  de dorure sur la pierre et son ouverture luit d'un ambre chaud, les bannières
+  en loques sont ourlées d'or, les boucliers et heaumes coulés dans la cendre
+  accrochent quelques éclats de laiton, la poussière en suspension et une bande
+  d'or terni à l'horizon font le reste. Cet or reste **au fond** : il ne doit
+  jamais dépasser en éclat l'armure du roi, qui demeure la chose la plus lumineuse
+  de l'image.
 
 Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
 profondes et une seule lumière chaude et faible. Huile sur toile, clair-obscur
