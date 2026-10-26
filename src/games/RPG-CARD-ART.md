@@ -1207,10 +1207,11 @@ brisés à demi enfouis au premier plan.
 
 - **L'armure** est une **plaque dorée complète et rongée** : épaulières
   festonnées, cuirasse lamellaire aux plaques de laiton terni lacées de corde
-  noircie, grèves dorées, et un **grand heaume de bronze usé, à cimier et
-  gardes-joues, porté haut : le visage reste entièrement découvert** — joues
-  burinées, regard sombre, barbe grisonnante — et de longs cheveux gris-noir
-  s'en échappent et balaient les épaules. L'or **luit
+  noircie, grèves dorées. Le roi est **tête nue : aucun heaume, aucun casque,
+  aucune couronne** — un visage d'homme d'environ **trente-cinq ans**, joues
+  sans rides, mâchoire nette, nez droit, regard sombre et durci par la guerre,
+  barbe courte ; ses longs cheveux noirs tombent sur ses épaules et balaient la
+  scène au galop. L'or **luit
   faiblement de l'intérieur**, comme des braises prises sous le métal : la
   lumière suinte des joints et des laçages, et retombe à peine sur l'encolure du
   cheval et la cendre autour de lui.
@@ -1220,6 +1221,9 @@ brisés à demi enfouis au premier plan.
   poussière sur le flanc, haleine fumante dans l'air froid.
 - **Le guépard** court à sa droite, pelage gris de cendre, côtes un peu visibles,
   collier de cuir, une seule queue continue — la bête du roi, jamais un trophée.
+- **Le fond est éclairé de loin en loin par la même lumière** : l'arche brisée
+  garde des traces de dorure sur la pierre et son ouverture luit d'un ambre
+  chaud, derrière les bannières et les squelettes à demi enfouis.
 - **Les repères du fond portent l'accent doré** : l'arche brisée garde des traces
   de dorure sur la pierre et son ouverture luit d'un ambre chaud, les bannières
   en loques sont ourlées d'or, les boucliers et heaumes coulés dans la cendre
@@ -1230,8 +1234,8 @@ brisés à demi enfouis au premier plan.
 
 Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
 profondes et une seule lumière chaude et faible. Huile sur toile, clair-obscur
-épais, touches visibles, atmosphère âpre et monumentale ; le cavalier domine
-l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
+épais, touches visibles, atmosphère âpre et monumentale ; le cavalier, tête nue et
+cheveux au vent, domine l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
 texte ni cadre. Sa révision de cache est **`aksel-roi-imazigh-v1`** — une clé
 dédiée, pour qu'un futur repeint ne date que cette carte.
 
