@@ -546,7 +546,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   // salon et l'onglet Deck partagent les mêmes URL d'illustration.
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
-    ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
+    // La passe des Furies a redaté la face du loup sous sa propre marque.
+    ['loup-des-neiges-furie', 'neige-furie-loup-v1'],
     // La passe Souls du Neige (octobre 2026) a redaté ces peintures : deux sous
     // la marque commune de la passe, deux reprises une seconde fois parce que
     // leur sujet ne lisait pas (le marteau de foudre, le grizzly prisonnier).
@@ -586,8 +587,8 @@ test('la Valkyrie au corbeau porte Furie 2 et révèle sa peinture alternative',
     'blessée sous sa DEF de base 4, elle gagne +2/+0 et passe à 5/3',
   );
   assert.match(cardArtFurie(carte),
-    /\/cards\/valkyrie-au-corbeau-furie\.jpg\?v=valkyrie-vol-plongeon-enragee-v4$/,
-    'son état de Furie utilise la nouvelle peinture avec son corbeau et les Vikings');
+    /\/cards\/valkyrie-au-corbeau-furie\.jpg\?v=neige-furie-valkyrie-v1$/,
+    'son état de Furie utilise la peinture de la passe — la valkyrie, son corbeau et le sang');
   assert.deepEqual(dimensionsJpeg(fileURLToPath(
     new URL('../public/cards/valkyrie-au-corbeau-furie.jpg', import.meta.url),
   )), [1024, 1280], 'la peinture alternative est livrée au format exact 4:5');

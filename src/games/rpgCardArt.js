@@ -144,6 +144,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits': 'corbeau-neuf-nuits-v1',
   'neige-noire': 'corbeau-neuf-nuits-v1',
   'maitre-des-corbeaux': 'corbeau-neuf-nuits-v1',
+  // Les deux faces de Furie du Corbeau des neuf nuits : même composition que
+  // la peinture intacte, seulement marquée par le combat.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
   // Le Serpent du monde garde la facture nihonga, mais sa composition est
   // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
   // Sa révision dédiée l’emporte sur celle du set Neige.
@@ -164,34 +168,12 @@ const CARD_ART_CACHE_VERSIONS = {
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
   'courant-de-retour': 'djinn-tourbillon-v1',
-  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
-  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
-  // casque brisé et visage en furie. On date les huit images ensemble pour
-  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
-  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
-  // La face de base du Berserk a depuis été repeinte seule : même visage et
-  // même rendu photoréaliste que son double, mais avant la Furie — debout,
-  // calme et sans aucune trace de sang. Le double garde la révision commune.
-  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
-  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
-  'maitre-du-marteau': 'furie-photorealiste-v1',
-  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
-  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
-  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
-  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
-  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
-  // chef ensanglanté et crocs dehors dans l’état Furie.
-  'loup-des-neiges-furie': 'loup-furie-huile-v1',
-  // La Valkyrie repart de sa scène d'origine : enragée et ensanglantée, elle
-  // vole dans le ciel et fond sur sa cible avec son corbeau noir, épée levée.
-  'valkyrie-au-corbeau-furie': 'valkyrie-vol-plongeon-enragee-v4',
-  // Le Corbeau des neuf nuits prête à son tour sa face de Furie à deux de ses
-  // cartes — le Berserk du crépuscule et la Valkyrie des neuf nuits. Chacune
-  // reprend trait pour trait la composition de sa peinture intacte, mais
-  // ensanglantée et enragée ; deux révisions dédiées, comme pour les porteurs
-  // du Serment, afin qu’aucun cache ne resserve la face calme.
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
-  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
+  // La passe Souls du Neige efface la dérogation photoréaliste : les quatre
+  // porteurs humains de Furie sont peints à l'huile comme le reste du set, et
+  // leur double ensanglanté avec eux — l'un sans l'autre jurerait de facture.
+  // Les faces de Furie de la passe : le loup, la valkyrie au corbeau, le
+  // berserk, le maître et bientôt le Jarl — même scène que la face intacte,
+  // seulement marquée par le combat.
   // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
   // d’électricité fonçant sur une cible pour l’Éclair, soldats gelés dans la
   // brume pour la Brume du fjord et grizzli prisonnier de la glace pour le
@@ -226,6 +208,15 @@ const CARD_ART_CACHE_VERSIONS = {
   'brume-du-fjord': 'neige-souls-cendres-v1',
   // Le grizzly lisait comme un bloc de verre : c'est la glace qui casse.
   'hurlement-du-blizzard': 'neige-hurlement-grizzli-v2',
+  // La passe des Furies (octobre 2026) : faces intactes et faces déclenchées,
+  // sous deux marques — la commune, et une dédiée au loup et à la valkyrie dont
+  // seule la face de Furie a changé.
+  'berserk-des-trois-hivers': 'neige-souls-cendres-v1',
+  'berserk-des-trois-hivers-furie': 'neige-furie-souls-v1',
+  'maitre-du-marteau': 'neige-souls-cendres-v1',
+  'maitre-du-marteau-furie': 'neige-furie-souls-v1',
+  'loup-des-neiges-furie': 'neige-furie-loup-v1',
+  'valkyrie-au-corbeau-furie': 'neige-furie-valkyrie-v1',
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

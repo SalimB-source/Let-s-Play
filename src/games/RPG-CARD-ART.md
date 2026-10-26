@@ -659,6 +659,36 @@ Règles de tir propres à ces cartes (vérifiées visuellement une à une) :
 - **Serpent des citernes** (`serpent-des-citernes.jpg`) — le jeton évoqué
   par le Bâton : serpent verdâtre dressé dans la citerne moussue.
 
+## La passe des Furies (octobre 2026)
+
+Les faces de Furie — l'état déclenché d'une créature blessée — étaient restées
+en arrière : quatre humains en **photoréaliste fantaisiste**, un loup et une
+valkyrie dans une huile d'une autre époque. La passe Souls du Neige les
+ramène toutes à l'huile sombre de la collection.
+
+**La règle tient** : une face de Furie n'est pas une seconde composition. Même
+personnage, même pose, même cadrage, même décor — seulement marqué par le
+combat : sang, armure ou casque brisé, cape ou pelisse déchirée, visage passé
+en furie. Une paire qui jurerait de facture serait pire qu'une paire
+ancienne : c'est pourquoi la face **intacte** des quatre humains est repeinte
+en même temps que sa furie.
+
+| Carte | Face intacte | Face de Furie |
+| --- | --- | --- |
+| Berserk des trois hivers | `neige-souls-cendres-v1` — debout, calme, aucun sang | `neige-furie-souls-v1` — gueule ouverte, torse et hache en sang |
+| Maître du marteau | `neige-souls-cendres-v1` — marteau bas, gantelets intacts | `neige-furie-souls-v1` — marteau levé, crâne fendu, foudre froide |
+| Loup des neiges | inchangée (la passe du set) | `neige-furie-loup-v1` — épaule et patte ouvertes, babines retroussées |
+| Valkyrie au corbeau | inchangée | `neige-furie-valkyrie-v1` — plongeon, heaume brisé, corbeau au poing |
+
+Les anciennes peintures sont archivées dans `public/cards/alt/` sous le
+préfixe `avant-souls-` : rien ne se jette.
+
+**Reste à faire** : le **Guerrier au bouclier rond** et le **Jarl au marteau de
+guerre** (leur paire est peinte, mais doit être reprise — le bouclier du
+guerrier gardait son vieux motif peint, et le marteau du Jarl se lit comme une
+hache), et les **deux furies du Corbeau des neuf nuits** (Berserk du crépuscule,
+Valkyrie des neuf nuits).
+
 ## Dérogation : les quatre porteurs humains de Furie en photoréaliste (octobre 2026)
 
 Les quatre cartes humaines Neige qui portent le mot-clé **Furie** — **Guerrier au
