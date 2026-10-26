@@ -410,8 +410,21 @@
   padding-bottom: 6px;
 }
 
+/* Un coffret de trente cartes est **épais**. Le réglage de l'étagère
+   (`--bd: .42 × --bw`) donnait, à cette taille, une tranche fine : la boîte
+   ressemblait à une carte posée debout. On lui rend son volume — profondeur
+   `0.62 × largeur` (les proportions d'un boîtier de cartes anglaises : 70 mm
+   de large pour 40 mm d'épaisseur), hauteur un peu tassée, et une pose plus
+   franchement de trois quarts pour que l'épaisseur se voie.
+
+   `--bh` et `--bd` sont déclarés sur `.rpg-deckbox` : on les redéfinit ici,
+   plus spécifiquement, plutôt que de toucher au boîtier partagé. */
 .rpg-coffret__coffre .rpg-deckbox {
-  --bw: clamp(150px, 18vw, 208px);
+  --bw: clamp(148px, 17vw, 200px);
+  --bh: calc(var(--bw) * 1.32);
+  --bd: calc(var(--bw) * 0.62);
+  --rx: -16deg;
+  --ry: 32deg;
   position: relative;
   z-index: 1;
 }

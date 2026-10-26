@@ -166,6 +166,20 @@ de trois quarts (`rotateX(6deg) rotateY(13deg)`) ; au survol elle se redresse
 et s'avance de 26 px. L'épaisseur de la tranche suit la rareté (6 px pour une
 commune, 10 px pour la mythique).
 
+### L'ouverture lui rend son épaisseur
+
+Aux proportions de l'étagère (`--bd: .42 × --bw`), la boîte de la cérémonie
+ressemblait à une carte posée debout : à cette taille, une tranche de 39 px ne
+suffit pas à lire un volume. Le boîtier de la cérémonie prend donc ses propres
+mesures — profondeur `0.62 × largeur` (les proportions d'un boîtier de cartes
+anglaises : 70 mm de large pour 40 mm d'épaisseur), hauteur tassée à `1.32`,
+pose plus franchement de trois quarts (`--rx: -16deg`, `--ry: 32deg`). La
+tranche perçue passe de 39 à 66 px, le dessus de 15 à 34 px — et la bouche du
+boîtier ouvert devient un vrai creux au lieu d'une fente.
+
+Ces valeurs ne touchent pas au boîtier partagé : `--bh` et `--bd` sont
+redéclarés sur `.rpg-coffret__coffre .rpg-deckbox`, plus spécifiquement.
+
 ### L'ouverture montre le même coffret
 
 L'acte zéro monte **le boîtier du choix**, agrandi, et l'ouvre. Quatre règles
