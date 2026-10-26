@@ -281,15 +281,16 @@ Sans proie désignée, le porteur attaque normalement.
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 
-### Le roi Aksel et l'Embuscade de Tahouda (Sable)
+### Le roi Kusayla et son guépard (Sable)
 
-Le catalogue accueille **Aksel, roi des Imazighen** (`aksel-roi-des-imazighen`),
-la figure du souverain awraba qui défit l'expédition omeyyade dans le défilé de
+Le catalogue accueille **Le roi Kusayla** (`kusayla-roi-des-imazighen`), la
+figure du souverain awraba qui défit l'expédition omeyyade dans le défilé de
 **Tahouda** (683) puis tint Kairouan jusqu'à sa mort au combat, en 688. La fiche
-suit la mémoire amazighe du roi — Aksel, Aksil, Koceila — sans en faire un
-sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
+suit la mémoire amazighe du roi — Aksel, Aksil, Kusayla, Koceila, selon les
+traditions — sans en faire un sujet de polémique : c'est le roi qui défend sa
+terre, rien de plus.
 
-- **Un héros Sable mythique** : 5 manas, **4/4**, `kind: 'hero'`, ligne de type
+- **Un héros Sable mythique** : 5 manas, **4/5**, `kind: 'hero'`, ligne de type
   « Créature légendaire — Roi amazigh », une seule copie par deck
   (`cardCopyLimit`). Il n'entre ni dans les recettes de départ ni dans la
   dotation : il se révèle au sommet de la **Tour des Sables** (`sables-3`),
@@ -299,24 +300,27 @@ sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
   créature adverse qui le frappe avec Attaque ciblée ou le cible avec une
   capacité encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait riposter
   sur le sorcier adverse.
-- **Embuscade de Tahouda** — `arrivee: { type: 'degats', amount: 2, cible: 'creature' }`.
-  Comme toute arrivée ciblée, la pose vient **d'abord** (la carte vole, le sable
-  est payé), puis la victime se désigne **sur la table adverse** ; la cible est
-  revalidée au clic (camp, protection, disparition). Sans cible légale, la pose
-  se résout sans choix et l'attente ne s'ouvre pas.
+- **Le guépard du roi** — `arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 }` :
+  quand Kusayla arrive, **un guépard 2/1 avec Rapidité entre en jeu sans coût**,
+  sur le chemin des chiens de sable de Tarek (voir la section des
+  créatures-jetons). Aucune cible à désigner, donc aucune attente : la pose et
+  le fauve se résolvent d'un seul geste, et seul le coût du roi est payé. Le
+  guépard est une **carte-jeton** (`RPG_JETON_CARDS`, hors catalogue) : elle ne
+  se collectionne pas, ne s'achète pas et n'entre dans aucun deck.
 - Sa peinture est un plein art 4:5 dédié, refaite dans la veine **soulslike**
   (la seule carte du catalogue à ce registre) : le roi **à cheval** sur un champ
   de bataille de cendre, **armure de plaque dorée complète et rongée**, **tête
   nue — aucun heaume**, visage d'un homme d'environ **trente-cinq ans** aux longs
   cheveux noirs, l'or qui **luit faiblement de l'intérieur**, une **grande hache
   de fer noirci** levée, le **guépard** au pelage fauve doré, taches noires et
-  larme de l'œil, qui court à sa droite, et
-  des **accents dorés dans le fond** (l'arche brisée, les bannières, les
-  boucliers coulés, la poussière) sans jamais dépasser l'éclat de l'armure
-  (direction artistique `RPG-CARD-ART.md`). Sa révision de cache est
-  `aksel-roi-imazigh-v1`, déclarée dans `rpgCardArt.js`.
+  larme de l'œil, qui court à sa droite, et des **accents dorés dans le fond**
+  (l'arche brisée, les bannières, les boucliers coulés, la poussière) sans
+  jamais dépasser l'éclat de l'armure (direction artistique
+  `RPG-CARD-ART.md`). Sa révision de cache est `kusayla-roi-imazigh-v1`,
+  déclarée dans `rpgCardArt.js` — le guépard-jeton porte la sienne,
+  `guepard-jeton-v1`.
 
-### Les créatures-jetons (les chiens de sable de Tarek)
+### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
 
 Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
 
@@ -334,6 +338,14 @@ Un jeton **se comporte comme une créature posée depuis la main** — mal
 d'invocation compris, il attaque et bloque dès le tour suivant — et il subit les
 auras du camp : sous son propre Tarek, le chien 1/1 arrive à 2/2 et retombe à
 1/1 si Tarek quitte la table.
+
+Le second jeton du set est le **Guépard** de Kusayla (`guepard`, 2/1, coût 0,
+`jeton: true`, `rapidite: true`) : le roi l'appelle à son arrivée, un seul
+exemplaire. Il ne connaît pas le mal d'invocation — **Rapidité** le rend prêt le
+tour même, comme la bête qui court déjà devant le cheval — mais il ne survit
+pas plus qu'un autre corps 2/1. Sa peinture est un plein art 4:5 dédié
+(`public/cards/guepard.jpg`), un guépard fauve sur la cendre du champ de
+bataille, révision de cache `guepard-jeton-v1`.
 
 Ce qu'un jeton **n'est pas** :
 

@@ -37,6 +37,13 @@ jouables dans un deck.
   jour et la matière de sable sculpté de l'illustration de Tarek
   (`public/cards/tarek.jpg`), sans texte ni interface : deux chiens de sable
   debout sur une crête rocheuse, les ruines de la côte dans le lointain.
+- **Guépard** (`guepard.jpg`) — le jeton du **roi Kusayla** : quand le roi
+  arrive, un guépard 2/1 avec Rapidité entre en jeu sans coût. Peinture plein art
+  4:5 (1024×1280, révision `guepard-jeton-v1`) dans la même veine soulslike que
+  son roi : l'animal seul, fauve doré taché de noir, la larme de l'œil, collier
+  de cuir, au pas de course sur une terre de cendre semée de fûts de lance
+  brisés, sous une lumière froide et une poussière que troue un or faible à
+  l'horizon. Aucun cadre, aucun texte : l'interface du duel pose les chiffres.
 - **Samouraï** (`samourai-du-daimyo.jpg`) — le jeton du Daimyō du Soleil rouge,
   levé par deux à son arrivée : un ashigaru en armure lamellaire rouge braise
   et lacets indigo, yari à la main, l'étendard de clan derrière lui, grand
@@ -1196,8 +1203,8 @@ la lettre de marque est retourné face contre table — cire brisée, cachet,
 chandelle —, et le grand débarquement est la seule scène de foule de la passe,
 éclairée par l'incendie de la ville haute.
 
-**La carte ajoutée après la passe — le roi Aksel** (`aksel-roi-des-imazighen`,
-`public/cards/aksel-roi-des-imazighen.jpg`) : Aksel (Koceila), roi awraba du
+**La carte ajoutée après la passe — Le roi Kusayla** (`kusayla-roi-des-imazighen`,
+`public/cards/kusayla-roi-des-imazighen.jpg`) : Kusayla (Aksel, Aksil, Koceila), roi awraba du
 VII<sup>e</sup> siècle, **à cheval sur un champ de bataille de cendre**. La
 peinture est refaite dans la **veine soulslike** — la seule carte du catalogue à
 ce registre : ciel bas et meurtri, brume de poussière, ruine d'une arche
@@ -1219,14 +1226,12 @@ brisés à demi enfouis au premier plan.
   long fût de frêne, poignée de cuir — levée, prête à tomber.
 - **La monture** est un cheval barb obscur et nerveux, crinière tressée, sueur et
   poussière sur le flanc, haleine fumante dans l'air froid.
-- **Le guépard** court à sa droite, **entièrement coloré** : dos et flancs d'un
+- **Le guépard** court à sa droite — c'est **le jeton que le roi appelle à son
+  arrivée** (`guepard.jpg`, 2/1 Rapidité) — **entièrement coloré** : dos et flancs d'un
   fauve doré chaud, poitrail, ventre et museau crème, taches noires sur tout le
   corps, la larme noire de l'œil à la gueule, yeux ambre, queue annelée à pointe
   crème, collier de cuir. C'est **le seul animal chaud et saturé** de l'image, et
   il doit le rester : le champ de bataille est de cendre, la bête est vivante.
-- **Le fond est éclairé de loin en loin par la même lumière** : l'arche brisée
-  garde des traces de dorure sur la pierre et son ouverture luit d'un ambre
-  chaud, derrière les bannières et les squelettes à demi enfouis.
 - **Les repères du fond portent l'accent doré** : l'arche brisée garde des traces
   de dorure sur la pierre et son ouverture luit d'un ambre chaud, les bannières
   en loques sont ourlées d'or, les boucliers et heaumes coulés dans la cendre
@@ -1239,7 +1244,7 @@ Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
 profondes et une seule lumière chaude et faible. Huile sur toile, clair-obscur
 épais, touches visibles, atmosphère âpre et monumentale ; le cavalier, tête nue et
 cheveux au vent, domine l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
-texte ni cadre. Sa révision de cache est **`aksel-roi-imazigh-v1`** — une clé
+texte ni cadre. Sa révision de cache est **`kusayla-roi-imazigh-v1`** — une clé
 dédiée, pour qu'un futur repeint ne date que cette carte.
 
 **Ce qui reste hors de la passe** : Yamina, Boualem et Fériel gardent leur

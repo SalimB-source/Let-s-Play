@@ -851,6 +851,23 @@ export const RPG_JETON_CARDS = [
     flavor: 'Il se lève du sable comme la dune se lève du vent.',
   },
   {
+    id: 'guepard',
+    name: 'Guépard',
+    // Le pluriel du journal (« le roi Kusayla crée 1 guépard »).
+    pluriel: 'guépards',
+    element: 'sable',
+    cost: 0,
+    atk: 2,
+    def: 1,
+    rarity: 'commune',
+    kind: 'creature',
+    jeton: true,
+    rapidite: true,
+    typeLine: 'Créature-jeton — Guépard',
+    text: 'Un guépard créé par le roi Kusayla à son arrivée : 2/1 avec Rapidité, sans coût.',
+    flavor: 'Il ne suit pas le roi : il arrive avant lui.',
+  },
+  {
     id: 'serpent-des-citernes',
     name: 'Serpent des citernes',
     pluriel: 'serpents des citernes',
@@ -1080,24 +1097,23 @@ export const RPG_HERO_CARDS = [
     flavor: 'Dans la mémoire des pistes, elle ouvre la route et rassemble les siens.',
   },
   {
-    id: 'aksel-roi-des-imazighen',
-    name: 'Aksel, roi des Imazighen',
+    id: 'kusayla-roi-des-imazighen',
+    name: 'Le roi Kusayla',
     role: 'Le Roi de Tahouda',
     element: 'sable',
     cost: 5,
     atk: 4,
-    def: 4,
+    def: 5,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Roi amazigh',
-    art: 'aksel-roi-des-imazighen',
+    art: 'kusayla-roi-des-imazighen',
     // Le roi awraba qui arrêta l’invasion à Tahouda : il rend les coups qu’on
-    // lui porte (Contre-attaque) et son arrivée referme le défilé sur une
-    // créature adverse (Embuscade).
+    // lui porte (Contre-attaque), et son guépard entre avec lui (jeton).
     contreAttaque: true,
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Aksel lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse. Embuscade de Tahouda — Quand Aksel arrive : il inflige 2 dégâts à une créature adverse ciblée.',
-    flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui.',
+    arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
     id: 'ifrit-al-ahmar',

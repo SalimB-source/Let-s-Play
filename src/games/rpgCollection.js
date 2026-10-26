@@ -100,13 +100,13 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
     'lettre-de-marque', 'le-routier'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise. Le roi
-  // Aksel y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
+  // Kusayla y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
   // dernier étage de la tour.
   'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'aksel-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
+  'sables-3': ['anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],

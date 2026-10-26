@@ -155,8 +155,9 @@ const PLEIN_ART_45 = [
   'jarl-au-marteau-de-guerre', 'maitre-du-marteau',
   // Eirik, la nouvelle mythique viking, reçoit aussi son plein art dédié.
   'eirik-du-premier-serment',
-  // Le roi Aksel, la nouvelle figure amazighe du Sable.
-  'aksel-roi-des-imazighen',
+  // Le roi Kusayla, la nouvelle figure amazighe du Sable, et le guépard qu'il
+  // appelle à son arrivée (créature-jeton, peinte comme les autres).
+  'kusayla-roi-des-imazighen', 'guepard',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
   'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
@@ -290,73 +291,91 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'le journal annonce la riposte d’Eirik');
 });
 
-test('Aksel, roi des Imazighen : un héros Sable mythique 4/4 pour 5, Contre-attaque et Embuscade', () => {
-  const carte = cardById('aksel-roi-des-imazighen');
+test('Le roi Kusayla : un héros Sable mythique 4/5 pour 5, Contre-attaque et le guépard qui arrive avec lui', () => {
+  const carte = cardById('kusayla-roi-des-imazighen');
   assert.deepEqual(
     {
       kind: carte.kind, element: carte.element, cost: carte.cost,
-      atk: carte.atk, def: carte.def, rarity: carte.rarity, role: carte.role,
+      atk: carte.atk, def: carte.def, rarity: carte.rarity,
+      name: carte.name, role: carte.role,
     },
     {
       kind: 'hero', element: 'sable', cost: 5,
-      atk: 4, def: 4, rarity: 'mythique', role: 'Le Roi de Tahouda',
+      atk: 4, def: 5, rarity: 'mythique',
+      name: 'Le roi Kusayla', role: 'Le Roi de Tahouda',
     },
   );
   assert.equal(carte.typeLine, 'Créature légendaire — Roi amazigh');
   assert.equal(cardHasPrintedType(carte, 'roi'), true);
   assert.equal(carte.contreAttaque, true, 'le roi rend les coups qu’on lui porte');
-  assert.deepEqual(carte.arrivee, { type: 'degats', amount: 2, cible: 'creature' });
-  assert.equal(arriveeCiblePortee(carte), 'ennemi', 'l’embuscade désigne une créature adverse');
+  assert.deepEqual(carte.arrivee, { type: 'jetons', jeton: 'guepard', nombre: 1 },
+    'son arrivée appelle son fauve, elle ne désigne aucune victime');
+  assert.equal(arriveeCiblePortee(carte), null, 'aucune cible à désigner sur la table');
   assert.equal(cardCopyLimit(carte), 1, 'sa rareté mythique le limite à un exemplaire');
   assert.equal(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id), true);
-  assert.match(carte.flavor, /Tahouda|défilé|dunes/);
+  assert.match(carte.flavor, /Tahouda|défilé|dunes|fauve/);
 });
 
-test('l’Embuscade de Tahouda frappe une créature adverse désignée après la pose', () => {
+test('le guépard du roi naît avec Kusayla : 2/1, Rapidité, sans coût ni carte en main', () => {
+  const modele = cardById('guepard');
+  assert.deepEqual(
+    {
+      kind: modele.kind, element: modele.element, cost: modele.cost,
+      atk: modele.atk, def: modele.def, jeton: modele.jeton, rapidite: modele.rapidite,
+    },
+    { kind: 'creature', element: 'sable', cost: 0, atk: 2, def: 1, jeton: true, rapidite: true },
+  );
+  assert.equal(modele.typeLine, 'Créature-jeton — Guépard');
+  // Un jeton se peint et se joue, mais ne se collectionne pas : il reste hors
+  // du catalogue vendable, comme les chiens de sable de Tarek.
+  assert.equal(cardArtId(modele), 'guepard');
+  assert.ok(existsSync(fileURLToPath(new URL('../public/cards/guepard.jpg', import.meta.url))),
+    'le guépard a sa peinture plein art');
+  assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === 'guepard'), false,
+    'le guépard n’entre ni au Souk ni dans l’atelier de decks');
+  assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes('guepard')), false);
+  assert.equal(cardById('guepard').jeton, true);
+
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
-  donnerMana(duel, 'sorcier', 30);
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-
-  const carte = cardById('aksel-roi-des-imazighen');
-  assert.equal(arriveeACibleLegale(duel, 'joueur', carte), true,
-    'le Chien adverse est une cible légale pour l’embuscade');
-
-  donner(duel, 'joueur', carte.id);
-  const pose = rpgJouerCreature(duel, 'joueur', carte.id, null, { cibleDifferee: true });
+  const manaAvant = Object.values(duel.joueur.mana).reduce((total, reste) => total + reste, 0);
+  donner(duel, 'joueur', 'kusayla-roi-des-imazighen');
+  const pose = rpgJouerCreature(duel, 'joueur', 'kusayla-roi-des-imazighen');
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.equal(pose.arriveeEnAttente, true, 'la pose précède la désignation de la victime');
-  assert.equal(chien.pv, 2, 'les 2 dégâts n’ont pas encore eu lieu');
-  assert.deepEqual([pose.entite.atk, pose.entite.pv], [4, 4], 'un corps 4/4');
-  assert.equal(Object.values(duel.joueur.mana).reduce((total, reste) => total + reste, 0), 145,
-    'les cinq manas du coût sont payés, dont au moins un Sable');
+  assert.equal(Boolean(pose.arriveeEnAttente), false, 'appeler le fauve ne demande aucune désignation');
+  assert.equal(duel.arriveeEnAttente ?? null, null);
 
-  const res = rpgResoudreArriveeCiblee(duel, 'joueur', chien.id);
-  assert.equal(res.ok, true, JSON.stringify(res));
-  assert.equal(duel.sorcier.creatures.includes(chien), false,
-    'le Chien 2/2 meurt de l’embuscade');
-  assert.equal(duel.arriveeEnAttente, null);
-  assert.ok(duel.joueur.creatures.includes(pose.entite), 'Aksel reste sur la table');
+  const fauves = duel.joueur.creatures.filter((entite) => entite.carteId === 'guepard');
+  assert.equal(fauves.length, 1, 'le guépard est sur la table avec son roi');
+  assert.deepEqual([fauves[0].atk, fauves[0].pv, fauves[0].rapidite], [2, 1, true],
+    'un corps 2/1 avec Rapidité');
+  assert.equal(duel.joueur.main.includes('guepard'), false, 'aucun guépard n’entre en main');
+  assert.equal(duel.joueur.cimetiere.includes('guepard'), false, 'ni au cimetière');
+  assert.equal(Object.values(duel.joueur.mana).reduce((total, reste) => total + reste, 0),
+    manaAvant - 5, 'seul le coût du roi est payé');
+  assert.equal(rpgPeutAttaquer(fauves[0]), true,
+    'Rapidité : il peut attaquer le tour même');
+  assert.ok(duel.log.some((ligne) => /Kusayla.*crée 1 guépard 2\/1/i.test(ligne)),
+    'le journal annonce le fauve');
 });
 
-test('la Contre-attaque d’Aksel rend ses 4 dégâts à la créature qui le cible', () => {
+test('la Contre-attaque du roi Kusayla rend ses 4 dégâts à la créature qui le cible', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
   donnerMana(duel, 'sorcier', 30);
-  donner(duel, 'sorcier', 'aksel-roi-des-imazighen');
-  const aksel = rpgJouerCreature(duel, 'sorcier', 'aksel-roi-des-imazighen').entite;
+  donner(duel, 'sorcier', 'kusayla-roi-des-imazighen');
+  const kusayla = rpgJouerCreature(duel, 'sorcier', 'kusayla-roi-des-imazighen').entite;
 
   donner(duel, 'joueur', 'tour-de-braise');
-  const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', aksel.id).entite;
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', kusayla.id).entite;
 
-  assert.equal(aksel.pv, 3, 'la Tour inflige d’abord son dégât');
+  assert.equal(kusayla.pv, 4, 'la Tour inflige d’abord son dégât');
   assert.equal(duel.joueur.creatures.includes(tour), false,
     'la riposte du roi détruit la Tour');
   assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25],
     'une capacité de créature riposte sur son auteur, jamais sur un sorcier');
-  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Aksel, roi des Imazighen rend son coup')),
-    'le journal annonce la riposte d’Aksel');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Le roi Kusayla rend son coup')),
+    'le journal annonce la riposte du roi');
 });
 
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {
