@@ -63,26 +63,34 @@ guerrière amazighe sur une chèvre de guerre, qui descend la montagne** — la
 scène est héroïque, vue en contre-plongée, et la cavalière domine l'image
 malgré sa taille.
 
-- **La cavalière** — petite et nerveuse, droite en selle, peau brune burinée,
-  pommettes hautes, menton au henné, yeux sombres fixés devant elle, un
-  demi-sourire décidé. Elle est **habillée entièrement de noir** : foulard
+- **La cavalière** — **une toute jeune femme d'une vingtaine d'années**, petite
+  et nerveuse, droite en selle : visage lisse aux joues pleines, peau brune
+  chaude, pommettes hautes, menton au henné, grands yeux sombres fixés devant
+  elle, un demi-sourire décidé. Pas de visage buriné ni de rides — c'est la
+  jeunesse qui frappe, pas l'expérience ; sa petite taille et son air juvénile
+  rendent la charge plus surprenante encore. Elle est **habillée entièrement de
+  noir** : foulard
   d'indigo noirci dont la queue flotte derrière elle, gilet lamellaire de cuir
   noir sur une tunique de lin noir, large ceinture tissée noire à boucle
   d'argent, pantalon noir serré dans des bottes de cuir noir enroulées. Le noir
   est mat, poussiéreux, nuancé de laine, de cuir et de lin pour que les volumes
   tiennent ; seuls le visage, les mains et le cou gardent leur peau chaude, et
   la lumière de l'aube cerne la silhouette. Petits accents d'argent seulement :
-  créoles, fibule à l'épaule, boucle, pommeau du sabre.
-- **L'équipement** — **deux sabres courts recourbés**, un dans chaque main,
-  lames d'acier usées qui accrochent la lumière de l'aube, poignées de cuir
-  sombre ; **aucun bouclier** — le dos est nu, sous le gilet lamellaire. Les
-  deux lames sont son Attaque ciblée, peintes dans le geste (la frappe d'un
-  sabre et la riposte de l'autre).
+  créoles, fibule à l'épaule, boucle de ceinture, garnitures d'argent de l'arc.
+- **L'équipement** — **un seul grand arc recurve** d'archer des montagnes :
+  bois sombre, corne et nerf, plus haut que son torse, tenu en travers du
+  corps — une main sur la poignée, l'autre qui bande la corde jusqu'à la joue,
+  une longue flèche encochée pointée au-delà des cornes de la chèvre ; un
+  **carquois de flèches** sanglé dans le dos, cuir noir. **Aucun sabre, aucune
+  épée, aucun bouclier** — le dos reste nu sous le gilet lamellaire. L'arc
+  bandé *est* son Attaque ciblée, peinte dans le geste, et l'Esquive se lit
+  dans cette absence de bouclier : elle ne pare pas, elle glisse dans la pente.
 - **L'effet de vitesse** — la descente doit se lire comme une charge : le
   panache de poussière s'étire derrière elle sur le sentier, le gravier et les
   cailloux partent en arrière sous les sabots, la toison de la chèvre et la
   queue du foulard filent en traînées, la roche du fond se perd dans un léger
-  flou de mouvement — tandis que le **visage et les deux lames restent nets**.
+  flou de mouvement — tandis que le **visage, la flèche et la corde restent
+  nets**.
   C'est de la peinture à l'huile, jamais des lignes de vitesse numériques.
 - **La monture** — une grande **chèvre de guerre** à longs poils noirs et
   fauves, cornes annelées rejetées en arrière, bride de cuir et de bronze,
@@ -94,7 +102,11 @@ malgré sa taille.
   prenant le premier soleil derrière elle.
 
 Plein art 4:5 livré en 1024×1280, sans texte ni cadre ; révision de cache
-**`bouchra-cretes-v1`**, déclarée dans `rpgCardArt.js`.
+**`bouchra-cretes-v2`**, déclarée dans `rpgCardArt.js`. Le tableau a été
+**repeint entièrement** (pas retouché) pour la version définitive : même
+composition, même chèvre, même pente, mais un visage plus jeune, un arc recurve
+bandé à la joue au lieu de sabres, et le village fortifié descendu dans la
+vallée pour laisser la crête et la lumière libre autour de la cavalière.
 
 ## Les Tours de défense
 

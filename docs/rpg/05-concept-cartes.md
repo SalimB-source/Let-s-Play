@@ -329,25 +329,34 @@ terre, rien de plus.
 ### Bouchra, la guerrière des crêtes (Sable)
 
 **Bouchra, guerrière des crêtes** (`bouchra-guerriere-des-cretes`) ajoute au
-Sable une combattante de tempo : une **rare** à **3 manas, 2/1**, ligne de type
-« Créature — Guerrière amazighe », **deux exemplaires** par deck.
+Sable une combattante de tempo : une **mythique** à **2 manas, 3/1**, ligne de
+type « Créature légendaire — Guerrière amazighe », **un seul exemplaire** par
+deck. C'est, avec Eirik du Premier Serment (Neige, 1 mana 2/2), la mythique la
+moins chère du catalogue : sa puissance calculée est **44,45**, dans la bande
+mythique (41,8 à 44,4), et son corps de 3/1 pour deux manas est le plus
+agressif du Sable.
 
 - **Rapidité** — sa chèvre de guerre ne connaît pas le mal d'invocation : elle
   attaque le tour où elle arrive, comme le Djinn de foudre ou Fériel.
+- **Esquive** — 30 % de chances d'esquiver une attaque, une Magie ou une
+  Sorcellerie (les capacités ne s'esquivent pas). C'est sa seule défense : elle
+  ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
+  sur trois seulement est annulée — la mythique se joue en tempo, pas en mur.
 - **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
   adverse de votre choix (30 % de chances de rater, 100 % contre le sorcier) :
-  ses 2 dégâts passent **sans riposte** et son attaque s'arrête là. C'est la
-  mécanique des archers du Soleil rouge, avec un corps bon marché.
+  ses **3 dégâts** passent **sans riposte** et son attaque s'arrête là. C'est la
+  mécanique des archers du Soleil rouge, et son grand arc la rend naturelle.
 - **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend
-  `null` — son javelot se paie en attaquant, pas en se posant.
+  `null` — son arc se paie en attaquant, pas en se posant.
 - Elle n'appartient à aucun boîtier de départ : elle se révèle à l'étage 3 de la
   **Tour des Listes** (`listes-3`), avec la gardienne des ksour, puis s'achète
   au Souk.
-- Sa peinture (plein art 4:5, révision `bouchra-cretes-v1`) la montre en noir
-  des pieds à la tête, en contre-plongée, **deux sabres courts aux mains et
-  sans bouclier**, sur sa chèvre lancée dans le sentier des Aurès — poussière
-  étirée derrière eux, cailloux projetés, flou de mouvement sur le fond, visage
-  et lames nets. Direction artistique `RPG-CARD-ART.md`.
+- Sa peinture (plein art 4:5, révision `bouchra-cretes-v2`) la montre en noir
+  des pieds à la tête, **toute jeune — une vingtaine d'années, visage lisse**,
+  **un grand arc recurve bandé à la joue et un carquois dans le dos — ni sabre,
+  ni bouclier**, sur sa chèvre lancée dans le sentier des Aurès — poussière
+  étirée derrière eux, cailloux projetés, flou de mouvement sur le fond, visage,
+  flèche et corde nets. Direction artistique `RPG-CARD-ART.md`.
 
 ### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
 

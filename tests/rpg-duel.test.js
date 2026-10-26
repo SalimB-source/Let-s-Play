@@ -295,7 +295,7 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'le journal annonce la riposte d’Eirik');
 });
 
-test('Bouchra, guerrière des crêtes : une rare Sable 2/1 pour 3, Rapidité et Attaque ciblée', () => {
+test('Bouchra, guerrière des crêtes : une mythique Sable 3/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
   const carte = cardById('bouchra-guerriere-des-cretes');
   assert.deepEqual(
     {
@@ -303,18 +303,21 @@ test('Bouchra, guerrière des crêtes : une rare Sable 2/1 pour 3, Rapidité et 
       atk: carte.atk, def: carte.def, rarity: carte.rarity, name: carte.name,
     },
     {
-      kind: 'creature', element: 'sable', cost: 3,
-      atk: 2, def: 1, rarity: 'rare', name: 'Bouchra, guerrière des crêtes',
+      kind: 'creature', element: 'sable', cost: 2,
+      atk: 3, def: 1, rarity: 'mythique', name: 'Bouchra, guerrière des crêtes',
     },
   );
-  assert.equal(carte.typeLine, 'Créature — Guerrière amazighe');
+  assert.equal(carte.typeLine, 'Créature légendaire — Guerrière amazighe');
   assert.equal(cardHasPrintedType(carte, 'guerrière'), true);
   assert.deepEqual(cardColors(carte), ['sable'], 'elle reste mono-Sable, comme sa montagne');
   assert.equal(carte.rapidite, true, 'sa chèvre de guerre ne connaît pas le mal d’invocation');
-  assert.equal(carte.coupRapide, true, 'son javelot frappe où elle veut');
-  assert.equal(cardCopyLimit(carte), 2, 'une rare se joue en deux exemplaires');
+  assert.equal(carte.coupRapide, true, 'son grand arc frappe où elle veut');
+  assert.equal(carte.esquive, true, 'la pente la rend insaisissable');
+  assert.equal(cardCopyLimit(carte), 1, 'une mythique reste unique');
   assert.equal(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id), true);
   assert.match(carte.flavor, /chèvre|sentier/);
+  assert.match(carte.flavor, /flèche/, 'la saveur nomme l’arc, plus le sabre');
+  assert.match(carte.text, /Esquive/, 'la fiche imprime l’Esquive');
   assert.equal(arriveeCiblePortee(carte), null, 'son arrivée ne désigne aucune cible : elle frappe en attaquant');
 });
 
@@ -322,23 +325,43 @@ test('Bouchra arrive prête et frappe une créature adverse sans riposte', () =>
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
-  donner(duel, 'sorcier', 'porteuse-de-cruches'); // 0/3, un mur sans attaque
-  const mur = rpgJouerCreature(duel, 'sorcier', 'porteuse-de-cruches').entite;
+  donner(duel, 'sorcier', 'dune-marchante'); // 2/4, un mur qui pourrait riposter
+  const mur = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
 
   donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   const pose = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [2, 1, true],
-    'un corps 2/1 déjà prêt à attaquer');
+  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [3, 1, true],
+    'un corps 3/1 déjà prêt à attaquer');
   assert.equal(rpgPeutAttaquer(pose.entite), true, 'Rapidité : elle attaque le tour même');
+  assert.equal(pose.entite.esquive, true, 'l’Esquive est portée par l’entité en jeu');
 
-  // Elle désigne le mur : 2 dégâts, et le mur 0/3 ne riposte pas.
-  rpgReglerHasard(duel, () => 0); // le javelot ne rate pas
+  // Elle désigne le mur : 3 dégâts, et le mur 2/4 ne riposte pas.
+  rpgReglerHasard(duel, () => 0); // la flèche ne rate pas
   const attaque = rpgAttaquerCreature(duel, 'joueur', pose.entite.id, mur.id);
   assert.equal(attaque.ok, true, JSON.stringify(attaque));
-  assert.equal(duel.sorcier.creatures.includes(mur), true, '2 dégâts ne suffisent pas à tuer un mur de 3 PV');
-  assert.equal(mur.pv, 1, 'le mur encaisse les 2 dégâts du javelot');
+  assert.equal(mur.pv, 1, 'le mur 2/4 encaisse les 3 dégâts de l’arc');
   assert.equal(pose.entite.pv, 1, 'et ne riposte pas : Bouchra reste intacte');
+});
+
+test('Bouchra esquive l’attaque qui devait la tuer — pas de bouclier, mais rien à toucher', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 10);
+  donnerMana(duel, 'sorcier', 10);
+  donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
+  donner(duel, 'sorcier', 'ashigaru-des-braises'); // 1/1
+  const attaquant = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
+  attaquant.ready = true;
+
+  // 29 % : sous le seuil de 30 %, l’attaque est annulée en entier.
+  rpgReglerHasard(duel, () => 0.29);
+  const combat = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [bouchra.id] });
+  assert.equal(combat.ok, true, JSON.stringify(combat));
+  assert.equal(bouchra.pv, 1, 'l’attaque esquivée ne lui retire rien');
+  assert.ok(duel.joueur.creatures.includes(bouchra), 'elle survit sans une égratignure');
+  assert.ok(duel.log.some((ligne) => /Bouchra.*esquive l’attaque/.test(ligne)),
+    'le journal nomme l’esquive de Bouchra');
 });
 
 test('Le roi Kusayla : un héros Sable mythique 4/5 pour 5, Contre-attaque et le guépard qui arrive avec lui', () => {

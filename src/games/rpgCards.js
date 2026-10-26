@@ -477,19 +477,24 @@ export const RPG_CREATURE_CARDS = [
     id: 'bouchra-guerriere-des-cretes',
     name: 'Bouchra, guerrière des crêtes',
     element: 'sable',
-    cost: 3,
-    atk: 2,
+    cost: 2,
+    atk: 3,
     def: 1,
-    rarity: 'rare',
-    typeLine: 'Créature — Guerrière amazighe',
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Guerrière amazighe',
     art: 'bouchra-guerriere-des-cretes',
-    // Elle descend la montagne avant tout le monde : sa chèvre de guerre ne
-    // connaît pas le mal d'invocation (Rapidité), et son javelot ouvre le
-    // combat à son arrivée — Attaque ciblée, comme les archers du Soleil rouge.
+    // La mythique bon marché du Sable : 3/1 pour deux manas, et rien pour se
+    // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
+    // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
+    // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
+    // insaisissable (Esquive, 30 %) : ce qu'elle ne pare pas, elle l'évite.
+    // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
+    // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
-    flavor: 'La chèvre connaît chaque pierre du sentier ; elle n’a plus qu’à choisir où frapper.',
+    esquive: true,
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
     id: 'amani-des-ksour',
