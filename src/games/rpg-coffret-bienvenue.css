@@ -494,24 +494,31 @@
   100% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(14px); filter: brightness(2.6); }
 }
 
-/* Le couvercle bascule sur l'arête arrière. */
+/* Le couvercle bascule sur l'arête arrière.
+   La charnière est l'arête **haute et arrière** du boîtier : l'élément est
+   ramené en haut du corps (`top: 0`) et son origine posée sur son propre bord
+   haut (`50% 0`), puis couché à plat. Il ne reste plus qu'à reculer le plan
+   d'une **demi-profondeur** pour que le couvercle tombe pile sur la bouche de
+   la boîte. Avec une profondeur entière (`-1`), le couvercle se retrouvait
+   décalé de `--bd / 2` vers l'arrière : le haut du paquet flottait derrière le
+   corps. */
 .rpg-coffret__coffre .rpg-deckbox__face--top {
   top: 0;
   transform-origin: 50% 0;
-  transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg);
+  transform: translateZ(calc(var(--bd) * -0.5)) rotateX(90deg);
   backface-visibility: visible;
   -webkit-backface-visibility: visible;
   animation: rpg-coffret-couvercle-ouvre 860ms 880ms cubic-bezier(0.32, 1.02, 0.4, 1) both;
 }
 
 @keyframes rpg-coffret-couvercle-ouvre {
-  0% { transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg); }
-  55% { transform: translateZ(calc(var(--bd) * -1)) rotateX(120deg); }
-  100% { transform: translateZ(calc(var(--bd) * -1)) rotateX(152deg); }
+  0% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(90deg); }
+  55% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(120deg); }
+  100% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(152deg); }
 }
 
-/* La bouche du boîtier : la même arête que le couvercle, deux pixels plus bas,
-   pour que le couvercle la couvre tant qu'il est fermé. */
+/* La bouche du boîtier : même arête et même profondeur que le couvercle, trois
+   pixels plus bas, pour que le couvercle la couvre tant qu'il est fermé. */
 .rpg-coffret__coffre .rpg-deckbox__body::after {
   content: '';
   position: absolute;
@@ -520,7 +527,7 @@
   top: 0;
   height: var(--bd);
   transform-origin: 50% 0;
-  transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg) translateZ(-2px);
+  transform: translateY(3px) translateZ(calc(var(--bd) * -0.5)) rotateX(90deg);
   border-radius: calc(var(--bw) * 0.03);
   background:
     radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--glow) 46%, #1b1208), #090605 76%),

@@ -198,11 +198,15 @@ suffisent, aucune ne redessine le boîtier :
 - le **fermoir** (`.rpg-deckbox__latch`) saute — c'est le sceau qui cède, dans
   la langue du boîtier (560 ms) ;
 - le **couvercle** est la face du dessus (`--top`). Sa charnière est déplacée
-  sur l'arête arrière (`transform-origin: 50% 0`) et la rotation poussée de 90°
-  à 152° : il se dresse derrière la boîte au lieu de rester posé dessus (860 ms) ;
-- la **bouche** (`::after` du corps, même arête, deux pixels plus bas) apparaît
-  alors. Sans elle, le boîtier ouvert montrait le vide entre son arête haute et
-  sa face arrière ;
+  sur l'arête haute et arrière (`top: 0` + `transform-origin: 50% 0`) et la
+  rotation poussée de 90° à 152° : il se dresse derrière la boîte au lieu de
+  rester posé dessus (860 ms). Le plan est reculé d'une **demi-profondeur**
+  (`translateZ(-0.5 × --bd)`) pour tomber pile sur la bouche : reculé d'une
+  profondeur entière, le couvercle flottait `--bd / 2` derrière le corps, et le
+  haut du paquet semblait décalé vers l'arrière ;
+- la **bouche** (`::after` du corps, même arête, même profondeur, trois pixels
+  plus bas) apparaît alors. Sans elle, le boîtier ouvert montrait le vide entre
+  son arête haute et sa face arrière ;
 - le **corps** monte et tremble sur `translate` / `rotate`, qui s'ajoutent à la
   pose de trois quarts sans l'écraser — animer `transform` aurait fait sauter
   la boîte à plat.
