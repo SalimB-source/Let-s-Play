@@ -108,6 +108,11 @@ export default function Reviews(){
                 <li key={point.lead}><strong>{point.lead}</strong> {point.body}</li>
               ))}
             </ul>
+          </div>
+          <div className="short-review-player hud-frame">
+            <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
+          </div>
+          <aside className="short-review-verdict">
             <div className={`short-review-score tier-${scoreTier(shortReviewVideo.score)}`}>
               <div className="short-review-score-top">
                 <span className="short-review-score-kicker">{sr.scoreKicker}</span>
@@ -118,12 +123,13 @@ export default function Reviews(){
                 <span className="short-review-score-max">/10</span>
               </div>
               <div className="short-review-score-bar"><i style={{ width: `${shortReviewVideo.score * 10}%` }} /></div>
+              <div className="short-review-summary">
+                <span className="short-review-summary-kicker">{sr.summaryKicker}</span>
+                <p>{sr.summary}</p>
+              </div>
             </div>
             <a className="arrow-link" href={shortReviewVideo.href} target="_blank" rel="noreferrer">{sr.watch} <Arrow/></a>
-          </div>
-          <div className="short-review-player hud-frame">
-            <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
-          </div>
+          </aside>
         </div>
       </section>
 

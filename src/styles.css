@@ -1965,20 +1965,19 @@ img{max-width:100%}
 .reel-label{pointer-events:auto;text-decoration:none}
 
 /* ============ SHORT REVIEW — YouTube Short transcrit ============ */
-/* Le Short (9:16) tient dans un cadre HUD, l'idée du test est
-   retranscrite à côté en texte, avec la note donnée dans la vidéo
-   (pastille de score du site, même échelle /10). */
+/* Le Short (9:16) tient dans un cadre HUD au centre : l'idée du test,
+   retranscrite en points à gauche, et à droite le verdict — la note
+   donnée dans la vidéo, en grand, avec le résumé de tous les points. */
 .short-review-section{padding:110px 0 60px}
 .short-review-head{display:flex;align-items:end;justify-content:space-between;gap:30px;padding-top:38px}
 .short-review-head h2{font-family:var(--display);font-weight:800;font-size:clamp(38px,5vw,64px);line-height:1.05;letter-spacing:.005em;margin:18px 0 0;text-transform:uppercase}
 .short-review-head h2 em{font-style:normal;color:var(--cyan);text-shadow:0 0 24px rgba(34,211,238,.5)}
-/* Texte à gauche, Short à droite. La colonne du lecteur épouse la largeur
-   du Short (9:16) : avec une colonne en `fr`, la vidéo resterait collée à
-   gauche d'une colonne plus large qu'elle, et l'écart avec le texte
-   doublerait (vide + gouttière). Ici le texte et le Short ne sont séparés
-   que par la gouttière, et un filet fin referme l'article. */
-.short-review-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,clamp(240px,30vw,340px));gap:clamp(20px,2.4vw,30px);margin-top:46px;align-items:start;padding:clamp(18px,2.2vw,26px);border:1px solid var(--line-strong);background:linear-gradient(210deg,rgba(34,211,238,.045),rgba(11,13,30,.26) 58%,transparent)}
-.short-review-player{position:relative;aspect-ratio:9/16;max-width:340px;background:var(--panel);box-shadow:0 0 44px -12px rgba(34,211,238,.35),0 24px 60px -30px rgba(0,0,0,.9)}
+/* Texte à gauche, Short au centre, verdict à droite. La colonne du
+   lecteur épouse la largeur du Short (9:16) et les colonnes latérales
+   font la même largeur (1fr), donc la vidéo reste exactement centrée
+   et n'est séparée des colonnes que par les gouttières. */
+.short-review-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,clamp(260px,27vw,340px)) minmax(0,1fr);gap:clamp(20px,2.4vw,30px);margin-top:46px;align-items:start;padding:clamp(18px,2.2vw,26px);border:1px solid var(--line-strong);background:linear-gradient(180deg,rgba(34,211,238,.045),rgba(11,13,30,.26) 58%,transparent)}
+.short-review-player{align-self:start;position:relative;aspect-ratio:9/16;max-width:340px;background:var(--panel);box-shadow:0 0 44px -12px rgba(34,211,238,.35),0 24px 60px -30px rgba(0,0,0,.9)}
 .short-review-player iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
 .short-review-copy{display:flex;flex-direction:column;gap:18px;min-width:0}
 .short-review-meta{display:block;font:500 10px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
@@ -2005,14 +2004,37 @@ img{max-width:100%}
 .short-review-score.tier-is-good .short-review-score-tier{color:var(--yellow-ink)}
 .short-review-score.tier-is-mid .short-review-score-value{color:#ff8a4c;text-shadow:0 0 26px rgba(255,138,76,.4)}
 .short-review-score.tier-is-mid .short-review-score-tier{color:#ff8a4c}
-.short-review-copy .arrow-link{align-self:flex-start;margin-top:2px}
+/* Le verdict, à droite : la note en très grand, puis le résumé qui
+   condense tous les points, dans le même bloc HUD */
+.short-review-verdict{display:flex;flex-direction:column;gap:18px;min-width:0}
+.short-review-verdict .short-review-score{margin-top:0;padding:clamp(24px,2vw,32px)}
+.short-review-verdict .short-review-score-main{margin:12px 0 18px}
+.short-review-verdict .short-review-score-value{font-size:clamp(96px,9vw,150px)}
+.short-review-verdict .short-review-score-max{font-size:18px}
+.short-review-verdict .short-review-score-bar{height:8px}
+.short-review-summary{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.short-review-summary-kicker{font:700 10px var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--yellow-ink)}
+.short-review-summary p{margin:10px 0 0;font-size:15px;line-height:1.65;color:var(--muted)}
+.short-review-verdict .arrow-link{align-self:flex-start}
+/* Sous 1150px, trois colonnes écraseraient le texte et le verdict : le
+   verdict repasse sous le texte à gauche, le Short à droite sur deux rangées */
+@media(min-width:801px) and (max-width:1150px) and (hover:hover), (min-width:801px) and (max-width:1150px) and (min-device-width:601px){
+  .short-review-grid{grid-template-columns:minmax(0,1fr) minmax(0,clamp(240px,30vw,340px));grid-template-rows:min-content minmax(0,1fr);align-items:start}
+  .short-review-copy{grid-column:1;grid-row:1}
+  .short-review-player{grid-column:2;grid-row:1/span 2}
+  .short-review-verdict{grid-column:1;grid-row:2}
+}
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .short-review-section{padding:70px 0 40px}
   .short-review-head{display:block;padding-top:32px}
   .short-review-head .arrow-link{margin-top:22px}
-  .short-review-grid{grid-template-columns:1fr;gap:24px;margin-top:34px;padding:16px}
-  /* Mobile : la vidéo passe avant le texte (le DOM garde texte puis vidéo) */
+  .short-review-grid{grid-template-columns:1fr;grid-template-rows:none;gap:24px;margin-top:34px;padding:16px}
+  /* Mobile : une colonne — on libère les placements du palier intermédiaire,
+     la vidéo passe avant le texte, le verdict (grande note + résumé) à la fin */
+  .short-review-copy,.short-review-player,.short-review-verdict{grid-column:auto;grid-row:auto}
   .short-review-player{order:-1;max-width:min(340px,100%);margin-inline:auto}
+  .short-review-verdict .short-review-score{padding:22px}
+  .short-review-verdict .short-review-score-value{font-size:clamp(76px,24vw,104px)}
 }
 @media(max-width:450px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .short-review-head h2{font-size:clamp(30px,8.4vw,38px)}
