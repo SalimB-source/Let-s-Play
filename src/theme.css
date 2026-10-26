@@ -1240,7 +1240,7 @@
 [data-theme='light'] .short-review-player,
 [data-theme='light'] .short-review-score{box-shadow:var(--shadow-md)}
 [data-theme='light'] .short-review-score{background:linear-gradient(140deg, rgba(34,211,238,.10), rgba(255,255,255,.5) 55%), var(--panel)}
-[data-theme='light'] .short-review-grid{background:linear-gradient(210deg, rgba(34,211,238,.07), rgba(255,255,255,.6) 58%), var(--panel)}
+[data-theme='light'] .short-review-grid{background:linear-gradient(180deg, rgba(34,211,238,.07), rgba(255,255,255,.6) 58%), var(--panel)}
 [data-theme='light'] .short-review-score-bar{background:rgba(35,32,70,.10)}
 [data-theme='light'] .short-review-points li::before{box-shadow:none}
 [data-theme='light'] .featured--ooredoo .featured-player,
