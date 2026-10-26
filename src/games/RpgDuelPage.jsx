@@ -112,8 +112,14 @@ import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
-import { GAINS, creditsLisible, gainsDeTour, recompenseEtage } from './rpgCredits.js';
-import { glypheEmbleme, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
+import {
+  GAINS,
+  creditsLisible,
+  gainsDeTour,
+  illustrationsAffichees as illustrationsAfficheesDuPortefeuille,
+  recompenseEtage,
+} from './rpgCredits.js';
+import { glypheEmbleme, niveauDeXp, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
   preparerDuelTutoriel,
@@ -253,6 +259,19 @@ import {
 // `rpgSortSignature.jsx`).
 import { SortSceau, SortSocle, classeLigneFamille } from './rpgSortSignature.jsx';
 import { cardArt, cardArtEntite, cardArtFurie } from './rpgCardArt.js';
+import {
+  ALTERNATIVES_DE_BOUTIQUE,
+  ALTERNATIVES_DE_L_ECHELLE,
+  RPG_ILLUSTRATIONS_ALTERNATIVES,
+  alternativeDeCarte,
+  alternativeOuverte,
+  alternativesGagneesEntre,
+  alternativesRestantes,
+  illustrationAlternativeUrl,
+  nomDeLaCarte,
+  prochaineAlternative,
+} from './rpgCardArtAlternatives.js';
+import { definirIllustrationsAffichees } from './rpgCardArt.js';
 import {
   DeckBox,
   ElementEmblem,
@@ -3216,7 +3235,136 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
  *
  * `surface` est le mot du sur-titre — l'écran qui a ouvert la fiche ; `armes`
  * sont celles que porte la créature ouverte, quand le duel les connaît. */
-function ApercuCarteCatalogue({ carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], prisonniere = null, surface = 'CATALOGUE', onFermer }) {
+/**
+ * La **vitrine** d'une illustration alternative : la peinture ancienne, en
+ * plus petit, à côté de la carte qu'elle double.
+ *
+ * Elle dit d'où vient l'image et quoi en faire :
+ *
+ *   - **échelle d'XP** — verrouillée, elle annonce « Gagnez cette carte en
+ *     montant au niveau N » et ne charge pas son image (une récompense ne se
+ *     laisse pas deviner). Ouverte, elle se gagne à jamais et peut remplacer la
+ *     peinture de la passe sur la carte ;
+ *   - **boutique** — la devanture montre ce qu'elle vend, avec son prix en
+ *     crédits ◈. L'achat se fait ici, d'un bouton, une seule fois ; le refus
+ *     (solde court, déjà acquise) se dit sous le bouton, jamais par une
+ *     alerte.
+ *
+ * Une illustration possédée — gagnée ou achetée — peut être **affichée sur la
+ * carte** : c'est ce que le joueur a payé, il doit le voir en duel.
+ */
+function VitrineIllustration({
+  carte, niveau = 1, portefeuille = null, credits = 0,
+  onAcheter = null, onBasculer = null, onPlaySfx = null,
+}) {
+  const alternative = alternativeDeCarte(carte?.id);
+  const [retour, setRetour] = useState(null);
+  if (!alternative) return null;
+  const acquises = portefeuille?.illustrations?.achetees ?? [];
+  const affichees = portefeuille?.illustrations?.affichees ?? [];
+  const achetee = acquises.includes(carte.id);
+  const gagnee = alternative.source === 'echelle' && niveau >= alternative.niveau;
+  const ouverte = alternativeOuverte(alternative, niveau, acquises);
+  const affichee = affichees.includes(carte.id);
+  const manque = Math.max(0, (alternative.prix ?? 0) - (Number(credits) || 0));
+  const acheter = () => {
+    const resultat = onAcheter?.(carte.id);
+    try { onPlaySfx?.(resultat?.ok ? 'select' : 'erreur'); } catch { /* silencieux */ }
+    if (resultat?.ok) setRetour('achetee');
+    else if (resultat?.raison === 'credits-insuffisants') setRetour('manque');
+    else if (resultat?.raison === 'deja-acquise') setRetour('deja');
+    else setRetour('refus');
+  };
+  const basculer = () => {
+    const resultat = onBasculer?.(carte.id, { gagnee });
+    try { onPlaySfx?.('menu'); } catch { /* silencieux */ }
+    if (resultat?.ok) setRetour(resultat.affichee ? 'affichee' : 'retiree');
+  };
+  return (
+    <aside
+      className={`rpg-vitrine${ouverte ? ' is-open' : ''}`}
+      data-vitrine={carte.id}
+      data-vitrine-source={alternative.source}
+      aria-label={`Illustration alternative de ${carte.name}`}
+    >
+      <div className="rpg-vitrine__art">
+        {ouverte || alternative.source === 'boutique' ? (
+          <img src={illustrationAlternativeUrl(alternative)} alt={`Illustration alternative — ${alternative.nom}`} />
+        ) : (
+          <span className="rpg-vitrine__sceau" aria-hidden="true">🔒</span>
+        )}
+        <span className="rpg-vitrine__source" aria-hidden="true">
+          {alternative.source === 'echelle' ? `ÉCHELLE · NIVEAU ${alternative.niveau}` : 'BOUTIQUE'}
+        </span>
+      </div>
+      <p className="rpg-vitrine__nom">{alternative.nom}</p>
+      <p className="rpg-vitrine__carte">Peinture alternative de <b>{carte.name}</b></p>
+
+      {alternative.source === 'echelle' && !ouverte ? (
+        <p className="rpg-vitrine__promesse" data-vitrine-promesse={alternative.niveau}>
+          Gagnez cette carte en montant au niveau <b>{alternative.niveau}</b>
+          <small>Vous êtes niveau {niveau}.</small>
+        </p>
+      ) : null}
+
+      {alternative.source === 'boutique' && !achetee ? (
+        <div className="rpg-vitrine__achat">
+          <button
+            type="button"
+            className="rpg-btn rpg-btn--primary rpg-vitrine__bouton"
+            data-vitrine-acheter={alternative.prix}
+            onClick={acheter}
+            disabled={manque > 0}
+            aria-label={`Acheter l’illustration alternative de ${carte.name} pour ${creditsLisible(alternative.prix)} crédits`}
+          >
+            Acheter · {creditsLisible(alternative.prix)} ◈
+          </button>
+          <small className="rpg-vitrine__solde">
+            {manque > 0
+              ? `Il manque ${creditsLisible(manque)} ◈`
+              : `Votre bourse : ${creditsLisible(credits)} ◈`}
+          </small>
+        </div>
+      ) : null}
+
+      {ouverte ? (
+        <div className="rpg-vitrine__pose">
+          <button
+            type="button"
+            className="rpg-btn rpg-btn--ghost rpg-vitrine__bouton"
+            data-vitrine-basculer={affichee ? 'retirer' : 'afficher'}
+            onClick={basculer}
+          >
+            {affichee ? 'Revenir à la peinture de la passe' : 'Afficher sur la carte'}
+          </button>
+          <small className="rpg-vitrine__etat">
+            {affichee ? 'Cette peinture habille la carte en duel.' : (gagnee ? 'Gagnée à l’échelle.' : 'Acquise à la boutique.')}
+          </small>
+        </div>
+      ) : null}
+
+      {retour === 'manque' ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="manque">Solde insuffisant — il manque {creditsLisible(manque)} ◈.</p>
+      ) : null}
+      {retour === 'achetee' ? (
+        <p className="rpg-vitrine__retour is-ok" role="status" data-vitrine-retour="achetee">Illustration acquise — elle habille la carte.</p>
+      ) : null}
+      {retour === 'affichee' ? (
+        <p className="rpg-vitrine__retour is-ok" role="status" data-vitrine-retour="affichee">Illustration affichée sur la carte.</p>
+      ) : null}
+      {retour === 'retiree' ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="retiree">La carte reprend sa peinture de la passe.</p>
+      ) : null}
+    </aside>
+  );
+}
+
+function ApercuCarteCatalogue({
+  carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [],
+  prisonniere = null, surface = 'CATALOGUE', onFermer,
+  niveau = 1, portefeuille = null, credits = 0,
+  onAcheterIllustration = null, onBasculerIllustration = null, onPlaySfx = null,
+}) {
   const boutonFermerRef = useRef(null);
   // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
   // reste où le joueur l'avait laissé, et Échap referme depuis là.
@@ -3234,8 +3382,19 @@ function ApercuCarteCatalogue({ carte, armes = [], furieDeclenchee = false, stat
       onClick={onFermer}
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
-      <div className="rpg-card-peek__panel">
-        <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} />
+      <div className="rpg-card-peek__duo">
+        <div className="rpg-card-peek__panel">
+          <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} />
+        </div>
+        <VitrineIllustration
+          carte={carte}
+          niveau={niveau}
+          portefeuille={portefeuille}
+          credits={credits}
+          onAcheter={onAcheterIllustration}
+          onBasculer={onBasculerIllustration}
+          onPlaySfx={onPlaySfx}
+        />
       </div>
       <div className="rpg-card-peek__bar">
         <button
@@ -3789,7 +3948,81 @@ export function BarreXpFinDeDuel({ depart = 0, arrivee = 0, legende = null }) {
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+/**
+ * L'illustration **alternative** d'une carte dans le catalogue — l'ancienne
+ * peinture, gagnée à la barre d'XP (voir `rpgCardArtAlternatives.js`).
+ *
+ * Elle se montre **à côté** de la carte qu'elle double, sous sa fiche : ouverte,
+ * c'est une vignette cliquable qui dit son nom ; fermée, c'est une tuile noire
+ * qui annonce seulement le niveau où elle tombe. L'image verrouillée n'est
+ * jamais chargée — une récompense ne se laisse pas deviner par une miniature
+ * sombre.
+ */
+function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPlaySfx, onOuvrirFiche = null }) {
+  const alternative = alternativeDeCarte(carte.id);
+  if (!alternative) return null;
+  const acquises = portefeuille?.illustrations?.achetees ?? [];
+  const gagnee = alternative.source === 'echelle' && alternative.niveau <= niveau;
+  const achetee = acquises.includes(carte.id);
+  const ouverte = alternativeOuverte(alternative, niveau, acquises);
+  // L'échelle cache son image tant qu'elle n'est pas gagnée : une récompense ne
+  // se laisse pas deviner par une miniature. La boutique, elle, montre ce
+  // qu'elle vend — c'est une devanture — et met son prix en étiquette.
+  const montreImage = alternative.source === 'boutique' || ouverte;
+  return (
+    <div
+      className={`rpg-card-catalogue__alternative${ouverte ? ' is-open' : ''}${montreImage ? ' has-art' : ''}`}
+      data-alternative={carte.id}
+      data-alternative-source={alternative.source}
+      data-alternative-niveau={alternative.niveau ?? undefined}
+      data-alternative-prix={alternative.prix ?? undefined}
+    >
+      <button
+        type="button"
+        className={`rpg-card-catalogue__alternative-art${montreImage ? '' : ' is-locked'}`}
+        onClick={() => {
+          try { onPlaySfx?.('menu'); } catch { /* pas de son, pas de drame */ }
+          onOuvrirFiche?.(carte);
+        }}
+        aria-label={alternative.source === 'boutique'
+          ? `Illustration alternative de ${carte.name} — ${alternative.nom}, ${alternative.prix} crédits`
+          : `Illustration alternative de ${carte.name} — ${alternative.nom}, à gagner au niveau ${alternative.niveau}`}
+      >
+        {montreImage ? (
+          <img
+            src={illustrationAlternativeUrl(alternative)}
+            alt=""
+            loading="lazy"
+          />
+        ) : (
+          <span className="rpg-card-catalogue__alternative-lock" aria-hidden="true">🔒</span>
+        )}
+        {alternative.source === 'boutique' && !achetee ? (
+          <span className="rpg-card-catalogue__alternative-prix" aria-hidden="true">
+            {creditsLisible(alternative.prix)} ◈
+          </span>
+        ) : null}
+        {ouverte ? (
+          <span className="rpg-card-catalogue__alternative-tag" aria-hidden="true">
+            {alternative.source === 'echelle' ? 'GAGNÉE' : 'ACQUISE'}
+          </span>
+        ) : null}
+      </button>
+      <p className="rpg-card-catalogue__alternative-legend">
+        <span>{alternative.source === 'echelle' ? 'Illustration alternative — échelle d’XP' : 'Illustration alternative — boutique'}</span>
+        <b>
+          {ouverte
+            ? alternative.nom
+            : alternative.source === 'echelle'
+              ? `Gagnez cette carte en montant au niveau ${alternative.niveau}`
+              : `${alternative.nom} — ${creditsLisible(alternative.prix)} ◈`}
+        </b>
+      </p>
+    </div>
+  );
+}
+
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4755,6 +4988,21 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                 <span className="rpg-mode-menu__eyebrow">COLLECTION COMPLÈTE · {RPG_DUEL_CARDS.length} CARTES</span>
                 <h2>Catalogue</h2>
                 <p>Parcourez les créatures, héros, terrains, magies et armes de Bab El — cliquez une carte pour l’ouvrir en grand, illustration et effets.</p>
+                <p className="rpg-card-catalogue__alternatives-resume">
+                  {(() => {
+                    // L'échelle et la boutique se comptent séparément : ce qui
+                    // s'achète ne « manque » pas au joueur, il peut l'acheter.
+                    const acquises = portefeuille?.illustrations?.achetees ?? [];
+                    const echelleGagnee = ALTERNATIVES_DE_L_ECHELLE.length - alternativesRestantes(niveauOnglet);
+                    const boutiqueAcquise = ALTERNATIVES_DE_BOUTIQUE.filter((entree) => acquises.includes(entree.carteId)).length;
+                    const prochaine = prochaineAlternative(niveauOnglet);
+                    const echelle = `l’échelle ${echelleGagnee} / ${ALTERNATIVES_DE_L_ECHELLE.length}`;
+                    const boutique = `la boutique ${boutiqueAcquise} / ${ALTERNATIVES_DE_BOUTIQUE.length}`;
+                    return prochaine
+                      ? `Illustrations alternatives — ${echelle} (la prochaine au niveau ${prochaine.niveau}), ${boutique}.`
+                      : `Illustrations alternatives — ${echelle} (échelle couverte), ${boutique}.`;
+                  })()}
+                </p>
               </div>
             </header>
             <div className="rpg-card-catalogue__filters" aria-label="Recherche et filtres du catalogue">
@@ -4895,6 +5143,13 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                           {carteEstArme(carte) && <b>⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</b>}
                         </div>
                         <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
+                        <CarteIllustrationAlternative
+                          carte={carte}
+                          niveau={niveauOnglet}
+                          portefeuille={portefeuille}
+                          onPlaySfx={play}
+                          onOuvrirFiche={onOpenCardPreview}
+                        />
                       </div>
                     </article>
                   );
@@ -5664,6 +5919,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
     acheterCarteDirecte, rafraichirEtal,
+    acheterIllustration, basculerIllustration,
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
     // que chaque palier franchi fait ouvrir au hasard.
     profil: profilJoueur, barreXp, boostersEnAttente: paquetsDePalierEnAttente,
@@ -5902,6 +6158,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // La fiche : là où le doigt tient une seconde, la souris **clique** — au
   // catalogue depuis toujours, et par un clic droit partout ailleurs dans le
   // jeu : la carte s'ouvre en grand, illustration et effets, sans être jouée.
+  // Le niveau courant du joueur : il décide de ce que l'échelle a déjà offert,
+  // dans le catalogue comme dans la barre d'XP.
+  const niveauDuJoueur = niveauDeXp(profilJoueur?.xp ?? 0);
+  // Les peintures que le joueur a choisies d'afficher sur ses cartes. On ne
+  // pose que celles qui sont **vraiment siennes** : gagnées à l'échelle à son
+  // niveau, ou achetées — une entrée restée dans la sauvegarde d'un autre
+  // temps ne doit pas repeindre une carte qu'il n'a pas.
+  useEffect(() => {
+    const achetees = portefeuilleSouk?.illustrations?.achetees ?? [];
+    const choisies = illustrationsAfficheesDuPortefeuille(portefeuilleSouk).filter((carteId) => {
+      const alternative = alternativeDeCarte(carteId);
+      return Boolean(alternative) && alternativeOuverte(alternative, niveauDuJoueur, achetees);
+    });
+    definirIllustrationsAffichees(choisies);
+  }, [portefeuilleSouk, niveauDuJoueur]);
   const [apercuCatalogue, setApercuCatalogue] = useState(null);
   // Les armes portées par la créature ouverte (vides partout ailleurs que sur
   // la table du duel) et le mot du sur-titre : l'écran qui a ouvert la fiche.
@@ -6823,6 +7094,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       arrivee: Math.max(xpAvantDuel.xp, Math.floor(Number(profilJoueur?.xp) || 0)),
     }
     : null;
+  // Les illustrations alternatives tombées pendant la partie : on compare le
+  // niveau d'avant le duel à celui du moment. L'écran de fin les **montre** —
+  // une récompense qu'on ne voit pas n'existe pas.
+  const illustrationsGagnees = xpFinDeDuel && xpFinDeDuel.arrivee > xpFinDeDuel.depart
+    ? alternativesGagneesEntre(niveauDeXp(xpFinDeDuel.depart), niveauDeXp(xpFinDeDuel.arrivee))
+    : [];
   const territoire = territoireDuDuel(duel, vainqueur);
   // Un nouveau duel repart avec la musique du joueur. Dans la bande neutre,
   // le dernier camp ayant franchi 60/40 conserve la main (hystérésis).
@@ -7714,6 +7991,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             statsFurie={apercuCatalogueFurie}
             effetsEpuises={apercuCatalogueEffetsEpuises}
             surface={apercuCatalogueSurface}
+            niveau={niveauDuJoueur}
+            portefeuille={portefeuilleSouk}
+            credits={credits}
+            onAcheterIllustration={acheterIllustration}
+            onBasculerIllustration={basculerIllustration}
+            onPlaySfx={jouerSfx}
             onFermer={fermerApercuCatalogue}
           />
         )}
@@ -7772,6 +8055,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onOuvrirBooster={acheterBooster}
           onOuvrirCoffret={acheterCoffret}
           onAcheterCarteDirecte={acheterCarteDirecte}
+          onAcheterIllustration={acheterIllustration}
+          onBasculerIllustration={basculerIllustration}
           onRafraichirEtal={rafraichirEtal}
           onFermerOuverture={fermerOuverture}
           profil={profilJoueur}
@@ -7846,6 +8131,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             statsFurie={apercuCatalogueFurie}
             effetsEpuises={apercuCatalogueEffetsEpuises}
             surface={apercuCatalogueSurface}
+            niveau={niveauDuJoueur}
+            portefeuille={portefeuilleSouk}
+            credits={credits}
+            onAcheterIllustration={acheterIllustration}
+            onBasculerIllustration={basculerIllustration}
+            onPlaySfx={jouerSfx}
             onFermer={fermerApercuCatalogue}
           />
         )}
@@ -12304,6 +12595,31 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     : 'Double chute — les cartes posées comptent quand même.'}
               />
             )}
+            {illustrationsGagnees.length > 0 && (
+              <div
+                className="rpg-overlay__alternatives"
+                role="status"
+                data-alternatives-gagnees={illustrationsGagnees.length}
+              >
+                <span className="rpg-overlay__alternatives-titre">
+                  {illustrationsGagnees.length === 1
+                    ? 'Nouvelle illustration alternative'
+                    : `${illustrationsGagnees.length} nouvelles illustrations alternatives`}
+                </span>
+                <ul className="rpg-overlay__alternatives-liste">
+                  {illustrationsGagnees.map((alternative) => (
+                    <li key={alternative.carteId} data-alternative-gagnee={alternative.carteId}>
+                      <img
+                        src={illustrationAlternativeUrl(alternative)}
+                        alt={`Illustration alternative gagnée : ${alternative.nom}`}
+                      />
+                      <span>{alternative.nom}</span>
+                      <b>{nomDeLaCarte(alternative.carteId)}</b>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {modePvp ? (
               <div className="rpg-overlay__actions">
                 <button type="button" className="rpg-btn rpg-btn--primary" onClick={() => pvp?.onQuitter?.()}>
@@ -12444,6 +12760,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           statsFurie={apercuCatalogueFurie}
           effetsEpuises={apercuCatalogueEffetsEpuises}
           surface={apercuCatalogueSurface}
+          niveau={niveauDuJoueur}
+          portefeuille={portefeuilleSouk}
+          credits={credits}
+          onAcheterIllustration={acheterIllustration}
+          onBasculerIllustration={basculerIllustration}
+          onPlaySfx={jouerSfx}
           onFermer={fermerApercuCatalogue}
         />
       )}

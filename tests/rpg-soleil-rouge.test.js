@@ -365,15 +365,32 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     const versionsSpecifiques = {
-      'susanoo': 'susanoo-kaiga-couleurs-v1',
-      'orochi': 'orochi-kaiga-vert-rouge-v2',
+      // Cartes repeintes en huile sombre, réaliste (dérogation Souls
+      // documentée par `RPG-CARD-ART.md`). Le lot est daté par sa révision :
+      // v2 pour Susanoo et Kagutsuchi, v3 pour le second lot, v4 pour le
+      // troisième. Trois cartes du set gardent leur kaiga.
+      'susanoo': 'braise-souls-cendres-v2',
+      'kagutsuchi-flamme-originelle': 'braise-souls-cendres-v2',
+      'orochi': 'braise-souls-cendres-v3',
+      'oni-de-la-fournaise': 'braise-souls-cendres-v3',
+      'daimyo-du-soleil-rouge': 'braise-souls-cendres-v3',
+      'tengu-du-mont-ardent': 'braise-souls-cendres-v3',
+      'onna-musha-des-cendres': 'braise-souls-cendres-v3',
+      'feriel': 'braise-souls-cendres-v3',
+      'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
+      'ashigaru-des-braises': 'braise-souls-cendres-v4',
+      'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
+      'samourai-du-torii': 'braise-souls-cendres-v4',
+      'hatamoto-des-cendres': 'braise-souls-cendres-v4',
+      'kenshi-de-la-forge': 'braise-souls-cendres-v4',
+      'serment-de-la-forge': 'braise-souls-cendres-v4',
+      // Le dernier lot Souls : les magies et la Tour de braise. Toujours en
+      // kaiga : Tojiro, rendu à sa peinture nihonga à la demande.
       'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
-      'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
-      'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
-      'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
+      'feux-de-kitsune': 'braise-souls-cendres-v6',
+      'sabre-maudit': 'braise-souls-cendres-v5',
+      'frappe-iaijutsu': 'braise-souls-cendres-v6',
       'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
-      'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
-      'samourai-du-torii': 'chef-samourai-strategie-sous-la-tente-v1',
     };
     const version = versionsSpecifiques[carte.id] ?? 'soleil-rouge-kaiga-couleurs-v7';
     assert.ok(page.includes(`'${carte.id}': '${version}'`), carte.id);

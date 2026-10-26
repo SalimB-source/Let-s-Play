@@ -87,7 +87,7 @@ export const GAINS = Object.freeze({
  *  `exemplaires` compte les copies achetées à l'unité à l'étal du Souk — voir
  *  `normaliserExemplaires`. */
 export function portefeuilleVide() {
-  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], exemplaires: {}, etal: etalVide(), majLe: null };
+  return { version: 1, credits: 0, cartes: [], ouvertures: 0, pitie: 0, journal: [], tutoriels: [], toursPayees: [], exemplaires: {}, etal: etalVide(), illustrations: illustrationsVides(), majLe: null };
 }
 
 /** Entier positif ou nul, quelle que soit l'entrée (chaîne, `NaN`, négatif). */
@@ -248,6 +248,129 @@ export function fusionnerEtals(local, distant) {
  * cartes connues sans doublon, compteurs positifs. Une valeur illisible rend un
  * portefeuille vide — jamais `null`, jamais une exception.
  */
+/**
+ * Les illustrations alternatives **achetées** (et celles qu'on affiche sur la
+ * carte). Deux listes d'identifiants de cartes, sans doublon :
+ *
+ *   - `achetees` — la peinture est à nous, payée une fois ;
+ *   - `affichees` — parmi les nôtres, celles qu'on préfère montrer à la place
+ *     de la peinture de la passe Souls, sur la carte elle-même.
+ *
+ * Un achat ne s'oublie pas : la fusion prend l'union des deux appareils. Les
+ * deux listes restent **indépendantes** — une illustration gagnée à l'échelle
+ * s'affiche sans avoir été achetée — et c'est l'écran qui valide une affichée
+ * contre ce que le joueur possède vraiment (niveau ou achat).
+ */
+export function illustrationsVides() {
+  return { achetees: [], affichees: [] };
+}
+
+/** Deux listes d'identifiants propres : chaînes non vides, sans doublon. */
+export function normaliserIllustrations(value) {
+  const brut = value && typeof value === 'object' ? value : {};
+  const liste = (entree) => [...new Set(
+    (Array.isArray(entree) ? entree : [])
+      .filter((id) => typeof id === 'string' && id.trim())
+      .map((id) => id.trim()),
+  )];
+  return { achetees: liste(brut.achetees), affichees: liste(brut.affichees) };
+}
+
+/** Vrai quand cette illustration alternative est à nous. */
+export function possedeIllustration(portefeuille, carteId) {
+  const { achetees } = normaliserIllustrations(portefeuille?.illustrations);
+  return achetees.includes(String(carteId ?? ''));
+}
+
+/** Vrai quand cette illustration est celle qu'on affiche sur la carte. */
+export function illustrationAffichee(portefeuille, carteId) {
+  const { affichees } = normaliserIllustrations(portefeuille?.illustrations);
+  return affichees.includes(String(carteId ?? ''));
+}
+
+/** Les identifiants des illustrations affichées sur les cartes. */
+export function illustrationsAffichees(portefeuille) {
+  return normaliserIllustrations(portefeuille?.illustrations).affichees;
+}
+
+/**
+ * Achète une illustration alternative : `{ ok, raison, portefeuille, prix }`.
+ *
+ * Refus explicites — `'deja-acquise'` (on ne paie pas deux fois la même
+ * peinture), `'credits-insuffisants'` (avec le montant qui manque), `'prix-
+ * invalide'`. Un refus rend le portefeuille normalisé, jamais amputé.
+ *
+ * L'illustration achetée **s'affiche aussitôt** sur la carte : c'est ce qu'on
+ * vient de payer, la voir apparaître est la moitié du plaisir. Le joueur peut
+ * ensuite revenir à la peinture de la passe dans la fiche.
+ */
+export function acheterIllustration(portefeuille, { carteId, prix } = {}) {
+  const base = normaliserPortefeuille(portefeuille);
+  const id = String(carteId ?? '').trim();
+  const tarif = entierPositif(prix);
+  if (!id) return { ok: false, raison: 'carte-inconnue', portefeuille: base, prix: tarif };
+  if (!tarif) return { ok: false, raison: 'prix-invalide', portefeuille: base, prix: 0 };
+  const illustrations = normaliserIllustrations(base.illustrations);
+  if (illustrations.achetees.includes(id)) {
+    return { ok: false, raison: 'deja-acquise', portefeuille: base, prix: tarif };
+  }
+  if (base.credits < tarif) {
+    return {
+      ok: false,
+      raison: 'credits-insuffisants',
+      manque: tarif - base.credits,
+      portefeuille: base,
+      prix: tarif,
+    };
+  }
+  return {
+    ok: true,
+    raison: null,
+    prix: tarif,
+    portefeuille: {
+      ...base,
+      credits: base.credits - tarif,
+      illustrations: {
+        achetees: [...illustrations.achetees, id],
+        affichees: [...new Set([...illustrations.affichees, id])],
+      },
+      majLe: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Affiche — ou remet la peinture de la passe — sur une carte.
+ * `{ ok, raison, portefeuille, affichee }`. On ne peut basculer que ce qu'on
+ * possède : une illustration achetée, ou gagnée à l'échelle (`gagnee`).
+ */
+export function basculerIllustrationAffichee(portefeuille, carteId, { gagnee = false } = {}) {
+  const base = normaliserPortefeuille(portefeuille);
+  const id = String(carteId ?? '').trim();
+  const illustrations = normaliserIllustrations(base.illustrations);
+  // `gagnee` : l'illustration est ouverte à l'échelle du joueur, même si elle
+  // n'a jamais été achetée. L'écran le sait (il a le niveau), la bourse non.
+  if (!illustrations.achetees.includes(id) && !gagnee) {
+    return { ok: false, raison: 'non-acquise', portefeuille: base, affichee: false };
+  }
+  const dejaAffichee = illustrations.affichees.includes(id);
+  return {
+    ok: true,
+    raison: null,
+    affichee: !dejaAffichee,
+    portefeuille: {
+      ...base,
+      illustrations: {
+        achetees: illustrations.achetees,
+        affichees: dejaAffichee
+          ? illustrations.affichees.filter((entree) => entree !== id)
+          : [...illustrations.affichees, id],
+      },
+      majLe: new Date().toISOString(),
+    },
+  };
+}
+
 export function normaliserPortefeuille(value) {
   const brut = value && typeof value === 'object' ? value : {};
   return {
@@ -261,6 +384,7 @@ export function normaliserPortefeuille(value) {
     toursPayees: normaliserToursPayees(brut.toursPayees),
     exemplaires: normaliserExemplaires(brut.exemplaires, normaliserCollection(brut.cartes)),
     etal: normaliserEtal(brut.etal),
+    illustrations: normaliserIllustrations(brut.illustrations),
     majLe: typeof brut.majLe === 'string' ? brut.majLe : null,
   };
 }
@@ -578,6 +702,13 @@ export function fusionnerPortefeuilles(local, distant) {
     // appareil en retard ne peut pas faire redescendre une carte de 2 à 1.
     exemplaires: fusionnerExemplaires(ici.exemplaires, la.exemplaires, cartes),
     etal: fusionnerEtals(ici.etal, la.etal),
+    // Les illustrations achetées ne redescendent pas : union des deux
+    // appareils. `normaliserIllustrations` recoupe ensuite les affichées sur
+    // les achetées, donc un choix orphelin ne survit pas à la fusion.
+    illustrations: normaliserIllustrations({
+      achetees: [...ici.illustrations.achetees, ...la.illustrations.achetees],
+      affichees: [...ici.illustrations.affichees, ...la.illustrations.affichees],
+    }),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);

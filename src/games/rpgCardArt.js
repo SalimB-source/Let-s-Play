@@ -9,54 +9,119 @@
 
 import { cardArtId, cardById } from './rpgCards.js';
 import { RPG_TOUR_OUBLIEE_SET_ID } from './rpgTourOubliee.js';
+import { alternativeDeCarte, illustrationAlternativeUrl } from './rpgCardArtAlternatives.js';
 
 const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
+
+/**
+ * Le set Neige a été peint en plusieurs passes, et sa **passe Souls** (octobre
+ * 2026) repeint vingt de ses vingt-neuf cartes en huile sombre. Chaque carte
+ * repeinte porte donc sa révision `neige-souls-cendres-v1` dans
+ * `CARD_ART_CACHE_VERSIONS`, en clair : pas de version de set à maintenir, et
+ * aucune peinture non repeinte ne change d'URL.
+ */
+const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
   // photoréaliste, repeint sous son ancien nom de fichier.
-  'la-vengeance-de-la-reine-anne': 'hollandais-volant-photorealiste-v2',
+  'la-vengeance-de-la-reine-anne': 'sable-souls-dore-v2',
   // La Barbe-Rousse repeint : jeune amiral en plein abordage, vue cinéma.
-  'la-barbe-rousse': 'barbe-rousse-jeune-abordage-v1',
-  'le-chasseur-d-ocracoke': 'pirates-v1',
+  'la-barbe-rousse': 'sable-souls-dore-v2',
+  'le-chasseur-d-ocracoke': 'sable-souls-dore-v2',
   'source-de-bimini': 'pirates-v1',
   'source-de-bimini-2': 'pirates-v1',
   'source-de-bimini-1': 'pirates-v1',
   'source-de-bimini-0': 'pirates-v1',
-  'le-tresor-de-lima': 'pirates-v2',
+  'le-tresor-de-lima': 'sable-souls-dore-v2',
   'le-tresor-de-lima-1': 'pirates-v2',
   'le-tresor-de-lima-0': 'pirates-v2',
-  'susanoo': 'susanoo-kaiga-couleurs-v1',
-  'orochi': 'orochi-kaiga-vert-rouge-v2',
+  // Braise — la refonte Souls (huile sombre, réaliste) du set Soleil rouge.
+  // Une révision partagée pour le lot ; Susanoo et Kagutsuchi, repeints une
+  // seconde fois de zéro, portent leur propre révision.
+  'susanoo': 'braise-souls-cendres-v2',
+  'kagutsuchi-flamme-originelle': 'braise-souls-cendres-v2',
+  'orochi': 'braise-souls-cendres-v3',
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
-  'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
+  'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
   // Le Pourfendeur repeint en peinture japonaise nihonga, même composition
   // mais en pigments minéraux (octobre 2025) : révision dédiée pour le cache.
   'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
-  'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
+  'sabre-maudit': 'braise-souls-cendres-v5',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
-  'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
-  'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'samourai-du-torii': 'chef-samourai-strategie-sous-la-tente-v1',
-  'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
-  'daimyo-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
-  'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
-  'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
-  'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
-  'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
-  'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
+  'ashigaru-des-braises': 'braise-souls-cendres-v4',
+  'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
+  'samourai-du-torii': 'braise-souls-cendres-v4',
+  'onna-musha-des-cendres': 'braise-souls-cendres-v3',
+  'hatamoto-des-cendres': 'braise-souls-cendres-v4',
+  'kenshi-de-la-forge': 'braise-souls-cendres-v4',
+  'daimyo-du-soleil-rouge': 'braise-souls-cendres-v3',
+  'tengu-du-mont-ardent': 'braise-souls-cendres-v3',
+  'oni-de-la-fournaise': 'braise-souls-cendres-v3',
+  'frappe-iaijutsu': 'braise-souls-cendres-v6',
+  'feux-de-kitsune': 'braise-souls-cendres-v6',
+  'serment-de-la-forge': 'braise-souls-cendres-v4',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'minotaure-demon-photorealiste-v1',
+  'ifrit-al-ahmar': 'braise-souls-cendres-v3',
   'la-devoreuse': 'devoreuse-nihonga-visage-v1',
-  'ifrit-des-ergs': 'ifrit-ergs-photorealiste-v1',
-  'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
-  'anqa-des-braises': 'anqa-des-braises-huile-v1',
+  'ifrit-des-ergs': 'braise-souls-cendres-v3',
+  'trait-de-braise': 'braise-souls-cendres-v5',
+  'anqa-des-braises': 'braise-souls-cendres-v3',
+  'sahir-des-braises': 'braise-souls-cendres-v3',
+  'braisier-du-souk': 'braise-souls-cendres-v4',
+  // Le Sable — la passe Souls du désert : mêmes cartes, lumière de cendre.
+  'faucon-du-zenith': 'sable-souls-dore-v2',
+  'dune-marchante': 'sable-souls-dore-v2',
+  'fennec-des-decombres': 'sable-souls-dore-v2',
+  'tour-de-sable': 'sable-souls-dore-v2',
+  'tislit-des-aures': 'sable-souls-dore-v2',
+  'cavalier-amazigh-du-desert': 'sable-souls-dore-v2',
+  'amayas-du-hoggar': 'sable-souls-dore-v2',
+  'faussoyeur-des-dunes': 'sable-souls-dore-v2',
+  'la-barbe-noire': 'sable-souls-dore-v2',
+  'galion-de-la-flotte': 'sable-souls-dore-v2',
+  'cotre-de-course': 'sable-souls-dore-v2',
+  'le-renegat': 'sable-souls-dore-v2',
+  'negociant-des-ranscons': 'sable-souls-dore-v2',
+  'mousse-des-galiotes': 'sable-souls-dore-v2',
+  'rais-de-la-galiote': 'sable-souls-dore-v2',
+  'tiziri-du-djurdjura': 'sable-souls-dore-v2',
+  'amani-des-ksour': 'sable-souls-dore-v2',
+  'guetteur-du-beffroi': 'sable-souls-dore-v2',
+  'scribe-de-la-liste': 'sable-souls-dore-v2',
+  'faiseur-de-passage': 'sable-souls-dore-v2',
+  'tercio-de-cuivre': 'sable-souls-dore-v2',
+  'tempete-de-sable': 'sable-souls-dore-v2',
+  'rempart-de-dunes': 'sable-souls-dore-v2',
+  'reanimation': 'sable-souls-dore-v2',
+  // Les héros du désert, leur chien et les premiers équipements.
+  'salem': 'sable-souls-dore-v2',
+  'tarek': 'sable-souls-dore-v2',
+  'tin-hinan-des-pistes': 'sable-souls-dore-v2',
+  'chien-du-guet': 'sable-souls-dore-v2',
+  // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
+  'grappin-d-abordage': 'grappin-griffes-bastingage-v3',
+  'takouba-des-pistes': 'sable-souls-dore-v2',
+  'sandales-de-tislit': 'sable-souls-dore-v2',
+  'cuirasse-de-sel': 'sable-souls-dore-v2',
+  // Le javelot est repassé de la dune au beffroi : il est chez lui, sous la cloche.
+  'javelot-du-beffroi': 'javelot-beffroi-cloche-v3',
+  'licou-du-chien-de-sable': 'sable-souls-dore-v2',
+  // Fin du set Sable : les trois dernières armes et les trois dernières magies.
+  'harnais-du-mehari': 'sable-souls-dore-v2',
+  'masque-du-guetteur': 'sable-souls-dore-v2',
+  'jitte-d-amayas': 'sable-souls-dore-v2',
+  'lame-des-ergs': 'sable-souls-dore-v2',
+  'takouba-de-tin-hinan': 'sable-souls-dore-v2',
+  'lettre-de-marque': 'sable-souls-dore-v2',
+  'le-grand-debarquement': 'sable-souls-dore-v2',
+  'rapport-du-greffier': 'sable-souls-dore-v2',
+  'tour-de-braise': 'braise-souls-cendres-v5',
+  'nuage-de-cendres': 'braise-souls-cendres-v5',
+  'vent-rouge': 'braise-souls-cendres-v5',
   // Les cinq héros du récit ont été **repeints en nihonga** (pigments
   // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
   // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
@@ -65,11 +130,11 @@ const CARD_ART_CACHE_VERSIONS = {
   // resserve les huiles précédentes. Fériel a une nouvelle composition :
   // archère au sommet d’une tour, une flèche électrique encochée, et donc
   // une révision dédiée.
-  feriel: 'feriel-tour-fleche-electrique-v1',
-  salem: 'heros-nihonga-algerien-v1',
-  yamina: 'heros-nihonga-algerien-v1',
-  tarek: 'heros-nihonga-algerien-v1',
-  boualem: 'heros-nihonga-algerien-v1',
+  feriel: 'braise-souls-cendres-v3',
+
+
+
+
   // Le Corbeau des neuf nuits — le set hybride Neige + Ténèbres (doc 22).
   // Cinq peintures neuves et la figure retournée du Père des corbeaux :
   // toutes partagent la révision du set, décidée ici une seule fois.
@@ -79,76 +144,168 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits': 'corbeau-neuf-nuits-v1',
   'neige-noire': 'corbeau-neuf-nuits-v1',
   'maitre-des-corbeaux': 'corbeau-neuf-nuits-v1',
+  // Les deux faces de Furie du Corbeau des neuf nuits : même composition que
+  // la peinture intacte, seulement marquée par le combat.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
   // Le Serpent du monde garde la facture nihonga, mais sa composition est
   // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
   // Sa révision dédiée l’emporte sur celle du set Neige.
   'serpent-du-monde': 'serpent-terre-nihonga-v1',
   // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
   // est conservé trait pour trait et simplement repeint en nihonga.
-  'armure-de-cendres': 'armure-nihonga-v1',
+  'armure-de-cendres': 'braise-souls-cendres-v4',
   // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
   // seul derrière la glace d'une vitrine, les serpents dehors.
   'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
-  'djinn-de-foudre': 'plein-art-foudre-v1',
+  'djinn-de-foudre': 'sable-souls-dore-v2',
   'sonneur-fele': 'plein-art-cloche-v1',
-  'dame-aux-ailes-d-or': 'nihonga-v1',
-  'lionne-du-midi-ardent': 'nihonga-v1',
+  'dame-aux-ailes-d-or': 'sable-souls-dore-v2',
+  'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
   'parade-du-verre': 'plein-art-verre-v1',
   'maree-contraire': 'deflection-ultrason-v1',
   ressac: 'djinn-tourbillon-v1',
   'courant-de-retour': 'djinn-tourbillon-v1',
-  // Les quatre porteurs humains de Furie ont été repeints en photoréaliste
-  // fantaisiste : chaque face intacte a son double ensanglanté, armure ou
-  // casque brisé et visage en furie. On date les huit images ensemble pour
-  // qu’aucun cache ne resserve les anciennes huiles sous les mêmes noms.
-  'guerrier-au-bouclier-rond': 'furie-photorealiste-v1',
-  // La face de base du Berserk a depuis été repeinte seule : même visage et
-  // même rendu photoréaliste que son double, mais avant la Furie — debout,
-  // calme et sans aucune trace de sang. Le double garde la révision commune.
-  'berserk-des-trois-hivers': 'berserk-meme-visage-sans-sang-v1',
-  'jarl-au-marteau-de-guerre': 'furie-photorealiste-v1',
-  'maitre-du-marteau': 'furie-photorealiste-v1',
-  'guerrier-au-bouclier-rond-furie': 'furie-photorealiste-v1',
-  'berserk-des-trois-hivers-furie': 'furie-photorealiste-v1',
-  'jarl-au-marteau-de-guerre-furie': 'furie-photorealiste-v1',
-  'maitre-du-marteau-furie': 'furie-photorealiste-v1',
-  // Le Loup garde, lui, la peinture à l’huile de sa meute : même composition,
-  // chef ensanglanté et crocs dehors dans l’état Furie.
-  'loup-des-neiges-furie': 'loup-furie-huile-v1',
-  // La Valkyrie repart de sa scène d'origine : enragée et ensanglantée, elle
-  // vole dans le ciel et fond sur sa cible avec son corbeau noir, épée levée.
-  'valkyrie-au-corbeau-furie': 'valkyrie-vol-plongeon-enragee-v4',
-  // Le Corbeau des neuf nuits prête à son tour sa face de Furie à deux de ses
-  // cartes — le Berserk du crépuscule et la Valkyrie des neuf nuits. Chacune
-  // reprend trait pour trait la composition de sa peinture intacte, mais
-  // ensanglantée et enragée ; deux révisions dédiées, comme pour les porteurs
-  // du Serment, afin qu’aucun cache ne resserve la face calme.
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
-  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
+  // La passe Souls du Neige efface la dérogation photoréaliste : les quatre
+  // porteurs humains de Furie sont peints à l'huile comme le reste du set, et
+  // leur double ensanglanté avec eux — l'un sans l'autre jurerait de facture.
+  // Les faces de Furie de la passe : le loup, la valkyrie au corbeau, le
+  // berserk, le maître et bientôt le Jarl — même scène que la face intacte,
+  // seulement marquée par le combat.
   // Repeints sous leurs anciens noms : charge frontale pour le Mur, marteau
   // d’électricité fonçant sur une cible pour l’Éclair, soldats gelés dans la
   // brume pour la Brume du fjord et grizzli prisonnier de la glace pour le
   // Hurlement du blizzard.
-  'mur-de-boucliers': 'mur-boucliers-charge-v1',
-  'eclair-du-marteau': 'eclair-marteau-electrique-cible-v1',
-  'brume-du-fjord': 'brume-personnes-gelees-v2',
-  'hurlement-du-blizzard': 'hurlement-grizzli-gele-v1',
+  // La passe Souls du Neige — dix cartes que leur peinture d'origine rendait
+  // étrangères à l'huile sombre : la mappemonde du Serpent du monde, la tour en
+  // 1408×768, la Dame au fil, la Poigne, l'Appât, le Défi, le Verglas, le
+  // Grand Voile, l'Embuscade et le portrait photoréaliste du Père des corbeaux.
+  'serpent-du-monde': 'neige-souls-cendres-v1',
+  'tour-de-neige': 'neige-souls-cendres-v1',
+  'dame-des-neuf-mondes': 'neige-souls-cendres-v1',
+  'pere-des-corbeaux': 'neige-souls-cendres-v1',
+  'poigne-de-givre': 'neige-souls-cendres-v1',
+  'verglas': 'neige-souls-cendres-v1',
+  'embuscade': 'neige-souls-cendres-v1',
+  'defi-du-jarl': 'neige-souls-cendres-v1',
+  'appat-de-la-meute': 'neige-souls-cendres-v1',
+  'grand-voile-blanc': 'neige-souls-cendres-v1',
+  // Deuxième lot : les figures du Nord et cinq magies.
+  // La hache d'Éirik avait le fer planté au milieu du manche : refaite.
+  'eirik-du-premier-serment': 'neige-eirik-hache-v2',
+  'valkyrie-des-glaces': 'neige-souls-cendres-v1',
+  'geant-des-banquises': 'neige-souls-cendres-v1',
+  'drakkar-a-tete-de-dragon': 'neige-souls-cendres-v1',
+  'scalde-des-runes': 'neige-souls-cendres-v1',
+  // Le marteau de foudre se lisait comme un simple éclair : il a une tête.
+  // Troisième reprise : le marteau doit tomber du ciel sur une créature, la
+  // foudre vivante autour de lui — les deux essais précédents restaient tièdes.
+  'eclair-du-marteau': 'neige-eclair-marteau-v4',
+  'mur-de-boucliers': 'neige-souls-cendres-v1',
+  'festin-des-vaillants': 'neige-souls-cendres-v1',
+  'brume-du-fjord': 'neige-souls-cendres-v1',
+  // Le grizzly lisait comme un bloc de verre : c'est la glace qui casse.
+  'hurlement-du-blizzard': 'neige-hurlement-grizzli-v2',
+  // La passe des Furies (octobre 2026) : faces intactes et faces déclenchées,
+  // sous deux marques — la commune, et une dédiée au loup et à la valkyrie dont
+  // seule la face de Furie a changé.
+  'berserk-des-trois-hivers': 'neige-souls-cendres-v1',
+  'berserk-des-trois-hivers-furie': 'neige-furie-souls-v1',
+  // Le Maître boit et rit dans sa taverne — sa face de Furie garde, elle, sa
+  // peinture de bataille, le marteau levé sous la foudre froide.
+  'maitre-du-marteau': 'neige-maitre-tavern-v1',
+  'maitre-du-marteau-furie': 'neige-furie-souls-v1',
+  'loup-des-neiges-furie': 'neige-furie-loup-v1',
+  'valkyrie-au-corbeau-furie': 'neige-furie-valkyrie-v1',
+  'jarl-au-marteau-de-guerre': 'neige-souls-cendres-v1',
+  'jarl-au-marteau-de-guerre-furie': 'neige-furie-souls-v1',
+  'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
+  // Les deux furies du Corbeau des neuf nuits : même scène que leur peinture
+  // intacte, marquée par le combat.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-souls-v1',
+  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
+  // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
+  // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
+  // la suie et à l'or terni. Puis `-v2` : le violet d'origine revient, mais
+  // **comme teinte de set seulement** — un mélange de 18 % de #5b2a86 en mode
+  // blend, saturation × 1,03, appliqué à la peinture et non en CSS. Assez pour
+  // teinter les ombres, trop peu pour lilas les blancs. Les six cartes du
+  // Corbeau des neuf nuits ne le reçoivent pas : elles portent leur propre
+  // marque et restent franchement froides.
+  'khopesh-d-or': 'tenebres-os-cendres-v2',
+  'chacal-du-seuil': 'tenebres-os-cendres-v2',
+  'ouvrier-du-natron': 'tenebres-os-cendres-v2',
+  'gardienne-de-la-balance': 'tenebres-os-cendres-v2',
+  'scribe-des-feuillets': 'tenebres-os-cendres-v2',
+  'pretre-de-la-bouche': 'tenebres-os-cendres-v2',
+  'ureus-du-seuil': 'tenebres-os-cendres-v2',
+  // Deuxième lot : les figures du seuil, les masques et les magies du livre.
+  // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
+  // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
+  'momie-de-lin': 'tenebres-os-cendres-v2',
+  'ibis-des-comptes': 'tenebres-os-cendres-v2',
+  'celle-qui-pese': 'tenebres-os-cendres-v2',
+  'la-devoreuse': 'tenebres-os-cendres-v2',
+  'celui-qui-juge': 'tenebres-os-cendres-v2',
+  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v2',
+  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v2',
+  'papyrus': 'tenebres-os-cendres-v2',
+  'nom-efface': 'tenebres-os-cendres-v2',
+  'offrande-de-lin': 'tenebres-os-cendres-v2',
+  // Troisième lot : les trois pesées et les deux lieux. Le set Ténèbres est
+  // clos — 28 cartes jouables, toutes à l'huile.
+  'le-poids': 'tenebres-os-cendres-v2',
+  'les-feuillets': 'tenebres-os-cendres-v2',
+  'la-grande-pesee': 'tenebres-os-cendres-v2',
+  'la-derniere-pesee': 'tenebres-os-cendres-v2',
+  'tour-des-tenebres': 'tenebres-os-cendres-v2',
+  // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
+  // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
+  // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
+  // lot entier est viré au **bleu de nuit** — l'Eau doit se distinguer de la
+  // Neige au premier regard, sinon les deux sets se confondent en gris.
+  'yamina': 'eau-souls-bleue-v1',
+  'boualem': 'eau-souls-bleue-v1',
+  'baton-des-citernes': 'eau-souls-bleue-v1',
+  'porteuse-de-cruches': 'eau-souls-bleue-v1',
+  'pilote-de-la-carreira': 'eau-souls-bleue-v1',
+  'source-de-bimini': 'eau-souls-bleue-v1',
+  'haut-fond': 'eau-souls-bleue-v1',
+  'lame-de-mer': 'eau-souls-bleue-v1',
+  'le-routier': 'eau-souls-bleue-v1',
+  'eau-de-la-source': 'eau-souls-bleue-v1',
+  // Les bêtes et les gardiens — deuxième lot : les unes étaient trop claires,
+  // les autres carrément absentes du registre. Toutes au bleu de nuit.
+  'leviathan': 'eau-souls-bleue-v1',
+  'bakunawa': 'eau-souls-bleue-v1',
+  'jormungandr': 'eau-souls-bleue-v1',
+  'seigneur-des-machoires': 'eau-souls-bleue-v1',
+  'vipere-de-verre': 'eau-souls-bleue-v1',
+  'tour-des-flots': 'eau-souls-bleue-v1',
+  'sonneur-fele': 'eau-souls-bleue-v1',
+  'veilleuse-des-citernes': 'eau-souls-bleue-v1',
+  'silence-decume': 'eau-souls-bleue-v1',
+  // Dernier lot : les huit magies du verre et du ressac, plus le Kraken refait
+  // — la première peinture donnait un serpent enroulé au navire, pas une bête
+  // à tentacules. Le set Eau est clos : 27 cartes, toutes à l'huile.
+  'kraken': 'eau-souls-bleue-v1',
+  'parade-du-verre': 'eau-souls-bleue-v1',
+  'brisure-de-verre': 'eau-souls-bleue-v1',
+  'ecueil': 'eau-souls-bleue-v1',
+  'contresort-des-abimes': 'eau-souls-bleue-v1',
+  'maree-contraire': 'eau-souls-bleue-v1',
+  'ressac': 'eau-souls-bleue-v1',
+  'courant-de-retour': 'eau-souls-bleue-v1',
+  // Les deux armes : la lance seule dans la glace, la hache plantée dans la
+  // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
+  'lance-de-givre': 'neige-souls-cendres-v1',
+  // La hache est plantée lame première, le fût debout : demande explicite.
+  'hache-de-la-banquise': 'neige-hache-fil-en-bas-v2',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
-  'hache-de-la-banquise': 'hache-plantee-glace-v2',
 };
-/**
- * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
- * place aux peintures définitives **sous les mêmes noms de fichiers**, et deux
- * figures (le Maître du marteau, le Père des corbeaux) ont ensuite été
- * repeintes. On date donc ses images : le `?v=` change l'URL, si bien qu'aucun
- * cache — celui du navigateur comme celui d'un intermédiaire — ne peut plus
- * resservir une ancienne peinture sous le nom d'une nouvelle. Incrémenter la
- * version à chaque repeint du set.
- */
-const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
 /**
  * La Tour Oubliée a d'abord été peinte en encrage BD, puis entièrement
  * reprise en peinture réaliste sombre (façon Souls) : la `?v=` change donc
@@ -157,12 +314,46 @@ const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
  * nouvelle passe sur le set.
  */
 const SET_TOUR_OUBLIEE_ART_VERSION = 'souls-realiste-v1';
+/**
+ * Les illustrations alternatives **affichées** — celles que le joueur a
+ * achetées puis choisies pour remplacer la peinture de la passe Souls sur la
+ * carte elle-même. La table est un simple index `carteId → alternative` :
+ *
+ *   - elle se **remplit** depuis la bourse (`définirIllustrationsAffichees`),
+ *     au montage et à chaque achat, plutôt que d'être lue ici — un module de
+ *     rendu ne connaît ni le stockage ni le compte ;
+ *   - elle ne porte que des peintures **possédées** : c'est la bourse qui
+ *     filtre, `normaliserIllustrations` recoupe déjà les affichées sur les
+ *     achetées ;
+ *   - elle ne change **que la face** d'une carte (`cardArt`) : les vignettes de
+ *     furie et d'entité gardent leur propre illustration.
+ */
+const ILLUSTRATIONS_AFFICHEES = new Map();
+
+/** Pose les illustrations choisies par le joueur (`['salem', …]`). */
+export function definirIllustrationsAffichees(carteIds = []) {
+  ILLUSTRATIONS_AFFICHEES.clear();
+  for (const carteId of Array.isArray(carteIds) ? carteIds : []) {
+    const alternative = alternativeDeCarte(carteId);
+    if (alternative) ILLUSTRATIONS_AFFICHEES.set(alternative.carteId, alternative);
+  }
+  return ILLUSTRATIONS_AFFICHEES.size;
+}
+
+/** L'illustration alternative affichée sur une carte, ou `null`. */
+export function illustrationAlternativeAffichee(id) {
+  return ILLUSTRATIONS_AFFICHEES.get(cardArtId(id) ?? String(id ?? '')) ?? null;
+}
+
 export const cardArt = (id) => {
   const artId = cardArtId(id);
+  // La peinture choisie par le joueur passe avant tout le reste : c'est elle
+  // qu'il a payée, et c'est elle qu'il veut voir sur sa carte.
+  const alternative = ILLUSTRATIONS_AFFICHEES.get(artId);
+  if (alternative) return illustrationAlternativeUrl(alternative);
   const carte = cardById(artId);
   const revision = CARD_ART_CACHE_VERSIONS[artId]
-    ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined)
-    ?? (carte?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
+    ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined);
   return `${CARD_ART_BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 

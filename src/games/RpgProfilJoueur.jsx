@@ -45,6 +45,7 @@ import {
 import { RPG_AVATARS, avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
 import { RPG_PLATEAUX, vignettePlateau } from './rpgPlateaux.js';
 import { cadreDeProfil, titreDeProfil } from './rpgProfilGains.js';
+import { prochaineAlternative } from './rpgCardArtAlternatives.js';
 
 /** Le préfixe de `public/` : `/Let-s-Play/` en ligne, `/` sur le bureau. */
 const BASE_URL = import.meta.env?.BASE_URL ?? '/';
@@ -62,6 +63,10 @@ export default function RpgProfilJoueur({
 }) {
   const barre = useMemo(() => progressionDeXp(profil?.xp ?? 0), [profil?.xp]);
   const { niveau, into, need, percent, reste, maximal } = barre;
+  // La barre ne promet pas que des paquets : chaque niveau ouvre aussi une
+  // illustration alternative d'une carte (voir `rpgCardArtAlternatives.js`).
+  // On l'annonce ici, là où l'XP se gagne, et le Catalogue la montre ensuite.
+  const illustrationSuivante = prochaineAlternative(niveau);
   const glyphe = glypheEmbleme(profil);
   const avatar = avatarDeProfil(profil);
   const plateauChoisi = profil?.plateau ?? null;
@@ -149,6 +154,21 @@ export default function RpgProfilJoueur({
         <p className="rpg-profil__xp-lecture" data-profil-xp-reste={reste}>
           {maximal ? 'Plus aucun palier à franchir.' : `${xpLisible(into)} / ${xpLisible(need)} XP`}
         </p>
+        {illustrationSuivante ? (
+          <p
+            className="rpg-profil__alternative"
+            data-profil-alternative-niveau={illustrationSuivante.niveau}
+            data-profil-alternative-carte={illustrationSuivante.carteId}
+          >
+            <span aria-hidden="true">🖼</span>
+            {`Gagnez cette carte en montant au niveau ${illustrationSuivante.niveau} — ${illustrationSuivante.nom}`}
+          </p>
+        ) : (
+          <p className="rpg-profil__alternative is-complet" data-profil-alternative-complet>
+            <span aria-hidden="true">🖼</span>
+            L’échelle des illustrations alternatives est couverte — le reste s’achète au Catalogue.
+          </p>
+        )}
 
         {dus > 0 && (
           <p className="rpg-profil__attente" role="status" data-profil-attente={dus}>

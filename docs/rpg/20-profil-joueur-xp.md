@@ -11,7 +11,29 @@
 > le premier duel libre gagné) et devient de plus en plus gourmande (le
 > trentième palier coûte 247 fois le premier).
 >
-> Trois règles gouvernent le chantier, les mêmes que pour le Souk : **rien ne
+> > Depuis les lots « Souls » (Braise puis tout le Sable), la barre ouvre
+> **aussi** des **illustrations alternatives** : les anciennes peintures des
+> sets, rangées dans `public/cards/alt/`
+> (`src/games/rpgCardArtAlternatives.js`). **Une tous les quatre niveaux**, de
+> 4 à 60 — quinze paliers, les cartes mythiques d'abord ; l'écran dit « Gagnez
+> cette carte en montant au niveau N ».
+> >
+> > Le lot a grossi plus vite que la courbe : soixante-dix-sept peintures pour
+> > trente paliers possibles. Le reste ne se perd pas — il **s'achète** dans la
+> > fiche du catalogue, au prix de la rareté de la carte (80 / 140 / 240 /
+> > 400 ◈), et peut ensuite **habiller la carte elle-même** en duel. Voir
+> > `RPG-CARD-ART.md`, « Les illustrations alternatives ».
+>
+> **Elles s'affichent au moment où on les gagne** : en fin de duel, sous la
+> barre d'XP, les vignettes des illustrations tombées pendant la partie
+> apparaissent, avec leur nom et la carte qu'elles doublent.
+>
+> Elles s'affichent dans le Catalogue, sous la fiche de la carte qu'elles
+> doublent ; la carte de profil annonce la prochaine. Le calcul est le même que
+> celui des paquets : une dette qui se déduit du niveau, jamais un compteur à
+> tenir à jour.
+
+Trois règles gouvernent le chantier, les mêmes que pour le Souk : **rien ne
 > se paie avec de l'argent réel**, **tout ce qui est gagné est monotone** (ni
 > l'XP ni le nombre de paquets offerts ne redescendent, ni par synchronisation,
 > ni par remontée d'horloge), et **les crédits ◈ restent leur propre monnaie**

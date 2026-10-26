@@ -44,6 +44,8 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AuthContext } from '../auth/AuthContext';
 import {
+  acheterIllustration as acheterIllustrationAuxCredits,
+  basculerIllustrationAffichee as basculerIllustrationAuxCredits,
   chargerPortefeuille,
   crediterCredits,
   fusionnerPortefeuilles,
@@ -51,6 +53,7 @@ import {
   reclamerRecompenseTutoriel,
   sauverPortefeuille,
 } from './rpgCredits.js';
+import { prixIllustration } from './rpgCardArtAlternatives.js';
 import {
   chargerEtatQuetes,
   chargerGraine,
@@ -570,6 +573,37 @@ export function useSablierBourse({
     return achat;
   }, [appliquer, pousser, onCartesRangees, compteId]);
 
+  /**
+   * L'achat d'une **illustration alternative** à la boutique du Catalogue : un
+   * débit de crédits, une peinture de plus, aucun tirage. Le prix vient de la
+   * rareté de la carte (`rpgCardArtAlternatives.js`) — l'écran ne l'invente
+   * jamais, il l'annonce.
+   *
+   * Refus connus : `'deja-acquise'`, `'credits-insuffisants'` (avec le montant
+   * qui manque). Le portefeuille n'est jamais amputé d'un refus.
+   */
+  const acheterIllustration = useCallback((cardId) => {
+    const avant = etatRef.current;
+    const achat = acheterIllustrationAuxCredits(avant.bourse, {
+      carteId: cardId,
+      prix: prixIllustration(cardId),
+    });
+    if (!achat.ok) return achat;
+    appliquer(achat.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    return achat;
+  }, [appliquer, pousser]);
+
+  /** Affiche — ou remet d'origine — une illustration achetée sur sa carte. */
+  const basculerIllustration = useCallback((cardId, { gagnee = false } = {}) => {
+    const avant = etatRef.current;
+    const bascule = basculerIllustrationAuxCredits(avant.bourse, cardId, { gagnee });
+    if (!bascule.ok) return bascule;
+    appliquer(bascule.portefeuille, avant.quetes, avant.profil);
+    pousser();
+    return bascule;
+  }, [appliquer, pousser]);
+
   /** Le second tirage de l'étal, consommé une seule fois dans la journée. */
   const rafraichirEtal = useCallback(() => {
     const avant = etatRef.current;
@@ -749,6 +783,8 @@ export function useSablierBourse({
     acheterBooster,
     acheterCoffret,
     acheterCarteDirecte,
+    acheterIllustration,
+    basculerIllustration,
     rafraichirEtal,
     fermerOuverture,
     ouverture,

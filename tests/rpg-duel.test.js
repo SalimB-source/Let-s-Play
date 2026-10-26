@@ -546,11 +546,17 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   // salon et l'onglet Deck partagent les mêmes URL d'illustration.
   const page = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   for (const [art, revision] of [
-    ['loup-des-neiges-furie', 'loup-furie-huile-v1'],
-    ['mur-de-boucliers', 'mur-boucliers-charge-v1'],
-    ['eclair-du-marteau', 'eclair-marteau-electrique-cible-v1'],
-    ['brume-du-fjord', 'brume-personnes-gelees-v2'],
-    ['hurlement-du-blizzard', 'hurlement-grizzli-gele-v1'],
+    // La passe des Furies a redaté la face du loup sous sa propre marque.
+    ['loup-des-neiges-furie', 'neige-furie-loup-v1'],
+    // La passe Souls du Neige (octobre 2026) a redaté ces peintures : deux sous
+    // la marque commune de la passe, deux reprises une seconde fois parce que
+    // leur sujet ne lisait pas (le marteau de foudre, le grizzly prisonnier).
+    ['mur-de-boucliers', 'neige-souls-cendres-v1'],
+    ['eclair-du-marteau', 'neige-eclair-marteau-v4'],
+    ['brume-du-fjord', 'neige-souls-cendres-v1'],
+    ['hurlement-du-blizzard', 'neige-hurlement-grizzli-v2'],
+    // Et la hache de la banquise a quitté sa révision dédiée pour la passe.
+    ['hache-de-la-banquise', 'neige-hache-fil-en-bas-v2'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
@@ -581,8 +587,8 @@ test('la Valkyrie au corbeau porte Furie 2 et révèle sa peinture alternative',
     'blessée sous sa DEF de base 4, elle gagne +2/+0 et passe à 5/3',
   );
   assert.match(cardArtFurie(carte),
-    /\/cards\/valkyrie-au-corbeau-furie\.jpg\?v=valkyrie-vol-plongeon-enragee-v4$/,
-    'son état de Furie utilise la nouvelle peinture avec son corbeau et les Vikings');
+    /\/cards\/valkyrie-au-corbeau-furie\.jpg\?v=neige-furie-valkyrie-v1$/,
+    'son état de Furie utilise la peinture de la passe — la valkyrie, son corbeau et le sang');
   assert.deepEqual(dimensionsJpeg(fileURLToPath(
     new URL('../public/cards/valkyrie-au-corbeau-furie.jpg', import.meta.url),
   )), [1024, 1280], 'la peinture alternative est livrée au format exact 4:5');
