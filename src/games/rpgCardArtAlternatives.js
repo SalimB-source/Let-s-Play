@@ -193,6 +193,17 @@ const DEFINITIONS = [
   ['hurlement-du-blizzard', 'Le hurlement du blizzard'],
   ['lance-de-givre', 'La lance de givre'],
   ['hache-de-la-banquise', 'La hache sous l’aurore'],
+  // L'Eau — peinte avant la passe Souls, en couleurs plates ou au plein jour.
+  ['yamina', 'Yamina au cadran du Souk'],
+  ['boualem', 'Boualem au comptoir des sources'],
+  ['baton-des-citernes', 'Le bâton des citernes'],
+  ['porteuse-de-cruches', 'La porteuse de cruches'],
+  ['pilote-de-la-carreira', 'Le pilote de la carreira'],
+  ['source-de-bimini', 'La source de Bimini'],
+  ['haut-fond', 'Le haut-fond'],
+  ['lame-de-mer', 'La lame de mer'],
+  ['le-routier', 'Le routier'],
+  ['eau-de-la-source', 'L’eau de la source'],
 ];
 
 /**

@@ -676,6 +676,35 @@ cesse de rire, et la table n'a plus rien à y faire.
 Révision de la carte de base : `neige-maitre-tavern-v1`. L'ancienne peinture de
 bataille est archivée en `avant-tavern-maitre-du-marteau.jpg`.
 
+## Passe Souls de l'Eau — premier lot (octobre 2026)
+
+L'Eau garde son caractère : pas de désert, mais des citernes, des canaux, des
+ports et des nuits de mer. Les dix premières cartes passent à l'huile sombre
+sous la marque `eau-souls-cendres-v1`.
+
+- **Yamina** et **Boualem**, les deux héros du récit, gardent **leur
+  identité** — même visage, même âge, même coiffe, mêmes vêtements et mêmes
+  objets — mais changent de scène et de facture : Yamina au bord d'une
+  **citerne obscure**, la main sur la margelle, sa chienne à ses côtés ;
+  Boualem sur les marches d'une **porte d'eau** à la lanterne. Tout l'aplat
+  doré et les cadrans du Souk disparaissent : c'est peint, plus imprimé.
+- **Bâton des citernes** — le bâton d'ornement art nouveau devient un **anneau
+  de pierre sur une hampe de cuivre vert-de-gris**, planté dans l'eau noire.
+- **Porteuse de cruches** — plus de rue de souk ensoleillée : elle monte une
+  ruelle aveugle au crépuscule, deux cruches au joug.
+- **Pilote de la carreira** — sa cabine passe à la nuit, la carte marine
+  réduite à des traits et des sondes, la chandelle pour seule lumière.
+- **Source de Bimini** — la grotte turquoise devient une **vasque noire**
+  frappée par une seule fente de jour.
+- **Le Routier** — le parchemin sépia devient un **garde de chaussée noyée**,
+  lanterne et bâton, la route qui s'en va sous l'eau.
+- **Haut-fond**, **Lame de mer** et **Eau de la source** — l'épave au crépuscule,
+  la vague de nuit, le puits ruiné.
+
+Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent neuf
+illustrations alternatives**, dont quinze à l'échelle et quatre-vingt-quatorze
+en boutique.
+
 ## La passe des Furies (octobre 2026)
 
 Les faces de Furie — l'état déclenché d'une créature blessée — étaient restées
