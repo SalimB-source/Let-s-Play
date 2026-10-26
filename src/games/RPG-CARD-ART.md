@@ -73,9 +73,17 @@ malgré sa taille.
   tiennent ; seuls le visage, les mains et le cou gardent leur peau chaude, et
   la lumière de l'aube cerne la silhouette. Petits accents d'argent seulement :
   créoles, fibule à l'épaule, boucle, pommeau du sabre.
-- **L'équipement** — un bouclier rond de cuir noir dans le dos, un sabre court
-  recourbé à la hanche, et un **javelot léger** en avant dans la main droite,
-  prêt à partir : c'est son Attaque ciblée, peinte dans le geste.
+- **L'équipement** — **deux sabres courts recourbés**, un dans chaque main,
+  lames d'acier usées qui accrochent la lumière de l'aube, poignées de cuir
+  sombre ; **aucun bouclier** — le dos est nu, sous le gilet lamellaire. Les
+  deux lames sont son Attaque ciblée, peintes dans le geste (la frappe d'un
+  sabre et la riposte de l'autre).
+- **L'effet de vitesse** — la descente doit se lire comme une charge : le
+  panache de poussière s'étire derrière elle sur le sentier, le gravier et les
+  cailloux partent en arrière sous les sabots, la toison de la chèvre et la
+  queue du foulard filent en traînées, la roche du fond se perd dans un léger
+  flou de mouvement — tandis que le **visage et les deux lames restent nets**.
+  C'est de la peinture à l'huile, jamais des lignes de vitesse numériques.
 - **La monture** — une grande **chèvre de guerre** à longs poils noirs et
   fauves, cornes annelées rejetées en arrière, bride de cuir et de bronze,
   couverture de selle tissée d'indigo, lancée sur un sentier de pierre : les

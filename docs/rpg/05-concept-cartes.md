@@ -344,8 +344,10 @@ Sable une combattante de tempo : une **rare** à **3 manas, 2/1**, ligne de type
   **Tour des Listes** (`listes-3`), avec la gardienne des ksour, puis s'achète
   au Souk.
 - Sa peinture (plein art 4:5, révision `bouchra-cretes-v1`) la montre en noir
-  des pieds à la tête, en contre-plongée, sur sa chèvre lancée dans le sentier
-  des Aurès — direction artistique `RPG-CARD-ART.md`.
+  des pieds à la tête, en contre-plongée, **deux sabres courts aux mains et
+  sans bouclier**, sur sa chèvre lancée dans le sentier des Aurès — poussière
+  étirée derrière eux, cailloux projetés, flou de mouvement sur le fond, visage
+  et lames nets. Direction artistique `RPG-CARD-ART.md`.
 
 ### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
 
