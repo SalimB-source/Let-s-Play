@@ -4802,6 +4802,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   from { opacity: 0; transform: translateY(6px) scale(.985); }
   to { opacity: 1; transform: none; }
 }
+/* La carte se centre en hauteur contre sa fiche. La colonne de texte reste
+   calée en haut (c'est elle qu'on lit), mais quand elle est plus longue que
+   l'illustration — un mot-clé déplié, la vitrine qui s'ajoute — la carte
+   suivait le haut et la fiche penchait d'un côté. `align-self` plutôt qu'un
+   `align-items` sur la grille : la colonne de droite garde son alignement. */
+.rpg-hover-card-preview--catalogue .rpg-hover-card-preview__empile {
+  align-self: center;
+}
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__face {
   /* Ouvrir une vignette ne doit pas la changer de forme : on reprend la
      silhouette de la fiche du catalogue (grands coins du haut, plus serrés en
@@ -12039,6 +12047,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   min-height: 0;
 }
 .rpg-card-peek__duo > .rpg-card-peek__panel { flex: 1 1 auto; }
+/* Le duo se cale au milieu de la hauteur. La grille du volet donne à cette
+   rangée toute la place restante (`minmax(0, 1fr)`) : les deux volets y étaient
+   étirés puis alignés en haut, la fiche se collait donc sous le bord supérieur
+   et laissait tout le vide en bas, au-dessus du bouton Fermer.
+   Des marges automatiques plutôt qu'un `align-items: center` : quand la fiche
+   est plus haute que l'écran, elles retombent à zéro — la boîte ne peut pas
+   être rognée par le haut — et le volet repart de sa première ligne. */
+.rpg-card-peek__duo > .rpg-card-peek__panel,
+.rpg-card-peek__duo > .rpg-vitrine {
+  margin-block: auto;
+}
 .rpg-vitrine {
   position: relative;
   z-index: 1;
