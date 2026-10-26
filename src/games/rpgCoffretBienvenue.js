@@ -35,6 +35,7 @@
  */
 
 import {
+  MYTHIQUE_VITRINE_PAR_ELEMENT,
   RPG_DUEL_CARDS,
   cardById,
   cardColors,
@@ -301,6 +302,24 @@ export function coffretBienvenueNecessaire({
   if ((acquis?.cartes?.length ?? 0) > 0) return false;
   if ((collection?.length ?? 0) > 0) return false;
   return true;
+}
+
+/**
+ * La **mythique de vitrine** d'un coffret : celle dont l'illustration s'imprime
+ * sur le paquet fermé.
+ *
+ * C'est la mythique emblématique de sa couleur (`MYTHIQUE_VITRINE_PAR_ELEMENT`,
+ * `rpgCards.js`), la même que les boosters du Souk affichent — **pas** celle
+ * qui sera tirée à l'ouverture : le paquet doit donner envie, pas vendre la
+ * surprise de la troisième vague. Si la couleur n'a pas de vitrine, on se
+ * rabat sur la mythique réellement tirée, pour qu'un paquet n'aille jamais
+ * sans peinture.
+ */
+export function mythiqueVitrineDuCoffret(coffret) {
+  if (!coffret) return null;
+  const vitrine = cardById(MYTHIQUE_VITRINE_PAR_ELEMENT[coffret.couleur]);
+  if (vitrine) return vitrine;
+  return cardById(coffret.mythiqueId) ?? null;
 }
 
 /** Le coffret en deck maison : un nom, une peinture, trente cartes. */

@@ -37,6 +37,7 @@ import {
   coffretBienvenueNecessaire,
   composerCoffret,
   composerOffre,
+  mythiqueVitrineDuCoffret,
   normaliserOffreBienvenue,
   offreBienvenue,
   vaguesDuCoffret,
@@ -207,6 +208,27 @@ test('le coffret remplace la dotation, et seulement lui', () => {
   const avecSouk = collectionJoueur({ acquis: { gel: true, cartes: [] }, coffret, souk: ['tarek'] });
   assert.equal(avecSouk.includes('tarek'), true, 'le Souk s’ajoute au coffret');
   assert.equal(avecSouk.length, avecCoffret.length + 1);
+});
+
+test('chaque paquet porte la peinture d’une mythique de SA couleur', () => {
+  // C'est l'illustration imprimée sur le coffret fermé : une mythique de la
+  // couleur du coffret, existante, et **pas** forcément celle qui sera tirée —
+  // le paquet doit donner envie, pas vendre la surprise de la troisième vague.
+  const vues = new Set();
+  for (const couleur of COFFRET_COULEURS) {
+    const coffret = composerCoffret(couleur, { rng: suite(41) });
+    const vitrine = mythiqueVitrineDuCoffret(coffret);
+    assert.ok(vitrine, `${couleur} a une peinture de paquet`);
+    assert.equal(cardById(vitrine.id), vitrine, 'la carte existe au catalogue');
+    assert.equal(vitrine.rarity, 'mythique', `${vitrine.id} est bien une mythique`);
+    assert.ok(cardColors(vitrine).includes(couleur), `${vitrine.id} est de la couleur du coffret`);
+    vues.add(vitrine.id);
+  }
+  assert.equal(vues.size, COFFRET_COULEURS.length, 'quatre couleurs, quatre peintures différentes');
+  assert.equal(mythiqueVitrineDuCoffret(null), null, 'sans coffret, aucune peinture');
+  // Le cachet de l'offre reste intact : la vitrine ne devient pas une carte du coffret.
+  const coffret = composerCoffret('sable', { rng: suite(41) });
+  assert.equal(coffret.cardIds.length, COFFRET_TAILLE);
 });
 
 test('le catalogue des coffrets ne cite jamais une carte inconnue', () => {

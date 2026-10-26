@@ -45,6 +45,21 @@ Le coffret ouvert devient aussi un **deck de la maison** (`coffretEnDeckMaison`)
 il porte le nom du coffret, sa mythique en peinture de boîtier, et il est jouable
 tout de suite, sans passer par l'atelier.
 
+## 3. Le paquet, et ce qu'il montre
+
+Le paquet fermé porte une **peinture** : la mythique de vitrine de sa couleur
+(`mythiqueVitrineDuCoffret`, la même que les boosters du Souk affichent —
+`MYTHIQUE_VITRINE_PAR_ELEMENT`). C'est une vitrine, **pas** la mythique qui sera
+tirée : le paquet donne envie sans vendre la surprise de la troisième vague.
+La même image est imprimée sur le couvercle du coffre qui s'ouvre, sous la
+même référence `data-rpg-coffret-vitrine` — la vitrine et l'écran ne peuvent
+pas se contredire.
+
+Les cartes révélées, elles, ne rayonnent pas : la rare garde son liseré froid,
+la mythique sa bordure d'or et sa taille, et **aucun halo** ne s'allume autour
+d'elles. Le reflet qui passe sur leur illustration est le seul éclat — il dit
+« carte fraîchement frappée », pas « carte magique ».
+
 ## 3. La cérémonie, par vagues
 
 L'ouverture ne montre pas trente cartes d'un coup. Trois vagues se succèdent,

@@ -32,6 +32,7 @@ import {
   choisirCoffret,
   coffretBienvenueNecessaire,
   coffretChoisi,
+  mythiqueVitrineDuCoffret,
   offreBienvenue,
   sauverOffreBienvenue,
   vaguesDuCoffret,
@@ -112,17 +113,28 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
   );
 }
 
-/** Un coffret fermé, sur l'étagère du choix. */
+/** Un coffret fermé, sur l'étagère du choix. Le paquet porte sa peinture. */
 function BoiteCoffret({ coffret, onChoisir }) {
   const identite = COFFRETS_IDENTITE[coffret.couleur] ?? {};
+  // La **mythique de vitrine** de la couleur, pas celle qui sera tirée : le
+  // paquet donne envie sans vendre la surprise de la troisième vague.
+  const vitrine = mythiqueVitrineDuCoffret(coffret);
   return (
     <button
       type="button"
       className={`rpg-coffret__boite rpg-coffret__boite--${coffret.couleur}`}
       onClick={() => onChoisir(coffret.id)}
       data-rpg-coffret-boite={coffret.couleur}
+      data-rpg-coffret-vitrine={vitrine?.id}
       aria-label={`Ouvrir ${coffret.nom} — ${identite.sousTitre ?? ''} : une mythique, trois rares et vingt-six autres cartes`}
     >
+      <span className="rpg-coffret__boite-vitrine">
+        {vitrine ? <img src={cardArt(vitrine)} alt="" width="176" height="220" loading="lazy" /> : null}
+        <span className="rpg-coffret__boite-vitrine-mention">
+          <small>Mythique</small>
+          <strong>{vitrine?.name ?? ''}</strong>
+        </span>
+      </span>
       <span className="rpg-coffret__boite-sceau" aria-hidden="true">
         <RuneSablier />
       </span>
@@ -140,7 +152,7 @@ function BoiteCoffret({ coffret, onChoisir }) {
 }
 
 /** La boîte qui s'ouvre : sceau, couvercle, lumière. Purement décorative. */
-function CoffretQuiSOuvre({ couleur, nom }) {
+function CoffretQuiSOuvre({ couleur, nom, vitrine = null }) {
   return (
     <div className={`rpg-coffret__scene rpg-coffret__scene--${couleur}`} aria-hidden="true">
       <span className="rpg-coffret__halo" />
@@ -157,7 +169,9 @@ function CoffretQuiSOuvre({ couleur, nom }) {
           <span className="rpg-coffret__coffre-nom">{nom}</span>
         </div>
         <div className="rpg-coffret__coffre-couvercle">
-          <span className="rpg-coffret__coffre-plaque" />
+          <span className="rpg-coffret__coffre-plaque">
+            {vitrine ? <img src={cardArt(vitrine)} alt="" width="176" height="220" /> : null}
+          </span>
         </div>
         <span className="rpg-coffret__coffre-fissure" />
         <span className="rpg-coffret__coffre-sceau">
@@ -305,7 +319,11 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
         data-rpg-coffret-couleur={choisi.couleur}
       >
         <Poussiere />
-        <CoffretQuiSOuvre couleur={choisi.couleur} nom={choisi.nom} />
+        <CoffretQuiSOuvre
+          couleur={choisi.couleur}
+          nom={choisi.nom}
+          vitrine={mythiqueVitrineDuCoffret(choisi)}
+        />
         <p className="sr-only" role="status">Le sceau se brise, le coffret s’ouvre.</p>
         <button type="button" className="rpg-coffret__passer" onClick={passerOuverture}>
           Passer

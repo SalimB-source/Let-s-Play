@@ -178,9 +178,10 @@
 .rpg-coffret__boite {
   position: relative;
   display: grid;
-  gap: 6px;
+  gap: 5px;
   align-content: start;
-  padding: 18px 16px 16px;
+  padding: 0 16px 16px;
+  overflow: hidden;
   border-radius: 14px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background:
@@ -227,9 +228,73 @@
 .rpg-coffret__boite--neige { --teinte: #9fd4f2; --teinte-faible: rgba(159, 212, 242, 0.22); }
 .rpg-coffret__boite--eau { --teinte: #4f9dd6; --teinte-faible: rgba(79, 157, 214, 0.22); }
 
+/* La peinture de la mythique, imprimée sur le paquet : elle occupe le haut du
+   boîtier et se fond dans la laque par le bas. */
+.rpg-coffret__boite-vitrine {
+  position: relative;
+  display: block;
+  margin: 0 -16px 6px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-bottom: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 34%, transparent);
+  background: #0b0d18;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.rpg-coffret__boite-vitrine img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 26%;
+  transition: transform 720ms cubic-bezier(0.2, 0.8, 0.3, 1), filter 320ms ease;
+}
+
+.rpg-coffret__boite:hover .rpg-coffret__boite-vitrine img,
+.rpg-coffret__boite:focus-visible .rpg-coffret__boite-vitrine img {
+  transform: scale(1.07);
+  filter: saturate(1.1);
+}
+
+/* Le fondu vers la laque du boîtier, et la mention posée dessus. */
+.rpg-coffret__boite-vitrine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 34%, rgba(10, 11, 22, 0.55) 72%, rgba(10, 11, 22, 0.94) 100%),
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--teinte, #e8b75c) 22%, transparent), transparent 62%);
+}
+
+.rpg-coffret__boite-vitrine-mention {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  z-index: 1;
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+
+.rpg-coffret__boite-vitrine-mention small {
+  font: 700 8px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--teinte, #e8b75c) 86%, #fff);
+}
+
+.rpg-coffret__boite-vitrine-mention strong {
+  font: 600 12px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 0.4px;
+  color: #f6f0e2;
+}
+
 .rpg-coffret__boite-ruban {
   position: absolute;
   inset: 0 auto 0 0;
+  z-index: 2;
   width: 6px;
   background: linear-gradient(180deg, var(--teinte, #e8b75c), transparent 140%);
   box-shadow: 0 0 18px -2px var(--teinte, #e8b75c);
@@ -238,6 +303,7 @@
 /* Le sceau de cire, en haut à droite : la promesse qu'il n'y a qu'une ouverture. */
 .rpg-coffret__boite-sceau {
   position: absolute;
+  z-index: 2;
   top: 12px;
   right: 12px;
   display: grid;
@@ -555,10 +621,30 @@
 
 .rpg-coffret__coffre-plaque {
   position: absolute;
-  inset: 26% 18%;
-  border-radius: 3px;
-  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 45%, transparent);
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  inset: 16% 12%;
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 52%, transparent);
+  background: #0a0b14;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+
+.rpg-coffret__coffre-plaque img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+  opacity: 0.94;
+}
+
+/* Le vernis qui passe sur la peinture du couvercle. */
+.rpg-coffret__coffre-plaque::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, 0.18) 50%, transparent 62%);
 }
 
 @keyframes rpg-coffret-couvercle {
@@ -712,18 +798,18 @@
   border-radius: 50%;
   background: repeating-conic-gradient(
     from 0deg,
-    rgba(232, 183, 92, 0.16) 0deg 2.4deg,
-    transparent 2.4deg 12deg
+    rgba(232, 183, 92, 0.1) 0deg 1.6deg,
+    transparent 1.6deg 14deg
   );
-  mask-image: radial-gradient(circle, #000 8%, transparent 58%);
-  -webkit-mask-image: radial-gradient(circle, #000 8%, transparent 58%);
+  mask-image: radial-gradient(circle, #000 6%, transparent 52%);
+  -webkit-mask-image: radial-gradient(circle, #000 6%, transparent 52%);
   animation: rpg-coffret-rayons-finale 4000ms ease-out both;
 }
 
 @keyframes rpg-coffret-rayons-finale {
   0% { opacity: 0; rotate: -8deg; scale: 0.6; }
   35% { opacity: 1; }
-  100% { opacity: 0.55; rotate: 10deg; scale: 1.05; }
+  100% { opacity: 0.4; rotate: 10deg; scale: 1.05; }
 }
 
 .rpg-coffret__carte {
@@ -813,21 +899,10 @@
   color: #e8b75c;
 }
 
-/* La rare : un liseré froid, et une pulsation d'éveil à l'arrivée. */
+/* La rare : un liseré froid et sa taille — rien qui rayonne autour d'elle. */
 .rpg-coffret__carte--rare {
   width: 132px;
   border-color: rgba(120, 190, 255, 0.5);
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 26px rgba(80, 150, 255, 0.22);
-  animation:
-    rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both,
-    rpg-coffret-rare-eveil 1400ms ease-out both;
-  animation-delay: var(--retard, 0ms), calc(var(--retard, 0ms) + 160ms);
-}
-
-@keyframes rpg-coffret-rare-eveil {
-  0% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 0 rgba(120, 190, 255, 0); }
-  30% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 46px rgba(120, 190, 255, 0.6); }
-  100% { box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), 0 0 26px rgba(80, 150, 255, 0.22); }
 }
 
 /* La mythique : plus large, dorée, elle respire. */
@@ -839,7 +914,6 @@
     #0d0a06;
   box-shadow:
     0 18px 42px rgba(0, 0, 0, 0.6),
-    0 0 60px rgba(232, 183, 92, 0.4),
     inset 0 0 0 1px rgba(255, 233, 184, 0.25);
   animation: rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
   animation-delay: var(--retard, 0ms);
@@ -858,31 +932,14 @@
   50% { translate: 0 -8px; }
 }
 
-.rpg-coffret__carte--mythique::after {
-  content: '';
-  position: absolute;
-  inset: -14% -10%;
-  z-index: -1;
-  border-radius: 22px;
-  background: radial-gradient(ellipse at 50% 45%, rgba(255, 216, 140, 0.5), transparent 66%);
-  opacity: 0.7;
-  animation: rpg-coffret-mythe-halo 3600ms ease-in-out infinite;
-}
-
 /* Le reflet repasse sur la mythique, lentement, pendant qu'elle flotte. */
 .rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique .rpg-coffret__carte-reflet {
   animation: rpg-coffret-reflet 3400ms 1800ms ease-in-out infinite;
 }
 
-@keyframes rpg-coffret-mythe-halo {
-  0%, 100% { opacity: 0.45; scale: 0.96; }
-  50% { opacity: 0.85; scale: 1.05; }
-}
-
 .rpg-coffret__carte--mythique .rpg-coffret__carte-nom {
   font-size: 13px;
   color: #ffe9b8;
-  text-shadow: 0 0 14px rgba(232, 183, 92, 0.5);
 }
 
 .rpg-coffret__carte--mythique .rpg-coffret__carte-rarete {
