@@ -45,70 +45,55 @@ Le coffret ouvert devient aussi un **deck de la maison** (`coffretEnDeckMaison`)
 il porte le nom du coffret, sa mythique en peinture de boîtier, et il est jouable
 tout de suite, sans passer par l'atelier.
 
-## 3. Le paquet, et ce qu'il montre
+## 3. Le coffret, et ce qu'il montre
 
-Le paquet fermé porte une **peinture** : la mythique de vitrine de sa couleur
+Le coffret fermé porte une **peinture** : la mythique de vitrine de sa couleur
 (`mythiqueVitrineDuCoffret`, la même que les boosters du Souk affichent —
 `MYTHIQUE_VITRINE_PAR_ELEMENT`). C'est une vitrine, **pas** la mythique qui sera
-tirée : le paquet donne envie sans vendre la surprise de la troisième vague.
-La même image est imprimée sur le couvercle du coffre qui s'ouvre, sous la
-même référence `data-rpg-coffret-vitrine` — la vitrine et l'écran ne peuvent
-pas se contredire.
+tirée : le coffret donne envie sans vendre la surprise de la troisième vague.
+La même image est imprimée sur le boîtier qui s'ouvre, sous la même référence
+`data-rpg-coffret-vitrine` — la vitrine et la cérémonie ne peuvent pas se
+contredire.
 
-### Le paquet est un volume, pas une vignette
+### Le coffret est un boîtier de deck
 
-Le paquet n'est pas un rectangle peint : c'est une **boîte fermée**, vue de trois
-quarts, comme les coffrets de pré-tirage posés sur un comptoir. Trois faces
-assemblées en 3D sous une `perspective` :
+Le coffret n'a **pas** sa propre 3D. Il prend la forme des boîtiers de deck du
+jeu (`DeckBox`, `src/games/rpg-deckbox.css`) : six faces posées autour d'un cube
+déformé sous une `perspective`, laque sombre cerclée de laiton, peinture plein
+art, plaque du nom, emblèmes de la couleur, compte des cartes.
 
-- la **face avant** (`--avant`, à `z = 0`) porte la peinture de la mythique sur
-  les deux tiers hauts, le sceau de cire à l'arête gauche, la jauge circulaire
-  « 30 cartes » à l'arête droite, puis le bloc imprimé — couleur, nom du coffret,
-  sous-titre — et la bande noire du bas (« 1 mythique · 3 rares · trente
-  cartes ») ;
-- la **tranche droite** (`--cote`) naît de l'arête droite
-  (`transform-origin: 100% 50%`), pivote d'un quart de tour puis recule de toute
-  l'épaisseur : elle porte le filet d'or et la rune gravée ;
-- le **dessus** (`--dessus`) naît de l'arête haute (`transform-origin: 50% 0`),
-  bascule vers le ciel et recule : c'est le vernis du couvercle.
+Ce n'est pas seulement de l'économie de code — c'est la bonne histoire : le
+coffret **devient** le deck de la maison une fois ouvert (`coffretEnDeckMaison`).
+Le joueur ne voit pas deux objets, mais le même, avant et après. Et tout ce qui
+rend un boîtier vivant est déjà écrit et réglé, une fois, pour les trois écrans
+de deck : balancement continu décalé d'un boîtier à l'autre, inclinaison au
+curseur (`inclinerBoitier`), redressement au survol et au focus, ombre au sol,
+reflets de laiton.
 
-Le volume est ensuite incliné — `rotateX(-12deg) rotateY(-24deg)`. **Les deux
-signes sont négatifs pour une raison** : `rotateX` positif renverrait le dessus
-derrière la boîte (on ne verrait que son arête), `rotateY` positif cacherait la
-tranche. Les faces cachées sont construites avec leur normale tournée vers
-l'extérieur (`translateZ(-profondeur)` **avant** la rotation), sinon le
-navigateur les peint par l'arrière et les dégradés se lisent à l'envers.
+Le module de coffret n'ajoute que ce qui lui est propre :
 
-L'épaisseur (`--profondeur`) est franche — `clamp(42px, 5vw, 62px)` — parce
-qu'en dessous d'une vingtaine de pixels de tranche visible, l'œil ne lit plus un
-volume mais une image légèrement penchée. Au survol et au focus clavier, le
-volume se redresse et monte de quelques pixels ; rien d'autre ne bouge, et
-`prefers-reduced-motion` supprime la transition.
+- la **mise en page** des trois boîtiers (`.rpg-coffret__boites`) et le bouton
+  qui porte le clic et l'inclinaison ;
+- la **légende**, sous le boîtier : emblème + couleur, nom du coffret,
+  sous-titre, puis `30 cartes · 1 mythique · 3 rares` ;
+- le **contrat de données** : `deckDuCoffret` fabrique le deck que `DeckBox`
+  attend. La couleur y est **déclarée** (`element`, `elements`), pas déduite des
+  cartes : un coffret reste mono-couleur même si une carte incolore se glisse
+  dans son socle. La peinture est la mythique de vitrine (`boxArt`).
 
-### L'emblème de la couleur, dessiné et pas seulement écrit
+### L'emblème de la couleur
 
-Un coffret dit sa couleur trois fois, et la troisième est un dessin :
-
-- la **ligne imprimée** au-dessus du nom — l'emblème du Sablier, puis le mot
-  (`Sable`, `Eau`, `Neige`…) ;
-- le **sceau de cire**, en haut à gauche de la peinture : c'est l'emblème de la
-  couleur qui y est gravé, pas un symbole générique — un coffret de Neige ne
-  porte donc plus le sablier du Sable ;
-- la **tranche**, où l'emblème est estampé à mi-hauteur, comme le symbole
-  d'extension sur une boîte de pré-tirage.
+Le boîtier de deck porte déjà l'emblème de sa couleur, à quatre endroits : la
+bande du couvercle, les deux tranches et le sceau du dos (`rpg-deckbox__medal`).
+Le coffret en profite tel quel — un coffret de Neige porte le flocon, pas le
+sablier du Sable. La légende répète l'emblème avec le mot, pour les lecteurs qui
+ne reconnaissent pas encore les silhouettes.
 
 Ces dessins viennent de `src/games/rpgEmblemes.jsx` (`ElementEmblem`) — le
-module que partagent déjà les boîtiers de deck, la jauge de mana du duel, le
-filtre du catalogue et le salon : sablier pour le Sable, flamme pour la Braise,
-goutte pour l'Eau, flocon pour la Neige, crâne pour les Ténèbres. Le module ne
-porte aucune feuille de style (`fill: currentColor`) : la teinte de l'emblème
-est celle de la laque du coffret (`--teinte`), donc chaque boîte est dessinée
-dans sa propre couleur.
-
-La **rune du Sablier** ne disparaît pas : elle est estampée au fond du coffre
-(`--interieur`) et ne se découvre qu'une fois le couvercle basculé. C'est la
-marque du marchand, pas celle de la couleur — les deux ne se disputent plus la
-même place.
+module que partagent les boîtiers, la jauge de mana du duel, le filtre du
+catalogue et le salon : sablier pour le Sable, flamme pour la Braise, goutte
+pour l'Eau, flocon pour la Neige, crâne pour les Ténèbres. Le module ne porte
+aucune feuille de style (`fill: currentColor`) : la teinte vient du contexte.
 
 Les illustrations sont chargées **sans `loading="lazy"`** : dans un calque
 `position: fixed`, un navigateur peut ne jamais déclencher le chargement d'une
@@ -183,19 +168,24 @@ commune, 10 px pour la mythique).
 
 ### L'ouverture montre le même coffret
 
-L'acte zéro ne redessine pas une boîte à lui : il monte **le même volume** que
-l'étagère du choix, agrandi, et le met en état `is-ouvert`. Même composant
-(`VolumeCoffret`), mêmes trois faces, même peinture de vitrine, même jauge de
-cartes — seul l'état change :
+L'acte zéro monte **le boîtier du choix**, agrandi, et l'ouvre. Quatre règles
+suffisent, aucune ne redessine le boîtier :
 
-- le **sceau de cire** se fend, tourne et tombe (540 ms) ;
-- le **couvercle** bascule sur son arête arrière — la face du dessus étant née
-  de cette arête, pousser la rotation de 90° à 152° suffit à le dresser derrière
-  la boîte (860 ms) ;
-- la **lumière** monte du fond et les **rayons** s'ouvrent. Ces deux nappes
-  vivent **hors** du volume : un calque flouté posé dans une scène
-  `preserve-3d` traverserait le coffret au lieu de l'éclairer ;
-- les **éclats** de cire partent du sceau, puis l'écran blanchit.
+- le **fermoir** (`.rpg-deckbox__latch`) saute — c'est le sceau qui cède, dans
+  la langue du boîtier (560 ms) ;
+- le **couvercle** est la face du dessus (`--top`). Sa charnière est déplacée
+  sur l'arête arrière (`transform-origin: 50% 0`) et la rotation poussée de 90°
+  à 152° : il se dresse derrière la boîte au lieu de rester posé dessus (860 ms) ;
+- la **bouche** (`::after` du corps, même arête, deux pixels plus bas) apparaît
+  alors. Sans elle, le boîtier ouvert montrait le vide entre son arête haute et
+  sa face arrière ;
+- le **corps** monte et tremble sur `translate` / `rotate`, qui s'ajoutent à la
+  pose de trois quarts sans l'écraser — animer `transform` aurait fait sauter
+  la boîte à plat.
+
+La lumière, les rayons et les éclats restent **hors** du boîtier, dans la scène :
+une nappe floutée posée dans un contexte `preserve-3d` traverserait les faces au
+lieu de les éclairer.
 
 ## 5. La dotation, remplacée — pas amputée
 

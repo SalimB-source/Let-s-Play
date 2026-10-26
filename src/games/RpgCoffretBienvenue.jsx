@@ -24,7 +24,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
 import { ElementEmblem } from './rpgEmblemes.jsx';
-import { cardById, cardRarityInfo } from './rpgCards.js';
+import { DeckBox, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
+import { cardRarityInfo } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
 import {
@@ -110,19 +111,6 @@ function Poussiere() {
   );
 }
 
-/** Le sceau du Sablier, gravé dans la cire et dans le fond de la scène. */
-function RuneSablier() {
-  return (
-    <svg className="rpg-coffret__rune" viewBox="0 0 48 64" aria-hidden="true" focusable="false">
-      <path d="M8 4h32M8 60h32" />
-      <path d="M12 6c0 10 24 16 24 26S12 48 12 58" />
-      <path d="M36 6c0 10-24 16-24 26s24 16 24 26" />
-      <path d="M24 22v20" />
-      <circle cx="24" cy="32" r="2.4" />
-    </svg>
-  );
-}
-
 /**
  * Une carte du coffret, **en volume** : une face avant (peinture, nom, rareté),
  * une tranche à droite, et une lueur qui change de teinte et d'intensité avec
@@ -177,115 +165,77 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
 }
 
 /**
- * Le **volume** du coffret : trois faces peintes, assemblées en 3D.
+ * Le coffret, **sous la forme d'un boîtier de deck** — le même objet que
+ * l'étagère de l'onglet Deck (`DeckBox`, `rpg-deckbox.css`) : six faces, une
+ * laque cerclée de laiton, l'illustration en plein art, la plaque du nom, les
+ * emblèmes de la couleur et le compte des cartes.
  *
- *   - la face avant (`--avant`, à `z = 0`) porte la peinture de la mythique, le
- *     sceau de cire, la jauge de cartes, le bloc imprimé et la bande du bas ;
- *   - la tranche droite (`--cote`) naît de l'arête droite, pivote et recule ;
- *   - le dessus (`--dessus`) naît de l'arête haute, bascule et recule.
- *
- * Le même composant sert **deux fois** : sur l'étagère du choix (fermé) et dans
- * la cérémonie d'ouverture (`ouvre`), où c'est le même coffret — mêmes faces,
- * même peinture, même épaisseur. Seul l'état change : le sceau se fend, le
- * couvercle bascule sur sa charnière arrière, la lumière monte.
+ * Pourquoi réutiliser ce boîtier plutôt que d'en dessiner un autre : c'est
+ * exactement ce que le coffret devient une fois ouvert — le deck de la maison.
+ * Le joueur ne voit donc pas deux objets, mais le même, avant et après ; et
+ * tout le travail de 3D (balancement, inclinaison au curseur, ombre, reflets)
+ * est déjà écrit, réglé et partagé.
  */
-function VolumeCoffret({ couleur, nom, sousTitre, vitrine = null, ouvre = false }) {
-  return (
-    <span className={`rpg-coffret__boite-scene${ouvre ? ' rpg-coffret__boite-scene--ouverture' : ''}`}>
-      <span className={`rpg-coffret__boite-volume${ouvre ? ' is-ouvert' : ''}`}>
-        {/* Les faces cachées d'abord : elles passent derrière la face avant. */}
-        <span className="rpg-coffret__boite-face rpg-coffret__boite-face--cote" aria-hidden="true">
-          <span className="rpg-coffret__boite-cote-bande" />
-          <span className="rpg-coffret__boite-cote-embleme">
-            <ElementEmblem element={couleur} />
-          </span>
-        </span>
-        <span className="rpg-coffret__boite-face rpg-coffret__boite-face--dessus" aria-hidden="true">
-          <span className="rpg-coffret__boite-dessus-vernis" />
-        </span>
-        {/* L'intérieur : la bouche de la boîte. Il n'existe que dans la
-            cérémonie — fermée, le couvercle le cache de toute façon, mais inutile
-            de le peindre trois fois sur l'étagère du choix. */}
-        {ouvre ? (
-          <span className="rpg-coffret__boite-face rpg-coffret__boite-face--interieur" aria-hidden="true">
-            {/* La rune du Sablier, estampée au fond : on ne la découvre qu'une
-                fois le couvercle ouvert — c'est la marque du marchand, pas
-                celle de la couleur. */}
-            <span className="rpg-coffret__boite-interieur-rune"><RuneSablier /></span>
-          </span>
-        ) : null}
-        <span className="rpg-coffret__boite-face rpg-coffret__boite-face--avant">
-          <span className="rpg-coffret__boite-vitrine">
-            {vitrine ? <IllustrationCarte carte={vitrine} /> : null}
-            {/* Le sceau de cire porte l'emblème de la couleur : le coffret dit
-                ce qu'il contient avant qu'on lise son nom. */}
-            <span className="rpg-coffret__boite-sceau" aria-hidden="true">
-              <ElementEmblem element={couleur} />
-            </span>
-            <span className="rpg-coffret__boite-jauge" aria-hidden="true">
-              <b>30</b>
-              <small>cartes</small>
-            </span>
-          </span>
-          <span className="rpg-coffret__boite-texte">
-            <span className="rpg-coffret__boite-couleur">
-              <span className="rpg-coffret__boite-embleme" aria-hidden="true">
-                <ElementEmblem element={couleur} />
-              </span>
-              {ELEMENT_LABELS[couleur] ?? couleur}
-            </span>
-            <span className="rpg-coffret__boite-nom">{nom}</span>
-            <span className="rpg-coffret__boite-sous">{sousTitre}</span>
-          </span>
-          <span className="rpg-coffret__boite-bande">
-            <b>1 mythique</b>
-            <span>3 rares · trente cartes</span>
-          </span>
-        </span>
-      </span>
-    </span>
-  );
+function deckDuCoffret(coffret, vitrine) {
+  return {
+    id: coffret.id,
+    name: coffret.nom,
+    // La couleur est **déclarée**, pas déduite des cartes : un coffret reste
+    // mono-couleur même si une carte incolore se glisse dans son socle.
+    element: coffret.couleur,
+    elements: [coffret.couleur],
+    boxArt: vitrine?.id,
+    cardIds: coffret.cardIds,
+  };
 }
 
-/** Un coffret sur l'étagère du choix : le volume, dans un bouton. */
-function BoiteCoffret({ coffret, onChoisir }) {
+/** Un coffret sur l'étagère du choix : le boîtier, sa légende, et son bouton. */
+function BoiteCoffret({ coffret, onChoisir, rang = 0 }) {
   const identite = COFFRETS_IDENTITE[coffret.couleur] ?? {};
   // La **mythique de vitrine** de la couleur, pas celle qui sera tirée : le
-  // paquet donne envie sans vendre la surprise de la troisième vague.
+  // boîtier donne envie sans vendre la surprise de la troisième vague.
   const vitrine = mythiqueVitrineDuCoffret(coffret);
   return (
     <button
       type="button"
       className={`rpg-coffret__boite rpg-coffret__boite--${coffret.couleur}`}
       onClick={() => onChoisir(coffret.id)}
+      onPointerMove={inclinerBoitier}
+      onPointerLeave={redresserBoitier}
       data-rpg-coffret-boite={coffret.couleur}
       data-rpg-coffret-vitrine={vitrine?.id}
       aria-label={`Ouvrir ${coffret.nom} — ${identite.sousTitre ?? ''} : une mythique, trois rares et vingt-six autres cartes`}
     >
-      <VolumeCoffret
-        couleur={coffret.couleur}
-        nom={coffret.nom}
-        sousTitre={identite.sousTitre}
-        vitrine={vitrine}
-      />
-      <span className="rpg-coffret__boite-ouvrir" aria-hidden="true">Ouvrir →</span>
+      <DeckBox deck={deckDuCoffret(coffret, vitrine)} index={rang} size="shelf" />
+      <span className="rpg-coffret__boite-texte">
+        <span className="rpg-coffret__boite-couleur">
+          <span className="rpg-coffret__boite-embleme" aria-hidden="true">
+            <ElementEmblem element={coffret.couleur} />
+          </span>
+          {ELEMENT_LABELS[coffret.couleur] ?? coffret.couleur}
+        </span>
+        <strong className="rpg-coffret__boite-nom">{coffret.nom}</strong>
+        <em className="rpg-coffret__boite-sous">{identite.sousTitre}</em>
+        <span className="rpg-coffret__boite-meta">30 cartes · 1 mythique · 3 rares</span>
+        <span className="rpg-coffret__boite-ouvrir" aria-hidden="true">Ouvrir →</span>
+      </span>
     </button>
   );
 }
 
 /**
- * La cérémonie d'ouverture : **le même coffret que celui du choix**, cette fois
- * en train de s'ouvrir. Le sceau de cire se fend, le couvercle bascule sur sa
- * charnière arrière, la lumière monte du fond — puis le rideau des cartes.
+ * La cérémonie d'ouverture : **le même boîtier que celui du choix**, en train
+ * de s'ouvrir. Le fermoir saute, le couvercle bascule sur son arête arrière, la
+ * lumière monte du fond — puis le rideau des cartes.
  *
- * La lumière et les rayons restent **hors du volume** (2D, derrière lui) : une
- * nappe floutée posée dans une scène `preserve-3d` la traverserait au lieu de
- * l'éclairer.
+ * La lumière, les rayons et les éclats restent **hors** du boîtier (2D, derrière
+ * lui) : une nappe floutée posée dans une scène `preserve-3d` traverserait les
+ * faces au lieu de les éclairer.
  */
-function CoffretQuiSOuvre({ couleur, nom, vitrine = null }) {
-  const identite = COFFRETS_IDENTITE[couleur] ?? {};
+function CoffretQuiSOuvre({ coffret, vitrine = null }) {
+  const identite = COFFRETS_IDENTITE[coffret.couleur] ?? {};
   return (
-    <div className={`rpg-coffret__scene rpg-coffret__scene--${couleur}`} aria-hidden="true">
+    <div className={`rpg-coffret__scene rpg-coffret__scene--${coffret.couleur}`} aria-hidden="true">
       <span className="rpg-coffret__halo" />
       <span className="rpg-coffret__onde">
         <i /><i /><i />
@@ -293,18 +243,14 @@ function CoffretQuiSOuvre({ couleur, nom, vitrine = null }) {
       <div className="rpg-coffret__coffre">
         <span className="rpg-coffret__coffre-lumiere" />
         <span className="rpg-coffret__coffre-rayons" />
-        <VolumeCoffret
-          couleur={couleur}
-          nom={nom}
-          sousTitre={identite.sousTitre}
-          vitrine={vitrine}
-          ouvre
-        />
+        <DeckBox deck={deckDuCoffret(coffret, vitrine)} size="shelf" />
         <span className="rpg-coffret__coffre-eclats">
           {Array.from({ length: 14 }, (_, i) => (
             <i key={i} style={{ '--eclat': i, '--angle': `${(i * 360) / 14}deg`, '--portee': `${28 + ((i * 13) % 46)}px` }} />
           ))}
         </span>
+        <span className="rpg-coffret__coffre-titre">{coffret.nom}</span>
+        <span className="rpg-coffret__coffre-sous">{identite.sousTitre}</span>
       </div>
     </div>
   );
@@ -420,8 +366,8 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
             puis les communes et les inhabituelles de sa couleur.
           </p>
           <div className="rpg-coffret__boites">
-            {offre.coffrets.map((coffret) => (
-              <BoiteCoffret key={coffret.id} coffret={coffret} onChoisir={ouvrir} />
+            {offre.coffrets.map((coffret, rang) => (
+              <BoiteCoffret key={coffret.id} coffret={coffret} onChoisir={ouvrir} rang={rang} />
             ))}
           </div>
           <p className="rpg-coffret__note">Le coffret ouvert devient votre collection de départ.</p>
@@ -442,11 +388,7 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
         data-rpg-coffret-couleur={choisi.couleur}
       >
         <Poussiere />
-        <CoffretQuiSOuvre
-          couleur={choisi.couleur}
-          nom={choisi.nom}
-          vitrine={mythiqueVitrineDuCoffret(choisi)}
-        />
+        <CoffretQuiSOuvre coffret={choisi} vitrine={mythiqueVitrineDuCoffret(choisi)} />
         <p className="sr-only" role="status">Le sceau se brise, le coffret s’ouvre.</p>
         <button type="button" className="rpg-coffret__passer" onClick={passerOuverture}>
           Passer

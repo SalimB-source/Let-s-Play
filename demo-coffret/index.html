@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;700&family=Orbitron:wght@400..900&family=Rajdhani:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./bundle.css?v=1793049460" />
+    <link rel="stylesheet" href="./bundle.css?v=1793049670" />
     <style>
       html, body { margin: 0; background: #05060f; color: #e8eaf6; }
       #racine { min-height: 100vh; }
@@ -83,16 +83,38 @@
     </script>
     <script>
       // Compte les illustrations réellement peintes : 0/N = le fichier ne vient
-      // pas, et l'URL en échec s'affiche sous le compteur.
+      // pas, et l'URL en échec s'affiche sous le compteur. Deux sources : les
+      // `<img>` (les cartes) et les fonds des boîtiers de deck (la peinture du
+      // coffret, posée en `background-image`).
       (function () {
         var boite = document.getElementById('images');
         var echecs = [];
+        var fonds = {};
+        function sonder(url) {
+          if (fonds[url]) return fonds[url];
+          var sonde = new Image();
+          fonds[url] = { ok: false, url: url };
+          sonde.onload = function () { fonds[url].ok = true; compter(); };
+          sonde.onerror = function () { echecs.push(url); compter(); };
+          sonde.src = url;
+          return fonds[url];
+        }
         function compter() {
           var imgs = Array.prototype.slice.call(document.querySelectorAll('img'));
           var peintes = imgs.filter(function (i) { return i.complete && i.naturalWidth > 0; });
-          boite.textContent = 'illustrations : ' + peintes.length + '/' + imgs.length
+          var decors = Array.prototype.slice.call(document.querySelectorAll('.rpg-deckbox__art'))
+            .map(function (el) {
+              var fond = getComputedStyle(el).backgroundImage || '';
+              var m = fond.match(/url\("?([^")]+)"?\)/);
+              return m ? sonder(m[1]) : null;
+            })
+            .filter(Boolean);
+          var decorsOk = decors.filter(function (d) { return d.ok; }).length;
+          var total = imgs.length + decors.length;
+          var peintesTotal = peintes.length + decorsOk;
+          boite.textContent = 'illustrations : ' + peintesTotal + '/' + total
             + (echecs.length ? ' — échec ' + echecs[0] : '');
-          boite.className = echecs.length ? 'is-ko' : (imgs.length && peintes.length === imgs.length ? 'is-ok' : '');
+          boite.className = echecs.length ? 'is-ko' : (total && peintesTotal === total ? 'is-ok' : '');
         }
         document.addEventListener('error', function (e) {
           var cible = e.target;
@@ -104,6 +126,6 @@
         compter();
       })();
     </script>
-    <script src="./bundle.js?v=1793049460"></script>
+    <script src="./bundle.js?v=1793049670"></script>
   </body>
 </html>

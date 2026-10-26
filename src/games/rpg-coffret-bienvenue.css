@@ -164,7 +164,17 @@
   color: #8f97b2;
 }
 
-/* ── Le choix : trois coffrets en volume ─────────────────────────────────── */
+/* ── Le choix : trois boîtiers de coffret ───────────────────────────────────
+
+   Le coffret prend la **forme des boîtiers de deck du jeu** (`DeckBox`,
+   `rpg-deckbox.css`) : six faces, laque cerclée de laiton, peinture plein art,
+   plaque du nom, emblèmes de la couleur, compte des cartes.
+
+   Rien de tout cela n'est redessiné ici. On ne pose que trois choses autour :
+   la mise en page, la légende sous le boîtier, et le bouton — plus, plus bas,
+   l'ouverture du couvercle pour la cérémonie. C'est ce qui rend l'ensemble
+   animable : balancement, inclinaison au curseur, ombre au sol et reflets sont
+   déjà écrits et réglés une fois pour toutes dans `rpg-deckbox.css`. */
 
 .rpg-coffret__boites {
   width: 100%;
@@ -176,255 +186,64 @@
   padding: 6px 0 14px;
 }
 
-/*
- * Un coffret, c'est un **volume** : trois faces peintes et assemblées en 3D.
- *
- *   - la face avant garde la peinture de la mythique et reste à `z = 0` ;
- *   - la tranche droite naît de l'arête droite (`transform-origin: 100% 50%`),
- *     pivote d'un quart de tour sur elle-même puis **recule** de toute
- *     l'épaisseur : elle regarde vers la droite, et se découvre parce que le
- *     volume est tourné vers la gauche ;
- *   - le dessus naît de l'arête haute (`transform-origin: 50% 0`), pivote vers
- *     le haut puis recule : il regarde le ciel, et se découvre parce que le
- *     volume est basculé vers l'observateur.
- *
- * Le bloc est ensuite vu de trois quarts, `rotateX(-12deg) rotateY(-24deg)` :
- * l'inclinaison est **négative**, sans quoi le dessus se déroberait. C'est
- * l'épaisseur des deux faces cachées qui fait le volume — aucune n'est un
- * `background` du voisin, sans quoi tout s'aplatirait au premier
- * `overflow: hidden`.
- */
+/* Le bouton porte tout : le boîtier, sa légende, et le clic. */
 .rpg-coffret__boite {
   position: relative;
   display: grid;
-  gap: 10px;
   justify-items: center;
-  padding: 0;
+  gap: 4px;
+  padding: 6px 6px 12px;
   border: 0;
+  border-radius: 16px;
   background: none;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
-  perspective: 1500px;
-  perspective-origin: 50% 42%;
   -webkit-tap-highlight-color: transparent;
+  transition: background 260ms ease;
+}
+
+.rpg-coffret__boite:hover,
+.rpg-coffret__boite:focus-visible {
+  background: radial-gradient(120% 80% at 50% 60%, rgba(232, 183, 92, 0.07), transparent 72%);
 }
 
 .rpg-coffret__boite:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--teinte, #e8b75c) 80%, transparent);
-  outline-offset: 6px;
-  border-radius: 10px;
+  outline-offset: 4px;
 }
 
-/* L'ombre portée, au sol : elle ancre le volume. */
-.rpg-coffret__boite::after {
-  content: '';
-  position: absolute;
-  left: 8%;
-  right: 14%;
-  bottom: 6px;
-  height: 18px;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.55), transparent 70%);
-  filter: blur(6px);
-  opacity: 0.75;
-  z-index: 0;
-  transition: opacity 260ms ease, transform 260ms ease;
+/* Le boîtier se tourne déjà vers le curseur (`inclinerBoitier`) ; on lui donne
+   simplement l'échelle d'une pièce maîtresse. */
+.rpg-coffret__boite .rpg-deckbox {
+  --bw: clamp(104px, min(13vw, 19vh), 156px);
 }
 
-.rpg-coffret__boite:hover::after,
-.rpg-coffret__boite:focus-visible::after {
-  opacity: 1;
-  transform: scale(1.04);
-}
-
-/* Les teintes des trois coffrets : elles colorent la laque, le sceau, la
-   tranche et la jauge — jamais la peinture de la mythique. */
+/* Les teintes des trois coffrets : elles colorent la lumière, les poussières
+   et le halo — jamais la peinture du boîtier. */
 .rpg-coffret__boite--sable { --teinte: #d8bc86; }
 .rpg-coffret__boite--braise { --teinte: #e2724a; }
 .rpg-coffret__boite--neige { --teinte: #9fd4f2; }
 .rpg-coffret__boite--eau { --teinte: #4f9dd6; }
 
-/* La rune du Sablier : un trait, pas un aplat — elle se grave dans la cire. */
-.rpg-coffret__rune {
-  display: inline-block;
-  width: 20px;
-  height: 26px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.rpg-coffret__boite-scene {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-}
-
-.rpg-coffret__boite-volume {
-  --profondeur: clamp(42px, 5vw, 62px);
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 0.94;
-  transform-style: preserve-3d;
-  /* `rotateX` **négatif** : l'arête haute vient vers l'observateur, on voit
-     donc le dessus du coffret — comme sur un présentoir. `rotateY` négatif
-     amène l'arête droite en avant, et découvre la tranche. */
-  transform: rotateX(-12deg) rotateY(-24deg);
-  transition: transform 460ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.rpg-coffret__boite:hover .rpg-coffret__boite-volume,
-.rpg-coffret__boite:focus-visible .rpg-coffret__boite-volume {
-  transform: rotateX(-8deg) rotateY(-17deg) translateY(-7px) scale(1.015);
-}
-
-.rpg-coffret__boite-face {
-  position: absolute;
-  display: block;
-  backface-visibility: visible;
-}
-
-/* ── La face avant ───────────────────────────────────────────────────────── */
-
-.rpg-coffret__boite-face--avant {
-  inset: 0;
-  display: grid;
-  grid-template-rows: 1fr auto auto;
-  overflow: hidden;
-  border-radius: 7px;
-  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 74%, #000);
-  background:
-    linear-gradient(178deg, rgba(255, 255, 255, 0.1), transparent 26%),
-    linear-gradient(155deg, color-mix(in srgb, var(--teinte, #e8b75c) 34%, #17130c) 0%, #14100b 52%, color-mix(in srgb, var(--teinte, #e8b75c) 20%, #0d0a07) 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -18px 28px rgba(0, 0, 0, 0.45);
-  transform: translateZ(0.6px);
-}
-
-/* Le liseré d'or intérieur, à la manière d'un coffret de collection. */
-.rpg-coffret__boite-face--avant::before {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  z-index: 2;
-  pointer-events: none;
-  border: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 42%, transparent);
-  border-radius: 4px;
-}
-
-.rpg-coffret__boite-vitrine {
-  position: relative;
-  display: block;
-  overflow: hidden;
-  min-height: 0;
-  background: #0b0d18;
-}
-
-.rpg-coffret__boite-vitrine img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 24%;
-  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.rpg-coffret__boite:hover .rpg-coffret__boite-vitrine img,
-.rpg-coffret__boite:focus-visible .rpg-coffret__boite-vitrine img {
-  transform: scale(1.06);
-}
-
-/* La peinture se fond dans la laque — uniquement **vers le bas**, là où le bloc
-   imprimé doit rester lisible. Plus de voile teinté sur le reste de
-   l'illustration : la peinture garde ses couleurs. */
-.rpg-coffret__boite-vitrine::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, transparent 52%, rgba(12, 10, 8, 0.46) 80%, rgba(12, 10, 8, 0.96) 100%);
-}
-
-/* Le sceau de cire, en haut à gauche, comme la marque du fabricant. */
-.rpg-coffret__boite-sceau {
-  position: absolute;
-  top: 9px;
-  left: 9px;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  color: #1a1108;
-  background: radial-gradient(circle at 34% 30%, color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff), color-mix(in srgb, var(--teinte, #e8b75c) 48%, #150d05));
-  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.55), inset 0 1px 2px rgba(255, 255, 255, 0.42);
-  transition: transform 320ms ease;
-}
-
-.rpg-coffret__boite:hover .rpg-coffret__boite-sceau {
-  transform: rotate(-8deg);
-}
-
-.rpg-coffret__boite-sceau .rpg-emblem {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
-  color: inherit;
-}
-
-/* La jauge de cartes, en haut à droite : le « 13+ » du coffret. */
-.rpg-coffret__boite-jauge {
-  position: absolute;
-  top: 9px;
-  right: 9px;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: rgba(247, 244, 236, 0.94);
-  color: #17130c;
-  line-height: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-.rpg-coffret__boite-jauge b {
-  font: 800 14px/1 'Orbitron', system-ui, sans-serif;
-  margin-top: 6px;
-}
-
-.rpg-coffret__boite-jauge small {
-  font: 700 6.5px/1 'Orbitron', system-ui, sans-serif;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  color: #5d5445;
-}
+/* ── La légende, sous le boîtier ─────────────────────────────────────────── */
 
 .rpg-coffret__boite-texte {
   display: grid;
+  justify-items: center;
   gap: 2px;
-  padding: 9px 12px 10px;
+  max-width: 100%;
 }
 
 /* La couleur, écrite — et dessinée : l'emblème du Sablier dit d'un coup d'œil
-   de quel élément le coffret est fait, avant même qu'on lise son nom. */
+   de quel élément le coffret est fait. */
 .rpg-coffret__boite-couleur {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   font: 700 9px/1.2 'Orbitron', system-ui, sans-serif;
-  letter-spacing: 2.6px;
+  letter-spacing: 2.4px;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--teinte, #e8b75c) 88%, #fff);
 }
@@ -436,11 +255,9 @@
   height: 13px;
 }
 
-/* L'emblème prend la laque du coffret : la même teinte que le filet, la rune
-   et la jauge. `fill: currentColor` vient de `rpgEmblemes.jsx`, donc rien
-   d'autre à charger — le dessin n'emporte pas sa feuille de style. */
-.rpg-coffret__boite-embleme svg,
-.rpg-coffret__boite-cote-embleme svg {
+/* L'emblème prend la laque du coffret. `fill: currentColor` vient de
+   `rpgEmblemes.jsx` : le dessin n'emporte pas sa feuille de style avec lui. */
+.rpg-coffret__boite-embleme svg {
   display: block;
   width: 100%;
   height: 100%;
@@ -449,134 +266,27 @@
 }
 
 .rpg-coffret__boite-nom {
-  font: 700 clamp(13px, 1.5vw, 16px)/1.2 'Orbitron', system-ui, sans-serif;
+  font: 700 clamp(13px, 1.4vw, 16px)/1.2 'Orbitron', system-ui, sans-serif;
   color: #f6f1e6;
 }
 
 .rpg-coffret__boite-sous {
-  font: 400 11.5px/1.35 'Rajdhani', 'Inter', system-ui, sans-serif;
-  color: #a9b0c6;
+  font: 400 11px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  font-style: normal;
+  color: #b7bed4;
 }
 
-/* La bande du bas, imprimée en sombre sur la laque. */
-.rpg-coffret__boite-bande {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 12px 8px;
-  background: linear-gradient(180deg, #171310, #0b0906);
-  border-top: 1px solid color-mix(in srgb, var(--teinte, #e8b75c) 30%, transparent);
-}
-
-.rpg-coffret__boite-bande b {
-  font: 800 9px/1.2 'Orbitron', system-ui, sans-serif;
-  letter-spacing: 1.4px;
+.rpg-coffret__boite-meta {
+  margin-top: 2px;
+  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.3px;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff);
+  color: #8f97b2;
 }
 
-.rpg-coffret__boite-bande span {
-  font: 600 9px/1.2 'Rajdhani', 'Inter', system-ui, sans-serif;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: #8f8778;
-}
-
-/* ── La tranche droite : elle donne l'épaisseur ──────────────────────────── */
-
-/* La tranche : elle naît de l'arête droite et recule de toute l'épaisseur.
-   `translateZ` **avant** la rotation : la face pivote sur place puis recule,
-   ce qui la place derrière l'arête — et la garde orientée vers l'extérieur. */
-.rpg-coffret__boite-face--cote {
-  top: 0;
-  bottom: 0;
-  right: 0;
-  width: var(--profondeur);
-  transform-origin: 100% 50%;
-  transform: translateZ(calc(var(--profondeur) * -1)) rotateY(90deg);
-  border-radius: 0 7px 7px 0;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0.18) 46%, rgba(0, 0, 0, 0.5)),
-    linear-gradient(180deg, color-mix(in srgb, var(--teinte, #e8b75c) 46%, #140f09) 0%, #100c08 60%, color-mix(in srgb, var(--teinte, #e8b75c) 26%, #0b0806) 100%);
-  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.1);
-}
-
-/* Le filet d'or qui court sur la tranche, et la rune gravée à mi-hauteur. */
-.rpg-coffret__boite-cote-bande {
-  position: absolute;
-  inset: 12% 0 auto;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teinte, #e8b75c) 70%, transparent), transparent);
-}
-
-/* La tranche porte l'emblème de la couleur, estampé à mi-hauteur — comme le
-   symbole d'extension sur une boîte de pré-tirage. */
-.rpg-coffret__boite-cote-embleme {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  translate: -50% -50%;
-  width: 26px;
-  height: 26px;
-  opacity: 0.72;
-}
-
-/* Le dessus : même principe, l'arête haute sert de charnière et la face
-   s'étend vers l'arrière. C'est l'inclinaison du volume qui la rend visible. */
-.rpg-coffret__boite-face--dessus {
-  left: 0;
-  right: 0;
-  top: 0;
-  height: var(--profondeur);
-  transform-origin: 50% 0;
-  transform: translateZ(calc(var(--profondeur) * -1)) rotateX(90deg);
-  border-radius: 7px 7px 0 0;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 60%),
-    linear-gradient(180deg, color-mix(in srgb, var(--teinte, #e8b75c) 40%, #17120c), #0e0b07);
-  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.16);
-}
-
-/* L'intérieur : la bouche du coffre, vue dès que le couvercle bascule. Même
-   arête que lui, mais deux pixels plus bas — fermé, le couvercle la couvre. */
-.rpg-coffret__boite-face--interieur {
-  left: 0;
-  right: 0;
-  top: 0;
-  height: var(--profondeur);
-  transform-origin: 50% 0;
-  transform: translateZ(calc(var(--profondeur) * -1)) rotateX(90deg) translateZ(-2px);
-  background:
-    radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--lueur, #ffe3ab) 30%, #1b1208), #0a0706 76%),
-    #070506;
-  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.92);
-}
-
-.rpg-coffret__boite-interieur-rune {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  translate: -50% -50%;
-  color: color-mix(in srgb, var(--lueur, #ffe3ab) 46%, transparent);
-  opacity: 0.5;
-}
-
-.rpg-coffret__boite-interieur-rune .rpg-coffret__rune {
-  width: 26px;
-  height: 34px;
-}
-
-/* Le vernis du couvercle : un reflet large, fixe, qui accuse le relief. */
-.rpg-coffret__boite-dessus-vernis {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(102deg, transparent 30%, rgba(255, 255, 255, 0.18) 48%, transparent 66%);
-  opacity: 0.7;
-}
-
-/* Le libellé d'appel, sous le coffret — jamais dans le volume. */
+/* Le libellé d'appel, sous la légende. */
 .rpg-coffret__boite-ouvrir {
+  margin-top: 6px;
   font: 700 10px/1 'Orbitron', system-ui, sans-serif;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -588,7 +298,7 @@
 .rpg-coffret__boite:hover .rpg-coffret__boite-ouvrir,
 .rpg-coffret__boite:focus-visible .rpg-coffret__boite-ouvrir {
   opacity: 1;
-  transform: translateY(1px);
+  transform: translateX(2px);
 }
 
 /* ── L'ouverture : la boîte s'ouvre ──────────────────────────────────────── */
@@ -679,61 +389,121 @@
   100% { opacity: 0; transform: scale(2.6); }
 }
 
-/* Le coffre de l'ouverture : **le même volume que sur l'étagère du choix**,
-   posé un peu plus grand, et qui s'ouvre. Tout l'effet est dans l'état
-   `is-ouvert` du volume — la géométrie des faces, elle, ne change pas d'un
-   pixel : c'est le coffret qu'on vient de choisir, pas une autre boîte. */
+/* Le coffre de l'ouverture : **le même boîtier que sur l'étagère du choix**,
+   posé un peu plus grand, et qui s'ouvre.
+
+   Tout l'effet tient en quatre règles, et aucune ne redessine le boîtier :
+
+   - le **fermoir** (`.rpg-deckbox__latch`) saute ;
+   - le **couvercle** est la face du dessus (`--top`), dont la charnière est
+     déplacée sur l'arête arrière : pousser la rotation de 90° à 152° le dresse
+     derrière la boîte ;
+   - la **bouche** (`::after` du corps) apparaît alors — sans elle, le boîtier
+     ouvert montre le vide entre son arête haute et sa face arrière ;
+   - le **corps** monte et tremble sur `translate`/`rotate`, qui s'ajoutent à la
+     pose de trois quarts sans l'écraser. */
 .rpg-coffret__coffre {
   position: relative;
-  width: clamp(248px, 32vw, 344px);
-  aspect-ratio: 0.94;
-  perspective: 1500px;
-  perspective-origin: 50% 42%;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding-bottom: 6px;
 }
 
-/* L'arrivée puis le tremblement : `translate` et `scale` seuls, jamais
-   `transform` — la rotation de trois quarts vit là, et l'écraser d'un coup
-   ferait sauter le volume à plat. */
-.rpg-coffret__boite-volume.is-ouvert {
+.rpg-coffret__coffre .rpg-deckbox {
+  --bw: clamp(150px, 18vw, 208px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Pas de balancement d'étagère pendant la cérémonie : la boîte tremble, c'est
+   tout — et le couvercle doit rester lisible. */
+.rpg-coffret__coffre .rpg-deckbox__sway {
+  animation: none;
+  transform: none;
+}
+
+.rpg-coffret__coffre .rpg-deckbox__body {
   animation:
     rpg-coffret-coffre-arrive 560ms cubic-bezier(0.2, 0.9, 0.25, 1) both,
-    rpg-coffret-coffre-tremble 170ms 660ms 3 ease-in-out;
+    rpg-coffret-coffre-tremble 170ms 700ms 3 ease-in-out;
 }
 
 @keyframes rpg-coffret-coffre-arrive {
-  from { opacity: 0; translate: 0 30px; scale: 0.72; }
+  from { opacity: 0; translate: 0 34px; scale: 0.7; }
   to { opacity: 1; translate: 0 0; scale: 1; }
 }
 
 @keyframes rpg-coffret-coffre-tremble {
-  0%, 100% { translate: 0 0; }
-  28% { translate: -2.5px 1px; rotate: -0.5deg; }
-  68% { translate: 2.5px -1px; rotate: 0.5deg; }
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  28% { translate: -2.5px 1px; rotate: -0.6deg; }
+  68% { translate: 2.5px -1px; rotate: 0.6deg; }
 }
 
-/* Le sceau de cire se fend, tourne et tombe. */
-.rpg-coffret__boite-scene--ouverture .rpg-coffret__boite-sceau {
-  animation: rpg-coffret-sceau-fend 620ms 540ms cubic-bezier(0.3, 0.7, 0.35, 1) both;
+/* Le fermoir saute — c'est le sceau qui cède, dans la langue du boîtier. */
+.rpg-coffret__coffre .rpg-deckbox__latch {
+  animation: rpg-coffret-fermoir-saute 560ms 520ms cubic-bezier(0.3, 0.8, 0.35, 1) both;
 }
 
-@keyframes rpg-coffret-sceau-fend {
-  0% { opacity: 1; transform: scale(1) rotate(0deg); filter: brightness(1); }
-  32% { opacity: 1; transform: scale(1.22) rotate(-7deg); filter: brightness(1.9); }
-  100% { opacity: 0; transform: scale(0.35) rotate(26deg) translateY(-12px); filter: brightness(2.4); }
+@keyframes rpg-coffret-fermoir-saute {
+  0% { opacity: 1; transform: translateX(-50%) scale(1); filter: brightness(1); }
+  30% { opacity: 1; transform: translateX(-50%) scale(1.3); filter: brightness(2.2); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(14px); filter: brightness(2.6); }
 }
 
-/* Le couvercle bascule sur son arête arrière. La face du dessus est née de
-   cette arête (`transform-origin: 50% 0` + `translateZ(-profondeur)`) : il
-   suffit de pousser la rotation au-delà de 90°, et le couvercle se dresse
-   derrière la boîte au lieu de rester posé dessus. */
-.rpg-coffret__boite-volume.is-ouvert .rpg-coffret__boite-face--dessus {
-  animation: rpg-coffret-couvercle-ouvre 860ms 860ms cubic-bezier(0.32, 1.02, 0.4, 1) both;
+/* Le couvercle bascule sur l'arête arrière. */
+.rpg-coffret__coffre .rpg-deckbox__face--top {
+  top: 0;
+  transform-origin: 50% 0;
+  transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg);
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  animation: rpg-coffret-couvercle-ouvre 860ms 880ms cubic-bezier(0.32, 1.02, 0.4, 1) both;
 }
 
 @keyframes rpg-coffret-couvercle-ouvre {
-  0% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(90deg); }
-  55% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(120deg); }
-  100% { transform: translateZ(calc(var(--profondeur) * -1)) rotateX(152deg); }
+  0% { transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg); }
+  55% { transform: translateZ(calc(var(--bd) * -1)) rotateX(120deg); }
+  100% { transform: translateZ(calc(var(--bd) * -1)) rotateX(152deg); }
+}
+
+/* La bouche du boîtier : la même arête que le couvercle, deux pixels plus bas,
+   pour que le couvercle la couvre tant qu'il est fermé. */
+.rpg-coffret__coffre .rpg-deckbox__body::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--bd);
+  transform-origin: 50% 0;
+  transform: translateZ(calc(var(--bd) * -1)) rotateX(90deg) translateZ(-2px);
+  border-radius: calc(var(--bw) * 0.03);
+  background:
+    radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--glow) 46%, #1b1208), #090605 76%),
+    #070506;
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.92);
+}
+
+/* La légende de la cérémonie : le nom et le sous-titre, sous le boîtier. */
+.rpg-coffret__coffre-titre {
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  font: 700 clamp(13px, 1.5vw, 17px)/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1px;
+  color: #f6f1e6;
+  text-align: center;
+  animation: rpg-coffret-apparait 620ms 320ms ease both;
+}
+
+.rpg-coffret__coffre-sous {
+  position: relative;
+  z-index: 1;
+  font: 400 11px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #b7bed4;
+  text-align: center;
+  animation: rpg-coffret-apparait 620ms 420ms ease both;
 }
 
 /* La lumière monte du fond de la boîte. Elle vit **hors** du volume : une
@@ -786,12 +556,6 @@
   0% { opacity: 0; scale: 0.35; rotate: -12deg; }
   40% { opacity: 0.8; }
   100% { opacity: 0.35; scale: 1.15; rotate: 8deg; }
-}
-
-/* Le volume passe devant la lumière. */
-.rpg-coffret__coffre > .rpg-coffret__boite-scene {
-  position: relative;
-  z-index: 1;
 }
 
 /* Les éclats de cire et les étincelles, autour du sceau. */
@@ -1222,20 +986,14 @@
     gap: 22px;
   }
 
-  /* Sur un téléphone, trois volumes empilés : le coffret reste vu de trois
-     quarts, mais avec moins de recul et une épaisseur plus franche. */
-  .rpg-coffret__boite-volume {
-    --profondeur: 46px;
-    transform: rotateX(-9deg) rotateY(-20deg);
+  /* Sur un téléphone, trois boîtiers empilés : un peu plus petits, et la
+     légende respire. */
+  .rpg-coffret__boite .rpg-deckbox {
+    --bw: clamp(96px, 34vw, 132px);
   }
 
-  .rpg-coffret__boite:hover .rpg-coffret__boite-volume,
-  .rpg-coffret__boite:focus-visible .rpg-coffret__boite-volume {
-    transform: rotateX(-7deg) rotateY(-15deg) translateY(-4px);
-  }
-
-  .rpg-coffret__boite-volume {
-    aspect-ratio: 1.02;
+  .rpg-coffret__boite {
+    gap: 2px;
   }
 
   /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
@@ -1266,8 +1024,8 @@
     transform: rotateX(4deg) rotateY(9deg);
   }
 
-  .rpg-coffret__coffre {
-    width: min(280px, 82vw);
+  .rpg-coffret__coffre .rpg-deckbox {
+    --bw: clamp(132px, 40vw, 172px);
   }
 
   .rpg-coffret__panneau {
