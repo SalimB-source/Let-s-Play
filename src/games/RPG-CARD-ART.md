@@ -829,9 +829,25 @@ change de matière :
 
 - **Os et suie** : le blanc devient ivoire mort, le fond devient noir de four.
 - **Or terni** : l'or ne brille plus, il est piqué, rayé, presque du bronze.
-- **Violet → bleu de nuit** : le violet d'origine bascule vers un bleu froid
-  (rouge × 0,98, vert × 1,00, bleu × 1,09, saturation × 0,96). Assez pour
-  refroidir, pas assez pour confondre le set avec l'Eau.
+- **Violet de nuit** : le violet d'origine revient — c'est la couleur du set —
+  mais **comme teinte seulement**, appliquée à la peinture, jamais en CSS :
+
+  | Réglage | Valeur |
+  | --- | --- |
+  | Couleur | `#5b2a86` |
+  | Mode | blend |
+  | Force | 18 % |
+  | Saturation | × 1,03 |
+
+  Assez pour teinter les ombres et les pierres, trop peu pour **lilas les
+  blancs** : les pages des *Feuillets*, le linceul de la *Momie* et le linge de
+  la *Gardienne* restent de l'ivoire. Testé à 10, 18, 22 et 25 % : au-delà de
+  20 % le papier vire au mauve et l'os devient bonbon. C'est la marque
+  `tenebres-os-cendres-v2` — la même peinture, avec le violet remis.
+
+  **Les six cartes du Corbeau des neuf nuits ne le reçoivent pas** : elles
+  portent `corbeau-neuf-nuits-v1`, restent franchement froides, et c'est ce
+  contraste qui donne au set sa profondeur.
 - **Une seule source** : une lampe à huile, une fente de jour, jamais deux.
 
 ### Premier lot : l'atelier et les serviteurs

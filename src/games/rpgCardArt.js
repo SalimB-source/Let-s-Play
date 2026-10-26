@@ -228,35 +228,39 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
   // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
-  // la suie et à l'or terni, le violet ramené à un bleu de nuit pour ne pas
-  // confondre le set avec l'Eau. Premier lot : l'atelier et les serviteurs.
-  'khopesh-d-or': 'tenebres-os-cendres-v1',
-  'chacal-du-seuil': 'tenebres-os-cendres-v1',
-  'ouvrier-du-natron': 'tenebres-os-cendres-v1',
-  'gardienne-de-la-balance': 'tenebres-os-cendres-v1',
-  'scribe-des-feuillets': 'tenebres-os-cendres-v1',
-  'pretre-de-la-bouche': 'tenebres-os-cendres-v1',
-  'ureus-du-seuil': 'tenebres-os-cendres-v1',
+  // la suie et à l'or terni. Puis `-v2` : le violet d'origine revient, mais
+  // **comme teinte de set seulement** — un mélange de 18 % de #5b2a86 en mode
+  // blend, saturation × 1,03, appliqué à la peinture et non en CSS. Assez pour
+  // teinter les ombres, trop peu pour lilas les blancs. Les six cartes du
+  // Corbeau des neuf nuits ne le reçoivent pas : elles portent leur propre
+  // marque et restent franchement froides.
+  'khopesh-d-or': 'tenebres-os-cendres-v2',
+  'chacal-du-seuil': 'tenebres-os-cendres-v2',
+  'ouvrier-du-natron': 'tenebres-os-cendres-v2',
+  'gardienne-de-la-balance': 'tenebres-os-cendres-v2',
+  'scribe-des-feuillets': 'tenebres-os-cendres-v2',
+  'pretre-de-la-bouche': 'tenebres-os-cendres-v2',
+  'ureus-du-seuil': 'tenebres-os-cendres-v2',
   // Deuxième lot : les figures du seuil, les masques et les magies du livre.
   // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
   // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
-  'momie-de-lin': 'tenebres-os-cendres-v1',
-  'ibis-des-comptes': 'tenebres-os-cendres-v1',
-  'celle-qui-pese': 'tenebres-os-cendres-v1',
-  'la-devoreuse': 'tenebres-os-cendres-v1',
-  'celui-qui-juge': 'tenebres-os-cendres-v1',
-  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v1',
-  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v1',
-  'papyrus': 'tenebres-os-cendres-v1',
-  'nom-efface': 'tenebres-os-cendres-v1',
-  'offrande-de-lin': 'tenebres-os-cendres-v1',
+  'momie-de-lin': 'tenebres-os-cendres-v2',
+  'ibis-des-comptes': 'tenebres-os-cendres-v2',
+  'celle-qui-pese': 'tenebres-os-cendres-v2',
+  'la-devoreuse': 'tenebres-os-cendres-v2',
+  'celui-qui-juge': 'tenebres-os-cendres-v2',
+  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v2',
+  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v2',
+  'papyrus': 'tenebres-os-cendres-v2',
+  'nom-efface': 'tenebres-os-cendres-v2',
+  'offrande-de-lin': 'tenebres-os-cendres-v2',
   // Troisième lot : les trois pesées et les deux lieux. Le set Ténèbres est
   // clos — 28 cartes jouables, toutes à l'huile.
-  'le-poids': 'tenebres-os-cendres-v1',
-  'les-feuillets': 'tenebres-os-cendres-v1',
-  'la-grande-pesee': 'tenebres-os-cendres-v1',
-  'la-derniere-pesee': 'tenebres-os-cendres-v1',
-  'tour-des-tenebres': 'tenebres-os-cendres-v1',
+  'le-poids': 'tenebres-os-cendres-v2',
+  'les-feuillets': 'tenebres-os-cendres-v2',
+  'la-grande-pesee': 'tenebres-os-cendres-v2',
+  'la-derniere-pesee': 'tenebres-os-cendres-v2',
+  'tour-des-tenebres': 'tenebres-os-cendres-v2',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
