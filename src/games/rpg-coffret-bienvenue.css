@@ -716,8 +716,8 @@
    (`::before`, flou), jamais un reflet qui balaie l'illustration. */
 
 .rpg-coffret__carte {
-  --largeur-carte: 108px;
-  --epaisseur-carte: 6px;
+  --largeur-carte: 128px;
+  --epaisseur-carte: 7px;
   --bord-carte: rgba(255, 255, 255, 0.16);
   --tranche-carte: #232838;
   --lueur-carte: transparent;
@@ -887,15 +887,16 @@
 
 /* ── Les quatre raretés ──────────────────────────────────────────────────── */
 
-/* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot. */
+/* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot,
+   mais assez grande pour que sa peinture se lise sans plisser les yeux. */
 .rpg-coffret__carte--commune {
-  --largeur-carte: 108px;
+  --largeur-carte: 128px;
   --lueur-force: 0;
 }
 
 /* Inhabituelle : le même gabarit, un halo d'acier à peine perceptible. */
 .rpg-coffret__carte--inhabituelle {
-  --largeur-carte: 108px;
+  --largeur-carte: 128px;
   --bord-carte: rgba(120, 170, 235, 0.42);
   --tranche-carte: #22314f;
   --lueur-carte: rgba(77, 154, 255, 0.55);
@@ -1049,13 +1050,13 @@
   /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
      reste la plus petite, la mythique tient l'écran sans le déborder. */
   .rpg-coffret__carte {
-    --largeur-carte: 96px;
-    --epaisseur-carte: 5px;
+    --largeur-carte: 112px;
+    --epaisseur-carte: 6px;
   }
 
   .rpg-coffret__carte--commune,
   .rpg-coffret__carte--inhabituelle {
-    --largeur-carte: 96px;
+    --largeur-carte: 112px;
   }
 
   .rpg-coffret__carte--rare {

@@ -111,8 +111,8 @@ La **rareté**, elle, se lit désormais à une lueur — mais une lueur qui vit
 
 | rareté | lueur | anneau | taille |
 | --- | --- | --- | --- |
-| commune | aucune | gris clair | 108 px |
-| inhabituelle | halo d'acier, à peine perceptible | acier | 108 px |
+| commune | aucune | gris clair | 128 px |
+| inhabituelle | halo d'acier, à peine perceptible | acier | 128 px |
 | rare | halo froid franc | bleu froid | 160 px |
 | mythique | halo d'or qui respire (4,6 s) | double anneau d'or | 296 px au plus |
 
