@@ -48,12 +48,6 @@ export default function Reviews(){
   const d = t.reviews.dossiers;
   const sr = t.reviews.shortReview;
   const tcl = tclFeature[lang] || tclFeature.fr;
-  // Les points du test se partagent autour du Short, centré : première
-  // moitié à gauche (avec meta + chapeau), seconde moitié à droite,
-  // close par la note.
-  const shortMid = Math.ceil(sr.points.length / 2);
-  const shortPointsStart = sr.points.slice(0, shortMid);
-  const shortPointsEnd = sr.points.slice(shortMid);
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
     e.preventDefault();
@@ -106,11 +100,11 @@ export default function Reviews(){
           </div>
         </div>
         <div className="short-review-grid">
-          <div className="short-review-copy short-review-copy--start">
+          <div className="short-review-copy">
             <span className="short-review-meta">{sr.meta}</span>
             <p className="short-review-kicker">{sr.kicker}</p>
             <ul className="short-review-points">
-              {shortPointsStart.map((point) => (
+              {sr.points.map((point) => (
                 <li key={point.lead}><strong>{point.lead}</strong> {point.body}</li>
               ))}
             </ul>
@@ -118,13 +112,7 @@ export default function Reviews(){
           <div className="short-review-player hud-frame">
             <iframe src={youTubeEmbedUrl(shortReviewVideo.id)} title={shortReviewVideo.title} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen />
           </div>
-          <div className="short-review-copy short-review-copy--end">
-            <ul className="short-review-points">
-              {shortPointsEnd.map((point) => (
-                <li key={point.lead}><strong>{point.lead}</strong> {point.body}</li>
-              ))}
-            </ul>
-            <a className="arrow-link" href={shortReviewVideo.href} target="_blank" rel="noreferrer">{sr.watch} <Arrow/></a>
+          <aside className="short-review-verdict">
             <div className={`short-review-score tier-${scoreTier(shortReviewVideo.score)}`}>
               <div className="short-review-score-top">
                 <span className="short-review-score-kicker">{sr.scoreKicker}</span>
@@ -135,8 +123,13 @@ export default function Reviews(){
                 <span className="short-review-score-max">/10</span>
               </div>
               <div className="short-review-score-bar"><i style={{ width: `${shortReviewVideo.score * 10}%` }} /></div>
+              <div className="short-review-summary">
+                <span className="short-review-summary-kicker">{sr.summaryKicker}</span>
+                <p>{sr.summary}</p>
+              </div>
             </div>
-          </div>
+            <a className="arrow-link" href={shortReviewVideo.href} target="_blank" rel="noreferrer">{sr.watch} <Arrow/></a>
+          </aside>
         </div>
       </section>
 
