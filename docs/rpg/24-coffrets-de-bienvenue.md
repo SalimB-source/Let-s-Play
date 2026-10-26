@@ -55,6 +55,36 @@ La même image est imprimée sur le couvercle du coffre qui s'ouvre, sous la
 même référence `data-rpg-coffret-vitrine` — la vitrine et l'écran ne peuvent
 pas se contredire.
 
+### Le paquet est un volume, pas une vignette
+
+Le paquet n'est pas un rectangle peint : c'est une **boîte fermée**, vue de trois
+quarts, comme les coffrets de pré-tirage posés sur un comptoir. Trois faces
+assemblées en 3D sous une `perspective` :
+
+- la **face avant** (`--avant`, à `z = 0`) porte la peinture de la mythique sur
+  les deux tiers hauts, le sceau de cire à l'arête gauche, la jauge circulaire
+  « 30 cartes » à l'arête droite, puis le bloc imprimé — couleur, nom du coffret,
+  sous-titre — et la bande noire du bas (« 1 mythique · 3 rares · trente
+  cartes ») ;
+- la **tranche droite** (`--cote`) naît de l'arête droite
+  (`transform-origin: 100% 50%`), pivote d'un quart de tour puis recule de toute
+  l'épaisseur : elle porte le filet d'or et la rune gravée ;
+- le **dessus** (`--dessus`) naît de l'arête haute (`transform-origin: 50% 0`),
+  bascule vers le ciel et recule : c'est le vernis du couvercle.
+
+Le volume est ensuite incliné — `rotateX(-12deg) rotateY(-24deg)`. **Les deux
+signes sont négatifs pour une raison** : `rotateX` positif renverrait le dessus
+derrière la boîte (on ne verrait que son arête), `rotateY` positif cacherait la
+tranche. Les faces cachées sont construites avec leur normale tournée vers
+l'extérieur (`translateZ(-profondeur)` **avant** la rotation), sinon le
+navigateur les peint par l'arrière et les dégradés se lisent à l'envers.
+
+L'épaisseur (`--profondeur`) est franche — `clamp(42px, 5vw, 62px)` — parce
+qu'en dessous d'une vingtaine de pixels de tranche visible, l'œil ne lit plus un
+volume mais une image légèrement penchée. Au survol et au focus clavier, le
+volume se redresse et monte de quelques pixels ; rien d'autre ne bouge, et
+`prefers-reduced-motion` supprime la transition.
+
 Les illustrations sont chargées **sans `loading="lazy"`** : dans un calque
 `position: fixed`, un navigateur peut ne jamais déclencher le chargement d'une
 image différée, et la zone restait noire. Si l'URL versionnée (`?v=…`) échoue,
@@ -69,7 +99,7 @@ choix vaut pour la cérémonie du **booster** (`rpg-souk.css`), où les lueurs
 dorée et violette qui respiraient autour des cartes ont été retirées : la
 rareté se lit à la bordure, jamais au rayonnement.
 
-## 3. La cérémonie, par vagues
+## 4. La cérémonie, par vagues
 
 L'ouverture ne montre pas trente cartes d'un coup. Trois vagues se succèdent,
 dans cet ordre :
@@ -82,7 +112,7 @@ Chaque carte entre avec un retard croissant (`--rang`), et la barre de jalons
 indique où l'on en est. `prefers-reduced-motion` présente tout d'un coup, sans
 sortie ni flottement.
 
-## 4. La dotation, remplacée — pas amputée
+## 5. La dotation, remplacée — pas amputée
 
 `collectionJoueur` (`rpgCollection.js`) prend une source de plus : le coffret.
 
@@ -94,7 +124,7 @@ sortie ni flottement.
 - L'écran ne s'impose jamais à quelqu'un qui a déjà joué : un étage vaincu, des
   acquis ou une collection le ferment (`coffretBienvenueNecessaire`).
 
-## 5. Plus aucun deck de base
+## 6. Plus aucun deck de base
 
 Le coffret **remplace aussi la vieille étagère de départ**. `RPG_DECKS`
 (`rpgCards.js`) est vide : le joueur ne reçoit plus trois paquets tout faits,
@@ -150,7 +180,7 @@ enregistrement tardif n'écrase pas le deck de départ.
 - **Le sorcier** joue toujours un archétype (`deckAdverseParDefaut` prend le
   rôle `adversaire`, la Cour des Djinns), jamais le deck du joueur.
 
-## 6. Ce que les tests protègent
+## 7. Ce que les tests protègent
 
 `tests/rpg-coffret-bienvenue.test.js` :
 

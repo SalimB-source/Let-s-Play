@@ -157,7 +157,17 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
   );
 }
 
-/** Un coffret fermé, sur l'étagère du choix. Le paquet porte sa peinture. */
+/**
+ * Un coffret fermé, sur l'étagère du choix — un **vrai volume**, pas une
+ * vignette : face avant (la peinture de la mythique, le sceau de cire, la
+ * jauge de cartes, la bande de présentation), tranche droite et dessus, vus de
+ * trois quarts comme un coffret posé sur son présentoir.
+ *
+ * Les trois faces sont peintes séparément et assemblées en `preserve-3d` :
+ * la face avant reste à `z = 0`, la tranche et le dessus filent **vers
+ * l'arrière** (`rotateY(-90deg)` et `rotateX(-90deg)` sur leur arête), ce qui
+ * donne l'épaisseur du coffret sans jamais déformer la peinture.
+ */
 function BoiteCoffret({ coffret, onChoisir }) {
   const identite = COFFRETS_IDENTITE[coffret.couleur] ?? {};
   // La **mythique de vitrine** de la couleur, pas celle qui sera tirée : le
@@ -172,23 +182,38 @@ function BoiteCoffret({ coffret, onChoisir }) {
       data-rpg-coffret-vitrine={vitrine?.id}
       aria-label={`Ouvrir ${coffret.nom} — ${identite.sousTitre ?? ''} : une mythique, trois rares et vingt-six autres cartes`}
     >
-      <span className="rpg-coffret__boite-vitrine">
-        {vitrine ? <IllustrationCarte carte={vitrine} /> : null}
-        <span className="rpg-coffret__boite-vitrine-mention">
-          <small>Mythique</small>
-          <strong>{vitrine?.name ?? ''}</strong>
+      <span className="rpg-coffret__boite-scene">
+        <span className="rpg-coffret__boite-volume">
+          {/* Les faces cachées d'abord : elles passent derrière la face avant. */}
+          <span className="rpg-coffret__boite-face rpg-coffret__boite-face--cote" aria-hidden="true">
+            <span className="rpg-coffret__boite-cote-bande" />
+            <span className="rpg-coffret__boite-cote-rune"><RuneSablier /></span>
+          </span>
+          <span className="rpg-coffret__boite-face rpg-coffret__boite-face--dessus" aria-hidden="true">
+            <span className="rpg-coffret__boite-dessus-vernis" />
+          </span>
+          <span className="rpg-coffret__boite-face rpg-coffret__boite-face--avant">
+            <span className="rpg-coffret__boite-vitrine">
+              {vitrine ? <IllustrationCarte carte={vitrine} /> : null}
+              <span className="rpg-coffret__boite-sceau" aria-hidden="true">
+                <RuneSablier />
+              </span>
+              <span className="rpg-coffret__boite-jauge" aria-hidden="true">
+                <b>30</b>
+                <small>cartes</small>
+              </span>
+            </span>
+            <span className="rpg-coffret__boite-texte">
+              <span className="rpg-coffret__boite-couleur">{ELEMENT_LABELS[coffret.couleur] ?? coffret.couleur}</span>
+              <span className="rpg-coffret__boite-nom">{coffret.nom}</span>
+              <span className="rpg-coffret__boite-sous">{identite.sousTitre}</span>
+            </span>
+            <span className="rpg-coffret__boite-bande">
+              <b>1 mythique</b>
+              <span>3 rares · trente cartes</span>
+            </span>
+          </span>
         </span>
-      </span>
-      <span className="rpg-coffret__boite-sceau" aria-hidden="true">
-        <RuneSablier />
-      </span>
-      <span className="rpg-coffret__boite-ruban" aria-hidden="true" />
-      <span className="rpg-coffret__boite-couleur">{ELEMENT_LABELS[coffret.couleur] ?? coffret.couleur}</span>
-      <span className="rpg-coffret__boite-nom">{coffret.nom}</span>
-      <span className="rpg-coffret__boite-sous">{identite.sousTitre}</span>
-      <span className="rpg-coffret__boite-contenu">
-        <strong>30 cartes</strong>
-        <span>1 mythique · 3 rares</span>
       </span>
       <span className="rpg-coffret__boite-ouvrir" aria-hidden="true">Ouvrir →</span>
     </button>
@@ -204,6 +229,7 @@ function CoffretQuiSOuvre({ couleur, nom, vitrine = null }) {
         <i /><i /><i />
       </span>
       <div className="rpg-coffret__coffre">
+        <span className="rpg-coffret__coffre-flanc" aria-hidden="true" />
         <span className="rpg-coffret__coffre-fond" />
         <span className="rpg-coffret__coffre-lumiere" />
         <span className="rpg-coffret__coffre-rayons" />
@@ -213,6 +239,7 @@ function CoffretQuiSOuvre({ couleur, nom, vitrine = null }) {
           <span className="rpg-coffret__coffre-nom">{nom}</span>
         </div>
         <div className="rpg-coffret__coffre-couvercle">
+          <span className="rpg-coffret__coffre-couvercle-flanc" aria-hidden="true" />
           <span className="rpg-coffret__coffre-plaque">
             {vitrine ? <img src={cardArt(vitrine)} alt="" width="176" height="220" /> : null}
           </span>
