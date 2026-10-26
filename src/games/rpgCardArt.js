@@ -241,6 +241,17 @@ const CARD_ART_CACHE_VERSIONS = {
   'lame-de-mer': 'eau-souls-bleue-v1',
   'le-routier': 'eau-souls-bleue-v1',
   'eau-de-la-source': 'eau-souls-bleue-v1',
+  // Les bêtes et les gardiens — deuxième lot : les unes étaient trop claires,
+  // les autres carrément absentes du registre. Toutes au bleu de nuit.
+  'leviathan': 'eau-souls-bleue-v1',
+  'bakunawa': 'eau-souls-bleue-v1',
+  'jormungandr': 'eau-souls-bleue-v1',
+  'seigneur-des-machoires': 'eau-souls-bleue-v1',
+  'vipere-de-verre': 'eau-souls-bleue-v1',
+  'tour-des-flots': 'eau-souls-bleue-v1',
+  'sonneur-fele': 'eau-souls-bleue-v1',
+  'veilleuse-des-citernes': 'eau-souls-bleue-v1',
+  'silence-decume': 'eau-souls-bleue-v1',
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

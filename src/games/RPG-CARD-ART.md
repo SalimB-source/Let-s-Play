@@ -722,9 +722,34 @@ C'est une **règle du set**, appliquée dès la peinture pour toute la suite
 (marque `eau-souls-bleue-v1`), et pas un filtre de navigateur : l'image livrée
 est déjà bleue, en duel comme en vignette.
 
-Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent neuf
-illustrations alternatives**, dont quinze à l'échelle et quatre-vingt-quatorze
-en boutique.
+### Deuxième lot : les bêtes et les gardiens
+
+- **Léviathan** — la tête et un tronçon de dos seulement, le reste sous l'eau
+  noire : on ne le voit jamais en entier, comme le dit sa saveur.
+- **Bakunawa** — le serpent dressé contre la pleine lune, gueule ouverte sur
+  elle, la lune pour seule lumière.
+- **Jörmungandr** — vu d'une falaise, son corps barre tout l'horizon et
+  s'enfonce aux deux bouts.
+- **Le Seigneur des mâchoires** — le crocodile de la crue, à demi hissé sur la
+  berge noyée, une lanterne de village pour seule note chaude.
+- **La Vipère de verre** — le serpent de verre sur la margelle d'une citerne,
+  ses reflets froids jetés sur la pierre.
+- **La Tour des flots** — la tour seule en mer, démâtée, le ressac qui monte
+  plus haut qu'elle. Elle était peinte **en paysage** (1376 × 768) : c'est la
+  première carte du catalogue recomposée en portrait.
+- **Le Sonneur fêlé** — le vieil homme à la corde dans le clocher noyé, sa
+  cloche fendue au-dessus de lui.
+- **La Veilleuse des citernes** — la gardienne au trousseau de clés, lanterne
+  et courte lance, sur la margelle.
+- **Le Silence d'écume** — l'écume refermée sur le sort comme une main, le
+  visage du sorcier à peine lisible derrière.
+
+**Le Kraken** reste pour le dernier lot : la première peinture rendait un
+**serpent** — pas un tentacule. Il sera repris avec le bras seul, sans tête.
+
+Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent dix-huit
+illustrations alternatives**, dont quinze à l'échelle et cent trois en
+boutique.
 
 ## La passe des Furies (octobre 2026)
 

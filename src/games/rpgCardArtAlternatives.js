@@ -204,6 +204,15 @@ const DEFINITIONS = [
   ['lame-de-mer', 'La lame de mer'],
   ['le-routier', 'Le routier'],
   ['eau-de-la-source', 'L’eau de la source'],
+  ['leviathan', 'Le Léviathan'],
+  ['bakunawa', 'Bakunawa'],
+  ['jormungandr', 'Jörmungandr'],
+  ['seigneur-des-machoires', 'Le Seigneur des mâchoires'],
+  ['vipere-de-verre', 'La vipère de verre'],
+  ['tour-des-flots', 'La tour des flots'],
+  ['sonneur-fele', 'Le sonneur fêlé'],
+  ['veilleuse-des-citernes', 'La veilleuse des citernes'],
+  ['silence-decume', 'Le silence d’écume'],
 ];
 
 /**
