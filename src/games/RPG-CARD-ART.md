@@ -778,6 +778,43 @@ Les dix-huit anciennes peintures rejoignent `public/cards/alt/` : **cent
 vingt-six illustrations alternatives**, dont quinze à l'échelle et cent onze en
 boutique.
 
+### Le doré du Sable (octobre 2026)
+
+Le set Sable était peint dans la palette commune — cendre et ardoise — et se
+distinguait mal de la Neige au premier regard. Il reçoit, comme l'Eau son bleu
+et les Ténèbres leur violet, une **teinte de set appliquée à la peinture** :
+
+| Réglage | Valeur |
+| --- | --- |
+| Couleur | `#c89a50` |
+| Mode | blend |
+| Force | 18 % |
+| Saturation | × 1,04 |
+
+Testé à 12, 18 et 24 % sur six cartes très différentes — un plein jour
+(`corsaire`), un héros nihonga (`salem`), une planche colorée
+(`sandales-de-tislit`), une arme (`grappin-d-abordage`), un portrait
+(`la-barbe-rousse`) et un mur (`tour-de-sable`). À 12 % on ne voit presque rien,
+à 24 % les chairs virent au bronze ; **18 %** est le même dosage que le violet
+des Ténèbres, ce qui garde une logique commune aux deux sets.
+
+Deux effets secondaires heureux :
+
+- **`corsaire`** était la carte la plus claire du catalogue (41 % de clarté,
+  plein jour, ciel bleu, aucune clé de cache). Le doré la ramène à un crépuscule
+  et corrige en partie l'écart relevé dans l'audit.
+- Les héros (Salem, Tarek, Tin Hinan) gardent leur peinture nihonga — le doré
+  la réchauffe sans la dénaturer.
+
+**`la-barbe-noire` vit dans les Ténèbres** : elle garde sa peinture du Sable et
+reçoit donc le doré, ce qui est cohérent — c'est un portrait de pirate, pas un
+scribe de la nécropole.
+
+Marque `sable-souls-dore-v2` sur les quarante-six cartes de la passe. Les deux
+cartes sans clé de cache (`corsaire`, `chien-de-sable`) sont dorées mais **ne
+reçoivent pas de clé** : leur peinture est antérieure à la convention, et la
+leur en ajouter ferait croire à un remplacement.
+
 ### Bilan du catalogue
 
 | Élément | Cartes | Dans l'huile sombre | Reste |
@@ -789,9 +826,11 @@ boutique.
 | Eau | 27 | 27 | — |
 
 **Le catalogue est entièrement repeint.** Les cinq sets tiennent désormais la
-même huile sombre, chacun avec sa marque de set : cendre et ardoise pour le
-Sable et la Neige, ambre pour la Braise, **bleu de nuit** pour l'Eau, **os et
-or terni** pour les Ténèbres.
+même huile sombre, chacun avec sa marque de set : **doré** pour le Sable, ambre
+pour la Braise, cendre et ardoise pour la Neige, **bleu de nuit** pour l'Eau,
+**os et violet de nuit** pour les Ténèbres. Le doré du Sable et le violet des
+Ténèbres sont appliqués au même dosage — 18 % de teinte en blend — ce qui garde
+une logique commune d'un set à l'autre.
 
 **Braise était déjà faite** : la dérogation Souls de dix-huit cartes de ce
 document (vingt-neuf au total avec les reprises) a couvert tout le set en 2025
