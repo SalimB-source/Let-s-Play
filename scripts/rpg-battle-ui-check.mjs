@@ -196,12 +196,16 @@ assert.match(battlePage, /onClick=\{\(\) => cliquerCreatureEnnemie\(entite\)\}/,
   'le clic sur une créature adverse agit directement, sans aperçu');
 assert.match(battlePage, /if \(!terrainInactif\) demanderCouleurMana\(event, terrain\);/,
   'le clic sur un terrain produit le mana directement, sans aperçu');
-assert.match(battlePage, /className=\{`rpg-hover-card-preview__type\$\{ligneFamille\}`\}[\s\S]*?className="rpg-hover-card-preview__cost"[\s\S]*?className="rpg-hover-card-preview__rules"[\s\S]*?className="rpg-hover-card-preview__stats"/,
-  'l’aperçu au survol ne contient que le type, le coût, les effets et les statistiques — le type seul prend la teinte de la famille de sort');
+assert.match(battlePage, /className=\{`rpg-hover-card-preview__type\$\{ligneFamille\}`\}[\s\S]*?rpg-hover-card-preview__pastilles[\s\S]*?className="rpg-hover-card-preview__stats"/,
+  'l’aperçu au survol affiche nom, type, mots-clés et statistiques — le type seul prend la teinte de la famille de sort');
+assert.doesNotMatch(battlePage, /rpg-hover-card-preview__cost/,
+  'l’aperçu n’affiche plus le coût : il se lit sur la face de la carte');
 assert.match(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*grid-template-columns:\s*minmax\(190px, 232px\) minmax\(0, 1fr\);[^}]*width:\s*min\(680px, calc\(100vw - 20px\)\);/s,
   'l’aperçu au survol est agrandi à 680 px');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*background:/s,
   'l’aperçu au survol n’a plus de fond principal');
+assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview__cost/,
+  'plus aucun style de coût dans l’aperçu');
 assert.doesNotMatch(battleCss, /\.rpg-hover-card-preview\s*\{[^}]*(?:border|box-shadow):/s,
   'l’aperçu au survol n’a plus de grand cadre ni l’ombre du cadre autour du contenu');
 // L'aperçu de la magie lancée (centré, 1,8 s) doit ressembler EXACTEMENT à l'aperçu rapide : on l'avait
@@ -1016,7 +1020,7 @@ assert.doesNotMatch(battleCss, /\.rpg-board-choice|\.rpg-mode-menu__boards|\.rpg
 // paysage, petites tablettes) : une deuxième ligne pleine largeur, jamais
 // d'onglets qui débordent de l'écran ni passent sous le bouton plein écran.
 assert.match(battleCss, /@media \(min-width: 821px\) and \(max-width: 1100px\) \{\s*\.rpg-mode-menu__header \{ flex-wrap: wrap; \}\s*\.rpg-mode-menu__switch \{ order: 3;[^}]*flex: 0 0 calc\(100% \+ clamp\(14px, 4\.6vw, 74px\) \* 2\);[^}]*overflow-x: auto; scrollbar-width: none; \}\s*\.rpg-mode-menu__switch::-webkit-scrollbar \{ display: none; \}\s*\.rpg-mode-menu__switch button, \.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{ flex: 1 0 auto; min-height: 46px;[^}]*\}\s*\}/,
-  'entre 821 et 1100 px, les six onglets passent sur leur propre ligne, pleine largeur, et se la partagent ; en dernier recours la barre défile sans onglet coupé');
+  'entre 821 et 1100 px, les sept onglets passent sur leur propre ligne, pleine largeur, et se la partagent ; en dernier recours la barre défile sans onglet coupé');
 assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'table-des-heures',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
   'chaque deck du catalogue a son terrain attitré');
 assert.match(plateauxSource, /couleurDominanteDeck/,

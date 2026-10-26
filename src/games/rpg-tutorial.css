@@ -177,36 +177,72 @@
 }
 @keyframes rpg-tutorial-spinner { to { transform: rotate(360deg); } }
 
-/* Les quatre portes du Sablier : deux entrées de tête (le récit, le duel en
-   ligne) et deux raccourcis (partie rapide, tutoriel). Une grille 2 × 2, pour
-   que chaque carte ait la même largeur — et plus de bouton orphelin.
-   Les couleurs des cartes vivent dans `rpg-battle.css`. */
+/* Les quatre modes de l'accueil Jouer : quatre colonnes de carrés sur PC,
+   deux sur téléphone, avec une grande icône par mode. « Apprendre à jouer »
+   quitte la grille : un simple lien texte, plus bas, avec une petite icône et
+   une flèche. Les couleurs et le détail des cartes vivent dans `rpg-battle.css`. */
 .rpg-mode-menu__hero-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  width: min(660px, 100%);
+  width: min(920px, 100%);
   justify-items: stretch;
   align-items: stretch;
 }
-.rpg-mode-menu__hero-actions .rpg-menu-button--tutorial { margin-top: 0; }
-/* Téléphone : une seule colonne, les quatre cartes à pleine largeur. */
-@media (max-width: 620px) {
-  .rpg-mode-menu__hero-actions { grid-template-columns: minmax(0, 1fr); }
+.rpg-mode-menu__apprendre {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 18px;
+  padding: 6px 2px;
+  border: 0;
+  background: none;
+  color: #e8c477;
+  font: 700 13px/1.2 var(--mono, monospace);
+  letter-spacing: .04em;
+  text-align: left;
+  cursor: pointer;
+  transition: color .18s ease;
 }
-.rpg-menu-button--tutorial {
-  min-width: min(270px, 100%);
-  margin-top: 12px;
-  border-color: rgba(242, 212, 142, .58);
-  background: rgba(16, 15, 21, .82);
-  color: #f5d88f;
-  box-shadow: 0 7px 22px rgba(0, 0, 0, .32), inset 0 0 18px rgba(233, 192, 101, .045);
-}
-.rpg-menu-button--tutorial:hover,
-.rpg-menu-button--tutorial:focus-visible {
-  border-color: #f5d88f;
-  background: rgba(70, 49, 29, .93);
+.rpg-mode-menu__apprendre:hover,
+.rpg-mode-menu__apprendre:focus-visible {
   color: #fff0c3;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.rpg-mode-menu__apprendre-icone {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  color: inherit;
+}
+.rpg-mode-menu__apprendre small {
+  color: #bda471;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: .03em;
+}
+.rpg-mode-menu__apprendre-arrow {
+  font-size: 15px;
+  line-height: 1;
+  transition: transform .18s ease;
+}
+.rpg-mode-menu__apprendre:hover .rpg-mode-menu__apprendre-arrow { transform: translate(2px, -2px); }
+@media (max-width: 620px) {
+  .rpg-mode-menu__hero-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .rpg-mode-menu__apprendre {
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 14px;
+  }
+  .rpg-mode-menu__apprendre small { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__apprendre-arrow { transition: none; }
 }
 .rpg-duel-nav__tutorial {
   display: inline-flex;

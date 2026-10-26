@@ -349,14 +349,17 @@ Décisions d'écran qui méritent d'être connues :
   boîtier retenu s'allume d'un liseré de laiton. Le module est partagé avec
   `RpgDuelPage.jsx` (extrait du menu, avec `src/games/rpgCardArt.js` pour les
   URL d'illustration) : aucune copie du coffret à maintenir.
-- **Les six autres onglets du Sablier vivent dans la même scène.** Le Jouer
-  reste le tableau de bord d'entrée ; Histoire, Jeu Solo, Deck, Souk,
-  Catalogue, Paramètres (et le Guide, les Tutoriels) reçoivent l'artwork
-  tamisé, la même gouttière (14 px au téléphone, 56 px au plus large) et un
-  retrait identique sous la barre d'onglets. Dans l'onglet, le « ← Menu » du
-  Souk disparaît — la barre d'onglets le remplace — et une pastille de sortie
-  (`rpg-mode-menu__quitter`) ramène aux jeux, puisque le Sablier couvre la
-  barre du site. `npm run check:rpg-accueil` vérifie ces règles.
+- **Les sept onglets du Sablier vivent dans la même scène.** Le Jouer
+  reste le tableau de bord d'entrée : ses quatre modes (Mode histoire, Duel en
+  ligne, Jouer, Conquête) sont des cartes, et « Apprendre à jouer » est un lien
+  sous la grille. La barre porte Jouer, Deck, Souk, Catalogue, puis — dans un
+  groupe séparé — Profil, Paramètres et Messagerie ; la Conquête n'est plus un
+  onglet. Tous reçoivent l'artwork tamisé, la même gouttière (14 px au
+  téléphone, 56 px au plus large) et un retrait identique sous la barre
+  d'onglets. Dans l'onglet, le « ← Menu » du Souk disparaît — la barre
+  d'onglets le remplace — et une pastille de sortie (`rpg-mode-menu__quitter`)
+  ramène aux jeux, puisque le Sablier couvre la barre du site.
+  `npm run check:rpg-accueil` vérifie ces règles.
 - **Le plateau en ligne est un écran dédié**, pas le duel solo : le solo garde
   son moteur local et ses 9 500 lignes intactes. Le plateau PvP n'a **aucun
   moteur** — il affiche la vue de l'arbitre et transforme chaque geste en
@@ -705,7 +708,7 @@ allée-retour de la carte d'invitation en jsdom (P2), expiration et double envoi
 | `package.json` | `npm run check:rpg-pvp` (35 tests), `npm run check:sablier-arbitre` et `npm run check:rpg-accueil` |
 
 **Le PvP est jouable de bout en bout dans le dépôt** : salon → invitation →
-partie → fin → (revanche à faire, P3). Le jeu solo est inchangé. Il ne reste
+partie → fin → (revanche à faire, P3). La Conquête est inchangée. Il ne reste
 qu'à poser les deux variables d'environnement (§8.9) ; dans l'intervalle,
 `GET /api/sablier-duel` répond `503` et le salon affiche son écran de
 connexion, sans casser le reste du site.

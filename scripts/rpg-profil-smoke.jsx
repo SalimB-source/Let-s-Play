@@ -464,6 +464,9 @@ export async function checkRpgProfilEcran(assert) {
     assert.match(noeud('[data-palier="7"] .rpg-piste__carte').style.backgroundImage, /dos-de-carte\.webp/,
       'peinte avec le dos de carte en vignette');
     assert.ok(noeud('[data-palier="7"] .rpg-piste__sachet'), 'avec le sachet du Souk');
+    assert.ok(noeud('[data-palier="7"] .rpg-souk__sachet-corps'), 'le vrai sachet de la cérémonie du Souk');
+    assert.ok(noeud('[data-palier="7"] .rpg-souk__sachet-corps img'), 'avec la peinture de sa vitrine');
+    assert.ok(noeud('[data-palier="7"] .rpg-souk__sachet-languette'), 'et sa languette crantée');
     assert.equal(donnee('[data-palier="3"]', 'palierGain'), 'rang', 'le jalon, lui, peint son rang');
     assert.ok(noeud('[data-palier="3"]').classList.contains('rpg-piste__palier--rang'),
       'et porte la classe qui lui pose le sachet en coin');

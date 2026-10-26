@@ -94,21 +94,23 @@ assert.match(socialDock, /const dockVisible = !onSocialRoute && !\(onSablierRout
 
 /* ── 3. La messagerie a son onglet dans le menu du jeu ─────────────────────── */
 
-assert.match(duelPage, /className=\{`rpg-mode-menu__messagerie\$\{screen === 'messagerie' \? ' is-active' : ''\}`\}/,
-  'le menu principal du Sablier donne à la messagerie son onglet, dans la barre des modes');
+assert.match(duelPage, /className=\{`rpg-mode-menu__messagerie rpg-mode-menu__onglet--secondaire\$\{screen === 'messagerie' \? ' is-active' : ''\}`\}/,
+  'le menu principal du Sablier donne à la messagerie son onglet, dans le groupe secondaire de la barre des modes');
+assert.match(duelPage, /rpg-mode-menu__onglet--secondaire/g,
+  'l’onglet porte la classe du groupe Profil / Paramètres / Messagerie');
 assert.match(duelPage, /onChangeScreen\('messagerie'\)/,
   'l’onglet Messagerie mène à son propre écran');
 assert.match(duelPage, /<RpgMessageriePanel\s+variante="ecran"/,
   'l’écran de l’onglet est le panneau de messagerie du jeu');
 assert.match(duelPage, /data-rpg-messagerie-onglet=\{messageriePastille\}/,
   'l’onglet porte la pastille des non-lus (repère de test compris)');
-// L’onglet doit SE LIRE : la barre des modes est écrite pour six onglets, et
-// le huitième restait peint hors de l’écran (701 – 1100 px) ou réduit à une
+// L’onglet doit SE LIRE : la barre des modes est écrite pour sept onglets, et
+// le dernier restait peint hors de l’écran (701 – 1100 px) ou réduit à une
 // bulle anonyme (≤ 560 px). Deux garde-fous, un par palier.
 assert.doesNotMatch(battleCss, /rpg-mode-menu__messagerie \.rpg-mode-menu__onglet-libelle \{ display: none/,
   'l’onglet Messagerie garde son mot « Messagerie » même au plus petit format');
 assert.match(battleCss, /@media \(min-width: 701px\) and \(max-width: 1100px\) \{[\s\S]{0,700}?\.rpg-mode-menu__switch \{[\s\S]{0,500}?flex-wrap: wrap;/,
-  'en paysage et sur petite tablette, la barre d’onglets passe à la ligne : le huitième onglet n’est plus coupé hors de l’écran');
+  'en paysage et sur petite tablette, la barre d’onglets passe à la ligne : le dernier onglet n’est plus coupé hors de l’écran');
 assert.match(battleCss, /@media \(max-width: 560px\) \{[\s\S]{0,800}?rpg-mode-menu__messagerie \.rpg-mode-menu__onglet-libelle \{\s*font-size: 8px;/,
   'sur un téléphone de 320 px, le mot « Messagerie » tient quand même sur l’onglet');
 assert.match(duelPage, /useMessages\(\)/, 'le menu lit la messagerie du site pour sa pastille');

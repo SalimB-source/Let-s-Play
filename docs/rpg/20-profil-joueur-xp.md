@@ -392,8 +392,9 @@ en 64 s, arrêté par `prefers-reduced-motion`) et l'éclipse.
 | `src/games/rpgProfilGains.js` | **les gains** : `CADRES`, `TITRES`, `gainsDuNiveau`, `pisteDesGains`, et la lecture qui valide (`cadreDeProfil`, `titreDeProfil`, `cadrePortable`, `titrePortable`) |
 | `src/games/useSablierBourse.js` | `reglerPaliers`, `verserXp`, `fermerMonteeNiveau`, `renommerLeProfil`, `choisirUnEmbleme`, `choisirUnAvatar`, `choisirUnPlateau`, `choisirUnCadre`, `choisirUnTitre` ; rend `profil`, `barreXp`, `boostersEnAttente`, `monteeNiveau` |
 | `src/games/RpgProfilJoueur.jsx` | **l'écran** : présentationnel, il reçoit des états et rend des gestes |
-| `src/games/RpgPisteGains.jsx` | **la piste des gains** : les colonnes façon passe de maîtrise de l'écran Jouer, et le seul endroit où un cosmétique se porte |
-| `src/games/rpg-piste-gains.css` | la piste et ses colonnes, le sachet et son dos de carte, le cadenas, la coche — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
+| `src/games/RpgPisteGains.jsx` | **la piste des gains** : la timeline scrollable de l'écran Jouer, et le seul endroit où un cosmétique se porte |
+| `src/games/RpgPaquetChemin.jsx` | **le vrai paquet** : le sachet du Souk en miniature, sa vitrine et le dos de carte |
+| `src/games/rpg-piste-gains.css` | la timeline, ses jalons espacés, le filet continu, les icônes libres, le cadenas et la coche — feuille à part pour ne pas toucher la queue de `rpg-profil.css` |
 | `src/games/RpgStoryBabEl.jsx` | **le seuil de Bab El** : l'histoire de la cité, montrée à un nouveau joueur au lancement du mode Histoire |
 | `src/games/rpg-story-bab-el.css` | le seuil : le keyart en fond, le voile, la carte de texte |
 | `src/games/rpg-profil.css` | la carte de profil, l'annonce de palier, l'onglet du menu, les cadres du médaillon, la ligne du titre |
@@ -496,7 +497,7 @@ l'adversaire joue toujours chez lui. Le plateau du joueur restant le
 Il n'y a toujours ni pastille « Aléatoire » ni verrou de plateau en début de
 partie : le choix vit sur la carte de profil, comme une préférence de maison.
 
-### 6.2 La piste des gains — des colonnes de passe de maîtrise, sur Jouer
+### 6.2 La piste des gains — une timeline scrollable, sur Jouer
 
 La piste a quitté la carte : elle vit sur l'écran **Jouer**, sous le héros, dans
 la colonne de gauche (en une colonne, elle se glisse juste après le héros, avant
@@ -506,49 +507,49 @@ niveaux. La carte, elle, ne montre plus que ce qui est **déjà** gagné : le ca
 peint autour du médaillon, le titre écrit sous le pseudo.
 
 Le **cadre s'allonge** sur toute la largeur du menu (`grid-column: 1 / -1` sur la
-grille de Jouer) : le héros et les quêtes du jour restent au-dessus, et d'un coup
-d'oeil la bande montre beaucoup plus de colonnes.
+grille de Jouer). La section est **scrollable** : la bande défile à l'horizontale
+(`scroll-snap`, `tabindex="0"` pour le clavier, ouverte sur le palier en cours)
+et le panneau lui-même peut défiler en hauteur sur les petits écrans. Une aide
+« faites défiler » le dit dans l'entête.
 
-La bande se lit comme une passe de maîtrise : une **colonne** par niveau,
-séparées d'un filet, teintées selon l'état — déjà passé, en cours, à venir — et
-dans chaque colonne, de haut en bas :
+La bande se lit comme une **timeline** : les niveaux sont espacés (168 px sur PC,
+136 px sur téléphone), reliés par un filet continu, et chaque jalon porte un
+losange sur la ligne. Les **icônes sont libres** : plus de tuile carrée, plus de
+médaillon rond — seul le glyphe, le rang ou le paquet se voit, avec une ombre
+portée pour se détacher du décor.
+
+Dans chaque jalon, de haut en bas :
 
 - le **repère** « niveau actuel » — la ligne est réservée partout, seule la
   colonne en cours l'écrit, et sa flèche la pointe ;
-- le **numéro** du niveau ;
-- la **coche** des niveaux déjà passés, peinte sur `.is-gagne` (un glyphe, pas un
-  noeud de plus) ;
-- le **filet** qui relie les colonnes : plein derrière soi, au pourcentage de la
-  barre devant soi, vide au-delà. Une seule boîte, deux largeurs en propriétés
-  personnalisées (`--gauche`, `--droite`) ;
-- la **récompense**, reconnaissable d'un coup d'oeil : le sachet du Souk **en
-  volume** — trois faces en perspective (corps doré et son étoile imprimée, flanc
-  sombre, sceau cranté dessus) que la feuille de style fait tourner lentement —
-  et son **dos de carte en miniature** quand le paquet est tout le gain (vignette
-  WebP de 1,3 Ko, `public/profil/dos-de-carte.webp`, découpée par
-  `tools/make-profil-vignettes.mjs` au format 4/5 des cartes) ; le glyphe du rang
-  ou du cosmétique sinon — et quand le niveau gagne autre chose qu'un paquet, le
-  sachet se pose **en coin** de la tuile (`::after`) : **chaque** niveau montre
-  son paquet ;
+- le **numéro** du niveau, puis la **coche** des niveaux déjà passés ;
+- la **récompense**, reconnaissable d'un coup d'oeil : le **vrai sachet du Souk**
+  quand le paquet est tout le gain — les classes `rpg-souk__sachet-*` de la
+  cérémonie d'ouverture, la peinture de la vitrine du rayon et le dos de carte en
+  miniature qui dépasse (`public/profil/dos-de-carte.webp`, 1,3 Ko) — ou le
+  glyphe du rang / du cosmétique. Chaque niveau porte aussi un petit sachet libre
+  en coin : la promesse d'un paquet ne disparaît jamais ;
+- la **ligne de temps** : pleine derrière soi, au pourcentage de la barre devant
+  soi, vide au-delà. Une seule boîte, deux largeurs en propriétés personnalisées
+  (`--gauche`, `--droite`) ;
 - **ce qu'il y a à gagner, écrit** : la **famille** du gain en capitales
   espacées, puis le **nom** de ce gain — « PAQUET · Un paquet du Souk »,
   « RANG · Porteur de lanterne ». Quatre familles, quatre **couleurs** qui
-  teintent la tuile, le glyphe et l'étiquette : paquet ambre `#f2b544`, rang ciel
+  teintent le glyphe, le jalon et l'étiquette : paquet ambre `#f2b544`, rang ciel
   `#66c3e9`, cadre argent `#c9d2dd`, titre vert `#93d483` ;
-- le **cadenas** d'une récompense à venir, peint en CSS au coin de la tuile ;
+- le **cadenas** d'une récompense à venir, peint en CSS au coin de l'icône ;
 - le **nom** du gain, deux lignes au plus.
 
-C'est un `<ol>` qui défile à l'horizontale (`scroll-snap`, `tabindex="0"` pour le
-clavier, ouvert sur le palier en cours), et non un tableau : aucun compteur,
+C'est un `<ol>` qui défile à l'horizontale, et non un tableau : aucun compteur,
 aucun barème, aucune formule de courbe n'est revenu dans le menu.
 
 - **sa forme** — du niveau en cours jusqu'au **prochain rang**, puis **huit**
   niveaux au-delà, sans jamais dépasser le plafond : dix paliers au niveau 2,
   dix-neuf au plus. Au niveau maximal, la piste regarde en arrière et montre les
   cinq derniers niveaux, tous gagnés. Le prochain rang porte un jalon (« rang »)
-  et une tuile ronde ;
+  et un losange doré sur la ligne ;
 - **ce qui se clique** — seuls les cosmétiques. Un cadre ou un titre gagné se
-  porte (la tuile se remplit d'or, `aria-pressed`), et se repose en recliquant.
+  porte (le glyphe s’illumine, `aria-pressed`), et se repose en recliquant.
   Les paquets ne se réclament pas ici : la dette se règle au Souk — et quand des
   paquets sont dus, l'entête de la piste ouvre un bouton (« N paquets à ouvrir »)
   qui y mène. Les rangs tombent d'eux-mêmes ;
@@ -826,11 +827,10 @@ portée ; l'indépendance des modules (`rpgProfil.js` ignore `rpgProfilGains.js`
 qui ignore les visages, les tables et les cartes) ; la piste qui ne fait rien
 elle-même (ni `localStorage`, ni `sauverProfil`, ni `useState`, ni `fetch`) ;
 l'accessibilité (`aria-current`, `aria-disabled`, `tabindex`, l'ouverture sur le
-palier en cours sans `scrollIntoView`) ; la lecture de passe de maîtrise — le
+palier en cours sans `scrollIntoView`) ; la lecture en timeline — le
 repère « niveau actuel », la coche peinte sur `.is-gagne`, le cadenas peint des
-récompenses à venir, le sachet en coin de toute tuile qui gagne autre chose qu'un
-paquet, la miniature du dos de carte et son outil ; sa **place** — montée dans le
-`<main>` de l'écran Jouer, avec ses props (`profil`, `paquetsEnAttente`, les deux
+récompenses à venir, le vrai sachet du Souk et la miniature du dos de carte ;
+sa **place** — montée dans le `<main>` de l'écran Jouer, avec ses props (`profil`, `paquetsEnAttente`, les deux
 gestes de cosmétiques, le Souk, les sons) — ; et les styles : la piste a **sa
 propre feuille** (`rpg-profil.css` n'en parle pas), elle défile vraiment, son
 filet se remplit en propriétés personnalisées, le jalon est écrit, les cadres du

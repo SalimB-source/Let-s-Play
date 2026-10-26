@@ -482,8 +482,9 @@ peuvent donc pas être perdues par une écriture concurrente.
 **Le compromis assumé** : un joueur qui dépense 400 ◈ hors ligne sur l'appareil A
 peut voir ces 400 ◈ revenir si l'appareil B pousse un solde plus élevé avant
 d'avoir vu la dépense. C'est le prix de la règle « on ne perd jamais rien », et
-c'est sans conséquence : jeu solo, aucun classement, aucun achat réel. Un
-compteur de séquence strict serait plus « juste » et pourrait faire disparaître
+c'est sans conséquence : la Conquête se joue hors ligne, sans classement
+ni achat réel. Un compteur de séquence strict serait plus « juste » et
+pourrait faire disparaître
 des crédits — on refuse.
 
 ## 5. Architecture et fichiers

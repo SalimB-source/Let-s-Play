@@ -65,6 +65,8 @@ const evenements = lire('src/games/rpgEvenementsDuel.js');
 const boosters = lire('src/games/rpgBoosters.js');
 const piste = lire('src/games/RpgPisteGains.jsx');
 const pisteCode = sansCommentaires(piste);
+const paquet = lire('src/games/RpgPaquetChemin.jsx');
+const paquetCode = sansCommentaires(paquet);
 const gains = lire('src/games/rpgProfilGains.js');
 const gainsCode = sansCommentaires(gains);
 const seuil = lire('src/games/RpgStoryBabEl.jsx');
@@ -161,8 +163,9 @@ assert.match(page, /import RpgStoryBabEl from '\.\/RpgStoryBabEl\.jsx';/, 'et le
 assert.match(page, /import RpgBoosterOuverture from '\.\/RpgBoosterOuverture\.jsx';/,
   'et la cérémonie — montée par la page, pas par l’écran, parce qu’un palier tombe aussi en plein duel');
 assert.match(page, /from '\.\/rpgProfil\.js';/, 'les règles viennent du module');
-assert.match(pageCode, /className=\{`rpg-mode-menu__profil\$\{screen === 'profil' \? ' is-active' : ''\}`\}/,
-  'l’onglet Profil est dans le menu');
+assert.match(pageCode, /className=\{`rpg-mode-menu__profil rpg-mode-menu__onglet--secondaire rpg-mode-menu__onglet--groupe-secondaire\$\{screen === 'profil' \? ' is-active' : ''\}`\}/,
+  'l’onglet Profil ouvre le groupe secondaire du menu');
+assert.match(pageCode, /rpg-mode-menu__onglet--groupe-secondaire/, 'le groupe Profil / Paramètres / Messagerie est marqué');
 assert.match(pageCode, /onChangeScreen\('profil'\)/, 'et il mène à l’écran');
 assert.match(pageCode, /screen === 'profil' \? \(\s*<RpgProfilJoueur/, 'l’écran est une branche du menu');
 assert.match(pageCode, /data-profil-onglet=\{niveauOnglet\}/, 'l’onglet affiche le niveau');
@@ -381,6 +384,9 @@ for (const interdit of ['localStorage', 'sauverProfil', 'useState', 'fetch(']) {
   assert.ok(!pisteCode.includes(interdit), `la piste ne fait rien elle-même (${interdit})`);
 }
 assert.match(piste, /import '\.\/rpg-piste-gains\.css';/, 'et elle porte sa propre feuille de style');
+assert.match(piste, /import '\.\/rpg-souk\.css';/, 'le vrai paquet du Souk vient avec sa feuille');
+assert.match(piste, /import RpgPaquetChemin from '\.\/RpgPaquetChemin\.jsx';/,
+  'la piste délègue le paquet au composant du jeu');
 assert.match(pisteCode, /data-palier=\{palier\.niveau\}/, 'chaque palier est marqué pour les vérifications');
 assert.match(pisteCode, /data-palier-etat=\{palier\.etat\}/, 'son état aussi');
 assert.match(pisteCode, /data-palier-gain=\{gain\.sorte\}/, 'et ce qu’il rapporte');
@@ -393,16 +399,22 @@ assert.match(pisteCode, /tabIndex=\{0\}/, 'la zone qui défile se parcourt au cl
 assert.match(pisteCode, /bande\.scrollLeft = Math\.max\(0, courant\.offsetLeft/,
   'elle s’ouvre sur le niveau en cours, sans `scrollIntoView` — absent de jsdom');
 
-// ── Les paquets sur la barre ────────────────────────────────────────────────
-// Chaque niveau offre un paquet : la tuile le montre donc toujours. En grand —
-// le dos de carte en miniature et son sachet — quand le paquet est tout le gain ;
-// en coin, par le `::after` de la feuille, quand un rang ou un cosmétique occupe
-// la tuile. Ni l'un ni l'autre ne coûte un asset : une vignette de 1,3 Ko et des
-// dégradés.
+// ── Le vrai paquet sur la timeline ─────────────────────────────────────────
+// Chaque niveau offre un paquet : la piste ne peint plus un sachet générique,
+// elle reprend les classes du sachet que la cérémonie du Souk ouvre, avec la
+// peinture de la vitrine. Le dos de carte en miniature dépasse toujours
+// derrière : cinq cartes face cachée, jamais un tirage montré à l'avance.
 assert.match(pisteCode, /vignetteDosDeCarte\(BASE_URL\)/, 'la miniature vient de la vignette du dos de carte');
-assert.match(pisteCode, /className="rpg-piste__carte" style=\{\{ backgroundImage: `url\("\$\{dos\}"\)` \}\}/,
+assert.match(paquetCode, /className="rpg-piste__carte" style=\{\{ backgroundImage: `url\("\$\{dos\}"\)` \}\}/,
   'peinte en fond, pas en `<img>` dans le flux');
-assert.match(pisteCode, /className="rpg-piste__sachet" aria-hidden="true"/, 'avec le sachet du Souk');
+assert.match(paquetCode, /className="rpg-piste__sachet-ancre rpg-souk__sachet-ancre"/,
+  'l’ancre du sachet vient du Souk');
+assert.match(paquetCode, /className="rpg-piste__sachet rpg-souk__sachet"/,
+  'le sachet porte les vraies classes du Souk');
+assert.match(paquetCode, /rpg-souk__sachet-corps/, 'avec le corps du sachet du jeu');
+assert.match(paquetCode, /cardArt\(rayon\.vitrine\)/, 'et l’illustration de la vitrine du rayon');
+assert.match(paquetCode, /rpg-souk__sachet-languette/, 'et sa languette crantée');
+assert.match(paquetCode, /TAUX\.cartes/, 'qui annonce les cinq cartes');
 assert.match(gainsCode, /export const DOS_DE_CARTE_SOURCE = 'dos-de-carte\.jpg';/,
   'la source de la vignette est écrite une fois');
 assert.match(gainsCode, /export const DOS_DE_CARTE_REVISION = '[^']+';/,
@@ -417,17 +429,17 @@ assert.match(vignettes, /const sortie = path\.join\(PUBLIC, vignetteDosRelative\
   'et son nom aussi — un seul endroit où l’URL est écrite');
 assert.match(vignettes, /hauteur: Math\.round\(\(DOS_DE_CARTE_LARGEUR \* 5\) \/ 4\),/,
   'au format des cartes du Sablier, quatre pour cinq');
-assert.match(cssPiste, /\.rpg-piste__carte \{[\s\S]{0,300}background-size: cover;/, 'la miniature couvre la tuile');
+assert.match(cssPiste, /\.rpg-piste__carte \{[\s\S]{0,300}background-size: cover;/, 'la miniature couvre le paquet');
 assert.match(cssPiste, /\.rpg-piste__sachet-top \{[\s\S]{0,600}clip-path: polygon\(/,
-  'le sceau cranté du sachet se voit de dessus');
-// Le sachet est un **volume** : trois faces en perspective, et une rotation
-// lente que `prefers-reduced-motion` arrête.
+  'le sceau cranté du sachet se voit');
 assert.match(cssPiste, /\.rpg-piste__sachet \{[\s\S]{0,300}transform-style: preserve-3d;/,
-  'le sachet est un volume, pas une image plate');
+  'le sachet garde son volume');
 for (const face of ['face', 'cote', 'top']) {
-  assert.ok(cssPiste.includes(`.rpg-piste__sachet-${face} {`), `le sachet a sa face « ${face} »`);
+  assert.ok(cssPiste.includes(`.rpg-piste__sachet-${face} {`), `le sachet a sa pièce « ${face} »`);
 }
 assert.match(cssPiste, /@keyframes rpg-piste-sachet \{/, 'et il tourne lentement sur lui-même');
+assert.match(cssPiste, /\.rpg-piste__paquet-reel \.rpg-souk__sachet-ancre \{/,
+  'la miniature réduit le vrai sachet sans le redessiner');
 // Ce qu'il y a à gagner s'écrit pour se lire d'un coup d'oeil : la famille du
 // gain dans sa couleur, puis le nom de ce gain.
 assert.match(pisteCode, /<b className="rpg-piste__famille">\{gain\.sorte\}<\/b>/,
@@ -477,6 +489,21 @@ assert.match(cssPiste, /\.rpg-mode-menu__play > \.rpg-piste \{ order: 1; \}/,
   'en une colonne, la piste passe avant les quêtes du jour');
 assert.match(cssPiste, /\.rpg-mode-menu__play > \.rpg-piste \{ grid-column: 1 \/ -1; \}/,
   'le cadre s’allonge sur toute la largeur du menu : plus de niveaux d’un coup d’oeil');
+
+// ── La timeline : respiration, filet continu, icônes libres ────────────────
+assert.match(cssPiste, /--rpg-piste-pas: 168px/, 'les niveaux sont éloignés les uns des autres');
+assert.match(cssPiste, /\.rpg-piste \{[\s\S]{0,600}?overflow-y: auto;/,
+  'la section elle-même est scrollable en hauteur');
+assert.match(pisteCode, /data-piste-scrollable=""/, 'et le dit au harnais');
+assert.match(pisteCode, /className="rpg-piste__defile"/, 'une aide au défilement est affichée');
+assert.match(cssPiste, /\.rpg-piste__filet \{[\s\S]{0,700}?position: absolute;/,
+  'le filet devient une ligne de temps continue');
+assert.match(cssPiste, /\.rpg-piste__filet::after \{[\s\S]{0,500}?rotate\(45deg\)/,
+  'un losange marque chaque niveau sur la ligne');
+assert.match(cssPiste, /\.rpg-piste__tuile \{[\s\S]{0,500}?border: 0;[\s\S]{0,260}?border-radius: 0;[\s\S]{0,200}?background: none;/,
+  'les icônes ne sont plus enfermées dans un carré');
+assert.doesNotMatch(cssPiste, /\.rpg-piste__palier--rang \.rpg-piste__tuile \{\s*border-radius: 50%/,
+  'ni dans un rond pour les rangs');
 
 // La piste est montée sur **Jouer**, dans la colonne de gauche, sous le héros —
 // pas sur la carte du profil : c'est là qu'on décide de sa soirée.
@@ -564,13 +591,13 @@ console.log('dépouillée — le pseudo, le niveau, la barre et sa lecture, troi
 console.log('visages du récit, six emblèmes, douze tables nommées plus « au gré du deck »),');
 console.log('une ligne quand un paquet attend, et ce qui est déjà gagné : un cadre peint');
 console.log('autour du médaillon, un titre écrit sous le pseudo.');
-console.log('La **piste des gains** vit sur l’écran Jouer, sous le héros : un chemin qui');
-console.log('défile du niveau en cours jusqu’au prochain rang de Bab El, puis huit niveaux');
-console.log('au-delà. Chaque palier dit ce qu’il rapporte, et **chaque niveau montre son');
-console.log('paquet** — le dos de carte en miniature et son sachet quand le paquet est tout');
-console.log('le gain, un sachet en coin quand un rang ou un cosmétique occupe la tuile. Des');
-console.log('paquets dus ? Un bouton mène au Souk. Les cosmétiques gagnés se portent là, ou');
-console.log('se reposent ; ce qui est gagné se calcule depuis l’XP — rien à réclamer, rien à');
+console.log('La **piste des gains** vit sur l’écran Jouer, sous le héros : une timeline');
+console.log('scrollable, espacée, qui défile du niveau en cours jusqu’au prochain rang de');
+console.log('Bab El puis huit niveaux au-delà. Les icônes sont libres — aucun carré ni rond');
+console.log('— et **chaque niveau montre son paquet** : le vrai sachet du Souk, avec la');
+console.log('peinture de sa vitrine, et le dos de carte en miniature qui dépasse. Des paquets');
+console.log('dus ? Un bouton mène au Souk. Les cosmétiques gagnés se portent là, ou se');
+console.log('reposent ; ce qui est gagné se calcule depuis l’XP — rien à réclamer, rien à');
 console.log('tricher, et un gain verrouillé le reste.');
 console.log('L’histoire de Bab El, elle, a quitté Jouer : elle attend un **nouveau joueur**');
 console.log('au lancement du mode Histoire — ni récit en cours, ni étage déblayé — avec le');
@@ -579,7 +606,7 @@ console.log('tard », qui rend l’écran d’où l’on vient sans rien écrire
 console.log('Ni compteurs, ni barème, ni journal : ces chiffres vivent dans `rpgProfil.js`');
 console.log('et au Souk, pas ici. Les vignettes des visages et des tables (6 à 34 Ko,');
 console.log('`tools/make-profil-vignettes.mjs`) coûtent moins qu’une peinture ; la piste');
-console.log('n’ajoute qu’un dos de carte de 1,3 Ko — le reste est glyphes et dégradés.');
+console.log('réutilise le dos de carte (1,3 Ko) et la vitrine du Souk — le reste est glyphes et dégradés.');
 console.log('La table choisie peint la moitié du joueur — musique et décor 3D suivent — et');
 console.log('le tutoriel garde la sienne. La barre monte vite au début puis devient');
 console.log('gourmande, et chaque palier offre un paquet tiré au hasard parmi les rayons');

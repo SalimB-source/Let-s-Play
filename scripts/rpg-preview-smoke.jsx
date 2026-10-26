@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
-import { cardById } from '../src/games/rpgCards.js';
+import { cardById, cardTypeLine } from '../src/games/rpgCards.js';
 import { effetsDetailles } from '../src/games/effetIcons.js';
 import { RPG_LONG_PRESS_MS } from '../src/games/rpgLongPress.js';
 import { crediterCredits, portefeuilleVide, sauverPortefeuille } from '../src/games/rpgCredits.js';
@@ -534,11 +534,28 @@ export async function checkRpgPreviewActions(assert) {
     const apercuAppui = peek().querySelector('.rpg-hover-card-preview--appui-long');
     assert.ok(apercuAppui, 'l’aperçu au doigt est bien l’aperçu instantané, dans sa variante tactile');
     const typeAppui = apercuAppui.querySelector('.rpg-hover-card-preview__type');
+    assert.ok(typeAppui, 'le volet imprime la ligne de type, créature comprise');
+    assert.equal(typeAppui.textContent,
+      cardTypeLine(attendue).replace(/^Créature(?: légendaire)?(?=\s|$)/u, 'Type'),
+      'la ligne de type reprend l’identité de la carte');
+    assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__name')?.textContent, attendue.name,
+      'le volet porte le nom de la carte');
+    assert.equal(apercuAppui.querySelector('.rpg-hover-card-preview__cost'), null,
+      'le volet n’affiche plus le coût');
+    // La description écrite reprend la carte sans ses mots-clés génériques :
+    // un Fennec n'écrit rien (ses pastilles suffisent), un sort ou un
+    // déclencheur d'arrivée garde sa phrase.
     const creatureAppui = ['creature', 'hero'].includes(attendue.kind);
-    assert.equal(Boolean(typeAppui), !creatureAppui,
-      'le volet imprime la ligne de type des magies et des terrains, et la tait pour une créature');
-    assert.equal(apercuAppui.querySelectorAll('.rpg-hover-card-preview__rules').length, 0,
-      'l’aperçu au doigt n’imprime plus la règle : ses mots-clés la portent');
+    const descriptionAttendue = creatureAppui
+      ? (effetsDetailles(attendue).texte ?? '')
+      : (attendue.text && attendue.text !== '—' ? attendue.text : '');
+    const blocDescription = apercuAppui.querySelector('.rpg-hover-card-preview__rules');
+    assert.equal(Boolean(blocDescription), Boolean(descriptionAttendue.trim()),
+      'l’aperçu écrit une description seulement quand la carte en porte une hors ses mots-clés');
+    // Les phrases se répartissent en lignes séparées : on compare sans espaces.
+    const sansEspaces = (valeur) => valeur.replace(/\s+/gu, '');
+    assert.equal(sansEspaces(blocDescription?.textContent ?? ''), sansEspaces(descriptionAttendue),
+      'la description écrite reprend la carte, sans réécrire ses mots-clés génériques');
     const pastillesAttendues = effetsDetailles(attendue).pastilles
       .map((pastille) => (pastille.valeur != null && !pastille.valeurMasquee
         ? `${pastille.label} ${pastille.valeur}`

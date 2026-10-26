@@ -520,7 +520,7 @@ export const RPG_STORY_TOURS = [
     ],
   },
   {
-    // La tour d'épreuves terminale du Jeu Solo (hors récit « La Dernière
+    // La tour d'épreuves terminale de la Conquête (hors récit « La Dernière
     // Liste ») : sept étages, sept identités différentes — les cinq
     // couleurs pures, la Course Sable + Eau, puis le tricolore du sommet.
     // Chaque gardien joue au niveau `sablier` (le plus fort de `rpgAI.js`)

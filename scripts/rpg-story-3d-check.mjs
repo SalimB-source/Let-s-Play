@@ -41,7 +41,7 @@ const counts = (page) => page.evaluate(() => window.__towerContexts.filter((entr
 const enter = async (page) => {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(url);
-  await page.getByRole('button', { name: /^(?:Jeu Solo|Histoire)$/i }).click();
+  await page.locator('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete').click();
   await page.locator('.rpg-story-tower').first().waitFor();
   // La campagne illustrée précède maintenant les tours : les maquettes ne
   // chargent qu’à vue. Amener la galerie à l’écran comme le fait le joueur.

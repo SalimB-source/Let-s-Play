@@ -708,10 +708,13 @@ contrôleur **pioche une carte puis en défausse une**.
 - son icône est la **besace percée** (`#effet-butin` du sprite
   `preview-effets-icone.html`), pastille sous la ligne de type. Dans un aperçu
   de carte, la pastille porte un **« ? » cerclé** et ouvre sa **bulle** au
-  survol (au toucher comme au clavier) : l'aperçu n'imprime plus la règle, ses
-  mots-clés survolables sont la seule porte vers elle — une indication
-  « Survolez un mot-clé pour lire son effet » l'accompagne
-  (`HoverCardPreview`, `RpgDuelPage.jsx`).
+  survol (au toucher comme au clavier) : les phrases des mots-clés génériques
+  (Rapidité, Attaque ciblée, Envol…) ne s'impriment plus, seules leurs
+  pastilles les portent — une indication « Survolez un mot-clé pour lire son
+  effet » les accompagne. Le reste de la description de la carte reste écrit
+  (déclencheurs d'arrivée, effets de sorts et d'armes) — l'aperçu dit toujours
+  ce que fait la carte (`effetsDetailles().texte`, `HoverCardPreview`,
+  `RpgDuelPage.jsx`).
 
 Porteurs (set Sable) : **Fennec des décombres** (2 mana 3/1, Rapidité + Butin —
 son Esquive a été rendue au Butin), **Chien du guet** (2 mana 2/2), **Faussoyeur des dunes**
