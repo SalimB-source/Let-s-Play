@@ -207,6 +207,16 @@ suffisent, aucune ne redessine le boîtier :
   pose de trois quarts sans l'écraser — animer `transform` aurait fait sauter
   la boîte à plat.
 
+Et une règle qui ne se voit pas mais qui décide de tout : **jamais d'`opacity`
+sur le corps du boîtier**. Il est `transform-style: preserve-3d` ; dès que son
+opacité descend sous 1, la spec en fait un « groupe », et le navigateur aplatit
+alors ses six faces en une seule image. La boîte gardait ses variables — `--bd:
+0.62 × --bw` était bien appliqué, on l'a vérifié — mais elle s'affichait mince
+au choix et plate à l'ouverture, uniquement parce que le fondu d'arrivée
+(`coffre-arrive`) animait `opacity: 0 → 1`. Le fondu est désormais porté par la
+scène (`.rpg-coffret__coffre`, une boîte plate, où il n'aplatit rien) et le
+corps ne joue plus que `translate` / `scale` / `rotate`.
+
 La lumière, les rayons et les éclats restent **hors** du boîtier, dans la scène :
 une nappe floutée posée dans un contexte `preserve-3d` traverserait les faces au
 lieu de les éclairer.
