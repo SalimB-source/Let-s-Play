@@ -22,7 +22,7 @@ import assert from 'node:assert/strict';
 
 import {
   CATALOGUE_DU_COMPOSEUR,
-  RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DUEL_CARDS,
   carteJouableSansTerrain,
   cardById,
@@ -82,7 +82,7 @@ test('chaque recette somme 30 cartes sans terrain et désigne un quota cohérent
 });
 
 test('les decks du catalogue et de l’Histoire sont composés par leur recette', () => {
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     const recette = RPG_RECETTES_DECKS[deck.id];
     assert.ok(recette, `${deck.id} a sa recette`);
     assert.deepEqual(deck.cardIds, composerDeck(recette, CATALOGUE_DU_COMPOSEUR),
@@ -99,7 +99,7 @@ test('les decks du catalogue et de l’Histoire sont composés par leur recette'
 
 test('aucune carte laissée de côté n’est mieux classée qu’une carte retenue', () => {
   for (const [deckId, recette] of Object.entries(RECETTES)) {
-    const liste = RPG_STORY_DECKS[deckId] ?? RPG_DECKS.find((deck) => deck.id === deckId)?.cardIds;
+    const liste = RPG_STORY_DECKS[deckId] ?? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === deckId)?.cardIds;
     assert.ok(liste, `${deckId} : la liste existe`);
     const signature = new Set(recette.signature.map((entree) => (Array.isArray(entree) ? entree[0] : entree)));
     const comptes = compter(liste);
@@ -157,7 +157,7 @@ test('aucune carte laissée de côté n’est mieux classée qu’une carte rete
 
 test('les meilleures cartes sont prises à leur maximum légal', () => {
   for (const [deckId, recette] of Object.entries(RECETTES)) {
-    const liste = RPG_STORY_DECKS[deckId] ?? RPG_DECKS.find((deck) => deck.id === deckId)?.cardIds;
+    const liste = RPG_STORY_DECKS[deckId] ?? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === deckId)?.cardIds;
     const comptes = compter(liste);
     for (const [id, nombre] of comptes) {
       const carte = carteParId.get(id);
@@ -177,6 +177,13 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
         .sort(comparerCartesParPuissance);
       if (classees.length) partielle.add(classees.at(-1).id);
     }
+    // Les paquets de la **rampe des Tours** (`rampeEtage`) sont plafonnés : un
+    // plafond peut interrompre une famille au milieu d'une carte, ce qui est
+    // exactement son travail — le paquet cède une copie plutôt que de dépasser
+    // le palier de l'étage. L'invariant du « maximum légal » vaut donc pour les
+    // compositions sans plafond de rampe.
+    const rampe = recette.mythiquesTotalMax !== undefined || recette.raresMax !== undefined;
+    if (rampe) continue;
     for (const id of horsTerrains) {
       if (signature.has(id) || partielle.has(id)) continue;
       const nombre = comptes.get(id);
@@ -189,7 +196,7 @@ test('les meilleures cartes sont prises à leur maximum légal', () => {
 // ── 3. Les invariants du jeu ────────────────────────────────────────────────
 
 test('les boîtiers du catalogue restent valides, illustrés et fidèles à leur couleur', () => {
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     const validation = rpgValiderDeck(deck.cardIds);
     assert.equal(validation.ok, true, `${deck.name} : ${validation.raison}`);
     assert.equal(deck.cardIds.length, 30);
@@ -210,7 +217,7 @@ test('les boîtiers du catalogue restent valides, illustrés et fidèles à leur
 });
 
 test('chaque deck de départ mélange les quatre raretés et respecte son plafond de mythiques', () => {
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     const recette = RPG_RECETTES_DECKS[deck.id];
     const comptes = compter(deck.cardIds);
     const cartesNonTerrain = [...comptes.keys()]

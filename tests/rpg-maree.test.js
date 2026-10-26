@@ -14,6 +14,7 @@ import {
 import { RPG_STORY_TOURS, deckHistoire } from '../src/games/rpgStoryTours.js';
 import {
   RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DECK_MAREE_BASE,
   RPG_DECK_SORCIER_BASE,
   cardById,
@@ -60,8 +61,11 @@ test('la Marée des abysses garde une mythique et ouvre les autres bêtes dans l
   }
   const contres = RPG_DECK_MAREE_BASE.filter((id) => cardById(id).effet?.type === 'contresort');
   assert.ok(contres.length >= 6, 'le deck embarque plusieurs contres');
-  const entree = RPG_DECKS.find((deck) => deck.id === 'maree-des-abysses');
-  assert.ok(entree, 'le deck est dans l’étagère');
+  // Depuis les coffrets de bienvenue, la Marée n'est plus un deck de base : elle
+  // reste un archétype du répertoire (le sorcier, les leçons, la Tour des Abysses).
+  assert.deepEqual(RPG_DECKS, [], 'l’étagère n’a plus de deck de base');
+  const entree = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'maree-des-abysses');
+  assert.ok(entree, 'le deck est dans le répertoire des archétypes');
   assert.equal(entree.cardIds, RPG_DECK_MAREE_BASE);
   assert.ok(entree.cardIds.includes(entree.boxArt), 'le boîtier reprend une carte du deck');
 });
@@ -326,11 +330,24 @@ test('sans mana, l’IA ne contre pas : la carte du joueur se résout', () => {
   assert.equal(duel.joueur.creatures.length, 1, 'la créature est posée');
 });
 
-test('la Tour des Abysses joue le deck bleu sur ses quatre étages, avec des contres pour l’IA', () => {
+test('la Tour des Abysses joue un paquet bleu par étage, de plus en plus fourni', () => {
   const tour = RPG_STORY_TOURS.find((t) => t.id === 'tour-des-abysses');
   assert.ok(tour, 'la tour existe');
   assert.equal(tour.etages.length, 4);
-  for (const etage of tour.etages) assert.equal(etage.deck, 'maree-des-abysses');
+  // Depuis la rampe des Tours, chaque étage a **son** paquet d'Eau — fini le
+  // même deck rejoué quatre fois. La Marée reste le boîtier de l'étagère.
+  const paquets = tour.etages.map((etage) => etage.deck);
+  assert.equal(new Set(paquets).size, 4, 'quatre paquets différents');
+  const mythiques = paquets.map((deckId) => deckHistoire(deckId)
+    .filter((id) => cardById(id).rarity === 'mythique').length);
+  assert.deepEqual(mythiques, [...mythiques].sort((a, b) => a - b),
+    'la rampe monte : jamais moins de figures à l’étage suivant');
+  for (const deckId of paquets) {
+    const deck = deckHistoire(deckId);
+    assert.equal(rpgValiderDeck(deck).ok, true, `${deckId} est un deck valide`);
+    assert.deepEqual([...new Set(deck.flatMap((id) => cardColors(cardById(id))))], ['eau'],
+      `${deckId} reste cent pour cent Eau`);
+  }
   assert.equal(deckHistoire('maree-des-abysses'), RPG_DECK_MAREE_BASE);
 });
 

@@ -889,14 +889,45 @@ Deux effets secondaires heureux :
 - Les héros (Salem, Tarek, Tin Hinan) gardent leur peinture nihonga — le doré
   la réchauffe sans la dénaturer.
 
-**`la-barbe-noire` vit dans les Ténèbres** : elle garde sa peinture du Sable et
-reçoit donc le doré, ce qui est cohérent — c'est un portrait de pirate, pas un
-scribe de la nécropole.
+**`la-barbe-noire` vit dans les Ténèbres** : elle garde sa peinture du Sable —
+un portrait de pirate, pas un scribe de la nécropole. Livrée après la passe
+dorée, elle n'a jamais reçu la teinte, contrairement à ce que prétendait sa
+marque de cache.
 
 Marque `sable-souls-dore-v2` sur les quarante-six cartes de la passe. Les deux
 cartes sans clé de cache (`corsaire`, `chien-de-sable`) sont dorées mais **ne
 reçoivent pas de clé** : leur peinture est antérieure à la convention, et la
 leur en ajouter ferait croire à un remplacement.
+
+#### Le doré retiré (octobre 2026)
+
+La teinte a été **retirée des peintures** : sur la passe Souls déjà sombre, le
+mélange doré à 18 % dominait, et les cartes du coffret viraient toutes au sépia
+— la cendre du set ne se lisait plus. Le retrait se fait carte par carte, dans
+`scripts/retirer-filtre-dore-sable.sh` :
+
+| Réglage | Valeur |
+| --- | --- |
+| Dominante retirée | la mesure de l'image, `mean(R) − mean(B)`, à 100 % |
+| Correction par canal | moitié sur le rouge (retirée), moitié sur le bleu (ajoutée), plafonnée à 7 % |
+| Saturation | × 0,90 |
+| Garde-fou | une image dont la dominante est ≤ 6 n'est pas touchée |
+
+Le dessin, le cadrage et le format 4:5 ne bougent pas : seule la balance des
+blancs revient. Mesure après passe, en moyennes sur vignette :
+
+| Élément | `R − B` avant | `R − B` après |
+| --- | --- | --- |
+| Sable | +21 | +7 |
+| Braise | 0 | 0 |
+| Neige | −11 | −11 |
+| Eau | −18 | −18 |
+| Ténèbres | −11 | −11 |
+
+Les peintures gardent leur nom de fichier ; la marque passe donc à
+`sable-souls-desore-v3` (et `bouchra-cretes-v3`, `kusayla-roi-imazigh-v2`,
+`grappin-griffes-bastingage-v4`, `javelot-beffroi-cloche-v4` pour les quatre
+cartes à clé propre), sinon un navigateur servirait l'ancienne image.
 
 ### Bilan du catalogue
 
@@ -1683,16 +1714,20 @@ la couleur posée sur le catalogue, l'atelier et le guide.
 Trois sets avaient reçu une **teinte appliquée à la peinture** après coup — pas
 un filtre CSS, l'image livrée elle-même : le doré du Sable (`#c89a50`, 18 %),
 le bleu de nuit de l'Eau (× 0,82 / × 0,96 / × 1,36 puis saturation × 1,18) et
-le violet des Ténèbres (`#5b2a86`, 18 %). Ce virage est annulé : les peintures
-sont neutres, chacune dans la lumière de sa scène.
+le violet des Ténèbres (`#5b2a86`, 18 %). Les trois sont retirés, chacun par la
+voie qui lui convenait.
 
 | Set | Cartes | Comment |
 | --- | --- | --- |
-| Sable | 49 | peinture d'avant teinte, reprise dans l'historique (`84e47dc^`) |
-| Eau | 10 | peinture d'avant virage (`19f5aa9^`) |
+| Sable | 49 | désaturation mesurée carte par carte (`scripts/retirer-filtre-dore-sable.sh`, marque `sable-souls-desore-v3`) |
+| Eau | 10 | peinture d'avant virage, reprise dans l'historique (`19f5aa9^`) |
 | Ténèbres | 21 | peinture d'avant violet (`32d7fdd^`) |
 | Eau | 16 | modèle inverse de la règle du set, appris sur les dix paires ci-dessus |
-| Ténèbres | 1 | même modèle inverse (`tour-des-tenebres`, repeinte après coup) |
+| Ténèbres | 1 | même modèle inverse (`tour-des-tenebres`, repeinte après la teinte) |
+
+Le Sable a sa propre section plus haut (« Le doré retiré ») : sa correction est
+une mesure par image, plafonnée, qui protège les scènes volontairement chaudes
+(forge, torche).
 
 Les 16 cartes de l'Eau du deuxième et du troisième lot n'ont pas de peinture
 d'avant virage dans l'historique : elles ont été **dévirées** par le modèle
@@ -1700,19 +1735,16 @@ inverse de la règle du set, ajusté sur les dix paires (avant / après) du
 premier lot. Erreur mesurée en validation croisée : **0,89 / 255** par canal —
 invisible à l'œil.
 
-Deux remarques :
+**Les couleurs d'élément ne vivent plus dans la peinture.** Le bleu de l'Eau,
+le violet des Ténèbres et le doré du Sable ont quitté les images ; c'est le
+**filet de 2 px** de chaque carte qui nomme son élément, et lui seul. Les
+peintures, elles, retournent à la lumière de leur scène.
 
-- **La Barbe Noire** porte `sable-souls-cendres-v1` : sa peinture n'a jamais
-  reçu le doré (elle a été livrée après la passe), seule sa marque de cache le
-  prétendait. Le mensonge est corrigé, l'image n'a pas bougé.
-- Le Seigneur des mâchoires et la Barbe Noire vivent dans les Ténèbres avec une
-  peinture du Sable : ils gardent leur scène, simplement neutre.
-
-La marque de cache de ces peintures devient `sans-teinte-v1` (constante
-`SANS_TEINTE` dans `rpgCardArt.js`) : elle ne décrit plus une couleur de set,
-elle casse le cache des navigateurs qui ont l'ancienne version. Le **filet de
-2 px** reste, lui, la seule marque d'élément — et il ne dépend plus de la
-peinture.
+Pour l'Eau et les Ténèbres, la marque de cache devient `sans-teinte-v1`
+(constante `SANS_TEINTE` dans `rpgCardArt.js`) : elle ne décrit plus une
+couleur de set, elle casse le cache des navigateurs qui ont l'ancienne version.
+C'est la seule marque du catalogue qui ne nomme pas une peinture mais un
+**état** — « cette peinture est neutre ».
 
 Les recettes de virage restent dans ce document, marquées « retiré » : elles
 sont l'historique du set, pas une consigne.

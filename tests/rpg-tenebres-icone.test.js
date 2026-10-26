@@ -6,6 +6,10 @@ const lire = (chemin) => readFileSync(new URL(`../${chemin}`, import.meta.url), 
 
 test('icône des Ténèbres : tête de mort sur les cartes, l’atelier, le guide, les coffrets et les jauges de mana', () => {
   const box = lire('src/games/RpgDeckBox.jsx');
+  // Les emblèmes ont leur module depuis que le coffret de bienvenue les montre
+  // aussi : c'est là que se dessine la tête de mort, et les boîtiers de deck la
+  // réexportent. Le test suit le dessin, pas le fichier historique.
+  const emblemes = lire('src/games/rpgEmblemes.jsx');
   const duelPage = lire('src/games/RpgDuelPage.jsx');
   const atelier = lire('src/games/RpgDeckAtelier.jsx');
   const assistant = lire('src/games/RpgDeckAssistant.jsx');
@@ -24,8 +28,10 @@ test('icône des Ténèbres : tête de mort sur les cartes, l’atelier, le guid
     assert.match(source, /tenebres:\s*(?:\{\s*glyph:\s*)?'💀'/, `${nom} utilise la tête de mort 💀 pour les Ténèbres`);
   }
 
-  const tenebresEmblem = box.slice(box.indexOf('  // Ténèbres'));
-  assert.doesNotMatch(tenebresEmblem, /M4 7\.6h16/, 'l’ancien emblème SVG de balance a disparu de RpgDeckBox.jsx');
+  assert.match(box, /from '\.\/rpgEmblemes\.jsx'/, 'RpgDeckBox.jsx importe ses emblèmes du module partagé');
+  const tenebresEmblem = emblemes.slice(emblemes.indexOf('  // Ténèbres'));
+  assert.doesNotMatch(tenebresEmblem, /M4 7\.6h16/, 'l’ancien emblème SVG de balance a disparu de rpgEmblemes.jsx');
+  assert.doesNotMatch(box, /M4 7\.6h16/, 'la balance ne revient pas dans RpgDeckBox.jsx');
   assert.match(tenebresEmblem, /fillRule="evenodd"/, 'l’emblème SVG des Ténèbres dessine la tête de mort ajourée');
   assert.match(
     battleCss,

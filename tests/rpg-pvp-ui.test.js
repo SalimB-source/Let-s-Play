@@ -58,7 +58,7 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
   });
 
   try {
-    const { RPG_DECKS } = await vite.ssrLoadModule('/src/games/rpgCards.js');
+    const { RPG_DECKS_ARCHETYPES } = await vite.ssrLoadModule('/src/games/rpgCards.js');
     const { decksPourDefi, resultatSalon } = await vite.ssrLoadModule('/src/games/rpgPvpSalon.js');
     const { creerArbitre } = await vite.ssrLoadModule('/src/server/sablierArbitre.js');
     const { rngSeme } = await vite.ssrLoadModule('/src/games/rpgHasard.js');
@@ -97,7 +97,7 @@ test('RpgPvpBoard monte la vraie table visuelle RpgDuelPage et pilote un duel co
       return rep.json();
     };
 
-    const decks = decksPourDefi(RPG_DECKS);
+    const decks = decksPourDefi(RPG_DECKS_ARCHETYPES);
     const hoteDom = dom.window.document.createElement('div');
     const inviteDom = dom.window.document.createElement('div');
     dom.window.document.body.append(hoteDom, inviteDom);

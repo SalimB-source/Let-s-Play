@@ -26,3 +26,7 @@ __pycache__/
 desktop/dist-web/
 desktop/release/
 desktop/pack/
+
+# Démo isolée de la cérémonie du coffret (artefact local, pas livré)
+demo-coffret/bundle.js
+demo-coffret/bundle.css

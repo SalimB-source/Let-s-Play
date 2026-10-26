@@ -1,0 +1,1081 @@
+/*
+ * Les coffrets de bienvenue — src/games/rpg-coffret-bienvenue.css
+ * --------------------------------------------------------------
+ * Trois écrans, une seule grammaire : le **choix** (trois boîtes de couleur),
+ * l'**ouverture** (la boîte monte au centre, le sceau casse, le couvercle
+ * bascule, la lumière jaillit) puis la **cérémonie** (les cartes entrent vague
+ * par vague, la mythique seule à la fin).
+ *
+ * Tout est en CSS : le scénario de l'ouverture est une suite de `animation`
+ * minutées (`animation-delay`), pour que le mouvement reste sur le compositeur
+ * et ne dépende d'aucun `setTimeout` intermédiaire. JavaScript ne décide que de
+ * la fin : quand la boîte a fini de s'ouvrir, la première vague prend sa place.
+ *
+ * Le fond reprend le keyart du Sablier, voilé comme l'écran d'entrée. Les
+ * couleurs des coffrets sont celles du jeu (sable, braise, neige, eau) : elles
+ * ne teintent que les liserés, la lumière et les poussières.
+ */
+
+.rpg-coffret {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: grid;
+  place-items: center;
+  padding: 28px 16px 36px;
+  overflow: auto;
+  background:
+    linear-gradient(180deg, rgba(5, 6, 15, 0.94) 0%, rgba(5, 6, 15, 0.86) 55%, rgba(5, 6, 15, 0.96) 100%),
+    url('../../public/sablier-de-bab-el-keyart.jpg') center / cover no-repeat;
+  color: #e8eaf6;
+  isolation: isolate;
+}
+
+/* La teinte d'un coffret : elle colore le sceau, la lumière et les poussières. */
+.rpg-coffret[data-rpg-coffret-couleur='sable'] { --teinte: #d8bc86; --lueur: #ffe3ab; }
+.rpg-coffret[data-rpg-coffret-couleur='braise'] { --teinte: #e2724a; --lueur: #ffb279; }
+.rpg-coffret[data-rpg-coffret-couleur='neige'] { --teinte: #9fd4f2; --lueur: #dcf4ff; }
+.rpg-coffret[data-rpg-coffret-couleur='eau'] { --teinte: #4f9dd6; --lueur: #a9e0ff; }
+.rpg-coffret[data-rpg-coffret-couleur='tenebres'] { --teinte: #a98bd8; --lueur: #dcc4ff; }
+
+/* Un voile de vignette par-dessus le keyart : le centre respire, les bords
+   tombent dans le noir. */
+.rpg-coffret::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(232, 183, 92, 0.1), transparent 58%),
+    radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(2, 3, 9, 0.72) 100%);
+}
+
+/* ── La poussière dorée ──────────────────────────────────────────────────── */
+
+.rpg-coffret__poussiere {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.rpg-coffret__poussiere i {
+  position: absolute;
+  left: var(--grain-x, 50%);
+  top: var(--grain-y, 50%);
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: var(--lueur, #ffe3ab);
+  opacity: 0;
+  box-shadow: 0 0 6px var(--lueur, #ffe3ab);
+  animation: rpg-coffret-grain 9s linear infinite;
+  animation-delay: calc(var(--grain, 0) * -560ms);
+}
+
+@keyframes rpg-coffret-grain {
+  0% { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.6); }
+  18% { opacity: 0.55; }
+  70% { opacity: 0.35; }
+  100% { opacity: 0; transform: translate3d(14px, -120px, 0) scale(1.1); }
+}
+
+/* ── Le panneau ──────────────────────────────────────────────────────────── */
+
+.rpg-coffret__panneau {
+  position: relative;
+  width: min(1040px, 100%);
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 26px clamp(16px, 4vw, 40px) 30px;
+  border-radius: 20px;
+  border: 1px solid rgba(232, 183, 92, 0.28);
+  background: linear-gradient(160deg, rgba(14, 16, 32, 0.92), rgba(7, 8, 18, 0.96));
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  text-align: center;
+  animation: rpg-coffret-panneau 620ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* Le liseré supérieur du panneau s'allume de la couleur du coffret ouvert. */
+.rpg-coffret__panneau::before {
+  content: '';
+  position: absolute;
+  inset: -1px 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--teinte, #e8b75c), transparent);
+  opacity: 0.85;
+}
+
+@keyframes rpg-coffret-panneau {
+  from { opacity: 0; transform: translateY(18px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.rpg-coffret__sur-titre {
+  margin: 0;
+  font: 600 11px/1.4 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #e8b75c;
+}
+
+.rpg-coffret__titre {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font: 800 clamp(24px, 4.4vw, 40px)/1.08 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 26px rgba(232, 183, 92, 0.22);
+}
+
+.rpg-coffret__compte {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font: 700 14px/1 'Orbitron', system-ui, sans-serif;
+  color: #161005;
+  background: #e8b75c;
+  box-shadow: 0 0 18px rgba(232, 183, 92, 0.5);
+  animation: rpg-coffret-compte 560ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes rpg-coffret-compte {
+  from { opacity: 0; transform: scale(0.4) rotate(-24deg); }
+  to { opacity: 1; transform: none; }
+}
+
+.rpg-coffret__chapeau {
+  margin: 0;
+  max-width: 78ch;
+  font: 400 14px/1.55 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #b9c0d8;
+}
+
+.rpg-coffret__note {
+  margin: 4px 0 0;
+  font: 400 12px/1.4 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #8f97b2;
+}
+
+/* ── Le choix : trois boîtiers de coffret ───────────────────────────────────
+
+   Le coffret prend la **forme des boîtiers de deck du jeu** (`DeckBox`,
+   `rpg-deckbox.css`) : six faces, laque cerclée de laiton, peinture plein art,
+   plaque du nom, emblèmes de la couleur, compte des cartes.
+
+   Rien de tout cela n'est redessiné ici. On ne pose que trois choses autour :
+   la mise en page, la légende sous le boîtier, et le bouton — plus, plus bas,
+   l'ouverture du couvercle pour la cérémonie. C'est ce qui rend l'ensemble
+   animable : balancement, inclinaison au curseur, ombre au sol et reflets sont
+   déjà écrits et réglés une fois pour toutes dans `rpg-deckbox.css`. */
+
+.rpg-coffret__boites {
+  width: 100%;
+  display: grid;
+  gap: clamp(16px, 3vw, 34px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  margin-top: 10px;
+  padding: 6px 0 14px;
+}
+
+/* Le bouton porte tout : le boîtier, sa légende, et le clic. */
+.rpg-coffret__boite {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 6px 6px 12px;
+  border: 0;
+  border-radius: 16px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 260ms ease;
+}
+
+.rpg-coffret__boite:hover,
+.rpg-coffret__boite:focus-visible {
+  background: radial-gradient(120% 80% at 50% 60%, rgba(232, 183, 92, 0.07), transparent 72%);
+}
+
+.rpg-coffret__boite:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--teinte, #e8b75c) 80%, transparent);
+  outline-offset: 4px;
+}
+
+/* ── Les proportions d'un coffret ─────────────────────────────────────────
+
+   Les mêmes sur l'étagère du choix **et** dans la cérémonie : c'est le même
+   objet du début à la fin, et le joueur doit le reconnaître quand il s'ouvre.
+
+   Un coffret de trente cartes est épais. Le réglage de l'étagère de decks
+   (`--bd: .42 × --bw`) donnait une tranche fine — la boîte ressemblait à une
+   carte posée debout. Un boîtier de cartes anglaises fait 70 mm de large pour
+   40 mm d'épaisseur : d'où `0.62`, la hauteur tassée à `1.32`, et une pose plus
+   franchement de trois quarts (`--rx`, `--ry`) pour que l'épaisseur se voie.
+
+   `--bh` et `--bd` sont déclarés sur `.rpg-deckbox` : on les redéfinit ici,
+   plus spécifiquement, plutôt que de toucher au boîtier partagé — l'étagère de
+   decks, le salon et l'en-tête de deck gardent leurs proportions. */
+.rpg-coffret__boite .rpg-deckbox,
+.rpg-coffret__coffre .rpg-deckbox {
+  --bh: calc(var(--bw) * 1.32);
+  --bd: calc(var(--bw) * 0.62);
+  --rx: -16deg;
+  --ry: 32deg;
+}
+
+/* La racine du boîtier partagé laisse 11 % de marge de chaque côté ; avec cette
+   profondeur, la tranche et le couvercle débordent un peu plus. */
+.rpg-coffret__boite .rpg-deckbox {
+  --bw: clamp(104px, min(13vw, 19vh), 156px);
+  width: calc(var(--bw) * 1.34);
+}
+
+.rpg-coffret__coffre .rpg-deckbox {
+  width: calc(var(--bw) * 1.34);
+}
+
+/* Les teintes des trois coffrets : elles colorent la lumière, les poussières
+   et le halo — jamais la peinture du boîtier. */
+.rpg-coffret__boite--sable { --teinte: #d8bc86; }
+.rpg-coffret__boite--braise { --teinte: #e2724a; }
+.rpg-coffret__boite--neige { --teinte: #9fd4f2; }
+.rpg-coffret__boite--eau { --teinte: #4f9dd6; }
+
+/* ── La légende, sous le boîtier ─────────────────────────────────────────── */
+
+.rpg-coffret__boite-texte {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: 100%;
+}
+
+/* La couleur, écrite — et dessinée : l'emblème du Sablier dit d'un coup d'œil
+   de quel élément le coffret est fait. */
+.rpg-coffret__boite-couleur {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 9px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--teinte, #e8b75c) 88%, #fff);
+}
+
+.rpg-coffret__boite-embleme {
+  display: inline-block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+/* L'emblème prend la laque du coffret. `fill: currentColor` vient de
+   `rpgEmblemes.jsx` : le dessin n'emporte pas sa feuille de style avec lui. */
+.rpg-coffret__boite-embleme svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  color: color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff);
+}
+
+.rpg-coffret__boite-nom {
+  font: 700 clamp(13px, 1.4vw, 16px)/1.2 'Orbitron', system-ui, sans-serif;
+  color: #f6f1e6;
+}
+
+.rpg-coffret__boite-sous {
+  font: 400 11px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  font-style: normal;
+  color: #b7bed4;
+}
+
+.rpg-coffret__boite-meta {
+  margin-top: 2px;
+  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: #8f97b2;
+}
+
+/* Le libellé d'appel, sous la légende. */
+.rpg-coffret__boite-ouvrir {
+  margin-top: 6px;
+  font: 700 10px/1 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff);
+  opacity: 0.55;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.rpg-coffret__boite:hover .rpg-coffret__boite-ouvrir,
+.rpg-coffret__boite:focus-visible .rpg-coffret__boite-ouvrir {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* ── L'ouverture : la boîte s'ouvre ──────────────────────────────────────── */
+
+.rpg-coffret--ouverture {
+  overflow: hidden;
+}
+
+.rpg-coffret__scene {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: min(62vh, 480px);
+  perspective: 1300px;
+  perspective-origin: 50% 42%;
+  animation: rpg-coffret-scene-entree 640ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+/* L'ombre au sol : elle ancre la boîte, sans `filter` sur la boîte elle-même —
+   un filtre y aplatirait la 3D et le couvercle ne basculerait plus. */
+.rpg-coffret__scene::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 9%;
+  width: min(420px, 62%);
+  height: 34px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.62), transparent 72%);
+  filter: blur(7px);
+  animation: rpg-coffret-sol 640ms ease-out both;
+}
+
+@keyframes rpg-coffret-sol {
+  from { opacity: 0; scale: 0.6 1; }
+  to { opacity: 1; scale: 1 1; }
+}
+
+@keyframes rpg-coffret-scene-entree {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Le halo derrière la boîte : il respire, puis s'épanouit. */
+.rpg-coffret__halo {
+  position: absolute;
+  width: min(760px, 92vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lueur, #ffe3ab) 34%, transparent), transparent 60%);
+  filter: blur(8px);
+  opacity: 0;
+  animation: rpg-coffret-halo 2000ms ease-out both;
+}
+
+@keyframes rpg-coffret-halo {
+  0% { opacity: 0; transform: scale(0.5); }
+  45% { opacity: 0.55; transform: scale(0.85); }
+  72% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.85; transform: scale(1.2); }
+}
+
+/* Trois ondes concentriques qui partent du sceau. */
+.rpg-coffret__onde {
+  position: absolute;
+  display: grid;
+  place-items: center;
+}
+
+.rpg-coffret__onde i {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--lueur, #ffe3ab) 70%, transparent);
+  opacity: 0;
+  animation: rpg-coffret-onde 1100ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+.rpg-coffret__onde i:nth-child(1) { animation-delay: 780ms; }
+.rpg-coffret__onde i:nth-child(2) { animation-delay: 940ms; }
+.rpg-coffret__onde i:nth-child(3) { animation-delay: 1100ms; }
+
+@keyframes rpg-coffret-onde {
+  0% { opacity: 0.85; transform: scale(0.28); }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+/* Le coffre de l'ouverture : **le même boîtier que sur l'étagère du choix**,
+   posé un peu plus grand, et qui s'ouvre.
+
+   Tout l'effet tient en quatre règles, et aucune ne redessine le boîtier :
+
+   - le **fermoir** (`.rpg-deckbox__latch`) saute ;
+   - le **couvercle** est la face du dessus (`--top`), dont la charnière est
+     déplacée sur l'arête arrière : pousser la rotation de 90° à 152° le dresse
+     derrière la boîte ;
+   - la **bouche** (`::after` du corps) apparaît alors — sans elle, le boîtier
+     ouvert montre le vide entre son arête haute et sa face arrière ;
+   - le **corps** monte et tremble sur `translate`/`rotate`, qui s'ajoutent à la
+     pose de trois quarts sans l'écraser. */
+/* La scène du coffre. Elle anime **son** opacité (voir plus bas), pas celle du
+   boîtier : c'est une boîte plate, son fondu n'aplatit rien. */
+.rpg-coffret__coffre {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding-bottom: 6px;
+  animation: rpg-coffret-coffre-parait 480ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+}
+
+/* Même boîtier, mêmes proportions (voir plus haut) : seule l'échelle change —
+   la cérémonie le montre en grand, au centre. */
+.rpg-coffret__coffre .rpg-deckbox {
+  --bw: clamp(148px, 17vw, 200px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Pas de balancement d'étagère pendant la cérémonie : la boîte tremble, c'est
+   tout — et le couvercle doit rester lisible. */
+.rpg-coffret__coffre .rpg-deckbox__sway {
+  animation: none;
+  transform: none;
+}
+
+/* L'arrivée : **jamais d'`opacity` sur le corps**. Il est
+   `transform-style: preserve-3d` ; une opacité inférieure à 1 en fait un
+   « groupe » au sens de la spec, et le navigateur aplatit alors ses six faces
+   en une seule — la boîte perd son épaisseur et s'ouvre en carte. Le fondu est
+   donc porté par la scène (`.rpg-coffret__coffre`, plate), et le corps ne joue
+   que `translate` / `scale` / `rotate`. */
+@keyframes rpg-coffret-coffre-parait {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.rpg-coffret__coffre .rpg-deckbox__body {
+  animation:
+    rpg-coffret-coffre-arrive 560ms cubic-bezier(0.2, 0.9, 0.25, 1) both,
+    rpg-coffret-coffre-tremble 170ms 700ms 3 ease-in-out;
+}
+
+@keyframes rpg-coffret-coffre-arrive {
+  from { translate: 0 34px; scale: 0.7; }
+  to { translate: 0 0; scale: 1; }
+}
+
+@keyframes rpg-coffret-coffre-tremble {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  28% { translate: -2.5px 1px; rotate: -0.6deg; }
+  68% { translate: 2.5px -1px; rotate: 0.6deg; }
+}
+
+/* Le fermoir saute — c'est le sceau qui cède, dans la langue du boîtier. */
+.rpg-coffret__coffre .rpg-deckbox__latch {
+  animation: rpg-coffret-fermoir-saute 560ms 520ms cubic-bezier(0.3, 0.8, 0.35, 1) both;
+}
+
+@keyframes rpg-coffret-fermoir-saute {
+  0% { opacity: 1; transform: translateX(-50%) scale(1); filter: brightness(1); }
+  30% { opacity: 1; transform: translateX(-50%) scale(1.3); filter: brightness(2.2); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(14px); filter: brightness(2.6); }
+}
+
+/* Le couvercle bascule sur l'arête arrière.
+   La charnière est l'arête **haute et arrière** du boîtier : l'élément est
+   ramené en haut du corps (`top: 0`) et son origine posée sur son propre bord
+   haut (`50% 0`), puis couché à plat. Il ne reste plus qu'à reculer le plan
+   d'une **demi-profondeur** pour que le couvercle tombe pile sur la bouche de
+   la boîte. Avec une profondeur entière (`-1`), le couvercle se retrouvait
+   décalé de `--bd / 2` vers l'arrière : le haut du paquet flottait derrière le
+   corps. */
+.rpg-coffret__coffre .rpg-deckbox__face--top {
+  top: 0;
+  transform-origin: 50% 0;
+  transform: translateZ(calc(var(--bd) * -0.5)) rotateX(90deg);
+  backface-visibility: visible;
+  -webkit-backface-visibility: visible;
+  animation: rpg-coffret-couvercle-ouvre 860ms 880ms cubic-bezier(0.32, 1.02, 0.4, 1) both;
+}
+
+@keyframes rpg-coffret-couvercle-ouvre {
+  0% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(90deg); }
+  55% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(120deg); }
+  100% { transform: translateZ(calc(var(--bd) * -0.5)) rotateX(152deg); }
+}
+
+/* La bouche du boîtier : même arête et même profondeur que le couvercle, trois
+   pixels plus bas, pour que le couvercle la couvre tant qu'il est fermé. */
+.rpg-coffret__coffre .rpg-deckbox__body::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--bd);
+  transform-origin: 50% 0;
+  transform: translateY(3px) translateZ(calc(var(--bd) * -0.5)) rotateX(90deg);
+  border-radius: calc(var(--bw) * 0.03);
+  background:
+    radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--glow) 46%, #1b1208), #090605 76%),
+    #070506;
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.92);
+}
+
+/* La légende de la cérémonie : le nom et le sous-titre, sous le boîtier. */
+.rpg-coffret__coffre-titre {
+  position: relative;
+  z-index: 1;
+  margin-top: 2px;
+  font: 700 clamp(13px, 1.5vw, 17px)/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1px;
+  color: #f6f1e6;
+  text-align: center;
+  animation: rpg-coffret-apparait 620ms 320ms ease both;
+}
+
+.rpg-coffret__coffre-sous {
+  position: relative;
+  z-index: 1;
+  font: 400 11px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #b7bed4;
+  text-align: center;
+  animation: rpg-coffret-apparait 620ms 420ms ease both;
+}
+
+/* La lumière monte du fond de la boîte. Elle vit **hors** du volume : une
+   nappe floutée dans une scène `preserve-3d` traverserait le coffret au lieu
+   de l'éclairer. */
+.rpg-coffret__coffre-lumiere {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  width: 78%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--lueur, #ffe3ab) 38%, transparent 72%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  z-index: 0;
+  animation: rpg-coffret-lumiere 1200ms 880ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-lumiere {
+  0% { opacity: 0; scale: 0.2; }
+  38% { opacity: 0.95; scale: 0.9; }
+  100% { opacity: 0.55; scale: 1.9; }
+}
+
+/* Les rayons : un éventail tournant qui sort de la boîte. */
+.rpg-coffret__coffre-rayons {
+  position: absolute;
+  left: 50%;
+  top: 20%;
+  width: 210%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--lueur, #ffe3ab) 42%, transparent) 0deg 3deg,
+    transparent 3deg 14deg
+  );
+  mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  -webkit-mask-image: radial-gradient(circle, #000 12%, transparent 62%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  z-index: 0;
+  animation: rpg-coffret-rayons 1500ms 960ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-rayons {
+  0% { opacity: 0; scale: 0.35; rotate: -12deg; }
+  40% { opacity: 0.8; }
+  100% { opacity: 0.35; scale: 1.15; rotate: 8deg; }
+}
+
+/* Les éclats de cire et les étincelles, autour du sceau. */
+.rpg-coffret__coffre-eclats {
+  position: absolute;
+  left: 22%;
+  top: 22%;
+  width: 0;
+  height: 0;
+  z-index: 2;
+}
+
+.rpg-coffret__coffre-eclats i {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--lueur, #ffe3ab);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--lueur, #ffe3ab) 70%, transparent);
+  opacity: 0;
+  animation: rpg-coffret-eclat 900ms 940ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
+@keyframes rpg-coffret-eclat {
+  0% { opacity: 0; transform: rotate(var(--angle)) translateY(0) scale(0.4); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--portee) * -1.7)) scale(0.2); }
+}
+
+/* L'éclat final : tout l'écran blanchit, la boîte s'efface. */
+.rpg-coffret__flash {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 46%, #fff 0%, var(--lueur, #ffe3ab) 34%, transparent 68%);
+  opacity: 0;
+  animation: rpg-coffret-flash 760ms 1380ms ease-out both;
+}
+
+@keyframes rpg-coffret-flash {
+  0% { opacity: 0; scale: 0.4; }
+  34% { opacity: 0.95; scale: 1; }
+  100% { opacity: 0; scale: 1.4; }
+}
+
+.rpg-coffret__passer {
+  position: absolute;
+  right: clamp(16px, 4vw, 40px);
+  bottom: clamp(16px, 4vh, 34px);
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(232, 183, 92, 0.4);
+  background: rgba(8, 9, 18, 0.72);
+  color: #cfd6ea;
+  font: 600 12px/1 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  cursor: pointer;
+  animation: rpg-coffret-apparait 400ms 300ms ease-out both;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+
+.rpg-coffret__passer:hover,
+.rpg-coffret__passer:focus-visible {
+  border-color: #e8b75c;
+  color: #ffe9b8;
+  outline: none;
+}
+
+@keyframes rpg-coffret-apparait {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── La cérémonie : les vagues ───────────────────────────────────────────── */
+
+.rpg-coffret--ceremonie {
+  overflow: auto;
+}
+
+.rpg-coffret__vague {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 18px 14px;
+  min-height: 250px;
+  padding: 12px 0 8px;
+  isolation: isolate;
+}
+
+/* ── Une carte du coffret : une vignette plate, et une lueur qui dit sa rareté ─
+
+   **Aucune 3D** : pas de perspective, pas de rotation, pas de tranche. La carte
+   est une vignette plate — la peinture, son anneau, son nom dessous. La
+   profondeur ne servait à rien à cette taille et cassait l'alignement des
+   vagues ; la rareté se dit par la taille, la lueur et l'anneau, ce qui suffit.
+   Au survol, la carte ne fait que se soulever de deux pixels.
+
+   Les quatre raretés ne se ressemblent plus :
+
+   - commune      — aucune lueur, un liseré neutre ;
+   - inhabituelle — un halo d'acier, à peine perceptible ;
+   - rare         — un halo froid plus large, et la carte plus grande ;
+   - mythique     — un halo d'or qui respire, la carte bien plus grande.
+
+   La peinture, elle, reste propre : la lueur est **derrière** la carte
+   (`::before`, flou), jamais un reflet qui balaie l'illustration. */
+
+.rpg-coffret__carte {
+  --largeur-carte: 140px;
+  --bord-carte: rgba(255, 255, 255, 0.16);
+  --lueur-carte: transparent;
+  --lueur-force: 0;
+  position: relative;
+  width: var(--largeur-carte);
+  animation: rpg-coffret-carte-sortie 620ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
+  animation-delay: var(--retard, 0ms);
+  will-change: transform, opacity;
+}
+
+/* Plus de perspective : la carte est plate. La scène ne sert plus qu'à tenir la
+   lueur `::before` dans le plan de la carte — un halo flou posé derrière une
+   illustration inclinée la voilait de la couleur de la rareté. */
+.rpg-coffret__carte-scene {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+/* La lueur de rareté : derrière, large, floue. */
+.rpg-coffret__carte::before {
+  content: '';
+  position: absolute;
+  inset: -18% -16% -12%;
+  z-index: 0;
+  border-radius: 24px;
+  background: radial-gradient(closest-side, var(--lueur-carte), transparent 78%);
+  opacity: var(--lueur-force);
+  filter: blur(12px);
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+/* Pas de cadre : ni marge, ni fond, ni bordure autour de l'illustration. La
+   carte EST la peinture — un anneau d'un pixel, et le nom en dessous. */
+.rpg-coffret__carte-corps {
+  position: relative;
+  display: block;
+  border-radius: 10px;
+  background: none;
+  transition: transform 300ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+/* Le survol ne redresse plus rien : la carte se soulève de deux pixels, à
+   plat. Toute rotation serait revenue par la porte de derrière. */
+.rpg-coffret__carte:hover .rpg-coffret__carte-corps {
+  transform: translateY(-2px);
+}
+
+.rpg-coffret__carte-face {
+  display: grid;
+  gap: 7px;
+}
+
+@keyframes rpg-coffret-carte-sortie {
+  0% {
+    opacity: 0;
+    transform: translate(var(--depart-x, 0px), 52px) rotate(var(--inclinaison, 0deg)) scale(0.74);
+  }
+  45% { opacity: 1; }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+/* L'illustration, seule : un anneau de rareté, une ombre portée, et rien
+   d'autre. Aucun voile, aucun `filter`, aucun `mix-blend-mode` — la peinture
+   garde ses vraies couleurs. */
+.rpg-coffret__carte-art {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: #0b0d18;
+  box-shadow:
+    0 0 0 1px var(--bord-carte),
+    0 14px 28px rgba(0, 0, 0, 0.5);
+}
+
+.rpg-coffret__carte-art img {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: none;
+}
+
+/* La plaque de repli : jamais un rectangle noir sans un mot. */
+.rpg-coffret__illustration-manquante {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  padding: 8px;
+  background:
+    radial-gradient(120% 90% at 50% 20%, rgba(232, 183, 92, 0.16), transparent 62%),
+    #10111c;
+  text-align: center;
+}
+
+.rpg-coffret__illustration-manquante b {
+  font: 600 10px/1.3 'Rajdhani', 'Inter', system-ui, sans-serif;
+  letter-spacing: 0.6px;
+  color: #b9c0d8;
+}
+
+.rpg-coffret__carte-texte {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 1px;
+  text-shadow: 0 1px 3px rgba(3, 5, 12, 0.85);
+}
+
+.rpg-coffret__carte-nom {
+  margin: 0;
+  font: 600 10px/1.25 'Rajdhani', 'Inter', system-ui, sans-serif;
+  color: #eef1fb;
+}
+
+.rpg-coffret__carte-rarete {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font: 600 9px/1.2 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #98a0ba;
+}
+
+.rpg-coffret__copies {
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(232, 183, 92, 0.18);
+  color: #e8b75c;
+}
+
+/* ── Les quatre raretés ──────────────────────────────────────────────────── */
+
+/* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot,
+   mais assez grande pour que sa peinture se lise sans plisser les yeux. */
+.rpg-coffret__carte--commune {
+  --largeur-carte: 140px;
+  --lueur-force: 0;
+}
+
+/* Inhabituelle : le même gabarit, un halo d'acier à peine perceptible. */
+.rpg-coffret__carte--inhabituelle {
+  --largeur-carte: 140px;
+  --bord-carte: rgba(120, 170, 235, 0.42);
+  --lueur-carte: rgba(77, 154, 255, 0.55);
+  --lueur-force: 0.3;
+}
+
+.rpg-coffret__carte--inhabituelle .rpg-coffret__carte-rarete {
+  color: #8fb8f0;
+}
+
+/* Rare : plus grande, liseré froid, halo franc. */
+.rpg-coffret__carte--rare {
+  --largeur-carte: 176px;
+  --bord-carte: rgba(120, 190, 255, 0.66);
+  --lueur-carte: rgba(96, 190, 255, 0.6);
+  --lueur-force: 0.55;
+}
+
+.rpg-coffret__carte--rare .rpg-coffret__carte-nom {
+  font-size: 12px;
+}
+
+.rpg-coffret__carte--rare .rpg-coffret__carte-rarete {
+  font-size: 10px;
+  color: #a9d8ff;
+}
+
+/* Mythique : la plus grande, l'or du coffret, et un halo qui respire. */
+.rpg-coffret__carte--mythique {
+  --largeur-carte: min(324px, 80vw);
+  --bord-carte: rgba(232, 183, 92, 0.85);
+  --lueur-carte: rgba(232, 183, 92, 0.66);
+  --lueur-force: 0.72;
+  animation: rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
+  animation-delay: var(--retard, 0ms);
+}
+
+/* La mythique n'a plus de plaque : c'est son anneau d'or qui la signe. */
+.rpg-coffret__carte--mythique .rpg-coffret__carte-art {
+  box-shadow:
+    0 0 0 2px rgba(232, 183, 92, 0.9),
+    0 0 0 3px rgba(255, 233, 184, 0.28),
+    0 22px 48px rgba(0, 0, 0, 0.62);
+}
+
+/* Une fois posée, la mythique flotte : `translate` est animé séparément de
+   `transform`, pour que l'entrée et le flottement ne s'écrasent pas. */
+.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique {
+  animation:
+    rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both,
+    rpg-coffret-mythe-flotte 5200ms 1200ms ease-in-out infinite;
+}
+
+@keyframes rpg-coffret-mythe-flotte {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
+/* La seule lueur qui respire : celle de la mythique. */
+.rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique::before {
+  animation: rpg-coffret-mythe-lueur 4600ms ease-in-out infinite;
+}
+
+@keyframes rpg-coffret-mythe-lueur {
+  0%, 100% { opacity: 0.58; }
+  50% { opacity: 0.95; }
+}
+
+.rpg-coffret__carte--mythique .rpg-coffret__carte-nom {
+  font-size: 14px;
+  color: #ffe9b8;
+}
+
+.rpg-coffret__carte--mythique .rpg-coffret__carte-rarete {
+  font-size: 10px;
+  color: #e8b75c;
+}
+
+/* ── Les actions ─────────────────────────────────────────────────────────── */
+
+.rpg-coffret__actions {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.rpg-coffret__jalons {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.rpg-coffret__jalons i {
+  width: 26px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background 240ms ease, box-shadow 240ms ease;
+}
+
+.rpg-coffret__jalons i.is-fait {
+  background: #e8b75c;
+  box-shadow: 0 0 12px rgba(232, 183, 92, 0.6);
+}
+
+.rpg-coffret__suivant {
+  margin-left: auto;
+}
+
+/* Le rideau de lumière entre deux vagues. */
+.rpg-coffret__rideau {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 248, 228, 0.95) 0%, rgba(232, 183, 92, 0.55) 30%, transparent 66%);
+  animation: rpg-coffret-rideau 460ms ease-in-out both;
+}
+
+@keyframes rpg-coffret-rideau {
+  0% { opacity: 0; scale: 0.85; }
+  45% { opacity: 1; scale: 1; }
+  100% { opacity: 0; scale: 1.12; }
+}
+
+/* ── Petits écrans ───────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .rpg-coffret__boites {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  /* Sur un téléphone, trois boîtiers empilés : un peu plus petits, et la
+     légende respire. */
+  .rpg-coffret__boite .rpg-deckbox {
+    --bw: clamp(96px, 34vw, 132px);
+  }
+
+  .rpg-coffret__boite {
+    gap: 2px;
+  }
+
+  /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
+     reste la plus petite, la mythique tient l'écran sans le déborder. */
+  .rpg-coffret__carte {
+    --largeur-carte: 124px;
+  }
+
+  .rpg-coffret__carte--commune,
+  .rpg-coffret__carte--inhabituelle {
+    --largeur-carte: 124px;
+  }
+
+  .rpg-coffret__carte--rare {
+    --largeur-carte: 148px;
+  }
+
+  .rpg-coffret__carte--mythique {
+    --largeur-carte: min(272px, 84vw);
+  }
+
+  .rpg-coffret__coffre .rpg-deckbox {
+    --bw: clamp(132px, 40vw, 172px);
+  }
+
+  .rpg-coffret__panneau {
+    padding: 20px 14px 24px;
+  }
+
+  .rpg-coffret__scene {
+    min-height: 54vh;
+  }
+}
+
+/* ── Moins de mouvement ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-coffret,
+  .rpg-coffret * {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+
+  .rpg-coffret__carte,
+  .rpg-coffret__carte--rare,
+  .rpg-coffret__carte--mythique,
+  .rpg-coffret__vague.is-finale .rpg-coffret__carte--mythique {
+    animation: none;
+  }
+
+  .rpg-coffret__poussiere {
+    display: none;
+  }
+}
+
+/* `is-reduit` : le même contrat, posé par le composant quand il a lu le
+   réglage système — les cartes sont là, immobiles, tout de suite. */
+.rpg-coffret__vague.is-reduit .rpg-coffret__carte,
+.rpg-coffret__carte.is-reduit {
+  animation: none;
+}

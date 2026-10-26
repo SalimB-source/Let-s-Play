@@ -304,9 +304,9 @@ test('les deux sièges remplacent réellement leurs cartes au mulligan avant le 
 });
 
 test('combat PvP en deux temps : déclaration publique, blocage adverse et identifiants monotones', async () => {
-  const { RPG_DECKS, cardById } = await import('../src/games/rpgCards.js');
-  const deckA = RPG_DECKS[0].cardIds;
-  const deckB = RPG_DECKS[1].cardIds;
+  const { RPG_DECKS_ARCHETYPES, cardById } = await import('../src/games/rpgCards.js');
+  const deckA = RPG_DECKS_ARCHETYPES[0].cardIds;
+  const deckB = RPG_DECKS_ARCHETYPES[1].cardIds;
   const duel = rpgNouveauDuel({
     joueurDeck: deckA,
     sorcierDeck: deckB,

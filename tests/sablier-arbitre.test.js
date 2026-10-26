@@ -16,13 +16,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cardById, RPG_DECKS } from '../src/games/rpgCards.js';
+import { cardById, RPG_DECKS_ARCHETYPES } from '../src/games/rpgCards.js';
 import { creerArbitre, etatInitial, OUBLIS_AVANT_ABANDON } from '../src/server/sablierArbitre.js';
 import { RPG_PVP_HORLOGES } from '../src/games/rpgPvp.js';
 import { rngSeme } from '../src/games/rpgHasard.js';
 
-const DECK_A = RPG_DECKS[0].cardIds;
-const DECK_B = RPG_DECKS[1].cardIds;
+// L'étagère du joueur est vide depuis les coffrets : les duels de test jouent
+// deux archétypes du répertoire (l'arbitre ne connaît que des listes de cartes).
+const DECK_A = RPG_DECKS_ARCHETYPES[0].cardIds;
+const DECK_B = RPG_DECKS_ARCHETYPES[1].cardIds;
 
 const HOTE = 'u-hote';
 const INVITE = 'u-invite';

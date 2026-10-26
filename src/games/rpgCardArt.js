@@ -25,13 +25,16 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 /**
  * `sans-teinte-v1` — les peintures dont la **teinte de set** a été retirée.
  *
- * Trois sets avaient reçu, après coup, un virage de couleur appliqué à la
- * peinture (pas en CSS) : le doré du Sable, le bleu de nuit de l'Eau, le violet
- * des Ténèbres. Le virage est annulé : ces cartes sont revenues à leur peinture
- * d'avant teinte, ou dévirées au plus près. La marque ne dit donc plus « cette
- * peinture a telle couleur de set », elle dit « cette peinture est neutre », et
- * elle sert uniquement à casser le cache des navigateurs qui ont l'ancienne
- * version. Le filet de 2 px, lui, continue de nommer l'élément.
+ * Deux sets portaient un virage de couleur appliqué à la peinture (pas en CSS) :
+ * le bleu de nuit de l'Eau et le violet des Ténèbres. Le virage est annulé : ces
+ * cartes sont revenues à leur peinture d'avant teinte. La marque ne décrit donc
+ * plus une couleur de set, elle dit « cette peinture est neutre », et elle sert
+ * surtout à casser le cache des navigateurs qui ont l'ancienne version.
+ *
+ * Le doré du Sable, lui, est retiré par mesure carte par carte
+ * (`scripts/retirer-filtre-dore-sable.sh`, marque `sable-souls-desore-v3`).
+ * Le filet de 2 px reste, lui, la seule marque d'élément — il ne dépend plus de
+ * la peinture.
  */
 const SANS_TEINTE = 'sans-teinte-v1';
 
@@ -39,15 +42,15 @@ const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
   // photoréaliste, repeint sous son ancien nom de fichier.
-  'la-vengeance-de-la-reine-anne': 'sable-souls-cendres-v1',
+  'la-vengeance-de-la-reine-anne': 'sable-souls-desore-v3',
   // La Barbe-Rousse repeint : jeune amiral en plein abordage, vue cinéma.
-  'la-barbe-rousse': 'sable-souls-cendres-v1',
-  'le-chasseur-d-ocracoke': 'sable-souls-cendres-v1',
+  'la-barbe-rousse': 'sable-souls-desore-v3',
+  'le-chasseur-d-ocracoke': 'sable-souls-desore-v3',
   'source-de-bimini': 'pirates-v1',
   'source-de-bimini-2': 'pirates-v1',
   'source-de-bimini-1': 'pirates-v1',
   'source-de-bimini-0': 'pirates-v1',
-  'le-tresor-de-lima': 'sable-souls-cendres-v1',
+  'le-tresor-de-lima': 'sable-souls-desore-v3',
   'le-tresor-de-lima-1': 'pirates-v2',
   'le-tresor-de-lima-0': 'pirates-v2',
   // Braise — la refonte Souls (huile sombre, réaliste) du set Soleil rouge.
@@ -86,61 +89,59 @@ const CARD_ART_CACHE_VERSIONS = {
   'sahir-des-braises': 'braise-souls-cendres-v3',
   'braisier-du-souk': 'braise-souls-cendres-v4',
   // Le Sable — la passe Souls du désert : mêmes cartes, lumière de cendre.
-  // Le doré de set appliqué ensuite (18 % de #c89a50) a été retiré : ces cartes
-  // ont retrouvé leur peinture de cendre, sans virage.
-  'faucon-du-zenith': 'sable-souls-cendres-v1',
-  'dune-marchante': 'sable-souls-cendres-v1',
-  'fennec-des-decombres': 'sable-souls-cendres-v1',
-  'tour-de-sable': 'sable-souls-cendres-v1',
-  'tislit-des-aures': 'sable-souls-cendres-v1',
-  'cavalier-amazigh-du-desert': 'sable-souls-cendres-v1',
-  'amayas-du-hoggar': 'sable-souls-cendres-v1',
-  'faussoyeur-des-dunes': 'sable-souls-cendres-v1',
-  'la-barbe-noire': 'sable-souls-cendres-v1',
-  'galion-de-la-flotte': 'sable-souls-cendres-v1',
-  'cotre-de-course': 'sable-souls-cendres-v1',
-  'le-renegat': 'sable-souls-cendres-v1',
-  'negociant-des-ranscons': 'sable-souls-cendres-v1',
-  'mousse-des-galiotes': 'sable-souls-cendres-v1',
-  'rais-de-la-galiote': 'sable-souls-cendres-v1',
-  'tiziri-du-djurdjura': 'sable-souls-cendres-v1',
-  'amani-des-ksour': 'sable-souls-cendres-v1',
-  'guetteur-du-beffroi': 'sable-souls-cendres-v1',
-  'scribe-de-la-liste': 'sable-souls-cendres-v1',
-  'faiseur-de-passage': 'sable-souls-cendres-v1',
-  'tercio-de-cuivre': 'sable-souls-cendres-v1',
-  'tempete-de-sable': 'sable-souls-cendres-v1',
-  'rempart-de-dunes': 'sable-souls-cendres-v1',
-  'reanimation': 'sable-souls-cendres-v1',
+  'faucon-du-zenith': 'sable-souls-desore-v3',
+  'dune-marchante': 'sable-souls-desore-v3',
+  'fennec-des-decombres': 'sable-souls-desore-v3',
+  'tour-de-sable': 'sable-souls-desore-v3',
+  'tislit-des-aures': 'sable-souls-desore-v3',
+  'cavalier-amazigh-du-desert': 'sable-souls-desore-v3',
+  'amayas-du-hoggar': 'sable-souls-desore-v3',
+  'faussoyeur-des-dunes': 'sable-souls-desore-v3',
+  'la-barbe-noire': 'sable-souls-desore-v3',
+  'galion-de-la-flotte': 'sable-souls-desore-v3',
+  'cotre-de-course': 'sable-souls-desore-v3',
+  'le-renegat': 'sable-souls-desore-v3',
+  'negociant-des-ranscons': 'sable-souls-desore-v3',
+  'mousse-des-galiotes': 'sable-souls-desore-v3',
+  'rais-de-la-galiote': 'sable-souls-desore-v3',
+  'tiziri-du-djurdjura': 'sable-souls-desore-v3',
+  'amani-des-ksour': 'sable-souls-desore-v3',
+  'guetteur-du-beffroi': 'sable-souls-desore-v3',
+  'scribe-de-la-liste': 'sable-souls-desore-v3',
+  'faiseur-de-passage': 'sable-souls-desore-v3',
+  'tercio-de-cuivre': 'sable-souls-desore-v3',
+  'tempete-de-sable': 'sable-souls-desore-v3',
+  'rempart-de-dunes': 'sable-souls-desore-v3',
+  'reanimation': 'sable-souls-desore-v3',
   // Les héros du désert, leur chien et les premiers équipements.
-  'salem': 'sable-souls-cendres-v1',
-  'tarek': 'sable-souls-cendres-v1',
-  'tin-hinan-des-pistes': 'sable-souls-cendres-v1',
+  'salem': 'sable-souls-desore-v3',
+  'tarek': 'sable-souls-desore-v3',
+  'tin-hinan-des-pistes': 'sable-souls-desore-v3',
   // Bouchra, la guerrière des crêtes : peinture neuve, révision dédiée.
-  'bouchra-guerriere-des-cretes': 'bouchra-cretes-v2',
+  'bouchra-guerriere-des-cretes': 'bouchra-cretes-v3',
   // Le roi Kusayla, peint pour le souverain amazigh : une révision dédiée, pour
   // qu'un repaint futur ne date que sa propre peinture. Le guépard qu'il
   // appelle à son arrivée est une créature-jeton, peinte elle aussi.
-  'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v1',
+  'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v2',
   'guepard': 'guepard-jeton-v1',
-  'chien-du-guet': 'sable-souls-cendres-v1',
+  'chien-du-guet': 'sable-souls-desore-v3',
   // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
-  'grappin-d-abordage': 'grappin-griffes-bastingage-v2',
-  'takouba-des-pistes': 'sable-souls-cendres-v1',
-  'sandales-de-tislit': 'sable-souls-cendres-v1',
-  'cuirasse-de-sel': 'sable-souls-cendres-v1',
+  'grappin-d-abordage': 'grappin-griffes-bastingage-v4',
+  'takouba-des-pistes': 'sable-souls-desore-v3',
+  'sandales-de-tislit': 'sable-souls-desore-v3',
+  'cuirasse-de-sel': 'sable-souls-desore-v3',
   // Le javelot est repassé de la dune au beffroi : il est chez lui, sous la cloche.
-  'javelot-du-beffroi': 'javelot-beffroi-cloche-v2',
-  'licou-du-chien-de-sable': 'sable-souls-cendres-v1',
+  'javelot-du-beffroi': 'javelot-beffroi-cloche-v4',
+  'licou-du-chien-de-sable': 'sable-souls-desore-v3',
   // Fin du set Sable : les trois dernières armes et les trois dernières magies.
-  'harnais-du-mehari': 'sable-souls-cendres-v1',
-  'masque-du-guetteur': 'sable-souls-cendres-v1',
-  'jitte-d-amayas': 'sable-souls-cendres-v1',
-  'lame-des-ergs': 'sable-souls-cendres-v1',
-  'takouba-de-tin-hinan': 'sable-souls-cendres-v1',
-  'lettre-de-marque': 'sable-souls-cendres-v1',
-  'le-grand-debarquement': 'sable-souls-cendres-v1',
-  'rapport-du-greffier': 'sable-souls-cendres-v1',
+  'harnais-du-mehari': 'sable-souls-desore-v3',
+  'masque-du-guetteur': 'sable-souls-desore-v3',
+  'jitte-d-amayas': 'sable-souls-desore-v3',
+  'lame-des-ergs': 'sable-souls-desore-v3',
+  'takouba-de-tin-hinan': 'sable-souls-desore-v3',
+  'lettre-de-marque': 'sable-souls-desore-v3',
+  'le-grand-debarquement': 'sable-souls-desore-v3',
+  'rapport-du-greffier': 'sable-souls-desore-v3',
   'tour-de-braise': 'braise-souls-cendres-v5',
   'nuage-de-cendres': 'braise-souls-cendres-v5',
   'vent-rouge': 'braise-souls-cendres-v5',
@@ -180,9 +181,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
   // seul derrière la glace d'une vitrine, les serpents dehors.
   'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
-  'djinn-de-foudre': 'sable-souls-cendres-v1',
+  'djinn-de-foudre': 'sable-souls-desore-v3',
   'sonneur-fele': 'plein-art-cloche-v1',
-  'dame-aux-ailes-d-or': 'sable-souls-cendres-v1',
+  'dame-aux-ailes-d-or': 'sable-souls-desore-v3',
   'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
@@ -252,52 +253,52 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
   // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
-  // la suie et à l'or terni. Le violet de set, appliqué un temps en mélange de
-  // 18 % de #5b2a86 sur la peinture, a été **retiré** : ces cartes sont
-  // revenues à la peinture d'os et de suie (`tenebres-os-cendres-v1`). Les six
-  // cartes du Corbeau des neuf nuits, elles, n'ont jamais reçu de teinte.
-  'khopesh-d-or': 'tenebres-os-cendres-v1',
-  'chacal-du-seuil': 'tenebres-os-cendres-v1',
-  'ouvrier-du-natron': 'tenebres-os-cendres-v1',
-  'gardienne-de-la-balance': 'tenebres-os-cendres-v1',
-  'scribe-des-feuillets': 'tenebres-os-cendres-v1',
-  'pretre-de-la-bouche': 'tenebres-os-cendres-v1',
-  'ureus-du-seuil': 'tenebres-os-cendres-v1',
+  // la suie et à l'or terni. Le violet de set — un mélange de 18 % de #5b2a86
+  // appliqué à la peinture — a ensuite été **retiré** : ces cartes sont
+  // revenues à l'os et à la suie, sans virage. Les six cartes du Corbeau des
+  // neuf nuits, elles, n'ont jamais reçu de teinte.
+  'khopesh-d-or': SANS_TEINTE,
+  'chacal-du-seuil': SANS_TEINTE,
+  'ouvrier-du-natron': SANS_TEINTE,
+  'gardienne-de-la-balance': SANS_TEINTE,
+  'scribe-des-feuillets': SANS_TEINTE,
+  'pretre-de-la-bouche': SANS_TEINTE,
+  'ureus-du-seuil': SANS_TEINTE,
   // Deuxième lot : les figures du seuil, les masques et les magies du livre.
   // La Dévoreuse garde son identité — la gueule énorme qui avale, sans visage
   // humain — mais perd l'or, le bleu de feu et le masque de pharaon.
-  'momie-de-lin': 'tenebres-os-cendres-v1',
-  'ibis-des-comptes': 'tenebres-os-cendres-v1',
-  'celle-qui-pese': 'tenebres-os-cendres-v1',
-  'la-devoreuse': 'devoreuse-nihonga-visage-v1',
-  'celui-qui-juge': 'tenebres-os-cendres-v1',
-  'passeur-au-masque-de-chacal': 'tenebres-os-cendres-v1',
-  'maitre-des-hieroglyphes': 'tenebres-os-cendres-v1',
-  'papyrus': 'tenebres-os-cendres-v1',
-  'nom-efface': 'tenebres-os-cendres-v1',
-  'offrande-de-lin': 'tenebres-os-cendres-v1',
+  'momie-de-lin': SANS_TEINTE,
+  'ibis-des-comptes': SANS_TEINTE,
+  'celle-qui-pese': SANS_TEINTE,
+  'la-devoreuse': SANS_TEINTE,
+  'celui-qui-juge': SANS_TEINTE,
+  'passeur-au-masque-de-chacal': SANS_TEINTE,
+  'maitre-des-hieroglyphes': SANS_TEINTE,
+  'papyrus': SANS_TEINTE,
+  'nom-efface': SANS_TEINTE,
+  'offrande-de-lin': SANS_TEINTE,
   // Troisième lot : les trois pesées et les deux lieux. Le set Ténèbres est
   // clos — 28 cartes jouables, toutes à l'huile.
-  'le-poids': 'tenebres-os-cendres-v1',
-  'les-feuillets': 'tenebres-os-cendres-v1',
-  'la-grande-pesee': 'tenebres-os-cendres-v1',
-  'la-derniere-pesee': 'tenebres-os-cendres-v1',
+  'le-poids': SANS_TEINTE,
+  'les-feuillets': SANS_TEINTE,
+  'la-grande-pesee': SANS_TEINTE,
+  'la-derniere-pesee': SANS_TEINTE,
   'tour-des-tenebres': SANS_TEINTE,
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
   // lot avait été viré au bleu de nuit pour distinguer l'Eau de la Neige ; le
   // virage est **retiré**, les peintures reviennent à l'ardoise froide.
-  'yamina': 'eau-souls-cendres-v1',
-  'boualem': 'eau-souls-cendres-v1',
-  'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
-  'porteuse-de-cruches': 'eau-souls-cendres-v1',
-  'pilote-de-la-carreira': 'eau-souls-cendres-v1',
-  'source-de-bimini': 'pirates-v1',
-  'haut-fond': 'eau-souls-cendres-v1',
-  'lame-de-mer': 'eau-souls-cendres-v1',
-  'le-routier': 'eau-souls-cendres-v1',
-  'eau-de-la-source': 'eau-souls-cendres-v1',
+  'yamina': SANS_TEINTE,
+  'boualem': SANS_TEINTE,
+  'baton-des-citernes': SANS_TEINTE,
+  'porteuse-de-cruches': SANS_TEINTE,
+  'pilote-de-la-carreira': SANS_TEINTE,
+  'source-de-bimini': SANS_TEINTE,
+  'haut-fond': SANS_TEINTE,
+  'lame-de-mer': SANS_TEINTE,
+  'le-routier': SANS_TEINTE,
+  'eau-de-la-source': SANS_TEINTE,
   // Les bêtes et les gardiens — deuxième lot : les unes étaient trop claires,
   // les autres carrément absentes du registre. Leur bleu de nuit a été retiré
   // comme celui du premier lot : ce sont des peintures neutres, dévirées.

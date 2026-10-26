@@ -4,7 +4,8 @@
  * C'est le seul moment du Souk qui doit faire plaisir : les cartes se
  * retournent l'une après l'autre — trois communes ou inhabituelles, la **rare
  * garantie**, puis la cinquième carte, celle qui peut être mythique —, chaque
- * carte tamponnée **NOUVELLE** ou « déjà possédée → +22 ◈ », puis le total
+ * carte tamponnée **Nouvelle**, **2ᵉ exemplaire** (la copie se garde et se joue
+ * à deux en deck) ou **+22 ◈** (le doublon est remboursé), puis le total
  * encaissé et le bouton **« Tout ranger dans la collection »**.
  *
  * Elle est montée par l'écran du Souk **et par la page** pour le paquet qu'un
@@ -24,7 +25,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
 import { cardById, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
-import { rayonParId } from './rpgBoosters.js';
+import { TAMPON_CARTE, etatDeCarteRevelee as etatDeCarte, rayonParId } from './rpgBoosters.js';
 import { creditsLisible } from './rpgCredits.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
@@ -46,16 +47,23 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
   if (!carte) return null;
   const rarete = cardRarityInfo(carte);
   const exemplaires = detail.exemplaires ?? 1;
+  const etat = etatDeCarte(detail);
+  const annonce = etat === 'remboursee'
+    ? `, doublon remboursé ${detail.remboursement} crédits`
+    : etat === 'exemplaire'
+      ? ', deuxième exemplaire gardé : deux copies jouables en deck'
+      : etat === 'deja' ? ', déjà possédée' : ', nouvelle carte';
   return (
     <article
       inert={!visible || undefined}
       aria-hidden={!visible || undefined}
-      aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${detail.doublon ? (detail.remboursement > 0 ? `, doublon remboursé ${detail.remboursement} crédits` : ', déjà possédée') : ', nouvelle carte'}`}
+      aria-label={`${carte.name}, ${rarete.label}, ${cardTypeLine(carte)} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''} dans la collection${annonce}`}
       title={`${carte.name} — clic droit pour ouvrir la fiche`}
-      className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'}`}
+      className={`rpg-souk__carte ${cardFrameClass(carte)}${detail.doublon ? ' is-doublon' : ' is-nouvelle'} is-${etat}`}
       data-card-id={carte.id}
       data-souk-carte={visible ? carte.id : undefined}
       data-souk-carte-etat={detail.doublon ? 'doublon' : 'nouvelle'}
+      data-souk-carte-etat-detail={etat}
       data-souk-carte-rarete={rarete.key}
       data-souk-carte-remboursement={detail.remboursement}
       style={{ '--rang': index % 5 }}
@@ -66,17 +74,13 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
         </div>
         <span className="rpg-souk__carte-reflet" aria-hidden="true" />
         <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__carte-copies" />
-        <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={detail.doublon ? 'doublon' : 'nouvelle'}>
-          {detail.doublon ? (
-            detail.remboursement > 0 ? (
-              <>
-                +{detail.remboursement} <RpgCreditIcon />
-                <span className="sr-only">crédits remboursés pour ce doublon</span>
-              </>
-            ) : (
-              'Déjà possédée'
-            )
-          ) : 'Nouvelle'}
+        <p className="rpg-souk__carte-tampon" data-souk-carte-tampon={etat}>
+          {etat === 'remboursee' ? (
+            <>
+              +{detail.remboursement} <RpgCreditIcon />
+              <span className="sr-only">crédits remboursés pour ce doublon</span>
+            </>
+          ) : TAMPON_CARTE[etat]}
         </p>
       </div>
     </article>
@@ -177,6 +181,9 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   if (!ouverture) return null;
   const toutRevele = phase === 'termine';
   const total = ouverture.remboursement ?? 0;
+  // Les deuxièmes exemplaires gardés ne rapportent pas de crédits : sans ce
+  // compte, un paquet de doublons utiles se résumait à « 0 nouvelle ».
+  const gardees = cartes.filter((detail) => etatDeCarte(detail) === 'exemplaire').length;
 
   /** Passer termine immédiatement tous les mouvements d'entrée. */
   const toutReveler = () => {
@@ -248,6 +255,7 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
             {toutRevele ? (
               <>
                 {ouverture.nouvelles ?? 0} nouvelle{(ouverture.nouvelles ?? 0) > 1 ? 's' : ''}
+                {gardees ? <> {'·'} {gardees} deuxième{gardees > 1 ? 's' : ''} exemplaire{gardees > 1 ? 's' : ''} gardé{gardees > 1 ? 's' : ''}</> : ''}
                 {total ? <> {'·'} {total} <RpgCreditIcon /> rendus par les doublons</> : ''}
               </>
             ) : phase === 'scelle' || phase === 'ouverture' ? 'Le sceau se brise…'
