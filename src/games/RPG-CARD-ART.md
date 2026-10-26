@@ -1326,3 +1326,58 @@ Ces révisions empêchent les caches de resservir les images précédentes. Pour
 le Serpent du monde, la révision dédiée l'emporte sur `SET_NEIGE_ART_VERSION`.
 Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie le ratio 4:5
 comme le reste de la collection, l'Armure de cendres y compris.
+
+## Audit visuel du catalogue (octobre 2026)
+
+Contrôle des **162 cartes illustrées** sur une planche unique, vignette par
+vignette, avec le nom sous chaque carte. La planche se refait avec
+`scripts/planche-cartes.sh` : elle tire les vignettes des mêmes fichiers que le
+jeu (`public/cards/<art>.jpg`), donc elle montre ce que le joueur voit.
+
+### Ce que la planche confirme
+
+Les cinq sets tiennent leur registre. Les ombres restent noires, les visages
+lisibles, aucune carte ne porte de texte, de bordure ni de cadre. Les marques de
+set se lisent d'un bloc à l'autre : ambre pour Braise, ardoise pour le Sable et
+la Neige, bleu de nuit pour l'Eau, os et violet de nuit pour les Ténèbres.
+
+### Les écarts restants, par gravité
+
+**1. Trois images hors facture (à reprendre).** Ce sont les seules cartes qui ne
+sont pas des peintures :
+
+| Carte | Élément | Ce qui cloche |
+| --- | --- | --- |
+| `shabti` | Ténèbres | Statuette turquoise en rendu 3D lisse, clarté 9 %, fond violet |
+| `serpent-des-citernes` | Eau | Serpent vert émeraude et eau turquoise, clarté 33 % : le point le plus clair du set |
+| `tojiro-le-pourfendeur` | Braise | Kaiga plat, clarté 44 % — **dérogation voulue**, à ne pas repeindre |
+
+**2. Cinq cartes trop claires pour la palette** (clarté ≥ 34 % contre 6-28 % pour
+le reste) :
+
+- `petit-orochi` — 44 %, serpent vert sur ciel rose et vert prairie. La carte
+  la plus criarde du catalogue.
+- `corsaire` — 41 %, plein jour, ciel bleu, aucune clé de cache.
+- `chien-de-sable` — 39 %, deux chiens de sable dorés sur un couchant orange.
+- `brume-du-fjord` — 40 %, brume blanche très lumineuse.
+- `grand-hiver` — 34 %, bloc de glace clair.
+
+Deux d'entre eux sont documentés (`petit-orochi` et `samourai-du-daimyo` en
+kaiga coloré) ; `corsaire` et `chien-de-sable` n'ont **aucune** clé de cache :
+ce sont les images les plus anciennes du catalogue.
+
+**3. Deux cartes trop sombres pour être lues en vignette** :
+`contresort-des-abimes` (6 %) et `baton-des-citernes` (7 %). À cette clarté, le
+sujet tient encore en grand mais se perd dans une main de cartes.
+
+**4. Le Corbeau des neuf nuits** (six cartes, `corbeau-neuf-nuits-v1`) reste un
+registre à part, plus violet et plus fantastique que le reste des Ténèbres. Ce
+n'est pas un défaut : c'est ce qui donne sa profondeur au set. À noter
+seulement que `la-barbe-noire` vit dans les Ténèbres avec une peinture du Sable.
+
+### Ce qui a été décidé
+
+Rien n'a été repeint sur la foi de la seule planche : les cartes marquées d'une
+dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
+elles sont. Les trois images hors facture et les deux cartes trop sombres sont
+les seules candidates à une reprise, et elles attendent un arbitrage.
