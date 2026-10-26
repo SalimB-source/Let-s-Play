@@ -478,7 +478,7 @@ panthéon égyptien — toujours nommées **par leur attribut** (jamais le mot
 | **Le Faucon du zénith** _(Horus)_ | `faucon-du-zenith` | Sable | 5 | 3/3 | **Envol**, **Attaque ciblée** (30 % contre une créature, 100 % contre le sorcier), **Tribut 1**, **Protection Ténèbres** (permanente) |
 | **La Lionne du midi ardent** _(Sekhmet)_ | `lionne-du-midi-ardent` | Braise | 6 | 4/4 | **Rapidité**, **Protection Eau et Neige** (permanente) ; arrivée : 2 dégâts à toutes les créatures adverses |
 | **La Dame aux ailes d'or** _(Isis)_ | `dame-aux-ailes-d-or` | Sable | 5 | 3/5 | **Envol** ; arrivée : bouclier de lumière ; mort : vous gagnez 4 PV |
-| **Le Seigneur des mâchoires** _(Sobek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** |
+| **Le Seigneur des mâchoires** _(Sobek / Sabek)_ | `seigneur-des-machoires` | Eau | 6 | 6/6 | **Tenacité**, **Tribut 2** — type « Souverain crocodile du Nil » ; sa peinture le montre en figure du fleuve (couronne au disque solaire et aux uraeus, sceptre ousekh, second crocodile à ses côtés), voir `RPG-CARD-ART.md` |
 
 ## Le deck du catalogue (étagère, onglet Deck)
 

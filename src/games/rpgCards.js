@@ -474,6 +474,29 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Son chant rassemble les villages avant la tempête.',
   },
   {
+    id: 'bouchra-guerriere-des-cretes',
+    name: 'Bouchra, guerrière des crêtes',
+    element: 'sable',
+    cost: 2,
+    atk: 3,
+    def: 1,
+    rarity: 'mythique',
+    typeLine: 'Créature légendaire — Guerrière amazighe',
+    art: 'bouchra-guerriere-des-cretes',
+    // La mythique bon marché du Sable : 3/1 pour deux manas, et rien pour se
+    // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
+    // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
+    // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
+    // insaisissable (Esquive, 30 %) : ce qu'elle ne pare pas, elle l'évite.
+    // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
+    // au premier échange qu'elle ne voit pas venir.
+    rapidite: true,
+    coupRapide: true,
+    esquive: true,
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
+  },
+  {
     id: 'amani-des-ksour',
     name: 'Amani, gardienne des ksour',
     element: 'sable',
@@ -851,6 +874,23 @@ export const RPG_JETON_CARDS = [
     flavor: 'Il se lève du sable comme la dune se lève du vent.',
   },
   {
+    id: 'guepard',
+    name: 'Guépard',
+    // Le pluriel du journal (« le roi Kusayla crée 1 guépard »).
+    pluriel: 'guépards',
+    element: 'sable',
+    cost: 0,
+    atk: 2,
+    def: 1,
+    rarity: 'commune',
+    kind: 'creature',
+    jeton: true,
+    rapidite: true,
+    typeLine: 'Créature-jeton — Guépard',
+    text: 'Un guépard créé par le roi Kusayla à son arrivée : 2/1 avec Rapidité, sans coût.',
+    flavor: 'Il ne suit pas le roi : il arrive avant lui.',
+  },
+  {
     id: 'serpent-des-citernes',
     name: 'Serpent des citernes',
     pluriel: 'serpents des citernes',
@@ -1078,6 +1118,30 @@ export const RPG_HERO_CARDS = [
     arrivee: { type: 'infiltration', cible: 'autres-allies', tours: 1 },
     text: 'Quand Tin Hinan arrive : vos autres créatures gagnent Infiltration jusqu’à la fin du tour.',
     flavor: 'Dans la mémoire des pistes, elle ouvre la route et rassemble les siens.',
+  },
+  {
+    id: 'kusayla-roi-des-imazighen',
+    name: 'Le roi Kusayla',
+    role: 'Le Roi de Tahouda',
+    // Le roi de la lumière couchante : le Sable de sa terre, les Ténèbres de la
+    // nuit où il frappe. Payer 5 manas exige donc au moins un Sable et un
+    // Ténèbres (voir `cardColorCost`), et son cadre se partage en deux.
+    element: 'sable',
+    colors: ['sable', 'tenebres'],
+    colorCost: { sable: 1, tenebres: 1 },
+    cost: 5,
+    atk: 4,
+    def: 5,
+    rarity: 'mythique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Roi amazigh',
+    art: 'kusayla-roi-des-imazighen',
+    // Le roi awraba qui arrêta l’invasion à Tahouda : il rend les coups qu’on
+    // lui porte (Contre-attaque), et son guépard entre avec lui (jeton).
+    contreAttaque: true,
+    arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
     id: 'ifrit-al-ahmar',

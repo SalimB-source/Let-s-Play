@@ -85,7 +85,9 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // découvre non plus — elles ne sont plus vendues nulle part.
   'listes-1': ['cavalier-amazigh-du-desert', 'scribe-de-la-liste'],
   'listes-2': ['braisier-du-souk'],
-  'listes-3': ['amani-des-ksour', 'tempete-de-sable', 'masque-du-guetteur'],
+  // La guerrière des crêtes descend la montagne avec les gardiennes des ksour :
+  // le Sable apprend le tempo de la chèvre de guerre.
+  'listes-3': ['amani-des-ksour', 'bouchra-guerriere-des-cretes', 'tempete-de-sable', 'masque-du-guetteur'],
   // Pétra et sa peinture alternative se débloquent ensemble à l’étage 4.
   // Pétra était un terrain : retirée avec les terrains.
   'listes-4': [],
@@ -99,12 +101,15 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
     'lettre-de-marque', 'le-routier'],
-  // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise.
+  // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise. Le roi
+  // Kusayla y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
+  // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
+  // campagne révélée avant la Nécropole (le roi de la nuit tombante).
   'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
+  'sables-3': ['anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],

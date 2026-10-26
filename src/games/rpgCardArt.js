@@ -101,6 +101,13 @@ const CARD_ART_CACHE_VERSIONS = {
   'salem': 'sable-souls-dore-v2',
   'tarek': 'sable-souls-dore-v2',
   'tin-hinan-des-pistes': 'sable-souls-dore-v2',
+  // Bouchra, la guerrière des crêtes : peinture neuve, révision dédiée.
+  'bouchra-guerriere-des-cretes': 'bouchra-cretes-v2',
+  // Le roi Kusayla, peint pour le souverain amazigh : une révision dédiée, pour
+  // qu'un repaint futur ne date que sa propre peinture. Le guépard qu'il
+  // appelle à son arrivée est une créature-jeton, peinte elle aussi.
+  'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v1',
+  'guepard': 'guepard-jeton-v1',
   'chien-du-guet': 'sable-souls-dore-v2',
   // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
   'grappin-d-abordage': 'grappin-griffes-bastingage-v3',
@@ -283,7 +290,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'leviathan': 'eau-souls-bleue-v1',
   'bakunawa': 'eau-souls-bleue-v1',
   'jormungandr': 'eau-souls-bleue-v1',
-  'seigneur-des-machoires': 'eau-souls-bleue-v1',
+  // Le Seigneur des mâchoires est repeint en figure du Nil (Sabek, le
+  // souverain crocodile) : révision dédiée, la peinture du village inondé
+  // reste l'illustration alternative.
+  'seigneur-des-machoires': 'tenebres-seigneur-machoires-nil-v2',
   'vipere-de-verre': 'eau-souls-bleue-v1',
   'tour-des-flots': 'eau-souls-bleue-v1',
   'sonneur-fele': 'eau-souls-bleue-v1',

@@ -118,6 +118,10 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
   assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
+  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Contre-attaque'],
+    'le roi Kusayla affiche sa Contre-attaque, comme Eirik et Tojiro');
+  assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
+    'le guépard-jeton n’affiche que sa Rapidité');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');
 });
 

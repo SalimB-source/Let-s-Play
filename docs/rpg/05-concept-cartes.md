@@ -281,7 +281,84 @@ Sans proie désignée, le porteur attaque normalement.
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 
-### Les créatures-jetons (les chiens de sable de Tarek)
+### Le roi Kusayla et son guépard (Sable)
+
+Le catalogue accueille **Le roi Kusayla** (`kusayla-roi-des-imazighen`), la
+figure du souverain awraba qui défit l'expédition omeyyade dans le défilé de
+**Tahouda** (683) puis tint Kairouan jusqu'à sa mort au combat, en 688. La fiche
+suit la mémoire amazighe du roi — Aksel, Aksil, Kusayla, Koceila, selon les
+traditions — sans en faire un sujet de polémique : c'est le roi qui défend sa
+terre, rien de plus.
+
+- **Un héros hybride Sable + Ténèbres, mythique** : 5 manas, **4/5**,
+  `kind: 'hero'`, `colors: ['sable', 'tenebres']`, ligne de type « Créature
+  légendaire — Roi amazigh », une seule copie par deck (`cardCopyLimit`). Le
+  Sable est la terre qu'il défend, les Ténèbres la nuit où il frappe : son coût
+  exige **un pip de chaque couleur** (`colorCost: { sable: 1, tenebres: 1 }`,
+  les quatre autres manas sont génériques), et son cadre se partage en deux
+  suivant l'ordre canonique des couleurs, `hybride-sable-tenebres`
+  (`#a98cbf`). Il n'entre ni dans les recettes de départ ni dans la dotation :
+  il se révèle au sommet de la **Tour des Sables** (`sables-3`), avec Tin Hinan
+  et Yamina — c'est la **seule carte teintée de Ténèbres** de la tour, la
+  couleur ne s'installant pour de bon qu'à la Nécropole.
+- **Contre-attaque** — le même drapeau que Tojiro et Eirik
+  (`contreAttaque: true`, `riposteDeContreAttaque` dans `rpgDuel.js`) : une
+  créature adverse qui le frappe avec Attaque ciblée ou le cible avec une
+  capacité encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait riposter
+  sur le sorcier adverse.
+- **Le guépard du roi** — `arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 }` :
+  quand Kusayla arrive, **un guépard 2/1 avec Rapidité entre en jeu sans coût**,
+  sur le chemin des chiens de sable de Tarek (voir la section des
+  créatures-jetons). Aucune cible à désigner, donc aucune attente : la pose et
+  le fauve se résolvent d'un seul geste, et seul le coût du roi est payé. Le
+  guépard est une **carte-jeton** (`RPG_JETON_CARDS`, hors catalogue) : elle ne
+  se collectionne pas, ne s'achète pas et n'entre dans aucun deck.
+- Sa peinture est un plein art 4:5 dédié, refaite dans la veine **soulslike**
+  (la seule carte du catalogue à ce registre) : le roi **à cheval** sur un champ
+  de bataille de cendre, **armure de plaque dorée complète et rongée**, **tête
+  nue — aucun heaume**, visage d'un homme d'environ **trente-cinq ans** aux longs
+  cheveux noirs, l'or qui **luit faiblement de l'intérieur**, une **grande hache
+  de fer noirci** levée, le **guépard** au pelage fauve doré, taches noires et
+  larme de l'œil, qui court à sa droite, et des **accents dorés dans le fond**
+  (l'arche brisée, les bannières, les boucliers coulés, la poussière) sans
+  jamais dépasser l'éclat de l'armure (direction artistique
+  `RPG-CARD-ART.md`). Sa révision de cache est `kusayla-roi-imazigh-v1`,
+  déclarée dans `rpgCardArt.js` — le guépard-jeton porte la sienne,
+  `guepard-jeton-v1`.
+
+### Bouchra, la guerrière des crêtes (Sable)
+
+**Bouchra, guerrière des crêtes** (`bouchra-guerriere-des-cretes`) ajoute au
+Sable une combattante de tempo : une **mythique** à **2 manas, 3/1**, ligne de
+type « Créature légendaire — Guerrière amazighe », **un seul exemplaire** par
+deck. C'est, avec Eirik du Premier Serment (Neige, 1 mana 2/2), la mythique la
+moins chère du catalogue : sa puissance calculée est **44,45**, dans la bande
+mythique (41,8 à 44,4), et son corps de 3/1 pour deux manas est le plus
+agressif du Sable.
+
+- **Rapidité** — sa chèvre de guerre ne connaît pas le mal d'invocation : elle
+  attaque le tour où elle arrive, comme le Djinn de foudre ou Fériel.
+- **Esquive** — 30 % de chances d'esquiver une attaque, une Magie ou une
+  Sorcellerie (les capacités ne s'esquivent pas). C'est sa seule défense : elle
+  ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
+  sur trois seulement est annulée — la mythique se joue en tempo, pas en mur.
+- **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
+  adverse de votre choix (30 % de chances de rater, 100 % contre le sorcier) :
+  ses **3 dégâts** passent **sans riposte** et son attaque s'arrête là. C'est la
+  mécanique des archers du Soleil rouge, et son grand arc la rend naturelle.
+- **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend
+  `null` — son arc se paie en attaquant, pas en se posant.
+- Elle n'appartient à aucun boîtier de départ : elle se révèle à l'étage 3 de la
+  **Tour des Listes** (`listes-3`), avec la gardienne des ksour, puis s'achète
+  au Souk.
+- Sa peinture (plein art 4:5, révision `bouchra-cretes-v2`) la montre en noir
+  des pieds à la tête, **toute jeune — une vingtaine d'années, visage lisse**,
+  **un grand arc recurve bandé à la joue et un carquois dans le dos — ni sabre,
+  ni bouclier**, sur sa chèvre lancée dans le sentier des Aurès — poussière
+  étirée derrière eux, cailloux projetés, flou de mouvement sur le fond, visage,
+  flèche et corde nets. Direction artistique `RPG-CARD-ART.md`.
+
+### Les créatures-jetons (les chiens de sable de Tarek, le guépard de Kusayla)
 
 Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :
 
@@ -299,6 +376,14 @@ Un jeton **se comporte comme une créature posée depuis la main** — mal
 d'invocation compris, il attaque et bloque dès le tour suivant — et il subit les
 auras du camp : sous son propre Tarek, le chien 1/1 arrive à 2/2 et retombe à
 1/1 si Tarek quitte la table.
+
+Le second jeton du set est le **Guépard** de Kusayla (`guepard`, 2/1, coût 0,
+`jeton: true`, `rapidite: true`) : le roi l'appelle à son arrivée, un seul
+exemplaire. Il ne connaît pas le mal d'invocation — **Rapidité** le rend prêt le
+tour même, comme la bête qui court déjà devant le cheval — mais il ne survit
+pas plus qu'un autre corps 2/1. Sa peinture est un plein art 4:5 dédié
+(`public/cards/guepard.jpg`), un guépard fauve sur la cendre du champ de
+bataille, révision de cache `guepard-jeton-v1`.
 
 Ce qu'un jeton **n'est pas** :
 

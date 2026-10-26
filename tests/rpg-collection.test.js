@@ -206,8 +206,18 @@ test('les révélations amènent les couleurs quand la campagne y entre', () => 
     'les Listes révèlent le Sable et la Braise');
   assert.deepEqual([...couleursDesRevelations(['tour-des-listes', 'tour-du-souk'])].sort(), ['braise', 'eau', 'sable'],
     'le Souk révèle l’Eau de ses citernes');
+  // Exception assumée : le sommet des Sables révèle **Le roi Kusayla**, carte
+  // hybride Sable + Ténèbres — le roi de la nuit tombante. Les Ténèbres ne
+  // s'installent pas pour autant avant la Nécropole : c'est la seule carte
+  // teintée de Ténèbres de la tour, et elle garde ses deux pips.
   assert.deepEqual([...couleursDesRevelations(['tour-des-listes', 'tour-du-souk', 'tour-des-sables'])].sort(),
-    ['braise', 'eau', 'sable'], 'les Sables restent dans les trois couleurs de la ville');
+    ['braise', 'eau', 'sable', 'tenebres'],
+    'les Sables ajoutent leur hybride Sable + Ténèbres, Kusayla');
+  assert.deepEqual(
+    RPG_REVELATIONS_PAR_ETAGE['sables-3'].filter((id) => cardColors(cardById(id)).includes('tenebres')),
+    ['kusayla-roi-des-imazighen'],
+    'le seul Ténèbres des Sables est le roi Kusayla',
+  );
   assert.deepEqual([...couleursDesRevelations(['tour-des-abysses'])].sort(), ['eau', 'neige'],
     'les Abysses révèlent la Neige du fond');
 });

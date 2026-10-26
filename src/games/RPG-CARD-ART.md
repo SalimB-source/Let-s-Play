@@ -37,6 +37,13 @@ jouables dans un deck.
   jour et la matière de sable sculpté de l'illustration de Tarek
   (`public/cards/tarek.jpg`), sans texte ni interface : deux chiens de sable
   debout sur une crête rocheuse, les ruines de la côte dans le lointain.
+- **Guépard** (`guepard.jpg`) — le jeton du **roi Kusayla** : quand le roi
+  arrive, un guépard 2/1 avec Rapidité entre en jeu sans coût. Peinture plein art
+  4:5 (1024×1280, révision `guepard-jeton-v1`) dans la même veine soulslike que
+  son roi : l'animal seul, fauve doré taché de noir, la larme de l'œil, collier
+  de cuir, au pas de course sur une terre de cendre semée de fûts de lance
+  brisés, sous une lumière froide et une poussière que troue un or faible à
+  l'horizon. Aucun cadre, aucun texte : l'interface du duel pose les chiffres.
 - **Samouraï** (`samourai-du-daimyo.jpg`) — le jeton du Daimyō du Soleil rouge,
   levé par deux à son arrivée : un ashigaru en armure lamellaire rouge braise
   et lacets indigo, yari à la main, l'étendard de clan derrière lui, grand
@@ -47,6 +54,59 @@ jouables dans un deck.
 
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
+
+## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
+
+La carte ajoutée au set Sable après sa passe (`bouchra-guerriere-des-cretes`,
+`public/cards/bouchra-guerriere-des-cretes.jpg`) : **Bouchra, une petite femme
+guerrière amazighe sur une chèvre de guerre, qui descend la montagne** — la
+scène est héroïque, vue en contre-plongée, et la cavalière domine l'image
+malgré sa taille.
+
+- **La cavalière** — **une toute jeune femme d'une vingtaine d'années**, petite
+  et nerveuse, droite en selle : visage lisse aux joues pleines, peau brune
+  chaude, pommettes hautes, menton au henné, grands yeux sombres fixés devant
+  elle, un demi-sourire décidé. Pas de visage buriné ni de rides — c'est la
+  jeunesse qui frappe, pas l'expérience ; sa petite taille et son air juvénile
+  rendent la charge plus surprenante encore. Elle est **habillée entièrement de
+  noir** : foulard
+  d'indigo noirci dont la queue flotte derrière elle, gilet lamellaire de cuir
+  noir sur une tunique de lin noir, large ceinture tissée noire à boucle
+  d'argent, pantalon noir serré dans des bottes de cuir noir enroulées. Le noir
+  est mat, poussiéreux, nuancé de laine, de cuir et de lin pour que les volumes
+  tiennent ; seuls le visage, les mains et le cou gardent leur peau chaude, et
+  la lumière de l'aube cerne la silhouette. Petits accents d'argent seulement :
+  créoles, fibule à l'épaule, boucle de ceinture, garnitures d'argent de l'arc.
+- **L'équipement** — **un seul grand arc recurve** d'archer des montagnes :
+  bois sombre, corne et nerf, plus haut que son torse, tenu en travers du
+  corps — une main sur la poignée, l'autre qui bande la corde jusqu'à la joue,
+  une longue flèche encochée pointée au-delà des cornes de la chèvre ; un
+  **carquois de flèches** sanglé dans le dos, cuir noir. **Aucun sabre, aucune
+  épée, aucun bouclier** — le dos reste nu sous le gilet lamellaire. L'arc
+  bandé *est* son Attaque ciblée, peinte dans le geste, et l'Esquive se lit
+  dans cette absence de bouclier : elle ne pare pas, elle glisse dans la pente.
+- **L'effet de vitesse** — la descente doit se lire comme une charge : le
+  panache de poussière s'étire derrière elle sur le sentier, le gravier et les
+  cailloux partent en arrière sous les sabots, la toison de la chèvre et la
+  queue du foulard filent en traînées, la roche du fond se perd dans un léger
+  flou de mouvement — tandis que le **visage, la flèche et la corde restent
+  nets**.
+  C'est de la peinture à l'huile, jamais des lignes de vitesse numériques.
+- **La monture** — une grande **chèvre de guerre** à longs poils noirs et
+  fauves, cornes annelées rejetées en arrière, bride de cuir et de bronze,
+  couverture de selle tissée d'indigo, lancée sur un sentier de pierre : les
+  pierres roulent sous ses sabots, les muscles sont tendus.
+- **Le décor** — une haute pente des Aurès aux premières lueurs : cèdres,
+  genévriers, affleurements de roche, le sentier qui descend, la vallée et un
+  village fortifié dans la brume chaude tout en bas, les crêtes froides
+  prenant le premier soleil derrière elle.
+
+Plein art 4:5 livré en 1024×1280, sans texte ni cadre ; révision de cache
+**`bouchra-cretes-v2`**, déclarée dans `rpgCardArt.js`. Le tableau a été
+**repeint entièrement** (pas retouché) pour la version définitive : même
+composition, même chèvre, même pente, mais un visage plus jeune, un arc recurve
+bandé à la joue au lieu de sabres, et le village fortifié descendu dans la
+vallée pour laisser la crête et la lumière libre autour de la cavalière.
 
 ## Les Tours de défense
 
@@ -559,7 +619,7 @@ son intérêt de jeu, et non de simple galerie.
   (« l'échelle 3 / 15, la boutique 7 / 62 »).
 
 Le lot actuel archive **soixante-dix-sept** peintures : les vingt-neuf de
-Braise, les quarante-sept du Sable et l'ancien art de la Tour oubliée.
+Braise, les quarante-huit du Sable et l'ancien art de la Tour oubliée.
 
 Les sujets humains s’inspirent des guerriers du Japon ; les tengu, oni,
 kitsune et Kagutsuchi relèvent de sa mythologie et ne sont pas présentés
@@ -747,8 +807,10 @@ est déjà bleue, en duel comme en vignette.
   elle, la lune pour seule lumière.
 - **Jörmungandr** — vu d'une falaise, son corps barre tout l'horizon et
   s'enfonce aux deux bouts.
-- **Le Seigneur des mâchoires** — le crocodile de la crue, à demi hissé sur la
-  berge noyée, une lanterne de village pour seule note chaude.
+- **Le Seigneur des mâchoires** — *repeint depuis* (voir plus bas) : il était le
+  crocodile de la crue, à demi hissé sur la berge noyée, une lanterne de village
+  pour seule note chaude. Cette peinture-là a quitté le catalogue ; l'histoire
+  du dépôt la garde (dernière version au commit `5922b4a`, 325 310 octets).
 - **La Vipère de verre** — le serpent de verre sur la margelle d'une citerne,
   ses reflets froids jetés sur la pierre.
 - **La Tour des flots** — la tour seule en mer, démâtée, le ressac qui monte
@@ -836,7 +898,7 @@ leur en ajouter ferait croire à un remplacement.
 
 | Élément | Cartes | Dans l'huile sombre | Reste |
 | --- | --- | --- | --- |
-| Sable | 47 | 47 | — |
+| Sable | 48 | 48 | — |
 | Braise | 32 | 32 | — |
 | Neige | 29 | 29 | — |
 | Ténèbres | 28 | 28 | — |
@@ -958,6 +1020,45 @@ reprise autrement — sans forme humaine lisible, un linceul debout.
   ciseau de bronze.
 - **L'Offrande de lin** — les bandes pliées sur l'autel noir, encore marquées
   par un corps.
+
+### La reprise du Seigneur des mâchoires — la figure du Nil (octobre 2026)
+
+Le Seigneur des mâchoires est la figure de **Sabek**, le souverain crocodile du
+Nil, dans le tableau des six grandes figures d'Égypte
+(`docs/rpg/16-deck-la-balance-des-heures.md` §11). Sa peinture ne le montrait
+pas : un simple crocodile dans un village inondé, une lanterne pour seule
+lumière — une bête de crue, pas un souverain du fleuve. La carte est donc
+**repeinte**.
+
+La nouvelle toile le donne à voir, à la nuit tombée, **debout dans la cour
+noyée d'un temple de brique crue** :
+
+- **la tête de crocodile** d'un grand crocodile du Nil, gueule entrouverte sur
+  des dents usées, un œil froid qui accroche la lumière ;
+- **le couvre-chef doré** au disque solaire, encadré de deux uraeus et de deux
+  hautes plumes, l'or bosselé et noirci — jamais un bijou ;
+- **le grand collier** d'or terni, d'os et de verre violet, et les brassards
+  d'or ;
+- **le sceptre ousekh** dans la main droite, la main gauche posée à plat sur
+  le mufle du **second crocodile** qui remonte à sa hauteur, seuls les yeux et
+  les crêtes hors de l'eau ;
+- autour de lui : colonnes à demi submergées, pylône brisé, roseaux et
+  débris flottants, la pluie, et une seule barque à lanterne pour l'échelle.
+
+Rien n'est écrit sur cette peinture : **aucun hiéroglyphe, aucun texte** — la
+règle du set s'applique aussi à la nouvelle toile. Le sujet se lit en vignette :
+la gueule, le disque d'or, l'eau noire.
+
+Révision de cache : **`tenebres-seigneur-machoires-nil-v2`**, déclarée dans
+`rpgCardArt.js`. Sa **légende de carte** suit la figure : le type devient
+« Créature légendaire — Souverain crocodile du Nil », et la saveur nomme le
+fleuve plutôt que la crue d'un village.
+
+L'**illustration alternative** de la carte (`public/cards/alt/seigneur-des-machoires.jpg`,
+achetée au Catalogue, `rpgCardArtAlternatives.js`) reste celle qui existait
+déjà : un souverain crocodile à la haute coiffure d'or et d'émeraude, incrusté
+de gemmes vertes. Elle n'a pas été touchée et ne doit pas l'être : deux
+peintures, deux âges de la carte.
 
 ### Troisième lot : les pesées et la tour — le set est clos
 
@@ -1195,6 +1296,53 @@ greffier. Les magies sont traitées comme des natures mortes : le parchemin de
 la lettre de marque est retourné face contre table — cire brisée, cachet,
 chandelle —, et le grand débarquement est la seule scène de foule de la passe,
 éclairée par l'incendie de la ville haute.
+
+**La carte ajoutée après la passe — Le roi Kusayla** (`kusayla-roi-des-imazighen`,
+`public/cards/kusayla-roi-des-imazighen.jpg`) : Kusayla (Aksel, Aksil, Koceila), roi awraba du
+VII<sup>e</sup> siècle, **à cheval sur un champ de bataille de cendre**. La
+peinture est refaite dans la **veine soulslike** — la seule carte du catalogue à
+ce registre : ciel bas et meurtri, brume de poussière, ruine d'une arche
+colossale et arbre mort à l'horizon pour l'échelle, rangs de lanciers et de
+bannières en loques fondus dans le brouillard, squelettes, heaumes et boucliers
+brisés à demi enfouis au premier plan.
+
+- **L'armure** est une **plaque dorée complète et rongée** : épaulières
+  festonnées, cuirasse lamellaire aux plaques de laiton terni lacées de corde
+  noircie, grèves dorées. Le roi est **tête nue : aucun heaume, aucun casque,
+  aucune couronne** — un visage d'homme d'environ **trente-cinq ans**, joues
+  sans rides, mâchoire nette, nez droit, regard sombre et durci par la guerre,
+  barbe courte ; ses longs cheveux noirs tombent sur ses épaules et balaient la
+  scène au galop. L'or **luit
+  faiblement de l'intérieur**, comme des braises prises sous le métal : la
+  lumière suinte des joints et des laçages, et retombe à peine sur l'encolure du
+  cheval et la cendre autour de lui.
+- **La hache** est une grande hache de guerre ancienne, large fer d'acier noirci,
+  long fût de frêne, poignée de cuir — levée, prête à tomber.
+- **La monture** est un cheval barb obscur et nerveux, crinière tressée, sueur et
+  poussière sur le flanc, haleine fumante dans l'air froid.
+- **Le guépard** court à sa droite — c'est **le jeton que le roi appelle à son
+  arrivée** (`guepard.jpg`, 2/1 Rapidité) — **entièrement coloré** : dos et flancs d'un
+  fauve doré chaud, poitrail, ventre et museau crème, taches noires sur tout le
+  corps, la larme noire de l'œil à la gueule, yeux ambre, queue annelée à pointe
+  crème, collier de cuir. C'est **le seul animal chaud et saturé** de l'image, et
+  il doit le rester : le champ de bataille est de cendre, la bête est vivante.
+- **Les repères du fond portent l'accent doré** : l'arche brisée garde des traces
+  de dorure sur la pierre et son ouverture luit d'un ambre chaud, les bannières
+  en loques sont ourlées d'or, les boucliers et heaumes coulés dans la cendre
+  accrochent quelques éclats de laiton, la poussière en suspension et une bande
+  d'or terni à l'horizon font le reste. Cet or reste **au fond** : il ne doit
+  jamais dépasser en éclat l'armure du roi, qui demeure la chose la plus lumineuse
+  de l'image.
+
+Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
+profondes et une seule lumière chaude et faible — le tableau hésite entre le
+**doré du Sable** et la **nuit des Ténèbres**, comme la carte elle-même :
+Kusayla est une créature **hybride Sable + Ténèbres**, et son cadre se partage
+en diagonale entre les deux teintes. Huile sur toile, clair-obscur épais,
+touches visibles, atmosphère âpre et monumentale ; le cavalier, tête nue et
+cheveux au vent, domine l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
+texte ni cadre. Sa révision de cache est **`kusayla-roi-imazigh-v1`** — une clé
+dédiée, pour qu'un futur repeint ne date que cette carte.
 
 **Ce qui reste hors de la passe** : Yamina, Boualem et Fériel gardent leur
 peinture nihonga algérienne documentée plus bas.
