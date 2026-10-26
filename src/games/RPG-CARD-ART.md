@@ -1282,8 +1282,11 @@ brisés à demi enfouis au premier plan.
   de l'image.
 
 Palette : cendre, terre d'ombre froide, **or terni**, sang séché, ombres
-profondes et une seule lumière chaude et faible. Huile sur toile, clair-obscur
-épais, touches visibles, atmosphère âpre et monumentale ; le cavalier, tête nue et
+profondes et une seule lumière chaude et faible — le tableau hésite entre le
+**doré du Sable** et la **nuit des Ténèbres**, comme la carte elle-même :
+Kusayla est une créature **hybride Sable + Ténèbres**, et son cadre se partage
+en diagonale entre les deux teintes. Huile sur toile, clair-obscur épais,
+touches visibles, atmosphère âpre et monumentale ; le cavalier, tête nue et
 cheveux au vent, domine l'image et reste lisible en vignette. Plein art 4:5 livré en 1024×1280, sans
 texte ni cadre. Sa révision de cache est **`kusayla-roi-imazigh-v1`** — une clé
 dédiée, pour qu'un futur repeint ne date que cette carte.

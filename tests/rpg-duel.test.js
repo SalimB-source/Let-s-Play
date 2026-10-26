@@ -61,6 +61,7 @@ import {
   rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 import {
+  CARD_FRAME_COLORS,
   CARD_RARITIES,
   RPG_CREATURE_CARDS,
   RPG_DUEL_CARDS,
@@ -74,6 +75,7 @@ import {
   cardArtId,
   cardById,
   cardColorCost,
+  cardFrameColor,
   cardColors,
   cardRarityInfo,
   creatureById,
@@ -306,6 +308,12 @@ test('Le roi Kusayla : un héros Sable mythique 4/5 pour 5, Contre-attaque et le
     },
   );
   assert.equal(carte.typeLine, 'Créature légendaire — Roi amazigh');
+  // Le roi est hybride : le Sable de sa terre, les Ténèbres de la nuit où il frappe.
+  assert.deepEqual(cardColors(carte), ['sable', 'tenebres'], 'Kusayla est Sable + Ténèbres');
+  assert.deepEqual(cardColorCost(carte), { sable: 1, tenebres: 1 },
+    'son coût exige un pip de chaque couleur');
+  assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS['hybride-sable-tenebres'].color,
+    'son cadre prend la teinte de la combinaison, pas celle d’une seule couleur');
   assert.equal(cardHasPrintedType(carte, 'roi'), true);
   assert.equal(carte.contreAttaque, true, 'le roi rend les coups qu’on lui porte');
   assert.deepEqual(carte.arrivee, { type: 'jetons', jeton: 'guepard', nombre: 1 },
@@ -2624,6 +2632,18 @@ test('un coût hybride exige une source Braise et une source Sable', () => {
   assert.equal(rpgPeutPayer(camp, djinn), false, 'deux Sables ne remplacent pas le pip Braise');
   camp.mana = { braise: 1, eau: 0, sable: 1, neige: 0 };
   assert.equal(rpgPeutPayer(camp, djinn), true, 'une source de chaque couleur suffit pour le Djinn de foudre');
+});
+
+test('le coût hybride de Kusayla exige une source Sable et une source Ténèbres', () => {
+  const roi = cardById('kusayla-roi-des-imazighen');
+  const camp = duelDeBase().joueur;
+  const mana = (sable, tenebres) => ({ braise: 0, eau: 0, sable, neige: 0, tenebres });
+  camp.mana = mana(5, 0);
+  assert.equal(rpgPeutPayer(camp, roi), false, 'cinq Sables ne remplacent pas le pip Ténèbres');
+  camp.mana = mana(0, 5);
+  assert.equal(rpgPeutPayer(camp, roi), false, 'cinq Ténèbres ne remplacent pas le pip Sable');
+  camp.mana = mana(4, 1);
+  assert.equal(rpgPeutPayer(camp, roi), true, 'un Sable et un Ténèbres suffisent : le reste est générique');
 });
 
 test('poser une créature sans mana échoue, avec mana elle entre en jeu', () => {

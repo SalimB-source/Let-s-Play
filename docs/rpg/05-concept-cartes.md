@@ -290,11 +290,17 @@ suit la mémoire amazighe du roi — Aksel, Aksil, Kusayla, Koceila, selon les
 traditions — sans en faire un sujet de polémique : c'est le roi qui défend sa
 terre, rien de plus.
 
-- **Un héros Sable mythique** : 5 manas, **4/5**, `kind: 'hero'`, ligne de type
-  « Créature légendaire — Roi amazigh », une seule copie par deck
-  (`cardCopyLimit`). Il n'entre ni dans les recettes de départ ni dans la
-  dotation : il se révèle au sommet de la **Tour des Sables** (`sables-3`),
-  avec Tin Hinan et Yamina.
+- **Un héros hybride Sable + Ténèbres, mythique** : 5 manas, **4/5**,
+  `kind: 'hero'`, `colors: ['sable', 'tenebres']`, ligne de type « Créature
+  légendaire — Roi amazigh », une seule copie par deck (`cardCopyLimit`). Le
+  Sable est la terre qu'il défend, les Ténèbres la nuit où il frappe : son coût
+  exige **un pip de chaque couleur** (`colorCost: { sable: 1, tenebres: 1 }`,
+  les quatre autres manas sont génériques), et son cadre se partage en deux
+  suivant l'ordre canonique des couleurs, `hybride-sable-tenebres`
+  (`#a98cbf`). Il n'entre ni dans les recettes de départ ni dans la dotation :
+  il se révèle au sommet de la **Tour des Sables** (`sables-3`), avec Tin Hinan
+  et Yamina — c'est la **seule carte teintée de Ténèbres** de la tour, la
+  couleur ne s'installant pour de bon qu'à la Nécropole.
 - **Contre-attaque** — le même drapeau que Tojiro et Eirik
   (`contreAttaque: true`, `riposteDeContreAttaque` dans `rpgDuel.js`) : une
   créature adverse qui le frappe avec Attaque ciblée ou le cible avec une

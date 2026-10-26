@@ -1100,7 +1100,12 @@ export const RPG_HERO_CARDS = [
     id: 'kusayla-roi-des-imazighen',
     name: 'Le roi Kusayla',
     role: 'Le Roi de Tahouda',
+    // Le roi de la lumière couchante : le Sable de sa terre, les Ténèbres de la
+    // nuit où il frappe. Payer 5 manas exige donc au moins un Sable et un
+    // Ténèbres (voir `cardColorCost`), et son cadre se partage en deux.
     element: 'sable',
+    colors: ['sable', 'tenebres'],
+    colorCost: { sable: 1, tenebres: 1 },
     cost: 5,
     atk: 4,
     def: 5,
