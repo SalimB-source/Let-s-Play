@@ -214,10 +214,37 @@
   outline-offset: 4px;
 }
 
-/* Le boîtier se tourne déjà vers le curseur (`inclinerBoitier`) ; on lui donne
-   simplement l'échelle d'une pièce maîtresse. */
+/* ── Les proportions d'un coffret ─────────────────────────────────────────
+
+   Les mêmes sur l'étagère du choix **et** dans la cérémonie : c'est le même
+   objet du début à la fin, et le joueur doit le reconnaître quand il s'ouvre.
+
+   Un coffret de trente cartes est épais. Le réglage de l'étagère de decks
+   (`--bd: .42 × --bw`) donnait une tranche fine — la boîte ressemblait à une
+   carte posée debout. Un boîtier de cartes anglaises fait 70 mm de large pour
+   40 mm d'épaisseur : d'où `0.62`, la hauteur tassée à `1.32`, et une pose plus
+   franchement de trois quarts (`--rx`, `--ry`) pour que l'épaisseur se voie.
+
+   `--bh` et `--bd` sont déclarés sur `.rpg-deckbox` : on les redéfinit ici,
+   plus spécifiquement, plutôt que de toucher au boîtier partagé — l'étagère de
+   decks, le salon et l'en-tête de deck gardent leurs proportions. */
+.rpg-coffret__boite .rpg-deckbox,
+.rpg-coffret__coffre .rpg-deckbox {
+  --bh: calc(var(--bw) * 1.32);
+  --bd: calc(var(--bw) * 0.62);
+  --rx: -16deg;
+  --ry: 32deg;
+}
+
+/* La racine du boîtier partagé laisse 11 % de marge de chaque côté ; avec cette
+   profondeur, la tranche et le couvercle débordent un peu plus. */
 .rpg-coffret__boite .rpg-deckbox {
   --bw: clamp(104px, min(13vw, 19vh), 156px);
+  width: calc(var(--bw) * 1.34);
+}
+
+.rpg-coffret__coffre .rpg-deckbox {
+  width: calc(var(--bw) * 1.34);
 }
 
 /* Les teintes des trois coffrets : elles colorent la lumière, les poussières
@@ -410,21 +437,10 @@
   padding-bottom: 6px;
 }
 
-/* Un coffret de trente cartes est **épais**. Le réglage de l'étagère
-   (`--bd: .42 × --bw`) donnait, à cette taille, une tranche fine : la boîte
-   ressemblait à une carte posée debout. On lui rend son volume — profondeur
-   `0.62 × largeur` (les proportions d'un boîtier de cartes anglaises : 70 mm
-   de large pour 40 mm d'épaisseur), hauteur un peu tassée, et une pose plus
-   franchement de trois quarts pour que l'épaisseur se voie.
-
-   `--bh` et `--bd` sont déclarés sur `.rpg-deckbox` : on les redéfinit ici,
-   plus spécifiquement, plutôt que de toucher au boîtier partagé. */
+/* Même boîtier, mêmes proportions (voir plus haut) : seule l'échelle change —
+   la cérémonie le montre en grand, au centre. */
 .rpg-coffret__coffre .rpg-deckbox {
   --bw: clamp(148px, 17vw, 200px);
-  --bh: calc(var(--bw) * 1.32);
-  --bd: calc(var(--bw) * 0.62);
-  --rx: -16deg;
-  --ry: 32deg;
   position: relative;
   z-index: 1;
 }

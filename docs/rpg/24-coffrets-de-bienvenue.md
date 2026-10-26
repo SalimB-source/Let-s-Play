@@ -166,19 +166,29 @@ de trois quarts (`rotateX(6deg) rotateY(13deg)`) ; au survol elle se redresse
 et s'avance de 26 px. L'épaisseur de la tranche suit la rareté (6 px pour une
 commune, 10 px pour la mythique).
 
-### L'ouverture lui rend son épaisseur
+### Les proportions d'un coffret, les mêmes partout
 
-Aux proportions de l'étagère (`--bd: .42 × --bw`), la boîte de la cérémonie
-ressemblait à une carte posée debout : à cette taille, une tranche de 39 px ne
-suffit pas à lire un volume. Le boîtier de la cérémonie prend donc ses propres
-mesures — profondeur `0.62 × largeur` (les proportions d'un boîtier de cartes
-anglaises : 70 mm de large pour 40 mm d'épaisseur), hauteur tassée à `1.32`,
-pose plus franchement de trois quarts (`--rx: -16deg`, `--ry: 32deg`). La
-tranche perçue passe de 39 à 66 px, le dessus de 15 à 34 px — et la bouche du
-boîtier ouvert devient un vrai creux au lieu d'une fente.
+Aux proportions de l'étagère de decks (`--bh: 1.4`, `--bd: .42 × --bw`), le
+coffret ressemblait à une carte posée debout : une tranche de 39 px ne suffit
+pas à lire un volume. Les deux écrans du coffret — le choix et la cérémonie —
+partagent donc une géométrie propre :
 
-Ces valeurs ne touchent pas au boîtier partagé : `--bh` et `--bd` sont
-redéclarés sur `.rpg-coffret__coffre .rpg-deckbox`, plus spécifiquement.
+| | étagère de decks | coffret |
+| --- | --- | --- |
+| hauteur | `1.4 × --bw` | `1.32 × --bw` |
+| profondeur | `0.42 × --bw` | `0.62 × --bw` |
+| pose | `rotateX(-10deg) rotateY(28deg)` | `rotateX(-16deg) rotateY(32deg)` |
+
+`0.62`, ce sont les proportions d'un boîtier de cartes anglaises : 70 mm de
+large pour 40 mm d'épaisseur. La tranche perçue passe de 39 à 66 px, le dessus
+de 15 à 34 px — et la bouche du boîtier ouvert devient un vrai creux au lieu
+d'une fente.
+
+Rien ne bouge dans `rpg-deckbox.css` : `--bh`, `--bd`, `--rx` et `--ry` sont
+redéclarés sur `.rpg-coffret__boite .rpg-deckbox, .rpg-coffret__coffre
+.rpg-deckbox`. L'étagère de decks, le salon et l'en-tête de deck gardent leurs
+proportions, et **le coffret du choix a exactement l'épaisseur de celui qui
+s'ouvre** — c'est le même objet, il ne doit pas changer de forme en grandissant.
 
 ### L'ouverture montre le même coffret
 
