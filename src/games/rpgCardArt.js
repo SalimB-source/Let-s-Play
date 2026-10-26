@@ -101,6 +101,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'salem': 'sable-souls-dore-v2',
   'tarek': 'sable-souls-dore-v2',
   'tin-hinan-des-pistes': 'sable-souls-dore-v2',
+  // Le roi Aksel, peint pour le souverain amazigh : une révision dédiée, pour
+  // qu'un repaint futur ne date que sa propre peinture.
+  'aksel-roi-des-imazighen': 'aksel-roi-imazigh-v1',
   'chien-du-guet': 'sable-souls-dore-v2',
   // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
   'grappin-d-abordage': 'grappin-griffes-bastingage-v3',

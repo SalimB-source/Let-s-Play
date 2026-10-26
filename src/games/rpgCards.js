@@ -1080,6 +1080,26 @@ export const RPG_HERO_CARDS = [
     flavor: 'Dans la mémoire des pistes, elle ouvre la route et rassemble les siens.',
   },
   {
+    id: 'aksel-roi-des-imazighen',
+    name: 'Aksel, roi des Imazighen',
+    role: 'Le Roi de Tahouda',
+    element: 'sable',
+    cost: 5,
+    atk: 4,
+    def: 4,
+    rarity: 'mythique',
+    kind: 'hero',
+    typeLine: 'Créature légendaire — Roi amazigh',
+    art: 'aksel-roi-des-imazighen',
+    // Le roi awraba qui arrêta l’invasion à Tahouda : il rend les coups qu’on
+    // lui porte (Contre-attaque) et son arrivée referme le défilé sur une
+    // créature adverse (Embuscade).
+    contreAttaque: true,
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Aksel lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse. Embuscade de Tahouda — Quand Aksel arrive : il inflige 2 dégâts à une créature adverse ciblée.',
+    flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui.',
+  },
+  {
     id: 'ifrit-al-ahmar',
     name: 'Ifrit al-Ahmar, seigneur des braises',
     role: 'Souverain des cendres',

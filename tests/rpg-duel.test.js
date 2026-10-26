@@ -155,6 +155,8 @@ const PLEIN_ART_45 = [
   'jarl-au-marteau-de-guerre', 'maitre-du-marteau',
   // Eirik, la nouvelle mythique viking, reçoit aussi son plein art dédié.
   'eirik-du-premier-serment',
+  // Le roi Aksel, la nouvelle figure amazighe du Sable.
+  'aksel-roi-des-imazighen',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
   'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
@@ -286,6 +288,75 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'une capacité de créature riposte sur son auteur, jamais sur un sorcier');
   assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
     'le journal annonce la riposte d’Eirik');
+});
+
+test('Aksel, roi des Imazighen : un héros Sable mythique 4/4 pour 5, Contre-attaque et Embuscade', () => {
+  const carte = cardById('aksel-roi-des-imazighen');
+  assert.deepEqual(
+    {
+      kind: carte.kind, element: carte.element, cost: carte.cost,
+      atk: carte.atk, def: carte.def, rarity: carte.rarity, role: carte.role,
+    },
+    {
+      kind: 'hero', element: 'sable', cost: 5,
+      atk: 4, def: 4, rarity: 'mythique', role: 'Le Roi de Tahouda',
+    },
+  );
+  assert.equal(carte.typeLine, 'Créature légendaire — Roi amazigh');
+  assert.equal(cardHasPrintedType(carte, 'roi'), true);
+  assert.equal(carte.contreAttaque, true, 'le roi rend les coups qu’on lui porte');
+  assert.deepEqual(carte.arrivee, { type: 'degats', amount: 2, cible: 'creature' });
+  assert.equal(arriveeCiblePortee(carte), 'ennemi', 'l’embuscade désigne une créature adverse');
+  assert.equal(cardCopyLimit(carte), 1, 'sa rareté mythique le limite à un exemplaire');
+  assert.equal(RPG_DUEL_CARDS.some((candidate) => candidate.id === carte.id), true);
+  assert.match(carte.flavor, /Tahouda|défilé|dunes/);
+});
+
+test('l’Embuscade de Tahouda frappe une créature adverse désignée après la pose', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const chien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+
+  const carte = cardById('aksel-roi-des-imazighen');
+  assert.equal(arriveeACibleLegale(duel, 'joueur', carte), true,
+    'le Chien adverse est une cible légale pour l’embuscade');
+
+  donner(duel, 'joueur', carte.id);
+  const pose = rpgJouerCreature(duel, 'joueur', carte.id, null, { cibleDifferee: true });
+  assert.equal(pose.ok, true, JSON.stringify(pose));
+  assert.equal(pose.arriveeEnAttente, true, 'la pose précède la désignation de la victime');
+  assert.equal(chien.pv, 2, 'les 2 dégâts n’ont pas encore eu lieu');
+  assert.deepEqual([pose.entite.atk, pose.entite.pv], [4, 4], 'un corps 4/4');
+  assert.equal(Object.values(duel.joueur.mana).reduce((total, reste) => total + reste, 0), 145,
+    'les cinq manas du coût sont payés, dont au moins un Sable');
+
+  const res = rpgResoudreArriveeCiblee(duel, 'joueur', chien.id);
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.equal(duel.sorcier.creatures.includes(chien), false,
+    'le Chien 2/2 meurt de l’embuscade');
+  assert.equal(duel.arriveeEnAttente, null);
+  assert.ok(duel.joueur.creatures.includes(pose.entite), 'Aksel reste sur la table');
+});
+
+test('la Contre-attaque d’Aksel rend ses 4 dégâts à la créature qui le cible', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'sorcier', 'aksel-roi-des-imazighen');
+  const aksel = rpgJouerCreature(duel, 'sorcier', 'aksel-roi-des-imazighen').entite;
+
+  donner(duel, 'joueur', 'tour-de-braise');
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', aksel.id).entite;
+
+  assert.equal(aksel.pv, 3, 'la Tour inflige d’abord son dégât');
+  assert.equal(duel.joueur.creatures.includes(tour), false,
+    'la riposte du roi détruit la Tour');
+  assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25],
+    'une capacité de créature riposte sur son auteur, jamais sur un sorcier');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Aksel, roi des Imazighen rend son coup')),
+    'le journal annonce la riposte d’Aksel');
 });
 
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {

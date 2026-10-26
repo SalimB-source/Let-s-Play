@@ -281,6 +281,34 @@ Sans proie désignée, le porteur attaque normalement.
 Moteur : `src/games/rpgDuel.js` (testé), catalogue créatures dans
 `src/games/rpgCards.js` (`RPG_CREATURE_CARDS`, première dizaine du set).
 
+### Le roi Aksel et l'Embuscade de Tahouda (Sable)
+
+Le catalogue accueille **Aksel, roi des Imazighen** (`aksel-roi-des-imazighen`),
+la figure du souverain awraba qui défit l'expédition omeyyade dans le défilé de
+**Tahouda** (683) puis tint Kairouan jusqu'à sa mort au combat, en 688. La fiche
+suit la mémoire amazighe du roi — Aksel, Aksil, Koceila — sans en faire un
+sujet de polémique : c'est le roi qui défend sa terre, rien de plus.
+
+- **Un héros Sable mythique** : 5 manas, **4/4**, `kind: 'hero'`, ligne de type
+  « Créature légendaire — Roi amazigh », une seule copie par deck
+  (`cardCopyLimit`). Il n'entre ni dans les recettes de départ ni dans la
+  dotation : il se révèle au sommet de la **Tour des Sables** (`sables-3`),
+  avec Tin Hinan et Yamina.
+- **Contre-attaque** — le même drapeau que Tojiro et Eirik
+  (`contreAttaque: true`, `riposteDeContreAttaque` dans `rpgDuel.js`) : une
+  créature adverse qui le frappe avec Attaque ciblée ou le cible avec une
+  capacité encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait riposter
+  sur le sorcier adverse.
+- **Embuscade de Tahouda** — `arrivee: { type: 'degats', amount: 2, cible: 'creature' }`.
+  Comme toute arrivée ciblée, la pose vient **d'abord** (la carte vole, le sable
+  est payé), puis la victime se désigne **sur la table adverse** ; la cible est
+  revalidée au clic (camp, protection, disparition). Sans cible légale, la pose
+  se résout sans choix et l'attente ne s'ouvre pas.
+- Sa peinture est un plein art 4:5 dédié, dans le doré du Sable : tête nue et
+  sans cape, longs cheveux gris-noir, gilet d'indigo et pantalon, gourde à la
+  hanche, un guépard à son flanc (direction artistique `RPG-CARD-ART.md`). Sa
+  révision de cache est `aksel-roi-imazigh-v1`, déclarée dans `rpgCardArt.js`.
+
 ### Les créatures-jetons (les chiens de sable de Tarek)
 
 Tarek, **Le Porteur**, porte deux capacités qui se lisent sur la même ligne :

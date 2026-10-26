@@ -40,7 +40,9 @@ const RACCOURCIS = [
   [/Doit bloquer\s*[-—:]\s*Cette créature doit bloquer une créature attaquante adverse chaque tour si possible\.?/gu, 'Doit bloquer.'],
   [/Priorité d[’']attaque rapide\s*[-—:]\s*Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent\.?/gu, 'Attire les attaques rapides.'],
   [/Attaque ciblée\s*[-—:]\s*Sélectionné[e]? pour attaquer,[^.]*\./gu, 'Attaque ciblée : peut attaquer n’importe quelle créature adverse.'],
-  [/Contre-attaque\s*[-—:]\s*Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d[’']attaque ; quand c[’']est un sort qui le cible, la riposte frappe le sorcier adverse\.?/gu, 'Contre-attaque : riposte aux coups et aux sorts.'],
+  // Le nom du porteur n'est pas figé : Eirik, Tojiro, Aksel — la capacité est
+  // la même, la phrase qui la définit aussi.
+  [/Contre-attaque\s*[-—:]\s*Quand une créature adverse (?:le|la) frappe avec Attaque ciblée ou (?:le|la) cible avec une capacité, [^.;]+ lui inflige ses dégâts d[’']attaque ; quand c[’']est un sort qui (?:le|la) cible, la riposte frappe le sorcier adverse\.?/gu, 'Contre-attaque : riposte aux coups et aux sorts.'],
 ];
 
 function texteBrut(carte) {
