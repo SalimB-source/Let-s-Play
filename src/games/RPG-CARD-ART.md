@@ -201,10 +201,19 @@ seul, aucune main, aucun porteur, aucune aurore colorée :
 
 - **Lance de givre** — la hampe d'frêne plantée dans la glace de nuit, le fer
   feuille-de-saule givré sur les bords, le lacet de cuir à l'équilibre.
-- **Hache de la banquise** — la hache à douille plantée **lame en bas** dans la
-  banquise, le fût dressé et gelé, l'éclat en étoile autour de l'impact. Elle
-  abandonne sa révision dédiée (`hache-plantee-glace-v2`) pour la marque
-  commune `neige-souls-cendres-v1`.
+- **Hache de la banquise** — la hache plantée **lame première**, le fer coupé
+  dans la glace du lac, le fût d'frêne debout vers le haut du cadre, l'éclat
+  blanc en étoile autour de l'entaille. Deux essais ont été nécessaires : le
+  premier enfouissait le fer sous une glace opaque et se lisait mal. Révision
+  `neige-hache-fil-en-bas-v2`.
+
+Et **Éclair du marteau** a demandé **trois reprises**. La peinture d'origine
+montrait un éclair nu ; la deuxième, le marteau en vol ; la troisième, l'impact
+sur un bouclier — joli, mais **superficiel**. La peinture définitive montre ce
+que dit la carte : **un marteau de foudre qui s'abat du ciel sur une créature**
+— la tête de fer à demi sortie de la nuée, des éclairs épais qui en dégringolent
+comme un filet et viennent frapper la bête dressée sur la banquise, la glace
+qui éclate sous les impacts. Révision `neige-eclair-marteau-v4`.
 
 ### Les deux dernières cartes du Serment (octobre 2026)
 

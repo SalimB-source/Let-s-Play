@@ -218,7 +218,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'drakkar-a-tete-de-dragon': 'neige-souls-cendres-v1',
   'scalde-des-runes': 'neige-souls-cendres-v1',
   // Le marteau de foudre se lisait comme un simple éclair : il a une tête.
-  'eclair-du-marteau': 'neige-eclair-marteau-v2',
+  // Troisième reprise : le marteau doit tomber du ciel sur une créature, la
+  // foudre vivante autour de lui — les deux essais précédents restaient tièdes.
+  'eclair-du-marteau': 'neige-eclair-marteau-v4',
   'mur-de-boucliers': 'neige-souls-cendres-v1',
   'festin-des-vaillants': 'neige-souls-cendres-v1',
   'brume-du-fjord': 'neige-souls-cendres-v1',
@@ -227,7 +229,8 @@ const CARD_ART_CACHE_VERSIONS = {
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',
-  'hache-de-la-banquise': 'neige-souls-cendres-v1',
+  // La hache est plantée lame première, le fût debout : demande explicite.
+  'hache-de-la-banquise': 'neige-hache-fil-en-bas-v2',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
 };

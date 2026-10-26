@@ -551,11 +551,11 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     // la marque commune de la passe, deux reprises une seconde fois parce que
     // leur sujet ne lisait pas (le marteau de foudre, le grizzly prisonnier).
     ['mur-de-boucliers', 'neige-souls-cendres-v1'],
-    ['eclair-du-marteau', 'neige-eclair-marteau-v2'],
+    ['eclair-du-marteau', 'neige-eclair-marteau-v4'],
     ['brume-du-fjord', 'neige-souls-cendres-v1'],
     ['hurlement-du-blizzard', 'neige-hurlement-grizzli-v2'],
     // Et la hache de la banquise a quitté sa révision dédiée pour la passe.
-    ['hache-de-la-banquise', 'neige-souls-cendres-v1'],
+    ['hache-de-la-banquise', 'neige-hache-fil-en-bas-v2'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
