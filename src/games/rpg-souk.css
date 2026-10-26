@@ -1152,6 +1152,17 @@
   backdrop-filter: blur(5px);
 }
 .rpg-souk__carte.is-doublon .rpg-souk__carte-tampon { background: rgba(27, 23, 18, .82); color: rgba(247, 237, 218, .76) !important; }
+/* Le **deuxième exemplaire** est un gain, pas une perte : l'illustration reste
+   pleine et la pastille prend l'or du Souk. Sans ça, un paquet de rares déjà
+   possédées s'affichait tout gris et le joueur croyait n'avoir rien reçu
+   alors que la copie était gardée, jouable à deux en deck (doc 13, D4). */
+.rpg-souk__carte.is-exemplaire .rpg-souk__carte-art img { opacity: 1; }
+.rpg-souk__carte.is-exemplaire .rpg-souk__carte-tampon {
+  background: linear-gradient(160deg, rgba(94, 67, 24, .95), rgba(38, 26, 10, .92));
+  border-color: rgba(255, 215, 133, .62);
+  color: #ffe7af !important;
+  box-shadow: 0 0 16px rgba(232, 183, 92, .38), inset 0 0 8px rgba(255, 226, 168, .2);
+}
 .rpg-souk__carte.is-dos {
   display: grid;
   grid-template-rows: 1fr;

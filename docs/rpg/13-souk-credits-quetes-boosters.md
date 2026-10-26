@@ -185,12 +185,29 @@ supplément.
 
 ### D4 — Le doublon n'est pas une punition
 
-Une carte déjà possédée est **estampillée** à l'ouverture (« déjà possédée »).
-Son deuxième exemplaire complète le playset autorisé en deck et se garde sans
-remboursement ; seuls les exemplaires au-delà de ce quota (3e et plus pour une
-carte à deux exemplaires, tout doublon pour une mythique à exemplaire unique,
-et tout doublon de commune ou de dotation dont le playset est acquis dès la
-possession) rendent des crédits au barème :
+Une carte déjà possédée est **estampillée** à l'ouverture. Son deuxième
+exemplaire complète le playset autorisé en deck et se garde sans remboursement ;
+seuls les exemplaires au-delà de ce quota (3e et plus pour une carte à deux
+exemplaires, tout doublon pour une mythique à exemplaire unique, et tout doublon
+de commune ou de dotation dont le playset est acquis dès la possession) rendent
+des crédits au barème :
+
+L'estampille dit **ce qui vient de se passer**, pas seulement que la carte était
+connue (`etatDeCarte`, `RpgBoosterOuverture.jsx`) :
+
+| Ce qui arrive | Ce que la carte porte |
+| --- | --- |
+| La carte entre en collection | « Nouvelle » |
+| La copie est gardée — elle complète le playset et se joue à deux en deck | « 2ᵉ exemplaire », en or, illustration pleine |
+| Le doublon est au-delà du quota | « +22 ◈ » (au barème de la rareté) |
+
+Sans cette distinction, une **rare** — la seule rareté dont le premier doublon
+tombe pile sur le quota de deux — s'affichait « déjà possédée » et le joueur
+croyait n'avoir rien reçu, alors que la copie venait d'être ajoutée au stock.
+Le bilan de la cérémonie compte d'ailleurs les copies gardées à côté des
+nouvelles cartes et du remboursement.
+
+Voici le barème :
 
 | Rareté du doublon | Remboursement |
 | --- | --- |

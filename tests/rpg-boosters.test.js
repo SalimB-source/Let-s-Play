@@ -6,10 +6,12 @@ import {
   TAUX,
   carteAuVivier,
   etageIntroduction,
+  etatDeCarteRevelee,
   etatRayon,
   etatRayons,
   ouvrirBooster,
   ouvrirCoffret,
+  TAMPON_CARTE,
   prixCoffret,
   rayonParId,
   rayonOuvert,
@@ -262,6 +264,38 @@ test('le deuxième exemplaire d’une carte possédée se garde sans rembourseme
   assert.equal(tirage.tirage.remboursement, 0, 'aucun crédit rendu pour ce paquet');
   assert.equal(tirage.portefeuille.credits, 100000 - 140, 'le solde est juste débité du prix');
   assert.equal(tirage.portefeuille.exemplaires[cible], 2, 'l’exemplaire conservé est écrit au stock');
+});
+
+test('l’étiquette d’une carte révélée dit ce qui vient de se passer', () => {
+  // Une rare déjà possédée une fois : c'est le cas qui s'affichait « déjà
+  // possédée » alors que la copie venait d'être gardée (doc 13, D4).
+  const cible = 'samourai-du-torii';
+  const tirage = ouvrirBooster({
+    portefeuille: journalier(100000),
+    rayonId: 'souk',
+    collection: [cible],
+    rng: rngSeme(81),
+  });
+  const detail = tirage.tirage.details.find((carte) => carte.id === cible);
+  assert.equal(etatDeCarteRevelee(detail), 'exemplaire');
+  assert.equal(TAMPON_CARTE.exemplaire, '2ᵉ exemplaire');
+
+  // Les autres états, sur les mêmes détails que la cérémonie reçoit.
+  assert.equal(etatDeCarteRevelee({ doublon: false, remboursement: 0, exemplaires: 1 }), 'nouvelle');
+  assert.equal(etatDeCarteRevelee({ doublon: true, remboursement: 22, exemplaires: 2 }), 'remboursee');
+  assert.equal(etatDeCarteRevelee({ doublon: true, remboursement: 0, exemplaires: 1 }), 'deja');
+  assert.equal(TAMPON_CARTE.nouvelle, 'Nouvelle');
+  assert.equal(TAMPON_CARTE.deja, 'Déjà possédée');
+  // Aucun état n'oublie son mot : la pastille ne peut pas se retrouver vide.
+  for (const etat of ['nouvelle', 'exemplaire', 'deja']) assert.ok(TAMPON_CARTE[etat]);
+});
+
+test('une nouvelle carte n’est jamais étiquetée comme un doublon', () => {
+  const tirage = ouvrirBooster({ portefeuille: journalier(100000), rayonId: 'souk', collection: [], rng: rngSeme(7) });
+  assert.equal(tirage.ok, true);
+  for (const detail of tirage.tirage.details) {
+    assert.equal(etatDeCarteRevelee(detail), 'nouvelle', `${detail.id} entre en collection`);
+  }
 });
 
 test('le troisième exemplaire d’une carte complète est remboursé au barème', () => {
