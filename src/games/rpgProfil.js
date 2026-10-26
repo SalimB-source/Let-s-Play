@@ -120,7 +120,7 @@ export const XP = Object.freeze({
   carteJouee: 2,
   /** Duel libre gagné. */
   duelLibre: 20,
-  /** Premier déblayage d'un étage (Histoire, Jeu Solo). */
+  /** Premier déblayage d'un étage (Histoire, Conquête). */
   etagePremiere: 70,
   /** Étage rejoué : le jeu paie le duel, pas le farm. */
   etageRejoue: 22,

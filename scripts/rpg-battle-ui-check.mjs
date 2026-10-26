@@ -1020,7 +1020,7 @@ assert.doesNotMatch(battleCss, /\.rpg-board-choice|\.rpg-mode-menu__boards|\.rpg
 // paysage, petites tablettes) : une deuxième ligne pleine largeur, jamais
 // d'onglets qui débordent de l'écran ni passent sous le bouton plein écran.
 assert.match(battleCss, /@media \(min-width: 821px\) and \(max-width: 1100px\) \{\s*\.rpg-mode-menu__header \{ flex-wrap: wrap; \}\s*\.rpg-mode-menu__switch \{ order: 3;[^}]*flex: 0 0 calc\(100% \+ clamp\(14px, 4\.6vw, 74px\) \* 2\);[^}]*overflow-x: auto; scrollbar-width: none; \}\s*\.rpg-mode-menu__switch::-webkit-scrollbar \{ display: none; \}\s*\.rpg-mode-menu__switch button, \.rpg-mode-menu__switch button\.rpg-mode-menu__souk \{ flex: 1 0 auto; min-height: 46px;[^}]*\}\s*\}/,
-  'entre 821 et 1100 px, les six onglets passent sur leur propre ligne, pleine largeur, et se la partagent ; en dernier recours la barre défile sans onglet coupé');
+  'entre 821 et 1100 px, les sept onglets passent sur leur propre ligne, pleine largeur, et se la partagent ; en dernier recours la barre défile sans onglet coupé');
 assert.match(plateauxSource, /RPG_PLATEAUX_PAR_DECK = \{[\s\S]*?'veilleurs-du-desert': 'erg-du-sahara',[\s\S]*?'cour-des-djinns': 'table-des-heures',[\s\S]*?'sentiers-de-cendre': 'caravane-de-gourara',[\s\S]*?'maree-des-abysses': 'ruines-de-tipaza'/,
   'chaque deck du catalogue a son terrain attitré');
 assert.match(plateauxSource, /couleurDominanteDeck/,

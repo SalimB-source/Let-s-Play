@@ -394,11 +394,14 @@ export async function checkRpgDecks(assert) {
 
   // Le bouton principal de l'écran Jouer est « Mode histoire » : il ouvre le
   // récit, quel que soit le deck mémorisé (le duel rapide passe par l'onglet Deck).
+  // Un nouveau joueur passe d'abord par le seuil de Bab El.
   window.localStorage.setItem(RPG_DECK_STORAGE_KEY, JSON.stringify({ deckId: 'sentiers-de-cendre' }));
   const lancement = await monter(assert, { vraisDecks: true });
   const modeHistoire = lancement.container.querySelector('.rpg-mode-menu__hero-copy .rpg-menu-button--primary');
   assert.match(texte(modeHistoire), /Mode histoire/, 'le bouton principal de Jouer est « Mode histoire »');
   await lancement.click(modeHistoire, 'Mode histoire');
+  const commencer = lancement.container.querySelector('[data-bab-el-commencer]');
+  if (commencer) await lancement.click(commencer, 'Commencer la campagne');
   assert.ok(lancement.container.querySelector('.rpg-narrative'), 'le mode histoire ouvre le récit');
   assert.ok(!lancement.container.querySelector('.card-table'), 'le mode histoire ne démarre pas un duel');
   await lancement.demonter();

@@ -153,13 +153,19 @@ export async function checkRpgBattle(assert) {
     if (chien && estJouable(chien)) await glisserSurTable(container, chien);
   };
 
-  // ── Menu Jouer / Deck / Catalogue : decks et cartes sont consultables ──
+  // ── Menu Jouer / carte Conquête / Deck / Catalogue : decks et cartes sont consultables ──
   assert.ok(container.querySelector('.rpg-mode-menu'), 'le jeu s’ouvre sur son menu dédié');
   const modeButtons = [...container.querySelectorAll('.rpg-mode-menu__switch button')];
   assert.ok(modeButtons.some((button) => button.textContent.includes('Jouer'))
     && modeButtons.some((button) => button.textContent.includes('Deck'))
     && modeButtons.some((button) => button.textContent.includes('Catalogue')),
-  'le menu expose Jouer, Deck et Catalogue');
+  'la barre expose Jouer, Deck et Catalogue, sans onglet Conquête');
+  assert.equal(modeButtons.some((button) => button.textContent.includes('Conquête')), false,
+    'la Conquête a quitté la barre de navigation');
+  assert.ok(container.querySelector('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete'),
+    'la Conquête reste accessible comme carte de la page Jouer');
+  assert.ok(container.querySelector('.rpg-mode-menu__accueil'),
+    'l’accueil Jouer reste atteignable par le bouton sablier, en plus de son onglet');
 
   // ── Le plateau n'est plus un choix : le menu ne propose rien ────────────
   assert.equal(container.querySelector('.rpg-mode-menu__boards'), null,

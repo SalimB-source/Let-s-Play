@@ -38,7 +38,7 @@
 .rpg-story__reset:hover,
 .rpg-story__reset:focus-visible { color: #fca5a5; border-color: #fca5a5; outline: none; }
 
-/* Les tours de Bab El : quatre de front sur ordinateur — l'écran du Jeu Solo
+/* Les tours de Bab El : quatre de front sur ordinateur — l'écran de la Conquête
    occupe toute la largeur, et les neuf tours tiennent ainsi en quelques
    rangées au lieu d'une longue colonne. La grille se resserre d'elle-même :
    trois tours sur un portable, deux sur une tablette, une seule au téléphone. */

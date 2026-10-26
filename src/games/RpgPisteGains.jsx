@@ -9,13 +9,17 @@
  *
  * ## Ce que chaque palier montre
  *
- * - un **paquet** du Souk : un sachet miniature peint en CSS, avec le dos d'une
- *   carte qui dépasse (`public/profil/dos-de-carte.webp`, 1,3 Ko). Cinq cartes
- *   face cachée — on montre le dos, jamais un tirage qui n'a pas eu lieu ;
- * - un **rang** de Bab El : une tuile ronde, et un jalon « rang » sur le
- *   prochain ;
+ * - un **paquet du Souk** : le vrai sachet que la cérémonie ouvre (`RpgPaquetChemin`,
+ *   classes `rpg-souk__sachet-*`), avec l'illustration de la vitrine et le dos
+ *   d'une carte qui dépasse (`public/profil/dos-de-carte.webp`, 1,3 Ko) ;
+ * - un **rang** de Bab El : son glyphe, et un jalon « rang » sur le prochain ;
  * - un **cadre** de médaillon ou un **titre** : leur glyphe, et un clic pour les
  *   porter.
+ *
+ * La bande est une **timeline horizontale** : les niveaux sont espacés, reliés
+ * par un filet continu, et les icônes sont libres — aucun carré ni rond ne les
+ * enferme. Elle défile à l'horizontale (et la section elle-même peut défiler en
+ * hauteur sur les petits écrans).
  *
  * Quand des paquets sont dus (`boostersDus`), la piste le dit en tête avec un
  * bouton vers le Souk — l'écran Jouer est à un onglet du comptoir, autant y
@@ -29,18 +33,20 @@
  * mais `aria-disabled` : il dit ce qu'il manque au lieu de disparaître, et le
  * clic sonne l'erreur plutôt que de mentir.
  *
- * ## Rien n'est chargé, rien n'est écrit
+ * ## Rien n'est écrit, presque rien à charger
  *
- * Un seul asset (le dos de carte, 1,3 Ko) ; le reste est du texte et des
- * dégradés. Le composant n'a ni `useState`, ni stockage, ni règle d'écriture :
- * les règles viennent de `rpgProfilGains.js`, la persistance de
- * `useSablierBourse.js`.
+ * Deux images déjà connues du jeu : le dos de carte (1,3 Ko) et la peinture de
+ * la vitrine du Souk ; le reste est du texte et des dégradés. Le composant n'a
+ * ni `useState`, ni stockage, ni règle d'écriture : les règles viennent de
+ * `rpgProfilGains.js`, la persistance de `useSablierBourse.js`.
  */
 
 import { useEffect, useMemo, useRef } from 'react';
+import './rpg-souk.css';
 import './rpg-piste-gains.css';
 import { xpLisible } from './rpgProfil.js';
 import { cadreDeProfil, pisteDesGains, titreDeProfil, vignetteDosDeCarte } from './rpgProfilGains.js';
+import RpgPaquetChemin from './RpgPaquetChemin.jsx';
 
 /** Le préfixe de `public/` : `/Let-s-Play/` en ligne, `/` sur le bureau. */
 const BASE_URL = import.meta.env?.BASE_URL ?? '/';
@@ -117,6 +123,7 @@ export default function RpgPisteGains({
       className="rpg-piste"
       aria-label="Les gains des prochains niveaux"
       data-piste
+      data-piste-scrollable=""
       data-piste-niveaux={`${piste.debut}-${piste.fin}`}
       data-piste-rang={jalon?.id ?? 'maximal'}
     >
@@ -127,6 +134,7 @@ export default function RpgPisteGains({
             ? 'Niveau maximal atteint — le chemin se souvient de vous.'
             : `Prochain rang : ${jalon.nom}, au niveau ${jalon.niveau}.`}
         </p>
+        <span className="rpg-piste__defile" aria-hidden="true">← faites défiler →</span>
         {dus > 0 ? (
           <button
             type="button"
@@ -145,7 +153,7 @@ export default function RpgPisteGains({
         ref={bandeRef}
         className="rpg-piste__bande"
         tabIndex={0}
-        aria-label={`Les gains à venir, du niveau ${piste.debut} au niveau ${piste.fin}. Faites défiler pour voir la suite du chemin.`}
+        aria-label={`Timeline des gains à venir, du niveau ${piste.debut} au niveau ${piste.fin}. Faites défiler pour voir la suite du chemin.`}
         data-piste-paliers={piste.paliers.length}
       >
         {piste.paliers.map((palier) => {
@@ -168,20 +176,10 @@ export default function RpgPisteGains({
             dus > 0 && palier.etat === 'courant' ? 'is-du' : '',
           ].filter(Boolean).join(' ');
 
-          /** La face de la tuile : un sachet et son dos de carte, ou un glyphe. */
-          const face = gain.sorte === 'paquet' ? (
-            <>
-              <span className="rpg-piste__carte" style={{ backgroundImage: `url("${dos}")` }} aria-hidden="true" />
-              {/* Le sachet est un **volume** : trois faces montées que la feuille
-                  de style met en perspective et fait tourner doucement — un
-                  paquet à gagner se reconnaît de loin. */}
-              <span className="rpg-piste__sachet" aria-hidden="true">
-                <i className="rpg-piste__sachet-face" />
-                <i className="rpg-piste__sachet-cote" />
-                <i className="rpg-piste__sachet-top" />
-              </span>
-            </>
-          ) : gain.glyphe;
+          /** La face libre de la timeline : le vrai paquet du Souk, ou un glyphe. */
+          const face = gain.sorte === 'paquet'
+            ? <RpgPaquetChemin dos={dos} />
+            : gain.glyphe;
 
           return (
             <li
@@ -203,14 +201,9 @@ export default function RpgPisteGains({
               </span>
               <span className="rpg-piste__niveau" aria-hidden="true">{palier.niveau}</span>
               {/* La coche des niveaux déjà passés : peinte par la feuille de
-                  style sur `.is-gagne` — le numéro au-dessus, la récompense
-                  dessous, et entre les deux le chemin. */}
+                  style sur `.is-gagne` — le numéro au-dessus, l'icône libre
+                  dessous, puis la ligne de temps. */}
               <span className="rpg-piste__coche" aria-hidden="true" />
-              {/* Le filet : la moitié gauche dit d'où l'on vient, la moitié
-                  droite où l'on va — celle du niveau en cours se remplit en
-                  route. Une seule boîte, deux largeurs en propriétés
-                  personnalisées, aucun noeud de plus. */}
-              <span className="rpg-piste__filet" aria-hidden="true" />
 
               {dansTuile ? (
                 <button
@@ -233,6 +226,11 @@ export default function RpgPisteGains({
                   {gagne ? null : <span className="rpg-piste__verrou" aria-hidden="true" />}
                 </span>
               )}
+
+              {/* Le filet : une ligne de temps continue sous les icônes. Ses deux
+                  largeurs (`--gauche`, `--droite`) disent la progression, et un
+                  petit losange marque le niveau. */}
+              <span className="rpg-piste__filet" aria-hidden="true" />
 
               <span className="rpg-piste__gain" aria-hidden="true">
                 <b className="rpg-piste__famille">{gain.sorte}</b>
