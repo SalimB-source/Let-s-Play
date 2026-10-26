@@ -112,10 +112,11 @@ function Poussiere() {
 }
 
 /**
- * Une carte du coffret, **en volume** : une face avant (peinture, nom, rareté),
- * une tranche à droite, et une lueur qui change de teinte et d'intensité avec
- * la rareté. La carte ne rayonne pas par sa peinture — c'est le halo derrière
- * elle qui dit ce qu'elle vaut, du neutre de la commune à l'or de la mythique.
+ * Une carte du coffret, **à plat** : la peinture, son anneau, son nom et sa
+ * rareté dessous, et une lueur qui change de teinte et d'intensité avec la
+ * rareté. Aucune perspective, aucune rotation, aucune tranche — la carte ne
+ * rayonne pas par sa peinture, c'est le halo derrière elle qui dit ce qu'elle
+ * vaut, du neutre de la commune à l'or de la mythique.
  */
 function CarteDuCoffret({ ligne, rang, total, reduit }) {
   const { carte, exemplaires } = ligne;
@@ -137,15 +138,9 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
       }}
       aria-label={`${carte.name}, ${rarete.label} — ${exemplaires} exemplaire${exemplaires > 1 ? 's' : ''}`}
     >
-      {/* La scène porte la perspective ; la lueur (`::before`) reste dehors,
-          dans le plan de la carte. Sans ça, les moitiés inclinées en arrière
-          passent en profondeur DERRIÈRE un halo flou — l'illustration se
-          retrouve voilée de la couleur de la rareté. */}
+      {/* La scène porte la lueur (`::before`), qui reste derrière la carte. */}
       <div className="rpg-coffret__carte-scene">
         <div className="rpg-coffret__carte-corps">
-          {/* La tranche part de l'arête droite et recule : c'est elle qui
-              donne l'épaisseur, et sa teinte suit la rareté. */}
-          <span className="rpg-coffret__carte-tranche" aria-hidden="true" />
           <div className="rpg-coffret__carte-face">
             <div className="rpg-coffret__carte-art">
               <IllustrationCarte carte={carte} />

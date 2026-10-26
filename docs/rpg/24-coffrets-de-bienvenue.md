@@ -122,9 +122,7 @@ lueur et l'anneau — et non sur la seule bordure.
 ### Pas de cadre : la carte est la peinture
 
 Aucune marge, aucun fond, aucune bordure autour de l'illustration : la carte
-**est** l'image, avec un anneau d'un pixel et son nom posé dessous, hors du
-volume. La tranche n'a donc que la hauteur de l'illustration — une légende ne
-participe pas de l'épaisseur d'une carte.
+**est** l'image, avec un anneau d'un pixel et son nom posé dessous.
 
 C'est aussi ce qui rend leurs vraies couleurs aux peintures. Deux voiles ont
 disparu :
@@ -159,12 +157,12 @@ Chaque carte entre avec un retard croissant (`--rang`), et la barre de jalons
 indique où l'on en est. `prefers-reduced-motion` présente tout d'un coup, sans
 sortie ni flottement.
 
-Chaque carte est un **volume** : une face avant (peinture, nom, rareté) et une
-tranche à droite, née de l'arête et reculée de toute l'épaisseur — la même
-grammaire que les faces du coffret, et que les cartes du Souk. La carte est vue
-de trois quarts (`rotateX(6deg) rotateY(13deg)`) ; au survol elle se redresse
-et s'avance de 26 px. L'épaisseur de la tranche suit la rareté (6 px pour une
-commune, 10 px pour la mythique).
+Chaque carte est **plate** : la peinture, son anneau, son nom dessous, et
+rien d'autre. Pas de perspective, pas de rotation, pas de tranche — la carte
+n'est plus un volume. À cette taille, la profondeur ne servait à rien qu'à
+casser l'alignement des vagues et à rendre les peintures obliques ; la rareté
+se dit par la **taille**, la **lueur** et l'**anneau**, ce qui suffit. Au
+survol, la carte se soulève de deux pixels, à plat.
 
 ### Les proportions d'un coffret, les mêmes partout
 

@@ -699,11 +699,13 @@
   isolation: isolate;
 }
 
-/* ── Une carte du coffret : un volume, et une lueur qui dit sa rareté ──────
+/* ── Une carte du coffret : une vignette plate, et une lueur qui dit sa rareté ─
 
-   Chaque carte est vue de trois quarts (`rotateY(13deg)`), avec une **tranche**
-   qui part de son arête droite et recule : une carte posée sur la table, pas
-   une vignette. Au survol, elle se redresse et s'avance.
+   **Aucune 3D** : pas de perspective, pas de rotation, pas de tranche. La carte
+   est une vignette plate — la peinture, son anneau, son nom dessous. La
+   profondeur ne servait à rien à cette taille et cassait l'alignement des
+   vagues ; la rareté se dit par la taille, la lueur et l'anneau, ce qui suffit.
+   Au survol, la carte ne fait que se soulever de deux pixels.
 
    Les quatre raretés ne se ressemblent plus :
 
@@ -717,9 +719,7 @@
 
 .rpg-coffret__carte {
   --largeur-carte: 128px;
-  --epaisseur-carte: 7px;
   --bord-carte: rgba(255, 255, 255, 0.16);
-  --tranche-carte: #232838;
   --lueur-carte: transparent;
   --lueur-force: 0;
   position: relative;
@@ -729,16 +729,13 @@
   will-change: transform, opacity;
 }
 
-/* La perspective est portée par la **scène**, pas par la carte. C'est ce qui
-   garde la lueur `::before` dans le plan de la carte : avec la perspective sur
-   la carte elle-même, la moitié de l'illustration inclinée vers l'arrière
-   passait en profondeur derrière un halo flou, et l'art se retrouvait voilé de
-   la couleur de la rareté. */
+/* Plus de perspective : la carte est plate. La scène ne sert plus qu'à tenir la
+   lueur `::before` dans le plan de la carte — un halo flou posé derrière une
+   illustration inclinée la voilait de la couleur de la rareté. */
 .rpg-coffret__carte-scene {
   position: relative;
   z-index: 1;
   display: block;
-  perspective: 900px;
 }
 
 /* La lueur de rareté : derrière, large, floue. */
@@ -762,39 +759,18 @@
   display: block;
   border-radius: 10px;
   background: none;
-  transform-style: preserve-3d;
-  transform: rotateX(6deg) rotateY(13deg);
   transition: transform 300ms cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 
-/* La carte se redresse et s'avance sous le curseur. */
+/* Le survol ne redresse plus rien : la carte se soulève de deux pixels, à
+   plat. Toute rotation serait revenue par la porte de derrière. */
 .rpg-coffret__carte:hover .rpg-coffret__carte-corps {
-  transform: rotateX(0deg) rotateY(2deg) translateZ(26px);
-}
-
-/* La tranche : elle naît de l'arête droite, pivote puis recule — même
-   grammaire que les faces du coffret, et sa teinte suit la rareté. */
-/* La tranche n'a que la hauteur de l'illustration : le nom et la rareté sont
-   posés dessous, hors du volume, comme une légende. */
-.rpg-coffret__carte-tranche {
-  position: absolute;
-  top: 0;
-  right: 0;
-  height: calc(var(--largeur-carte) * 1.25);
-  width: var(--epaisseur-carte);
-  transform-origin: 100% 50%;
-  transform: translateZ(calc(var(--epaisseur-carte) * -1)) rotateY(90deg);
-  border-radius: 0 4px 4px 0;
-  background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.52), rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.44)),
-    linear-gradient(180deg, color-mix(in srgb, var(--lueur-carte) 46%, var(--tranche-carte)), var(--tranche-carte));
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
 }
 
 .rpg-coffret__carte-face {
   display: grid;
   gap: 7px;
-  transform: translateZ(0.6px);
 }
 
 @keyframes rpg-coffret-carte-sortie {
@@ -898,7 +874,6 @@
 .rpg-coffret__carte--inhabituelle {
   --largeur-carte: 128px;
   --bord-carte: rgba(120, 170, 235, 0.42);
-  --tranche-carte: #22314f;
   --lueur-carte: rgba(77, 154, 255, 0.55);
   --lueur-force: 0.3;
 }
@@ -910,9 +885,7 @@
 /* Rare : plus grande, liseré froid, halo franc. */
 .rpg-coffret__carte--rare {
   --largeur-carte: 160px;
-  --epaisseur-carte: 8px;
   --bord-carte: rgba(120, 190, 255, 0.66);
-  --tranche-carte: #1d3a55;
   --lueur-carte: rgba(96, 190, 255, 0.6);
   --lueur-force: 0.55;
 }
@@ -929,9 +902,7 @@
 /* Mythique : la plus grande, l'or du coffret, et un halo qui respire. */
 .rpg-coffret__carte--mythique {
   --largeur-carte: min(296px, 76vw);
-  --epaisseur-carte: 10px;
   --bord-carte: rgba(232, 183, 92, 0.85);
-  --tranche-carte: #4a3517;
   --lueur-carte: rgba(232, 183, 92, 0.66);
   --lueur-force: 0.72;
   animation: rpg-coffret-carte-sortie 700ms cubic-bezier(0.2, 0.8, 0.28, 1) both;
@@ -1051,7 +1022,6 @@
      reste la plus petite, la mythique tient l'écran sans le déborder. */
   .rpg-coffret__carte {
     --largeur-carte: 112px;
-    --epaisseur-carte: 6px;
   }
 
   .rpg-coffret__carte--commune,
@@ -1061,18 +1031,10 @@
 
   .rpg-coffret__carte--rare {
     --largeur-carte: 132px;
-    --epaisseur-carte: 7px;
   }
 
   .rpg-coffret__carte--mythique {
     --largeur-carte: min(240px, 80vw);
-    --epaisseur-carte: 8px;
-  }
-
-  /* Moins de bascule sur un écran étroit : une carte trop vue de côté
-     devient illisible. */
-  .rpg-coffret__carte-corps {
-    transform: rotateX(4deg) rotateY(9deg);
   }
 
   .rpg-coffret__coffre .rpg-deckbox {
