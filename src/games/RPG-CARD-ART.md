@@ -1374,6 +1374,42 @@ le Serpent du monde, la révision dédiée l'emporte sur `SET_NEIGE_ART_VERSION`
 Le garde-fou `PLEIN_ART_45` de `tests/rpg-duel.test.js` vérifie le ratio 4:5
 comme le reste de la collection, l'Armure de cendres y compris.
 
+## Deux peintures reprises — le brouillard et le trait d'iaijutsu (octobre 2026)
+
+### Grand Voile blanc : c'était une voile, c'est un brouillard
+
+La carte est une **magie de brouillard** — « aucune créature ne peut infliger de
+dégâts de combat ce tour », saveur *« Le voile descend, et les coups s'égarent
+dans le blanc »* — mais sa peinture montrait un drakkar sous sa grand-voile. Le
+jeu de mots avait été pris au pied de la lettre.
+
+La nouvelle peinture montre **la nappe elle-même** : une armée qui charge et
+s'efface dans le blanc, un seul homme debout qui regarde, son épée basse, la
+brume aux genoux. Le brouillard est **la seule source de lumière** de l'image —
+c'est ce qui la distingue des autres cartes du set Neige, toutes sombres.
+Marque `neige-brouillard-v1`.
+
+La voile remplacée n'est pas perdue : elle rejoint `public/cards/alt/` sous
+`avant-brouillard-grand-voile-blanc.jpg`. L'alternative officielle de la carte,
+elle, ne bouge pas.
+
+### Frappe d'iaijutsu : l'alternative partait dans le mauvais sens
+
+L'ancienne peinture alternative montrait le sabre **rengainé** tandis qu'un
+trait lumineux décrivait un arc — le corps ne faisait rien. La nouvelle montre
+l'instant qui suit la coupe : le sabre **sorti, tendu à plat**, le trait qui
+file **derrière** la lame vers le fourreau vide, et l'adversaire qui se plie
+hors du cadre. C'est la direction que la carte décrit.
+
+L'ancienne alternative est archivée sous
+`avant-iaijutsu-v2-frappe-iaijutsu.jpg`.
+
+**Une révision de cache a été ajoutée pour les alternatives.** Leur chemin est
+fixe — `cards/alt/<carteId>.jpg`, une carte, une alternative — donc un fichier
+remplacé garde son nom, et un navigateur qui a déjà l'ancienne peinture ne
+verrait jamais la nouvelle. `REVISIONS_ALTERNATIVES` porte les cartes concernées
+et `illustrationAlternativeUrl` ajoute le `?v=` ; les autres n'en ont pas.
+
 ## Audit visuel du catalogue (octobre 2026)
 
 Contrôle des **162 cartes illustrées** sur une planche unique, vignette par
