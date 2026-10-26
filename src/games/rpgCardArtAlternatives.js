@@ -221,6 +221,14 @@ const DEFINITIONS = [
   ['maree-contraire', 'La marée contraire'],
   ['ressac', 'Le ressac'],
   ['courant-de-retour', 'Le courant de retour'],
+  // Ténèbres — peintes avant la passe, en or massif et lumière de musée.
+  ['khopesh-d-or', 'Le khopesh d’or'],
+  ['chacal-du-seuil', 'Le chacal du seuil'],
+  ['ouvrier-du-natron', 'L’ouvrier du natron'],
+  ['gardienne-de-la-balance', 'La gardienne de la balance'],
+  ['scribe-des-feuillets', 'Le scribe des feuillets'],
+  ['pretre-de-la-bouche', 'Le prêtre de la bouche'],
+  ['ureus-du-seuil', 'L’uræus du seuil'],
 ];
 
 /**

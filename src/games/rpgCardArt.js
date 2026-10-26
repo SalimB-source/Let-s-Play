@@ -226,6 +226,17 @@ const CARD_ART_CACHE_VERSIONS = {
   // intacte, marquée par le combat.
   'berserk-du-crepuscule-furie': 'corbeau-furie-souls-v1',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
+  // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
+  // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
+  // la suie et à l'or terni, le violet ramené à un bleu de nuit pour ne pas
+  // confondre le set avec l'Eau. Premier lot : l'atelier et les serviteurs.
+  'khopesh-d-or': 'tenebres-os-cendres-v1',
+  'chacal-du-seuil': 'tenebres-os-cendres-v1',
+  'ouvrier-du-natron': 'tenebres-os-cendres-v1',
+  'gardienne-de-la-balance': 'tenebres-os-cendres-v1',
+  'scribe-des-feuillets': 'tenebres-os-cendres-v1',
+  'pretre-de-la-bouche': 'tenebres-os-cendres-v1',
+  'ureus-du-seuil': 'tenebres-os-cendres-v1',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le

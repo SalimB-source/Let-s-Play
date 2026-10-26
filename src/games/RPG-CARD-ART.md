@@ -807,6 +807,56 @@ avec son ancienne peinture conservée en alternative. Le dernier set encore dans
 l'ancien registre est **Ténèbres** — l'Égypte de la balance : or, violet et
 lumière de musée, à reprendre en os, suie et or terni.
 
+## Passe des Ténèbres — l'Égypte de la balance (octobre 2026)
+
+Dernier set resté dans l'ancien registre : **or massif, violet et lumière de
+musée**. Vingt-huit cartes jouables, dont vingt-deux à reprendre — les six
+autres sont le **Corbeau des neuf nuits**, déjà fait.
+
+### La palette du set
+
+L'or et le violet étaient le problème : à côté des quatre autres sets, taillés
+en cendre, les cartes Ténèbres ressemblaient à des vitrines. Le set garde son
+sujet — les rites funéraires, la pesée du cœur, les serviteurs du seuil — et
+change de matière :
+
+- **Os et suie** : le blanc devient ivoire mort, le fond devient noir de four.
+- **Or terni** : l'or ne brille plus, il est piqué, rayé, presque du bronze.
+- **Violet → bleu de nuit** : le violet d'origine bascule vers un bleu froid
+  (rouge × 0,98, vert × 1,00, bleu × 1,09, saturation × 0,96). Assez pour
+  refroidir, pas assez pour confondre le set avec l'Eau.
+- **Une seule source** : une lampe à huile, une fente de jour, jamais deux.
+
+### Premier lot : l'atelier et les serviteurs
+
+Marque `tenebres-os-cendres-v1`.
+
+- **Khopesh d'or** — l'épée faucille plantée pointe en bas dans une dalle
+  d'offrande, lame d'or ternie et piquée, une seule lumière de côté.
+- **Chacal du seuil** — l'animal maigre sur la pierre du seuil, le passage
+  derrière lui n'est plus qu'un vide.
+- **Ouvrier du natron** — l'homme du sel à genoux devant son auge, les avant-
+  bras blancs, la lampe au sol pour seule lumière.
+- **Gardienne de la balance** — la gardienne debout dans la salle noire, lame
+  courte et linge plié, un seul brasero de bronze.
+- **Scribe des feuillets** — le vieux scribe assis par terre, le papyrus
+  **vierge**, la lampe sur sa planche.
+- **Prêtre de la bouche** — le prêtre à l'herminette devant la statue usée
+  jusqu'à l'effacement, murs nus.
+- **Uræus du seuil** — le cobra dressé sur la dalle, sans couronne ni joyau.
+
+**Aucun hiéroglyphe nulle part** : les murs sont de la pierre nue. C'est une
+règle du set, et elle vaut aussi pour les cartes à venir — les signes gravés
+étaient précisément ce qui donnait aux anciennes peintures leur air de musée.
+
+**Deux refus de modération** ont coûté des essais : le corps enseveli de
+l'ouvrier et la bouche de la statue ont été reformulés (bundle de lin fermé,
+statue sans visage). La **Momie de lin** a été refusée deux fois et sera
+reprise autrement — sans forme humaine lisible, un linceul debout.
+
+Les sept anciennes peintures rejoignent `public/cards/alt/` : **cent
+trente-trois illustrations alternatives**.
+
 ## La passe des Furies (octobre 2026)
 
 Les faces de Furie — l'état déclenché d'une créature blessée — étaient restées
