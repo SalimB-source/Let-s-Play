@@ -111,10 +111,10 @@ La **rareté**, elle, se lit désormais à une lueur — mais une lueur qui vit
 
 | rareté | lueur | anneau | taille |
 | --- | --- | --- | --- |
-| commune | aucune | gris clair | 128 px |
-| inhabituelle | halo d'acier, à peine perceptible | acier | 128 px |
-| rare | halo froid franc | bleu froid | 160 px |
-| mythique | halo d'or qui respire (4,6 s) | double anneau d'or | 296 px au plus |
+| commune | aucune | gris clair | 140 px |
+| inhabituelle | halo d'acier, à peine perceptible | acier | 140 px |
+| rare | halo froid franc | bleu froid | 176 px |
+| mythique | halo d'or qui respire (4,6 s) | double anneau d'or | 324 px au plus |
 
 Le contraste entre les quatre se joue donc sur **trois** axes — la taille, la
 lueur et l'anneau — et non sur la seule bordure.

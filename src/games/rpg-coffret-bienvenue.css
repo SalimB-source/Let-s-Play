@@ -718,7 +718,7 @@
    (`::before`, flou), jamais un reflet qui balaie l'illustration. */
 
 .rpg-coffret__carte {
-  --largeur-carte: 128px;
+  --largeur-carte: 140px;
   --bord-carte: rgba(255, 255, 255, 0.16);
   --lueur-carte: transparent;
   --lueur-force: 0;
@@ -866,13 +866,13 @@
 /* Commune : le socle. Aucune lueur — c'est la carte la plus petite du lot,
    mais assez grande pour que sa peinture se lise sans plisser les yeux. */
 .rpg-coffret__carte--commune {
-  --largeur-carte: 128px;
+  --largeur-carte: 140px;
   --lueur-force: 0;
 }
 
 /* Inhabituelle : le même gabarit, un halo d'acier à peine perceptible. */
 .rpg-coffret__carte--inhabituelle {
-  --largeur-carte: 128px;
+  --largeur-carte: 140px;
   --bord-carte: rgba(120, 170, 235, 0.42);
   --lueur-carte: rgba(77, 154, 255, 0.55);
   --lueur-force: 0.3;
@@ -884,7 +884,7 @@
 
 /* Rare : plus grande, liseré froid, halo franc. */
 .rpg-coffret__carte--rare {
-  --largeur-carte: 160px;
+  --largeur-carte: 176px;
   --bord-carte: rgba(120, 190, 255, 0.66);
   --lueur-carte: rgba(96, 190, 255, 0.6);
   --lueur-force: 0.55;
@@ -901,7 +901,7 @@
 
 /* Mythique : la plus grande, l'or du coffret, et un halo qui respire. */
 .rpg-coffret__carte--mythique {
-  --largeur-carte: min(296px, 76vw);
+  --largeur-carte: min(324px, 80vw);
   --bord-carte: rgba(232, 183, 92, 0.85);
   --lueur-carte: rgba(232, 183, 92, 0.66);
   --lueur-force: 0.72;
@@ -1021,20 +1021,20 @@
   /* Les cartes gardent leur hiérarchie de taille, resserrée : la commune
      reste la plus petite, la mythique tient l'écran sans le déborder. */
   .rpg-coffret__carte {
-    --largeur-carte: 112px;
+    --largeur-carte: 124px;
   }
 
   .rpg-coffret__carte--commune,
   .rpg-coffret__carte--inhabituelle {
-    --largeur-carte: 112px;
+    --largeur-carte: 124px;
   }
 
   .rpg-coffret__carte--rare {
-    --largeur-carte: 132px;
+    --largeur-carte: 148px;
   }
 
   .rpg-coffret__carte--mythique {
-    --largeur-carte: min(240px, 80vw);
+    --largeur-carte: min(272px, 84vw);
   }
 
   .rpg-coffret__coffre .rpg-deckbox {
