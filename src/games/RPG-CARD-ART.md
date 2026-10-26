@@ -780,14 +780,32 @@ boutique.
 
 ### Bilan du catalogue
 
-| Élément | Cartes | Repaintes |
-| --- | --- | --- |
-| Neige | 29 | 29 |
-| Eau | 27 | 27 |
-| Sable | 47 | 47 |
+| Élément | Cartes | Dans l'huile sombre | Reste |
+| --- | --- | --- | --- |
+| Sable | 47 | 47 | — |
+| Neige | 29 | 29 | — |
+| Eau | 27 | 27 | — |
+| Braise | 32 | 32 | — |
+| Ténèbres | 29 | 6 (le Corbeau des neuf nuits) | **22** |
 
-**Cent trois cartes** sont désormais dans la même huile sombre, chacune avec son
-ancienne peinture conservée en alternative.
+**Braise était déjà faite** : la dérogation Souls de dix-huit cartes de ce
+document (vingt-neuf au total avec les reprises) a couvert tout le set en 2025
+et 2026, sous les révisions `braise-souls-cendres-v2` à `-v6`. La seule carte
+du set qui n'est pas à l'huile est **Tojiro, le pourfendeur**, rendu à sa
+peinture nihonga à la demande ; la **Montagne du Soleil rouge** est un terrain,
+hors du lot des cartes jouées.
+
+> **Ne pas se fier aux seuls noms de révision.** Un comptage rapide des marques
+> contenant `souls` donnait « Braise : 0/32 » — faux : plusieurs cartes portent
+> une révision d'un autre nom (`pirates-v1`, `kaiga-couleurs`, `nihonga`) et
+> quelques-unes ont été peintes **avant** que la convention de cache existe,
+> donc sans clé du tout. Le seul état fiable est visuel, ou celui de ce
+> document.
+
+**Cent trente-cinq cartes** sont désormais dans la même huile sombre, chacune
+avec son ancienne peinture conservée en alternative. Le dernier set encore dans
+l'ancien registre est **Ténèbres** — l'Égypte de la balance : or, violet et
+lumière de musée, à reprendre en os, suie et or terni.
 
 ## La passe des Furies (octobre 2026)
 
