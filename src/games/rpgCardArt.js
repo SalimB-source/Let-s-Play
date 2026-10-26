@@ -9,6 +9,7 @@
 
 import { cardArtId, cardById } from './rpgCards.js';
 import { RPG_TOUR_OUBLIEE_SET_ID } from './rpgTourOubliee.js';
+import { alternativeDeCarte, illustrationAlternativeUrl } from './rpgCardArtAlternatives.js';
 
 const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
@@ -16,47 +17,102 @@ const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
   // photoréaliste, repeint sous son ancien nom de fichier.
-  'la-vengeance-de-la-reine-anne': 'hollandais-volant-photorealiste-v2',
+  'la-vengeance-de-la-reine-anne': 'sable-souls-cendres-v1',
   // La Barbe-Rousse repeint : jeune amiral en plein abordage, vue cinéma.
-  'la-barbe-rousse': 'barbe-rousse-jeune-abordage-v1',
-  'le-chasseur-d-ocracoke': 'pirates-v1',
+  'la-barbe-rousse': 'sable-souls-cendres-v1',
+  'le-chasseur-d-ocracoke': 'sable-souls-cendres-v1',
   'source-de-bimini': 'pirates-v1',
   'source-de-bimini-2': 'pirates-v1',
   'source-de-bimini-1': 'pirates-v1',
   'source-de-bimini-0': 'pirates-v1',
-  'le-tresor-de-lima': 'pirates-v2',
+  'le-tresor-de-lima': 'sable-souls-cendres-v1',
   'le-tresor-de-lima-1': 'pirates-v2',
   'le-tresor-de-lima-0': 'pirates-v2',
-  'susanoo': 'susanoo-kaiga-couleurs-v1',
-  'orochi': 'orochi-kaiga-vert-rouge-v2',
+  // Braise — la refonte Souls (huile sombre, réaliste) du set Soleil rouge.
+  // Une révision partagée pour le lot ; Susanoo et Kagutsuchi, repeints une
+  // seconde fois de zéro, portent leur propre révision.
+  'susanoo': 'braise-souls-cendres-v2',
+  'kagutsuchi-flamme-originelle': 'braise-souls-cendres-v2',
+  'orochi': 'braise-souls-cendres-v3',
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
-  'cavalier-des-deux-sabres': 'cavalier-deux-sabres-kaiga-champ-ble-v2',
+  'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
   // Le Pourfendeur repeint en peinture japonaise nihonga, même composition
   // mais en pigments minéraux (octobre 2025) : révision dédiée pour le cache.
   'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
-  'sabre-maudit': 'sabre-maudit-kaiga-palais-v1',
+  'sabre-maudit': 'braise-souls-cendres-v5',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
-  'ashigaru-des-braises': 'soleil-rouge-kaiga-couleurs-v7',
-  'ronin-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'samourai-du-torii': 'chef-samourai-strategie-sous-la-tente-v1',
-  'onna-musha-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'hatamoto-des-cendres': 'soleil-rouge-kaiga-couleurs-v7',
-  'kenshi-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
-  'daimyo-du-soleil-rouge': 'soleil-rouge-kaiga-couleurs-v7',
-  'tengu-du-mont-ardent': 'soleil-rouge-kaiga-couleurs-v7',
-  'oni-de-la-fournaise': 'soleil-rouge-kaiga-couleurs-v7',
-  'kagutsuchi-flamme-originelle': 'soleil-rouge-kaiga-couleurs-v7',
-  'frappe-iaijutsu': 'iaijutsu-kaiga-couleurs-sans-jambes-v10',
-  'feux-de-kitsune': 'kitsune-kaiga-couleurs-v4',
-  'serment-de-la-forge': 'soleil-rouge-kaiga-couleurs-v7',
+  'ashigaru-des-braises': 'braise-souls-cendres-v4',
+  'ronin-du-soleil-rouge': 'braise-souls-cendres-v4',
+  'samourai-du-torii': 'braise-souls-cendres-v4',
+  'onna-musha-des-cendres': 'braise-souls-cendres-v3',
+  'hatamoto-des-cendres': 'braise-souls-cendres-v4',
+  'kenshi-de-la-forge': 'braise-souls-cendres-v4',
+  'daimyo-du-soleil-rouge': 'braise-souls-cendres-v3',
+  'tengu-du-mont-ardent': 'braise-souls-cendres-v3',
+  'oni-de-la-fournaise': 'braise-souls-cendres-v3',
+  'frappe-iaijutsu': 'braise-souls-cendres-v6',
+  'feux-de-kitsune': 'braise-souls-cendres-v6',
+  'serment-de-la-forge': 'braise-souls-cendres-v4',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'minotaure-demon-photorealiste-v1',
+  'ifrit-al-ahmar': 'braise-souls-cendres-v3',
   'la-devoreuse': 'devoreuse-nihonga-visage-v1',
-  'ifrit-des-ergs': 'ifrit-ergs-photorealiste-v1',
-  'trait-de-braise': 'trait-feu-sorcier-appeure-v1',
-  'anqa-des-braises': 'anqa-des-braises-huile-v1',
+  'ifrit-des-ergs': 'braise-souls-cendres-v3',
+  'trait-de-braise': 'braise-souls-cendres-v5',
+  'anqa-des-braises': 'braise-souls-cendres-v3',
+  'sahir-des-braises': 'braise-souls-cendres-v3',
+  'braisier-du-souk': 'braise-souls-cendres-v4',
+  // Le Sable — la passe Souls du désert : mêmes cartes, lumière de cendre.
+  'faucon-du-zenith': 'sable-souls-cendres-v1',
+  'dune-marchante': 'sable-souls-cendres-v1',
+  'fennec-des-decombres': 'sable-souls-cendres-v1',
+  'tour-de-sable': 'sable-souls-cendres-v1',
+  'tislit-des-aures': 'sable-souls-cendres-v1',
+  'cavalier-amazigh-du-desert': 'sable-souls-cendres-v1',
+  'amayas-du-hoggar': 'sable-souls-cendres-v1',
+  'faussoyeur-des-dunes': 'sable-souls-cendres-v1',
+  'la-barbe-noire': 'sable-souls-cendres-v1',
+  'galion-de-la-flotte': 'sable-souls-cendres-v1',
+  'cotre-de-course': 'sable-souls-cendres-v1',
+  'le-renegat': 'sable-souls-cendres-v1',
+  'negociant-des-ranscons': 'sable-souls-cendres-v1',
+  'mousse-des-galiotes': 'sable-souls-cendres-v1',
+  'rais-de-la-galiote': 'sable-souls-cendres-v1',
+  'tiziri-du-djurdjura': 'sable-souls-cendres-v1',
+  'amani-des-ksour': 'sable-souls-cendres-v1',
+  'guetteur-du-beffroi': 'sable-souls-cendres-v1',
+  'scribe-de-la-liste': 'sable-souls-cendres-v1',
+  'faiseur-de-passage': 'sable-souls-cendres-v1',
+  'tercio-de-cuivre': 'sable-souls-cendres-v1',
+  'tempete-de-sable': 'sable-souls-cendres-v1',
+  'rempart-de-dunes': 'sable-souls-cendres-v1',
+  'reanimation': 'sable-souls-cendres-v1',
+  // Les héros du désert, leur chien et les premiers équipements.
+  'salem': 'sable-souls-cendres-v1',
+  'tarek': 'sable-souls-cendres-v1',
+  'tin-hinan-des-pistes': 'sable-souls-cendres-v1',
+  'chien-du-guet': 'sable-souls-cendres-v1',
+  // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
+  'grappin-d-abordage': 'grappin-griffes-bastingage-v2',
+  'takouba-des-pistes': 'sable-souls-cendres-v1',
+  'sandales-de-tislit': 'sable-souls-cendres-v1',
+  'cuirasse-de-sel': 'sable-souls-cendres-v1',
+  // Le javelot est repassé de la dune au beffroi : il est chez lui, sous la cloche.
+  'javelot-du-beffroi': 'javelot-beffroi-cloche-v2',
+  'licou-du-chien-de-sable': 'sable-souls-cendres-v1',
+  // Fin du set Sable : les trois dernières armes et les trois dernières magies.
+  'harnais-du-mehari': 'sable-souls-cendres-v1',
+  'masque-du-guetteur': 'sable-souls-cendres-v1',
+  'jitte-d-amayas': 'sable-souls-cendres-v1',
+  'lame-des-ergs': 'sable-souls-cendres-v1',
+  'takouba-de-tin-hinan': 'sable-souls-cendres-v1',
+  'lettre-de-marque': 'sable-souls-cendres-v1',
+  'le-grand-debarquement': 'sable-souls-cendres-v1',
+  'rapport-du-greffier': 'sable-souls-cendres-v1',
+  'tour-de-braise': 'braise-souls-cendres-v5',
+  'nuage-de-cendres': 'braise-souls-cendres-v5',
+  'vent-rouge': 'braise-souls-cendres-v5',
   // Les cinq héros du récit ont été **repeints en nihonga** (pigments
   // minéraux sur feuille d’or) avec une palette algérienne — indigo touareg,
   // safran, henné, vert émeraude, turquoise et or. Mêmes noms de fichiers,
@@ -65,11 +121,11 @@ const CARD_ART_CACHE_VERSIONS = {
   // resserve les huiles précédentes. Fériel a une nouvelle composition :
   // archère au sommet d’une tour, une flèche électrique encochée, et donc
   // une révision dédiée.
-  feriel: 'feriel-tour-fleche-electrique-v1',
-  salem: 'heros-nihonga-algerien-v1',
-  yamina: 'heros-nihonga-algerien-v1',
-  tarek: 'heros-nihonga-algerien-v1',
-  boualem: 'heros-nihonga-algerien-v1',
+  feriel: 'braise-souls-cendres-v3',
+
+
+
+
   // Le Corbeau des neuf nuits — le set hybride Neige + Ténèbres (doc 22).
   // Cinq peintures neuves et la figure retournée du Père des corbeaux :
   // toutes partagent la révision du set, décidée ici une seule fois.
@@ -85,14 +141,14 @@ const CARD_ART_CACHE_VERSIONS = {
   'serpent-du-monde': 'serpent-terre-nihonga-v1',
   // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
   // est conservé trait pour trait et simplement repeint en nihonga.
-  'armure-de-cendres': 'armure-nihonga-v1',
+  'armure-de-cendres': 'braise-souls-cendres-v4',
   // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
   // seul derrière la glace d'une vitrine, les serpents dehors.
   'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
-  'djinn-de-foudre': 'plein-art-foudre-v1',
+  'djinn-de-foudre': 'sable-souls-cendres-v1',
   'sonneur-fele': 'plein-art-cloche-v1',
-  'dame-aux-ailes-d-or': 'nihonga-v1',
-  'lionne-du-midi-ardent': 'nihonga-v1',
+  'dame-aux-ailes-d-or': 'sable-souls-cendres-v1',
+  'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
   'parade-du-verre': 'plein-art-verre-v1',
@@ -157,8 +213,43 @@ const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
  * nouvelle passe sur le set.
  */
 const SET_TOUR_OUBLIEE_ART_VERSION = 'souls-realiste-v1';
+/**
+ * Les illustrations alternatives **affichées** — celles que le joueur a
+ * achetées puis choisies pour remplacer la peinture de la passe Souls sur la
+ * carte elle-même. La table est un simple index `carteId → alternative` :
+ *
+ *   - elle se **remplit** depuis la bourse (`définirIllustrationsAffichees`),
+ *     au montage et à chaque achat, plutôt que d'être lue ici — un module de
+ *     rendu ne connaît ni le stockage ni le compte ;
+ *   - elle ne porte que des peintures **possédées** : c'est la bourse qui
+ *     filtre, `normaliserIllustrations` recoupe déjà les affichées sur les
+ *     achetées ;
+ *   - elle ne change **que la face** d'une carte (`cardArt`) : les vignettes de
+ *     furie et d'entité gardent leur propre illustration.
+ */
+const ILLUSTRATIONS_AFFICHEES = new Map();
+
+/** Pose les illustrations choisies par le joueur (`['salem', …]`). */
+export function definirIllustrationsAffichees(carteIds = []) {
+  ILLUSTRATIONS_AFFICHEES.clear();
+  for (const carteId of Array.isArray(carteIds) ? carteIds : []) {
+    const alternative = alternativeDeCarte(carteId);
+    if (alternative) ILLUSTRATIONS_AFFICHEES.set(alternative.carteId, alternative);
+  }
+  return ILLUSTRATIONS_AFFICHEES.size;
+}
+
+/** L'illustration alternative affichée sur une carte, ou `null`. */
+export function illustrationAlternativeAffichee(id) {
+  return ILLUSTRATIONS_AFFICHEES.get(cardArtId(id) ?? String(id ?? '')) ?? null;
+}
+
 export const cardArt = (id) => {
   const artId = cardArtId(id);
+  // La peinture choisie par le joueur passe avant tout le reste : c'est elle
+  // qu'il a payée, et c'est elle qu'il veut voir sur sa carte.
+  const alternative = ILLUSTRATIONS_AFFICHEES.get(artId);
+  if (alternative) return illustrationAlternativeUrl(alternative);
   const carte = cardById(artId);
   const revision = CARD_ART_CACHE_VERSIONS[artId]
     ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined)

@@ -201,6 +201,18 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ── L'illustration alternative qui tombe au prochain palier ───────────────── */
+.rpg-profil__alternative {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  color: rgba(238, 219, 176, .78);
+  font: 500 11px/1.45 Georgia, serif;
+}
+.rpg-profil__alternative > span { font-size: 11px; line-height: 1; opacity: .8; }
+.rpg-profil__alternative.is-complet { color: rgba(226, 214, 192, .48); font-style: italic; }
+
 /* ── Le paquet qui attend : une ligne, un bouton ───────────────────────────── */
 .rpg-profil__attente { margin: 2px 0 0; }
 .rpg-profil__attente-aller {
