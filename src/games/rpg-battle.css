@@ -12091,6 +12091,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-vitrine__solde, .rpg-vitrine__etat { color: rgba(232, 218, 194, .58); font: 600 9.5px/1.35 var(--mono, monospace); text-align: center; }
 .rpg-vitrine__retour { margin: 0; padding: 5px 6px; border-radius: 6px; background: rgba(120, 40, 34, .28); color: #f2c4b4; font: 700 10px/1.35 var(--mono, monospace); }
 .rpg-vitrine__retour.is-ok { background: rgba(38, 86, 60, .3); color: #bfe5c6; }
+/* « Vous ne possédez pas encore cette carte. » — un constat, pas une erreur : la
+   teinte est celle d'une promesse en attente, pas celle d'un refus de solde. */
+.rpg-vitrine__retour[data-vitrine-non-possessee] { background: rgba(52, 44, 28, .34); color: #e6d3a8; }
 /* Sous 900 px, la vitrine passe sous la carte : deux colonnes rogneraient l'une
    et l'autre, et la fiche du catalogue est déjà dense. */
 @media (max-width: 900px) {

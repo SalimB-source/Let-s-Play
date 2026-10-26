@@ -522,6 +522,15 @@ l'illustration — un bouton, une fois ; le solde court s'écrit sous le bouton
 portefeuille (`illustrations.achetees`), se fusionnent en union entre deux
 appareils, et ne redescendent jamais.
 
+> **On n'achète que la peinture d'une carte qu'on possède.** La collection est
+> relue **dans le geste d'achat** (`useSablierBourse`), pas reçue de l'écran :
+> une fiche ouverte avant un paquet ne peut pas vendre l'illustration d'une
+> carte qu'elle croit absente, et un appel direct ne contourne pas la règle. Le
+> refus porte sa raison, `'carte-non-possédée'`, et la vitrine affiche à la
+> place du bouton : **« Vous ne possédez pas encore cette carte. »** La bascule
+> d'affichage est fermée pour la même raison — on n'habille pas une carte qu'on
+> n'a pas.
+
 > **La vitrine ne s'ouvre pas en jeu.** Sur la table d'un duel, le clic droit
 > ouvre la même fiche — mais avec `avecVitrine={false}` : ni peinture
 > alternative, ni prix, ni bouton d'achat, ni bascule. On y lit une carte avant

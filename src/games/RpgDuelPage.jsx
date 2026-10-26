@@ -3255,7 +3255,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
  */
 function VitrineIllustration({
   carte, niveau = 1, portefeuille = null, credits = 0,
-  onAcheter = null, onBasculer = null, onPlaySfx = null,
+  possede = true, onAcheter = null, onBasculer = null, onPlaySfx = null,
 }) {
   const alternative = alternativeDeCarte(carte?.id);
   const [retour, setRetour] = useState(null);
@@ -3273,6 +3273,7 @@ function VitrineIllustration({
     if (resultat?.ok) setRetour('achetee');
     else if (resultat?.raison === 'credits-insuffisants') setRetour('manque');
     else if (resultat?.raison === 'deja-acquise') setRetour('deja');
+    else if (resultat?.raison === 'carte-non-possédée') setRetour('non-possédée');
     else setRetour('refus');
   };
   const basculer = () => {
@@ -3307,7 +3308,19 @@ function VitrineIllustration({
         </p>
       ) : null}
 
-      {alternative.source === 'boutique' && !achetee ? (
+      {/*
+        On n'achète pas la seconde peinture d'une carte qu'on n'a pas. La
+        condition est portée jusqu'ici pour que le refus se *lise* — le bouton
+        cède la place à une phrase — et la bourse la revérifie de son côté :
+        l'écran n'est pas la seule garde.
+      */}
+      {!possede ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-non-possessee={carte.id}>
+          Vous ne possédez pas encore cette carte.
+        </p>
+      ) : null}
+
+      {possede && alternative.source === 'boutique' && !achetee ? (
         <div className="rpg-vitrine__achat">
           <button
             type="button"
@@ -3327,7 +3340,7 @@ function VitrineIllustration({
         </div>
       ) : null}
 
-      {ouverte ? (
+      {possede && ouverte ? (
         <div className="rpg-vitrine__pose">
           <button
             type="button"
@@ -3352,6 +3365,9 @@ function VitrineIllustration({
       {retour === 'affichee' ? (
         <p className="rpg-vitrine__retour is-ok" role="status" data-vitrine-retour="affichee">Illustration affichée sur la carte.</p>
       ) : null}
+      {retour === 'non-possédée' ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="non-possédée">Vous ne possédez pas encore cette carte.</p>
+      ) : null}
       {retour === 'retiree' ? (
         <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="retiree">La carte reprend sa peinture de la passe.</p>
       ) : null}
@@ -3374,7 +3390,7 @@ function VitrineIllustration({
 function ApercuCarteCatalogue({
   carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [],
   prisonniere = null, surface = 'CATALOGUE', onFermer,
-  niveau = 1, portefeuille = null, credits = 0, avecVitrine = true,
+  niveau = 1, portefeuille = null, credits = 0, avecVitrine = true, possede = true,
   onAcheterIllustration = null, onBasculerIllustration = null, onPlaySfx = null,
 }) {
   const boutonFermerRef = useRef(null);
@@ -3404,6 +3420,7 @@ function ApercuCarteCatalogue({
             niveau={niveau}
             portefeuille={portefeuille}
             credits={credits}
+            possede={possede}
             onAcheter={onAcheterIllustration}
             onBasculer={onBasculerIllustration}
             onPlaySfx={onPlaySfx}
@@ -8008,6 +8025,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             niveau={niveauDuJoueur}
             portefeuille={portefeuilleSouk}
             credits={credits}
+            possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}
@@ -8148,6 +8166,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             niveau={niveauDuJoueur}
             portefeuille={portefeuilleSouk}
             credits={credits}
+            possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}

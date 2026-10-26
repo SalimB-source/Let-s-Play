@@ -271,6 +271,26 @@ test('la preview en jeu ne montre aucune vitrine d’illustration alternative', 
   }
 });
 
+test('la vitrine n’ouvre l’achat qu’à qui possède la carte originale', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+
+  // La fiche reçoit la possession et la transmet à la vitrine.
+  assert.match(page, /avecVitrine = true, possede = true,/, 'la fiche porte la possession de la carte');
+  assert.match(page, /<VitrineIllustration[\s\S]{0,400}?possede=\{possede\}/, 'la vitrine la reçoit');
+  assert.match(page, /possede=\{possedeCarte\(collection, apercuCatalogue\)\}/,
+    'le catalogue la lit dans la collection du joueur');
+
+  // Sans la carte : une phrase à la place du bouton, et pas de bascule.
+  assert.match(page, /data-vitrine-non-possessee=\{carte\.id\}/, 'le refus se lit dans la vitrine');
+  assert.match(page, /Vous ne possédez pas encore cette carte\./, 'la phrase est celle demandée');
+  assert.match(page, /\{possede && alternative\.source === 'boutique' && !achetee \? \(/,
+    'le bouton d’achat est fermé sans la carte');
+  assert.match(page, /\{possede && ouverte \? \(/, 'la bascule aussi');
+
+  // Le refus de la bourse a son propre retour, sans passer par « refus ».
+  assert.match(page, /raison === 'carte-non-possédée'/, 'la vitrine connaît le refus de possession');
+});
+
 test('l’illustration achetée peut habiller la carte elle-même', () => {
   const art = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   assert.match(art, /export function definirIllustrationsAffichees\(/, 'la table d’affichage se pose depuis la bourse');

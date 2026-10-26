@@ -304,12 +304,25 @@ export function illustrationsAffichees(portefeuille) {
  * vient de payer, la voir apparaître est la moitié du plaisir. Le joueur peut
  * ensuite revenir à la peinture de la passe dans la fiche.
  */
-export function acheterIllustration(portefeuille, { carteId, prix } = {}) {
+/**
+ * L'achat d'une **illustration alternative** : `{ ok, raison, manque, prix, portefeuille }`.
+ *
+ * `possedee` dit si le joueur a déjà la **carte originale** dans sa collection.
+ * C'est une condition d'achat, pas un détail d'affichage : on n'achète pas la
+ * seconde peinture d'une carte qu'on n'a jamais eue. Le refus porte sa propre
+ * raison, `'carte-non-possédée'`, pour que l'écran puisse le dire en toutes
+ * lettres. Par défaut `true` — le module reste une bourse, et c'est l'appelant
+ * qui sait ce que contient la collection.
+ */
+export function acheterIllustration(portefeuille, { carteId, prix, possedee = true } = {}) {
   const base = normaliserPortefeuille(portefeuille);
   const id = String(carteId ?? '').trim();
   const tarif = entierPositif(prix);
   if (!id) return { ok: false, raison: 'carte-inconnue', portefeuille: base, prix: tarif };
   if (!tarif) return { ok: false, raison: 'prix-invalide', portefeuille: base, prix: 0 };
+  if (possedee === false) {
+    return { ok: false, raison: 'carte-non-possédée', portefeuille: base, prix: tarif };
+  }
   const illustrations = normaliserIllustrations(base.illustrations);
   if (illustrations.achetees.includes(id)) {
     return { ok: false, raison: 'deja-acquise', portefeuille: base, prix: tarif };
