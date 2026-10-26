@@ -5147,7 +5147,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         aria-label={`Agrandir ${carte.name} — ${famille}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${verrouillee ? ', carte verrouillée' : ''}`}
                         onClick={() => onOpenCardPreview?.(carte)}
                       />
-                      <div className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
+                      <div
+                        className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
+                        style={cardFrameStyle(carte)}
+                      >
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span

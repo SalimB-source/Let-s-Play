@@ -1621,3 +1621,42 @@ Rien n'a été repeint sur la foi de la seule planche : les cartes marquées d'u
 dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
 elles sont. Les trois images hors facture et les deux cartes trop sombres sont
 les seules candidates à une reprise, et elles attendent un arbitrage.
+
+## Le filet de couleur — 2 px, la teinte de l'élément (octobre 2026)
+
+La couleur d'élément des cartes (Sable `#d8bc86`, Braise `#e0412a`, Eau
+`#3f9fe8`, Neige `#a9e0f5`, Ténèbres `#4b2e83`, et les diagonales des
+hybrides) n'était plus lisible nulle part : l'anneau orné de 7 à 10 px avait
+été coupé par l'expérimentation « plus aucun cadre », et un Braise ressemblait
+à un Eau.
+
+Les faces des cartes portent donc désormais un **filet de 2 px** — et rien
+d'autre. Ce n'est pas un retour de l'anneau : le motif (résille de Bab El,
+zellige des mythiques) est coupé, parce qu'à cette épaisseur il n'est plus
+qu'un bruit de pixels. Seule la matière reste — aplat pour une mono, deux
+aplats en diagonale pour une hybride, dégradé pour une mythique mono — et
+c'est elle qui nomme l'élément d'un coup d'œil.
+
+L'épaisseur tient dans une variable, `--rpg-card-filet: 2px` (`rpg-battle.css`,
+en tête), et les trois feuilles qui peignent des faces la reprennent :
+
+| Feuille | Faces |
+|---|---|
+| `rpg-battle.css` | main, table, terrains, aperçu au survol, paquet, mulligan, destruction, sort joué, catalogue |
+| `rpg-card-guide.css` | l'exemple du guide |
+| `rpg-deck-atelier.css` | la vignette de l'atelier de deck |
+| `rpg-mobile.css` | les mêmes faces au doigt — le retrait du cadre sur mobile/APK n'a plus lieu d'être |
+
+Le filet ne mange pas l'illustration : chaque face est en `border-box`, elle
+garde sa largeur, son 4:5 et sa mesure, et le plein art reste plein cadre
+jusqu'au filet. Le liseré noir de 2 px (`outline`) qui détache les cartes du
+bois ne bouge pas.
+
+Une face échappe volontairement au filet : la **Furie déclenchée**, dont la
+peinture alternative occupe toute la face sans être rognée.
+
+Le catalogue ne recevait pas la couleur de son élément (il retombait sur le
+repli clair `#f1f3f5`) : `cardFrameStyle` y est désormais posé comme sur les
+faces du duel. `tests/rpg-cadre-filet.test.js` verrouille l'ensemble — la
+largeur, l'absence de `border-width: 0` sur les faces, la matière intacte et
+la couleur posée sur le catalogue, l'atelier et le guide.
