@@ -1198,21 +1198,23 @@ chandelle —, et le grand débarquement est la seule scène de foule de la pass
 
 **La carte ajoutée après la passe — le roi Aksel** (`aksel-roi-des-imazighen`,
 `public/cards/aksel-roi-des-imazighen.jpg`) : Aksel (Koceila), roi awraba du
-VII<sup>e</sup> siècle, debout sur la crête des Aurès à l'aube froide,
-**tête nue et sans cape** — longs cheveux noirs grisonnants tombant sur les
-épaules, barbe taillée, gilet d'indigo sans manches sur une tunique de lin
-clair et une cuirasse de cuir cloutée de bronze, **pantalon d'indigo** rentré
-dans les bottes, large ceinture tissée ; une **gourde d'eau** ronde de
-terre cuite pend à sa hanche gauche, et un **guépard** se tient à son flanc,
-collier de cuir, tête à hauteur de sa main. La lance de fer reste plantée dans
-la roche, et en contrebas, dans l'ombre bleue du défilé, ses guerriers
-embusqués attendent la colonne ennemie qui s'engage dans le passage. Le fauve
-est son attribut de roi : la chasse au guépard est l'image de la vitesse et de
-la patience, jamais celle d'un trophée.
-Huile sombre, une seule source chaude sur le visage, plein art 4:5 livré en
-1024×1280. La peinture a été tirée à la palette du Sable, puis sa révision de
-cache est **`aksel-roi-imazigh-v1`** — une clé dédiée, pour qu'un futur repeint
-ne date que cette carte.
+VII<sup>e</sup> siècle, **lancé au pas de charge sur un champ de bataille**,
+lance de fer basse, poussière sous les bottes. Il porte une **armure complète
+dorée** — cuirasse lamellaire de plaques dorées lacées de cuir, épaulières,
+vambraces, tassettes et grèves de bronze doré, usées et rayées par le combat,
+jamais un bijou — et un **casque doré** à gardes-joues, cimier court et queue
+d'étoffe indigo, dont s'échappent ses longs cheveux gris-noir ; barbe taillée,
+visage découvert. Sous l'armure, gilet d'indigo sans manches et **pantalon
+d'indigo** rentré dans les bottes ; une **gourde d'eau** ronde de terre cuite
+pend à sa hanche, et un **guépard** bondit à son flanc, collier de cuir, une
+seule queue continue. Derrière lui, la ligne des guerriers amazighs aux
+boucliers ronds avance dans la poussière, devant les bannières de la colonne
+ennemie ; lances brisées et boucliers tombés couvrent la plaine. Le fauve est
+son attribut de roi : la chasse au guépard est l'image de la vitesse et de la
+patience, jamais celle d'un trophée.
+Huile sombre, traitement de la collection, plein art 4:5 livré en 1024×1280.
+Sa révision de cache est **`aksel-roi-imazigh-v1`** — une clé dédiée, pour
+qu'un futur repeint ne date que cette carte.
 
 **Ce qui reste hors de la passe** : Yamina, Boualem et Fériel gardent leur
 peinture nihonga algérienne documentée plus bas.
