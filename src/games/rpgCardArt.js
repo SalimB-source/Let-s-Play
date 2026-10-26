@@ -13,6 +13,15 @@ import { alternativeDeCarte, illustrationAlternativeUrl } from './rpgCardArtAlte
 
 const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
+/**
+ * Le set Neige a été peint en plusieurs passes, et sa **passe Souls** (octobre
+ * 2026) repeint dix de ses vingt-neuf cartes en huile sombre. Chaque carte
+ * repeinte porte donc sa propre révision `neige-souls-cendres-v1` dans
+ * `CARD_ART_CACHE_VERSIONS` : pas de version de set à maintenir, et aucune
+ * peinture non repeinte ne change d'URL.
+ */
+const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
+
 const CARD_ART_CACHE_VERSIONS = {
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
@@ -191,20 +200,24 @@ const CARD_ART_CACHE_VERSIONS = {
   'eclair-du-marteau': 'eclair-marteau-electrique-cible-v1',
   'brume-du-fjord': 'brume-personnes-gelees-v2',
   'hurlement-du-blizzard': 'hurlement-grizzli-gele-v1',
+  // La passe Souls du Neige — dix cartes que leur peinture d'origine rendait
+  // étrangères à l'huile sombre : la mappemonde du Serpent du monde, la tour en
+  // 1408×768, la Dame au fil, la Poigne, l'Appât, le Défi, le Verglas, le
+  // Grand Voile, l'Embuscade et le portrait photoréaliste du Père des corbeaux.
+  'serpent-du-monde': SET_NEIGE_SOULS_VERSION,
+  'tour-de-neige': SET_NEIGE_SOULS_VERSION,
+  'dame-des-neuf-mondes': SET_NEIGE_SOULS_VERSION,
+  'pere-des-corbeaux': SET_NEIGE_SOULS_VERSION,
+  'poigne-de-givre': SET_NEIGE_SOULS_VERSION,
+  'verglas': SET_NEIGE_SOULS_VERSION,
+  'embuscade': SET_NEIGE_SOULS_VERSION,
+  'defi-du-jarl': SET_NEIGE_SOULS_VERSION,
+  'appat-de-la-meute': SET_NEIGE_SOULS_VERSION,
+  'grand-voile-blanc': SET_NEIGE_SOULS_VERSION,
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
   'hache-de-la-banquise': 'hache-plantee-glace-v2',
 };
-/**
- * Le set Neige a été peint en plusieurs passes : les esquisses ont cédé la
- * place aux peintures définitives **sous les mêmes noms de fichiers**, et deux
- * figures (le Maître du marteau, le Père des corbeaux) ont ensuite été
- * repeintes. On date donc ses images : le `?v=` change l'URL, si bien qu'aucun
- * cache — celui du navigateur comme celui d'un intermédiaire — ne peut plus
- * resservir une ancienne peinture sous le nom d'une nouvelle. Incrémenter la
- * version à chaque repeint du set.
- */
-const SET_NEIGE_ART_VERSION = 'peintures-definitives-v3';
 /**
  * La Tour Oubliée a d'abord été peinte en encrage BD, puis entièrement
  * reprise en peinture réaliste sombre (façon Souls) : la `?v=` change donc
@@ -252,8 +265,7 @@ export const cardArt = (id) => {
   if (alternative) return illustrationAlternativeUrl(alternative);
   const carte = cardById(artId);
   const revision = CARD_ART_CACHE_VERSIONS[artId]
-    ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined)
-    ?? (carte?.element === 'neige' ? SET_NEIGE_ART_VERSION : undefined);
+    ?? (carte?.set === RPG_TOUR_OUBLIEE_SET_ID ? SET_TOUR_OUBLIEE_ART_VERSION : undefined);
   return `${CARD_ART_BASE_URL}cards/${artId}.jpg${revision ? `?v=${revision}` : ''}`;
 };
 

@@ -169,6 +169,18 @@ const DEFINITIONS = [
   ['lettre-de-marque', 'La lettre de marque'],
   ['le-grand-debarquement', 'Le grand débarquement'],
   ['rapport-du-greffier', 'Le rapport du greffier'],
+  // Le Neige — peintes avant la passe Souls, sauf la mappemonde du Serpent du
+  // monde, la tour en paysage et le portrait photoréaliste du Père des corbeaux.
+  ['serpent-du-monde', 'Le serpent autour du monde'],
+  ['tour-de-neige', 'La tour de neige au crépuscule'],
+  ['dame-des-neuf-mondes', 'La dame des neuf mondes'],
+  ['pere-des-corbeaux', 'Le père des corbeaux'],
+  ['poigne-de-givre', 'La poigne de givre'],
+  ['verglas', 'Le verglas'],
+  ['embuscade', 'L’embuscade'],
+  ['defi-du-jarl', 'Le défi du jarl'],
+  ['appat-de-la-meute', 'L’appât de la meute'],
+  ['grand-voile-blanc', 'Le grand voile blanc'],
 ];
 
 /**

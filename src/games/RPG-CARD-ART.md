@@ -124,6 +124,42 @@ attribut, parce que leur sujet ne doit jamais se réduire à un objet :
 - la **Dame des neuf mondes** — une femme au foyer de bois, le fil à la main ;
 - le **Serpent du monde** — le corps en anneau qui entoure les eaux.
 
+### La passe Souls du Neige — dix cartes (octobre 2026)
+
+Le Serment des Neuf Hivers avait déjà son huile naturaliste, mais quatre
+peintures juraient franchement dans la collection, et six autres flottaient à
+mi-chemin. Dix cartes sont donc reprises dans la direction générale de la
+maison — huile sombre, clair-obscur, une seule source froide par image, plein
+art 4:5 — sous la révision `neige-souls-cendres-v1` :
+
+- **Serpent du monde** — la mappemonde dorée (un globe en anneau, sans rapport
+  avec une carte de duel) devient le corps immense qui se dresse entre deux
+  parois de roche noire, de nuit, une longère allumée sur la rive pour donner
+  l'échelle.
+- **Tour de neige** — la tour était en **paysage 1408×768**. Elle est
+  maintenant verticale : pierre noire sur la crête, couronne brisée, une seule
+  fenêtre allumée, le pin mort contre la muraille.
+- **Dame des neuf mondes** — la femme au foyer de bois, de face, fil et
+  quenouille, la flamme basse et son ombre démesurée sur la cloison.
+- **Père des corbeaux** — son portrait était **photoréaliste**, seul de son
+  espèce dans la collection. Même homme, même chapeau à large bord, même œil
+  pâle, mêmes corbeaux et même bâton ; la facture seule rejoint l'huile.
+- **Poigne de givre**, **Verglas**, **Embuscade**, **Défi du jarl**,
+  **Appât de la meute**, **Grand Voile blanc** — les six peintures qui
+  restaient à mi-chemin passent à l'huile sombre : la main de glace sur le
+  guerrier, la file de boucliers prise dans la gangue, l'embuscade qui sort de
+  la congère, le jarl seul sur son rocher, l'appât cerné par la meute au bord
+  de la lumière, la voile immense qui casse sous le blizzard.
+
+**Ce qui change dans le code** : la version de cache du set entier
+(`peintures-definitives-v3`) disparaît au profit d'une révision **par carte**.
+Une carte non repeinte ne change plus d'URL, et un futur repeint ne fera plus
+changer d'URL vingt-neuf peintures pour en dater dix.
+
+**Les dix anciennes peintures** rejoignent `public/cards/alt/` et les
+illustrations alternatives (échelle d'XP pour les mythiques, boutique pour le
+reste).
+
 ### Les deux dernières cartes du Serment (octobre 2026)
 
 - **Le Grand Hiver** (`grand-hiver.jpg`) — sorcellerie Neige à 2 manas : 1 dégât
