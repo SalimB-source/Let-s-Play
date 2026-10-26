@@ -228,17 +228,19 @@ const CARD_ART_CACHE_VERSIONS = {
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
-  // éclairé comme un souk, le pilote en plein jour, la source turquoise).
-  'yamina': 'eau-souls-cendres-v1',
-  'boualem': 'eau-souls-cendres-v1',
-  'baton-des-citernes': 'eau-souls-cendres-v1',
-  'porteuse-de-cruches': 'eau-souls-cendres-v1',
-  'pilote-de-la-carreira': 'eau-souls-cendres-v1',
-  'source-de-bimini': 'eau-souls-cendres-v1',
-  'haut-fond': 'eau-souls-cendres-v1',
-  'lame-de-mer': 'eau-souls-cendres-v1',
-  'le-routier': 'eau-souls-cendres-v1',
-  'eau-de-la-source': 'eau-souls-cendres-v1',
+  // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
+  // lot entier est viré au **bleu de nuit** — l'Eau doit se distinguer de la
+  // Neige au premier regard, sinon les deux sets se confondent en gris.
+  'yamina': 'eau-souls-bleue-v1',
+  'boualem': 'eau-souls-bleue-v1',
+  'baton-des-citernes': 'eau-souls-bleue-v1',
+  'porteuse-de-cruches': 'eau-souls-bleue-v1',
+  'pilote-de-la-carreira': 'eau-souls-bleue-v1',
+  'source-de-bimini': 'eau-souls-bleue-v1',
+  'haut-fond': 'eau-souls-bleue-v1',
+  'lame-de-mer': 'eau-souls-bleue-v1',
+  'le-routier': 'eau-souls-bleue-v1',
+  'eau-de-la-source': 'eau-souls-bleue-v1',
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
   'lance-de-givre': 'neige-souls-cendres-v1',

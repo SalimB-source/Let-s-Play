@@ -701,6 +701,27 @@ sous la marque `eau-souls-cendres-v1`.
 - **Haut-fond**, **Lame de mer** et **Eau de la source** — l'épave au crépuscule,
   la vague de nuit, le puits ruiné.
 
+### Le bleu de l'Eau : une marque de set, pas un détail
+
+Peint dans la palette commune — gris de cendre et ardoise froide — le premier
+lot de l'Eau se confondait avec la **Neige** au premier regard. Les deux sets
+sont pourtant voisins dans la barre d'XP et dans les boosters : une carte doit
+se reconnaître à trois mètres. L'Eau reçoit donc, dans la peinture elle-même,
+un **virage au bleu de nuit** : les ombres et l'eau se décalent vers un bleu
+profond, le contraste monte un peu, et les seules chaleurs qui restent sont les
+lampes et les visages.
+
+| Réglage | Valeur |
+| --- | --- |
+| Rouge | × 0,82 |
+| Vert | × 0,96 |
+| Bleu | × 1,36 |
+| Saturation | × 1,18 |
+
+C'est une **règle du set**, appliquée dès la peinture pour toute la suite
+(marque `eau-souls-bleue-v1`), et pas un filtre de navigateur : l'image livrée
+est déjà bleue, en duel comme en vignette.
+
 Les dix anciennes peintures rejoignent `public/cards/alt/` : **cent neuf
 illustrations alternatives**, dont quinze à l'échelle et quatre-vingt-quatorze
 en boutique.
