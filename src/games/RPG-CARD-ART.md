@@ -894,6 +894,36 @@ cartes sans clé de cache (`corsaire`, `chien-de-sable`) sont dorées mais **ne
 reçoivent pas de clé** : leur peinture est antérieure à la convention, et la
 leur en ajouter ferait croire à un remplacement.
 
+#### Le doré retiré (octobre 2026)
+
+La teinte a été **retirée des peintures** : sur la passe Souls déjà sombre, le
+mélange doré à 18 % dominait, et les cartes du coffret viraient toutes au sépia
+— la cendre du set ne se lisait plus. Le retrait se fait carte par carte, dans
+`scripts/retirer-filtre-dore-sable.sh` :
+
+| Réglage | Valeur |
+| --- | --- |
+| Dominante retirée | la mesure de l'image, `mean(R) − mean(B)`, à 100 % |
+| Correction par canal | moitié sur le rouge (retirée), moitié sur le bleu (ajoutée), plafonnée à 7 % |
+| Saturation | × 0,90 |
+| Garde-fou | une image dont la dominante est ≤ 6 n'est pas touchée |
+
+Le dessin, le cadrage et le format 4:5 ne bougent pas : seule la balance des
+blancs revient. Mesure après passe, en moyennes sur vignette :
+
+| Élément | `R − B` avant | `R − B` après |
+| --- | --- | --- |
+| Sable | +21 | +7 |
+| Braise | 0 | 0 |
+| Neige | −11 | −11 |
+| Eau | −18 | −18 |
+| Ténèbres | −11 | −11 |
+
+Les peintures gardent leur nom de fichier ; la marque passe donc à
+`sable-souls-desore-v3` (et `bouchra-cretes-v3`, `kusayla-roi-imazigh-v2`,
+`grappin-griffes-bastingage-v4`, `javelot-beffroi-cloche-v4` pour les quatre
+cartes à clé propre), sinon un navigateur servirait l'ancienne image.
+
 ### Bilan du catalogue
 
 | Élément | Cartes | Dans l'huile sombre | Reste |
