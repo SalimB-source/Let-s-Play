@@ -20,7 +20,7 @@ import {
   vignettePlateau,
   vignettePlateauRelative,
 } from '../src/games/rpgPlateaux.js';
-import { RPG_DECKS } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES } from '../src/games/rpgCards.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 
 
@@ -287,7 +287,7 @@ test('rien n’est écrit sur l’appareil au moment du tirage', () => {
 // ── Chaque deck a son terrain ───────────────────────────────────────────────
 
 test('chaque deck du catalogue impose un plateau connu', () => {
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     const resolu = plateauDeDeck(deck);
     assert.equal(resolu.motif, 'deck', `${deck.id} a son terrain attitré`);
     assert.ok(RPG_PLATEAUX.includes(resolu.plateau), `${deck.id} : plateau du catalogue`);
@@ -323,7 +323,7 @@ test('le navire pirate est livré en 4K 3:2 et sert de terrain aux Lettres de Ma
   assert.equal(RPG_PLATEAUX_PAR_DECK['essai-mana-lettres-de-marque'], 'navire-pirate');
   assert.equal(plateauDeDeck('essai-mana-lettres-de-marque').plateau.id, 'navire-pirate');
   // Un paquet maison construit autour des cartes corsaires rejoint aussi le navire.
-  const paquetCorsaire = RPG_DECKS.find(({ id }) => id === 'lettres-de-marque').cardIds;
+  const paquetCorsaire = RPG_DECKS_ARCHETYPES.find(({ id }) => id === 'lettres-de-marque').cardIds;
   assert.equal(plateauDeDeck(paquetCorsaire).plateau.id, 'navire-pirate');
   assert.equal(varianteFantaisisteDe('navire-pirate'), null, 'le navire pirate est un terrain unique');
   let appels = 0;

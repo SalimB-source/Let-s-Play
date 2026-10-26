@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { cardById, RPG_DECKS, terrainManaColors, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { cardById, RPG_DECKS_ARCHETYPES, terrainManaColors, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { choisirCarteIA, choisirCiblesRapidesIA } from '../src/games/rpgAI.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgFinDeTour, rpgBlesserCreature, rpgLancerAttaque, rpgAttaquerSorcier } from '../src/games/rpgDuel.js';
@@ -29,7 +29,7 @@ test('le sabre accompagne le starter sans terrain et reste à acquérir au Souk'
   assert.equal(sabre.cost, 4);
   assert.equal(sabre.honneur, undefined);
   assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true });
-  const deck = RPG_DECKS.find((d) => d.id === 'serment-du-soleil-rouge');
+  const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === 'serment-du-soleil-rouge');
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => id === 'sabre-maudit').length, 2, 'le starter de trente cartes inclut deux sabres');
   assert.equal(COLLECTION_DEPART.includes('sabre-maudit'), false);

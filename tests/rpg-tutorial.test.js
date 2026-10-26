@@ -12,7 +12,7 @@ import {
   rpgPeutMulligan,
   rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
-import { RPG_DECKS, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { portefeuilleVide, reclamerRecompenseTutoriel } from '../src/games/rpgCredits.js';
 import {
@@ -24,7 +24,7 @@ import {
   tutorielParId,
 } from '../src/games/rpgTutorial.js';
 
-const deckDe = (id) => RPG_DECKS.find((deck) => deck.id === id)?.cardIds ?? [];
+const deckDe = (id) => RPG_DECKS_ARCHETYPES.find((deck) => deck.id === id)?.cardIds ?? [];
 
 function duelDeLecon(tutoriel) {
   const duel = rpgNouveauDuel({
@@ -63,7 +63,7 @@ test('le menu propose cinq leçons, une par deck, chacune récompensée', () => 
     assert.ok(tutoriel.steps.every((etape) => etape.title && etape.text),
       `${tutoriel.id} explique chaque étape`);
     assert.equal(tutoriel.steps.at(-1).kind, 'complete', `${tutoriel.id} se termine par un bilan`);
-    assert.ok(RPG_DECKS.some((deck) => deck.id === tutoriel.opponentDeckId));
+    assert.ok(RPG_DECKS_ARCHETYPES.some((deck) => deck.id === tutoriel.opponentDeckId));
   }
   assert.equal(tutorielParId('inconnu').id, RPG_TUTORIELS[0].id);
 });
@@ -88,7 +88,7 @@ test('la préparation installe la main, le mana et la scène de chaque leçon', 
     assert.deepEqual(duel.joueur.main, tutoriel.openingHand, `${tutoriel.id} : main exacte`);
     assert.equal(rpgPeutMulligan(duel, 'joueur'), false, `${tutoriel.id} : pas de mulligan`);
     assert.equal(duel.sorcier.main.length, tutoriel.opponentHand.length, `${tutoriel.id} : main adverse`);
-    const manaAttendu = tutoriel.playerMana ?? { [RPG_DECKS.find((deck) => deck.id === tutoriel.deckId).element]: 1 };
+    const manaAttendu = tutoriel.playerMana ?? { [RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutoriel.deckId).element]: 1 };
     for (const [couleur, montant] of Object.entries(manaAttendu)) {
       assert.equal(duel.joueur.mana[couleur], montant, `${tutoriel.id} : mana ${couleur}`);
     }

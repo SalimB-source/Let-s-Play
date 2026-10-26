@@ -23,10 +23,12 @@
  * 3. **Une récompense par leçon** : `reward` est versé par la bourse
  *    (`reclamerRecompenseTutoriel`) et retenu dans le portefeuille.
  */
-import { RPG_DECKS, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
 import { rpgJouerCreature } from './rpgDuel.js';
 
-const deckParId = (id) => RPG_DECKS.find((deck) => deck.id === id) ?? null;
+// Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
+// l'étagère du joueur (vide depuis les coffrets de bienvenue).
+const deckParId = (id) => RPG_DECKS_ARCHETYPES.find((deck) => deck.id === id) ?? null;
 const cartesDuDeck = (id) => [...(deckParId(id)?.cardIds ?? RPG_DECK_JOUEUR_BASE)];
 
 /** La première leçon garde les alias historiques du tutoriel débutant. */

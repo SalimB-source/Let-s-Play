@@ -71,7 +71,7 @@ import {
   RPG_MAGIE_CARDS,
   RPG_TERRAIN_CARDS,
   RPG_TOUR_CARDS,
-  RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   cardArtId,
   cardById,
   cardColorCost,
@@ -412,7 +412,7 @@ test('le guépard du roi naît avec Kusayla : 2/1, Rapidité, sans coût ni cart
     'le guépard a sa peinture plein art');
   assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === 'guepard'), false,
     'le guépard n’entre ni au Souk ni dans l’atelier de decks');
-  assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes('guepard')), false);
+  assert.equal(RPG_DECKS_ARCHETYPES.some((deck) => deck.cardIds.includes('guepard')), false);
   assert.equal(cardById('guepard').jeton, true);
 
   const duel = duelDeBase();
@@ -986,7 +986,7 @@ test('chaque carte du duel possède une illustration locale et une ligne de type
 
 test('les decks ont leurs illustrations et le contrôle catalogue détecte les partages restants', () => {
   const cartes = [...RPG_CREATURE_CARDS, ...RPG_HERO_CARDS, ...RPG_TERRAIN_CARDS, ...RPG_MAGIE_CARDS];
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     const imagesDeCeDeck = new Map();
     for (const id of new Set(deck.cardIds)) {
       const illustration = cardArtId(cardById(id));
@@ -1077,7 +1077,7 @@ test('les decks ont leurs illustrations et le contrôle catalogue détecte les p
 
 test('chaque deck de départ a son boîtier illustré : une carte emblématique du deck, unique et livrée avec le jeu', () => {
   const illustrations = new Map();
-  for (const deck of RPG_DECKS) {
+  for (const deck of RPG_DECKS_ARCHETYPES) {
     assert.ok(deck.boxArt, `${deck.name} a une illustration de boîtier (boxArt)`);
     assert.ok(deck.cardIds.some((id) => cardArtId(cardById(id)) === deck.boxArt),
       `l’illustration du boîtier « ${deck.name} » est celle d’une carte de ce deck`);
@@ -3673,7 +3673,7 @@ test('un chien de sable renvoyé en main cesse d’exister : jamais de carte gra
   assert.equal(cardById('chien-de-sable').jeton, true);
   assert.equal(RPG_DUEL_CARDS.some((carte) => carte.id === 'chien-de-sable'), false,
     'le chien de sable reste hors du catalogue jouable');
-  assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes('chien-de-sable')), false,
+  assert.equal(RPG_DECKS_ARCHETYPES.some((deck) => deck.cardIds.includes('chien-de-sable')), false,
     'aucun deck ne contient de créature-jeton');
 });
 
@@ -3822,7 +3822,7 @@ test('les magies : types, coûts, cibles et magies rapides de combat', () => {
   // du jeu : elles ne figurent plus ni au catalogue ni dans aucun deck.
   for (const idRetire of ['rafale-du-minaret', 'sentence-de-la-liste', 'fureur-du-souk']) {
     assert.equal(RPG_MAGIE_CARDS.some((c) => c.id === idRetire), false, `${idRetire} a quitté le jeu`);
-    assert.equal(RPG_DECKS.some((deck) => deck.cardIds.includes(idRetire)), false,
+    assert.equal(RPG_DECKS_ARCHETYPES.some((deck) => deck.cardIds.includes(idRetire)), false,
       `${idRetire} ne reste dans aucun deck de départ`);
   }
 });
@@ -4301,7 +4301,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {
-  const deck = RPG_DECKS.find(({ id }) => id === 'serment-des-neuf-hivers');
+  const deck = RPG_DECKS_ARCHETYPES.find(({ id }) => id === 'serment-des-neuf-hivers');
   assert.ok(deck, 'le deck Neige apparaît dans la sélection');
   assert.equal(deck.role, 'joueur');
   assert.equal(deck.element, 'neige');
@@ -4553,7 +4553,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
 });
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {
-  assert.deepEqual(RPG_DECKS.map(({ id }) => id),
+  assert.deepEqual(RPG_DECKS_ARCHETYPES.map(({ id }) => id),
     ['veilleurs-du-desert', 'cour-des-djinns', 'sentiers-de-cendre', 'maree-des-abysses', 'serment-des-neuf-hivers', 'serment-du-soleil-rouge', 'balance-des-heures', 'lettres-de-marque'],
     'les huit decks du catalogue, dont les deux cultures de Braise, les Ténèbres et la Régence');
   assert.equal(RPG_DECK_SORCIER_BASE.filter((id) => id === 'anqa-des-braises').length, 1,
@@ -4612,7 +4612,7 @@ test('les decks de départ respectent les limites mythiques et le deck hybride r
     }
   }
 
-  const deckHybride = RPG_DECKS.find(({ id }) => id === 'sentiers-de-cendre');
+  const deckHybride = RPG_DECKS_ARCHETYPES.find(({ id }) => id === 'sentiers-de-cendre');
   assert.ok(deckHybride, 'le deck hybride apparaît dans la sélection');
   assert.equal(deckHybride.role, 'joueur');
   assert.deepEqual(deckHybride.elements, ['sable', 'braise']);

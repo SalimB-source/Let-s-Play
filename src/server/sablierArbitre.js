@@ -31,7 +31,7 @@
  * JSON : `{ ok: true, ... }` ou `{ ok: false, raison, ... }`.
  */
 
-import { rpgValiderDeck, RPG_DECKS } from '../games/rpgCards.js';
+import { rpgValiderDeck, RPG_DECKS_ARCHETYPES } from '../games/rpgCards.js';
 import { rpgNouveauDuel, rpgDemarrerManaEssai } from '../games/rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from '../games/rpgManaEssai.js';
 import { rngSeme } from '../games/rpgHasard.js';
@@ -121,11 +121,13 @@ function memeDeck(a, b) {
 
 /**
  * Métadonnées publiques d'un deck (aucune liste de cartes privées ne sort) :
- * l'identifiant du coffret s'il vient du catalogue, sinon ses seules couleurs.
+ * l'identifiant du coffret s'il vient du répertoire, sinon ses seules couleurs.
+ * Un deck de joueur (coffret de bienvenue, atelier) n'a pas d'identifiant à
+ * exposer : il n'en sort que ses couleurs.
  */
 function infoDeckPublic(deckIds, couleursFallback = []) {
   if (!Array.isArray(deckIds)) return null;
-  const catalogue = RPG_DECKS.find((candidat) => memeDeck(candidat.cardIds, deckIds));
+  const catalogue = RPG_DECKS_ARCHETYPES.find((candidat) => memeDeck(candidat.cardIds, deckIds));
   if (catalogue) {
     return {
       id: catalogue.id,
@@ -214,12 +216,14 @@ export function creerArbitre({
   /**
    * Le deck est-il jouable ici ? Format d'abord (`rpgValiderDeck` : 30 cartes,
    * 1–3 couleurs, limites d'exemplaires), puis **possession** : un deck du
-   * catalogue est ouvert à tous, un deck composé exige que chaque carte soit
-   * dans la collection du compte (`rpg_sablier_progress.state.collection`).
+   * répertoire (archétypes d'entraînement, celui du sorcier, des leçons) est
+   * ouvert à tous, un deck du joueur — le seul qui existe depuis les coffrets —
+   * exige que chaque carte soit dans la collection du compte
+   * (`rpg_sablier_progress.state.collection`).
    */
   async function deckAutorise(uid, deck) {
     if (!rpgValiderDeck(deck).ok) return { ok: false, raison: 'deck-invalide' };
-    if (RPG_DECKS.some((catalogue) => memeDeck(catalogue.cardIds, deck))) return { ok: true };
+    if (RPG_DECKS_ARCHETYPES.some((catalogue) => memeDeck(catalogue.cardIds, deck))) return { ok: true };
     const etat = await magasin.etatSablier(uid);
     const collection = new Set(Array.isArray(etat?.collection) ? etat.collection : []);
     if (!collection.size) return { ok: false, raison: 'deck-non-possede' };

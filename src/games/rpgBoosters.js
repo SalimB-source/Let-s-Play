@@ -497,6 +497,34 @@ function detaillerTirage(cartes, collection, comptes = null) {
 }
 
 /**
+ * Ce que la cérémonie annonce d'une carte révélée, en un mot :
+ *
+ *   - `nouvelle`   — la carte entre dans la collection ;
+ *   - `remboursee` — déjà au quota : le doublon est payé au barème (D4) ;
+ *   - `exemplaire` — **le deuxième exemplaire se garde** : il complète le
+ *     playset et se joue à deux en deck ;
+ *   - `deja`       — le reste : une copie qui ne peut pas monter (rien à
+ *     ajouter, rien à rendre).
+ *
+ * C'est la **seule** règle de l'étiquette : sans elle, la rare — la seule
+ * rareté dont le premier doublon tombe pile sur le quota de deux — affichait
+ * « déjà possédée » alors que la copie venait d'être ajoutée au stock, et le
+ * joueur croyait n'avoir rien reçu (doc 13, D4).
+ */
+export function etatDeCarteRevelee(detail) {
+  if (!detail || !detail.doublon) return 'nouvelle';
+  if ((detail.remboursement ?? 0) > 0) return 'remboursee';
+  return (detail.exemplaires ?? 1) > 1 ? 'exemplaire' : 'deja';
+}
+
+/** Les mots de la pastille, pour l'œil et pour le lecteur d'écran. */
+export const TAMPON_CARTE = Object.freeze({
+  nouvelle: 'Nouvelle',
+  exemplaire: '2ᵉ exemplaire',
+  deja: 'Déjà possédée',
+});
+
+/**
  * Ouvre un paquet du comptoir — **acheté ou offert**.
  *
  * Les deux chemins partagent exactement le même tirage, le même remboursement

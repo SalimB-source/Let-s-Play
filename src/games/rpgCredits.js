@@ -184,6 +184,40 @@ export function ajouterExemplaireAuPortefeuille(portefeuille, cardId, { possedee
 }
 
 /**
+ * Range un **coffret de bienvenue** dans le portefeuille : ses cartes entrent en
+ * possession, et leur **nombre d'exemplaires** est porté au stock.
+ *
+ * Sans ce compte, un coffret ne serait pas jouable : le deck de la maison lit
+ * le stock payé pour les inhabituelles et les rares (`exemplairesPossedables`),
+ * et une carte posée deux fois dans le coffret n'aurait qu'une copie déclarée.
+ * Le stock ne recule jamais : on garde le maximum entre l'existant et le
+ * coffret, comme la fusion entre deux appareils.
+ */
+export function rangerCoffretDansPortefeuille(portefeuille, coffret) {
+  const base = normaliserPortefeuille(portefeuille);
+  const ids = Array.isArray(coffret?.cardIds) ? coffret.cardIds.filter((id) => cardById(id)) : [];
+  if (ids.length === 0) return { portefeuille: base, modifie: false };
+  const cartes = normaliserCollection([...base.cartes, ...ids]);
+  const comptes = normaliserExemplaires(base.exemplaires, cartes);
+  for (const id of ids) {
+    const carte = cardById(id);
+    const limite = cardCopyLimit(carte);
+    const nombre = ids.filter((autre) => autre === id).length;
+    const total = Math.min(Math.max(comptes[id] ?? 0, nombre), limite);
+    comptes[id] = total;
+  }
+  return {
+    portefeuille: {
+      ...base,
+      cartes,
+      exemplaires: normaliserExemplaires(comptes, cartes),
+      majLe: new Date().toISOString(),
+    },
+    modifie: true,
+  };
+}
+
+/**
  * Fusion des stocks entre deux appareils : le **maximum** copie par copie,
  * jamais la somme (deux appareils qui achètent le même exemplaire ne créent pas
  * deux exemplaires) ni la valeur du plus récent.

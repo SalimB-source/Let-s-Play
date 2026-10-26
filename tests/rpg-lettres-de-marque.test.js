@@ -40,7 +40,7 @@ import {
 } from '../src/games/rpgDuel.js';
 import * as moteurDuel from '../src/games/rpgDuel.js';
 import {
-  RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DECK_LETTRES_DE_MARQUE_BASE,
   CATALOGUE_DU_COMPOSEUR,
   cardById,
@@ -900,7 +900,7 @@ test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles
   assert.equal(RPG_MANA_ESSAI_DECKS.length, 5, 'le banc d’essai compte cinq paquets');
 
   // Le boîtier de l'étagère : composé par sa recette, pas écrit à la main.
-  const boitier = RPG_DECKS.find((deck) => deck.id === 'lettres-de-marque');
+  const boitier = RPG_DECKS_ARCHETYPES.find((deck) => deck.id === 'lettres-de-marque');
   assert.ok(boitier, 'le boîtier est sur l’étagère');
   assert.deepEqual(boitier.cardIds, composerDeck(RPG_RECETTES_DECKS['lettres-de-marque'], CATALOGUE_DU_COMPOSEUR),
     'la liste est celle de la recette');

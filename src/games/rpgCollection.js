@@ -35,6 +35,7 @@
  */
 
 import { RPG_DUEL_CARDS, cardById, cardCopyLimit } from './rpgCards.js';
+import { coffretChoisiDeLAppareil } from './rpgCoffretBienvenue.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { ecrireProgression, lireProgression, stockageProgression } from '../lib/progressionScope.js';
 import { etageHistoireParId } from './rpgStoryTours.js';
@@ -208,10 +209,18 @@ export function revelationsDepuisEtages(etageIds) {
  * pas. Le troisième paramètre du compte garde le nom `collection` — c'est un
  * nom sur le fil, pas une règle.
  */
-export function collectionJoueur({ acquis = null, distante = null, souk = null } = {}) {
+export function collectionJoueur({ acquis = null, distante = null, souk = null, coffret = undefined } = {}) {
   const acquisNormalise = normaliserAcquis(acquis ?? chargerAcquis());
+  // **Le coffret de bienvenue remplace la dotation.** Un joueur qui a ouvert un
+  // coffret (`rpgCoffretBienvenue.js`) possède exactement ses trente cartes,
+  // puis ce qu'il gagne : acquis du compte, apports d'un autre appareil, Souk.
+  // Sans coffret — un joueur d'avant les coffrets, ou un catalogue qui ne peut
+  // pas en composer — la dotation du catalogue reste la base, et aucune
+  // collection existante ne maigrit.
+  const coffretDuJoueur = coffret === undefined ? coffretChoisiDeLAppareil() : coffret;
+  const base = coffretDuJoueur ? normaliserCollection(coffretDuJoueur.cardIds) : COLLECTION_DEPART;
   return fusionnerCollections(
-    COLLECTION_DEPART,
+    base,
     acquisNormalise.cartes,
     distante,
     souk,

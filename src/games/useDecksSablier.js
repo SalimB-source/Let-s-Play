@@ -32,6 +32,7 @@ import {
   sauverAcquis,
   sauverCollectionDistante,
 } from './rpgCollection.js';
+import { garantirDeckDeDepart } from './rpgDeckDeDepart.js';
 import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { chargerPortefeuille, exemplairesDuPortefeuille, sauverPortefeuille } from './rpgCredits.js';
@@ -113,9 +114,17 @@ function etatDeDepart(acquis) {
     collection,
     exemplaires,
   );
-  if (lu.modifie) sauverCasierMaison(lu.casier);
+  // **Le deck de départ.** Plus aucun deck de base n'est offert depuis les
+  // coffrets de bienvenue : si le deck du coffret manque (autre appareil,
+  // sauvegarde d'avant), il est reposé ; sinon, un joueur qui n'a qu'une
+  // collection reçoit un premier deck composé dans ses couleurs
+  // (`rpgDeckDeDepart.js`). Une pierre tombale n'est jamais contredite.
+  // Un seul écrit : le casier réparé *et* complété (l'ordre inverse écraserait
+  // le deck de départ par la version d'avant réparation).
+  const rattrapage = garantirDeckDeDepart({ casier: lu.casier, collection });
+  if (rattrapage.cree || lu.modifie) sauverCasierMaison(rattrapage.casier);
   return {
-    ...lu.casier,
+    ...rattrapage.casier,
     collection,
     exemplaires,
     reparation: lu.modifie ? { retires: lu.retires, ajoutes: lu.ajoutes } : null,

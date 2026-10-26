@@ -107,6 +107,8 @@ import RpgProfilJoueur from './RpgProfilJoueur.jsx';
 import RpgPisteGains from './RpgPisteGains.jsx';
 import RpgStoryBabEl from './RpgStoryBabEl.jsx';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
+import RpgCoffretBienvenue from './RpgCoffretBienvenue.jsx';
+import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
@@ -241,6 +243,7 @@ import {
   RPG_DECK_JOUEUR_BASE,
   RPG_DECK_SORCIER_BASE,
   RPG_DECKS,
+  RPG_DECKS_ARCHETYPES,
   RPG_DUEL_CARDS,
   cardArtId,
   cardById,
@@ -4053,7 +4056,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4111,10 +4114,11 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
     play('menu');
     try { await onSignOut?.(); } catch { /* la session locale est déjà coupée */ }
   };
-  // L'étagère : les sept decks du catalogue, puis les boîtiers maison.
+  // L'étagère : **les decks de la maison** (celui du coffret, puis ceux de
+  // l'atelier) — plus aucun deck de base depuis les coffrets de bienvenue.
   const decksTous = [...RPG_DECKS, ...decksMaison];
-  const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? RPG_DECKS[0];
-  const playerDeck = deckSeJoue(selectedDeck, collection) ? selectedDeck : deckParDefaut();
+  const selectedDeck = decksTous.find((deck) => deck.id === selectedDeckId) ?? decksMaison[0] ?? null;
+  const playerDeck = deckSeJoue(selectedDeck, collection, exemplaires) ? selectedDeck : deckParDefaut(decksMaison, collection, exemplaires);
   // Le sorcier joue la Cour des Djinns — sauf si c'est le deck du joueur : il prend alors un autre deck.
   const opponentDeck = deckAdversePour(playerDeck);
   // Filtre par couleur de l'étagère : un deck écarté n'est pas dessiné et ne peut pas rester ouvert.
@@ -4123,7 +4127,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // La liste des cartes n'existe qu'une fois un deck cliqué : `openDeck` reste nul
   // (et la liste n'est même pas calculée) tant que le joueur n'a rien ouvert.
   const openDeck = decksVisibles.find((deck) => deck.id === openDeckId) ?? null;
-  const openJouable = openDeck ? deckSeJoue(openDeck, collection) : false;
+  const openJouable = openDeck ? deckSeJoue(openDeck, collection, exemplaires) : false;
   const openStats = openDeck ? deckStats(openDeck) : { terrains: 0, creatures: 0, magies: 0, armes: 0 };
   const openCards = openDeck ? deckCardList(openDeck) : [];
   // La liste se lit par familles : créatures, puis sorts, puis terrains. Une
@@ -4138,7 +4142,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
       .filter((famille) => famille.cartes.length > 0)
     : [];
   const openValidation = openDeck
-    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection) : rpgValiderDeck(openDeck.cardIds))
+    ? (openDeck.maison ? rpgValiderDeckMaison(openDeck.cardIds, collection, exemplaires) : rpgValiderDeck(openDeck.cardIds))
     : { ok: false, raisons: ['Aucun deck ouvert.'] };
   // Le Catalogue est une encyclopédie : il montre vraiment toutes les cartes,
   // y compris les terrains et les cartes archivées hors du format de deck.
@@ -4238,12 +4242,12 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   // « Sélectionner » : le deck devient le deck de jeu (le parent le mémorise sur l'appareil).
   // Ouvrir un boîtier, lui, ne fait que montrer la liste de ses cartes.
   const choisirDeck = (deck) => {
-    if (!deckSeJoue(deck, collection) || deck.id === playerDeck?.id) return;
+    if (!deckSeJoue(deck, collection, exemplaires) || deck.id === playerDeck?.id) return;
     setConfirmation({ deckId: deck.id, enregistre: onSelectDeck(deck.id) === true });
   };
   // Jouer avec un deck en fait le deck de jeu ; le duel démarre avec lui sans attendre le rendu.
   const jouerAvec = (deck) => {
-    if (!deckSeJoue(deck, collection)) return;
+    if (!deckSeJoue(deck, collection, exemplaires)) return;
     onSelectDeck(deck.id);
     onStartGame(deck.id);
   };
@@ -4466,7 +4470,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     </span>
                     <span className="rpg-mode-carte__arrow rpg-menu-button__arrow" aria-hidden="true">→</span>
                   </a>
-                  <button type="button" className="rpg-mode-carte rpg-menu-button rpg-menu-button--partie-rapide" onClick={() => { play('select'); setPartieRapideChoix(playerDeck?.id ?? decksTous.filter((deck) => deckSeJoue(deck, collection))[0]?.id ?? ''); setPartieRapideOuverte(true); }}>
+                  <button type="button" className="rpg-mode-carte rpg-menu-button rpg-menu-button--partie-rapide" onClick={() => { play('select'); setPartieRapideChoix(playerDeck?.id ?? decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires))[0]?.id ?? ''); setPartieRapideOuverte(true); }}>
                     <RpgModeIcon nom="jouer" className="rpg-mode-carte__icone" />
                     <span className="rpg-mode-carte__texte rpg-menu-button__text">
                       <strong>Jouer</strong>
@@ -4782,7 +4786,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                     );
                   })}
                 </div>
-                <p className="rpg-deck-filter__count" aria-live="polite">{decksVisibles.length} / {RPG_DECKS.length} deck{RPG_DECKS.length === 1 ? '' : 's'}</p>
+                <p className="rpg-deck-filter__count" aria-live="polite">{decksVisibles.length} / {decksTous.length} deck{decksTous.length === 1 ? '' : 's'}</p>
               </div>
               <div className="rpg-deck-catalog__choices">
                 <button
@@ -4808,7 +4812,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                   if (!deckCorrespondCouleur(deck, deckCouleur)) return null; // écarté par le filtre de couleur
                   const ouvert = openDeck?.id === deck.id;
                   const actif = playerDeck?.id === deck.id;
-                  const jouable = deckSeJoue(deck, collection);
+                  const jouable = deckSeJoue(deck, collection, exemplaires);
                   return (
                     <div
                       key={deck.id}
@@ -5375,7 +5379,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
             </header>
             <div className="rpg-partie-rapide__grid" role="list">
               {(() => {
-                const decksJouables = decksTous.filter((deck) => deckSeJoue(deck, collection));
+                const decksJouables = decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires));
                 if (!decksJouables.length) {
                   return <p className="rpg-partie-rapide__empty">Aucun deck disponible. Construisez un deck dans l’atelier pour débloquer une partie rapide.</p>;
                 }
@@ -5413,10 +5417,10 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
               <button
                 type="button"
                 className="rpg-btn rpg-btn--primary"
-                disabled={!partieRapideChoix || !decksTous.find((deck) => deck.id === partieRapideChoix && deckSeJoue(deck, collection))}
+                disabled={!partieRapideChoix || !decksTous.find((deck) => deck.id === partieRapideChoix && deckSeJoue(deck, collection, exemplaires))}
                 onClick={() => {
                   const deck = decksTous.find((d) => d.id === partieRapideChoix);
-                  if (!deck || !deckSeJoue(deck, collection)) return;
+                  if (!deck || !deckSeJoue(deck, collection, exemplaires)) return;
                   play('select');
                   onSelectDeck(deck.id);
                   onStartGame(deck.id);
@@ -5890,6 +5894,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const {
     decksMaison,
     collection,
+    exemplaires,
     statutSync,
     rafraichirCollection,
     enregistrerDeckMaison,
@@ -5898,17 +5903,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   } = useDecksSablier();
   const decksTous = [...RPG_DECKS, ...decksMaison];
   // Le deck de jeu : celui que le joueur a sélectionné lors d'un lancement précédent
-  // (mémorisé sur l'appareil), sinon le deck par défaut.
-  const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi(decksMaison, collection) ?? deckParDefaut()?.id ?? '');
+  // (mémorisé sur l'appareil), sinon le premier deck jouable de son étagère.
+  const [deckSelectionneId, setDeckSelectionneId] = useState(() => chargerDeckChoisi(decksMaison, collection, exemplaires) ?? deckParDefaut(decksMaison, collection, exemplaires)?.id ?? '');
   // Le deck du duel en cours : changer de sélection dans le menu ne change pas un duel déjà lancé.
   const [deckDuelId, setDeckDuelId] = useState(null);
   // Le deck du sorcier en duel libre (null : celui par défaut, ou un étage du mode Histoire).
   const [deckAdverseId, setDeckAdverseId] = useState(null);
   const choisirDeck = (deckId) => {
     const deck = decksTous.find((candidat) => candidat.id === deckId);
-    if (!deckSeJoue(deck, collection)) return false;
+    if (!deckSeJoue(deck, collection, exemplaires)) return false;
     setDeckSelectionneId(deck.id);
-    return sauverDeckChoisi(deck.id, decksMaison, collection);
+    return sauverDeckChoisi(deck.id, decksMaison, collection, exemplaires);
   };
   // Plateaux du duel : la table est découpée en deux moitiés — en bas, le
   // terrain du deck du joueur (`plateauId`, le principal pour le décor 3D) ;
@@ -5948,7 +5953,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
-    acheterBooster, acheterCoffret, fermerOuverture, ouverture: ouvertureSouk,
+    acheterBooster, acheterCoffret, rangerCoffret, fermerOuverture, ouverture: ouvertureSouk,
     acheterCarteDirecte, rafraichirEtal,
     acheterIllustration, basculerIllustration,
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
@@ -5982,10 +5987,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // obéit au joueur qui a choisi une table chez lui.
   useEffect(() => {
     if (!modePvp || !pvp?.vue) return;
-    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.joueur.id) : null)
+    const deckJ = (pvp.decks?.joueur?.id ? RPG_DECKS_ARCHETYPES.find((d) => d.id === pvp.decks.joueur.id) : null)
       ?? (pvp.decks?.joueur?.cardIds?.length ? { id: pvp.decks.joueur.id ?? 'pvp-joueur', elements: pvp.vue.joueur?.couleurs, cardIds: pvp.decks.joueur.cardIds } : null)
       ?? (pvp.vue.joueur?.couleurs?.length ? { id: 'pvp-joueur', elements: pvp.vue.joueur.couleurs, cardIds: [] } : null);
-    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS.find((d) => d.id === pvp.decks.sorcier.id) : null)
+    const deckS = (pvp.decks?.sorcier?.id ? RPG_DECKS_ARCHETYPES.find((d) => d.id === pvp.decks.sorcier.id) : null)
       ?? (pvp.decks?.sorcier?.cardIds?.length ? { id: pvp.decks.sorcier.id ?? 'pvp-sorcier', elements: pvp.vue.sorcier?.couleurs, cardIds: pvp.decks.sorcier.cardIds } : null)
       ?? (pvp.vue.sorcier?.couleurs?.length ? { id: 'pvp-sorcier', elements: pvp.vue.sorcier.couleurs, cardIds: [] } : null);
     const plateaux = resoudrePlateauxDuDuel({
@@ -6849,11 +6854,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const deckChoisiId = modeTutoriel ? tutoriel.deckId : options.deckId ?? deckSelectionneId;
     // Les leçons prêtent leur deck : il ne dépend pas de la collection du
     // joueur. Le plateau et les couleurs se lisent donc dans le catalogue.
-    const deckTutorielJoueur = modeTutoriel ? RPG_DECKS.find((deck) => deck.id === tutoriel.deckId) ?? null : null;
-    const deckTutorielAdverse = modeTutoriel ? RPG_DECKS.find((deck) => deck.id === tutoriel.opponentDeckId) ?? null : null;
+    const deckTutorielJoueur = modeTutoriel ? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutoriel.deckId) ?? null : null;
+    const deckTutorielAdverse = modeTutoriel ? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutoriel.opponentDeckId) ?? null : null;
+    // Sans sélection explicite — premier lancement, deck du coffret ouvert dans
+    // la foulée — le premier deck jouable de la maison prend la main. Plus aucun
+    // deck de base n'existe : le paquet de secours ci-dessous n'est qu'un
+    // garde-fou d'ingénierie, jamais un deck offert au joueur.
     const deckJoueurSelectionne = modeTutoriel
       ? deckTutorielJoueur
-      : decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection));
+      : decksTous.find((deck) => deck.id === deckChoisiId && deckSeJoue(deck, collection, exemplaires))
+        ?? deckParDefaut(decksMaison, collection, exemplaires);
     // Duel libre : le sorcier joue la Cour des Djinns, ou un autre deck si le joueur joue déjà la Cour.
     // Dans le tutoriel, son paquet de Montagnes est volontairement passif.
     const deckAdverse = modeTutoriel || etageCourant || sorcierDeck || deckEssai ? null : deckAdversePour(deckJoueurSelectionne);
@@ -7979,8 +7989,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   if (lectureHistoire) {
-    const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection));
-    const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId) ?? decksJouablesHistoire[0] ?? deckParDefaut();
+    const decksJouablesHistoire = decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires));
+    const deckActifHistoire = decksJouablesHistoire.find((deck) => deck.id === deckSelectionneId)
+      ?? decksJouablesHistoire[0]
+      ?? deckParDefaut(decksMaison, collection, exemplaires);
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
@@ -7996,7 +8008,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             sauvegardeOk={sauvegardeHistoireOk} sonActif={sonActif} onToggleSound={basculerSon} />
         ) : (
           <RpgStoryScene recit={progressionHistoire.recit} etagesVaincus={progressionHistoire.etagesVaincus}
-            deckNom={deckActifHistoire?.name ?? deckActifHistoire?.nom ?? 'Veilleurs du Désert'}
+            deckNom={deckActifHistoire?.name ?? deckActifHistoire?.nom ?? 'Aucun deck jouable'}
             deckActifId={deckActifHistoire?.id ?? null}
             decksJouables={decksJouablesHistoire}
             onSelectDeck={choisirDeck}
@@ -8075,6 +8087,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           campagneEnCours={Boolean(campagneDuelRef.current)}
           decksMaison={decksMaison}
           collection={collection}
+          exemplaires={exemplaires}
           credits={credits}
           aReclamer={soukAReclamer}
           quetes={quetesSouk}
@@ -8236,7 +8249,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const cibleTutoriel = (nom) => Boolean(tutorielActif
     && etapeTutoriel?.target?.includes(`data-tutorial-target="${nom}"`));
   const deckPvpJoueur = modePvp
-    ? (RPG_DECKS.find((deck) => deck.id === pvp?.decks?.joueur?.id)
+    ? (RPG_DECKS_ARCHETYPES.find((deck) => deck.id === pvp?.decks?.joueur?.id)
       ?? (duel.joueur.couleurs?.length ? {
         id: 'pvp-joueur',
         name: pvp?.decks?.joueur?.name ?? 'Votre deck',
@@ -8245,7 +8258,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       } : null))
     : null;
   const deckPvpAdverse = modePvp
-    ? (RPG_DECKS.find((deck) => deck.id === pvp?.decks?.sorcier?.id)
+    ? (RPG_DECKS_ARCHETYPES.find((deck) => deck.id === pvp?.decks?.sorcier?.id)
       ?? (duel.sorcier.couleurs?.length ? {
         id: 'pvp-sorcier',
         name: pvp?.decks?.sorcier?.name ?? 'Deck adverse',
@@ -8255,12 +8268,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null;
   const deckJoueurAffiche = deckPvpJoueur
     ?? (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(duel.essaiDeckId) : null)
-    ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.deckId) : null)
-    ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection)) ?? RPG_DECKS[0];
+    ?? (tutorielActif ? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutorielCourant?.deckId) : null)
+    ?? decksTous.find((deck) => deck.id === (deckDuelId ?? deckSelectionneId) && deckSeJoue(deck, collection, exemplaires))
+    ?? deckParDefaut(decksMaison, collection, exemplaires);
   const deckAdverseAffiche = deckPvpAdverse
     ?? (duel.modeMana === RPG_MODE_MANA_ESSAI ? deckManaEssaiParId(deckAdverseId) : null)
-    ?? (tutorielActif ? RPG_DECKS.find((deck) => deck.id === tutorielCourant?.opponentDeckId) : null)
-    ?? RPG_DECKS.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut() ?? RPG_DECKS[0];
+    ?? (tutorielActif ? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === tutorielCourant?.opponentDeckId) : null)
+    ?? RPG_DECKS_ARCHETYPES.find((deck) => deck.id === deckAdverseId) ?? deckAdverseParDefaut();
   const nomJoueurAffiche = modePvp
     ? (duel.noms?.joueur ?? (pvp?.siege === 'sorcier' ? pvp?.noms?.sorcier : pvp?.noms?.joueur) ?? nomProfilJoueur)
     : nomProfilJoueur;
@@ -12758,6 +12772,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       {/* Aucun paquet ne s'ouvre pendant une partie en cours : la cérémonie
           n'apparaît ici qu'une fois le duel terminé (victoire, défaite ou
           égalité), au-dessus du bilan de fin de partie. */}
+      {/* Le tout premier lancement : les trois coffrets de bienvenue. Le
+          coffret ouvert devient un deck de la maison — trente cartes, tout de
+          suite jouables — et la collection se rafraîchit sans recharger. */}
+      <RpgCoffretBienvenue
+        onPlaySfx={jouerSfx}
+        onOuvrir={(coffret) => {
+          // Le coffret **remplace la dotation** : ses cartes et leur stock de
+          // copies entrent dans la bourse, son deck devient un deck de la
+          // maison (trente cartes, jouable tout de suite), et l'atelier voit
+          // la collection sans recharger la page.
+          rangerCoffret(coffret);
+          enregistrerDeckMaison(coffretEnDeckMaison(coffret));
+          rafraichirCollection();
+        }}
+      />
       {!partieEnCours && (
         <MonteeDeNiveau
           montee={monteeNiveau}
