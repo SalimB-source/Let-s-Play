@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
+import { ElementEmblem } from './rpgEmblemes.jsx';
 import { cardById, cardRarityInfo } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
@@ -189,7 +190,9 @@ function VolumeCoffret({ couleur, nom, sousTitre, vitrine = null, ouvre = false 
         {/* Les faces cachées d'abord : elles passent derrière la face avant. */}
         <span className="rpg-coffret__boite-face rpg-coffret__boite-face--cote" aria-hidden="true">
           <span className="rpg-coffret__boite-cote-bande" />
-          <span className="rpg-coffret__boite-cote-rune"><RuneSablier /></span>
+          <span className="rpg-coffret__boite-cote-embleme">
+            <ElementEmblem element={couleur} />
+          </span>
         </span>
         <span className="rpg-coffret__boite-face rpg-coffret__boite-face--dessus" aria-hidden="true">
           <span className="rpg-coffret__boite-dessus-vernis" />
@@ -197,12 +200,21 @@ function VolumeCoffret({ couleur, nom, sousTitre, vitrine = null, ouvre = false 
         {/* L'intérieur : la bouche de la boîte. Il n'existe que dans la
             cérémonie — fermée, le couvercle le cache de toute façon, mais inutile
             de le peindre trois fois sur l'étagère du choix. */}
-        {ouvre ? <span className="rpg-coffret__boite-face rpg-coffret__boite-face--interieur" aria-hidden="true" /> : null}
+        {ouvre ? (
+          <span className="rpg-coffret__boite-face rpg-coffret__boite-face--interieur" aria-hidden="true">
+            {/* La rune du Sablier, estampée au fond : on ne la découvre qu'une
+                fois le couvercle ouvert — c'est la marque du marchand, pas
+                celle de la couleur. */}
+            <span className="rpg-coffret__boite-interieur-rune"><RuneSablier /></span>
+          </span>
+        ) : null}
         <span className="rpg-coffret__boite-face rpg-coffret__boite-face--avant">
           <span className="rpg-coffret__boite-vitrine">
             {vitrine ? <IllustrationCarte carte={vitrine} /> : null}
+            {/* Le sceau de cire porte l'emblème de la couleur : le coffret dit
+                ce qu'il contient avant qu'on lise son nom. */}
             <span className="rpg-coffret__boite-sceau" aria-hidden="true">
-              <RuneSablier />
+              <ElementEmblem element={couleur} />
             </span>
             <span className="rpg-coffret__boite-jauge" aria-hidden="true">
               <b>30</b>
@@ -210,7 +222,12 @@ function VolumeCoffret({ couleur, nom, sousTitre, vitrine = null, ouvre = false 
             </span>
           </span>
           <span className="rpg-coffret__boite-texte">
-            <span className="rpg-coffret__boite-couleur">{ELEMENT_LABELS[couleur] ?? couleur}</span>
+            <span className="rpg-coffret__boite-couleur">
+              <span className="rpg-coffret__boite-embleme" aria-hidden="true">
+                <ElementEmblem element={couleur} />
+              </span>
+              {ELEMENT_LABELS[couleur] ?? couleur}
+            </span>
             <span className="rpg-coffret__boite-nom">{nom}</span>
             <span className="rpg-coffret__boite-sous">{sousTitre}</span>
           </span>

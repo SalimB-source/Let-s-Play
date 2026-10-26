@@ -85,6 +85,31 @@ volume mais une image légèrement penchée. Au survol et au focus clavier, le
 volume se redresse et monte de quelques pixels ; rien d'autre ne bouge, et
 `prefers-reduced-motion` supprime la transition.
 
+### L'emblème de la couleur, dessiné et pas seulement écrit
+
+Un coffret dit sa couleur trois fois, et la troisième est un dessin :
+
+- la **ligne imprimée** au-dessus du nom — l'emblème du Sablier, puis le mot
+  (`Sable`, `Eau`, `Neige`…) ;
+- le **sceau de cire**, en haut à gauche de la peinture : c'est l'emblème de la
+  couleur qui y est gravé, pas un symbole générique — un coffret de Neige ne
+  porte donc plus le sablier du Sable ;
+- la **tranche**, où l'emblème est estampé à mi-hauteur, comme le symbole
+  d'extension sur une boîte de pré-tirage.
+
+Ces dessins viennent de `src/games/rpgEmblemes.jsx` (`ElementEmblem`) — le
+module que partagent déjà les boîtiers de deck, la jauge de mana du duel, le
+filtre du catalogue et le salon : sablier pour le Sable, flamme pour la Braise,
+goutte pour l'Eau, flocon pour la Neige, crâne pour les Ténèbres. Le module ne
+porte aucune feuille de style (`fill: currentColor`) : la teinte de l'emblème
+est celle de la laque du coffret (`--teinte`), donc chaque boîte est dessinée
+dans sa propre couleur.
+
+La **rune du Sablier** ne disparaît pas : elle est estampée au fond du coffre
+(`--interieur`) et ne se découvre qu'une fois le couvercle basculé. C'est la
+marque du marchand, pas celle de la couleur — les deux ne se disputent plus la
+même place.
+
 Les illustrations sont chargées **sans `loading="lazy"`** : dans un calque
 `position: fixed`, un navigateur peut ne jamais déclencher le chargement d'une
 image différée, et la zone restait noire. Si l'URL versionnée (`?v=…`) échoue,

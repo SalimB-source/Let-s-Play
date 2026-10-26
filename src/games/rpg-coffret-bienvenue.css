@@ -373,10 +373,11 @@
   transform: rotate(-8deg);
 }
 
-.rpg-coffret__boite-sceau .rpg-coffret__rune {
-  width: 15px;
-  height: 20px;
-  stroke-width: 3.4;
+.rpg-coffret__boite-sceau .rpg-emblem {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  color: inherit;
 }
 
 /* La jauge de cartes, en haut à droite : le « 13+ » du coffret. */
@@ -416,11 +417,35 @@
   padding: 9px 12px 10px;
 }
 
+/* La couleur, écrite — et dessinée : l'emblème du Sablier dit d'un coup d'œil
+   de quel élément le coffret est fait, avant même qu'on lise son nom. */
 .rpg-coffret__boite-couleur {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font: 700 9px/1.2 'Orbitron', system-ui, sans-serif;
   letter-spacing: 2.6px;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--teinte, #e8b75c) 88%, #fff);
+}
+
+.rpg-coffret__boite-embleme {
+  display: inline-block;
+  flex: none;
+  width: 13px;
+  height: 13px;
+}
+
+/* L'emblème prend la laque du coffret : la même teinte que le filet, la rune
+   et la jauge. `fill: currentColor` vient de `rpgEmblemes.jsx`, donc rien
+   d'autre à charger — le dessin n'emporte pas sa feuille de style. */
+.rpg-coffret__boite-embleme svg,
+.rpg-coffret__boite-cote-embleme svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  color: color-mix(in srgb, var(--teinte, #e8b75c) 92%, #fff);
 }
 
 .rpg-coffret__boite-nom {
@@ -485,18 +510,16 @@
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--teinte, #e8b75c) 70%, transparent), transparent);
 }
 
-.rpg-coffret__boite-cote-rune {
+/* La tranche porte l'emblème de la couleur, estampé à mi-hauteur — comme le
+   symbole d'extension sur une boîte de pré-tirage. */
+.rpg-coffret__boite-cote-embleme {
   position: absolute;
   left: 50%;
-  top: 52%;
+  top: 50%;
   translate: -50% -50%;
-  color: color-mix(in srgb, var(--teinte, #e8b75c) 62%, transparent);
-  opacity: 0.55;
-}
-
-.rpg-coffret__boite-cote-rune .rpg-coffret__rune {
-  width: 18px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
+  opacity: 0.72;
 }
 
 /* Le dessus : même principe, l'arête haute sert de charnière et la face
@@ -528,6 +551,20 @@
     radial-gradient(120% 90% at 50% 34%, color-mix(in srgb, var(--lueur, #ffe3ab) 30%, #1b1208), #0a0706 76%),
     #070506;
   box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.92);
+}
+
+.rpg-coffret__boite-interieur-rune {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  color: color-mix(in srgb, var(--lueur, #ffe3ab) 46%, transparent);
+  opacity: 0.5;
+}
+
+.rpg-coffret__boite-interieur-rune .rpg-coffret__rune {
+  width: 26px;
+  height: 34px;
 }
 
 /* Le vernis du couvercle : un reflet large, fixe, qui accuse le relief. */
