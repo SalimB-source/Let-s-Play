@@ -84,6 +84,12 @@ test('chaque face dessinée reçoit la couleur de son élément', () => {
   );
   // L'atelier et le guide la posent aussi, en style en ligne.
   assert.match(lire('RpgDeckAtelier.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
+  // La vignette de l'assistant de deck ferme la liste : elle n'avait aucun cadre.
+  assert.match(
+    atelier,
+    /\.rpg-assistant__carte-art \{[^}]*border: var\(--rpg-card-filet, 2px\) solid transparent;[^}]*var\(--rpg-frame-gradient, linear-gradient\(var\(--rpg-frame-color/,
+    'l’assistant de deck porte le filet et la matière de l’élément',
+  );
   assert.match(lire('RpgCardGuide.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
   assert.match(lire('RpgDeckAssistant.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
 });

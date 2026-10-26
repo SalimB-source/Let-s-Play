@@ -1644,7 +1644,7 @@ en tête), et les trois feuilles qui peignent des faces la reprennent :
 |---|---|
 | `rpg-battle.css` | main, table, terrains, aperçu au survol, paquet, mulligan, destruction, sort joué, catalogue |
 | `rpg-card-guide.css` | l'exemple du guide |
-| `rpg-deck-atelier.css` | la vignette de l'atelier de deck |
+| `rpg-deck-atelier.css` | la vignette de l'atelier de deck et celle de l'assistant de deck |
 | `rpg-mobile.css` | les mêmes faces au doigt — le retrait du cadre sur mobile/APK n'a plus lieu d'être |
 
 Le filet ne mange pas l'illustration : chaque face est en `border-box`, elle

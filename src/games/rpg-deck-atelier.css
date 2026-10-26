@@ -977,6 +977,18 @@
   display: block;
   aspect-ratio: 2 / 2.6;
   overflow: hidden;
+  /* Dernière face de carte sans filet : la vignette de l'assistant de deck.
+     Elle reçoit le même filet de 2 px que les cartes du duel — la couleur de
+     l'élément, et la diagonale pour une hybride — peint sur la border-box,
+     l'illustration couvrant la padding-box. Pas de motif : dans 2 px, il ne
+     se lirait pas. */
+  border: var(--rpg-card-filet, 2px) solid transparent;
+  background-image:
+    var(--rpg-frame-gradient, linear-gradient(var(--rpg-frame-color, #f1f3f5), var(--rpg-frame-color, #f1f3f5)));
+  background-origin: border-box;
+  background-clip: border-box;
+  background-size: var(--rpg-frame-material-size, 100% 100%);
+  background-repeat: no-repeat;
 }
 .rpg-assistant__carte-art img {
   width: 100%;
