@@ -49,13 +49,13 @@ test('les coûts hybrides se partagent nettement les couleurs de la carte', () =
   const rouge = CARD_FRAME_COLORS.braise.color;
   const sable = CARD_FRAME_COLORS.sable.color;
   assert.equal(cardHybridGradient('vent-rouge'),
-    `linear-gradient(135deg, ${rouge} 0% 50%, ${sable} 50% 100%)`,
+    `linear-gradient(to bottom right, ${rouge} 0% 50%, ${sable} 50% 100%)`,
     'Vent rouge : Braise en haut à gauche, Sable en bas à droite');
   assert.equal(cardHybridGradient('djinn-de-foudre'),
-    `linear-gradient(135deg, ${rouge} 0% 50%, ${sable} 50% 100%)`,
+    `linear-gradient(to bottom right, ${rouge} 0% 50%, ${sable} 50% 100%)`,
     'Djinn de foudre : le coût partage le cadre dans le même sens que la carte, quel que soit l’ordre déclaré');
   assert.equal(cardHybridGradient({ colors: ['braise', 'eau', 'neige'] }),
-    `linear-gradient(135deg, ${rouge} 0% 33%, ${CARD_FRAME_COLORS.eau.color} 33% 67%, ${CARD_FRAME_COLORS.neige.color} 67% 100%)`,
+    `linear-gradient(to bottom right, ${rouge} 0% 33%, ${CARD_FRAME_COLORS.eau.color} 33% 67%, ${CARD_FRAME_COLORS.neige.color} 67% 100%)`,
     'une future tricolore recevra trois bandes sans changer les couleurs des cartes mono');
 });
 

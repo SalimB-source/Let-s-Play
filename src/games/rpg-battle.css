@@ -8459,90 +8459,98 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    et mythiques. Le reflet ne vit plus que dans le guide : l'atelier de deck,
    lui aussi passé à « plus aucun cadre », n'anime plus ses vignettes. */
 
-/* Hybrides : deux aplats francs, chacun la moitié de la diagonale.
-   L'angle et les arrêts identiques sur toutes les faces dessinent la même
-   séparation dans l'anneau (pas de teinte mélangée, ni balayage brillant).
-   Les combinaisons de 3 ou 4 éléments, prévues pour de futures cartes,
-   partagent de la même façon la diagonale en 3 ou 4 aplats. */
+/* Hybrides : deux aplats francs, séparés par la diagonale qui monte du coin
+   bas-gauche au coin haut-droit. La première couleur court donc du coin
+   bas-gauche, le long du bord gauche et du bord haut, jusqu'au coin haut-droit.
+   Les **mots-clés de coin** (`to bottom right`) sont indispensables : un angle
+   fixe (`135deg`) ne traverse les coins que sur un carré, or une face de carte
+   est en 4:5 — la séparation tombait à 10 % des bords, et la première couleur
+   n'atteignait jamais son coin. Avec un mot-clé de coin, la perpendiculaire de
+   l'axe du dégradé passe exactement par les deux coins opposés, quelle que soit
+   la taille de la face (main, table, aperçu, catalogue, atelier, guide).
+   Les arrêts restent identiques sur toutes les faces : même séparation dans
+   l'anneau, pas de teinte mélangée ni de balayage brillant. Les combinaisons de
+   3 ou 4 éléments, prévues pour de futures cartes, partagent de la même façon
+   la diagonale en 3 ou 4 aplats. */
 .rpg-card--frame-hybride-braise-eau {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #3f9fe8 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #3f9fe8 50%);
 }
 .rpg-card--frame-hybride-braise-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #d8bc86 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #d8bc86 50%);
 }
 .rpg-card--frame-hybride-braise-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-eau-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #d8bc86 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #d8bc86 50%);
 }
 .rpg-card--frame-hybride-eau-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #a9e0f5 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 50%, #a9e0f5 50%);
 }
 .rpg-card--frame-hybride-braise-eau-sable {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #d8bc86 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #d8bc86 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-braise-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #a9e0f5 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-neige {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #a9e0f5 75%);
 }
 /* Ténèbres : cinquième couleur du banc d'essai — chaque combinaison qui la
    contient partage le cadre avec son violet de balance (doc 16). */
 .rpg-card--frame-hybride-braise-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-eau-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #a9e0f5 50%, #4b2e83 50%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #a9e0f5 50%, #4b2e83 50%);
 }
 .rpg-card--frame-hybride-braise-eau-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #3f9fe8 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-eau-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #d8bc86 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-eau-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #d8bc86 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #d8bc86 33.333%, #a9e0f5 33.333% 66.666%, #4b2e83 66.666%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #d8bc86 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-eau-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #3f9fe8 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #3f9fe8 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-eau-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #3f9fe8 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #3f9fe8 25%, #d8bc86 25% 50%, #a9e0f5 50% 75%, #4b2e83 75%);
 }
 .rpg-card--frame-hybride-braise-eau-sable-neige-tenebres {
-  --rpg-frame-gradient: linear-gradient(135deg, #e0412a 20%, #3f9fe8 20% 40%, #d8bc86 40% 60%, #a9e0f5 60% 80%, #4b2e83 80%);
+  --rpg-frame-gradient: linear-gradient(to bottom right, #e0412a 20%, #3f9fe8 20% 40%, #d8bc86 40% 60%, #a9e0f5 60% 80%, #4b2e83 80%);
 }
 
 /* Mythique : le zellige de Bab El (une étoile à huit pointes) distingue la

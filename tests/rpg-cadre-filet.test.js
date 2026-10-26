@@ -4,7 +4,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { CARD_FRAME_COLORS, RPG_ELEMENTS, cardFrameColor } from '../src/games/rpgCards.js';
+import {
+  CARD_FRAME_COLORS,
+  RPG_ELEMENTS,
+  cardFrameColor,
+  cardHybridGradient,
+} from '../src/games/rpgCards.js';
 
 /* Le filet de couleur : 2 px de la teinte de l'élément, partout où une face de
    carte est dessinée. Ces tests lisent les feuilles de style : ils ne prouvent
@@ -67,7 +72,7 @@ test('le filet garde la couleur et la matière de l’élément, sans le motif',
       `la feuille porte une règle pour ${element}`,
     );
   }
-  assert.match(battle, /\.rpg-card--frame-hybride-braise-eau\s*\{\s*--rpg-frame-gradient:\s*linear-gradient\(135deg, #e0412a 50%, #3f9fe8 50%\);/);
+  assert.match(battle, /\.rpg-card--frame-hybride-braise-eau\s*\{\s*--rpg-frame-gradient:\s*linear-gradient\(to bottom right, #e0412a 50%, #3f9fe8 50%\);/);
   for (const element of RPG_ELEMENTS) {
     assert.equal(cardFrameColor({ element }), CARD_FRAME_COLORS[element].color, element);
   }
@@ -92,6 +97,27 @@ test('chaque face dessinée reçoit la couleur de son élément', () => {
   );
   assert.match(lire('RpgCardGuide.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
   assert.match(lire('RpgDeckAssistant.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
+});
+
+test('la diagonale des hybrides passe exactement par les coins', () => {
+  const bloc = battle.slice(
+    battle.indexOf('.rpg-card--frame-hybride-braise-eau {'),
+    battle.indexOf('/* Mythique : le zellige de Bab El'),
+  );
+  const regles = bloc.match(/\.rpg-card--frame-hybride-[a-z-]+ \{/g) ?? [];
+  assert.ok(regles.length >= 20, `le bloc hybride porte ${regles.length} règles`);
+  assert.equal(
+    (bloc.match(/--rpg-frame-gradient: linear-gradient\(to bottom right,/g) ?? []).length,
+    regles.length,
+    'chaque hybride passe par les coins, pas par un angle fixe',
+  );
+  // Un angle fixe ne touche les coins que sur un carré : sur une face 4:5, la
+  // séparation tombait à 10 % des bords et la première couleur n'atteignait
+  // jamais son coin.
+  assert.doesNotMatch(bloc, /135deg/, 'plus aucun angle fixe dans les cadres hybrides');
+  // La pastille de coût hybride suit la même diagonale.
+  const coût = cardHybridGradient({ colors: ['sable', 'braise'] });
+  assert.ok(coût.startsWith('linear-gradient(to bottom right,'), coût);
 });
 
 test('au doigt, le filet reste — la feuille tactile ne le retire plus', () => {

@@ -1657,6 +1657,18 @@ garde sa largeur, son 4:5 et sa mesure, et le plein art reste plein cadre
 jusqu'au filet. Le liseré noir de 2 px (`outline`) qui détache les cartes du
 bois ne bouge pas.
 
+**Sens de la diagonale des hybrides.** Une carte à deux couleurs est coupée par
+la diagonale qui monte du **coin bas-gauche au coin haut-droit** : la première
+couleur court donc du coin bas-gauche, le long du bord gauche et du bord haut,
+jusqu'au coin haut-droit ; la seconde tient le coin bas-droit. Cette diagonale
+passe **exactement** par les deux coins, sur une face en 4:5 comme sur une
+pastille, parce que le dégradé est décrit avec des mots-clés de coin
+(`to bottom right`) et non avec un angle : un `135deg` ne traverse les coins que
+sur un carré — sur une face 4:5, la séparation tombait à 10 % des bords et la
+première couleur n'atteignait jamais son coin. Les arrêts restent nets (50/50,
+et 33/33/33 ou 25 × 4 pour les combinaisons à trois et quatre éléments). La
+pastille de coût hybride (`cardHybridGradient`) suit la même diagonale.
+
 Une face échappe volontairement au filet : la **Furie déclenchée**, dont la
 peinture alternative occupe toute la face sans être rognée.
 
