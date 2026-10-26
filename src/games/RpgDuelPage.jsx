@@ -3255,7 +3255,7 @@ function ApercuCarteAppuiLong({ carte, armes = [], furieDeclenchee = false, stat
  */
 function VitrineIllustration({
   carte, niveau = 1, portefeuille = null, credits = 0,
-  onAcheter = null, onBasculer = null, onPlaySfx = null,
+  possede = true, onAcheter = null, onBasculer = null, onPlaySfx = null,
 }) {
   const alternative = alternativeDeCarte(carte?.id);
   const [retour, setRetour] = useState(null);
@@ -3273,6 +3273,7 @@ function VitrineIllustration({
     if (resultat?.ok) setRetour('achetee');
     else if (resultat?.raison === 'credits-insuffisants') setRetour('manque');
     else if (resultat?.raison === 'deja-acquise') setRetour('deja');
+    else if (resultat?.raison === 'carte-non-possédée') setRetour('non-possédée');
     else setRetour('refus');
   };
   const basculer = () => {
@@ -3307,7 +3308,19 @@ function VitrineIllustration({
         </p>
       ) : null}
 
-      {alternative.source === 'boutique' && !achetee ? (
+      {/*
+        On n'achète pas la seconde peinture d'une carte qu'on n'a pas. La
+        condition est portée jusqu'ici pour que le refus se *lise* — le bouton
+        cède la place à une phrase — et la bourse la revérifie de son côté :
+        l'écran n'est pas la seule garde.
+      */}
+      {!possede ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-non-possessee={carte.id}>
+          Vous ne possédez pas encore cette carte.
+        </p>
+      ) : null}
+
+      {possede && alternative.source === 'boutique' && !achetee ? (
         <div className="rpg-vitrine__achat">
           <button
             type="button"
@@ -3327,7 +3340,7 @@ function VitrineIllustration({
         </div>
       ) : null}
 
-      {ouverte ? (
+      {possede && ouverte ? (
         <div className="rpg-vitrine__pose">
           <button
             type="button"
@@ -3352,6 +3365,9 @@ function VitrineIllustration({
       {retour === 'affichee' ? (
         <p className="rpg-vitrine__retour is-ok" role="status" data-vitrine-retour="affichee">Illustration affichée sur la carte.</p>
       ) : null}
+      {retour === 'non-possédée' ? (
+        <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="non-possédée">Vous ne possédez pas encore cette carte.</p>
+      ) : null}
       {retour === 'retiree' ? (
         <p className="rpg-vitrine__retour" role="status" data-vitrine-retour="retiree">La carte reprend sa peinture de la passe.</p>
       ) : null}
@@ -3359,10 +3375,22 @@ function VitrineIllustration({
   );
 }
 
+/**
+ * La fiche d'une carte, ouverte au clic (catalogue, collection, deck) ou au
+ * clic droit sur la table du duel.
+ *
+ * `avecVitrine` commande la vitrine de l'illustration alternative, et elle est
+ * **coupée en jeu** : sur la table, la fiche sert à lire une carte avant de la
+ * jouer, pas à faire ses achats. Le clic droit d'un duel n'affiche donc ni la
+ * peinture alternative, ni son prix, ni le bouton d'achat, ni la bascule —
+ * tout cela reste au catalogue, où la vitrine est chez elle. Un `false` ici
+ * n'est pas un simple masquage : les rappels d'achat ne sont même pas reçus,
+ * la fiche ne peut pas devenir une boutique par accident.
+ */
 function ApercuCarteCatalogue({
   carte, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [],
   prisonniere = null, surface = 'CATALOGUE', onFermer,
-  niveau = 1, portefeuille = null, credits = 0,
+  niveau = 1, portefeuille = null, credits = 0, avecVitrine = true, possede = true,
   onAcheterIllustration = null, onBasculerIllustration = null, onPlaySfx = null,
 }) {
   const boutonFermerRef = useRef(null);
@@ -3386,15 +3414,18 @@ function ApercuCarteCatalogue({
         <div className="rpg-card-peek__panel">
           <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} />
         </div>
-        <VitrineIllustration
-          carte={carte}
-          niveau={niveau}
-          portefeuille={portefeuille}
-          credits={credits}
-          onAcheter={onAcheterIllustration}
-          onBasculer={onBasculerIllustration}
-          onPlaySfx={onPlaySfx}
-        />
+        {avecVitrine ? (
+          <VitrineIllustration
+            carte={carte}
+            niveau={niveau}
+            portefeuille={portefeuille}
+            credits={credits}
+            possede={possede}
+            onAcheter={onAcheterIllustration}
+            onBasculer={onBasculerIllustration}
+            onPlaySfx={onPlaySfx}
+          />
+        ) : null}
       </div>
       <div className="rpg-card-peek__bar">
         <button
@@ -7994,6 +8025,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             niveau={niveauDuJoueur}
             portefeuille={portefeuilleSouk}
             credits={credits}
+            possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}
@@ -8134,6 +8166,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             niveau={niveauDuJoueur}
             portefeuille={portefeuilleSouk}
             credits={credits}
+            possede={possedeCarte(collection, apercuCatalogue)}
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}
@@ -12750,7 +12783,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       )}
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
       {/* La même fiche que le catalogue : le clic droit l'ouvre sur la table,
-          en main, sur les terrains ou sur une pile — sans rien jouer. */}
+          en main, sur les terrains ou sur une pile — sans rien jouer. La
+          vitrine de l'illustration alternative y est **coupée** : on lit une
+          carte, on n'achète pas en pleine partie (`avecVitrine={false}`, et
+          les rappels d'achat ne sont même pas passés). */}
       {apercuCatalogue && (
         <ApercuCarteCatalogue
           carte={cardById(apercuCatalogue)}
@@ -12761,10 +12797,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           effetsEpuises={apercuCatalogueEffetsEpuises}
           surface={apercuCatalogueSurface}
           niveau={niveauDuJoueur}
-          portefeuille={portefeuilleSouk}
-          credits={credits}
-          onAcheterIllustration={acheterIllustration}
-          onBasculerIllustration={basculerIllustration}
+          avecVitrine={false}
           onPlaySfx={jouerSfx}
           onFermer={fermerApercuCatalogue}
         />

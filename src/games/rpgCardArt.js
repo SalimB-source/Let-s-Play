@@ -191,7 +191,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'embuscade': 'neige-souls-cendres-v1',
   'defi-du-jarl': 'neige-souls-cendres-v1',
   'appat-de-la-meute': 'neige-souls-cendres-v1',
-  'grand-voile-blanc': 'neige-souls-cendres-v1',
+  // Le Grand Voile blanc était peint en voile de drakkar ; c'est une magie de
+  // brouillard, la carte le dit (« les coups s'égarent dans le blanc »).
+  'grand-voile-blanc': 'neige-brouillard-v1',
   // Deuxième lot : les figures du Nord et cinq magies.
   // La hache d'Éirik avait le fer planté au milieu du manche : refaite.
   'eirik-du-premier-serment': 'neige-eirik-hache-v2',

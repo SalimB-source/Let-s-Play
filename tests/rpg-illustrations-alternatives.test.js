@@ -238,6 +238,59 @@ test('le Catalogue monte la vignette alternative et la fiche ouvre sa vitrine', 
   assert.match(page, /<VitrineIllustration[\s\S]{0,200}niveau=\{niveau\}/, 'la fiche passe le niveau à la vitrine');
 });
 
+test('la preview en jeu ne montre aucune vitrine d’illustration alternative', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+
+  // La fiche est la même partout, mais la vitrine se commande : le catalogue la
+  // garde, la table du duel la coupe.
+  assert.match(page, /avecVitrine = true,/, 'la fiche accepte de se passer de vitrine');
+  assert.match(
+    page,
+    /\{avecVitrine \? \([\s\S]{0,400}?<VitrineIllustration[\s\S]{0,400}?: null\}/,
+    'la vitrine n’est montée que si la fiche la demande',
+  );
+
+  // Le clic droit sur la table — « le clic droit l'ouvre sur la table » — est le
+  // seul point d'appel en jeu : il coupe la vitrine et ne reçoit aucun rappel
+  // d'achat ni de bascule.
+  const blocJeu = page.match(
+    /\{apercuCatalogue && \(\s*<ApercuCarteCatalogue[\s\S]*?\/>\s*\)\}/g,
+  ) ?? [];
+  assert.equal(blocJeu.length, 3, 'trois fiches : catalogue, collection et table');
+  const ficheEnJeu = blocJeu.filter((bloc) => bloc.includes('avecVitrine={false}'));
+  assert.equal(ficheEnJeu.length, 1, 'une seule fiche tourne en jeu, et elle coupe la vitrine');
+  assert.doesNotMatch(ficheEnJeu[0], /onAcheterIllustration/, 'la fiche en jeu ne reçoit pas le rappel d’achat');
+  assert.doesNotMatch(ficheEnJeu[0], /onBasculerIllustration/, 'la fiche en jeu ne reçoit pas le rappel de bascule');
+
+  // Les fiches hors jeu — catalogue et collection — gardent la leur.
+  const fichesHorsJeu = blocJeu.filter((bloc) => !bloc.includes('avecVitrine={false}'));
+  assert.equal(fichesHorsJeu.length, 2, 'catalogue et collection gardent la vitrine');
+  for (const fiche of fichesHorsJeu) {
+    assert.match(fiche, /onAcheterIllustration=\{acheterIllustration\}/,
+      'hors jeu, la fiche garde son bouton d’achat');
+  }
+});
+
+test('la vitrine n’ouvre l’achat qu’à qui possède la carte originale', () => {
+  const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
+
+  // La fiche reçoit la possession et la transmet à la vitrine.
+  assert.match(page, /avecVitrine = true, possede = true,/, 'la fiche porte la possession de la carte');
+  assert.match(page, /<VitrineIllustration[\s\S]{0,400}?possede=\{possede\}/, 'la vitrine la reçoit');
+  assert.match(page, /possede=\{possedeCarte\(collection, apercuCatalogue\)\}/,
+    'le catalogue la lit dans la collection du joueur');
+
+  // Sans la carte : une phrase à la place du bouton, et pas de bascule.
+  assert.match(page, /data-vitrine-non-possessee=\{carte\.id\}/, 'le refus se lit dans la vitrine');
+  assert.match(page, /Vous ne possédez pas encore cette carte\./, 'la phrase est celle demandée');
+  assert.match(page, /\{possede && alternative\.source === 'boutique' && !achetee \? \(/,
+    'le bouton d’achat est fermé sans la carte');
+  assert.match(page, /\{possede && ouverte \? \(/, 'la bascule aussi');
+
+  // Le refus de la bourse a son propre retour, sans passer par « refus ».
+  assert.match(page, /raison === 'carte-non-possédée'/, 'la vitrine connaît le refus de possession');
+});
+
 test('l’illustration achetée peut habiller la carte elle-même', () => {
   const art = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
   assert.match(art, /export function definirIllustrationsAffichees\(/, 'la table d’affichage se pose depuis la bourse');

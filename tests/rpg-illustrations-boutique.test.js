@@ -85,6 +85,45 @@ test('acheter une illustration débite une fois et se refuse proprement', () => 
   assert.equal(acheterIllustration(bourse(999), { carteId: '', prix }).raison, 'carte-inconnue');
 });
 
+test('on n’achète pas la peinture d’une carte qu’on ne possède pas', () => {
+  const prix = prixIllustration(achetable.carteId);
+
+  // Sans la carte originale, la bourse riche est quand même refusée.
+  const refus = acheterIllustration(bourse(999), {
+    carteId: achetable.carteId,
+    prix,
+    possedee: false,
+  });
+  assert.equal(refus.ok, false);
+  assert.equal(refus.raison, 'carte-non-possédée');
+  assert.equal(refus.prix, prix, 'le refus annonce le prix de la vitrine');
+  assert.equal(refus.portefeuille.credits, 999, 'un refus n’ampute pas la bourse');
+  assert.deepEqual(refus.portefeuille.illustrations.achetees, [], 'rien n’est acquis');
+
+  // La même bourse, la carte possédée : l'achat passe.
+  const achat = acheterIllustration(bourse(999), {
+    carteId: achetable.carteId,
+    prix,
+    possedee: true,
+  });
+  assert.equal(achat.ok, true, 'la possession ouvre l’achat');
+  assert.equal(achat.portefeuille.credits, 999 - prix);
+
+  // Le défaut ne change pas la bourse : ce module ne connaît pas la collection,
+  // c'est l'appelant qui sait. Les appels historiques restent valides.
+  assert.equal(acheterIllustration(bourse(999), { carteId: achetable.carteId, prix }).ok, true);
+});
+
+test('la bourse relit la collection avant de vendre une illustration', () => {
+  const hook = readFileSync(new URL('../src/games/useSablierBourse.js', import.meta.url), 'utf8');
+  // La collection est reconstruite sur l'état courant, dans le geste d'achat :
+  // l'écran ne peut pas la lui souffler, ni la contourner.
+  const geste = hook.match(/const acheterIllustration = useCallback[\s\S]*?\}, \[appliquer, pousser\]\);/);
+  assert.ok(geste, 'le geste d’achat d’illustration existe');
+  assert.match(geste[0], /collectionJoueur\(\{/, 'la collection est relue au moment du geste');
+  assert.match(geste[0], /possedee: possedeCarte\(collection, cardId\)/, 'la possession entre dans l’achat');
+});
+
 test('chaque prix suit la rareté de la carte doublée', () => {
   for (const entree of ALTERNATIVES_DE_BOUTIQUE) {
     assert.equal(entree.prix, PRIX_ILLUSTRATION[rareteDeLaCarte(entree.carteId)]);

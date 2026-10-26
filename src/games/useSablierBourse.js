@@ -94,7 +94,7 @@ import {
 // **gagné** se calcule là-bas, depuis le niveau — donc depuis l'XP.
 import { cadrePortable, titrePortable } from './rpgProfilGains.js';
 import { tirerParmi } from './rpgHasard.js';
-import { chargerAcquis, chargerCollectionDistante, collectionJoueur } from './rpgCollection.js';
+import { chargerAcquis, chargerCollectionDistante, collectionJoueur, possedeCarte } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
@@ -579,14 +579,26 @@ export function useSablierBourse({
    * rareté de la carte (`rpgCardArtAlternatives.js`) — l'écran ne l'invente
    * jamais, il l'annonce.
    *
-   * Refus connus : `'deja-acquise'`, `'credits-insuffisants'` (avec le montant
-   * qui manque). Le portefeuille n'est jamais amputé d'un refus.
+   * Refus connus : `'carte-non-possédée'`, `'deja-acquise'`,
+   * `'credits-insuffisants'` (avec le montant qui manque). Le portefeuille n'est
+   * jamais amputé d'un refus.
+   *
+   * **On n'achète que la seconde peinture d'une carte qu'on a.** La collection
+   * est relue ici, sur l'état courant — pas reçue de l'écran : une fiche
+   * ouverte avant un paquet ne peut pas vendre une illustration d'une carte
+   * qu'elle croit encore absente, et un appel direct ne contourne pas la règle.
    */
   const acheterIllustration = useCallback((cardId) => {
     const avant = etatRef.current;
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: avant.bourse.cartes,
+    });
     const achat = acheterIllustrationAuxCredits(avant.bourse, {
       carteId: cardId,
       prix: prixIllustration(cardId),
+      possedee: possedeCarte(collection, cardId),
     });
     if (!achat.ok) return achat;
     appliquer(achat.portefeuille, avant.quetes, avant.profil);

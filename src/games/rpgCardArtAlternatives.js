@@ -313,12 +313,24 @@ export function alternativeDeCarte(carteId) {
   return PAR_CARTE.get(String(carteId ?? '')) ?? null;
 }
 
+/**
+ * Les alternatives **repeintes** depuis leur première livraison.
+ *
+ * Le chemin d'une alternative est fixe — `cards/alt/<carteId>.jpg`, une carte,
+ * une alternative — donc un fichier remplacé garde son nom : sans révision, un
+ * navigateur qui a déjà l'ancienne peinture ne verrait jamais la nouvelle. La
+ * table ne porte que les cartes concernées ; les autres n'ont pas de `?v=`.
+ */
+const REVISIONS_ALTERNATIVES = Object.freeze({
+  // Le slash partait dans le mauvais sens, et le fourreau était vide.
+  'frappe-iaijutsu': 'iaijutsu-trait-derriere-la-lame-v2',
+});
+
 /** L'URL de l'image d'une alternative (révision de cache comprise). */
 export function illustrationAlternativeUrl(alternative) {
   if (!alternative?.fichier) return '';
-  // Le nom du fichier change avec le contenu (chaque peinture est archivée une
-  // fois pour toutes) : pas de `?v=` à propager, un cache ne peut pas mentir.
-  return `${ART_BASE_URL}${alternative.fichier}`;
+  const revision = REVISIONS_ALTERNATIVES[alternative.carteId];
+  return `${ART_BASE_URL}${alternative.fichier}${revision ? `?v=${revision}` : ''}`;
 }
 
 /**
