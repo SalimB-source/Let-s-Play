@@ -288,7 +288,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'leviathan': 'eau-souls-bleue-v1',
   'bakunawa': 'eau-souls-bleue-v1',
   'jormungandr': 'eau-souls-bleue-v1',
-  'seigneur-des-machoires': 'eau-souls-bleue-v1',
+  // Le Seigneur des mâchoires est repeint en figure du Nil (Sabek, le
+  // souverain crocodile) : révision dédiée, la peinture du village inondé
+  // reste l'illustration alternative.
+  'seigneur-des-machoires': 'tenebres-seigneur-machoires-nil-v2',
   'vipere-de-verre': 'eau-souls-bleue-v1',
   'tour-des-flots': 'eau-souls-bleue-v1',
   'sonneur-fele': 'eau-souls-bleue-v1',

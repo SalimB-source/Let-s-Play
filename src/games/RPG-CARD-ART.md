@@ -754,8 +754,10 @@ est déjà bleue, en duel comme en vignette.
   elle, la lune pour seule lumière.
 - **Jörmungandr** — vu d'une falaise, son corps barre tout l'horizon et
   s'enfonce aux deux bouts.
-- **Le Seigneur des mâchoires** — le crocodile de la crue, à demi hissé sur la
-  berge noyée, une lanterne de village pour seule note chaude.
+- **Le Seigneur des mâchoires** — *repeint depuis* (voir plus bas) : il était le
+  crocodile de la crue, à demi hissé sur la berge noyée, une lanterne de village
+  pour seule note chaude. Cette peinture-là a quitté le catalogue ; l'histoire
+  du dépôt la garde (dernière version au commit `5922b4a`, 325 310 octets).
 - **La Vipère de verre** — le serpent de verre sur la margelle d'une citerne,
   ses reflets froids jetés sur la pierre.
 - **La Tour des flots** — la tour seule en mer, démâtée, le ressac qui monte
@@ -965,6 +967,45 @@ reprise autrement — sans forme humaine lisible, un linceul debout.
   ciseau de bronze.
 - **L'Offrande de lin** — les bandes pliées sur l'autel noir, encore marquées
   par un corps.
+
+### La reprise du Seigneur des mâchoires — la figure du Nil (octobre 2026)
+
+Le Seigneur des mâchoires est la figure de **Sabek**, le souverain crocodile du
+Nil, dans le tableau des six grandes figures d'Égypte
+(`docs/rpg/16-deck-la-balance-des-heures.md` §11). Sa peinture ne le montrait
+pas : un simple crocodile dans un village inondé, une lanterne pour seule
+lumière — une bête de crue, pas un souverain du fleuve. La carte est donc
+**repeinte**.
+
+La nouvelle toile le donne à voir, à la nuit tombée, **debout dans la cour
+noyée d'un temple de brique crue** :
+
+- **la tête de crocodile** d'un grand crocodile du Nil, gueule entrouverte sur
+  des dents usées, un œil froid qui accroche la lumière ;
+- **le couvre-chef doré** au disque solaire, encadré de deux uraeus et de deux
+  hautes plumes, l'or bosselé et noirci — jamais un bijou ;
+- **le grand collier** d'or terni, d'os et de verre violet, et les brassards
+  d'or ;
+- **le sceptre ousekh** dans la main droite, la main gauche posée à plat sur
+  le mufle du **second crocodile** qui remonte à sa hauteur, seuls les yeux et
+  les crêtes hors de l'eau ;
+- autour de lui : colonnes à demi submergées, pylône brisé, roseaux et
+  débris flottants, la pluie, et une seule barque à lanterne pour l'échelle.
+
+Rien n'est écrit sur cette peinture : **aucun hiéroglyphe, aucun texte** — la
+règle du set s'applique aussi à la nouvelle toile. Le sujet se lit en vignette :
+la gueule, le disque d'or, l'eau noire.
+
+Révision de cache : **`tenebres-seigneur-machoires-nil-v2`**, déclarée dans
+`rpgCardArt.js`. Sa **légende de carte** suit la figure : le type devient
+« Créature légendaire — Souverain crocodile du Nil », et la saveur nomme le
+fleuve plutôt que la crue d'un village.
+
+L'**illustration alternative** de la carte (`public/cards/alt/seigneur-des-machoires.jpg`,
+achetée au Catalogue, `rpgCardArtAlternatives.js`) reste celle qui existait
+déjà : un souverain crocodile à la haute coiffure d'or et d'émeraude, incrusté
+de gemmes vertes. Elle n'a pas été touchée et ne doit pas l'être : deux
+peintures, deux âges de la carte.
 
 ### Troisième lot : les pesées et la tour — le set est clos
 

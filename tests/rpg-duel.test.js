@@ -4148,6 +4148,31 @@ test('le plein art du Serment est livré : les vingt-neuf cartes Neige sont déd
   }
 });
 
+test('Le Seigneur des mâchoires est la figure du Nil : type, saveur et peinture dédiée', () => {
+  const carte = cardById('seigneur-des-machoires');
+  assert.equal(carte.typeLine, 'Créature légendaire — Souverain crocodile du Nil',
+    'la ligne de type nomme le souverain du fleuve, pas un crocodile anonyme');
+  assert.match(carte.flavor, /fleuve/, 'la saveur parle du fleuve');
+  assert.doesNotMatch(`${carte.name} ${carte.typeLine} ${carte.text} ${carte.flavor}`, /\bdieu(x)?\b/i,
+    'la figure garde son attribut : le mot « dieu » ne s’écrit pas sur la carte');
+  assert.deepEqual(
+    { cost: carte.cost, atk: carte.atk, def: carte.def, tenacite: carte.tenacite, tribut: carte.tribut },
+    { cost: 6, atk: 6, def: 6, tenacite: true, tribut: 2 },
+    'les règles de la carte ne changent pas avec sa peinture',
+  );
+  // Le fichier est celui de la carte (aucune illustration prêtée), livré en 4:5,
+  // et il porte sa propre révision de cache : la peinture du village inondé ne
+  // doit jamais revenir par un cache.
+  assert.equal(cardArtId(carte), 'seigneur-des-machoires');
+  const [largeur, hauteur] = dimensionsJpeg(
+    fileURLToPath(new URL('../public/cards/seigneur-des-machoires.jpg', import.meta.url)),
+  );
+  assert.ok(Math.abs(largeur / hauteur - 4 / 5) < 0.01, `peinture 4:5 (${largeur}×${hauteur})`);
+  const art = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
+  assert.match(art, /'seigneur-des-machoires': 'tenebres-seigneur-machoires-nil-v2'/,
+    'la nouvelle peinture porte une révision de cache dédiée');
+});
+
 test('les quatre figures du Nord portent leur kenning, jamais le mot « dieu »', () => {
   const figures = RPG_DUEL_CARDS.filter((carte) => carte.kind === 'hero' && carte.element === 'neige');
   assert.equal(figures.length, 4, 'le set Neige a quatre figures légendaires');
