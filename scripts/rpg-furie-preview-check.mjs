@@ -38,8 +38,11 @@ const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
 const REVISION_VALKYRIE_FURIE = 'valkyrie-vol-plongeon-enragee-v4';
 // Le Corbeau des neuf nuits : deux cartes du set hybride portent la Furie et
 // ont leur propre double ensanglanté, daté séparément.
+// Le Berserk du crépuscule a été recadré en octobre 2026 (sa tête tombait sous
+// le bandeau de nom) : sa face de Furie suit sa face intacte sous la révision
+// du recadrage.
 const REVISIONS_CORBEAU_FURIE = {
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-cadrage-v2',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
 };
 // La Tour Oubliée est hors catalogue : son Ifrit d'encre porte Furie 1 et
