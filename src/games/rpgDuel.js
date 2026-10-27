@@ -1534,17 +1534,22 @@ function armeCarteDe(entite) {
 /**
  * LE BOUCLIER D'UNE CRÉATURE — une parade anti-sort, pas une armure.
  *
- * Tant qu'il tient, le bouclier bloque **le premier sort adverse qui désigne
- * la créature** : le sort est payé et va au cimetière, mais aucun de ses effets
- * ne se résout. Le bouclier tombe alors en entier, quelle que soit la valeur
- * affichée — un seul sort est bloqué, pas un par point. Les sorts du camp de
- * la créature (Parade de verre, renforts…) ne sont jamais bloqués, et les
- * sorts de zone, qui ne désignent personne, passent sous la garde.
+ * Tant qu'il tient, le bouclier bloque le premier sort adverse qui atteint
+ * la créature :
+ *  - un sort qui la **désigne** est payé et va au cimetière, mais aucun de
+ *    ses effets ne se résout (voir `rpgLancerMagie`) ;
+ *  - un sort de **zone** ne désigne personne : la parade ne l'arrête pas en
+ *    entier, mais elle épargne SA porteuse — la vague frappe les autres
+ *    créatures normalement — puis tombe (voir `paradeZoneBloque`).
+ * Le bouclier tombe alors en entier, quelle que soit la valeur affichée —
+ * un seul sort est bloqué, pas un par point. Les sorts du camp de la
+ * créature (Parade de verre, renforts…) ne sont jamais bloqués.
  *
- * Les dégâts — attaques, capacités, sorts de zone — ne sont plus absorbés :
- * les points de bouclier ne sont donc dépensés que par `briserBouclier`.
- * Le champ `bouclier` reste numérique (1 = parade prête, 0 = tombée) pour
- * que la table, les aperçus et l'animation d'égide continuent de le lire.
+ * Les dégâts qui ne viennent pas d'un sort — attaques et capacités, y compris
+ * les capacités de zone — ne sont plus absorbés : les points de bouclier ne
+ * sont donc dépensés que par `briserBouclier`. Le champ `bouclier` reste
+ * numérique (1 = parade prête, 0 = tombée) pour que la table, les aperçus et
+ * l'animation d'égide continuent de le lire.
  */
 export function rpgBouclierEstActif(entite) {
   return (entite?.bouclier ?? 0) > 0;
@@ -1562,6 +1567,37 @@ function briserBouclier(entite) {
   if (entite.arme?.bouclier) entite.arme.bouclier = 0;
   if (!entite.bouclierLumiere) entite.bouclierEpuise = true;
   return montant;
+}
+
+/**
+ * La parade anti-sort face à une VAGUE DE ZONE (dégâts, gel, destruction,
+ * renvoi ou malus qui frappent plusieurs créatures sans en désigner une).
+ *
+ * Contrairement au sort ciblé — arrêté en entier dans `rpgLancerMagie` —
+ * une zone continue de se résoudre : la parade ne protège que SA porteuse,
+ * que la vague épargne entièrement (ni dégât, ni gel, ni destruction, ni
+ * malus), puis elle tombe. Les autres créatures encaissent le sort
+ * normalement.
+ *
+ * Mêmes garde-fous que face à un sort ciblé :
+ *  - seules les magies sont concernées (`sourceType === 'magie'`) : une
+ *    capacité de zone (l'arrivée d'Ifrit, la vague du Léviathan) traverse la
+ *    parade comme une attaque ;
+ *  - un sort du camp de la créature ne réveille jamais sa parade, même quand
+ *    une zone balaie les deux camps (Le Grand Hiver, La Dernière Pesée) ;
+ *  - une parade déjà tombée (`bouclier` à 0) ne protège plus de rien.
+ *
+ * @param {string} campCible camp de la créature frappée par la vague
+ * @param {string} campLanceur camp du sorcier qui lance le sort
+ * @returns {boolean} vrai si la créature est épargnée par cette vague.
+ */
+function paradeZoneBloque(duel, entite, sourceType, campCible, campLanceur) {
+  if (!entite || sourceType !== 'magie') return false;
+  if (!campCible || campCible === campLanceur) return false;
+  if (!rpgBouclierEstActif(entite)) return false;
+  briserBouclier(entite);
+  duel.log.push(`Le bouclier de ${entite.name} encaisse la vague et tombe.`);
+  return true;
 }
 
 /**
@@ -2106,8 +2142,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
     // Le bouclier n'encaisse plus les coups : il ne tombe que devant un sort
-    // qui désigne la créature (voir `rpgLancerMagie`). Tous les dégâts de
-    // combat cumulés atteignent donc les PV tels quels.
+    // (ciblé via `rpgLancerMagie`, ou de zone via `paradeZoneBloque`, qui a
+    // déjà écarté ces créatures de la vague). Tous les dégâts de combat
+    // cumulés atteignent donc les PV tels quels.
     const recus = montant;
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
@@ -2334,6 +2371,9 @@ function resoudreEchos(duel) {
       }
       duel.log.push(`L’écho de ${nomSource} retombe sur la table : ${echo.amount} dégâts.`);
       for (const cible of cibles) {
+        // L'écho est la seconde vague d'un sort : une parade neuve l'encaisse
+        // comme la vague initiale et tombe à sa place.
+        if (paradeZoneBloque(duel, cible, echo.sourceType, cote, echo.coteSource)) continue;
         rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
       }
     }
@@ -2751,6 +2791,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
         .filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          && !paradeZoneBloque(duel, entite, sourceType, camp, cote)
           && !tenterEsquive(duel, entite, sourceType))
         .map((entite) => ({ camp, entite })));
       for (const { camp, entite } of victimes) {
@@ -2779,6 +2820,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           // La protection de couleur et le Serpent du monde écartent la vague.
           if (rpgEstProtegee(entite, sourceElement)
             || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
+          // La parade anti-sort épargne sa porteuse et tombe : elle n'entre
+          // ni dans les victimes, ni dans les survivantes gelées ensuite.
+          if (paradeZoneBloque(duel, entite, sourceType, camp, cote)) continue;
           // Un sort esquivé est annulé EN ENTIER sur cette créature : ni
           // destruction, ni gel — un seul jet, comme pour les dégâts de zone.
           if (tenterEsquive(duel, entite, sourceType)) continue;
@@ -2937,7 +2981,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (effet.cible === 'toutes-autres') {
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
-            if (entite.id === sauf || tenterEsquive(duel, entite, sourceType)) continue;
+            if (entite.id === sauf
+              || paradeZoneBloque(duel, entite, sourceType, campCible, cote)
+              || tenterEsquive(duel, entite, sourceType)) continue;
             renvoyerEnMain(duel, campCible, entite, sourceElement, sourceType);
           }
         }
@@ -3146,7 +3192,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // camp entier. Toutes les autres buffs campent sur le camp et
       // s'excluent elles-mêmes (`sauf`).
       const horsSort = (entite) => contreAdversaire && sourceType === 'magie'
-        && (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType) || tenterEsquive(duel, entite, sourceType));
+        && (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          || paradeZoneBloque(duel, entite, sourceType, campCible, cote)
+          || tenterEsquive(duel, entite, sourceType));
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => entite.id !== sauf
@@ -3299,8 +3347,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (effet.cible === 'toutes-autres') {
         // Photographie des deux champs : la source est épargnée et les jetons
         // créés par les morts ne subissent pas la vague qui les a fait naître.
+        // Une parade d'une créature adverse encaisse la vague à sa place et
+        // tombe ; les créatures du camp du lanceur ne réveillent pas la leur.
         const coups = [cote, adv].flatMap((camp) => duel[camp].creatures
-          .filter((entite) => entite.id !== sauf)
+          .filter((entite) => entite.id !== sauf
+            && !paradeZoneBloque(duel, entite, sourceType, camp, cote))
           .map((entite) => ({ cote: camp, entiteId: entite.id,
             amount: effet.amount ?? 0, sourceElement, sourceType })));
         appliquerDegatsDeCombatSimultanes(duel, coups);
@@ -3349,6 +3400,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
       for (const { entite: cible, camp: campCible } of cibles) {
+        // La parade anti-sort encaisse toute la vague sur sa porteuse : ni
+        // dégât, ni gel associé, et la parade tombe. Les autres cibles sont
+        // frappées normalement.
+        if (paradeZoneBloque(duel, cible, sourceType, campCible, cote)) continue;
         const blessure = rpgBlesserCreature(duel, campCible, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
         // Un sort esquivé est annulé en entier sur cette créature : ni dégât,
         // ni gel associé. Les autres cibles font leur propre jet.
@@ -3410,6 +3465,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const cibles = effet.cible === 'toutes-creatures'
         ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+          && !paradeZoneBloque(duel, entite, sourceType, adv, cote)
           && !tenterEsquive(duel, entite, sourceType))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId
           && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
@@ -5103,7 +5159,8 @@ function entiteCiblableParSort(entite, carte) {
 
 /** Portées qui frappent une zone sans désigner une seule créature. Même si
  *  l'interface transmet un `cibleId` pour l'animation, ces sorts ne sont pas
- *  des sorts « ciblants » : la parade ne les arrête pas. */
+ *  des sorts « ciblants » : la parade ne les annule pas en entier — elle
+ *  n'épargne que sa porteuse, au fil de la résolution (`paradeZoneBloque`). */
 const CIBLES_SORT_ZONE = new Set([
   'creatures-adverses', 'toutes-alliees', 'toutes-creatures', 'toutes-autres', 'toutes',
 ]);
@@ -5114,8 +5171,9 @@ const sortViseUneZone = (carte) => CIBLES_SORT_ZONE.has(carte?.effet?.cible);
  * premier sort ADVERSE qui la désigne. La créature reste une cible légale —
  * c'est même ainsi que la parade se consume — mais le sort ne résout rien.
  * Un sort du camp de la créature (renfort, Parade de verre, Défi du Jarl sur
- * son propre champion) ne peut pas être bloqué ; un sort de zone, qui ne
- * désigne personne (`cibleId` nul), passe sous la garde.
+ * son propre champion) ne peut pas être bloqué. Les sorts de zone, eux, ne
+ * sont pas annulés ici : ils se résolvent et chaque parade n'épargne que sa
+ * propre porteuse (voir `paradeZoneBloque`).
  */
 function bouclierQuiBloque(duel, cote, cibleId) {
   if (!cibleId || cibleId === 'sorcier') return null;
@@ -5351,7 +5409,9 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // part au cimetière, mais AUCUN effet ne se résout — pas même la pioche ou
   // le gel attachés au sort. La parade tombe en entier. On place ce test
   // après le contre (un sort contrecarré n'use pas le bouclier) et après le
-  // paiement (la parade bloque l'effet, pas le lancement).
+  // paiement (la parade bloque l'effet, pas le lancement). Un sort de zone
+  // n'est jamais arrêté en entier : sa résolution épargne une à une les
+  // créatures dont la parade est prête (`paradeZoneBloque`).
   const bouclierBloquant = sortViseUneZone(carte) ? null : bouclierQuiBloque(duel, cote, cibleId);
   if (bouclierBloquant) {
     const montant = briserBouclier(bouclierBloquant);

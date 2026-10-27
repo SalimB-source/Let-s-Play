@@ -4168,8 +4168,9 @@ test('Le Grand Hiver : 1 dégât à toutes les créatures, les deux camps compri
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === tislitAlliee.id), false,
     'la créature alliée 1/1 meurt de la même vague');
   assert.equal(duel.joueur.cimetiere.includes('grand-hiver'), true, 'la sorcellerie rejoint le cimetière');
-  // Une parade ne bloque pas une vague de zone : elle ne tombe que devant un
-  // sort qui DÉSIGNE la créature. Le Grand Hiver ne désigne personne.
+  // Une parade bloque aussi une vague de zone : la créature protégée est
+  // épargnée par le Grand Hiver et sa parade tombe, tandis que le reste de
+  // la table encaissent la vague normalement.
   const duel2 = duelDeBase();
   donnerMana(duel2, 'joueur', 8);
   donnerMana(duel2, 'sorcier', 8);
@@ -4179,8 +4180,8 @@ test('Le Grand Hiver : 1 dégât à toutes les créatures, les deux camps compri
   const pvGuerrier = guerrier.pv;
   donner(duel2, 'joueur', 'grand-hiver');
   assert.equal(rpgLancerMagie(duel2, 'joueur', 'grand-hiver').ok, true);
-  assert.equal(guerrier.bouclier, 1, 'la parade reste : la zone ne la concerne pas');
-  assert.equal(guerrier.pv, pvGuerrier - 1, 'et le dégât de zone passe normalement');
+  assert.equal(guerrier.bouclier, 0, 'la parade encaisse la vague et tombe');
+  assert.equal(guerrier.pv, pvGuerrier, 'le dégât de zone n’atteint pas la créature protégée');
 });
 
 test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblée', () => {

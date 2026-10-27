@@ -8915,7 +8915,9 @@ Ce que la parade **ne** fait pas :
   frappent directement les PV (`rpgBlesserCreature` et
   `appliquerDegatsDeCombatSimultanes` ne touchent plus au bouclier) ;
 - elle ne bloque pas un sort de zone, qui ne désigne personne (le Grand Hiver
-  passe sous la garde) ;
+  passe sous la garde) — **règle remplacée plus bas** : la parade épargne
+  désormais sa porteuse face aux sorts de zone, voir la section
+  « le bouclier bloque aussi les sorts de zone » ;
 - elle ne bloque pas un sort du camp de la créature (la Parade de verre, un
   renfort, le champion du Défi du Jarl) ;
 - elle ne concerne pas la **réserve du sorcier** du pacte de la Tour oubliée :
@@ -9072,3 +9074,47 @@ Contrôles : nouvelle suite `tests/rpg-malediction.test.js` (fiche, glossaire,
 cases vides, arrivées, cumul de sources, plancher à 0, fin de tour stable),
 suite `rpg-lettres-de-marque` réécrite, `node scripts/rpg-cale-check.mjs`,
 `npm run check:rpg` et `npm run build`.
+
+## Le Sablier : le bouclier bloque aussi les sorts de zone
+
+La parade anti-sort ne se contente plus d'arrêter les sorts qui **désignent**
+une créature : elle encaisse aussi les **sorts de zone** adverses. La zone
+n'est jamais annulée en entier — elle continue de frapper toutes les autres
+créatures — mais la porteuse d'une parade est entièrement épargnée par la
+vague, et sa parade tombe en entier, comme devant un sort ciblé.
+
+- **Une parade, une créature** : dans chaque branche de zone (`degats`,
+  `gel`, `destruction-totale`, `destruction-coutmax`, le renvoi
+  `toutes-autres` et le malus `creatures-adverses` de l'Embuscade), le nouvel
+  aide-mémoire `paradeZoneBloque` écarte la créature protégée avant tout
+  effet — ni dégât, ni gel, ni destruction, ni malus — puis fait tomber sa
+  parade. L'écho différé d'un sort (le Nuage de cendres) est encaissé de la
+  même façon par une parade neuve.
+- **Les mêmes garde-fous que pour un sort ciblé** : seules les magies sont
+  concernées (`sourceType === 'magie'`). Une capacité de zone — l'arrivée de
+  la Valkyrie des glaces, la vague du Léviathan — traverse la parade comme
+  une attaque, et un sort du camp de la créature ne réveille jamais sa
+  parade, même quand une zone balaie les deux camps (le Grand Hiver, La
+  Dernière Pesée).
+- **Ciblé reste intégral** : un sort qui désigne une créature protégée est
+  toujours payé et envoyé au cimetière sans le moindre effet
+  (`bouclierQuiBloque`, dans `rpgLancerMagie`) ; seules les zones basculent
+  sur une protection par créature.
+- **Textes et pédagogie** : les six cartes qui posent une parade (Guerrier au
+  bouclier rond, Veilleuse, Tour de sable, Salem, Parade de verre, Hache de
+  la banquise), la leçon `rpgCardLessons.js`, la leçon Neige du tutoriel et la
+  pastille du mot-clé (`effetIcons.js`) annoncent toutes que la zone est
+  bloquée à l'égard de la créature protégée.
+- **IA** : les estimations de vagues (`rpgAI.js`) ne comptent plus les
+  créatures adverses à parade parmi les victimes d'une zone, tout en gardant
+  le sort jouable : la vague ne perd que ses cibles protégées, dont la
+  parade se brise au passage.
+- **Table** : aucun changement d'animation — la chute de la parade est
+  détectée par la comparaison avant/après du champ `bouclier`, donc l'impact
+  d'égide existant se joue aussi sur une zone, en JcJ comme contre le sorcier.
+
+Contrôles : la suite `tests/rpg-bouclier-sort.test.js` couvre les zones de
+dégâts, le gel attaché, les destructions de zone, l'Embuscade, les sorts
+alliés, les capacités de zone et l'écho ; `tests/rpg-tenebres.test.js`
+vérifie La Dernière Pesée face à une parade, et `scripts/rpg-bouclier-check.mjs`
+relit le branchement de `paradeZoneBloque` dans le moteur.

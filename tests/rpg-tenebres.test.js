@@ -531,8 +531,10 @@ test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 
     const ennemi = poserTenebres(duel, 'ibis-des-comptes');
     duel.joueur.creatures = duel.joueur.creatures.filter((c) => c.id !== ennemi.id);
     duel.sorcier.creatures.push(ennemi);
-    // Ni les PV élevés, ni la prévention des dégâts ne bloquent une destruction.
-    Object.assign(allie, { pv: 100, pvMax: 100, def: 100, bouclier: 100, bouclierLumiere: true });
+    // Ni les PV élevés, ni la prévention des dégâts (bouclier de lumière)
+    // ne bloquent une destruction. La parade anti-sort, elle, épargne
+    // désormais des sorts de zone : voir le test dédié plus bas.
+    Object.assign(allie, { pv: 100, pvMax: 100, def: 100, bouclierLumiere: true });
     const pv = [duel.joueur.pv, duel.sorcier.pv];
     duel.tour = cote;
     duel[cote].mana.tenebres = 8;
@@ -548,6 +550,29 @@ test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 
     assert.ok(duel[cote].cimetiere.includes('la-derniere-pesee'));
     assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], pv);
   }
+});
+
+test('La Dernière Pesée épargne la créature adverse dont la parade est prête, puis la fait tomber', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  const protege = poserTenebres(duel, 'chacal-du-seuil');
+  protege.bouclier = 1;
+  protege.bouclierEpuise = false;
+  const seconde = poserTenebres(duel, 'ibis-des-comptes');
+  // Le sorcier lance la Pesée : les deux créatures sont alors dans le camp
+  // adverse du lanceur, seule celle qui porte la parade doit survivre.
+  duel.tour = 'sorcier';
+  duel.sorcier.mana.tenebres = 8;
+  duel.sorcier.manaSources = ['tenebres'];
+  duel.joueur.main = [];
+  duel.sorcier.main = ['la-derniere-pesee'];
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'la-derniere-pesee').ok, true);
+  assert.equal(duel.joueur.creatures.length, 1, 'seule la créature à parade survit à la vague');
+  assert.equal(duel.joueur.creatures[0].id, protege.id);
+  assert.equal(protege.bouclier, 0, 'la parade tombe en encaissant la destruction de zone');
+  assert.equal(protege.bouclierEpuise, true);
+  assert.ok(duel.joueur.cimetiere.includes(seconde.carteId), 'la créature sans parade est détruite');
+  assert.ok(duel.sorcier.cimetiere.includes('la-derniere-pesee'));
 });
 
 test('La Dernière Pesée libère tout le champ avant les déclenchements de mort', () => {

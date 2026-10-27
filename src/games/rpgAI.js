@@ -1235,7 +1235,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // créature tenace meurt bien, mais revient au tour suivant avec 1 point
       // de défense : la vague vaut donc un peu moins contre elle.
       const pertes = (c) => duel[c].creatures
-        .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte))
+        .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte)
+          // Une parade adverse encaisse la vague à la place de sa porteuse ;
+          // les parades du camp du lanceur ne protègent pas de son propre sort.
+          && (c !== adv || !moteur.rpgBouclierEstActif(entite)))
         .reduce((somme, entite) => somme + valeurEntite(entite)
           * (entite.tenaciteDisponible ? 0.7 : 1), 0);
       const gain = pertes(adv) - pertes(cote);
@@ -1251,7 +1254,8 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const seuil = Number(effet.coutMax) || 0;
       const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
       const couvertes = camps.flatMap((camp) => duel[camp].creatures
-        .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)));
+        .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
+          && (camp !== adv || !moteur.rpgBouclierEstActif(entite))));
       const brisees = couvertes
         .filter((entite) => (duelCardById(entite.carteId)?.cost ?? 0) <= seuil);
       const gain = brisees.reduce((somme, entite) => somme
@@ -1270,7 +1274,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // protégée n'est pas un balayage, c'est du mana perdu.
         const couleursSort = cardColors(carte);
         const touchees = duel[adv].creatures
-          .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte));
+          .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
+            // La parade épargne sa porteuse et tombe : l'IA ne compte ni sa
+            // mort ni sa blessure dans la valeur de la vague.
+            && !moteur.rpgBouclierEstActif(entite));
         const tues = touchees.filter((entite) => meurtSous(entite, montant, 'magie'));
         const blessees = touchees
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
@@ -1297,6 +1304,9 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // lui — il ne la lance que si le compte penche de son côté.
         const valeurTable = (campVise) => duel[campVise].creatures.reduce((total, entite) => {
           if (estProtegee(entite, cardColors(carte)) || horsDAtteinteDuSort(entite, carte)) return total;
+          // La parade adverse encaisse la vague ; celle du camp du lanceur
+          // ne protège pas contre son propre sort.
+          if (campVise === adv && moteur.rpgBouclierEstActif(entite)) return total;
           const recus = degatsApresEsquive(entite, montant, 'magie');
           if (recus <= 0) return total;
           return total + (meurtSous(entite, montant, 'magie') ? valeurEntite(entite) : 1.2);
@@ -1461,9 +1471,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     }
     if (effet.type === 'buff' && effet.cible === 'creatures-adverses') {
       // L'Embuscade : le débuff ne tue jamais (plancher 1/1) mais ampute
-      // toute la table adverse avant de la jeter sur nos attaquants.
-      const adversaires = duel[adv].creatures;
-      if (!adversaires.length) return { score: 0, cibleId: null };
+      // toute la table adverse avant de la jeter sur nos attaquants. Une
+      // parade épargne sa porteuse (et tombe) : elle n'entre pas dans le
+      // compte des créatures réellement marquées.
+      const adversaires = duel[adv].creatures
+        .filter((entite) => !moteur.rpgBouclierEstActif(entite));
+      if (!duel[adv].creatures.length) return { score: 0, cibleId: null };
       const retraitAtk = Math.abs(Number(effet.atk) || 0);
       const retraitDef = Math.abs(Number(effet.def) || 0);
       const score = 1.5 + adversaires.length * (0.8 + retraitAtk * 0.5 + retraitDef * 0.4)

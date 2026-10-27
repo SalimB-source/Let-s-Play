@@ -593,7 +593,7 @@ export const EFFET_DEFINITIONS = {
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
-  bouclier: () => 'Bloque le premier sort adverse qui cible cette créature, puis le bouclier tombe. Les dégâts des attaques, des capacités et des sorts de zone ne sont pas absorbés.',
+  bouclier: () => 'Bloque le premier sort adverse qui atteint cette créature, même un sort de zone : la vague épargne alors cette seule créature, puis le bouclier tombe. Les dégâts des attaques et des capacités ne sont pas absorbés.',
   aura: () => 'Tant qu’elle est en jeu, seules les créatures adjacentes de son camp reçoivent son renfort : celles des deux cases qui entourent la sienne. Une case vide coupe le voisinage, et la source ne se renforce jamais elle-même. Si elle quitte la table, le bonus disparaît.',
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
