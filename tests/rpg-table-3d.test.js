@@ -52,6 +52,17 @@ test('le village viking garde sa peinture à vol d’oiseau : deux braseros vaci
   assert.ok(theme.particles.vy < 0, 'la neige tombe sur la place du village');
 });
 
+test('la Place du Souk garde sa peinture et anime les lanternes et la poussière', () => {
+  const plateau = plateauParId('place-du-souk');
+  const theme = tableSceneTheme(plateau.id);
+  assert.deepEqual(theme.objets, [], 'les étals restent peints aux bords');
+  assert.equal(theme.plaque, null);
+  assert.equal(tablePlaqueFile(plateau), 'plateau-place-du-souk.jpg');
+  assert.equal(theme.lights.length, 4, 'une lumière par lanterne d’angle');
+  assert.ok(theme.lights.every((lampe) => lampe.flicker > 0), 'les lanternes vacillent');
+  assert.ok(theme.particles.count > 0 && theme.particles.vx > 0, 'la poussière dérive');
+});
+
 test('le navire pirate éclaire son pont par quatre fanaux d’angle et ses embruns marins', () => {
   const plateau = plateauParId('navire-pirate');
   const theme = tableSceneTheme(plateau.id);

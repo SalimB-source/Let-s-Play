@@ -203,7 +203,7 @@ ok('electron-updater : fournisseur GitHub configuré, vérification et installat
 ok('electron-builder : paquet web hors asar (resources/app), icône présente');
 
 const regles = JSON.parse(readFileSync(join(RACINE, 'desktop', 'bundle-assets.json'), 'utf8'));
-for (const dossier of ['assets', 'cards', 'sablier-story', 'sablier-tours', 'audio', 'icons']) {
+for (const dossier of ['assets', 'cards', 'sablier-story', 'sablier-tours', 'audio', 'icons', 'profil']) {
   assert.ok(regles.dirs.includes(dossier), `dossier embarqué manquant : ${dossier}`);
 }
 ok('bundle-assets.json : cartes, plateaux, sons et décor du Sablier embarqués');

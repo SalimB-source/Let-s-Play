@@ -46,6 +46,7 @@
     "check:rpg-sans-brume": "node scripts/rpg-sans-brume-check.mjs",
     "check:rpg-brume": "npm run check:rpg-sans-brume",
     "check:rpg-souk-ui": "node scripts/rpg-souk-ui-check.mjs",
+    "check:rpg-plateau-souk": "node --test tests/rpg-plateaux.test.js tests/rpg-table-3d.test.js tests/rpg-conquete-music.test.js && node scripts/rpg-plateau-souk-check.mjs",
     "check:rpg-booster-layout": "node scripts/rpg-booster-layout-check.mjs",
     "preview:rpg-booster": "node scripts/rpg-booster-layout-check.mjs --preview",
     "check:rpg-vie-layout": "node scripts/rpg-vie-layout-check.mjs",

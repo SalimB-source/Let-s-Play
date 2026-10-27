@@ -328,6 +328,10 @@ export async function checkRpgProfilEcran(assert) {
       'chaque tuile porte le nom de sa table, peint sur sa vignette');
     assert.match(texte(noeud('[data-profil-plateau="cour-de-l-empereur"]')), /La Cour de l’Empereur/,
       'même les noms longs : deux lignes au plus');
+    const placeDuSouk = noeud('[data-profil-plateau="place-du-souk"]');
+    assert.match(texte(placeDuSouk), /La Place du Souk/, 'la nouvelle place se présente dans le profil');
+    assert.match(placeDuSouk.style.backgroundImage, /profil\/plateaux\/place-du-souk\.webp/,
+      'sa vignette légère est utilisée dans le choix de table');
     assert.ok(noeud('[data-profil-plateau-auto]').classList.contains('is-choisi'),
       'au départ, c’est le deck qui décide de la table');
     assert.equal(noeud('[data-profil-avatar-image]'), null, 'sans visage choisi, le médaillon porte le glyphe');
@@ -357,6 +361,11 @@ export async function checkRpgProfilEcran(assert) {
     assert.equal(noeud('[data-profil-avatar-image]'), null, '…que le médaillon ignore : la lecture valide');
     await act(async () => noeud('[data-profil-avatar="yamina"]').click());
     assert.equal(bourse.profil.avatar, 'yamina', 'et le visage revient d’un clic');
+
+    await act(async () => placeDuSouk.click());
+    assert.equal(bourse.profil.plateau, 'place-du-souk', 'la place peut être choisie et sauvegardée');
+    assert.equal(placeDuSouk.getAttribute('aria-pressed'), 'true');
+    assert.equal(JSON.parse(window.localStorage.getItem(RPG_PROFIL_STORAGE_KEY)).plateau, 'place-du-souk');
 
     const table = noeud('[data-profil-plateau="village-viking"]');
     await act(async () => table.click());

@@ -128,6 +128,21 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 56, color: '#e8b98a', size: 0.03, opacity: 0.45, vx: 0.24, vy: 0.01, sway: 0.05, swayHz: 0.5, z: 0.5, zSpread: 0.4 }),
     overlay: { kind: 'ombre', color: '#3b1d10', opacity: 0.15, speed: 0.009, scale: 1.4 },
   }),
+  // La place du Souk : les étals et les objets restent peints aux bords, afin
+  // de laisser le dallage central libre. Quatre lanternes vacillent aux angles
+  // et quelques grains de poussière dorée traversent la lumière chaude.
+  'place-du-souk': theme({
+    ambient: '#fff3df', ambientIntensity: 0.58, key: '#ffd4a4', keyIntensity: 0.48,
+    keyDirection: [-0.5, 0.65, 1], relief: 1.25, roughness: 0.88,
+    lights: [
+      light({ color: '#ffb85e', intensity: 1.8, distance: 3.4, x: -0.84, y: 0.76, z: 0.65, flicker: 0.23 }),
+      light({ color: '#ffb85e', intensity: 1.8, distance: 3.4, x: 0.84, y: 0.76, z: 0.65, flicker: 0.23 }),
+      light({ color: '#ffb85e', intensity: 1.8, distance: 3.4, x: -0.84, y: -0.76, z: 0.65, flicker: 0.23 }),
+      light({ color: '#ffb85e', intensity: 1.8, distance: 3.4, x: 0.84, y: -0.76, z: 0.65, flicker: 0.23 }),
+    ],
+    particles: motes({ count: 52, color: '#ffd7a2', size: 0.026, opacity: 0.45, vx: 0.08, vy: 0.03, sway: 0.12, swayHz: 0.28, z: 0.8, zSpread: 0.55 }),
+    overlay: null,
+  }),
   // Tipasa : brise marine, pierre claire, nuages rapides.
   'ruines-de-tipaza': theme({
     key: '#fff6e4', keyIntensity: 0.5, keyDirection: [-0.6, 0.7, 1], relief: 1.7, roughness: 0.88,
