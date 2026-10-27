@@ -309,7 +309,11 @@ assert.match(moteur, /function bouclierQuiBloque\(duel, cote, cibleId\) \{[\s\S]
 assert.match(moteur, /const bouclierBloquant = sortViseUneZone\(carte\) \? null : bouclierQuiBloque\(duel, cote, cibleId\);[\s\S]*?const montant = briserBouclier\(bouclierBloquant\);[\s\S]*?bouclierBloque: true,/,
   'le lancement du sort bloqué consomme la parade et le dit au résultat');
 assert.match(moteur, /const CIBLES_SORT_ZONE = new Set\(\[[\s\S]*?'toutes-creatures'/,
-  'les sorts de zone sont explicitement hors de portée de la parade');
+  'les portées de zone restent nommées, pour distinguer les vagues des sorts ciblants');
+assert.match(moteur, /function paradeZoneBloque\(duel, entite, sourceType, campCible, campLanceur\) \{[\s\S]*?sourceType !== 'magie'[\s\S]*?campCible === campLanceur[\s\S]*?briserBouclier\(entite\);/,
+  'la parade encaisse une vague de zone adverse : ni les capacités ni les sorts du camp de la créature ne la réveillent');
+assert.ok((moteur.match(/paradeZoneBloque\(/g) ?? []).length >= 8,
+  'toutes les branches de zone (dégâts, gel, destructions, renvoi, malus et écho) consultent la parade');
 assert.match(moteur, /case 'bouclier-lumiere': \{[\s\S]*?entite\.bouclierLumiere = true;\s*entite\.bouclierEpuise = false;/,
   'accorder un bouclier de lumière réarme l’état');
 assert.match(moteur, /case 'bouclier': \{[\s\S]*?entite\.bouclier = 1;[\s\S]*?entite\.bouclierEpuise = false;/,

@@ -274,8 +274,9 @@ export function valeurCarte(carte) {
     // par capture — lu comme l'effet de soin qu'il est.
     if (carte.priseEnCale) valeur += valeurEffet(carte.priseEnCale);
     // L'arme qui pose une parade sur son porteur (la Hache de la banquise) :
-    // le premier sort adverse qui le cible est bloqué, une seule fois —
-    // même prix que la parade donnée par un sort, et jamais deux fois.
+    // le premier sort adverse qui l'atteint est bloqué, une seule fois — y
+    // compris un sort de zone, qui n'épargnera alors que lui. Même prix que
+    // la parade donnée par un sort, et jamais deux fois.
     if (carte.donne?.bouclier) valeur += 1.1;
     // Le prix de l'attachement : l'arme qui blesse son porteur vaut moins,
     // d'autant plus que la morsure est profonde.
