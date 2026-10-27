@@ -61,7 +61,7 @@ const server = await createServer({
 
 // Comparer les pixels réellement peints attrape aussi un calque caché derrière
 // l'image : la seule présence du nœud et de son animation ne suffirait pas.
-async function mesurerBrumePeinte(page, face) {
+async function mesurerBrumePeinte(page, face, { comparerAvant = false } = {}) {
   const brume = face.locator('.rpg-brume-mythique');
   // Ne pas figer une animation d'entrée à son premier instant (opacité zéro).
   await face.evaluate(async (node) => {
@@ -87,11 +87,26 @@ async function mesurerBrumePeinte(page, face) {
     // Laisse Chromium repeindre la texture décodée avant la capture.
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const avec = await face.screenshot();
+    let avant = null;
+    if (comparerAvant) {
+      // Même carte et même phase, avec les anciennes opacités : cette mesure
+      // vérifie que le renforcement est visible, pas seulement déclaré en CSS.
+      const ancienVoile = await page.addStyleTag({ content: `
+        .rpg-brume-mythique::before { opacity: .74 !important; }
+        .rpg-brume-mythique::after { opacity: .28 !important; }
+      ` });
+      try {
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        avant = await face.screenshot();
+      } finally {
+        await ancienVoile.evaluate((node) => node.remove());
+      }
+    }
     await brume.evaluate((node) => { node.style.visibility = 'hidden'; });
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const sans = await face.screenshot();
     await brume.evaluate((node) => { node.style.removeProperty('visibility'); });
-    const resultat = await page.evaluate(async ([a, b]) => {
+    const resultat = await page.evaluate(async ([a, b, ancien]) => {
       const charger = async (source) => {
         const image = new Image();
         image.src = `data:image/png;base64,${source}`;
@@ -103,17 +118,22 @@ async function mesurerBrumePeinte(page, face) {
         contexte.drawImage(image, 0, 0);
         return contexte.getImageData(0, 0, image.width, image.height).data;
       };
-      const premier = await charger(a);
-      const second = await charger(b);
-      let changes = 0;
-      let ecart = 0;
-      for (let i = 0; i < premier.length; i += 4) {
-        const difference = Math.abs(premier[i] - second[i]) + Math.abs(premier[i + 1] - second[i + 1]) + Math.abs(premier[i + 2] - second[i + 2]);
-        if (difference > 3) changes += 1;
-        ecart += difference;
-      }
-      return { partModifiee: changes / (premier.length / 4), ecartMoyen: ecart / (premier.length / 4 * 3) };
-    }, [avec.toString('base64'), sans.toString('base64')]);
+      const avecBrume = await charger(a);
+      const sansBrume = await charger(b);
+      const mesurer = (pixels) => {
+        let changes = 0;
+        let ecart = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          const difference = Math.abs(pixels[i] - sansBrume[i]) + Math.abs(pixels[i + 1] - sansBrume[i + 1]) + Math.abs(pixels[i + 2] - sansBrume[i + 2]);
+          if (difference > 3) changes += 1;
+          ecart += difference;
+        }
+        return { partModifiee: changes / (pixels.length / 4), ecartMoyen: ecart / (pixels.length / 4 * 3) };
+      };
+      const resultat = mesurer(avecBrume);
+      if (ancien) resultat.ecartAvant = mesurer(await charger(ancien)).ecartMoyen;
+      return resultat;
+    }, [avec.toString('base64'), sans.toString('base64'), avant?.toString('base64') ?? null]);
     return resultat;
   } finally {
     await brume.evaluate((node) => { node.style.removeProperty('visibility'); });
@@ -166,9 +186,11 @@ try {
   assert.equal(await brume.evaluate((node) => getComputedStyle(node).pointerEvents), 'none');
   assert.ok(Number(await face.locator('.rpg-card__foot').evaluate((node) => getComputedStyle(node).zIndex)) > 0,
     'attaque et défense restent au-dessus de la brume');
-  const peinture = await mesurerBrumePeinte(page, face);
-  assert.ok(peinture.partModifiee > .05 && peinture.ecartMoyen < 25,
+  const peinture = await mesurerBrumePeinte(page, face, { comparerAvant: true });
+  assert.ok(peinture.partModifiee > .05 && peinture.ecartMoyen < 40,
     `la brume se peint sur la fiche sans masquer la peinture (${JSON.stringify(peinture)})`);
+  assert.ok(peinture.ecartMoyen > peinture.ecartAvant * 1.5,
+    `la brume est sensiblement plus forte qu’avant (${JSON.stringify(peinture)})`);
 
   const styleDesNappes = () => brume.evaluate((node) => ({
     premiere: getComputedStyle(node, '::before').transform,
@@ -211,7 +233,15 @@ try {
   });
   assert.ok(alpha.max > 0 && alpha.max < 110, 'même la fumée la plus dense laisse voir la peinture');
   assert.ok(alpha.moyenne > 3 && alpha.moyenne < 45 && alpha.transparents > 0,
-    'le voile est léger, avec des espaces totalement transparents');
+    'la texture conserve des espaces totalement transparents');
+  const opacites = await brume.evaluate((node) => ({
+    premiere: Number(getComputedStyle(node, '::before').opacity),
+    seconde: Number(getComputedStyle(node, '::after').opacity),
+  }));
+  const alphaMax = alpha.max / 255;
+  const couvertureMax = 1 - (1 - alphaMax * opacites.premiere) * (1 - alphaMax * opacites.seconde);
+  assert.ok(couvertureMax < .55,
+    `même les deux nappes superposées laissent voir la peinture (${couvertureMax})`);
 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const reduite = await styleDesNappes();
@@ -242,7 +272,7 @@ try {
   }
   for (const [nom, carte] of [['main', enMain], ['plateau', surTable]]) {
     const rendu = await mesurerBrumePeinte(page, carte);
-    assert.ok(rendu.partModifiee > .05 && rendu.ecartMoyen < 25,
+    assert.ok(rendu.partModifiee > .05 && rendu.ecartMoyen < 40,
       `la brume se peint en ${nom} sans masquer la peinture (${JSON.stringify(rendu)})`);
   }
   assert.equal(await page.locator('.rpg-hand__card[data-card-id="chien-du-guet"] .rpg-brume-mythique').count(), 0);
@@ -255,8 +285,8 @@ try {
   assert.equal(await cimetiere.locator('.rpg-brume-mythique').count(), 1,
     'la carte visible au cimetière garde elle aussi la brume');
   const pile = await mesurerBrumePeinte(page, cimetiere);
-  assert.ok(pile.partModifiee > .05 && pile.ecartMoyen < 25,
-    `la brume est visible sur la vignette du cimetière (${JSON.stringify(pile)})`);
+  assert.ok(pile.partModifiee > .05 && pile.ecartMoyen < 40,
+    `la brume est visible sur la vignette du cimetière sans masquer la peinture (${JSON.stringify(pile)})`);
   const cibleAuCentre = await surTable.evaluate((carte) => {
     const r = carte.getBoundingClientRect();
     const cible = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);

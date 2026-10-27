@@ -1,5 +1,5 @@
-/* La porte de brume des mythiques : deux voiles de fumée ambrée montent
-   lentement sur la peinture, en laissant ses couleurs et ses repères lisibles.
+/* La porte de brume des mythiques : deux nappes de fumée dorée plus épaisses
+   montent lentement sur la peinture, en laissant son dessin et ses repères lisibles.
    La texture est transparente et raccordée en hauteur : la boucle n'a pas de
    saut, et le navigateur réutilise la même petite image pour toutes les faces. */
 .rpg-brume-mythique {
@@ -24,9 +24,11 @@
   animation: rpg-brume-mythique-monte 9.5s linear var(--rpg-brume-delai, 0s) infinite;
 }
 
-.rpg-brume-mythique::before { opacity: .74; }
+/* La texture elle-même reste translucide : renforcer les deux nappes rend la
+   porte plus présente sans poser un aplat opaque sur l'illustration. */
+.rpg-brume-mythique::before { opacity: 1; }
 .rpg-brume-mythique::after {
-  opacity: .28;
+  opacity: .9;
   animation-name: rpg-brume-mythique-retour;
   animation-duration: 16s;
 }
