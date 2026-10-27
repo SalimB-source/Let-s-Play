@@ -708,8 +708,12 @@ test('le Trait de braise ne désigne jamais une créature protégée contre la B
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'tiziri-du-djurdjura');
-  const tiziri = rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura').entite;
+  // Tiziri ne porte plus de protection de Braise (elle s’engage pour du mana
+  // désormais) : la protection est attachée à la cible, comme une protection
+  // temporaire prêtée par un effet.
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const protege = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
+  protege.protection = { contre: 'braise', toursRestants: Infinity };
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   donner(duel, 'sorcier', 'trait-de-braise');
@@ -717,14 +721,14 @@ test('le Trait de braise ne désigne jamais une créature protégée contre la B
   const choix = choisirCarteIA(duel, 'sorcier');
   assert.equal(choix?.cibleId, chien.id,
     'le Trait choisit la seule cible que la protection ne couvre pas');
-  assert.notEqual(choix.cibleId, tiziri.id);
+  assert.notEqual(choix.cibleId, protege.id);
 
   // Seule la protégée reste sur la table : le Trait part au visage — il ne
   // se jette pas sur l’écran de Braise.
   duel.joueur.creatures = duel.joueur.creatures.filter((entite) => entite.id !== chien.id);
   const choixSeul = choisirCarteIA(duel, 'sorcier');
   if (choixSeul) {
-    assert.equal(choixSeul.cibleId, 'sorcier', 'le burn s’adresse au sorcier, jamais à Tiziri');
+    assert.equal(choixSeul.cibleId, 'sorcier', 'le burn s’adresse au sorcier, jamais à la protégée');
   }
 });
 
@@ -735,8 +739,9 @@ test('un sort de zone ne compte ni ne cible les créatures protégées', () => {
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'tiziri-du-djurdjura');
-  rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura');
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const protege = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
+  protege.protection = { contre: 'braise', toursRestants: Infinity };
   donner(duel, 'sorcier', 'vent-rouge');
   assert.equal(choisirCarteIA(duel, 'sorcier'), null,
     'aucune victime possible derrière la protection : le sort reste en main');

@@ -29,11 +29,12 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label));
 
-test('le sprite porte les 30 symboles validés, un par effet', () => {
+test('le sprite porte les 36 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 32 depuis le Coup critique (`i-coup-critique`) : chaque symbole est
-  // référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 32);
+  // 36 avec le Furtif (`i-furtif`), l'engagement de mana (`i-mana`) et la
+  // Recherche de deck (`i-recherche`) : chaque symbole est référencé par
+  // `EFFET_ICONE`, aucun n'est orphelin.
+  assert.equal(symboles.length, 36);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -116,10 +117,11 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
-  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Protection Braise']);
+  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Mana de Eau 1'],
+    'Tiziri n’a plus de Protection : sa pastille annonce l’engagement qui produit son mana d’eau');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
-  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Contre-attaque'],
-    'le roi Kusayla affiche sa Contre-attaque, comme Eirik et Tojiro');
+  assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
+    'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');
@@ -393,9 +395,9 @@ test('une pastille dit tout ce que la fiche imprime de son mot-clé', () => {
 // ── L'effet chiffré d'un sort : « -2/-2 » écrit sur la carte ────────────────
 
 test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
-  // Sans cette pastille, le -2/-2 de la Lame de mer ne vivait que dans sa
+  // Sans cette pastille, le -3/-3 de la Lame de mer ne vivait que dans sa
   // phrase de règle — et une face de carte n'imprime pas la règle.
-  assert.deepEqual(pastillesDe('lame-de-mer'), ['Affaiblissement -2/-2']);
+  assert.deepEqual(pastillesDe('lame-de-mer'), ['Affaiblissement -3/-3']);
   assert.deepEqual(pastillesDe('embuscade'), ['Affaiblissement -2/-2'],
     'l’Embuscade rabote toute la table adverse de -2/-2');
   assert.deepEqual(pastillesDe('vipere-de-verre'), ['Affaiblissement -2/0'],
@@ -409,7 +411,7 @@ test('les cartes qui modifient les statistiques affichent leur chiffre', () => {
 test('la pastille chiffrée explique le malus, statistique par statistique', () => {
   const lire = (id) => definitionPastille(pastillesPourCarte(cardById(id))[0]);
   assert.equal(lire('lame-de-mer'),
-    'La cible perd 2 en attaque et 2 en défense. Si sa défense tombe à 0, elle est détruite.');
+    'La cible perd 3 en attaque et 3 en défense. Si sa défense tombe à 0, elle est détruite.');
   assert.equal(lire('vipere-de-verre'),
     'La cible perd 2 en attaque. Si sa défense tombe à 0, elle est détruite.',
     'la vipère ne dit pas qu’elle retire de la défense');
@@ -418,9 +420,9 @@ test('la pastille chiffrée explique le malus, statistique par statistique', () 
 
 test('le chiffre de la carte se lit aussi hors des pastilles', () => {
   const modif = (id) => modificationStats(cardById(id));
-  assert.deepEqual(modif('lame-de-mer'), { atk: -2, def: -2 });
+  assert.deepEqual(modif('lame-de-mer'), { atk: -3, def: -3 });
   assert.deepEqual(modif('vipere-de-verre'), { atk: -2, def: 0 });
-  assert.equal(libelleModificationStats(cardById('lame-de-mer')), '-2/-2');
+  assert.equal(libelleModificationStats(cardById('lame-de-mer')), '-3/-3');
   assert.equal(libelleModificationStats(cardById('serment-de-la-forge')), '+2/+1');
   // Une arme garde son bonus de porteur : pas de doublon chiffré.
   assert.equal(modif('khopesh-d-or'), null);

@@ -945,6 +945,47 @@ export function rpgEngagerTerrain(duel, cote, terrainId, couleurChoisie = null) 
   return { ok: true, couleur };
 }
 
+/**
+ * Une créature peut-elle être engagée pour produire du mana (Tiziri) ?
+ * Le marqueur de fiche `manaEngagement: { couleur, amount }` ouvre la
+ * capacité ; elle ne s'active qu'au tour de son contrôleur, sur une créature
+ * dégagée (ni attaquante, ni déjà engagée) et non gelée. L'engagement suit
+ * les mêmes règles qu'une attaque : la créature ne pourra ni attaquer ni
+ * bloquer avant son dégagement, au début du prochain tour de son camp.
+ */
+export function rpgPeutEngagerPourMana(duel, cote, entiteId) {
+  const entite = duel?.[cote]?.creatures?.find((candidate) => candidate.id === entiteId);
+  if (!entite) return false;
+  const carte = duelCardById(entite.carteId);
+  if (!carte?.manaEngagement) return false;
+  if (duel.tour !== cote) return false;
+  if (estGelee(entite)) return false;
+  // Seul l'état engagé bloque : contrairement à une attaque, la capacité se
+  // lance même sous le mal d'invocation (Tiziri produit son mana dès son
+  // arrivée). Une créature gelée ou déjà tournée ne peut plus s'engager.
+  if (entite.attaquee) return false;
+  const couleur = carte.manaEngagement.couleur;
+  return Boolean(couleur && RPG_COULEURS.includes(couleur));
+}
+
+/** Engage la créature : elle se tourne sur le flanc et produit son mana. */
+export function rpgEngagerPourMana(duel, cote, entiteId) {
+  if (!rpgPeutEngagerPourMana(duel, cote, entiteId)) return { ok: false, raison: 'engagement' };
+  const camp = duel[cote];
+  const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
+  const carte = duelCardById(entite.carteId);
+  const couleur = carte.manaEngagement.couleur;
+  const montant = Math.max(1, Math.floor(Number(carte.manaEngagement.amount) || 1));
+  // L'engagement utilise le même état qu'une attaque : la créature reste
+  // tournée jusqu'au `rpgFinDeTour` qui remet `ready` et `attaquee` à neuf.
+  entite.ready = false;
+  entite.attaquee = true;
+  camp.mana[couleur] = (Number(camp.mana[couleur]) || 0) + montant;
+  duel.log.push(`${entite.name} s’engage et produit ${montant} mana d’${ELEMENT_LABELS[couleur]?.toLowerCase() ?? couleur}.`);
+  rpgActionsEtat(duel);
+  return { ok: true, couleur, amount: montant };
+}
+
 export const rpgMana = (camp) => ({ ...camp.mana, total: totalMana(camp) });
 
 /** Coût d'un effet activé sous la forme d'une « pseudo-carte » que `payer`
@@ -3146,11 +3187,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         return;
       }
       // La plupart des vagues « toutes-creatures » sont hostiles. Ifrit
-      // al-Ahmar déclare explicitement `inclutAllies` : sa vague balaie les
-      // deux camps et ne s'épargne pas elle-même.
+      // al-Ahmar déclarait explicitement `inclutAllies` : sa vague balaie les
+      // deux camps sans s'épargner. La Valkyrie des glaces ajoute
+      // `exclutSoi` : le vent froid prend les deux camps, mais jamais la
+      // Valkyrie elle-même (son id est passé via `sauf`).
       let cibles = effet.cible === 'toutes-creatures'
         ? (effet.inclutAllies
-          ? [cote, adv].flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
+          ? [cote, adv]
+            .flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
+            .filter(({ entite }) => !(effet.exclutSoi && entite.id === sauf))
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId).map((entite) => ({ entite, camp: adv }));
       // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
@@ -3231,10 +3276,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'gel': {
-      // Le gel **sans blessure** (le Géant des banquises) : le froid seul fige
-      // les créatures adverses — ni attaque ni blocage jusqu'à la fin de leur
-      // prochain tour. La protection contre la couleur de la source fait écran
-      // au gel exactement comme elle ferait écran aux dégâts.
+      // Le gel **sans blessure** fige les créatures adverses — ni attaque ni
+      // blocage jusqu'à la fin de leur prochain tour. La protection contre la
+      // couleur de la source fait écran au gel exactement comme elle ferait
+      // écran aux dégâts. Le Géant des banquises y ajoute `degats` : son
+      // souffle mord d'abord (1 dégât à chaque cible), et seules les
+      // survivantes sont gelées — les mortes ne rejoignent pas la liste.
       const cibles = effet.cible === 'toutes-creatures'
         ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
@@ -3243,7 +3290,18 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
           && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
-      for (const cible of cibles) gelerEntite(duel, cible);
+      const aGeler = [];
+      for (const cible of cibles) {
+        if (Number.isFinite(effet.degats) && effet.degats > 0) {
+          const blessure = rpgBlesserCreature(duel, adv, cible.id, effet.degats,
+            sourceElement, null, sourceType, sourceCarteId);
+          if (blessure.esquive) continue;
+        }
+        // La cible a pu mourir sous la morsure du souffle : on ne gèle que
+        // ce qui tient encore debout.
+        if (duel[adv].creatures.some((entite) => entite.id === cible.id)) aGeler.push(cible);
+      }
+      for (const cible of aGeler) gelerEntite(duel, cible);
       return;
     }
     case 'recyclage': {
@@ -3366,9 +3424,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         duel.log.push(`${entite.name} ne pourra pas bloquer avant la fin de son prochain tour.`);
       }
       // Le venin qui ronge jusqu'à l'os tue sa victime (la Lame de mer ronge
-      // les 1/1) — la mort est attribuée à la couleur de la source.
+      // les 1/1) — la mort est attribuée à la couleur de la source. La Lame
+      // de mer porte `exilEnMourant` : sa victime ne rejoint jamais le
+      // cimetière, elle est exilée à la place, sans déclencher sa mort.
       if (!(entite.pv > 0) && plancher <= 0) {
-        enterrer(duel, adv, entite, sourceElement ? [sourceElement] : []);
+        if (effet.exilEnMourant) {
+          exilerEntite(duel, adv, entite, sourceCarteId);
+        } else {
+          enterrer(duel, adv, entite, sourceElement ? [sourceElement] : []);
+        }
       }
       return;
     }
@@ -3407,12 +3471,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'prochaine-arrivee-abordage': {
-      // Le Pilote de la Carreira lit la route pour le seul prochain départ :
-      // la **prochaine** créature jouée ce tour accoste avec Abordage (même
-      // barème que l'imprimé, coût − 1). Le sceau est consommé par cette
-      // pose et meurt de toute façon avec le tour (`rpgFinDeTour`).
+      // La Lettre de marque n'arme que la **prochaine** créature jouée : elle
+      // accoste avec Abordage (même barème que l'imprimé, coût − 1). Le sceau
+      // est consommé par cette pose et meurt de toute façon avec le tour
+      // (`rpgFinDeTour`). La Lettre enchaîne sur une pioche (`pioche: 1`).
       duel[cote].prochaineArriveeAbordage = true;
       duel.log.push('La prochaine créature jouée ce tour a Abordage.');
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;
     }
     case 'arrivees-abordage': {
@@ -3424,6 +3489,56 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // pleine (doc 18 §12.10).
       duel[cote].abordageDesArrivees = true;
       duel.log.push('Jusqu’à la fin du tour, les créatures qui arrivent en jeu ont Abordage.');
+      return;
+    }
+    case 'destruction-navire': {
+      // Le Kraken coule un navire : la cible désignée doit porter le type
+      // imprimé « Navire » (la validation de pose et `arriveeCiblePortee`
+      // garantissent la cible, on revérifie ici comme pour l'exil).
+      const victime = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (!victime || victime.id === sauf) return;
+      const fiche = duelCardById(victime.carteId);
+      if (!cardHasPrintedType(fiche, 'Navire')) return;
+      if (rpgEstProtegee(victime, sourceElement)
+        || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
+      const nom = victime.name;
+      enterrer(duel, adv, victime, sourceElement ? [sourceElement] : []);
+      duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le Kraken'} coule ${nom}.`);
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return;
+    }
+    case 'recherche-deck': {
+      // Le Pilote de la Carreira va chercher une carte du type imprimé demandé
+      // (un Navire) dans le deck et la met en main. Le tiraire est sans choix
+      // ni révélation, comme la pioche de type de la Valkyrie au corbeau ;
+      // sans candidat, l'effet se dissipe sans toucher au paquet.
+      const type = effet.typeImprime ?? 'Navire';
+      const piochee = piocherCarteDeType(duel, cote, type);
+      const source = cardById(sourceCarteId)?.name ?? 'La capacité';
+      duel.log.push(piochee
+        ? `${source} trouve une carte de type ${type} dans le deck : elle rejoint la main.`
+        : `${source} ne trouve aucune carte de type ${type} dans le deck.`);
+      return;
+    }
+    case 'mue-mondiale': {
+      // La mue du Serpent du monde : les DEUX camps vident leur main au
+      // cimetière, sans choix ni fenêtre (toutes les cartes partent), puis
+      // chacun pioche le même nombre de cartes neuves.
+      const nombre = Math.max(0, Math.floor(Number(effet.pioche) || 0));
+      for (const campCible of [cote, adv]) {
+        const camp = duel[campCible];
+        const defaussees = camp.main.splice(0, camp.main.length);
+        camp.cimetiere.push(...defaussees);
+        if (defaussees.length) {
+          duel.log.push(`${campCible === 'joueur' ? 'Vous défaussez' : 'Le sorcier défausse'} ${defaussees.length} carte${defaussees.length > 1 ? 's' : ''} de sa main.`);
+        }
+      }
+      for (let i = 0; i < nombre; i += 1) {
+        rpgPiocher(duel, cote);
+        rpgPiocher(duel, adv);
+      }
+      duel.log.push(`Chaque joueur pioche ${nombre} cartes.`);
       return;
     }
     default:
@@ -3551,6 +3666,29 @@ function programmerRetourTenacite(duel, cote, entite) {
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
 function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
   rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
+}
+
+/**
+ * Exile une créature : sortie de table SANS mort — pas de cimetière, pas de
+ * capacité « quand elle meurt », pas de Tenacité. Partagée par l'effet
+ * `exil` (le Père des corbeaux, Susanoo) et par les effets qui remplacent la
+ * mort par un exil (la Lame de mer : `exilEnMourant`). Le prisonnier en cale
+ * est rendu et les armes attachées tombent, comme pour toute sortie de table.
+ */
+function exilerEntite(duel, cote, entite, sourceCarteId = null) {
+  if (!entite || estSite(entite)) return false;
+  ouvrirCale(duel, cote, entite);
+  detacherArmes(duel, cote, entite);
+  armeAuCimetiere(duel, cote, entite);
+  duel[cote].creatures = duel[cote].creatures.filter((candidate) => candidate.id !== entite.id);
+  journaliserExil(duel, cote, entite, sourceCarteId);
+  if (!entite.jeton) {
+    duel[cote].exil ??= [];
+    duel[cote].exil.push(entite.carteId);
+  }
+  duel.log.push(`${entite.name} est retirée de la partie.`);
+  rafraichirAuras(duel);
+  return true;
 }
 
 /**
@@ -3824,6 +3962,9 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'exil') return 'tous';
   if (arrivee.type === 'combat') return arrivee.cible === 'creature' ? 'ennemi' : null;
   if (arrivee.type === 'degats') return arrivee.cible === 'creature' ? 'ennemi' : null;
+  // Le Kraken ne désigne qu'un navire adverse : la table n'allume que les
+  // créatures portant le type imprimé « Navire » (voir `arriveeACibleLegale`).
+  if (arrivee.type === 'destruction-navire') return 'ennemi';
   if (arrivee.type === 'retour-main') {
     if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
     return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
@@ -3850,6 +3991,9 @@ export function arriveeConsulteDeck(carte) {
   return type.startsWith('pioche')
     || type.startsWith('recherche')
     || type === 'tuteur'
+    // La mue du Serpent du monde vide les deux mains et repioche : le paquet
+    // est consulté dès la pose, l'action n'est plus annulable.
+    || type === 'mue-mondiale'
     || Number(arrivee.pioche) > 0
     || Number(arrivee.recherche) > 0
     || Boolean(arrivee.rechercheDeck);
@@ -3927,7 +4071,23 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
       && !rpgEstProtegee(entite, cardColors(carte))
-      && cibleRespecteCoutMax(carte, entite)));
+      && cibleRespecteCoutMax(carte, entite)
+      && cibleRespecteTypeImprime(carte, entite)));
+}
+
+/**
+ * Le filtre de type imprimé des arrivées ciblées : le Kraken
+ * (`destruction-navire`) ne peut désigner qu'une créature dont la ligne de
+ * type porte « Navire ». Sans contrainte de type, toute créature convient.
+ */
+function cibleRespecteTypeImprime(carte, entite) {
+  const arrivee = carte?.arrivee;
+  if (!arrivee) return true;
+  // Le Kraken ne coule que les navires ; les autres effets (le Pilote, qui ne
+  // cible pas la table) lisent leur contrainte dans `typeImprime`.
+  const type = arrivee.type === 'destruction-navire' ? 'Navire' : arrivee.typeImprime;
+  if (!type) return true;
+  return cardHasPrintedType(duelCardById(entite.carteId), type);
 }
 
 /**
@@ -4030,6 +4190,20 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (cible && !cibleRespecteCoutMax(carte, cible)) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
+  if (carte.arrivee?.type === 'destruction-navire') {
+    // Le Kraken ne désigne qu'un navire adverse : une créature d'un autre
+    // type, protégée ou absente, rend la désignation illégale. Sans navire
+    // sur la table, l'arrivée se résout seule et ne coule rien.
+    const adversaires = duel[autre(cote)].creatures;
+    const cible = adversaires.find((entite) => entite.id === cibleId);
+    if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (cible && !cibleRespecteTypeImprime(carte, cible)) return { ok: false, raison: 'cible' };
+    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (cible && rpgEstProtegeeDesSorts(cible, cardColors(carte), 'capacite')) return { ok: false, raison: 'protection' };
     if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
       return { ok: false, raison: 'cible' };
     }
@@ -4296,6 +4470,10 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   // Le Père des corbeaux (coût 3 ou moins) et Susanoo (coût 5 ou plus) :
   // une cible hors seuil reste illégale, l'attente reste ouverte.
   if (!cibleRespecteCoutMax(carte, cible)) {
+    return { ok: false, raison: 'cible' };
+  }
+  // Le Kraken : une cible qui n'est pas un Navire reste illégale.
+  if (!cibleRespecteTypeImprime(carte, cible)) {
     return { ok: false, raison: 'cible' };
   }
   if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
@@ -5414,7 +5592,24 @@ export function rpgLancerAttaque(
     blocages: affectations,
     repartitions: repartitionFinale,
     attaquantsBloques: [...attaquantsDejaBloques],
+    // Chaque coup critique porté pendant le combat : `{ entiteId, fois }`.
+    // La table y lit ses cinématiques (le « ×4 » enflammé de Kagutsuchi),
+    // frappes ciblées, combats bloqués et attaques directes confondus.
+    critiques: [],
   };
+  const enregistrerCritique = (entite, fois) => {
+    if (!entite || !fois) return;
+    resume.critiques.push({ entiteId: entite.id, carteId: entite.carteId, fois });
+  };
+  // Les critiques des Attaques ciblées sont déjà dans les frappes rapides.
+  for (const frappe of frappesRapides) {
+    if (frappe.critique) {
+      enregistrerCritique(
+        duel[cote].creatures.find((entite) => entite.id === frappe.attaquantId),
+        frappe.critiqueFois,
+      );
+    }
+  }
   const degatsCombat = [];
   const coupsSorcier = [];
   const enregistrerDegatsCombat = (coups, coteCible, entiteId, amount, sourceElement, sourceType, coteSource, sourceId) => {
@@ -5452,6 +5647,7 @@ export function rpgLancerAttaque(
         if (critiquesAttaquant.has(attaquant.id)) {
           const info = critiquesAttaquant.get(attaquant.id);
           duel.log.push(`Coup critique : ${attaquant.name} frappe ${info.fois} fois !`);
+          enregistrerCritique(attaquant, info.fois);
         }
       }
       continue;
@@ -5461,6 +5657,7 @@ export function rpgLancerAttaque(
     if (critiquesAttaquant.has(attaquant.id)) {
       const info = critiquesAttaquant.get(attaquant.id);
       duel.log.push(`Coup critique : ${attaquant.name} frappe ${info.fois} fois !`);
+      enregistrerCritique(attaquant, info.fois);
     }
     const carteAttaquant = duelCardById(attaquant.carteId);
     const couleursAttaquant = cardColors(carteAttaquant);
@@ -5471,6 +5668,7 @@ export function rpgLancerAttaque(
       const forceBloqueur = resBloqueur.force;
       if (resBloqueur.critique) {
         duel.log.push(`Coup critique : ${bloqueur.name} frappe ${attaquant.name} ${resBloqueur.fois} fois !`);
+        enregistrerCritique(bloqueur, resBloqueur.fois);
       }
 
       enregistrerDegatsCombat(

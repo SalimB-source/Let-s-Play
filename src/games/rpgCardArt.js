@@ -89,7 +89,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'sahir-des-braises': 'braise-souls-cendres-v3',
   'braisier-du-souk': 'braise-souls-cendres-v4',
   // Le Sable — la passe Souls du désert : mêmes cartes, lumière de cendre.
-  'faucon-du-zenith': 'sable-souls-desore-v3',
+  // Le Faucon du zénith devient la déesse solaire : révision dédiée, sa
+  // peinture ne partage plus la marque de passe des autres cartes Sable.
+  'faucon-du-zenith': 'faucon-deesse-solaire-v1',
   'dune-marchante': 'sable-souls-desore-v3',
   'fennec-des-decombres': 'sable-souls-desore-v3',
   'tour-de-sable': 'sable-souls-desore-v3',
@@ -122,7 +124,8 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le roi Kusayla, peint pour le souverain amazigh : une révision dédiée, pour
   // qu'un repaint futur ne date que sa propre peinture. Le guépard qu'il
   // appelle à son arrivée est une créature-jeton, peinte elle aussi.
-  'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v2',
+  // v3 : charge frontale, hache courte brandie vers le ciel.
+  'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v3',
   'guepard': 'guepard-jeton-v1',
   'chien-du-guet': 'sable-souls-desore-v3',
   // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
@@ -183,7 +186,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
   'djinn-de-foudre': 'sable-souls-desore-v3',
   'sonneur-fele': 'plein-art-cloche-v1',
-  'dame-aux-ailes-d-or': 'sable-souls-desore-v3',
+  // La Dame aux ailes d'or s'envole dans la nef en ruine : révision dédiée.
+  'dame-aux-ailes-d-or': 'dame-ailes-or-vol-v1',
   'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
@@ -225,9 +229,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'drakkar-a-tete-de-dragon': 'neige-souls-cendres-v1',
   'scalde-des-runes': 'neige-souls-cendres-v1',
   // Le marteau de foudre se lisait comme un simple éclair : il a une tête.
-  // Troisième reprise : le marteau doit tomber du ciel sur une créature, la
-  // foudre vivante autour de lui — les deux essais précédents restaient tièdes.
-  'eclair-du-marteau': 'neige-eclair-marteau-v4',
+  // Quatrième reprise : le marteau est d'acier bleu runique, sa foudre aussi.
+  'eclair-du-marteau': 'neige-eclair-marteau-v5',
   'mur-de-boucliers': 'neige-souls-cendres-v1',
   'festin-des-vaillants': 'neige-souls-cendres-v1',
   'brume-du-fjord': 'neige-souls-cendres-v1',

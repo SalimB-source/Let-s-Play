@@ -456,8 +456,10 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Amazighe chaouie',
     art: 'tislit-des-aures',
-    arrivee: { type: 'pioche', amount: 1 },
-    text: 'Quand Tislit arrive : piochez une carte.',
+    // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
+    // ciblée — elle désigne une créature adverse avant le combat.
+    coupRapide: true,
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -469,9 +471,12 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
-    protection: { contre: 'braise' },
-    text: 'À son arrivée, Tiziri est protégée contre la Braise de façon permanente.',
-    flavor: 'Son chant rassemble les villages avant la tempête.',
+    // Sa voix appelle l'eau de la montagne : engageable pour un mana d'Eau
+    // (moteur : `rpgEngagerPourMana`). Une créature engagée n'attaque ni ne
+    // bloque jusqu'à son dégagement, au début du prochain tour de son camp.
+    manaEngagement: { couleur: 'eau', amount: 1 },
+    text: 'Engagez Tiziri : elle produit un mana d’Eau pendant ce tour. Une créature engagée ne peut ni attaquer ni bloquer jusqu’à ce qu’elle se dégage.',
+    flavor: 'Son chant rassemble les villages avant la tempête — et fait descendre l’eau des crêtes.',
   },
   {
     id: 'bouchra-guerriere-des-cretes',
@@ -525,9 +530,9 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Guide touareg',
     art: 'amayas-du-hoggar',
-    protection: { contre: 'tenebres' },
-    destruction: { type: 'pioche', amount: 1 },
-    text: 'Amayas est protégé contre les Ténèbres de façon permanente. Quand il meurt : piochez une carte.',
+    // Le guide fait le point en arrivant : une carte lue, une carte laissée.
+    arrivee: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
+    text: 'Quand Amayas arrive : piochez une carte, puis défaussez une carte.',
     flavor: 'Même perdu, il laisse une piste pour ceux qui suivent.',
   },
   // ── Djinns et sorcellerie du Brasier ──────────────────────────────────
@@ -576,19 +581,24 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Même la cendre sait où se cachent les braises.',
   },
   {
+    // L'identifiant historique reste `ifrit-des-ergs` (collections, decks et
+    // parties sauvegardées) ; seule la fiche change : l'Ifrit des ergs est
+    // devenu l'Ifrit furtif, 5/3, et sa disparition en fin de tour se nomme
+    // désormais le mot-clé Furtif (le moteur lit toujours `ephemere`).
     id: 'ifrit-des-ergs',
-    name: 'Ifrit des ergs',
+    name: 'Ifrit furtif',
     element: 'braise',
     cost: 5,
     atk: 5,
-    def: 5,
+    def: 3,
     rarity: 'mythique',
     typeLine: 'Créature — Ifrit',
     art: 'ifrit-des-ergs',
     rapidite: true,
     overkill: true,
+    furtif: true,
     ephemere: true,
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse. Détruit à la fin du tour.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse. Furtif — détruit à la fin du tour.',
     flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
   },
   {
@@ -657,14 +667,13 @@ export const RPG_CREATURE_CARDS = [
     name: 'Guerrier au bouclier rond',
     element: 'neige',
     cost: 2,
-    atk: 1,
-    def: 3,
+    atk: 2,
+    def: 2,
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
-    furie: 2,
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Furie 2. Quand il arrive : il reçoit un bouclier de 1.',
+    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie' },
+    text: 'Quand il arrive : il reçoit un bouclier de 2.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -751,10 +760,10 @@ export const RPG_CREATURE_CARDS = [
     envol: true,
     protectionSorts: true,
     // `inclutAllies` : le vent froid balaie la table entière, le camp de la
-    // Valkyrie compris — elle encaisse donc son propre dégât, comme l’Ifrit
-    // al-Ahmar, et court la même chance de gel que les autres créatures.
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, gelChance: 0.25 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser. Quand elle arrive : elle inflige 1 dégât à toutes les créatures, elle comprise, et a 25 % de chances de geler chacune d’elles.',
+    // Valkyrie compris — mais `exclutSoi` l'épargne elle-même : son propre
+    // souffle ne la blesse ni ne la gèle, contrairement à l'Ifrit al-Ahmar.
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25 },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 25 % de chances de geler chacune d’elles.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -767,8 +776,10 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'mythique',
     typeLine: 'Créature — Géant',
     art: 'geant-des-banquises',
-    arrivee: { type: 'gel', cible: 'toutes-creatures' },
-    text: 'Quand le Géant arrive : son souffle fige la banquise — les créatures adverses sont gelées : ni attaque ni blocage jusqu’à la fin de leur prochain tour.',
+    // Le souffle du Géant mord d'abord (1 dégât à chaque créature adverse),
+    // puis fige les survivantes (`degats` lu par le case 'gel' du moteur).
+    arrivee: { type: 'gel', cible: 'toutes-creatures', degats: 1 },
+    text: 'Quand le Géant arrive : son souffle balaie la banquise — il inflige 1 dégât à chaque créature adverse, et les survivantes sont gelées : ni attaque ni blocage jusqu’à la fin de leur prochain tour.',
     flavor: 'La banquise craque bien avant qu’il n’apparaisse.',
   },
   {
@@ -796,15 +807,17 @@ export const RPG_CREATURE_CARDS = [
     def: 8,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Bête marine',
-    arrivee: { type: 'magie-gratuite' },
-    text: 'Quand Le Kraken arrive : vous pouvez lancer une magie rapide ou une sorcellerie de votre main sans payer son coût de mana.',
+    // Le Kraken coule un navire en arrivant : la cible doit porter le type
+    // imprimé « Navire » (moteur : case 'destruction-navire').
+    arrivee: { type: 'destruction-navire', cible: 'creature' },
+    text: 'Quand Le Kraken arrive : il détruit une créature adverse de type Navire ciblée.',
     flavor: 'Il ne laisse que des bateaux vides et des récits.',
   },
   {
     id: 'leviathan',
     name: 'Léviathan',
     element: 'eau',
-    cost: 6,
+    cost: 8,
     atk: 6,
     def: 6,
     rarity: 'mythique',
@@ -990,16 +1003,16 @@ export const RPG_TOUR_CARDS = [
     element: 'tenebres',
     set: 'balance-des-heures',
     cost: 5,
-    atk: 0,
-    def: 7,
+    atk: 1,
+    def: 5,
     rarity: 'mythique',
     typeLine: 'Créature — Tour de défense',
     art: 'tour-des-tenebres',
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
-    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures', etSorcier: false },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 2 dégâts à toutes les créatures adverses.',
+    arrivee: { type: 'destruction-coutmax', coutMax: 2, cible: 'creatures-adverses' },
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : les créatures adverses de coût 2 ou moins sont détruites.',
     flavor: 'L’ombre qu’elle projette étouffe toute lumière.',
   },
 ];
@@ -1130,17 +1143,19 @@ export const RPG_HERO_CARDS = [
     colors: ['sable', 'tenebres'],
     colorCost: { sable: 1, tenebres: 1 },
     cost: 5,
-    atk: 4,
-    def: 5,
+    atk: 5,
+    def: 3,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Roi amazigh',
     art: 'kusayla-roi-des-imazighen',
     // Le roi awraba qui arrêta l’invasion à Tahouda : il rend les coups qu’on
-    // lui porte (Contre-attaque), et son guépard entre avec lui (jeton).
+    // lui porte (Contre-attaque), esquive un tiers des coups (Esquive), et
+    // son guépard entre avec lui (jeton).
     contreAttaque: true,
+    esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1155,8 +1170,10 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Démon · Minotaure',
     art: 'ifrit-al-ahmar',
-    arrivee: { type: 'degats', amount: 3, cible: 'toutes-creatures', inclutAllies: true },
-    text: 'Quand l’Ifrit arrive : 3 dégâts à toutes les créatures, lui compris.',
+    // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
+    // sa proie lui-même (Attaque ciblée).
+    coupRapide: true,
+    text: 'Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1166,16 +1183,17 @@ export const RPG_HERO_CARDS = [
     role: 'Celui qui sait',
     element: 'neige',
     cost: 6,
-    atk: 5,
+    atk: 3,
     def: 5,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'pere-des-corbeaux',
     envol: true,
+    coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 3 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 3 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 3 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1208,14 +1226,14 @@ export const RPG_HERO_CARDS = [
     role: 'La Gardienne du foyer',
     element: 'neige',
     cost: 4,
-    atk: 3,
+    atk: 2,
     def: 5,
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
     art: 'dame-des-neuf-mondes',
-    arrivee: { type: 'soin', amount: 5 },
-    text: 'Quand elle arrive : vous récupérez 5 points de vie.',
+    arrivee: { type: 'soin', amount: 8 },
+    text: 'Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',
   },
   {
@@ -1232,7 +1250,10 @@ export const RPG_HERO_CARDS = [
     art: 'serpent-du-monde',
     protectionSorts: true,
     overkill: true,
-    text: 'Protection — Le Serpent est protégé contre les magies rapides et les sorcelleries : aucun sort ne peut le cibler ni le blesser. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
+    // La mue du monde : chaque camp vide sa main au cimetière, puis pioche
+    // six cartes neuves (moteur : case 'mue-mondiale').
+    arrivee: { type: 'mue-mondiale', pioche: 6 },
+    text: 'Quand le Serpent du monde arrive : chaque joueur défausse toute sa main, puis pioche 6 cartes. Protection — Le Serpent est protégé contre les magies rapides et les sorcelleries : aucun sort ne peut le cibler ni le blesser. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
     flavor: 'Il mord sa propre queue dans la glace, et le monde tient debout.',
   },
   // Le Père des corbeaux retourné : la figure hybride de la Tour du Corbeau.
@@ -1405,7 +1426,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Sable',
     art: 'rapport-du-greffier',
-    cost: 3,
+    cost: 4,
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'pioche', amount: 2 },
@@ -1419,10 +1440,13 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie',
     typeLine: 'Sorcellerie — Eau',
     art: 'lame-de-mer',
-    cost: 2,
+    cost: 3,
     rarity: 'commune',
     cibles: ['creature'],
-    effet: { type: 'debuff', atk: -2, def: -2, cible: 'creature' }, text: 'La Lame de mer donne -2/-2 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite.',
+    // `exilEnMourant` : si la créature ne survit pas à la morsure, elle est
+    // exilée au lieu de rejoindre le cimetière (case 'debuff' du moteur).
+    effet: { type: 'debuff', atk: -3, def: -3, cible: 'creature', exilEnMourant: true },
+    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière.',
     flavor: 'La vague coupe plus propre que le couteau.',
   },
   {
@@ -1483,8 +1507,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'buff', atk: -1, def: -1, cible: 'creatures-adverses', minimum: 0 },
-    text: 'Magie Rapide — Toutes les créatures adverses perdent 1 attaque et 1 défense. Si leur défense tombe en dessous de 1, elles sont détruites.',
+    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures' },
+    text: 'Magie Rapide — Infligez 1 dégât à chaque créature ennemie.',
     flavor: 'Le verre se fend en mille éclats, jamais au hasard.',
   },
     {

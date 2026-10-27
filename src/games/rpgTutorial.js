@@ -380,7 +380,11 @@ export const RPG_TUTORIELS = Object.freeze([
     playerMana: { eau: 8 },
     opponentHand: ['lame-de-mer'],
     opponentDraws: ['leviathan', 'seigneur-des-machoires'],
-    opponentMana: { eau: 1 },
+    // La Lame de mer coûte désormais 3 manas : la réserve adverse doit pouvoir
+    // la payer pour que l’annonce contrée reste légale (voir `contrerAnnonce`).
+    // Le mode essai verse un mana de plus à chaque tour, d’où 2 ici pour 3
+    // au moment de l’annonce — et zéro après la contre, comme l’exige la leçon.
+    opponentMana: { eau: 2 },
     opponentDeckFill: 'leviathan',
     stagedOpponent: [{ cardId: 'vipere-de-verre', ready: false }],
     steps: [
@@ -925,7 +929,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="hand"]',
         eyebrow: 'ÉTAPE 1 · TROIS RÉPONSES',
         title: 'Lire la main du Nord',
-        text: 'Le Guerrier au bouclier rond arrive avec un bouclier 1 et porte Furie 2. La Valkyrie au corbeau est une 3/4 avec Envol et Furie 2 : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; deux créatures adverses sont en face.',
+        text: 'Le Guerrier au bouclier rond est une 2/2 qui arrive avec un bouclier 2, sans Furie. La Valkyrie au corbeau est une 3/4 avec Envol et Furie 2 : à son arrivée, une carte de type Viking tirée au hasard de votre deck rejoindra votre main. La Poigne de givre inflige 2 dégâts et gèle une créature adverse. Votre Berserk des trois hivers, Furie 2, attend déjà sur votre ligne ; deux créatures adverses sont en face.',
         nextLabel: 'Poser le Guerrier',
         side: 'top',
       },
@@ -935,7 +939,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 2 · LE REMPART',
         title: 'Posez le Guerrier',
-        text: 'Touchez le Guerrier au bouclier rond. Il coûte deux manas. À son arrivée, il reçoit un bouclier 1 : le prochain dégât qu’il subit est réduit d’autant.',
+        text: 'Touchez le Guerrier au bouclier rond. Il coûte deux manas. À son arrivée, il reçoit un bouclier 2 : les deux prochains dégâts qu’il subit sont réduits d’autant.',
         on: 'creature-jouee',
         cardId: 'guerrier-au-bouclier-rond',
         side: 'top',
@@ -988,7 +992,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.card-row--ennemi .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 5 · CIBLE',
         title: 'Figez le guerrier adverse',
-        text: 'Touchez le Guerrier au bouclier rond adverse. Son propre bouclier absorbe 1 des 2 dégâts : il reste à 2 de défense, sous sa DEF de base de 3, donc sa Furie s’allume. Le gel s’applique quand même et il ne pourra ni attaquer ni bloquer. Le Loup, lui, reste libre de charger.',
+        text: 'Touchez le Guerrier au bouclier rond adverse. Son bouclier 2 absorbe les 2 dégâts de la Poigne : il reste à 2 de défense, intact, et il ne porte plus de Furie. Le gel s’applique quand même et il ne pourra ni attaquer ni bloquer. Le Loup, lui, reste libre de charger.',
         on: 'magie-lancee',
         cardId: 'poigne-de-givre',
         side: 'bottom',

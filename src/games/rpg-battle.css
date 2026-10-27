@@ -11045,6 +11045,100 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
 }
 
+/* ── Le « ×4 » enflammé de Kagutsuchi : cinématique de coup critique ────────
+   Un glyphe rien que pour sa fiche (le seul multiplicateur ×4 du jeu) : un
+   dégradé de braise, un halo qui brûle et une montée qui s'achève en fumée.
+   Il partage le positionnement du MISS, un cran plus haut pour trôner. */
+.rpg-card__critique {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 13;
+  font-family: var(--display, Georgia, 'Times New Roman', serif);
+  font-size: clamp(18px, 26cqw, 34px);
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  pointer-events: none;
+  background: linear-gradient(180deg, #fff3b0 0%, #ffb347 38%, #ff5a1f 68%, #c81d11 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(48, 8, 4, .85);
+  text-shadow:
+    0 0 14px rgba(255, 110, 24, .85),
+    0 0 30px rgba(255, 60, 10, .55),
+    0 4px 10px rgba(0, 0, 0, .85);
+  filter: drop-shadow(0 0 6px rgba(255, 140, 40, .65));
+  opacity: 0;
+  transform: translate(-50%, 8px) scale(.5) rotate(-6deg);
+  animation: rpg-card-critique-flamme 1.5s cubic-bezier(.2, .8, .28, 1) forwards;
+}
+@keyframes rpg-card-critique-flamme {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(.45) rotate(-10deg);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(-50%, -4px) scale(1.25) rotate(-4deg);
+  }
+  26% {
+    transform: translate(-50%, -8px) scale(1) rotate(-5deg);
+  }
+  40% {
+    transform: translate(-50%, -10px) scale(1.06) rotate(-3deg);
+  }
+  72% {
+    opacity: 1;
+    transform: translate(-50%, -16px) scale(1.02) rotate(-4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(.96) rotate(-6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-card__critique {
+    animation-duration: 1.2s;
+    transform: translate(-50%, 0);
+  }
+  @keyframes rpg-card-critique-flamme {
+    0%, 100% { opacity: 0; transform: translate(-50%, 0); }
+    15%, 78% { opacity: 1; transform: translate(-50%, 0); }
+  }
+}
+
+/* ── L'engagement de mana (Tiziri) : pastille « +1 eau » sous la capacité ──
+   Même famille que la pastille de capacité activée, mais en bleu d'Eau et
+   sans prix : on ne paie rien, on tourne la créature pour produire. Éteinte
+   hors conditions, elle ne devient cliquable qu'avec `is-pret`. */
+.rpg-card__engagement {
+  position: absolute;
+  top: 40px;
+  right: 6px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(157, 213, 242, .7);
+  background: rgba(10, 24, 42, .84);
+  cursor: default;
+  opacity: .55;
+  transition: opacity .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.rpg-card__engagement.is-pret {
+  cursor: pointer;
+  opacity: 1;
+  box-shadow: 0 0 12px rgba(157, 213, 242, .65);
+}
+.rpg-card__engagement.is-pret:hover {
+  transform: scale(1.08);
+}
+
 
 /* ── Le journal du duel : un onglet, et un récit qui ne s'ouvre qu'à la
    demande ──────────────────────────────────────────────────────────────────

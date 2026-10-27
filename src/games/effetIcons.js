@@ -51,6 +51,9 @@ export const EFFETS_SPRITE = `
   <symbol id="i-visages" viewBox="0 0 24 24"><path d="M11 3.5C8 3.5 5.8 5.6 5.8 8.2c0 2 1.4 3.3 1.4 3.3s-1.7 1.6-1.7 4.3c0 2.6 2.4 4.7 5.5 4.7"/><path d="M13 3.5c3 0 5.2 2.1 5.2 4.7 0 2-1.4 3.3-1.4 3.3s1.7 1.6 1.7 4.3c0 2.6-2.4 4.7-5.5 4.7"/><path d="M8.2 8.2h1.6M14.2 8.2h1.6"/></symbol>
   <symbol id="i-abordage" viewBox="0 0 24 24"><circle cx="12" cy="9.6" r="6.5"/><path d="M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4"/><circle cx="9.5" cy="9.4" r="1.5"/><circle cx="14.5" cy="9.4" r="1.5"/><path d="M3.1 20.9 8.6 15.4"/><path d="M2.29 20.09 3.91 21.71"/><path d="M7.79 14.59 9.41 16.21"/><path d="M15.4 15.4 20.9 20.9"/><path d="M16.21 14.59 14.59 16.21"/><path d="M21.71 20.09 20.09 21.71"/><path d="M3.1 3.1 8.6 8.6"/><path d="M3.91 2.29 2.29 3.91"/><path d="M9.41 7.79 7.79 9.41"/><path d="M15.4 8.6 20.9 3.1"/><path d="M14.59 7.79 16.21 9.41"/><path d="M20.09 2.29 21.71 3.91"/></symbol>
   <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
+  <symbol id="i-furtif" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10l2.3-2 2.4 2 2.3-2 2.3 2 2.4-2 2.3 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10" r="1.2"/><circle cx="14.5" cy="10" r="1.2"/></symbol>
+  <symbol id="i-mana" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-recherche" viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="1.5"/><path d="M8 8h5M8 11.5h5"/><circle cx="17.5" cy="17" r="3.5"/><path d="m20 19.5 1.8 1.8"/></symbol>
 </svg>`.trim();
 
 /**
@@ -134,6 +137,12 @@ export const EFFET_ICONE = {
   exil: 'i-rebond',
   'destruction-totale': 'i-degats',
   'retour-apres-tours': 'i-rebond',
+  furtif: 'i-furtif',
+  manaEngagement: 'i-mana',
+  recherche: 'i-recherche',
+  'recherche-deck': 'i-recherche',
+  'destruction-navire': 'i-degats',
+  'mue-mondiale': 'i-defausse',
 };
 
 /**
@@ -156,7 +165,7 @@ export const MOTS_CLES_PASTILLES = [
   'envol', 'infiltration', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
-  'abordage', 'visages', 'cargaison',
+  'abordage', 'visages', 'cargaison', 'furtif', 'manaEngagement',
 ];
 
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
@@ -231,6 +240,12 @@ export const EFFET_LIBELLES = {
   'empeche-blocage': 'Blocage interdit',
   exil: 'Exil',
   'destruction-totale': 'Destruction totale',
+  furtif: 'Furtif',
+  manaEngagement: 'Mana',
+  recherche: 'Recherche',
+  'recherche-deck': 'Recherche',
+  'destruction-navire': 'Destruction de navire',
+  'mue-mondiale': 'Mue mondiale',
 };
 
 const capitaliser = (mot = '') => (mot ? mot.charAt(0).toUpperCase() + mot.slice(1) : mot);
@@ -316,6 +331,18 @@ export function pastillesPourCarte(carte) {
   if (carte.alternance) ajouter('visages', 'Deux Visages');
   if (carte.cargaison) ajouter('cargaison', 'Cargaison', Number(carte.cargaison) || null);
   if (carte.declenchePrise) ajouter('prise', 'Prise', Number(carte.declenchePrise) || null);
+  // L'Ifrit furtif : sa présence s'éteint à la fin du tour — la pastille
+  // annonce ce caractère éphémère, distinct de la Rapidité qu'il garde.
+  if (carte.furtif) ajouter('furtif', 'Furtif');
+  // Tiziri s'engage pour produire du mana : la pastille nomme l'élément et
+  // la quantité (« Mana d'eau 1 »), la goutte restant monochrome sur la face.
+  if (carte.manaEngagement) {
+    const libellesMana = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
+    const nom = libellesMana[carte.manaEngagement.couleur] ?? capitaliser(carte.manaEngagement.couleur);
+    ajouter('manaEngagement', `Mana de ${nom}`, Number(carte.manaEngagement.amount) || 1, {
+      couleurMana: carte.manaEngagement.couleur,
+    });
+  }
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
@@ -336,11 +363,14 @@ export function pastillesPourCarte(carte) {
     transfert: ['transfert', 'Transfert'],
     'defausse-adverse': ['defausse-adverse', 'Défausse adverse'],
     defaussePaquet: ['defaussePaquet', 'Défausse de paquet'],
-    // Les sceaux qui arment les arrivées (Lettre de marque, Pilote) se
-    // lisent « Abordage » sur la face : c’est ce que gagne la créature
-    // suivante, même si le seuil n’existe qu’à sa pose.
+    // Le sceau de la Lettre de marque se lit « Abordage » sur la face :
+    // c’est ce que gagne la prochaine créature, même si le seuil n’existe
+    // qu’à sa pose. Le Pilote, lui, cherche désormais un Navire au deck.
     'arrivees-abordage': ['abordage', 'Abordage'],
     'prochaine-arrivee-abordage': ['abordage', 'Abordage'],
+    'recherche-deck': ['recherche', 'Recherche'],
+    'destruction-navire': ['destruction-navire', 'Destruction de navire'],
+    'mue-mondiale': ['mue-mondiale', 'Mue mondiale'],
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
   if (typeEffet === 'bouclier') {

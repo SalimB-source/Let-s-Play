@@ -56,7 +56,11 @@ test('la cible doit être alliée et non protégée, sans consommation sur cible
   const mana = duel.joueur.mana.braise;
   assert.equal(armer(duel, ennemi).ok, false);
   assert.equal(duel.joueur.mana.braise, mana);
-  const protege = poser(duel, 'joueur', 'tiziri-du-djurdjura');
+  // Tiziri n’a plus de protection de Braise (elle s’engage pour du mana
+  // désormais) : la cible protégée est reconstituée avec une garde temporaire,
+  // comme celle que prêterait un effet de protection.
+  const protege = poser(duel, 'joueur', 'chien-du-guet');
+  protege.protection = { contre: 'braise', toursRestants: 2 };
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', protege.id).raison, 'protection');
   assert.ok(duel.joueur.main.includes('sabre-maudit'));
 });

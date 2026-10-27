@@ -441,6 +441,16 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       ?? duel[cote].creatures.filter(legale)
         .sort((a, b) => valeurEntite(a) - valeurEntite(b))[0]?.id ?? null;
   }
+  if (carte?.arrivee?.type === 'destruction-navire') {
+    // Le Kraken ne peut couler qu'un navire adverse : le plus menaçant
+    // d'abord, à défaut le plus gros. Sans navire, rien à désigner.
+    const couleurs = cardColors(carte);
+    const navires = duel[autre(cote)].creatures
+      .filter((entite) => cardHasPrintedType(duelCardById(entite.carteId), 'Navire')
+        && !estProtegee(entite, couleurs))
+      .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2));
+    return navires[0]?.id ?? null;
+  }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
   }
@@ -1578,6 +1588,29 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         const cible = duel[adv].creatures.find((entite) => entite.id === cibleRenvoi);
         if (cible) score += arrivee.type === 'exil' ? 4 + valeurEntite(cible) : 1.5 + menace(cible) * 0.4;
       }
+    }
+    if (arrivee.type === 'destruction-navire') {
+      // Le Kraken ne vaut son mana que si un navire adverse peut être coulé.
+      const cibleNavire = choisirCibleAutoIA(duel, cote, carte);
+      if (cibleNavire) {
+        cibleId = cibleNavire;
+        const cible = duel[adv].creatures.find((entite) => entite.id === cibleNavire);
+        score += cible ? 4 + valeurEntite(cible) : 3;
+      } else {
+        return { score: 0, cibleId: null };
+      }
+    }
+    if (arrivee.type === 'recherche-deck') {
+      // Le Pilote : un tuteur qui ne sert que si le type cherché est encore
+      // au paquet — sinon la pose brûle son mana sans rien rapporter.
+      const type = arrivee.typeImprime ?? 'Navire';
+      const resteTuteur = camp.deck.some((carteId) => cardHasPrintedType(carteId, type));
+      score += resteTuteur ? 2.5 + (camp.main.length <= 3 ? 1.5 : 0) : 0;
+    }
+    if (arrivee.type === 'mue-mondiale') {
+      // La mue se juge sur l'écart de taille de main : on renouvelle une main
+      // pauvre, et l'adversaire qui déborde de cartes perd son avantage.
+      score += 2 + (duel[adv].main.length - camp.main.length) * 0.8;
     }
     if (arrivee.type === 'soin') score += Math.min(arrivee.amount ?? 0, manquePv) * 0.8;
     if (arrivee.type === 'transfert') score += Math.max(0, Number(arrivee.amount) || 0) * 1.1;

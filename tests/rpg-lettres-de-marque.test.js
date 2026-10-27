@@ -494,70 +494,79 @@ test('le jeton Corsaire n’accoste pas : créé par effet, il ne prend rien', (
   assert.equal(RPG_LETTRES_DE_MARQUE_JETONS[0].abordage, undefined, 'la fiche du Corsaire est muette');
 });
 
-test('la Lettre de marque arme les arrivées pour un tour — la cale déjà prise reste pleine', () => {
+test('la Lettre de marque n’arme que la prochaine créature, fait piocher, et la cale déjà prise reste pleine', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 10);
   mana(duel, 'sorcier', 10);
+  duel.joueur.deck = ['fennec-des-decombres', 'fennec-des-decombres'];
   donner(duel, 'joueur', 'tercio-de-cuivre');
   const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre').entite;
   assert.equal(cardById('tercio-de-cuivre').abordage, undefined, 'le Tercio n’a pas l’Abordage imprimé');
   donner(duel, 'joueur', 'lettre-de-marque');
+  const deckAvant = duel.joueur.deck.length;
+  const mainAvant = duel.joueur.main.length;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'lettre-de-marque').ok, true);
   assert.equal(tercio.enCale, null, 'le sceau ne se gratte pas après coup : le Tercio déjà posé ne prend rien');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, true, 'le routier n’arme que la prochaine pose');
+  assert.ok(!duel.joueur.abordageDesArrivees, 'la Lettre ne lève plus le drapeau de tout le tour');
+  assert.equal(duel.joueur.deck.length, deckAvant - 1, 'la Lettre fait piocher une carte');
+  assert.equal(duel.joueur.main.length, mainAvant, 'le sort consommé et la carte piochée se compensent en main');
   // Le Tercio (3/4) est déjà là — c'est la suivante arrivée qui accoste :
-  // le Routier ? Non : une créature. Le Tercio Deux prend la Mousse (1 ≤ 2).
+  // le Tercio Deux prend la Mousse (1 ≤ 2, seuil coût 3 − 1).
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
   donner(duel, 'joueur', 'tercio-de-cuivre');
   const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
-  assert.ok(tercio2.enCale, 'l’arrivée sous sceau a pris la Mousse (seuil : coût 3 − 1 = 2)');
-  assert.equal(duel.joueur.abordageDesArrivees, true, 'le drapeau du camp est levé');
-  rpgFinDeTour(duel);
-  assert.equal(duel.joueur.abordageDesArrivees, false, 'à la fin du tour, la lettre expire');
+  assert.ok(tercio2.enCale, 'la prochaine créature sous sceau a pris la Mousse (seuil : coût 3 − 1 = 2)');
+  assert.equal(duel.joueur.prochaineArriveeAbordage, false, 'le sceau est consommé par cette unique pose');
   assert.ok(tercio2.enCale, 'mais la cale prise ne se vide jamais d’elle-même');
-  // Le tour suivant : une nouvelle arrivée ne prend plus rien.
-  duel.tour = 'joueur';
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
+  // La créature suivante n’accoste plus : une seule route lue par Lettre.
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse2 = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
   donner(duel, 'joueur', 'tercio-de-cuivre');
   const tercio3 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse2.id).entite;
-  assert.equal(tercio3.enCale, null, 'le sceau a expiré : la pose suivante n’accoste plus');
+  assert.equal(tercio3.enCale, null, 'sceau consommé : la pose suivante ne prend rien');
+
+  // Non dépensé, le sceau meurt avec le tour qui l’a vu naître.
+  const tardif = duelVide();
+  mana(tardif, 'joueur', 10);
+  tardif.joueur.deck = ['fennec-des-decombres'];
+  donner(tardif, 'joueur', 'lettre-de-marque');
+  rpgLancerMagie(tardif, 'joueur', 'lettre-de-marque');
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, true);
+  rpgFinDeTour(tardif);
+  assert.equal(tardif.joueur.prochaineArriveeAbordage, false, 'le tour fermé emporte le routier');
 });
 
-test('le Pilote de la Carreira arme la seule prochaine créature jouée ce tour', () => {
+test('le Pilote de la Carreira cherche une carte Navire dans le deck à son arrivée', () => {
   const duel = duelVide();
   mana(duel, 'joueur', 12);
   mana(duel, 'sorcier', 12);
   donner(duel, 'sorcier', 'mousse-des-galiotes');
   const mousse = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  // Le Pilote arrive : il ne prend rien lui-même, il arme la pose suivante.
+  // Le paquet contient un Navire noyé parmi d'autres cartes : le Pilote le
+  // tire et le met en main, sans toucher à la table.
+  duel.joueur.deck = ['fennec-des-decombres', 'drakkar-a-tete-de-dragon', 'chien-du-guet'];
   donner(duel, 'joueur', 'pilote-de-la-carreira');
   const pilote = jouer(duel, 'joueur', 'pilote-de-la-carreira').entite;
-  assert.equal(pilote.enCale, null, 'le Pilote ne s’arme pas lui-même');
+  assert.equal(pilote.enCale, null, 'le Pilote ne prend rien lui-même');
   assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse tient encore la table');
-  assert.equal(duel.joueur.prochaineArriveeAbordage, true, 'le routier est ouvert pour la prochaine pose');
-  // Le Tercio (aucun Abordage imprimé) accoste au barème : coût 3 − 1 = 2.
-  donner(duel, 'joueur', 'tercio-de-cuivre');
-  const tercio = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse.id).entite;
-  assert.equal(tercio.enCale?.carteId, 'mousse-des-galiotes', 'la créature armée par le Pilote a pris la Mousse');
-  assert.equal(duel.joueur.prochaineArriveeAbordage, false, 'le sceau est consommé par cette unique pose');
-  // La créature suivante n’accoste plus : une seule route lue par tour (et par Pilote).
-  donner(duel, 'sorcier', 'mousse-des-galiotes');
-  const mousse2 = jouer(duel, 'sorcier', 'mousse-des-galiotes').entite;
-  donner(duel, 'joueur', 'tercio-de-cuivre');
-  const tercio2 = jouer(duel, 'joueur', 'tercio-de-cuivre', mousse2.id).entite;
-  assert.equal(tercio2.enCale, null, 'sans sceau en cours, la pose suivante ne prend rien');
+  assert.ok(!duel.joueur.prochaineArriveeAbordage, 'le Pilote n’ouvre plus de routier d’Abordage');
+  assert.ok(!duel.joueur.abordageDesArrivees, 'aucun drapeau de tour n’est levé');
+  assert.ok(duel.joueur.main.includes('drakkar-a-tete-de-dragon'), 'le Navire cherché rejoint la main');
+  assert.equal(duel.joueur.deck.includes('drakkar-a-tete-de-dragon'), false, 'le Navire a quitté le deck');
+  assert.equal(duel.joueur.deck.length, 2, 'une seule carte est sortie du paquet');
 
-  // Non dépensé, le sceau meurt avec le tour qui l’a vu naître.
-  const tardif = duelVide();
-  mana(tardif, 'joueur', 10);
-  donner(tardif, 'joueur', 'pilote-de-la-carreira');
-  jouer(tardif, 'joueur', 'pilote-de-la-carreira');
-  assert.equal(tardif.joueur.prochaineArriveeAbordage, true);
-  rpgFinDeTour(tardif);
-  assert.equal(tardif.joueur.prochaineArriveeAbordage, false, 'le tour fermé emporte le routier');
+  // Sans Navire au deck, l'arrivée se dissipe sans rien déplacer.
+  const sec = duelVide();
+  mana(sec, 'joueur', 10);
+  sec.joueur.deck = ['fennec-des-decombres', 'chien-du-guet'];
+  donner(sec, 'joueur', 'pilote-de-la-carreira');
+  const deckAvant = sec.joueur.deck.length;
+  const mainAvant = sec.joueur.main.length;
+  assert.equal(jouer(sec, 'joueur', 'pilote-de-la-carreira').ok, true);
+  assert.equal(sec.joueur.deck.length, deckAvant, 'aucune carte sortie du paquet sans Navire');
+  assert.equal(sec.joueur.main.length, mainAvant - 1, 'le Pilote quitte la main sans être remplacé par une recherche');
 });
 
 test('Le Grand Débarquement arme les cales pleines : +2/+2 et Overkill jusqu’à la fin du tour', () => {
@@ -688,21 +697,22 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
 
   // La Valkyrie des glaces ne protège que contre les sorts de Braise :
   // la frappe et l’explosion du Brûlot sont des blessures de combat/capacité,
-  // elles passent donc normalement (1 + 2 dégâts). Son propre vent froid
-  // l’entame d’un point à l’arrivée : elle entre à 4 PV, tombe à 1.
+  // elles passent donc normalement (1 + 2 dégâts). Son vent froid ne la
+  // touche plus elle-même (`exclutSoi`) : elle entre à ses 5 PV d’imprimé,
+  // puis tombe à 2 sous la frappe (1) et l’explosion (2) du Brûlot.
   // Le hasard est fixé à 0,5 : elle n’est pas gelée par sa propre vague.
   const protegee = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
   mana(protegee, 'joueur', 12);
   mana(protegee, 'sorcier', 12);
   donner(protegee, 'joueur', 'valkyrie-des-glaces');
   const valkyrie = jouer(protegee, 'joueur', 'valkyrie-des-glaces').entite;
-  assert.equal(valkyrie.pv, 4, 'sa vague l’a blessée de 1 à l’arrivée');
+  assert.equal(valkyrie.pv, 5, 'sa vague l’épargne désormais : elle garde ses 5 PV');
   donner(protegee, 'sorcier', 'le-brulot');
   const brulotProtege = jouer(protegee, 'sorcier', 'le-brulot').entite;
   pret(valkyrie);
   rpgAttaquerCreature(protegee, 'joueur', valkyrie.id, brulotProtege.id);
   assert.equal(protegee.sorcier.cimetiere.includes('le-brulot'), true);
-  assert.equal(valkyrie.pv, 1, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
+  assert.equal(valkyrie.pv, 2, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
 
   // Morte par magie : le tueur est inconnu, rien ne se déclenche.
   const magie = duelVide();
@@ -983,8 +993,8 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
   assert.deepEqual(libellesPastilles('tercio-de-cuivre'), ['Attaque ciblée'],
     'le Tercio 1/4 porte la pastille Attaque ciblée');
   assert.equal(cardById('tercio-de-cuivre').atk, 1, 'le Tercio est un 1/4');
-  assert.ok(libellesPastilles('pilote-de-la-carreira').includes('Abordage'),
-    'le Pilote annonce sur sa face l’Abordage qu’il offre à la prochaine pose');
+  assert.deepEqual(libellesPastilles('pilote-de-la-carreira'), ['Recherche'],
+    'le Pilote annonce sur sa face la Recherche d’un Navire dans son deck');
   const noire = cardById('la-barbe-noire');
   assert.equal(noire.element, 'tenebres', 'La Barbe Noire est devenue une carte Ténèbres');
   assert.deepEqual(cardColors(noire), ['tenebres'], '100 % Ténèbres : ni Sable ni Eau');

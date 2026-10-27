@@ -214,10 +214,12 @@ import {
   cibleRespecteCoutMax,
   rpgActiverArme,
   rpgActiverCapacite,
+  rpgEngagerPourMana,
   rpgJouerArme,
   rpgModesArme,
   rpgPeutActiverArme,
   rpgPeutActiverCapacite,
+  rpgPeutEngagerPourMana,
   rpgSorcierActiverArmes,
   rpgSorcierActiverCapacitesIA,
   rpgSorcierAnnonceSuivante,
@@ -285,6 +287,9 @@ import {
 } from './RpgDeckBox.jsx';
 
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' };
+/** Kagutsuchi est la seule créature dont le coup critique multiplie par
+ *  quatre : son « ×4 » enflammé a droit à sa cinématique de table. */
+const KAGUTSUCHI_ID = 'kagutsuchi-flamme-originelle';
 const ELEMENT_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Sable + Braise' };
 const FILTRE_COULEUR_LABELS = { toutes: 'Toutes', sable: 'Sable', braise: 'Braise', eau: 'Eau', neige: 'Neige', tenebres: 'Ténèbres', hybride: 'Hybride' };
 /**
@@ -2347,6 +2352,12 @@ export function TableCard({
   soin = null,
   // `{ token }` le temps d'afficher « MISS » au-dessus de l'attaquant qui rate son Attaque ciblée.
   miss = null,
+  // `{ fois, token }` le temps du « ×4 » enflammé au-dessus de Kagutsuchi qui critique.
+  critiqueFx = null,
+  // Engagement de Tiziri : pastille « +1 💧 » allumée quand la créature peut se
+  // tourner pour produire son mana ce tour, sinon rendue mais éteinte.
+  engagementManaDispo = false,
+  onEngagerMana = null,
   // `{ montant, restant, lumiere, token }` le temps du choc d'un bouclier qui
   // vient d'absorber un coup (`ImpactBouclier`), sinon null.
   bouclierFx = null,
@@ -2656,6 +2667,34 @@ export function TableCard({
           </span>
         </span>
       )}
+      {carte?.manaEngagement && cote === 'joueur' && onEngagerMana && (
+        <span
+          className={`rpg-card__engagement${engagementManaDispo ? ' is-pret' : ''}`}
+          role={engagementManaDispo ? 'button' : undefined}
+          tabIndex={engagementManaDispo ? 0 : -1}
+          aria-label={engagementManaDispo
+            ? `Engager ${nom} : produire ${carte.manaEngagement.amount ?? 1} mana d'${ELEMENT_LABELS[carte.manaEngagement.couleur]?.toLowerCase() ?? 'eau'} ce tour`
+            : `${nom} ne peut pas s'engager pour du mana pour le moment`}
+          aria-disabled={engagementManaDispo ? undefined : true}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (engagementManaDispo) onEngagerMana();
+          }}
+          onKeyDown={(event) => {
+            if (!engagementManaDispo) return;
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              event.stopPropagation();
+              onEngagerMana();
+            }
+          }}
+        >
+          <span className={`rpg-mana-cost rpg-mana-cost--${carte.manaEngagement.couleur} is-compact`} aria-hidden="true">
+            <b>+{carte.manaEngagement.amount ?? 1}</b>
+            <i>{ELEMENT_GLYPHS[carte.manaEngagement.couleur] ?? '◇'}</i>
+          </span>
+        </span>
+      )}
         {!estSite && (
           <footer className="rpg-card__foot" aria-label={`Attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}`}>
             <span
@@ -2684,6 +2723,11 @@ export function TableCard({
         {miss && (
           <span key={miss.token} className="rpg-card__miss" aria-hidden="true">
             MISS
+          </span>
+        )}
+        {critiqueFx && (
+          <span key={critiqueFx.token} className="rpg-card__critique" aria-hidden="true">
+            ×{critiqueFx.fois}
           </span>
         )}
       </button>
@@ -6345,6 +6389,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [animationsEntites, setAnimationsEntites] = useState({});
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
+  // Les « ×4 » enflammés de Kagutsuchi : `{ [entityId]: { fois, token } }` le
+  // temps de la cinématique, nourris par `resume.critiques` à chaque combat.
+  const [critiquesVisibles, setCritiquesVisibles] = useState({});
+  const sequenceCritiqueRef = useRef(0);
   // Les chocs de bouclier en cours : `{ [entityId]: { montant, restant,
   // lumiere, token } }` le temps d'`ImpactBouclier` — assez longtemps pour
   // voir l'égide encaisser (et, à zéro, se briser) avant de s'effacer.
@@ -8217,6 +8265,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ?? (deployee ? null : pile.entites
       .map((membre) => missVisibles[membre.id])
       .find(Boolean) ?? null);
+  // Le « ×4 » enflammé de Kagutsuchi suit la même relève que le MISS : la tête
+  // d’une pile repliée porte la cinématique de l’exemplaire caché qui critique.
+  const critiqueDeCarte = (entite, pile, deployee) => critiquesVisibles[entite.id]
+    ?? (deployee ? null : pile.entites
+      .map((membre) => critiquesVisibles[membre.id])
+      .find(Boolean) ?? null);
   // Même relève pour le choc d'un bouclier : la tête d'une pile repliée
   // porte l'impact de l'exemplaire caché qui vient d'encaisser.
   const bouclierDeCarte = (entite, pile, deployee) => boucliersVisibles[entite.id]
@@ -8543,6 +8597,33 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const suivant = { ...courant };
         cibles.forEach((id) => {
           if (suivant[id]?.token === token) delete suivant[id];
+        });
+        return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
+      });
+    }, duree);
+  };
+
+  /** Allume le « ×4 » enflammé au-dessus de Kagutsuchi quand son coup
+   *  critique part. Seule sa fiche multiplie par quatre (`fois: 4`) : les
+   *  critiques ×2 des autres créatures restent dans le journal, sans
+   *  cinématique dédiée. Le token fait rejouer l’embrasement à chaque coup. */
+  const declencherCritiques = (entrees = [], duree = 1500) => {
+    const cibles = (entrees ?? [])
+      .filter((entree) => entree?.entiteId && entree.carteId === KAGUTSUCHI_ID);
+    if (!cibles.length) return;
+    const token = ++sequenceCritiqueRef.current;
+    setCritiquesVisibles((courant) => ({
+      ...courant,
+      ...Object.fromEntries(cibles.map((entree) => [entree.entiteId, {
+        fois: entree.fois ?? 4,
+        token,
+      }])),
+    }));
+    programmerNettoyageVisuel(() => {
+      setCritiquesVisibles((courant) => {
+        const suivant = { ...courant };
+        cibles.forEach((entree) => {
+          if (suivant[entree.entiteId]?.token === token) delete suivant[entree.entiteId];
         });
         return Object.keys(suivant).length === Object.keys(courant).length ? courant : suivant;
       });
@@ -10153,6 +10234,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  // Tiziri : un tap direct l’engage et produit son mana d’eau, sans coût ni
+  // cible. Le bouton n’est proposé qu’en solo — le protocole PvP ne véhicule
+  // pas encore cette intention — et quand le moteur autorise l’engagement.
+  const engagerPourMana = (entite) => {
+    if (!monTour || phase || cibleEnCours || cibleAttaqueEnCours || combatEntrant || reponseActive
+      || modePvp || !rpgPeutEngagerPourMana(duel, 'joueur', entite.id)) {
+      jouerSfx('erreur');
+      force();
+      return;
+    }
+    const res = rpgEngagerPourMana(duel, 'joueur', entite.id);
+    jouerSfx(res.ok ? 'select' : 'erreur');
+    force();
+  };
+
   const resoudreActivation = (entite) => {
     const sourceId = activationEnCours;
     setActivationEnCours(null);
@@ -10602,6 +10698,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
+    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
@@ -10693,6 +10790,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
+    if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (res.resume.frappeSorcier > 0) {
@@ -11110,6 +11208,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ...(cibleAttaqueEnCours ? [cibleAttaqueEnCours] : []),
     ...Object.keys(animationsEntites ?? {}),
     ...Object.keys(missVisibles ?? {}),
+    ...Object.keys(critiquesVisibles ?? {}),
     ...Object.keys(boucliersVisibles ?? {}),
   ]);
   // Au doigt, la clé identifie une pile ; sur grand écran, elle identifie
@@ -11770,6 +11869,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      critiqueFx={critiqueDeCarte(entite, pile, deployee)}
                       bouclierFx={bouclierDeCarte(entite, pile, deployee)}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}
@@ -11864,7 +11964,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
                       miss={missDeCarte(entite, pile, deployee)}
+                      critiqueFx={critiqueDeCarte(entite, pile, deployee)}
                       bouclierFx={bouclierDeCarte(entite, pile, deployee)}
+                      engagementManaDispo={!modePvp && monTour
+                        && rpgPeutEngagerPourMana(duel, 'joueur', entite.id)}
+                      onEngagerMana={() => engagerPourMana(entite)}
                       playerTurn={tourDuJoueur}
                       onHoverCard={afficherApercuSurvol}
                       onLeaveHoverCard={quitterCarteSurvol}

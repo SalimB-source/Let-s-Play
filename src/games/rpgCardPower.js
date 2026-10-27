@@ -208,6 +208,22 @@ function valeurEffet(effet = {}) {
       return 1.5;
     case 'compteurs-arme':
       return montant * 2;
+    case 'gel':
+      // Le froid qui fige une table : un retrait de tempo par créature prise,
+      // et la morsure du souffle (le Géant des banquises y ajoute `degats`).
+      return 1.5 + (Number(effet.degats) || 0) * (effet.cible === 'toutes-creatures' ? 1.9 : 1.25);
+    case 'destruction-navire':
+      // Le Kraken : une destruction ciblée, mais conditionnée au type Navire —
+      // un cran sous l'exil qui prend n'importe quelle cible.
+      return 4.5;
+    case 'recherche-deck':
+      // Le Pilote de la Carreira : un tuteur tribal sans révéler, garanti tant
+      // que le paquet contient le type cherché — entre la pioche et le tuteur.
+      return 2.5;
+    case 'mue-mondiale':
+      // La mue du Serpent du monde : les deux camps vident leur main et
+      // repiochent — un reset symétrique, lu comme une grosse pioche neutre.
+      return (Number(effet.pioche) || 0) * 0.8;
     default:
       return 0;
   }
@@ -311,6 +327,16 @@ export function valeurCarte(carte) {
   // le jeu agressif, qui décourage l’Attaque ciblée et les sorts ciblés.
   if (carte.contreAttaque) valeur += 2;
   if (carte.protection) valeur += 1.5;
+  // La protection contre les sorts (le Faucon du zénith, le Serpent du monde)
+  // ne bloque que les magies et capacités ciblées, pas le combat : un cran
+  // sous la protection de couleur.
+  if (carte.protectionSorts) valeur += 1.2;
+  // Une productrice de mana (Tiziri) : un terrain sur pattes, qui coûte une
+  // créature et s'engage — le prix d'un demi-terrain plus la flexibilité.
+  if (carte.manaEngagement) valeur += 1.5 * (Number(carte.manaEngagement.amount) || 1);
+  // Le Furtif (l'Ifrit furtif) se consume à la fin du tour : une frappe
+  // éphémère, son corps ne tient pas la table — escompte d'obsolescence.
+  if (carte.furtif) valeur -= 0.8;
   if (carte.furie) valeur += 0.7 + 0.55 * carte.furie;
   if (carte.overkill) valeur += 1.5;
   // Les mots-clés que la Furie prête (le Maître du marteau) ne comptent que
