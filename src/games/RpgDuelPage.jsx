@@ -1140,13 +1140,23 @@ function FaceDownHand({ count, drawAnimations = [] }) {
   );
 }
 
-function CardPile({ count, label, variant, topCard = null, drawing = false, drawToken = null, onHoverCard, onLeaveHoverCard }) {
+function CardPile({ count, label, variant, topCard = null, drawing = false, drawToken = null, onHoverCard, onLeaveHoverCard, onClick }) {
   const carteDuDessus = topCard ? cardById(topCard) : null;
+  const cliquable = Boolean(onClick && count);
   return (
     <div
-      className={`rpg-card-pile rpg-card-pile--${variant}${drawing ? ' is-drawing' : ''}`}
+      className={`rpg-card-pile rpg-card-pile--${variant}${drawing ? ' is-drawing' : ''}${cliquable ? ' is-clickable' : ''}`}
       aria-label={`${label} : ${count} carte${count === 1 ? '' : 's'}`}
       data-draw-token={drawing ? drawToken : undefined}
+      role={cliquable ? 'button' : undefined}
+      tabIndex={cliquable ? 0 : undefined}
+      onClick={cliquable ? onClick : undefined}
+      onKeyDown={cliquable ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick(event);
+        }
+      } : undefined}
     >
       <span className="rpg-card-pile__stack" aria-hidden="true">
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
@@ -1165,6 +1175,39 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
       </span>
       <b>{count}</b>
       <small>{label}</small>
+    </div>
+  );
+}
+
+function CimetiereCarousel({ cartes, campLabel, index, onChange, onClose }) {
+  const cartesDisponibles = cartes.map(cardById).filter(Boolean);
+  const indexSûr = Math.min(Math.max(index, 0), Math.max(cartesDisponibles.length - 1, 0));
+  const carte = cartesDisponibles[indexSûr];
+  const boutonFermerRef = useRef(null);
+
+  useEffect(() => {
+    boutonFermerRef.current?.focus({ preventScroll: true });
+  }, []);
+
+  if (!carte) return null;
+  const allerÀ = (delta) => onChange((indexSûr + delta + cartesDisponibles.length) % cartesDisponibles.length);
+
+  return (
+    <div className="rpg-card-peek rpg-card-peek--catalogue rpg-graveyard-carousel" role="dialog" aria-modal="true" aria-label={`Cimetière de ${campLabel}`} onClick={onClose}>
+      <div className="rpg-card-peek__backdrop" aria-hidden="true" />
+      <div className="rpg-graveyard-carousel__content" onClick={(event) => event.stopPropagation()}>
+        <div className="rpg-graveyard-carousel__heading">
+          <span>{campLabel} · CIMETIÈRE</span>
+          <strong>{indexSûr + 1} / {cartesDisponibles.length}</strong>
+        </div>
+        <div className="rpg-graveyard-carousel__card">
+          <button type="button" className="rpg-graveyard-carousel__arrow rpg-graveyard-carousel__arrow--prev" onClick={() => allerÀ(-1)} aria-label="Carte précédente">‹</button>
+          <HoverCardPreview carte={carte} variante="catalogue" />
+          <button type="button" className="rpg-graveyard-carousel__arrow rpg-graveyard-carousel__arrow--next" onClick={() => allerÀ(1)} aria-label="Carte suivante">›</button>
+        </div>
+        <p className="rpg-graveyard-carousel__hint">Faites défiler les cartes du cimetière</p>
+        <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onClose}>Fermer le cimetière</button>
+      </div>
     </div>
   );
 }
@@ -6276,6 +6319,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [apercuCatalogueFurie, setApercuCatalogueFurie] = useState(null);
   // Même grisaille des effets dépensés pour cette fiche.
   const [apercuCatalogueEffetsEpuises, setApercuCatalogueEffetsEpuises] = useState([]);
+  const [cimetiereOuvert, setCimetiereOuvert] = useState(null);
   // La carte consultée (appui long ou fiche) garde le focus pendant que le
   // plateau passe au flou derrière elle : on retient l'élément sur lequel le
   // geste a été fait, et un effet y pose `data-apercu-source`, que la feuille
@@ -6295,6 +6339,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuCatalogueFurie(null);
     setApercuCatalogueEffetsEpuises([]);
     setApercuCataloguePrisonniere(null);
+    setCimetiereOuvert(null);
     if (ecran !== 'partie' && tutorielActif) {
       etapeTutorielIdRef.current = null;
       setEtapeTutorielId(null);
@@ -7661,6 +7706,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     appuiLongRef.current?.();
     appuiLongRef.current = null;
   };
+  const ouvrirCimetiere = (cote) => {
+    const cartes = duel?.[cote]?.cimetiere ?? [];
+    if (!cartes.length) return;
+    masquerApercuSurvol();
+    setApercuAppui(null);
+    setApercuCatalogue(null);
+    setCimetiereOuvert({ cote, index: cartes.length - 1 });
+  };
+  const fermerCimetiere = () => setCimetiereOuvert(null);
   const fermerApercuAppui = () => {
     annulerAppuiLong();
     jouerSfx('annuler');
@@ -7740,15 +7794,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // bouton Fermer. Il n'y a rien d'autre à faire au clavier : la fiche ne
   // montre qu'une carte, elle n'a ni flèches ni pas de page.
   useEffect(() => {
-    if (!apercuAppui && !apercuCatalogue) return undefined;
+    if (!apercuAppui && !apercuCatalogue && !cimetiereOuvert) return undefined;
     const surClavier = (event) => {
       if (event.key !== 'Escape') return;
-      if (apercuCatalogue) fermerApercuCatalogue();
+      if (cimetiereOuvert) fermerCimetiere();
+      else if (apercuCatalogue) fermerApercuCatalogue();
       else fermerApercuAppui();
     };
     window.addEventListener('keydown', surClavier);
     return () => window.removeEventListener('keydown', surClavier);
-  }, [apercuAppui, apercuCatalogue]);
+  }, [apercuAppui, apercuCatalogue, cimetiereOuvert]);
   // Le menu contextuel natif (callout iOS, « enregistrer l'image » / sélection
   // Android) n'appartient à aucun geste de la table : étouffé sur toute la
   // coque du jeu, pas seulement pendant un appui long armé. Sans ça, une seule
@@ -11791,6 +11846,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             topCard={duel.sorcier.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
             onLeaveHoverCard={quitterCarteSurvol}
+            onClick={() => ouvrirCimetiere('sorcier')}
           />
         </div>
 
@@ -12222,6 +12278,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             topCard={duel.joueur.cimetiere.at(-1)}
             onHoverCard={afficherApercuSurvol}
             onLeaveHoverCard={quitterCarteSurvol}
+            onClick={() => ouvrirCimetiere('joueur')}
           />
           <CardPile count={nbDeckJoueur} label="Paquet" variant="deck" drawing={piochesJoueur.length > 0} drawToken={tokenPiocheJoueur} />
         </div>
@@ -12938,6 +12995,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onNext={continuerTutoriel}
           onFinish={terminerTutoriel}
           onClose={fermerTutoriel}
+        />
+      )}
+      {cimetiereOuvert && (
+        <CimetiereCarousel
+          cartes={duel[cimetiereOuvert.cote].cimetiere}
+          campLabel={cimetiereOuvert.cote === 'joueur' ? 'VOTRE' : 'SORCIER'}
+          index={cimetiereOuvert.index}
+          onChange={(index) => setCimetiereOuvert((courant) => courant ? { ...courant, index } : courant)}
+          onClose={fermerCimetiere}
         />
       )}
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}
