@@ -401,11 +401,11 @@ function browserStorage() {
 }
 
 /** Les acquis de l'appareil (vides si le stockage manque ou ment). */
-export function chargerAcquis() {
+export function chargerAcquis({ reprise = true } = {}) {
   const stockage = browserStorage();
   if (!stockage) return acquisVide();
   try {
-    return normaliserAcquis(JSON.parse(lireProgression(RPG_ACQUIS_STORAGE_KEY, stockage) ?? 'null'));
+    return normaliserAcquis(JSON.parse(lireProgression(RPG_ACQUIS_STORAGE_KEY, stockage, { reprise }) ?? 'null'));
   } catch {
     return acquisVide();
   }
@@ -418,12 +418,18 @@ export function sauverAcquis(acquis) {
   return ecrireProgression(RPG_ACQUIS_STORAGE_KEY, JSON.stringify(normaliserAcquis(acquis)), stockage);
 }
 
-/** Les apports du compte mis en cache sur cet appareil (liste vide sinon). */
-export function chargerCollectionDistante() {
+/**
+ * Les apports du compte mis en cache sur cet appareil (liste vide sinon).
+ *
+ * `reprise` vaut `true` par défaut : la partie commencée hors ligne rejoint le
+ * premier compte connecté. Le coffret de bienvenue, lui, lit `{ reprise: false }`
+ * — il décide d'un **premier écran de compte**, pas d'un état d'appareil.
+ */
+export function chargerCollectionDistante({ reprise = true } = {}) {
   const stockage = browserStorage();
   if (!stockage) return [];
   try {
-    return normaliserCollection(JSON.parse(lireProgression(RPG_COLLECTION_STORAGE_KEY, stockage) ?? 'null')?.cartes);
+    return normaliserCollection(JSON.parse(lireProgression(RPG_COLLECTION_STORAGE_KEY, stockage, { reprise }) ?? 'null')?.cartes);
   } catch {
     return [];
   }

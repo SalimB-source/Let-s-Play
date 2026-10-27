@@ -29,6 +29,16 @@
  * autres. Une fois le choix fait, il est définitif (`choisi`) et le coffret
  * devient la collection du joueur (`rpgCollection.js`, `collectionJoueur`).
  *
+ * ## Un coffret par compte, jamais hérité
+ *
+ * L'offre est rangée sous la clé **du compte** (`…:user:<id>`) et elle ne se
+ * reprend **jamais** d'un visiteur. Un joueur qui a ouvert un coffret sans être
+ * connecté le garde sur l'appareil ; le compte qu'il crée ensuite reçoit le
+ * sien, avec son propre choix. Sans cette règle, un compte neuf sur un
+ * navigateur déjà utilisé — ou dont la session n'était pas encore résolue au
+ * premier rendu — trouvait un coffret « déjà ouvert » et n'avait donc ni choix
+ * ni ouverture.
+ *
  * Tout est **pur** ici : les fonctions reçoivent leur catalogue, leur générateur
  * et leur état, et rendent un nouvel état. Le stockage (`localStorage`) reste
  * aux deux fonctions de lecture/écriture, comme partout dans le dépôt.
@@ -350,12 +360,19 @@ export function coffretChoisiDeLAppareil() {
   return coffretChoisi(chargerOffreBienvenue());
 }
 
-/** L'offre de l'appareil, normalisée (offre vide si rien n'est stocké). */
+/**
+ * L'offre **du joueur courant**, normalisée (offre vide si rien n'est stocké).
+ *
+ * `reprise: false` : la copie d'un visiteur n'est jamais reprise. Le coffret de
+ * bienvenue est un rendez-vous entre un compte et son premier écran, pas un
+ * état d'appareil — voir l'en-tête du module.
+ */
 export function chargerOffreBienvenue() {
   const stockage = browserStorage();
   if (!stockage) return normaliserOffreBienvenue(null);
   try {
-    return normaliserOffreBienvenue(JSON.parse(lireProgression(RPG_COFFRET_STORAGE_KEY, stockage) ?? 'null'));
+    const brut = lireProgression(RPG_COFFRET_STORAGE_KEY, stockage, { reprise: false });
+    return normaliserOffreBienvenue(JSON.parse(brut ?? 'null'));
   } catch {
     return normaliserOffreBienvenue(null);
   }

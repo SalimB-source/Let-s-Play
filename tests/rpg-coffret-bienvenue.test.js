@@ -39,10 +39,71 @@ import {
   composerOffre,
   mythiqueVitrineDuCoffret,
   normaliserOffreBienvenue,
+  offreAAfficher,
   offreBienvenue,
   vaguesDuCoffret,
 } from '../src/games/rpgCoffretBienvenue.js';
-import { collectionJoueur, COLLECTION_DEPART } from '../src/games/rpgCollection.js';
+import {
+  COLLECTION_DEPART,
+  chargerAcquis,
+  chargerCollectionDistante,
+  collectionJoueur,
+  sauverAcquis,
+  sauverCollectionDistante,
+} from '../src/games/rpgCollection.js';
+import {
+  RPG_COFFRET_STORAGE_KEY,
+  chargerOffreBienvenue,
+  sauverOffreBienvenue,
+} from '../src/games/rpgCoffretBienvenue.js';
+import {
+  definirProprietaireProgression,
+  definirSessionPrete,
+} from '../src/lib/progressionScope.js';
+
+const COMPTE_A = '11111111-1111-1111-1111-111111111111';
+const COMPTE_B = '22222222-2222-2222-2222-222222222222';
+
+/**
+ * `localStorage` en mémoire, le temps d'un test. Le propriétaire et l'état de
+ * session sont remis à zéro après coup : un test ne doit rien laisser derrière
+ * lui aux suivants.
+ */
+function avecStockage(test) {
+  const donnees = new Map();
+  const precedent = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (cle) => (donnees.has(cle) ? donnees.get(cle) : null),
+      setItem: (cle, valeur) => donnees.set(cle, String(valeur)),
+      removeItem: (cle) => donnees.delete(cle),
+      clear: () => donnees.clear(),
+      key: (index) => [...donnees.keys()][index] ?? null,
+      get length() { return donnees.size; },
+    },
+  });
+  try {
+    return test(donnees);
+  } finally {
+    if (precedent) Object.defineProperty(globalThis, 'localStorage', precedent);
+    else delete globalThis.localStorage;
+    definirProprietaireProgression(null);
+    definirSessionPrete(true);
+  }
+}
+
+/**
+ * Le premier écran de bienvenue s'affiche-t-il pour le joueur courant ? Même
+ * chemin que le composant : l'offre est relue, ou tirée si le compte n'en a pas.
+ */
+function ecranNecessaire() {
+  return coffretBienvenueNecessaire({
+    offre: offreAAfficher({ rng: suite(17) }),
+    acquis: chargerAcquis({ reprise: false }),
+    collection: chargerCollectionDistante({ reprise: false }),
+  });
+}
 
 /** Un générateur reproductible : les tests ne dépendent pas du hasard. */
 function suite(graine = 1) {
@@ -239,4 +300,79 @@ test('le catalogue des coffrets ne cite jamais une carte inconnue', () => {
     assert.equal(connues.has(coffret.mythiqueId), true);
     for (const id of coffret.raresIds) assert.equal(connues.has(id), true);
   }
+});
+
+test('un compte neuf reçoit son coffret, même sur un appareil déjà utilisé', () => {
+  avecStockage(() => {
+    // Avant : un visiteur a joué ici — coffret ouvert, cartes acquises, apports
+    // du compte. Rien de tout cela ne doit décider pour le compte qui arrive.
+    definirProprietaireProgression(null);
+    const offreVisiteur = offreBienvenue({ rng: suite(3) });
+    sauverOffreBienvenue(choisirCoffret(offreVisiteur, offreVisiteur.coffrets[0].id));
+    sauverAcquis({ version: 1, gel: false, cartes: ['tarek'] });
+    sauverCollectionDistante(['salem']);
+
+    // Après : un compte neuf se connecte sur ce même navigateur.
+    definirProprietaireProgression(COMPTE_A);
+    assert.deepEqual(chargerOffreBienvenue().coffrets, [],
+      'l’offre du visiteur n’est pas héritée : le compte a la sienne à tirer');
+    assert.equal(ecranNecessaire(), true,
+      'ni les acquis ni la collection du visiteur ne suppriment le coffret du compte');
+  });
+});
+
+test('le coffret d’un compte n’est jamais celui d’un autre sur le même appareil', () => {
+  avecStockage(() => {
+    definirProprietaireProgression(COMPTE_A);
+    const offreA = offreBienvenue({ rng: suite(5) });
+    sauverOffreBienvenue(choisirCoffret(offreA, offreA.coffrets[0].id));
+    assert.equal(ecranNecessaire(), false, 'le compte A a choisi : plus de coffret pour lui');
+
+    definirProprietaireProgression(COMPTE_B);
+    assert.equal(chargerOffreBienvenue().choisi, null, 'B ne voit pas le choix de A');
+    assert.equal(ecranNecessaire(), true, 'B, lui, reçoit son coffret');
+  });
+});
+
+test('la copie d’un visiteur écrite pendant l’attente de la session n’est pas reprise', () => {
+  avecStockage((donnees) => {
+    // Ce que fait un joueur déjà connecté dont la session n'est pas résolue :
+    // la page rend avec un propriétaire nul et écrit sous la clé invité.
+    definirSessionPrete(false);
+    definirProprietaireProgression(null);
+    const offre = offreBienvenue({ rng: suite(11) });
+    sauverOffreBienvenue(choisirCoffret(offre, offre.coffrets[0].id));
+    assert.ok(donnees.has(`${RPG_COFFRET_STORAGE_KEY}:invite-en-attente`),
+      'la copie est marquée comme écrite avant la résolution');
+
+    // La session se résout : c'est un compte. Il ne doit rien hériter de ça.
+    definirSessionPrete(true);
+    definirProprietaireProgression(COMPTE_A);
+    assert.deepEqual(chargerOffreBienvenue().coffrets, [],
+      'le compte n’hérite pas de l’offre écrite pendant l’attente');
+    assert.equal(ecranNecessaire(), true, 'et son coffret lui est bien proposé');
+  });
+});
+
+test('un vrai visiteur, lui, garde sa copie reprenable', () => {
+  avecStockage((donnees) => {
+    // Session résolue et aucun compte : c'est un visiteur, pas une attente.
+    definirSessionPrete(true);
+    definirProprietaireProgression(null);
+    const offre = offreBienvenue({ rng: suite(13) });
+    sauverOffreBienvenue(choisirCoffret(offre, offre.coffrets[0].id));
+    assert.equal(donnees.has(`${RPG_COFFRET_STORAGE_KEY}:invite-en-attente`), false,
+      'aucune marque : la copie est celle d’un visiteur');
+
+    // Ce qu'il a gagné hors ligne rejoint son compte, sans que le coffret de
+    // bienvenue suive : la partie continue, le rendez-vous reste au compte.
+    sauverAcquis({ version: 1, gel: false, cartes: ['tarek'] });
+    definirProprietaireProgression(COMPTE_A);
+    assert.deepEqual(chargerAcquis().cartes, ['tarek'],
+      'la reprise unique des acquis tient toujours');
+    assert.deepEqual(chargerOffreBienvenue().coffrets, [],
+      'mais le coffret du visiteur ne devient pas celui du compte');
+    assert.equal(ecranNecessaire(), false,
+      'le compte a déjà des cartes reprises : pas de second coffret');
+  });
 });

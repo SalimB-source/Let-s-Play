@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import {
   cleProgression,
   definirProprietaireProgression,
+  definirSessionPrete,
   effacerProgression,
   ecrireProgression,
   lireProgression,
@@ -74,6 +75,7 @@ function withStockage(test) {
     return test(donnees);
   } finally {
     definirProprietaireProgression(null);
+    definirSessionPrete(true);
     if (precedent) Object.defineProperty(globalThis, 'localStorage', precedent);
     else delete globalThis.localStorage;
   }
@@ -154,6 +156,42 @@ test('la partie commencée hors ligne est reprise UNE fois par le premier compte
     // …et B, qui se connecte ensuite sur la même machine, ne l'hérite pas.
     definirProprietaireProgression(COMPTE_B);
     assert.equal(chargerPortefeuille().credits, 0, 'aucune fuite vers le compte suivant');
+  });
+});
+
+test('une copie invité écrite avant la résolution de la session n’est jamais reprise', () => {
+  withStockage((donnees) => {
+    // Ce que fait un joueur CONNECTÉ dont la session n'est pas encore résolue :
+    // la page rend avec un propriétaire nul et écrit sous les clés invité.
+    definirSessionPrete(false);
+    sauverPortefeuille(crediterCredits(portefeuilleVide(), 500).portefeuille);
+    assert.ok(donnees.has(`${RPG_BOURSE_STORAGE_KEY}:invite-en-attente`),
+      'la copie visiteur est marquée « écrite pendant l’attente »');
+
+    // La session se résout : c'est le compte A. Il ne doit pas hériter.
+    definirSessionPrete(true);
+    definirProprietaireProgression(COMPTE_A);
+    assert.equal(chargerPortefeuille().credits, 0,
+      'aucune reprise d’une copie écrite avant la résolution');
+
+    // Un vrai visiteur, lui, reste reprenable : session résolue, pas de compte.
+    definirProprietaireProgression(null);
+    definirSessionPrete(true);
+    sauverPortefeuille(crediterCredits(portefeuilleVide(), 90).portefeuille);
+    assert.equal(donnees.has(`${RPG_BOURSE_STORAGE_KEY}:invite-en-attente`), false,
+      'une écriture visiteur après résolution retire la marque');
+    definirProprietaireProgression(COMPTE_A);
+    assert.equal(chargerPortefeuille().credits, 90, 'la reprise unique tient toujours');
+  });
+});
+
+test('une clé peut refuser la reprise : la copie invité reste à l’invité', () => {
+  withStockage(() => {
+    sauverPortefeuille(crediterCredits(portefeuilleVide(), 240).portefeuille);
+    definirProprietaireProgression(COMPTE_A);
+    assert.equal(lireProgression(RPG_BOURSE_STORAGE_KEY, undefined, { reprise: false }), null,
+      'sans reprise, le compte ne voit rien de l’invité');
+    assert.equal(chargerPortefeuille().credits, 240, 'les autres clés reprennent comme avant');
   });
 });
 

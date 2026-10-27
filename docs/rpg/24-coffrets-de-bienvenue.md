@@ -16,11 +16,38 @@ joueur en ouvre **un seul**, et ce coffret **remplace sa dotation de départ**.
 
 - Trois coffrets sur les quatre couleurs : l'offre n'est jamais la même d'un
   appareil à l'autre, mais elle ne propose jamais deux fois la même couleur.
-- Le tirage est **fait une fois** puis rangé sur l'appareil
-  (`letsplay_sablier_coffret_bienvenue_v1`) : revenir sur l'écran sans choisir
-  repropose **les mêmes** trois coffrets, jamais trois autres.
+- Le tirage est **fait une fois** puis rangé sous la clé **du compte**
+  (`letsplay_sablier_coffret_bienvenue_v1:user:<id>`) : revenir sur l'écran sans
+  choisir repropose **les mêmes** trois coffrets, jamais trois autres.
 - Le choix est **définitif**. Choisir une deuxième fois ne remplace rien, et un
   identifiant inconnu laisse l'offre intacte.
+
+### Un coffret par compte, jamais hérité
+
+Le rendez-vous est entre **un compte** et son premier écran, pas entre un
+appareil et son premier visiteur. Deux règles en découlent :
+
+1. l'offre se lit avec `reprise: false` (`progressionScope.js`) : la copie d'un
+   visiteur de cet appareil n'est **jamais** adoptée par le compte qui se
+   connecte. Un compte neuf voit donc son coffret même sur un navigateur déjà
+   utilisé, où un visiteur a ouvert le sien ;
+2. le verdict « coffret nécessaire » ne regarde que **l'état du compte**
+   (`chargerAcquis({ reprise: false })`, `chargerCollectionDistante({
+   reprise: false })`) : ni les cartes gagnées en visiteur, ni sa collection, ni
+   ses étages vaincus ne peuvent le supprimer.
+
+La partie commencée hors ligne continue, elle, d'être reprise une seule fois par
+le premier compte connecté — mais elle ne décide pas du coffret.
+
+**La fenêtre d'attente de la session.** Au démarrage, les pages rendent avant
+que `getSession()` ait répondu, donc avec un propriétaire nul : un joueur
+**déjà connecté** écrivait sous les clés invité pendant quelques dizaines de
+millisecondes, et son compte « reprenait » ensuite cette copie comme s'il venait
+de jouer en visiteur. `AuthProvider` déclare maintenant `definirSessionPrete(
+!loading)` : une écriture visiteur faite avant la résolution est marquée
+(`…:invite-en-attente`) et n'est jamais reprise ; l'écran du coffret, lui,
+attend la résolution et se rejoue si le compte change (`useEffect` sur
+`compteId`).
 
 ## 2. Ce qu'il y a dans un coffret
 
@@ -301,4 +328,9 @@ enregistrement tardif n'écrase pas le deck de départ.
 - la jouabilité : **deux cents tirages de suite** sont des decks valides ;
 - le choix : définitif, insensible à un identifiant inconnu ;
 - les vagues : socle → rares → mythique, et les trente cartes s'y retrouvent ;
-- la dotation : remplacée avec un coffret, intacte sans.
+- la dotation : remplacée avec un coffret, intacte sans ;
+- **la portée** : un compte neuf reçoit son coffret même sur un appareil déjà
+  utilisé (coffret de visiteur ouvert, cartes acquises), l'offre d'un compte
+  n'est jamais celle d'un autre, et une copie invité écrite pendant l'attente de
+  la session n'est jamais reprise — `tests/progression-scope.test.js` tient la
+  même règle pour la bourse.
