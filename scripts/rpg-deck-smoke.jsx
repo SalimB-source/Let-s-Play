@@ -408,13 +408,19 @@ export async function checkRpgDecks(assert) {
   window.localStorage.clear();
 
 
-  // --- L'atelier : grille « Arena », bascules, clic droit, courbe --------------------------------
+  // --- Le seuil de création puis l'atelier manuel minimaliste ------------------------------------
   window.localStorage.clear();
   const atelier = await monter(assert);
   await atelier.click(atelier.tab('Deck'), 'onglet Deck (atelier)');
   assert.match(texte(atelier.container.querySelector('.rpg-deck-catalog__sync')), /Decks gardés sur cet appareil/, 'hors compte, la ligne de sync le dit');
-  await atelier.click(atelier.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
-  assert.ok(atelier.container.querySelector('.rpg-atelier'), 'l’atelier remplace l’étagère');
+  await atelier.click(atelier.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir la création');
+  // La crate « Nouveau deck » ouvre d'abord le seuil à deux portes.
+  const seuil = atelier.container.querySelector('.rpg-creation');
+  assert.ok(seuil, 'le seuil assistée / manuelle remplace l’étagère');
+  assert.equal(seuil.querySelectorAll('.rpg-creation__carte').length, 2, 'deux portes sont proposées');
+  assert.ok(!atelier.container.querySelector('.rpg-atelier'), 'l’atelier n’est pas encore ouvert');
+  await atelier.click(seuil.querySelector('.rpg-creation__carte--manuel'), 'choisir la création manuelle');
+  assert.ok(atelier.container.querySelector('.rpg-atelier'), 'l’atelier manuel remplace le seuil');
   assert.ok(!atelier.container.querySelector('.rpg-deck-catalog__choices'), 'l’étagère n’est pas rendue en même temps que l’atelier');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /0 \/ 30 cartes/, 'les compteurs démarrent à zéro');
   assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, RPG_DUEL_CARDS.length, 'la bibliothèque montre tout le catalogue');
@@ -462,16 +468,22 @@ export async function checkRpgDecks(assert) {
   const pipSable = pips.find((pip) => pip.getAttribute('aria-label') === 'Couleur Sable');
   await atelier.click(pipSable, 'bascule Sable en plus');
   assert.ok(atelier.container.querySelectorAll('.rpg-atelier__carte').length > cartesEau.length, 'deux couleurs cumulent (ou logique)');
-  const cout2 = [...toolbar.querySelectorAll('.rpg-atelier__toggle--cout')].find((bouton) => texte(bouton) === '2');
+  // Les filtres fins (coût, type, rareté, tri) sont repliés derrière un seul bouton.
+  const boutonFiltres = toolbar.querySelector('.rpg-atelier__toggle--filtres');
+  assert.equal(boutonFiltres.getAttribute('aria-expanded'), 'false', 'les filtres avancés sont repliés au départ');
+  await atelier.click(boutonFiltres, 'déplier les filtres avancés');
+  const filtresAvances = atelier.container.querySelector('.rpg-atelier__filtres-avances');
+  assert.ok(filtresAvances, 'le panneau de filtres avancés se déploie');
+  const cout2 = [...filtresAvances.querySelectorAll('.rpg-atelier__toggle--cout')].find((bouton) => texte(bouton) === '2');
   await atelier.click(cout2, 'bascule coût 2');
   assert.ok(atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]'), 'le Chien du guet (Sable, coût 2) reste');
   assert.ok([...atelier.container.querySelectorAll('.rpg-atelier__carte')].every((carte) => Number(carte.querySelector('.rpg-atelier__cout b')?.textContent) === 2),
     'le filtre de coût ne montre que les cartes du palier 2');
-  const reset = toolbar.querySelector('.rpg-atelier__toggle--reset');
+  const reset = filtresAvances.querySelector('.rpg-atelier__toggle--reset');
   assert.ok(reset, 'un bouton de réinitialisation apparaît quand un filtre est actif');
   await atelier.click(reset, 'réinitialiser les filtres');
   assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte').length, RPG_DUEL_CARDS.length, 'la grille complète revient');
-  assert.ok(!toolbar.querySelector('.rpg-atelier__toggle--reset'), 'et le bouton disparaît');
+  assert.ok(!filtresAvances.querySelector('.rpg-atelier__toggle--reset'), 'et le bouton disparaît');
   const possedees = [...toolbar.querySelectorAll('.rpg-atelier__toggle')].find((bouton) => texte(bouton) === 'Possédées');
   await atelier.click(possedees, 'bascule Possédées');
   assert.equal(atelier.container.querySelectorAll('.rpg-atelier__carte.is-locked').length, 0, '« Possédées » masque les cartes verrouillées');
@@ -485,10 +497,10 @@ export async function checkRpgDecks(assert) {
   });
   await atelier.settle();
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /1 \/ 30 cartes/, 'le clic droit retire un exemplaire');
-  // La courbe de mana et les couleurs suivent le deck.
+  // La courbe de mana et la ligne de chiffres ténue suivent le deck.
   const barre2 = atelier.container.querySelector('.rpg-atelier__barre[data-cout="2"] b');
   assert.equal(texte(barre2), '1', 'la courbe de mana compte le Chien du guet au palier 2');
-  assert.match(texte(atelier.container.querySelector('.rpg-atelier__couleurs')), /Sable/, 'la répartition des couleurs nomme le Sable');
+  assert.match(texte(atelier.container.querySelector('.rpg-atelier__mini-stats')), /1/, 'la ligne de chiffres suit le deck');
   // Vider demande deux clics, puis le deck repart de zéro.
   const vider = [...atelier.container.querySelectorAll('.rpg-atelier__outil')].find((bouton) => texte(bouton).includes('Vider'));
   await atelier.click(vider, 'Vider (premier clic)');
@@ -508,38 +520,35 @@ export async function checkRpgDecks(assert) {
   await atelier.settle();
   assert.ok(!atelier.container.querySelector('.rpg-hover-card-preview'), 'et disparaît quand la souris s’en va');
 
-  // --- La création assistée : couleurs, 4 créatures, 4 sorts, l’IA complète --------------------
-  await atelier.click([...atelier.container.querySelectorAll('.rpg-atelier__outil')].find((bouton) => texte(bouton).includes('Création assistée')), 'bouton Création assistée');
+  // --- La création assistée : couleurs puis style (aggro / contrôle / mix) ---------------------
+  // L'assistant ne vit plus dans l'atelier : on repasse par le seuil de création.
+  await atelier.click([...atelier.container.querySelectorAll('.rpg-menu-link')].find((bouton) => texte(bouton).includes('Fermer')), 'fermer l’atelier manuel');
+  await atelier.click(atelier.container.querySelector('.rpg-deck-choice--neuf'), 'rouvrir la création');
+  await atelier.click(atelier.container.querySelector('.rpg-creation__carte--assiste'), 'choisir la création assistée');
   const assistant = atelier.container.querySelector('.rpg-assistant');
-  assert.ok(assistant, 'l’assistant remplace les panneaux de l’atelier');
-  assert.ok(!atelier.container.querySelector('.rpg-atelier__panneaux'), 'les panneaux sont masqués pendant l’assistant');
-  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 3, 'trois étapes au fil de l’assistant');
+  assert.ok(assistant, 'l’assistant remplace le seuil');
+  assert.ok(!atelier.container.querySelector('.rpg-atelier'), 'l’atelier est masqué pendant l’assistant');
+  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 2, 'deux étapes au fil : couleurs puis style');
   const pipSableAssistant = [...assistant.querySelectorAll('.rpg-assistant__couleur')].find((bouton) => bouton.getAttribute('aria-label') === 'Couleur Sable');
   await atelier.click(pipSableAssistant, 'couleur Sable');
   assert.equal(pipSableAssistant.getAttribute('aria-pressed'), 'true', 'la couleur Sable est retenue');
-  await atelier.click(assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'), 'Continuer vers les créatures');
-  assert.match(texte(assistant.querySelector('.rpg-assistant__compteur')), /0 \/ 4 créatures/, 'le compteur de créatures démarre à zéro');
-  const vignettesCrea = [...assistant.querySelectorAll('.rpg-assistant__carte-bouton')];
-  assert.ok(vignettesCrea.length >= 4, 'des créatures Sable possédées sont proposées');
-  for (const vignette of vignettesCrea.slice(0, 4)) await atelier.click(vignette, 'choisir une créature');
-  assert.match(texte(assistant.querySelector('.rpg-assistant__compteur')), /4 \/ 4 créatures/, 'quatre créatures sont choisies');
-  assert.equal(assistant.querySelectorAll('.rpg-assistant__carte.is-choisie').length, 4, 'les vignettes choisies portent la coche');
-  const versSorts = assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary');
-  assert.equal(versSorts.disabled, false, 'Continuer est ouvert avec quatre créatures');
-  await atelier.click(versSorts, 'Continuer vers les sorts');
-  assert.match(texte(assistant.querySelector('.rpg-assistant__compteur')), /0 \/ 4 sorts/, 'le compteur de sorts démarre à zéro');
-  const vignettesSorts = [...assistant.querySelectorAll('.rpg-assistant__carte-bouton')];
-  assert.ok(vignettesSorts.length >= 4, 'des sorts Sable possédés sont proposés');
-  for (const vignette of vignettesSorts.slice(0, 4)) await atelier.click(vignette, 'choisir un sort');
+  await atelier.click(assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'), 'Continuer vers le style');
+  const styles = [...assistant.querySelectorAll('.rpg-assistant__style')];
+  assert.equal(styles.length, 3, 'trois styles de jeu sont proposés');
+  assert.deepEqual(styles.map((bouton) => texte(bouton.querySelector('strong'))), ['Aggro', 'Contrôle', 'Mix']);
   const generer = assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary');
+  assert.equal(generer.disabled, true, 'impossible de générer sans style choisi');
+  await atelier.click(styles[0], 'choisir le style Aggro');
+  assert.equal(styles[0].getAttribute('aria-pressed'), 'true', 'le style Aggro est retenu');
+  assert.equal(generer.disabled, false, 'le bouton de génération se débloque');
   assert.match(texte(generer), /Générer le deck/, 'le dernier pas génère le deck');
   await atelier.click(generer, 'Générer le deck');
   assert.ok(!atelier.container.querySelector('.rpg-assistant'), 'l’assistant se referme sur le deck généré');
+  assert.ok(atelier.container.querySelector('.rpg-atelier'), 'le deck généré atterrit dans l’atelier manuel');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /30 \/ 30 cartes/, 'le deck généré est complet');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__verdict')), /prêt à jouer/, 'le verdict de validation est vert');
-  assert.match(texte(atelier.container.querySelector('.rpg-atelier__statut')), /Deck généré/, 'la ligne d’état explique la génération');
   assert.ok(atelier.container.querySelectorAll('.rpg-atelier__liste .rpg-atelier__ligne').length >= 8,
-    'la liste du deck mêle les huit choix et les compléments de l’IA');
+    'la liste du deck montre les cartes générées');
 
   // --- Enregistrer : le jeu propose de nommer le deck ------------------------------------------
   await atelier.click(atelier.container.querySelector('.rpg-atelier__actions .rpg-menu-button--primary'), 'Enregistrer le deck');
@@ -587,7 +596,8 @@ export async function checkRpgDecks(assert) {
   window.localStorage.removeItem('letsplay_sablier_decks_maison_v1');
   const brouillon = await monter(assert);
   await brouillon.click(brouillon.tab('Deck'), 'onglet Deck (brouillon)');
-  await brouillon.click(brouillon.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir l’atelier');
+  await brouillon.click(brouillon.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir la création');
+  await brouillon.click(brouillon.container.querySelector('.rpg-creation__carte--manuel'), 'création manuelle');
   await brouillon.click(brouillon.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-ajout'), 'ajouter Chien du guet');
   const champNom = brouillon.container.querySelector('.rpg-atelier__state input[type="text"]');
   await act(async () => {

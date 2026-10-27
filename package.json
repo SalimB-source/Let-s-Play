@@ -113,6 +113,7 @@
     "check:rpg-story-3d-ui": "node scripts/rpg-story-3d-check.mjs",
     "check:rpg-ambient-ui": "node scripts/rpg-ambient-music-ui-check.mjs",
     "check:rpg-deck-ui": "node scripts/rpg-deck-ui-check.mjs",
+    "check:rpg-deck-creation": "node scripts/rpg-deck-creation-check.mjs",
     "check:city-rush": "node --test tests/city-rush-rules.test.js tests/city-rush-bazooka.test.js tests/city-rush-themes.test.js tests/city-rush-hud.test.js tests/city-rush-progression.test.js tests/city-rush-story.test.js tests/city-rush-tournament.test.js tests/city-rush-missions.test.js tests/city-rush-side-bump.test.js tests/city-rush-cockpit.test.js tests/city-rush-free-drive.test.js",
     "check:city-rush-cockpit": "node --test tests/city-rush-cockpit.test.js && node scripts/city-rush-cockpit-check.mjs --all && node scripts/vice-city-camera-ui-check.mjs",
     "check:city-rush-free-drive": "node --test tests/city-rush-free-drive.test.js && node scripts/city-rush-free-drive-check.mjs --all && node scripts/vice-city-driving-ui-check.mjs",

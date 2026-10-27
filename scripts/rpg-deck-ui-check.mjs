@@ -130,8 +130,9 @@ console.log('✓ Onglet Deck : boîtiers 3D illustrés, liste des cartes masqué
 // ── Atelier de deck : la création vit dans l'onglet Deck, pleine largeur quand elle est ouverte ──
 assert.match(pageSource, /screen === 'decks' \? \(atelier \? \(/,
   'l’atelier remplace l’étagère quand il est ouvert');
-assert.match(pageSource, /<RpgDeckAtelier[\s\S]*?onEnregistrer=\{enregistrerAtelier\}/,
+assert.match(pageSource, /<RpgDeckCreation[\s\S]*?onEnregistrer=\{enregistrerAtelier\}/,
   'l’enregistrement de l’atelier passe par le parent (casier + synchronisation)');
+assert.match(pageSource, /mode=\{atelier\.mode\}/, 'le wrapper de création reçoit le mode d’ouverture (nouveau, édition, copie)');
 assert.match(pageSource, /rpg-deck-choice--neuf/, 'la crate « Nouveau deck » est sur l’étagère');
 assert.match(pageSource, /RPG_DECKS_MAISON_LIMITE/, 'l’étagère maison a un plafond affiché');
 assert.match(pageSource, /rpg-deck-catalog__sync/, 'la ligne de synchronisation du compte est sur l’étagère');
@@ -171,17 +172,53 @@ assert.match(readSource('../src/games/RpgDeckAtelier.jsx'), /carteReveleePar/, '
 // Le geste est délégué par la page au menu entier (l’atelier y vit) : il suffit que les
 // cartes de l’atelier portent leur `data-card-id` et que l’astuce annonce le geste au doigt.
 const atelierSource = readSource('../src/games/RpgDeckAtelier.jsx');
+const creationSource = readSource('../src/games/RpgDeckCreation.jsx');
+const choixSource = readSource('../src/games/RpgDeckModeChoice.jsx');
+const assistantSource = readSource('../src/games/RpgDeckAssistant.jsx');
+const autoSource = readSource('../src/games/rpgDeckAuto.js');
 // Le deck compte les exemplaires **payés** : l'atelier ne laisse pas aligner deux
 // copies d'une carte achetée une fois (doc 13, D10). Trois portes, un seul stock lu.
 const atelierStock = atelierSource;
 assert.match(atelierStock, /const validation = useMemo\(\(\) => rpgValiderDeckMaison\(cardIds, collection, exemplaires\)/,
   'la validation de l’atelier consulte le stock, pas le seul quota de rareté');
 assert.equal((atelierStock.match(/peutAjouterCarte\(carte\.id, cardIds, collection, exemplaires\)/g) ?? []).length, 3,
-  'les trois portes d’ajout de l’atelier — grille, deck, assistant — lisent le même stock');
+  'les trois portes d’ajout de l’atelier — ajout, grille, liste — lisent le même stock');
 assert.match(atelierStock, /const limite = plafondVisible\(collection, carte\.id, exemplaires\)/,
   'le plafond affiché dans la grille est celui du deck, pas le quota brut de la carte');
-assert.match(atelierStock, /limiteDe: \(carte\) => \(carte \? plafondVisible\(collection, carte\.id, exemplaires\) : 0\)/,
-  'l’assistant génère dans le stock : un deck né assisté doit rester enregistrable');
+assert.match(creationSource, /limiteDe: \(carte\) => \(carte \? plafondVisible\(collection, carte\.id, exemplaires\) : 0\)/,
+  'la génération assistée compose dans le stock : un deck né assisté doit rester enregistrable');
+assert.match(creationSource, /genererDeckAssiste\(\{[\s\S]*?style,/,
+  'le wrapper transmet le style choisi au moteur de génération');
+
+// ── Le seuil de création : deux portes, puis l'atelier ou l'assistant ────────────────────────
+assert.match(choixSource, /rpg-creation__carte--assiste/, 'la porte assistée est identifiée');
+assert.match(choixSource, /rpg-creation__carte--manuel/, 'la porte manuelle est identifiée');
+assert.equal((choixSource.match(/type="button"/g) ?? []).length >= 2, true, 'les deux portes sont de vrais boutons');
+assert.match(creationSource, /useState\(mode === 'nouveau' \? 'choix' : 'manuel'\)/,
+  'une création neuve passe par le seuil ; édition et copie ouvrent directement l’atelier');
+assert.match(creationSource, /onFermer=\{\(\) => setVue\('choix'\)\}/,
+  'annuler l’assistant ramène au seuil, pas à l’étagère');
+
+// ── L'assistant : deux étapes (couleurs, style), plus de choix carte par carte ──────────────
+assert.match(assistantSource, /id: 'couleurs'/, 'la première étape reste le choix des couleurs');
+assert.match(assistantSource, /id: 'style'/, 'la seconde étape est le style de jeu');
+assert.doesNotMatch(assistantSource, /RPG_ASSISTANT_CREATURES|cartesPourEtape/,
+  'l’assistant ne fait plus choisir 4 créatures et 4 sorts');
+assert.match(assistantSource, /RPG_STYLES_JEU\.map/, 'les trois styles sont rendus depuis les profils du moteur');
+assert.match(assistantSource, /onGenerer\(\{ couleurs: \[\.\.\.couleurs\], style \}\)/,
+  'la génération ne reçoit que les couleurs et le style');
+assert.match(autoSource, /export const RPG_STYLES_JEU = \[/, 'les profils de style sont déclarés dans le moteur pur');
+assert.match(autoSource, /id: 'aggro'[\s\S]*?id: 'controle'[\s\S]*?id: 'mix'/,
+  'les trois styles aggro, contrôle, mix sont déclarés dans cet ordre');
+assert.match(autoSource, /export function bonusStyle/, 'le style pèse sur le score des candidats');
+
+// ── L'atelier manuel minimaliste : filtres fins repliés, panneau allégé ─────────────────────
+assert.match(atelierSource, /rpg-atelier__toggle--filtres/, 'un seul bouton déploie les filtres avancés');
+assert.match(atelierSource, /aria-expanded=\{filtresAvances\}/, 'le bouton Filtres annonce son état aux lecteurs d’écran');
+assert.match(atelierSource, /rpg-atelier__mini-stats/, 'les chiffres du deck tiennent sur une ligne ténue');
+assert.match(atelierSource, /rpg-atelier__options/, 'la carte emblème est rangée dans des options repliées');
+assert.doesNotMatch(atelierSource, /RpgDeckAssistant|genererDeckAssiste/,
+  'l’atelier manuel ne contient plus l’assistant : le choix se fait en amont');
 const collectionRules = readSource('../src/games/rpgCollection.js');
 assert.match(collectionRules, /export function carteEnPlayset\(carteOuId\)/,
   'le playset (communes et dotation) est une règle nommée, pas une exception éparse');
@@ -221,4 +258,4 @@ assert.match(atelierCss, /@media \(pointer: coarse\)\s*\{[^{}]*\.rpg-atelier__as
 assert.match(battleCss, /\.rpg-battle \[data-card-id\] img,[\s\S]{0,120}\.rpg-battle img\[data-card-id\]\s*\{\s*-webkit-user-drag:\s*none/,
   'toute carte affichée — créateur de deck compris — refuse le drag natif de son illustration');
 
-console.log('✓ Atelier de decks : crate « Nouveau deck », éditeur (nom, emblème, cartes, validation live collection), brouillons enregistrables, decks maison jouables en duel libre, édition/renommage/suppression en deux temps, copie, récompenses d’étage vers la collection, compte Supabase et fusion d’appareils');
+console.log('✓ Atelier de decks : crate « Nouveau deck » → seuil assistée/manuelle, assistant couleurs → style (aggro, contrôle, mix) générant dans la collection, éditeur manuel minimaliste (filtres repliés, nom, emblème, cartes, validation live collection), brouillons enregistrables, decks maison jouables en duel libre, édition/renommage/suppression en deux temps, copie, compte Supabase et fusion d’appareils');

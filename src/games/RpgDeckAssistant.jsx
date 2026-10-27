@@ -1,21 +1,21 @@
 /**
- * L'assistant de création assistée — le wizard en trois pas de l'atelier.
+ * L'assistant de création assistée — le wizard en deux pas de l'atelier.
  *
- * « ✦ Création assistée » ouvre ce panneau à la place de la collection :
+ * Le parcours est désormais celui que la maison promet sur la crate
+ * « Nouveau deck » :
  *
  *   1. **Les couleurs** — 1 à 3 des cinq éléments du jeu ;
- *   2. **4 créatures** — les créatures et héros possédés de ces couleurs ;
- *   3. **4 sorts** — magies et armes, mêmes règles.
+ *   2. **Le style de jeu** — aggro, contrôle ou mix (`RPG_STYLES_JEU`,
+ *      `rpgDeckAuto.js`).
  *
- * « Générer le deck » rend la main à l'atelier : `genererDeckAssiste`
- * (`rpgDeckAuto.js`) pose les huit choix à deux exemplaires et l'IA complète
- * autour. Le deck pré-rempli atterrit dans l'édition normale — chaque carte
- * reste retirable, ajoutable, jusqu'à l'enregistrement.
+ * « Générer le deck » appelle `onGenerer({ couleurs, style })` : le moteur
+ * (`genererDeckAssiste`) compose alors trente cartes — ou un brouillon si la
+ * collection ne suffit pas — uniquement avec des cartes possédées. Le deck
+ * généré atterrit dans l'atelier manuel, où chaque carte reste retouchable.
  *
- * Composant présentationnel, comme l'atelier : pas de persistance ici, les
- * cartes choisies remontent par `onGenerer({ couleurs, creatures, sorts })`.
- * Les vignettes portent `data-card-id` : l'appui long de la maison
- * (`rpgLongPress.js`) y ouvre l'aperçu sans rien sélectionner.
+ * Composant présentationnel : pas de persistance ici. Il annonce en revanche
+ * la taille maximale que la collection permet pour les couleurs retenues,
+ * pour ne pas promettre un deck de 30 cartes qu'il ne pourrait pas tenir.
  */
 
 import { useMemo, useState } from 'react';
@@ -23,114 +23,52 @@ import {
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   cardColors,
-  cardCost,
-  cardCopyLimit,
-  cardFrameColor,
-  cardFrameClass,
-  cardMotifClass,
-  cardTypeLine,
-  carteEstArme,
+  carteJouableSansTerrain,
 } from './rpgCards.js';
-import { SortSceau } from './rpgSortSignature.jsx';
 import { plafondVisible } from './rpgCollection.js';
-import {
-  RPG_ASSISTANT_CREATURES,
-  RPG_ASSISTANT_SORTS,
-  cartesPourEtape,
-  familleDeCarte,
-} from './rpgDeckAuto.js';
+import { RPG_STYLES_JEU } from './rpgDeckAuto.js';
 
 const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
-/**
- * Le catalogue que l'assistant pose sur la table. `limiteDe` n'est PAS le quota
- * de rareté par défaut : l'assistant compose avec le **stock** (doc 13, D10),
- * sinon il générerait un deck à trente cartes dont l'atelier refuserait les
- * doublons — un deck né conforme dans l'assistant, hors stock à l'enregistrement.
- */
-const cataloguePour = (collection, exemplaires) => ({
-  cartes: RPG_DUEL_CARDS,
-  couleursDe: cardColors,
-  limiteDe: (carte) => (carte ? plafondVisible(collection, carte.id, exemplaires) : 0),
-});
-
-const typeLabel = (carte) => (carteEstArme(carte) ? 'Arme'
-  : carte.kind === 'magie' ? 'Magie'
-    : carte.kind === 'hero' ? 'Héros' : 'Créature');
 
 /** Étapes du wizard, dans l'ordre — l'en-tête les montre comme un fil. */
 const ETAPES = [
   { id: 'couleurs', label: 'Couleurs', titre: 'Vos couleurs' },
-  { id: 'creatures', label: '4 créatures', titre: 'Quatre créatures' },
-  { id: 'sorts', label: '4 sorts', titre: 'Quatre sorts' },
+  { id: 'style', label: 'Style de jeu', titre: 'Votre style de jeu' },
 ];
-
-/** Une vignette de choix : un clic coche ou décoche, la coche reste posée. */
-function Vignette({ carte, choisi, max, onChoisir, artUrl, surSfx, onHoverCard, onLeaveHoverCard }) {
-  const survoler = (event) => onHoverCard?.(carte, event);
-  const quitter = () => onLeaveHoverCard?.();
-  const famille = familleDeCarte(carte);
-  return (
-    <li
-      className={`rpg-assistant__carte${choisi ? ' is-choisie' : ''}`}
-      data-card-id={carte.id}
-      style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte) }}
-      onMouseEnter={survoler}
-      onMouseLeave={quitter}
-    >
-      <button
-        type="button"
-        className="rpg-assistant__carte-bouton"
-        aria-pressed={choisi}
-        aria-label={`${choisi ? 'Retirer' : 'Choisir'} ${carte.name} — ${typeLabel(carte)}, ${cardCost(carte)} mana`}
-        onClick={() => { surSfx(choisi ? 'annuler' : 'select'); onChoisir(carte.id); }}
-        onFocus={survoler}
-        onBlur={quitter}
-      >
-        <span className={`rpg-assistant__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
-          <img src={artUrl(carte.id)} alt="" loading="lazy" />
-          <b className="rpg-assistant__cout" aria-hidden="true">{cardCost(carte)}</b>
-          {choisi && <span className="rpg-assistant__coche" aria-hidden="true">✓</span>}
-          {famille === 'creature' && (
-            <span className="rpg-assistant__pt" aria-hidden="true">{carte.atk}<i>/</i>{carte.def}</span>
-          )}
-          <SortSceau carte={carte} className="rpg-assistant__carte-sort" />
-        </span>
-        <span className="rpg-assistant__carte-nom">
-          <strong>{carte.name}</strong>
-          <small>{typeLabel(carte)} · {cardTypeLine(carte)}</small>
-        </span>
-      </button>
-    </li>
-  );
-}
 
 export function RpgDeckAssistant({
   collection = [],
   exemplaires = null,
-  artUrl = (id) => id,
   onGenerer,
   onFermer,
   surSfx = () => {},
-  onHoverCard = null,
-  onLeaveHoverCard = null,
 }) {
   const [etape, setEtape] = useState('couleurs');
   const [couleurs, setCouleurs] = useState(() => new Set());
-  const [creatures, setCreatures] = useState([]);
-  const [sorts, setSorts] = useState([]);
+  const [style, setStyle] = useState('');
   const [message, setMessage] = useState('');
 
   const rangEtape = ETAPES.findIndex((entree) => entree.id === etape);
-  const catalogue = useMemo(() => cataloguePour(collection, exemplaires), [collection, exemplaires]);
-  const candidatsCreatures = useMemo(
-    () => cartesPourEtape([...couleurs], 'creatures', catalogue, collection),
-    [couleurs, collection, catalogue],
-  );
-  const candidatsSorts = useMemo(
-    () => cartesPourEtape([...couleurs], 'sorts', catalogue, collection),
-    [couleurs, collection, catalogue],
-  );
+
+  /**
+   * Le potentiel de génération des couleurs retenues : le nombre de
+   * références possédées et le total d'exemplaires alignables (le stock
+   * payé borne chaque carte, pas le seul quota de rareté).
+   */
+  const potentiel = useMemo(() => {
+    if (!couleurs.size) return { references: 0, copies: 0 };
+    const retenues = RPG_DUEL_CARDS.filter((carte) => {
+      if (!carteJouableSansTerrain(carte)) return false;
+      if (!collection.includes(carte.id)) return false;
+      return cardColors(carte).every((couleur) => couleurs.has(couleur));
+    });
+    const copies = retenues.reduce(
+      (total, carte) => total + plafondVisible(collection, carte.id, exemplaires),
+      0,
+    );
+    return { references: retenues.length, copies };
+  }, [couleurs, collection, exemplaires]);
 
   const basculerCouleur = (couleur) => {
     setMessage('');
@@ -146,52 +84,33 @@ export function RpgDeckAssistant({
     });
   };
 
-  const basculerCarte = (liste, setListe, maximum) => (id) => {
+  const choisirStyle = (id) => {
+    surSfx('menu');
     setMessage('');
-    setListe((actuels) => {
-      if (actuels.includes(id)) return actuels.filter((entree) => entree !== id);
-      if (actuels.length >= maximum) {
-        surSfx('erreur');
-        setMessage(`${maximum} cartes au plus à cette étape : retirez-en une pour en choisir une autre.`);
-        return actuels;
-      }
-      return [...actuels, id];
-    });
+    setStyle(id);
   };
 
-  const versCreations = () => {
+  const versStyle = () => {
     if (!couleurs.size) {
       surSfx('erreur');
       setMessage('Choisissez d’abord au moins une couleur.');
       return;
     }
     surSfx('menu');
-    setEtape('creatures');
-  };
-
-  const versSorts = () => {
-    if (creatures.length !== RPG_ASSISTANT_CREATURES) {
-      surSfx('erreur');
-      setMessage(`Choisissez exactement ${RPG_ASSISTANT_CREATURES} créatures pour continuer.`);
-      return;
-    }
-    surSfx('menu');
-    setEtape('sorts');
+    setEtape('style');
   };
 
   const generer = () => {
-    if (sorts.length !== RPG_ASSISTANT_SORTS) {
+    if (!style) {
       surSfx('erreur');
-      setMessage(`Choisissez exactement ${RPG_ASSISTANT_SORTS} sorts pour lancer la génération.`);
+      setMessage('Choisissez un style de jeu pour lancer la génération.');
       return;
     }
     surSfx('apparition');
-    onGenerer({ couleurs: [...couleurs], creatures: [...creatures], sorts: [...sorts] });
+    onGenerer({ couleurs: [...couleurs], style });
   };
 
-  const peutChoisir = etape === 'creatures'
-    ? candidatsCreatures.length >= RPG_ASSISTANT_CREATURES
-    : candidatsSorts.length >= RPG_ASSISTANT_SORTS;
+  const collectionTropJuste = couleurs.size > 0 && potentiel.copies < 30;
 
   return (
     <section className="rpg-assistant" aria-label="Création assistée de deck">
@@ -201,8 +120,7 @@ export function RpgDeckAssistant({
           <h3>{ETAPES[rangEtape].titre}</h3>
           <p className="rpg-assistant__aide">
             {etape === 'couleurs' && 'Une à trois couleurs : le deck ne sortira jamais de cette identité.'}
-            {etape === 'creatures' && 'Choisissez les créatures qui porteront votre deck : l’IA bâtit autour.'}
-            {etape === 'sorts' && 'Magies et armes complémentaires, puis l’IA remplit le reste de la collection.'}
+            {etape === 'style' && 'Choisissez un plan de jeu : le moteur compose ensuite avec les cartes que vous possédez.'}
           </p>
         </div>
         <button type="button" className="rpg-menu-link" onClick={() => { surSfx('annuler'); onFermer(); }}>
@@ -241,106 +159,69 @@ export function RpgDeckAssistant({
               <small>{couleurs.has(couleur) ? 'retenue' : 'choisir'}</small>
             </button>
           ))}
-          <p className="rpg-assistant__astuce">Mono, duo, tri : les hybrides de vos couleurs sont bienvenus.</p>
+          <p className="rpg-assistant__astuce">Mono, duo ou tri : les cartes hybrides de vos couleurs sont aussi retenues.</p>
         </div>
       )}
 
-      {etape !== 'couleurs' && (
+      {etape === 'style' && (
         <>
           <p className="rpg-assistant__compteur" aria-live="polite">
-            {etape === 'creatures'
-              ? <><b>{creatures.length}</b> / {RPG_ASSISTANT_CREATURES} créatures choisies</>
-              : <><b>{sorts.length}</b> / {RPG_ASSISTANT_SORTS} sorts choisis</>}
-            {' · '}
-            {[...couleurs].map((couleur) => COULEUR_LABELS[couleur]).join(' · ')}
+            Couleurs retenues :{' '}
+            <b>{[...couleurs].map((couleur) => COULEUR_LABELS[couleur]).join(' · ')}</b>
+            {' · '}{potentiel.references} carte{potentiel.references > 1 ? 's' : ''} possédée{potentiel.references > 1 ? 's' : ''}
           </p>
-          {!peutChoisir && (
-            <p className="rpg-assistant__message" role="status">
-              Votre collection ne compte pas assez de cartes de ces couleurs à cette étape : revenez en arrière
-              et élargissez les couleurs.
+          {collectionTropJuste && (
+            <p className="rpg-assistant__message rpg-assistant__message--alerte" role="status">
+              Votre collection de ces couleurs permet {potentiel.copies} cartes au plus : le deck généré sera un
+              brouillon incomplet. Élargissez vos couleurs ou débloquez des cartes au Souk pour atteindre 30.
             </p>
           )}
-          {etape === 'creatures' && (
-            candidatsCreatures.length === 0 ? (
-              <p className="rpg-assistant__vide">Aucune créature possédée dans ces couleurs.</p>
-            ) : (
-              <ul className="rpg-assistant__grille" aria-label="Créatures de vos couleurs">
-                {candidatsCreatures.map((carte) => (
-                  <Vignette
-                    key={carte.id}
-                    carte={carte}
-                    choisi={creatures.includes(carte.id)}
-                    onChoisir={basculerCarte(creatures, setCreatures, RPG_ASSISTANT_CREATURES)}
-                    artUrl={artUrl}
-                    surSfx={surSfx}
-                    onHoverCard={onHoverCard}
-                    onLeaveHoverCard={onLeaveHoverCard}
-                  />
-                ))}
-              </ul>
-            )
-          )}
-          {etape === 'sorts' && (
-            candidatsSorts.length === 0 ? (
-              <p className="rpg-assistant__vide">Aucun sort possédé dans ces couleurs.</p>
-            ) : (
-              <ul className="rpg-assistant__grille" aria-label="Sorts de vos couleurs">
-                {candidatsSorts.map((carte) => (
-                  <Vignette
-                    key={carte.id}
-                    carte={carte}
-                    choisi={sorts.includes(carte.id)}
-                    onChoisir={basculerCarte(sorts, setSorts, RPG_ASSISTANT_SORTS)}
-                    artUrl={artUrl}
-                    surSfx={surSfx}
-                    onHoverCard={onHoverCard}
-                    onLeaveHoverCard={onLeaveHoverCard}
-                  />
-                ))}
-              </ul>
-            )
-          )}
+          <div className="rpg-assistant__styles" role="group" aria-label="Style de jeu">
+            {RPG_STYLES_JEU.map((profil) => (
+              <button
+                key={profil.id}
+                type="button"
+                className={`rpg-assistant__style rpg-assistant__style--${profil.id}${style === profil.id ? ' is-on' : ''}`}
+                aria-pressed={style === profil.id}
+                onClick={() => choisirStyle(profil.id)}
+              >
+                <i className="rpg-assistant__style-icone" aria-hidden="true">{profil.icone}</i>
+                <strong>{profil.label}</strong>
+                <small>{profil.accroche}</small>
+                <span>{profil.description}</span>
+              </button>
+            ))}
+          </div>
         </>
       )}
 
       <footer className="rpg-assistant__actions">
-        {etape !== 'couleurs' && (
+        {etape === 'style' && (
           <button
             type="button"
             className="rpg-menu-button"
-            onClick={() => { surSfx('annuler'); setMessage(''); setEtape(etape === 'sorts' ? 'creatures' : 'couleurs'); }}
+            onClick={() => { surSfx('annuler'); setMessage(''); setEtape('couleurs'); }}
           >
             ← Retour
           </button>
         )}
         {etape === 'couleurs' && (
-          <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={versCreations}>
+          <button type="button" className="rpg-menu-button rpg-menu-button--primary" onClick={versStyle}>
             Continuer →
           </button>
         )}
-        {etape === 'creatures' && (
+        {etape === 'style' && (
           <button
             type="button"
             className="rpg-menu-button rpg-menu-button--primary"
-            disabled={creatures.length !== RPG_ASSISTANT_CREATURES}
-            onClick={versSorts}
-          >
-            Continuer →
-          </button>
-        )}
-        {etape === 'sorts' && (
-          <button
-            type="button"
-            className="rpg-menu-button rpg-menu-button--primary"
-            disabled={sorts.length !== RPG_ASSISTANT_SORTS}
+            disabled={!style}
             onClick={generer}
           >
             ✦ Générer le deck
           </button>
         )}
         <p className="rpg-atelier__statut" role="status">
-          L’IA complétera avec les cartes qui font écho aux vôtres — tribus, mécaniques, courbe de mana.
-          Rien n’est joué avant l’enregistrement.
+          Le moteur n’emploie que vos cartes possédées, dans la limite de vos exemplaires. Rien n’est joué avant l’enregistrement.
         </p>
       </footer>
     </section>

@@ -89,7 +89,7 @@ import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
-import RpgDeckAtelier from './RpgDeckAtelier.jsx';
+import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { regleCarteLongue, resumeCarte } from './rpgCardResume.js';
@@ -4800,7 +4800,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
-            <RpgDeckAtelier
+            <RpgDeckCreation
+              mode={atelier.mode}
               deckInitial={atelier.mode === 'edition'
                 ? decksMaison.find((deck) => deck.id === atelier.id) ?? null
                 : null}
@@ -4813,6 +4814,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 ? atelier.deck.cardIds.filter((id) => collection.includes(id))
                 : []}
               collection={collection}
+              exemplaires={exemplaires}
               artUrl={cardArt}
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}
