@@ -173,17 +173,23 @@ test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peintu
     // Les deux furies ont été repeintes dans la passe Souls (octobre 2026) :
     // même composition, mais l'huile sombre de la collection au lieu d'une
     // facture d'une autre époque.
-    ['berserk-du-crepuscule', 'corbeau-furie-souls-v1'],
-    ['valkyrie-des-neuf-nuits', 'corbeau-furie-souls-v1'],
+    //
+    // Le Berserk du crépuscule a ensuite été recadré (octobre 2026) : sa tête
+    // tombait sous le bandeau de nom. Face intacte et face de Furie ont été
+    // reprises ensemble — plus de ciel au-dessus, le crâne au tiers supérieur —
+    // et portent donc chacune leur révision, le temps que les caches se
+    // retournent.
+    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-cadrage-v2', 'corbeau-crepuscule-cadrage-v2'],
+    ['valkyrie-des-neuf-nuits', 'corbeau-furie-souls-v1', 'corbeau-neuf-nuits-v1'],
   ];
-  for (const [carteId, revision] of portraits) {
+  for (const [carteId, revision, revisionIntacte] of portraits) {
     const carte = cardById(carteId);
     assert.equal(carte.furie, 2, `${carteId} porte bien la Furie 2`);
     assert.equal(cardArtFurie(carte),
       `/cards/${carteId}-furie.jpg?v=${revision}`,
       `${carteId} affiche sa peinture furie, datée sous ${revision}`);
-    assert.match(cardArt(carte), new RegExp(`^/cards/${carteId}\\.jpg\\?v=corbeau-neuf-nuits-v1$`),
-      `${carteId} garde sa peinture intacte, sous la révision du set`);
+    assert.match(cardArt(carte), new RegExp(`^/cards/${carteId}\\.jpg\\?v=${revisionIntacte}$`),
+      `${carteId} garde sa peinture intacte, sous ${revisionIntacte}`);
     assert.ok(existsSync(fileURLToPath(
       new URL(`../public/cards/${carteId}-furie.jpg`, import.meta.url),
     )), `${carteId}-furie.jpg est livré avec le jeu`);

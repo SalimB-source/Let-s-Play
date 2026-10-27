@@ -291,8 +291,9 @@ qui éclate sous les impacts. Révision `neige-eclair-marteau-v4`.
 ## Le Corbeau des neuf nuits — Neige + Ténèbres
 
 Le set hybride de la **Tour du Corbeau** (dossier 22) peint six cartes, toutes
-au ratio exact de la face (1024×1280), dans une seule révision de cache —
-`corbeau-neuf-nuits-v1` dans `rpgCardArt.js` :
+au ratio exact de la face (1024×1280), sous la révision de cache du set —
+`corbeau-neuf-nuits-v1` dans `rpgCardArt.js` — sauf le Berserk du crépuscule,
+recadré depuis et daté à part (voir plus bas) :
 
 - **Corbeau de givre** — un grand corbeau de nuit posé sur une pierre runique,
   le bec et les plumes pris dans le givre, la neige épaisse, l'aurore en haut
@@ -322,6 +323,30 @@ Deux de ces six cartes portent la Furie et reçoivent donc, en plus de leur
 peinture intacte, une **face de Furie** au même ratio et dans la même
 composition, ensanglantée et enragée : `berserk-du-crepuscule-furie.jpg` et
 `valkyrie-des-neuf-nuits-furie.jpg` (voir la dérogation Furie plus bas).
+
+### Le recadrage du Berserk du crépuscule (octobre 2026)
+
+Sur la carte posée, le **Berserk du crépuscule** était mal cadré : le peintre
+avait rempli le tiers supérieur du cadre de ciel, et le crâne du berserker
+tombait exactement sous le bandeau de nom — le parchemin, la ligne de type et
+le bandeau d'élément mangeaient le front, et il ne restait plus, en vignette
+comme sur la table, qu'un visage coupé au-dessus des sourcils. La composition
+elle-même n'était pas en cause : c'était sa place dans le cadre.
+
+La peinture a donc été **reprise dans le même fichier**, sans rien changer à la
+scène : le même berserker (même visage buriné, même barbe tressée, même peau de
+loup givrée, même hache, même bouclier rond cerclé de fer, même torse balafré),
+la même grève, le même dernier rouge du jour, les mêmes montagnes et le même
+vol de corbeaux. Seul le cadrage recule : plus de ciel au-dessus de lui, le
+crâne désormais au tiers supérieur et **entièrement dégagé sous le parchemin**,
+la silhouette plus basse dans la face. Sa **face de Furie** suit le même
+recadrage, cri et sang compris, pour que les deux états ne se contredisent pas.
+
+Les deux faces portent leur propre révision de cache —
+`corbeau-crepuscule-cadrage-v2` pour la face intacte, la même marque suffixée
+`-furie` (`corbeau-furie-crepuscule-cadrage-v2`) pour la face déclenchée —, le
+temps que les navigateurs oublient l'ancien cadrage ; les noms de fichiers ne
+bougent pas.
 
 ## État des sept magies reprises en plein art 4:5
 
@@ -1009,8 +1034,9 @@ change de matière :
   `tenebres-os-cendres-v2` — la même peinture, avec le violet remis.
 
   **Les six cartes du Corbeau des neuf nuits ne le reçoivent pas** : elles
-  portent `corbeau-neuf-nuits-v1`, restent franchement froides, et c'est ce
-  contraste qui donne au set sa profondeur.
+  portent la marque du set (`corbeau-neuf-nuits-v1`, ou
+  `corbeau-crepuscule-cadrage-v2` pour le Berserk recadré), restent franchement
+  froides, et c'est ce contraste qui donne au set sa profondeur.
 - **Une seule source** : une lampe à huile, une fente de jour, jamais deux.
 
 ### Premier lot : l'atelier et les serviteurs
@@ -1124,9 +1150,10 @@ peintures, deux âges de la carte.
 ### Les Ténèbres sont closes : 28 cartes sur 28
 
 Contrôle fait carte par carte, comme pour la Neige et l'Eau : aucune carte
-jouable de l'élément Ténèbres ne garde son ancienne peinture. Les six entrées
-en marque `corbeau-neuf-nuits-v1` sont le **Corbeau des neuf nuits**, déjà
-traité.
+jouable de l'élément Ténèbres ne garde son ancienne peinture. Les six cartes
+du **Corbeau des neuf nuits** — cinq sous la marque du set
+`corbeau-neuf-nuits-v1`, le Berserk du crépuscule sous celle de son recadrage
+`corbeau-crepuscule-cadrage-v2` — sont déjà traitées.
 
 Les cinq anciennes peintures rejoignent `public/cards/alt/` : **cent
 quarante-huit illustrations alternatives**, dont quinze à l'échelle et cent
@@ -1163,7 +1190,9 @@ intacte et levé, ensanglanté, sur la furie. Le **Guerrier au bouclier rond**
 garde son bouclier de fer goudronné sur sa furie, sans le motif vert et blanc.
 Et les **deux furies du Corbeau des neuf nuits** — Berserk du crépuscule,
 Valkyrie des neuf nuits — sont repeintes dans l'huile sombre, même grève, même
-aurore, même spirale de corbeaux (`corbeau-furie-souls-v1`).
+aurore, même spirale de corbeaux (`corbeau-furie-souls-v1` ; la face du
+Berserk, recadrée depuis, est datée
+`corbeau-furie-crepuscule-cadrage-v2`).
 
 Les sept faces de Furie du catalogue sont désormais toutes dans la même
 facture.
@@ -1238,11 +1267,13 @@ seulement marquée par le combat, au format exact 1024×1280 et sous une
 révision dédiée à chacune.
 
 - **Berserk du crépuscule** (`berserk-du-crepuscule-furie.jpg`, révision
-  `corbeau-furie-crepuscule-v1`) — le même berserker sur la grève, face au
-  dernier rouge du jour ; le visage est passé en furie, la peau de loup
+  `corbeau-furie-crepuscule-cadrage-v2`) — le même berserker sur la grève, face
+  au dernier rouge du jour ; le visage est passé en furie, la peau de loup
   déchirée et souillée, le torse et les bras couverts de sang, le bouclier
   rond fendu sur son bord et la hache noircie de gore. Le ciel violet, les
-  montagnes et les corbeaux restent identiques.
+  montagnes et les corbeaux restent identiques, et la face suit le recadrage de
+  la peinture intacte : le crâne entier se lit sous le bandeau de nom, la bouche
+  hurlante au tiers supérieur.
 - **Valkyrie des neuf nuits** (`valkyrie-des-neuf-nuits-furie.jpg`, révision
   `corbeau-furie-neuf-nuits-v1`) — la même Valkyrie sur la glace, sous la même
   aurore ; elle hurle, le visage et l’armure de fer sanglants, une épaulière
@@ -1681,8 +1712,10 @@ ce sont les images les plus anciennes du catalogue.
 `contresort-des-abimes` (6 %) et `baton-des-citernes` (7 %). À cette clarté, le
 sujet tient encore en grand mais se perd dans une main de cartes.
 
-**4. Le Corbeau des neuf nuits** (six cartes, `corbeau-neuf-nuits-v1`) reste un
-registre à part, plus violet et plus fantastique que le reste des Ténèbres. Ce
+**4. Le Corbeau des neuf nuits** (six cartes, marque du set
+`corbeau-neuf-nuits-v1` et `corbeau-crepuscule-cadrage-v2` pour le Berserk
+recadré) reste un registre à part, plus violet et plus fantastique que le reste
+des Ténèbres. Ce
 n'est pas un défaut : c'est ce qui donne sa profondeur au set. À noter
 seulement que `la-barbe-noire` vit dans les Ténèbres avec une peinture du Sable.
 
