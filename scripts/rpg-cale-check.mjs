@@ -90,13 +90,16 @@ assert.deepEqual(ordreReperes, ['couleurs', 'cale'],
   'le losange ⛓ est rendu juste après la pastille de couleur, pas avant');
 
 // Une créature à Abordage d'une seule couleur (La Barbe Noire) n'a qu'une
-// pastille : la cale garde le rang commun, à côté du masque des Deux Visages.
+// pastille : la cale garde le rang commun. Les Deux Visages ont disparu —
+// plus de compteur 🎭 — et la Malédiction s'annonce dans la description lue.
 const docMono = documentDe(rendu.mono.html);
 const caleMono = docMono.querySelector('[data-compteur="cale"]');
 assert.ok(caleMono?.parentElement.matches('.rpg-card__compteurs:not(.rpg-card__compteurs--hybride)'),
   'mono : le losange ⛓ reste dans le rang commun des compteurs, sous la couleur');
-assert.ok(caleMono.parentElement.querySelector('[data-compteur="visage"]'),
-  'mono : la cale et le visage partagent ce rang');
+assert.equal(caleMono.parentElement.querySelector('[data-compteur="visage"]'), null,
+  'mono : le compteur des Deux Visages n’est plus rendu');
+assert.match(docMono.querySelector('.rpg-card')?.getAttribute('aria-label') ?? '', /malédiction/i,
+  'mono : la Malédiction est annoncée dans la description lue de la table');
 
 // ── 2 ter. Le Grappin accroché ne redemande plus de porteur ────────────────
 // L'attachement du Grappin ouvre une attente de prise en cale : la table doit

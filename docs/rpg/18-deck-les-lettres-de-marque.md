@@ -751,28 +751,32 @@ par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
 | **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : une parade anti-sort |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
-| **La Barbe Noire, les deux visages** | **Ténèbres** | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
+| **La Barbe Noire, la malédiction** | **Ténèbres** | 5 | 4/5 | **Provocation, Abordage 4, Malédiction, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
 
-**La Barbe Noire** (la carte du dédoublement, devenue carte 100 % Ténèbres
-et révélée au sommet de la Nécropole — `necropole-4`) porte la mécanique signature du personnage
-historique : Thatch l’homme d’affaires, la légende qui nouait des mèches
-brûlantes dans sa barbe pour effrayer les équipages.
+**La Barbe Noire** (la carte de la malédiction, devenue carte 100 % Ténèbres
+et révélée au sommet de la Nécropole — `necropole-4`) a perdu ses **Deux
+Visages** : c'est désormais un corps fixe **4/5 avec Provocation**, qui garde
+son Abordage 4 et son `insaisissable`.
 
-- **Elle arrive sous le visage de l’homme** — 2/7 avec Provocation : le
-  marchand de prises qui prend déjà une créature de coût 4 ou moins en cale
-  (Abordage 4, barème coût − 1) ;
-- **au début de CHACUN de vos tours, elle change** — `alternance`, moteur
-  `changerVisages` : l’homme 2/7 Provocation, la légende 6/2. Personne ne
-  choisit : la terreur se réveille et se rendort toute seule. Les blessures
-  suivent d’un visage à l’autre (une légende blessée reste un homme blessé),
-  et changer de visage ne la tue jamais — à terre, 1 PV ;
+- **Malédiction** — `malediction: { atk: 2, def: 0 }` : tant qu'elle est en
+  jeu, **toutes les créatures du camp adverse gagnent -2/-0**. Aucune
+  adjacence : contrairement à l'Aura, la Malédiction touche le camp entier,
+  quelles que soient les cases et même avec des cases vides. Les créatures qui
+  arrivent **après** elle sont maudites aussi (le moteur relit la table à
+  chaque changement via `appliquerMaledictions`, appelé par `rafraichirAuras`) ;
+  deux Barbe Noire cumulent leurs malus. Le malus se lève dès que la dernière
+  source quitte la table.
+- **Le malus ne tue pas** : seule l'attaque bouge, avec un plancher à 0.
+  Chaque entité retient l'écart *effectivement* appliqué (`maledictionBonus`)
+  pour qu'un petit corps maudit à 0 ATQ retrouve exactement son attaque
+  imprimée — pas une de plus — quand la Malédiction tombe.
 - **Le dédoublement** — `insaisissable` : elle ne peut pas être prise en cale.
-  La signature du set ne retourne pas l’arme du set contre elle : on emporte
-  un visage, l’autre reste.
+  La signature du set ne retourne pas l'arme du set contre elle.
 
-Le swap se fait **par différence** sur `atk`/`def`/`pvMax` (armes et renforts
-posés par-dessus suivent), la Provocation appartient au visage (`l’homme`
-seul). Barème : alternance +1,5, insaisissable +1 (rpgCardPower, rpgAI).
+Moteur : `appliquerMaledictions` (`rpgDuel.js`), pastille et définition du
+mot-clé (`effetIcons.js`), icône `i-malediction` (crâne). Barème : Malédiction
++1 + 0,9 par point d'attaque retiré, insaisissable +1 (`rpgCardPower`) ; l'IA
+valorise la carte selon les créatures adverses déjà posées (`rpgAI`).
 
 ## 15. Frontière & phase 2
 

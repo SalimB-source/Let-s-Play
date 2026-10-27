@@ -1831,9 +1831,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       .filter((id) => id !== carte.id && duelCardById(id)).length;
     if (autresCreatures > 0) score += 1.5;
   }
-  // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
-  // présences ; l'insaisissable refuse la cale adverse pour de bon.
-  if (carte.alternance) score += 1.5;
+  // La Malédiction (La Barbe Noire) : -2/-0 à TOUTES les créatures adverses,
+  // sans adjacence — sa valeur suit donc la table d'en face déjà posée.
+  if (carte.malediction) {
+    const adverses = duel[autre(cote)].creatures.filter((entite) => entite.pv > 0).length;
+    score += 1 + adverses * Math.max(0, Number(carte.malediction.atk) || 0) * 0.8;
+  }
+  // L'insaisissable refuse la cale adverse pour de bon.
   if (carte.insaisissable) score += 1;
   return { score, cibleId };
 }

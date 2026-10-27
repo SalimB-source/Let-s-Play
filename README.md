@@ -9033,3 +9033,42 @@ Contrôles : `npm run check:rpg` (nouvelle suite
 resserre la rangée, Bou Jeloud, Résonance inchangée —, plus les suites
 `rpg-duel`, `rpg-soleil-rouge` et `rpg-mana-essai` mises à jour),
 `node scripts/rpg-aura-check.mjs` et `npm run build`.
+
+## Le Sablier : La Barbe Noire perd ses Deux Visages et gagne Malédiction
+
+La mythique Ténèbres des Lettres de Marque change de nature. **Les Deux Visages
+sont retirés du jeu** — plus d'`alternance`, plus de pastille « Deux Visages »,
+plus de compteur 🎭 sur la table, plus de `changerVisages` en début de tour.
+La fiche devient un corps fixe **4/5 avec Provocation** (compromis entre
+l'homme 2/7 et la légende 6/2), qui garde **Abordage 4** et **insaisissable**.
+
+À la place, un nouveau mot-clé : **Malédiction**.
+
+> Tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent
+> **-2/-0**.
+
+- **Tout le camp adverse, sans adjacence** : la Malédiction n'est **pas** une
+  Aura. Ni cases voisines, ni cases vides : toutes les créatures du camp d'en
+  face perdent 2 ATQ, où qu'elles soient. La défense ne bouge pas.
+- **Effet de présence** : une créature qui arrive *après* la source est maudite
+  dès sa pose ; le malus se lève quand la dernière source quitte la table.
+  Deux Barbe Noire cumulent (-4/-0), en retirer une ne rend que son écart.
+- **Le plancher ne triche pas** : l'attaque s'arrête à 0, et l'entité retient
+  l'écart *effectivement* appliqué (`maledictionBonus`). Un 1/1 maudit à 0 ATQ
+  redevient un 1/1 — pas un 2/1 — quand la Malédiction tombe. Aucune dérive
+  avec les armes, la Furie ou les autres renforts.
+- Le sorcier adverse et les Sites ne sont pas des créatures : ils sont
+  épargnés. Le camp de la source aussi.
+
+**Moteur** : `appliquerMaledictions` (`rpgDuel.js`) s'ajoute à
+`rafraichirAuras` ; `malediction: { atk, def }` sur la fiche. **Mot-clé** :
+pastille « Malédiction », définition, libellé imprimé en tête de phrase et
+icône `i-malediction` (crâne) dans `effetIcons.js` — l'icône `i-visages` et la
+règle CSS du compteur pourpre disparaissent. **Table** : la description lue
+annonce la Malédiction. **IA et barème** : la carte se valorise selon les
+créatures adverses déjà posées ; `alternance` ne compte plus.
+
+Contrôles : nouvelle suite `tests/rpg-malediction.test.js` (fiche, glossaire,
+cases vides, arrivées, cumul de sources, plancher à 0, fin de tour stable),
+suite `rpg-lettres-de-marque` réécrite, `node scripts/rpg-cale-check.mjs`,
+`npm run check:rpg` et `npm run build`.

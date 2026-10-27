@@ -368,14 +368,6 @@
 }
 .rpg-card__compteur--cale > span { color: #d8fff5; }
 
-.rpg-card__compteur--visage {
-  /* Les Deux Visages (La Barbe Noire) : pourpre profond cerclé d'or — le
-     masque qui tourne au début de chaque tour du camp. */
-  border-color: #e8c66a;
-  background: linear-gradient(145deg, #5b2a86, #1d1030);
-}
-.rpg-card__compteur--visage > span { color: #f4e3b2; }
-
 /* La carte prisonnière de la cale (Abordage) : glissée DERRIÈRE son capteur,
    elle dépasse par le haut et la droite — inclinée, assombrie, derrière les
    chaînes, son nom en haut de la carte visible sur la bande qui dépasse. Le

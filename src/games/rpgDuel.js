@@ -1242,14 +1242,62 @@ function appliquerAurasBuffAutres(duel) {
 }
 
 /**
- * Rafraîchit toutes les auras de présence après un changement du champ de
+ * Malédiction (La Barbe Noire, set Lettres de Marque) : tant que la source est
+ * en jeu, **toutes les créatures du camp adverse** perdent l'attaque imprimée
+ * (`malediction.atk`, ici 2). Contrairement à l'Aura, il n'y a **aucune
+ * adjacence** : le camp entier est touché, où que soient les cases, y compris
+ * les créatures qui arrivent APRÈS la source. Le malus est un effet de
+ * présence : il se lève dès que la dernière source quitte la table, et deux
+ * sources cumulent leurs malus.
+ *
+ * Chaque entité ne retient que l'écart qu'elle a déjà reçu (`maledictionBonus`)
+ * — même contrat que les Aura — afin qu'une arrivée, une mort ou un renfort ne
+ * fasse jamais dériver les statistiques gagnées par ailleurs. L'attaque
+ * retombe au plancher de 0 ; la défense n'est pas touchée (`-2/-0`), donc
+ * perdre ou gagner la Malédiction ne tue jamais.
+ */
+function appliquerMaledictions(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const opposant = autre(cote);
+    const sources = duel[cote].creatures.filter((entite) => entite.pv > 0
+      && duelCardById(entite.carteId)?.malediction);
+    const voulu = -sources.reduce((total, source) => {
+      const malediction = duelCardById(source.carteId).malediction;
+      return total + Math.max(0, Number(malediction.atk ?? malediction) || 0);
+    }, 0);
+    const camp = duel[opposant];
+    const dejaMaudit = camp.creatures.some((entite) => (entite.maledictionBonus ?? 0) < 0);
+    for (const entite of camp.creatures) {
+      const cible = estSite(entite) ? 0 : voulu;
+      const deja = entite.maledictionBonus ?? 0;
+      if (cible === deja) continue;
+      // On reconstitue l'attaque « nue » avant de réappliquer l'écart. Le
+      // plancher de 0 ne doit pas faire oublier ce qui a vraiment été retiré :
+      // un 1/1 maudit à 0 ATQ redevient un 1/1 quand la source part, pas un
+      // 2/1. `maledictionBonus` retient donc l'écart EFFECTIVEMENT appliqué.
+      const nue = entite.atk - deja;
+      const prochaine = Math.max(0, nue + cible);
+      entite.atk = prochaine;
+      entite.maledictionBonus = prochaine - nue;
+    }
+    if (!dejaMaudit && voulu < 0) {
+      duel.log.push(`Malédiction : toutes les créatures ${opposant === 'joueur' ? 'du joueur' : 'du sorcier'} perdent ${-voulu} ATQ.`);
+    } else if (dejaMaudit && voulu === 0) {
+      duel.log.push('La Malédiction se lève : les créatures retrouvent leur attaque.');
+    }
+  }
+}
+
+/**
+ * Rafraîchit tous les effets de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
  * et l'égide d'Amani sur chaque camp, les auras « buff-autres » du Kenshi et
- * de Bou Jeloud sur la table entière, puis la Résonance de table. Les quatre
- * sources d'Aura ne touchent plus que leurs voisins (`voisines`) ; la
- * Résonance, elle, reste de table. Chaque mécanisme ne pose que l'écart qu'il
- * détient déjà — voir les commentaires de `appliquerAuraSable`,
- * `appliquerAuraAmani`, `appliquerAurasBuffAutres` et `majResonance`.
+ * de Bou Jeloud, la Malédiction de la Barbe Noire, puis la Résonance de table.
+ * Les Aura ne touchent plus que leurs voisins (`voisines`) ; la Malédiction et
+ * la Résonance, elles, sont de camp entier / de table. Chaque mécanisme ne
+ * pose que l'écart qu'il détient déjà — voir les commentaires de
+ * `appliquerAuraSable`, `appliquerAuraAmani`, `appliquerAurasBuffAutres`,
+ * `appliquerMaledictions` et `majResonance`.
  */
 function rafraichirAuras(duel) {
   appliquerAuraSable(duel, 'joueur');
@@ -1257,6 +1305,7 @@ function rafraichirAuras(duel) {
   appliquerAuraAmani(duel, 'joueur');
   appliquerAuraAmani(duel, 'sorcier');
   appliquerAurasBuffAutres(duel);
+  appliquerMaledictions(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
@@ -1438,11 +1487,10 @@ function creerEntiteCreature(carte) {
     // mémorisé séparément afin de disparaître sans effacer les autres buffs.
     caleCombleBonusAtk: 0,
     butin: Boolean(carte.butin),
-    // Les Deux Visages (La Barbe Noire) : l'index du visage courant, `null`
-    // pour toute créature sans alternance. La fiche imprime le visage
-    // d'arrivée (index 0) ; le moteur bascule au début de chaque tour du camp
-    // (`changerVisages`), les blessures suivant d'un visage à l'autre.
-    visage: carte.alternance ? 0 : null,
+    // Malédiction (La Barbe Noire) : l'écart d'attaque déjà retiré par les
+    // sources adverses en jeu. Chaque entité ne retient que SON écart, pour
+    // qu'une arrivée, une mort ou un renfort ne fasse pas dériver les chiffres.
+    maledictionBonus: 0,
     // La Cargaison (set Lettres de Marque) : combien de cartes le propriétaire
     // pioche quand cette créature meurt ou est prise en cale.
     cargaison: Math.max(0, Number(carte.cargaison) || 0),
@@ -6219,40 +6267,6 @@ function detruireEphemeres(duel) {
  *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
-/**
- * Les Deux Visages (La Barbe Noire, set Lettres de Marque) : au début du tour
- * de son camp, la créature change de visage — l'homme et la légende se
- * relaient, sans que personne ne choisisse. Les statistiques du nouveau
- * visage remplacent celles de l'ancien **par différence** : les armes portées
- * et les renforts posés par-dessus suivent le mouvement. Les blessures
- * suivent d'un visage à l'autre (une légende blessée reste un homme blessé),
- * et changer de visage ne la tue jamais : à terre, le corps garde 1 PV.
- */
-function changerVisages(duel) {
-  const camp = duel[duel.tour];
-  for (const entite of camp.creatures) {
-    if (entite.visage == null) continue;
-    const visages = duelCardById(entite.carteId)?.alternance?.visages;
-    if (!Array.isArray(visages) || visages.length < 2) continue;
-    const ancien = visages[entite.visage] ?? visages[0];
-    entite.visage = (entite.visage + 1) % visages.length;
-    const nouveau = visages[entite.visage];
-    const deltaAtk = (nouveau.atk ?? 0) - (ancien.atk ?? 0);
-    const deltaDef = (nouveau.def ?? 0) - (ancien.def ?? 0);
-    entite.atk = Math.max(0, entite.atk + deltaAtk);
-    entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + deltaDef);
-    entite.def = Math.max(1, entite.def + deltaDef);
-    entite.pv = Math.min(entite.pv + deltaDef, entite.def);
-    if (entite.pv < 1) entite.pv = 1;
-    // La Provocation appartient au visage : l'homme tient le rempart, la
-    // légende ne se cache derrière rien.
-    if (ancien.provocation || nouveau.provocation) {
-      entite.provocation = Boolean(nouveau.provocation);
-    }
-    duel.log.push(`${entite.name} change de visage : ${nouveau.nom ?? 'l’autre'} (${nouveau.atk ?? 0}/${nouveau.def ?? 0}).`);
-  }
-}
-
 export function rpgFinDeTour(duel) {
   // Bimini attend que son contrôleur désigne la créature consacrée.
   if (duel.siteEnAttente) return duel;
@@ -6373,7 +6387,6 @@ export function rpgFinDeTour(duel) {
   resoudreRetoursProgrammes(duel);
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
-  changerVisages(duel);             // Les Deux Visages tournent avec le camp
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
     && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
     camp.manaChoixEnAttente = true;

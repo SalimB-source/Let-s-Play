@@ -367,9 +367,10 @@ export function valeurCarte(carte) {
   // table garanti à la pose, qu'un exil ou un renvoi peut défaire, entre le
   // Butin et l'Envol.
   if (carte.abordage) valeur += 1.5;
-  // Les Deux Visages (La Barbe Noire) : l'autre visage vaut un second corps —
-  // la muraille quand la frappe manque, la frappe quand le mur s'effondre.
-  if (carte.alternance) valeur += 1.5;
+  // La Malédiction (La Barbe Noire) : un -2/-0 permanent à TOUT le camp
+  // adverse vaut plus qu'une Aura de voisinage, mais reste un effet de
+  // présence que le camp d'en face peut faire tomber.
+  if (carte.malediction) valeur += 1 + Math.max(0, Number(carte.malediction.atk) || 0) * 0.9;
   // L'insaisissable (La Barbe Noire) : la cale adverse ne la prend jamais —
   // une rébellion permanente contre la signature du set d'en face.
   if (carte.insaisissable) valeur += 1;

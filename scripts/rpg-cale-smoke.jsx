@@ -34,12 +34,12 @@ export function rendreCales() {
     libre: { html: rendre('cotre-de-course') },
     // La Barbe Noire : la seule créature à Abordage d'une seule couleur
     // (Ténèbres). Sa cale garde le rang commun des compteurs, sous l'unique
-    // pastille de couleur, à côté du masque des Deux Visages.
+    // pastille de couleur ; les Deux Visages ont disparu, la Malédiction
+    // s'annonce désormais dans la description lue de la carte.
     mono: {
       html: rendre('la-barbe-noire', {
         name: cardById('la-barbe-noire').name,
         enCale,
-        visage: 0,
       }),
     },
     // La fiche du capteur (clic droit sur la table) : une petite carte captive
