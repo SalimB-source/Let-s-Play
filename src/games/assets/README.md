@@ -84,6 +84,18 @@ marteau** (`maitre-du-marteau`). Both sides use the same sound. A returning
 Maître triggers it again with its Tenacité arrival effect; the PvP snapshot
 route also recognizes the opponent's arrival.
 
+## Cri de victoire: `viking-warrior-battle-cry-with-horn.mp3`
+
+`viking-warrior-battle-cry-with-horn.mp3` is a byte-for-byte copy of the
+user-supplied `public/viking warrior battle cry with horn.mp3` (MP3 MPEG-1
+Layer III, 320 kbps CBR, 44.1 kHz, 2.56 seconds, 114,848 bytes). The original
+is kept in `public/`; no re-encoding or editing was applied.
+
+It plays under the SFX name `victoire` — the victory sound of « Le Sablier »
+(duel won, quests and souk victories, mythic booster reveals…). It replaces
+`victory-trumpets.mp3` (« Victory Trumpets »), which has been deleted from the
+game entirely.
+
 ## Cold wind mass freeze: `cold-wind.wav`
 
 `cold-wind.wav` is a real recorded wind sample, not synthesized.

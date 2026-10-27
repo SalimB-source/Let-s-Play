@@ -2,8 +2,8 @@
  * Signature sonore — « Le Sablier ».
  *
  * Les bruitages du jeu sont les échantillons fournis (cartes, frappes, souffle
- * du feu, vagues, contres, renvois, chocs, pages, fanfares de victoire et de
- * défaite, coups blessants) lus sous forme de fichiers.
+ * du feu, vagues, contres, renvois, chocs, pages, cri de victoire viking et
+ * fanfare de défaite, coups blessants) lus sous forme de fichiers.
  * Le seul son encore synthétisé en WebAudio est l'effleurement de survol de
  * l'interface : tout le reste du catalogue synthétique a été retiré, et les
  * noms inconnus de `rpgSfx` restent silencieux.
@@ -41,7 +41,7 @@ const CREATURE_RETURN_SAMPLE_URL = new URL('./assets/creature-return.wav', impor
 const BLOCK_IMPACT_SAMPLE_URL = new URL('./assets/block-impact.mp3', import.meta.url);
 const DESTRUCTION_HIT_SAMPLE_URL = new URL('./assets/destruction-hit.mp3', import.meta.url);
 const PAGE_TURN_SAMPLE_URL = new URL('./assets/page-turn.mp3', import.meta.url);
-const VICTORY_TRUMPETS_SAMPLE_URL = new URL('./assets/victory-trumpets.mp3', import.meta.url);
+const VICTORY_CRY_SAMPLE_URL = new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url);
 const GAME_LOST_SAMPLE_URL = new URL('./assets/game-lost.mp3', import.meta.url);
 const HIT_SAMPLE_URL = new URL('./assets/hit.wav', import.meta.url);
 const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.url);
@@ -62,7 +62,7 @@ const CREATURE_RETURN_VOLUME = 0.58;
 const BLOCK_IMPACT_VOLUME = 0.58;
 const DESTRUCTION_HIT_VOLUME = 0.6;
 const PAGE_TURN_VOLUME = 0.5;
-const VICTORY_TRUMPETS_VOLUME = 0.6;
+const VICTORY_CRY_VOLUME = 0.6;
 const GAME_LOST_VOLUME = 0.6;
 const HIT_VOLUME = 0.62;
 const PIRATE_AHOY_VOLUME = 0.62;
@@ -146,7 +146,8 @@ const RPG_SFX_TABLE = {
   block_impact: [{ kind: 'sample', at: 0, dur: 0.967, g: 1 }],
   destruction_hit: [{ kind: 'sample', at: 0, dur: 1.698, g: 1 }],
   page_turn: [{ kind: 'sample', at: 0, dur: 1.097, g: 1 }],
-  victoire: [{ kind: 'sample', at: 0, dur: 4.624, g: 1 }],
+  // Cri de guerre viking (viking-warrior-battle-cry-with-horn.mp3, 2,56 s).
+  victoire: [{ kind: 'sample', at: 0, dur: 2.56, g: 1 }],
   defaite: [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }],
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
@@ -227,7 +228,7 @@ export class RpgAudioPlayer {
     this.blockImpactAudio = null;
     this.destructionHitAudio = null;
     this.pageTurnAudio = null;
-    this.victoryTrumpetsAudio = null;
+    this.victoryCryAudio = null;
     this.gameLostAudio = null;
     this.hitAudio = null;
     this.pirateAhoyAudio = null;
@@ -273,9 +274,9 @@ export class RpgAudioPlayer {
         this.pageTurnAudio = new AudioCtor(PAGE_TURN_SAMPLE_URL.href);
         this.pageTurnAudio.preload = 'auto';
         this.pageTurnAudio.volume = PAGE_TURN_VOLUME;
-        this.victoryTrumpetsAudio = new AudioCtor(VICTORY_TRUMPETS_SAMPLE_URL.href);
-        this.victoryTrumpetsAudio.preload = 'auto';
-        this.victoryTrumpetsAudio.volume = VICTORY_TRUMPETS_VOLUME;
+        this.victoryCryAudio = new AudioCtor(VICTORY_CRY_SAMPLE_URL.href);
+        this.victoryCryAudio.preload = 'auto';
+        this.victoryCryAudio.volume = VICTORY_CRY_VOLUME;
         this.gameLostAudio = new AudioCtor(GAME_LOST_SAMPLE_URL.href);
         this.gameLostAudio.preload = 'auto';
         this.gameLostAudio.volume = GAME_LOST_VOLUME;
@@ -402,7 +403,7 @@ export class RpgAudioPlayer {
       [this.blockImpactAudio, BLOCK_IMPACT_VOLUME],
       [this.destructionHitAudio, DESTRUCTION_HIT_VOLUME],
       [this.pageTurnAudio, PAGE_TURN_VOLUME],
-      [this.victoryTrumpetsAudio, VICTORY_TRUMPETS_VOLUME],
+      [this.victoryCryAudio, VICTORY_CRY_VOLUME],
       [this.gameLostAudio, GAME_LOST_VOLUME],
       [this.hitAudio, HIT_VOLUME],
       [this.pirateAhoyAudio, PIRATE_AHOY_VOLUME],
@@ -453,7 +454,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryTrumpetsAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryCryAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -721,14 +722,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.pageTurnAudio = null;
-    if (this.victoryTrumpetsAudio) {
+    if (this.victoryCryAudio) {
       try {
-        this.victoryTrumpetsAudio.pause?.();
-        this.victoryTrumpetsAudio.removeAttribute?.('src');
-        this.victoryTrumpetsAudio.load?.();
+        this.victoryCryAudio.pause?.();
+        this.victoryCryAudio.removeAttribute?.('src');
+        this.victoryCryAudio.load?.();
       } catch { /* élément audio déjà libéré */ }
     }
-    this.victoryTrumpetsAudio = null;
+    this.victoryCryAudio = null;
     if (this.gameLostAudio) {
       try {
         this.gameLostAudio.pause?.();

@@ -94,11 +94,13 @@ test('Thunder Spark est un sample partagé par les deux marteaux', () => {
     'Thunder Spark Transition voyage dans src/games/assets');
 });
 
-test('la victoire est la fanfare fournie, livrée avec le jeu', () => {
+test('la victoire est le cri de guerre viking, livré avec le jeu', () => {
   assert.ok(RPG_SFX_NAMES.includes('victoire'));
-  assert.deepEqual(rpgSfx('victoire'), [{ kind: 'sample', at: 0, dur: 4.624, g: 1 }]);
-  assert.ok(existsSync(new URL('../src/games/assets/victory-trumpets.mp3', import.meta.url)),
-    'Victory Trumpets voyage dans src/games/assets');
+  assert.deepEqual(rpgSfx('victoire'), [{ kind: 'sample', at: 0, dur: 2.56, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url)),
+    'Le cri de guerre viking voyage dans src/games/assets');
+  assert.ok(!existsSync(new URL('../src/games/assets/victory-trumpets.mp3', import.meta.url)),
+    'Victory Trumpets a entièrement disparu du jeu');
 });
 
 test('la défaite et les coups blessants jouent les fichiers fournis', () => {
