@@ -212,6 +212,10 @@ function valeurEffet(effet = {}) {
       // Le froid qui fige une table : un retrait de tempo par créature prise,
       // et la morsure du souffle (le Géant des banquises y ajoute `degats`).
       return 1.5 + (Number(effet.degats) || 0) * (effet.cible === 'toutes-creatures' ? 1.9 : 1.25);
+    case 'destruction-arme':
+      // Brise-lame : retirer l'équipement adverse vaut un contre conditionnel,
+      // et la carte qu'elle pioche se paie comme une pioche ordinaire.
+      return 3 + (Number(effet.pioche) || 0) * 1.5;
     case 'destruction-navire':
       // Le Kraken : une destruction ciblée, mais conditionnée au type Navire —
       // un cran sous l'exil qui prend n'importe quelle cible.

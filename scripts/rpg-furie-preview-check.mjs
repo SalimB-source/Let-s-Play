@@ -16,6 +16,8 @@
  * une même révision de cache. Le Loup des neiges garde son huile :
  * même meute, chef ensanglanté, et le Corbeau des neuf nuits donne les deux
  * faces de Furie de son Berserk du crépuscule et de sa Valkyrie des neuf nuits.
+ * L'Ifrit d'encre, seul porteur de Furie de la Tour oubliée (hors catalogue),
+ * est contrôlé à part avec la même exigence de ratio et de révision.
  * Une vignette rouge animée serre les bords de
  * la créature en Furie, sur la table comme dans sa preview.
  */
@@ -40,6 +42,9 @@ const REVISIONS_CORBEAU_FURIE = {
   'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-v1',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
 };
+// La Tour Oubliée est hors catalogue : son Ifrit d'encre porte Furie 1 et
+// contrôle donc sa face déclenchée à part, sous sa propre révision.
+const REVISION_TOUR_FURIE = 'tour-furie-encre-v1';
 const CARTES_PHOTOREALISTES = [
   'guerrier-au-bouclier-rond',
   'berserk-des-trois-hivers',
@@ -232,6 +237,16 @@ for (const [illustration, revision] of Object.entries(REVISIONS_CORBEAU_FURIE)) 
     `${illustration}.jpg est daté sous ${revision}`);
 }
 
+// L'Ifrit d'encre n'est pas dans `RPG_DUEL_CARDS` (set de la Tour oubliée,
+// absent du catalogue), mais il porte Furie 1 : son double se vérifie ici
+// comme les huit porteurs du catalogue — même ratio, même révision dédiée.
+const ifritFurie = new URL('../public/cards/ifrit-d-encre-furie.jpg', import.meta.url);
+assert.ok(existsSync(ifritFurie), 'ifrit-d-encre-furie.jpg est livré avec le jeu');
+assert.deepEqual(dimensionsJpeg(ifritFurie), [1024, 1280],
+  'ifrit-d-encre-furie.jpg est au format exact 4:5 de la face');
+assert.match(artSource, new RegExp(`'ifrit-d-encre-furie': '${REVISION_TOUR_FURIE}'`),
+  `ifrit-d-encre-furie.jpg est daté sous ${REVISION_TOUR_FURIE}`);
+
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
 assert.match(glossaire, /Tant que sa défense actuelle est inférieure à sa DEF de base/,
   'le glossaire compare les PV à la DEF imprimée, pas au plafond renforcé');
@@ -278,4 +293,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule et la Valkyrie des neuf nuits ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
+console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule, la Valkyrie des neuf nuits et l’Ifrit d’encre de la Tour oubliée ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');

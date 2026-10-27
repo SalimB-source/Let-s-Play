@@ -337,6 +337,19 @@ mythiques uniques, une couleur).
   feu — plus de lampe, de vase ni de génie qui s'échappe. Même consigne pour
   les prochaines passes : aucun contenant magique, aucun cliché du génie.
 
+  **Face de Furie de l'Ifrit d'encre.** La carte porte `Furie 1` : quand une
+  blessure déclenche l'état, le jeu affiche désormais
+  `public/cards/ifrit-d-encre-furie.jpg` (**1024×1280**, révision
+  `tour-furie-encre-v1` dans `rpgCardArt.js`). Même composition que la face
+  intacte — ifrit debout, archive en feu, livre ouvert au premier plan — mais
+  le corps fissuré s'est ouvert sur une braise blanche, la gueule hurle, la
+  flamme violette se déchaîne et l'encre noire jaillit en fouets sur les
+  rayonnages. Les pages du registre ne portent que des éclaboussures : aucun
+  texte lisible, ni latin ni arabe. Plein cadre, sans bordure, et affichée
+  sans filet de couleur sous la vignette rouge de Furie. L'autre porteur de
+  Furie du set, **Teryel aux sept cornes**, n'a pas encore de double
+  déclenché.
+
   **Règle de peinture — le plein cadre.** L'illustration va à fond perdu :
   aucune bordure, aucun liseré, aucune marge intégrée à l'image, le cadre étant
   dessiné par le CSS du jeu (`.rpg-card`). Cinq peintures sont arrivées

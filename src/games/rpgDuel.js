@@ -39,6 +39,7 @@ import {
   couleurEngagement,
 } from './rpgAI.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
+import { armesPortees } from './rpgCardStacks.js';
 import { rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import {
   RPG_MANA_ESSAI_CARTES_EXCLUES,
@@ -3491,6 +3492,47 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       duel.log.push('Jusqu’à la fin du tour, les créatures qui arrivent en jeu ont Abordage.');
       return;
     }
+    case 'destruction-arme': {
+      // Brise-lame : l'arme équipée tombe au cimetière de son porteur, ses
+      // bonus et ses mots-clés repartent ; la créature, elle, reste en jeu.
+      const porteur = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (!porteur || porteur.id === sauf) return;
+      if (rpgEstProtegee(porteur, sourceElement)
+        || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
+      const armes = armesPortees(porteur);
+      if (!armes.length) return;
+      if (porteur.arme) retirerArme(duel, adv, porteur);
+      const armesSorts = porteur.armes ?? [];
+      if (armesSorts.length) {
+        let atk = 0;
+        let def = 0;
+        let coupRapide = false;
+        for (const id of armesSorts) {
+          const carteArme = magieById(id);
+          if (carteArme?.effet?.type !== 'arme') continue;
+          atk += Number(carteArme.effet.atk) || 0;
+          def += Number(carteArme.effet.def) || 0;
+          coupRapide = coupRapide || Boolean(carteArme.effet.coupRapide);
+        }
+        porteur.armes = [];
+        porteur.atk = Math.max(0, porteur.atk - atk);
+        porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
+        porteur.def = Math.max(1, porteur.def - def);
+        porteur.pv = Math.max(1, Math.min(porteur.pv, porteur.pvMax));
+        if (coupRapide) {
+          porteur.coupRapide = Boolean(duelCardById(porteur.carteId)?.coupRapide)
+            || Boolean(armeCarteDe(porteur)?.donne?.coupRapide)
+            || (porteur.coupRapideTemporaire ?? 0) > 0;
+        }
+        duel[adv].cimetiere.push(...armesSorts);
+      }
+      const source = cardById(sourceCarteId)?.name ?? 'Le sort';
+      duel.log.push(`${source} brise ${armes.map((id) => cardById(id)?.name ?? id).join(', ')} : ${porteur.name} perd son équipement.`);
+      for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return;
+    }
     case 'destruction-navire': {
       // Le Kraken coule un navire : la cible désignée doit porter le type
       // imprimé « Navire » (la validation de pose et `arriveeCiblePortee`
@@ -4971,6 +5013,10 @@ export function rpgSortACibleValide(duel, cote, carte) {
     // Certains sorts peuvent aussi frapper le sorcier adverse directement.
     return aCibleEnnemie || Boolean(carte.cibles?.includes('sorcier'));
   }
+  if (carte.effet?.type === 'destruction-arme') {
+    return duel[adv].creatures.some((entite) => entiteCiblableParSort(entite, carte)
+      && armesPortees(entite).length > 0);
+  }
   if (['debuff', 'empeche-blocage', 'blocage-force'].includes(carte.effet?.type)) return aCibleEnnemie;
   if (carte.effet?.type === 'retour-main') {
     return carte.effet.cible === 'creature-amie' ? aCibleAlliee : aCibleEnnemie;
@@ -5086,6 +5132,13 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     // créature adverse à marquer ; la protection contre l'eau la refuse.
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+  if (carte.effet.type === 'destruction-arme') {
+    // Brise-lame : sans créature adverse équipée, le sort ne se lance pas et
+    // le mana reste entier, comme un renvoi sans cible.
+    const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    if (!cible || !armesPortees(cible).length) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
   if (carte.effet.type === 'reanimation') {

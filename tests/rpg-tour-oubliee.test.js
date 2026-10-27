@@ -74,6 +74,7 @@ import {
   varianteFantaisisteDe,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
+import { cardArtFurie } from '../src/games/rpgCardArt.js';
 
 const CHEMIN = (relatif) => fileURLToPath(new URL(`../public/${relatif}`, import.meta.url));
 
@@ -170,6 +171,7 @@ function bordureDeLaPeinture(chemin) {
     return clairs / total;
   };
   return {
+    width, height,
     clair: ['gauche', 'haut', 'droite', 'bas'].map(partClaire),
     bord: statistiques(anneau(1)),
     interieur: statistiques(anneau(34)),
@@ -190,6 +192,25 @@ test('les peintures du set sont plein cadre : ni bordure blanche, ni bande noire
     assert.equal(plate, false,
       `${id} : bande de cadre unie sur le pourtour (luminance ${Math.round(mesure.bord.moyenne)} contre ${Math.round(mesure.interieur.moyenne)} à l’intérieur)`);
   }
+});
+
+test('la face de Furie de l’Ifrit d’encre est livrée en 4:5, plein cadre et datée', () => {
+  // La carte porte `Furie 1` : dès que l'état est actif, `cardArtFurie`
+  // remplacerait la peinture intacte par un fichier manquant. On verrouille
+  // donc le fichier, son format exact, son plein cadre et sa révision.
+  const chemin = CHEMIN('cards/ifrit-d-encre-furie.jpg');
+  assert.ok(existsSync(chemin), 'la peinture de Furie accompagne la carte intacte');
+  const mesure = bordureDeLaPeinture(chemin);
+  assert.deepEqual([mesure.width, mesure.height], [1024, 1280],
+    'format exact 4:5 de la face, comme les autres doubles de Furie');
+  for (const part of mesure.clair) {
+    assert.ok(part < 0.2, `liseré blanc sur un bord (${Math.round(part * 100)} %)`);
+  }
+  const plate = mesure.bord.ecart < 4 && Math.abs(mesure.bord.moyenne - mesure.interieur.moyenne) > 22;
+  assert.equal(plate, false, 'aucune bande de cadre unie sur le pourtour');
+  assert.match(cardArtFurie('ifrit-d-encre'),
+    /\/cards\/ifrit-d-encre-furie\.jpg\?v=tour-furie-encre-v1$/,
+    'la face est datée dans l’URL pour écarter tout cache d’une ancienne passe');
 });
 
 test('les cartes de l’Oubliée sont connues du moteur mais absentes du catalogue', () => {

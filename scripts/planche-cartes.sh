@@ -6,7 +6,7 @@
 #   scripts/planche-cartes.sh [dossier-de-sortie]
 #
 # Par défaut : /tmp/planche-cartes. Produit <élément>.jpg pour chaque élément
-# et catalogue.jpg avec les 162 cartes. Les vignettes sont tirées des mêmes
+# et catalogue.jpg avec les 163 cartes. Les vignettes sont tirées des mêmes
 # fichiers que le jeu (public/cards/<art>.jpg), donc la planche montre ce que
 # le joueur voit — pas les originaux de .ref-art ni les alternatives.
 set -euo pipefail

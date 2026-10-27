@@ -1406,6 +1406,24 @@ export const RPG_MAGIE_CARDS = [
     flavor: 'Une étincelle suffit, au souk.',
   },
   {
+    id: 'brise-lame',
+    name: 'Brise-lame',
+    element: 'braise',
+    kind: 'magie',
+    typeLine: 'Magie Rapide — Braise',
+    art: 'brise-lame',
+    cost: 3,
+    rarity: 'inhabituelle',
+    instant: true,
+    cibles: ['creature'],
+    // Nouvelle réponse Braise à l'équipement : la cible doit porter une arme
+    // (prototype `entite.arme` ou Sabre maudit `entite.armes`). La pioche
+    // reste acquise même si l'Esquive annule la destruction.
+    effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 },
+    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte.',
+    flavor: 'Le fer retourne au feu ; la main qui le tenait reste vide.',
+  },
+  {
     id: 'eau-de-la-source',
     name: 'Eau de la source',
     element: 'eau',

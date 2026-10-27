@@ -1067,6 +1067,9 @@ function targetMode(carte) {
   if (carteEstArme(carte)) return 'allie';
   if (carte?.effet?.type === 'degats' && carte.effet.cible === 'creature') return 'ennemi';
   if (['debuff', 'empeche-blocage', 'blocage-force'].includes(carte?.effet?.type)) return 'ennemi';
+  // Brise-lame ne désigne qu'une créature adverse : la table filtrera celles
+  // qui portent réellement une arme (voir `canTarget`).
+  if (carte?.effet?.type === 'destruction-arme') return 'ennemi';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
@@ -9381,6 +9384,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return { nom: 'Vous', illustrationId: 'salem', targetPlate: 'joueur', targetIds: [] };
     }
     if (carte.effet?.cible === 'creature-amie') return { nom: 'Une créature alliée', targetIds: [] };
+    if (carte.effet?.type === 'destruction-arme') return { nom: 'Une créature adverse équipée', targetIds: [] };
     if (carte.effet?.cible === 'creature') return { nom: 'Une créature adverse', targetIds: [] };
     if (carte.effet?.type === 'transfert') return { nom: 'Les deux sorciers', targetPlate: 'sorcier', targetIds: [] };
     if (carte.effet?.type === 'defausse-adverse') return { nom: 'La main du sorcier', targetPlate: 'sorcier', targetIds: [] };
@@ -11854,6 +11858,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         idsCiblesDestruction.has(entite.id)
                         || (cibleEnCours && ['ennemi', 'tous'].includes(modeCible)
                           && !attenteAbordage
+      && !(carteCiblee?.effet?.type === 'destruction-arme' && !armesPortees(entite).length)
                           && !rpgEstProtegee(entite, cardColors(carteCiblee))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
                           && cibleRespecteCoutMax(carteCiblee, entite))
