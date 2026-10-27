@@ -65,7 +65,7 @@ import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
-import { sauverCollectionDistante, possedeCarte, nombreExemplaires } from './rpgCollection.js';
+import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
@@ -102,6 +102,7 @@ import RpgTableScene3D from './RpgTableScene3D.jsx';
 import { readRpgTable3dPref, writeRpgTable3dPref } from './rpgTableSceneThemes.js';
 import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
+import { accueilSablierPret } from './useStatutSyncSablier.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgProfilJoueur from './RpgProfilJoueur.jsx';
 import RpgPisteGains from './RpgPisteGains.jsx';
@@ -113,10 +114,12 @@ import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
+import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import {
   GAINS,
   creditsLisible,
+  exemplairesDuPortefeuille,
   gainsDeTour,
   illustrationsAffichees as illustrationsAfficheesDuPortefeuille,
   recompenseEtage,
@@ -1150,15 +1153,16 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
-          ? <img
+          ? <span
               className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}`}
               style={cardFrameStyle(carteDuDessus)}
-              src={cardArt(topCard)}
-              alt=""
               data-card-id={carteDuDessus?.id}
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
               onMouseLeave={onLeaveHoverCard}
-            />
+            >
+              <img src={cardArt(topCard)} alt="" />
+              <RpgBrumeMythique carte={carteDuDessus} />
+            </span>
           : <span key={drawToken ?? 'deck-top'} className="rpg-card-pile__card rpg-card-pile__card--top rpg-card-pile__card--back" />}
       </span>
       <b>{count}</b>
@@ -1558,6 +1562,7 @@ export function TourbillonEau({ effet, onTermine = null }) {
           style={cardFrameStyle(cardById(effet.cardId))}
         >
           <img src={cardArt(effet.cardId)} alt="" />
+          <RpgBrumeMythique carte={cardById(effet.cardId)} />
         </span>
       )}
       <i className="rpg-tourbillon-eau__nappe" />
@@ -1855,6 +1860,7 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
         }}
       >
         <img src={cardArt(effet.cardId)} alt="" />
+        <RpgBrumeMythique carte={carteDetruite} />
         <b>{effet.name}</b>
         {prise && <LiensAbordageCarte effet={effet} />}
       </div>
@@ -2553,6 +2559,7 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
+      <RpgBrumeMythique carte={carte} />
       {entite.furieDeclenchee && <VignetteFurie />}
       {((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && (
         <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />
@@ -3126,6 +3133,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             <figure className="rpg-hover-card-preview__weapon" data-arme-equipee={arme.id} key={`${arme.id}-${index}`}>
               <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
                 <img src={cardArt(arme)} alt="" />
+                <RpgBrumeMythique carte={arme} />
                 <span className="rpg-hover-card-preview__weapon-cost">{arme.cost}</span>
               </span>
               <figcaption>
@@ -3144,6 +3152,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           >
             <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
               <img src={cardArt(prisonniereCarte)} alt="" />
+              <RpgBrumeMythique carte={prisonniereCarte} />
               <span className="rpg-hover-card-preview__weapon-cost">{prisonniereCarte.cost}</span>
             </span>
             <figcaption>
@@ -3174,6 +3183,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden="true"
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
+      <RpgBrumeMythique carte={carte} />
       {estEnFurie && <VignetteFurie />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
@@ -3523,6 +3533,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+      <RpgBrumeMythique carte={carte} />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-mulligan__sceau rpg-mulligan__sort" />
@@ -3663,12 +3674,13 @@ function SpellAnnouncement({ annonce, camp = 'joueur' }) {
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
           : `${sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
-      <img
+      <span
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
-        src={cardArt(carte)}
-        alt=""
-      />
+      >
+        <img src={cardArt(carte)} alt="" />
+        <RpgBrumeMythique carte={carte} />
+      </span>
       <div className="rpg-spell-played__details">
         {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
             contre garde son or : sa règle est plus spécifique (voir
@@ -4100,7 +4112,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4314,6 +4326,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
   return (
     <section
       className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
+      inert={bloqueAccueil || undefined}
       style={{ backgroundImage: menuBackground }}
       // L'aperçu au survol est placé d'après la position de la carte au moment
       // du survol : dès que l'écran défile, il désignerait la mauvaise ligne.
@@ -5200,6 +5213,7 @@ function GameModeMenu({ screen, selectedDeckId, onSelectDeck, onChangeScreen, on
                         style={cardFrameStyle(carte)}
                       >
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+                        <RpgBrumeMythique carte={carte} />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span
                           className={`rpg-card-catalogue__cost${degradeCout ? ' rpg-card-catalogue__cost--hybride' : ''}`}
@@ -5972,7 +5986,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [histoireEtageId, setHistoireEtageId] = useState(null);
   const {
     progression: progressionHistoire, progressionRef: progressionHistoireRef,
-    sauvegardeOk: sauvegardeHistoireOk, ouvrirRecit, agirRecit,
+    sauvegardeOk: sauvegardeHistoireOk, statutSync: statutSyncHistoire, ouvrirRecit, agirRecit,
     enregistrerVictoire, recommencerRecit, effacerProgression,
   } = useRpgStory();
   // La bourse du Souk (dossier 13, lot 2) : les gestes du duel l'alimentent par
@@ -5998,6 +6012,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const partieEnCours = ecran === 'partie' && (modePvp ? duelPvpEnCours : duelSoloEnCours);
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
+    statutSync: statutSyncBourse, pousser: pousserBourse,
     noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, rangerCoffret, fermerOuverture, ouverture: ouvertureSouk,
@@ -6022,6 +6037,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     onCartesRangees: rafraichirCollection,
     partieEnCours,
   });
+  // L'accueil attend les trois lectures du compte : les decks, la bourse ET
+  // l'histoire se synchronisent séparément et peuvent arriver dans tout ordre.
+  const accueilPret = accueilSablierPret(authContext, statutSync, statutSyncBourse, statutSyncHistoire);
+  const [bienvenueActive, setBienvenueActive] = useState(true);
   // La carte de profil peut imposer la moitié basse de la table (dossier 20 §6) :
   // le choix vit dans le profil, validé par le catalogue — un identifiant inconnu
   // (plateau retiré d'une version à l'autre) rend la main au deck, sans planter.
@@ -8110,6 +8129,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
         <GameModeMenu
+          bloqueAccueil={!modePvp && (!accueilPret || bienvenueActive)}
           screen={ecran}
           selectedDeckId={deckSelectionneId}
           onSelectDeck={choisirDeck}
@@ -8188,6 +8208,32 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           desktopAccount={desktopAccount}
           onSignOut={onSignOut}
         />
+        {/* Le premier choix se fait à l'accueil, avant toute partie. Les cartes
+            et leur deck sont rangés ensemble, puis sélectionnés immédiatement. */}
+        {!modePvp && (
+          <RpgCoffretBienvenue
+            pret={accueilPret}
+            onEtatChange={setBienvenueActive}
+            onPlaySfx={jouerSfx}
+            onOuvrir={(coffret) => {
+              const rangement = rangerCoffret(coffret, { synchroniser: false });
+              const resultat = enregistrerDeckMaison(coffretEnDeckMaison(coffret));
+              rafraichirCollection();
+              if (resultat.ok) {
+                setDeckSelectionneId(resultat.deck.id);
+                sauverDeckChoisi(
+                  resultat.deck.id,
+                  [resultat.deck],
+                  collectionJoueur({ coffret, souk: rangement.portefeuille.cartes }),
+                  exemplairesDuPortefeuille(rangement.portefeuille),
+                );
+              } else {
+                // Même si le casier refuse le deck, les cartes restent au compte.
+                pousserBourse();
+              }
+            }}
+          />
+        )}
         {recompenseTutoriel && (
           <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
             <RpgCreditIcon />
@@ -8307,12 +8353,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && etapeTutoriel?.target?.includes(`data-tutorial-target="${nom}"`));
   const deckPvpJoueur = modePvp
     ? (RPG_DECKS_ARCHETYPES.find((deck) => deck.id === pvp?.decks?.joueur?.id)
-      ?? (duel.joueur.couleurs?.length ? {
+      // Une reconnexion à une table déjà lancée n'a pas nécessairement de
+      // deck local ni de couleurs publiques : le plateau reste jouable sans
+      // attendre l'accueil ou inventer un deck dans la collection du joueur.
+      ?? {
         id: 'pvp-joueur',
         name: pvp?.decks?.joueur?.name ?? 'Votre deck',
-        elements: duel.joueur.couleurs,
+        elements: duel.joueur.couleurs ?? [],
         cardIds: [],
-      } : null))
+      })
     : null;
   const deckPvpAdverse = modePvp
     ? (RPG_DECKS_ARCHETYPES.find((deck) => deck.id === pvp?.decks?.sorcier?.id)
@@ -11807,6 +11856,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onMouseLeave={quitterCarteSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <RpgBrumeMythique carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
@@ -12137,6 +12187,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
+                <RpgBrumeMythique carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
@@ -12598,6 +12649,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
+                  <RpgBrumeMythique carte={carte} />
                   <CardElementBadge carte={carte} />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />
@@ -12879,21 +12931,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       {/* Aucun paquet ne s'ouvre pendant une partie en cours : la cérémonie
           n'apparaît ici qu'une fois le duel terminé (victoire, défaite ou
           égalité), au-dessus du bilan de fin de partie. */}
-      {/* Le tout premier lancement : les trois coffrets de bienvenue. Le
-          coffret ouvert devient un deck de la maison — trente cartes, tout de
-          suite jouables — et la collection se rafraîchit sans recharger. */}
-      <RpgCoffretBienvenue
-        onPlaySfx={jouerSfx}
-        onOuvrir={(coffret) => {
-          // Le coffret **remplace la dotation** : ses cartes et leur stock de
-          // copies entrent dans la bourse, son deck devient un deck de la
-          // maison (trente cartes, jouable tout de suite), et l'atelier voit
-          // la collection sans recharger la page.
-          rangerCoffret(coffret);
-          enregistrerDeckMaison(coffretEnDeckMaison(coffret));
-          rafraichirCollection();
-        }}
-      />
       {!partieEnCours && (
         <MonteeDeNiveau
           montee={monteeNiveau}

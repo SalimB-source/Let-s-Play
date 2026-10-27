@@ -785,9 +785,8 @@
   }
 }
 
-/* L'illustration, seule : un anneau de rareté, une ombre portée, et rien
-   d'autre. Aucun voile, aucun `filter`, aucun `mix-blend-mode` — la peinture
-   garde ses vraies couleurs. */
+/* L'illustration garde ses couleurs, son anneau et son ombre. Seule la
+   mythique reçoit la brume dorée translucide (rpg-brume-mythique.css). */
 .rpg-coffret__carte-art {
   position: relative;
   border-radius: 10px;

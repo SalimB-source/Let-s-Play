@@ -237,6 +237,16 @@ test('l’écran de bienvenue ne s’impose jamais à un joueur qui a déjà jou
     'des cartes gagnées : plus de coffret');
   assert.equal(coffretBienvenueNecessaire({ offre, collection: ['tarek'] }), false,
     'une collection existante : plus de coffret');
+  assert.equal(coffretBienvenueNecessaire({ offre, bourse: { cartes: ['tarek'] } }), false,
+    'les cartes d’une bourse récupérée sur un autre appareil suffisent aussi');
+  assert.equal(coffretBienvenueNecessaire({ offre, bourse: { cartes: [] } }), true,
+    'une bourse vide ne prive pas un nouveau joueur de son coffret');
+  assert.equal(coffretBienvenueNecessaire({ offre, profil: { xp: 120 } }), false,
+    'un joueur déjà expérimenté ne reçoit pas un second départ');
+  assert.equal(coffretBienvenueNecessaire({ offre, bourse: { credits: 10 } }), false,
+    'des crédits gagnés signalent aussi une partie antérieure');
+  assert.equal(coffretBienvenueNecessaire({ offre, aDeckPersonnel: true }), false,
+    'un deck créé auparavant signale un joueur existant');
   assert.equal(coffretBienvenueNecessaire({ offre: normaliserOffreBienvenue(null) }), false,
     'sans offre, il n’y a rien à proposer');
 });

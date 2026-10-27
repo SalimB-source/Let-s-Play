@@ -1,0 +1,62 @@
+/* La porte de brume des mythiques : deux voiles de fumée ambrée montent
+   lentement sur la peinture, en laissant ses couleurs et ses repères lisibles.
+   La texture est transparente et raccordée en hauteur : la boucle n'a pas de
+   saut, et le navigateur réutilise la même petite image pour toutes les faces. */
+.rpg-brume-mythique {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.rpg-brume-mythique::before,
+.rpg-brume-mythique::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -10%;
+  width: 120%;
+  height: 200%;
+  background: url('./assets/brume-mythique.png') 0 0 / 100% 50% repeat-y;
+  pointer-events: none;
+  animation: rpg-brume-mythique-monte 9.5s linear var(--rpg-brume-delai, 0s) infinite;
+}
+
+.rpg-brume-mythique::before { opacity: .74; }
+.rpg-brume-mythique::after {
+  opacity: .28;
+  animation-name: rpg-brume-mythique-retour;
+  animation-duration: 16s;
+}
+
+@keyframes rpg-brume-mythique-monte {
+  to { transform: translate3d(0, -50%, 0); }
+}
+@keyframes rpg-brume-mythique-retour {
+  from { transform: translate3d(0, -50%, 0) scaleX(-1); }
+  to { transform: translate3d(0, 0, 0) scaleX(-1); }
+}
+
+/* Les états qui grisent ou éteignent une peinture doivent rester lisibles :
+   la brume suit l'état, sans repeindre en or une carte verrouillée ou choisie. */
+.rpg-card-catalogue__card.is-locked .rpg-brume-mythique,
+.rpg-atelier__carte.is-locked .rpg-brume-mythique,
+.rpg-mulligan__card.is-selected .rpg-brume-mythique,
+.rpg-card.is-summoning-sick .rpg-brume-mythique {
+  filter: grayscale(1);
+  opacity: .55;
+}
+.rpg-atelier__carte.is-full:not(.is-locked) .rpg-brume-mythique,
+.rpg-souk__direct-carte.is-complet:not(.is-achetee) .rpg-brume-mythique,
+.rpg-card.is-attacked .rpg-brume-mythique {
+  opacity: .55;
+}
+
+/* La brume reste présente, mais immobile, si le joueur réduit les mouvements. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-brume-mythique::before,
+  .rpg-brume-mythique::after { animation: none; }
+  .rpg-brume-mythique::after { transform: scaleX(-1); }
+}

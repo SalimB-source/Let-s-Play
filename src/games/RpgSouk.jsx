@@ -22,6 +22,7 @@
  * un Souk vide doit dire pourquoi il est vide, pas casser l'écran.
  */
 
+import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
 import { GAINS, creditsLisible, exemplairesDuPortefeuille } from './rpgCredits.js';
@@ -357,6 +358,7 @@ function CarteDeLEtal({
     >
       <div className="rpg-souk__direct-art">
         <img src={cardArt?.(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+        <RpgBrumeMythique carte={carte} />
         <span className="rpg-souk__direct-rarete">{rarete.label}</span>
         <RpgCardCopyBadge
           nombre={acquis}

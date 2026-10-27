@@ -20,6 +20,7 @@
  * la collection et le deck du coffret soient pris en compte sans recharger.
  */
 
+import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
@@ -28,6 +29,10 @@ import { DeckBox, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import { cardRarityInfo } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
+import { chargerPortefeuille } from './rpgCredits.js';
+import { chargerProfil } from './rpgProfil.js';
+import { chargerDecksMaison } from './rpgDeckBuilder.js';
+import { RPG_DECK_DEPART_ID } from './rpgDeckDeDepart.js';
 import { AuthContext } from '../auth/AuthContext.jsx';
 import {
   COFFRETS_IDENTITE,
@@ -115,9 +120,9 @@ function Poussiere() {
 /**
  * Une carte du coffret, **à plat** : la peinture, son anneau, son nom et sa
  * rareté dessous, et une lueur qui change de teinte et d'intensité avec la
- * rareté. Aucune perspective, aucune rotation, aucune tranche — la carte ne
- * rayonne pas par sa peinture, c'est le halo derrière elle qui dit ce qu'elle
- * vaut, du neutre de la commune à l'or de la mythique.
+ * rareté. Aucune perspective, aucune rotation ni tranche : la peinture garde
+ * ses couleurs et la mythique reçoit une brume dorée translucide, en plus du
+ * halo derrière elle.
  */
 function CarteDuCoffret({ ligne, rang, total, reduit }) {
   const { carte, exemplaires } = ligne;
@@ -145,6 +150,7 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
           <div className="rpg-coffret__carte-face">
             <div className="rpg-coffret__carte-art">
               <IllustrationCarte carte={carte} />
+              <RpgBrumeMythique carte={carte} />
             </div>
             <div className="rpg-coffret__carte-texte">
               <p className="rpg-coffret__carte-nom">{carte.name}</p>
@@ -195,6 +201,7 @@ function BoiteCoffret({ coffret, onChoisir, rang = 0 }) {
     <button
       type="button"
       className={`rpg-coffret__boite rpg-coffret__boite--${coffret.couleur}`}
+      autoFocus={rang === 0}
       onClick={() => onChoisir(coffret.id)}
       onPointerMove={inclinerBoitier}
       onPointerLeave={redresserBoitier}
@@ -252,8 +259,11 @@ function CoffretQuiSOuvre({ coffret, vitrine = null }) {
   );
 }
 
-export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null } = {}) {
+export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null, pret = true, onEtatChange = null } = {}) {
   const [offre, setOffre] = useState(null);
+  // `undefined` signifie qu'aucun verdict n'a encore été calculé ; `null` est
+  // au contraire le propriétaire invité (partagé avec les profils de démo).
+  const [proprietaireOffre, setProprietaireOffre] = useState(undefined);
   const [etape, setEtape] = useState('choix');
   const [vague, setVague] = useState(0);
   const [rideau, setRideau] = useState(false);
@@ -268,7 +278,7 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
   // `useContext` plutôt que `useAuth` : l'écran tourne aussi hors fournisseur
   // (démo du coffret, vérifications), où il n'y a simplement pas de compte.
   const auth = useContext(AuthContext);
-  const compteId = auth?.user?.id ?? null;
+  const compteId = auth?.isDemo ? null : (auth?.user?.id ?? null);
   const sessionPrete = !auth?.loading;
 
   // Aucune minuterie ne survit au démontage : la cérémonie ne doit pas rouvrir
@@ -288,31 +298,43 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
   // est tirée puis rangée sous la clé du compte, pour qu'un rechargement
   // repropose exactement les trois mêmes coffrets.
   //
-  // Le verdict « coffret nécessaire » ne regarde que l'état **de ce compte**
-  // (`reprise: false`) : ni les acquis, ni la collection, ni la progression
-  // d'un visiteur de cet appareil ne peuvent le supprimer. Un compte neuf voit
-  // donc son coffret, même sur un navigateur déjà utilisé.
+  // Le verdict lit les données de progression du joueur courant après leur
+  // synchronisation. La reprise locale prévue pour un véritable invité est
+  // respectée ; aucune offre d'un autre compte n'est réutilisée.
   useEffect(() => {
-    if (typeof window === 'undefined' || !sessionPrete) return;
+    // Changer de compte interrompt aussi une éventuelle animation de l'ancien :
+    // aucun rideau ou minuterie ne doit agir sur le nouveau choix.
+    oublierMinuteries();
+    setEtape('choix');
+    setVague(0);
+    setRideau(false);
+    if (typeof window === 'undefined' || !sessionPrete || !pret) {
+      setProprietaireOffre(undefined);
+      return;
+    }
     const existante = chargerOffreBienvenue();
     const courante = existante.coffrets.length > 0 ? existante : offreBienvenue();
-    if (existante.coffrets.length === 0) sauverOffreBienvenue(courante);
     const necessaire = coffretBienvenueNecessaire({
       offre: courante,
       progression: chargerProgressionHistoire(),
       acquis: chargerAcquis({ reprise: false }),
       collection: chargerCollectionDistante({ reprise: false }),
+      bourse: chargerPortefeuille(),
+      profil: chargerProfil(),
+      aDeckPersonnel: chargerDecksMaison().some((deck) => deck.id !== RPG_DECK_DEPART_ID),
     });
-    if (!necessaire) {
-      setFerme(true);
-      return;
-    }
-    setFerme(false);
-    setOffre(courante);
-  }, [compteId, sessionPrete]);
+    if (necessaire && existante.coffrets.length === 0) sauverOffreBienvenue(courante);
+    setProprietaireOffre(compteId);
+    setFerme(!necessaire);
+    setOffre(necessaire ? courante : null);
+  }, [compteId, sessionPrete, pret]);
 
   const choisi = coffretChoisi(offre);
   const vagues = useMemo(() => (choisi ? vaguesDuCoffret(choisi) : []), [choisi]);
+  const enAttente = !sessionPrete || !pret || proprietaireOffre !== compteId;
+  const bloqueAccueil = enAttente || Boolean(!ferme && offre && (choisi || etape === 'choix'));
+  useEffect(() => { onEtatChange?.(bloqueAccueil); }, [bloqueAccueil, onEtatChange]);
+  useEffect(() => () => { onEtatChange?.(false); }, [onEtatChange]);
 
   // Les vagues entrent l'une après l'autre : socle, rares, mythique. La dernière
   // s'arrête sur la mythique seule, qui garde le bouton « Entrer ».
@@ -326,6 +348,7 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
   };
 
   const ouvrir = (id) => {
+    if (enAttente) return;
     const maj = choisirCoffret(offre, id);
     sauverOffreBienvenue(maj);
     setOffre(maj);
@@ -364,6 +387,17 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
     plusTard(() => setRideau(false), DUREE_RIDEAU);
   };
 
+  if (enAttente) {
+    return (
+      <div className="rpg-coffret rpg-coffret--attente" role="status" aria-live="polite" aria-busy="true" data-rpg-coffret-attente>
+        <div className="rpg-coffret__panneau">
+          <p className="rpg-coffret__sur-titre">Le Sablier de Bab El</p>
+          <p className="rpg-coffret__titre">Préparation de votre accueil…</p>
+          <p className="rpg-coffret__chapeau">Nous retrouvons votre progression avant de vous laisser jouer.</p>
+        </div>
+      </div>
+    );
+  }
   if (ferme || !offre || (!choisi && etape !== 'choix')) return null;
 
   if (etape === 'choix') {

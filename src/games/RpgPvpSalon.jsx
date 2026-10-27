@@ -4,7 +4,14 @@ import './rpg-pvp.css';
 import { useAuth } from '../auth/AuthContext';
 import { useFriends } from '../friends/FriendsContext';
 import { sendMessage } from '../messages/messagesApi';
-import { chargerDecksMaison } from './rpgDeckBuilder.js';
+import { useDecksSablier } from './useDecksSablier.js';
+import { useSablierBourse } from './useSablierBourse.js';
+import { accueilSablierPret } from './useStatutSyncSablier.js';
+import RpgCoffretBienvenue from './RpgCoffretBienvenue.jsx';
+import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
+import { collectionJoueur } from './rpgCollection.js';
+import { exemplairesDuPortefeuille } from './rpgCredits.js';
+import { deckSeJoue, sauverDeckChoisi } from './rpgDeckChoice.js';
 import { deckColors } from './rpgDeckFilter.js';
 import { DeckBox, deckColorModifier, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import {
@@ -155,10 +162,62 @@ function SelecteurDeck({ decks, valeur, onChange, desactive }) {
   );
 }
 
+/**
+ * Prépare les decks uniquement dans un salon où l'on peut encore choisir.
+ * Une invitation directe reçoit le même accueil que le hub, mais un duel déjà
+ * en cours n'y monte jamais (et ne lance pas un deuxième jeu de synchronisations).
+ */
+function DecksDuSalon({ children }) {
+  const auth = useAuth();
+  const { decksMaison, collection, exemplaires, statutSync, enregistrerDeckMaison, rafraichirCollection } = useDecksSablier();
+  const { statutSync: statutBourse, rangerCoffret, pousser } = useSablierBourse({
+    onCartesRangees: rafraichirCollection,
+    // Le salon n'affiche pas les cérémonies de paliers : elles attendront le
+    // retour au hub au lieu d'ouvrir des boosters invisibles ici.
+    partieEnCours: true,
+  });
+  const pret = accueilSablierPret(auth, statutSync, statutBourse);
+  const [bloque, setBloque] = useState(true);
+  const [deckId, setDeckId] = useState('');
+  const decks = useMemo(
+    () => decksPourDefi(decksMaison).filter((deck) => deckSeJoue(deck, collection, exemplaires)),
+    [decksMaison, collection, exemplaires],
+  );
+  const deck = decks.find((candidat) => candidat.id === deckId) ?? decks[0] ?? null;
+  const couche = (
+    <RpgCoffretBienvenue
+      pret={pret}
+      onEtatChange={setBloque}
+      onOuvrir={(coffret) => {
+        const rangement = rangerCoffret(coffret, { synchroniser: false });
+        const resultat = enregistrerDeckMaison(coffretEnDeckMaison(coffret));
+        rafraichirCollection();
+        if (resultat.ok) {
+          setDeckId(resultat.deck.id);
+          sauverDeckChoisi(
+            resultat.deck.id,
+            [resultat.deck],
+            collectionJoueur({ coffret, souk: rangement.portefeuille.cartes }),
+            exemplairesDuPortefeuille(rangement.portefeuille),
+          );
+        } else {
+          pousser();
+        }
+      }}
+    />
+  );
+  return children({ decks, deck, deckId: deck?.id ?? '', setDeckId, bloque: !pret || bloque, couche });
+}
+
+function AvecDecksDuSalon({ actif, children }) {
+  if (!actif) return children({ decks: [], deck: null, deckId: '', setDeckId: () => {}, bloque: false, couche: null });
+  return <DecksDuSalon>{children}</DecksDuSalon>;
+}
+
 export default function RpgPvpSalon() {
   const { code: codeParam } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: sessionEnChargement, isDemo } = useAuth();
   const { friends = [] } = useFriends() ?? {};
 
   const disponible = sablierPvpDisponible();
@@ -170,10 +229,6 @@ export default function RpgPvpSalon() {
   const [busy, setBusy] = useState(false);
   const [copie, setCopie] = useState(false);
   const [saisie, setSaisie] = useState('');
-  // Le joueur n'aligne que ses propres decks : celui du coffret, puis ceux de
-  // l'atelier. Sans deck jouable, le salon le dit au lieu d'en inventer un.
-  const decks = useMemo(() => decksPourDefi(chargerDecksMaison()), []);
-  const [deckId, setDeckId] = useState(() => decks[0]?.id ?? '');
   const [amiId, setAmiId] = useState('');
   const [mode, setMode] = useState('live');
   const [maintenant, setMaintenant] = useState(() => Date.now());
@@ -189,7 +244,6 @@ export default function RpgPvpSalon() {
   const ecran = !code
     ? 'accueil'
     : etatSalon(vue, { disponible: Boolean(uid) && disponible, chargement: chargement && !vue });
-  const deck = decks.find((candidat) => candidat.id === deckId) ?? decks[0] ?? null;
 
   /* ------------------------------- chargement ------------------------------ */
 
@@ -284,7 +338,7 @@ export default function RpgPvpSalon() {
     return tache;
   };
 
-  const creerDefi = (visibilite) => agir(async () => {
+  const creerDefi = (visibilite, deck) => agir(async () => {
     if (!deck) return { ok: false, raison: 'deck-requis' };
     const reponse = await ouvrirDefi({
       deck: deck.cardIds,
@@ -310,7 +364,7 @@ export default function RpgPvpSalon() {
     return reprise;
   });
 
-  const rejoindre = () => agir(async () => {
+  const rejoindre = (deck) => agir(async () => {
     if (!deck) return { ok: false, raison: 'deck-requis' };
     return rejoindreDefi({ code, deck: deck.cardIds });
   });
@@ -382,9 +436,11 @@ export default function RpgPvpSalon() {
     );
   }
 
-  return (
+  const preparerDecks = ecran === 'a-rejoindre'
+    || (ecran === 'accueil' && (sessionEnChargement || (Boolean(uid) && disponible && !isDemo)));
+  const rendreSalon = ({ decks, deck, deckId, setDeckId, bloque, couche }) => (
     <Cadre code={code} retour={code ? { href: cheminSalon(), libelle: 'Salon' } : null}>
-      <main className="rpg-pvp">
+      <main className="rpg-pvp" inert={bloque || undefined}>
         <header className="rpg-pvp__header">
           <p className="rpg-pvp__eyebrow">LE SABLIER · EN LIGNE</p>
           <h1>{code ? 'Salon du défi' : 'Duel en ligne'}</h1>
@@ -439,7 +495,7 @@ export default function RpgPvpSalon() {
               <>
                 <h2>Choisis ton deck</h2>
                 <SelecteurDeck decks={decks} valeur={deckId} onChange={setDeckId} desactive={busy} />
-                <button type="button" className="rpg-pvp__cta" onClick={rejoindre} disabled={busy || !deck}>
+                <button type="button" className="rpg-pvp__cta" onClick={() => rejoindre(deck)} disabled={busy || !deck}>
                   Rejoindre le duel
                 </button>
               </>
@@ -471,7 +527,7 @@ export default function RpgPvpSalon() {
             <div className="rpg-pvp__colonne">
               <section className="rpg-pvp__panneau" aria-labelledby="pvp-etape-creer">
                 <h2 id="pvp-etape-creer"><span className="rpg-pvp__etape" aria-hidden="true">2</span> Créer un défi</h2>
-                <button type="button" className="rpg-pvp__cta rpg-pvp__cta--large" onClick={() => creerDefi('lien')} disabled={busy || !deck}>
+                <button type="button" className="rpg-pvp__cta rpg-pvp__cta--large" onClick={() => creerDefi('lien', deck)} disabled={busy || !deck}>
                   Créer un lien de défi
                 </button>
                 <p className="rpg-pvp__note">
@@ -489,7 +545,7 @@ export default function RpgPvpSalon() {
                     <button
                       type="button"
                       className="rpg-pvp__ghost"
-                      onClick={() => creerDefi('amis')}
+                      onClick={() => creerDefi('amis', deck)}
                       disabled={busy || !amiId || !deck}
                     >
                       Envoyer l’invitation
@@ -521,6 +577,8 @@ export default function RpgPvpSalon() {
           <p className="rpg-pvp__note">Temps restant : {tempsRestant(vue.echeance, maintenant)}</p>
         )}
       </main>
+      {couche}
     </Cadre>
   );
+  return <AvecDecksDuSalon actif={preparerDecks}>{rendreSalon}</AvecDecksDuSalon>;
 }

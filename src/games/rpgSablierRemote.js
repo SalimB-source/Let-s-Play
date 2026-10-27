@@ -18,6 +18,7 @@
  */
 
 import { supabase } from '../lib/supabase';
+import { avecDelaiSablier } from './rpgSablierDelai.js';
 
 /** Table Supabase qui porte les decks maison et la collection de chaque compte. */
 export const RPG_SABLIER_TABLE = 'rpg_sablier_progress';
@@ -41,11 +42,12 @@ function erreurTableAbsente(error) {
 export async function chargerEtatSablier(userId) {
   if (!supabase || !userId) return { state: null, source: 'unavailable' };
   try {
-    const { data, error } = await supabase
+    const { data, error } = await avecDelaiSablier((signal) => supabase
       .from(RPG_SABLIER_TABLE)
       .select('state')
       .eq('user_id', userId)
-      .maybeSingle();
+      .abortSignal(signal)
+      .maybeSingle());
     if (error) throw error;
     return data?.state ? { state: data.state, source: 'table' } : { state: null, source: 'none' };
   } catch (error) {
@@ -61,13 +63,14 @@ export async function chargerEtatSablier(userId) {
 export async function sauverEtatSablier(userId, state) {
   if (!supabase || !userId || !state || typeof state !== 'object') return null;
   try {
-    const { error } = await supabase
+    const { error } = await avecDelaiSablier((signal) => supabase
       .from(RPG_SABLIER_TABLE)
       .upsert({
         user_id: userId,
         state,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'user_id' })
+      .abortSignal(signal));
     return error ? null : 'table';
   } catch {
     return null;

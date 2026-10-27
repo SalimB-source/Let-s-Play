@@ -2992,6 +2992,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-pile__card--back:first-child { transform: translate(-3px, -3px) rotate(-5deg); }
 .rpg-card-pile__card--back:nth-child(2) { transform: translate(-1px, -1px) rotate(-2deg); }
 .rpg-card-pile__card--top { transform: rotate(2deg); }
+/* Une face visible peut recevoir la brume : l'image occupe son gabarit sans
+   changer le format ni le geste de survol de la pile. */
+.rpg-card-pile__card--top > img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 .rpg-card-pile--graveyard .rpg-card-pile__card--top { filter: saturate(.6) brightness(.82); }
 .rpg-card-pile b { margin-top: 1px; color: #ffebc3; font: 800 11px/1 var(--mono); }
 .rpg-card-pile small { color: rgba(244, 225, 190, .82); font: 700 7px/1.1 var(--display); letter-spacing: .12em; text-transform: uppercase; }
@@ -3688,6 +3691,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-spell-played--sorcier .rpg-spell-played__target > img { border-color: rgba(255, 180, 160, .8); }
 .rpg-spell-played--sorcier .rpg-spell-played__target-mark { border-color: rgba(255, 180, 160, .7); color: #ffc0ad; }
 .rpg-spell-played__art {
+  position: relative;
+  overflow: hidden;
   display: block;
   width: 58px;
   height: 72px;
@@ -3696,6 +3701,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   object-fit: cover;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .5);
 }
+.rpg-spell-played__art > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rpg-spell-played__details { display: grid; min-width: 0; gap: 2px; }
 .rpg-spell-played__eyebrow { color: #72e6d0; font: 800 8px/1.1 var(--display); letter-spacing: .18em; }
 .rpg-spell-played--contre .rpg-spell-played__eyebrow { color: #ffd27a; }
@@ -8614,11 +8620,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview[class*="rpg-card--frame-"],
 .rpg-hover-card-preview__face[class*="rpg-card--frame-"] { background-color: transparent; }
 
-/* La peinture mythique garde un soupçon de relief, sans virer vers une autre
-   couleur. C'est tout ce qui la distingue maintenant de ses voisines : son
-   reflet n'est plus un calque à part, c'est le foil commun, plus dense parce
-   qu'elle a déjà un cadre doré autour. Les filtres d'état (fatigue, blessure,
-   carte verrouillée) restent prioritaires. */
+/* La peinture mythique garde un soupçon de relief. La brume dorée est un
+   calque séparé (`rpg-brume-mythique.css`) ; les filtres d'état de l'image
+   (fatigue, blessure, carte verrouillée) restent prioritaires. */
 .rpg-card--mythique:not(.is-summoning-sick, .is-attacked) > .rpg-card__img,
 .rpg-card--mythique > .rpg-hand__img,
 .rpg-card--mythique > .rpg-mulligan__img,

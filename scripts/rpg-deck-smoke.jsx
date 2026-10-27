@@ -425,6 +425,8 @@ export async function checkRpgDecks(assert) {
     'le cadre du Kraken mythique suit sa couleur Eau dans la collection');
   assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art.rpg-card--frame-eau.rpg-card--frame-brillant.rpg-card--mythique'),
     'le Kraken garde ses classes de cadre mythique brillant dans l’atelier');
+  assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art .rpg-brume-mythique'),
+    'la mythique conserve sa brume dans la collection, même verrouillée');
   assert.match(texte(rangeeKraken), /Le Souk la vendra après « Le Pêcheur de perles » — La Tour des Abysses/, 'et il annonce où il se débloque');
   assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'impossible d’ajouter une carte verrouillée');
   const rangeeHybride = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="rais-de-la-galiote"]');
@@ -432,6 +434,8 @@ export async function checkRpgDecks(assert) {
     'une carte hybride garde dans l’atelier ses deux aplats diagonaux, sans reflet');
   const rangeeChien = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
   assert.ok(!rangeeChien.classList.contains('is-locked'), 'une commune de la dotation est libre');
+  assert.equal(rangeeChien.querySelector('.rpg-brume-mythique'), null,
+    'une commune de la collection ne porte pas de brume');
   await atelier.click(rangeeChien.querySelector('.rpg-atelier__carte-ajout'), 'ajouter Chien du guet');
   assert.match(texte(atelier.container.querySelector('.rpg-atelier__state')), /1 \/ 30 cartes/, 'le compteur suit l’ajout');
   const ligneChien = atelier.container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');

@@ -290,28 +290,41 @@ export function coffretEstJouable(coffret) {
   return Boolean(coffret) && rpgValiderDeck(coffret.cardIds).ok;
 }
 
+/** Les traces d'un joueur existant, sans compter la dotation commune par défaut. */
+export function joueurSablierDejaActif({
+  progression = null, acquis = null, collection = null, bourse = null, profil = null, aDeckPersonnel = false,
+} = {}) {
+  const contientDesElements = (valeur) => Array.isArray(valeur) && valeur.length > 0;
+  return contientDesElements(progression?.etagesVaincus)
+    || contientDesElements(acquis?.cartes)
+    || contientDesElements(collection)
+    || contientDesElements(bourse?.cartes)
+    || contientDesElements(bourse?.tutoriels)
+    || Number(bourse?.ouvertures) > 0
+    || Number(bourse?.credits) > 0
+    || Number(profil?.xp) > 0
+    || aDeckPersonnel;
+}
+
 /**
  * Faut-il présenter les coffrets ? Seulement au **tout premier lancement** :
- *
- *   - aucune offre enregistrée, et aucun coffret choisi ;
- *   - un joueur qui a déjà joué (un étage vaincu, des cartes gagnées, une
- *     collection) **ne voit jamais l'écran** : sa collection existante ne se
- *     reprend pas, et un écran de bienvenue par-dessus son jeu serait faux.
+ * aucun choix enregistré et aucune progression ni collection déjà acquise.
+ * Les cartes de la bourse comptent aussi : elles peuvent être la seule trace
+ * d'un ancien joueur récupérée depuis un autre appareil.
  */
 export function coffretBienvenueNecessaire({
   offre = null,
   progression = null,
   acquis = null,
   collection = null,
+  bourse = null,
+  profil = null,
+  aDeckPersonnel = false,
 } = {}) {
   const etat = normaliserOffreBienvenue(offre);
   if (etat.choisi) return false;
   if (etat.coffrets.length === 0) return false; // catalogue incomplet : rien à proposer
-  const etages = progression?.etagesVaincus;
-  if (Array.isArray(etages) && etages.length > 0) return false;
-  if ((acquis?.cartes?.length ?? 0) > 0) return false;
-  if ((collection?.length ?? 0) > 0) return false;
-  return true;
+  return !joueurSablierDejaActif({ progression, acquis, collection, bourse, profil, aDeckPersonnel });
 }
 
 /**

@@ -246,6 +246,8 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(offres.some((carte) => carte.dataset.soukDirectRarete === 'rare')
       && offres.some((carte) => carte.dataset.soukDirectRarete === 'mythique'),
     'les deux prix sont représentés chaque jour');
+    assert.ok(offres.every((carte) => Boolean(carte.querySelector('.rpg-brume-mythique')) === (carte.dataset.soukDirectRarete === 'mythique')),
+      'dans l’étal, seules les mythiques portent la brume dorée');
     assert.ok(offres.every((carte) => carte.dataset.cardId === carte.dataset.soukDirectCarte),
       'chaque offre est reliée à l’aperçu par data-card-id');
     assert.ok(offres.every((carte) => carte.querySelector('[data-souk-direct-acheter]').disabled),

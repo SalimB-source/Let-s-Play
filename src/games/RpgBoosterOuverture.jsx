@@ -22,6 +22,7 @@
  * présente immédiatement toutes les cartes, sans sortie ni flottement.
  */
 
+import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-souk.css';
 import { cardById, cardFrameClass, cardRarityInfo, cardTypeLine } from './rpgCards.js';
@@ -71,6 +72,7 @@ function CarteRevelee({ detail, cardArt, index, visible = true }) {
       <div className="rpg-souk__carte-volume">
         <div className="rpg-souk__carte-art">
           <img src={cardArt(carte)} alt="" width="176" height="238" />
+          <RpgBrumeMythique carte={carte} />
         </div>
         <span className="rpg-souk__carte-reflet" aria-hidden="true" />
         <RpgCardCopyBadge nombre={exemplaires} className="rpg-souk__carte-copies" />

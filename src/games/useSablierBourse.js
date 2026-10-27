@@ -99,6 +99,7 @@ import { chargerAcquis, chargerCollectionDistante, collectionJoueur, possedeCart
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
+import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 
 /** L'état local complet, tel qu'il vit sur l'appareil — les deux moitiés. */
 function etatLocalComplet() {
@@ -144,7 +145,7 @@ export function useSablierBourse({
   // il reste sur les clés invité de l'appareil.
   const compteId = authContext && !authContext.isDemo ? (authContext.user?.id ?? null) : null;
   const [etat, setEtat] = useState(() => etatInitial(progression, compteId));
-  const [statutSync, setStatutSync] = useState('local');
+  const [statutSync, setStatutSync] = useStatutSyncSablier(compteId);
   // L'état courant, lisible depuis les rappels sans les recréer à chaque rendu.
   const etatRef = useRef(etat);
   etatRef.current = etat;
@@ -288,11 +289,14 @@ export function useSablierBourse({
       if (!vivant) return;
       appliquer(bourse, quetes, profil);
       sauverProgressionHistoire(fusion.etat.histoire);
-      setStatutSync('synchronise');
-      sauverEtatSablier(compteId, { ...fusion.etat, bourse, quetes, profil });
+      // Ne libérer l'accueil qu'après cette écriture initiale : une réponse
+      // tardive ne doit pas remplacer le stock du coffret qui vient d'être pris.
+      const enregistre = await sauverEtatSablier(compteId, { ...fusion.etat, bourse, quetes, profil });
+      if (!vivant) return;
+      setStatutSync(enregistre ? 'synchronise' : 'horsligne');
     })();
     return () => { vivant = false; };
-  }, [compteId, appliquer]);
+  }, [compteId, appliquer, setStatutSync]);
 
   /**
    * Règle la dette des paliers : **un booster offert par niveau gagné**, tiré
@@ -784,12 +788,14 @@ export function useSablierBourse({
    * compte. C'est ce qui rend le deck du coffret jouable tout de suite — sans
    * ce compte, ses inhabituelles posées deux fois n'auraient qu'une copie.
    */
-  const rangerCoffret = useCallback((coffret) => {
+  const rangerCoffret = useCallback((coffret, { synchroniser = true } = {}) => {
     const avant = etatRef.current;
     const maj = rangerCoffretDansPortefeuille(avant.bourse, coffret);
     if (!maj.modifie) return maj;
     appliquer(maj.portefeuille, avant.quetes, avant.profil);
-    pousser();
+    // L'accueil peut grouper cette écriture avec celle du deck qui suit : une
+    // seule sauvegarde distante contient alors à la fois les cartes et le deck.
+    if (synchroniser) pousser();
     onCartesRangees?.();
     return maj;
   }, [appliquer, pousser, onCartesRangees]);
