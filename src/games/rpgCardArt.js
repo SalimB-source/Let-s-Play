@@ -254,6 +254,14 @@ const CARD_ART_CACHE_VERSIONS = {
   // intacte, marquée par le combat.
   'berserk-du-crepuscule-furie': 'corbeau-furie-souls-v1',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
+  // La Tour Oubliée rejoint la passe : l'Ifrit d'encre porte Furie 1. Sa face
+  // déclenchée reprend son archive en feu, fissures ouvertes et encre lâchée.
+  // Révision dédiée, comme les autres doubles de Furie : le fichier garde son
+  // nom, seul le `?v=` casse le cache.
+  'ifrit-d-encre-furie': 'tour-furie-encre-v1',
+  // Brise-lame : la Magie Rapide Braise qui désarme l'adversaire. Peinture
+  // neuve, révision dédiée contre les caches du navigateur.
+  'brise-lame': 'braise-brise-lame-v2',
   // La passe des Ténèbres — l'Égypte de la balance (octobre 2026). Le set
   // était resté en or massif, violet et lumière de musée ; il passe à l'os, à
   // la suie et à l'or terni. Le violet de set — un mélange de 18 % de #5b2a86
@@ -408,7 +416,8 @@ export const cardArtEntite = (entite) => {
  * (`entite.furieDeclenchee === true`), on affiche sa peinture alternative
  * entachée de sang et en colère ; dès qu'il retombe, la face normale revient.
  * Retourne l'URL de l'image `public/cards/<id>-furie.jpg` avec sa révision
- * de cache, ou l'illustration normale si aucune peinture furie n'existe.
+ * de cache. Chaque porteur de Furie doit donc livrer ce fichier : le moteur
+ * ne le demande que lorsque l'état est actif, mais ne devine pas son absence.
  */
 export const cardArtFurie = (id) => {
   const artId = `${cardArtId(id)}-furie`;

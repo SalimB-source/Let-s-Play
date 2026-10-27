@@ -929,12 +929,21 @@ Les peintures gardent leur nom de fichier ; la marque passe donc à
 `grappin-griffes-bastingage-v4`, `javelot-beffroi-cloche-v4` pour les quatre
 cartes à clé propre), sinon un navigateur servirait l'ancienne image.
 
+### Brise-lame — une Braise qui désarme (octobre 2026)
+
+`brise-lame.jpg` (**1024×1280**, révision `braise-brise-lame-v2`) peint une
+épée qui éclate en une douzaine de morceaux distincts au-dessus d'une
+enclume : fragments d'acier aux arêtes orangées, étincelles, braises et fumée
+sur fond d'ardoise. Même huile sombre que le reste
+du set Braise, aucun texte, aucune bordure, aucun personnage. C'est la première
+réponse du catalogue à l'équipement adverse.
+
 ### Bilan du catalogue
 
 | Élément | Cartes | Dans l'huile sombre | Reste |
 | --- | --- | --- | --- |
 | Sable | 48 | 48 | — |
-| Braise | 32 | 32 | — |
+| Braise | 33 | 33 | — |
 | Neige | 29 | 29 | — |
 | Ténèbres | 28 | 28 | — |
 | Eau | 27 | 27 | — |
@@ -954,7 +963,7 @@ peinture nihonga à la demande ; la **Montagne du Soleil rouge** est un terrain,
 hors du lot des cartes jouées.
 
 > **Ne pas se fier aux seuls noms de révision.** Un comptage rapide des marques
-> contenant `souls` donnait « Braise : 0/32 » — faux : plusieurs cartes portent
+> contenant `souls` donnait « Braise : 0/33 » — faux : plusieurs cartes portent
 > une révision d'un autre nom (`pirates-v1`, `kaiga-couleurs`, `nihonga`) et
 > quelques-unes ont été peintes **avant** que la convention de cache existe,
 > donc sans clé du tout. Le seul état fiable est visuel, ou celui de ce
@@ -1158,6 +1167,32 @@ aurore, même spirale de corbeaux (`corbeau-furie-souls-v1`).
 
 Les sept faces de Furie du catalogue sont désormais toutes dans la même
 facture.
+
+### La Tour oubliée rejoint la passe — l'Ifrit d'encre (octobre 2026)
+
+Le **Bestiaire oublié** a lui aussi un porteur de Furie : **l'Ifrit d'encre**
+(`Furie 1`, doc 23). Sa face déclenchée est livrée dans
+`public/cards/ifrit-d-encre-furie.jpg` — **1024×1280**, sous la révision
+dédiée `tour-furie-encre-v1`. Comme les sept autres, elle **n'est pas une
+seconde composition** : même ifrit debout à proportion humaine, même archive
+en feu, mêmes rayonnages, même cadrage, même livre ouvert au premier plan.
+Seul l'état a changé.
+
+Les fissures orangées du corps charbonneux se sont ouvertes et brûlent à
+blanc, la gueule est grande ouverte sur un hurlement, les yeux passent au
+jaune incandescent, la chevelure de flammes violettes monte plus haut, et les
+volutes d'encre noire qui sortaient paresseusement de sa main fouettent
+maintenant tout le cadre. L'incendie a gagné les livres ; l'encre a éclaboussé
+les pages du registre ouvert — **aucun caractère lisible**, conformément à la
+règle du set. Toujours **ni lampe, ni vase, ni génie qui s'échappe** : la
+consigne de repaint de l'Ifrit d'encre vaut aussi pour sa Furie.
+
+À l'écran, cette peinture remplace la face intacte pleine page, sans filet de
+couleur, tant que `entite.furieDeclenchee` est vrai ; la vignette rouge animée
+l'accompagne, sur la table comme dans les aperçus. `tests/rpg-tour-oubliee.test.js`
+et `check:rpg-furie-preview` verrouillent le fichier, son ratio 4:5, son plein
+cadre et sa révision de cache. **Teryel aux sept cornes**, l'autre porteur de
+Furie du set, reste à doter de son double.
 
 ## Dérogation : les quatre porteurs humains de Furie en photoréaliste (octobre 2026)
 
@@ -1605,7 +1640,7 @@ et `illustrationAlternativeUrl` ajoute le `?v=` ; les autres n'en ont pas.
 
 ## Audit visuel du catalogue (octobre 2026)
 
-Contrôle des **162 cartes illustrées** sur une planche unique, vignette par
+Contrôle des **163 cartes illustrées** sur une planche unique, vignette par
 vignette, avec le nom sous chaque carte. La planche se refait avec
 `scripts/planche-cartes.sh` : elle tire les vignettes des mêmes fichiers que le
 jeu (`public/cards/<art>.jpg`), donc elle montre ce que le joueur voit.

@@ -142,6 +142,7 @@ export const EFFET_ICONE = {
   recherche: 'i-recherche',
   'recherche-deck': 'i-recherche',
   'destruction-navire': 'i-degats',
+  'destruction-arme': 'i-degats',
   'mue-mondiale': 'i-defausse',
 };
 
@@ -245,6 +246,7 @@ export const EFFET_LIBELLES = {
   recherche: 'Recherche',
   'recherche-deck': 'Recherche',
   'destruction-navire': 'Destruction de navire',
+  'destruction-arme': 'Destruction d’arme',
   'mue-mondiale': 'Mue mondiale',
 };
 
@@ -370,6 +372,7 @@ export function pastillesPourCarte(carte) {
     'prochaine-arrivee-abordage': ['abordage', 'Abordage'],
     'recherche-deck': ['recherche', 'Recherche'],
     'destruction-navire': ['destruction-navire', 'Destruction de navire'],
+    'destruction-arme': ['destruction-arme', 'Destruction d’arme'],
     'mue-mondiale': ['mue-mondiale', 'Mue mondiale'],
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
@@ -463,6 +466,7 @@ const MOTIFS_LIGNE = [
   ['defaussePaquet', /dessus du paquet[^.]*cimetière|paquet adverse[^.]*cimetière/iu],
   ['empeche-blocage', /empêche de bloquer|ne pourra pas bloquer|ne peut pas bloquer/iu],
   ['destruction-totale', /détruisez toutes les créatures/iu],
+  ['destruction-arme', /d[ée]truis(?:ez|ent|ons)?[^.]*\barme\b/iu],
   ['jetons', /\bcré(?:e|ez|éent|er)\b[^.]*\b(?:créatures?-jetons?|jetons?|chiens? de sable)\b|\bcréatures?-jetons?\b/iu],
   ['protectionSortsContre', /\bprotection contre les sorts\b/iu],
   ['protection', /\bprotection\b|\bprot[ée]g/iu],
@@ -609,6 +613,7 @@ export const EFFET_DEFINITIONS = {
   heures: 'Porte des compteurs d’Heures : on en retire un au début de chacun de vos tours ; quand le dernier part, l’effet se déclenche.',
   'retour-main': 'Renvoie une créature dans la main de son propriétaire : elle n’est pas détruite et pourra être rejouée.',
   'destruction-totale': 'Détruit les créatures des deux camps, sans infliger de dégâts. Les capacités de mort se déclenchent.',
+  'destruction-arme': 'Détruit une arme équipée à une créature adverse : ses bonus et ses mots-clés quittent le porteur, et l’arme rejoint le cimetière.',
   exil: 'Retire une créature de la partie : elle ne va pas au cimetière.',
   'empeche-blocage': 'La créature visée ne peut pas bloquer pendant la durée indiquée.',
   debuff: (valeur) => `La créature visée encaisse un malus de ${valeur ?? '-X/-X'} : son attaque frappe moins fort et sa réserve de vie fond. Si sa défense tombe à 0, elle est détruite.`,

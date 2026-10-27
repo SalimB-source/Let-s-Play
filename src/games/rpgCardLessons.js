@@ -32,6 +32,13 @@ export const RPG_CARD_LESSONS = Object.freeze([
     text: 'Le Sabre maudit se joue sur une créature alliée : son porteur gagne +1/+0 et Attaque ciblée, comme Fériel. Ce n’est pas Rapidité : le mal d’invocation reste applicable. Le bonus persiste entre les tours ; quand le porteur meurt ou retourne en main, le sabre rejoint le cimetière. L’arme ne donne ni Harakiri ni le type Samouraï.',
   },
   {
+    id: 'destruction-arme',
+    section: 'Magies',
+    cardIds: ['brise-lame', 'sabre-maudit', 'takouba-des-pistes'],
+    title: 'Une Braise peut briser une arme équipée',
+    text: 'Brise-lame est une Magie Rapide de coût 3 : elle détruit une arme portée par une créature adverse, puis fait piocher une carte. La créature doit être équipée — une arme du prototype ou le Sabre maudit — sinon le sort ne se lance pas et le mana reste entier. L’arme rejoint le cimetière de son camp ; le porteur perd les bonus et les mots-clés qu’elle donnait, mais reste sur la table. Une protection contre la Braise, une protection contre les sorts ou une Esquive peuvent empêcher la destruction ; la pioche, elle, est déjà acquise.',
+  },
+  {
     id: 'rituel-ephemere',
     section: 'Magies',
     cardIds: ['tempete-de-sable', 'rempart-de-dunes', 'parade-du-verre'],

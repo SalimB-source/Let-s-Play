@@ -38,6 +38,7 @@ import {
   terrainManaColors,
 } from './rpgCards.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
+import { armesPortees } from './rpgCardStacks.js';
 // Accès différé au moteur (cycle d'import maîtrisé : aucune de ces fonctions
 // n'est appelée pendant l'évaluation des modules) — il s'agit ici de tester la
 // solvabilité réelle avec exactement les mêmes règles de paiement que le jeu.
@@ -450,6 +451,13 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
         && !estProtegee(entite, couleurs))
       .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2));
     return navires[0]?.id ?? null;
+  }
+  if (carte?.effet?.type === 'destruction-arme') {
+    // Brise-lame : on désarme la plus grosse menace équipée que la protection
+    // de couleur n'écarte pas. Sans arme adverse, aucune cible.
+    return ciblesLegales(duel, cote, carte, 'creature')
+      .filter((entite) => armesPortees(entite).length > 0)
+      .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2))[0]?.id ?? null;
   }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
@@ -1349,6 +1357,15 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const tempo = effet.cible === 'creature-amie' ? valeurEntite(cible) * 0.2 : 1.5 + menace(cible) * 0.5;
       const controle = profil.style === 'controle' ? 1 : 0;
       const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
+      return { score: score > 0 ? score : 0, cibleId };
+    }
+    if (effet.type === 'destruction-arme') {
+      const cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });
+      if (!cibleId) return null;
+      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      const valeurArmes = cible ? armesPortees(cible).length * 2 : 0;
+      const score = 2 + valeurArmes + (cible ? menace(cible) * 0.35 : 0)
+        + (Number(effet.pioche) || 0) * 2 - cout * 0.3;
       return { score: score > 0 ? score : 0, cibleId };
     }
     if (effet.type === 'debuff') {

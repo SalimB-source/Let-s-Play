@@ -3848,7 +3848,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 45, 'Neige noire rejoint les magies du catalogue');
+  assert.equal(RPG_MAGIE_CARDS.length, 46, 'Brise-lame rejoint les magies du catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);

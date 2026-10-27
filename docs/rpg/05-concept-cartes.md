@@ -766,6 +766,17 @@ texte d'effet de la créature en bleu (« Bonus d’équipement : +X/+Y ·
 Infiltration », par exemple). La pile armée et les règles du duel ne changent
 pas.
 
+**Désarmer l'adversaire.** *Brise-lame* (`brise-lame`, Magie Rapide Braise,
+coût 3, inhabituelle) détruit **une arme équipée à une créature adverse** et
+fait piocher une carte. La cible doit porter au moins une arme — prototype
+(`entite.arme`) ou Sabre maudit (`entite.armes`) — et n'être ni protégée contre
+la Braise, ni protégée contre les sorts. L'arme rejoint le cimetière de son
+camp ; ses bonus, ses mots-clés et son bouclier quittent le porteur, qui reste
+en jeu avec ses statistiques imprimées. Comme tout sort qui désigne une
+créature adverse, l'Esquive et la Contre-attaque peuvent répondre ; la pioche,
+elle, reste acquise même si l'effet est esquivé. `rpgSortACibleValide` éteint
+la carte en main tant qu'aucune créature adverse n'est équipée.
+
 ## 10. Le Butin (set Sable)
 
 Le **Butin** est le mot-clé offensif du set Sable (`nerfs-set-sable.md`) :

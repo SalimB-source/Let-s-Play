@@ -64,7 +64,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 43, 'la dotation : les Tours de défense communes ou inhabituelles et la Hache de la banquise, sans les terrains retirés');
+  assert.equal(COLLECTION_DEPART.length, 44, 'la dotation : les Tours de défense communes ou inhabituelles, la Hache de la banquise et Brise-lame, sans les terrains retirés');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
