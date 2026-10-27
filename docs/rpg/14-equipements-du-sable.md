@@ -223,8 +223,9 @@ Le *Living Weapon*. Deux effets très agréables :
 - elle rend le lot **jouable à vide** : plus personne ne se retrouve avec une
   main d'armes et une table vide (le cauchemar de tout set d'équipements) ;
 - elle se combine avec Tarek : la Lame posée sur son propre chien donne un
-  1/1 → 4/2 (+1/+1 de l'aura de Tarek compris), pour 4 manas et **sans rien
-  sacrifier**.
+  1/1 → 4/2 (+1/+1 de l'aura de Tarek compris **si le chien occupe une case
+  voisine de Tarek** — voir la règle d'Aura adjacente), pour 4 manas et
+  **sans rien sacrifier**.
 
 **Brique moteur** : `rpgJouerArme` exige aujourd'hui une cible en jeu
 (`si pas de cible → raison: 'cible'`). Il faut autoriser `cibleId: null` quand
@@ -259,8 +260,10 @@ la couleur qui frappe avant le combat, comme la Neige est celle qui frappe en
 l'air.
 
 Le lien avec Tarek est délibéré : les chiens de sable créés par la Takouba
-**sont** des créatures Sable, donc ils profitent de son aura s'il est en jeu.
-La Takouba est la carte qui transforme un deck jetons en deck valeur.
+**sont** des créatures Sable, donc ils profitent de son aura s'ils occupent une
+case voisine de la sienne. Depuis la règle d'Aura adjacente, placer Tarek au
+milieu de ses jetons compte : la Takouba est la carte qui transforme un deck
+jetons en deck valeur.
 
 ---
 

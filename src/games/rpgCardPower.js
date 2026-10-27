@@ -351,7 +351,9 @@ export function valeurCarte(carte) {
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
-  if (carte.aura) valeur += 2.5;
+  // Une Aura ne touche plus que les deux créatures adjacentes : elle vaut
+  // moins qu'un renfort de camp entier, mais plus qu'un simple mot-clé.
+  if (carte.aura) valeur += 1.8;
   // Bannière : chaque attaque d'un Samouraï du camp laisse un +X/+X définitif
   // à l'attaquant — un renfort récurrent, un cran au-dessus d'une aura fixe.
   if (carte.banniere) valeur += 3;

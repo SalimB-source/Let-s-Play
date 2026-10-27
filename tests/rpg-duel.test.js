@@ -1122,7 +1122,8 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   donner(duel, 'joueur', 'amani-des-ksour');
   const amani = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
   assert.deepEqual([amani.atk, amani.def, amani.pv], [2, 5, 5], 'Amani est une 2/5');
-  assert.equal(fennec.def, 2, 'son égide donne +0/+1 aux autres créatures du camp');
+  assert.equal(tiziri.def, 2, 'son égide donne +0/+1 à la voisine immédiate (Tiziri)');
+  assert.equal(fennec.def, 1, 'le Fennec, deux cases plus loin, garde sa DEF imprimée');
 
   donner(duel, 'joueur', 'amayas-du-hoggar');
   const mainAvantAmayas = duel.joueur.main.length;
@@ -1140,7 +1141,8 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   donner(duel, 'joueur', 'tin-hinan');
   const tin = rpgJouerCreature(duel, 'joueur', 'tin-hinan').entite;
   assert.equal(fennec.atk, 3, 'Tin Hinan ne donne plus aucun boost de statistiques');
-  assert.equal(fennec.def, 2, 'seule l’égide d’Amani (1 + 1) compte pour la défense');
+  assert.equal(fennec.def, 1, 'le Fennec reste trop loin d’Amani pour recevoir son égide');
+  assert.equal(tiziri.def, 2, 'seule Tiziri, voisine d’Amani, garde le +0/+1');
   assert.equal(cardById('fennec-des-decombres').butin, true, 'son Butin reste imprimé sur la fiche');
   assert.equal(fennec.infiltration, true, 'Tin Hinan ouvre la route à ses autres créatures');
   assert.equal(tin.infiltration, false, 'elle ne gagne rien elle-même');
@@ -1543,65 +1545,66 @@ test('Tenacité ne sauve pas d’un coup fatal porté par deux bloqueurs', () =>
   assert.equal(duel.log.filter((ligne) => ligne.startsWith('Tenacité :')).length, 1);
 });
 
-test('Amani est une 2/5 à 4 dont l’égide donne +0/+1 aux autres créatures de son camp', () => {
+test('Amani est une 2/5 à 4 dont l’égide donne +0/+1 aux créatures adjacentes', () => {
   const carte = cardById('amani-des-ksour');
   assert.deepEqual({ cost: carte.cost, atk: carte.atk, def: carte.def, rarity: carte.rarity }, {
     cost: 4, atk: 2, def: 5, rarity: 'rare',
   });
   assert.deepEqual(carte.aura, { type: 'buff-autres', atk: 0, def: 1, camps: 'camp' });
-  assert.match(carte.text, /Tant qu.Amani est en jeu, vos autres créatures gagnent \+0\/\+1/);
+  assert.match(carte.text, /Tant qu.Amani est en jeu, vos créatures adjacentes gagnent \+0\/\+1/);
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 50);
   donnerMana(duel, 'sorcier', 50);
+  const poser = (cote, id) => {
+    donner(duel, cote, id);
+    return rpgJouerCreature(duel, cote, id).entite;
+  };
 
-  // Sans Amani, chacun garde ses chiffres imprimés.
-  donner(duel, 'joueur', 'chien-du-guet');
-  const mien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  assert.deepEqual([mien.atk, mien.def, mien.pv], [2, 2, 2], 'pas d’égide, pas de bonus');
-
-  // Amani entre : les autres gagnent +0/+1, elle reste une 2/5.
-  donner(duel, 'joueur', 'amani-des-ksour');
-  const amani = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
+  // Rangée : Chien (0), Amani (1), Fennec (2), Porteuse (3).
+  const chien = poser('joueur', 'chien-du-guet');
+  const amani = poser('joueur', 'amani-des-ksour');
+  const fennec = poser('joueur', 'fennec-des-decombres');
+  const porteuse = poser('joueur', 'porteuse-de-cruches');
+  const adverse = poser('sorcier', 'chien-du-guet');
   assert.deepEqual([amani.atk, amani.def, amani.pv], [2, 5, 5], 'Amani ne se protège pas elle-même');
-  assert.deepEqual([mien.atk, mien.def, mien.pv], [2, 3, 3], 'le Chien du guet gagne +0/+1');
+  assert.deepEqual([chien.atk, chien.def, chien.pv], [2, 3, 3], 'voisin de gauche : +0/+1');
+  assert.deepEqual([fennec.atk, fennec.def, fennec.pv], [3, 2, 2], 'voisin de droite : le Fennec 3/1 passe en 3/2');
+  assert.deepEqual([porteuse.atk, porteuse.def, porteuse.pv], [0, 3, 3], 'à deux cases : aucun bonus');
+  assert.deepEqual([adverse.atk, adverse.def, adverse.pv], [2, 2, 2], 'le camp adverse reste nu');
 
-  // Les arrivantes entrent déjà sous l’égide.
-  donner(duel, 'joueur', 'fennec-des-decombres');
-  const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
-  assert.deepEqual([fennec.atk, fennec.def, fennec.pv], [3, 2, 2], 'le Fennec 3/1 entre en 3/2');
+  // Deux Amani adjacentes cumulent leurs égides l’une sur l’autre ; la
+  // créature située deux cases plus loin ne reçoit toujours rien.
+  const deux = duelDeBase();
+  donnerMana(deux, 'joueur', 50);
+  const poserDeux = (id) => {
+    donner(deux, 'joueur', id);
+    return rpgJouerCreature(deux, 'joueur', id).entite;
+  };
+  const premiere = poserDeux('amani-des-ksour');
+  const seconde = poserDeux('amani-des-ksour');
+  const voisin = poserDeux('chien-du-guet');
+  const loin = poserDeux('fennec-des-decombres');
+  assert.deepEqual([premiere.def, seconde.def], [6, 6], 'les deux Amani se protègent l’une l’autre');
+  assert.deepEqual([voisin.def, voisin.pv], [3, 3], 'leur voisin reçoit une égide');
+  assert.deepEqual([loin.def, loin.pv], [1, 1], 'le Fennec, encore une case plus loin, ne reçoit rien');
 
-  // Le camp adverse reste nu : l’égide ne protège pas l’envahisseur.
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const sien = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  assert.deepEqual([sien.atk, sien.def, sien.pv], [2, 2, 2], 'le Chien adverse reste un 2/2');
-
-  // Une seconde Amani dédouble l’égide : chaque Amani protège toutes les
-  // créatures sauf elle-même — elles se protègent donc l’une l’autre.
-  donner(duel, 'joueur', 'amani-des-ksour');
-  const seconde = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
-  assert.deepEqual([seconde.atk, seconde.def, seconde.pv], [2, 6, 6], 'la seconde Amani 2/5 reçoit l’égide de la première : 2/6');
-  assert.deepEqual([amani.atk, amani.def, amani.pv], [2, 6, 6], 'et la première reçoit la sienne');
-  assert.deepEqual([mien.def, mien.pv], [4, 4], 'l’égide passe à +0/+2 pour les autres créatures');
-  assert.deepEqual([fennec.def, fennec.pv], [3, 3]);
-
-  // Retirer une Amani ne rend que son égide : l’autre tient le +0/+1.
-  assert.equal(rpgBlesserCreature(duel, 'joueur', amani.id, 100, 'braise').ok, true);
-  assert.deepEqual([seconde.def, seconde.pv], [5, 5], 'la seconde redevient une 2/5');
-  assert.deepEqual([mien.def, mien.pv], [3, 3], 'le bonus retombe à +0/+1');
-  assert.deepEqual([fennec.def, fennec.pv], [2, 2]);
-
-  // Perdre la dernière égide ne tue jamais : au pire, 1 PV (règle de la Résonance).
-  donner(duel, 'joueur', 'porteuse-de-cruches');
-  const porteuse = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
-  assert.deepEqual([porteuse.atk, porteuse.def, porteuse.pv], [0, 4, 4], 'la Porteuse 0/3 entre en 0/4');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', porteuse.id, 3, 'braise').recus, 3);
-  assert.deepEqual([porteuse.def, porteuse.pv], [1, 1], 'trois blessures : elle ne tient plus qu’à 1 PV');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', seconde.id, 100, 'braise').ok, true);
-  assert.ok(duel.joueur.creatures.includes(porteuse), 'la perte de l’égide ne l’achève pas');
-  assert.equal(porteuse.pv, 1, 'au pire, 1 PV');
-  assert.deepEqual([mien.atk, mien.def, mien.pv], [2, 2, 2], 'le Chien retrouve son 2/2');
-  assert.deepEqual([fennec.atk, fennec.def, fennec.pv], [3, 1, 1], 'le Fennec retrouve son 3/1');
+  // Retirer une égide ne rend que son point — et perdre la dernière ne tue
+  // jamais : au pire, 1 PV (même plancher que la Résonance).
+  const perte = duelDeBase();
+  donnerMana(perte, 'joueur', 50);
+  const poserPerte = (id) => {
+    donner(perte, 'joueur', id);
+    return rpgJouerCreature(perte, 'joueur', id).entite;
+  };
+  const gardienne = poserPerte('amani-des-ksour');
+  const fragile = poserPerte('fennec-des-decombres');
+  assert.deepEqual([fragile.def, fragile.pv], [2, 2], 'le Fennec voisin entre en 3/2');
+  assert.equal(rpgBlesserCreature(perte, 'joueur', fragile.id, 1, 'braise').recus, 1);
+  assert.equal(fragile.pv, 1, 'puis tombe à 1 PV');
+  assert.equal(rpgBlesserCreature(perte, 'joueur', gardienne.id, 100, 'braise').ok, true);
+  assert.ok(perte.joueur.creatures.includes(fragile), 'perdre l’égide ne l’achève pas');
+  assert.deepEqual([fragile.def, fragile.pv], [1, 1], 'au pire, 1 PV');
 });
 
 test('la portée d’une arrivée ciblée est déclarée une fois, pour le moteur et pour la table', () => {
@@ -3667,18 +3670,33 @@ test('la Lame de mer détruit et exile la créature dont la défense tombe sous 
   assert.match(cardById('lame-de-mer').text, /détruite et exilée/);
 });
 
-test('Tarek donne +1/+1 aux créatures Sable tant qu’il est en jeu', () => {
+test('Tarek donne +1/+1 aux créatures Sable adjacentes — ni à lui-même, ni aux lointaines', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
+  // Rangée : Chien (0, Sable), Porteuse (1, Eau), Fennec (2, Sable), Tarek (3),
+  // puis les deux chiens-jetons créés à son arrivée (4 et 5).
   donner(duel, 'joueur', 'chien-du-guet');
   const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
   donner(duel, 'joueur', 'porteuse-de-cruches');
   const eau = rpgJouerCreature(duel, 'joueur', 'porteuse-de-cruches').entite;
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
   donner(duel, 'joueur', 'tarek');
   const tarek = rpgJouerCreature(duel, 'joueur', 'tarek').entite;
-  assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 3, pv: 3, def: 3 });
-  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 0, pv: 3, def: 3 });
-  assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 5, pv: 6, def: 6 });
+  const jetons = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
+
+  assert.deepEqual({ atk: fennec.atk, pv: fennec.pv, def: fennec.def }, { atk: 4, pv: 2, def: 2 },
+    'le Fennec Sable, case voisine de gauche, gagne +1/+1');
+  assert.deepEqual({ atk: jetons[0].atk, pv: jetons[0].pv, def: jetons[0].def }, { atk: 2, pv: 2, def: 2 },
+    'le premier chien-jeton, case voisine de droite, gagne +1/+1');
+  assert.deepEqual({ atk: tarek.atk, pv: tarek.pv, def: tarek.def }, { atk: 4, pv: 5, def: 5 },
+    'Tarek ne se renforce plus lui-même');
+  assert.deepEqual({ atk: eau.atk, pv: eau.pv, def: eau.def }, { atk: 0, pv: 3, def: 3 },
+    'la Porteuse Eau, même voisine, reste hors de l’aura Sable');
+  assert.deepEqual({ atk: chien.atk, pv: chien.pv, def: chien.def }, { atk: 2, pv: 2, def: 2 },
+    'le Chien, à trois cases, ne reçoit rien');
+  assert.deepEqual({ atk: jetons[1].atk, pv: jetons[1].pv, def: jetons[1].def }, { atk: 1, pv: 1, def: 1 },
+    'le second chien-jeton, à deux cases, reste une 1/1');
 });
 
 test('Tarek crée deux chiens de sable 1/1 sans coût à son arrivée', () => {
@@ -3690,14 +3708,16 @@ test('Tarek crée deux chiens de sable 1/1 sans coût à son arrivée', () => {
   const jetons = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
   assert.equal(jetons.length, 2, 'Tarek arrive avec ses deux chiens de sable');
   assert.ok(jetons.every((entite) => entite.jeton), 'les deux chiens sont des créatures-jetons');
-  // La fiche imprimée est 1/1 ; sur la table, l’aura Sable de Tarek les porte à
-  // 2/2 dès qu’ils arrivent, exactement comme les autres créatures Sable.
+  // La fiche imprimée est 1/1. Tarek occupe la case 0, le premier jeton la
+  // case 1 (voisine, donc renforcé) et le second la case 2 (trop loin).
   const chienDeSable = cardById('chien-de-sable');
   assert.deepEqual({ cost: chienDeSable.cost, atk: chienDeSable.atk, def: chienDeSable.def, jeton: chienDeSable.jeton }, {
     cost: 0, atk: 1, def: 1, jeton: true,
   });
-  assert.ok(jetons.every((entite) => entite.atk === 2 && entite.pv === 2 && entite.def === 2),
-    'les chiens arrivent à 2/2 sous l’aura de Tarek');
+  assert.deepEqual([jetons[0].atk, jetons[0].pv, jetons[0].def], [2, 2, 2],
+    'le chien adjacent arrive à 2/2 sous l’aura de Tarek');
+  assert.deepEqual([jetons[1].atk, jetons[1].pv, jetons[1].def], [1, 1, 1],
+    'le second, à deux cases, garde sa fiche 1/1');
   assert.equal(duel.joueur.main.includes('chien-de-sable'), false, 'aucun chien de sable n’entre en main');
 
   // Rapidité : de vraies créatures, qui peuvent frapper dès leur arrivée.
@@ -3705,7 +3725,7 @@ test('Tarek crée deux chiens de sable 1/1 sans coût à son arrivée', () => {
     'les chiens de sable ont Rapidité et sont prêts dès leur arrivée');
   const attaque = rpgLancerAttaque(duel, 'joueur', jetons.map((entite) => entite.id));
   assert.equal(attaque.ok, true, 'les chiens de sable attaquent dès leur arrivée');
-  assert.equal(attaque.resume.frappeSorcier, 4, 'deux chiens à 2 ATQ frappent le sorcier');
+  assert.equal(attaque.resume.frappeSorcier, 3, 'un chien à 2 ATQ et un à 1 ATQ frappent le sorcier');
 });
 
 test('un chien de sable renvoyé en main cesse d’exister : jamais de carte gratuite', () => {

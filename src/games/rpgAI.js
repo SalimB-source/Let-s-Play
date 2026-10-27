@@ -1563,11 +1563,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // une aura qui renforce tout le type déjà posé (Samouraï, Viking…).
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
   if (carte.aura) {
-    // Tarek, Amani, Kenshi : l'aura ne grandit que les AUTRES corps — sa
-    // valeur suit donc la table déjà posée, pas les chiffres de la carte.
+    // Tarek, Amani, Kenshi, Bou Jeloud : l'aura ne grandit plus que les DEUX
+    // créatures adjacentes de son camp. On borne donc son gain au voisinage
+    // réellement atteignable — jamais à toute la table — tout en gardant le
+    // filtre de couleur de l'aura Sable de Tarek.
+    const alliees = camp.creatures.filter((entite) => !carte.aura.element
+      || cardColors(duelCardById(entite.carteId)).includes(carte.aura.element));
+    const voisins = Math.min(2, alliees.length);
     const force = Math.max(0, Number(carte.aura.atk) || 0) * 0.8
       + Math.max(0, Number(carte.aura.def) || 0) * 0.6;
-    score += 1.5 + camp.creatures.length * force;
+    score += 1 + voisins * force;
   }
   if (carte.resonance) {
     const element = cardResonanceGroup(carte);

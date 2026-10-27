@@ -240,9 +240,12 @@ export const RPG_TOUR_OUBLIEE_CREATURES = [
     atk: 3,
     def: 4,
     rarity: 'rare',
+    // Même aura de voisinage que le Kenshi de la forge : seules les deux
+    // créatures qui l'entourent sur la rangée gagnent +1/+0. Le moteur la
+    // lit désormais comme source `buff-autres` (`appliquerAurasBuffAutres`).
     aura: { type: 'buff-autres', atk: 1, def: 0, saufSoi: true, camps: 'camp' },
     typeLine: 'Créature légendaire — Cauchemar · Père des peaux',
-    text: 'Tant que Bou Jeloud est en jeu, toutes vos autres créatures gagnent +1/+0.',
+    text: 'Tant que Bou Jeloud est en jeu, vos créatures adjacentes gagnent +1/+0.',
     flavor: 'Il danse devant la horde avec sa peau de chèvre, et la horde suit le rythme.',
   }),
   carte({

@@ -1053,12 +1053,52 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
+/**
+ * L'Aura ne renforce plus que les **créatures adjacentes** de son camp : les
+ * deux cases qui entourent la source, jamais la source elle-même, et jamais
+ * le camp d'en face. La Résonance et la Bannière gardent leurs règles propres.
+ *
+ * `casesRangee` donne la case de chaque créature. En mode sans terrains, la
+ * case choisie à la pose (0 à 4) fait foi : une case VIDE entre deux
+ * créatures coupe le voisinage. Dans le format historique — et dans les
+ * sauvegardes sans case — la rangée se lit dans l'ordre d'arrivée : pas de
+ * trou, chaque créature est voisine de la précédente et de la suivante.
+ */
+function casesRangee(camp) {
+  const creatures = camp?.creatures ?? [];
+  if (!creatures.some((entite) => Number.isInteger(entite?.emplacement))) {
+    return new Map(creatures.map((entite, index) => [entite, index]));
+  }
+  const cases = rpgEmplacementsChamp(camp);
+  const positions = new Map();
+  creatures.forEach((entite, index) => {
+    const caseTrouvee = cases.indexOf(entite);
+    // Une créature hors des cinq cases (sauvegarde incomplète) est mise à
+    // l'écart plutôt que déclarée voisine d'une case fixe par accident.
+    positions.set(entite, caseTrouvee >= 0
+      ? caseTrouvee
+      : RPG_MANA_ESSAI_CHAMP_MAX + index);
+  });
+  return positions;
+}
+
+/** La source et la cible occupent-elles deux cases voisines du même camp ? */
+function voisines(positions, source, cible) {
+  if (!source || !cible || source === cible) return false;
+  const a = positions.get(source);
+  const b = positions.get(cible);
+  return Number.isInteger(a) && Number.isInteger(b) && Math.abs(a - b) === 1;
+}
+
 function appliquerAuraSable(duel, cote) {
   const camp = duel[cote];
-  const tarekEnJeu = camp.creatures.some((entite) => entite.carteId === 'tarek');
+  const positions = casesRangee(camp);
+  const sources = camp.creatures.filter((entite) => entite.carteId === 'tarek' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
-    const prochainBonus = !estSite(carte) && tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
+    // Tarek ne se renforce plus lui-même : il n'est jamais son propre voisin.
+    const prochainBonus = !estSite(carte) && cardColors(carte).includes('sable')
+      && sources.some((source) => voisines(positions, source, entite)) ? 1 : 0;
     const delta = prochainBonus - (entite.auraSableBonus ?? 0);
     if (!delta) continue;
     entite.auraSableBonus = prochainBonus;
@@ -1070,24 +1110,23 @@ function appliquerAuraSable(duel, cote) {
 }
 
 /**
- * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, les
- * **autres** créatures de son camp gagnent +0/+1. Même contrat que l'aura
- * Sable : chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour
- * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
- * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
- * chaque Amani protège toutes les créatures sauf elle-même, donc une seconde
- * Amani double le bonus des autres et protège la première. Comme toute aura,
- * l'égide ne franchit jamais la ligne du camp adverse. La perdre ne tue jamais :
- * au pire, 1 PV (la règle de la Résonance).
+ * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, ses
+ * **créatures adjacentes** gagnent +0/+1. Même contrat que l'aura Sable :
+ * chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour qu'une
+ * créature qui entre ou qui meurt ne fasse pas dériver les statistiques déjà
+ * cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
+ * chaque Amani ne protège que ses deux voisines — une Amani ne se protège
+ * jamais elle-même, mais deux Amani voisines se protègent l'une l'autre. Une
+ * case vide entre elles coupe l'égide. Comme toute aura, elle ne franchit
+ * jamais la ligne du camp adverse. La perdre ne tue jamais : au pire, 1 PV.
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
-  const nombreAmani = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour').length;
+  const positions = casesRangee(camp);
+  const sources = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour' && entite.pv > 0);
   for (const entite of camp.creatures) {
-    const sources = entite.carteId === 'amani-des-ksour'
-      ? nombreAmani - 1
-      : nombreAmani;
-    const prochainBonus = estSite(entite) ? 0 : Math.max(0, sources);
+    const prochainBonus = estSite(entite) ? 0 : sources.reduce((total, source) =>
+      total + (voisines(positions, source, entite) ? 1 : 0), 0);
     const delta = prochainBonus - (entite.auraAmaniBonus ?? 0);
     if (!delta) continue;
     entite.auraAmaniBonus = prochainBonus;
@@ -1162,29 +1201,37 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
 }
 
 /**
- * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **toutes les
- * autres créatures de son camp** gagnent +1/+0, quel que soit leur type. Une
- * aura ne franchit jamais la ligne du camp adverse.
+ * Les auras « buff-autres » en attaque — le Kenshi de la forge (+1/+0) et
+ * Bou Jeloud (+1/+0) : tant qu'elles sont en jeu, seules leurs **créatures
+ * adjacentes** gagnent le bonus, quel que soit leur type. Une aura ne franchit
+ * jamais la ligne du camp adverse ; Amani, dont l'aura ne donne que de la
+ * défense, est traitée à part par `appliquerAuraAmani`.
  *
- * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
- * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis du même camp se
- * donnent donc +1/+0 l'un à l'autre et +2/+0 au reste de leur camp.
+ * La source ne se forge jamais elle-même : elle occupe sa propre case, pas une
+ * case voisine. Deux sources voisines d'une même créature cumulent leurs
+ * bonus, mais deux sources éloignées ne se donnent rien. Une case vide coupe
+ * le voisinage.
  *
- * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
- * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
- * jamais dériver les statistiques déjà gagnées par la Furie ou un autre renfort.
- * L'aura ne touche pas la défense : la perdre ne peut pas tuer, et l'attaque
- * retombe au plancher de 0.
+ * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus` — nom
+ * historique de l'accumulateur), même contrat que l'aura Sable et l'égide
+ * d'Amani : une arrivée ou une mort ne fait jamais dériver les statistiques
+ * déjà gagnées par la Furie ou un autre renfort. L'aura ne touche pas la
+ * défense : la perdre ne peut pas tuer, et l'attaque retombe au plancher de 0.
  */
-function appliquerAuraKenshi(duel) {
+function appliquerAurasBuffAutres(duel) {
   for (const cote of ['joueur', 'sorcier']) {
-    const sources = duel[cote].creatures
-      .filter((entite) => entite.carteId === 'kenshi-de-la-forge');
-    for (const entite of duel[cote].creatures) {
+    const camp = duel[cote];
+    const positions = casesRangee(camp);
+    const sources = camp.creatures.filter((entite) => {
+      const aura = duelCardById(entite.carteId)?.aura;
+      return entite.pv > 0 && aura?.type === 'buff-autres' && Number(aura.atk) > 0;
+    });
+    for (const entite of camp.creatures) {
       const voulu = estSite(entite) ? 0 : sources.reduce((bonus, source) => {
         const aura = duelCardById(source.carteId)?.aura;
-        if (source.id === entite.id && aura?.saufSoi) return bonus;
-        return bonus + Math.max(0, Number(aura?.atk) || 0);
+        return voisines(positions, source, entite)
+          ? bonus + Math.max(0, Number(aura?.atk) || 0)
+          : bonus;
       }, 0);
       const delta = voulu - (entite.auraKenshiBonus ?? 0);
       if (!delta) continue;
@@ -1197,17 +1244,19 @@ function appliquerAuraKenshi(duel) {
 /**
  * Rafraîchit toutes les auras de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
- * et l'égide d'Amani sur chaque camp, l'aura de forge du Kenshi sur la table
- * entière, puis la Résonance de table. Chaque mécanisme ne pose que l'écart
- * qu'il détient déjà — voir les commentaires de `appliquerAuraSable`,
- * `appliquerAuraAmani`, `appliquerAuraKenshi` et `majResonance`.
+ * et l'égide d'Amani sur chaque camp, les auras « buff-autres » du Kenshi et
+ * de Bou Jeloud sur la table entière, puis la Résonance de table. Les quatre
+ * sources d'Aura ne touchent plus que leurs voisins (`voisines`) ; la
+ * Résonance, elle, reste de table. Chaque mécanisme ne pose que l'écart qu'il
+ * détient déjà — voir les commentaires de `appliquerAuraSable`,
+ * `appliquerAuraAmani`, `appliquerAurasBuffAutres` et `majResonance`.
  */
 function rafraichirAuras(duel) {
   appliquerAuraSable(duel, 'joueur');
   appliquerAuraSable(duel, 'sorcier');
   appliquerAuraAmani(duel, 'joueur');
   appliquerAuraAmani(duel, 'sorcier');
-  appliquerAuraKenshi(duel);
+  appliquerAurasBuffAutres(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou

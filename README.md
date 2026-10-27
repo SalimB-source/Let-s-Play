@@ -6599,8 +6599,9 @@ d'arrivée** : quand il arrive en jeu, il crée **deux chiens de sable 1/1 sans
 coût**. La carte imprimée le dit d'une ligne, dans l'ordre où les effets se
 produisent :
 
-> Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Tant
-> que Tarek est en jeu, vos créatures Sable gagnent +1/+1.
+> Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité
+> sans coût. Tant que Tarek est en jeu, vos créatures Sable **adjacentes**
+> gagnent +1/+1.
 
 Aucun sable n'est payé pour eux : le coût de Tarek (5) est le seul paiement de
 l'arrivée. Ce sont des **créatures-jetons** (`RPG_JETON_CARDS`), un nouveau
@@ -7290,10 +7291,11 @@ désormais :
 - `src/games/rpgSoleilRouge.js` — la fiche du Kenshi (1/3, `aura:
   { type: 'buff-tribu', tribu: 'samourai', atk: 2, def: 0, saufSoi: true,
   camps: 'tous' }`) et son nouveau texte imprimé.
-- `src/games/rpgDuel.js` — `appliquerAuraKenshi`, appelée par `rafraichirAuras`
-  avec l'aura Sable de Tarek et l'égide d'Amani : elle compte les sources des
-  deux camps, retire le Kenshi de son propre compte (« les autres ») et ne pose
-  que l'écart d'attaque.
+- `src/games/rpgDuel.js` — `appliquerAuraKenshi` (aujourd'hui
+  `appliquerAurasBuffAutres`), appelée par `rafraichirAuras` avec l'aura Sable
+  de Tarek et l'égide d'Amani : elle compte les sources, écarte la source de
+  son propre compte (« les autres ») et ne pose que l'écart d'attaque. Depuis
+  la règle d'Aura adjacente, elle ne retient plus que les cases voisines.
 - `src/games/rpgCardPower.js`, `src/games/rpgAI.js` — l'aura de forge compte
   dans la valeur de la carte et dans l'évaluation de l'IA (`carte.aura`).
 - `src/games/rpgCardLessons.js` — la fiche « Une aura agit tant que sa source
@@ -8984,3 +8986,50 @@ Contrôles : `npm run check:rpg` (les suites `tests/rpg-bouclier-sort.test.js`,
 blocage sans riposte, la riposte du second sort et les dégâts qui passent),
 plus `node scripts/rpg-bouclier-check.mjs` pour les trois pastilles de Salem
 et l'égide de lumière de la Dame.
+
+## Le Sablier : l'Aura ne touche plus que les créatures adjacentes
+
+Le mot-clé **Aura** change de portée. Les quatre cartes qui l'impriment —
+**Tarek**, **Amani, gardienne des ksour**, **Kenshi de la forge** et
+**Bou Jeloud** — ne renforcent plus tout leur camp : seulement les créatures
+des **deux cases qui entourent la source**. La source ne se renforce jamais
+elle-même, l'aura ne franchit jamais la ligne des camps, et une **case vide
+coupe le voisinage**.
+
+| Source | Bonus | Cibles |
+| --- | --- | --- |
+| Tarek | +1/+1 | créatures **Sable** adjacentes |
+| Amani | +0/+1 | créatures adjacentes (cumul par Amani voisine) |
+| Kenshi de la forge | +1/+0 | créatures adjacentes, quel que soit le type |
+| Bou Jeloud | +1/+0 | créatures adjacentes — son aura est désormais réellement appliquée par le moteur |
+
+Deux sources voisines d'une même créature **cumulent** leurs bonus ; deux
+sources éloignées ne se donnent rien. Quand une créature quitte la table, la
+rangée se resserre et le voisinage est recalculé : perdre une aura ne tue
+jamais (l'égide laisse au pire 1 PV, la forge ne touche pas la défense).
+
+**Ce qui ne change pas** : la **Résonance** samouraï/viking reste de table —
+deux sources éloignées se comptent toujours, même adverses — et la
+**Bannière** du Daimyō reste un déclenché d'attaque, pas une aura.
+
+Moteur (`rpgDuel.js`) : `casesRangee` donne la case de chaque créature (les
+cinq cases fixes du mode sans terrains, l'ordre d'arrivée dans le format
+historique), `voisines` ne retient qu'un écart de une case, et
+`appliquerAuraSable`, `appliquerAuraAmani` et `appliquerAurasBuffAutres`
+(qui remplace `appliquerAuraKenshi` et couvre aussi Bou Jeloud) l'appliquent
+à chaque rafraîchissement. Les accumulateurs par entité
+(`auraSableBonus`, `auraAmaniBonus`, `auraKenshiBonus`) gardent leur contrat
+d'écart : une arrivée ou une mort ne fait jamais dériver les Furie et autres
+renforts déjà acquis.
+
+Textes des quatre cartes, définition du mot-clé (`effetIcons.js`), description
+lue de la table (`RpgDuelPage.jsx`), deux leçons du guide, IA (l'aura est
+bornée à deux voisins) et valeur de carte (`rpgCardPower.js`) suivent. Les
+sections plus anciennes de ce README et des fiches de conception décrivent
+l'état d'avant la règle : celle-ci fait foi.
+
+Contrôles : `npm run check:rpg` (nouvelle suite
+`tests/rpg-aura-adjacence.test.js` — cases vides, cumul de sources, mort qui
+resserre la rangée, Bou Jeloud, Résonance inchangée —, plus les suites
+`rpg-duel`, `rpg-soleil-rouge` et `rpg-mana-essai` mises à jour),
+`node scripts/rpg-aura-check.mjs` et `npm run build`.

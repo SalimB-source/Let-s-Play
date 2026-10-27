@@ -101,7 +101,7 @@ Fichier : `src/games/rpgTourOubliee.js` (aucun import de `rpgCards.js`, comme
 | --- | --- | --- | --- |
 | **Goule affamée** | 3 | Créature 3/1 | À l'arrivée : détruit les créatures adverses de coût 1 ou moins |
 | **Colosse des charognes** | 5 | Créature 5/5 | À la mort : crée **deux** Lambeaux |
-| **Bou Jeloud** | 5 | Créature 3/4 | Aura : +1/+0 à vos autres créatures |
+| **Bou Jeloud** | 5 | Créature 3/4 | Aura : +1/+0 à vos créatures adjacentes (moteur `appliquerAurasBuffAutres`) |
 | **Pacte de l'Oubliée** | 2 + 3 PV | Sorcellerie | Piochez 2 cartes (`prixPv`) |
 | **Réveil de la horde** | 5 | Sorcellerie | Réanime la dernière créature de votre cimetière |
 

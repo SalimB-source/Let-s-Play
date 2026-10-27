@@ -73,7 +73,10 @@ Toutes les fiches ci-dessous sont à coller dans **`src/games/rpgSoleilRouge.js`
 
 ## 4. Kenshi de la forge — 3 mana 1/2
 
-**Changement :** `def: 3 → 2`. Le reste strictement identique.
+**Changement historique :** `def: 3 → 2`. Le reste strictement identique à
+l'époque. Le bloc ci-dessous est l'état de ce correctif, pas la fiche actuelle :
+l'Aura du Kenshi ne touche plus que ses **créatures adjacentes** (voir la
+section « l'Aura ne touche plus que les créatures adjacentes » du README).
 
 ```js
   carte({
