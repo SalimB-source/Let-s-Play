@@ -263,9 +263,13 @@ test('sans créature adverse, Harakiri frappe le sorcier adverse', () => {
 test('les dégâts du Harakiri respectent bouclier et protection, mais pas Esquive', () => {
   const duel = duelTest();
   const mort = jouer(duel, 'joueur', 'samourai-du-torii');
-  const protege = jouer(duel, 'sorcier', 'tiziri-du-djurdjura');
+  // Tiziri ne porte plus de protection de Braise (son engagement pour mana l’a
+  // remplacée) : la protection est attachée directement à la cible, comme dans
+  // les scénarios qui prêtent une protection temporaire.
+  const protege = jouer(duel, 'sorcier', 'seigneur-des-machoires');
+  protege.protection = { contre: 'braise', toursRestants: 2 };
   rpgBlesserCreature(duel, 'joueur', mort.id, 20, 'eau');
-  assert.equal(protege.def, 1, 'protection contre la Braise');
+  assert.equal(protege.def, 6, 'protection contre la Braise : le Harakiri ne l’entame pas');
   const avecBouclier = duelTest();
   const mortBouclier = jouer(avecBouclier, 'joueur', 'samourai-du-torii');
   const cibleBouclier = jouer(avecBouclier, 'sorcier', 'seigneur-des-machoires');

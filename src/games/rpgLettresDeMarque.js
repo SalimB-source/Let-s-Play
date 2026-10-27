@@ -130,9 +130,11 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     atk: 2,
     def: 1,
     rarity: 'inhabituelle',
-    arrivee: { type: 'prochaine-arrivee-abordage' },
+    // Le Pilote connaît les routes et les navires : il cherche une carte de
+    // type Navire dans le deck et la met en main (moteur : 'recherche-deck').
+    arrivee: { type: 'recherche-deck', typeImprime: 'Navire' },
     typeLine: 'Créature — Humain · Pilote',
-    text: 'Quand le Pilote arrive : la prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un.',
+    text: 'Quand le Pilote arrive : cherchez une carte de type Navire dans votre deck et mettez-la dans votre main.',
     flavor: 'Il a lu le routier une seule fois ; la mer n’a gardé que lui.',
   }),
   carte({
@@ -366,8 +368,10 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     rarity: 'commune',
     typeLine: 'Sorcellerie — Chancellerie · Sable + Eau',
     cibles: ['soi'],
-    effet: { type: 'arrivees-abordage' },
-    text: 'Jusqu’à la fin du tour, vos créatures qui arrivent en jeu ont Abordage — chacune au seuil de son coût moins un.',
+    // Le sceau n'arme que la SEULE prochaine créature jouée (le même drapeau
+    // que le Pilote), puis le greffier pioche une carte.
+    effet: { type: 'prochaine-arrivee-abordage', pioche: 1 },
+    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({

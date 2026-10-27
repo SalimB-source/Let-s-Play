@@ -270,14 +270,15 @@ test('la protection de la Jitte part avec elle — sauf celle imprimée sur la f
   assert.equal(duel.joueur.cimetiere.includes('jitte-d-amayas'), true);
   assert.equal(simple.protection, null, 'le Chien n’est plus protégé de rien');
 
-  // Amayas porte sa propre protection Ténèbres imprimée : la Jitte partie, elle demeure.
-  const amayas = poser(duel, 'joueur', 'amayas-du-hoggar');
-  equiper(duel, 'joueur', 'jitte-d-amayas', amayas);
+  // La Lionne du midi ardent porte sa propre protection imprimée contre
+  // l’Eau et la Neige : la Jitte retirée, sa garde permanente demeure.
+  const lionne = poser(duel, 'joueur', 'lionne-du-midi-ardent');
+  equiper(duel, 'joueur', 'jitte-d-amayas', lionne);
   donner(duel, 'joueur', 'takouba-des-pistes');
   manaPlein(duel, 'joueur');
-  assert.equal(rpgJouerArme(duel, 'joueur', 'takouba-des-pistes', amayas.id).ok, true);
-  assert.equal(amayas.protection?.contre, 'tenebres', 'sa protection imprimée demeure');
-  assert.equal(amayas.protection?.toursRestants, Infinity);
+  assert.equal(rpgJouerArme(duel, 'joueur', 'takouba-des-pistes', lionne.id).ok, true);
+  assert.deepEqual(lionne.protection?.contre, ['eau', 'neige'], 'sa protection imprimée demeure');
+  assert.equal(lionne.protection?.toursRestants, Infinity);
 });
 
 // ── L'arme vivante ──────────────────────────────────────────────────────────

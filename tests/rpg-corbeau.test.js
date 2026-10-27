@@ -152,7 +152,8 @@ test('les cartes du Corbeau réunissent les vocabulaires imprimés des deux coul
   const valkyrie = cardById('valkyrie-des-neuf-nuits');
   assert.equal(valkyrie.envol, true);
   assert.equal(valkyrie.furie, 2);
-  assert.deepEqual(valkyrie.arrivee, { type: 'exil', cible: 'creature', coutMax: 2 });
+  assert.deepEqual(valkyrie.arrivee, { type: 'exil', cible: 'creature', coutMax: 3 },
+    'sa révision porte le seuil d’exil de 2 à 3 manas');
 
   const neige = cardById('neige-noire');
   assert.equal(neige.kind, 'magie');
@@ -344,22 +345,22 @@ test('le Corbeau de givre ne gèle que les créatures de coût 3 ou moins', () =
   assert.equal(grosse.gelToursRestants ?? 0, 0, 'la créature de coût 4 reste libre');
 });
 
-test('la Valkyrie des neuf nuits n’emporte que les créatures de coût 2 ou moins', () => {
+test('la Valkyrie des neuf nuits n’emporte que les créatures de coût 3 ou moins', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'sorcier', 'pretre-de-la-bouche');
   donner(duel, 'sorcier', 'momie-de-lin');
-  const petite = rpgJouerCreature(duel, 'sorcier', 'pretre-de-la-bouche').entite; // coût 2
-  const moyenne = rpgJouerCreature(duel, 'sorcier', 'momie-de-lin').entite; // coût 3
+  donner(duel, 'sorcier', 'celle-qui-pese');
+  const petite = rpgJouerCreature(duel, 'sorcier', 'momie-de-lin').entite; // coût 3
+  const grosse = rpgJouerCreature(duel, 'sorcier', 'celle-qui-pese').entite; // coût 4
   donner(duel, 'joueur', 'valkyrie-des-neuf-nuits');
-  const refus = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-neuf-nuits', moyenne.id);
-  assert.equal(refus.ok, false, 'les corbeaux n’emportent pas une créature de coût 3');
+  const refus = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-neuf-nuits', grosse.id);
+  assert.equal(refus.ok, false, 'les corbeaux n’emportent pas une créature de coût 4');
   assert.equal(refus.raison, 'cible');
   const pose = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-neuf-nuits', petite.id);
   assert.equal(pose.ok, true, pose.raison);
-  assert.ok(duel.sorcier.exil?.includes('pretre-de-la-bouche'), 'la créature de coût 2 est exilée');
-  assert.ok(duel.sorcier.creatures.includes(moyenne), 'celle de coût 3 reste sur la table');
+  assert.ok(duel.sorcier.exil?.includes('momie-de-lin'), 'la créature de coût 3 est exilée');
+  assert.ok(duel.sorcier.creatures.includes(grosse), 'celle de coût 4 reste sur la table');
 });
 
 test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres — et épargne son camp', () => {

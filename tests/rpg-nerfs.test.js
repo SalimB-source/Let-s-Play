@@ -4,6 +4,7 @@ import {
   rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerMagie, rpgAttaquerSorcier,
   rpgLancerAttaque, rpgFinDeTour, rpgEstProtegee, rpgContreJouable, rpgResoudreArriveeCiblee,
   rpgDefausserCarte, rpgBlesserCreature, rpgPeutAttaquer, rpgChoisirAttaquants,
+  rpgPeutEngagerPourMana, rpgEngagerPourMana,
 } from '../src/games/rpgDuel.js';
 import { magieById } from '../src/games/rpgCards.js';
 
@@ -147,20 +148,31 @@ test('Vipère / Bakunawa', () => {
   ok('interdit d\'attaque marqué', chien.empecheAttaqueToursRestants >= 1, `${chien.empecheAttaqueToursRestants}`);
 }
 
-// ─── 7. PROTECTION PERMANENTE (Tiziri) ──────────────────────────────────────
+// ─── 7. ENGAGEMENT POUR MANA (Tiziri) ───────────────────────────────────────
 });
 
-test('Protection permanente', () => {
+test('Engagement pour mana', () => {
 {
   const duel = duelAvecMains(['tiziri-du-djurdjura']);
   rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura');
   const tiziri = duel.joueur.creatures[0];
-  ok('protégée contre la braise', tiziri.protection?.contre === 'braise');
-  ok('contre la braise', rpgEstProtegee(tiziri, ['braise']));
-  ok('pas contre l\'eau', !rpgEstProtegee(tiziri, ['eau']));
-  rpgFinDeTour(duel); rpgFinDeTour(duel); rpgFinDeTour(duel); rpgFinDeTour(duel);
-  ok('toujours protégée après 2 tours complets', rpgEstProtegee(tiziri, ['braise']));
-  ok('bonus +1 ATQ temporaire bien retiré', tiziri.atk === 2, `atk=${tiziri.atk}`);
+  // La protection de braise a disparu avec la refonte : Tiziri ne se paie plus
+  // que par son engagement, et son imprimé ne porte aucune protection.
+  ok('plus de protection de braise', !tiziri.protection && !rpgEstProtegee(tiziri, ['braise']));
+  ok('engageable dès son arrivée', rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
+  const eauAvant = duel.joueur.mana.eau;
+  const res = rpgEngagerPourMana(duel, 'joueur', tiziri.id);
+  ok('engagement accepté', res.ok, JSON.stringify(res));
+  ok('un mana d’eau produit', duel.joueur.mana.eau === eauAvant + 1, `+${duel.joueur.mana.eau - eauAvant}`);
+  ok('Tiziri reste tournée (attaquée)', tiziri.attaquee === true && tiziri.ready === false);
+  ok('un second engagement est refusé', !rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id)
+    && !rpgEngagerPourMana(duel, 'joueur', tiziri.id).ok);
+  // Le camp adverse ne peut pas activer la créature d’autrui.
+  ok('le sorcier ne peut pas l’engager', !rpgPeutEngagerPourMana(duel, 'sorcier', tiziri.id));
+  // Au prochain tour du joueur, Tiziri se dégage et peut de nouveau produire.
+  rpgFinDeTour(duel); rpgFinDeTour(duel);
+  ok('dégagée au tour suivant', tiziri.attaquee === false && tiziri.ready === true);
+  ok('de nouveau engageable', rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
 }
 
 // ─── 8. RÉANIMATION : cimetière → table ─────────────────────────────────────

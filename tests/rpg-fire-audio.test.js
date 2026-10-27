@@ -31,11 +31,13 @@ test('les attaques de créatures ne brûlent jamais : toutes partagent la frappe
 
 test('seules les arrivées qui blessent jouent le souffle', () => {
   // Une arrivée qui frappe : le souffle est à sa place.
-  assert.equal(rpgFireSoundFor('ifrit-al-ahmar', 'arrival'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('braisier-du-souk', 'arrival'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('lionne-du-midi-ardent', 'arrival'), RPG_FIRE_SFX);
   // Une arrivée qui ne blesse rien reste sur `card_place` : le Daimyō lève ses
-  // Samouraïs, le Sahir pioche, l’Ifrit attend son tour.
+  // Samouraïs, le Sahir pioche, l’Ifrit attend son tour. Ifrit al-Ahmar a perdu
+  // sa vague de dégâts pour Attaque ciblée : son arrivée est désormais silencieuse.
+  assert.equal(rpgFireSoundFor('ifrit-al-ahmar', 'arrival'), null,
+    'sa révision retire l’arrivée qui frappait toute la table');
   assert.equal(rpgFireSoundFor('daimyo-du-soleil-rouge', 'arrival'), null,
     'le Daimyō crée des jetons : pas de feu à son arrivée');
   assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'arrival'), null);
@@ -52,8 +54,8 @@ test('les capacités de combat qui blessent gardent le souffle, pas le contact s
 });
 
 test('les morts qui blessent partent en feu, celles qui ne blessent pas s’en vont', () => {
-  assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'destruction'), RPG_FIRE_SFX,
-    'l’Ifrit blesse le sorcier en tombant');
+  assert.equal(rpgFireSoundFor('ifrit-des-ergs', 'destruction'), null,
+    'l’Ifrit furtif s’éteint en fin de tour sans blesser personne');
   assert.equal(rpgFireSoundFor('ghul-des-cendres', 'destruction'), RPG_FIRE_SFX,
     'le Ghul blesse une créature en tombant');
   assert.equal(rpgFireSoundFor('anqa-des-braises', 'destruction'), null,

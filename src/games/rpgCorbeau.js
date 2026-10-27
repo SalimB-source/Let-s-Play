@@ -83,9 +83,9 @@ export const RPG_CORBEAU_CREATURES = [
     rarity: 'rare',
     envol: true,
     furie: 2,
-    arrivee: { type: 'exil', cible: 'creature', coutMax: 2 },
+    arrivee: { type: 'exil', cible: 'creature', coutMax: 3 },
     typeLine: 'Créature — Valkyrie viking',
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Furie 2. Quand elle arrive : ses corbeaux emportent une créature de coût 2 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Furie 2. Quand elle arrive : ses corbeaux emportent une créature de coût 3 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Elle ne choisit plus les héros : elle choisit ceux que la balance oublie.',
   }),
 ];

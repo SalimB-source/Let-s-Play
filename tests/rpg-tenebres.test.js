@@ -62,10 +62,10 @@ test('la cinquième couleur existe partout où l’élément se nomme', () => {
   assert.ok(cardById('la-devoreuse'));
 });
 
-test('les 21 fiches de base sont en Ténèbres, les 6 grandes figures couvrent les éléments, et les limites de copies tiennent', () => {
+test('les 21 fiches de base sont en Ténèbres, les 5 grandes figures couvrent les éléments, et les limites de copies tiennent', () => {
   const fiches = [...RPG_TENEBRES_CREATURES, ...RPG_TENEBRES_MAGIES, ...RPG_TENEBRES_ARMES, ...RPG_TENEBRES_JETONS];
-  assert.equal(RPG_TENEBRES_CREATURES.length, 18);
-  assert.equal(RPG_TENEBRES_FIGURES.length, 6);
+  assert.equal(RPG_TENEBRES_CREATURES.length, 17);
+  assert.equal(RPG_TENEBRES_FIGURES.length, 5);
   assert.equal(RPG_TENEBRES_MAGIES.length, 7);
   assert.equal(RPG_TENEBRES_ARMES.length, 1);
   assert.equal(RPG_TENEBRES_JETONS.length, 1);
@@ -91,7 +91,7 @@ test('les 21 fiches de base sont en Ténèbres, les 6 grandes figures couvrent l
       `${figure.id} est nommée par son attribut, jamais « dieu »`);
   }
   assert.deepEqual(RPG_TENEBRES_FIGURES.map((f) => f.element),
-    ['tenebres', 'tenebres', 'sable', 'braise', 'sable', 'eau']);
+    ['tenebres', 'sable', 'braise', 'sable', 'eau']);
   assert.deepEqual(cardColorCost(cardById('maitre-des-hieroglyphes')), { tenebres: 1 });
   assert.deepEqual(cardColorCost(cardById('faucon-du-zenith')), { sable: 1 });
   const ids = fiches.map((carte) => carte.id);
@@ -317,7 +317,7 @@ test('moteur : deux « Nom effacé » cumulent leurs défausses pour le joueur',
 
 test('Ténèbres : Tribut reste minoritaire et les quatre rôles révisés sont distincts', () => {
   const creatures = RPG_TENEBRES_CREATURES.filter((c) => c.element === 'tenebres');
-  assert.equal(creatures.length, 14);
+  assert.equal(creatures.length, 13);
   assert.deepEqual(creatures.filter((c) => c.tribut).map((c) => c.id), ['chacal-du-seuil', 'celui-qui-juge']);
   for (const id of ['ureus-du-seuil', 'celle-qui-pese', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes']) {
     const carte = cardById(id);
@@ -498,15 +498,18 @@ test('Celui qui juge 3/5 détruit les créatures à 3 mana ou moins à l’arriv
     assert.ok(!duel.joueur.creatures.some((c) => c.id === momie.id), 'la momie du joueur est détruite (3 mana)');
     assert.ok(!duel.joueur.creatures.some((c) => c.id === gardienne.id), 'la gardienne du joueur est détruite (2 mana)');
     assert.ok(!duel.sorcier.creatures.some((c) => c.id === ennemi.id), 'la momie ennemie est détruite (3 mana)');
-    assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], pv, 'aucun dégât aux sorciers');
+    // La Gardienne de la balance, détruite par la vague, soigne son contrôleur
+    // de 3 PV (son déclencheur de destruction) ; le sorcier adverse ne prend rien.
+    assert.equal(duel.joueur.pv, pv[0] + 3, 'la Gardienne morte soigne le joueur de 3 PV');
+    assert.equal(duel.sorcier.pv, pv[1], 'aucun dégât au sorcier adverse');
   }
 });
 
 
-test('La Dernière Pesée est une sorcellerie mythique Ténèbres à 5 mana', () => {
+test('La Dernière Pesée est une sorcellerie mythique Ténèbres à 8 mana', () => {
   const carte = cardById('la-derniere-pesee');
   assert.equal(carte.kind, 'magie');
-  assert.equal(carte.cost, 5);
+  assert.equal(carte.cost, 8);
   assert.equal(carte.rarity, 'mythique');
   assert.equal(carte.element, 'tenebres');
   assert.ok(!carte.instant);
@@ -520,7 +523,7 @@ const lancerDernierePesee = (duel, cote = 'joueur') => {
   return rpgLancerMagie(duel, cote, 'la-derniere-pesee');
 };
 
-test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 5 mana', () => {
+test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 8 mana', () => {
   for (const cote of ['joueur', 'sorcier']) {
     const duel = nouveau();
     installerMana(duel);
@@ -532,7 +535,7 @@ test('La Dernière Pesée détruit les deux camps sans dégâts ni exil et paie 
     Object.assign(allie, { pv: 100, pvMax: 100, def: 100, bouclier: 100, bouclierLumiere: true });
     const pv = [duel.joueur.pv, duel.sorcier.pv];
     duel.tour = cote;
-    duel[cote].mana.tenebres = 5;
+    duel[cote].mana.tenebres = 8;
     duel[cote].manaSources = ['tenebres'];
     duel[cote].main = [];
     duel[cote === 'joueur' ? 'sorcier' : 'joueur'].main = [];
@@ -578,11 +581,11 @@ test('La Dernière Pesée tue les créatures tenaces et épargne les protections
 test('La Dernière Pesée exige son tour et son mana, mais aucune cible', () => {
   const duel = nouveau();
   installerMana(duel);
-  duel.joueur.mana.tenebres = 4;
+  duel.joueur.mana.tenebres = 7;
   duel.joueur.main = ['la-derniere-pesee'];
   assert.equal(rpgLancerMagie(duel, 'joueur', 'la-derniere-pesee').raison, 'mana');
-  assert.equal(duel.joueur.mana.tenebres, 4);
-  duel.joueur.mana.tenebres = 5;
+  assert.equal(duel.joueur.mana.tenebres, 7);
+  duel.joueur.mana.tenebres = 8;
   duel.tour = 'sorcier';
   duel.fenetreReponse = true;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'la-derniere-pesee').raison, 'timing');

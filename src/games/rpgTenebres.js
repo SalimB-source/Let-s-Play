@@ -186,10 +186,9 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 5,
     def: 5,
     rarity: 'mythique',
-    envol: true,
     arrivee: { type: 'reanimation' },
     typeLine: 'Créature légendaire — Passeur du seuil',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu.',
+    text: 'Quand Le Passeur au masque de chacal arrive : la dernière créature de votre cimetière revient en jeu.',
     flavor: 'Il connaît le poids de chaque cœur avant même que l’aiguille ne bouge.',
   }),
   carte({
@@ -217,11 +216,13 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'mythique',
     envol: true,
     coupRapide: true,
-    tribut: 1,
-    // Le midi plane au-dessus de la tombe : la nuit ne peut pas le saisir.
-    protection: { contre: 'tenebres' },
-    typeLine: 'Créature légendaire — Faucon solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tribut 1 — Quand cette créature touche le sorcier adverse, il perd 1 PV et vous en gagnez 1. Protection — Le Faucon est protégé contre les Ténèbres de façon permanente.',
+    tribut: 3,
+    // La déesse du midi plane au-dessus de la tombe : aucun sort ne peut
+    // l'atteindre (Protection contre les sorts), là où la nuit ne la saisissait
+    // qu'en Ténèbres. Son tribut passe à 3.
+    protectionSorts: true,
+    typeLine: 'Créature légendaire — Déesse solaire',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({
@@ -236,9 +237,10 @@ export const RPG_TENEBRES_CREATURES = [
     // Protection permanente double : ni l'Eau ni la Neige ne peuvent la
     // cibler, la blesser ou la bloquer — le midi ardent ne s'éteint pas.
     protection: { contre: ['eau', 'neige'] },
-    arrivee: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    // Son souffle ne balaie plus la plaine : il désigne une seule proie.
+    arrivee: { type: 'degats', amount: 4, cible: 'creature' },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Protection — La Lionne est protégée contre l’Eau et la Neige de façon permanente. Quand La Lionne du midi ardent arrive : son souffle embrase la plaine — 2 dégâts à toutes les créatures adverses.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Protection — La Lionne est protégée contre l’Eau et la Neige de façon permanente. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({
@@ -251,9 +253,9 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'mythique',
     envol: true,
     arrivee: { type: 'bouclier-lumiere' },
-    destruction: { type: 'soin', amount: 4 },
+    destruction: { type: 'soin', amount: 5 },
     typeLine: 'Créature légendaire — Souveraine ailée',
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand La Dame aux ailes d’or arrive : elle reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 4 PV.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Quand La Dame aux ailes d’or arrive : elle reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, elle ne peut pas subir de dégâts. Quand elle meurt, vous gagnez 5 PV.',
     flavor: 'Ses deux ailes refermées sur le trône suffisent à retenir le souffle qui s’en va.',
   }),
   carte({
@@ -264,10 +266,11 @@ export const RPG_TENEBRES_CREATURES = [
     atk: 6,
     def: 6,
     rarity: 'mythique',
+    rapidite: true,
     tenacite: true,
     tribut: 2,
     typeLine: 'Créature légendaire — Souverain crocodile du Nil',
-    text: 'Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
     flavor: 'Il tient le fleuve comme on tient une porte : la crue monte, et c’est lui qui décide de ce qu’elle emporte.',
   }),
 ];
@@ -280,7 +283,7 @@ export const RPG_TENEBRES_MAGIES = [
     id: 'la-derniere-pesee',
     name: 'La Dernière Pesée',
     kind: 'magie',
-    cost: 5,
+    cost: 8,
     rarity: 'mythique',
     typeLine: 'Sorcellerie — Jugement · Ténèbres',
     effet: { type: 'destruction-totale' },
