@@ -141,11 +141,12 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'kenshi-de-la-forge', name: 'Kenshi de la forge',
     cost: 3, atk: 1, def: 2, rarity: 'rare',
     typeLine: 'Créature — Humain · Samouraï',
-    // L'aura de forge : +1/+0 à TOUTES les AUTRES créatures de SON camp,
-    // quel que soit leur type — une aura ne franchit jamais la ligne du camp
-    // adverse (voir `appliquerAuraKenshi`). Le petit corps est le prix de l'aura.
+    // L'aura de forge : +1/+0 aux créatures ADJACENTES de SON camp, quel que
+    // soit leur type — une aura ne franchit jamais la ligne du camp adverse et
+    // une case vide coupe le voisinage (voir `appliquerAurasBuffAutres`).
+    // Le petit corps est le prix de l'aura.
     aura: { type: 'buff-autres', atk: 1, def: 0, saufSoi: true, camps: 'camp' },
-    text: 'Tant qu’il est en jeu, toutes vos autres créatures gagnent +1/+0, quel que soit leur type.',
+    text: 'Tant qu’il est en jeu, vos créatures adjacentes gagnent +1/+0, quel que soit leur type.',
     flavor: 'Il a appris à tenir l’acier avant de savoir tenir une lame.',
   }),
   // Le pourfendeur : la carte « duel » du set. Il ne cherche pas le contact —

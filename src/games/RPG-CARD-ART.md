@@ -421,11 +421,11 @@ n’ajoute aucune carte au catalogue : le jeton vit hors de `RPG_DUEL_CARDS`,
 comme les chiens de sable.
 
 Le **Kenshi de la forge** a, lui, reçu l'**aura de forge** : 1/2 au lieu de 2/4,
-et « tant qu'il est en jeu, toutes vos autres créatures gagnent +1/+0, quel que
+et « tant qu'il est en jeu, vos créatures adjacentes gagnent +1/+0, quel que
 soit leur type » — l'aura ne touche jamais la défense, donc la perdre ne peut pas
 tuer. Sa peinture ne change pas (le forgeron frappant une lame en fusion reste
-son illustration, version `soleil-rouge-kaiga-couleurs-v7`) : il forge toutes les
-autres créatures de son propre camp, sans franchir la ligne adverse.
+son illustration, version `soleil-rouge-kaiga-couleurs-v7`) : il forge les deux
+créatures voisines de son propre camp, sans franchir la ligne adverse.
 
 Les peintures sont versionnées `soleil-rouge-kaiga-couleurs-v7` dans
 `CARD_ART_CACHE_VERSIONS`, sauf le Samouraï du torii
@@ -1297,7 +1297,7 @@ bleue deviennent des mers noires, du goudron et de la brume froide.
 
 - **La Barbe-Rousse** — l'amiral corsaire en turban et cotte de mailles sur le
   pont d'une galère en pleine tempête, la ville blanche en flammes au loin.
-- **La Barbe Noire** — la barbe qui fume et brûle, et le second visage qui se
+- **La Barbe Noire** — la barbe qui fume et brûle, et la malédiction qui se
   devine dans la fumée derrière l'épaule.
 - **Le Chasseur d'Ocracoke** — seul dans une barque, long fusil sur l'avant-bras,
   lanterne au ceinturon, l'épave affleurant la brume.

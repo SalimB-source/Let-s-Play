@@ -463,7 +463,10 @@ test('les jetons sont prisables par l’abordage : on les met en cale', () => {
   // (Abordage 5) refuse de la désigner.
   donner(duel, 'joueur', 'salem');
   const salem = jouer(duel, 'joueur', 'salem').entite;
-  salem.bouclierLumiere = false;
+  // Sa parade anti-sort ne le couvre plus au combat : il n'y a plus de
+  // bouclier de lumière à éteindre avant la frappe de l'amirale.
+  assert.equal(salem.bouclier, 1, 'Salem arrive avec son bouclier anti-sort');
+  assert.equal(salem.bouclierLumiere, false, 'et sans bouclier de lumière');
   donner(duel, 'sorcier', 'la-barbe-rousse');
   assert.equal(jouer(duel, 'sorcier', 'la-barbe-rousse', salem.id).ok, false, 'on ne met pas une figure en cale');
   const amirale = jouer(duel, 'sorcier', 'la-barbe-rousse').entite;
@@ -839,49 +842,56 @@ test('rien ne rend une prise trop chère : même riche, l’IA ne rachète plus 
   assert.equal(cher.sorcier.main.includes('galion-de-la-flotte'), false, 'rien ne revient en main');
 });
 
-test('La Barbe Noire change de visage au début de chaque tour — et ne se prend jamais en cale', () => {
+test('La Barbe Noire maudit tout le camp adverse tant qu’elle est en jeu', () => {
   const duel = duelVide();
-  mana(duel, 'joueur', 10);
-  mana(duel, 'sorcier', 10);
-  // Elle arrive sous le visage de l'homme : 2/7 avec Provocation, et son
-  // Abordage 4 emporte une créature adverse de coût ≤ 4.
+  mana(duel, 'joueur', 20);
+  mana(duel, 'sorcier', 20);
+  // Le Tercio (coût 2) sera la proie de l'Abordage 4 ; la Rousse (coût 5)
+  // reste sur la table et sert de témoin du malus.
   donner(duel, 'sorcier', 'tercio-de-cuivre');
   const tercio = jouer(duel, 'sorcier', 'tercio-de-cuivre').entite;
+  donner(duel, 'sorcier', 'la-barbe-rousse');
+  const rousse = jouer(duel, 'sorcier', 'la-barbe-rousse').entite;
+  const atkRousse = rousse.atk;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const mien = jouer(duel, 'joueur', 'chien-du-guet').entite;
+  const atkMien = mien.atk;
+  const pvSorcier = duel.sorcier.pv;
+
   donner(duel, 'joueur', 'la-barbe-noire');
   const noire = jouer(duel, 'joueur', 'la-barbe-noire', tercio.id).entite;
-  assert.ok(noire.enCale?.carteId === 'tercio-de-cuivre', 'l’homme a pris le Tercio à l’arrivée');
-  assert.equal(noire.atk, 2, 'l’homme est un mur');
-  assert.equal(noire.def, 7);
-  assert.equal(noire.provocation, true, 'l’homme tient le rempart');
-  assert.equal(noire.visage, 0);
-  // Le tour du sorcier s'ouvre : son camp ne tourne pas, elle reste l'homme.
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  assert.equal(noire.visage, 0, 'le visage ne tour qu’au début du tour de son camp');
-  // Le tour du joueur s'ouvre : la légende se réveille — 6/2, plus de mur.
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'joueur');
-  assert.equal(noire.visage, 1);
-  assert.equal(noire.atk, 6, 'la légende frappe');
-  assert.equal(noire.def, 2);
-  assert.equal(noire.provocation, false, 'la légende ne se cache derrière rien');
-  // Blessée sous la légende (1 PV), elle redevient l'homme : les blessures
-  // suivent — ni mort, ni soin gratuit.
-  noire.pv = 1;
-  rpgFinDeTour(duel);
-  rpgFinDeTour(duel);
-  assert.equal(noire.visage, 0);
-  assert.equal(noire.def, 7);
-  assert.equal(noire.pv, 6, 'blessures conservées : 7 − (2 − 1)');
-  assert.equal(noire.provocation, true, 'le rempart revient avec l’homme');
-  // Et la légende revient tour après tour — personne ne choisit.
-  rpgFinDeTour(duel);
-  rpgFinDeTour(duel);
-  assert.equal(noire.visage, 1);
-  assert.equal(noire.atk, 6);
+  assert.ok(noire.enCale?.carteId === 'tercio-de-cuivre', 'l’Abordage 4 a pris le Tercio à l’arrivée');
+  assert.deepEqual([noire.atk, noire.def, noire.provocation], [4, 5, true],
+    'la Noire est un 4/5 fixe avec Provocation — plus aucun visage');
+  assert.equal(noire.visage, undefined, 'le champ `visage` a disparu des entités');
+  assert.equal(rousse.atk, atkRousse - 2, 'la créature adverse déjà en jeu perd 2 ATQ');
+  assert.equal(mien.atk, atkMien, 'son propre camp est épargné');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'le sorcier adverse n’est pas une créature');
 
-  // Le dédoublement : même La Barbe-Rousse adverse (Abordage 5, et la Noire
-  // coûte 5) ne peut pas la prendre — ni en la désignant, ni en auto-pick.
+  // Une créature qui arrive APRÈS la source est maudite elle aussi.
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const nouveau = jouer(duel, 'sorcier', 'chien-du-guet').entite;
+  assert.equal(nouveau.atk, 0, '2/2 → 0/2 : le plancher de 0 est respecté');
+  assert.equal(nouveau.def, 2, 'la défense ne bouge pas (-2/-0)');
+
+  // Le malus ne se rejoue pas à chaque rafraîchissement : la table bouge,
+  // les chiffres restent stables.
+  rpgFinDeTour(duel);
+  rpgFinDeTour(duel);
+  assert.equal(rousse.atk, atkRousse - 2, 'aucune dérive au fil des tours');
+  assert.equal(nouveau.atk, 0);
+
+  // Quand la source quitte la table, la Malédiction se lève partout.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', noire.id, 100, 'braise').ok, true);
+  assert.equal(rousse.atk, atkRousse, 'la Rousse retrouve son attaque');
+  assert.equal(nouveau.atk, 2, 'le nouveau venu aussi');
+  assert.ok(duel.log.some((ligne) => ligne.startsWith('La Malédiction se lève')),
+    'le journal annonce la levée du malus');
+});
+
+test('Le dédoublement : La Barbe Noire ne se prend jamais en cale', () => {
+  // Même La Barbe-Rousse adverse (Abordage 5, et la Noire coûte 5) ne peut
+  // pas la prendre — ni en la désignant, ni en auto-pick.
   const miroir = duelVide();
   mana(miroir, 'joueur', 10);
   mana(miroir, 'sorcier', 10);
@@ -892,7 +902,8 @@ test('La Barbe Noire change de visage au début de chaque tour — et ne se pren
     'la désignation refuse l’insaisissable');
   const rousse = jouer(miroir, 'sorcier', 'la-barbe-rousse').entite;
   assert.equal(rousse.enCale, null, 'l’auto-pick la laisse sur la table');
-  assert.equal(miroir.joueur.creatures.includes(insaisissable), true, 'on emporte un visage, l’autre reste');
+  assert.equal(miroir.joueur.creatures.includes(insaisissable), true,
+    'la Noire reste en jeu et maudit le camp d’en face');
 });
 
 test('le deck d’essai et le boîtier des Lettres de Marque suivent les règles du jeu', () => {
@@ -998,13 +1009,16 @@ test('les valeurs du set se paient au barème : Abordage, Cargaison, Prise, past
   const noire = cardById('la-barbe-noire');
   assert.equal(noire.element, 'tenebres', 'La Barbe Noire est devenue une carte Ténèbres');
   assert.deepEqual(cardColors(noire), ['tenebres'], '100 % Ténèbres : ni Sable ni Eau');
-  assert.ok(puissanceCarte(noire) > puissanceCarte({ ...noire, alternance: null, insaisissable: false }),
-    'le dédoublement vaut son prix au barème');
-  assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Provocation', 'Abordage 4', 'Deux Visages'],
+  assert.deepEqual([noire.atk, noire.def], [4, 5], 'la Noire est un 4/5 sans alternance');
+  assert.equal(noire.alternance, undefined, 'les Deux Visages ont disparu de la fiche');
+  assert.deepEqual(noire.malediction, { atk: 2, def: 0 }, 'Malédiction : -2/-0');
+  assert.ok(puissanceCarte(noire) > puissanceCarte({ ...noire, malediction: null, insaisissable: false }),
+    'la Malédiction et le dédoublement valent leur prix au barème');
+  assert.deepEqual(libellesPastilles('la-barbe-noire'), ['Provocation', 'Abordage 4', 'Malédiction'],
     'la Barbe Noire porte ses trois pastilles');
   assert.equal(iconePourLigne(noire,
-    'Deux Visages — elle arrive en jeu sous le visage de l’homme (2/7 avec Provocation) ; au début de chacun de vos tours, elle change.'),
-    'visages', 'la ligne de règle se lit Deux Visages');
+    'Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0.'),
+    'malediction', 'la ligne de règle se lit Malédiction');
   assert.equal(iconePourLigne(cardById('rais-de-la-galiote'),
     'Abordage 1 — quand le Raïs arrive en jeu, la créature adverse ciblée de coût 1 ou moins est prise en sa cale.'),
     'abordage', 'la ligne de règle se lit Abordage');

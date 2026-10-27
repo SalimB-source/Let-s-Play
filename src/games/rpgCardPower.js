@@ -91,7 +91,11 @@ function valeurEffet(effet = {}) {
     case 'pioche-defausse':
       return (Number(effet.pioche) || 0) * 1.2 - (Number(effet.defausse) || 0) * 0.4;
     case 'bouclier':
-      return montant * 0.7;
+      // Une parade anti-sort : un sort adverse entier annulé, une seule fois.
+      // Sa valeur ne dépend plus du montant imprimé (toujours 1 désormais).
+      // `cible: 'soi'` (Salem) vaut la même chose : la parade est garantie
+      // sur le corps qui arrive, sans allié à désigner.
+      return 2.2;
     case 'bouclier-lumiere':
       return 2.5;
     case 'brouillard':
@@ -247,7 +251,7 @@ export function valeurCarte(carte) {
     // déclenché de combat, lu comme un effet de dégâts ordinaire.
     let valeur = 1.3 * (carte.bonus?.atk ?? 0) + (carte.bonus?.def ?? 0);
     if (carte.donne?.envol) valeur += 2.5;
-    if (carte.donne?.bouclier) valeur += 0.7 * Math.max(0, Number(carte.donne.bouclier) || 0);
+    if (carte.donne?.bouclier) valeur += 1.1;
     if (carte.donne?.infiltration) valeur += 2.5;
     if (carte.donne?.esquive) valeur += 1.5;
     if (carte.donne?.furie) valeur += 0.7 + 0.55 * carte.donne.furie;
@@ -269,9 +273,10 @@ export function valeurCarte(carte) {
     // La prime de prise en cale (le Grappin) : un soin conditionnel, une fois
     // par capture — lu comme l'effet de soin qu'il est.
     if (carte.priseEnCale) valeur += valeurEffet(carte.priseEnCale);
-    // L'arme qui pose un bouclier sur son porteur (la Hache de la banquise) :
-    // il absorbe les premières blessures, au prix d'un bouclier de sort.
-    if (carte.donne?.bouclier) valeur += 0.7 * carte.donne.bouclier;
+    // L'arme qui pose une parade sur son porteur (la Hache de la banquise) :
+    // le premier sort adverse qui le cible est bloqué, une seule fois —
+    // même prix que la parade donnée par un sort, et jamais deux fois.
+    if (carte.donne?.bouclier) valeur += 1.1;
     // Le prix de l'attachement : l'arme qui blesse son porteur vaut moins,
     // d'autant plus que la morsure est profonde.
     if (carte.blessurePorteur) valeur -= 1.2 * carte.blessurePorteur;
@@ -350,7 +355,9 @@ export function valeurCarte(carte) {
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
-  if (carte.aura) valeur += 2.5;
+  // Une Aura ne touche plus que les deux créatures adjacentes : elle vaut
+  // moins qu'un renfort de camp entier, mais plus qu'un simple mot-clé.
+  if (carte.aura) valeur += 1.8;
   // Bannière : chaque attaque d'un Samouraï du camp laisse un +X/+X définitif
   // à l'attaquant — un renfort récurrent, un cran au-dessus d'une aura fixe.
   if (carte.banniere) valeur += 3;
@@ -364,9 +371,10 @@ export function valeurCarte(carte) {
   // table garanti à la pose, qu'un exil ou un renvoi peut défaire, entre le
   // Butin et l'Envol.
   if (carte.abordage) valeur += 1.5;
-  // Les Deux Visages (La Barbe Noire) : l'autre visage vaut un second corps —
-  // la muraille quand la frappe manque, la frappe quand le mur s'effondre.
-  if (carte.alternance) valeur += 1.5;
+  // La Malédiction (La Barbe Noire) : un -2/-0 permanent à TOUT le camp
+  // adverse vaut plus qu'une Aura de voisinage, mais reste un effet de
+  // présence que le camp d'en face peut faire tomber.
+  if (carte.malediction) valeur += 1 + Math.max(0, Number(carte.malediction.atk) || 0) * 0.9;
   // L'insaisissable (La Barbe Noire) : la cale adverse ne la prend jamais —
   // une rébellion permanente contre la signature du set d'en face.
   if (carte.insaisissable) valeur += 1;

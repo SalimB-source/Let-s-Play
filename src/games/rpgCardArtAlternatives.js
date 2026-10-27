@@ -130,7 +130,7 @@ const DEFINITIONS = [
   ['faussoyeur-des-dunes', 'Le pillard au turban'],
   // Les pirates — l'ancien set doré, avant la passe Souls.
   ['la-barbe-rousse', 'L’amiral en plein abordage'],
-  ['la-barbe-noire', 'Les deux visages de Thatch'],
+  ['la-barbe-noire', 'La malédiction de Thatch'],
   ['le-chasseur-d-ocracoke', 'Le chasseur dans les brumes'],
   ['la-vengeance-de-la-reine-anne', 'Le vaisseau fantôme à la lune'],
   ['galion-de-la-flotte', 'Le galion d’argent'],

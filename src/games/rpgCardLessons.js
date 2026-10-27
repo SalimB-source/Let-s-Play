@@ -70,8 +70,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'boucliers',
     section: 'Magies',
     cardIds: ['parade-du-verre', 'salem'],
-    title: 'Un bouclier absorbe les dégâts',
-    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche. Sur la table, une égide animée cerne la créature protégée ; quand elle encaisse, l’écu claque — et se fissure si le bouclier tombe.',
+    title: 'Un bouclier bloque un sort',
+    text: 'La Parade de verre donne à une créature alliée un bouclier : le premier sort adverse qui la cible est bloqué — la carte est payée, mais aucun de ses effets ne se résout — puis le bouclier tombe. Salem arrive avec le même bouclier, en plus de sa Rapidité et de sa Contre-attaque : le sort bloqué ne déclenche même pas sa riposte, mais le sort adverse suivant se paie au visage du lanceur. Un sort allié qui la cible passe normalement, et un sort de zone qui ne désigne personne aussi. Le bouclier n’absorbe plus aucun dégât : attaques et capacités frappent les PV. Le bouclier de lumière de la Dame aux ailes d’or, lui, reste ce qu’il était : il la protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie la touche. Sur la table, une égide animée cerne la créature protégée ; quand le bouclier tombe, l’écu claque et se fissure.',
   },
   {
     id: 'degats-et-gel',
@@ -113,7 +113,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['tarek', 'chien-de-sable'],
     title: 'Une arrivée peut créer des créatures-jetons',
-    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Ces créatures-jetons n’existent que sur la table : elles attaquent, bloquent et meurent comme les autres créatures — l’aura de Tarek les renforce même dès leur arrivée, puisqu’ils sont Sable — mais elles ne viennent d’aucune main et ne peuvent pas y retourner : un renvoi en main les fait disparaître.',
+    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 sans coût. Ces créatures-jetons n’existent que sur la table : elles attaquent, bloquent et meurent comme les autres créatures — seul le chien posé sur une case voisine de Tarek est renforcé par son aura, l’autre reste une 1/1 — mais elles ne viennent d’aucune main et ne peuvent pas y retourner : un renvoi en main les fait disparaître.',
   },
   {
     id: 'arrivee-ciblee',
@@ -146,9 +146,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'contre-attaque',
     section: 'Capacités des créatures',
-    cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment'],
+    cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment', 'salem'],
     title: 'Contre-attaque : le coup se paie',
-    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
+    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Salem la porte aussi : son bouclier encaisse le premier sort adverse sans riposter, mais le deuxième rend 4 dégâts au lanceur. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
   },
   {
     id: 'envol',
@@ -211,14 +211,14 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['ronin-du-soleil-rouge', 'samourai-du-torii', 'oni-de-la-fournaise'],
     title: 'Harakiri : une dernière frappe à la mort',
-    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
+    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. La protection s’applique normalement ; la parade anti-sort, elle, ne bloque pas cette capacité : le dégât passe. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
   },
   {
     id: 'auras-et-resonance',
     section: 'Capacités des créatures',
     cardIds: ['tarek', 'tengu-du-mont-ardent', 'samourai-du-torii', 'kenshi-de-la-forge'],
     title: 'Une aura agit tant que sa source reste en jeu',
-    text: 'Une aura ne quitte jamais son camp : Tarek renforce les créatures Sable de son camp, l’égide d’Amani donne +0/+1 aux autres créatures du sien, et l’aura de forge du Kenshi donne +1/+0 à toutes les autres créatures de son camp, quel que soit leur type — il ne se forge pas lui-même, mais deux Kenshis du même camp se renforcent l’un l’autre et le reste de leur camp reçoit les deux ; celui d’en face ne forge que les siens. La Résonance, elle, est de table et se lit sur le TYPE imprimé de sa source : celle du Tengu et du Shogun promu ne renforce que les créatures de type Samouraï, même adverses et quelle que soit leur couleur, de +1/+1 par source ; Kagutsuchi ne porte plus cette Résonance. Celle du Shogun promu renforce tous les Samouraïs, lui compris ; deux Shoguns cumulent leurs bonus sur eux-mêmes et sur les autres Samouraïs. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. Si la source quitte la table, le bonus d’aura correspondant disparaît — l’aura de forge ne touche jamais la défense, donc la perdre ne peut pas tuer.',
+    text: 'Une Aura ne touche plus que les créatures ADJACENTES de son camp : les deux cases qui entourent sa source. Une case vide coupe le voisinage, la source ne se renforce jamais elle-même, et rien ne franchit la ligne des camps. Tarek donne +1/+1 aux créatures Sable voisines (les autres couleurs, même voisines, sont ignorées) ; l’égide d’Amani donne +0/+1 à ses deux voisines ; la forge du Kenshi donne +1/+0 aux siennes, quel que soit leur type. Deux sources voisines d’une même créature cumulent leurs bonus, mais deux sources éloignées ne se donnent rien ; quand une créature meurt, la rangée se resserre et le voisinage est recalculé. La Résonance, elle, n’a PAS changé : elle est de table et se lit sur le TYPE imprimé de sa source — celle du Tengu et du Shogun promu ne renforce que les créatures de type Samouraï, même adverses, même très éloignées et quelle que soit leur couleur, de +1/+1 par source ; Kagutsuchi ne porte plus cette Résonance. Celle du Shogun promu renforce tous les Samouraïs, lui compris ; deux Shoguns cumulent leurs bonus sur eux-mêmes et sur les autres Samouraïs. Les autres créatures Braise, les yōkai et les kami n’en bénéficient pas. Si la source quitte la table, le bonus d’aura correspondant disparaît — la forge ne touche jamais la défense, donc la perdre ne peut pas tuer, et l’égide laisse au pire 1 PV.',
   },
   {
     id: 'banniere-samourai',

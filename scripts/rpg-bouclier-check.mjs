@@ -2,14 +2,17 @@
  * Le Bouclier se voit, veille, puis encaisse.
  * node scripts/rpg-bouclier-check.mjs
  *
- * Les boucliers actuels viennent des arrivées (le Guerrier au bouclier rond),
- * des sorts (la Parade de verre) et des boucliers de lumière (Salem). La Lance
- * de givre ne donne plus de bouclier : elle donne +1/+0 et Attaque ciblée.
+ * Les boucliers actuels viennent des arrivées (le Guerrier au bouclier rond,
+ * Salem), des sorts (la Parade de verre) et du bouclier de lumière de la Dame
+ * aux ailes d'or. Salem n'a plus de lumière : il arrive avec la parade
+ * anti-sort, Rapidité et Contre-attaque. La Lance de givre ne donne plus de
+ * bouclier : elle donne +1/+0 et Attaque ciblée.
  *
  * Sur la table, une égide animée cerne toute créature protégée — glacée pour
- * un bouclier ordinaire, dorée pour un bouclier de lumière. Quand un coup
- * est absorbé, un impact séparé rejoue le choc : l'écu se cabre, et il se
- * fissure en perdant ses éclats si le bouclier tombe à zéro. Une fois tombé,
+ * la parade anti-sort, dorée pour un bouclier de lumière. Quand la parade
+ * bloque un sort (ou que la lumière encaisse un coup), un impact séparé
+ * rejoue le choc : l'écu se cabre, et il se fissure quand il tombe à zéro.
+ * Une fois tombé,
  * son icône et tout son texte se grisent dans l'aperçu, comme la Tenacité
  * déjà déclenchée du Maître du marteau. Entièrement absorbé, le coup ne
  * déclenche plus le clignotement de blessure ; en mouvement réduit, l'égide
@@ -19,7 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
-import { armeById } from '../src/games/rpgCards.js';
+import { armeById, cardById } from '../src/games/rpgCards.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const moteur = readFileSync(new URL('../src/games/rpgDuel.js', import.meta.url), 'utf8');
@@ -36,6 +39,19 @@ assert.equal(lance.donne?.envol, undefined, 'son ancien Envol est retiré');
 assert.equal(lance.donne?.bouclier, undefined, 'elle ne donne aucun bouclier');
 assert.match(lance.text, /\+1\/\+0 et Attaque ciblée/, 'son texte annonce ses deux dons');
 assert.doesNotMatch(lance.text, /bouclier/i, 'aucun bouclier dans son texte');
+
+// ── 1 bis. Salem : Bouclier + Rapidité + Contre-attaque ─────────────────────
+const salem = cardById('salem');
+assert.ok(salem, 'Salem est bien au catalogue');
+assert.equal(salem.rapidite, true, 'Salem garde sa Rapidité');
+assert.equal(salem.contreAttaque, true, 'et gagne la Contre-attaque');
+assert.equal(salem.arrivee?.type, 'bouclier', 'son arrivée pose une parade anti-sort');
+assert.equal(salem.arrivee?.cible, 'soi', 'la parade est posée sur Salem lui-même');
+assert.equal(salem.arrivee?.amount, 1, 'une seule parade');
+assert.match(salem.text, /prochain sort adverse/, 'le texte annonce le sort bloqué');
+assert.match(salem.text, /Contre-attaque/, 'et la riposte');
+assert.doesNotMatch(salem.text, /bouclier de lumière|ne peut pas subir de dégâts/,
+  'son ancienne invulnérabilité a disparu');
 
 // ── 2. Les états visuels, rendus pour de vrai ───────────────────────────────
 const previousEnv = process.env.NODE_ENV;
@@ -163,7 +179,7 @@ const apercuDom = (html) => {
 {
   const { dom, racine } = carteDom(rendu.lumiere);
   try {
-    assert.equal(racine.getAttribute('data-bouclier-lumiere'), 'true', 'Salem expose son bouclier de lumière');
+    assert.equal(racine.getAttribute('data-bouclier-lumiere'), 'true', 'la Dame expose son bouclier de lumière');
     assert.equal(racine.getAttribute('data-effets-epuises'), null, 'intact, il n’est pas épuisé');
     const egide = racine.querySelector('.rpg-bouclier-egide--lumiere');
     assert.ok(egide, 'la même égide veille, dans sa teinte dorée');
@@ -213,13 +229,14 @@ const apercuDom = (html) => {
       'le mot seul reste écrit : l’aperçu n’écrit plus d’explication sous le mot-clé');
     assert.match(pastille.getAttribute('aria-label') ?? '', /tombé/,
       'la pastille grise annonce elle aussi son état « tombé » aux lecteurs d’écran');
-    const furie = racine.querySelector('.rpg-pastille[data-pastille="furie"]');
-    assert.ok(furie, 'la Furie du Guerrier reste rendue');
-    assert.equal(furie.classList.contains('is-epuisee'), false, 'seul le Bouclier est grisé');
+    // Le Guerrier a perdu sa Furie dans sa révision : plus aucune autre
+    // pastille que le Bouclier ne doit être grisée sur sa fiche.
+    assert.equal(racine.querySelectorAll('.rpg-pastille.is-epuisee').length, 1,
+      'seul le Bouclier est grisé');
     // La description du Guerrier reste écrite : la phrase du bouclier est ce
     // que la carte fait (l'état « tombé » grise la pastille et le libellé).
-    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : il reçoit un bouclier de 1/,
-      'l’aperçu écrit ce que fait le Guerrier : le bouclier reçu à son arrivée');
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué/,
+      'l’aperçu écrit la nouvelle règle du Guerrier : un sort adverse bloqué');
   } finally {
     dom.window.close();
   }
@@ -246,31 +263,65 @@ const apercuDom = (html) => {
 }
 
 {
-  const { dom, racine } = apercuDom(apercus.salemEpuise);
+  const { dom, racine } = apercuDom(apercus.salemActif);
   try {
-    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier');
-    // Les phrases propres du Salem restent écrites : elles décrivent son
-    // bouclier de lumière, au-delà du mot-clé Rapidité porté en pastille.
-    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /bouclier de lumière/,
-      'l’aperçu écrit le bouclier de lumière du Salem');
-    assert.match(racine.getAttribute('aria-label') ?? '', /[Bb]ouclier/,
-      'et le libellé du volet reste celui qui nomme le bouclier de lumière');
+    assert.equal(racine.getAttribute('data-effets-epuises'), null, 'rien de dépensé sur une fiche neuve');
+    for (const cle of ['rapidite', 'contreAttaque', 'bouclier']) {
+      const pastille = racine.querySelector(`.rpg-pastille[data-pastille="${cle}"]`);
+      assert.ok(pastille, `la pastille ${cle} est rendue sur Salem`);
+      assert.equal(pastille.classList.contains('is-epuisee'), false, `${cle} garde sa couleur`);
+    }
+    const regles = racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '';
+    assert.match(regles, /prochain sort adverse/, 'l’aperçu écrit la parade anti-sort de Salem');
+    assert.doesNotMatch(regles, /bouclier de lumière/, 'plus aucune lumière sur sa fiche');
+    assert.match(racine.querySelector('.rpg-pastille[data-pastille="contreAttaque"]')?.getAttribute('aria-label') ?? '',
+      /riposte frappe le sorcier adverse/, 'la pastille Contre-attaque explique la riposte');
   } finally {
     dom.window.close();
   }
 }
 
-// ── 4. Le moteur : un absorbeur unique et un « tombé » explicite ───────────
-assert.match(moteur, /function absorberBouclier\(entite, montant\) \{[\s\S]*?if \(absorbes > 0 && entite\.bouclier === 0 && !entite\.bouclierLumiere\) \{\s*entite\.bouclierEpuise = true;/,
-  'le dernier point absorbé marque le bouclier comme tombé');
+{
+  const { dom, racine } = apercuDom(apercus.salemEpuise);
+  try {
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier');
+    const pastille = racine.querySelector('.rpg-pastille[data-pastille="bouclier"]');
+    assert.ok(pastille, 'la pastille Bouclier est rendue');
+    assert.ok(pastille.classList.contains('is-epuisee'), 'la parade tombée se grise');
+    for (const cle of ['rapidite', 'contreAttaque']) {
+      const autre = racine.querySelector(`.rpg-pastille[data-pastille="${cle}"]`);
+      assert.equal(autre?.classList.contains('is-epuisee'), false, `${cle} reste en couleur`);
+    }
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /prochain sort adverse/,
+      'la phrase de la parade reste écrite, grisée mais lisible');
+    assert.match(racine.getAttribute('aria-label') ?? '', /[Bb]ouclier/,
+      'le libellé du volet nomme le bouclier tombé');
+  } finally {
+    dom.window.close();
+  }
+}
+
+// ── 4. Le moteur : une parade anti-sort et un « tombé » explicite ──────────
+assert.match(moteur, /function briserBouclier\(entite\) \{[\s\S]*?entite\.bouclier = 0;[\s\S]*?if \(!entite\.bouclierLumiere\) entite\.bouclierEpuise = true;/,
+  'le bouclier tombe en entier et marque sa chute');
+assert.match(moteur, /function bouclierQuiBloque\(duel, cote, cibleId\) \{[\s\S]*?duel\[autre\(cote\)\]\.creatures/,
+  'seul un sort adverse qui désigne la créature rencontre la parade');
+assert.match(moteur, /const bouclierBloquant = sortViseUneZone\(carte\) \? null : bouclierQuiBloque\(duel, cote, cibleId\);[\s\S]*?const montant = briserBouclier\(bouclierBloquant\);[\s\S]*?bouclierBloque: true,/,
+  'le lancement du sort bloqué consomme la parade et le dit au résultat');
+assert.match(moteur, /const CIBLES_SORT_ZONE = new Set\(\[[\s\S]*?'toutes-creatures'/,
+  'les sorts de zone sont explicitement hors de portée de la parade');
 assert.match(moteur, /case 'bouclier-lumiere': \{[\s\S]*?entite\.bouclierLumiere = true;\s*entite\.bouclierEpuise = false;/,
   'accorder un bouclier de lumière réarme l’état');
-assert.match(moteur, /case 'bouclier': \{[\s\S]*?entite\.bouclier = \(entite\.bouclier \?\? 0\) \+ \(effet\.amount \?\? 0\);[\s\S]*?if \(entite\.bouclier > 0\) entite\.bouclierEpuise = false;/,
-  'accorder un bouclier chiffré réarme l’état');
+assert.match(moteur, /case 'bouclier': \{[\s\S]*?entite\.bouclier = 1;[\s\S]*?entite\.bouclierEpuise = false;/,
+  'accorder une parade réarme l’état sans additionner de points');
+assert.match(moteur, /if \(effet\.cible === 'creature-amie' \|\| effet\.cible === 'soi'\) \{[\s\S]*?const visee = effet\.cible === 'soi' \? sauf : \(cibleId \?\? sauf\);/,
+  'une parade `soi` (Salem) ne peut pas être détournée vers un autre allié');
+assert.match(moteur, /if \(carte\.arrivee\.cible === 'creature-amie'\) cibleArrivee = cibleId \?\? entite\.id;[\s\S]*?carte\.arrivee\.cible !== 'soi'/,
+  'la pose ne transmet aucune cible à une arrivée `soi`');
 assert.equal([...moteur.matchAll(/if \(!\(entite\.bouclier > 0\)\) entite\.bouclierEpuise = true;/g)].length, 2,
   'les deux chemins qui touchent un bouclier de lumière marquent sa chute');
-assert.equal([...moteur.matchAll(/const absorbes = absorberBouclier\(entite,/g)].length, 2,
-  'le combat simultané et la blessure directe passent par le même absorbeur');
+assert.equal([...moteur.matchAll(/absorberBouclier\(/g)].length, 0,
+  'plus aucun dégât n’est absorbé par la parade');
 
 // ── 5. La page : avant/après, deux rangées, piles repliées, aperçus ────────
 assert.match(page, /const DUREE_IMPACT_BOUCLIER = 850;/, 'l’impact a sa durée propre, lisible');
@@ -333,4 +384,4 @@ assert.match(iconesCss, /\.rpg-card-icone\.is-epuisee \{[\s\S]*?filter: grayscal
 assert.match(reglesCss, /\.rpg-card-rules__ligne--epuisee \{[\s\S]*?color: #a9a9a9;[\s\S]*?filter: grayscale\(1\);/,
   'la ligne de règle dépensée se grise entièrement');
 
-console.log('✓ Bouclier animé : la Lance de givre donne +1/+0 et Attaque ciblée sans bouclier ; les boucliers du Guerrier, de la Parade et de Salem veillent et encaissent, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');
+console.log('✓ Bouclier animé : Salem arrive avec la parade anti-sort, Rapidité et Contre-attaque ; la Lance de givre donne +1/+0 et Attaque ciblée sans bouclier ; la parade du Guerrier, de la Parade et de Salem bloque un sort adverse, le bouclier de lumière de la Dame aux ailes d’or encaisse un coup, puis leur icône et leur texte se grisent dans l’aperçu une fois tombés — comme la Tenacité déjà utilisée.');

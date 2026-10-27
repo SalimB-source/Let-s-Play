@@ -43,11 +43,12 @@
  *     jamais contre le sorcier) ; sa Prime (`primeChasseur`) paie en sus la
  *     destruction d’une telle proie.
  *
- * Deux marqueurs de plus pour La Barbe Noire (la carte du dédoublement) :
- *   - `alternance: { visages: [...] }` — Les Deux Visages : elle arrive sous
- *     le visage imprimé (index 0), puis change au début de chaque tour de son
- *     camp (`changerVisages`, appelé par `rpgFinDeTour`) — l’homme 2/7 avec
- *     Provocation, la légende 6/2, les blessures suivant d’un visage à l’autre ;
+ * Deux marqueurs pour La Barbe Noire (la carte de la malédiction) :
+ *   - `malediction: { atk, def }` — Malédiction : tant qu'elle est en jeu,
+ *     TOUTES les créatures du camp adverse perdent ce bonus (ici -2/-0).
+ *     Contrairement à l'Aura, aucune adjacence : le camp entier est touché, y
+ *     compris les créatures qui arrivent après elle. Le moteur tient l'écart
+ *     par entité (`appliquerMaledictions`, appelé par `rafraichirAuras`) ;
  *   - `insaisissable: true` — Le dédoublement : la cale adverse ne la prend
  *     jamais (filtre `priseEnCaleLegale`, garde `prendreEnCale`).
  */
@@ -333,25 +334,23 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
   // Sable + Eau des Lettres de Marque (voir le portillon de `rpgDeckComposer`).
   carte({
     id: 'la-barbe-noire',
-    name: 'La Barbe Noire, les deux visages',
+    name: 'La Barbe Noire, la malédiction',
     element: 'tenebres',
     colors: ['tenebres'],
     colorCost: { tenebres: 1 },
     cost: 5,
-    atk: 2,
-    def: 7,
+    atk: 4,
+    def: 5,
     rarity: 'mythique',
     provocation: true,
     abordage: 4,
     insaisissable: true,
-    alternance: {
-      visages: [
-        { nom: 'l’homme', atk: 2, def: 7, provocation: true },
-        { nom: 'la légende', atk: 6, def: 2 },
-      ],
-    },
+    // Malédiction : tant qu'elle est en jeu, TOUTES les créatures adverses
+    // perdent 2 ATQ (et 0 DEF). Effet de présence, sans adjacence — voir
+    // `appliquerMaledictions` dans `rpgDuel.js`.
+    malediction: { atk: 2, def: 0 },
     typeLine: 'Créature légendaire — Pirate · Terreur',
-    text: 'Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Deux Visages — elle arrive en jeu sous le visage de l’homme (2/7 avec Provocation) ; au début de chacun de vos tours, elle change : l’homme 2/7 avec Provocation, ou la légende 6/2 — ses blessures la suivent d’un visage à l’autre. Le dédoublement — Barbe Noire ne peut pas être prise en cale : on emporte un visage, l’autre reste.',
+    text: 'Abordage 4 — quand La Barbe Noire arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Malédiction — tant que La Barbe Noire est en jeu, toutes les créatures adverses gagnent -2/-0. Le dédoublement — Barbe Noire ne peut pas être prise en cale : la fumée referme son poing sur elle.',
     flavor: 'Thatch comptait les rançons au sou près ; la chose qui brûlait dans sa barbe n’a jamais rien compté.',
   }),
 ];

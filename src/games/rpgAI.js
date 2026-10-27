@@ -142,7 +142,8 @@ function degatsSubis(entite, montant, couleursSource, sourceType = 'attaque') {
   return degatsApresEsquive(entite, montant, sourceType);
 }
 
-/** Blessure nette d'un coup de ces couleurs (Esquive, bouclier, protection). */
+/** Blessure nette d'un coup de ces couleurs (Esquive, protection). Le bouclier
+ *  n'absorbe plus rien : il ne tombe que devant un sort qui cible. */
 function blessureSousCouleurs(entite, montant, couleursSource, sourceType = 'attaque') {
   return estProtegee(entite, couleursSource) ? 0 : blessureNette(entite, montant, sourceType);
 }
@@ -183,13 +184,13 @@ export function degatsApresEsquive(entite, montant, sourceType = 'attaque') {
 }
 
 /**
- * Blessure nette encaissée : ce qui reste après l’Esquive puis le bouclier.
- * Une attaque entièrement absorbée n’est pas une blessure — la Furie attend
- * le premier sang, exactement comme le moteur.
+ * Blessure nette encaissée : ce qui reste après l’Esquive. Le bouclier de la
+ * créature est une parade anti-sort, pas une armure : il ne retire plus aucun
+ * dégât, exactement comme dans le moteur.
  */
 export function blessureNette(entite, montant, sourceType = 'attaque') {
   const apresEsquive = degatsApresEsquive(entite, montant, sourceType);
-  return Math.max(0, apresEsquive - Math.max(0, entite?.bouclier ?? 0));
+  return Math.max(0, apresEsquive);
 }
 
 /** Furie **nouvellement** gagnée par une créature blessée qui survit : le coup
@@ -207,15 +208,16 @@ export function furieGagnee(entite, degatsRecus) {
     && pvApres > 0 && pvApres < defenseDeBase ? furie : 0;
 }
 
-/** L’entité meurt-elle sous un coup de ce type (bouclier compris) ?
- *  Le moteur tue à 0 PV : dégâts ≥ PV + bouclier, pas strictement plus.
+/** L’entité meurt-elle sous un coup de ce type ?
+ *  Le moteur tue à 0 PV : dégâts ≥ PV, pas strictement plus. Le bouclier ne
+ *  compte plus dans ce calcul : il ne bloque qu'un sort, pas les blessures.
  *  La **Tenacité** (le Seigneur des mâchoires, le Maître du marteau) ne
  *  refuse plus la destruction : la créature meurt ici comme une autre, et ne
  *  revient qu'au tour suivant, avec 1 point de défense. L'IA peut donc tuer
  *  une créature tenace sans se tromper — le corps perdu n'est pas sauvé. */
 function meurtSous(entite, montant, sourceType = 'attaque') {
   return degatsApresEsquive(entite, montant, sourceType)
-    >= (entite.bouclier ?? 0) + Math.max(0, entite.pv ?? 0);
+    >= Math.max(0, entite.pv ?? 0);
 }
 
 /** Une créature peut-elle bloquer ? Ni engagée, ni gelée, ni privée de sa
@@ -236,7 +238,9 @@ export function valeurEntite(entite) {
   const carte = duelCardById(entite?.carteId) ?? {};
   let valeur = (entite?.atk ?? 0) * 1.3
     + Math.max(0, entite?.pv ?? entite?.def ?? 0) * 1.1
-    + (entite?.bouclier ?? 0) * 1.1
+    // La parade anti-sort vaut un sort adverse gâché — un forfait, pas une
+    // réserve de PV : sa valeur ne dépend plus du nombre affiché.
+    + (moteur.rpgBouclierEstActif(entite) ? 1.8 : 0)
     + (entite?.esquive ? 1.6 : 0)
     + (entite?.contreAttaque || carte.contreAttaque ? 1.8 : 0)
     + Math.max(0, carte.cost ?? 0) * 0.4;
@@ -257,8 +261,9 @@ export function valeurEntite(entite) {
   // avec 1 point de défense — un corps gratuit vaut un peu plus que ses PV
   // affichés, sans valoir une créature qui refuse la destruction.
   if (entite?.tenaciteDisponible) valeur += 1;
-  // Bouclier de lumière (la Dame aux ailes d'or, Salem) : la prochaine attaque
+  // Bouclier de lumière (la Dame aux ailes d'or) : la prochaine attaque
   // ou magie ne passe pas — un rempart d'un coup, à ne pas sous-estimer.
+  // Salem n'en porte plus : sa parade anti-sort est comptée ailleurs.
   if (entite?.bouclierLumiere) valeur += 2;
   // Furie : +X/+0 tant que la défense reste sous la DEF de base. Active, le bonus
   // est déjà dans l'attaque ; inactive, il reste un gain latent — y compris
@@ -281,12 +286,12 @@ export function valeurEntite(entite) {
   return valeur;
 }
 
-/** Force d'Overkill qui traverse un bloqueur : ce qui dépasse ses PV et son
- *  bouclier continue jusqu'au sorcier, comme dans le moteur. */
+/** Force d'Overkill qui traverse un bloqueur : ce qui dépasse ses PV
+ *  continue jusqu'au sorcier, comme dans le moteur. Le bouclier n'encaisse
+ *  plus de dégâts : il ne compte pas dans ce calcul. */
 function excesOverkill(attaquant, bloqueur) {
   if (!attaquant?.overkill || !bloqueur) return 0;
-  const encaissable = Math.max(0, (Number(bloqueur.pv ?? bloqueur.def) || 0)
-    + Math.max(0, Number(bloqueur.bouclier) || 0));
+  const encaissable = Math.max(0, Number(bloqueur.pv ?? bloqueur.def) || 0);
   return Math.max(0, (Number(attaquant.atk) || 0) - encaissable);
 }
 
@@ -324,9 +329,10 @@ export function resultatBlocage(attaquant, bloqueur) {
   let attaquantMeurt = !attaquantVit;
   let bloqueurMeurt = !bloqueurVit;
   if (attaquantVit && bloqueurVit) {
-    // Bouclier de lumière (la Dame aux ailes d'or, Salem) : la PREMIÈRE attaque
+    // Bouclier de lumière (la Dame aux ailes d'or) : la PREMIÈRE attaque
     // ou magie ne touche pas — elle éteint le bouclier à sa place. Un coup de
-    // capacité, lui, passe outre. Le bouclier du bloqueur avale donc la frappe
+    // capacité, lui, passe outre. La parade anti-sort de Salem, elle, n'absorbe
+    // aucun dégât de combat. Le bouclier du bloqueur avale donc la frappe
     // de l'attaquant, celui de l'attaquant avale la riposte.
     const forceAttaquant = bloqueur?.bouclierLumiere ? 0 : (attaquant.atk ?? 0);
     const forceBloqueur = attaquant?.bouclierLumiere ? 0 : (bloqueur.atk ?? 0);
@@ -373,11 +379,17 @@ function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, p
   const prets = duel[cote].creatures.filter((entite) => moteur.rpgPeutAttaquer(entite));
   const options = [];
   for (const entite of ciblesLegales(duel, cote, carte, portee)) {
-    const kill = montant != null && meurtSous(entite, montant, sourceType);
+    // Une parade anti-sort bloque tout le sort adverse qui désigne sa
+    // créature : l'IA évite de gaspiller une magie dessus si une autre cible
+    // (ou le visage) se présente. Elle garde quand même l'option en dernier
+    // recours — briser la parade a aussi sa valeur.
+    const paradeAdverse = sourceType === 'magie' && carte?.kind === 'magie'
+      && moteur.rpgBouclierEstActif(entite);
+    const kill = !paradeAdverse && montant != null && meurtSous(entite, montant, sourceType);
     options.push({
       cibleId: entite.id,
       kill,
-      score: (kill ? 20 : 0) + menace(entite),
+      score: (kill ? 20 : 0) + menace(entite) - (paradeAdverse ? 6 : 0),
     });
   }
   // « Créature ou sorcier » : la magie le déclare dans `cibles`, l'arrivée du
@@ -1568,11 +1580,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   // une aura qui renforce tout le type déjà posé (Samouraï, Viking…).
   if (carte.furie) score += 0.8 + carte.furie * 0.7;
   if (carte.aura) {
-    // Tarek, Amani, Kenshi : l'aura ne grandit que les AUTRES corps — sa
-    // valeur suit donc la table déjà posée, pas les chiffres de la carte.
+    // Tarek, Amani, Kenshi, Bou Jeloud : l'aura ne grandit plus que les DEUX
+    // créatures adjacentes de son camp. On borne donc son gain au voisinage
+    // réellement atteignable — jamais à toute la table — tout en gardant le
+    // filtre de couleur de l'aura Sable de Tarek.
+    const alliees = camp.creatures.filter((entite) => !carte.aura.element
+      || cardColors(duelCardById(entite.carteId)).includes(carte.aura.element));
+    const voisins = Math.min(2, alliees.length);
     const force = Math.max(0, Number(carte.aura.atk) || 0) * 0.8
       + Math.max(0, Number(carte.aura.def) || 0) * 0.6;
-    score += 1.5 + camp.creatures.length * force;
+    score += 1 + voisins * force;
   }
   if (carte.resonance) {
     const element = cardResonanceGroup(carte);
@@ -1758,10 +1775,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         cibleId = meilleureCibleAmie(duel, cote, carte);
         if (cibleId) score += 0.5;
       }
+      // `cible: 'soi'` (Salem) : la parade est garantie sur le corps qui
+      // arrive, aucune désignation à choisir — donc pas de cibleId.
     }
     if (arrivee.type === 'bouclier-lumiere') {
-      // La Dame aux ailes d'or, Salem : un rempart qui avale la prochaine
-      // attaque ou magie — il protège un corps qu'on veut garder.
+      // La Dame aux ailes d'or : un rempart qui avale la prochaine attaque
+      // ou magie — il protège un corps qu'on veut garder.
       score += 2.5;
     }
     if (arrivee.type === 'soin-creatures') {
@@ -1829,9 +1848,13 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       .filter((id) => id !== carte.id && duelCardById(id)).length;
     if (autresCreatures > 0) score += 1.5;
   }
-  // Les Deux Visages (La Barbe Noire) : un corps qui alterne vaut deux
-  // présences ; l'insaisissable refuse la cale adverse pour de bon.
-  if (carte.alternance) score += 1.5;
+  // La Malédiction (La Barbe Noire) : -2/-0 à TOUTES les créatures adverses,
+  // sans adjacence — sa valeur suit donc la table d'en face déjà posée.
+  if (carte.malediction) {
+    const adverses = duel[autre(cote)].creatures.filter((entite) => entite.pv > 0).length;
+    score += 1 + adverses * Math.max(0, Number(carte.malediction.atk) || 0) * 0.8;
+  }
+  // L'insaisissable refuse la cale adverse pour de bon.
   if (carte.insaisissable) score += 1;
   return { score, cibleId };
 }

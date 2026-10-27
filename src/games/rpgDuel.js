@@ -271,7 +271,9 @@ export function rpgBlessuresDepuis(duel, position = 0) {
 /**
  * La dernière blessure d'une créature : `{ entityId, cote, elements,
  * sourceCarteId, recus, absorbes, pvApres, bouclierApres, mortelle }`.
- * `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
+ * `absorbes` reste dans le contrat du journal mais vaut toujours 0 depuis
+ * que la parade ne prévient plus les dégâts (elle ne tombe que devant un
+ * sort). `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
  * **encore** celui de cette blessure — la table n'allume donc la roue de feu
  * que pour un coup qui vient de tomber, jamais pour une ancienne brûlure.
  * `sourceCarteId` nomme la carte du coup quand le moteur la connaît (magie,
@@ -1052,12 +1054,52 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
 
+/**
+ * L'Aura ne renforce plus que les **créatures adjacentes** de son camp : les
+ * deux cases qui entourent la source, jamais la source elle-même, et jamais
+ * le camp d'en face. La Résonance et la Bannière gardent leurs règles propres.
+ *
+ * `casesRangee` donne la case de chaque créature. En mode sans terrains, la
+ * case choisie à la pose (0 à 4) fait foi : une case VIDE entre deux
+ * créatures coupe le voisinage. Dans le format historique — et dans les
+ * sauvegardes sans case — la rangée se lit dans l'ordre d'arrivée : pas de
+ * trou, chaque créature est voisine de la précédente et de la suivante.
+ */
+function casesRangee(camp) {
+  const creatures = camp?.creatures ?? [];
+  if (!creatures.some((entite) => Number.isInteger(entite?.emplacement))) {
+    return new Map(creatures.map((entite, index) => [entite, index]));
+  }
+  const cases = rpgEmplacementsChamp(camp);
+  const positions = new Map();
+  creatures.forEach((entite, index) => {
+    const caseTrouvee = cases.indexOf(entite);
+    // Une créature hors des cinq cases (sauvegarde incomplète) est mise à
+    // l'écart plutôt que déclarée voisine d'une case fixe par accident.
+    positions.set(entite, caseTrouvee >= 0
+      ? caseTrouvee
+      : RPG_MANA_ESSAI_CHAMP_MAX + index);
+  });
+  return positions;
+}
+
+/** La source et la cible occupent-elles deux cases voisines du même camp ? */
+function voisines(positions, source, cible) {
+  if (!source || !cible || source === cible) return false;
+  const a = positions.get(source);
+  const b = positions.get(cible);
+  return Number.isInteger(a) && Number.isInteger(b) && Math.abs(a - b) === 1;
+}
+
 function appliquerAuraSable(duel, cote) {
   const camp = duel[cote];
-  const tarekEnJeu = camp.creatures.some((entite) => entite.carteId === 'tarek');
+  const positions = casesRangee(camp);
+  const sources = camp.creatures.filter((entite) => entite.carteId === 'tarek' && entite.pv > 0);
   for (const entite of camp.creatures) {
     const carte = duelCardById(entite.carteId);
-    const prochainBonus = !estSite(carte) && tarekEnJeu && cardColors(carte).includes('sable') ? 1 : 0;
+    // Tarek ne se renforce plus lui-même : il n'est jamais son propre voisin.
+    const prochainBonus = !estSite(carte) && cardColors(carte).includes('sable')
+      && sources.some((source) => voisines(positions, source, entite)) ? 1 : 0;
     const delta = prochainBonus - (entite.auraSableBonus ?? 0);
     if (!delta) continue;
     entite.auraSableBonus = prochainBonus;
@@ -1069,24 +1111,23 @@ function appliquerAuraSable(duel, cote) {
 }
 
 /**
- * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, les
- * **autres** créatures de son camp gagnent +0/+1. Même contrat que l'aura
- * Sable : chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour
- * qu'une créature qui entre ou qui meurt ne fasse pas dériver les statistiques
- * déjà cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
- * chaque Amani protège toutes les créatures sauf elle-même, donc une seconde
- * Amani double le bonus des autres et protège la première. Comme toute aura,
- * l'égide ne franchit jamais la ligne du camp adverse. La perdre ne tue jamais :
- * au pire, 1 PV (la règle de la Résonance).
+ * Amani — l'égide de la Gardienne des ksour : tant qu'Amani est en jeu, ses
+ * **créatures adjacentes** gagnent +0/+1. Même contrat que l'aura Sable :
+ * chaque entité ne garde que l'écart appliqué (`auraAmaniBonus`), pour qu'une
+ * créature qui entre ou qui meurt ne fasse pas dériver les statistiques déjà
+ * cumulées par la Furie ou d'autres renforts. L'égide compte **par source** :
+ * chaque Amani ne protège que ses deux voisines — une Amani ne se protège
+ * jamais elle-même, mais deux Amani voisines se protègent l'une l'autre. Une
+ * case vide entre elles coupe l'égide. Comme toute aura, elle ne franchit
+ * jamais la ligne du camp adverse. La perdre ne tue jamais : au pire, 1 PV.
  */
 function appliquerAuraAmani(duel, cote) {
   const camp = duel[cote];
-  const nombreAmani = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour').length;
+  const positions = casesRangee(camp);
+  const sources = camp.creatures.filter((entite) => entite.carteId === 'amani-des-ksour' && entite.pv > 0);
   for (const entite of camp.creatures) {
-    const sources = entite.carteId === 'amani-des-ksour'
-      ? nombreAmani - 1
-      : nombreAmani;
-    const prochainBonus = estSite(entite) ? 0 : Math.max(0, sources);
+    const prochainBonus = estSite(entite) ? 0 : sources.reduce((total, source) =>
+      total + (voisines(positions, source, entite) ? 1 : 0), 0);
     const delta = prochainBonus - (entite.auraAmaniBonus ?? 0);
     if (!delta) continue;
     entite.auraAmaniBonus = prochainBonus;
@@ -1161,29 +1202,37 @@ export function rpgAppliquerBannieresAttaque(duel, cote, attaquantIds = []) {
 }
 
 /**
- * Kenshi de la forge — l'aura de forge : tant qu'il est en jeu, **toutes les
- * autres créatures de son camp** gagnent +1/+0, quel que soit leur type. Une
- * aura ne franchit jamais la ligne du camp adverse.
+ * Les auras « buff-autres » en attaque — le Kenshi de la forge (+1/+0) et
+ * Bou Jeloud (+1/+0) : tant qu'elles sont en jeu, seules leurs **créatures
+ * adjacentes** gagnent le bonus, quel que soit leur type. Une aura ne franchit
+ * jamais la ligne du camp adverse ; Amani, dont l'aura ne donne que de la
+ * défense, est traitée à part par `appliquerAuraAmani`.
  *
- * Le Kenshi ne se forge pas lui-même — il dit « les autres » : il ne reçoit que
- * l'aura de ses confrères, s'il y en a d'autres. Deux Kenshis du même camp se
- * donnent donc +1/+0 l'un à l'autre et +2/+0 au reste de leur camp.
+ * La source ne se forge jamais elle-même : elle occupe sa propre case, pas une
+ * case voisine. Deux sources voisines d'une même créature cumulent leurs
+ * bonus, mais deux sources éloignées ne se donnent rien. Une case vide coupe
+ * le voisinage.
  *
- * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus`), même
- * contrat que l'aura Sable et l'égide d'Amani : une arrivée ou une mort ne fait
- * jamais dériver les statistiques déjà gagnées par la Furie ou un autre renfort.
- * L'aura ne touche pas la défense : la perdre ne peut pas tuer, et l'attaque
- * retombe au plancher de 0.
+ * Chaque entité ne retient que l'écart appliqué (`auraKenshiBonus` — nom
+ * historique de l'accumulateur), même contrat que l'aura Sable et l'égide
+ * d'Amani : une arrivée ou une mort ne fait jamais dériver les statistiques
+ * déjà gagnées par la Furie ou un autre renfort. L'aura ne touche pas la
+ * défense : la perdre ne peut pas tuer, et l'attaque retombe au plancher de 0.
  */
-function appliquerAuraKenshi(duel) {
+function appliquerAurasBuffAutres(duel) {
   for (const cote of ['joueur', 'sorcier']) {
-    const sources = duel[cote].creatures
-      .filter((entite) => entite.carteId === 'kenshi-de-la-forge');
-    for (const entite of duel[cote].creatures) {
+    const camp = duel[cote];
+    const positions = casesRangee(camp);
+    const sources = camp.creatures.filter((entite) => {
+      const aura = duelCardById(entite.carteId)?.aura;
+      return entite.pv > 0 && aura?.type === 'buff-autres' && Number(aura.atk) > 0;
+    });
+    for (const entite of camp.creatures) {
       const voulu = estSite(entite) ? 0 : sources.reduce((bonus, source) => {
         const aura = duelCardById(source.carteId)?.aura;
-        if (source.id === entite.id && aura?.saufSoi) return bonus;
-        return bonus + Math.max(0, Number(aura?.atk) || 0);
+        return voisines(positions, source, entite)
+          ? bonus + Math.max(0, Number(aura?.atk) || 0)
+          : bonus;
       }, 0);
       const delta = voulu - (entite.auraKenshiBonus ?? 0);
       if (!delta) continue;
@@ -1194,19 +1243,70 @@ function appliquerAuraKenshi(duel) {
 }
 
 /**
- * Rafraîchit toutes les auras de présence après un changement du champ de
+ * Malédiction (La Barbe Noire, set Lettres de Marque) : tant que la source est
+ * en jeu, **toutes les créatures du camp adverse** perdent l'attaque imprimée
+ * (`malediction.atk`, ici 2). Contrairement à l'Aura, il n'y a **aucune
+ * adjacence** : le camp entier est touché, où que soient les cases, y compris
+ * les créatures qui arrivent APRÈS la source. Le malus est un effet de
+ * présence : il se lève dès que la dernière source quitte la table, et deux
+ * sources cumulent leurs malus.
+ *
+ * Chaque entité ne retient que l'écart qu'elle a déjà reçu (`maledictionBonus`)
+ * — même contrat que les Aura — afin qu'une arrivée, une mort ou un renfort ne
+ * fasse jamais dériver les statistiques gagnées par ailleurs. L'attaque
+ * retombe au plancher de 0 ; la défense n'est pas touchée (`-2/-0`), donc
+ * perdre ou gagner la Malédiction ne tue jamais.
+ */
+function appliquerMaledictions(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const opposant = autre(cote);
+    const sources = duel[cote].creatures.filter((entite) => entite.pv > 0
+      && duelCardById(entite.carteId)?.malediction);
+    const voulu = -sources.reduce((total, source) => {
+      const malediction = duelCardById(source.carteId).malediction;
+      return total + Math.max(0, Number(malediction.atk ?? malediction) || 0);
+    }, 0);
+    const camp = duel[opposant];
+    const dejaMaudit = camp.creatures.some((entite) => (entite.maledictionBonus ?? 0) < 0);
+    for (const entite of camp.creatures) {
+      const cible = estSite(entite) ? 0 : voulu;
+      const deja = entite.maledictionBonus ?? 0;
+      if (cible === deja) continue;
+      // On reconstitue l'attaque « nue » avant de réappliquer l'écart. Le
+      // plancher de 0 ne doit pas faire oublier ce qui a vraiment été retiré :
+      // un 1/1 maudit à 0 ATQ redevient un 1/1 quand la source part, pas un
+      // 2/1. `maledictionBonus` retient donc l'écart EFFECTIVEMENT appliqué.
+      const nue = entite.atk - deja;
+      const prochaine = Math.max(0, nue + cible);
+      entite.atk = prochaine;
+      entite.maledictionBonus = prochaine - nue;
+    }
+    if (!dejaMaudit && voulu < 0) {
+      duel.log.push(`Malédiction : toutes les créatures ${opposant === 'joueur' ? 'du joueur' : 'du sorcier'} perdent ${-voulu} ATQ.`);
+    } else if (dejaMaudit && voulu === 0) {
+      duel.log.push('La Malédiction se lève : les créatures retrouvent leur attaque.');
+    }
+  }
+}
+
+/**
+ * Rafraîchit tous les effets de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
- * et l'égide d'Amani sur chaque camp, l'aura de forge du Kenshi sur la table
- * entière, puis la Résonance de table. Chaque mécanisme ne pose que l'écart
- * qu'il détient déjà — voir les commentaires de `appliquerAuraSable`,
- * `appliquerAuraAmani`, `appliquerAuraKenshi` et `majResonance`.
+ * et l'égide d'Amani sur chaque camp, les auras « buff-autres » du Kenshi et
+ * de Bou Jeloud, la Malédiction de la Barbe Noire, puis la Résonance de table.
+ * Les Aura ne touchent plus que leurs voisins (`voisines`) ; la Malédiction et
+ * la Résonance, elles, sont de camp entier / de table. Chaque mécanisme ne
+ * pose que l'écart qu'il détient déjà — voir les commentaires de
+ * `appliquerAuraSable`, `appliquerAuraAmani`, `appliquerAurasBuffAutres`,
+ * `appliquerMaledictions` et `majResonance`.
  */
 function rafraichirAuras(duel) {
   appliquerAuraSable(duel, 'joueur');
   appliquerAuraSable(duel, 'sorcier');
   appliquerAuraAmani(duel, 'joueur');
   appliquerAuraAmani(duel, 'sorcier');
-  appliquerAuraKenshi(duel);
+  appliquerAurasBuffAutres(duel);
+  appliquerMaledictions(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
@@ -1249,7 +1349,9 @@ export function rpgEstProtegeeDesSorts(entite, element, sourceType = 'magie') {
     && couleursProtegees.some((couleur) => couleursSources.includes(couleur));
 }
 
-/** Les boucliers absorbent les prochains dégâts avant qu'ils n'atteignent les PV. */
+/** La réserve de bouclier du SORCIER (le pacte de la Tour oubliée) absorbe
+ *  encore les dégâts avant les PV. Ce n'est pas la parade des créatures :
+ *  celle-ci, décrite plus bas, bloque un sort au lieu d'encaisser des coups. */
 function rpgInfligerSorcier(duel, cote, amount) {
   const camp = duel[cote];
   const degats = Math.max(0, amount);
@@ -1309,10 +1411,12 @@ function creerEntiteCreature(carte) {
     def: carte.def,
     pv: carte.def,
     pvMax: carte.def,
+    // 0 = pas de parade, 1 = une parade anti-sort prête. Il n'y en a jamais
+    // plus d'une : voir `briserBouclier` et le `case 'bouclier'`.
     bouclier: 0,
     bouclierLumiere: false,
-    // Un bouclier déjà tombé reste lisible dans l'aperçu (pastille et texte
-    // grisés) jusqu'à ce qu'un nouveau bouclier le remplace.
+    // Une parade déjà tombée reste lisible dans l'aperçu (pastille et texte
+    // grisés) jusqu'à ce qu'une nouvelle parade la remplace.
     bouclierEpuise: false,
     auraSableBonus: 0,
     auraAmaniBonus: 0,
@@ -1384,11 +1488,10 @@ function creerEntiteCreature(carte) {
     // mémorisé séparément afin de disparaître sans effacer les autres buffs.
     caleCombleBonusAtk: 0,
     butin: Boolean(carte.butin),
-    // Les Deux Visages (La Barbe Noire) : l'index du visage courant, `null`
-    // pour toute créature sans alternance. La fiche imprime le visage
-    // d'arrivée (index 0) ; le moteur bascule au début de chaque tour du camp
-    // (`changerVisages`), les blessures suivant d'un visage à l'autre.
-    visage: carte.alternance ? 0 : null,
+    // Malédiction (La Barbe Noire) : l'écart d'attaque déjà retiré par les
+    // sources adverses en jeu. Chaque entité ne retient que SON écart, pour
+    // qu'une arrivée, une mort ou un renfort ne fasse pas dériver les chiffres.
+    maledictionBonus: 0,
     // La Cargaison (set Lettres de Marque) : combien de cartes le propriétaire
     // pioche quand cette créature meurt ou est prise en cale.
     cargaison: Math.max(0, Number(carte.cargaison) || 0),
@@ -1429,22 +1532,36 @@ function armeCarteDe(entite) {
 }
 
 /**
- * Fait encaisser un montant par le bouclier d'une créature et rend ce qui a
- * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`)
- * encaisse en premier : quand l'arme tombera, seul ce
- * reliquat-là repartira avec elle — un bouclier venu d'un sort ou d'une
- * arrivée ne peut donc pas être volé par un simple changement d'arme.
+ * LE BOUCLIER D'UNE CRÉATURE — une parade anti-sort, pas une armure.
+ *
+ * Tant qu'il tient, le bouclier bloque **le premier sort adverse qui désigne
+ * la créature** : le sort est payé et va au cimetière, mais aucun de ses effets
+ * ne se résout. Le bouclier tombe alors en entier, quelle que soit la valeur
+ * affichée — un seul sort est bloqué, pas un par point. Les sorts du camp de
+ * la créature (Parade de verre, renforts…) ne sont jamais bloqués, et les
+ * sorts de zone, qui ne désignent personne, passent sous la garde.
+ *
+ * Les dégâts — attaques, capacités, sorts de zone — ne sont plus absorbés :
+ * les points de bouclier ne sont donc dépensés que par `briserBouclier`.
+ * Le champ `bouclier` reste numérique (1 = parade prête, 0 = tombée) pour
+ * que la table, les aperçus et l'animation d'égide continuent de le lire.
  */
-function absorberBouclier(entite, montant) {
-  const absorbes = Math.min(entite.bouclier ?? 0, Math.max(0, montant));
-  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-  if (absorbes > 0 && entite.bouclier === 0 && !entite.bouclierLumiere) {
-    entite.bouclierEpuise = true;
-  }
-  if (entite.arme?.bouclier) {
-    entite.arme.bouclier = Math.max(0, entite.arme.bouclier - absorbes);
-  }
-  return absorbes;
+export function rpgBouclierEstActif(entite) {
+  return (entite?.bouclier ?? 0) > 0;
+}
+
+/**
+ * Fait tomber la parade d'une créature et rend la valeur encore affichée
+ * avant sa chute (l'impact visuel de l'égide s'en sert). La part prêtée par
+ * une arme (`entite.arme.bouclier`) tombe avec elle : un changement d'arme
+ * ne réarme pas la parade.
+ */
+function briserBouclier(entite) {
+  const montant = Math.max(0, Number(entite.bouclier) || 0);
+  entite.bouclier = 0;
+  if (entite.arme?.bouclier) entite.arme.bouclier = 0;
+  if (!entite.bouclierLumiere) entite.bouclierEpuise = true;
+  return montant;
 }
 
 /**
@@ -1475,13 +1592,13 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
-  // Un bouclier éventuellement donné par l'arme rejoint la réserve qui
-  // absorbera les prochains dégâts ; sa part encore intacte vit sur l'arme
-  // elle-même pour repartir avec elle si elle est remplacée.
+  // L'arme peut poser la parade anti-sort sur son porteur. Il n'y a jamais
+  // qu'UNE parade : la valeur est ramenée à 1, et la part encore intacte vit
+  // sur l'arme elle-même pour repartir avec elle si elle est remplacée.
   const bouclierDonne = Math.max(0, Math.floor(Number(carteArme.donne?.bouclier) || 0));
   if (bouclierDonne) {
-    entite.arme.bouclier = bouclierDonne;
-    entite.bouclier = (entite.bouclier ?? 0) + bouclierDonne;
+    entite.arme.bouclier = 1;
+    entite.bouclier = 1;
     entite.bouclierEpuise = false;
   }
   if (carteArme.donne?.esquive) entite.esquive = true;
@@ -1988,11 +2105,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
-    let recus = 0;
-    for (const coupRecu of blessure.coups ?? [{ amount: montant, sourceKey: 'unique' }]) {
-      const absorbes = absorberBouclier(entite, coupRecu.amount);
-      recus += coupRecu.amount - absorbes;
-    }
+    // Le bouclier n'encaisse plus les coups : il ne tombe que devant un sort
+    // qui désigne la créature (voir `rpgLancerMagie`). Tous les dégâts de
+    // combat cumulés atteignent donc les PV tels quels.
+    const recus = montant;
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
@@ -2951,16 +3067,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'bouclier': {
-      if (effet.cible === 'creature-amie') {
+      if (effet.cible === 'creature-amie' || effet.cible === 'soi') {
         // Sans autre allié (ou lors d’une réanimation), la Veilleuse retombe
-        // sur sa propre entité : son arrivée ne se perd jamais.
-        const entite = duel[cote].creatures.find((e) => e.id === (cibleId ?? sauf));
+        // sur sa propre entité : son arrivée ne se perd jamais. Salem, lui,
+        // déclare `cible: 'soi'` : sa parade ne peut jamais être détournée
+        // vers un autre allié, même si un `cibleId` traîne. Une seule parade
+        // par créature : `amount` ne s'additionne plus, il réarme la
+        // protection contre le prochain sort adverse.
+        const visee = effet.cible === 'soi' ? sauf : (cibleId ?? sauf);
+        const entite = duel[cote].creatures.find((e) => e.id === visee);
         if (entite && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
-          entite.bouclier = (entite.bouclier ?? 0) + (effet.amount ?? 0);
-          if (entite.bouclier > 0) entite.bouclierEpuise = false;
+          entite.bouclier = 1;
+          if (entite.arme?.bouclier) entite.arme.bouclier = 0;
+          entite.bouclierEpuise = false;
         }
       } else {
+        // La réserve du sorcier, elle, reste une armure de dégâts (pacte de
+        // la Tour oubliée) : elle continue d'additionner les points.
         duel[cote].bouclier = (duel[cote].bouclier ?? 0) + (effet.amount ?? 0);
       }
       return;
@@ -3940,9 +4064,12 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   if (tenterEsquive(duel, entite, sourceType)) {
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
+  // Plus aucun dégât n'est absorbé par la parade : celle-ci ne tombe que
+  // devant un sort qui désigne la créature (`rpgLancerMagie`). `absorbes`
+  // reste dans le journal et le résultat, à zéro, pour les lecteurs habituels.
   const apresEsquive = Math.max(0, amount);
-  const absorbes = absorberBouclier(entite, apresEsquive);
-  const recus = apresEsquive - absorbes;
+  const absorbes = 0;
+  const recus = apresEsquive;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
   const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
@@ -4373,9 +4500,11 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
     // n'en portent pas, ce qui évite qu'une cible quelconque — un Boualem
     // adverse par exemple — n'intercepte un effet qui ne la visait pas.
-    const cibleArrivee = carte.arrivee.cible
-      ? (carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId)
-      : null;
+    // `cible: 'soi'` (la parade de Salem) ne désigne personne sur la table :
+    // l'effet trouvera son porteur dans `sauf`, l'id de la créature qui arrive.
+    let cibleArrivee = null;
+    if (carte.arrivee.cible === 'creature-amie') cibleArrivee = cibleId ?? entite.id;
+    else if (carte.arrivee.cible && carte.arrivee.cible !== 'soi') cibleArrivee = cibleId;
     appliquer(duel, cote, effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
       entite.id, cardColors(carte), 'capacite', carte.id);
     journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
@@ -4624,10 +4753,10 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
   }
   // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
-  // porteur AVANT de lui donner quoi que ce soit — le bouclier qu'elle
-  // accorde ne saurait donc absorber sa propre morsure. Un porteur qui
-  // succombe ne porte rien : l'arme tombe au cimetière avec lui, comme si
-  // son porteur était mort en la prenant.
+  // porteur AVANT de lui donner quoi que ce soit. La parade qu'elle accorde
+  // ensuite ne bloque que les sorts : cette morsure — une capacité — passe
+  // de toute façon. Un porteur qui succombe ne porte rien : l'arme tombe au
+  // cimetière avec lui, comme si son porteur était mort en la prenant.
   if (Math.max(0, Number(carte.blessurePorteur) || 0) > 0) {
     const morsure = Math.max(0, Number(carte.blessurePorteur) || 0);
     duel.log.push(`${carte.name} mord ${cible.name} en s’attachant (${morsure} dégât${morsure > 1 ? 's' : ''}).`);
@@ -4972,6 +5101,28 @@ function entiteCiblableParSort(entite, carte) {
     && !rpgEstProtegeeDesSorts(entite, cardColors(carte));
 }
 
+/** Portées qui frappent une zone sans désigner une seule créature. Même si
+ *  l'interface transmet un `cibleId` pour l'animation, ces sorts ne sont pas
+ *  des sorts « ciblants » : la parade ne les arrête pas. */
+const CIBLES_SORT_ZONE = new Set([
+  'creatures-adverses', 'toutes-alliees', 'toutes-creatures', 'toutes-autres', 'toutes',
+]);
+const sortViseUneZone = (carte) => CIBLES_SORT_ZONE.has(carte?.effet?.cible);
+
+/**
+ * Le bouclier d'une créature est une parade à usage unique : elle bloque le
+ * premier sort ADVERSE qui la désigne. La créature reste une cible légale —
+ * c'est même ainsi que la parade se consume — mais le sort ne résout rien.
+ * Un sort du camp de la créature (renfort, Parade de verre, Défi du Jarl sur
+ * son propre champion) ne peut pas être bloqué ; un sort de zone, qui ne
+ * désigne personne (`cibleId` nul), passe sous la garde.
+ */
+function bouclierQuiBloque(duel, cote, cibleId) {
+  if (!cibleId || cibleId === 'sorcier') return null;
+  const visee = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+  return rpgBouclierEstActif(visee) ? visee : null;
+}
+
 /**
  * Ce sort a-t-il, là, tout de suite, de quoi se lancer ?
  *
@@ -5196,6 +5347,27 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     payer(duel, cote, carte);
   }
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  // Le bouclier de la créature visée bloque le sort : la carte est payée et
+  // part au cimetière, mais AUCUN effet ne se résout — pas même la pioche ou
+  // le gel attachés au sort. La parade tombe en entier. On place ce test
+  // après le contre (un sort contrecarré n'use pas le bouclier) et après le
+  // paiement (la parade bloque l'effet, pas le lancement).
+  const bouclierBloquant = sortViseUneZone(carte) ? null : bouclierQuiBloque(duel, cote, cibleId);
+  if (bouclierBloquant) {
+    const montant = briserBouclier(bouclierBloquant);
+    if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
+    duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+    duel.log.push(`Le bouclier de ${bouclierBloquant.name} bloque ${carte.name} et tombe.`);
+    rpgActionsEtat(duel);
+    return {
+      ok: true,
+      bouclierBloque: true,
+      bouclierEntityId: bouclierBloquant.id,
+      bouclierMontant: montant,
+      renvoiMain: false,
+      renvoiEntityId: null,
+    };
+  }
   const effet = carte.effet.type === 'degats'
     && carte.effet.cible === 'creature'
     && cibleId === 'sorcier'
@@ -5768,11 +5940,12 @@ export function rpgLancerAttaque(
       traquesCombat.push({ attaquant: attaquant.name, cible: proieTraquee.name, bonus: bonusTraque });
     }
     // Overkill (le Serpent du monde) : comme le Piétinement — la force qui
-    // dépasse ce qu'il faut pour terrasser les bloqueurs (PV et boucliers
-    // compris) continue sa course jusqu'au sorcier défenseur.
+    // dépasse ce qu'il faut pour terrasser les bloqueurs continue sa course
+    // jusqu'au sorcier défenseur. Le bouclier n'encaisse plus de dégâts :
+    // seuls les PV comptent dans le calcul de l'excédent.
     if (attaquant.overkill) {
       const encaissable = bloqueurs.reduce((total, bloqueur) => total
-        + Math.max(0, bloqueur.pv + (bloqueur.bouclier ?? 0)), 0);
+        + Math.max(0, bloqueur.pv), 0);
       const forceOverkill = forcesAttaquant.get(attaquant.id) ?? forceCombat(attaquant);
       const exces = Math.max(0, forceOverkill + bonusTraque - encaissable);
       if (exces > 0) {
@@ -6147,40 +6320,6 @@ function detruireEphemeres(duel) {
  *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
-/**
- * Les Deux Visages (La Barbe Noire, set Lettres de Marque) : au début du tour
- * de son camp, la créature change de visage — l'homme et la légende se
- * relaient, sans que personne ne choisisse. Les statistiques du nouveau
- * visage remplacent celles de l'ancien **par différence** : les armes portées
- * et les renforts posés par-dessus suivent le mouvement. Les blessures
- * suivent d'un visage à l'autre (une légende blessée reste un homme blessé),
- * et changer de visage ne la tue jamais : à terre, le corps garde 1 PV.
- */
-function changerVisages(duel) {
-  const camp = duel[duel.tour];
-  for (const entite of camp.creatures) {
-    if (entite.visage == null) continue;
-    const visages = duelCardById(entite.carteId)?.alternance?.visages;
-    if (!Array.isArray(visages) || visages.length < 2) continue;
-    const ancien = visages[entite.visage] ?? visages[0];
-    entite.visage = (entite.visage + 1) % visages.length;
-    const nouveau = visages[entite.visage];
-    const deltaAtk = (nouveau.atk ?? 0) - (ancien.atk ?? 0);
-    const deltaDef = (nouveau.def ?? 0) - (ancien.def ?? 0);
-    entite.atk = Math.max(0, entite.atk + deltaAtk);
-    entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + deltaDef);
-    entite.def = Math.max(1, entite.def + deltaDef);
-    entite.pv = Math.min(entite.pv + deltaDef, entite.def);
-    if (entite.pv < 1) entite.pv = 1;
-    // La Provocation appartient au visage : l'homme tient le rempart, la
-    // légende ne se cache derrière rien.
-    if (ancien.provocation || nouveau.provocation) {
-      entite.provocation = Boolean(nouveau.provocation);
-    }
-    duel.log.push(`${entite.name} change de visage : ${nouveau.nom ?? 'l’autre'} (${nouveau.atk ?? 0}/${nouveau.def ?? 0}).`);
-  }
-}
-
 export function rpgFinDeTour(duel) {
   // Bimini attend que son contrôleur désigne la créature consacrée.
   if (duel.siteEnAttente) return duel;
@@ -6301,7 +6440,6 @@ export function rpgFinDeTour(duel) {
   resoudreRetoursProgrammes(duel);
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   resoudreEchos(duel);              // les échos dus au camp dont le tour s'ouvre
-  changerVisages(duel);             // Les Deux Visages tournent avec le camp
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && !rpgVainqueur(duel)
     && totalCapaciteMana(camp) < RPG_MANA_ESSAI_MAX) {
     camp.manaChoixEnAttente = true;

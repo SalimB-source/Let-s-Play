@@ -565,7 +565,7 @@ capacités de mort se déclenchent après le retrait des victimes. Les Shabtis
 créés par ces morts ne sont pas détruits par la même vague. Une créature tenace
 meurt comme les autres et ne revient qu'au prochain tour de son camp, avec
 1 point de défense ; les protections contre Ténèbres, elles, écartent la vague ;
-les boucliers qui absorbent les dégâts ne préviennent pas cette destruction.
+les boucliers — désormais de simples parades contre un sort — ne préviennent pas cette destruction.
 
 La carte rejoint le catalogue et la galerie, sans modifier la liste de
 30 cartes du deck d’essai. Le catalogue Ténèbres compte désormais 7 magies.

@@ -144,4 +144,30 @@ assert.match(resonanceCss, /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]
 assert.equal((battleCss.match(/@keyframes rpg-resonance-onde/g) ?? []).length, 1,
   'une seule cadence pour les deux teintes');
 
-console.log('✓ Aura : les cartes qui impriment une aura portent le sonar de la résonance en jaune — même calque, mêmes ondes, même débordement, même mouvement réduit — et la créature qui en profite n’en projette rien');
+// ── 4. La règle : l'Aura ne renforce que les cases voisines ─────────────────
+const moteur = lire('rpgDuel.js');
+const fiches = [lire('rpgCards.js'), lire('rpgSoleilRouge.js'), lire('rpgTourOubliee.js')].join('\n');
+assert.match(moteur, /function casesRangee\(camp\) \{[\s\S]*?rpgEmplacementsChamp\(camp\)/,
+  'la rangée lit les cinq cases fixes du mode sans terrains');
+assert.match(moteur, /function voisines\(positions, source, cible\) \{[\s\S]*?Math\.abs\(a - b\) === 1/,
+  'deux créatures ne sont voisines qu’à une case d’écart');
+assert.match(moteur, /function appliquerAurasBuffAutres\(duel\)/,
+  'les auras buff-autres sont calculées ensemble (Kenshi et Bou Jeloud)');
+assert.match(moteur, /appliquerAurasBuffAutres\(duel\);/,
+  'rafraichirAuras appelle le calcul de voisinage');
+assert.match(moteur, /sources\.some\(\(source\) => voisines\(positions, source, entite\)\)/,
+  'Tarek ne renforce que ses voisines Sable');
+assert.match(moteur, /voisines\(positions, source, entite\) \? 1 : 0/,
+  'Amani compte ses sources voisines, une par une');
+assert.doesNotMatch(moteur, /function appliquerAuraKenshi\(/,
+  'l’ancien calcul de camp entier a disparu');
+for (const id of ['tarek', 'amani-des-ksour', 'kenshi-de-la-forge', 'bou-jeloud']) {
+  assert.match(fiches, new RegExp(`id: '${id}'[\\s\\S]{0,900}?créatures (?:Sable )?adjacentes`),
+    `${id} imprime la règle d’adjacence sur sa fiche`);
+}
+assert.match(lire('effetIcons.js'), /aura: \(\) => 'Tant qu’elle est en jeu, seules les créatures adjacentes/,
+  'la définition du mot-clé dit le voisinage');
+assert.match(duel, /aura : vos créatures adjacentes gagnent/,
+  'la description lue de la table dit elle aussi le voisinage');
+
+console.log('✓ Aura : les cartes qui impriment une aura portent le sonar de la résonance en jaune — même calque, mêmes ondes, même débordement, même mouvement réduit — et ne renforcent plus que les créatures des cases voisines de leur camp');

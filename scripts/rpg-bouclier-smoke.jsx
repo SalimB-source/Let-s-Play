@@ -1,8 +1,10 @@
 // Les états visuels du Bouclier, rendus pour de vrai par `TableCard` et par
-// l'aperçu : le Guerrier dresse son égide d'arrivée, la Parade laisse un
-// bouclier partiellement entamé en place, sa chute à zéro rejoue le choc qui
-// l'a brisé, et le bouclier de lumière de Salem veille en or pâle. La Lance de
-// givre, elle, donne désormais +1/+0 et Attaque ciblée — jamais de bouclier.
+// l'aperçu : le Guerrier dresse son égide d'arrivée, un état intermédiaire
+// exerce l'animation d'impact (les fixtures restent libres sur la valeur), sa
+// chute à zéro rejoue le choc qui l'a brisé, et le bouclier de lumière de la
+// Dame aux ailes d'or veille en or pâle. Salem, lui, porte désormais la parade
+// anti-sort glacée (avec Rapidité et Contre-attaque). La Lance de givre donne
+// +1/+0 et Attaque ciblée — jamais de bouclier.
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RpgDuelPage, { HoverCardPreview, TableCard } from '../src/games/RpgDuelPage.jsx';
@@ -47,14 +49,14 @@ const guerrier = (entite = {}) => ({
   ...entite,
 });
 
-const Salem = (entite = {}) => ({
+const Dame = (entite = {}) => ({
   id: 'entite-lumiere',
-  carteId: 'salem',
-  name: 'SALEM',
-  atk: 4,
-  def: 3,
-  pv: 3,
-  pvMax: 3,
+  carteId: 'dame-aux-ailes-d-or',
+  name: 'La Dame aux ailes d’or',
+  atk: 3,
+  def: 5,
+  pv: 5,
+  pvMax: 5,
   ...entite,
 });
 
@@ -81,11 +83,12 @@ export function rendreCartesBouclier() {
       guerrier({ bouclier: 0, bouclierEpuise: true }),
       { montant: 1, restant: 0, lumiere: false, token: 2 },
     ),
-    // Le bouclier de lumière de Salem : la même égide, teinte d'or.
-    lumiere: rendreTable(Salem({ bouclierLumiere: true })),
+    // Le bouclier de lumière de la Dame aux ailes d'or : la même égide,
+    // teinte d'or. Salem n'en porte plus : il a la parade anti-sort.
+    lumiere: rendreTable(Dame({ bouclierLumiere: true })),
     // … puis touché : l'impact lumineux se brise, sans égide persistante.
     lumiereTouchee: rendreTable(
-      Salem({ id: 'entite-lumiere-touchee', bouclierLumiere: false, bouclierEpuise: true }),
+      Dame({ id: 'entite-lumiere-touchee', bouclierLumiere: false, bouclierEpuise: true }),
       { montant: 0, restant: 0, lumiere: true, token: 3 },
     ),
   };
@@ -104,6 +107,9 @@ export function rendreApercusEffetsEpuises() {
     guerrierActif: rendreApercu('guerrier-au-bouclier-rond'),
     guerrierEpuise: rendreApercu('guerrier-au-bouclier-rond', ['bouclier']),
     maitreEpuise: rendreApercu('maitre-du-marteau', ['tenacite']),
+    // Salem porte maintenant la parade ordinaire : intacte, ses trois
+    // pastilles sont en couleur ; une fois tombée, seul le Bouclier se grise.
+    salemActif: rendreApercu('salem'),
     salemEpuise: rendreApercu('salem', ['bouclier']),
   };
 }

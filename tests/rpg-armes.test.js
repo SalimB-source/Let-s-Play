@@ -362,16 +362,16 @@ test('remplacer la Lance conserve les PV et ne vole pas un bouclier venu d’ail
   donner(duel, 'joueur', 'parade-du-verre');
   manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'parade-du-verre', dune.id).ok, true);
-  assert.equal(dune.bouclier, 3, 'les 3 points viennent de la Parade, pas de la Lance');
+  assert.equal(dune.bouclier, 1, 'la parade vient de la Parade, pas de la Lance');
 
   rpgBlesserCreature(duel, 'joueur', dune.id, 1, 'eau', null, 'magie');
-  assert.equal(dune.bouclier, 2, 'la Parade absorbe un point');
-  assert.equal(dune.pv, 4, 'les PV restent intacts derrière la Parade');
+  assert.equal(dune.bouclier, 1, 'une blessure directe ne fait pas tomber la parade');
+  assert.equal(dune.pv, 3, 'le dégât passe : la parade n’absorbe plus rien');
 
   equiper(duel, 'joueur', 'takouba-des-pistes', dune);
-  assert.deepEqual([dune.atk, dune.def, dune.pv, dune.pvMax], [4, 4, 4, 4],
+  assert.deepEqual([dune.atk, dune.def, dune.pv, dune.pvMax], [4, 3, 3, 4],
     'le +0 de la Lance ne change ni le plafond ni les PV en le remplaçant');
-  assert.equal(dune.bouclier, 2, 'les points restants de la Parade demeurent : changer d’arme ne les vole pas');
+  assert.equal(dune.bouclier, 1, 'la parade de la Parade demeure : changer d’arme ne la vole pas');
   assert.equal(dune.envol, false, 'Envol repart avec la Lance');
   assert.equal(dune.arme.carteId, 'takouba-des-pistes');
 });
@@ -573,7 +573,7 @@ test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres car
 
 // ── La Hache de la banquise : le prix de l'attachement ─────────────────────
 
-test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 et d’un bouclier de 1', () => {
+test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 et d’une parade', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
   equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
@@ -581,12 +581,12 @@ test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +
   assert.equal(dune.def, 3, 'la Hache ne change pas la défense : la morsure, elle, suit les PV');
   assert.equal(dune.pv, 3, 'elle a d’abord mordu son porteur : 4 − 1');
   assert.equal(dune.pvMax, 4, 'la morsure est une blessure, pas une amputation du maximum');
-  assert.equal(dune.bouclier, 1, 'et le bouclier de l’arme reste sur le porteur');
+  assert.equal(dune.bouclier, 1, 'et la parade de l’arme reste sur le porteur');
   assert.equal(dune.arme.carteId, 'hache-de-la-banquise');
-  // Le bouclier absorbe la première blessure de la créature.
+  // La parade ne prévient pas les dégâts : seul un sort la fait tomber.
   rpgBlesserCreature(duel, 'joueur', dune.id, 2, 'braise', null, 'magie');
-  assert.equal(dune.bouclier, 0, 'le bouclier a dévoré 1 point');
-  assert.equal(dune.pv, 2, 'le reste passe : 3 − 1');
+  assert.equal(dune.bouclier, 1, 'la parade tient encore');
+  assert.equal(dune.pv, 1, 'les 2 dégâts passent : 3 − 2');
 });
 
 test('le bouclier de la Hache part avec l’arme, pas la morsure', () => {

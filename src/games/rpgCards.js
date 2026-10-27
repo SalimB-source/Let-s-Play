@@ -430,8 +430,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
-    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie', choisirCible: true },
-    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier de 2.',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
+    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui la cible est bloqué.',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -511,13 +511,13 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'rare',
     typeLine: 'Créature — Amazighe mozabite',
     art: 'amani-des-ksour',
-    // Égide de la Gardienne — aura de camp, comme l'aura Sable de Tarek, mais
-    // en défense : tant qu'Amani est en jeu, les AUTRES créatures de son camp
+    // Égide de la Gardienne — aura de voisinage, comme l'aura Sable de Tarek,
+    // mais en défense : tant qu'Amani est en jeu, ses créatures ADJACENTES
     // gagnent +0/+1 (le moteur la tient dans `appliquerAuraAmani`). L'égide se
-    // cumule par Amani présente : une seconde Amani double le bonus, et les
-    // Amani se protègent l'une l'autre.
+    // cumule par Amani voisine : une case vide coupe le voisinage, et une
+    // Amani ne se protège jamais elle-même.
     aura: { type: 'buff-autres', atk: 0, def: 1, camps: 'camp' },
-    text: 'Tant qu’Amani est en jeu, vos autres créatures gagnent +0/+1.',
+    text: 'Tant qu’Amani est en jeu, vos créatures adjacentes gagnent +0/+1.',
     flavor: 'Les portes de pierre tiennent parce que quelqu’un veille.',
   },
   {
@@ -672,8 +672,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
-    arrivee: { type: 'bouclier', amount: 2, cible: 'creature-amie' },
-    text: 'Quand il arrive : il reçoit un bouclier de 2.',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -977,7 +977,7 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier de 1.',
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui la cible est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },
   {
@@ -1051,9 +1051,14 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
+    // Le Sondeur ne porte plus de bouclier de lumière (réservé à la Dame aux
+    // ailes d'or). Il arrive désormais avec les trois mots-clés demandés :
+    // une parade anti-sort sur SON corps (`cible: 'soi'`), la Rapidité qu'il
+    // avait déjà, et la Contre-attaque d'Eirik et de Tojiro.
     rapidite: true,
-    arrivee: { type: 'bouclier-lumiere' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Salem arrive : il reçoit un bouclier de lumière. Tant que ce bouclier n’est pas touché par une attaque ou une magie ennemie, Salem ne peut pas subir de dégâts.',
+    contreAttaque: true,
+    arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1111,9 +1116,11 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
+    // Aura de voisinage : seules les créatures Sable des deux cases qui
+    // entourent Tarek reçoivent le bonus ; Tarek ne se renforce plus lui-même.
     aura: { type: 'buff-element', element: 'sable', atk: 1, def: 1, camps: 'camp' },
     arrivee: { type: 'jetons', jeton: 'chien-de-sable', nombre: 2 },
-    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité sans coût. Tant que Tarek est en jeu, vos créatures Sable gagnent +1/+1.',
+    text: 'Quand Tarek arrive en jeu, il crée deux chiens de sable 1/1 avec Rapidité sans coût. Tant que Tarek est en jeu, vos créatures Sable adjacentes gagnent +1/+1.',
     flavor: 'Il frappe avec ce qu’il porte.',
   },
   {
@@ -1510,8 +1517,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'rare',
     cibles: ['creature-amie'],
-    effet: { type: 'bouclier', amount: 3, cible: 'creature-amie' },
-    text: 'Magie Rapide — Une créature alliée prévient les 3 prochains dégâts qu’elle devrait subir.',
+    effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'Magie Rapide — Une créature alliée reçoit un bouclier : le prochain sort adverse qui la cible est bloqué.',
     flavor: 'Une seconde de verre suffit à dévier le coup.',
   },
   {
@@ -1876,7 +1883,7 @@ export const RPG_MAGIE_CARDS = [
  * au moment où elle s'attache (la Hache de la banquise, 1 dégât), avant ses
  * propres bonus. Un porteur qui succombe à cette morsure ne porte rien :
  * l'arme tombe au cimetière avec lui. Et `donne.bouclier` accorde au porteur
- * un bouclier qui suit l'arme — il s'en va si l'arme est remplacée.
+ * une parade anti-sort qui suit l'arme — elle s'en va si l'arme est remplacée.
  */
 export const RPG_ARME_CARDS = [
   ...RPG_TENEBRES_ARMES,
@@ -1947,12 +1954,13 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     // Le prix de l'acier de glace : `blessurePorteur` mord la créature AU
-    // MOMENT de l'attachement, avant que le bouclier de l'arme ne soit posé —
-    // la morsure ne s'absorbe donc pas elle-même. Le bouclier (`donne.bouclier`),
-    // lui, suit l'arme : il part avec elle si le porteur en change.
+    // MOMENT de l'attachement, avant que le bouclier de l'arme ne soit posé.
+    // Le bouclier (`donne.bouclier`) est une parade anti-sort, pas une armure :
+    // il ne peut donc pas encaisser la morsure. Il suit l'arme — il part avec
+    // elle si le porteur en change.
     blessurePorteur: 1,
     donne: { bouclier: 1 },
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier de 1.',
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort adverse qui le cible est bloqué.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
