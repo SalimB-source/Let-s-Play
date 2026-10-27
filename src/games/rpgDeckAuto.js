@@ -1,11 +1,14 @@
 /**
  * La création assistée d'un deck maison — « l'IA » de l'atelier.
  *
- * Le joueur pose les fondations, le moteur complète. Trois choix le guident :
- * les **couleurs** du deck (1 à 3), **quatre créatures**, puis **quatre sorts**
- * (magies et armes) de ces couleurs — toujours dans sa collection. Le moteur
- * remplit alors les places restantes jusqu'à la taille du deck avec des cartes
- * qui **complètent** celles choisies.
+ * Le joueur pose les fondations, le moteur compose. Deux choix le guident
+ * désormais : les **couleurs** du deck (1 à 3), puis son **style de jeu**
+ * (`aggro`, `controle` ou `mix`, voir `RPG_STYLES_JEU`). Le moteur bâtit alors
+ * un deck de trente cartes **uniquement avec des cartes possédées**, en
+ * respectant la courbe de mana, le mix créatures / sorts et les affinités
+ * d'effets du style choisi. L'ancien parcours (quatre créatures puis quatre
+ * sorts choisis à la main) reste supporté par les paramètres `creatures` et
+ * `sorts`, mais l'interface ne le propose plus.
  *
  * Compléter, ici, est un calcul — jamais un appel réseau. Le jeu tourne hors
  * ligne (desktop, Android) et la maison préfère les règles vérifiables ; le
@@ -51,6 +54,61 @@ export const RPG_ASSISTANT_SORTS = 4;
 
 /** Exemplaires posés de chaque carte choisie (la mythique garde sa règle de une). */
 export const RPG_ASSISTANT_COPIES = 2;
+
+/**
+ * Les styles de jeu de la création assistée. Le joueur ne choisit plus de
+ * cartes une à une : il dit ses **couleurs**, puis son **style**, et le moteur
+ * compose trente cartes dans sa collection. Chaque profil règle trois leviers
+ * du score (`scoreComplementarite`) :
+ *
+ *   - `courbe` — les places visées à chaque palier de mana (1…6, 7+) ;
+ *   - `creatures` / `sorts` — le mix de familles visé (les deux nombres
+ *     totalisent toujours la taille du deck, 30) ;
+ *   - les affinités de `bonusStyle` — les capacités et types d'effet que le
+ *     style récompense (vitesse et dégâts pour l'aggro, retraits et pioche
+ *     pour le contrôle).
+ *
+ * `mix` reprend exactement les cibles historiques de l'atelier : c'est le
+ * style par défaut, et celui des decks composés sans choix du joueur
+ * (`rpgDeckDeDepart.js`).
+ */
+export const RPG_STYLES_JEU = [
+  {
+    id: 'aggro',
+    label: 'Aggro',
+    icone: '⚔️',
+    accroche: 'Vite, fort, sans attendre',
+    description: 'Une courbe basse, des créatures rapides et des sorts de dégâts : submerger l’adversaire avant qu’il ne s’installe.',
+    courbe: [7, 8, 7, 4, 2, 1, 1],
+    creatures: 22,
+    sorts: 8,
+  },
+  {
+    id: 'controle',
+    label: 'Contrôle',
+    icone: '🛡️',
+    accroche: 'Tenir, puis dominer',
+    description: 'Retraits, contres, pioche et soins pour survivre, puis de gros finishers pour prendre le dessus.',
+    courbe: [2, 3, 4, 6, 6, 5, 4],
+    creatures: 14,
+    sorts: 16,
+  },
+  {
+    id: 'mix',
+    label: 'Mix',
+    icone: '⊙',
+    accroche: 'L’équilibre avant tout',
+    description: 'Une courbe équilibrée et un mélange de créatures et de sorts, pour s’adapter à tous les plans de jeu.',
+    courbe: [4, 6, 6, 5, 4, 3, 2],
+    creatures: 18,
+    sorts: 12,
+  },
+];
+
+/** Le profil d'un style, avec repli sur `mix` si l'identifiant est inconnu. */
+export function profilStyle(style) {
+  return RPG_STYLES_JEU.find((profil) => profil.id === style) ?? RPG_STYLES_JEU.find((profil) => profil.id === 'mix');
+}
 
 /** Les capacités imprimées qui signalent une mécanique de deck. */
 const CAPACITES = ['butin', 'rapidite', 'envol', 'coupRapide', 'furie', 'overkill', 'protection', 'esquive'];
@@ -105,7 +163,7 @@ export function mecaniquesDeCarte(carte) {
   return jetons;
 }
 
-/** La courbe visée du deck : les places de chaque palier (1…6, 7+). */
+/** La courbe visée historique de l'atelier : celle du style `mix`. */
 const COURBE_CIBLE = [4, 6, 6, 5, 4, 3, 2];
 const palierDeCout = (cout) => Math.min(Math.max(Number(cout) || 0, 1), 7);
 
@@ -113,6 +171,63 @@ const palierDeCout = (cout) => Math.min(Math.max(Number(cout) || 0, 1), 7);
 const POIDS_JETON = (jeton) => (jeton.startsWith('tribu:') ? 2.4
   : jeton.startsWith('cap:') ? 1.1
     : jeton.startsWith('donne:') ? 0.8 : 0.55);
+
+/** Les effets qui retirent une menace : le cœur du plan de jeu contrôle. */
+const EFFETS_CONTROLE = ['effet:degats', 'effet:contresort', 'effet:gel', 'effet:exil', 'effet:debuff', 'effet:brouillard'];
+/** Ce qui fait tourner l'avantage de cartes : pioche et recyclage. */
+const EFFETS_AVANTAGE = ['effet:pioche', 'effet:recyclage'];
+/** Ce qui gagne du temps et des points de vie. */
+const EFFETS_SURVIE = ['effet:soin', 'effet:bouclier'];
+
+const sommeJusque = (jetons, liste, gain, plafond) => {
+  let total = 0;
+  for (const jeton of liste) {
+    if (jetons.has(jeton)) total += gain;
+    if (total >= plafond) return plafond;
+  }
+  return total;
+};
+
+/**
+ * Le bonus (ou le malus) qu'un **style de jeu** applique à un candidat.
+ * Neutre pour `mix` — son caractère équilibré vit déjà dans la courbe et le
+ * mix de familles ciblés, donc le score historique reste strictement le même
+ * quand aucun style n'est choisi.
+ */
+export function bonusStyle(carte, style) {
+  if (style === 'aggro') {
+    const cout = palierDeCout(carte?.cost);
+    let bonus = 0;
+    // La tempo d'abord : tout ce qui arrive tôt prend l'ascendant, les gros
+    // coûts sont taxés — un deck aggro veut finir avant eux.
+    if (cout <= 2) bonus += 0.9;
+    else if (cout === 3) bonus += 0.45;
+    else if (cout === 5) bonus -= 0.35;
+    else if (cout >= 6) bonus -= 0.8;
+    const jetons = mecaniquesDeCarte(carte);
+    bonus += sommeJusque(jetons, ['cap:rapidite', 'cap:coupRapide', 'cap:furie'], 0.5, 0.8);
+    if (jetons.has('cap:envol')) bonus += 0.3;
+    if (jetons.has('effet:degats')) bonus += familleDeCarte(carte) === 'creature' ? 0.25 : 0.6;
+    if (familleDeCarte(carte) === 'creature') bonus += 0.3;
+    return bonus;
+  }
+  if (style === 'controle') {
+    const cout = palierDeCout(carte?.cost);
+    let bonus = 0;
+    // Le contrôle achète du temps : il évite les cartes trop précoces et
+    // récompense les finishers tardifs.
+    if (cout >= 5) bonus += 0.7;
+    else if (cout === 4) bonus += 0.2;
+    else if (cout <= 1) bonus -= 0.5;
+    const jetons = mecaniquesDeCarte(carte);
+    bonus += sommeJusque(jetons, EFFETS_CONTROLE, 0.5, 1.2);
+    bonus += sommeJusque(jetons, EFFETS_AVANTAGE, 0.45, 0.8);
+    bonus += sommeJusque(jetons, EFFETS_SURVIE, 0.35, 0.6);
+    if (familleDeCarte(carte) !== 'creature') bonus += 0.3;
+    return bonus;
+  }
+  return 0;
+}
 
 /**
  * Le score de complémentarité d'un candidat face au deck en cours de
@@ -134,14 +249,16 @@ export function scoreComplementarite(carte, etat) {
     if (jeton.startsWith('effet:') && !etat.jetonsDeck.has(jeton)) couverture += 0.7;
     if (couverture >= 2) break;
   }
-  // 3. Courbe de mana : la place du palier encore ouverte.
+  // 3. Courbe de mana : la place du palier encore ouverte, selon le style.
   const palier = palierDeCout(carte?.cost);
-  const cible = COURBE_CIBLE[palier - 1];
+  const courbeCible = etat.courbeCible ?? COURBE_CIBLE;
+  const cible = courbeCible[palier - 1];
   const ouvert = Math.max(0, cible - etat.parPalier[palier - 1]);
   const courbe = (ouvert / cible) * 1.5;
-  // 4. Mix : créatures et sorts selon la répartition des recettes du catalogue.
+  // 4. Mix : créatures et sorts selon la répartition visée par le style.
   const famille = familleDeCarte(carte);
-  const cibleFamille = famille === 'creature' ? 18 : 12;
+  const cibleCreatures = etat.cibleCreatures ?? 18;
+  const cibleFamille = famille === 'creature' ? cibleCreatures : (RPG_ASSISTANT_TAILLE - cibleCreatures);
   const deficit = Math.max(0, cibleFamille - etat.parFamille[famille]);
   const mix = Math.min(1, deficit / cibleFamille) * 1.1;
   // 5. Couleurs : une couleur choisie encore absente du deck appelle ses cartes.
@@ -155,11 +272,13 @@ export function scoreComplementarite(carte, etat) {
   const puissance = amplitude > 0
     ? ((puissanceCarte(carte) - etat.puissanceMin) / amplitude) * 0.7
     : 0.35;
-  return synergie + couverture + courbe + mix + couleurs + puissance;
+  // 7. Le style de jeu choisi : neutre en `mix`, directeur en aggro/contrôle.
+  const styleBonus = bonusStyle(carte, etat.style ?? 'mix');
+  return synergie + couverture + courbe + mix + couleurs + puissance + styleBonus;
 }
 
 /** L'état de construction lu à chaque ajout — pur, dérivé de la liste en cours. */
-function etatDeConstruction(cardIds, choixIds, cartesParId) {
+function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix') {
   const jetonsChoisis = new Set();
   for (const id of choixIds) {
     for (const jeton of mecaniquesDeCarte(cartesParId.get(id))) jetonsChoisis.add(jeton);
@@ -176,7 +295,19 @@ function etatDeConstruction(cardIds, choixIds, cartesParId) {
     parFamille[familleDeCarte(carte)] += 1;
     for (const couleur of (carte.couleurs ?? [])) couleursDeck.add(couleur);
   }
-  return { jetonsChoisis, jetonsDeck, parPalier, parFamille, couleursDeck, puissanceMin: 0, puissanceMax: 1 };
+  const profil = profilStyle(style);
+  return {
+    jetonsChoisis,
+    jetonsDeck,
+    parPalier,
+    parFamille,
+    couleursDeck,
+    puissanceMin: 0,
+    puissanceMax: 1,
+    style: profil.id,
+    courbeCible: profil.courbe,
+    cibleCreatures: profil.creatures,
+  };
 }
 
 /**
@@ -206,6 +337,11 @@ export function cartesPourEtape(couleurs, famille, catalogue, collection = null)
  * mythique — puis les compléments par score décroissant), et la carte emblème
  * du boîtier (la plus rare des cartes choisies).
  *
+ * La création assistée actuelle ne demande plus que les **couleurs** et le
+ * **style de jeu** (`aggro`, `controle`, `mix`) : `creatures` et `sorts`
+ * restent acceptés pour la compatibilité (le deck de départ en appelle un
+ * sans signature), mais l'interface ne les fait plus choisir.
+ *
  * `taille` est paramétrable pour les tests ; le deck maison réel vaut 30.
  * Quand la collection ne mène pas jusqu'à la taille, le deck rendu reste
  * volontairement incomplet : l'atelier l'affiche en brouillon, jamais cassé.
@@ -214,6 +350,7 @@ export function genererDeckAssiste({
   couleurs = [],
   creatures = [],
   sorts = [],
+  style = 'mix',
   collection = null,
   catalogue,
   taille = RPG_ASSISTANT_TAILLE,
@@ -258,7 +395,7 @@ export function genererDeckAssiste({
   // 3. Le remplissage : un complément par itération, le score se recalcule à
   //    chaque ajout — le prochain complément répond aux précédents.
   while (cardIds.length < taille) {
-    const etat = etatDeConstruction(cardIds, choixIds, cartesParId);
+    const etat = etatDeConstruction(cardIds, choixIds, cartesParId, style);
     etat.puissanceMin = Math.min(...puissances, 0);
     etat.puissanceMax = Math.max(...puissances, 1);
     let meilleur = null;

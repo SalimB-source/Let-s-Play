@@ -5,11 +5,14 @@ import { collectionJoueur } from '../src/games/rpgCollection.js';
 import { rpgValiderDeckMaison } from '../src/games/rpgDeckBuilder.js';
 import {
   RPG_ASSISTANT_TAILLE,
+  RPG_STYLES_JEU,
+  bonusStyle,
   cartesPourEtape,
   familleDeCarte,
   genererDeckAssiste,
   mecaniquesDeCarte,
   particuleDe,
+  profilStyle,
   scoreComplementarite,
   suggestionsNomsDeck,
   tribusDeCarte,
@@ -243,4 +246,101 @@ test('la création assistée du catalogue réel rend un deck maison légal', () 
     assert.ok(cardIds.includes(id), `${cardById(id)?.name} : la carte choisie est dans le deck`);
   }
   assert.ok(embleme && [...creatures, ...sorts].includes(embleme), 'l’emblème vient des cartes choisies');
+});
+
+test('RPG_STYLES_JEU propose aggro, contrôle et mix, chacun cohérent avec 30 cartes', () => {
+  assert.deepEqual(RPG_STYLES_JEU.map((profil) => profil.id), ['aggro', 'controle', 'mix']);
+  for (const profil of RPG_STYLES_JEU) {
+    assert.equal(profil.courbe.length, 7, 'sept paliers de mana (1…6, 7+)');
+    assert.equal(profil.courbe.reduce((total, palier) => total + palier, 0), RPG_ASSISTANT_TAILLE,
+      `${profil.id} : la courbe cible totalise 30 places`);
+    assert.equal(profil.creatures + profil.sorts, RPG_ASSISTANT_TAILLE,
+      `${profil.id} : créatures et sorts totalisent 30`);
+    assert.ok(profil.description && profil.label, `${profil.id} : le style porte un libellé et une description`);
+  }
+  assert.equal(profilStyle('inconnu').id, 'mix', 'un style inconnu retombe sur mix');
+  assert.equal(profilStyle('aggro').creatures > profilStyle('controle').creatures, true,
+    'l’aggro vise plus de créatures que le contrôle');
+});
+
+test('bonusStyle récompense la tempo en aggro, les retraits en contrôle, rien en mix', () => {
+  const creatureBonMarche = carte('eclaire', { cost: 1, atk: 2, def: 1 });
+  const creatureChere = carte('colosse', { cost: 6, atk: 7, def: 7 });
+  const brulure = carte('brulure', { kind: 'magie', cost: 2, effet: { type: 'degats', amount: 3 } });
+  const contresort = carte('contre', { kind: 'magie', cost: 3, effet: { type: 'contresort' } });
+  const pioche = carte('pioche-style', { kind: 'magie', cost: 3, effet: { type: 'pioche', amount: 2 } });
+
+  assert.equal(bonusStyle(creatureBonMarche, 'mix'), 0, 'mix reste neutre');
+  assert.equal(bonusStyle(creatureChere, 'mix'), 0, 'mix reste toujours neutre');
+  assert.ok(bonusStyle(creatureBonMarche, 'aggro') > bonusStyle(creatureChere, 'aggro'),
+    'l’aggro préfère la carte bon marché au finisseur tardif');
+  assert.ok(bonusStyle(creatureChere, 'controle') > bonusStyle(creatureBonMarche, 'controle'),
+    'le contrôle préfère le finisseur tardif');
+  assert.ok(bonusStyle(brulure, 'aggro') > 0, 'les dégâts servent le plan aggro');
+  assert.ok(bonusStyle(contresort, 'controle') > 0, 'un contresort sert le plan contrôle');
+  assert.ok(bonusStyle(pioche, 'controle') > 0, 'la pioche sert le plan contrôle');
+});
+
+test('le style aggro génère une courbe plus basse que le contrôle', () => {
+  const cartes = [
+    carte('piaf-a', { cost: 1, atk: 2, def: 1 }),
+    carte('piaf-b', { cost: 1, atk: 2, def: 1 }),
+    carte('loup-a', { cost: 2, atk: 3, def: 2 }),
+    carte('loup-b', { cost: 2, atk: 3, def: 2 }),
+    carte('garde', { cost: 4, atk: 4, def: 5 }),
+    carte('geant-a', { cost: 5, atk: 6, def: 6 }),
+    carte('geant-b', { cost: 6, atk: 7, def: 7 }),
+    carte('colosse', { cost: 7, atk: 8, def: 8 }),
+    carte('brulure', { kind: 'magie', cost: 1, effet: { type: 'degats', amount: 2 } }),
+    carte('gel', { kind: 'magie', cost: 3, effet: { type: 'gel' } }),
+    carte('contre', { kind: 'magie', cost: 3, effet: { type: 'contresort' } }),
+    carte('pioche-style', { kind: 'magie', cost: 3, effet: { type: 'pioche', amount: 2 } }),
+  ];
+  const moyenne = (ids) => ids.reduce((total, id) => total + (cartes.find((c) => c.id === id)?.cost ?? 0), 0) / ids.length;
+  const aggro = genererDeckAssiste({ couleurs: ['sable'], style: 'aggro', catalogue: catalogueDe(cartes), taille: 12 });
+  const controle = genererDeckAssiste({ couleurs: ['sable'], style: 'controle', catalogue: catalogueDe(cartes), taille: 12 });
+  assert.equal(aggro.cardIds.length, 12);
+  assert.equal(controle.cardIds.length, 12);
+  assert.ok(moyenne(aggro.cardIds) < moyenne(controle.cardIds),
+    `l’aggro (${moyenne(aggro.cardIds).toFixed(2)}) coûte moins cher que le contrôle (${moyenne(controle.cardIds).toFixed(2)})`);
+  const basseAggro = aggro.cardIds.filter((id) => cartes.find((c) => c.id === id)?.cost <= 2).length;
+  const basseControle = controle.cardIds.filter((id) => cartes.find((c) => c.id === id)?.cost <= 2).length;
+  assert.ok(basseAggro > basseControle, 'l’aggro aligne plus de cartes à deux mana ou moins');
+  assert.ok(controle.cardIds.includes('contre') || controle.cardIds.includes('gel'),
+    'le contrôle embarque un sort de contrôle (contre ou gel)');
+});
+
+test('chaque style génère un deck Sable légal dans la collection de départ', () => {
+  const catalogue = {
+    cartes: RPG_DUEL_CARDS,
+    couleursDe: cardColors,
+    limiteDe: cardCopyLimit,
+  };
+  const collection = collectionJoueur();
+  for (const style of ['aggro', 'controle', 'mix']) {
+    const { cardIds } = genererDeckAssiste({ couleurs: ['sable'], style, collection, catalogue });
+    assert.equal(cardIds.length, RPG_ASSISTANT_TAILLE, `${style} : trente cartes`);
+    assert.ok(rpgValiderDeck(cardIds).ok, `${style} : le format du duel est tenu`);
+    const validation = rpgValiderDeckMaison(cardIds, collection);
+    assert.ok(validation.ok, `${style} : deck maison valide — ${validation.raisons.join(' · ')}`);
+    assert.ok(cardIds.every((id) => cardColors(cardById(id)).every((couleur) => couleur === 'sable')),
+      `${style} : toutes les cartes respectent l’identité Sable`);
+  }
+});
+
+test('sur catalogue riche, aggro et contrôle séparent leurs courbes et leurs sorts', () => {
+  const catalogue = {
+    cartes: RPG_DUEL_CARDS,
+    couleursDe: cardColors,
+    limiteDe: cardCopyLimit,
+  };
+  const collection = RPG_DUEL_CARDS.map((carte) => carte.id);
+  const aggro = genererDeckAssiste({ couleurs: ['braise', 'sable'], style: 'aggro', collection, catalogue });
+  const controle = genererDeckAssiste({ couleurs: ['braise', 'sable'], style: 'controle', collection, catalogue });
+  const moyenne = (ids) => ids.reduce((total, id) => total + (cardById(id)?.cost ?? 0), 0) / ids.length;
+  assert.ok(moyenne(aggro.cardIds) < moyenne(controle.cardIds),
+    'l’aggro garde une courbe nettement plus basse que le contrôle');
+  const creaAggro = aggro.cardIds.filter((id) => familleDeCarte(cardById(id)) === 'creature').length;
+  const creaControle = controle.cardIds.filter((id) => familleDeCarte(cardById(id)) === 'creature').length;
+  assert.ok(creaAggro > creaControle, 'l’aggro aligne plus de créatures que le contrôle');
 });
