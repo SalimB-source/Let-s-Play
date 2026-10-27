@@ -122,6 +122,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
+  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Contre-attaque', 'Bouclier 1'],
+    'Salem affiche ses trois mots-clés : Rapidité, Contre-attaque et sa parade anti-sort');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');
@@ -165,12 +167,25 @@ test('Tenacité et Bouclier ne se grisent qu’une fois dépensés sur la table'
   }), [], 'un nouveau bouclier réarme l’état tant qu’il tient');
 
   const Salem = cardById('salem');
+  assert.equal(Salem.arrivee.type, 'bouclier', 'Salem porte la parade anti-sort, plus aucun bouclier de lumière');
   assert.deepEqual(effetsEpuisesPourEntite(Salem, {
+    bouclier: 1,
+    bouclierLumiere: false,
+    bouclierEpuise: false,
+  }), [], 'la parade de Salem encore en place reste en couleur');
+  assert.deepEqual(effetsEpuisesPourEntite(Salem, {
+    bouclier: 0,
+    bouclierLumiere: false,
+    bouclierEpuise: true,
+  }), ['bouclier'], 'la parade de Salem tombée est épuisée');
+  // Le bouclier de lumière de la Dame aux ailes d'or, lui, est resté intact.
+  const dame = cardById('dame-aux-ailes-d-or');
+  assert.deepEqual(effetsEpuisesPourEntite(dame, {
     bouclier: 0,
     bouclierLumiere: true,
     bouclierEpuise: false,
   }), [], 'le bouclier de lumière intact reste en couleur');
-  assert.deepEqual(effetsEpuisesPourEntite(Salem, {
+  assert.deepEqual(effetsEpuisesPourEntite(dame, {
     bouclier: 0,
     bouclierLumiere: false,
     bouclierEpuise: true,

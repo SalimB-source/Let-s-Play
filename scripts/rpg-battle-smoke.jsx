@@ -901,7 +901,7 @@ export async function checkRpgBattle(assert) {
   await resoudreCombat();
   assert.match([...container.querySelectorAll('.rpg-card--equipe')]
     .find((carte) => carte.getAttribute('aria-label')?.startsWith(nomCibleParade))?.getAttribute('aria-label') ?? '',
-  /bouclier 2/, 'la Parade absorbe les dégâts répartis automatiquement sans ajouter de texte sur la face de la carte');
+  /bouclier 1/, 'la parade posée par la Parade survit aux dégâts répartis automatiquement : son état se lit dans la description de la carte');
 
   // ── Les attaques passent par une déclaration et le défenseur choisit ses blocs ─
   await act(async () => { container.querySelector('.rpg-wizard-plate--ennemi').click(); });

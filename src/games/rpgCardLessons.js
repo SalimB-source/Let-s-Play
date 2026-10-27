@@ -63,8 +63,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'boucliers',
     section: 'Magies',
     cardIds: ['parade-du-verre', 'salem'],
-    title: 'Un bouclier absorbe les dégâts',
-    text: 'La Parade de verre protège une créature alliée contre ses trois prochains dégâts, quelle que soit leur provenance. Le bouclier de lumière de Salem est différent : il le protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie le touche. Sur la table, une égide animée cerne la créature protégée ; quand elle encaisse, l’écu claque — et se fissure si le bouclier tombe.',
+    title: 'Un bouclier bloque un sort',
+    text: 'La Parade de verre donne à une créature alliée un bouclier : le premier sort adverse qui la cible est bloqué — la carte est payée, mais aucun de ses effets ne se résout — puis le bouclier tombe. Salem arrive avec le même bouclier, en plus de sa Rapidité et de sa Contre-attaque : le sort bloqué ne déclenche même pas sa riposte, mais le sort adverse suivant se paie au visage du lanceur. Un sort allié qui la cible passe normalement, et un sort de zone qui ne désigne personne aussi. Le bouclier n’absorbe plus aucun dégât : attaques et capacités frappent les PV. Le bouclier de lumière de la Dame aux ailes d’or, lui, reste ce qu’il était : il la protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie la touche. Sur la table, une égide animée cerne la créature protégée ; quand le bouclier tombe, l’écu claque et se fissure.',
   },
   {
     id: 'degats-et-gel',
@@ -139,9 +139,9 @@ export const RPG_CARD_LESSONS = Object.freeze([
   {
     id: 'contre-attaque',
     section: 'Capacités des créatures',
-    cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment'],
+    cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment', 'salem'],
     title: 'Contre-attaque : le coup se paie',
-    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
+    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui la cible fait frapper le sorcier qui l’a lancé. Salem la porte aussi : son bouclier encaisse le premier sort adverse sans riposter, mais le deuxième rend 4 dégâts au lanceur. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
   },
   {
     id: 'envol',
@@ -204,7 +204,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['ronin-du-soleil-rouge', 'samourai-du-torii', 'oni-de-la-fournaise'],
     title: 'Harakiri : une dernière frappe à la mort',
-    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. Boucliers et protection s’appliquent normalement. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
+    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. La protection s’applique normalement ; la parade anti-sort, elle, ne bloque pas cette capacité : le dégât passe. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
   },
   {
     id: 'auras-et-resonance',

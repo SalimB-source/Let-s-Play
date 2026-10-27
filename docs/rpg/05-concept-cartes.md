@@ -205,14 +205,16 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Venin anti-blocage** | `empecheBlocageToursRestants` (Vipère de verre, Bakunawa) : la créature reste en jeu mais ne bloque plus | Le bloqueur marqué sort de la liste (`peutBloquerEntite`). Avant, l'IA le proposait : le moteur refusait l'attaque entière (`raison: 'bloqueur'`) et **le joueur perdait son tour de frappe**. |
 | **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
 | **Tenacité** | Une renaissance par partie : la créature meurt normalement (cimetière, arme, capacités de mort, Harakiri), puis sa carte revient en jeu au début du prochain tour de son camp avec 1 point de défense. La renaissance est une **arrivée en jeu** : l'effet d'arrivée de la carte se déclenche de nouveau. L'exil, qui retire la carte de la partie, empêche le retour. | `meurtSous` la tue comme n'importe qui (plus de fausse survie dans la simulation) ; `valeurEntite` lui rend +1 pour le corps gratuit du tour suivant, et une vague de destruction vaut 0,7 de sa valeur contre elle. |
-| **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or, Salem) | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
+| **Bouclier** (parade) | Le premier sort adverse qui **désigne** la créature est bloqué : le sort est payé mais aucun effet ne se résout, puis le bouclier tombe en entier. Aucun dégât n'est absorbé. | `bouclierQuiBloque` ne regarde que les créatures du camp adverse désignées par `cibleId` ; l'IA évite de gaspiller une magie sur une parade, tout en gardant l'option de la briser. `valeurEntite` la compte comme un forfait, pas comme des PV. |
+| **Salem : Bouclier + Rapidité + Contre-attaque** | Son ancien bouclier de lumière est remplacé par `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade anti-sort se pose sur lui sans désignation. Rapidité reste, Contre-attaque s'ajoute. Un sort bloqué par la parade ne résout rien — **pas même la riposte** ; le sort adverse suivant blesse Salem et fait frapper le sorcier lanceur de 4 dégâts. | `cible: 'soi'` n'a aucune portée (`arriveeCiblePortee === null`) : l'IA ne choisit pas d'allié, et un `cibleId` transmis par mégarde ne détourne pas la parade. `valeurEntite` paie la parade comme un sort adverse gâché ; la Contre-attaque vaut son épine habituelle. |
+| **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or uniquement) — mécanique distincte, inchangée | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
 | **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
 | **Blocage obligatoire** | `doitBloquer` (Tours) et `blocageForce` (Appât de la meute, Embuscade) | Anticipé dans la simulation, sur le plus gros attaquant, comme le moteur. |
 | **Butin** | Toucher le sorcier pioche puis défausse | +0,8 de valeur sur le porteur. |
 | **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
 | **Réanimation** | Ramène la dernière créature du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
 | **Auras** | Tarek, Amani, Kenshi : la carte grandit les AUTRES corps | Valorisée selon la table déjà posée, pas selon ses seuls chiffres. |
-| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier-lumiere`, `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier` (Guerrier, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
 
 Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
 au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée
@@ -239,9 +241,9 @@ valkyries n'émettent plus de Résonance viking.
   blessure sans la faire passer sous le seuil. Le bonus d'attaque est compté
   à part : dès que la créature retrouve sa DEF de base, il est retiré sans
   toucher aux autres renforts,
-  puis une nouvelle chute sous le seuil peut le rallumer. Une attaque
-  entièrement absorbée par un bouclier ne fait pas passer sous le seuil, et
-  une créature qui meurt n'entre pas en Furie.
+  puis une nouvelle chute sous le seuil peut le rallumer. Le bouclier d'une
+  créature n'absorbe plus aucun dégât : un coup qui entame les PV fait donc
+  passer sous le seuil, et une créature qui meurt n'entre pas en Furie.
 - **L'appel du corbeau** (Valkyrie au corbeau, 5 mana, 3/4, Envol, Furie 2) — à son
   arrivée, son contrôleur pioche une carte dont la ligne de type contient
   **Viking**, choisie uniformément au hasard parmi les exemplaires encore

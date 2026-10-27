@@ -148,7 +148,7 @@ formaient le triptyque des Ténèbres :
 | Cas | Règle |
 |---|---|
 | La cale est pleine | le second abattage tue normalement : cimetière, déclencheurs, tout |
-| Tenacité, boucliers | une créature qui survit n’est pas détruite : pas de prise — le bouclier qui absorbe tout protège de la cale aussi |
+| Tenacité, boucliers | une créature qui survit n’est pas détruite : pas de prise — mais la parade anti-sort n’est pas une survie : elle ne bloque qu’un sort et ne protège pas de la cale |
 | Jets et héros | **jamais pris en cale** : un jeton meurt normalement (on n’embarque pas un chien), un héros à 0 loyauté s’en retourne au palier comme toujours — son serment le rappelle |
 | Protections | elles fonctionnent comme toujours : elles empêchent les blessures, donc la destruction, donc la prise. Elles ne sauvent pas, en soi, une créature qu’elles n’ont pas sauvée |
 | Capturer un capteur | sa cale s’ouvre (il quitte la table sans mourir) : ses prisonniers partent en main |
@@ -749,7 +749,7 @@ par leur nom — la saveur porte l’histoire. Toutes hors recette du boîtier
 | Carte | Couleur | Coût | ⚔/🛡 | Capacités |
 |---|---|---|---|---|
 | **Le Chien de la Reine** | Eau | 5 | 4/3 | **Rapidité, Butin** ; arrivée : piochez 1 carte |
-| **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : bouclier de 2 |
+| **L’Invincible** | Sable | 6 | 3/8 | **Cargaison 3** ; arrivée : une parade anti-sort |
 | **Celle qui tient le Routier** | Eau | 4 | 2/3 | **Envol** ; arrivée : piochez 2 cartes puis défaussez 1 |
 | **La Barbe Noire, les deux visages** | **Ténèbres** | 5 | 2/7 | **Provocation, Abordage 4, Deux Visages, insaisissable** — carte 100 % Ténèbres (mana de Ténèbres ; jouable dans les decks des Ténèbres, plus dans le Sable + Eau des Lettres) |
 

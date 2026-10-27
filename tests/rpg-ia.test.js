@@ -72,7 +72,7 @@ test('l’IA vise le kill, pas la première créature venue', () => {
   assert.notEqual(rpgCibleAuto(duel, 'sorcier', trait), vipere.id);
 });
 
-test('l’IA confie le Bouclier 2 de la Veilleuse à un allié, avec un repli solo', () => {
+test('l’IA confie la parade de la Veilleuse à un allié, avec un repli solo', () => {
   const duel = duelNu();
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'sorcier', 'dune-marchante');
@@ -83,7 +83,7 @@ test('l’IA confie le Bouclier 2 de la Veilleuse à un allié, avec un repli so
   assert.equal(choix?.carteId, 'veilleuse-des-citernes');
   assert.equal(choix?.cibleId, allie.id);
   assert.equal(rpgJouerCreature(duel, 'sorcier', 'veilleuse-des-citernes', choix.cibleId).ok, true);
-  assert.equal(allie.bouclier, 2);
+  assert.equal(allie.bouclier, 1);
 
   const solo = duelNu();
   donnerMana(solo, 'sorcier', 20);
@@ -93,7 +93,7 @@ test('l’IA confie le Bouclier 2 de la Veilleuse à un allié, avec un repli so
   assert.equal(choixSolo?.carteId, 'veilleuse-des-citernes');
   const pose = rpgJouerCreature(solo, 'sorcier', 'veilleuse-des-citernes', choixSolo.cibleId);
   assert.equal(pose.ok, true);
-  assert.equal(pose.entite.bouclier, 2);
+  assert.equal(pose.entite.bouclier, 1);
 });
 
 test('l’IA préfère le visage létal à un kill sur le plateau', () => {
@@ -394,17 +394,17 @@ const defenseurSousLeCoup = (duel) => {
 };
 
 test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () => {
-  // Une attaque entièrement absorbée n’est pas une blessure…
-  const garde = { id: 'g', carteId: 'jarl-au-marteau-de-guerre', atk: 2, def: 5, pv: 5, pvMax: 5, bouclier: 3, esquive: 0 };
-  assert.equal(blessureNette(garde, 2), 0, 'le bouclier absorbe tout : aucune Furie');
-  assert.equal(furieGagnee(garde, blessureNette(garde, 2)), 0);
-  // …alors qu’un coup qui passe fait passer la créature sous sa DEF de base.
-  assert.equal(blessureNette(garde, 5), 2);
-  assert.equal(furieGagnee(garde, blessureNette(garde, 5)), 3, 'Furie 3 : +3/+0 pour le Jarl');
+  // La parade n'est plus une armure : elle ne retire aucun dégât.
+  const garde = { id: 'g', carteId: 'jarl-au-marteau-de-guerre', atk: 2, def: 5, pv: 5, pvMax: 5, bouclier: 1, esquive: 0 };
+  assert.equal(blessureNette(garde, 2), 2, 'le bouclier ne prévient plus les dégâts');
+  assert.equal(furieGagnee(garde, blessureNette(garde, 2)), 2, 'Furie 2 : +2/+0 pour le Jarl');
+  // Un coup létal, lui, ne laisse aucune Furie à gagner.
+  assert.equal(blessureNette(garde, 5), 5);
+  assert.equal(furieGagnee(garde, blessureNette(garde, 5)), 0, 'à 0 PV, pas de Furie');
   // Le plafond renforcé ne change pas le seuil imprimé : de 6 à 5 PV, le
   // Jarl est blessé sous son plafond mais reste exactement à sa base.
   assert.equal(furieGagnee({ ...garde, bouclier: 0, pv: 6, pvMax: 6 }, 1), 0,
-    'un renfort peut absorber la première blessure sans allumer la Furie');
+    'un renfort garde la créature au-dessus de sa DEF de base');
   // Une créature sans Furie ne gagne rien, et une morte non plus.
   const cavalier = attaquantTemoin();
   assert.equal(furieGagnee(cavalier, 2), 0);
@@ -415,11 +415,11 @@ test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () 
     'le bonus est déjà là : il ne se cumule pas');
 
   // L’échange simulé rapporte le gain : les deux survivent, mais seul le
-  // Jarl blessé voit son attaque promise à +3.
+  // Jarl blessé voit son attaque promise à +2.
   const jarl = { ...garde, bouclier: 0 };
   const dune = { id: 'd', carteId: 'dune-marchante', atk: 2, def: 5, pv: 5, pvMax: 5, bouclier: 0, esquive: 0 };
   assert.deepEqual(resultatBlocage(jarl, dune),
-    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 3, bloqueurFurie: 0 });
+    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 2, bloqueurFurie: 0 });
   assert.deepEqual(resultatBlocage(cavalier, dune),
     { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
     'un corps sans Furie ne profite pas de la blessure');
@@ -434,7 +434,7 @@ test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () 
   const jarlEnJeu = rpgJouerCreature(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre').entite;
   jarlEnJeu.ready = true;
   assert.deepEqual(rpgChoisirBloqueurs(duelFurieux, 'sorcier', [jarlEnJeu.id]), {},
-    'l’IA refuse d’écorner le Jarl : elle ne lui offrirait que +3/+0');
+    'l’IA refuse d’écorner le Jarl : elle ne lui offrirait que +2/+0');
   assert.equal(duneContreJarl.atk, 2, 'le bloqueur reste en réserve');
 
   const duelTemoin = duelNu();

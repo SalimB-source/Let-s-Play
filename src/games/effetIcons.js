@@ -409,8 +409,9 @@ export function effetsFurieInactifs(carte, entite = null) {
 
 /**
  * Les effets imprimés qu'une créature posée a déjà dépensés : sa Tenacité
- * quand elle l'a sauvée une fois, son Bouclier quand il a absorbé son dernier
- * point (ou que son bouclier de lumière a été touché). L'aperçu grise alors
+ * quand elle l'a sauvée une fois, son Bouclier quand il a bloqué son sort
+ * (Salem, Guerrier, Parade de verre…) ou que le bouclier de lumière de la
+ * Dame aux ailes d'or a été touché. L'aperçu grise alors
  * la pastille, son explication et les lignes de règle de cet effet. Une carte
  * en main ou au catalogue n'a pas d'entité : rien n'y est jamais épuisé. Un
  * nouveau bouclier réarme l'état — tant qu'il tient, rien n'est grisé.
@@ -586,10 +587,7 @@ export const EFFET_DEFINITIONS = {
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
-  bouclier: (n) => {
-    if (n === 1) return 'Absorbe le prochain dégât reçu, quelle que soit sa provenance.';
-    return n ? `Absorbe les ${n} prochains dégâts reçus, quelle que soit leur provenance.` : 'Absorbe les prochains dégâts reçus.';
-  },
+  bouclier: () => 'Bloque le premier sort adverse qui cible cette créature, puis le bouclier tombe. Les dégâts des attaques, des capacités et des sorts de zone ne sont pas absorbés.',
   aura: 'Tant qu’elle est en jeu, elle renforce d’autres créatures de son camp.',
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,

@@ -404,7 +404,7 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await harnais.click(harnais.carteChamp('ennemi', 'guerrier-au-bouclier-rond'), 'le Guerrier adverse');
     await act(async () => { await wait(300); });
     assert.equal(harnais.step(), 'gel');
-    await harnais.click(harnais.next(), 'la règle du Gel');
+    await harnais.click(harnais.next(), 'la règle du sort bloqué');
     assert.equal(harnais.step(), 'fin-tour-neige');
     await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour Neige');
     for (let i = 0; i < 24 && harnais.step() !== 'blocage-neige'; i += 1) {
@@ -413,7 +413,7 @@ export async function checkRpgTutorialAutresLecons(assert) {
     assert.equal(harnais.step(), 'blocage-neige');
     await harnais.click(harnais.carteChamp('equipe', 'berserk-des-trois-hivers'), 'le Berserk allié bloqueur');
     assert.equal(harnais.step(), 'blocage-neige-cible');
-    await harnais.click(harnais.carteChamp('ennemi', 'loup-des-neiges'), 'le Loup des neiges attaquant');
+    await harnais.click(harnais.carteChamp('ennemi', 'guerrier-au-bouclier-rond'), 'le Guerrier adverse attaquant');
     assert.equal(harnais.step(), 'blocage-neige-confirmer');
     await harnais.click(container.querySelector('[data-tutorial-target="resolve-combat"]'), 'Résoudre le combat Neige');
     await act(async () => { await wait(300); });

@@ -270,7 +270,9 @@ export function rpgBlessuresDepuis(duel, position = 0) {
 /**
  * La dernière blessure d'une créature : `{ entityId, cote, elements,
  * sourceCarteId, recus, absorbes, pvApres, bouclierApres, mortelle }`.
- * `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
+ * `absorbes` reste dans le contrat du journal mais vaut toujours 0 depuis
+ * que la parade ne prévient plus les dégâts (elle ne tombe que devant un
+ * sort). `pvApres`/`bouclierApres` disent si l'état actuel de la créature est
  * **encore** celui de cette blessure — la table n'allume donc la roue de feu
  * que pour un coup qui vient de tomber, jamais pour une ancienne brûlure.
  * `sourceCarteId` nomme la carte du coup quand le moteur la connaît (magie,
@@ -1248,7 +1250,9 @@ export function rpgEstProtegeeDesSorts(entite, element, sourceType = 'magie') {
     && couleursProtegees.some((couleur) => couleursSources.includes(couleur));
 }
 
-/** Les boucliers absorbent les prochains dégâts avant qu'ils n'atteignent les PV. */
+/** La réserve de bouclier du SORCIER (le pacte de la Tour oubliée) absorbe
+ *  encore les dégâts avant les PV. Ce n'est pas la parade des créatures :
+ *  celle-ci, décrite plus bas, bloque un sort au lieu d'encaisser des coups. */
 function rpgInfligerSorcier(duel, cote, amount) {
   const camp = duel[cote];
   const degats = Math.max(0, amount);
@@ -1308,10 +1312,12 @@ function creerEntiteCreature(carte) {
     def: carte.def,
     pv: carte.def,
     pvMax: carte.def,
+    // 0 = pas de parade, 1 = une parade anti-sort prête. Il n'y en a jamais
+    // plus d'une : voir `briserBouclier` et le `case 'bouclier'`.
     bouclier: 0,
     bouclierLumiere: false,
-    // Un bouclier déjà tombé reste lisible dans l'aperçu (pastille et texte
-    // grisés) jusqu'à ce qu'un nouveau bouclier le remplace.
+    // Une parade déjà tombée reste lisible dans l'aperçu (pastille et texte
+    // grisés) jusqu'à ce qu'une nouvelle parade la remplace.
     bouclierEpuise: false,
     auraSableBonus: 0,
     auraAmaniBonus: 0,
@@ -1428,22 +1434,36 @@ function armeCarteDe(entite) {
 }
 
 /**
- * Fait encaisser un montant par le bouclier d'une créature et rend ce qui a
- * été absorbé. Le point encore porté par une arme (`entite.arme.bouclier`)
- * encaisse en premier : quand l'arme tombera, seul ce
- * reliquat-là repartira avec elle — un bouclier venu d'un sort ou d'une
- * arrivée ne peut donc pas être volé par un simple changement d'arme.
+ * LE BOUCLIER D'UNE CRÉATURE — une parade anti-sort, pas une armure.
+ *
+ * Tant qu'il tient, le bouclier bloque **le premier sort adverse qui désigne
+ * la créature** : le sort est payé et va au cimetière, mais aucun de ses effets
+ * ne se résout. Le bouclier tombe alors en entier, quelle que soit la valeur
+ * affichée — un seul sort est bloqué, pas un par point. Les sorts du camp de
+ * la créature (Parade de verre, renforts…) ne sont jamais bloqués, et les
+ * sorts de zone, qui ne désignent personne, passent sous la garde.
+ *
+ * Les dégâts — attaques, capacités, sorts de zone — ne sont plus absorbés :
+ * les points de bouclier ne sont donc dépensés que par `briserBouclier`.
+ * Le champ `bouclier` reste numérique (1 = parade prête, 0 = tombée) pour
+ * que la table, les aperçus et l'animation d'égide continuent de le lire.
  */
-function absorberBouclier(entite, montant) {
-  const absorbes = Math.min(entite.bouclier ?? 0, Math.max(0, montant));
-  entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - absorbes);
-  if (absorbes > 0 && entite.bouclier === 0 && !entite.bouclierLumiere) {
-    entite.bouclierEpuise = true;
-  }
-  if (entite.arme?.bouclier) {
-    entite.arme.bouclier = Math.max(0, entite.arme.bouclier - absorbes);
-  }
-  return absorbes;
+export function rpgBouclierEstActif(entite) {
+  return (entite?.bouclier ?? 0) > 0;
+}
+
+/**
+ * Fait tomber la parade d'une créature et rend la valeur encore affichée
+ * avant sa chute (l'impact visuel de l'égide s'en sert). La part prêtée par
+ * une arme (`entite.arme.bouclier`) tombe avec elle : un changement d'arme
+ * ne réarme pas la parade.
+ */
+function briserBouclier(entite) {
+  const montant = Math.max(0, Number(entite.bouclier) || 0);
+  entite.bouclier = 0;
+  if (entite.arme?.bouclier) entite.arme.bouclier = 0;
+  if (!entite.bouclierLumiere) entite.bouclierEpuise = true;
+  return montant;
 }
 
 /**
@@ -1474,13 +1494,13 @@ function attacherArme(duel, cote, entite, carteArme) {
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
   entite.pv += carteArme.bonus?.def ?? 0;
-  // Un bouclier éventuellement donné par l'arme rejoint la réserve qui
-  // absorbera les prochains dégâts ; sa part encore intacte vit sur l'arme
-  // elle-même pour repartir avec elle si elle est remplacée.
+  // L'arme peut poser la parade anti-sort sur son porteur. Il n'y a jamais
+  // qu'UNE parade : la valeur est ramenée à 1, et la part encore intacte vit
+  // sur l'arme elle-même pour repartir avec elle si elle est remplacée.
   const bouclierDonne = Math.max(0, Math.floor(Number(carteArme.donne?.bouclier) || 0));
   if (bouclierDonne) {
-    entite.arme.bouclier = bouclierDonne;
-    entite.bouclier = (entite.bouclier ?? 0) + bouclierDonne;
+    entite.arme.bouclier = 1;
+    entite.bouclier = 1;
     entite.bouclierEpuise = false;
   }
   if (carteArme.donne?.esquive) entite.esquive = true;
@@ -1987,11 +2007,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const furieuses = [];
   for (const blessure of blessures.values()) {
     const { entite, montant, cote } = blessure;
-    let recus = 0;
-    for (const coupRecu of blessure.coups ?? [{ amount: montant, sourceKey: 'unique' }]) {
-      const absorbes = absorberBouclier(entite, coupRecu.amount);
-      recus += coupRecu.amount - absorbes;
-    }
+    // Le bouclier n'encaisse plus les coups : il ne tombe que devant un sort
+    // qui désigne la créature (voir `rpgLancerMagie`). Tous les dégâts de
+    // combat cumulés atteignent donc les PV tels quels.
+    const recus = montant;
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
@@ -2950,16 +2969,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'bouclier': {
-      if (effet.cible === 'creature-amie') {
+      if (effet.cible === 'creature-amie' || effet.cible === 'soi') {
         // Sans autre allié (ou lors d’une réanimation), la Veilleuse retombe
-        // sur sa propre entité : son arrivée ne se perd jamais.
-        const entite = duel[cote].creatures.find((e) => e.id === (cibleId ?? sauf));
+        // sur sa propre entité : son arrivée ne se perd jamais. Salem, lui,
+        // déclare `cible: 'soi'` : sa parade ne peut jamais être détournée
+        // vers un autre allié, même si un `cibleId` traîne. Une seule parade
+        // par créature : `amount` ne s'additionne plus, il réarme la
+        // protection contre le prochain sort adverse.
+        const visee = effet.cible === 'soi' ? sauf : (cibleId ?? sauf);
+        const entite = duel[cote].creatures.find((e) => e.id === visee);
         if (entite && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) {
-          entite.bouclier = (entite.bouclier ?? 0) + (effet.amount ?? 0);
-          if (entite.bouclier > 0) entite.bouclierEpuise = false;
+          entite.bouclier = 1;
+          if (entite.arme?.bouclier) entite.arme.bouclier = 0;
+          entite.bouclierEpuise = false;
         }
       } else {
+        // La réserve du sorcier, elle, reste une armure de dégâts (pacte de
+        // la Tour oubliée) : elle continue d'additionner les points.
         duel[cote].bouclier = (duel[cote].bouclier ?? 0) + (effet.amount ?? 0);
       }
       return;
@@ -3898,9 +3925,12 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   if (tenterEsquive(duel, entite, sourceType)) {
     return { ok: true, recus: 0, absorbes: 0, esquive: true };
   }
+  // Plus aucun dégât n'est absorbé par la parade : celle-ci ne tombe que
+  // devant un sort qui désigne la créature (`rpgLancerMagie`). `absorbes`
+  // reste dans le journal et le résultat, à zéro, pour les lecteurs habituels.
   const apresEsquive = Math.max(0, amount);
-  const absorbes = absorberBouclier(entite, apresEsquive);
-  const recus = apresEsquive - absorbes;
+  const absorbes = 0;
+  const recus = apresEsquive;
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
   const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
@@ -4331,9 +4361,11 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
     // n'en portent pas, ce qui évite qu'une cible quelconque — un Boualem
     // adverse par exemple — n'intercepte un effet qui ne la visait pas.
-    const cibleArrivee = carte.arrivee.cible
-      ? (carte.arrivee.cible === 'creature-amie' ? (cibleId ?? entite.id) : cibleId)
-      : null;
+    // `cible: 'soi'` (la parade de Salem) ne désigne personne sur la table :
+    // l'effet trouvera son porteur dans `sauf`, l'id de la créature qui arrive.
+    let cibleArrivee = null;
+    if (carte.arrivee.cible === 'creature-amie') cibleArrivee = cibleId ?? entite.id;
+    else if (carte.arrivee.cible && carte.arrivee.cible !== 'soi') cibleArrivee = cibleId;
     appliquer(duel, cote, effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
       entite.id, cardColors(carte), 'capacite', carte.id);
     journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
@@ -4582,10 +4614,10 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     if (!cible) return { ok: false, raison: 'cible' };
   }
   // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
-  // porteur AVANT de lui donner quoi que ce soit — le bouclier qu'elle
-  // accorde ne saurait donc absorber sa propre morsure. Un porteur qui
-  // succombe ne porte rien : l'arme tombe au cimetière avec lui, comme si
-  // son porteur était mort en la prenant.
+  // porteur AVANT de lui donner quoi que ce soit. La parade qu'elle accorde
+  // ensuite ne bloque que les sorts : cette morsure — une capacité — passe
+  // de toute façon. Un porteur qui succombe ne porte rien : l'arme tombe au
+  // cimetière avec lui, comme si son porteur était mort en la prenant.
   if (Math.max(0, Number(carte.blessurePorteur) || 0) > 0) {
     const morsure = Math.max(0, Number(carte.blessurePorteur) || 0);
     duel.log.push(`${carte.name} mord ${cible.name} en s’attachant (${morsure} dégât${morsure > 1 ? 's' : ''}).`);
@@ -4930,6 +4962,28 @@ function entiteCiblableParSort(entite, carte) {
     && !rpgEstProtegeeDesSorts(entite, cardColors(carte));
 }
 
+/** Portées qui frappent une zone sans désigner une seule créature. Même si
+ *  l'interface transmet un `cibleId` pour l'animation, ces sorts ne sont pas
+ *  des sorts « ciblants » : la parade ne les arrête pas. */
+const CIBLES_SORT_ZONE = new Set([
+  'creatures-adverses', 'toutes-alliees', 'toutes-creatures', 'toutes-autres', 'toutes',
+]);
+const sortViseUneZone = (carte) => CIBLES_SORT_ZONE.has(carte?.effet?.cible);
+
+/**
+ * Le bouclier d'une créature est une parade à usage unique : elle bloque le
+ * premier sort ADVERSE qui la désigne. La créature reste une cible légale —
+ * c'est même ainsi que la parade se consume — mais le sort ne résout rien.
+ * Un sort du camp de la créature (renfort, Parade de verre, Défi du Jarl sur
+ * son propre champion) ne peut pas être bloqué ; un sort de zone, qui ne
+ * désigne personne (`cibleId` nul), passe sous la garde.
+ */
+function bouclierQuiBloque(duel, cote, cibleId) {
+  if (!cibleId || cibleId === 'sorcier') return null;
+  const visee = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+  return rpgBouclierEstActif(visee) ? visee : null;
+}
+
 /**
  * Ce sort a-t-il, là, tout de suite, de quoi se lancer ?
  *
@@ -5143,6 +5197,27 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     payer(duel, cote, carte);
   }
   camp.main.splice(camp.main.indexOf(carteId), 1);
+  // Le bouclier de la créature visée bloque le sort : la carte est payée et
+  // part au cimetière, mais AUCUN effet ne se résout — pas même la pioche ou
+  // le gel attachés au sort. La parade tombe en entier. On place ce test
+  // après le contre (un sort contrecarré n'use pas le bouclier) et après le
+  // paiement (la parade bloque l'effet, pas le lancement).
+  const bouclierBloquant = sortViseUneZone(carte) ? null : bouclierQuiBloque(duel, cote, cibleId);
+  if (bouclierBloquant) {
+    const montant = briserBouclier(bouclierBloquant);
+    if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
+    duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
+    duel.log.push(`Le bouclier de ${bouclierBloquant.name} bloque ${carte.name} et tombe.`);
+    rpgActionsEtat(duel);
+    return {
+      ok: true,
+      bouclierBloque: true,
+      bouclierEntityId: bouclierBloquant.id,
+      bouclierMontant: montant,
+      renvoiMain: false,
+      renvoiEntityId: null,
+    };
+  }
   const effet = carte.effet.type === 'degats'
     && carte.effet.cible === 'creature'
     && cibleId === 'sorcier'
@@ -5715,11 +5790,12 @@ export function rpgLancerAttaque(
       traquesCombat.push({ attaquant: attaquant.name, cible: proieTraquee.name, bonus: bonusTraque });
     }
     // Overkill (le Serpent du monde) : comme le Piétinement — la force qui
-    // dépasse ce qu'il faut pour terrasser les bloqueurs (PV et boucliers
-    // compris) continue sa course jusqu'au sorcier défenseur.
+    // dépasse ce qu'il faut pour terrasser les bloqueurs continue sa course
+    // jusqu'au sorcier défenseur. Le bouclier n'encaisse plus de dégâts :
+    // seuls les PV comptent dans le calcul de l'excédent.
     if (attaquant.overkill) {
       const encaissable = bloqueurs.reduce((total, bloqueur) => total
-        + Math.max(0, bloqueur.pv + (bloqueur.bouclier ?? 0)), 0);
+        + Math.max(0, bloqueur.pv), 0);
       const forceOverkill = forcesAttaquant.get(attaquant.id) ?? forceCombat(attaquant);
       const exces = Math.max(0, forceOverkill + bonusTraque - encaissable);
       if (exces > 0) {

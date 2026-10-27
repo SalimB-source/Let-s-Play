@@ -483,7 +483,7 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
 
   // Furie du catalogue : 1 pour le Loup, 2 pour le Berserk et le Jarl,
   // 3 pour le Maître du marteau. Le Guerrier au bouclier rond a perdu sa
-  // Furie dans sa révision (2/2, bouclier de 2). Les faces se contentent de
+  // Furie dans sa révision (2/2, une parade anti-sort). Les faces se contentent de
   // « Furie X. » : aucune ne récite la règle de soin et de réactivation.
   for (const [id, furie] of [
     ['loup-des-neiges', 1],
@@ -544,15 +544,16 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   assert.equal(duel.joueur.cimetiere.includes('berserk-des-trois-hivers'), true);
 
   // Le Guerrier au bouclier rond a perdu sa Furie dans sa révision : c’est
-  // désormais un 2/2 dont le bouclier de 2 encaisse les deux premiers coups.
+  // un 2/2 dont la parade bloque un sort adverse sans absorber de dégâts.
   donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond').entite;
-  assert.deepEqual([guerrier.atk, guerrier.def, guerrier.bouclier], [2, 2, 2]);
+  assert.deepEqual([guerrier.atk, guerrier.def, guerrier.bouclier], [2, 2, 1]);
   assert.equal(guerrier.furie, undefined, 'plus aucune Furie imprimée');
-  assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 2, 'braise').recus, 0,
-    'le bouclier de 2 absorbe l’intégralité du coup');
+  assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise').recus, 1,
+    'un coup ordinaire traverse la parade');
   assert.equal(guerrier.furieDeclenchee, false, 'rien ne s’allume : le Guerrier n’a plus de Furie');
-  assert.equal(guerrier.pv, 2, 'ses PV restent intacts sous le bouclier');
+  assert.equal(guerrier.pv, 1, 'ses PV sont entamés');
+  assert.equal(guerrier.bouclier, 1, 'et la parade tient toujours : seul un sort la brise');
 
   // Furie 3 : le Jarl 2/5 devient 5/4 après un point de dégâts.
   donner(duel, 'joueur', 'jarl-au-marteau-de-guerre');
@@ -2576,7 +2577,7 @@ test('Sahir : une répartition invalide ne consomme ni capacité ni bouclier', (
   assert.equal(JSON.stringify(duel), avant, 'aucun dégât, cimetière, pioche ou journal modifié');
 });
 
-test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
+test('Sahir : une parade ne prévient plus les dégâts du partage', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
   donnerMana(duel, 'sorcier', 30);
@@ -2587,7 +2588,7 @@ test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
     return (id === 'seigneur-des-machoires' ? jouerGros(duel, 'sorcier') : rpgJouerCreature(duel, 'sorcier', id)).entite;
   });
   sahir.ready = true;
-  bloqueurs[0].bouclier = 2;
+  bloqueurs[0].bouclier = 1;
   const pvEsquive = bloqueurs[0].pv;
   // Jet d'esquive manqué (au-dessus du seuil de 30 %) : l'Onna-musha encaisse
   // la blessure normale, que le test veut voir passer.
@@ -2595,8 +2596,8 @@ test('Sahir : les boucliers préservent les bloqueurs pour le partage', () => {
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
   assert.equal(res.ok, true);
   assert.deepEqual(res.resume.repartitions[sahir.id], Object.fromEntries(bloqueurs.map(b => [b.id, 1])));
-  assert.equal(bloqueurs[0].bouclier, 0);
-  assert.equal(bloqueurs[0].pv, pvEsquive - 1, 'le bouclier absorbe la capacité, la blessure normale passe');
+  assert.equal(bloqueurs[0].bouclier, 1, 'la parade ne tombe pas sous une capacité');
+  assert.equal(bloqueurs[0].pv, pvEsquive - 3, 'capacité et blessures normales passent toutes');
   assert.equal(bloqueurs[1].pv, 3);
 });
 
@@ -3077,21 +3078,23 @@ test('les dégâts encaissés se comptent : la magie compte pour la quête « le
   assert.equal(duel.sorcier.pv, RPG_PV_SORCIER_BASE - 3);
 });
 
-test('la Veilleuse gagne son bouclier dès son arrivée et absorbe les premiers dégâts', () => {
+test('la Veilleuse gagne sa parade dès son arrivée, qui ne prévient aucun dégât', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'veilleuse-des-citernes');
   const veilleuse = rpgJouerCreature(duel, 'joueur', 'veilleuse-des-citernes').entite;
-  assert.equal(veilleuse.bouclier, 2);
+  assert.equal(veilleuse.bouclier, 1);
   const degats = rpgBlesserCreature(duel, 'joueur', veilleuse.id, 3);
-  assert.equal(degats.absorbes, 2);
-  assert.equal(veilleuse.pv, 1);
+  assert.equal(degats.absorbes, 0);
+  assert.equal(degats.recus, 3, 'les 3 dégâts passent entièrement');
+  assert.equal(veilleuse.bouclier, 1, 'la parade reste en place : ce n’est pas une armure');
+  assert.ok(!duel.joueur.creatures.includes(veilleuse), 'la 1/2 meurt sous le coup');
 });
 
 test('la Veilleuse protège un allié choisi, ou elle-même quand elle est seule', () => {
   const carte = cardById('veilleuse-des-citernes');
   assert.deepEqual([carte.atk, carte.def], [1, 2]);
-  assert.deepEqual(carte.arrivee, { type: 'bouclier', amount: 2, cible: 'creature-amie', choisirCible: true });
+  assert.deepEqual(carte.arrivee, { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true });
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
@@ -3100,14 +3103,14 @@ test('la Veilleuse protège un allié choisi, ou elle-même quand elle est seule
   donner(duel, 'joueur', 'veilleuse-des-citernes');
   const pose = rpgJouerCreature(duel, 'joueur', 'veilleuse-des-citernes', allie.id);
   assert.equal(pose.ok, true);
-  assert.equal(allie.bouclier, 2, 'le bouclier va à l’allié désigné');
+  assert.equal(allie.bouclier, 1, 'la parade va à l’allié désigné');
   assert.equal(pose.entite.bouclier ?? 0, 0, 'la Veilleuse ne se donne pas le bouclier à la place de l’allié');
 
   const solo = duelDeBase();
   donnerMana(solo, 'joueur', 10);
   donner(solo, 'joueur', 'veilleuse-des-citernes');
   const seule = rpgJouerCreature(solo, 'joueur', 'veilleuse-des-citernes').entite;
-  assert.equal(seule.bouclier, 2, 'sans autre allié, le repli protège la Veilleuse');
+  assert.equal(seule.bouclier, 1, 'sans autre allié, le repli protège la Veilleuse');
 });
 
 test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un allié', () => {
@@ -3121,7 +3124,7 @@ test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un
   assert.equal(pose.arriveeEnAttente, true);
   assert.equal(allie.bouclier ?? 0, 0, 'le bouclier attend le choix de la cible');
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', allie.id).ok, true);
-  assert.equal(allie.bouclier, 2);
+  assert.equal(allie.bouclier, 1);
   assert.equal(duel.arriveeEnAttente, null);
 
   const solo = duelDeBase();
@@ -3130,7 +3133,7 @@ test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un
   const poseSolo = rpgJouerCreature(solo, 'joueur', 'veilleuse-des-citernes', null, { cibleDifferee: true });
   assert.equal(poseSolo.ok, true);
   assert.equal(poseSolo.arriveeEnAttente, undefined, 'le repli solo ne bloque pas la pose');
-  assert.equal(poseSolo.entite.bouclier, 2);
+  assert.equal(poseSolo.entite.bouclier, 1);
 });
 
 test('la Valkyrie des glaces protège contre tous les sorts', () => {
@@ -3368,18 +3371,33 @@ test('les héros sont des cartes du paquet, pas de la main de départ', () => {
   assert.ok(true);
 });
 
-test('Salem reçoit un bouclier de lumière qui absorbe le premier impact ennemi', () => {
+test('Salem arrive avec Bouclier, Rapidité et Contre-attaque — plus de bouclier de lumière', () => {
   const duel = duelDeBase();
+  const carte = cardById('salem');
+  assert.equal(carte.rapidite, true, 'il garde sa Rapidité');
+  assert.equal(carte.contreAttaque, true, 'et gagne la Contre-attaque');
+  assert.equal(carte.arrivee.type, 'bouclier', 'son ancien bouclier de lumière devient une parade anti-sort');
+  assert.equal(carte.arrivee.cible, 'soi', 'la parade protège Salem lui-même, sans désignation');
+  assert.match(carte.text, /prochain sort adverse/, 'le texte annonce le sort bloqué');
+  assert.doesNotMatch(carte.text, /bouclier de lumière|ne peut pas subir de dégâts/,
+    'plus aucune invulnérabilité n’est imprimée');
+
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'salem');
   const salem = rpgJouerCreature(duel, 'joueur', 'salem').entite;
-  assert.equal(salem.bouclierLumiere, true);
-  const premier = rpgBlesserCreature(duel, 'joueur', salem.id, 3, ['braise'], null, 'magie');
-  assert.equal(premier.bouclierLumiere, true);
-  assert.equal(salem.pv, 3);
-  assert.equal(salem.bouclierLumiere, false);
-  assert.equal(rpgBlesserCreature(duel, 'joueur', salem.id, 1, ['braise'], null, 'magie').recus, 1);
-  assert.equal(salem.pv, 2);
+  assert.equal(salem.bouclier, 1, 'la parade veille dès l’arrivée');
+  assert.equal(salem.bouclierLumiere, false, 'aucun bouclier de lumière ne le couvre');
+  assert.equal(salem.rapidite, true, 'Rapidité est portée par l’entité');
+  assert.equal(salem.ready, true, 'il peut attaquer le tour où il arrive');
+  assert.equal(salem.contreAttaque, true, 'la riposte est portée par l’entité');
+
+  // La parade n’est plus une armure : une attaque frappe directement les PV,
+  // sans entamer le bouclier — celui-ci attend un sort adverse.
+  const coup = rpgBlesserCreature(duel, 'joueur', salem.id, 1, ['braise'], null, 'attaque');
+  assert.equal(coup.recus, 1, 'les dégâts passent entièrement');
+  assert.equal(coup.absorbes, 0, 'rien n’est absorbé');
+  assert.equal(salem.pv, 2, 'Salem tombe de 3 à 2 PV');
+  assert.equal(salem.bouclier, 1, 'et la parade reste prête');
 });
 
 test('Yamina soigne toutes les créatures alliées de 2 et rend 5 PV au joueur', () => {
@@ -3944,7 +3962,7 @@ test('la répartition des dégâts doit exactement égaler la force de l’attaq
   assert.equal(seigneur.attaquee, false, 'une répartition invalide n’engage pas l’attaquant');
 });
 
-test('Parade et Trait de braise sont des magies rapides de réponse; le bouclier absorbe les dégâts', () => {
+test('Parade et Trait de braise sont des magies rapides de réponse ; la parade bloque un sort', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donnerMana(duel, 'sorcier', 10);
@@ -3971,18 +3989,27 @@ test('Parade et Trait de braise sont des magies rapides de réponse; le bouclier
   donnerMana(duel, 'joueur', 2);
   const parade = rpgLancerMagie(duel, 'joueur', 'parade-du-verre', chien.id);
   assert.equal(parade.ok, true);
-  assert.equal(chien.bouclier, 3);
+  assert.equal(chien.bouclier, 1);
   assert.equal(chien.bouclierEpuise, false);
   assert.ok(duel.joueur.cimetiere.includes('parade-du-verre'), 'la Parade résolue va au cimetière');
 
-  const premierCoup = rpgBlesserCreature(duel, 'joueur', chien.id, 2);
-  assert.equal(premierCoup.absorbes, 2);
-  assert.equal(chien.pv, 2, 'les premiers dégâts ne traversent pas le bouclier');
-  assert.equal(chien.bouclierEpuise, false, 'il reste un point : le bouclier tient encore');
-  rpgBlesserCreature(duel, 'joueur', chien.id, 2);
-  assert.equal(chien.pv, 1, 'le point de bouclier restant absorbe un dégât');
-  assert.equal(chien.bouclier, 0);
-  assert.equal(chien.bouclierEpuise, true, 'le dernier point absorbé marque le bouclier tombé');
+  const premierCoup = rpgBlesserCreature(duel, 'joueur', chien.id, 1);
+  assert.equal(premierCoup.absorbes, 0, 'la parade n’absorbe plus aucun dégât');
+  assert.equal(chien.pv, 1, 'un coup ordinaire traverse la parade');
+  assert.equal(chien.bouclier, 1, 'la parade reste debout');
+  assert.equal(chien.bouclierEpuise, false, 'rien ne l’a encore fait tomber');
+  // La parade tombe devant un sort adverse : la Poigne de givre du sorcier
+  // ne fait ni dégât ni gel, mais elle est payée et part au cimetière.
+  duel.fenetreReponse = false;
+  donner(duel, 'sorcier', 'poigne-de-givre');
+  const poigne = rpgLancerMagie(duel, 'sorcier', 'poigne-de-givre', chien.id);
+  assert.equal(poigne.ok, true);
+  assert.equal(poigne.bouclierBloque, true, 'le sort est bloqué par la parade');
+  assert.equal(chien.bouclier, 0, 'la parade tombe en entier');
+  assert.equal(chien.bouclierEpuise, true, 'et se marque comme tombée');
+  assert.equal(chien.pv, 1, 'les 2 dégâts de la Poigne ne passent pas');
+  assert.equal(chien.gelToursRestants ?? 0, 0, 'ni le gel attaché au sort');
+  assert.ok(duel.sorcier.cimetiere.includes('poigne-de-givre'), 'le sort bloqué va au cimetière');
 });
 
 test('Parade de verre ne se lance pas si sa créature cible est absente', () => {
@@ -4121,18 +4148,19 @@ test('Le Grand Hiver : 1 dégât à toutes les créatures, les deux camps compri
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === tislitAlliee.id), false,
     'la créature alliée 1/1 meurt de la même vague');
   assert.equal(duel.joueur.cimetiere.includes('grand-hiver'), true, 'la sorcellerie rejoint le cimetière');
-  // Un bouclier garde ses droits, comme contre tout dégât.
+  // Une parade ne bloque pas une vague de zone : elle ne tombe que devant un
+  // sort qui DÉSIGNE la créature. Le Grand Hiver ne désigne personne.
   const duel2 = duelDeBase();
   donnerMana(duel2, 'joueur', 8);
   donnerMana(duel2, 'sorcier', 8);
-  donner(duel2, 'sorcier', 'guerrier-au-bouclier-rond'); // 2/2, bouclier 2
+  donner(duel2, 'sorcier', 'guerrier-au-bouclier-rond'); // 2/2, parade
   const guerrier = rpgJouerCreature(duel2, 'sorcier', 'guerrier-au-bouclier-rond').entite;
-  assert.equal(guerrier.bouclier, 2);
+  assert.equal(guerrier.bouclier, 1);
   const pvGuerrier = guerrier.pv;
   donner(duel2, 'joueur', 'grand-hiver');
   assert.equal(rpgLancerMagie(duel2, 'joueur', 'grand-hiver').ok, true);
-  assert.equal(guerrier.bouclier, 1, 'le bouclier de 2 encaisse la vague et garde un point');
-  assert.equal(guerrier.pv, pvGuerrier, 'et la créature ne perd aucun PV');
+  assert.equal(guerrier.bouclier, 1, 'la parade reste : la zone ne la concerne pas');
+  assert.equal(guerrier.pv, pvGuerrier - 1, 'et le dégât de zone passe normalement');
 });
 
 test('Défi du Jarl : le champion allié se bat avec la créature adverse ciblée', () => {

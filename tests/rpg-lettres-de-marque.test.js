@@ -463,7 +463,10 @@ test('les jetons sont prisables par l’abordage : on les met en cale', () => {
   // (Abordage 5) refuse de la désigner.
   donner(duel, 'joueur', 'salem');
   const salem = jouer(duel, 'joueur', 'salem').entite;
-  salem.bouclierLumiere = false;
+  // Sa parade anti-sort ne le couvre plus au combat : il n'y a plus de
+  // bouclier de lumière à éteindre avant la frappe de l'amirale.
+  assert.equal(salem.bouclier, 1, 'Salem arrive avec son bouclier anti-sort');
+  assert.equal(salem.bouclierLumiere, false, 'et sans bouclier de lumière');
   donner(duel, 'sorcier', 'la-barbe-rousse');
   assert.equal(jouer(duel, 'sorcier', 'la-barbe-rousse', salem.id).ok, false, 'on ne met pas une figure en cale');
   const amirale = jouer(duel, 'sorcier', 'la-barbe-rousse').entite;

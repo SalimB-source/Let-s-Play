@@ -182,14 +182,14 @@ test('la leçon Samouraï installe la Résonance, les jetons et la Bannière', (
     'la Bannière grandit chaque Samouraï qui attaque');
 });
 
-test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furies', () => {
+test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', () => {
   const tutoriel = tutorielParId('serment-des-neuf-hivers');
   assert.ok(tutoriel.steps.some((etape) => etape.id === 'appel-viking'),
     'la leçon nomme la nouvelle arrivée de la Valkyrie');
   const duel = duelDeLecon(tutoriel);
   const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond');
   assert.equal(guerrier.ok, true);
-  assert.equal(guerrier.entite.bouclier, 2, 'le Guerrier arrive avec un bouclier 2');
+  assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec une parade');
   const mainAvantValkyrie = duel.joueur.main.length;
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');
   assert.equal(valkyrie.ok, true);
@@ -205,16 +205,18 @@ test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furi
     'la carte amenée par la Valkyrie porte le type Viking');
 
   const ennemi = duel.sorcier.creatures.find((entite) => entite.carteId === 'guerrier-au-bouclier-rond');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', ennemi.id).ok, true);
-  assert.ok(ennemi.gelToursRestants > 0, 'la Poigne gèle même quand le bouclier encaisse tout');
-  assert.equal(ennemi.bouclier, 0, 'les 2 dégâts consument le bouclier 2');
+  const poigne = rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', ennemi.id);
+  assert.equal(poigne.ok, true);
+  assert.equal(poigne.bouclierBloque, true, 'la parade du Guerrier bloque la Poigne');
+  assert.equal(ennemi.gelToursRestants ?? 0, 0, 'le sort entier est bloqué : aucun gel');
+  assert.equal(ennemi.bouclier, 0, 'la parade tombe après avoir bloqué son sort');
+  assert.equal(ennemi.bouclierEpuise, true, 'et se marque comme tombée');
   assert.deepEqual(
     [ennemi.atk, ennemi.pv, ennemi.pvMax],
     [2, 2, 2],
-    'le bouclier absorbe tout : la 2/2 reste intacte',
+    'le sort bloqué ne fait aucun dégât : la 2/2 reste intacte',
   );
-  assert.ok(!ennemi.furieDeclenchee,
-    'le Guerrier n’a plus de Furie — le gel le tient de toute façon hors du combat');
+  assert.ok(!ennemi.furieDeclenchee, 'le Guerrier n’a plus de Furie');
   assert.equal(duel.joueur.mana.neige, 0, 'les trois cartes de la leçon consomment les dix manas');
 
   preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'furie'));
@@ -222,17 +224,18 @@ test('la leçon Neige appelle un Viking, gèle un adversaire et active deux Furi
   assert.deepEqual([berserk.atk, berserk.def, berserk.pv], [2, 4, 4],
     'la leçon installe le Berserk 2/4 comme défenseur de la riposte');
   rpgFinDeTour(duel);
-  const loup = duel.sorcier.creatures.find((entite) => entite.carteId === 'loup-des-neiges');
-  assert.deepEqual([loup.atk, loup.def, loup.pv], [2, 2, 2]);
-  assert.equal(rpgLancerAttaque(duel, 'sorcier', [loup.id], { [loup.id]: [berserk.id] }, null,
-    [loup.id], {}, { attaqueDeclaree: true }).ok, true);
+  // Le Guerrier adverse n'était pas gelé : c'est lui qui charge. Sa parade
+  // tombée n'encaisse aucun dégât de combat.
+  assert.deepEqual([ennemi.atk, ennemi.def, ennemi.pv], [2, 2, 2]);
+  assert.equal(rpgLancerAttaque(duel, 'sorcier', [ennemi.id], { [ennemi.id]: [berserk.id] }, null,
+    [ennemi.id], {}, { attaqueDeclaree: true }).ok, true);
   assert.deepEqual(
     [berserk.furieDeclenchee, berserk.furieBonusAtk, berserk.atk, berserk.pv, berserk.pvMax],
     [true, 2, 4, 2, 4],
     'le Berserk tombe à 2 PV : sa Furie 2 lui donne +2/+0',
   );
-  assert.equal(duel.sorcier.creatures.includes(loup), false,
-    'les 2 dégâts du Berserk détruisent le Loup 2/2');
+  assert.equal(duel.sorcier.creatures.includes(ennemi), false,
+    'les 2 dégâts du Berserk détruisent le Guerrier 2/2, malgré sa parade tombée');
   assert.equal(duel.joueur.pv, 25, 'aucun dégât ne passe au joueur');
 });
 

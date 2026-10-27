@@ -8893,3 +8893,94 @@ Contrôles : `npm run check:rpg` (la tour et ses types dans
 maquette et l'ambiance dans leurs suites, plus la couverture générique des
 decks composés, des plateaux, des crédits et des boosters). Conception :
 `docs/rpg/21-tour-du-sablier-renverse.md`.
+
+## Le Sablier : le bouclier bloque un sort au lieu d'absorber des dégâts
+
+Le **bouclier d'une créature** change de nature : ce n'est plus une réserve de
+points qui encaisse les blessures, mais une **parade anti-sort à usage unique**.
+Tant qu'il tient, le premier sort adverse qui **désigne** la créature est
+bloqué : la carte est payée et rejoint le cimetière, mais **aucun** de ses
+effets ne se résout — ni les dégâts, ni le gel, ni la pioche attachée au sort.
+Le bouclier tombe alors **en entier** (`bouclier = 0`, `bouclierEpuise = true`)
+et l'égide joue sa rupture comme avant. Un seul sort est bloqué, quelle que
+soit la valeur affichée : toutes les sources n'en posent plus qu'un
+(`amount: 1` — Guerrier au bouclier rond, Veilleuse des citernes, Tour de sable,
+Parade de verre, Hache de la banquise).
+
+Ce que la parade **ne** fait pas :
+
+- elle n'absorbe aucun dégât — attaques, capacités, Harakiri et combat
+  frappent directement les PV (`rpgBlesserCreature` et
+  `appliquerDegatsDeCombatSimultanes` ne touchent plus au bouclier) ;
+- elle ne bloque pas un sort de zone, qui ne désigne personne (le Grand Hiver
+  passe sous la garde) ;
+- elle ne bloque pas un sort du camp de la créature (la Parade de verre, un
+  renfort, le champion du Défi du Jarl) ;
+- elle ne concerne pas la **réserve du sorcier** du pacte de la Tour oubliée :
+  celle-ci reste une armure de dégâts, bornée par `RPG_ATOUTS_MAX`.
+
+Le contrôle se fait dans `rpgLancerMagie`, après les contrôles de légalité,
+après un éventuel contresort (un sort contrecarré n'use pas la parade) et
+après le paiement du mana : `bouclierQuiBloque` ne retient qu'une créature du
+camp adverse désignée par `cibleId`, puis `briserBouclier` fait tomber la
+parade, part d'arme comprise — changer d'arme ne la réarme pas. Le résultat
+porte `bouclierBloque`, `bouclierEntityId` et `bouclierMontant` ; le journal
+du duel annonce le blocage. Le bouclier de lumière de la Dame aux ailes d'or
+reste, lui, ce qu'il était : la première attaque ou magie ennemie ne touche
+pas. Salem, désormais, utilise la parade ordinaire (voir la section suivante).
+
+Textes et pédagogie suivent : les cinq cartes qui posent une parade, la leçon
+« Un bouclier bloque un sort » (`rpgCardLessons.js`), la pastille et
+l'explication du mot-clé (`effetIcons.js`), la description lue des cartes, la
+leçon Neige du tutoriel — où la Poigne de givre se brise sur le Guerrier
+adverse — et les fiches de conception. L'IA ne compte plus la parade dans
+`blessureNette`, `meurtSous` ni l'Overkill ; `valeurEntite` la paie comme un
+sort adverse gâché et `meilleuresOptionsOffensives` évite de viser une parade
+quand une meilleure cible existe. `rpgCardPower` la valorise de même.
+
+Contrôles : `npm run check:rpg` (la nouvelle suite
+`tests/rpg-bouclier-sort.test.js` couvre le blocage, le paiement, la chute,
+les sorts alliés, la zone, les blessures, l'arme et le sorcier), les tests du
+tutoriel, des armes et du moteur, plus `node scripts/rpg-bouclier-check.mjs`
+pour l'égide et sa rupture.
+
+## Le Sablier : Salem passe à Bouclier + Rapidité + Contre-attaque
+
+La fiche de **Salem** (`RPG_HERO_CARDS`, 4/3 pour 4 manas) change d'effet :
+son **bouclier de lumière** — l'invulnérabilité jusqu'au premier coup — disparaît.
+Il arrive désormais avec les trois mots-clés **Bouclier**, **Rapidité** et
+**Contre-attaque** :
+
+- `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade
+  anti-sort se pose sur **lui-même**, sans désignation. `cible: 'soi'` est un
+  nouveau cas du `case 'bouclier'` de `appliquerEffet` ; `rpgJouerCreature` ne
+  lui transmet aucun `cibleId`, `arriveeCiblePortee` reste `null` et l'IA ne
+  cherche donc pas d'allié à protéger. Même avec un `cibleId` d'allié, la
+  parade reste sur Salem. Une réanimation ou une renaissance de Tenacité
+  réarme la parade comme les autres arrivées.
+- `rapidite: true` : inchangé, il peut attaquer le tour où il arrive.
+- `contreAttaque: true` : la même riposte qu'Eirik et Tojiro. Une créature
+  adverse qui le frappe avec Attaque ciblée ou le cible avec une capacité
+  encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait frapper le
+  sorcier qui l'a lancé.
+
+L'interaction des deux protections se lit dans `rpgLancerMagie` : le premier
+sort adverse qui désigne Salem est **bloqué avant** `appliquer` — payé, au
+cimetière, aucun effet résolu — donc la Contre-attaque ne riposte pas encore ;
+la parade tombe. Le sort adverse **suivant** passe, blesse Salem et déclenche
+la riposte de 4 dégâts sur le lanceur. Attaques et capacités, elles, n'ont
+jamais été absorbées par la parade : Salem n'a plus d'armure, seulement une
+parade et une épine.
+
+Le bouclier de lumière reste une mécanique distincte, portée par la **Dame aux
+ailes d'or** (`rpgTenebres.js`) ; le moteur, l'IA, les pastilles et l'égide
+dorée de la table la conservent telle quelle. Textes, deux leçons du guide
+(`rpgCardLessons.js`), l'aperçu de la fiche — trois pastilles, dont le
+Bouclier qui se grise après sa chute — et les contrôles suivent.
+
+Contrôles : `npm run check:rpg` (les suites `tests/rpg-bouclier-sort.test.js`,
+`tests/rpg-duel.test.js`, `tests/rpg-effets-icones.test.js` et
+`tests/rpg-lettres-de-marque.test.js` couvrent la fiche, l'arrivée `soi`, le
+blocage sans riposte, la riposte du second sort et les dégâts qui passent),
+plus `node scripts/rpg-bouclier-check.mjs` pour les trois pastilles de Salem
+et l'égide de lumière de la Dame.

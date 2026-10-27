@@ -168,7 +168,10 @@ atouts: { pv: 12, mana: 1, main: 1, bouclier: 6 }
   et le plafond de dix sources reste le même) ;
 - `main` : cartes de départ supplémentaires (la main du mode sans terrains est
   de 3) ;
-- `bouclier` : bouclier initial du sorcier, à briser avant de le toucher.
+- `bouclier` : réserve d'armure initiale du SORCIER, à briser avant de le
+  toucher. Elle absorbe encore les dégâts : ce n'est pas la parade anti-sort
+  des créatures, qui ne concerne qu'elles (voir le README, section « le
+  bouclier bloque un sort »).
 
 `rpgAtoutsSorcier` **borne** chaque levier (`RPG_ATOUTS_MAX` : 20 PV, 3 manas,
 3 cartes, 10 de bouclier) et ramène à zéro tout ce qui est absent ou illisible.
