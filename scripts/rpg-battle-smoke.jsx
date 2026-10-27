@@ -209,8 +209,8 @@ export async function checkRpgBattle(assert) {
     'le catalogue garde la couleur Braise de Fériel, même si elle est mythique');
   assert.ok(ferielCatalogue?.querySelector('.rpg-card-catalogue__art.rpg-card--frame-braise.rpg-card--frame-brillant.rpg-card--mythique'),
     'le catalogue donne à Fériel le même cadre brillant que dans le duel');
-  assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__art .rpg-brume-mythique')?.getAttribute('aria-hidden'), 'true',
-    'la mythique du catalogue reçoit une brume purement décorative');
+  assert.equal(ferielCatalogue?.querySelector('.rpg-card-catalogue__art .rpg-brume-mythique'), null,
+    'la mythique du catalogue ne porte plus de voile de brume');
   assert.match(ferielCatalogue?.querySelector('.rpg-card-catalogue__art img')?.getAttribute('src') ?? '',
     /\/cards\/feriel\.jpg\?v=feriel-tour-fleche-electrique-v1$/,
     'le catalogue charge la nouvelle illustration de Fériel sur sa tour avec une URL versionnée contre le cache');
@@ -1649,16 +1649,16 @@ export async function checkRpgBattle(assert) {
     && ferielEnMain.classList.contains('rpg-card--frame-brillant'),
     'Fériel conserve son cadre Braise brillant dès la main');
   assertElementFrame(ferielEnMain, 'feriel', 'Fériel en main');
-  assert.equal(ferielEnMain.querySelector('.rpg-brume-mythique')?.getAttribute('aria-hidden'), 'true',
-    'la brume accompagne la mythique en main sans changer son libellé');
+  assert.equal(ferielEnMain.querySelector('.rpg-brume-mythique'), null,
+    'la mythique en main ne porte plus de voile de brume');
   await glisserSurTable(ferielContainer, ferielEnMain);
   const ferielEnJeu = ferielContainer.querySelector('.rpg-card--equipe[data-card-id="feriel"]');
   assert.ok(ferielEnJeu?.classList.contains('is-pret'), 'Rapidité la rend attaquante dès son tour de pose');
   assert.ok(ferielEnJeu.classList.contains('rpg-card--mythique'),
     'Fériel, mythique, garde son zellige sur la table');
   assertElementFrame(ferielEnJeu, 'feriel', 'Fériel en jeu');
-  assert.ok(ferielEnJeu.querySelector('.rpg-brume-mythique'),
-    'la brume suit la même carte une fois posée sur le champ');
+  assert.equal(ferielEnJeu.querySelector('.rpg-brume-mythique'), null,
+    'la mythique posée sur le champ ne porte plus de voile de brume');
   assert.equal(ferielContainer.querySelectorAll('.rpg-card__flames, .rpg-card__flames-tongue, .rpg-card__flames-halo').length, 0,
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });

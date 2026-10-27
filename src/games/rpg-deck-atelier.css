@@ -317,7 +317,7 @@
 /* Les armes gardent le gabarit commun : leur plaque d'acier est l'épaisseur
    de toutes les cartes (voir les gabarits en tête de `rpg-battle.css`). */
 /* Aucun reflet ne balaie le cadre au survol : celui-ci se lit à l'ombre et au
-   liseré doré. La brume des mythiques est indépendante de cet effet de survol. */
+   liseré doré, sans voile sur l'illustration. */
 .rpg-atelier__carte:hover .rpg-atelier__carte-art { box-shadow: 0 12px 26px rgba(0, 0, 0, .55), 0 0 0 1px rgba(240, 217, 148, .5), 0 0 18px rgba(240, 217, 148, .3); }
 .rpg-atelier__carte-art img {
   width: 100%;
@@ -327,8 +327,7 @@
   transition: transform .25s ease;
 }
 .rpg-atelier__carte:hover .rpg-atelier__carte-art img { transform: scale(1.04); }
-/* Un dégradé sombre garde le bas de la peinture lisible. La brume des
-   mythiques est un calque séparé, sous les pastilles et le cadenas. */
+/* Un dégradé sombre garde le bas de la peinture lisible sous les pastilles. */
 .rpg-atelier__carte-art::after {
   content: "";
   position: absolute;

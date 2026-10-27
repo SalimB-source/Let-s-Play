@@ -425,8 +425,8 @@ export async function checkRpgDecks(assert) {
     'le cadre du Kraken mythique suit sa couleur Eau dans la collection');
   assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art.rpg-card--frame-eau.rpg-card--frame-brillant.rpg-card--mythique'),
     'le Kraken garde ses classes de cadre mythique brillant dans l’atelier');
-  assert.ok(rangeeKraken.querySelector('.rpg-atelier__carte-art .rpg-brume-mythique'),
-    'la mythique conserve sa brume dans la collection, même verrouillée');
+  assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-art .rpg-brume-mythique'), null,
+    'la mythique de la collection ne porte plus de voile de brume');
   assert.match(texte(rangeeKraken), /Le Souk la vendra après « Le Pêcheur de perles » — La Tour des Abysses/, 'et il annonce où il se débloque');
   assert.equal(rangeeKraken.querySelector('.rpg-atelier__carte-ajout').disabled, true, 'impossible d’ajouter une carte verrouillée');
   const rangeeHybride = atelier.container.querySelector('.rpg-atelier__carte[data-card-id="rais-de-la-galiote"]');

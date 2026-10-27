@@ -785,8 +785,7 @@
   }
 }
 
-/* L'illustration garde ses couleurs, son anneau et son ombre. Seule la
-   mythique reçoit la brume dorée translucide (rpg-brume-mythique.css). */
+/* L'illustration garde ses couleurs, son anneau et son ombre, sans voile. */
 .rpg-coffret__carte-art {
   position: relative;
   border-radius: 10px;

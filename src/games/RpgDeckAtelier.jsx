@@ -28,7 +28,6 @@ import { carteJouableSansTerrain } from './rpgCards.js';
  * synchronisation vivent dans `useDecksSablier.js`, appelé par la page.
  */
 
-import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-deck-atelier.css';
 import {
@@ -605,7 +604,6 @@ export function RpgDeckAtelier({
                     >
                       <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
                         <img src={artUrl(carte.id)} alt="" loading="lazy" />
-                        <RpgBrumeMythique carte={carte} />
                         {!estTerrain && <Cout carte={carte} />}
                         {estTerrain && (
                           <span className="rpg-atelier__carte-mana" aria-hidden="true">

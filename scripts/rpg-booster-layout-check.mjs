@@ -101,8 +101,8 @@ async function checkLayout() {
         count: carte.querySelectorAll('.rpg-souk__carte-art .rpg-brume-mythique').length,
       })));
       assert.ok(brumes.some((carte) => carte.rarete === 'mythique'), 'the pack includes a mythic');
-      assert.ok(brumes.every((carte) => carte.count === (carte.rarete === 'mythique' ? 1 : 0)),
-        'only mythic cards receive the mist in the booster');
+      assert.ok(brumes.every((carte) => carte.count === 0),
+        'no card receives the removed mythic mist');
       for (const width of [1122, 820, 640, 481, 390, 320]) {
         await page.setViewportSize({ width, height: 900 });
         await page.locator('.rpg-souk__carte img').evaluateAll((images) => Promise.all(images.map((img) => img.decode())));
