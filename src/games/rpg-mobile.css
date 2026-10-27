@@ -1576,3 +1576,17 @@
 }
 
 
+
+/* Carrousel du cimetière : les flèches restent accessibles au pouce, sans
+   réduire la fiche de carte ni faire défiler le plateau derrière le volet. */
+.rpg-graveyard-carousel__content { min-width: min(100%, 680px); padding: 8px 4px; }
+.rpg-graveyard-carousel__heading { width: min(100%, 680px); padding: 0 6px; font-size: 10px; }
+.rpg-graveyard-carousel__arrow { width: 42px; height: 42px; }
+.rpg-graveyard-carousel__arrow--prev { left: 0; }
+.rpg-graveyard-carousel__arrow--next { right: 0; }
+@media (max-width: 560px) {
+  .rpg-graveyard-carousel__content { gap: 7px; }
+  .rpg-graveyard-carousel__card .rpg-hover-card-preview { width: min(100%, 560px); }
+  .rpg-graveyard-carousel__arrow { width: 38px; height: 38px; font-size: 32px; }
+  .rpg-graveyard-carousel__hint { font-size: 8px; }
+}
