@@ -16,7 +16,8 @@
     "sablier-story",
     "sablier-tours",
     "audio",
-    "icons"
+    "icons",
+    "profil"
   ],
   "files": [
     "index.html",

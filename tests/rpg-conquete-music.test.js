@@ -26,6 +26,11 @@ test('chaque camp impose son thème, avec repli quand le terrain est sans piste'
   assert.equal(plateauMusicalDuCamp('joueur', 'palais-du-pharaon', 'palais-du-pharaon'), 'palais-du-pharaon');
 });
 
+test('la Place du Souk fournit sa musique quand son camp domine', () => {
+  assert.equal(plateauMusicalDuCamp('sorcier', MER, 'place-du-souk'), 'place-du-souk');
+  assert.equal(plateauMusicalDuCamp('joueur', 'place-du-souk', MER), 'place-du-souk');
+});
+
 test('le Cercle des corbeaux fournit sa piste même quand la conquête donne la main à l’adversaire', () => {
   const CORBEAU = 'cercle-des-corbeaux';
   const SABLIER = 'sablier-renverse';
@@ -152,8 +157,10 @@ test('deux terrains partageant un fichier ne lancent pas deux copies du morceau'
   pistes[0].currentTime = 13;
   musique.setPlateau('desert-de-verre');
   await musique.start();
+  musique.setPlateau('place-du-souk');
+  await musique.start();
   assert.equal(pistes.length, 1);
-  assert.equal(pistes[0].currentTime, 13);
+  assert.equal(pistes[0].currentTime, 13, 'le Souk partage la piste sans la relancer');
 });
 
 test('les anciens play asynchrones ne repartent pas après une pause ou un changement de cible', async (t) => {

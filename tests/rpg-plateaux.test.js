@@ -21,7 +21,7 @@ import {
   vignettePlateauRelative,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_DECKS_ARCHETYPES } from '../src/games/rpgCards.js';
-import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
+import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
 
 /** La taille d'un JPEG sans dépendance : le premier marqueur SOFn. */
@@ -306,6 +306,44 @@ test('chaque deck du catalogue impose un plateau connu', () => {
   assert.equal(plateauDeDeck('balance-des-heures').plateau.id, 'necropole-des-dalles');
   // Les Lettres de Marque embarquent sur leur propre navire pirate.
   assert.equal(plateauDeDeck('lettres-de-marque').plateau.id, 'navire-pirate');
+});
+
+test('la Place du Souk est le terrain des quatre étages de la Tour du Souk', () => {
+  const souk = plateauParId('place-du-souk');
+  assert.ok(souk, 'la place figure au catalogue');
+  assert.equal(souk.fichier, 'plateau-place-du-souk.jpg');
+  assert.match(souk.nom, /Souk/);
+  assert.match(souk.resume, /dégagé pour les cartes/i);
+  assert.deepEqual(tailleJpeg(new URL(`../public/${souk.fichier}`, import.meta.url)),
+    { width: 3840, height: 2560 }, 'peinture au format 4K 3:2 des autres plateaux');
+  assert.ok(existsSync(new URL(`../public/${vignettePlateauRelative(souk)}`, import.meta.url)),
+    'la vignette permet de choisir la place depuis le profil');
+
+  const tour = RPG_STORY_TOURS.find(({ id }) => id === 'tour-du-souk');
+  assert.deepEqual(tour.etages.map(({ id }) => id), ['souk-1', 'souk-2', 'souk-3', 'souk-4']);
+  for (const etage of tour.etages) {
+    const terrain = plateauDeDeck(etage.deck);
+    assert.equal(terrain.plateau.id, souk.id, `${etage.id} reçoit sur la place`);
+    assert.equal(terrain.motif, 'deck');
+    const resolution = resoudrePlateauxDuDuel({
+      deckJoueur: 'cour-des-djinns', deckAdverse: etage.deck, variantesFantaisistes: true,
+    });
+    assert.equal(resolution.joueur.plateau.id, 'table-des-heures', 'le joueur garde son terrain');
+    assert.equal(resolution.adversaire.plateau.id, souk.id, 'le Souk occupe la moitié adverse');
+    assert.equal(resolution.decouper, true);
+  }
+  assert.equal(varianteFantaisisteDe(souk.id), null, 'la place ne tire pas de variante');
+  let appels = 0;
+  const choisi = resoudrePlateauxDuDuel({
+    deckJoueur: 'cour-des-djinns', deckAdverse: tour.etages[0].deck,
+    plateauChoisi: souk.id, variantesFantaisistes: true,
+    rng: () => { appels += 1; return 0.9; },
+  });
+  assert.equal(choisi.joueur.motif, RPG_PLATEAU_MOTIF_CHOIX);
+  assert.equal(choisi.joueur.plateau.id, souk.id);
+  assert.equal(choisi.adversaire.plateau.id, souk.id);
+  assert.equal(choisi.decouper, false, 'choisir le Souk réunit les deux moitiés');
+  assert.equal(appels, 0, 'aucun tirage de variante pour la place');
 });
 
 test('le navire pirate est livré en 4K 3:2 et sert de terrain aux Lettres de Marque', () => {

@@ -56,14 +56,13 @@
  * En duel en ligne, le choix est une préférence **locale** : chaque client
  * peint sa propre moitié, l'arbitre ne lit ni l'un ni l'autre.
  *
- * Trois des terrains classiques ont leur **double merveilleux** : quand la
- * partie l'autorise (`variantesFantaisistes`), un tirage par camp peut échanger
- * le terrain imposé contre sa version fantaisiste — l'Erg contre le Désert de
- * Verre, les Ruines contre les Abysses Phosphorescentes, le Village Viking
- * contre les Îles Célestes. Les cinq autres — la piste caravanière, la Table des Heures
- * (la table d'origine, que les Cavernes de Cristal ont quittée), la
- * Cour de l'Empereur et les deux terrains des Ténèbres, la Nécropole des
- * dalles et les Palais du Pharaon — restent uniques. Le
+ * Quatre terrains ont leur **double merveilleux** : quand la partie l'autorise
+ * (`variantesFantaisistes`), un tirage par camp peut échanger le terrain imposé
+ * contre sa version fantaisiste — l'Erg contre le Désert de Verre, les Ruines
+ * contre les Abysses Phosphorescentes, le Village Viking contre les Îles
+ * Célestes et le Cimetière contre la Fosse de l'Oubliée. Les autres terrains,
+ * notamment la piste caravanière, la Place du Souk et la Table des Heures,
+ * restent uniques. Le
  * motif et le camp ne bougent pas : ils disent toujours quel deck a imposé le
  * terrain.
  *
@@ -100,6 +99,15 @@ export const RPG_PLATEAUX = [
     lieu: 'Le Gourara, pays des foggaras',
     fichier: 'plateau-caravane-de-gourara.jpg',
     resume: 'Le lit sec de l’oued et sa piste de caravane : les deux empreintes du campement, l’outre, la corde et le compas abandonné.',
+  },
+  // La Tour du Souk : une place de marché vue de dessus, dont le centre reste
+  // libre pour les cartes. Les quatre étages y reçoivent leurs adversaires.
+  {
+    id: 'place-du-souk',
+    nom: 'La Place du Souk',
+    lieu: 'Bab El, la place des étals de la Tour du Souk',
+    fichier: 'plateau-place-du-souk.jpg',
+    resume: 'Une place de grès ensoleillée vue de dessus : une mosaïque de laiton et de bleu repose à plat au centre, et le dallage reste dégagé pour les cartes. Tout autour, les étals sous leurs auvents rayés rassemblent épices, tapis, verrerie turquoise, poteries de cuivre, balances et lanternes de laiton.',
   },
   {
     id: 'village-viking',
@@ -258,10 +266,11 @@ export const RPG_PLATEAUX_PAR_DECK = {
   'guetteur-de-palier': 'erg-du-sahara',
   'scribe-de-la-liste': 'erg-du-sahara',
   'puisatier-des-cendres': 'caravane-de-gourara',
-  'marchand-de-sable': 'caravane-de-gourara',
-  'gardienne-des-ksour': 'erg-du-sahara',
-  'djinn-du-tournant': 'caravane-de-gourara',
-  'reine-des-etals': 'caravane-de-gourara',
+  // Les quatre adversaires du Souk partagent la place des étals.
+  'marchand-de-sable': 'place-du-souk',
+  'gardienne-des-ksour': 'place-du-souk',
+  'djinn-du-tournant': 'place-du-souk',
+  'reine-des-etals': 'place-du-souk',
   'veille-des-ergs': 'erg-du-sahara',
   'ifrit-des-sables': 'caravane-de-gourara',
   'horloger-du-zenith': 'table-des-heures',
