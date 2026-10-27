@@ -32,7 +32,9 @@ import {
   sauverAcquis,
   sauverCollectionDistante,
 } from './rpgCollection.js';
-import { garantirDeckDeDepart } from './rpgDeckDeDepart.js';
+import { garantirDeckDeDepart, RPG_DECK_DEPART_ID } from './rpgDeckDeDepart.js';
+import { coffretChoisiDeLAppareil, joueurSablierDejaActif } from './rpgCoffretBienvenue.js';
+import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 import { cartesOuvertes } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { chargerPortefeuille, exemplairesDuPortefeuille, sauverPortefeuille } from './rpgCredits.js';
@@ -40,17 +42,6 @@ import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
 import { chargerProfil, sauverProfil } from './rpgProfil.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
-
-/** L'identifiant du compte Sablier actif, ou `null` (hors provider, déconnecté, profil de démonstration). */
-function compteSablierActif() {
-  try {
-    const auth = useContext(AuthContext);
-    if (!auth || auth.isDemo) return null;
-    return auth.user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * L'état complet porté par le compte : casier local, apports du compte en
@@ -106,14 +97,16 @@ function exemplairesDeLAppareil() {
  * une fois. Ils rentrent dans leur stock — rien n'est ajouté à la collection,
  * et rien ne bouge sur un deck déjà conforme.
  */
-function etatDeDepart(acquis) {
+function etatDeDepart(acquis, { attenteCompte = false, reparer = true } = {}) {
   const collection = collectionDeLAppareil(acquis);
   const exemplaires = exemplairesDeLAppareil();
-  const lu = reparerCasierHorsStock(
-    { decks: chargerDecksMaison(), supprimes: chargerSupprimesMaison() },
-    collection,
-    exemplaires,
-  );
+  const casier = { decks: chargerDecksMaison(), supprimes: chargerSupprimesMaison() };
+  // Ne jamais « réparer » avec un stock partiel avant la lecture du compte :
+  // cela retirerait les cartes qui existent seulement sur l'autre appareil et
+  // rendrait cette suppression plus récente que le vrai deck distant.
+  const lu = reparer
+    ? reparerCasierHorsStock(casier, collection, exemplaires)
+    : { casier, modifie: false, retires: 0, ajoutes: 0 };
   // **Le deck de départ.** Plus aucun deck de base n'est offert depuis les
   // coffrets de bienvenue : si le deck du coffret manque (autre appareil,
   // sauvegarde d'avant), il est reposé ; sinon, un joueur qui n'a qu'une
@@ -121,7 +114,22 @@ function etatDeDepart(acquis) {
   // (`rpgDeckDeDepart.js`). Une pierre tombale n'est jamais contredite.
   // Un seul écrit : le casier réparé *et* complété (l'ordre inverse écraserait
   // le deck de départ par la version d'avant réparation).
-  const rattrapage = garantirDeckDeDepart({ casier: lu.casier, collection });
+  // Un nouveau joueur va choisir son coffret à l'accueil. Ne lui inventons pas
+  // auparavant un deck fondé sur l'ancienne dotation : il deviendrait invalide
+  // dès que les cartes du coffret remplacent celle-ci.
+  const dejaActif = joueurSablierDejaActif({
+    progression: chargerProgressionHistoire(),
+    acquis,
+    collection: chargerCollectionDistante(),
+    bourse: chargerPortefeuille(),
+    profil: chargerProfil(),
+    // L'ancien deck automatique seul peut avoir été créé avant le premier
+    // choix ; un deck personnel, lui, témoigne d'un joueur déjà installé.
+    aDeckPersonnel: lu.casier.decks.some((deck) => deck.id !== RPG_DECK_DEPART_ID),
+  });
+  const rattrapage = !attenteCompte && (dejaActif || coffretChoisiDeLAppareil())
+    ? garantirDeckDeDepart({ casier: lu.casier, collection })
+    : { casier: lu.casier, cree: null };
   if (rattrapage.cree || lu.modifie) sauverCasierMaison(rattrapage.casier);
   return {
     ...rattrapage.casier,
@@ -133,6 +141,9 @@ function etatDeDepart(acquis) {
 
 /** Statuts de synchronisation : `'local'`, `'attente'`, `'synchronise'`, `'horsligne'`. */
 export function useDecksSablier() {
+  const auth = useContext(AuthContext);
+  const compteId = auth && !auth.isDemo ? (auth.user?.id ?? null) : null;
+  const attenteCompte = Boolean(auth?.loading || compteId);
   // Le gel des acquis est calculé UNE fois, au montage : au premier lancement
   // de cette version, il reprend les cartes que l'ancienne règle avait données
   // pour les étages déjà vaincus (`figerAcquisitions`). Ensuite, `gel: true` le
@@ -141,14 +152,13 @@ export function useDecksSablier() {
   const acquisRef = useRef(acquis);
   // Un seul instantané au montage : `etatDeDepart` écrit dans le casier quand il
   // range des decks, il ne doit donc pas être calculé deux fois.
-  const [depart] = useState(() => etatDeDepart(acquis));
+  const [depart] = useState(() => etatDeDepart(acquis, { attenteCompte, reparer: !attenteCompte }));
   const [decksMaison, setDecksMaison] = useState(depart.decks);
   const [collection, setCollection] = useState(depart.collection);
   // Le stock payé à l'étal : les decks le respectent, l'atelier le consulte.
   const [exemplaires, setExemplaires] = useState(depart.exemplaires);
   const [reparation, setReparation] = useState(depart.reparation);
-  const [statutSync, setStatutSync] = useState('local');
-  const compteId = compteSablierActif();
+  const [statutSync, setStatutSync] = useStatutSyncSablier(compteId);
   const supprimesRef = useRef(chargerSupprimesMaison());
   // Changement de joueur — session restaurée, connexion, déconnexion, autre
   // compte sur la même machine : l'état en mémoire appartenait au précédent.
@@ -157,14 +167,14 @@ export function useDecksSablier() {
   useEffect(() => {
     const suivis = figerAcquisitions();
     acquisRef.current = suivis;
-    const depart = etatDeDepart(suivis);
+    const depart = etatDeDepart(suivis, { attenteCompte, reparer: !attenteCompte });
     supprimesRef.current = depart.supprimes;
     setAcquis(suivis);
     setDecksMaison(depart.decks);
     setCollection(depart.collection);
     setExemplaires(depart.exemplaires);
     setReparation(depart.reparation);
-  }, [compteId]);
+  }, [compteId, attenteCompte]);
   // Le gel est écrit sur l'appareil dès qu'il change (silencieux s'il n'y a
   // pas de stockage : le jeu reste jouable, la migration se refera).
   useEffect(() => { sauverAcquis(acquis); }, [acquis]);
@@ -181,6 +191,15 @@ export function useDecksSablier() {
       const { state, source } = await chargerEtatSablier(compteId);
       if (!vivant) return;
       if (!state) {
+        // Hors ligne ou sans copie distante : garder les decks locaux intacts.
+        // Un stock absent ne prouve pas qu'une carte a été perdue ; on peut
+        // néanmoins compléter un casier vide à partir des données locales.
+        const depart = etatDeDepart(acquisRef.current, { reparer: false });
+        supprimesRef.current = depart.supprimes;
+        setDecksMaison(depart.decks);
+        setCollection(depart.collection);
+        setExemplaires(depart.exemplaires);
+        setReparation(depart.reparation);
         if (source === 'unavailable') {
           setStatutSync('horsligne');
           return;
@@ -206,9 +225,23 @@ export function useDecksSablier() {
       });
       const exemplairesFusionnes = exemplairesDuPortefeuille(etatFusionne.bourse);
       const casier = reparerCasierHorsStock(fusion.casier, collectionFusionnee, exemplairesFusionnes);
-      sauverCasierMaison(casier.casier);
-      supprimesRef.current = casier.casier.supprimes;
-      setDecksMaison(casier.casier.decks);
+      // Un ancien compte récupéré sur un appareil neuf peut n'avoir aucun deck
+      // local : le rattrapage se fait maintenant, avec sa vraie collection, et
+      // non avant le téléchargement sur la dotation du nouveau joueur.
+      const dejaActif = joueurSablierDejaActif({
+        progression: etatFusionne.histoire,
+        acquis: acquisFusionnes,
+        collection: etatFusionne.collection,
+        bourse: etatFusionne.bourse,
+        profil: etatFusionne.profil,
+        aDeckPersonnel: casier.casier.decks.some((deck) => deck.id !== RPG_DECK_DEPART_ID),
+      });
+      const rattrapage = dejaActif || coffretChoisiDeLAppareil()
+        ? garantirDeckDeDepart({ casier: casier.casier, collection: collectionFusionnee })
+        : { casier: casier.casier, cree: null };
+      sauverCasierMaison(rattrapage.casier);
+      supprimesRef.current = rattrapage.casier.supprimes;
+      setDecksMaison(rattrapage.casier.decks);
       if (casier.modifie) setReparation({ retires: casier.retires, ajoutes: casier.ajoutes });
       sauverCollectionDistante(fusion.etat.collection);
       // L'économie appartient à `useSablierBourse.js` : ce hook la transporte,
@@ -227,15 +260,20 @@ export function useDecksSablier() {
       setAcquis(acquisFusionnes);
       setCollection(collectionFusionnee);
       setExemplaires(exemplairesFusionnes);
-      setStatutSync('synchronise');
-      // La fusion a apporté quelque chose à l'appareil : les autres
-      // appareils doivent le savoir (pierres tombales, decks récents).
-      if (fusion.modifie) sauverEtatSablier(compteId, fusion.etat);
+      // Attendre aussi la fin de l'écriture initiale : elle ne doit pas
+      // écraser ensuite le coffret choisi pendant qu'elle était encore en vol.
+      if (fusion.modifie || rattrapage.cree || casier.modifie) {
+        const enregistre = await sauverEtatSablier(compteId, { ...fusion.etat, ...rattrapage.casier });
+        if (!vivant) return;
+        setStatutSync(enregistre ? 'synchronise' : 'horsligne');
+      } else {
+        setStatutSync('synchronise');
+      }
     })();
     return () => {
       vivant = false;
     };
-  }, [compteId]);
+  }, [compteId, setStatutSync]);
 
   // Les decks, pierres tombales, la collection effective et les acquis du
   // moment, poussés au compte — **avec l'économie**, relue sur l'appareil au

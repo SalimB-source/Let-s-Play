@@ -8,6 +8,7 @@ import { chargerPortefeuille } from './rpgCredits.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerEtatQuetes } from './rpgQuetes.js';
 import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
+import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 import {
   RPG_STORY_LEGACY_STORAGE_KEY,
   RPG_STORY_STORAGE_KEY,
@@ -49,6 +50,7 @@ function etatLocalComplet(histoire) {
 
 export function useRpgStory() {
   const compteId = compteSablierActif();
+  const [statutSync, setStatutSync] = useStatutSyncSablier(compteId);
   const [progression, setProgression] = useState(chargerProgressionHistoire);
   const progressionRef = useRef(progression);
   const [sauvegardeOk, setSauvegardeOk] = useState(true);
@@ -83,11 +85,19 @@ export function useRpgStory() {
   }, []);
 
   useEffect(() => {
-    if (!compteId) return undefined;
+    if (!compteId) {
+      setStatutSync('local');
+      return undefined;
+    }
     let vivant = true;
+    setStatutSync('attente');
     (async () => {
       const { state, source } = await chargerEtatSablier(compteId);
-      if (!vivant || source === 'unavailable') return;
+      if (!vivant) return;
+      if (source === 'unavailable') {
+        setStatutSync('horsligne');
+        return;
+      }
       const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(progressionRef.current), distant: state });
       if (JSON.stringify(fusion.etat.histoire) !== JSON.stringify(progressionRef.current)) {
         progressionRef.current = fusion.etat.histoire;
@@ -96,11 +106,15 @@ export function useRpgStory() {
       }
       const distantHistoire = normaliserProgressionHistoire(state?.histoire);
       if ((!state && fusion.modifie) || (state && JSON.stringify(fusion.etat.histoire) !== JSON.stringify(distantHistoire))) {
-        sauverEtatSablier(compteId, fusion.etat);
+        const enregistre = await sauverEtatSablier(compteId, fusion.etat);
+        if (!vivant) return;
+        setStatutSync(enregistre ? 'synchronise' : 'horsligne');
+      } else {
+        setStatutSync('synchronise');
       }
     })();
     return () => { vivant = false; };
-  }, [compteId]);
+  }, [compteId, setStatutSync]);
 
   const pousserHistoire = useCallback((histoire) => {
     if (!compteId) return;
@@ -158,5 +172,5 @@ export function useRpgStory() {
 
   const effacerProgression = useCallback(() => modifier(() => reinitialiserProgressionHistoire()), [modifier]);
 
-  return { progression, progressionRef, sauvegardeOk, ouvrirRecit, agirRecit, enregistrerVictoire, recommencerRecit, effacerProgression };
+  return { progression, progressionRef, sauvegardeOk, statutSync, ouvrirRecit, agirRecit, enregistrerVictoire, recommencerRecit, effacerProgression };
 }

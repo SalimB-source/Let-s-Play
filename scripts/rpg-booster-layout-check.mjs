@@ -96,6 +96,13 @@ async function checkLayout() {
     for (const count of [5, 50]) {
       if (count === 50) await page.evaluate(() => window.renderBooster(50));
       await page.waitForFunction((n) => document.querySelectorAll('[data-souk-carte]').length === n, count);
+      const brumes = await page.locator('[data-souk-carte]').evaluateAll((cartes) => cartes.map((carte) => ({
+        rarete: carte.dataset.soukCarteRarete,
+        count: carte.querySelectorAll('.rpg-souk__carte-art .rpg-brume-mythique').length,
+      })));
+      assert.ok(brumes.some((carte) => carte.rarete === 'mythique'), 'the pack includes a mythic');
+      assert.ok(brumes.every((carte) => carte.count === (carte.rarete === 'mythique' ? 1 : 0)),
+        'only mythic cards receive the mist in the booster');
       for (const width of [1122, 820, 640, 481, 390, 320]) {
         await page.setViewportSize({ width, height: 900 });
         await page.locator('.rpg-souk__carte img').evaluateAll((images) => Promise.all(images.map((img) => img.decode())));

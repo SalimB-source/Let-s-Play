@@ -18,6 +18,7 @@
  * (`rpgLongPress.js`) y ouvre l'aperçu sans rien sélectionner.
  */
 
+import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useMemo, useState } from 'react';
 import {
   RPG_DUEL_CARDS,
@@ -89,6 +90,7 @@ function Vignette({ carte, choisi, max, onChoisir, artUrl, surSfx, onHoverCard, 
       >
         <span className={`rpg-assistant__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
           <img src={artUrl(carte.id)} alt="" loading="lazy" />
+          <RpgBrumeMythique carte={carte} />
           <b className="rpg-assistant__cout" aria-hidden="true">{cardCost(carte)}</b>
           {choisi && <span className="rpg-assistant__coche" aria-hidden="true">✓</span>}
           {famille === 'creature' && (
