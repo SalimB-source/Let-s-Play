@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { supabase } from '../lib/supabase';
 import { DEMO_PROFILES, DEFAULT_DEMO_KEY } from './demoProfiles';
 import { syncDemoCommentsForUser } from '../lib/comments';
-import { definirProprietaireProgression } from '../lib/progressionScope';
+import { definirProprietaireProgression, definirSessionPrete } from '../lib/progressionScope';
 
 export const AuthContext = createContext(null);
 const DEMO_STORAGE_KEY = 'letsplay_auth_demo_profile';
@@ -139,6 +139,13 @@ export function AuthProvider({ children, initialSession = null }) {
   // `…:user:<id>` : deux joueurs sur le même PC (ou la même installation)
   // ne lisent jamais la progression l'un de l'autre. Les profils de
   // démonstration restent des visiteurs : `session?.user` est nul pour eux.
+  //
+  // L'ordre compte : tant que la session n'est pas résolue, les pages rendent
+  // avec un propriétaire nul (invité). `definirSessionPrete(false)` dit au
+  // stockage que ces écritures-là appartiennent peut-être au compte qui arrive :
+  // elles seront marquées et jamais reprises. Sans cette précaution, un compte
+  // neuf héritait d'un coffret de bienvenue ouvert pendant l'attente.
+  definirSessionPrete(!loading);
   definirProprietaireProgression(session?.user?.id ?? null);
 
   const value = useMemo(() => ({

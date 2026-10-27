@@ -29,6 +29,23 @@
 /** Propriétaire courant (identifiant de compte Supabase), ou `null` (invité). */
 let proprietaire = null;
 
+/**
+ * La session est-elle **résolue** ? `false` tant que `AuthProvider` attend la
+ * réponse de Supabase.
+ *
+ * Pourquoi cet état existe : au démarrage, les pages se rendent avant que
+ * `getSession()` n'ait répondu, donc avec `proprietaire === null`. Un joueur
+ * **déjà connecté** écrit alors sous les clés invité pendant quelques dizaines
+ * de millisecondes ; à la résolution suivante, son compte « reprenait » cette
+ * copie comme s'il venait de jouer en visiteur. C'est ainsi qu'un compte neuf
+ * héritait d'un coffret de bienvenue déjà ouvert sur l'appareil.
+ *
+ * Tant que la session n'est pas résolue, une écriture visiteur est donc
+ * **marquée** (`…:invite-en-attente`) : elle ne sera jamais reprise par un
+ * compte. La marque disparaît dès qu'un vrai visiteur écrit sur la clé nue.
+ */
+let sessionPrete = true;
+
 /** Identifiant de compte normalisé (`null` si vide ou non textuel). */
 export function normaliserProprietaire(id) {
   const valeur = typeof id === 'string' ? id.trim() : '';
@@ -50,6 +67,33 @@ export function definirProprietaireProgression(id) {
 /** Compte courant, ou `null` pour un visiteur / une session de démonstration. */
 export function proprietaireProgression() {
   return proprietaire;
+}
+
+/**
+ * Déclare la session **résolue** (ou non). Posé par `AuthProvider` avec
+ * `!loading`. Rend `true` si l'état a changé. Un état jamais annoncé est
+ * réputé résolu : les appelants qui ne disent rien (tests, scripts, pages hors
+ * compte) gardent le comportement d'avant.
+ */
+export function definirSessionPrete(pret) {
+  const suivant = pret !== false;
+  const change = suivant !== sessionPrete;
+  sessionPrete = suivant;
+  return change;
+}
+
+/** La session est-elle résolue ? */
+export function sessionProgressionPrete() {
+  return sessionPrete;
+}
+
+/**
+ * La marque d'une copie invité écrite **avant** que la session soit résolue.
+ * Elle n'est pas une donnée de jeu : un booléen suffit, et son absence est le
+ * cas normal.
+ */
+function cleInviteEnAttente(base) {
+  return `${base}:invite-en-attente`;
 }
 
 /** Clé de progression du joueur `id` (compte courant par défaut). */
@@ -74,16 +118,21 @@ export function stockageProgression() {
  * l'appareil, adoptée par le compte puis effacée. Rend `null` si rien n'est
  * stocké (ou si le stockage est indisponible).
  */
-export function lireProgression(base, storage) {
+export function lireProgression(base, storage, { reprise = true } = {}) {
   const store = storage === undefined ? stockageProgression() : storage;
   if (!store) return null;
   try {
     const cle = cleProgression(base);
     const valeur = store.getItem(cle);
     if (valeur !== null && valeur !== undefined) return valeur;
-    if (cle === base) return null;
+    // Rien à reprendre pour un visiteur, pour une clé qui refuse la reprise
+    // (le coffret de bienvenue), ou tant que la session n'est pas résolue.
+    if (cle === base || !reprise || !sessionPrete) return null;
     const invite = store.getItem(base);
     if (invite === null || invite === undefined) return null;
+    // Copie écrite pendant l'attente de la session : elle appartient peut-être
+    // au compte connecté, pas à un visiteur. On ne l'hérite jamais.
+    if (store.getItem(cleInviteEnAttente(base))) return null;
     // Reprise unique : la partie commencée hors ligne rejoint le compte, et la
     // clé invité disparaît pour qu'aucun autre compte ne l'hérite ensuite.
     try {
@@ -103,7 +152,14 @@ export function ecrireProgression(base, valeur, storage) {
   const store = storage === undefined ? stockageProgression() : storage;
   if (!store) return false;
   try {
-    store.setItem(cleProgression(base), valeur);
+    const cle = cleProgression(base);
+    store.setItem(cle, valeur);
+    if (cle === base) {
+      // Copie visiteur : elle n'est reprenable que si elle a été écrite par une
+      // session résolue (un vrai visiteur), jamais pendant l'attente.
+      if (sessionPrete) store.removeItem(cleInviteEnAttente(base));
+      else store.setItem(cleInviteEnAttente(base), '1');
+    }
     return true;
   } catch {
     return false;
@@ -116,6 +172,7 @@ export function effacerProgression(base, storage) {
   if (!store) return false;
   try {
     store.removeItem(cleProgression(base));
+    store.removeItem(cleInviteEnAttente(base));
     return true;
   } catch {
     return false;

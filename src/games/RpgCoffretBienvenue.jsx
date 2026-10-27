@@ -20,7 +20,7 @@
  * la collection et le deck du coffret soient pris en compte sans recharger.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
 import { ElementEmblem } from './rpgEmblemes.jsx';
@@ -28,6 +28,7 @@ import { DeckBox, inclinerBoitier, redresserBoitier } from './RpgDeckBox.jsx';
 import { cardRarityInfo } from './rpgCards.js';
 import { chargerProgressionHistoire } from './rpgStory.js';
 import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
+import { AuthContext } from '../auth/AuthContext.jsx';
 import {
   COFFRETS_IDENTITE,
   chargerOffreBienvenue,
@@ -259,6 +260,16 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
   const [ferme, setFerme] = useState(false);
   const reduit = useMemo(mouvementReduit, []);
   const minuteries = useRef([]);
+  // La portée du stockage dépend du compte : l'écran attend que la session soit
+  // résolue avant de lire quoi que ce soit, et se rejoue si le compte change
+  // (connexion faite après le montage, passage d'un profil de démonstration à
+  // un vrai compte). Sans cela, l'écran décidait « invité » puis ne se
+  // réévaluait plus jamais.
+  // `useContext` plutôt que `useAuth` : l'écran tourne aussi hors fournisseur
+  // (démo du coffret, vérifications), où il n'y a simplement pas de compte.
+  const auth = useContext(AuthContext);
+  const compteId = auth?.user?.id ?? null;
+  const sessionPrete = !auth?.loading;
 
   // Aucune minuterie ne survit au démontage : la cérémonie ne doit pas rouvrir
   // un écran déjà fermé (ou pire, changer de vague après la sortie).
@@ -273,25 +284,32 @@ export default function RpgCoffretBienvenue({ onOuvrir = null, onPlaySfx = null 
   };
   useEffect(() => oublierMinuteries, []);
 
-  // L'offre se lit au montage : au premier passage elle est tirée puis rangée,
-  // pour qu'un rechargement repropose exactement les trois mêmes coffrets.
+  // L'offre se lit **une fois la session résolue** : au premier passage elle
+  // est tirée puis rangée sous la clé du compte, pour qu'un rechargement
+  // repropose exactement les trois mêmes coffrets.
+  //
+  // Le verdict « coffret nécessaire » ne regarde que l'état **de ce compte**
+  // (`reprise: false`) : ni les acquis, ni la collection, ni la progression
+  // d'un visiteur de cet appareil ne peuvent le supprimer. Un compte neuf voit
+  // donc son coffret, même sur un navigateur déjà utilisé.
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !sessionPrete) return;
     const existante = chargerOffreBienvenue();
     const courante = existante.coffrets.length > 0 ? existante : offreBienvenue();
     if (existante.coffrets.length === 0) sauverOffreBienvenue(courante);
     const necessaire = coffretBienvenueNecessaire({
       offre: courante,
       progression: chargerProgressionHistoire(),
-      acquis: chargerAcquis(),
-      collection: chargerCollectionDistante(),
+      acquis: chargerAcquis({ reprise: false }),
+      collection: chargerCollectionDistante({ reprise: false }),
     });
     if (!necessaire) {
       setFerme(true);
       return;
     }
+    setFerme(false);
     setOffre(courante);
-  }, []);
+  }, [compteId, sessionPrete]);
 
   const choisi = coffretChoisi(offre);
   const vagues = useMemo(() => (choisi ? vaguesDuCoffret(choisi) : []), [choisi]);
