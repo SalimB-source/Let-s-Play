@@ -20,7 +20,6 @@
  * la collection et le deck du coffret soient pris en compte sans recharger.
  */
 
-import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import './rpg-coffret-bienvenue.css';
 import { cardArt } from './rpgCardArt.js';
@@ -121,8 +120,7 @@ function Poussiere() {
  * Une carte du coffret, **à plat** : la peinture, son anneau, son nom et sa
  * rareté dessous, et une lueur qui change de teinte et d'intensité avec la
  * rareté. Aucune perspective, aucune rotation ni tranche : la peinture garde
- * ses couleurs et la mythique reçoit une brume dorée translucide, en plus du
- * halo derrière elle.
+ * ses couleurs, et le halo derrière elle indique sa rareté.
  */
 function CarteDuCoffret({ ligne, rang, total, reduit }) {
   const { carte, exemplaires } = ligne;
@@ -150,7 +148,6 @@ function CarteDuCoffret({ ligne, rang, total, reduit }) {
           <div className="rpg-coffret__carte-face">
             <div className="rpg-coffret__carte-art">
               <IllustrationCarte carte={carte} />
-              <RpgBrumeMythique carte={carte} />
             </div>
             <div className="rpg-coffret__carte-texte">
               <p className="rpg-coffret__carte-nom">{carte.name}</p>

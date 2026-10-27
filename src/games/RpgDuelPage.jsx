@@ -114,7 +114,6 @@ import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
-import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import {
   GAINS,
@@ -1153,16 +1152,15 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         <span className="rpg-card-pile__card rpg-card-pile__card--back" />
         {topCard
-          ? <span
+          ? <img
               className={`rpg-card-pile__card rpg-card-pile__card--top ${cardFrameClass(carteDuDessus)} ${cardMotifClass(carteDuDessus)}`}
               style={cardFrameStyle(carteDuDessus)}
+              src={cardArt(topCard)}
+              alt=""
               data-card-id={carteDuDessus?.id}
               onMouseEnter={(event) => onHoverCard?.(carteDuDessus, event)}
               onMouseLeave={onLeaveHoverCard}
-            >
-              <img src={cardArt(topCard)} alt="" />
-              <RpgBrumeMythique carte={carteDuDessus} />
-            </span>
+            />
           : <span key={drawToken ?? 'deck-top'} className="rpg-card-pile__card rpg-card-pile__card--top rpg-card-pile__card--back" />}
       </span>
       <b>{count}</b>
@@ -1562,7 +1560,6 @@ export function TourbillonEau({ effet, onTermine = null }) {
           style={cardFrameStyle(cardById(effet.cardId))}
         >
           <img src={cardArt(effet.cardId)} alt="" />
-          <RpgBrumeMythique carte={cardById(effet.cardId)} />
         </span>
       )}
       <i className="rpg-tourbillon-eau__nappe" />
@@ -1860,7 +1857,6 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
         }}
       >
         <img src={cardArt(effet.cardId)} alt="" />
-        <RpgBrumeMythique carte={carteDetruite} />
         <b>{effet.name}</b>
         {prise && <LiensAbordageCarte effet={effet} />}
       </div>
@@ -2559,7 +2555,6 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
-      <RpgBrumeMythique carte={carte} />
       {entite.furieDeclenchee && <VignetteFurie />}
       {((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && (
         <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />
@@ -3133,7 +3128,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
             <figure className="rpg-hover-card-preview__weapon" data-arme-equipee={arme.id} key={`${arme.id}-${index}`}>
               <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
                 <img src={cardArt(arme)} alt="" />
-                <RpgBrumeMythique carte={arme} />
                 <span className="rpg-hover-card-preview__weapon-cost">{arme.cost}</span>
               </span>
               <figcaption>
@@ -3152,7 +3146,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           >
             <span className="rpg-hover-card-preview__weapon-art" aria-hidden="true">
               <img src={cardArt(prisonniereCarte)} alt="" />
-              <RpgBrumeMythique carte={prisonniereCarte} />
               <span className="rpg-hover-card-preview__weapon-cost">{prisonniereCarte.cost}</span>
             </span>
             <figcaption>
@@ -3183,7 +3176,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden="true"
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
-      <RpgBrumeMythique carte={carte} />
       {estEnFurie && <VignetteFurie />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
@@ -3533,7 +3525,6 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       aria-label={`${carte.name} — ${cardFaceTypeLine(carte)}${carte.kind === 'terrain' ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text && carte.text !== '—' ? ` — ${carte.text}` : ''}${estCreature ? ` — attaque ${carte.atk}, défense ${carte.def}` : ''} — ${selectionnee ? 'carte à changer, toucher pour la garder' : 'toucher pour la changer'}`}
     >
       <img className="rpg-mulligan__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-      <RpgBrumeMythique carte={carte} />
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-mulligan__sceau rpg-mulligan__sort" />
@@ -3674,13 +3665,12 @@ function SpellAnnouncement({ annonce, camp = 'joueur' }) {
           ? `Seconde vague : ${carte.name}. Cible : ${annonce.cible.nom}.`
           : `${sorcier ? 'Magie du sorcier' : 'Magie jouée'} : ${carte.name}. Cible : ${annonce.cible.nom}.`}
     >
-      <span
+      <img
         className={`rpg-spell-played__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
         style={cardFrameStyle(carte)}
-      >
-        <img src={cardArt(carte)} alt="" />
-        <RpgBrumeMythique carte={carte} />
-      </span>
+        src={cardArt(carte)}
+        alt=""
+      />
       <div className="rpg-spell-played__details">
         {/* Le sur-titre prend la teinte de la famille du sort annoncé. Un
             contre garde son or : sa règle est plus spécifique (voir
@@ -5213,7 +5203,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         style={cardFrameStyle(carte)}
                       >
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-                        <RpgBrumeMythique carte={carte} />
                         <CardElementBadge carte={carte} />
                         {!estTerrain && <span
                           className={`rpg-card-catalogue__cost${degradeCout ? ' rpg-card-catalogue__cost--hybride' : ''}`}
@@ -11856,7 +11845,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onMouseLeave={quitterCarteSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <RpgBrumeMythique carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
@@ -12187,7 +12175,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 onBlur={masquerApercuSurvol}
               >
                 <img src={cardArt(terrain.carteId)} alt="" />
-                <RpgBrumeMythique carte={carte} />
                 {groupe.count > 1 && <span className="rpg-terrain-stack__count" aria-hidden="true">×{groupe.count}</span>}
                 {groupe.count > 1 && groupe.tapped > 0 && (
                   <span className="rpg-terrain-stack__engagement" aria-hidden="true">↻{groupe.tapped}</span>
@@ -12649,7 +12636,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
-                  <RpgBrumeMythique carte={carte} />
                   <CardElementBadge carte={carte} />
                   <span className="rpg-hand__title">
                     <ManaCost carte={carte} showElement={false} />

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import RpgBrumeMythique from './RpgBrumeMythique.jsx';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { EffetsSprite, PastillesCarte } from './effetIcons.jsx';
@@ -43,7 +42,6 @@ function GuideCard({ carte, cardArt }) {
     >
       <div className="rpg-card-guide__art">
         <img src={cardArt(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-        <RpgBrumeMythique carte={carte} />
         {carte.kind !== 'terrain' && <span
           className={`rpg-card-guide__cost${degradeCout ? ' rpg-card-guide__cost--hybride' : ''}`}
           style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
