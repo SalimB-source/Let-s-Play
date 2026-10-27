@@ -8965,8 +8965,9 @@ Il arrive désormais avec les trois mots-clés **Bouclier**, **Rapidité** et
 - `rapidite: true` : inchangé, il peut attaquer le tour où il arrive.
 - `contreAttaque: true` : la même riposte qu'Eirik et Tojiro. Une créature
   adverse qui le frappe avec Attaque ciblée ou le cible avec une capacité
-  encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait frapper le
-  sorcier qui l'a lancé.
+  encaisse ses 4 dégâts d'attaque ; un sort qui l'atteint — y compris un
+  **sort de zone**, voir plus bas la section « la Contre-attaque répond aussi
+  aux sorts de zone » — fait frapper le sorcier qui l'a lancé.
 
 L'interaction des deux protections se lit dans `rpgLancerMagie` : le premier
 sort adverse qui désigne Salem est **bloqué avant** `appliquer` — payé, au
@@ -9118,3 +9119,61 @@ dégâts, le gel attaché, les destructions de zone, l'Embuscade, les sorts
 alliés, les capacités de zone et l'écho ; `tests/rpg-tenebres.test.js`
 vérifie La Dernière Pesée face à une parade, et `scripts/rpg-bouclier-check.mjs`
 relit le branchement de `paradeZoneBloque` dans le moteur.
+
+## Le Sablier : la Contre-attaque répond aussi aux sorts de zone
+
+La Contre-attaque ne se limitait plus aux sorts qui **désignent** la créature :
+désormais, chaque créature adverse **atteinte par une vague de zone** riposte
+aussi, exactement comme si la vague l'avait visée personnellement. Une zone ne
+désigne personne, mais elle frappe tout le monde — et chaque épine plantée dans
+la vague répond.
+
+- **Qui riposte ?** Toute créature du camp adverse du lanceur que la vague
+  atteint réellement : ni épargnée par une parade anti-sort (la parade tombe
+  et la vague passe sur les autres), ni écartée par une protection de couleur
+  ou la protection des sorts du Serpent du monde, et toujours debout à la fin
+  de la vague. Les créatures du camp du lanceur ne ripostent jamais, même
+  quand une zone balaie les deux tables (le Grand Hiver, le vent de la
+  Valkyrie) : on ne rend pas de coup à son propre camp.
+- **Où part la riposte ?** La règle du ciblé est conservée : un **sort** de
+  zone se paie sur le visage du **sorcier lanceur** (`rpgInfligerSorcier`),
+  une **capacité** de zone sur la **créature source** (`sauf`, via
+  `rpgBlesserCreature` en type `capacite`, donc non esquivable). Chaque
+  créature à Contre-attaque touchée produit sa propre riposte, avec sa propre
+  ATK du moment — l'Embuscade réduit d'abord l'ATK, les ripostes partent
+  ensuite à la valeur abaissée.
+- **Morts et Esquives** : une créature tuée par la vague ne riposte pas (elle
+  n'est plus dans le camp, et `riposteDeContreAttaque` exige des PV > 0) ; une
+  Esquive réussie annule dégâts et malus sur la créature mais **n'éteint pas
+  sa riposte**, comme devant un sort ciblé. Une créature renvoyée en main par
+  la vague du Léviathan quitte la table et ne peut pas non plus rendre de coup.
+- **Moteur** : le nouveau `ripostesDeZone(duel, coteLanceur, sauf, sourceType,
+  touchees)` de `rpgDuel.js` centralise le réveil des Contre-attaques de zone,
+  sur le modèle de `riposterSurEffet` pour le ciblé. Il est branché dans toutes
+  les branches de zone — `degats` (`toutes-autres` et `toutes-creatures`, gel
+  inclus), `gel` sans blessure, `destruction-totale` et `destruction-coutmax`
+  (où seules les survivantes — Esquive ou coût trop élevé — ripostent), le
+  malus `buff`/`creatures-adverses` de l'Embuscade (magies seulement), le
+  renvoi `retour-main`/`toutes-autres` et la résolution des **échos** (le
+  Nuage de cendres : chaque vague réveille à nouveau les Contre-attaques
+  debout). Le journal réutilise les lignes existantes de Contre-attaque.
+- **IA** : `rpgAI.js` déduit désormais le prix des ripostes dans ses
+  estimations de zone. Le nouvel helper `degatsRipostesZone` retranche les
+  dégâts certains qui vont au visage du sorcier (destructions totales et
+  jugements par coût ne laissent que les Esquives, le Grand Hiver et
+  l'Embuscade comptent les survivantes) ; pour les capacités d'arrivée de
+  zone, les ripostes qui frappent la nouvelle créature sont évaluées sur son
+  propre corps (mort certaine = perte totale, sinon blessure amortie). La
+  simulation des niveaux Normal et au-delà voyait déjà la mort via le moteur.
+- **Textes et pédagogie** : les quatre porteurs de Contre-attaque (Eirik,
+  Salem, Kusayla, Tojiro), la pastille du mot-clé (`effetIcons.js`), la leçon
+  de `rpgCardLessons.js` et `docs/rpg/05-concept-cartes.md` précisent que
+  l'épine répond aux sorts ciblés **comme de zone**, et qu'une Esquive ne
+  l'empêche jamais de partir.
+
+Contrôles : la suite `tests/rpg-duel.test.js` gagne un bloc « Contre-attaque et
+sorts de zone » (zone de base, doubles ripostes, cible tuée, parade, capacité
+de zone, zones deux camps, Embuscade, Esquive qui riposte quand même, Neige
+noire et écho) et `tests/rpg-ia.test.js` vérifie que le sorcier ne lance plus
+à perte une zone dans des Contre-attaques survivantes ; le total de la suite
+reste stable, sans régression sur les sorts ciblés.

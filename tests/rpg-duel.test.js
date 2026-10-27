@@ -458,6 +458,189 @@ test('la Contre-attaque du roi Kusayla rend ses 4 dégâts à la créature qui l
     'le journal annonce la riposte du roi');
 });
 
+/* ── Contre-attaque et sorts de zone : la vague réveille chaque riposte ──── */
+
+test('une Contre-attaque survivante renvoie un sort de zone sur le sorcier lanceur', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 2/2, Contre-attaque
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'brisure-de-verre'); // 1 dégât à chaque créature ennemie
+  const pvJoueur = duel.joueur.pv;
+
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brisure-de-verre').ok, true);
+  assert.equal(eirik.pv, 1, 'la vague blesse Eirik (2 → 1)');
+  assert.equal(duel.joueur.pv, pvJoueur - 2, 'Eirik survivant renvoie ses 2 dégâts au visage du lanceur');
+  assert.equal(duel.sorcier.pv, 25, 'la riposte d’un sort va au sorcier adverse, pas au sorcier défenseur');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment renvoie le sort au sorcier joueur')),
+    'le journal raconte la riposte de zone');
+});
+
+test('chaque créature adverse atteinte par une zone renvoie sa propre riposte', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const premier = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  const second = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'brisure-de-verre');
+
+  rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(premier.pv, 1);
+  assert.equal(second.pv, 1);
+  assert.equal(duel.joueur.pv, pvJoueur - 4, 'deux Contre-attaques à 2 : 4 dégâts au sorcier lanceur');
+});
+
+test('une créature tuée par la vague ne riposte pas', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 2/2
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'vent-rouge'); // 2 dégâts de zone : Eirik meurt
+
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'vent-rouge').ok, true);
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === eirik.id), false, 'Eirik est détruit');
+  assert.equal(duel.joueur.pv, pvJoueur, 'aucune riposte ne part d’une créature morte');
+});
+
+test('une parade qui encaisse la vague n’entraîne aucune riposte ; sans parade, Salem riposte', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'salem'); // 4/3, parade + Contre-attaque
+  const salem = rpgJouerCreature(duel, 'sorcier', 'salem').entite;
+  assert.equal(salem.bouclier, 1);
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+
+  donner(duel, 'joueur', 'brisure-de-verre');
+  rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(salem.pv, 3, 'la parade épargne Salem');
+  assert.equal(salem.bouclier, 0, 'et tombe');
+  assert.equal(duel.joueur.pv, pvJoueur, 'bloquée par la parade, la vague ne déclenche pas la riposte');
+
+  salem.bouclier = 0;
+  salem.bouclierEpuise = true;
+  donner(duel, 'joueur', 'brisure-de-verre');
+  rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(salem.pv, 2, 'la seconde vague blesse Salem (3 → 2)');
+  assert.equal(duel.joueur.pv, pvJoueur - 4, 'sans parade, sa Contre-attaque frappe le lanceur de 4');
+});
+
+test('une capacité de zone adverse fait riposter sur la créature source, pas sur un sorcier', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'valkyrie-des-glaces'); // arrivée : 1 dégât de zone, deux camps
+  const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
+
+  assert.equal(eirik.pv, 1, 'le vent froid blesse Eirik');
+  assert.equal(valkyrie.pv, 3, 'la Valkyrie encaisse la riposte d’Eirik (5 → 3), son propre vent l’épargnant');
+  assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25], 'aucun sorcier ne prend la riposte d’une capacité');
+  assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
+    'le journal nomme la riposte sur la créature source');
+});
+
+test('une zone qui balaie les deux camps ne fait pas riposter les créatures du lanceur', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  const adverse = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  const allie = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  const pvSorcier = duel.sorcier.pv;
+  donner(duel, 'joueur', 'grand-hiver'); // 1 dégât à toutes les créatures, les deux camps
+
+  rpgLancerMagie(duel, 'joueur', 'grand-hiver');
+  assert.equal(adverse.pv, 1);
+  assert.equal(allie.pv, 1, 'l’Eirik du lanceur encaisse aussi la vague');
+  assert.equal(duel.joueur.pv, pvJoueur - 2, 'seul l’Eirik adverse riposte, sur le joueur lanceur');
+  assert.equal(duel.sorcier.pv, pvSorcier, 'un camp ne riposte jamais contre son propre sorcier');
+});
+
+test('l’Embuscade marquée en zone réveille la Contre-attaque, avec la force amputée par le malus', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'embuscade'); // -2/-2 plancher 1 sur toute la table adverse
+
+  rpgLancerMagie(duel, 'joueur', 'embuscade');
+  assert.equal(eirik.atk, 1, 'le malus ampute Eirik (plancher 1)');
+  assert.equal(duel.joueur.pv, pvJoueur - 1, 'la riposte part avec l’attaque actuelle, déjà réduite');
+});
+
+test('l’Esquive d’une zone n’empêche pas la Contre-attaque, tout en annulant le dégât', () => {
+  const duel = duelDeBase({ rng: () => 0.1 }); // sous le seuil d’Esquive (30 %)
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'kusayla-roi-des-imazighen'); // 5/3, Esquive + Contre-attaque
+  const kusayla = rpgJouerCreature(duel, 'sorcier', 'kusayla-roi-des-imazighen').entite;
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'brisure-de-verre');
+
+  rpgLancerMagie(duel, 'joueur', 'brisure-de-verre');
+  assert.equal(kusayla.pv, 3, 'l’Esquive annule le dégât de la vague');
+  assert.equal(duel.joueur.pv, pvJoueur - 5, 'mais la Contre-attaque part quand même, à 5 de force');
+});
+
+test('la survivante trop chère pour la Neige noire est gelée et renvoie sa riposte', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'kusayla-roi-des-imazighen'); // coût 5 > borne 3
+  donner(duel, 'sorcier', 'chien-du-guet');
+  const kusayla = rpgJouerCreature(duel, 'sorcier', 'kusayla-roi-des-imazighen').entite;
+  rpgJouerCreature(duel, 'sorcier', 'chien-du-guet');
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'neige-noire'); // coût 6 + 3 PV, détruit ≤ 3, gèle le reste
+
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'neige-noire').ok, true);
+  assert.ok(duel.sorcier.creatures.some((entite) => entite.id === kusayla.id), 'Kusayla survit, trop cher pour la vague');
+  assert.ok((kusayla.gelToursRestants ?? 0) > 0, 'il est gelé comme survivant');
+  // 3 PV du prix de la Neige noire, puis 5 de la riposte de Kusayla.
+  assert.equal(duel.joueur.pv, pvJoueur - 3 - 5, 'le lanceur paie son prix en PV puis encaisse la riposte');
+});
+
+test('l’écho d’un sort de zone réveille aussi la Contre-attaque, une fois par vague', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  Object.assign(eirik, { pv: 10, pvMax: 10, def: 10 }); // de quoi survivre aux deux vagues
+  duel.tour = 'joueur';
+  const pvJoueur = duel.joueur.pv;
+  donner(duel, 'joueur', 'nuage-de-cendres'); // 2 immédiats, puis 1 en écho
+
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  assert.equal(duel.joueur.pv, pvJoueur - 2, 'la première vague fait déjà riposter Eirik');
+  rpgFinDeTour(duel); // tour du sorcier : l’écho attend son lanceur
+  rpgFinDeTour(duel); // retour du joueur : l’écho retombe
+  assert.equal(duel.sorcier.degatsEchos.length, 0);
+  assert.equal(eirik.pv, 7, 'Eirik encaisse 2 puis 1 (10 → 7)');
+  assert.equal(duel.joueur.pv, pvJoueur - 4, 'la seconde vague déclenche une seconde riposte de 2');
+});
+
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {
   assert.deepEqual(RPG_TOUR_CARDS.map((carte) => carte.id), [
     'tour-de-braise', 'tour-des-flots', 'tour-de-sable', 'tour-de-neige', 'tour-des-tenebres',

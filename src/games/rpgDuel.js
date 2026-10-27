@@ -2017,7 +2017,8 @@ function tenterEsquive(duel, entite, sourceType) {
  * La Contre-attaque est une riposte IMMÉDIATE, sans jet de dés. Elle frappe
  * la créature qui a porté le coup (une attaque ciblée, une
  * capacité qui le ciblait) ou, pour un sort, le sorcier qui l'a lancé — la
- * magie se paie sur le visage du lanceur.
+ * magie se paie sur le visage du lanceur. Une vague de zone qui atteint la
+ * créature produit la même riposte, voir `ripostesDeZone`.
  *
  * Elle passe par `rpgBlesserCreature` avec le type « capacite » : les
  * capacités ne s'esquivent pas, une riposte ne peut donc jamais être renvoyée
@@ -2048,10 +2049,10 @@ function riposteDeContreAttaque(duel, defenseur, source) {
 }
 
 /**
- * La Contre-attaque d'un effet : la cible adverse désignée par une capacité
- * riposte sur la créature source, celle d'un sort sur le sorcier qui l'a
- * lancé. Les effets de zone (`cible: 'toutes-creatures'`) ne désignent
- * personne : ils ne déclenchent rien.
+ * La Contre-attaque d'un effet ciblé : la créature adverse désignée par une
+ * capacité riposte sur la créature source, celle d'un sort sur le sorcier qui
+ * l'a lancé. Les effets de zone passent par `ripostesDeZone`, qui réveille
+ * chaque Contre-attaque atteinte par la vague.
  */
 function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
   if (!cibleId || effet?.cible !== 'creature') return false;
@@ -2061,6 +2062,35 @@ function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
   return riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
     ? { type: 'sorcier', cote }
     : { type: 'creature', cote, entiteId: sauf });
+}
+
+/**
+ * Les Contre-attaques d'une VAGUE DE ZONE. Une zone ne désigne personne, mais
+ * chaque créature adverse que la vague atteint réellement — ni épargnée par
+ * une parade, ni écartée par une protection, ni du camp du lanceur — riposte
+ * si elle porte Contre-attaque et tient encore debout : un sort se paie sur
+ * le visage du sorcier lanceur, une capacité sur la créature source.
+ *
+ * Une créature tuée par la vague ne riposte pas (elle n'est plus dans le
+ * camp, et `riposteDeContreAttaque` exige des PV > 0) ; une Esquive réussie
+ * n'empêche rien, comme pour un effet ciblé ; une créature dont la parade a
+ * encaissé la vague n'est pas dans la liste et ne riposte donc pas.
+ *
+ * @param {Array<{camp: string, entiteId: string}>} touchees entités que la
+ *   vague a réellement atteintes, tous camps confondus.
+ */
+function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
+  for (const { camp, entiteId } of touchees) {
+    // Seul le camp adverse du lanceur riposte : une zone qui balaie aussi
+    // les alliés (le Grand Hiver, le vent de la Valkyrie) ne fait pas
+    // frapper ses propres créatures.
+    if (camp !== autre(coteLanceur)) continue;
+    const defenseur = duel[camp].creatures.find((entite) => entite.id === entiteId);
+    if (!defenseur?.contreAttaque) continue;
+    riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
+      ? { type: 'sorcier', cote: coteLanceur }
+      : { type: 'creature', cote: coteLanceur, entiteId: sauf });
+  }
 }
 
 /** Applique les blessures d’un effet de combat simultanément avant de résoudre
@@ -2370,12 +2400,17 @@ function resoudreEchos(duel) {
         continue;
       }
       duel.log.push(`L’écho de ${nomSource} retombe sur la table : ${echo.amount} dégâts.`);
+      const touchees = [];
       for (const cible of cibles) {
         // L'écho est la seconde vague d'un sort : une parade neuve l'encaisse
         // comme la vague initiale et tombe à sa place.
         if (paradeZoneBloque(duel, cible, echo.sourceType, cote, echo.coteSource)) continue;
-        rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
+        const blessure = rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
+        // La protection écarte totalement l'écho ; l'Esquive, elle, n'éteint
+        // pas la Contre-attaque que la vague peut réveiller.
+        if (!blessure.protegee) touchees.push({ camp: cote, entiteId: cible.id });
       }
+      ripostesDeZone(duel, echo.coteSource, null, echo.sourceType, touchees);
     }
   }
 }
@@ -2788,18 +2823,31 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Les morts sont retirés ensemble, avant leurs déclenchements : les
       // jetons et les réanimations produits ensuite échappent à cette vague.
       const declenchements = [];
-      const victimes = [cote, adv].flatMap((camp) => duel[camp].creatures
-        .filter((entite) => !rpgEstProtegee(entite, sourceElement)
-          && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          && !paradeZoneBloque(duel, entite, sourceType, camp, cote)
-          && !tenterEsquive(duel, entite, sourceType))
-        .map((entite) => ({ camp, entite })));
+      const victimes = [];
+      // Les survivantes que la vague a tout de même atteintes : une créature
+      // qui a esquivé reste en jeu et peut réveiller sa Contre-attaque.
+      const touchees = [];
+      for (const camp of [cote, adv]) {
+        for (const entite of duel[camp].creatures) {
+          if (rpgEstProtegee(entite, sourceElement)
+            || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
+          // La parade encaisse la vague : la créature n'est pas atteinte et
+          // ne riposte pas, comme devant un sort ciblé bloqué.
+          if (paradeZoneBloque(duel, entite, sourceType, camp, cote)) continue;
+          if (tenterEsquive(duel, entite, sourceType)) {
+            touchees.push({ camp, entiteId: entite.id });
+            continue;
+          }
+          victimes.push({ camp, entite });
+        }
+      }
       for (const { camp, entite } of victimes) {
         enterrer(duel, camp, entite, sourceElement, declenchements);
       }
       for (const declencher of declenchements) declencher();
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
+      ripostesDeZone(duel, cote, sauf, sourceType, touchees);
       return;
     }
     case 'destruction-coutmax': {
@@ -2813,6 +2861,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const declenchements = [];
       const victimes = [];
       const epargnees = [];
+      // Survivantes atteintes par la vague (Esquive ou coût trop élevé) :
+      // elles restent en jeu et peuvent riposter si elles portent Contre-attaque.
+      const touchees = [];
       for (const camp of camps) {
         for (const entite of duel[camp].creatures) {
           // La source ne se vise jamais elle-même (Celui qui juge).
@@ -2825,11 +2876,16 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           if (paradeZoneBloque(duel, entite, sourceType, camp, cote)) continue;
           // Un sort esquivé est annulé EN ENTIER sur cette créature : ni
           // destruction, ni gel — un seul jet, comme pour les dégâts de zone.
-          if (tenterEsquive(duel, entite, sourceType)) continue;
+          // L'Esquive n'éteint pas sa Contre-attaque pour autant.
+          if (tenterEsquive(duel, entite, sourceType)) {
+            touchees.push({ camp, entiteId: entite.id });
+            continue;
+          }
           if ((duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax) {
             victimes.push({ camp, entite });
           } else {
             epargnees.push({ camp, entite });
+            touchees.push({ camp, entiteId: entite.id });
           }
         }
       }
@@ -2844,6 +2900,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       }
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
+      ripostesDeZone(duel, cote, sauf, sourceType, touchees);
       return;
     }
     case 'exil': {
@@ -2979,14 +3036,25 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // camp du lanceur, `toutes-autres` la table entière hors la source (la
       // vague du Léviathan). `pioche` fait piocher le lanceur après le renvoi.
       if (effet.cible === 'toutes-autres') {
+        // Vague du Léviathan : les renvoyées quittent la table et, comme les
+        // détruites, ne ripostent pas (elles ne sont plus dans le camp). Seule
+        // une créature qui reste en jeu tout en ayant été atteinte — une Esquive
+        // réussie, donc uniquement face à une source de magie — peut réveiller
+        // sa Contre-attaque. Les protégées (`renvoyerEnMain` refuse) et les
+        // parades ne sont pas atteintes et ne ripostent pas.
+        const touchees = [];
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
             if (entite.id === sauf
-              || paradeZoneBloque(duel, entite, sourceType, campCible, cote)
-              || tenterEsquive(duel, entite, sourceType)) continue;
+              || paradeZoneBloque(duel, entite, sourceType, campCible, cote)) continue;
+            if (tenterEsquive(duel, entite, sourceType)) {
+              touchees.push({ camp: campCible, entiteId: entite.id });
+              continue;
+            }
             renvoyerEnMain(duel, campCible, entite, sourceElement, sourceType);
           }
         }
+        ripostesDeZone(duel, cote, sauf, sourceType, touchees);
       } else if (effet.cible === 'creature-amie') {
         const cibles = duel[cote].creatures.filter((entite) => entite.id === cibleId);
         for (const cible of cibles) {
@@ -3193,16 +3261,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // s'excluent elles-mêmes (`sauf`).
       const horsSort = (entite) => contreAdversaire && sourceType === 'magie'
         && (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          || paradeZoneBloque(duel, entite, sourceType, campCible, cote)
-          || tenterEsquive(duel, entite, sourceType));
+          || paradeZoneBloque(duel, entite, sourceType, campCible, cote));
+      // Les Esquives réussies d'un malus de zone : le débuff ne les marque
+      // pas, mais l'Esquive n'éteint pas leur Contre-attaque.
+      const esquivees = new Set();
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
-        : campCible.creatures.filter((entite) => entite.id !== sauf
-          && !rpgEstProtegee(entite, sourceElement)
-          && !horsSort(entite)
+        : campCible.creatures.filter((entite) => {
+          if (entite.id === sauf || rpgEstProtegee(entite, sourceElement) || horsSort(entite)) return false;
           // Le Grand Débarquement ne renforce que les cales pleines : une
           // créature sans prise à bord ne débarque personne.
-          && (!effet.caleOccupeeSeulement || Boolean(entite.enCale)));
+          if (effet.caleOccupeeSeulement && !entite.enCale) return false;
+          if (contreAdversaire && sourceType === 'magie'
+            && tenterEsquive(duel, entite, sourceType)) {
+            esquivees.add(entite.id);
+            return false;
+          }
+          return true;
+        });
       // `tribut` (l'Offrande de lin) : le renfort porte aussi le mot-clé —
       // chaque créature touchée gagne Tribut X, rendu avec le bonus quand le
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
@@ -3252,6 +3328,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (effet.arriveesAbordage) {
         duel[cote].abordageDesArrivees = true;
         duel.log.push('Jusqu’à la fin du tour, les créatures qui arrivent en jeu ont Abordage.');
+      }
+      // Le malus de zone adverse (l'Embuscade) réveille les Contre-attaques
+      // des créatures atteintes, celles qui ont esquivé comprises.
+      if (contreAdversaire && sourceType === 'magie') {
+        const touchees = [
+          ...ciblesBuff.map((entite) => ({ camp: adv, entiteId: entite.id })),
+          ...[...esquivees].map((entiteId) => ({ camp: adv, entiteId })),
+        ];
+        ripostesDeZone(duel, cote, sauf, sourceType, touchees);
       }
       return;
     }
@@ -3349,12 +3434,19 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // créés par les morts ne subissent pas la vague qui les a fait naître.
         // Une parade d'une créature adverse encaisse la vague à sa place et
         // tombe ; les créatures du camp du lanceur ne réveillent pas la leur.
-        const coups = [cote, adv].flatMap((camp) => duel[camp].creatures
+        const atteintes = [cote, adv].flatMap((camp) => duel[camp].creatures
           .filter((entite) => entite.id !== sauf
+            && !rpgEstProtegee(entite, sourceElement)
+            && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote))
-          .map((entite) => ({ cote: camp, entiteId: entite.id,
-            amount: effet.amount ?? 0, sourceElement, sourceType })));
+          .map((entite) => ({ camp, entiteId: entite.id })));
+        const coups = atteintes.map(({ camp, entiteId }) => ({
+          cote: camp, entiteId, amount: effet.amount ?? 0, sourceElement, sourceType,
+        }));
         appliquerDegatsDeCombatSimultanes(duel, coups);
+        // Les Contre-attaques des survivants frappent le lanceur : un sort
+        // va au visage du sorcier, une capacité à sa créature source.
+        ripostesDeZone(duel, cote, sauf, sourceType, atteintes);
         return;
       }
       if (effet.cible === 'sorcier') {
@@ -3399,14 +3491,23 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
+      const estUneZone = sortViseUneZone({ effet });
+      // Les entités que la vague atteint vraiment (hors parade et protection,
+      // esquive comprise) : chacune peut réveiller une Contre-attaque.
+      const toucheesParLaVague = [];
       for (const { entite: cible, camp: campCible } of cibles) {
         // La parade anti-sort encaisse toute la vague sur sa porteuse : ni
         // dégât, ni gel associé, et la parade tombe. Les autres cibles sont
         // frappées normalement.
         if (paradeZoneBloque(duel, cible, sourceType, campCible, cote)) continue;
         const blessure = rpgBlesserCreature(duel, campCible, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
+        // La protection de couleur ou le Serpent du monde écartent la vague :
+        // la créature n'est pas atteinte et ne riposte pas.
+        if (blessure.protegee) continue;
+        if (estUneZone) toucheesParLaVague.push({ camp: campCible, entiteId: cible.id });
         // Un sort esquivé est annulé en entier sur cette créature : ni dégât,
-        // ni gel associé. Les autres cibles font leur propre jet.
+        // ni gel associé. Les autres cibles font leur propre jet — mais
+        // l'Esquive n'éteint pas la Contre-attaque, déjà enregistrée.
         if (blessure.esquive) continue;
         // Le gel (`gel`) accompagne les dégâts — la Poigne de givre, le
         // Verglas. La créature tuée n'a rien à figer ; la survivante ne
@@ -3427,6 +3528,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // du souk) — le même effet frappe la table, puis le visage.
       if (effet.etSorcier) {
         rpgInfligerSorcier(duel, adv, effet.etSorcier);
+      }
+      // Une zone qui atteint des Contre-attaques les réveille : les sorts
+      // ciblés, eux, ripostent déjà via `riposterSurEffet` dans `appliquer`.
+      if (estUneZone) {
+        ripostesDeZone(duel, cote, sauf, sourceType, toucheesParLaVague);
       }
       differerEcho(duel, cote, adv, effet, sourceElement, sourceType, sourceCarteId);
       return;
@@ -3462,27 +3568,46 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // écran aux dégâts. Le Géant des banquises y ajoute `degats` : son
       // souffle mord d'abord (1 dégât à chaque cible), et seules les
       // survivantes sont gelées — les mortes ne rejoignent pas la liste.
-      const cibles = effet.cible === 'toutes-creatures'
+      const zoneGel = effet.cible === 'toutes-creatures';
+      const cibles = zoneGel
         ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          && !paradeZoneBloque(duel, entite, sourceType, adv, cote)
-          && !tenterEsquive(duel, entite, sourceType))
+          && !paradeZoneBloque(duel, entite, sourceType, adv, cote))
         : duel[adv].creatures.filter((entite) => entite.id === cibleId
           && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
           && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
       const aGeler = [];
+      // Les atteintes de la vague de gel (esquive comprise) : chacune peut
+      // réveiller une Contre-attaque si sa porteuse survit.
+      const touchees = [];
       for (const cible of cibles) {
+        if (zoneGel && tenterEsquive(duel, cible, sourceType)) {
+          touchees.push(cible);
+          continue;
+        }
         if (Number.isFinite(effet.degats) && effet.degats > 0) {
           const blessure = rpgBlesserCreature(duel, adv, cible.id, effet.degats,
             sourceElement, null, sourceType, sourceCarteId);
-          if (blessure.esquive) continue;
+          if (blessure.esquive) {
+            touchees.push(cible);
+            continue;
+          }
         }
         // La cible a pu mourir sous la morsure du souffle : on ne gèle que
         // ce qui tient encore debout.
-        if (duel[adv].creatures.some((entite) => entite.id === cible.id)) aGeler.push(cible);
+        if (duel[adv].creatures.some((entite) => entite.id === cible.id)) {
+          aGeler.push(cible);
+          touchees.push(cible);
+        }
       }
       for (const cible of aGeler) gelerEntite(duel, cible);
+      // Le gel de zone atteint des survivantes : leurs Contre-attaques
+      // ripostent sur le lanceur. Le gel ciblé passe par `riposterSurEffet`.
+      if (zoneGel) {
+        ripostesDeZone(duel, cote, sauf, sourceType,
+          touchees.map((entite) => ({ camp: adv, entiteId: entite.id })));
+      }
       return;
     }
     case 'recyclage': {
@@ -3769,10 +3894,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
 
 /**
  * L'entrée unique des effets du duel. Elle applique l'effet, puis laisse la
- * Contre-attaque répondre si l'effet **désignait** une créature adverse :
- * une capacité se paie sur la créature qui la porte, un sort sur le sorcier
- * qui l'a lancé. Un effet esquivé par la cible déclenche la riposte comme un
- * effet encaissé — l'Esquive ne rend pas le coup moins vif.
+ * Contre-attaque répondre : un effet qui **désigne** une créature adverse
+ * passe par `riposterSurEffet` (une capacité se paie sur la créature qui la
+ * porte, un sort sur le sorcier qui l'a lancé), et une **zone** réveille
+ * chaque créature adverse atteinte par la vague via `ripostesDeZone`, au fil
+ * de sa résolution dans `appliquerEffet`. Un effet esquivé par la cible
+ * déclenche la riposte comme un effet encaissé — l'Esquive ne rend pas le
+ * coup moins vif.
  */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
   appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId);
