@@ -63,6 +63,7 @@ mécanique sur des cartes du catalogue.
 | **Braise et sable** (arme-sort, rare) | 3 | +1/+0 · Attaque ciblée · critique 30 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
 | **Feux de kitsune** (magie, rare) | 5 | **4** dégâts à une créature, ou **2** à chacune de deux | **5** dégâts, ou **3** et **3** | +1 sur les deux modes | Oni de la fournaise (Braise, mythique, 5) |
 | **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | **+2/+0** · critique **50 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
+| **Frappe d'iaijutsu** (magie rapide, rare) | 1 | **2** dégâts à une créature | **3** dégâts | un cran, et la carte la plus jouable du set | Tojiro, le pourfendeur (Braise, mythique, 6) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -188,6 +189,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des dix paires entrent dans le prototype.
+2. B : lesquelles des onze paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

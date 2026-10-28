@@ -322,6 +322,27 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Frappe d’iaijutsu : 2 dégâts, 3 avec Tojiro le pourfendeur', () => {
+  const monter = (avecTojiro) => {
+    const duel = duelVide();
+    const cible = poser(duel, 'sorcier', 'bakunawa');
+    if (avecTojiro) poser(duel, 'joueur', 'tojiro-le-pourfendeur');
+    return { duel, cible, avant: cible.pv };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'frappe-iaijutsu', sans.cible.id);
+  assert.equal(sans.avant - sans.cible.pv, 2, 'sans ancre : 2 dégâts, la carte à son coût plein');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'frappe-iaijutsu', avec.cible.id);
+  assert.equal(avec.avant - avec.cible.pv, 3, 'avec le Pourfendeur : 3 dégâts');
+
+  const carte = cardById('frappe-iaijutsu');
+  assert.equal(carte.cost, 1, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'tojiro-le-pourfendeur', effet: { amount: 3 } });
+});
+
 test('Feux de kitsune : 4 sur une cible ou 2 et 2 ; 5 ou 3 et 3 avec l’Oni', () => {
   // Une 3/6 encaisse les deux modes sans mourir : on lit les dégâts exacts.
   // L'Oni frappe aussi à l'arrivée, donc on mesure toujours le **delta**.

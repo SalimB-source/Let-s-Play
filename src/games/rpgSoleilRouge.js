@@ -211,7 +211,10 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Magie Rapide — Technique · Braise',
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée.',
+    // Le Lien du Pourfendeur : la frappe gagne le cran qui manquait, celui qui
+    // finit le duel — 3 au lieu de 2, pour 1 mana.
+    lien: { ancre: 'tojiro-le-pourfendeur', effet: { amount: 3 } },
+    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée. Lien du Pourfendeur — si Tojiro, le pourfendeur est en jeu, inflige 3 dégâts à la place.',
     flavor: 'Le fourreau n’a pas fini de résonner que le duel est terminé.',
   }),
   carte({
