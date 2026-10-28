@@ -115,6 +115,7 @@
     <a href="#autres-pistes">+ Pistes du dépôt</a>
     <a href="#ambiances">🏰 Ambiances des 10 Tours</a>
     <a href="#echantillons">▶ Échantillons (fichiers)</a>
+    <a href="#voix">🗣 Voix des créatures</a>
     <a href="#synthese">✦ Survol — dernier son synthétisé</a>
     <a href="#annexe">⚠ Annexe</a>
   </nav>
@@ -165,6 +166,23 @@
     <div class="grid" id="liste-echantillons"></div>
   </section>
 
+  <section id="voix">
+    <h2>🗣 Voix d’arrivée des créatures <span class="compte" id="compte-voix"></span></h2>
+    <p class="intro">
+      Un court échantillon par créature, joué <b>à son entrée en jeu</b> — une carte
+      jouée depuis la main, jamais un aperçu, une pioche ni une réanimation
+      (source : <code>src/games/rpgArrivalVoices.js</code>, fichiers à la racine de
+      <code>public/</code>). La voix propre d’une carte <b>remplace</b> son accueil
+      générique : la Barbe-Rousse ne s’écoute pas par-dessus un « Ahoy ! », les
+      créatures sans voix gardent les accueils pirates, le quai des navires et la
+      réplique naine. Les noms des fichiers ne sont pas ceux des cartes —
+      « Damiyo » pour le Daimyō du Soleil rouge, « Shogun » pour le Samouraï du
+      Torii, « Serpent de verre » pour la Vipère de verre — le rapprochement est
+      consigné carte par carte.
+    </p>
+    <div class="grid" id="liste-voix"></div>
+  </section>
+
   <section id="synthese">
     <h2>✦ Bruitage synthétisé — le survol <span class="compte" id="compte-synthese"></span></h2>
     <p class="intro">
@@ -187,6 +205,7 @@
     </div>
     <div class="note">
       <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
+      <code>src/games/rpgArrivalVoices.js</code> (37 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
       <code>src/games/rpgAmbientMusic.js</code> (10 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
@@ -202,6 +221,7 @@
 <script type="module">
 import { RpgAudioPlayer, rpgSfx, RPG_SFX_NAMES } from './src/games/rpgAudio.js';
 import { RpgAmbientMusic, RPG_AMBIENT_THEMES } from './src/games/rpgAmbientMusic.js';
+import { RPG_ARRIVAL_VOICE_FILES } from './src/games/rpgArrivalVoices.js';
 
 const $ = (sel) => document.querySelector(sel);
 const statut = $('#statut');
@@ -323,6 +343,8 @@ const ECHANTILLONS = [
     desc: 'La vague d’attaque est validée.' },
   { nom: 'Coup d’attaque du joueur', fichier: './src/games/assets/player-attack-hit.wav', code: 'player_attack_hit · player-attack-hit.wav',
     desc: 'La frappe du joueur qui touche.' },
+  { nom: 'Flèche de l’Attaque ciblée', fichier: './src/games/assets/arrow-shot.wav', code: 'fleche · arrow-shot.wav',
+    desc: 'Une créature qui frappe une proie désignée tire : corde, encoche et sifflement d’empennage. Jamais le coup d’épée par-dessus.' },
   { nom: 'Souffle de Braise', fichier: './src/games/assets/flame-gust.wav', code: 'flame_gust · flame-gust.wav',
     desc: 'Le vent de feu des sorts et effets Braise qui blessent (jamais les attaques).' },
   { nom: 'Vague d’Eau', fichier: './src/games/assets/water-wave.wav', code: 'water_wave · water-wave.wav',
@@ -363,6 +385,59 @@ lane.appendChild(carteAudio({
   fichier: './src/games/assets/cowboy-hey-haa.mp3', code: 'cowboy-hey-haa.mp3 → arcadeAudio.js',
   desc: 'Jeu Mirage Rush : cri de victoire tous les 5 ramassages consécutifs. Listé ici car il partage le dossier d’assets du Sablier.',
 }));
+
+/* ── 3 bis · Voix d’arrivée des créatures ─────────────────────────── */
+// Le rapprochement carte ↔ fichier vit dans le module du jeu ; la salle
+// d’écoute n’en garde qu’un libellé lisible par carte.
+const LIBELLES_VOIX = {
+  susanoo: 'Susanoo',
+  'cavalier-des-deux-sabres': 'Cavalier des deux sabres',
+  'onna-musha-des-cendres': 'Onna-musha des cendres',
+  'oni-de-la-fournaise': 'Oni de la fournaise',
+  'kagutsuchi-flamme-originelle': 'Kagutsuchi, Flamme originelle',
+  'kenshi-de-la-forge': 'Kenshi de la forge',
+  'tojiro-le-pourfendeur': 'Tojiro, le pourfendeur',
+  'daimyo-du-soleil-rouge': 'Daimyō du Soleil rouge',
+  'samourai-du-torii': 'Samouraï du Torii (Shogun promu)',
+  'celui-qui-juge': 'Celui qui juge',
+  'la-devoreuse': 'La Dévoreuse',
+  'passeur-au-masque-de-chacal': 'Le Passeur au masque de chacal',
+  'maitre-des-hieroglyphes': 'Le Maître des hiéroglyphes',
+  'berserk-du-crepuscule': 'Berserk du crépuscule',
+  'valkyrie-des-neuf-nuits': 'Valkyrie des neuf nuits',
+  'faucon-du-zenith': 'Le Faucon du zénith',
+  'lionne-du-midi-ardent': 'La Lionne du midi ardent',
+  'dame-aux-ailes-d-or': 'La Dame aux ailes d’or',
+  'seigneur-des-machoires': 'Le Seigneur des mâchoires',
+  'cavalier-amazigh-du-desert': 'Cavalier amazigh du Désert',
+  'la-barbe-rousse': 'La Barbe-Rousse, amiral des deux mers',
+  'la-barbe-noire': 'La Barbe Noire, la malédiction',
+  'vipere-de-verre': 'Vipère de verre',
+  jormungandr: 'Jörmungandr',
+  'jarl-au-marteau-de-guerre': 'Jarl au marteau de guerre',
+  'valkyrie-des-glaces': 'Valkyrie des glaces',
+  'valkyrie-au-corbeau': 'Valkyrie au corbeau',
+  'berserk-des-trois-hivers': 'Berserk des trois hivers',
+  'geant-des-banquises': 'Géant des banquises',
+  salem: 'SALEM',
+  yamina: 'YAMINA',
+  boualem: 'BOUALEM',
+  feriel: 'FÉRIEL',
+  'kusayla-roi-des-imazighen': 'Le roi Kusayla',
+  'ifrit-al-ahmar': 'Ifrit al-Ahmar, seigneur des braises',
+  'maitre-du-marteau': 'LE MAÎTRE DU MARTEAU',
+  'maitre-des-corbeaux': 'LE MAÎTRE DES CORBEAUX',
+};
+const lv = $('#liste-voix');
+for (const [carteId, fichier] of Object.entries(RPG_ARRIVAL_VOICE_FILES)) {
+  lv.appendChild(carteAudio({
+    plateau: LIBELLES_VOIX[carteId] ?? carteId,
+    fichier: `./public/${fichier}`,
+    code: fichier,
+    desc: `Arrivée en jeu de la carte <code>${carteId}</code> — voix propre à la carte, jouée à la place des accueils génériques.`,
+  }));
+}
+$('#compte-voix').textContent = `${lv.children.length} voix · une par carte`;
 
 /* ── 4 · Bruitages synthétisés ────────────────────────────────────── */
 const player = new RpgAudioPlayer();

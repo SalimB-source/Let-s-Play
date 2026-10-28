@@ -9177,3 +9177,59 @@ de zone, zones deux camps, Embuscade, Esquive qui riposte quand même, Neige
 noire et écho) et `tests/rpg-ia.test.js` vérifie que le sorcier ne lance plus
 à perte une zone dans des Contre-attaques survivantes ; le total de la suite
 reste stable, sans régression sur les sorts ciblés.
+
+## Le Sablier : chaque créature parle en entrant en jeu
+
+Le lot « Game voices » a déposé, à la racine de `public/`, un court MP3 par
+créature — 0,65 s à 3,06 s, 80 kbps. Ces fichiers n'étaient lus par personne :
+le duel n'accueillait ses cartes qu'avec trois sons génériques (le cri pirate
+« Ahoy ! » ou son dialogue « Alright », l'ambiance de quai des navires, la
+réplique naine « My axe shall speak for me »). Chaque voix est désormais
+attachée à sa carte et jouée **à son arrivée en jeu**.
+
+- **Le rapprochement est un fichier, pas une intuition.** Le nouveau module
+  `src/games/rpgArrivalVoices.js` porte la table des 37 voix, carte par carte,
+  et consigne chaque écart de nom : « Damiyo » pour le **Daimyō du Soleil
+  rouge**, « Shogun » pour le **Samouraï du Torii** (la carte qui se promeut en
+  Shogun), « Géant de glace » pour le **Géant des banquises**, « Viking des
+  trois hivers » pour le **Berserk des trois hivers**, « Valkyrie de glace » et
+  « Valkyrie du corbeau » pour la **Valkyrie des glaces** et la **Valkyrie au
+  corbeau**, « Serpent de verre » pour la **Vipère de verre** (la seule carte de
+  verre du jeu), « Black beard » pour la **Barbe Noire**, « lionne du soleil »
+  pour la **Lionne du midi ardent**, « Kusayla » pour **Le roi Kusayla**,
+  « Ifrit el ahmar » pour **Ifrit al-Ahmar**, les deux suffixes de
+  téléchargement `(1)` de Kagutsuchi et de La Dévoreuse, et les minuscules de
+  « dame aux ailes d'or » et « faucon du zenith ».
+- **Ce qui n'est pas une voix ne parle pas.** Les longues pistes de `public/`
+  (`Viking Howl`, `Egypt`, `Le Sceau de Sang`, `CherryBlossomStrings`…) restent
+  des musiques de plateau, et `viking warrior battle cry with horn.mp3` comme
+  `26509 Thunder spark transition-full.mp3` sont déjà les bruitages `victoire`
+  et `foudre_marteau` de `rpgAudio.js`. Le partage est net : une voix pèse
+  moins de 200 Ko, une piste plus de 3 Mo.
+- **La voix propre supplante l'accueil générique.** Une Barbe-Rousse ne
+  s'écoute pas par-dessus un « Ahoy ! » : `rpgArriveesSansVoix` renvoie les
+  seules cartes muettes aux trois accueils existants. Le jeton Corsaire créé
+  par l'amiral, les sites et les cartes sans fichier gardent donc le quai, le
+  cri pirate et la réplique naine — et rien ne change pour eux.
+- **Quelques règles d'écoute.** Une seule voix à la fois (la précédente est
+  mise en pause), trois au plus par relevé d'arrivées, décalées de 140 ms : le
+  raid d'un même geste ne se coupe pas la parole. Le gain de base est de 0,5
+  (`RPG_CARD_VOICE_VOLUME`), sous les bruitages de table, et le lecteur reste
+  muet quand le joueur a coupé le son ou baissé le volume — `playCardVoice`
+  partage la règle de `syncOutputGain`, et `destroy()` coupe les départs en
+  attente.
+- **Le moteur ne juge pas la carte.** `rpgConsommerArriveesCreature` journalise
+  **toute** entrée en jeu depuis la main (jamais un jeton, une réanimation ou
+  un retour de cale) ; c'est la page qui lit la voix de la carte, en solo comme
+  en PvP, où l'arrivée adverse se constate par différence de champ.
+- **La salle d'écoute suit.** `sons-du-sablier.html` gagne une section « Voix
+  d'arrivée des créatures » : les 37 échantillons, chacun avec son nom de
+  fichier et la carte qu'il salue.
+
+Contrôles : `tests/rpg-voix-arrivees.test.js` (les 37 cartes existent et sont
+des créatures ou des héros, aucun fichier n'est attribué deux fois, aucune voix
+du lot ne reste orpheline et aucune musique n'entre dans la table, encodage des
+adresses, journal du moteur, priorité sur les accueils génériques, lecteur —
+une voix à la fois, son coupé, décalage et démontage), et
+`tests/rpg-voix-arrivees-ui.test.js`, qui monte la vraie page : la Mousse des
+galiotes garde son « Ahoy ! », le Kenshi de la forge joue son propre MP3.

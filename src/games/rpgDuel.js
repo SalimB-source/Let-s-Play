@@ -196,16 +196,32 @@ export function rpgConsommerPrisesEnCale(duel) {
 
 // Les arrivées sonores des créatures : des journaux audio hors état JSON, sur
 // le modèle des prises en cale. Une créature jouée depuis la main entre dans
-// un seul journal : les navires (type imprimé « Navire ») pour l'ambiance de
-// quai, les pirates non-navires pour leur accueil alterné, et les quatre
-// guerriers du Nord concernés pour la voix naine. Le type Navire prime toujours
-// sur le set pirate. Ni les jetons, ni les réanimations, ni les détenues
-// rendues en jeu par l'ouverture d'une cale ne passent par ces journaux : le
-// moteur précise lui-même que ces retours ne sont pas des arrivées. La page
-// consomme les journaux à chaque rendu.
+// le journal général (`rpgConsommerArriveesCreature`) — c'est là que la page
+// lit la voix propre de la carte (`rpgArrivalVoices.js`) — et dans un seul
+// journal d'accueil générique : les navires (type imprimé « Navire ») pour
+// l'ambiance de quai, les pirates non-navires pour leur accueil alterné, et
+// les quatre guerriers du Nord concernés pour la voix naine. Le type Navire
+// prime toujours sur le set pirate. Les deux journaux coexistent : c'est la
+// page qui tait l'accueil générique quand la carte a sa propre voix — ainsi
+// une Barbe-Rousse parle au lieu d'écouter « Ahoy ! ». Ni les jetons, ni les
+// réanimations, ni les détenues rendues en jeu par l'ouverture d'une cale ne
+// passent par ces journaux : le moteur précise lui-même que ces retours ne
+// sont pas des arrivées. La page consomme les journaux à chaque rendu.
 const arriveesPirateAudioParDuel = new WeakMap();
 const arriveesNavireAudioParDuel = new WeakMap();
 const arriveesDwarfAudioParDuel = new WeakMap();
+// Toutes les entrées en jeu, sans filtre : c'est la page qui décide quelle
+// carte a sa propre voix (`rpgArrivalVoices.js`) et quelle carte se contente
+// de son accueil générique.
+const arriveesCreatureAudioParDuel = new WeakMap();
+
+/** Toutes les entrées en jeu survenues depuis le dernier relevé — le journal se vide. */
+export function rpgConsommerArriveesCreature(duel) {
+  if (!duel) return [];
+  const journal = arriveesCreatureAudioParDuel.get(duel) ?? [];
+  arriveesCreatureAudioParDuel.delete(duel);
+  return journal;
+}
 
 /** Les arrivées de pirates survenues depuis le dernier relevé — le journal se vide. */
 export function rpgConsommerArriveesPirate(duel) {
@@ -234,6 +250,11 @@ export function rpgConsommerArriveesDwarf(duel) {
 function journaliserArriveeCreature(duel, cote, entite) {
   const carte = duelCardById(entite.carteId);
   const evenement = { entityId: entite.id, carteId: entite.carteId, cote };
+  // Le journal général reçoit toute entrée en jeu : la page y lit les voix
+  // propres aux cartes (celles qui supplantent l'accueil générique).
+  const toutes = arriveesCreatureAudioParDuel.get(duel) ?? [];
+  toutes.push({ ...evenement });
+  arriveesCreatureAudioParDuel.set(duel, toutes);
   if (cardHasPrintedType(carte, 'Navire')) {
     const journal = arriveesNavireAudioParDuel.get(duel) ?? [];
     journal.push(evenement);
