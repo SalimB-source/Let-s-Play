@@ -96,17 +96,17 @@ assert.doesNotMatch(duel, /entite\?\.aura \? <AuraOndes/,
 assert.match(duel, /carte\?\.aura \? 'has-aura' : '',/,
   'la carte porte la classe de l’aura, sur le même verdict');
 
-// ── 2. Le composant : un seul calque, deux teintes ──────────────────────────
+// ── 2. Le composant : un seul calque, trois teintes ─────────────────────────
 const composant = duel.slice(
-  duel.indexOf('function AuraOndes'),
+  duel.indexOf('/** L\'aura de sonar'),
   duel.indexOf("/* ── Soins : l'éclat d'un gain de vie"),
 );
 assert.match(composant, /variante = 'resonance'/, 'la variante par défaut reste le bleu de la résonance');
 assert.match(composant, /rpg-card__resonance--aura/, 'la variante jaune se pose sur le même calque');
 assert.equal((duel.match(/function AuraOndes/g) ?? []).length, 1,
   'un seul composant d’ondes pour les deux teintes — pas deux effets à maintenir');
-assert.equal((duel.match(/<AuraOndes/g) ?? []).length, 2,
-  'la table monte le calque pour la résonance et pour l’aura, et pour elles seules');
+assert.equal((duel.match(/<AuraOndes/g) ?? []).length, 3,
+  'la table monte le calque pour la résonance, l’aura et la malédiction, et pour elles seules');
 
 // ── 3. La feuille : le même débordement, une teinte d'or ────────────────────
 const debut = battleCss.indexOf('/* ── Résonance : une aura bleue de sonar');
@@ -114,12 +114,12 @@ const fin = battleCss.indexOf('/* ── Infiltration : la carte brumeuse');
 assert.ok(debut > 0 && fin > debut, 'le bloc du sonar porte les deux variantes');
 const resonanceCss = battleCss.slice(debut, fin);
 
-assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\)\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura, \.has-malediction\)\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
   'les ondes de l’aura débordent du cadre comme celles de la résonance');
 
 const auraCss = resonanceCss.slice(
   resonanceCss.indexOf('.rpg-card__resonance--aura {'),
-  resonanceCss.indexOf('.rpg-card__resonance-onde--1'),
+  resonanceCss.indexOf('.rpg-card__resonance--malediction {'),
 );
 assert.ok(auraCss.length > 0, 'la feuille déclare la variante jaune');
 assert.match(auraCss, /background:\s*radial-gradient\([^;]*rgba\(255, 226, 120,/s,

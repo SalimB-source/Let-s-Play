@@ -766,6 +766,15 @@ son Abordage 4 et son `insaisissable`.
   chaque changement via `appliquerMaledictions`, appelé par `rafraichirAuras`) ;
   deux Barbe Noire cumulent leurs malus. Le malus se lève dès que la dernière
   source quitte la table.
+- **Le sonar violet** — sur la table, la carte qui imprime la Malédiction
+  projette les trois ondes concentriques de la Résonance, teintées du violet
+  des Ténèbres (`.has-malediction` / `.rpg-card__resonance--malediction`,
+  `rpg-battle.css`) : **même calque, même cadence de 3,6 s, même
+  débordement et même mouvement réduit** que l'aura jaune des cartes à Aura —
+  seule la teinte change. Le bleu dit « je renforce tout le monde », le jaune
+  « je renforce mes voisines », le violet « je maudis le camp d'en face ».
+  Seule la **source** rayonne : une créature maudite (`maledictionBonus`) ne
+  projette rien. Contrôle : `npm run check:rpg-malediction-sonar`.
 - **Le malus ne tue pas** : seule l'attaque bouge, avec un plancher à 0.
   Chaque entité retient l'écart *effectivement* appliqué (`maledictionBonus`)
   pour qu'un petit corps maudit à 0 ATQ retrouve exactement son attaque

@@ -11492,17 +11492,23 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Les cartes qui impriment une **aura** portent exactement le même sonar, en
    jaune (`.has-aura` / `.rpg-card__resonance--aura`) : mêmes ondes, même
    cadence, même débordement — seule la teinte change, pour que la source d'un
-   bonus se repère à sa couleur. */
-.rpg-card:is(.has-resonance, .has-aura) {
+   bonus se repère à sa couleur.
+
+   La **Malédiction** joue la même partition en violet (`.has-malediction` /
+   `.rpg-card__resonance--malediction`) : le sonar est identique, ondes,
+   cadence et débordement compris, mais sa teinte dit que l'effet part dans
+   l'autre sens — la source n'irradie pas un bonus, elle maudit le camp
+   d'en face. Trois couleurs, un seul calque. */
+.rpg-card:is(.has-resonance, .has-aura, .has-malediction) {
   overflow: clip;
   overflow-clip-margin: 58px;
 }
 /* Les calques pleine face gardent l'arrondi de la carte maintenant que le
    débordement est ouvert (le fond, les taches de sang, le givre). */
-.rpg-card:is(.has-resonance, .has-aura) > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+.rpg-card:is(.has-resonance, .has-aura, .has-malediction) > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
   border-radius: inherit;
 }
-.rpg-card:is(.has-resonance, .has-aura) .rpg-card__img {
+.rpg-card:is(.has-resonance, .has-aura, .has-malediction) .rpg-card__img {
   animation: none !important;
 }
 
@@ -11558,6 +11564,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow:
     0 0 10px rgba(232, 176, 40, .62),
     inset 0 0 10px rgba(255, 226, 130, .52);
+}
+/* La Malédiction, en violet : le même sonar, teinté des Ténèbres (#9a7ce0).
+   Rien ne change au mouvement — ni cycle, ni retard, ni images clés — seule la
+   teinte dit que l'onde ne porte pas un bonus mais un malus, et qu'elle part
+   vers le camp d'en face. Le liseré violet reste allumé avec les ondes : la
+   source se repère même en mouvement réduit. */
+.rpg-card__resonance--malediction {
+  background: radial-gradient(
+    ellipse at 50% 52%,
+    rgba(203, 176, 250, .05) 32%,
+    rgba(122, 74, 208, .2) 100%
+  );
+  box-shadow:
+    inset 0 0 16px rgba(154, 124, 224, .32),
+    0 0 14px rgba(122, 74, 208, .38);
+}
+.rpg-card__resonance--malediction .rpg-card__resonance-onde {
+  border-color: rgba(178, 146, 245, .92);
+  box-shadow:
+    0 0 10px rgba(140, 96, 226, .62),
+    inset 0 0 10px rgba(206, 180, 252, .52);
 }
 
 .rpg-card__resonance-onde--1 { --rpg-resonance-retard: 0s; }
