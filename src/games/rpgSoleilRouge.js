@@ -151,16 +151,16 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
   // Le pourfendeur : la carte « duel » du set. Il ne cherche pas le contact —
   // il le rend. Contre-attaque lit les coups portés CONTRE lui (Attaque ciblée,
-  // capacité qui le cible) et les sorts qui le désignent ; Esquive ne l'empêche
-  // jamais de riposter, elle ne fait que lui épargner les dégâts (voir
-  // `riposteDeContreAttaque` dans `rpgDuel.js`).
+  // capacité qui le cible) et les sorts qui l'atteignent, y compris les sorts
+  // de zone (`ripostesDeZone`) ; Esquive ne l'empêche jamais de riposter, elle
+  // ne fait que lui épargner les dégâts (voir `riposteDeContreAttaque`).
   carte({
     id: 'tojiro-le-pourfendeur', name: 'Tojiro, le pourfendeur',
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
     typeLine: 'Créature légendaire — Humain · Samouraï',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({

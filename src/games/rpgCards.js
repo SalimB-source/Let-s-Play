@@ -431,7 +431,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui la cible est bloqué.',
+    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -659,7 +659,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature légendaire — Guerrier viking',
     art: 'eirik-du-premier-serment',
     contreAttaque: true,
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
   },
   {
@@ -673,7 +673,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué.',
+    text: 'Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -991,7 +991,7 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui la cible est bloqué.',
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },
   {
@@ -1075,7 +1075,7 @@ export const RPG_HERO_CARDS = [
     rapidite: true,
     contreAttaque: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (30 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (30 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1179,7 +1179,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort qui le cible, la riposte frappe le sorcier adverse.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1537,7 +1537,7 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['creature-amie'],
     effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Magie Rapide — Une créature alliée reçoit un bouclier : le prochain sort adverse qui la cible est bloqué.',
+    text: 'Magie Rapide — Une créature alliée reçoit un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Une seconde de verre suffit à dévier le coup.',
   },
   {
@@ -1979,7 +1979,7 @@ export const RPG_ARME_CARDS = [
     // elle si le porteur en change.
     blessurePorteur: 1,
     donne: { bouclier: 1 },
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort adverse qui le cible est bloqué.',
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 

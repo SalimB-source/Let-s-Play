@@ -205,8 +205,8 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Venin anti-blocage** | `empecheBlocageToursRestants` (Vipère de verre, Bakunawa) : la créature reste en jeu mais ne bloque plus | Le bloqueur marqué sort de la liste (`peutBloquerEntite`). Avant, l'IA le proposait : le moteur refusait l'attaque entière (`raison: 'bloqueur'`) et **le joueur perdait son tour de frappe**. |
 | **Grand Voile blanc** | `duel.brouillardCombat` : aucun dégât de combat ce tour, des deux côtés | Aucun attaquant n'est déclaré (sauf un porteur d'arme à déclencheur d'attaque), aucun bloqueur posé : la frappe est gardée pour le tour suivant. |
 | **Tenacité** | Une renaissance par partie : la créature meurt normalement (cimetière, arme, capacités de mort, Harakiri), puis sa carte revient en jeu au début du prochain tour de son camp avec 1 point de défense. La renaissance est une **arrivée en jeu** : l'effet d'arrivée de la carte se déclenche de nouveau. L'exil, qui retire la carte de la partie, empêche le retour. | `meurtSous` la tue comme n'importe qui (plus de fausse survie dans la simulation) ; `valeurEntite` lui rend +1 pour le corps gratuit du tour suivant, et une vague de destruction vaut 0,7 de sa valeur contre elle. |
-| **Bouclier** (parade) | Le premier sort adverse qui **désigne** la créature est bloqué : le sort est payé mais aucun effet ne se résout, puis le bouclier tombe en entier. Aucun dégât n'est absorbé. | `bouclierQuiBloque` ne regarde que les créatures du camp adverse désignées par `cibleId` ; l'IA évite de gaspiller une magie sur une parade, tout en gardant l'option de la briser. `valeurEntite` la compte comme un forfait, pas comme des PV. |
-| **Salem : Bouclier + Rapidité + Contre-attaque** | Son ancien bouclier de lumière est remplacé par `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade anti-sort se pose sur lui sans désignation. Rapidité reste, Contre-attaque s'ajoute. Un sort bloqué par la parade ne résout rien — **pas même la riposte** ; le sort adverse suivant blesse Salem et fait frapper le sorcier lanceur de 4 dégâts. | `cible: 'soi'` n'a aucune portée (`arriveeCiblePortee === null`) : l'IA ne choisit pas d'allié, et un `cibleId` transmis par mégarde ne détourne pas la parade. `valeurEntite` paie la parade comme un sort adverse gâché ; la Contre-attaque vaut son épine habituelle. |
+| **Bouclier** (parade) | Le premier sort adverse qui **atteint** la créature est bloqué, puis le bouclier tombe en entier. Un sort qui la désigne est payé mais aucun effet ne se résout ; un sort de **zone** se résout normalement, mais la parade épargne sa seule porteuse (ni dégât, ni gel, ni destruction, ni malus) via `paradeZoneBloque`, tandis que les autres créatures encaissent la vague. Les sorts du camp de la créature ne réveillent pas la parade, et aucun dégât d'attaque ou de capacité n'est absorbé. | `bouclierQuiBloque` ne regarde que les créatures du camp adverse désignées par `cibleId` ; l'IA évite de gaspiller une magie sur une parade, tout en gardant l'option de la briser. Une zone reste utile : elle ne perd que sa cible à parade. `valeurEntite` la compte comme un forfait, pas comme des PV. |
+| **Salem : Bouclier + Rapidité + Contre-attaque** | Son ancien bouclier de lumière est remplacé par `arrivee: { type: 'bouclier', amount: 1, cible: 'soi' }` : la parade anti-sort se pose sur lui sans désignation. Rapidité reste, Contre-attaque s'ajoute. Un sort bloqué par la parade ne résout rien — **pas même la riposte** ; le sort adverse suivant blesse Salem et fait frapper le sorcier lanceur de 4 dégâts. Une fois la parade tombée, un sort de zone qui l'atteint déclenche la même riposte sur le sorcier lanceur, comme pour toute Contre-attaque. | `cible: 'soi'` n'a aucune portée (`arriveeCiblePortee === null`) : l'IA ne choisit pas d'allié, et un `cibleId` transmis par mégarde ne détourne pas la parade. `valeurEntite` paie la parade comme un sort adverse gâché ; la Contre-attaque vaut son épine habituelle. |
 | **Bouclier de lumière** | La première attaque ou magie ne touche pas (Dame aux ailes d'or uniquement) — mécanique distincte, inchangée | Il avale la frappe dans `resultatBlocage` ; une magie de dégâts qui le vise ne compte plus comme un kill. |
 | **Overkill** | L'excédent de force qui dépasse les bloqueurs perce jusqu'au sorcier (Serpent du monde) | Compté des deux côtés : en attaque (dégâts au visage) et en défense (ce qu'un petit bloqueur ne retient pas). |
 | **Blocage obligatoire** | `doitBloquer` (Tours) et `blocageForce` (Appât de la meute, Embuscade) | Anticipé dans la simulation, sur le plus gros attaquant, comme le moteur. |
@@ -230,7 +230,8 @@ valkyries n'émettent plus de Résonance viking.
 - **Eirik du Premier Serment** (1 mana, 2/2, mythique, Contre-attaque) — une
   créature légendaire de type Guerrier viking. Une créature qui le frappe avec
   Attaque ciblée ou le cible avec une capacité encaisse ses 2 dégâts d’attaque ;
-  un sort qui le cible fait riposter sur le sorcier adverse. Sa rareté le
+  un sort qui l'atteint — ciblé ou de zone, s'il survit à la vague — fait
+  riposter sur le sorcier adverse. Sa rareté le
   limite à un exemplaire par deck ; il est révélé au premier étage du Fjord.
 - **Furie X** (Loup des neiges 1 ; Valkyrie au corbeau, Guerrier au bouclier
   rond et Berserk des trois hivers 2 ; Jarl au marteau de guerre et Maître du
@@ -306,8 +307,9 @@ terre, rien de plus.
 - **Contre-attaque** — le même drapeau que Tojiro et Eirik
   (`contreAttaque: true`, `riposteDeContreAttaque` dans `rpgDuel.js`) : une
   créature adverse qui le frappe avec Attaque ciblée ou le cible avec une
-  capacité encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait riposter
-  sur le sorcier adverse.
+  capacité encaisse ses 4 dégâts d'attaque ; un sort qui l'atteint, ciblé comme
+  de zone, fait riposter sur le sorcier adverse — à condition qu'il survive à
+  la vague (les sorts de zone passent par `ripostesDeZone`).
 - **Le guépard du roi** — `arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 }` :
   quand Kusayla arrive, **un guépard 2/1 avec Rapidité entre en jeu sans coût**,
   sur le chemin des chiens de sable de Tarek (voir la section des

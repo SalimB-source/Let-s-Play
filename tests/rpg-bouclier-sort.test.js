@@ -2,9 +2,14 @@
  * Le bouclier du Sablier — une parade anti-sort, pas une armure.
  *
  * Règle : tant qu'une créature porte un bouclier, le PREMIER sort adverse qui
- * la désigne est bloqué (payé, mais aucun effet résolu) et le bouclier tombe
- * en entier. Les sorts alliés, les sorts de zone et toutes les blessures
- * (attaques, capacités, combat) passent normalement. Voir `rpgDuel.js`.
+ * l'atteint est bloqué et le bouclier tombe en entier.
+ *  - un sort qui la DÉSIGNE est payé, mais aucun de ses effets ne se résout ;
+ *  - un sort de ZONE continue de frapper les autres créatures, mais il
+ *    épargne la porteuse de la parade (ni dégât, ni gel, ni destruction, ni
+ *    malus), dont le bouclier tombe.
+ * Les sorts alliés et toutes les blessures qui ne viennent pas d'un sort
+ * (attaques, capacités — y compris les capacités de zone —, combat) passent
+ * normalement. Voir `rpgDuel.js`.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,6 +21,7 @@ import {
   rpgLancerMagie,
   rpgBlesserCreature,
   rpgBouclierEstActif,
+  rpgFinDeTour,
 } from '../src/games/rpgDuel.js';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
@@ -121,28 +127,145 @@ test('le bouclier ne bloque pas un sort du camp de la créature', () => {
   assert.equal(alliee.bouclierEpuise, false);
 });
 
-test('un sort de zone, qui ne désigne personne, passe sous la parade', () => {
+test('un sort de zone adverse est encaissé par la parade, qui épargne sa porteuse puis tombe', () => {
   const { duel, protegee } = scene();
+  const voisine = poser(duel, 'sorcier', 'chien-du-guet');
+  const pvVoisine = voisine.pv;
   donner(duel, 'joueur', 'grand-hiver');
   manaPlein(duel, 'joueur');
   const vague = rpgLancerMagie(duel, 'joueur', 'grand-hiver');
   assert.equal(vague.ok, true);
-  assert.equal(vague.bouclierBloque, undefined, 'la zone ne rencontre pas la parade');
-  assert.equal(protegee.bouclier, 1, 'la parade reste en place');
-  assert.equal(protegee.pv, 3, 'le dégât de zone passe : 4 − 1');
+  assert.equal(vague.bouclierBloque, undefined, 'la zone n’est jamais annulée en entier');
+  assert.equal(protegee.bouclier, 0, 'la parade tombe sur la vague');
+  assert.equal(protegee.bouclierEpuise, true);
+  assert.equal(rpgBouclierEstActif(protegee), false);
+  assert.equal(protegee.pv, 4, 'la porteuse ne prend pas le dégât de zone');
+  assert.equal(voisine.pv, pvVoisine - 1, 'la vague frappe quand même les autres créatures');
+  assert.ok(duel.log.some((ligne) => /bouclier de .* encaisse la vague et tombe/.test(ligne)),
+    'le journal raconte la parade de zone');
 });
 
-test('une zone reste insensible à la parade même avec un identifiant de cible', () => {
+test('une zone réveille la parade même quand l’interface transmet un identifiant de cible', () => {
   const { duel, protegee } = scene();
   donner(duel, 'joueur', 'grand-hiver');
   manaPlein(duel, 'joueur');
   // L'interface peut transmettre un cibleId pour son animation : la portée
-  // du sort reste une zone, la parade ne doit pas se réveiller.
+  // du sort reste une zone, mais la parade de la porteuse doit se réveiller.
   const vague = rpgLancerMagie(duel, 'joueur', 'grand-hiver', protegee.id);
   assert.equal(vague.ok, true);
-  assert.equal(vague.bouclierBloque, undefined);
-  assert.equal(protegee.bouclier, 1);
-  assert.equal(protegee.pv, 3, 'le dégât de zone passe');
+  assert.equal(vague.bouclierBloque, undefined, 'le sort de zone n’est pas contrecarré en entier');
+  assert.equal(protegee.bouclier, 0, 'la parade tombe');
+  assert.equal(protegee.pv, 4, 'et sa porteuse est épargnée');
+});
+
+test('la parade de zone absorbe aussi le gel attaché au sort (Verglas)', () => {
+  const { duel, protegee } = scene();
+  const voisine = poser(duel, 'sorcier', 'chien-du-guet');
+  // Verglas inflige 2 dégâts ; lui donner assez de PV pour vérifier aussi
+  // que le gel s’applique bien à une survivante.
+  voisine.pv = 3;
+  voisine.pvMax = 3;
+  voisine.def = 3;
+  donner(duel, 'joueur', 'verglas');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'verglas').ok, true);
+  assert.equal(protegee.pv, 4, 'aucun dégât sur la porteuse');
+  assert.equal(protegee.gelToursRestants ?? 0, 0, 'ni gel');
+  assert.equal(protegee.bouclier, 0, 'la parade tombe');
+  assert.ok((voisine.gelToursRestants ?? 0) > 0, 'la voisine, elle, est gelée');
+  assert.equal(voisine.pv, voisine.pvMax - 2, 'et blessée par les 2 dégâts de la grêle');
+});
+
+test('la parade épargne sa porteuse d’une destruction de zone (Neige noire), sans geler', () => {
+  const duel = duelVide();
+  const protegee = poser(duel, 'sorcier', 'dune-marchante'); // coût 2, dans la borne 3
+  protegee.bouclier = 1;
+  protegee.bouclierEpuise = false;
+  const petite = poser(duel, 'sorcier', 'chien-du-guet');
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'neige-noire');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'neige-noire').ok, true);
+  assert.ok(duel.sorcier.creatures.some((entite) => entite.id === protegee.id), 'la porteuse survit');
+  assert.equal(protegee.bouclier, 0, 'la parade tombe');
+  assert.equal(protegee.gelToursRestants ?? 0, 0, 'le gel de la Neige noire ne l’atteint pas');
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === petite.id), false,
+    'la petite créature sans parade est détruite');
+});
+
+test('la parade épargne sa porteuse d’une destruction totale, sans épargner le reste de la table', () => {
+  const duel = duelVide();
+  const protegee = poser(duel, 'sorcier', 'dune-marchante');
+  protegee.bouclier = 1;
+  protegee.bouclierEpuise = false;
+  poser(duel, 'sorcier', 'chien-du-guet');
+  const allie = poser(duel, 'joueur', 'chien-du-guet');
+  allie.bouclier = 1; // une parade du camp du lanceur ne protège pas de son propre sort
+  allie.bouclierEpuise = false;
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'la-derniere-pesee');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'la-derniere-pesee').ok, true);
+  assert.equal(duel.sorcier.creatures.length, 1, 'seule la créature adverse à parade survit');
+  assert.equal(duel.sorcier.creatures[0].id, protegee.id);
+  assert.equal(protegee.bouclier, 0);
+  assert.equal(duel.joueur.creatures.length, 0, 'les créatures du lanceur sont détruites, parade comprise');
+});
+
+test('la parade encaisse le malus de zone (Embuscade) et tombe', () => {
+  const { duel, protegee } = scene();
+  const atkAvant = protegee.atk;
+  const voisine = poser(duel, 'sorcier', 'chien-du-guet');
+  const atkVoisineAvant = voisine.atk;
+  donner(duel, 'joueur', 'embuscade');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  assert.equal(protegee.atk, atkAvant, 'la porteuse garde ses statistiques');
+  assert.equal(protegee.bouclier, 0, 'la parade tombe');
+  assert.equal(voisine.atk, Math.max(1, atkVoisineAvant - 2), 'la voisine subit le -2/-2');
+});
+
+test('un sort de zone du camp de la créature ne réveille pas sa parade', () => {
+  const duel = duelVide();
+  const aMoi = poser(duel, 'joueur', 'dune-marchante');
+  aMoi.bouclier = 1;
+  aMoi.bouclierEpuise = false;
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'grand-hiver');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
+  assert.equal(aMoi.bouclier, 1, 'la parade reste debout devant un sort allié');
+  assert.equal(aMoi.bouclierEpuise, false);
+  assert.equal(aMoi.pv, 3, 'le dégât atteint quand même la créature de son propre camp');
+});
+
+test('une capacité de zone traverse la parade sans la faire tomber', () => {
+  const { duel, protegee } = scene();
+  // La Valkyrie des glaces : à son arrivée, 1 dégât de zone sur les deux
+  // camps. C'est une capacité, pas un sort : la parade ne doit pas bouger.
+  poser(duel, 'joueur', 'valkyrie-des-glaces');
+  assert.equal(protegee.pv, 3, 'la capacité blesse bien la créature');
+  assert.equal(protegee.bouclier, 1, 'la parade ne regarde que les sorts');
+  assert.equal(protegee.bouclierEpuise, false);
+});
+
+test('une parade neuve encaisse l’écho différé d’un sort de zone', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'dune-marchante'); // 2/4
+  duel.tour = 'joueur';
+  donner(duel, 'joueur', 'nuage-de-cendres');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
+  assert.equal(cible.pv, 2, 'la première vague passe : 4 − 2');
+  // Une Parade de verre en réponse réarme la créature avant l'écho.
+  cible.bouclier = 1;
+  cible.bouclierEpuise = false;
+  rpgFinDeTour(duel); // tour du sorcier : l'écho attend son lanceur
+  assert.equal(duel.sorcier.degatsEchos.length, 1);
+  rpgFinDeTour(duel); // retour du joueur : l'écho retombe
+  assert.equal(duel.sorcier.degatsEchos.length, 0);
+  assert.equal(cible.pv, 2, 'l’écho est encaissé par la parade');
+  assert.equal(cible.bouclier, 0, 'la parade tombe sur l’écho');
 });
 
 test('un sort adverse qui vise une autre créature ne consume pas la parade', () => {

@@ -355,6 +355,33 @@ function menace(entite) {
   return (entite?.atk ?? 0) * 1.2 + valeurEntite(entite) * 0.4;
 }
 
+/**
+ * Les Contre-attaques qu'une VAGUE DE ZONE ennemie renvoie sur le visage du
+ * sorcier qui envisage de lancer le sort (estimation en dégâts certains).
+ * Chaque créature adverse que la vague atteint vraiment — ni protégée, ni
+ * épargnée par sa parade — et qui survit renvoie son ATK : un sort se paie au
+ * sorcier, et l'Esquive n'éteint pas la riposte.
+ *
+ * `montantDegats` nul = la vague ne blesse pas (Embuscade, jugement par coût)
+ * : toute créature touchée survit. Un montant fini ne se survit, quand il est
+ * létal, que par une Esquive réussie — d'où la probabilité appliquée. Une
+ * destruction totale (`Infinity`) ne laisse donc que les Esquives.
+ */
+function degatsRipostesZone(duel, cote, carte, touchees, montantDegats = null) {
+  const couleurs = cardColors(carte);
+  return touchees.reduce((total, entite) => {
+    if (!entite?.contreAttaque) return total;
+    if (estProtegee(entite, couleurs) || horsDAtteinteDuSort(entite, carte)
+      || moteur.rpgBouclierEstActif(entite)) return total;
+    const probaSurvie = montantDegats == null
+      ? 1
+      : meurtSous(entite, montantDegats, 'magie')
+        ? (entite.esquive ? moteur.RPG_ESQUIVE_CHANCE : 0)
+        : 1;
+    return total + (Number(entite.atk) || 0) * probaSurvie;
+  }, 0);
+}
+
 // ── Ciblage ─────────────────────────────────────────────────────────────────
 
 function ciblesLegales(duel, cote, carte, portee) {
@@ -1235,10 +1262,17 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // créature tenace meurt bien, mais revient au tour suivant avec 1 point
       // de défense : la vague vaut donc un peu moins contre elle.
       const pertes = (c) => duel[c].creatures
-        .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte))
+        .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte)
+          // Une parade adverse encaisse la vague à la place de sa porteuse ;
+          // les parades du camp du lanceur ne protègent pas de son propre sort.
+          && (c !== adv || !moteur.rpgBouclierEstActif(entite)))
         .reduce((somme, entite) => somme + valeurEntite(entite)
           * (entite.tenaciteDisponible ? 0.7 : 1), 0);
-      const gain = pertes(adv) - pertes(cote);
+      // Seule une Esquive permet de survivre à la destruction : la Contre-
+      // attaque de la survivante se paie alors sur le visage du sorcier.
+      const ripostes = degatsRipostesZone(duel, cote, carte,
+        duel[adv].creatures, Number.POSITIVE_INFINITY);
+      const gain = pertes(adv) - pertes(cote) - ripostes;
       return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
     }
     if (effet.type === 'destruction-coutmax') {
@@ -1251,14 +1285,22 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const seuil = Number(effet.coutMax) || 0;
       const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
       const couvertes = camps.flatMap((camp) => duel[camp].creatures
-        .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)));
+        .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
+          && (camp !== adv || !moteur.rpgBouclierEstActif(entite))));
       const brisees = couvertes
         .filter((entite) => (duelCardById(entite.carteId)?.cost ?? 0) <= seuil);
+      // Les Contre-attaques survivantes ripostent sur le sorcier : les petites
+      // créatures ne survivent que par une Esquive, les trop coûteuses sont
+      // certaines de rester en jeu.
+      const ripostes = degatsRipostesZone(duel, cote, carte, brisees, Number.POSITIVE_INFINITY)
+        + degatsRipostesZone(duel, cote, carte,
+          couvertes.filter((entite) => !brisees.includes(entite)), null);
       const gain = brisees.reduce((somme, entite) => somme
         + valeurEntite(entite)
           * (entite.esquive ? 1 - moteur.RPG_ESQUIVE_CHANCE : 1)
           * (entite.tenaciteDisponible ? 0.7 : 1), 0)
-        + (effet.gel ? (couvertes.length - brisees.length) * 1.2 : 0);
+        + (effet.gel ? (couvertes.length - brisees.length) * 1.2 : 0)
+        - ripostes;
       return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
     }
     if (effet.type === 'degats') {
@@ -1270,7 +1312,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // protégée n'est pas un balayage, c'est du mana perdu.
         const couleursSort = cardColors(carte);
         const touchees = duel[adv].creatures
-          .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte));
+          .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
+            // La parade épargne sa porteuse et tombe : l'IA ne compte ni sa
+            // mort ni sa blessure dans la valeur de la vague.
+            && !moteur.rpgBouclierEstActif(entite));
         const tues = touchees.filter((entite) => meurtSous(entite, montant, 'magie'));
         const blessees = touchees
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
@@ -1283,12 +1328,16 @@ function scoreCarte(duel, cote, carte, profil, rng) {
           ? (touchees.length - tues.length) * echoMontant * 0.35
           : 0;
         const chanceGel = Math.min(1, Math.max(0, Number(effet.gelChance) || 0));
+        // Chaque Contre-attaque qui survit à la vague — l'Esquive comprise —
+        // renvoie ses dégâts sur le sorcier lanceur.
+        const ripostes = degatsRipostesZone(duel, cote, carte, touchees, montant);
         const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo
           // Le gel de zone fige les survivantes réellement touchées en plus
           // de la blessure : un tour entier de leur attaque en moins. Quand
           // il n'est qu'une chance (25 % pour la Brume du fjord, une sur deux
           // pour le Hurlement), il se paie à sa probabilité.
-          + (effet.gel ? touchees.length * 1.2 : blessees.length * chanceGel * 1.2);
+          + (effet.gel ? touchees.length * 1.2 : blessees.length * chanceGel * 1.2)
+          - ripostes;
         return { score: gain > 0 ? 4 + gain - cout * 0.3 : 0, cibleId: null };
       }
       if (effet.cible === 'toutes-autres') {
@@ -1297,11 +1346,17 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         // lui — il ne la lance que si le compte penche de son côté.
         const valeurTable = (campVise) => duel[campVise].creatures.reduce((total, entite) => {
           if (estProtegee(entite, cardColors(carte)) || horsDAtteinteDuSort(entite, carte)) return total;
+          // La parade adverse encaisse la vague ; celle du camp du lanceur
+          // ne protège pas contre son propre sort.
+          if (campVise === adv && moteur.rpgBouclierEstActif(entite)) return total;
           const recus = degatsApresEsquive(entite, montant, 'magie');
           if (recus <= 0) return total;
           return total + (meurtSous(entite, montant, 'magie') ? valeurEntite(entite) : 1.2);
         }, 0);
-        const gain = valeurTable(adv) - valeurTable(cote);
+        // Les Contre-attaques adverses survivantes frappent le sorcier ; les
+        // créatures du camp du lanceur ne ripostent jamais contre leur camp.
+        const ripostes = degatsRipostesZone(duel, cote, carte, duel[adv].creatures, montant);
+        const gain = valeurTable(adv) - valeurTable(cote) - ripostes;
         return { score: gain > 0 ? 3 + gain - cout * 0.3 : 0, cibleId: null };
       }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
@@ -1461,13 +1516,19 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     }
     if (effet.type === 'buff' && effet.cible === 'creatures-adverses') {
       // L'Embuscade : le débuff ne tue jamais (plancher 1/1) mais ampute
-      // toute la table adverse avant de la jeter sur nos attaquants.
-      const adversaires = duel[adv].creatures;
-      if (!adversaires.length) return { score: 0, cibleId: null };
+      // toute la table adverse avant de la jeter sur nos attaquants. Une
+      // parade épargne sa porteuse (et tombe) : elle n'entre pas dans le
+      // compte des créatures réellement marquées.
+      const adversaires = duel[adv].creatures
+        .filter((entite) => !moteur.rpgBouclierEstActif(entite));
+      if (!duel[adv].creatures.length) return { score: 0, cibleId: null };
       const retraitAtk = Math.abs(Number(effet.atk) || 0);
       const retraitDef = Math.abs(Number(effet.def) || 0);
+      // Le débuff ne tue jamais (plancher 1/1) : toute Contre-attaque touchée
+      // survit et renvoie son ATK sur le sorcier lanceur.
+      const ripostes = degatsRipostesZone(duel, cote, carte, adversaires, null);
       const score = 1.5 + adversaires.length * (0.8 + retraitAtk * 0.5 + retraitDef * 0.4)
-        + (effet.blocageForce ? 1.5 : 0) - cout * 0.2;
+        + (effet.blocageForce ? 1.5 : 0) - ripostes - cout * 0.2;
       return { score: score > 0 ? score : 0, cibleId: null };
     }
     if (effet.type === 'buff') {
@@ -1680,6 +1741,23 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
     }
     if (arrivee.type === 'degats') {
+      // Une capacité de zone ne se paie pas au sorcier : les Contre-attaques
+      // adverses qui survivent à la vague frappent la créature qui vient
+      // d'arriver. Les capacités ne s'esquivent pas, et une créature tuée par
+      // la vague ne riposte pas ; si les ripostes tuent la porteuse, sa perte
+      // totale est déjà comptée par ailleurs (vague d'Ifrit sur elle-même).
+      if ((arrivee.cible === 'toutes-autres' || arrivee.cible === 'toutes-creatures')
+        && !(arrivee.inclutAllies && !arrivee.exclutSoi && (carte.def ?? 0) <= (arrivee.amount ?? 0))) {
+        const secours = entiteDeSecours(carte, duel);
+        const ripostes = duel[adv].creatures
+          .filter((entite) => entite.contreAttaque && !estProtegee(entite, cardColors(carte))
+            && !meurtSous(entite, arrivee.amount ?? 0, 'capacite'))
+          .reduce((total, entite) => total + (Number(entite.atk) || 0), 0);
+        if (ripostes > 0) {
+          const vie = Number(secours?.pv ?? carte.def ?? 0) || 0;
+          score -= ripostes >= vie ? valeurEntite(secours) : ripostes * 0.5;
+        }
+      }
       if (arrivee.cible === 'toutes-autres') {
         const valeurVague = (camp) => duel[camp].creatures.reduce((total, entite) => {
           if (estProtegee(entite, cardColors(carte))) return total;

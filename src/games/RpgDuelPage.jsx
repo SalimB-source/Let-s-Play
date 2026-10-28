@@ -44,6 +44,15 @@ import {
 } from './rpgManaEssai.js';
 import { armesPortees, groupEntitesParCarte, trierCartesMainParCout } from './rpgCardStacks.js';
 import { classeVariationStatCreature, libelleVariationStatCreature } from './rpgCreatureStats.js';
+import {
+  RPG_VITESSES_ANIMATION,
+  dureeAnimation,
+  readRpgReducedPref,
+  readRpgVitessePref,
+  rpgAnimationsReduites,
+  writeRpgReducedPref,
+  writeRpgVitessePref,
+} from './rpgAnimations.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
 import {
@@ -196,6 +205,10 @@ import {
   rpgExils,
   rpgNombreBlessures,
   rpgBlessuresDepuis,
+  rpgNombreTransferts,
+  rpgTransfertsDepuis,
+  rpgNombreTributs,
+  rpgTributsDepuis,
   rpgOuvrirFenetreReponse,
   rpgOuvrirFinDeTour,
   rpgPeutRepondre,
@@ -655,6 +668,24 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
   const capacite = camp.manaMax ?? {};
   const maximum = Object.values(capacite).reduce((total, valeur) => total + valeur, 0);
   const disponible = Object.values(camp.mana).reduce((total, valeur) => total + valeur, 0);
+  // La marée de mana : à la recharge du tour, la réserve remonte d'un coup et
+  // les orbes se rallument en cascade de gauche à droite. Une dépense fait
+  // baisser `disponible` (rien), la recharge le fait monter (marée). Le premier
+  // rendu n'émeut rien : la réf. s'initialise à la valeur courante.
+  const precedentDispoRef = useRef(disponible);
+  const [maree, setMaree] = useState(false);
+  const timerMareeRef = useRef(null);
+  useEffect(() => {
+    if (disponible > precedentDispoRef.current && !animationsReduites()) {
+      setMaree(true);
+      if (timerMareeRef.current) window.clearTimeout(timerMareeRef.current);
+      timerMareeRef.current = window.setTimeout(() => setMaree(false), dureeAnimation(DUREE_MAREE_MANA));
+    }
+    precedentDispoRef.current = disponible;
+  }, [disponible]);
+  useEffect(() => () => {
+    if (timerMareeRef.current) window.clearTimeout(timerMareeRef.current);
+  }, []);
   const depenseApercu = cote === 'joueur' ? calculerApercuDepenseMana(camp, carteApercu) : null;
   const totalApercu = depenseApercu
     ? Object.values(depenseApercu).reduce((total, valeur) => total + valeur, 0)
@@ -678,7 +709,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
   }));
   return (
     <div
-      className={`rpg-terrains rpg-terrains--${cote} rpg-flux-track rpg-flux-track--${cote}`}
+      className={`rpg-terrains rpg-terrains--${cote} rpg-flux-track rpg-flux-track--${cote}${maree ? ' is-maree' : ''}`}
       data-tutorial-target={cote === 'joueur' ? 'mana-track' : undefined}
       data-mana-capacite={maximum}
       data-mana-disponible={disponible}
@@ -694,6 +725,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
             <i
               key={index}
               className={`rpg-flux-track__slot${couleur ? ` rpg-flux-track__slot--${couleur}` : ''} ${etat === 'vide' ? 'is-empty' : etat === 'disponible' ? 'is-lit' : 'is-spent'}${apercuCout ? ' is-cost-preview' : ''}${deficitCout ? ' is-deficit-preview' : ''}`}
+              style={{ '--mana-slot': index }}
               data-mana-slot={index + 1}
               data-mana-etat={etat}
               data-mana-preview={apercuCout ? 'true' : undefined}
@@ -1569,6 +1601,49 @@ const DUREE_ROUE_FEU = 900;
 // La foudre du marteau : l'impact, puis les arcs qui s'éteignent.
 const DUREE_ECLAIR_MARTEAU = 950;
 
+// La tempête de sable : la lame balaie la carte, les grains retombent au sol.
+const DUREE_TEMPETE_SABLE = 900;
+
+// La balance des Heures (Ténèbres) : le fléau s'incline, les grains traversent.
+const DUREE_BALANCE_TENEBRES = 1100;
+
+// Le fil de sable du Tribut : le trait se tend de la créature à la plaque qui
+// paye, trois grains d'or remontent le fil vers la créature bénéficiaire.
+const DUREE_TRIBUT_FIL = 550;
+
+// La ligne de charge : avant le bond, un trait de sable se trace de l'attaquant
+// à sa cible (220 ms de tracé), tient un instant puis s'efface.
+const DUREE_LIGNE_CHARGE = 420;
+
+// Le retournement du bouton « Fin du tour » au nouveau tour du joueur.
+const DUREE_FLIP_TOUR = 480;
+
+// La marée de mana : les orbes se rallument en cascade à la recharge du tour.
+// Dix orbes × 40 ms de décalage, plus la durée d'une orbe.
+const DUREE_MAREE_MANA = 800;
+
+// Les grains qui s'arrachent à la lame de sable, chacun dans sa direction et
+// avec son propre retard — même grammaire que les gouttes du tourbillon d'eau.
+const GRAINS_TEMPETE = Object.freeze([
+  { dx: -52, dy: 30, d: 120 },
+  { dx: -30, dy: 58, d: 40 },
+  { dx: 8, dy: 66, d: 200 },
+  { dx: 38, dy: 50, d: 90 },
+  { dx: 54, dy: 22, d: 260 },
+  { dx: -12, dy: 44, d: 160 },
+]);
+
+// Les grains d'or qui traversent la balance, de la coupelle basse (le camp qui
+// perd des PV) vers la haute. Le sens de `dx` est inversé par la feuille selon
+// que c'est le joueur ou le sorcier qui reçoit la vie.
+const GRAINS_BALANCE = Object.freeze([
+  { dx: 78, dy: 6, d: 240 },
+  { dx: 64, dy: -8, d: 340 },
+  { dx: 84, dy: 14, d: 430 },
+  { dx: 58, dy: 0, d: 520 },
+  { dx: 72, dy: -14, d: 610 },
+]);
+
 const GOUTTES_TOURBILLON = Object.freeze([
   { dx: -46, dy: -34, d: 0 },
   { dx: 42, dy: -52, d: 90 },
@@ -1620,6 +1695,193 @@ export function TourbillonEau({ effet, onTermine = null }) {
           style={{ '--dx': `${goutte.dx}px`, '--dy': `${goutte.dy}px`, '--d': `${goutte.d}ms` }}
         />
       ))}
+    </div>
+  );
+}
+
+/**
+ * La tempête de sable d'un sort Sable (Tempête de sable, etc.).
+ *
+ * La Braise a sa roue de feu, l'Eau son tourbillon, la Neige son gel : le Sable
+ * manquait de signature. Quand une bénédiction ou un sort de l'élément frappe
+ * une créature, une lame de poussière balaie sa carte, les bords s'érodent et
+ * quelques grains retombent **au sol** — la ressource-sable qui s'accumule, la
+ * métaphore fondatrice du jeu. Le calque reprend la place et l'inclinaison de
+ * la créature touchée (mesurées avant l'action), ne capte aucun geste et rend
+ * la table à sa dernière image ; la minuterie du parent n'est qu'un filet.
+ */
+export function TempeteSable({ effet, onTermine = null }) {
+  return (
+    <div
+      className="rpg-tempete-sable"
+      data-rpg-sable-id={effet.entityId}
+      data-rpg-sable-fx="sable"
+      aria-hidden="true"
+      style={{
+        left: `${effet.left}px`,
+        top: `${effet.top}px`,
+        width: `${effet.width}px`,
+        height: `${effet.height}px`,
+        '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+      }}
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-tempete-sable__voile" />
+      <i className="rpg-tempete-sable__lame" />
+      <i className="rpg-tempete-sable__erosion" />
+      {GRAINS_TEMPETE.map((grain) => (
+        <i
+          key={grain.d}
+          className="rpg-tempete-sable__grain"
+          style={{ '--dx': `${grain.dx}px`, '--dy': `${grain.dy}px`, '--d': `${grain.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * La balance des Heures d'un transfert de vie Ténèbres (Tribut, sorts « pesée »).
+ *
+ * Le set Balance des Heures déplace la vie d'un camp à l'autre sans jamais
+ * parler de dégâts. Au centre de la table, un fléau s'incline du côté qui perd
+ * des PV, ses deux coupelles marquent le poids, et des grains d'or filent de la
+ * coupelle basse vers la haute. Le calque est décoratif, centré sur le plateau
+ * (il ne dépend d'aucune position de carte), et s'efface de lui-même.
+ */
+export function BalanceTenebres({ effet, onTermine = null }) {
+  const gagneJoueur = effet.coteSource === 'joueur';
+  const sens = gagneJoueur ? 'gagne-joueur' : 'gagne-sorcier';
+  return (
+    <div
+      className={`rpg-balance-tenebres rpg-balance-tenebres--${sens}`}
+      data-rpg-balance-fx="tenebres"
+      data-rpg-balance-sens={sens}
+      aria-hidden="true"
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-balance-tenebres__halo" />
+      <i className="rpg-balance-tenebres__glyphe rpg-balance-tenebres__glyphe--sorcier" />
+      <i className="rpg-balance-tenebres__glyphe rpg-balance-tenebres__glyphe--joueur" />
+      <div className="rpg-balance-tenebres__balance">
+        <i className="rpg-balance-tenebres__pilier" />
+        <div className="rpg-balance-tenebres__fleau">
+          <span className="rpg-balance-tenebres__plateau rpg-balance-tenebres__plateau--sorcier">
+            <i className="rpg-balance-tenebres__coupelle" />
+          </span>
+          <span className="rpg-balance-tenebres__plateau rpg-balance-tenebres__plateau--joueur">
+            <i className="rpg-balance-tenebres__coupelle" />
+          </span>
+        </div>
+      </div>
+      {GRAINS_BALANCE.map((grain) => (
+        <i
+          key={grain.d}
+          className="rpg-balance-tenebres__grain"
+          style={{ '--dx': `${grain.dx}px`, '--dy': `${grain.dy}px`, '--d': `${grain.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+const GRAINS_TRIBUT_FIL = Object.freeze([0, 1, 2]);
+
+// La délitement d'une carte détruite : douze grains de sable dont le point de
+// départ et la chute sont figés une fois pour toutes (pas de hasard moteur pour
+// un effet purement visuel). `gx`/`gy` (%) les répartissent sur la carte,
+// `dx`/`dy` (px) leur donnent une chute en éventail vers le sol du plateau.
+const GRAINS_DELITEMENT = Object.freeze([
+  { gx: 12, gy: 34, dx: -24, dy: 96, d: 30 },
+  { gx: 26, gy: 52, dx: -14, dy: 78, d: 60 },
+  { gx: 40, gy: 28, dx: -6, dy: 104, d: 20 },
+  { gx: 55, gy: 46, dx: 8, dy: 84, d: 75 },
+  { gx: 70, gy: 32, dx: 16, dy: 98, d: 40 },
+  { gx: 86, gy: 54, dx: 26, dy: 72, d: 95 },
+  { gx: 18, gy: 70, dx: -18, dy: 64, d: 50 },
+  { gx: 34, gy: 82, dx: -8, dy: 58, d: 110 },
+  { gx: 48, gy: 66, dx: 4, dy: 74, d: 35 },
+  { gx: 63, gy: 78, dx: 12, dy: 62, d: 85 },
+  { gx: 78, gy: 68, dx: 20, dy: 68, d: 65 },
+  { gx: 90, gy: 84, dx: 28, dy: 56, d: 125 },
+]);
+
+/**
+ * Le fil de sable d'un Tribut au contact.
+ *
+ * Quand une créature qui porte le mot-clé touche le sorcier adverse, un fil
+ * d'or relie son emplacement à la plaque qui paye, et trois grains remontent
+ * le fil du payeur vers la créature — la vie voyage et arrive chez le
+ * bénéficiaire. La géométrie est figée à la capture (coords relatives à la
+ * table, longueur et angle) : le composant n'écrit jamais dans l'état du duel
+ * et ne recalcule aucune mise en page. Sa disparition est pilotée par la
+ * minuterie de la page, comme les autres effets ponctuels ; le mouvement
+ * réduit ne le crée pas du tout côté React, et la feuille le fige en filet.
+ */
+export function TributFil({ effet }) {
+  return (
+    <div
+      className={`rpg-tribut-fil rpg-tribut-fil--${effet.cote}`}
+      data-rpg-tribut-fx=""
+      data-rpg-tribut-cote={effet.cote}
+      role="status"
+      aria-label={`Tribut : ${effet.montant} point de vie transféré par ${effet.nom ?? 'la créature'}.`}
+      style={{
+        left: `${effet.x1}px`,
+        top: `${effet.y1}px`,
+        width: `${effet.longueur}px`,
+        '--fil-longueur': `${effet.longueur}px`,
+        transform: `rotate(${effet.angle}deg)`,
+      }}
+    >
+      <span className="rpg-tribut-fil__trait" aria-hidden="true" />
+      {GRAINS_TRIBUT_FIL.map((grain) => (
+        <i
+          key={grain}
+          className="rpg-tribut-fil__grain"
+          style={{ '--d': `${grain * 60}ms` }}
+          aria-hidden="true"
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * La ligne de charge d'une attaque.
+ *
+ * Juste avant le bond, un trait de sable se trace de l'attaquant vers sa cible
+ * (une créature ou la plaque du sorcier) : on lit QUI frappe QUI avant
+ * l'impact, pas pendant. Comme le fil du Tribut, le conteneur ne porte qu'une
+ * géométrie figée une fois pour toutes (point de départ, longueur, angle
+ * relatifs à la table) ; le tracé s'anime en `scaleX` et la pointe en
+ * transform/opacité — aucune propriété de mise en page. Le calque est
+ * décoratif : le journal et les autres retours annoncent déjà l'attaque.
+ */
+export function LigneCharge({ effet }) {
+  return (
+    <div
+      className={`rpg-ligne-charge rpg-ligne-charge--${effet.cote} rpg-ligne-charge--${effet.cibleType}`}
+      data-rpg-charge-fx=""
+      data-rpg-charge-cote={effet.cote}
+      data-rpg-charge-cible={effet.cibleType}
+      aria-hidden="true"
+      style={{
+        left: `${effet.x1}px`,
+        top: `${effet.y1}px`,
+        width: `${effet.longueur}px`,
+        '--charge-longueur': `${effet.longueur}px`,
+        transform: `rotate(${effet.angle}deg)`,
+      }}
+    >
+      <span className="rpg-ligne-charge__trait" />
+      <i className="rpg-ligne-charge__pointe" />
     </div>
   );
 }
@@ -1878,6 +2140,36 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
     <Fragment>
       {prise && vecteur && (
         <ChaineAbordage effet={{ ...effet, abordage: vecteur }} />
+      )}
+      {/* La destruction est du sable : hors combustion Braise et hors prise en
+          cale (la carte part alors chez son capteur), la carte se délite en
+          grains qui tombent au sol. Calque frère du fantôme, même géométrie,
+          pour hériter de son cycle de vie sans toucher à son overflow. */}
+      {!prise && !effet.bruleeParBraise && (
+        <span
+          className="rpg-carte-delitee"
+          aria-hidden="true"
+          style={{
+            left: `${effet.left}px`,
+            top: `${effet.top}px`,
+            width: `${effet.width}px`,
+            height: `${effet.height}px`,
+          }}
+        >
+          {GRAINS_DELITEMENT.map((grain, index) => (
+            <i
+              key={index}
+              className="rpg-carte-delitee__grain"
+              style={{
+                '--gx': `${grain.gx}%`,
+                '--gy': `${grain.gy}%`,
+                '--dx': `${grain.dx}px`,
+                '--dy': `${grain.dy}px`,
+                '--d': `${grain.d}ms`,
+              }}
+            />
+          ))}
+        </span>
       )}
       <div
         className={`rpg-card-destruction-fx${prise ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
@@ -4135,7 +4427,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -5317,6 +5609,51 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 </button>
               </section>
 
+              <section className="rpg-settings__card" aria-label="Animations de la table">
+                <div className="rpg-settings__card-head">
+                  <div>
+                    <span className="rpg-settings__eyebrow">MOUVEMENT &amp; RYTHME</span>
+                    <h3>Animations de la table</h3>
+                  </div>
+                  <span className={`rpg-settings__status${animReduite ? ' is-on' : ''}`}>
+                    {animReduite ? 'Réduites' : 'Complètes'}
+                  </span>
+                </div>
+                <p className="rpg-settings__desc">
+                  Forcez des gestes courts même sans réglage système, ou accélérez l’ensemble des animations pour enchaîner les duels. Les bruitages et les informations à l’écran ne changent jamais.
+                </p>
+                <button
+                  type="button"
+                  className={`rpg-settings__toggle rpg-settings__reduced${animReduite ? ' is-on' : ''}`}
+                  aria-pressed={Boolean(animReduite)}
+                  aria-label={animReduite ? 'Rétablir les animations complètes' : 'Réduire les animations'}
+                  onClick={() => { play('menu'); onToggleAnimReduite?.(); }}
+                >
+                  <span className="rpg-settings__toggle-badge" aria-hidden="true">◐</span>
+                  <span className="rpg-settings__toggle-copy">
+                    <strong>Animations réduites</strong>
+                    <small>{animReduite ? 'Gestes courts, état final immédiat' : 'Gestes complets, selon le réglage système'}</small>
+                  </span>
+                  <span className="rpg-settings__toggle-pill" aria-hidden="true">{animReduite ? 'ON' : 'OFF'}</span>
+                </button>
+                <div className="rpg-settings__speed" role="group" aria-label="Vitesse des animations">
+                  <span className="rpg-settings__speed-label"><strong>Vitesse</strong><small>Durée de tous les gestes de la table</small></span>
+                  <div className="rpg-settings__segment">
+                    {vitessesAnimation.map((vitesse) => (
+                      <button
+                        key={vitesse.id}
+                        type="button"
+                        className={`rpg-settings__segment-btn${vitesse.facteur === vitesseAnimation ? ' is-active' : ''}`}
+                        aria-pressed={vitesse.facteur === vitesseAnimation}
+                        onClick={() => { play('menu'); onChoisirVitesseAnimation?.(vitesse.facteur); }}
+                      >
+                        {vitesse.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
               <section className="rpg-settings__card" aria-label="Contrôle du volume">
                 <div className="rpg-settings__card-head">
                   <div>
@@ -5545,9 +5882,13 @@ function nettoyerFantomes(effets, maintenant = Date.now()) {
   return restants.length === effets.length ? effets : restants;
 }
 
-/** Le joueur a demandé moins d'animations : on les lui épargne. */
+/**
+ * Le joueur a demandé moins d'animations : on les lui épargne. Délègue au
+ * module de réglages, qui combine le mode réduit forcé dans les paramètres et
+ * la préférence système `prefers-reduced-motion`.
+ */
 function animationsReduites() {
-  return Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  return rpgAnimationsReduites();
 }
 
 /** Vrai quand le geste part d'un champ de saisie : le nom d'un deck maison, un
@@ -6129,6 +6470,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le décor 3D de la table (relief, lumière, particules) : mémorisé sur l'appareil.
   const [decor3dActif, setDecor3dActif] = useState(readRpgTable3dPref);
   const basculerDecor3d = () => setDecor3dActif((actif) => { writeRpgTable3dPref(!actif); return !actif; });
+  // Les gestes de la table : mode réduit forcé (indépendant du système) et
+  // vitesse de lecture (×0,5 · ×1 · ×2), mémorisés sur l'appareil.
+  const [animReduite, setAnimReduite] = useState(readRpgReducedPref);
+  const [vitesseAnim, setVitesseAnim] = useState(readRpgVitessePref);
+  const basculerAnimReduite = () => setAnimReduite((actif) => {
+    const suivant = !actif;
+    writeRpgReducedPref(suivant);
+    return suivant;
+  });
+  const choisirVitesseAnim = (facteur) => setVitesseAnim(() => {
+    writeRpgVitessePref(facteur);
+    return facteur;
+  });
   useEffect(() => { writeRpgSoundPref(sonActif); }, [sonActif]);
   useEffect(() => {
     writeRpgVolumePref(RPG_SFX_VOLUME_KEY, volumeSfx);
@@ -6455,6 +6809,33 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Les foudres de l'Éclair du marteau : même relève d'emplacement que la
   // roue, le temps que l'éclair tombe et que ses arcs s'éteignent.
   const [eclairsMarteau, setEclairsMarteau] = useState([]);
+  // Les tempêtes de sable des sorts Sable : une par créature frappée, sur la
+  // relève d'emplacement de la roue de feu. La lame balaie, les grains
+  // retombent au sol.
+  const [tempetesSable, setTempetesSable] = useState([]);
+  // Les balances des Heures des transferts Ténèbres (Tribut, pesée) : un
+  // calque central par événement, le temps que le fléau s'incline.
+  const [balancesTenebres, setBalancesTenebres] = useState([]);
+  const sequenceBalanceRef = useRef(0);
+  const balanceTimersRef = useRef([]);
+  const transfertsDuelRef = useRef({ duel: null, position: 0 });
+  // Tribut : un fil de sable par créature qui a touché le sorcier (les pesées
+  // sans créature source n'alimentent pas ce journal, seulement la balance).
+  const [filsTribut, setFilsTribut] = useState([]);
+  const sequenceTributRef = useRef(0);
+  const tributTimersRef = useRef([]);
+  const tributsDuelRef = useRef({ duel: null, position: 0 });
+  // Ligne de charge : un trait de sable par attaquant, tracé juste avant le
+  // bond. Effet purement visuel, déclenché par les deux résolutions de combat.
+  const [lignesCharge, setLignesCharge] = useState([]);
+  const sequenceChargeRef = useRef(0);
+  const chargeTimersRef = useRef([]);
+  // Le retournement 3D du bouton « Fin du tour » à chaque nouveau tour du
+  // joueur. Le geste le plus répété du jeu doit avoir un retour net ; la classe
+  // ne vit que le temps du flip et ne touche jamais l'état du duel.
+  const [flipTourNeuf, setFlipTourNeuf] = useState(false);
+  const tourPrecedentFlipRef = useRef(null);
+  const timerFlipRef = useRef(null);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [gelMasseFx, setGelMasseFx] = useState(null);
@@ -6535,6 +6916,218 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setSoinsVisibles((courant) => (Object.keys(courant).length ? {} : courant));
   };
   useEffect(() => () => soinsTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
+
+  // ── Ténèbres : la balance des Heures d'un transfert de vie (Tribut, pesée) ──
+  // Le moteur journalise chaque transfert hors de l'état JSON. Après chaque
+  // rendu, la page relève les nouveaux événements et incline le fléau du côté
+  // qui perd des PV. Un lot de transferts simultanés ne donne qu'UNE seule
+  // balance centrée. En mouvement réduit, la position de lecture avance sans
+  // rien afficher : la perte et le gain de vie gardent leurs propres retours,
+  // et le son reste joué par ailleurs.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (transfertsDuelRef.current.duel !== duelCourant) {
+      transfertsDuelRef.current = { duel: duelCourant, position: rpgNombreTransferts(duelCourant) };
+      return;
+    }
+    if (ecran !== 'partie') return;
+    const position = transfertsDuelRef.current.position;
+    const frais = rpgTransfertsDepuis(duelCourant, position);
+    transfertsDuelRef.current = { duel: duelCourant, position: rpgNombreTransferts(duelCourant) };
+    if (!frais.length || animationsReduites()) return;
+    const token = ++sequenceBalanceRef.current;
+    const effet = {
+      coteSource: frais[0].coteSource,
+      montant: frais.reduce((total, evenement) => total + (Number(evenement.montant) || 0), 0),
+      sourceCarteId: frais.find((evenement) => evenement.sourceCarteId)?.sourceCarteId ?? null,
+      token,
+      effectId: `balance-${token}`,
+      expireA: Date.now() + dureeAnimation(DUREE_BALANCE_TENEBRES) + 400,
+    };
+    setBalancesTenebres((current) => [...nettoyerFantomes(current), effet]);
+    const timer = window.setTimeout(() => {
+      balanceTimersRef.current = balanceTimersRef.current.filter((id) => id !== timer);
+      setBalancesTenebres((current) => current.filter((autre) => autre.effectId !== effet.effectId));
+    }, dureeAnimation(DUREE_BALANCE_TENEBRES));
+    balanceTimersRef.current.push(timer);
+  });
+
+  // ── Ténèbres : le fil de sable du Tribut, de la créature à la plaque payeuse ──
+  // Journal jumeau de celui des transferts : chaque événement nomme la créature
+  // qui a touché le sorcier. Un fil par créature (jamais fusionné), dont la
+  // géométrie est figée tout de suite : la créature est encore sur la table au
+  // moment où le journal se relève. Le mouvement réduit avance la position de
+  // lecture sans rien tracer ; la perte et le gain de vie gardent leurs autres
+  // retours (balance, compteurs, choc d'écran, sons).
+  const geometrieFilTribut = (entiteId, cote) => {
+    const table = tableRef.current;
+    const tableRect = table?.getBoundingClientRect()
+      ?? { left: 0, top: 0, width: 0, height: 0 };
+    const source = prendreInstantaneChamp()
+      .find((carte) => carte.entityId === entiteId && !carte.isTerrain);
+    const x1 = source ? source.left + source.width / 2 : tableRect.width / 2;
+    const y1 = source ? source.top + source.height / 2 : tableRect.height / 2;
+    const selecteurPlaque = cote === 'joueur'
+      ? '.rpg-wizard-plate--ennemi'
+      : '.rpg-wizard-plate--joueur';
+    const plaqueRect = table?.querySelector(selecteurPlaque)?.getBoundingClientRect();
+    const x2 = plaqueRect
+      ? plaqueRect.left + plaqueRect.width / 2 - tableRect.left
+      : tableRect.width / 2;
+    const y2 = plaqueRect
+      ? plaqueRect.top + plaqueRect.height / 2 - tableRect.top
+      : 0;
+    const longueur = Math.max(1, Math.hypot(x2 - x1, y2 - y1));
+    const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+    return { x1, y1, x2, y2, longueur, angle };
+  };
+
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (tributsDuelRef.current.duel !== duelCourant) {
+      tributsDuelRef.current = { duel: duelCourant, position: rpgNombreTributs(duelCourant) };
+      return;
+    }
+    if (ecran !== 'partie') return;
+    const position = tributsDuelRef.current.position;
+    const frais = rpgTributsDepuis(duelCourant, position);
+    tributsDuelRef.current = { duel: duelCourant, position: rpgNombreTributs(duelCourant) };
+    if (!frais.length || animationsReduites()) return;
+    const nouveauxEffets = frais.map((evenement) => {
+      const token = ++sequenceTributRef.current;
+      const entite = duelCourant[evenement.cote]?.creatures
+        .find((candidate) => candidate.id === evenement.entityId);
+      return {
+        effectId: `tribut-fil-${token}`,
+        token,
+        entityId: evenement.entityId,
+        nom: entite?.name ?? null,
+        cote: evenement.cote,
+        montant: evenement.montant,
+        expireA: Date.now() + dureeAnimation(DUREE_TRIBUT_FIL) + 400,
+        ...geometrieFilTribut(evenement.entityId, evenement.cote),
+      };
+    });
+    setFilsTribut((current) => [...nettoyerFantomes(current), ...nouveauxEffets]);
+    nouveauxEffets.forEach((effet) => {
+      const timer = window.setTimeout(() => {
+        tributTimersRef.current = tributTimersRef.current.filter((id) => id !== timer);
+        setFilsTribut((current) => current.filter((autre) => autre.effectId !== effet.effectId));
+      }, dureeAnimation(DUREE_TRIBUT_FIL));
+      tributTimersRef.current.push(timer);
+    });
+  });
+  useEffect(() => () => {
+    tributTimersRef.current.forEach((id) => window.clearTimeout(id));
+    tributTimersRef.current = [];
+  }, []);
+  useEffect(() => {
+    if (!filsTribut.length) return undefined;
+    const derniere = Math.max(...filsTribut.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setFilsTribut((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [filsTribut]);
+
+  // ── Ligne de charge : le trait de sable annonçant chaque attaque ──
+  // Géométrie figée sur l'instantané d'AVANT la résolution : les créatures
+  // sont encore à leur place, le bond n'a pas commencé. Une cible est soit un
+  // identifiant de créature (frappe ciblée ou bloquée), soit la plaque du
+  // sorcier défenseur (attaque directe).
+  const geometrieLigneCharge = (attaquantId, cible, cote, instantane) => {
+    const table = tableRef.current;
+    const tableRect = table?.getBoundingClientRect()
+      ?? { left: 0, top: 0, width: 0, height: 0 };
+    const centreCarte = (entiteId) => {
+      const carte = instantane.find((entite) => entite.entityId === entiteId && !entite.isTerrain);
+      if (!carte) return null;
+      return { x: carte.left + carte.width / 2, y: carte.top + carte.height / 2 };
+    };
+    const depart = centreCarte(attaquantId)
+      ?? { x: tableRect.width / 2, y: tableRect.height / 2 };
+    let arrivee;
+    if (cible === 'sorcier') {
+      const selecteurPlaque = cote === 'joueur'
+        ? '.rpg-wizard-plate--ennemi'
+        : '.rpg-wizard-plate--joueur';
+      const plaqueRect = table?.querySelector(selecteurPlaque)?.getBoundingClientRect();
+      arrivee = plaqueRect
+        ? {
+          x: plaqueRect.left + plaqueRect.width / 2 - tableRect.left,
+          y: plaqueRect.top + plaqueRect.height / 2 - tableRect.top,
+        }
+        : { x: tableRect.width / 2, y: 0 };
+    } else {
+      arrivee = centreCarte(cible)
+        ?? { x: tableRect.width / 2, y: cote === 'joueur' ? 0 : tableRect.height };
+    }
+    const longueur = Math.max(1, Math.hypot(arrivee.x - depart.x, arrivee.y - depart.y));
+    const angle = Math.atan2(arrivee.y - depart.y, arrivee.x - depart.x) * 180 / Math.PI;
+    return { x1: depart.x, y1: depart.y, longueur, angle };
+  };
+
+  // Trace une ligne par attaquant, juste avant que `animerModificationsChamp`
+  // ne lance le bond. Ne bloque aucune action : la ligne se contente de rendre
+  // l'intention lisible, et sa minuterie est toujours annulable.
+  const declencherLignesCharge = (cote, attaquantsIds, ciblesParId, instantane) => {
+    if (animationsReduites() || !Array.isArray(attaquantsIds) || !attaquantsIds.length) return;
+    const nouveauxEffets = attaquantsIds.map((attaquantId) => {
+      const token = ++sequenceChargeRef.current;
+      const cible = ciblesParId?.[attaquantId] ?? 'sorcier';
+      return {
+        effectId: `ligne-charge-${token}`,
+        token,
+        cote,
+        cibleType: cible === 'sorcier' ? 'sorcier' : 'creature',
+        expireA: Date.now() + dureeAnimation(DUREE_LIGNE_CHARGE) + 400,
+        ...geometrieLigneCharge(attaquantId, cible, cote, instantane),
+      };
+    });
+    setLignesCharge((current) => [...nettoyerFantomes(current), ...nouveauxEffets]);
+    nouveauxEffets.forEach((effet) => {
+      const timer = window.setTimeout(() => {
+        chargeTimersRef.current = chargeTimersRef.current.filter((id) => id !== timer);
+        setLignesCharge((current) => current.filter((autre) => autre.effectId !== effet.effectId));
+      }, dureeAnimation(DUREE_LIGNE_CHARGE));
+      chargeTimersRef.current.push(timer);
+    });
+  };
+  useEffect(() => () => {
+    chargeTimersRef.current.forEach((id) => window.clearTimeout(id));
+    chargeTimersRef.current = [];
+  }, []);
+  useEffect(() => {
+    if (!lignesCharge.length) return undefined;
+    const derniere = Math.max(...lignesCharge.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setLignesCharge((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [lignesCharge]);
+
+  // ── Le bouton « Fin du tour » se retourne à chaque nouveau tour du joueur ──
+  // Pur retour de geste : aucun état du duel n'en dépend. Lu à chaque rendu via
+  // `duelRef` (comme les journaux de soins et de transferts), donc sans
+  // dépendre de la constante `duel` encore dans sa zone morte temporelle. Le
+  // premier rendu (réf. nulle) et les duels neufs (réf. réarmée au reset) ne
+  // jouent rien ; le mouvement réduit supprime le flip, la décision reste libre.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (!duelCourant) return;
+    const tour = duelCourant.tour;
+    if (tourPrecedentFlipRef.current === null) {
+      tourPrecedentFlipRef.current = tour;
+      return;
+    }
+    if (tourPrecedentFlipRef.current === tour) return;
+    tourPrecedentFlipRef.current = tour;
+    if (tour !== 'joueur' || animationsReduites()) return;
+    setFlipTourNeuf(true);
+    if (timerFlipRef.current) window.clearTimeout(timerFlipRef.current);
+    timerFlipRef.current = window.setTimeout(() => setFlipTourNeuf(false), dureeAnimation(DUREE_FLIP_TOUR));
+  });
+  useEffect(() => () => {
+    if (timerFlipRef.current) window.clearTimeout(timerFlipRef.current);
+  }, []);
 
   // ── Abordage : chaque créature kidnappée en cale déclenche le cliquetis de chaînes ───
   const prisesDuelRef = useRef(null);
@@ -6807,6 +7400,26 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [eclairsMarteau]);
 
+  // Les tempêtes de sable ne restent pas figées sur une créature partie si la
+  // minuterie qui les retire se fait avaler par une mise en veille.
+  useEffect(() => {
+    if (!tempetesSable.length) return undefined;
+    const derniere = Math.max(...tempetesSable.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setTempetesSable((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [tempetesSable]);
+
+  // La balance des Heures non plus : son fléau ne reste pas incliné hors de son
+  // transfert si la minuterie se perd.
+  useEffect(() => {
+    if (!balancesTenebres.length) return undefined;
+    const derniere = Math.max(...balancesTenebres.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setBalancesTenebres((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [balancesTenebres]);
+
   // Retour d'arrière-plan : un téléphone qui met l'onglet en veille peut avaler
   // les minuteries d'animation. On rattrape alors à la main tout ce qui serait
   // resté figé — image de carte détruite, carte en vol, halos de combat — pour
@@ -6827,6 +7440,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setEclairsMarteau((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setTempetesSable((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setBalancesTenebres((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -7073,6 +7694,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setTourbillonsEau([]);
     setRouesFeu([]);
     setEclairsMarteau([]);
+    setTempetesSable([]);
+    setBalancesTenebres([]);
+    balanceTimersRef.current.forEach((id) => window.clearTimeout(id));
+    balanceTimersRef.current = [];
+    setFilsTribut([]);
+    tributTimersRef.current.forEach((id) => window.clearTimeout(id));
+    tributTimersRef.current = [];
+    tributsDuelRef.current = { duel: null, position: 0 };
+    setLignesCharge([]);
+    chargeTimersRef.current.forEach((id) => window.clearTimeout(id));
+    chargeTimersRef.current = [];
+    if (timerFlipRef.current) window.clearTimeout(timerFlipRef.current);
+    timerFlipRef.current = null;
+    setFlipTourNeuf(false);
+    tourPrecedentFlipRef.current = duelRef.current?.tour ?? null;
     setCarteEnVol(null);
     setImpactEcran(null);
     setGelMasseFx(null);
@@ -8232,6 +8868,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onToggleFullscreen={basculerPleinEcran}
           decor3dActif={decor3dActif}
           onToggleDecor3d={basculerDecor3d}
+          animReduite={animReduite}
+          onToggleAnimReduite={basculerAnimReduite}
+          vitessesAnimation={RPG_VITESSES_ANIMATION}
+          vitesseAnimation={vitesseAnim}
+          onChoisirVitesseAnimation={choisirVitesseAnim}
           sonActif={sonActif}
           onToggleSound={basculerSon}
           volumeSfx={volumeSfx}
@@ -9017,6 +9658,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (fraiche) brulees.set(entite.entityId, entite);
       }
     }
+    // Le Sable, comme la Braise, se lit dans les éléments de la blessure. Une
+    // Tempête de sable balaie plusieurs créatures d'un coup : chacune reçoit sa
+    // propre lame sur son emplacement. Même règle de fraîcheur : une ancienne
+    // blessure de sable ne rallume rien à l'action suivante.
+    const sableuses = new Map();
+    if (!mouvementReduit) {
+      const sableParEntite = new Map();
+      for (const blessure of blessuresNouvelles) {
+        if (blessure.elements.includes('sable')) sableParEntite.set(blessure.entityId, blessure);
+      }
+      for (const entite of avant) {
+        if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
+        const blessure = sableParEntite.get(entite.entityId);
+        if (!blessure) continue;
+        const apres = vivants.get(entite.entityId);
+        const fraiche = apres
+          ? apres.pv === blessure.pvApres
+            && (apres.bouclier ?? 0) === blessure.bouclierApres
+          : blessure.mortelle;
+        if (fraiche) sableuses.set(entite.entityId, entite);
+      }
+    }
     // La foudre du marteau : la couleur ne suffit pas — plein de Neige
     // blesse sans faire tomber le ciel — c'est la carte du coup que le
     // journal nomme (`blessureDuMarteau`). L'Éclair et les 3 dégâts d'arrivée
@@ -9153,6 +9816,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const ids = new Set(effetsFoudre.map((effet) => effet.effectId));
         setEclairsMarteau((current) => current.filter((effet) => !ids.has(effet.effectId)));
       }, DUREE_ECLAIR_MARTEAU);
+    }
+
+    // La tempête de sable : une par créature frappée par un sort Sable. Comme
+    // la roue de feu, elle joue sur l'emplacement relevé avant l'action — la
+    // créature tuée par la lame a déjà commencé son adieu par ailleurs.
+    if (sableuses.size) {
+      const token = ++sequenceAnimationRef.current;
+      const effetsSable = [...sableuses.values()].map((entite) => ({
+        ...entite,
+        token,
+        effectId: `sable-${token}-${entite.entityId}`,
+        expireA: Date.now() + dureeAnimation(DUREE_TEMPETE_SABLE) + 400,
+      }));
+      setTempetesSable((current) => [...nettoyerFantomes(current), ...effetsSable]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effetsSable.map((effet) => effet.effectId));
+        setTempetesSable((current) => current.filter((effet) => !ids.has(effet.effectId)));
+      }, dureeAnimation(DUREE_TEMPETE_SABLE));
     }
 
     // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
@@ -10822,6 +11503,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     jouerSfx('combat');
     if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
+    // La ligne de charge se trace avant le bond : qui frappe qui, lisible
+    // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
+    const ciblesChargeEnnemie = Object.fromEntries(attaquantsVivants.map((id) => [
+      id,
+      combatEntrant.ciblesAttaque?.[id] ?? blocages[id]?.[0] ?? 'sorcier',
+    ]));
+    declencherLignesCharge('sorcier', attaquantsVivants, ciblesChargeEnnemie, champAvantAttaque);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     rpgFermerFenetreReponse(duel);
     setCombatEntrant(null);
@@ -10918,6 +11606,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (!frappeCreature) {
       jouerSfx('block_impact', 0.2);
     }
+    // La ligne de charge se trace avant le bond : cible désignée (coup
+    // rapide), premier bloqueur, ou la plaque du sorcier en attaque directe.
+    const ciblesChargeJoueur = Object.fromEntries(attaquantsVivants.map((id) => [
+      id,
+      combat.ciblesAttaque?.[id] ?? blocages[id]?.[0] ?? 'sorcier',
+    ]));
+    declencherLignesCharge('joueur', attaquantsVivants, ciblesChargeJoueur, champAvantAttaque);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
     if (res.resume.frappeSorcier > 0) declencherImpactEcran('dealt');
     rpgFermerFenetreReponse(duel);
@@ -11518,11 +12213,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   return (
     <div
       ref={shellRef}
-      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}${pleinEcran ? ' is-immersive' : ''}`}
+      className={`rpg-battle${viewport.mobile ? ' rpg-battle--touch' : ''}${pleinEcran ? ' is-immersive' : ''}${rpgAnimationsReduites(animReduite) ? ' is-reduced' : ''}`}
       data-scene="duel"
-      style={DOS_DE_CARTE_STYLE}
+      style={{ ...DOS_DE_CARTE_STYLE, '--rpg-anim-scale': String(vitesseAnim) }}
       onPointerDown={demarrerAppuiLongCarte}
       data-mode-mana={duel.modeMana ?? undefined}
+      data-anim-vitesse={String(vitesseAnim)}
       onContextMenu={surMenuContextuel}
     >
       <EffetsSprite />
@@ -11548,6 +12244,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         onPointerDownCapture={() => unlockSfx()}
         className={`card-table card-table--plateau-${plateau.id}${plateauDecoupe ? ' card-table--decoupee' : ''}${carteGlissee ? ' is-card-dragging' : ''}${carteGlissee && cartePrendUneCase(cardById(carteGlissee)) ? ' is-dragging-creature' : ''}${poseEnCours ? ' is-choix-emplacement' : ''}${surZoneDepot ? ' is-drop-target' : ''}${bloqueurGlisse ? ' is-blocker-dragging' : ''}${carteEnVol ? ' is-card-flight-active' : ''}${impactEcran ? ` rpg-screen-shake--${impactEcran.variante}` : ''}${impactEcran?.mode === 'received' ? ` rpg-screen-hit--${impactEcran.variante}` : ''}`}
         data-screen-impact={impactEcran?.mode ?? undefined}
+        data-anim-reduite={rpgAnimationsReduites(animReduite) ? 'true' : undefined}
+        data-anim-vitesse={String(vitesseAnim)}
         data-screen-impact-token={impactEcran?.token ?? undefined}
         data-plateau-joueur={plateau.id}
         data-plateau-adversaire={plateauAdverse.id}
@@ -11556,6 +12254,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         data-plateau-musical={plateauMusiqueId}
         data-territoire-dominant={territoire.dominant}
         data-territoire-termine={vainqueur ? 'true' : undefined}
+        data-vainqueur={vainqueur ?? undefined}
         data-apercu-carte={apercuCarte ?? undefined}
         aria-busy={carteEnVol ? 'true' : undefined}
         style={{
@@ -12165,10 +12864,38 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         ))}
 
+        {/* Sable : la lame de poussière balaie chaque créature frappée par un sort. */}
+        {tempetesSable.map((effet) => (
+          <TempeteSable
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setTempetesSable((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
+
         {/* Gel de masse : Verglas / Brume / Blizzard / Géant — tempête qui couvre le plateau. */}
         {gelMasseFx && (
           <RpgMassFreezeFx effet={gelMasseFx} />
         )}
+
+        {/* Ténèbres : la balance des Heures s'incline du côté qui perd des PV. */}
+        {balancesTenebres.map((effet) => (
+          <BalanceTenebres
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setBalancesTenebres((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
+
+        {/* Ténèbres : le fil de sable du Tribut, de la créature à la plaque qui paye. */}
+        {filsTribut.map((effet) => (
+          <TributFil key={effet.effectId} effet={effet} />
+        ))}
+
+        {/* Ligne de charge : le trait de sable qui annonce chaque attaque avant le bond. */}
+        {lignesCharge.map((effet) => (
+          <LigneCharge key={effet.effectId} effet={effet} />
+        ))}
 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
@@ -12596,13 +13323,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 ↶ Annuler la dernière action
               </button>
             )}
-            <button type="button" className="rpg-btn rpg-btn--endturn"
+            <button type="button" className={`rpg-btn rpg-btn--endturn${flipTourNeuf ? ' is-tour-neuf' : ''}`}
               data-tutorial-target={cibleTutoriel('end-turn') ? 'end-turn' : undefined}
               data-key-hint="Espace"
               title="Raccourci clavier : Espace"
               onClick={finDuTour}
               disabled={!monTour || phase || Boolean(cibleEnCours) || Boolean(combatEntrant) || Boolean(sacrificeEnCours) || mulliganOuvert || choixManaEssaiOuvert}>
-              ⧗ Fin du tour
+              <span className="rpg-btn--endturn__label">⧗ Fin du tour</span>
             </button>
           </div>
         </div>

@@ -8915,7 +8915,9 @@ Ce que la parade **ne** fait pas :
   frappent directement les PV (`rpgBlesserCreature` et
   `appliquerDegatsDeCombatSimultanes` ne touchent plus au bouclier) ;
 - elle ne bloque pas un sort de zone, qui ne désigne personne (le Grand Hiver
-  passe sous la garde) ;
+  passe sous la garde) — **règle remplacée plus bas** : la parade épargne
+  désormais sa porteuse face aux sorts de zone, voir la section
+  « le bouclier bloque aussi les sorts de zone » ;
 - elle ne bloque pas un sort du camp de la créature (la Parade de verre, un
   renfort, le champion du Défi du Jarl) ;
 - elle ne concerne pas la **réserve du sorcier** du pacte de la Tour oubliée :
@@ -8963,8 +8965,9 @@ Il arrive désormais avec les trois mots-clés **Bouclier**, **Rapidité** et
 - `rapidite: true` : inchangé, il peut attaquer le tour où il arrive.
 - `contreAttaque: true` : la même riposte qu'Eirik et Tojiro. Une créature
   adverse qui le frappe avec Attaque ciblée ou le cible avec une capacité
-  encaisse ses 4 dégâts d'attaque ; un sort qui le cible fait frapper le
-  sorcier qui l'a lancé.
+  encaisse ses 4 dégâts d'attaque ; un sort qui l'atteint — y compris un
+  **sort de zone**, voir plus bas la section « la Contre-attaque répond aussi
+  aux sorts de zone » — fait frapper le sorcier qui l'a lancé.
 
 L'interaction des deux protections se lit dans `rpgLancerMagie` : le premier
 sort adverse qui désigne Salem est **bloqué avant** `appliquer` — payé, au
@@ -9072,3 +9075,105 @@ Contrôles : nouvelle suite `tests/rpg-malediction.test.js` (fiche, glossaire,
 cases vides, arrivées, cumul de sources, plancher à 0, fin de tour stable),
 suite `rpg-lettres-de-marque` réécrite, `node scripts/rpg-cale-check.mjs`,
 `npm run check:rpg` et `npm run build`.
+
+## Le Sablier : le bouclier bloque aussi les sorts de zone
+
+La parade anti-sort ne se contente plus d'arrêter les sorts qui **désignent**
+une créature : elle encaisse aussi les **sorts de zone** adverses. La zone
+n'est jamais annulée en entier — elle continue de frapper toutes les autres
+créatures — mais la porteuse d'une parade est entièrement épargnée par la
+vague, et sa parade tombe en entier, comme devant un sort ciblé.
+
+- **Une parade, une créature** : dans chaque branche de zone (`degats`,
+  `gel`, `destruction-totale`, `destruction-coutmax`, le renvoi
+  `toutes-autres` et le malus `creatures-adverses` de l'Embuscade), le nouvel
+  aide-mémoire `paradeZoneBloque` écarte la créature protégée avant tout
+  effet — ni dégât, ni gel, ni destruction, ni malus — puis fait tomber sa
+  parade. L'écho différé d'un sort (le Nuage de cendres) est encaissé de la
+  même façon par une parade neuve.
+- **Les mêmes garde-fous que pour un sort ciblé** : seules les magies sont
+  concernées (`sourceType === 'magie'`). Une capacité de zone — l'arrivée de
+  la Valkyrie des glaces, la vague du Léviathan — traverse la parade comme
+  une attaque, et un sort du camp de la créature ne réveille jamais sa
+  parade, même quand une zone balaie les deux camps (le Grand Hiver, La
+  Dernière Pesée).
+- **Ciblé reste intégral** : un sort qui désigne une créature protégée est
+  toujours payé et envoyé au cimetière sans le moindre effet
+  (`bouclierQuiBloque`, dans `rpgLancerMagie`) ; seules les zones basculent
+  sur une protection par créature.
+- **Textes et pédagogie** : les six cartes qui posent une parade (Guerrier au
+  bouclier rond, Veilleuse, Tour de sable, Salem, Parade de verre, Hache de
+  la banquise), la leçon `rpgCardLessons.js`, la leçon Neige du tutoriel et la
+  pastille du mot-clé (`effetIcons.js`) annoncent toutes que la zone est
+  bloquée à l'égard de la créature protégée.
+- **IA** : les estimations de vagues (`rpgAI.js`) ne comptent plus les
+  créatures adverses à parade parmi les victimes d'une zone, tout en gardant
+  le sort jouable : la vague ne perd que ses cibles protégées, dont la
+  parade se brise au passage.
+- **Table** : aucun changement d'animation — la chute de la parade est
+  détectée par la comparaison avant/après du champ `bouclier`, donc l'impact
+  d'égide existant se joue aussi sur une zone, en JcJ comme contre le sorcier.
+
+Contrôles : la suite `tests/rpg-bouclier-sort.test.js` couvre les zones de
+dégâts, le gel attaché, les destructions de zone, l'Embuscade, les sorts
+alliés, les capacités de zone et l'écho ; `tests/rpg-tenebres.test.js`
+vérifie La Dernière Pesée face à une parade, et `scripts/rpg-bouclier-check.mjs`
+relit le branchement de `paradeZoneBloque` dans le moteur.
+
+## Le Sablier : la Contre-attaque répond aussi aux sorts de zone
+
+La Contre-attaque ne se limitait plus aux sorts qui **désignent** la créature :
+désormais, chaque créature adverse **atteinte par une vague de zone** riposte
+aussi, exactement comme si la vague l'avait visée personnellement. Une zone ne
+désigne personne, mais elle frappe tout le monde — et chaque épine plantée dans
+la vague répond.
+
+- **Qui riposte ?** Toute créature du camp adverse du lanceur que la vague
+  atteint réellement : ni épargnée par une parade anti-sort (la parade tombe
+  et la vague passe sur les autres), ni écartée par une protection de couleur
+  ou la protection des sorts du Serpent du monde, et toujours debout à la fin
+  de la vague. Les créatures du camp du lanceur ne ripostent jamais, même
+  quand une zone balaie les deux tables (le Grand Hiver, le vent de la
+  Valkyrie) : on ne rend pas de coup à son propre camp.
+- **Où part la riposte ?** La règle du ciblé est conservée : un **sort** de
+  zone se paie sur le visage du **sorcier lanceur** (`rpgInfligerSorcier`),
+  une **capacité** de zone sur la **créature source** (`sauf`, via
+  `rpgBlesserCreature` en type `capacite`, donc non esquivable). Chaque
+  créature à Contre-attaque touchée produit sa propre riposte, avec sa propre
+  ATK du moment — l'Embuscade réduit d'abord l'ATK, les ripostes partent
+  ensuite à la valeur abaissée.
+- **Morts et Esquives** : une créature tuée par la vague ne riposte pas (elle
+  n'est plus dans le camp, et `riposteDeContreAttaque` exige des PV > 0) ; une
+  Esquive réussie annule dégâts et malus sur la créature mais **n'éteint pas
+  sa riposte**, comme devant un sort ciblé. Une créature renvoyée en main par
+  la vague du Léviathan quitte la table et ne peut pas non plus rendre de coup.
+- **Moteur** : le nouveau `ripostesDeZone(duel, coteLanceur, sauf, sourceType,
+  touchees)` de `rpgDuel.js` centralise le réveil des Contre-attaques de zone,
+  sur le modèle de `riposterSurEffet` pour le ciblé. Il est branché dans toutes
+  les branches de zone — `degats` (`toutes-autres` et `toutes-creatures`, gel
+  inclus), `gel` sans blessure, `destruction-totale` et `destruction-coutmax`
+  (où seules les survivantes — Esquive ou coût trop élevé — ripostent), le
+  malus `buff`/`creatures-adverses` de l'Embuscade (magies seulement), le
+  renvoi `retour-main`/`toutes-autres` et la résolution des **échos** (le
+  Nuage de cendres : chaque vague réveille à nouveau les Contre-attaques
+  debout). Le journal réutilise les lignes existantes de Contre-attaque.
+- **IA** : `rpgAI.js` déduit désormais le prix des ripostes dans ses
+  estimations de zone. Le nouvel helper `degatsRipostesZone` retranche les
+  dégâts certains qui vont au visage du sorcier (destructions totales et
+  jugements par coût ne laissent que les Esquives, le Grand Hiver et
+  l'Embuscade comptent les survivantes) ; pour les capacités d'arrivée de
+  zone, les ripostes qui frappent la nouvelle créature sont évaluées sur son
+  propre corps (mort certaine = perte totale, sinon blessure amortie). La
+  simulation des niveaux Normal et au-delà voyait déjà la mort via le moteur.
+- **Textes et pédagogie** : les quatre porteurs de Contre-attaque (Eirik,
+  Salem, Kusayla, Tojiro), la pastille du mot-clé (`effetIcons.js`), la leçon
+  de `rpgCardLessons.js` et `docs/rpg/05-concept-cartes.md` précisent que
+  l'épine répond aux sorts ciblés **comme de zone**, et qu'une Esquive ne
+  l'empêche jamais de partir.
+
+Contrôles : la suite `tests/rpg-duel.test.js` gagne un bloc « Contre-attaque et
+sorts de zone » (zone de base, doubles ripostes, cible tuée, parade, capacité
+de zone, zones deux camps, Embuscade, Esquive qui riposte quand même, Neige
+noire et écho) et `tests/rpg-ia.test.js` vérifie que le sorcier ne lance plus
+à perte une zone dans des Contre-attaques survivantes ; le total de la suite
+reste stable, sans régression sur les sorts ciblés.

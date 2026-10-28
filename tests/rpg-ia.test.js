@@ -961,3 +961,60 @@ test('l’Appât de la meute : l’IA anticipe le blocage obligatoire', () => {
   assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
     { [ifrit.id]: [dune.id] }, 'le blocage forcé est compté dans la simulation');
 });
+
+test('une zone qui réveille des Contre-attaques coûte son prix à l’IA', () => {
+  // Niveau Récit : heuristique seule, sans simulation moteur — la pénalité de
+  // riposte doit suffire à sortir le sort du classement.
+  const niveauRecit = (duel) => { duel.sorcier.ia = { niveau: 'recit' }; };
+
+  // Le Grand Hiver ne griffe qu’à 1 : l’Eirik survivant renvoie 2 dégâts au
+  // sorcier, la vague vaut moins que rien. Face à une 2/2 sans Contre-attaque,
+  // le même sort reste rentable.
+  let duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'sorcier', 'grand-hiver');
+  niveauRecit(duel);
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 }), null,
+    'le Grand Hiver ne se lance pas dans une Contre-attaque survivante');
+
+  duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'loup-des-neiges');
+  rpgJouerCreature(duel, 'joueur', 'loup-des-neiges');
+  donner(duel, 'sorcier', 'grand-hiver');
+  niveauRecit(duel);
+  assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 })?.carteId, 'grand-hiver',
+    'sans Contre-attaque en face, le Grand Hiver reste rentable');
+
+  // Embuscade létale : deux Eiriks survivants renvoient 4 dégâts au visage du
+  // sorcier (3 PV). La simulation du niveau Normal voit la mort et choisit
+  // autre chose.
+  duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment');
+  duel.sorcier.pv = 3;
+  donner(duel, 'sorcier', 'embuscade');
+  donner(duel, 'sorcier', 'loup-des-neiges');
+  assert.notEqual(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 })?.carteId, 'embuscade',
+    'l’IA ne signe pas sa mort en lançant Embuscade dans deux Contre-attaques');
+
+  // Capacité de zone : le Braisier 1/1 blesse l’Eirik (2 PV) qui survit et le
+  // tue en riposte — l’IA préfère une créature sans ce risque.
+  duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'sorcier', 'braisier-du-souk');
+  donner(duel, 'sorcier', 'loup-des-neiges');
+  assert.notEqual(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 })?.carteId, 'braisier-du-souk',
+    'le Braisier ne se pose pas devant une Contre-attaque qui va le tuer');
+});
