@@ -9,6 +9,8 @@ assert.match(styles, /\.brand-logo\{\s*height:50px;width:auto;aspect-ratio:1248\
 assert.match(styles, /\.nav\.scrolled \.brand-logo\{height:44px\}/, 'logo encore lisible après défilement');
 assert.match(styles, /\.nav-primary \.nav-submenu a\{\s*display:flex;align-items:center;justify-content:center;text-align:center/, 'liens du dropdown centrés');
 assert.match(themeStyles, /\.nav \.nav-primary \.nav-submenu a,[\s\S]{0,160}color:var\(--ink\) !important/, 'liens dropdown lisibles sur le panneau clair');
+assert.match(themeStyles, /\[data-theme='light'\] \.actus-card\{[\s\S]{0,120}background:#4f3494/, 'cartes Actus violettes en thème clair');
+assert.match(themeStyles, /\[data-theme='light'\] \.actus-card-copy p\{color:rgba\(255,255,255,\.9\)\}/, 'descriptions des cartes Actus lisibles en thème clair');
 execFileSync('npx', ['vite', 'build', '--ssr', 'scripts/nav-smoke.jsx', '--outDir', 'node_modules/.cache/nav', '--emptyOutDir', '--logLevel', 'error'], { stdio: 'inherit' });
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost' });
 globalThis.window = dom.window;

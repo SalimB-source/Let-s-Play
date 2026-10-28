@@ -1561,3 +1561,28 @@
     color:#fff;
   }
 }
+
+/* Hub Actus : même violet de marque que la barre de navigation, avec texte
+   blanc pour conserver le contraste en mode clair. */
+[data-theme='light'] .actus-card{
+  --actus-accent:#ffd619;
+  color:#fff;
+  background:#4f3494;
+  border-color:rgba(255,255,255,.24);
+  box-shadow:0 10px 30px -14px rgba(48,31,100,.34),inset 0 1px 0 rgba(255,255,255,.12);
+}
+[data-theme='light'] .actus-card:hover{
+  border-color:#ffd619;
+  box-shadow:0 16px 36px -16px rgba(48,31,100,.48),inset 0 1px 0 rgba(255,255,255,.18);
+}
+[data-theme='light'] .actus-card-visual{
+  background:radial-gradient(ellipse at 50% 72%,rgba(255,214,25,.16),transparent 56%),linear-gradient(145deg,#6148a2,#4f3494 78%);
+}
+[data-theme='light'] .actus-card-number,
+[data-theme='light'] .actus-card-category,
+[data-theme='light'] .actus-card-copy h2,
+[data-theme='light'] .actus-card-action{color:#fff}
+[data-theme='light'] .actus-card-category{color:#ffe36c}
+[data-theme='light'] .actus-card-copy p{color:rgba(255,255,255,.9)}
+[data-theme='light'] .actus-card-action span{border-color:rgba(255,255,255,.42)}
+[data-theme='light'] .actus-card:hover .actus-card-action span{color:#4f3494;background:#ffd619;border-color:#ffd619}
