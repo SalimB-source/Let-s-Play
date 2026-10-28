@@ -252,3 +252,22 @@ test('carteLiee ne touche à rien quand le Lien est muet ou l’ancre absente', 
   assert.equal(carteLiee(masque, true).porteurBlesseSorcier.defausse, 0);
   assert.equal(masque.porteurBlesseSorcier.defausse, 1, 'la fiche imprimée n’est jamais mutée');
 });
+
+test('Nuage de cendres : 2 dégâts sans Susanoo, 3 avec — et l’écho reste à 1', () => {
+  // Une 0/3 : elle survit à 2 dégâts, elle meurt à 3.
+  const sans = duelVide();
+  const cible = poser(sans, 'sorcier', 'gardienne-de-la-balance');
+  lancer(sans, 'joueur', 'nuage-de-cendres');
+  assert.equal(cible.pv, 1, 'sans ancre : 2 dégâts, la Gardienne survit à 1 PV');
+  // La promesse d'écho n'est pas alourdie par le Lien.
+  assert.equal(sans.sorcier.degatsEchos?.at(-1)?.amount, 1);
+
+  const avec = duelVide();
+  const victime = poser(avec, 'sorcier', 'gardienne-de-la-balance');
+  poser(avec, 'joueur', 'susanoo');
+  lancer(avec, 'joueur', 'nuage-de-cendres');
+  assert.equal(avec.sorcier.creatures.some((entite) => entite.id === victime.id), false,
+    'avec Susanoo : 3 dégâts, la Gardienne est détruite');
+  assert.equal(avec.sorcier.degatsEchos?.at(-1)?.amount, 1,
+    'l’écho garde son dégât : le Lien ne touche que la première vague');
+});

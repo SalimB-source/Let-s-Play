@@ -1664,7 +1664,10 @@ export const RPG_MAGIE_CARDS = [
     // seconde vague, qui tombe au début du prochain tour du lanceur — après
     // le tour adverse, sur ce qu'il y a alors à brûler (voir `degatsEchos`).
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 1, tours: 1 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant.',
+    // Le Lien de la tempête : Susanoo ne change pas la seconde vague, il
+    // alourdit la première — le nuage tombe plus dru quand le kami est là.
+    lien: { ancre: 'susanoo', effet: { amount: 3 } },
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant. Lien de Susanoo — si Susanoo est en jeu, le nuage inflige 3 dégâts à la première vague.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {
