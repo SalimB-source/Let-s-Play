@@ -248,7 +248,9 @@ moment où son ancre mythique tient une place sur la rangée du joueur, il faut
 que ça se voie **avant** de la jouer.
 
 - **En main** : la carte porte `is-lien-actif` (et `data-lien-actif="true"`),
-  un liseré et un halo **or** (`#f2c94c`), qui respirent doucement.
+  un liseré et un halo **or** (`#f2c94c`), qui respirent doucement — **et
+  seulement si elle est jouable maintenant**. L'or dit « renforcée *et*
+  disponible » ; sur une carte éteinte, il promettrait une action impossible.
 - **Sur la table** : une arme liée déjà posée s'allume du même or tant que son
   ancre tient sa rangée (`lienActifSurTable`), et s'éteint dès qu'elle part.
 - **Deux signaux, jamais confondus** : la lueur de jouabilité d'une mythique

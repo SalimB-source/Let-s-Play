@@ -13700,8 +13700,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const estMythique = cardRarityInfo(carte).key === 'mythique';
               // La carte liée dont l'ancre mythique est en jeu : elle s'allume
               // d'une lueur dorée, pour que le joueur voie qu'elle est renforcée
-              // AVANT de la jouer.
-              const lienActifMain = Boolean(carte.lien) && lienSatisfait(carte, duel.joueur.creatures);
+              // AVANT de la jouer. Seulement si elle est JOUABLE maintenant —
+              // un liseré d'or sur une carte éteinte promettrait une action
+              // qu'on ne peut pas faire.
+              const lienActifMain = baseJouable
+                && Boolean(carte.lien)
+                && lienSatisfait(carte, duel.joueur.creatures);
               const estCreatureMythique = estMythique && (carte.kind === 'creature' || carte.kind === 'hero' || (!carte.kind && carte.atk != null && carte.def != null));
               const mythiqueJouable = baseJouable && estCreatureMythique;
               const enVol = carteEnVol?.phase === 'flying'

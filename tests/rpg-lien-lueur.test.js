@@ -27,8 +27,8 @@ function corpsDe(selecteurs) {
 test('Lueur dorée : la carte en main calcule son Lien et s’allume', () => {
   assert.match(
     page,
-    /const lienActifMain = Boolean\(carte\.lien\) && lienSatisfait\(carte, duel\.joueur\.creatures\)/,
-    'la main doit calculer le Lien de chaque carte contre la rangée du joueur',
+    /const lienActifMain = baseJouable\s*\n?\s*&& Boolean\(carte\.lien\)\s*\n?\s*&& lienSatisfait\(carte, duel\.joueur\.creatures\)/,
+    'la main doit calculer le Lien de chaque carte contre la rangée du joueur, et seulement pour une carte jouable',
   );
   assert.match(
     page,
@@ -74,10 +74,11 @@ test('Lueur dorée : elle ne remplace pas la lueur de jouabilité d’une mythiq
   const bloc = main.slice(0, main.indexOf("].filter(Boolean).join(' ')"));
   assert.match(bloc, /mythiqueJouable \? 'is-mythique-jouable' : ''/);
   assert.match(bloc, /lienActifMain \? 'is-lien-actif' : ''/);
-  // Et la carte non jouable reste éteinte : la règle d'assombrissement vient
-  // après la nôtre dans la feuille.
-  assert.ok(
-    battleCss.indexOf('.rpg-hand__card.is-unplayable') > battleCss.indexOf('.rpg-card.is-lien-actif {'),
-    'is-unplayable doit rester la dernière règle de filtre',
+  // Et le liseré ne s'allume que sur une carte réellement jouable : une carte
+  // dorée mais éteinte promettrait une action impossible.
+  assert.match(
+    page,
+    /const lienActifMain = baseJouable/,
+    'la lueur en main est conditionnée par la jouabilité',
   );
 });
