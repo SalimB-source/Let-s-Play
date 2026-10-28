@@ -184,12 +184,12 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.25 },
-    // Lien de NOM (`nominal`) : aucun chiffre n'est ajouté. La paire tient
-    // toute seule, parce que les coups critiques se cumulent — sur la Flamme
-    // originelle (25 % ×4), le sabre fait passer la frappe quadruple à 50 %.
-    // Le Lien ne fait que nommer l'accord ; il le dit au joueur sur la carte.
-    lien: { ancre: 'kagutsuchi-flamme-originelle', nominal: true },
-    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Lien de la Flamme — sur Kagutsuchi, Flamme originelle, le critique du sabre s’ajoute à sa frappe quadruple : 50 % de chances de frapper 4 fois.',
+    // Le Lien de la Flamme : sur Kagutsuchi, le sabre ne mord **que la
+    // force** — la défense imprimée reste intacte (+2/+0 au lieu de +2/-2).
+    // Et comme les coups critiques se cumulent, sa frappe quadruple passe de
+    // 25 % à 50 % de chances SANS que ce Lien ait à l'écrire.
+    lien: { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
+    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Lien de la Flamme — sur Kagutsuchi, Flamme originelle, le sabre ne mord que la force : le porteur gagne +2/+0 au lieu de +2/-2, et son critique s’ajoute à sa frappe quadruple (50 % de chances de frapper 4 fois).',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({

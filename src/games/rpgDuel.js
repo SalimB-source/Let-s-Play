@@ -1446,7 +1446,7 @@ function appliquerLiensArmes(duel) {
         // son renfort dans `lien.effet` — les deux disent la même chose.
         const renfort = lien.bonus ?? lien.effet;
         if (!renfort || (renfort.atk === undefined && renfort.def === undefined)) continue;
-        const actif = lienSatisfait(arme, champ);
+        const actif = lienSatisfait(arme, champ, entite.carteId);
         const voulu = actif
           ? { atk: (renfort.atk ?? base.atk ?? 0) - (base.atk ?? 0), def: (renfort.def ?? base.def ?? 0) - (base.def ?? 0) }
           : { atk: 0, def: 0 };

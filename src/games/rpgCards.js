@@ -157,10 +157,13 @@ export function bonusArme(carte) {
  *                 est là (le Masque du guetteur pioche alors **sans**
  *                 défausser : `{ porteurBlesseSorcier: { defausse: 0, … } }`) ;
  *   - `nominal` : `true` pour un **Lien de nom** — la paire n'ajoute aucun
- *                 chiffre, elle existe déjà par une autre règle (le Sabre
- *                 maudit sur la Flamme originelle : deux coups critiques qui
- *                 se cumulent). Le drapeau est obligatoire pour qu'un Lien
- *                 sans effet soit un choix dit, jamais un bonus oublié.
+ *                 chiffre, elle existe déjà par une autre règle. Le drapeau
+ *                 est obligatoire pour qu'un Lien sans effet soit un choix
+ *                 dit, jamais un bonus oublié ;
+ *   - `porteur` : `true` pour un **Lien de porteur** — l'ancre doit être la
+ *                 créature qui tient l'arme (le Sabre maudit ne mord que la
+ *                 force entre les mains de la Flamme), et non simplement être
+ *                 en jeu.
  *
  * Le Lien est toujours une **différence légère** : un cran, pas un
  * dédoublement. Une carte liée reste la même carte, un peu meilleure.
@@ -174,10 +177,20 @@ export function lienDeCarte(carte) {
   return carte?.lien?.ancre ? carte.lien : null;
 }
 
-/** L'ancre est-elle sur le champ ? `cartesEnJeu` accepte des cartes ou des entités. */
-export function lienSatisfait(carte, cartesEnJeu = []) {
+/**
+ * L'ancre est-elle sur le champ ? `cartesEnJeu` accepte des cartes ou des
+ * entités.
+ *
+ * `porteurCarteId` sert aux Liens **de porteur** (`lien.porteur`, le Sabre
+ * maudit sur la Flamme originelle) : l'ancre doit alors être la créature qui
+ * porte l'arme, et non n'importe qui sur la rangée. Sans ce troisième
+ * paramètre — un sort, une arme du prototype — la règle reste « l'ancre est
+ * en jeu ».
+ */
+export function lienSatisfait(carte, cartesEnJeu = [], porteurCarteId = null) {
   const lien = lienDeCarte(carte);
   if (!lien) return false;
+  if (lien.porteur) return Boolean(porteurCarteId) && porteurCarteId === lien.ancre;
   return (cartesEnJeu ?? []).some((entree) => {
     const id = typeof entree === 'string' ? entree : (entree?.carteId ?? entree?.id);
     if (id !== lien.ancre) return false;

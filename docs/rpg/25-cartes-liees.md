@@ -41,7 +41,8 @@ main, de la table, du catalogue et de l'atelier reste donc la seule vérité
 | **Déclencheur** | `lien.remplace` réécrit un déclencheur de l'arme, pas seulement ses chiffres : le Masque du guetteur pioche alors **sans défausser** (`defausse: 0`). La fiche imprimée n'est jamais mutée. |
 | **Arme-sort** | Une magie de type `arme` (Braise et sable, Sabre maudit) s'attache à l'**imprimé** puis vit son Lien en continu, comme une arme du prototype : le renfort retombe quand l'ancre s'en va, et il part avec l'arme si on la brise. Le registre `lienArmesBonus` retient la part de **chaque** arme séparément. |
 | **Deux modes** | Un sort à cible double a deux montants : `amount` (une cible) et `secondAmount` (chacune des deux, 2 par défaut). Le Lien peut relever les deux, l'invite de ciblage annonce alors les chiffres du moteur au lieu des chiffres imprimés. |
-| **Lien de nom** | `nominal: true` : la paire n'ajoute **aucun** chiffre, parce qu'une autre règle la fait déjà exister. Le Sabre maudit sur la Flamme originelle en est le cas d'école — leurs coups critiques se **cumulent** (25 % + 25 %), et la frappe quadruple de Kagutsuchi passe de 25 % à 50 %. Le Lien ne fait que nommer l'accord, et le texte annonce la valeur mesurable. Le drapeau est **obligatoire** : un Lien sans effet doit être un choix dit, jamais un bonus oublié (le test du catalogue le vérifie). |
+| **Lien de nom** | `nominal: true` : la paire n'ajoute **aucun** chiffre, parce qu'une autre règle la fait déjà exister. Le drapeau est **obligatoire** pour un Lien sans effet : un Lien de nom doit être un choix dit, jamais un bonus oublié (le test du catalogue le vérifie). |
+| **Lien de porteur** | `porteur: true` : l'ancre ne suffit pas à être **en jeu**, c'est **elle** qui doit tenir l'arme. Le Sabre maudit ne mord que la force entre les mains de la Flamme originelle — sur tout autre porteur, même avec Kagutsuchi sur la rangée, le `−2` reste. Et ce `−2` reste **mortel** : un 1/1 qui s'attache le sabre tombe sur-le-champ (la défense n'est pas planchée à l'attachement d'une arme). C'est le sens de la carte — le sabre est maudit, il coûte des porteurs. |
 | **Coût** | **Inchangé.** Ni remise, ni surcoût, ni mana détruit. |
 | **Texte** | La règle s'imprime sur la carte (« Lien de Tin Hinan — … »), comme Abordage, Harakiri ou Malédiction. Un test vérifie que chaque Lien nomme une ancre mythique **qui existe** et que le texte la nomme : aucune fiche ne peut dériver de sa mécanique. |
 
@@ -61,7 +62,7 @@ mécanique sur des cartes du catalogue.
 | **Brise-lame** (magie rapide, inhabituelle) | 3 | brise une arme adverse · pioche **1** | brise l'arme · pioche **2** | +1 carte | Orochi (Braise, mythique, 8) |
 | **Braise et sable** (arme-sort, rare) | 3 | +1/+0 · Attaque ciblée · critique 30 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
 | **Feux de kitsune** (magie, rare) | 5 | **4** dégâts à une créature, ou **2** à chacune de deux | **5** dégâts, ou **3** et **3** | +1 sur les deux modes | Oni de la fournaise (Braise, mythique, 5) |
-| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | *identique* — **Lien de nom** | aucun chiffre | Kagutsuchi, Flamme originelle (Braise, mythique, 6) |
+| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | **+2/+0** · critique **50 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -69,11 +70,13 @@ récompenser la construction. Les premiers chiffres essayés (+4/+2 pour la
 Takouba, 8 PV pour l'Eau, 4 dégâts pour le Vent rouge) étaient trop généreux —
 un Lien se juge à l'écart, pas au total.
 
-Les trois formes que prend ce cran :
+Les formes que prend ce cran :
 
 - **les chiffres** d'une arme (`bonus`) ou d'un sort (`effet.amount`) ;
 - **le déclencheur** d'une arme (`remplace`) : le Masque du guetteur pioche
   sans défausser, ce qui change la carte sans changer un seul nombre ;
+- **la dette annulée** (`effet: { def: 0 }`, Lien de porteur) : le Sabre
+  maudit ne mord que la force quand la Flamme le tient ;
 - **la portée** d'un renfort (`effet.atk/def`) pour le Serment.
 
 **Le Serment de la forge est une carte de Samouraïs** : son ancre est donc le
