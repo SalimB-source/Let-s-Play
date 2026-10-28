@@ -252,13 +252,13 @@ export function PlaqueVie({ pv, pvMax, bouclier = 0, soin = null, base = 25 }) {
  * d'une arme. Le losange et ses classes restent ceux de la feuille
  * (`rpg-battle.css`) ; ce module n'ajoute que l'état de variation.
  *
- * `type` : `heures` ou `sable` (les autres compteurs gardent leur symbole, ils
- * ne changent pas de valeur). `valeur` : le nombre restant.
+ * `type` : `heures`, `sable` ou `durabilite` (les autres compteurs gardent leur
+ * symbole, ils ne changent pas de valeur). `valeur` : le nombre restant.
  */
 export function CompteurCarte({ type, valeur, titre = '' }) {
   const reduit = useMouvementReduit();
   const { sens, token } = useVariation(valeur, reduit, { duree: RPG_COMPTEUR_DUREE, pose: true });
-  const derniere = type === 'heures' && Number(valeur) === 1;
+  const derniere = ['heures', 'sable', 'durabilite'].includes(type) && Number(valeur) === 1;
 
   const classes = [
     'rpg-card__compteur',
