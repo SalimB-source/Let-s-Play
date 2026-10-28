@@ -8,7 +8,7 @@ const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.ur
 test('la Valkyrie déclenche le vent froid et s’épargne de sa propre vague', () => {
   const animation = page.slice(page.indexOf('const declencherGelMasse ='), page.indexOf('const annoncerMagie ='));
   assert.match(animation, /'valkyrie-des-glaces'\]\.includes\(id\)/);
-  assert.match(animation, /jouerSfx\('cold_wind'\)/);
+  assert.match(page, /jouerSfx\('freeze_impact'\)/);
   assert.match(page, /effet.carteId === 'valkyrie-des-glaces' \? 'Valkyrie des glaces — vent froid'/);
   assert.deepEqual(cardById('valkyrie-des-glaces').arrivee, {
     type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25,
