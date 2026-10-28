@@ -1524,7 +1524,10 @@ export const RPG_MAGIE_CARDS = [
     instant: true,
     cibles: ['creature', 'sorcier'],
     effet: { type: 'degats', amount: 3, cible: 'creature' },
-    text: '3 dégâts à une créature ou un sorcier ciblés.',
+    // Le Lien de la Lionne : le trait devient son souffle — 4 dégâts, le
+    // chiffre exact qu'elle imprime à l'arrivée. La braise se répond.
+    lien: { ancre: 'lionne-du-midi-ardent', effet: { amount: 4 } },
+    text: '3 dégâts à une créature ou un sorcier ciblés. Lien de la Lionne — si La Lionne du midi ardent est en jeu, 4 dégâts à la place — le chiffre de son souffle.',
     flavor: 'Une étincelle suffit, au souk.',
   },
   {

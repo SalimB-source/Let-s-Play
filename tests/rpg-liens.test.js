@@ -322,6 +322,28 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Trait de braise : 3 dégâts, 4 avec La Lionne du midi ardent — le chiffre de son souffle', () => {
+  const monter = (avecLionne) => {
+    const duel = duelVide();
+    // La Lionne frappe à l'arrivée : on la pose avant toute proie adverse.
+    if (avecLionne) poser(duel, 'joueur', 'lionne-du-midi-ardent');
+    const cible = poser(duel, 'sorcier', 'momie-de-lin');
+    return { duel, cible, avant: cible.pv };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'trait-de-braise', sans.cible.id);
+  assert.equal(sans.avant - sans.cible.pv, 3, 'sans ancre : 3 dégâts');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'trait-de-braise', avec.cible.id);
+  assert.equal(avec.avant - avec.cible.pv, 4, 'avec la Lionne : 4 dégâts, son souffle');
+
+  const carte = cardById('trait-de-braise');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'lionne-du-midi-ardent', effet: { amount: 4 } });
+});
+
 test('Tempête de sable : 3 dégâts à toute la rangée, 4 avec Le Faucon du zénith', () => {
   const monter = (avecFaucon) => {
     const duel = duelVide();
