@@ -341,7 +341,16 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Magie Rapide — Ténèbres',
     effet: { type: 'transfert', amount: 2 },
     cibles: ['sorcier'],
-    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2.',
+    // Le Lien de la Barbe Noire : le poids s'abat deux fois. Le transfert
+    // monte à 3 PV, et une créature adverse ciblée perd en plus -3/-3
+    // (`lien.cible` dit au jeu qu'il faut la désigner).
+    lien: {
+      ancre: 'la-barbe-noire',
+      effet: { amount: 3 },
+      cible: 'creature',
+      debuff: { atk: -3, def: -3 },
+    },
+    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2. Lien de la Malédiction — si La Barbe Noire, la malédiction est en jeu, il perd 3 PV et vous en gagnez 3, et une créature adverse ciblée gagne -3/-3.',
     flavor: 'Deux grains tombent de chaque côté ; la table ne bouge pas.',
   }),
   carte({

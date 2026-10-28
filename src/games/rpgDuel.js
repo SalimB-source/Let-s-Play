@@ -5980,6 +5980,33 @@ function choisirContreIA(duel, carte) {
   return candidats[0] ?? null;
 }
 
+/**
+ * La cible SUPPLÉMENTAIRE qu'un Lien exige (le Poids de la Barbe Noire, qui
+ * désigne en plus une créature adverse pour -3/-3).
+ *
+ * `null` quand le Lien n'en demande pas, ou quand son ancre n'est pas en jeu.
+ * Sinon la créature désignée si elle est légale — une créature adverse, ni
+ * protégée par la couleur du sort, ni protégée des sorts. Sans désignation
+ * (l'IA, un sort poussé sans cible), la meilleure proie est retenue : le Lien
+ * frappe toujours, il ne se contente pas de ne rien faire.
+ */
+function cibleDuLien(duel, cote, carte, cibleId, { auto = false } = {}) {
+  const lien = carte?.lien;
+  if (!lien?.cible || !lien?.debuff) return null;
+  if (!lienSatisfait(carte, duel[cote].creatures)) return null;
+  const adv = autre(cote);
+  const legales = duel[adv].creatures.filter((entite) => entite.pv > 0
+    && !estSite(entite)
+    && !rpgEstProtegee(entite, cardColors(carte))
+    && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'magie'));
+  if (!legales.length) return null;
+  const designee = cibleId && cibleId !== 'sorcier'
+    ? legales.find((entite) => entite.id === cibleId)
+    : null;
+  if (designee) return designee;
+  return auto ? legales.slice().sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0))[0] : null;
+}
+
 /** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
 export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeId = null) {
   const camp = duel[cote];
@@ -6010,6 +6037,20 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (rpgEstProtegeeDesSorts(visee, cardColors(carte)) || estSite(visee)) return { ok: false, raison: 'protection' };
   }
 
+  // Le Lien qui exige une cible supplémentaire : sans créature adverse
+  // légale, le sort ne se lance pas — et le mana reste entier, comme pour un
+  // renvoi sans cible. Une créature désignée mais protégée est refusée.
+  if (carte.lien?.cible && carte.lien?.debuff && lienSatisfait(carte, camp.creatures)) {
+    const advLien = autre(cote);
+    const legales = duel[advLien].creatures.filter((entite) => entite.pv > 0
+      && !estSite(entite)
+      && !rpgEstProtegee(entite, cardColors(carte))
+      && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'magie'));
+    if (!legales.length) return { ok: false, raison: 'cible' };
+    if (cibleId && cibleId !== 'sorcier' && !legales.some((entite) => entite.id === cibleId)) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (carte.effet.choixDegats && cibleAllieeId) {
       const premiere = duel[adv].creatures.find((entite) => entite.id === cibleId);
@@ -6136,6 +6177,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // laisse donc le sort se résoudre au tarif imprimé — jouer son sort avant
   // de perdre son mythe est une vraie décision de tempo.
   const effetLieActif = lienSatisfait(carte, camp.creatures);
+  const lienActif = effetLieActif;
   // Une arme-sort s'attache à l'imprimé : son Lien est ensuite tenu en
   // continu par `appliquerLiensArmes` (il retombe quand l'ancre s'en va),
   // exactement comme celui d'une arme du prototype.
@@ -6156,6 +6198,16 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   appliquer(duel, cote, effet, cibleId,
     cibleAllieeId ?? null,
     cardColors(carte), 'magie', carteId);
+  // Le Lien à cible supplémentaire (le Poids de la Barbe Noire) : la créature
+  // désignée encaisse son malus APRÈS le transfert de vie. Le Lien se lit à la
+  // résolution, comme tous les autres.
+  if (lienActif) {
+    const cibleLien = cibleDuLien(duel, cote, carte, cibleId, { auto: true });
+    if (cibleLien) {
+      appliquer(duel, cote, { type: 'debuff', ...carte.lien.debuff, cible: 'creature' },
+        cibleLien.id, null, cardColors(carte), 'magie', carteId);
+    }
+  }
   if (carte.effet.type === 'arme') {
     // L'arme-sort vient de s'attacher : son Lien se relève dans la foulée.
     appliquerLiensArmes(duel);

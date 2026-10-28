@@ -160,6 +160,11 @@ export function bonusArme(carte) {
  *                 chiffre, elle existe déjà par une autre règle. Le drapeau
  *                 est obligatoire pour qu'un Lien sans effet soit un choix
  *                 dit, jamais un bonus oublié ;
+ *   - `cible` : une **cible supplémentaire** que le Lien exige (le Poids de
+ *                 la Barbe Noire désigne en plus une créature adverse). La
+ *                 fiche imprimée garde ses propres cibles ;
+ *   - `debuff` : l'effet de malus appliqué à cette cible supplémentaire
+ *                 (`{ atk, def }`, permanent comme la Lame de mer) ;
  *   - `donne` : les mots-clés prêtés au porteur d'une arme (le Sabre du
  *                 Berger donne un bouclier). Fusionné avec le `donne` imprimé
  *                 à l'attachement, il ne remplace rien ;

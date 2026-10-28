@@ -1098,7 +1098,11 @@ const RPG_DECK_FAMILLES = [
   { id: 'terrains', nom: 'Terrains', note: 'Les sources de mana du deck' },
 ];
 
-function targetMode(carte) {
+function targetMode(carte, lienActif = false) {
+  // Un Lien peut exiger une cible que la fiche n'imprime pas : le Poids de la
+  // Barbe Noire désigne en plus une créature adverse pour -3/-3. La table
+  // s'allume alors sur la créature, pas sur la plaque du sorcier.
+  if (lienActif && carte?.lien?.cible === 'creature' && carte?.lien?.debuff) return 'ennemi';
   // Une arrivée en jeu qui désigne sa cible : sa portée vient du moteur
   // (`arriveeCiblePortee`), la même règle que celle qui exige et valide la
   // désignation — l'exil du Susanoo choisit dans les deux camps, le duel du
@@ -1143,6 +1147,7 @@ export function porteeCibleEnCours({
   attenteAbordage = false,
   attenteSiteBimini = false,
   cibleAllieeMagie = null,
+  lienActif = false,
 } = {}) {
   if (attenteSiteBimini) return 'allie';
   // Le Grappin accroché : la cale attend une proie ADVERSE. Seule une arme qui
@@ -1154,7 +1159,7 @@ export function porteeCibleEnCours({
   if (carte?.effet?.type === 'combat' && carte?.effet?.sourceCible === 'creature-amie') {
     return cibleAllieeMagie ? 'ennemi' : 'allie';
   }
-  return targetMode(carte);
+  return targetMode(carte, lienActif);
 }
 
 function FaceDownHand({ count, drawAnimations = [] }) {
@@ -9433,6 +9438,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     attenteAbordage,
     attenteSiteBimini,
     cibleAllieeMagie,
+    lienActif: Boolean(carteCiblee) && lienSatisfait(carteCiblee, duel.joueur.creatures),
   });
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
@@ -10875,7 +10881,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (carte.kind === 'magie') {
       signalerTutoriel('magie-choisie', { cardId: carteId });
-      const cible = targetMode(carte);
+      const cible = targetMode(carte, lienSatisfait(carte, duel.joueur.creatures));
       if (cible) {
         setCibleAllieeMagie(null);
         // Même verdict que le halo de la main (`rpgSortACibleValide`, via
@@ -11602,8 +11608,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  // Le Lien qui exige une cible supplémentaire détourne la désignation vers la
+  // créature : la plaque du sorcier n'est plus une cible légale pour ce sort.
+  const sorcierEstCibleDuSort = Boolean(carteCiblee?.cibles?.includes('sorcier'))
+    && !(carteCiblee?.lien?.cible === 'creature' && modeCible === 'ennemi');
+
   const cliquerSorcier = () => {
-    if (cibleEnCours && carteCiblee?.cibles?.includes('sorcier')) {
+    if (cibleEnCours && sorcierEstCibleDuSort) {
       jouerSfx('select');
       lancerMagie(cibleEnCours, 'sorcier');
       return;
@@ -12866,7 +12877,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (carteCiblee?.cibles?.includes('sorcier') || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}

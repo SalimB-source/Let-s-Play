@@ -329,6 +329,53 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Le Poids : 2 PV, 3 et un -3/-3 ciblé sous La Barbe Noire', () => {
+  const monter = (avecLien) => {
+    const duel = duelVide();
+    duel.joueur.pv = 20;
+    duel.joueur.pvMax = 20;
+    duel.sorcier.pv = 20;
+    duel.sorcier.pvMax = 20;
+    // La Barbe Noire arrive AVANT la proie : son Abordage prendrait sinon la
+    // créature qu'on veut garder sur la table.
+    if (avecLien) poser(duel, 'joueur', 'la-barbe-noire');
+    const proie = poser(duel, 'sorcier', 'momie-de-lin');
+    return { duel, proie };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'le-poids');
+  assert.equal(sans.duel.sorcier.pv, 18, 'sans ancre : le sorcier perd 2 PV');
+  assert.equal(sans.duel.joueur.pv, 22, 'et vous en gagnez 2');
+  assert.deepEqual([sans.proie.atk, sans.proie.def], [2, 4], 'la créature n’est pas touchée');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'le-poids', avec.proie.id);
+  assert.equal(avec.duel.sorcier.pv, 17, 'sous la Malédiction : 3 PV');
+  assert.equal(avec.duel.joueur.pv, 23, 'et 3 PV pour vous');
+  assert.deepEqual([avec.proie.atk, avec.proie.def], [0, 1], 'ET la créature ciblée perd -3/-3');
+
+  // Sans créature adverse à désigner, le sort ne se lance pas : le mana reste
+  // entier et la carte reste en main.
+  const vide = duelVide();
+  poser(vide, 'joueur', 'la-barbe-noire');
+  donner(vide, 'joueur', 'le-poids');
+  manaPlein(vide, 'joueur');
+  const manaAvant = { ...vide.joueur.mana };
+  assert.equal(rpgLancerMagie(vide, 'joueur', 'le-poids').ok, false, 'aucune cible : refus');
+  assert.deepEqual(vide.joueur.mana, manaAvant, 'et le mana n’est pas dépensé');
+  assert.ok(vide.joueur.main.includes('le-poids'), 'la carte reste en main');
+
+  const carte = cardById('le-poids');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, {
+    ancre: 'la-barbe-noire',
+    effet: { amount: 3 },
+    cible: 'creature',
+    debuff: { atk: -3, def: -3 },
+  });
+});
+
 test('Hurlement du blizzard : 2 dégâts à toutes, 3 sous Le Géant des banquises', () => {
   const monter = (avecGeant) => {
     const duel = duelVide();
