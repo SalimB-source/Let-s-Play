@@ -260,9 +260,10 @@ que ça se voie **avant** de la jouer.
   `outline` plutôt qu'en `box-shadow` justement pour cohabiter avec le halo :
   une carte liée et jouable garde son halo *et* son filet.
 - **Mouvement** : `prefers-reduced-motion` fige la respiration, le filet reste.
-- **La phrase elle-même** : « Avec <ancre> en jeu : … » ne porte **aucune
-  icône d'effet** (le pictogramme d'un effet mentirait sur une phrase
-  conditionnelle). Elle s'écrit **grisée** tant que le renfort n'est pas réel,
+- **La phrase elle-même** : « Avec <ancre> en jeu : … » porte **les deux
+  maillons du Lien** (`i-lien`), jamais le pictogramme d'un effet (celui-ci
+  mentirait sur une phrase conditionnelle). Elle s'écrit **grisée** — maillons
+  compris — tant que le renfort n'est pas réel,
   et prend l'**or du Lien en gras** quand l'ancre tient la rangée **et** que la
   carte peut partir — les deux conditions du filet, dites dans le texte.
   Le découpage vit dans `rpgLienTexte.js` (une seule définition de la phrase),

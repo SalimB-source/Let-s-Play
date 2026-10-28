@@ -29,12 +29,12 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label));
 
-test('le sprite porte les 36 symboles validés, un par effet', () => {
+test('le sprite porte les 37 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 36 avec le Furtif (`i-furtif`), l'engagement de mana (`i-mana`) et la
-  // Recherche de deck (`i-recherche`) : chaque symbole est référencé par
-  // `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 36);
+  // 37 avec le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
+  // Recherche de deck (`i-recherche`) et les deux maillons du Lien (`i-lien`) :
+  // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
+  assert.equal(symboles.length, 37);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {

@@ -58,6 +58,7 @@ export default function RpgCardRules({ carte, text = carte?.text, effetsEpuises 
           className={`rpg-card-rules__lien${lienActif ? ' is-actif' : ''}`}
           data-lien-actif={lienActif ? 'true' : undefined}
         >
+          <IconeLigneRegle carte={carte} ligne={morceau.texte} />
           {morceau.texte}
         </span>
       ) : (

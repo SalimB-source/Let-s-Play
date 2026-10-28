@@ -33,17 +33,21 @@
   opacity: .52;
 }
 
-/* Dans un bloc de règles, chaque ligne réserve la place de son icône (14 px et
-   5 px de marge). La phrase de Lien n'en a pas : elle garde cette réserve en
-   retrait, pour que son texte s'aligne sur celui des autres lignes au lieu de
-   se coller au filet. */
-.rpg-hover-card-preview__rules .rpg-card-rules__lien {
-  padding-left: 19px;
+/* Les deux maillons suivent la phrase : en retrait avec elle, or plein quand
+   le renfort est vrai. */
+.rpg-card-rules__lien .rpg-effet-icone--ligne {
+  opacity: .7;
 }
 
 .rpg-card-rules__lien.is-actif,
 .rpg-card-rules__lien[data-lien-actif="true"] {
   color: #f2c94c;
   font-weight: 800;
+  opacity: 1;
+}
+
+.rpg-card-rules__lien.is-actif .rpg-effet-icone--ligne,
+.rpg-card-rules__lien[data-lien-actif="true"] .rpg-effet-icone--ligne {
+  color: #f2c94c;
   opacity: 1;
 }
