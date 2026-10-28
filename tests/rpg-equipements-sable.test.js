@@ -32,11 +32,12 @@ import {
 } from '../src/games/rpgDuel.js';
 import { RPG_ARME_CARDS, RPG_DUEL_CARDS, armeById, cardById } from '../src/games/rpgCards.js';
 
-/** Les neuf cartes du lot, dans l'ordre du catalogue (la Boussole est retirée avec les terrains). */
+/** Les dix cartes du lot, dans l'ordre du catalogue (la Boussole est retirée avec les terrains). */
 const LOT = [
   'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
   'licou-du-chien-de-sable', 'harnais-du-mehari',
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
+  'sphere-de-rotation',
 ];
 const cartesDuLot = RPG_ARME_CARDS.filter((carte) => LOT.includes(carte.id));
 
@@ -79,8 +80,8 @@ const equiper = (duel, cote, armeId, entite = null) => {
 
 // ── Le catalogue ────────────────────────────────────────────────────────────
 
-test('le lot compte neuf équipements de Sable, tous peints', () => {
-  assert.equal(cartesDuLot.length, 9);
+test('le lot compte dix équipements de Sable, tous peints', () => {
+  assert.equal(cartesDuLot.length, 10);
   for (const carte of cartesDuLot) {
     assert.equal(carte.element, 'sable', `${carte.id} est une carte de Sable`);
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
@@ -96,11 +97,11 @@ test('le lot compte neuf équipements de Sable, tous peints', () => {
   }
 });
 
-test('le lot s’étage par rareté : trois communes, deux inhabituelles, trois rares, une mythique', () => {
+test('le lot s’étage par rareté : trois communes, deux inhabituelles, quatre rares, une mythique', () => {
   const compter = (rarete) => cartesDuLot.filter((carte) => carte.rarity === rarete).length;
   assert.equal(compter('commune'), 3);
   assert.equal(compter('inhabituelle'), 2);
-  assert.equal(compter('rare'), 3);
+  assert.equal(compter('rare'), 4);
   assert.equal(compter('mythique'), 1);
   assert.equal(armeById('takouba-de-tin-hinan').rarity, 'mythique');
 });
@@ -345,6 +346,48 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   assert.equal(duel.joueur.main.length, mainAvant, 'aucune pioche : aucune créature n’a été blessée');
   const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
   assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
+});
+
+// ── La sphère de rotation ──────────────────────────────────────────────────
+
+test('la sphère de rotation donne +1/+0 à son porteur', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
+  equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
+  assert.equal(porteur.atk, 3, '+1/+0');
+  assert.equal(porteur.def, 2, 'aucune modification de défense');
+});
+
+test('la sphère de rotation renvoie la créature blessée avec 25 % de chance', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/2 avec la sphère de rotation
+  const bloqueur = poser(duel, 'sorcier', 'chien-du-guet'); // 2/2 en blocage
+  equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
+  rendrePret(duel, porteur);
+  rendrePret(duel, bloqueur);
+
+  // Jet à 0.20 < 0.25 : le renvoi fonctionne.
+  rpgReglerHasard(duel, () => 0.20);
+  const mainAvant = duel.sorcier.main.length;
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [bloqueur.id] });
+  assert.equal(res.ok, true);
+  assert.equal(duel.sorcier.main.length, mainAvant + 1, 'la créature adverse retourne en main');
+  assert.equal(duel.sorcier.creatures.length, 0, 'la créature a quitté la table');
+
+  // Jet à 0.30 >= 0.25 : pas de renvoi (la créature encaisse les dégâts mais reste en vie).
+  const duel2 = duelVide();
+  const porteur2 = poser(duel2, 'joueur', 'chien-du-guet');
+  const bloqueur2 = poser(duel2, 'sorcier', 'dune-marchante'); // 2/5, survit aux 3 dégâts du porteur
+  equiper(duel2, 'joueur', 'sphere-de-rotation', porteur2);
+  rendrePret(duel2, porteur2);
+  rendrePret(duel2, bloqueur2);
+  rpgReglerHasard(duel2, () => 0.30);
+  const mainAvant2 = duel2.sorcier.main.length;
+  const res2 = rpgLancerAttaque(duel2, 'joueur', [porteur2.id], { [porteur2.id]: [bloqueur2.id] });
+  assert.equal(res2.ok, true);
+  assert.equal(duel2.sorcier.main.length, mainAvant2, 'pas de renvoi au-dessus du seuil');
+  assert.equal(duel2.sorcier.creatures.length, 1, 'la créature reste en vie sur le battlefield');
+  assert.ok(bloqueur2.pv > 0, 'la créature a survécu aux dégâts');
 });
 
 test('la Jitte simplifiée n’offre plus rien à activer : l’IA passe son chemin', () => {

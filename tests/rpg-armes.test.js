@@ -80,6 +80,7 @@ const LOT_EQUIPEMENTS_SABLE = [
   'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
   'licou-du-chien-de-sable', 'boussole-du-hoggar', 'harnais-du-mehari',
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
+  'sphere-de-rotation',
 ];
 const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
 

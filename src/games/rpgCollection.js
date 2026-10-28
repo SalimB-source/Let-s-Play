@@ -108,7 +108,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Kusayla y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
   // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
   // campagne révélée avant la Nécropole (le roi de la nuit tombante).
-  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation'],
+  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation', 'sphere-de-rotation'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
