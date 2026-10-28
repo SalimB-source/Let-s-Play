@@ -98,7 +98,7 @@ function IconePastille({ pastille, size = 13 }) {
  * mot : le nombre reste dans la donnée, pas dans le nom affiché.
  */
 export const pastilleTexte = (pastille) => (
-  pastille.valeur != null && !pastille.valeurMasquee
+  pastille.cle !== 'bouclier' && pastille.valeur != null && !pastille.valeurMasquee
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label
 );

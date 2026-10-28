@@ -349,7 +349,7 @@ export function pastillesPourCarte(carte) {
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
-  if (carte.donne?.bouclier) ajouter('bouclier', 'Bouclier', Number(carte.donne.bouclier) || null);
+  if (carte.donne?.bouclier) ajouter('bouclier', 'Bouclier', Number(carte.donne.bouclier) || null, { valeurMasquee: true });
   if (carte.porteurMeurt?.type === 'reanimation-porteur') ajouter('reanimation', 'Réanimation');
 
   // L’effet signé des sorts (et des arrivées qui se lisent d’un coup d’œil).
@@ -378,7 +378,7 @@ export function pastillesPourCarte(carte) {
   }[typeEffet];
   if (pastilleEffet) ajouter(...pastilleEffet);
   if (typeEffet === 'bouclier') {
-    ajouter('bouclier', 'Bouclier', Number(carte.effet?.amount ?? carte.arrivee?.amount) || null);
+    ajouter('bouclier', 'Bouclier', Number(carte.effet?.amount ?? carte.arrivee?.amount) || null, { valeurMasquee: true });
   }
 
   // La modification de statistiques, écrite en clair : « Lame de mer » porte

@@ -6037,8 +6037,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    supérieur. */
 .rpg-bouclier-egide,
 .rpg-bouclier-impact {
-  --rpg-bouclier-teinte: 142, 224, 255;
-  --rpg-bouclier-coeur: #eafaff;
+  --rpg-bouclier-teinte: 186, 132, 255;
+  --rpg-bouclier-coeur: #f3e8ff;
   position: absolute;
   inset: 0;
   border-radius: inherit;
