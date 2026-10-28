@@ -72,6 +72,7 @@ mécanique sur des cartes du catalogue.
 | **Rempart de dunes** (magie rapide, commune) | 2 | +0/+3 jusqu'à la fin du tour | +0/+3 **et un bouclier** | la Dame prête sa lumière | La Dame aux ailes d'or (Sable, mythique, 5) |
 | **Lame de mer** (sorcellerie, commune) | 3 | **−3/−3**, exil si la défense tombe | **−4/−4**, exil inchangé | une morsure qui tue par la structure | Le Seigneur des mâchoires (Eau, mythique, 6) |
 | **Lettre de marque** (sorcellerie, commune) | 2 | Abordage de la prochaine créature, **seuil coût − 1** | Abordage **au seuil du coût plein** | la lettre du Chasseur ouvre un coût de plus | Le Chasseur d'Ocracoke (Sable, mythique, 6) |
+| **Le Grand Débarquement** (sorcellerie, rare) | 5 | cales pleines : **+2/+2** et Overkill | **+3/+2** et Overkill | l'assaut mord, il ne tient pas | La Barbe-Rousse, amiral des deux mers (Sable, mythique, 6) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -210,6 +211,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des dix-neuf paires entrent dans le prototype.
+2. B : lesquelles des vingt paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

@@ -418,7 +418,11 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 2, overkill: true, caleOccupeeSeulement: true, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill.',
+    // Le Lien de la Barbe-Rousse : les cales pleines débordent. L'assaut
+    // mord un cran plus fort (+3/+2) — la défense ne bouge pas, un assaut
+    // ne tient pas, il frappe.
+    lien: { ancre: 'la-barbe-rousse', effet: { atk: 3, def: 2 } },
+    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill. Lien de l’Amiral — si La Barbe-Rousse, amiral des deux mers est en jeu, elles gagnent +3/+2 et Overkill à la place.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];

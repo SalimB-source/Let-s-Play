@@ -324,6 +324,37 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Le Grand Débarquement : +2/+2 et Overkill, +3/+2 sous La Barbe-Rousse', () => {
+  const monter = (avecAmiral) => {
+    const duel = duelVide();
+    // Un capteur à cale pleine : le Raïs prend la Mousse dès son arrivée.
+    const proie = poser(duel, 'sorcier', 'mousse-des-galiotes');
+    const rais = poser(duel, 'joueur', 'rais-de-la-galiote', proie.id);
+    assert.ok(rais.enCale, 'le Raïs tient sa prise');
+    if (avecAmiral) poser(duel, 'joueur', 'la-barbe-rousse');
+    return { duel, rais };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'le-grand-debarquement');
+  assert.deepEqual([sans.rais.atk, sans.rais.def], [4, 4], 'sans ancre : 2/2 devient 4/4');
+  assert.equal(sans.rais.overkill, true, 'et Overkill');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'le-grand-debarquement');
+  assert.deepEqual([avec.rais.atk, avec.rais.def], [5, 4], 'sous l’Amiral : +3/+2, l’assaut mord');
+
+  // Une créature sans prise à bord ne débarque pas, Lien ou non.
+  const vide = monter(true);
+  const simple = poser(vide.duel, 'joueur', 'momie-de-lin');
+  lancer(vide.duel, 'joueur', 'le-grand-debarquement');
+  assert.deepEqual([simple.atk, simple.def], [2, 4], 'cale vide : aucune prime');
+
+  const carte = cardById('le-grand-debarquement');
+  assert.equal(carte.cost, 5, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'la-barbe-rousse', effet: { atk: 3, def: 2 } });
+});
+
 test('Lettre de marque : le seuil d’Abordage passe au coût plein sous Le Chasseur d’Ocracoke', () => {
   const monter = (avecChasseur) => {
     const duel = duelVide();
