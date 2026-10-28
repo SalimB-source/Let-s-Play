@@ -3,8 +3,9 @@
  *
  * `flame_gust` est réservé aux sorts et effets qui BLESSENT une créature ou
  * un joueur : les sorts de dégâts et la table rase, les arrivées qui
- * frappent, les capacités de combat qui blessent la créature combattue et
- * les effets de mort qui infligent des dégâts. Une Braise qui ne blesse pas
+ * frappent — **une fois leur cible désignée** (`rpgArriveeAudio.js`) —, les
+ * capacités de combat qui blessent la créature combattue et les effets de
+ * mort qui infligent des dégâts. Une Braise qui ne blesse pas
  * (renfort, jetons, pioche, retour parmi les siens…) ne met pas le feu.
  *
  * Les attaques de créatures, elles, ne brûlent pas : toutes les frappes —

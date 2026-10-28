@@ -95,6 +95,7 @@ import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix } from './rpgArrivalVoices.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
+import { sonArriveeALaDesignation, sonArriveeAuPose } from './rpgArriveeAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { rpgSonsResolutionCombat } from './rpgAttackAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
@@ -6219,6 +6220,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
     const idsAvantAdverse = new Set((avant.sorcier?.creatures ?? []).map((e) => e.id));
     const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
+    // Une arrivée adverse qui désigne encore sa cible ne sonne pas à la pose :
+    // son souffle part quand l'adversaire désigne sa victime, et seulement si
+    // la victime encaisse (`arriveeAdverseClose`). Même règle que pour le
+    // joueur (`finaliserPoseCreature` / `resoudreCible`).
+    const arriveeAdverseEnAttente = entrant.arriveeEnAttente?.cote === 'sorcier'
+      ? entrant.arriveeEnAttente.carteId : null;
+    const arriveeAdverseClose = avant.arriveeEnAttente?.cote === 'sorcier'
+      && avant.arriveeEnAttente.carteId !== arriveeAdverseEnAttente
+      ? avant.arriveeEnAttente.carteId : null;
+    // Les PV des créatures du joueur : une arrivée « renoncée » ne blesse rien
+    // et ne fait donc pas de flamme.
+    const pvCreaturesJoueur = (etat) => (etat?.joueur?.creatures ?? [])
+      .reduce((total, entite) => total + (entite.pv ?? 0), 0);
+    const degatsChezJoueur = pvCreaturesJoueur(entrant) < pvCreaturesJoueur(avant);
     if (nouvellesCreaturesAdverses.length) {
       // Plus de bruit de pose : une créature entre en jeu avec sa voix
       // (`rpgArrivalVoices.js`) ou l'accueil de son élément, jamais avec un
@@ -6227,8 +6242,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         .map((entite) => rpgFoudreSoundFor(cardById(entite.carteId), 'arrival'))
         .find(Boolean);
       const sonFeu = rpgFireSoundFor(cardById(nouvellesCreaturesAdverses[0].carteId), 'arrival');
-      if (sonFoudre) jouerSfx(sonFoudre);
-      else if (sonFeu) jouerSfx(sonFeu);
+      // Le souffle d'une arrivée encore en attente de cible est tu : il sonne
+      // au clic de désignation, comme côté joueur.
+      const souffleDiffere = Boolean(arriveeAdverseEnAttente)
+        && nouvellesCreaturesAdverses.some((entite) => entite.carteId === arriveeAdverseEnAttente);
+      if (!souffleDiffere) {
+        if (sonFoudre) jouerSfx(sonFoudre);
+        else if (sonFeu) jouerSfx(sonFeu);
+      }
       // Les journaux WeakMap du moteur ne traversent pas l'instantané PvP :
       // l'arrivée d'une créature adverse s'y constate par différence de champ.
       // La voix propre à la carte tient l'accueil ; le quai, le cri pirate et
@@ -6241,6 +6262,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         else if (rpgEstCartePirate(carteNouvelle)) jouerArriveePirate();
         else if (rpgDwarfSoundFor(carteNouvelle, 'arrival')) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
       }
+    }
+
+    if (arriveeAdverseClose && degatsChezJoueur) {
+      jouerSfx(sonArriveeALaDesignation(cardById(arriveeAdverseClose)));
     }
 
     const cimetiereAvantLen = avant.sorcier?.cimetiere?.length ?? 0;
@@ -10647,16 +10672,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         res.sacrificeId ? [res.sacrificeId] : []);
-      const sonFoudre = rpgFoudreSoundFor(carte, 'arrival');
-      if (sonFoudre) jouerSfx(sonFoudre);
-      else {
-        const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
-        if (sonEffetBraise) jouerSfx(sonEffetBraise);
-        else {
-          const sonEau = rpgWaterSoundFor(carte, 'arrival');
-          if (sonEau) jouerSfx(sonEau);
-        }
-      }
+      // Une arrivée qui désigne encore sa cible ne sonne pas ici : sa flamme
+      // (ou son tonnerre) appartient au geste qui blesse, et part au clic qui
+      // désigne la victime (`resoudreCible`, `rpgArriveeAudio.js`). La Tour de
+      // Braise ne brûle donc plus avant que le joueur ait choisi la créature
+      // qui prend le dégât.
+      const sonArrivee = sonArriveeAuPose(carte, { arriveeEnAttente: Boolean(res.arriveeEnAttente) });
+      if (sonArrivee) jouerSfx(sonArrivee);
       // Le filtre inclut aussi le vent d’arrivée de la Valkyrie (sans gel).
       declencherGelMasse(carte, 'joueur');
       signalerTutoriel('creature-jouee', { cardId: carteId, entiteId: res.entite?.id });
@@ -11165,7 +11187,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // prochain clic, sinon on la lève.
       if (!duel.arriveeEnAttente) setCibleEnCours(null);
       if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
-      jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
+      // Le souffle appartient à l'effet qui vient de frapper : il part
+      // maintenant, sur la cible désignée — jamais à la pose de la carte.
+      jouerSfx(sonArriveeALaDesignation(carteSource));
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
       return true;
@@ -11593,7 +11617,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: 'sorcier' });
       if (!duel.arriveeEnAttente) setCibleEnCours(null);
-      jouerSfx('select');
+      // Le souffle de l'arrivée part sur le visage frappé, pas à la pose.
+      jouerSfx(sonArriveeALaDesignation(carteCiblee));
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
       return;

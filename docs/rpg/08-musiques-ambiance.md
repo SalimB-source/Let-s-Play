@@ -88,8 +88,19 @@ Ce qui reste à l'arrivée d'une carte :
 | Gestes | Ce qu'on entend |
 |---|---|
 | Créature (les deux camps) | sa voix d'arrivée (`rpgArrivalVoices.js`), sinon le souffle de son élément, sinon **rien** |
+| Créature à arrivée **ciblée** | le souffle part au clic qui désigne la victime, pas à la pose (`rpgArriveeAudio.js`) |
 | Sort | le son de son élément (feu, eau, foudre), sinon rien |
 | Terrain, arme équipée | rien — le geste se lit à l'écran |
+
+**Le souffle appartient à l'effet, pas à la carte.** Une arrivée qui désigne
+encore sa cible — la Tour de Braise et ses 1 dégât, l'Oni de la fournaise, la
+Lionne du Midi ardent, le Maître du marteau — ne fait rien brûler au moment où
+elle se pose : la victime n'existe pas encore, et le joueur peut encore
+renoncer à la désignation. `sonArriveeAuPose` se tait donc tant que
+`duel.arriveeEnAttente` est ouvert, et `sonArriveeALaDesignation` joue le
+souffle sur la créature choisie (ou sur le visage adverse). PvP compris :
+l'arrivée différée de l'adversaire sonne quand sa cible tombe, et seulement si
+elle encaisse.
 
 Les bruitages d'**événement** (frappes, destructions, contres, victoire,
 défaite, pioche, pages) restent inchangés : ce sont eux qui portent le rythme
