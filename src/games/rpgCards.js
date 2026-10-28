@@ -136,6 +136,65 @@ export function bonusArme(carte) {
   return null;
 }
 
+/**
+ * ── Le Lien ────────────────────────────────────────────────────────────────
+ *
+ * Une carte **liée** se joue toujours, à son coût imprimé — mais elle donne
+ * plus quand son **ancre** est en jeu : la créature mythique dont elle porte
+ * le nom, le masque, la lame ou le serment. Rien n'est jamais perdu quand
+ * l'ancre dort au fond du paquet : la carte n'est jamais une carte morte, elle
+ * est seulement une carte **ordinaire**.
+ *
+ * La fiche porte `lien` :
+ *   - `ancre`  : l'identifiant de la carte mythique exigée **sur le champ du
+ *                lanceur** (créature, héros ou Site — tout ce qui tient une
+ *                place sur la rangée) ;
+ *   - `bonus`  : pour une arme, le bonus de porteur **total** avec le lien
+ *                (`{ atk: 4, def: 2 }` remplace `{ atk: 2, def: 0 }`) ;
+ *   - `effet`  : pour un sort, les champs qui **remplacent** ceux de l'effet
+ *                imprimé (`{ amount: 4 }` transforme 2 dégâts en 4).
+ *
+ * Le texte imprimé porte la règle (« Lien de Tin Hinan — … ») comme il porte
+ * déjà Abordage, Harakiri ou Malédiction ; `tests/rpg-liens.test.js` vérifie
+ * que chaque lien a une ancre mythique existante et que son texte la nomme,
+ * pour qu'aucune fiche ne dérive de sa mécanique.
+ */
+export function lienDeCarte(carte) {
+  return carte?.lien?.ancre ? carte.lien : null;
+}
+
+/** L'ancre est-elle sur le champ ? `cartesEnJeu` accepte des cartes ou des entités. */
+export function lienSatisfait(carte, cartesEnJeu = []) {
+  const lien = lienDeCarte(carte);
+  if (!lien) return false;
+  return (cartesEnJeu ?? []).some((entree) => {
+    const id = typeof entree === 'string' ? entree : (entree?.carteId ?? entree?.id);
+    if (id !== lien.ancre) return false;
+    // Une entité à 0 PV est déjà morte : elle ne tient plus sa place. Un
+    // identifiant nu (une carte, pas un état) n'a pas de PV et compte.
+    if (entree && typeof entree === 'object' && Number(entree.pv) <= 0) return false;
+    return true;
+  });
+}
+
+/** L'effet d'un sort, renforcé par son lien quand l'ancre est en jeu. */
+export function effetLie(carte, actif = false) {
+  const effet = carte?.effet ?? null;
+  if (!effet || !actif) return effet;
+  const renfort = lienDeCarte(carte)?.effet;
+  return renfort ? { ...effet, ...renfort } : effet;
+}
+
+/** Le bonus de porteur **total** d'une arme — celui du lien remplace l'imprimé. */
+export function bonusArmeLie(carte, actif = false) {
+  const base = carte?.bonus ?? (carteEstArme(carte)
+    ? { atk: carte.effet?.atk ?? 0, def: carte.effet?.def ?? 0 }
+    : { atk: 0, def: 0 });
+  const renfort = lienDeCarte(carte)?.bonus;
+  if (!actif || !renfort) return { atk: base.atk ?? 0, def: base.def ?? 0 };
+  return { atk: renfort.atk ?? base.atk ?? 0, def: renfort.def ?? base.def ?? 0 };
+}
+
 /** Un nombre signé pour l'affichage d'un changement de statistique :
  *  « +2 », « -2 », « 0 » — jamais « +-2 ». */
 export function signeStat(valeur = 0) {
@@ -1460,7 +1519,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin', amount: 4 },
-    text: 'Vous récupérez 4 points de vie.',
+    lien: { ancre: 'source-de-bimini', effet: { amount: 8 } },
+    text: 'Vous récupérez 4 points de vie. Lien de la Source — si La Source de Bimini est en jeu, vous en récupérez 8.',
     flavor: 'Elle a le goût d’avant le sable.',
   },
   {
@@ -1601,7 +1661,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses.',
+    lien: { ancre: 'daimyo-du-soleil-rouge', effet: { amount: 4 } },
+    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses. Lien du Daimyō — si le Daimyō du Soleil rouge est en jeu, elle en inflige 4.',
     flavor: 'La poussière rougit, puis le vent l’emporte.',
   },
   // ── Serment des Neuf Hivers : le combat physique et le combat magique ──
@@ -1917,7 +1978,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué).',
+    lien: { ancre: 'tin-hinan', bonus: { atk: 4, def: 2 } },
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Lien de Tin Hinan — si Tin Hinan, mère des pistes est en jeu, le porteur gagne +4/+2 à la place.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2067,7 +2129,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 1 },
     porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une.',
+    lien: { ancre: 'passeur-au-masque-de-chacal', bonus: { atk: 3, def: 3 } },
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Lien du Passeur — si Le Passeur au masque de chacal est en jeu, le porteur gagne +3/+3 à la place.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {

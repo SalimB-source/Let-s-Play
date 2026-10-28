@@ -33,6 +33,8 @@ import {
   cardResonanceGroup,
   cardReceivesResonance,
   duelCardById,
+  effetLie,
+  lienSatisfait,
   magieById,
   terrainById,
   terrainManaColors,
@@ -533,12 +535,15 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
   }
   if (carte?.effet?.type === 'degats') {
+    // Le Lien change le montant : un Vent rouge lié tue ce qu'un Vent rouge
+    // nu ne fait que blesser, la cible choisie doit donc suivre.
+    const degats = effetLie(carte, lienSatisfait(carte, duel[cote].creatures)) ?? carte.effet;
     // Le Grand Hiver frappe les deux tables : il ne désigne personne.
-    if (carte.effet.cible === 'toutes-autres') return null;
+    if (degats.cible === 'toutes-autres') return null;
     return meilleuresOptionsOffensives(duel, cote, carte, {
-      montant: carte.effet.amount ?? 0,
+      montant: degats.amount ?? 0,
       sourceType: 'magie',
-      portee: carte.effet.cible,
+      portee: degats.cible,
       profil,
       rng,
     })?.cibleId ?? null;
@@ -1255,7 +1260,9 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   const cout = Math.max(0, carte.cost ?? 0) + Math.max(0, Number(carte.prixPv) || 0) * 0.6;
 
   if (carte.kind === 'magie' || magieById(carte.id)) {
-    const effet = carte.effet ?? {};
+    // Le Lien : le sorcier lit l'effet **réellement résolu** — un Vent rouge
+    // qui vaut 4 dégâts avec son Daimyō ne se joue pas au score d'un 2.
+    const effet = effetLie(carte, lienSatisfait(carte, camp.creatures)) ?? {};
     if (effet.type === 'destruction-totale') {
       // La protection de couleur et le Serpent du monde (protégé des magies)
       // écartent la vague : la créature survit sans rien encaisser. Une

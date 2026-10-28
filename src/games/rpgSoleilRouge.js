@@ -221,7 +221,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
-    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour.',
+    lien: { ancre: 'eirik-du-premier-serment', effet: { atk: 3, def: 2 } },
+    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Lien d’Eirik — si Eirik du Premier Serment est en jeu, elles gagnent +3/+2 à la place.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];

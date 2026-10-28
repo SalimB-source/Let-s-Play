@@ -20,6 +20,10 @@ import {
   cardReceivesResonance,
   resonanceGroupLabel,
   duelCardById,
+  effetLie,
+  lienDeCarte,
+  lienSatisfait,
+  signeStat,
   jetonById,
   magieById,
   terrainById,
@@ -1399,6 +1403,47 @@ function appliquerMaledictions(duel) {
 }
 
 /**
+ * Le Lien d'une arme : tant que l'ancre nommée par l'arme tient une place sur
+ * la rangée du **même camp**, le porteur porte le bonus renforcé ; l'ancre
+ * s'en va (morte, renvoyée, exilée), le bonus retombe à l'imprimé. Aucune
+ * arme n'est jamais perdue : elle est seulement moins belle sans son mythe.
+ *
+ * Comme les Auras, chaque entité ne retient que l'écart qu'elle a déjà reçu
+ * (`lienArmeBonus`) — l'imprimé reste posé une fois pour toutes par
+ * `attacherArme`, et ce module ne déplace que le supplément. Un écart négatif
+ * ne descend jamais sous 1 PV : perdre le Lien ne tue personne.
+ */
+function appliquerLiensArmes(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const camp = duel[cote];
+    const champ = camp.creatures;
+    for (const entite of champ) {
+      // `duelCardById` ne couvre que créatures et héros : une arme se lit par
+      // `armeById`, comme partout ailleurs dans le moteur.
+      const arme = armeCarteDe(entite);
+      const lien = arme ? lienDeCarte(arme) : null;
+      const base = arme?.bonus ?? { atk: 0, def: 0 };
+      const total = lien && lienSatisfait(arme, champ)
+        ? { atk: lien.bonus?.atk ?? base.atk ?? 0, def: lien.bonus?.def ?? base.def ?? 0 }
+        : { atk: base.atk ?? 0, def: base.def ?? 0 };
+      const voulu = { atk: total.atk - (base.atk ?? 0), def: total.def - (base.def ?? 0) };
+      const deja = entite.lienArmeBonus ?? { atk: 0, def: 0 };
+      const dAtk = voulu.atk - (deja.atk ?? 0);
+      const dDef = voulu.def - (deja.def ?? 0);
+      if (!dAtk && !dDef) continue;
+      entite.lienArmeBonus = { atk: voulu.atk, def: voulu.def };
+      entite.atk = Math.max(0, entite.atk + dAtk);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + dDef);
+      entite.def = Math.max(1, entite.def + dDef);
+      entite.pv = Math.max(1, entite.pv + dDef);
+      duel.log.push(dAtk + dDef > 0
+        ? `Lien — ${arme.name} se réveille sur ${entite.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`
+        : `Lien — ${entite.name} perd la faveur de ${arme.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`);
+    }
+  }
+}
+
+/**
  * Rafraîchit tous les effets de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
  * et l'égide d'Amani sur chaque camp, les auras « buff-autres » du Kenshi et
@@ -1416,6 +1461,9 @@ function rafraichirAuras(duel) {
   appliquerAuraAmani(duel, 'sorcier');
   appliquerAurasBuffAutres(duel);
   appliquerMaledictions(duel);
+  // Le Lien d'une arme : il se lève et retombe avec son ancre, sur le même
+  // rafraîchissement que les auras — une arrivée comme une mort le déplace.
+  appliquerLiensArmes(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
@@ -1814,11 +1862,15 @@ function attacherArme(duel, cote, entite, carteArme) {
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
   const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
+  // Le supplément du Lien part avec l'arme : `appliquerLiensArmes` ne le
+  // retrouvera plus, puisque plus aucune arme n'est attachée.
+  const lienBonus = entite.lienArmeBonus ?? { atk: 0, def: 0 };
+  entite.lienArmeBonus = { atk: 0, def: 0 };
   entite.arme = null;
   if (!carteArme) return;
-  entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0));
-  entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
-  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
+  entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0) - (lienBonus.atk ?? 0));
+  entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
+  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
   if (bouclierRestant) {
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
@@ -5284,6 +5336,10 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     appliquerAuraSable(duel, cote);
     majResonance(duel);
   }
+  // Le Lien de l'arme se pose tout de suite si son ancre est déjà en jeu (et
+  // reste à 0 sinon) : c'est le même calcul que celui du rafraîchissement des
+  // auras, appliqué ici pour que la carte posée affiche déjà ses bons chiffres.
+  appliquerLiensArmes(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite: cible };
 }
@@ -5891,11 +5947,21 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       renvoiEntityId: null,
     };
   }
-  const effet = carte.effet.type === 'degats'
-    && carte.effet.cible === 'creature'
+  // Le Lien se lit **à la résolution** : l'ancre doit tenir sa place sur la
+  // rangée du lanceur à cet instant précis. Une ancre tuée en réponse au sort
+  // laisse donc le sort se résoudre au tarif imprimé — jouer son sort avant
+  // de perdre son mythe est une vraie décision de tempo.
+  const effetLieActif = lienSatisfait(carte, camp.creatures);
+  const effetBrut = effetLie(carte, effetLieActif);
+  if (effetLieActif) {
+    const ancre = duelCardById(carte.lien.ancre);
+    duel.log.push(`Lien — ${ancre?.name ?? 'l’ancre'} renforce ${carte.name}.`);
+  }
+  const effet = effetBrut.type === 'degats'
+    && effetBrut.cible === 'creature'
     && cibleId === 'sorcier'
-    ? { ...carte.effet, cible: 'sorcier' }
-    : carte.effet;
+    ? { ...effetBrut, cible: 'sorcier' }
+    : effetBrut;
   // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
   // d’`appliquer` lit sa source dans ce paramètre.
   appliquer(duel, cote, effet, cibleId,

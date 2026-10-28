@@ -25,6 +25,7 @@ réactif de *Clair Obscur*.
 | [`21-tour-du-sablier-renverse.md`](21-tour-du-sablier-renverse.md) | La **Tour du Sablier renversé** : la tour d’épreuves terminale de la Conquête — sept étages de types différents (les cinq couleurs, la Course, le tricolore), l’IA au niveau **Sablier** avec les **meilleures cartes** de chaque identité, sans plafond de mythiques |
 | [`22-tour-du-corbeau.md`](22-tour-du-corbeau.md) | La **Tour du Corbeau** : le set hybride **Neige + Ténèbres** — le Père des corbeaux retourné en Maître des corbeaux, six cartes signature, quatre étages et leur plateau |
 | [`24-coffrets-de-bienvenue.md`](24-coffrets-de-bienvenue.md) | Les **coffrets de bienvenue** : trois coffrets de couleurs différentes au tout premier lancement, une mythique et trois rares dans chacun, trente cartes jouables — et la cérémonie qui les ouvre **vague par vague** (le socle, les rares, la mythique) |
+| [`25-cartes-liees.md`](25-cartes-liees.md) | Les **cartes liées** : une carte n'est jamais morte, elle est seulement meilleure quand sa créature mythique est en jeu — sans jamais baisser son coût |
 
 ## La décision de conception
 
