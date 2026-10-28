@@ -6,7 +6,9 @@
  *  - **l'Attaque ciblée** (le coup rapide) est un **tir à distance** : la
  *    créature désigne sa proie avant le combat, 30 % de chances de rater, et
  *    son attaque s'arrête sur la frappe. Elle siffle comme une flèche
- *    (`fleche`, `arrow-shot.wav`).
+ *    (`fleche`, `arrow-shot.wav`) — **y compris quand la flèche manque sa
+ *    cible** : un tir qui rate reste un tir, et il n'y a aucun repli d'acier
+ *    derrière.
  *  - **le corps à corps** — une créature bloquée, ou la plaque du sorcier —
  *    garde le coup d'épée commun (`player_attack_hit`,
  *    `player-attack-hit.wav`), ou le souffle de l'élément quand une capacité
@@ -42,9 +44,24 @@ export function rpgResolutionAToucheUneCible(resume) {
 }
 
 /**
+ * Les frappes ciblées dont la flèche est réellement partie : ni annulées (la
+ * proie avait déjà disparu, l'arc ne se bande pas), ni… ratées — un tir qui
+ * manque reste un tir. Une frappe `rate` siffle donc comme les autres : c'est
+ * la seule chose qu'un coup rapide fait entendre, jamais l'acier du repli.
+ */
+export function rpgFrappesCibleesTirees(resume) {
+  const coups = Array.isArray(resume?.coupsRapides) ? resume.coupsRapides : [];
+  return coups.filter((coup) => !coup?.annule);
+}
+
+/**
  * Les sons d'une résolution de combat, dans l'ordre d'écoute :
- * `[{ nom, delai, fleches }]`. Un duel sans frappe ciblée ni corps à corps
- * (toutes les proies disparues, tout le monde gelé) ne sonne pas ici.
+ * `[{ nom, delai, fleches, touchees }]`. Un duel sans frappe ciblée ni corps à
+ * corps (toutes les proies disparues, tout le monde gelé) ne sonne pas ici.
+ *
+ * La flèche part dès qu'une frappe ciblée est tirée, qu'elle porte ou non :
+ * c'est le seul son d'un coup rapide, et le seul retour sonore d'un raté. La
+ * page n'a donc aucun repli métallique à jouer derrière.
  *
  * `sonMelee` laisse la page passer le souffle de l'élément quand une capacité
  * de combat qui blesse se déclenche ; la flèche, elle, ne change jamais.
@@ -55,8 +72,15 @@ export function rpgSonsResolutionCombat(resume, {
   delai = 0.015,
 } = {}) {
   const sons = [];
-  const fleches = rpgFrappesCibleesReussies(resume).length;
-  if (fleches) sons.push({ nom: sonFleche, delai, fleches });
+  const tirees = rpgFrappesCibleesTirees(resume);
+  if (tirees.length) {
+    sons.push({
+      nom: sonFleche,
+      delai,
+      fleches: tirees.length,
+      touchees: tirees.filter((coup) => !coup?.rate).length,
+    });
+  }
   // `paires` : chaque attaquant qui a rencontré un bloqueur. Un attaquant
   // arrêté par sa flèche n'y figure pas.
   if ((resume?.paires?.length ?? 0) > 0 && sonMelee) sons.push({ nom: sonMelee, delai });

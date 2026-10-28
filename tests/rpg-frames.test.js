@@ -6,6 +6,7 @@ import {
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   cardById,
+  cardColors,
   cardFrameClass,
   cardFrameColor,
   cardFrameInfo,
@@ -87,8 +88,19 @@ test('le catalogue applique les mêmes cadres aux vraies mythiques, sans violet 
 
 test('les armes n’ont plus de cadre spécifique : elles suivent leur élément', () => {
   for (const carte of RPG_ARME_CARDS) {
-    assert.equal(cardFrameInfo(carte).key, carte.element, carte.id);
-    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS[carte.element].color, carte.id);
+    const cle = cardFrameInfo(carte).key;
+    // Une arme suit son élément. Une arme qui déclare deux couleurs garde le
+    // cadre hybride de sa combinaison : la sphère de rotation est une boule
+    // d'acier Eau + Sable (`colors: ['eau', 'sable']`, doc 14), et ses deux
+    // couleurs comptent pour la protection.
+    const couleurs = cardColors(carte);
+    if (couleurs.length > 1) {
+      assert.ok(cle.startsWith('hybride-'), `${carte.id} : cadre hybride, pas « ${cle} »`);
+      for (const couleur of couleurs) assert.ok(cle.includes(couleur), `${carte.id} : ${couleur} dans ${cle}`);
+    } else {
+      assert.equal(cle, carte.element, carte.id);
+    }
+    assert.equal(cardFrameColor(carte), CARD_FRAME_COLORS[cle].color, carte.id);
     assert.equal(cardFrameClass(carte).includes('rpg-card--frame-arme'), false, carte.id);
   }
   const takouba = cardById('takouba-des-pistes');

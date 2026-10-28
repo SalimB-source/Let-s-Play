@@ -1,13 +1,18 @@
 /**
  * Signature sonore — « Le Sablier ».
  *
- * Les bruitages du jeu sont les échantillons fournis (cartes, frappes, souffle
- * du feu, vagues, contres, renvois, chocs, pages, cri de victoire viking et
- * fanfare de défaite, coups blessants) lus sous forme de fichiers, et les voix
- * d'arrivée des créatures (`rpgArrivalVoices.js` : un MP3 par carte, joué par
- * `playCardVoice`). Le seul son encore synthétisé en WebAudio est
- * l'effleurement de survol de l'interface : tout le reste du catalogue
- * synthétique a été retiré, et les noms inconnus de `rpgSfx` restent muets.
+ * **Tout le son du jeu sort d'un fichier.** Les bruitages (cartes, frappes,
+ * souffle du feu, vagues, contres, renvois, chocs, pages, cri de victoire
+ * viking et fanfare de défaite, coups blessants) sont les échantillons
+ * fournis, les voix d'arrivée des créatures sont des MP3
+ * (`rpgArrivalVoices.js`, joués par `playCardVoice`), et l'effleurement de
+ * survol lui-même est un extrait du vrai enregistrement de carte
+ * (`hover.wav`, découpé par `tools/make-son-survol.py`).
+ *
+ * Il n'y a **plus une seule forme d'onde fabriquée par du code** : le moteur
+ * de synthèse (oscillateurs, bruit blanc, réverbération de convolution) a été
+ * supprimé. Un nom absent du catalogue se joue en silence — il n'existe pas de
+ * repli synthétique pour le masquer.
  *
  * Tous ces fichiers sont joués **au même niveau d'écoute** : chaque échantillon
  * est mesuré (LUFS, ITU-R BS.1770) et son gain en découle — voir
@@ -16,7 +21,8 @@
  * limiteur ; sans routage des médias, il retombe sur le volume de l'élément.
  *
  * Deux couches :
- *  - `hz()` et `rpgSfx()` décrivent des événements purs, faciles à tester ;
+ *  - `rpgSfx()` décrit le catalogue (un événement `sample` par nom), facile à
+ *    tester ;
  *  - `RpgAudioPlayer` ne s'éveille qu'après un geste joueur, ménage les pics
  *    de volume et se tait si WebAudio manque ou si le joueur coupe le son.
  */
@@ -27,11 +33,14 @@ import { gainEchantillon, gainVoixArrivee } from './rpgNiveauxSons.js';
 /** Tonnerre partagé par l'Éclair du marteau et l'arrivée du Maître. */
 export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';
 
-const SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
-const MASTER_VOLUME = 0.22;
-const REVERB_SECONDS = 0.68;
-const REVERB_RETURN = 0.16;
-const MIN_GAIN = 0.0001;
+/**
+ * La dose du survol : le seul son du jeu qui n'est pas un événement, mais un
+ * effleurement. Il se déclenche à chaque carte touchée, parfois plusieurs fois
+ * par seconde — il reste donc **sous** le niveau commun. Son fichier mesure
+ * -11,4 LUFS ; à 0,22 il joue vers -24,5 LUFS, soit 4,5 dB sous les bruitages
+ * de table : un froissement de papier qu'on entend sans l'écouter.
+ */
+const DOSE_SURVOL = 0.22;
 
 export function clampRpgVolume(value) {
   const num = Number(value);
@@ -51,7 +60,9 @@ export function clampRpgVolume(value) {
  * pose d'une carte et un coup d'épée.
  */
 const ECHANTILLONS_FICHIERS = Object.freeze([
-  ['card_place', new URL('./assets/card-place.wav', import.meta.url), 'cardPlaceAudio'],
+  // L'effleurement de survol : un extrait du vrai enregistrement de carte, pas
+  // une sinusoïde (`tools/make-son-survol.py`).
+  ['hover', new URL('./assets/hover.wav', import.meta.url), 'hoverAudio'],
   ['card_draw', new URL('./assets/card-draw.wav', import.meta.url), 'cardDrawAudio'],
   ['attackers_confirm', new URL('./assets/attackers-confirm.mp3', import.meta.url), 'attackersConfirmAudio'],
   ['player_attack_hit', new URL('./assets/player-attack-hit.wav', import.meta.url), 'playerAttackHitAudio'],
@@ -155,32 +166,21 @@ export const RPG_COLD_WIND_SFX = 'cold_wind';
 /** Impact de glace joué lorsqu'un sort ou un effet gèle réellement une créature. */
 export const RPG_FREEZE_IMPACT_SFX = 'freeze_impact';
 
-/** « A4 » → 440 Hz ; accepte # et b. */
-export function hz(note) {
-  const match = /^([A-G])([#b]?)(-?\d)$/.exec(note);
-  if (!match) return 0;
-  const base = SEMITONES[match[1]];
-  const accidental = match[2] === '#' ? 1 : match[2] === 'b' ? -1 : 0;
-  const midi = 12 * (Number(match[3]) + 1) + base + accidental;
-  return 440 * 2 ** ((midi - 69) / 12);
-}
-
-const tone = (wave, note, at, dur, g = 0.5, options = {}) => ({
-  kind: 'tone', w: wave, n: note, wave, note, at, dur, g, ...options,
-});
-
 /**
- * Le catalogue du duel : les échantillons fournis plus le seul bruitage
- * encore synthétisé, le survol. Les entrées `sample` documentent la durée et
- * le gain de chaque fichier ; leur lecture passe par les éléments `<audio>`
- * de `RpgAudioPlayer`.
+ * Le catalogue du duel : un événement `sample` par nom jouable. Chaque entrée
+ * documente la durée du fichier et sa **dose** — le facteur appliqué au gain
+ * mesuré du fichier (`rpgNiveauxSons.js`). Toutes les doses valent 1 : le
+ * niveau commun suffit. Seul le survol garde une dose discrète, parce qu'un
+ * effleurement n'est pas un événement.
+ *
+ * Aucune entrée n'est synthétisée : le moteur de synthèse a été retiré, et un
+ * nom absent d'ici se joue en silence.
  */
 const RPG_SFX_TABLE = {
-  // Interface : le dernier son synthétisé du jeu — un effleurement de survol.
-  hover: [tone('sine', 'A4', 0, 0.055, 0.055, { attack: 0.003, filter: 1700, send: 0.035 })],
+  // Interface : le froissement d'une carte effleurée.
+  hover: [{ kind: 'sample', at: 0, dur: 0.08, g: DOSE_SURVOL }],
 
   // Les échantillons fournis, dans `src/games/assets/`.
-  card_place: [{ kind: 'sample', at: 0, dur: 0.608, g: 1 }],
   card_draw: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
   attackers_confirm: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
   player_attack_hit: [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }],
@@ -226,45 +226,18 @@ const RPG_SFX_TABLE = {
 export const RPG_SFX_NAMES = Object.freeze(Object.keys(RPG_SFX_TABLE));
 
 /**
- * Les événements d'un bruitage, clonés à la demande. Les options restent des
- * nuances de synthèse (`filter`, `attack`, `send`) pour le seul son encore
- * généré — le survol. Tout nom inconnu renvoie `null` : le jeu se tait.
+ * Les événements d'un bruitage, clonés à la demande. Tout nom inconnu renvoie
+ * `null` : le jeu se tait — il n'y a pas de repli synthétique.
  */
 export function rpgSfx(name) {
   const sequence = RPG_SFX_TABLE[name];
   return sequence ? sequence.map((event) => ({ ...event })) : null;
 }
 
-function makeReverbImpulse(context) {
-  if (typeof context.createBuffer !== 'function' || !context.sampleRate) return null;
-  const sampleRate = context.sampleRate;
-  const length = Math.max(1, Math.floor(sampleRate * REVERB_SECONDS));
-  const impulse = context.createBuffer(2, length, sampleRate);
-  for (let channel = 0; channel < 2; channel += 1) {
-    const samples = impulse.getChannelData(channel);
-    for (let index = 0; index < length; index += 1) {
-      const progress = index / length;
-      const envelope = (1 - progress) ** 3.2;
-      // Deux impulsions légèrement différentes ouvrent la réverbération sans
-      // déplacer le centre des impacts et des annonces.
-      const stereoWeight = channel === 0 ? 0.96 : 1.04;
-      samples[index] = (Math.random() * 2 - 1) * envelope * stereoWeight;
-    }
-  }
-  return impulse;
-}
-
 /** Lecteur WebAudio : muet tant que `unlock()` n'a pas suivi un geste joueur. */
 export class RpgAudioPlayer {
   constructor() {
     this.ctx = null;
-    this.master = null;
-    this.sfxBus = null;
-    this.limiter = null;
-    this.reverb = null;
-    this.reverbFilter = null;
-    this.reverbReturn = null;
-    this.noiseBuffer = null;
     this.muted = false;
     this.volume = 1;
     // Le bus des échantillons : un nœud de gain par fichier — c'est lui qui
@@ -296,7 +269,10 @@ export class RpgAudioPlayer {
             audio.preload = 'auto';
           } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
         }
-        entree = { nom, audio, gain: gainEchantillon(nom), noeud: null };
+        // Le niveau mesuré du fichier, corrigé de sa dose de catalogue : le
+        // survol est le seul à en avoir une (un effleurement, pas un événement).
+        const dose = rpgSfx(nom)?.[0]?.g ?? 1;
+        entree = { nom, audio, gain: gainEchantillon(nom) * dose, noeud: null };
         if (audio) audio.volume = this.volumeElement(entree);
         parUrl.set(url.href, entree);
         this.echantillons.push(entree);
@@ -308,16 +284,11 @@ export class RpgAudioPlayer {
     }
   }
 
-  effectiveMasterGain() {
-    if (this.muted || this.volume <= 0) return MIN_GAIN;
-    return Math.max(MIN_GAIN, MASTER_VOLUME * this.volume);
-  }
-
   /**
-   * Le gain d'un échantillon : son niveau mesuré (`rpgNiveauxSons.js`) fois le
-   * volume des sons choisi par le joueur. Il peut dépasser 1 — c'est tout
-   * l'intérêt du nœud de gain WebAudio : l'ambiance de quai, mesurée à
-   * -23 LUFS, remonte de 3 dB pour rejoindre les autres.
+   * Le gain d'un échantillon : son niveau mesuré (`rpgNiveauxSons.js`) fois sa
+   * dose de catalogue fois le volume des sons choisi par le joueur. Il peut
+   * dépasser 1 — c'est tout l'intérêt du nœud de gain WebAudio : l'ambiance de
+   * quai, mesurée à -23 LUFS, remonte de 3 dB pour rejoindre les autres.
    */
   gainEchantillon(entree) {
     if (!entree || this.muted || this.volume <= 0) return 0;
@@ -400,54 +371,10 @@ export class RpgAudioPlayer {
     try {
       context = new AudioContext();
       this.ctx = context;
-      this.master = context.createGain();
-      this.master.gain.value = this.effectiveMasterGain();
 
-      this.sfxBus = context.createGain();
-      this.sfxBus.gain.value = 1;
-      this.sfxBus.connect(this.master);
-
-      // Le limiteur évite les crêtes quand les impacts se superposent aux cartes.
-      if (typeof context.createDynamicsCompressor === 'function') {
-        this.limiter = context.createDynamicsCompressor();
-        this.limiter.threshold.value = -12;
-        this.limiter.knee.value = 12;
-        this.limiter.ratio.value = 4;
-        this.limiter.attack.value = 0.004;
-        this.limiter.release.value = 0.18;
-        this.master.connect(this.limiter);
-        this.limiter.connect(context.destination);
-      } else {
-        this.master.connect(context.destination);
-      }
-
-      // Réverbération courte et générée à la volée : aucun fichier audio ni
-      // chargement réseau. Les retours sont filtrés pour rester doux au casque.
-      if (typeof context.createConvolver === 'function') {
-        const impulse = makeReverbImpulse(context);
-        if (impulse) {
-          this.reverb = context.createConvolver();
-          this.reverb.buffer = impulse;
-          this.reverbFilter = typeof context.createBiquadFilter === 'function'
-            ? context.createBiquadFilter()
-            : null;
-          if (this.reverbFilter) {
-            this.reverbFilter.type = 'lowpass';
-            this.reverbFilter.frequency.value = 5200;
-            this.reverb.connect(this.reverbFilter);
-          }
-          this.reverbReturn = context.createGain();
-          this.reverbReturn.gain.value = REVERB_RETURN;
-          (this.reverbFilter || this.reverb).connect(this.reverbReturn);
-          this.reverbReturn.connect(this.master);
-        }
-      }
-
-      // Le bus des échantillons ne passe pas par le gain maître : les fichiers
-      // sont déjà ramenés au niveau commun par leur propre nœud, et le gain
-      // maître est calibré pour les synthèses (0,22). Le limiteur du bus
-      // écrête les trois fichiers remontés au-delà de la pleine échelle et
-      // empêche deux sons superposés de saturer.
+      // Toute la sortie est celle des échantillons : chaque fichier arrive par
+      // son propre nœud, au niveau commun, et le limiteur du bus écrête les
+      // fichiers remontés au-delà de la pleine échelle et les sons superposés.
       this.busEchantillons = context.createGain();
       this.busEchantillons.gain.value = 1;
       if (typeof context.createDynamicsCompressor === 'function') {
@@ -464,12 +391,6 @@ export class RpgAudioPlayer {
       }
     } catch {
       this.ctx = null;
-      this.master = null;
-      this.sfxBus = null;
-      this.limiter = null;
-      this.reverb = null;
-      this.reverbFilter = null;
-      this.reverbReturn = null;
       this.busEchantillons = null;
       this.limiteurEchantillons = null;
       if (context && typeof context.close === 'function') {
@@ -489,16 +410,6 @@ export class RpgAudioPlayer {
     for (const entree of this.echantillons) this.appliquerGain(entree);
     // Les voix de cartes suivent la même règle — chacune avec son niveau.
     for (const entree of this.voixEntrees.values()) this.appliquerGain(entree);
-    if (!this.master) return;
-    const now = this.ctx?.currentTime ?? 0;
-    const parameter = this.master.gain;
-    const target = this.effectiveMasterGain();
-    parameter.cancelScheduledValues?.(now);
-    if (typeof parameter.setTargetAtTime === 'function') {
-      parameter.setTargetAtTime(target, now, 0.035);
-    } else {
-      parameter.value = target;
-    }
   }
 
   /**
@@ -571,192 +482,24 @@ export class RpgAudioPlayer {
   }
 
   play(name, delay = 0) {
-    if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
+    if (!this.ctx || this.muted || this.volume <= 0) return;
     const entree = this.echantillonsParNom.get(name);
-    if (entree) {
-      if (!entree.audio) return;
-      // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
-      // que l'échantillon rejoint le bus, s'il ne l'a pas déjà fait.
-      this.routerEchantillon(entree);
-      this.appliquerGain(entree);
-      try {
-        entree.audio.currentTime = 0;
-        const playback = entree.audio.play();
-        playback?.catch?.(() => {});
-      } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
-      return;
-    }
-    const sequence = rpgSfx(name);
-    if (!sequence) return;
-    const safeDelay = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
-    const startAt = this.ctx.currentTime + safeDelay;
-    for (const event of sequence) this.schedule(event, startAt + event.at);
-  }
-
-  envelope(gain, peak, time, duration, requestedAttack = null) {
-    const safeDuration = Math.max(0.008, duration);
-    const attack = Math.max(0.002, Math.min(
-      Number.isFinite(requestedAttack) ? requestedAttack : Math.min(0.012, safeDuration * 0.25),
-      safeDuration * 0.45,
-    ));
-    gain.gain.setValueAtTime(MIN_GAIN, time);
-    gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), time + attack);
-    gain.gain.exponentialRampToValueAtTime(MIN_GAIN, time + safeDuration);
-  }
-
-  routeVoice(source, voiceGain, event, intermediateNodes = []) {
-    const context = this.ctx;
-    let output = voiceGain;
-    let panner = null;
-    const pan = Math.max(-1, Math.min(1, Number(event.pan) || 0));
-    if (Math.abs(pan) > 0.001 && typeof context.createStereoPanner === 'function') {
-      panner = context.createStereoPanner();
-      panner.pan.value = pan;
-      voiceGain.connect(panner);
-      output = panner;
-    }
-    output.connect(this.sfxBus || this.master);
-
-    let sendGain = null;
-    const sendAmount = event.send === undefined
-      ? (event.kind === 'bell' ? 0.32 : event.kind === 'tone' ? 0.14 : 0.1)
-      : Math.max(0, Math.min(0.6, Number(event.send) || 0));
-    if (this.reverb && sendAmount > 0) {
-      sendGain = context.createGain();
-      sendGain.gain.value = sendAmount;
-      output.connect(sendGain);
-      sendGain.connect(this.reverb);
-    }
-
-    source.onended = () => {
-      for (const node of [source, ...intermediateNodes, voiceGain, panner, sendGain]) {
-        try { node?.disconnect?.(); } catch { /* Le nœud a déjà été libéré. */ }
-      }
-    };
-  }
-
-  makeFilter(event, time, defaultType = 'lowpass') {
-    const context = this.ctx;
-    if (typeof context.createBiquadFilter !== 'function') return null;
-    if (!event.filter && !event.filterTo && !event.filterType) return null;
-    const filter = context.createBiquadFilter();
-    filter.type = event.filterType || defaultType;
-    const startFrequency = Math.max(40, Number(event.filter) || 5200);
-    filter.frequency.setValueAtTime(startFrequency, time);
-    filter.Q.value = Math.max(0.0001, Number(event.q) || 0.8);
-    if (event.filterTo) {
-      filter.frequency.exponentialRampToValueAtTime(Math.max(40, Number(event.filterTo)), time + Math.max(0.01, event.filterDuration || event.dur));
-    }
-    return filter;
-  }
-
-  schedule(event, time) {
-    const context = this.ctx;
-    if (!context || !this.master) return;
-    if (event.kind === 'noise') {
-      if (!this.noiseBuffer) {
-        const sampleRate = context.sampleRate || 44100;
-        const length = Math.floor(sampleRate);
-        this.noiseBuffer = context.createBuffer(1, length, sampleRate);
-        const data = this.noiseBuffer.getChannelData(0);
-        for (let index = 0; index < length; index += 1) data[index] = Math.random() * 2 - 1;
-      }
-      const source = context.createBufferSource();
-      source.buffer = this.noiseBuffer;
-      source.loop = true;
-      const filter = this.makeFilter(event, time, 'lowpass');
-      const voiceGain = context.createGain();
-      this.envelope(voiceGain, event.g, time, event.dur, event.attack);
-      if (filter) {
-        source.connect(filter);
-        filter.connect(voiceGain);
-      } else {
-        source.connect(voiceGain);
-      }
-      this.routeVoice(source, voiceGain, event, filter ? [filter] : []);
-      source.start(time, Math.random() * 0.8);
-      source.stop(time + event.dur);
-      return;
-    }
-
-    if (event.kind === 'thud') {
-      const source = context.createOscillator();
-      source.type = 'sine';
-      const startFrequency = Math.max(25, Number(event.from) || 135);
-      const endFrequency = Math.max(25, Number(event.to) || 42);
-      source.frequency.setValueAtTime(startFrequency, time);
-      source.frequency.exponentialRampToValueAtTime(endFrequency, time + Math.max(0.015, event.pitchSweep || event.dur * 0.82));
-      const filter = this.makeFilter({ ...event, filter: event.filter || 420 }, time, 'lowpass');
-      const voiceGain = context.createGain();
-      this.envelope(voiceGain, event.g, time, event.dur, event.attack ?? 0.004);
-      if (filter) {
-        source.connect(filter);
-        filter.connect(voiceGain);
-      } else {
-        source.connect(voiceGain);
-      }
-      this.routeVoice(source, voiceGain, event, filter ? [filter] : []);
-      source.start(time);
-      source.stop(time + event.dur + 0.03);
-      return;
-    }
-
-    if (event.kind === 'bell') {
-      const fundamental = hz(event.note);
-      const partials = [[1, 1], [2.01, 0.26], [2.74, 0.095]];
-      for (const [multiplier, level] of partials) {
-        const source = context.createOscillator();
-        source.type = 'sine';
-        source.frequency.setValueAtTime(fundamental * multiplier, time);
-        const voiceGain = context.createGain();
-        this.envelope(voiceGain, event.g * level, time, event.dur, event.attack ?? 0.003);
-        this.routeVoice(source, voiceGain, event);
-        source.start(time);
-        source.stop(time + event.dur + 0.04);
-      }
-      return;
-    }
-
-    const source = context.createOscillator();
-    source.type = event.wave || 'sine';
-    source.frequency.setValueAtTime(hz(event.note), time);
-    if (event.slideTo && hz(event.slideTo)) {
-      source.frequency.exponentialRampToValueAtTime(
-        hz(event.slideTo),
-        time + Math.max(0.01, event.slideDuration || event.dur * 0.78),
-      );
-    }
-    if (event.detune && source.detune) source.detune.setValueAtTime(event.detune, time);
-    const filter = this.makeFilter(event, time, 'lowpass');
-    const voiceGain = context.createGain();
-    this.envelope(voiceGain, event.g, time, event.dur, event.attack);
-    if (filter) {
-      source.connect(filter);
-      filter.connect(voiceGain);
-    } else {
-      source.connect(voiceGain);
-    }
-    this.routeVoice(source, voiceGain, event, filter ? [filter] : []);
-    source.start(time);
-    source.stop(time + event.dur + 0.04);
+    if (!entree) return;                     // pas de fichier : pas de son
+    if (!entree.audio) return;
+    // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
+    // que l'échantillon rejoint le bus, s'il ne l'a pas déjà fait.
+    this.routerEchantillon(entree);
+    this.appliquerGain(entree);
+    try {
+      entree.audio.currentTime = 0;
+      const playback = entree.audio.play();
+      playback?.catch?.(() => {});
+    } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
   }
 
   destroy() {
     const context = this.ctx;
-    if (this.master && context) {
-      try {
-        this.master.gain.cancelScheduledValues?.(context.currentTime);
-        this.master.gain.setTargetAtTime?.(MIN_GAIN, context.currentTime, 0.025);
-      } catch { /* Le contexte peut déjà être fermé. */ }
-    }
     this.ctx = null;
-    this.master = null;
-    this.sfxBus = null;
-    this.limiter = null;
-    this.reverb = null;
-    this.reverbFilter = null;
-    this.reverbReturn = null;
-    this.noiseBuffer = null;
     this.busEchantillons = null;
     this.limiteurEchantillons = null;
     for (const entree of this.echantillons) {

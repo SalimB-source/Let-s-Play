@@ -6220,7 +6220,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const idsAvantAdverse = new Set((avant.sorcier?.creatures ?? []).map((e) => e.id));
     const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
     if (nouvellesCreaturesAdverses.length) {
-      jouerSfx('card_place');
+      // Plus de bruit de pose : une créature entre en jeu avec sa voix
+      // (`rpgArrivalVoices.js`) ou l'accueil de son élément, jamais avec un
+      // claquement de carte.
       const sonFoudre = nouvellesCreaturesAdverses
         .map((entite) => rpgFoudreSoundFor(cardById(entite.carteId), 'arrival'))
         .find(Boolean);
@@ -10280,10 +10282,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!monTour || reponseApresBlocage || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
-    if (res.ok) {
-      conserverAnnulation(etatAvantAction);
-      jouerSfx('card_place');
-    } else { jouerSfx('erreur'); }
+    if (res.ok) conserverAnnulation(etatAvantAction);
+    else jouerSfx('erreur');
     force();
     // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
     // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
@@ -10517,7 +10517,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (res.ok) {
-      jouerSfx('card_place');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         [res.renvoiEntityId]);
       invaliderAnnulation();
@@ -10648,7 +10647,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         res.sacrificeId ? [res.sacrificeId] : []);
-      jouerSfx('card_place');
       const sonFoudre = rpgFoudreSoundFor(carte, 'arrival');
       if (sonFoudre) jouerSfx(sonFoudre);
       else {
@@ -10739,7 +10737,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      jouerSfx('card_place');
       signalerTutoriel('arme-equipee', { cardId: carteId, entiteId: cibleId });
       // Le Grappin d'abordage : l'attachement ouvre une désignation de prize
       // (`duel.arriveeEnAttente.abordage`) — la table adverse s'allume sur
@@ -11842,9 +11839,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
-    } else if (!sonsCombat.length) {
-      jouerSfx('block_impact', 0.2);
     }
+    // Rien d'autre ici : une Attaque ciblée ne fait entendre que sa flèche. Le
+    // repli `block_impact` qui suivait un raté était de l'acier — le joueur y
+    // entendait l'épée qu'il n'avait pas demandée (`rpgAttackAudio.js`).
     // La ligne de charge se trace avant le bond : cible désignée (coup
     // rapide), premier bloqueur, ou la plaque du sorcier en attaque directe.
     const ciblesChargeJoueur = Object.fromEntries(attaquantsVivants.map((id) => [

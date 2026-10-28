@@ -222,7 +222,7 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
       () => container.querySelectorAll('.rpg-card--equipe[data-card-id="rais-de-la-galiote"]').length === 2,
       'le second Raïs est posé sans prise possible',
     );
-    assert.ok(sons.includes('card_place'), 'la pose joue son bruitage de carte');
+    assert.ok(!sons.includes('card_place'), 'la pose ne joue plus de bruitage de carte');
     assert.ok(!sons.includes('abordage'),
       'sans créature kidnappée, le Raïs n’émet pas le cliquetis d’abordage');
   } finally {

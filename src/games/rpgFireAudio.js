@@ -29,8 +29,9 @@ const SORTS_DE_FEU = new Set(['degats', 'destruction-totale']);
  * Les seuls effets d'arrivée qui SONNENT comme le feu : ceux qui blessent
  * réellement la table. Une carte Braise dont l'arrivée crée des jetons, exile,
  * pioche ou détruit un terrain n'a pas de souffle à elle — le Daimyō du Soleil
- * rouge lève ses Samouraïs, il ne met pas le feu ; c'est `card_place` qui
- * l'annonce, comme pour toute créature posée.
+ * rouge lève ses Samouraïs, il ne met pas le feu ; l'arrivée reste alors
+ * silencieuse, comme toute pose de carte depuis que le bruit de pose a été
+ * retiré.
  */
 const ARRIVEES_DE_FEU = new Set(['degats']);
 

@@ -21,6 +21,7 @@ import {
   RPG_ECHANTILLONS_NAMES,
   RPG_SFX_NAMES,
   RpgAudioPlayer,
+  rpgSfx,
 } from '../src/games/rpgAudio.js';
 import {
   RPG_NIVEAU_CIBLE_LUFS,
@@ -205,8 +206,11 @@ test('le lecteur pose sur chaque échantillon le gain de sa mesure', () => {
   const { player, rendre } = lecteurAvecRoutage();
   try {
     const context = player.ctx;
+    // Une source par *fichier* : `degats` et `degats_sorcier` partagent le même
+    // `hit.wav`, donc un seul élément et un seul nœud. Le survol, lui, a bien
+    // son fichier depuis que le bip de synthèse a été remplacé.
     assert.equal(context.sources.length, RPG_ECHANTILLONS_NAMES.length - 1,
-      'un nœud source par fichier du registre — le survol n’est pas un fichier');
+      'un nœud source par fichier du registre');
     // Chaque source rejoint un nœud de gain, qui rejoint le bus des échantillons.
     for (const source of context.sources) {
       const gain = source.connections[0];
@@ -215,20 +219,28 @@ test('le lecteur pose sur chaque échantillon le gain de sa mesure', () => {
         'et le nœud rejoint le bus commun, jamais la sortie directement');
     }
     // Le bus passe par son limiteur avant la sortie.
-    assert.equal(context.compressors.length, 2, 'deux limiteurs : synthèses et échantillons');
+    assert.equal(context.compressors.length, 1,
+      'un seul limiteur : celui du bus des échantillons (plus de chaîne de synthèse)');
     assert.deepEqual(player.busEchantillons.connections, [player.limiteurEchantillons]);
     assert.deepEqual(player.limiteurEchantillons.connections, [context.destination]);
 
-    // Le gain effectif de chaque fichier est celui de la table.
+    // Le gain effectif de chaque fichier est celui de la table, corrigé de sa
+    // dose de catalogue — nulle part ailleurs que sur le survol.
     for (const entree of player.echantillons) {
-      assert.ok(Math.abs(entree.noeud.gain.value - gainEchantillon(entree.nom)) < 1e-9,
+      // Le gain du nœud = niveau mesuré du fichier × dose de catalogue. Les
+      // doses valent 1 partout, sauf pour le survol (0,22) : un effleurement
+      // discret, pas un événement.
+      const dose = rpgSfx(entree.nom)[0].g;
+      assert.ok(Math.abs(entree.noeud.gain.value - gainEchantillon(entree.nom) * dose) < 1e-9,
         `${entree.nom} : gain ${entree.noeud.gain.value}`);
       assert.equal(entree.audio.volume, 1, 'l’élément ne coupe pas ce que le nœud règle');
     }
-    // La pose de carte et la pioche ont été remontées **dans leur fichier**
-    // (gain + limiteur hors ligne) : à la lecture, leur gain reste dans la
-    // marge de crête, et le limiteur du bus n'a plus qu'un rôle de secours.
-    assert.ok(gainEchantillon('card_place') > 1 && gainEchantillon('card_place') < 1.1);
+    // Le survol reste bien en dessous du niveau commun.
+    assert.ok(player.echantillonsParNom.get('hover').noeud.gain.value < 0.25);
+    // La pioche a été remontée **dans son fichier** (gain + limiteur hors
+    // ligne) : à la lecture, son gain reste dans la marge de crête, et le
+    // limiteur du bus n'a plus qu'un rôle de secours.
+    assert.ok(gainEchantillon('card_draw') > 0.9 && gainEchantillon('card_draw') < 1.1);
   } finally {
     player.destroy();
     rendre();
@@ -238,19 +250,19 @@ test('le lecteur pose sur chaque échantillon le gain de sa mesure', () => {
 test('le volume des sons du jeu et le mute pilotent les nœuds des échantillons', () => {
   const { player, rendre } = lecteurAvecRoutage();
   try {
-    const carte = player.echantillonsParNom.get('card_place');
+    const pioche = player.echantillonsParNom.get('card_draw');
     const epee = player.echantillonsParNom.get('player_attack_hit');
     player.setVolume(0.5);
-    assert.ok(Math.abs(carte.noeud.gain.value - gainEchantillon('card_place') / 2) < 1e-9);
+    assert.ok(Math.abs(pioche.noeud.gain.value - gainEchantillon('card_draw') / 2) < 1e-9);
     assert.ok(Math.abs(epee.noeud.gain.value - gainEchantillon('player_attack_hit') / 2) < 1e-9);
 
     player.setMuted(true);
-    assert.equal(carte.noeud.gain.value, 0, 'le silence coupe le nœud, pas seulement l’élément');
-    assert.equal(carte.audio.paused, true, 'la lecture en cours est mise en pause');
+    assert.equal(pioche.noeud.gain.value, 0, 'le silence coupe le nœud, pas seulement l’élément');
+    assert.equal(pioche.audio.paused, true, 'la lecture en cours est mise en pause');
 
     player.setMuted(false);
     player.setVolume(1);
-    assert.ok(Math.abs(carte.noeud.gain.value - gainEchantillon('card_place')) < 1e-9);
+    assert.ok(Math.abs(pioche.noeud.gain.value - gainEchantillon('card_draw')) < 1e-9);
   } finally {
     player.destroy();
     rendre();
@@ -296,13 +308,13 @@ test('sans routage des médias, le gain retombe sur le volume de l’élément',
   try {
     player.unlock();
     assert.equal(player.ctx.sources.length, 0, 'aucun élément n’est routé');
-    const carte = player.echantillonsParNom.get('card_place');
+    const plume = player.echantillonsParNom.get('page_turn');
     const epee = player.echantillonsParNom.get('player_attack_hit');
-    assert.ok(carte.audio.volume <= 1,
-      'sans nœud, le volume de l’élément reste borné à 1 — la pose de carte perd son gain');
+    assert.ok(plume.audio.volume <= 1,
+      'sans nœud, le volume de l’élément reste borné à 1 — un fichier remonté perd son gain');
     assert.ok(Math.abs(epee.audio.volume - gainEchantillon('player_attack_hit')) < 1e-9,
       'les sons atténués gardent leur juste niveau');
-    player.play('card_place');
+    player.play('page_turn');
     assert.equal(FakeAudio.lectures.length, 1, 'et le son se joue quand même');
   } finally {
     player.destroy();
@@ -328,9 +340,11 @@ test('le démontage libère les éléments, les nœuds et les champs historiques
   }
 });
 
-test('le survol reste un murmure, hors du niveau commun', () => {
-  // Le seul son encore synthétisé n'a pas de fichier à mesurer : il garde son
-  // gain de synthèse et ne figure pas dans la table.
+test('le survol est un fichier, joué en murmurme hors du niveau commun', () => {
+  // Son fichier n'a pas à être ramené au niveau commun : le survol reste le
+  // seul son du jeu dont la dose n'est pas 1, parce qu'un effleurement n'est
+  // pas un événement. Il n'a donc pas d'entrée dans la table des niveaux.
   assert.equal(RPG_NIVEAUX_ECHANTILLONS.hover, undefined);
   assert.ok(RPG_SFX_NAMES.includes('hover'));
+  assert.equal(rpgSfx('hover')[0].kind, 'sample', 'plus une seule synthèse dans le jeu');
 });

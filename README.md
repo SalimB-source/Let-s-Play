@@ -5381,10 +5381,10 @@ round : ×1,5 et +1 Verre) et la **Cristallisation** (3 Verres : puissance ×2).
   détruite grisée sur la table, boîte de message à texte tapé lettre à lettre,
   bannière « des ennemis apparaissent ! ». La main se tient en éventail dans
   la barre du bas ; les magies rapides répondent pendant le tour ennemi.
-- `src/games/rpgAudio.js` — le son, synthétisé en WebAudio (zéro asset) :
-  jingles d'apparition et de victoire, impacts, soins, cloche de l'Astrolabe,
-  souffle de sable. La partie pure est testée ; le lecteur s'éveille au
-  premier geste joueur, bouton 🔊/🔇 mémorisé.
+- `src/games/rpgAudio.js` — le son, **entièrement fait de fichiers** : cartes,
+  frappes, souffle du feu, vagues, pages, voix d'arrivée, survol compris. Plus
+  rien n'est fabriqué en WebAudio. La partie pure est testée ; le lecteur
+  s'éveille au premier geste joueur, bouton 🔊/🔇 mémorisé.
 - `src/games/rpg-battle.css` — la palette laiton / indigo / ocre du concept,
   sur les variables de couleur du site (donc compatible thème clair).
 - `public/sablier-de-bab-el-thumb.svg` — vignette vectorielle (une démo
@@ -9265,11 +9265,11 @@ gardent l'effleurement.
 
 ## Le Sablier : tous les sons au même niveau d'écoute
 
-Les échantillons du duel n'ont pas la même origine : la pose d'une carte
-(`card-place.wav`) a été enregistrée très bas, le coup d'épée
+Les échantillons du duel n'ont pas la même origine : la pioche
+(`card-draw.wav`) a été enregistrée très bas, le coup d'épée
 (`player-attack-hit.wav`) sature, les 60 voix d'arrivée viennent de trois lots
 distincts. Les volumes étaient réglés à la main entre 0,5 et 0,64, si bien que
-l'écart **entendu** atteignait **trente-deux décibels** : la carte posée était
+l'écart **entendu** atteignait **trente-deux décibels** : la pioche était
 inaudible, la frappe assourdissante, et deux voix sur trois passaient sous les
 bruitages de table.
 
@@ -9280,7 +9280,7 @@ bruitages de table.
   écoute donc à **-20 LUFS** — 6 dB au-dessus des musiques de plateau, qui
   gardent leur chaîne et leur curseur.
 - **Le tableau est engendré, pas tapé.** `tools/mesure-sons-sablier.py` mesure
-  les 24 échantillons et les 60 voix (lecture des WAV maison — trois fichiers
+  les 23 échantillons et les 60 voix (lecture des WAV maison — trois fichiers
   portent un bloc `bext` non UTF-8 que les lecteurs stricts refusent — et des
   MP3 par PyAV), puis affiche la table, les gains et le niveau obtenu :
 
@@ -9290,13 +9290,12 @@ bruitages de table.
   python3 tools/mesure-sons-sablier.py --egaliser # remonte les WAV trop pointus
   ```
 
-- **Les fichiers trop pointus sont remontés dans le fichier.** La pose de
-  carte demandait +17 dB, alors que sa crête ne laissait que 10 dB de marge :
-  aucun gain de lecture ne pouvait la rendre audible sans saturer.
+- **Les fichiers trop pointus sont remontés dans le fichier.** La pioche
+  demandait +12 dB, alors que sa crête ne laissait pas la marge : aucun gain de
+  lecture ne pouvait la rendre audible sans saturer.
   `tools/mesure-sons-sablier.py --egaliser` réécrit ces WAV (gain + limiteur à
-  pré-lecture, crête à -1 dBFS) — trois fichiers seulement : `card-place.wav`
-  (-37,1 → -21,5 LUFS), `card-draw.wav` (-32,5 → -20,2) et la voix du Tengu
-  (-29,5 → -20,5). L'outil itère jusqu'à ce que le niveau soit atteint, puis
+  pré-lecture, crête à -1 dBFS) — `card-draw.wav` (-32,5 → -20,2 LUFS) et la
+  voix du Tengu (-29,5 → -20,5). L'outil itère jusqu'à ce que le niveau soit atteint, puis
   réécrit le WAV en PCM 16 bits, mêmes canaux, même fréquence. Les MP3 fournis
   ne sont pas réécrits.
 - **Le gain de lecture passe par un nœud WebAudio.** Un élément `<audio>`
@@ -9309,9 +9308,21 @@ bruitages de table.
   hiéroglyphes » (-21,4). Tous les autres fichiers tombent à moins de 0,1 dB de
   la cible. Sans `createMediaElementSource` (navigateur ancien), le gain
   retombe sur `audio.volume`, borné à 1.
-- **Le survol reste un murmure.** Le seul son encore synthétisé se déclenche à
-  chaque carte effleurée : il garde son gain de synthèse et ne figure pas dans
-  la table. Idem pour les musiques de plateau (curseur `volumeMusique`).
+- **La pose de carte ne sonne plus.** `card_place` a été retiré du catalogue,
+  du registre et du disque. Un duel pose des dizaines de cartes : c'était le son
+  le plus répété du jeu, et son fichier — enregistré à -37 LUFS — avait dû être
+  remonté de 15,6 dB dans le fichier pour être audible, ce qui faisait remonter
+  avec lui son bruit de fond et ses artéfacts. Une créature entre désormais en
+  jeu avec sa voix d'arrivée (ou le souffle de son élément), un sort avec le son
+  de son élément, un terrain et une arme en silence.
+- **Le survol reste un murmure, mais c'est un fichier.**
+  `src/games/assets/hover.wav` est un extrait du vrai enregistrement de carte
+  (`card-draw.wav`), découpé par `tools/make-son-survol.py` : c'était le dernier
+  son synthétisé du jeu — une sinusoïde de 55 ms sur A4, qu'on entendait comme
+  un bip d'interface posé sur la pose des cartes. Il garde une **dose** de 0,22
+  (sous le niveau commun, parce qu'un effleurement n'est pas un événement) et
+  ne figure donc pas dans la table. Les musiques de plateau gardent leur propre
+  curseur `volumeMusique`.
 - **La salle d'écoute suit.** `sons-du-sablier.html` applique les mêmes gains
   (petit bus WebAudio + limiteur, monté au premier geste) et affiche sur chaque
   carte l'écart appliqué — « -6,5 dB → -20 LUFS » pour Susanoo, « +1,7 dB »

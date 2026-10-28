@@ -54,7 +54,7 @@ carte du boss qu'on n'a pas encore affronté — est le seul luxe offert.
 | `useDecksSablier.js` | état local + synchronisation du compte, défensif hors provider | sert de patron à `useSablierBourse.js` |
 | `rpgSablierRemote.js` | `state` jsonb dans `rpg_sablier_progress`, RLS stricte | **aucune nouvelle table, aucun SQL à écrire** |
 | `RpgDuelPage.jsx` | menu à onglets (`jouer`, `histoire`, `tours`, `decks`, `catalogue`), boucle de duel, `enregistrerVictoire` | gagne un onglet **Souk**, un badge et un point d'émission d'événements |
-| `rpgAudio.js`, `rpg-mobile.css`, plein écran | sons synthétisés, ergonomie tactile | l'ouverture du booster s'y adosse, sans nouvel asset |
+| `rpgAudio.js`, `rpg-mobile.css`, plein écran | bruitages (tous en fichiers), ergonomie tactile | l'ouverture du booster s'y adosse, sans nouvel asset |
 
 ## 3. Les décisions structurantes
 

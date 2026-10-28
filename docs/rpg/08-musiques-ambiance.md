@@ -14,11 +14,11 @@ la dernière table du jeu (voir plus bas).
 
 ## Le niveau d'écoute commun des sons
 
-Les échantillons du duel viennent de sources très différentes : la pose d'une
-carte enregistrée très bas (`card-place.wav`, -37 LUFS), un coup d'épée saturé
+Les échantillons du duel viennent de sources très différentes : la pioche
+enregistrée très bas (`card-draw.wav`, -32 LUFS), un coup d'épée saturé
 (`player-attack-hit.wav`, -6 LUFS), un cri viking, les 60 voix d'arrivée. Les
 anciennes constantes réglées à la main (0,5 à 0,64) laissaient **trente-deux
-décibels** d'écart entre la pose d'une carte — inaudible — et la frappe —
+décibels** d'écart entre la pioche — inaudible — et la frappe —
 assourdissante.
 
 `src/games/rpgNiveauxSons.js` porte désormais **la mesure de chaque fichier**
@@ -38,15 +38,14 @@ réglé à la main :
 
 Le geste tient en deux temps :
 
-1. **les fichiers trop pointus sont remontés dans le fichier** — la pose de
-   carte demandait +17 dB quand sa crête ne laissait que 10 dB de marge. On
+1. **les fichiers trop pointus sont remontés dans le fichier** — la pioche
+   demandait +12 dB quand sa crête ne laissait pas la marge. On
    lance `python3 tools/mesure-sons-sablier.py --egaliser` : l'outil applique le
    gain puis un **limiteur à pré-lecture** (fenêtre de 5 ms, relâchement de
    120 ms) qui écrête à -1 dBFS, itère jusqu'à ce que la cible soit atteinte,
-   et réécrit le WAV (PCM 16 bits, mêmes canaux, même fréquence). Trois
-   fichiers : `card-place.wav` (-37,1 → -21,5 LUFS), `card-draw.wav` (-32,5 →
-   -20,2) et la voix du Tengu (-29,5 → -20,5). Les MP3 fournis ne sont pas
-   réécrits ;
+   et réécrit le WAV (PCM 16 bits, mêmes canaux, même fréquence). Deux
+   fichiers : `card-draw.wav` (-32,5 → -20,2 LUFS) et la voix du Tengu
+   (-29,5 → -20,5). Les MP3 fournis ne sont pas réécrits ;
 2. **le gain de lecture** ramène chaque fichier au niveau commun, par un
    **nœud WebAudio** (`createMediaElementSource` + `GainNode`), dans un bus
    commun qui finit sur un limiteur de secours (-0,3 dBFS) pour les sons qui se
@@ -56,10 +55,43 @@ Le geste tient en deux temps :
    restent 4,1 dB et 1,4 dB sous la cible. Sans routage des médias (navigateur
    ancien), le gain retombe sur `audio.volume`, borné à 1.
 
-Le **survol** de l'interface reste un murmure volontaire (le seul son encore
-synthétisé) : il se déclenche à chaque carte effleurée, et un son d'événement
-se remarque là où un effleurement doit passer inaperçu. Les **musiques** ont
-leur propre chaîne et leur propre curseur ; elles ne sont pas dans cette table.
+Le **survol** de l'interface reste un murmure volontaire, mais c'est désormais
+un **fichier** : `src/games/assets/hover.wav`, un extrait de 80 ms de la
+glissière de `card-draw.wav`, découpé par `tools/make-son-survol.py`. Il
+remplace la sinusoïde de 55 ms qui était le dernier son fabriqué par du code —
+sur une carte qu'on s'apprête à poser, ce bip se confondait avec le geste et
+donnait à la pose une couleur d'interface. Sa **dose** de 0,22 le garde 4,5 dB sous le
+niveau commun (son fichier mesure -11,4 LUFS, il joue vers -24,5), sans entrée
+dans la table des niveaux : un effleurement n'est pas un événement, et
+`tools/mesure-sons-sablier.py` l'écarte de la mesure (`SANS_NIVEAU_COMMUN`). Les **musiques** ont leur propre chaîne et leur propre curseur ;
+elles ne sont pas dans cette table.
+
+**Aucun son du jeu n'est synthétisé** : le moteur de synthèse (oscillateurs,
+bruit blanc, réverbération de convolution, `hz()`) a été supprimé avec lui. Un
+nom absent du catalogue se joue en silence — il n'y a pas de repli synthétique
+pour masquer un fichier manquant.
+
+## La pose de carte ne sonne plus
+
+`card_place` a été **retiré du catalogue, du registre et du disque**
+(`src/games/assets/card-place.wav` n'existe plus). Un duel pose des dizaines de
+cartes : le bruit de pose était le son le plus répété du jeu, et son fichier
+d'origine, enregistré à -37 LUFS, avait dû être remonté de 15,6 dB **dans le
+fichier** pour être audible — un enregistrement faible ainsi gonflé fait
+remonter son bruit de fond et ses artéfacts, d'où le timbre synthétique qu'on
+entendait sous les créatures.
+
+Ce qui reste à l'arrivée d'une carte :
+
+| Gestes | Ce qu'on entend |
+|---|---|
+| Créature (les deux camps) | sa voix d'arrivée (`rpgArrivalVoices.js`), sinon le souffle de son élément, sinon **rien** |
+| Sort | le son de son élément (feu, eau, foudre), sinon rien |
+| Terrain, arme équipée | rien — le geste se lit à l'écran |
+
+Les bruitages d'**événement** (frappes, destructions, contres, victoire,
+défaite, pioche, pages) restent inchangés : ce sont eux qui portent le rythme
+d'un duel, pas le claquement de chaque carte posée.
 
 ## Le son du duel vient du plateau
 
@@ -169,10 +201,19 @@ frappe ciblée seule ne joue jamais le coup d'épée**, même quand l'attaquante
 la seule à attaquer. C'est le reproche d'origine : le son commun, perçu comme
 un sabre, couvrait la flèche.
 
-`tests/rpg-fleche-audio.test.js` vérifie le catalogue, le filtrage des frappes
-ratées ou annulées et le routage du lecteur ; `tests/rpg-fleche-audio-ui.test.js`
-joue la vraie page du duel (jsdom) sur une Attaque ciblée seule et contrôle le
-`<audio>` réellement alimenté.
+La flèche part **aussi quand le tir manque** (les 30 % du coup rapide) : un tir
+raté reste un tir, son sifflement est le seul retour sonore du raté. Seule la
+frappe `annule` — la proie avait déjà disparu avant que l'arc ne se bande — ne
+tire rien. La page n'a donc aucun repli métallique derrière une Attaque ciblée :
+l'ancien `block_impact` joué sur un raté (`RpgDuelPage.jsx`) était exactement
+l'acier que le joueur entendait encore. `block_impact` ne sert plus qu'à la
+sélection d'un bloqueur, où il annonce un choix et non une frappe.
+
+`tests/rpg-fleche-audio.test.js` vérifie le catalogue, le partage
+tir/toucher (`rpgFrappesCibleesTirees`, `rpgFrappesCibleesReussies`), le cas
+figé d'une frappe `rate: true` — flèche seule, aucun acier — et le routage du
+lecteur ; `tests/rpg-fleche-audio-ui.test.js` joue la vraie page du duel (jsdom)
+sur une Attaque ciblée seule et contrôle le `<audio>` réellement alimenté.
 
 ## Comment elle se déclenche
 

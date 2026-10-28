@@ -2,10 +2,10 @@
 """Mesure le niveau des sons du Sablier et engendre la table d'égalisation.
 
 Le duel mélange des échantillons qui viennent de sources très différentes : une
-carte posée (`card-place.wav`, enregistrée très bas), un coup d'épée saturé, un
-cri viking, un fichier de foley stéréo. À volume d'élément égal, l'écart
-entendu va de un à trente-deux décibels : la pose de carte est inaudible, le
-coup d'épée assourdissant.
+pioche (`card-draw.wav`, enregistrée très bas), un coup d'épée saturé, un cri
+viking, un fichier de foley stéréo. À volume d'élément égal, l'écart entendu va
+de un à trente-deux décibels : la pioche est inaudible, le coup d'épée
+assourdissant.
 
 Le jeu ramène donc chaque son au **même niveau d'écoute**
 (`RPG_NIVEAU_CIBLE_LUFS`, voir `src/games/rpgNiveauxSons.js`) : chaque fichier
@@ -271,6 +271,13 @@ def mesurer(chemin: Path) -> dict:
 
 
 # ── Inventaire ──────────────────────────────────────────────────────────────
+# Le survol est le seul son du jeu qui ne vise pas le niveau commun : il se
+# déclenche à chaque carte effleurée et garde une dose discrète
+# (`DOSE_SURVOL`, dans `src/games/rpgAudio.js`). Il n'entre donc pas dans la
+# table des niveaux — le mesurer ici ferait proposer un gain de +13 dB.
+SANS_NIVEAU_COMMUN = frozenset({'hover'})
+
+
 def inventaire_echantillons() -> list[tuple[str, str]]:
     """(nom de bruitage, fichier) relu dans le registre du lecteur."""
     source = AUDIO_A.read_text(encoding='utf-8')
@@ -334,6 +341,8 @@ def main() -> int:
 
     echantillons = []
     for nom, fichier in inventaire_echantillons():
+        if nom in SANS_NIVEAU_COMMUN:
+            continue
         chemin = ASSETS / fichier
         if not chemin.exists():
             print(f'  !! {nom} : {fichier} manquant', file=sys.stderr)
@@ -352,6 +361,8 @@ def main() -> int:
         plafond = -1.0
         print(f'Niveau de référence : {cible:g} LUFS — crête plafonnée à {plafond:g} dBFS\n')
         for nom, fichier in inventaire_echantillons():
+            if nom in SANS_NIVEAU_COMMUN:
+                continue
             chemin = ASSETS / fichier
             if not chemin.exists():
                 continue
