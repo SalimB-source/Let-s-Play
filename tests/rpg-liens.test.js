@@ -332,6 +332,31 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Le Routier : 2 cartes piochées, 3 sous Bakunawa — une seule défaussée', () => {
+  const monter = (avecBakunawa) => {
+    const duel = duelVide();
+    // Bakunawa se bat à l'arrivée : on le pose avant toute proie adverse.
+    if (avecBakunawa) poser(duel, 'joueur', 'bakunawa');
+    duel.joueur.deck = Array.from({ length: 8 }, () => 'poigne-de-givre');
+    return duel;
+  };
+
+  const sans = monter(false);
+  lancer(sans, 'joueur', 'le-routier');
+  assert.equal(sans.joueur.deck.length, 6, 'sans ancre : deux cartes piochées');
+  assert.equal(sans.joueur.main.length, 2);
+
+  const avec = monter(true);
+  lancer(avec, 'joueur', 'le-routier');
+  assert.equal(avec.joueur.deck.length, 5, 'sous le Serpent : trois cartes piochées');
+  assert.equal(avec.joueur.main.length, 3);
+
+  const carte = cardById('le-routier');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.equal(carte.effet.defausse, 1, 'la défausse ne bouge pas');
+  assert.deepEqual(carte.lien, { ancre: 'bakunawa', effet: { pioche: 3 } });
+});
+
 test('Haut-fond : -1/-2, -2/-3 sous Le Kraken — jusqu’à la fin du tour', () => {
   const monter = (avecKraken) => {
     const duel = duelVide();

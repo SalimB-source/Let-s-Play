@@ -80,6 +80,7 @@ mécanique sur des cartes du catalogue.
 | **Hurlement du blizzard** (sorcellerie, rare) | 4 | **2** dégâts à toutes les créatures adverses, gel 25 % | **3** dégâts, gel inchangé | le souffle grandit, pas le froid | Le Géant des banquises (Neige, mythique, 6) |
 | **Le Poids** (magie rapide, commune) | 3 | −**2** PV au sorcier, +2 pour vous | identique **+ −2/−2 à une créature ciblée** | le sort ne change pas, il frappe en plus | La Barbe Noire, la malédiction (Ténèbres, mythique, 5) |
 | **Haut-fond** (magie rapide, commune) | 1 | −**1/−2** jusqu'à la fin du tour | **−2/−3** | la marée monte d'un cran | Le Kraken (Eau, mythique, 8) |
+| **Le Routier** (sorcellerie, inhabituelle) | 3 | pioche **2**, défausse 1 | pioche **3**, défausse 1 | la carte marine porte plus loin | Bakunawa (Eau, mythique, 4) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -232,6 +233,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des vingt-sept paires entrent dans le prototype.
+2. B : lesquelles des vingt-huit paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

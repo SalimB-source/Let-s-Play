@@ -406,7 +406,10 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Sorcellerie — Carte marine · Eau',
     cibles: ['soi'],
     effet: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
-    text: 'Piochez deux cartes, puis défaussez une carte.',
+    // Le Lien du Serpent : la carte marine porte un cran plus loin — trois
+    // cartes piochées, une défaussée. Ce qu'on jette ne change pas.
+    lien: { ancre: 'bakunawa', effet: { pioche: 3 } },
+    text: 'Piochez deux cartes, puis défaussez une carte. Lien du Serpent — si Bakunawa est en jeu, piochez trois cartes, puis défaussez une carte.',
     flavor: 'Les routes de la mer se copient à la main, jamais à l’imprimé.',
   }),
   carte({
