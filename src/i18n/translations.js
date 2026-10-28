@@ -175,8 +175,8 @@ export const translations = {
     },
     home: {
       eyebrow: 'Algeria’s gaming & pop culture show',
-      h1a: 'LEVEL UP',
-      h1b: 'YOUR REALITY.',
+      h1a: 'ALL THE NEWS,',
+      h1b: 'GAMING, TECH & CINEMA.',
       heroText: 'Reviews, previews, e-sport, tech and pop culture — the show for the community that never stopped playing. Every drop, every round, every story worth playing.',
       watchEpisodes: 'Watch the episodes',
       enterShow: 'See the news',
@@ -618,7 +618,7 @@ export const translations = {
     },
     home: {
       eyebrow: 'L’émission gaming & pop culture de l’Algérie',
-      h1a: 'PASSE UN', h1b: 'NIVEAU AU RÉEL.',
+      h1a: 'TOUTE L’ACTU', h1b: 'GAMING, TECH ET CINÉMA.',
       heroText: 'Tests, avant-premières, e-sport, tech et pop culture — l’émission de la communauté qui n’a jamais arrêté de jouer. Chaque sortie, chaque round, chaque histoire qui mérite d’être jouée.',
       watchEpisodes: 'Regarder les épisodes',
       enterShow: 'Voir les actus',
@@ -1057,7 +1057,7 @@ export const translations = {
     },
     home: {
       eyebrow: 'برنامج الجزائر للألعاب والثقافة الشعبية',
-      h1a: 'ارتقِ', h1b: 'بواقعك.',
+      h1a: 'كل أخبار', h1b: 'الألعاب والتقنية والسينما.',
       heroText: 'مراجعات، عروض أولى، رياضات إلكترونية، تكنولوجيا وثقافة شعبية — البرنامج المخصص للمجتمع الذي لم يتوقف عن اللعب أبدًا. كل إصدار، كل جولة، كل قصة تستحق أن تُلعب.',
       watchEpisodes: 'شاهد الحلقات',
       enterShow: 'شاهد الأخبار',

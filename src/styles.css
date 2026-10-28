@@ -836,9 +836,17 @@ img{max-width:100%}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;margin:0;font:500 11px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
 .live-dot{width:8px;height:8px;background:var(--yellow);border-radius:50%;box-shadow:0 0 10px var(--yellow);animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+/* Le titre du héros tient sur deux lignes. La ligne mise en avant
+   (« Gaming, Tech et Cinéma ») est plus longue que l'ancienne : à 110px elle
+   mesure ~1650px, soit 15 fois son corps, et passait donc à la ligne dans la
+   colonne de 1240px — ~110px de hauteur en plus, qui poussaient la bande
+   « le plus attendu » sous la ligne de flottaison. Le corps est borné à 6vw
+   pour que ce rapport (15 × 6vw ≈ 90vw) reste toujours sous la largeur de la
+   colonne (fenêtre − 56px) ; à partir de 769px seulement, la règle mobile
+   prenant le relais en dessous. */
 .hero h1{
   font-family:var(--display);font-weight:800;
-  font-size:clamp(46px,8.4vw,110px);line-height:1;letter-spacing:.005em;
+  font-size:clamp(40px,6vw,88px);line-height:1;letter-spacing:.005em;
   margin:26px 0 28px;text-transform:uppercase;
 }
 .hero h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 26px rgba(34,211,238,.65),0 0 80px rgba(34,211,238,.35)}
@@ -1897,7 +1905,10 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
-  .hero h1{font-size:clamp(36px,9.6vw,52px)}
+  /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
+     ne tenait plus dans la colonne et le titre du héros passait à quatre
+     lignes. */
+  .hero h1{font-size:clamp(34px,9.6vw,52px)}
   .hero-content{margin-bottom:88px}
   .hero-frame{display:none}
   .featured{padding:70px 0 40px}
