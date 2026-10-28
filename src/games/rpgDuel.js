@@ -2419,18 +2419,20 @@ function degatsCreatureCombattue(carte, quand) {
 
 /** Effet de blocage des Tours de Neige et des Flots. Il se résout après les
  * capacités pré-combat : le gel laisse les blessures du combat se résoudre,
- * tandis que le renvoi met fin à l'échange. */
-function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId) {
-  const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId);
+ * tandis que le renvoi des Flots attend la fin des blessures normales.
+ */
+function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null) {
+  const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId) ?? bloqueurSnapshot;
   const attaquant = duel[autre(coteBloqueur)]?.creatures.find((e) => e.id === attaquantId);
   const combat = bloqueur && duelCardById(bloqueur.carteId)?.combat;
   if (!combat || combat.quand !== 'blocage' || !attaquant) return;
-  if (combat.type === 'gel') {
+  if (combat.type === 'gel' && !apresBlessures) {
     gelerEntite(duel, attaquant);
     duel.log.push(`${attaquant.name} est gelée par ${bloqueur.name}.`);
-  } else if (combat.type === 'retour-main') {
-    renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite');
-    duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire.`);
+  } else if (combat.type === 'retour-main' && apresBlessures) {
+    if (renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite')) {
+      duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire après les blessures de combat.`);
+    }
   }
 }
 
@@ -5520,6 +5522,9 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     });
   }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  // Le renvoi de la Tour des Flots se résout après les blessures : l’attaquant
+  // a d’abord le temps d’infliger les siennes à la Tour.
+  resoudreCapaciteBlocage(duel, autre(cote), cible.id, attaquant.id, true, cible);
   // Contre-attaque : le duel de créatures rend les coups esquivés.
   for (const esquive of esquivesCombat ?? []) {
     const defenseur = duel[esquive.cote]?.creatures.find((entite) => entite.id === esquive.entiteId);
@@ -6538,6 +6543,14 @@ export function rpgLancerAttaque(
     }
   }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
+  // Les capacités de retour en main des Tours des Flots sont retardées jusqu’à
+  // ce que les blessures normales aient été assignées et résolues.
+  for (const attaquant of attaquants) {
+    for (const bloqueurId of affectations[attaquant.id] ?? []) {
+      const bloqueurSnapshot = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
+      resoudreCapaciteBlocage(duel, adv, bloqueurId, attaquant.id, true, bloqueurSnapshot);
+    }
+  }
   // Contre-attaque : une attaque esquivée pendant l'échange est rendue à son
   // auteur, une seule fois par défenseur, après les blessures simultanées.
   for (const esquive of esquivesCombat ?? []) {

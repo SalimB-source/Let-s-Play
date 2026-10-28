@@ -974,7 +974,7 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     arrivee: { type: 'soin', amount: 2 },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : vous récupérez 2 points de vie.',
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : vous récupérez 2 points de vie. Quand elle bloque : après l’assignation des blessures de combat, elle renvoie l’attaquant dans la main de son propriétaire.',
     flavor: 'Les vagues se brisent contre ses fondations sans fin.',
   },
   {
