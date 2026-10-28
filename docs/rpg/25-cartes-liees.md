@@ -37,7 +37,8 @@ main, de la table, du catalogue et de l'atelier reste donc la seule vérité
 | **Ancre** | Une carte **mythique** du même camp, présente sur le champ : créature, héros ou Site (tout ce qui tient une place de la rangée). L'ancre **adverse** ne compte pas. |
 | **Moment** | Le Lien se lit **à la résolution** : pour un sort, l'ancre doit être en jeu quand le sort se résout (la tuer en réponse le laisse se résoudre au tarif imprimé) ; pour une arme, il se lit **en continu**. |
 | **Arme** | Le bonus du Lien **remplace** le bonus imprimé (`+2/+0` → `+4/+2`). Il se lève à l'arrivée de l'ancre, **retombe** à sa mort, et ne descend jamais sous 1 PV. |
-| **Sort** | Les champs de `lien.effet` **remplacent** ceux de l'effet imprimé (`2` dégâts → `4`) ; le reste de l'effet est inchangé (cible, durée, mots-clés). |
+| **Sort** | Les champs de `lien.effet` **remplacent** ceux de l'effet imprimé (`2` dégâts → `3`) ; le reste de l'effet est inchangé (cible, durée, mots-clés). |
+| **Déclencheur** | `lien.remplace` réécrit un déclencheur de l'arme, pas seulement ses chiffres : le Masque du guetteur pioche alors **sans défausser** (`defausse: 0`). La fiche imprimée n'est jamais mutée. |
 | **Coût** | **Inchangé.** Ni remise, ni surcoût, ni mana détruit. |
 | **Texte** | La règle s'imprime sur la carte (« Lien de Tin Hinan — … »), comme Abordage, Harakiri ou Malédiction. Un test vérifie que chaque Lien nomme une ancre mythique **qui existe** et que le texte la nomme : aucune fiche ne peut dériver de sa mécanique. |
 
@@ -46,13 +47,32 @@ main, de la table, du catalogue et de l'atelier reste donc la seule vérité
 Toutes existaient déjà par leur nom ; le prototype ne fait que brancher la
 mécanique sur des cartes du catalogue.
 
-| Carte liée | Coût | Sans l'ancre | Avec l'ancre | Ancre |
-| --- | --- | --- | --- | --- |
-| **Takouba des pistes** (arme, commune) | 3 | +2/+0 · Infiltration | **+4/+2** · Infiltration | Tin Hinan, mère des pistes (Sable, mythique, 5) |
-| **Masque du guetteur** (arme, rare) | 2 | +1/+1 · pioche sur blessure | **+3/+3** · pioche sur blessure | Le Passeur au masque de chacal (Ténèbres, mythique, 6) |
-| **Eau de la source** (magie, commune) | 1 | soigne **4** PV | soigne **8** PV | La Source de Bimini (Site mythique, Eau + Sable, 3) |
-| **Vent rouge** (magie, rare) | 3 | **2** dégâts à toutes les créatures adverses | **4** dégâts | Daimyō du Soleil rouge (Braise, mythique, 5) |
-| **Serment de la forge** (magie, mythique) | 4 | +2/+1 · Attaque ciblée | **+3/+2** · Attaque ciblée | Eirik du Premier Serment (Braise, mythique, 1) |
+| Carte liée | Coût | Sans l'ancre | Avec l'ancre | Écart | Ancre |
+| --- | --- | --- | --- | --- | --- |
+| **Takouba des pistes** (arme, commune) | 3 | +2/+0 · Infiltration | **+3/+1** · Infiltration | +1/+1 | Tin Hinan, mère des pistes (Sable, mythique, 5) |
+| **Masque du guetteur** (arme, rare) | 2 | +1/+1 · pioche **puis défausse** | **+2/+2** · pioche **sans défausse** | +1/+1 et la défausse tombe | Le Passeur au masque de chacal (Ténèbres, mythique, 6) |
+| **Eau de la source** (magie, commune) | 1 | soigne **4** PV | soigne **6** PV | +2 PV | La Source de Bimini (Site mythique, Eau + Sable, 3) |
+| **Vent rouge** (magie, rare) | 3 | **2** dégâts à toutes les créatures adverses | **3** dégâts | +1 dégât | Daimyō du Soleil rouge (Braise, mythique, 5) |
+| **Serment de la forge** (magie, mythique) | 4 | +2/+1 · Attaque ciblée | **+3/+1** · Attaque ciblée | +1/+0 | Daimyō du Soleil rouge (Braise, mythique, 5) |
+
+**La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
+calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
+récompenser la construction. Les premiers chiffres essayés (+4/+2 pour la
+Takouba, 8 PV pour l'Eau, 4 dégâts pour le Vent rouge) étaient trop généreux —
+un Lien se juge à l'écart, pas au total.
+
+Les trois formes que prend ce cran :
+
+- **les chiffres** d'une arme (`bonus`) ou d'un sort (`effet.amount`) ;
+- **le déclencheur** d'une arme (`remplace`) : le Masque du guetteur pioche
+  sans défausser, ce qui change la carte sans changer un seul nombre ;
+- **la portée** d'un renfort (`effet.atk/def`) pour le Serment.
+
+**Le Serment de la forge est une carte de Samouraïs** : son ancre est donc le
+**Daimyō du Soleil rouge**, pas Eirik — le viking du Premier Serment prêtait à
+confusion avec le mot « serment » de la carte, alors qu'aucun de ses effets ne
+touche un Samouraï. Le Daimyō porte la bannière qui grandit les Samouraïs :
+c'est lui, thématiquement, qui fait serment à la forge.
 
 Deux remarques de conception, tirées de ces paires :
 
@@ -68,8 +88,8 @@ Deux remarques de conception, tirées de ces paires :
 
 | Fichier | Rôle |
 | --- | --- |
-| `src/games/rpgCards.js` | La fiche `lien: { ancre, bonus?, effet? }` sur les cinq cartes, et les helpers purs : `lienDeCarte`, `lienSatisfait`, `effetLie`, `bonusArmeLie` |
-| `src/games/rpgDuel.js` | `appliquerLiensArmes` (recalculé avec les auras par `rafraichirAuras`), l'application dans `rpgJouerArme` et `rpgLancerMagie`, le retrait dans `retirerArme` |
+| `src/games/rpgCards.js` | La fiche `lien: { ancre, bonus?, effet?, remplace? }` sur les cinq cartes, et les helpers purs : `lienDeCarte`, `lienSatisfait`, `effetLie`, `bonusArmeLie`, `carteLiee` |
+| `src/games/rpgDuel.js` | `appliquerLiensArmes` (recalculé avec les auras par `rafraichirAuras`), l'application dans `rpgJouerArme` et `rpgLancerMagie`, le retrait dans `retirerArme`, et les déclencheurs de porteur dans `declencherArmesAttaquants` |
 | `src/games/rpgAI.js` | Le sorcier lit l'effet **réellement résolu** (`effetLie`) pour scorer son sort et choisir sa cible |
 | `tests/rpg-liens.test.js` | Le catalogue, les helpers, et les cinq paires jouées des deux côtés (avec et sans ancre) |
 
@@ -106,3 +126,57 @@ npm run build
 
 > **Le Lien ne prend jamais rien au joueur : il ne fait que rendre sa carte
 > meilleure quand son mythe est là.**
+
+
+## 8. Le menu — ce qui reste à trancher
+
+Rien de cette section n'est codé : ce sont les choix à faire avant de figer le
+Lien. Chaque proposition respecte la règle de calibrage (**un cran**).
+
+### A. Trois arbitrages sur les paires actuelles
+
+| # | Question | Options |
+| --- | --- | --- |
+| A1 | **Quelle Takouba ?** La `takouba-de-tin-hinan` (mythique, 4, +3/+2) porte littéralement le nom de son ancre — mais une arme mythique liée à une créature mythique ne se réunit que rarement. | 1. garder la **Takouba des pistes** (actuel, commune) · 2. la remplacer par la **Takouba de Tin Hinan** (+3/+2 → +4/+3) |
+| A2 | **L'ancre du Serment de la forge.** Trois mythiques Samouraïs existent : le Daimyō (bannière), Tojiro le pourfendeur (duelliste), le Cavalier des deux sabres. | 1. **Daimyō** (actuel) · 2. **Tojiro** · 3. **Cavalier des deux sabres** |
+| A3 | **Le Daimyō porte deux Liens** (Serment + Vent rouge). C'est un « cycle du Daimyō », assumé — ou on répartit ? | 1. garder les deux (cycle) · 2. déplacer Vent rouge sur la **Lionne du midi ardent** ou l'**Ifrit des ergs** |
+| A4 | **L'ancre du Masque du guetteur** : le Passeur (actuel) ou le Maître des hiéroglyphes, l'autre mythique du set Ténèbres ? | 1. Passeur (actuel) · 2. Maître des hiéroglyphes |
+
+### B. Douze nouvelles paires candidates
+
+Toutes existent déjà dans le catalogue ; aucune n'est branchée. L'écart est
+donné à titre de proposition.
+
+| Carte non liée | Coût | Aujourd'hui | Lien proposé | Ancre (mythique) |
+| --- | --- | --- | --- | --- |
+| **Éclair du marteau** | 2 | 3 dégâts à une créature | **4 dégâts** | LE MAÎTRE DU MARTEAU (Neige, 7) |
+| **Frappe d'iaijutsu** | 1 | 2 dégâts à une créature | **3 dégâts** | Tojiro, le pourfendeur (Braise, 6) |
+| **Poigne de givre** | 2 | 2 dégâts + gel | **3 dégâts**, gel inchangé | Valkyrie des glaces (Neige, 6) |
+| **Hurlement du blizzard** | 4 | 2 dégâts à toutes + 25 % de gel | **3 dégâts** | Géant des banquises (Neige, 6) |
+| **Tempête de sable** | 5 | 3 dégâts à toutes les créatures adverses | **4 dégâts** | Le Faucon du zénith (Sable, 5) |
+| **Feux de kitsune** | 5 | 4 dégâts, ou 2 à deux créatures | **5 dégâts / 3 et 3** | Kagutsuchi, Flamme originelle (Braise, 6) |
+| **Nuage de cendres** | 5 | 2 dégâts à toutes + 1 d'écho | **3 + 1 d'écho** | Ifrit al-Ahmar, seigneur des braises (Braise, 5) |
+| **Les feuillets** | 4 | 3 cartes du paquet adverse au cimetière | **4 cartes** | Le Maître des hiéroglyphes (Ténèbres, 5) |
+| **La Grande Pesée** | 5 | transfert 3, pioche 2 | **transfert 4** | La Dévoreuse (Ténèbres, 6) |
+| **Bâton des citernes** | 4 | +1/+2, serpents 1/1 | **serpents 2/2** | Le Serpent du monde (Neige, 8) |
+| **Lame des ergs** | 4 | +3/+1, fait naître son chien de sable | **chien de sable 2/2** | Bouchra, guerrière des crêtes (Sable, 2) |
+| **Neige noire** ⚠ | 6 | détruit les créatures de coût ≤ 3, gèle les survivantes | **seuil ≤ 4** — *hors calibrage* | Le Maître des corbeaux (Neige + Ténèbres, 7) |
+
+Deux garde-fous, si ces paires sont retenues :
+
+- **rester sous quinze cartes liées** sur 170 : le Lien est une signature, pas
+  une couche de règles. Au-delà, il faudrait une pastille et un filtre dédiés ;
+- **une ancre par carte, deux cartes par ancre au maximum** — c'est ce qui fait
+  d'une mythique un centre de gravité sans en faire une pièce obligatoire.
+
+Le Lien marqué ⚠ est le seul qui sorte de la règle de calibrage : passer un
+**seuil de coût** de 3 à 4 n'est pas « un cran », c'est un palier — et un
+palier, ça tue des cartes que le sort ne tuait pas. Il n'est là que pour
+montrer où se trouve la limite.
+
+### C. Ce qu'il reste à décider, en une ligne
+
+1. A1 à A4 : les quatre arbitrages ci-dessus.
+2. B : lesquelles des dix paires entrent dans le prototype.
+3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
+   liseré sur la carte quand l'ancre est en jeu.

@@ -20,6 +20,7 @@ import {
   cardReceivesResonance,
   resonanceGroupLabel,
   duelCardById,
+  carteLiee,
   effetLie,
   lienDeCarte,
   lienSatisfait,
@@ -6043,8 +6044,12 @@ function declencherArmesAttaquants(duel, cote, bilans) {
   let declenche = false;
   const adv = autre(cote);
   for (const bilan of bilans) {
-    const carte = bilan.armeId ? armeById(bilan.armeId) : null;
-    if (!carte) continue;
+    const brut = bilan.armeId ? armeById(bilan.armeId) : null;
+    if (!brut) continue;
+    // Le Lien d'une arme se lit ici aussi : le Masque du guetteur pioche
+    // **sans défausser** quand son Passeur est en jeu, et ce déclencheur se
+    // résout au moment des blessures, pas à l'attachement de l'arme.
+    const carte = carteLiee(brut, lienSatisfait(brut, duel[cote].creatures));
     const effets = [];
     if (carte.porteurAttaque) effets.push(carte.porteurAttaque);
     if (carte.porteurBlesse && bilan.creature + bilan.sorcier > 0) effets.push(carte.porteurBlesse);

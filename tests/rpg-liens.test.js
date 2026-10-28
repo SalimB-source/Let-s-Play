@@ -20,11 +20,13 @@ import {
   rpgJouerArme,
   rpgLancerMagie,
   rpgBlesserCreature,
+  rpgAttaquerSorcier,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DUEL_CARDS,
   bonusArmeLie,
   cardById,
+  carteLiee,
   effetLie,
   lienDeCarte,
   lienSatisfait,
@@ -109,25 +111,25 @@ test('le Lien d’une arme remplace le bonus imprimé, il ne s’y ajoute pas', 
   const takouba = cardById('takouba-des-pistes');
   assert.deepEqual(takouba.bonus, { atk: 2, def: 0 });
   assert.deepEqual(bonusArmeLie(takouba, false), { atk: 2, def: 0 });
-  assert.deepEqual(bonusArmeLie(takouba, true), { atk: 4, def: 2 });
+  assert.deepEqual(bonusArmeLie(takouba, true), { atk: 3, def: 1 });
 });
 
 test('le Lien d’un sort remplace les champs de l’effet, sans toucher au reste', () => {
   const ventRouge = cardById('vent-rouge');
   assert.deepEqual(effetLie(ventRouge, false), { type: 'degats', amount: 2, cible: 'toutes-creatures' });
-  assert.deepEqual(effetLie(ventRouge, true), { type: 'degats', amount: 4, cible: 'toutes-creatures' });
+  assert.deepEqual(effetLie(ventRouge, true), { type: 'degats', amount: 3, cible: 'toutes-creatures' });
   // Le Serment de la forge garde sa durée et son Attaque ciblée.
   const serment = cardById('serment-de-la-forge');
   const lie = effetLie(serment, true);
   assert.equal(lie.atk, 3);
-  assert.equal(lie.def, 2);
+  assert.equal(lie.def, 1);
   assert.equal(lie.tours, 1);
   assert.equal(lie.coupRapide, true);
 });
 
 // ── Le moteur : les sorts ───────────────────────────────────────────────────
 
-test('Vent rouge : 2 dégâts sans le Daimyō, 4 avec lui', () => {
+test('Vent rouge : 2 dégâts sans le Daimyō, 3 avec lui', () => {
   const sans = duelVide();
   const cible = poser(sans, 'sorcier', 'chacal-du-seuil');
   const pvAvant = cible.pv;
@@ -139,10 +141,10 @@ test('Vent rouge : 2 dégâts sans le Daimyō, 4 avec lui', () => {
   poser(avec, 'joueur', 'daimyo-du-soleil-rouge');
   const pvLie = cibleLiee.pv;
   lancer(avec, 'joueur', 'vent-rouge');
-  assert.equal(cibleLiee.pv, pvLie - 4, 'avec le Daimyō en jeu, le sort en inflige 4');
+  assert.equal(cibleLiee.pv, pvLie - 3, 'avec le Daimyō en jeu, le sort en inflige 3');
 });
 
-test('Eau de la source : 4 PV sans la Source, 8 avec elle', () => {
+test('Eau de la source : 4 PV sans la Source, 6 avec elle', () => {
   const sans = duelVide();
   sans.joueur.pv = 10;
   lancer(sans, 'joueur', 'eau-de-la-source');
@@ -154,10 +156,10 @@ test('Eau de la source : 4 PV sans la Source, 8 avec elle', () => {
   manaPlein(avec, 'joueur');
   assert.equal(rpgJouerCreature(avec, 'joueur', 'source-de-bimini').ok, true, 'le Site tient une place');
   lancer(avec, 'joueur', 'eau-de-la-source');
-  assert.equal(avec.joueur.pv, 18);
+  assert.equal(avec.joueur.pv, 16);
 });
 
-test('Serment de la forge : +2/+1 sans Eirik, +3/+2 avec lui, et le tour les efface', () => {
+test('Serment de la forge : +2/+1 sans le Daimyō, +3/+1 avec lui', () => {
   const sans = duelVide();
   const troupes = poser(sans, 'joueur', 'chacal-du-seuil');
   const atkNu = troupes.atk;
@@ -166,7 +168,7 @@ test('Serment de la forge : +2/+1 sans Eirik, +3/+2 avec lui, et le tour les eff
 
   const avec = duelVide();
   const troupesLiees = poser(avec, 'joueur', 'chacal-du-seuil');
-  poser(avec, 'joueur', 'eirik-du-premier-serment');
+  poser(avec, 'joueur', 'daimyo-du-soleil-rouge');
   const atkLie = troupesLiees.atk;
   lancer(avec, 'joueur', 'serment-de-la-forge');
   assert.equal(troupesLiees.atk, atkLie + 3);
@@ -174,7 +176,7 @@ test('Serment de la forge : +2/+1 sans Eirik, +3/+2 avec lui, et le tour les eff
 
 // ── Le moteur : les armes ───────────────────────────────────────────────────
 
-test('Takouba : +2/+0 seule, +4/+2 avec Tin Hinan, et le Lien retombe à sa mort', () => {
+test('Takouba : +2/+0 seule, +3/+1 avec Tin Hinan, et le Lien retombe à sa mort', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chacal-du-seuil');
   const { atk: atkNu, def: defNu } = porteur;
@@ -184,8 +186,8 @@ test('Takouba : +2/+0 seule, +4/+2 avec Tin Hinan, et le Lien retombe à sa mort
 
   const tinHinan = poser(duel, 'joueur', 'tin-hinan');
   // Une arrivée suffit : le rafraîchissement des auras relève le Lien.
-  assert.equal(porteur.atk, atkNu + 4, 'avec Tin Hinan, +4 ATQ');
-  assert.equal(porteur.def, defNu + 2, 'avec Tin Hinan, +2 DEF');
+  assert.equal(porteur.atk, atkNu + 3, 'avec Tin Hinan, +3 ATQ');
+  assert.equal(porteur.def, defNu + 1, 'avec Tin Hinan, +1 DEF');
 
   rpgBlesserCreature(duel, 'joueur', tinHinan.id, 99, 'braise');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === tinHinan.id), false, 'Tin Hinan est tombée');
@@ -193,7 +195,7 @@ test('Takouba : +2/+0 seule, +4/+2 avec Tin Hinan, et le Lien retombe à sa mort
   assert.equal(porteur.def, defNu, 'la défense rendue ne tue pas le porteur');
 });
 
-test('Masque du guetteur : +1/+1 seul, +3/+3 avec le Passeur', () => {
+test('Masque du guetteur : +1/+1 seul, +2/+2 avec le Passeur', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chacal-du-seuil');
   const { atk, def } = porteur;
@@ -202,8 +204,8 @@ test('Masque du guetteur : +1/+1 seul, +3/+3 avec le Passeur', () => {
   assert.equal(porteur.def, def + 1);
 
   poser(duel, 'joueur', 'passeur-au-masque-de-chacal');
-  assert.equal(porteur.atk, atk + 3);
-  assert.equal(porteur.def, def + 3);
+  assert.equal(porteur.atk, atk + 2);
+  assert.equal(porteur.def, def + 2);
 });
 
 test('le Lien ne traverse pas la table : l’ancre adverse ne renforce rien', () => {
@@ -213,4 +215,40 @@ test('le Lien ne traverse pas la table : l’ancre adverse ne renforce rien', ()
   equiper(duel, 'joueur', 'takouba-des-pistes', porteur);
   poser(duel, 'sorcier', 'tin-hinan');
   assert.equal(porteur.atk, atk + 2, 'la Tin Hinan du sorcier ne réveille pas la Takouba du joueur');
+});
+
+test('Masque du guetteur : le Lien réécrit le déclencheur — pioche sans défausse', () => {
+  // Sans le Passeur : le porteur blesse le sorcier, le Masque pioche puis
+  // défausse — la main ne bouge pas.
+  // L'Ashigaru n'a ni Butin ni Tribut : la seule défausse possible vient du
+  // Masque, ce qui rend le contrôle lisible.
+  const sans = duelVide();
+  sans.joueur.deck = ['chacal-du-seuil', 'chacal-du-seuil', 'chacal-du-seuil'];
+  const porteur = poser(sans, 'joueur', 'ashigaru-des-braises');
+  equiper(sans, 'joueur', 'masque-du-guetteur', porteur);
+  porteur.ready = true;
+  assert.equal(rpgAttaquerSorcier(sans, 'joueur', porteur.id).ok, true);
+  assert.equal(sans.defausseEnAttente?.restant, 1,
+    'sans ancre : la pioche du Masque ouvre la défausse (choisie par le joueur)');
+
+  // Avec le Passeur : la même attaque pioche sans rien défausser.
+  const avec = duelVide();
+  avec.joueur.deck = ['chacal-du-seuil', 'chacal-du-seuil', 'chacal-du-seuil'];
+  const porteurLie = poser(avec, 'joueur', 'ashigaru-des-braises');
+  equiper(avec, 'joueur', 'masque-du-guetteur', porteurLie);
+  poser(avec, 'joueur', 'passeur-au-masque-de-chacal');
+  porteurLie.ready = true;
+  const mainLiee = avec.joueur.main.length;
+  assert.equal(rpgAttaquerSorcier(avec, 'joueur', porteurLie.id).ok, true);
+  assert.equal(avec.joueur.main.length, mainLiee + 1, 'avec l’ancre : la pioche ne défausse plus');
+  assert.ok(!avec.defausseEnAttente, 'aucune fenêtre de défausse ne s’ouvre');
+});
+
+test('carteLiee ne touche à rien quand le Lien est muet ou l’ancre absente', () => {
+  const takouba = cardById('takouba-des-pistes');
+  assert.equal(carteLiee(takouba, true), takouba, 'pas de `remplace` : la fiche est rendue telle quelle');
+  const masque = cardById('masque-du-guetteur');
+  assert.equal(carteLiee(masque, false), masque);
+  assert.equal(carteLiee(masque, true).porteurBlesseSorcier.defausse, 0);
+  assert.equal(masque.porteurBlesseSorcier.defausse, 1, 'la fiche imprimée n’est jamais mutée');
 });
