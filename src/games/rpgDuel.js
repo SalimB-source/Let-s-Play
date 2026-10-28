@@ -5459,7 +5459,14 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
       return { ok: true, entite: null };
     }
   }
-  attacherArme(duel, cote, cible, carte);
+  // Le Lien du Berger : l'arme couvre son porteur sans changer de chiffres.
+  // `lien.donne` se fusionne avec le `donne` imprimé, et c'est la fiche
+  // fusionnée que lit `attacherArme` (bouclier, esquive, Envol…).
+  const lienActif = lienSatisfait(carte, camp.creatures);
+  const donneLie = lienActif && carte.lien?.donne
+    ? { ...carte.donne, ...carte.lien.donne }
+    : carte.donne;
+  attacherArme(duel, cote, cible, { ...carte, donne: donneLie });
   const bonusSigne = (valeur) => {
     const nombre = Number(valeur) || 0;
     return nombre < 0 ? `−${Math.abs(nombre)}` : `+${nombre}`;

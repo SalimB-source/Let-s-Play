@@ -86,7 +86,12 @@ test('chaque Lien nomme une ancre mythique qui existe, et son texte la nomme', (
       assert.equal(lien.effet, undefined, `${carte.id} : un Lien nominal n’ajoute pas d’effet`);
       continue;
     }
-    if (carte.kind === 'arme') {
+    if (carte.kind === 'arme' && lien.donne) {
+      // Une arme peut prêter un mot-clé au lieu de grandir (la Lame des ergs
+      // couvre son porteur d'un bouclier sous Tarek) : aucun chiffre ne bouge.
+      assert.equal(lien.bonus, undefined, `${carte.id} : le Lien prête un mot-clé, pas un bonus`);
+      assert.ok(Object.keys(lien.donne).length, `${carte.id} : le Lien nomme ce qu’il prête`);
+    } else if (carte.kind === 'arme') {
       assert.ok(lien.bonus, `${carte.id} : une arme liée porte un bonus de Lien`);
       assert.ok(lien.bonus.atk >= (carte.bonus?.atk ?? 0) && lien.bonus.def >= (carte.bonus?.def ?? 0),
         `${carte.id} : le Lien ne retire jamais de statistiques`);
@@ -322,6 +327,43 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   const cavalier = duel.joueur.creatures.find((entite) => entite.carteId === 'cavalier-des-deux-sabres');
   rpgBlesserCreature(duel, 'joueur', cavalier.id, 99, 'braise');
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
+});
+
+test('Lame des ergs : +3/+1 au chien de sable, et un bouclier sous TAREK', () => {
+  const monter = (avecTarek) => {
+    const duel = duelVide();
+    if (avecTarek) poser(duel, 'joueur', 'tarek');
+    // Arme vivante : jouée sans créature, elle fait naître son porteur.
+    donner(duel, 'joueur', 'lame-des-ergs');
+    manaPlein(duel, 'joueur');
+    const res = rpgJouerArme(duel, 'joueur', 'lame-des-ergs');
+    assert.equal(res.ok, true, 'la Lame se joue sans porteur désigné');
+    return { duel, porteur: res.entite };
+  };
+
+  const sans = monter(false);
+  assert.deepEqual([sans.porteur.atk, sans.porteur.def], [4, 2], 'chien 1/1 + lame 3/1, sans ancre');
+  assert.equal(sans.porteur.bouclier ?? 0, 0, 'et aucun bouclier');
+
+  const avec = monter(true);
+  assert.deepEqual([avec.porteur.atk, avec.porteur.def], [4, 2], 'sous TAREK : les chiffres ne bougent pas');
+  assert.equal(avec.porteur.bouclier, 1, 'mais le porteur est couvert d’un bouclier');
+
+  // Le bouclier fait son travail : il bloque le premier sort adverse qui
+  // atteint le porteur, et la créature n'encaisse rien.
+  const avant = avec.porteur.pv;
+  avec.duel.tour = 'sorcier';
+  donner(avec.duel, 'sorcier', 'poigne-de-givre');
+  manaPlein(avec.duel, 'sorcier');
+  avec.duel.fenetreReponse = true;
+  const res = rpgLancerMagie(avec.duel, 'sorcier', 'poigne-de-givre', avec.porteur.id);
+  assert.equal(res.bouclierBloque, true, 'le sort est bloqué');
+  assert.equal(avec.porteur.pv, avant, 'le porteur ne perd aucun PV');
+  assert.equal(avec.porteur.bouclier, 0, 'et le bouclier tombe');
+
+  const carte = cardById('lame-des-ergs');
+  assert.equal(carte.cost, 4, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'tarek', donne: { bouclier: 1 } });
 });
 
 test('Le Grand Débarquement : +2/+2 et Overkill, +3/+2 sous La Barbe-Rousse', () => {

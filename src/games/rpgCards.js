@@ -160,6 +160,9 @@ export function bonusArme(carte) {
  *                 chiffre, elle existe déjà par une autre règle. Le drapeau
  *                 est obligatoire pour qu'un Lien sans effet soit un choix
  *                 dit, jamais un bonus oublié ;
+ *   - `donne` : les mots-clés prêtés au porteur d'une arme (le Sabre du
+ *                 Berger donne un bouclier). Fusionné avec le `donne` imprimé
+ *                 à l'attachement, il ne remplace rien ;
  *   - `porteur` : `true` pour un **Lien de porteur** — l'ancre doit être la
  *                 créature qui tient l'arme (le Sabre maudit ne mord que la
  *                 force entre les mains de la Flamme), et non simplement être
@@ -2222,7 +2225,11 @@ export const RPG_ARME_CARDS = [
     // Arme vivante (Batterskull) : jouable la main vide, elle fait naître le
     // chien de sable qui la portera (`rpgJouerArme` accepte `cibleId: null`).
     armeVivante: { jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1.',
+    // Le Lien du Berger : sous Tarek, la lame ne grandit pas — elle couvre.
+    // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
+    // sans qu'un seul de ses chiffres imprints ne bouge.
+    lien: { ancre: 'tarek', donne: { bouclier: 1 } },
+    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Lien du Berger — si TAREK est en jeu, le porteur gagne aussi un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
