@@ -75,7 +75,7 @@ mécanique sur des cartes du catalogue.
 | **Le Grand Débarquement** (sorcellerie, rare) | 5 | cales pleines : **+2/+2** et Overkill | **+3/+2** et Overkill | l'assaut mord, il ne tient pas | La Barbe-Rousse, amiral des deux mers (Sable, mythique, 6) |
 | **Lame des ergs** (arme vivante, rare) | 4 | chien de sable 1/1, porteur **+3/+1** | +3/+1 **et un bouclier** | sous le berger, la lame couvre au lieu de grandir | TAREK (Sable, mythique, 5) |
 | **Javelot du beffroi** (arme, commune) | 2 | porteur **+2/+0** et Attaque ciblée | **+3/+0** et Attaque ciblée | la riposte du Contre-attaquant mord plus fort | Le roi Kusayla (Sable, mythique, 5) |
-| **Cuirasse de sel** (arme, commune) | 2 | porteur **+0/+3** et Esquive | **+0/+4** et Esquive | rend jouable une 3/1, et l'Esquive s'ajoute à la sienne (50 %) | Bouchra, guerrière des crêtes (Sable, mythique, 2) |
+| **Cuirasse de sel** (arme, commune) | 2 | porteur **+0/+3** et Esquive | **+0/+4** au lieu de +0/+3 | un cran de défense, rien de plus — le cumul d'Esquive est une règle générale | Bouchra, guerrière des crêtes (Sable, mythique, 2) |
 | **Festin des vaillants** (sorcellerie, commune) | 3 | soigne **2** aux créatures et **2** au sorcier | **3** et **3** | le banquet du Premier Serment | Eirik du Premier Serment (Neige, mythique, 1) |
 | **Hurlement du blizzard** (sorcellerie, rare) | 4 | **2** dégâts à toutes les créatures adverses, gel 25 % | **3** dégâts, gel inchangé | le souffle grandit, pas le froid | Le Géant des banquises (Neige, mythique, 6) |
 | **Le Poids** (magie rapide, commune) | 3 | −**2** PV au sorcier, +2 pour vous | identique **+ −2/−2 à une créature ciblée** | le sort ne change pas, il frappe en plus | La Barbe Noire, la malédiction (Ténèbres, mythique, 5) |

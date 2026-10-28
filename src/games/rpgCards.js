@@ -2155,11 +2155,12 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
-    // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4). Son
-    // Esquive, elle, se CUMULE avec celle que la guerrière imprime : deux
-    // sources valent 25 % + 25 %, donc 50 %.
+    // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4), rien
+    // de plus — le texte ne dit que la différence. Le CUMUL d'Esquive
+    // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
+    // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3, et l’Esquive s’ajoute à celle du porteur.',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas ; elle s’ajoute à celle d’une créature qui esquive déjà). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {

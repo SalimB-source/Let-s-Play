@@ -104,6 +104,37 @@ test('chaque Lien nomme une ancre mythique qui existe, et son texte la nomme', (
   }
 });
 
+test('le texte d’un Lien dit la différence seule, jamais l’effet complet', () => {
+  for (const carte of RPG_DUEL_CARDS.filter((candidat) => lienDeCarte(candidat))) {
+    const texte = carte.text ?? '';
+    // Une seule phrase de Lien, à la fin, sous la forme
+    // « Avec <ancre> en jeu : <ce qui change>. »
+    assert.equal(
+      texte.split('Avec ').length - 1,
+      1,
+      `${carte.id} : une seule phrase « Avec … en jeu : »`,
+    );
+    assert.match(
+      texte,
+      /Avec .+ en jeu : .+\.$/,
+      `${carte.id} : le texte finit sur la différence du Lien`,
+    );
+    assert.doesNotMatch(
+      texte,
+      /Lien (de|du|des|d’|d')/,
+      `${carte.id} : plus de formule « Lien de … », la phrase nomme l’ancre`,
+    );
+    // La différence ne réécrit pas la carte : elle ne rappelle ni son type de
+    // ligne ni son gabarit de sort, elle dit ce que l'ancre change.
+    const difference = texte.slice(texte.indexOf('Avec '));
+    assert.doesNotMatch(
+      difference,
+      /typeLine|Magie Rapide|Sorcellerie|Arme —/,
+      `${carte.id} : la phrase de Lien ne rappelle pas la fiche`,
+    );
+  }
+});
+
 test('aucun Lien ne baisse le coût : la carte se joue au tarif imprimé', () => {
   for (const carte of RPG_DUEL_CARDS.filter((candidat) => lienDeCarte(candidat))) {
     const lien = lienDeCarte(carte);
