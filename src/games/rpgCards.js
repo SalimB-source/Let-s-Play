@@ -2119,8 +2119,8 @@ export const RPG_ARME_CARDS = [
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {
-    id: 'steel-ball',
-    name: 'steel ball',
+    id: 'sphere-de-rotation',
+    name: 'sphère de rotation',
     element: 'sable',
     kind: 'arme',
     typeLine: 'Arme — Boule d\'acier',

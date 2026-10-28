@@ -56,7 +56,7 @@ meilleures raisons d'attaquer.
 | 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
 | 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Attaque ciblée + deux déclencheurs de combat |
-| 11 | Steel ball | rare | 3 | +1/+0 | Blessure au combat → 25 % renvoi en main (JoJo) |
+| 11 | sphère de rotation | rare | 3 | +1/+0 | Blessure au combat → 25 % renvoi en main (JoJo) |
 
 ---
 
@@ -345,7 +345,7 @@ qui se joue la table vide sans rien désigner.
   plusieurs cartes rendrait le Sable trop punitif pour ses propres créatures,
   qui sont justement petites et nombreuses.
 
-### 11. Steel ball — rare — 3
+### 11. sphère de rotation — rare — 3
 
 > **Arme — Boule d'acier.** Le porteur gagne +1/+0. Quand le porteur inflige
 > des blessures de combat à une créature : 25 % de chances de la renvoyer
@@ -359,5 +359,5 @@ Le moteur gère le tirage des 25 % via le hasard du duel (`hasardParDuel`) et
 passe l'identifiant de la créature blessée comme cible du `retour-main`. Une
 créature protégée contre la couleur Sable échappe au renvoi.
 
-Référence ouverte à *JoJo's Bizarre Adventure* : la Steel Ball de Gyro
-Zepelli, lanceuse d'acier qui fait revenir ses cibles.
+Référence ouverte à *JoJo's Bizarre Adventure* : la sphère de rotation de
+Gyro Zepelli, lanceuse d'acier qui fait revenir ses cibles.

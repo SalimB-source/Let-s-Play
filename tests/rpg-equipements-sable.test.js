@@ -37,7 +37,7 @@ const LOT = [
   'sandales-de-tislit', 'cuirasse-de-sel', 'javelot-du-beffroi',
   'licou-du-chien-de-sable', 'harnais-du-mehari',
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
-  'steel-ball',
+  'sphere-de-rotation',
 ];
 const cartesDuLot = RPG_ARME_CARDS.filter((carte) => LOT.includes(carte.id));
 
@@ -348,21 +348,21 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');
 });
 
-// ── La Steel Ball ─────────────────────────────────────────────────────────
+// ── La sphère de rotation ──────────────────────────────────────────────────
 
-test('la Steel Ball donne +1/+0 à son porteur', () => {
+test('la sphère de rotation donne +1/+0 à son porteur', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
-  equiper(duel, 'joueur', 'steel-ball', porteur);
+  equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
   assert.equal(porteur.atk, 3, '+1/+0');
   assert.equal(porteur.def, 2, 'aucune modification de défense');
 });
 
-test('la Steel Ball renvoie la créature blessée avec 25 % de chance', () => {
+test('la sphère de rotation renvoie la créature blessée avec 25 % de chance', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/2 avec la Steel Ball
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/2 avec la sphère de rotation
   const bloqueur = poser(duel, 'sorcier', 'chien-du-guet'); // 2/2 en blocage
-  equiper(duel, 'joueur', 'steel-ball', porteur);
+  equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
   rendrePret(duel, porteur);
   rendrePret(duel, bloqueur);
 
@@ -378,7 +378,7 @@ test('la Steel Ball renvoie la créature blessée avec 25 % de chance', () => {
   const duel2 = duelVide();
   const porteur2 = poser(duel2, 'joueur', 'chien-du-guet');
   const bloqueur2 = poser(duel2, 'sorcier', 'dune-marchante'); // 2/5, survit aux 3 dégâts du porteur
-  equiper(duel2, 'joueur', 'steel-ball', porteur2);
+  equiper(duel2, 'joueur', 'sphere-de-rotation', porteur2);
   rendrePret(duel2, porteur2);
   rendrePret(duel2, bloqueur2);
   rpgReglerHasard(duel2, () => 0.30);

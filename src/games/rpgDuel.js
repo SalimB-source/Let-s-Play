@@ -5950,7 +5950,7 @@ function declencherArmesAttaquants(duel, cote, bilans) {
     if (carte.porteurBlesseCreature && bilan.creature > 0) effets.push(carte.porteurBlesseCreature);
     if (carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
     for (const effet of effets) {
-      // Retour-main avec chance sur chaque créature blessée (Steel Ball :
+      // Retour-main avec chance sur chaque créature blessée (sphère de rotation :
       // 25 % par créature touchée par le porteur). Les cibles sont des
       // entites capturées avant que les dégâts de combat ne les retire
       // éventuellement du battlefield : une créature tuée par ce même combat
@@ -5974,7 +5974,7 @@ function declencherArmesAttaquants(duel, cote, bilans) {
           if (carteIndex >= 0) {
             duel[adv].cimetiere.splice(carteIndex, 1);
             duel[adv].main.push(cible.carteId);
-            duel.log.push(`${cible.name} revient dans la main de son propriétaire (Steel Ball).`);
+            duel.log.push(`${cible.name} revient dans la main de son propriétaire (sphère de rotation).`);
             declencheUn = true;
           }
         }
