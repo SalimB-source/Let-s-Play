@@ -176,10 +176,10 @@ test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peintu
     //
     // Le Berserk du crépuscule a ensuite été recadré (octobre 2026) : sa tête
     // tombait sous le bandeau de nom. Face intacte et face de Furie ont été
-    // reprises ensemble — plus de ciel au-dessus, le crâne au tiers supérieur —
+    // resserrées ensemble, avec le crâne dégagé sous le bandeau —
     // et portent donc chacune leur révision, le temps que les caches se
     // retournent.
-    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-cadrage-v2', 'corbeau-crepuscule-cadrage-v2'],
+    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-cadrage-v3', 'corbeau-crepuscule-cadrage-v3'],
     ['valkyrie-des-neuf-nuits', 'corbeau-furie-souls-v1', 'corbeau-neuf-nuits-v1'],
   ];
   for (const [carteId, revision, revisionIntacte] of portraits) {
