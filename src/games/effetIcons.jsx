@@ -1,7 +1,7 @@
 /**
  * Les icônes d'effets en React — le pendant vivant d'`effetIcons.js`.
  *
- * Le sprite (26 symboles validés) s'injecte **une fois** par surface avec
+ * Le sprite (37 symboles validés) s'injecte **une fois** par surface avec
  * `<EffetsSprite />` ; ensuite chaque icône n'est qu'un `<use>` sans coût.
  * Deux grammaires, comme sur la preview validée :
  * - les **pastilles** (`<PastillesCarte />`) : les mots-clés d'une fiche,
@@ -30,7 +30,7 @@ import {
 } from './effetIcons.js';
 import './effet-icons.css';
 
-/** Le sprite des 26 symboles, à monter une fois par écran (menu, duel, guide). */
+/** Le sprite des 37 symboles, à monter une fois par écran (menu, duel, guide). */
 export function EffetsSprite() {
   // Le contenu est une constante du module — aucun texte venu de l'extérieur.
   return (

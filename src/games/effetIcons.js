@@ -14,6 +14,7 @@
  */
 
 import { libelleModificationStats, modificationStats } from './rpgCards.js';
+import { estLigneDeLien } from './rpgLienTexte.js';
 
 /** Les symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
@@ -54,6 +55,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-furtif" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10l2.3-2 2.4 2 2.3-2 2.3 2 2.4-2 2.3 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10" r="1.2"/><circle cx="14.5" cy="10" r="1.2"/></symbol>
   <symbol id="i-mana" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
   <symbol id="i-recherche" viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="1.5"/><path d="M8 8h5M8 11.5h5"/><circle cx="17.5" cy="17" r="3.5"/><path d="m20 19.5 1.8 1.8"/></symbol>
+  <symbol id="i-lien" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
 </svg>`.trim();
 
 /**
@@ -127,6 +129,9 @@ export const EFFET_ICONE = {
   'retour-main': 'i-rebond',
   recyclage: 'i-recyclage',
   reanimation: 'i-reanimation',
+  // Le Lien : la seule icône qui ne décrit PAS un effet de la carte, mais le
+  // fait que sa phrase nomme une ancre. Deux maillons.
+  lien: 'i-lien',
   heures: 'i-heures',
   debuff: 'i-degats',
   'empeche-blocage': 'i-esquive',
@@ -530,6 +535,12 @@ export function iconePourLigne(carte, ligne = '') {
   const texte = String(ligne).replace(/magie rapide/giu, ' ');
   const phrase = texte.trim();
 
+  // La phrase d'un LIEN — « Avec <ancre> en jeu : … » — ne porte pas le
+  // pictogramme d'un effet : elle ne décrit pas ce que fait la carte, elle dit
+  // ce que son ancre y ajoute. Elle a donc son propre symbole, les deux
+  // maillons du Lien — et jamais celui de la ligne du dessus, qui annonçait
+  // des dégâts sur une phrase conditionnelle.
+  if (estLigneDeLien(phrase)) return 'lien';
   if (carte?.kind === 'magie' && TYPES_SANS_ICONE_LIGNE.has(carte.effet?.type)) return null;
   if (/^(?:Mur|Doit bloquer|Priorité d’attaque rapide)\s*—/u.test(phrase)) return null;
   if (/^Si\b/u.test(phrase)) return null;
