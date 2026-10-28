@@ -1622,7 +1622,11 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
-    text: '3 dégâts à toutes les créatures adverses.',
+    // Le Lien du Zénith : sous le faucon, la tempête gagne le cran qui la
+    // rend létale sur les petites créatures — 4 au lieu de 3, sur toute la
+    // rangée adverse, sans exception ni ciblage.
+    lien: { ancre: 'faucon-du-zenith', effet: { amount: 4 } },
+    text: '3 dégâts à toutes les créatures adverses. Lien du Zénith — si Le Faucon du zénith est en jeu, 4 dégâts à toutes les créatures adverses à la place.',
     flavor: 'Le ciel se couche. Personne n’est invité.',
   },
   {

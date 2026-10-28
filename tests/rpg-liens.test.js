@@ -322,6 +322,28 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Tempête de sable : 3 dégâts à toute la rangée, 4 avec Le Faucon du zénith', () => {
+  const monter = (avecFaucon) => {
+    const duel = duelVide();
+    const a = poser(duel, 'sorcier', 'momie-de-lin');
+    const b = poser(duel, 'sorcier', 'momie-de-lin');
+    if (avecFaucon) poser(duel, 'joueur', 'faucon-du-zenith');
+    return { duel, a, b };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'tempete-de-sable');
+  assert.deepEqual([sans.a.pv, sans.b.pv], [1, 1], 'sans ancre : 3 dégâts sur 4 PV');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'tempete-de-sable');
+  assert.deepEqual([avec.a.pv, avec.b.pv], [0, 0], 'avec le Zénith : 4 dégâts, elles tombent');
+
+  const carte = cardById('tempete-de-sable');
+  assert.equal(carte.cost, 5, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'faucon-du-zenith', effet: { amount: 4 } });
+});
+
 test('Les feuillets : 3 cartes au cimetière adverse, 4 avec le Maître des hiéroglyphes', () => {
   const monter = (avecMaitre) => {
     const duel = duelVide();

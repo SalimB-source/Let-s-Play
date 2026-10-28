@@ -67,6 +67,7 @@ mécanique sur des cartes du catalogue.
 | **Poigne de givre** (magie rapide, commune) | 2 | **2** dégâts + gel | **3** dégâts, gel inchangé | le gel ne s'achète pas au détail | Valkyrie des glaces (Neige, mythique, 6) |
 | **La Grande Pesée** (sorcellerie, rare) | 5 | −3 PV adverse / +3 / pioche 2 | **−4 / +4** | le même verbe : peser, c'est déjà manger | La Dévoreuse (Ténèbres, mythique, 6) |
 | **Les feuillets** (sorcellerie, rare) | 4 | **3** cartes du paquet adverse au cimetière | **4** cartes | le greffier tient le registre | Le Maître des hiéroglyphes (Ténèbres, mythique, 5) |
+| **Tempête de sable** (sorcellerie, rare) | 5 | **3** dégâts à toutes les créatures adverses | **4** dégâts | le zénith a l'échelle d'une déesse | Le Faucon du zénith (Sable, mythique, 5) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -192,6 +193,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des quatorze paires entrent dans le prototype.
+2. B : lesquelles des quinze paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.
