@@ -704,11 +704,7 @@
 [data-theme='light'] .nav-profile-dropdown-links a:hover{
   background:rgba(86,70,190,.07); border-color:rgba(86,70,190,.10); color:var(--ink);
 }
-/* Sous-menu « Jeux » : même panneau clair que le menu du compte. La pastille
-   jaune qui glisse reste posée par l'indicateur (voir styles.css) — c'est
-   l'encre du chevron qui change, pas la pastille. */
-[data-theme='light'] .nav-submenu-mark{color:var(--cyan)}
-[data-theme='light'] .nav-submenu-desc{color:var(--muted)}
+/* Menu « Actus » : même panneau clair que le menu du compte. */
 @media (min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
   [data-theme='light'] .nav-submenu{
     background:rgba(255,255,255,.96);
@@ -724,7 +720,6 @@
   [data-theme='light'] .nav-primary .nav-submenu a.is-current{
     background:rgba(255,214,25,.16); border-color:rgba(86,70,190,.16); color:var(--ink);
   }
-  [data-theme='light'] .nav-primary .nav-submenu a.is-current .nav-submenu-desc{color:var(--yellow-ink)}
   [data-theme='light'] .nav-item--menu:hover:not(.active),
   [data-theme='light'] .nav-item--menu.is-open:not(.active){background:rgba(255,255,255,.16)}
   [data-theme='light'] .nav-item--menu.active .nav-submenu-toggle{color:var(--violet)}
@@ -810,11 +805,10 @@
     background:transparent !important;
     box-shadow:none !important;
   }
-  /* Sous-entrées « Jeux-vidéo » / « Quizz » du menu mobile : de simples
-     lignes de liste, sans carte — elles héritent de la ligne claire du menu. */
+  /* Les liens du menu Actus gardent une encre sombre lisible sur le panneau clair. */
   [data-theme='light'] .nav-primary .nav-submenu a{
     background:transparent; border:0; border-bottom:1px solid rgba(86,70,190,.10);
-    color:var(--muted);
+    color:var(--ink);
   }
   [data-theme='light'] .nav-primary .nav-submenu a.is-current{color:var(--ink)}
   [data-theme='light'] .menu-button.open{color:var(--ink)}
@@ -1485,7 +1479,24 @@
 @media (min-width:801px) and (hover:hover), (min-width:801px) and (min-device-width:601px){
   [data-theme='light'] .nav .nav-primary a,
   [data-theme='light'] .nav .nav-primary a:hover{color:#fff}
+  /* Le menu déroulant est un panneau clair, contrairement à la barre violette :
+     rétablit une encre sombre après la règle générale des liens desktop. */
   [data-theme='light'] .nav .nav-primary a:not(.active):hover{background:rgba(255,255,255,.16)}
+  [data-theme='light'] .nav .nav-primary .nav-submenu a,
+  [data-theme='light'] .nav .nav-primary .nav-submenu a:hover{
+    color:var(--ink) !important;
+    background:rgba(86,70,190,.045);
+    border-color:rgba(86,70,190,.10);
+  }
+  [data-theme='light'] .nav .nav-primary .nav-submenu a:hover{
+    background:rgba(86,70,190,.09);
+    border-color:rgba(86,70,190,.18);
+  }
+  [data-theme='light'] .nav .nav-primary .nav-submenu a.is-current{
+    color:var(--ink) !important;
+    background:rgba(255,214,25,.22);
+    border-color:rgba(138,97,0,.32);
+  }
   [data-theme='light'] .nav .nav-search{
     background:rgba(255,255,255,.94);
     border-color:rgba(255,255,255,.48);

@@ -539,10 +539,8 @@ export default function Layout({ children }) {
                             onClick={() => { setMenuOpen(false); closeSectionMenu(); }}
                             style={{ '--i': idx + (subIdx + 1) / 10 }}
                           >
-                            <span className="nav-submenu-mark" aria-hidden="true">↳</span>
                             <span className="nav-submenu-text">
                               <span className="nav-submenu-label">{item.label}</span>
-                              <span className="nav-submenu-desc">{item.desc}</span>
                             </span>
                           </Link>
                         );

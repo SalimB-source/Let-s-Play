@@ -61,6 +61,7 @@ export async function checkNav(assert) {
     ['News', 'Tests', 'Dossiers', 'Dz DEV'],
     'les intitulés du menu éditorial',
   );
+  assert.equal(entries.some((a) => a.querySelector('.nav-submenu-mark, .nav-submenu-desc')), false, 'les liens dropdown affichent uniquement leur intitulé, sans flèche ni texte secondaire');
   assert.equal(home.node.querySelector('.nav-primary > a[href="/reviews"]'), null, 'Tests n’est plus une entrée séparée');
   assert.equal(home.node.querySelector('.nav-primary > a[href="/dossiers"]'), null, 'Dossiers n’est plus une entrée séparée');
   assert.equal(home.node.querySelector('.nav-primary > a[href="/dz-dev"]'), null, 'DZ Dev n’est plus une entrée séparée');

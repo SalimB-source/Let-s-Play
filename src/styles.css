@@ -623,27 +623,22 @@ img{max-width:100%}
 }
 /* Les rubriques : même famille visuelle que le menu du compte. */
 .nav-primary .nav-submenu a{
-  display:flex;align-items:flex-start;gap:10px;
-  padding:10px 12px;border-radius:12px;
+  display:flex;align-items:center;justify-content:flex-start;
+  padding:11px 14px;border-radius:12px;
   font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;
   color:rgba(238,240,255,.86);
   background:rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.05);
-  transition:background .2s, border-color .2s, color .2s, transform .18s;
+  transition:background .2s, border-color .2s, color .2s;
 }
 .nav-primary .nav-submenu a:hover{
   background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12);color:#fff;
-  transform:translateX(2px);
 }
 .nav-primary .nav-submenu a.is-current{
   background:rgba(255,214,25,.10);border-color:rgba(255,214,25,.3);color:#fff;
 }
-.nav-submenu-mark{font-size:12px;line-height:1.2;color:var(--cyan);opacity:.85}
-.nav-submenu-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.nav-submenu-text{display:block;min-width:0}
 .nav-submenu-label{font-family:var(--display);font-weight:800;font-size:12.5px;letter-spacing:.02em}
-.nav-submenu-desc{font:500 9px var(--mono);letter-spacing:.16em;color:var(--dim)}
-.nav-primary .nav-submenu a.is-current .nav-submenu-mark{color:var(--yellow)}
-.nav-primary .nav-submenu a.is-current .nav-submenu-desc{color:rgba(255,214,25,.72)}
 
 /* Téléphone : le panneau devient une liste de sous-entrées, toujours ouverte. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
@@ -689,9 +684,7 @@ img{max-width:100%}
     border-color:rgba(34,211,238,.28);
     transform:none;
   }
-  .nav-submenu-mark{font-size:14px;line-height:1}
   .nav-submenu-label{font-size:clamp(16px,4.6vw,19px)}
-  .nav-submenu-desc{font-size:8px}
   /* Arabe : la liste des sous-entrées se décale de l'autre côté. */
   [dir="rtl"] .nav-submenu{padding:0 30px 6px 0}
   [dir="rtl"] .nav-primary .nav-submenu a:hover,
