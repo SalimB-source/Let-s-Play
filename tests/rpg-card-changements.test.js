@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cardById, RPG_CREATURE_CARDS, RPG_HERO_CARDS, RPG_TOUR_CARDS, RPG_MAGIE_CARDS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgLancerAttaque,
-  rpgBlesserCreature, rpgFinDeTour, rpgReglerHasard,
+  rpgBlesserCreature, rpgFinDeTour, rpgReglerHasard, rpgResoudreContresortBoualem,
 } from '../src/games/rpgDuel.js';
 
 function duel() {
@@ -120,17 +120,26 @@ test('Tour de Neige gèle son attaquant bloqueur et Tour des Flots le renvoie en
 });
 
 
-test('Boualem contre l’effet ciblé puis le laisse être relancé sur la cible choisie', () => {
+test('Boualem contre l’effet ciblé, puis c’est son contrôleur qui désigne la nouvelle cible', () => {
   const d = duel();
   const boualem = poser(d, 'joueur', 'boualem');
-  const nouvelleCible = poser(d, 'joueur', 'chien-du-guet');
+  const autreCible = poser(d, 'joueur', 'chien-du-guet');
   d.sorcier.main.push('poigne-de-givre');
   d.tour = 'sorcier';
-  const resultat = rpgLancerMagie(d, 'sorcier', 'poigne-de-givre', boualem.id, nouvelleCible.id);
+  const resultat = rpgLancerMagie(d, 'sorcier', 'poigne-de-givre', boualem.id);
   assert.equal(resultat.ok, true);
   assert.equal(boualem.boualemContresortDisponible, false);
   assert.equal(boualem.pv, boualem.pvMax, 'l’effet ne reste pas sur Boualem');
-  assert.equal(nouvelleCible.pv, nouvelleCible.pvMax - 2, 'le sort relancé frappe la nouvelle cible');
+  // Le lanceur ne choisit rien : le sort attend la victime désignée par le
+  // camp qui joue Boualem.
+  assert.equal(autreCible.pv, autreCible.pvMax, 'rien n’est encore frappé');
+  assert.equal(d.boualemEnAttente?.cote, 'joueur');
+  // Un clic hors des cibles légales est refusé.
+  assert.equal(rpgResoudreContresortBoualem(d, 'joueur', boualem.id).raison, 'cible');
+  const choix = rpgResoudreContresortBoualem(d, 'joueur', autreCible.id);
+  assert.equal(choix.ok, true);
+  assert.equal(d.boualemEnAttente, null);
+  assert.equal(autreCible.pv, autreCible.pvMax - 2, 'le sort relancé frappe la cible choisie par le joueur de Boualem');
 });
 
 test('Feux de kitsune fait 4 dégâts à une cible ou 2 dégâts à chacune de deux', () => {

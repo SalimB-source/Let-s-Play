@@ -33,6 +33,7 @@ import {
   rpgProvocationValide,
   rpgResonanceEnJeu,
   rpgResoudreDestructionCiblee,
+  rpgResoudreContresortBoualem,
   rpgDissiperDestructionsSansCible,
   rpgDestructionsDepuis,
   rpgDerniereBlessure,
@@ -3965,12 +3966,27 @@ test('Boualem est une 3/4 et contre une seule fois l’effet adverse qui le cibl
   const boualem = rpgJouerCreature(duel, 'joueur', 'boualem').entite;
   assert.deepEqual([boualem.atk, boualem.pv, boualem.def], [3, 4, 4]);
   assert.equal(boualem.boualemContresortDisponible, true);
+  // Un témoin dans le camp de Boualem : la nouvelle cible légale, celle que
+  // son contrôleur désignera lui-même.
+  donner(duel, 'joueur', 'dune-marchante');
+  const temoin = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
 
   donner(duel, 'sorcier', 'vipere-de-verre');
   const premier = rpgJouerCreature(duel, 'sorcier', 'vipere-de-verre', boualem.id);
   assert.equal(premier.ok, true);
   assert.equal(boualem.pv, 4, 'le premier effet ciblé est contrecarré');
   assert.equal(boualem.boualemContresortDisponible, false);
+  // La vipère est une arrivée ciblée : l'effet contré attend la victime que
+  // désigne le camp qui joue Boualem (ici le joueur), pas le sorcier lanceur.
+  assert.equal(duel.boualemEnAttente?.cote, 'joueur');
+  assert.equal(rpgResoudreContresortBoualem(duel, 'sorcier', temoin.id).raison, 'aucune-attente',
+    'le lanceur du sort n’a pas la main sur ce choix');
+  assert.equal(rpgResoudreContresortBoualem(duel, 'joueur', boualem.id).ok, false,
+    'Boualem ne peut pas être sa propre nouvelle cible');
+  const atkTemoin = temoin.atk;
+  assert.equal(rpgResoudreContresortBoualem(duel, 'joueur', temoin.id).ok, true,
+    'le camp de Boualem désigne lui-même la victime');
+  assert.equal(temoin.atk, atkTemoin - 2, 'le venin relancé part sur le témoin');
 
   donner(duel, 'sorcier', 'vipere-de-verre');
   rpgJouerCreature(duel, 'sorcier', 'vipere-de-verre', boualem.id);

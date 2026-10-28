@@ -229,6 +229,8 @@ import {
   rpgResoudreArriveeCiblee,
   rpgResoudreDestructionCiblee,
   rpgResoudreSiteCible,
+  rpgResoudreContresortBoualem,
+  rpgDissiperContresortBoualem,
   rpgDissiperDestructionsSansCible,
   cibleRespecteCoutMax,
   rpgActiverArme,
@@ -6748,7 +6750,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // impossible, et le tour du sorcier mis en pause reprend son cours.
   useEffect(() => {
     const duelCourant = duelRef.current;
-    if (!duelCourant?.destructionsEnAttente?.length) return;
+    if (!duelCourant) return;
+    // Le contresort de Boualem sans cible légale se dissipe : la partie ne
+    // reste jamais suspendue sur un choix impossible.
+    if (rpgDissiperContresortBoualem(duelCourant)) {
+      force();
+      reprendreSorcier();
+      return;
+    }
+    if (!duelCourant.destructionsEnAttente?.length) return;
     if (!rpgDissiperDestructionsSansCible(duelCourant)) return;
     force();
     reprendreSorcier();
@@ -9059,10 +9069,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const attenteBlocageAdverse = Boolean(
     modePvp && !vainqueur && duel.phase === 'blocage' && duel.combatDeclare?.cote === 'joueur',
   );
-  const monTour = tourDuJoueur && !finTourJoueur && !mulliganAttenteAdverse && !attenteBlocageAdverse;
+  // Le contresort de Boualem gèle la table le temps de son choix : c'est le
+  // seul geste attendu, comme pour une destruction ciblée.
+  const monTour = tourDuJoueur && !finTourJoueur && !mulliganAttenteAdverse && !attenteBlocageAdverse
+    && !duel.boualemEnAttente;
   const sorcierReflechit = Boolean(!vainqueur && !tutorielActif && duel.tour === 'sorcier'
     && !duel.annonce && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
     && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
+    && !duel.boualemEnAttente
     && !duel.defausseEnAttente && !mulliganOuvert);
   const choixManaEssaiOuvert = duel.modeMana === RPG_MODE_MANA_ESSAI
     && Boolean(duel.joueur.manaChoixEnAttente) && !mulliganOuvert && !mulliganAttenteAdverse && !vainqueur;
@@ -9178,6 +9192,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const attenteDestruction = duel.destructionsEnAttente?.[0]?.cote === 'joueur'
     ? duel.destructionsEnAttente[0]
     : null;
+  /* Le contresort de Boualem : l'effet adverse a été contrôlé, et c'est CELUI
+     QUI JOUE BOUALEM qui désigne la nouvelle cible — ses propres créatures.
+     Le lanceur du sort n'a jamais ce choix. */
+  const attenteBoualem = duel.boualemEnAttente?.cote === 'joueur'
+    ? duel.boualemEnAttente
+    : null;
+  const idsCiblesBoualem = new Set(attenteBoualem
+    ? duel.joueur.creatures
+      .filter((entite) => entite.id !== attenteBoualem.cibleId && entite.pv > 0
+        && !rpgEstProtegee(entite, attenteBoualem.sourceElement))
+      .map((entite) => entite.id)
+    : []);
+  const attenteBoualemVisible = Boolean(attenteBoualem && idsCiblesBoualem.size > 0);
   const carteAttenteDestruction = attenteDestruction ? cardById(attenteDestruction.carteId) : null;
   const idsCiblesDestruction = new Set(attenteDestruction
     ? duel.sorcier.creatures
@@ -9533,7 +9560,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pauseSiAttenteJoueur = (reprendre) => {
     const destruction = duel.destructionsEnAttente?.[0]?.cote === 'joueur';
     const site = duel.siteEnAttente?.cote === 'joueur';
-    if (!destruction && !site) return false;
+    // Boualem : l'effet contré attend la victime désignée par son contrôleur.
+    const boualem = duel.boualemEnAttente?.cote === 'joueur';
+    if (!destruction && !site && !boualem) return false;
     repriseSorcierRef.current = reprendre;
     force();
     return true;
@@ -11001,18 +11030,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       equiperArme(carteId, entite.id);
       return true;
     }
-    const boualemProtege = cibleAllieeMagie
-      ? [...duel.joueur.creatures, ...duel.sorcier.creatures].find((e) => e.id === cibleAllieeMagie
-        && e.carteId === 'boualem' && e.boualemContresortDisponible)
-      : null;
-    if (boualemProtege && carteSource?.kind === 'magie') {
-      const carteId = cibleEnCours;
-      const nouvelleCibleId = entite.id;
-      setCibleEnCours(null);
-      setCibleAllieeMagie(null);
-      lancerMagie(carteId, boualemProtege.id, nouvelleCibleId);
-      return true;
-    }
+    // Boualem ne fait plus choisir la nouvelle cible au LANCEUR : c'est celui
+    // qui joue Boualem qui la désigne, de son côté (`duel.boualemEnAttente`).
     // Feux de kitsune : choisissez une cible pour 4 dégâts, ou deux cibles
     // distinctes pour répartir 2 dégâts sur chacune.
     if (carteSource?.id === 'feux-de-kitsune') {
@@ -11043,12 +11062,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setCibleEnCours(null);
       setCibleAllieeMagie(null);
       lancerMagie(carteId, entite.id, championId);
-      return true;
-    }
-    if (carteSource?.kind === 'magie' && entite.carteId === 'boualem' && entite.boualemContresortDisponible) {
-      setCibleAllieeMagie(entite.id);
-      jouerSfx('select');
-      force();
       return true;
     }
     lancerMagie(cibleEnCours, entite.id);
@@ -11132,6 +11145,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (poseEnCours) { jouerSfx('erreur'); force(); return; }
     if (clicApresGlisserBloqueurRef.current === entite.id) {
       clicApresGlisserBloqueurRef.current = null;
+      return;
+    }
+    // Le contresort de Boualem attend la victime : c'est le camp qui joue
+    // Boualem qui clique — jamais le lanceur du sort.
+    if (duel.boualemEnAttente?.cote === 'joueur') {
+      const champAvantAction = prendreInstantaneChamp();
+      const debutJournalDestructions = rpgNombreDestructions(duel);
+      const res = rpgResoudreContresortBoualem(duel, 'joueur', entite.id);
+      if (!res.ok) {
+        jouerSfx('erreur');
+        force();
+        return;
+      }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-boualem', cibleId: entite.id });
+      jouerSfx('select');
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+      if (!modePvp) reprendreSorcier();
+      force();
       return;
     }
     // Désignation du sacrifice (champ d'essai plein) : ce clic désigne la
@@ -11681,7 +11712,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!monTour || combatEntrant || mulliganOuvert) { jouerSfx('erreur'); return; }
     // Le Ghul des cendres attend sa victime : le tour ne se ferme pas tant que
     // le joueur n'a pas cliqué la créature qui encaisse.
-    if (duel.destructionsEnAttente?.[0]?.cote === 'joueur' || duel.siteEnAttente?.cote === 'joueur') {
+    if (duel.destructionsEnAttente?.[0]?.cote === 'joueur' || duel.siteEnAttente?.cote === 'joueur'
+      || duel.boualemEnAttente?.cote === 'joueur') {
       jouerSfx('erreur'); force(); return;
     }
     if (choixManaEssaiOuvert) { jouerSfx('erreur'); return; }
@@ -12173,6 +12205,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `Carte choisie : ${cardById(carteDefausseSelectionnee.carteId)?.name ?? 'carte sélectionnée'} · ${duel.defausseEnAttente.restant} à défausser`
               : `Choisissez une carte à défausser (${duel.defausseEnAttente.restant})`,
         }
+        : attenteBoualemVisible
+          ? {
+            cle: `boualem:${attenteBoualem.cibleId}:${attenteBoualem.sourceCarteId ?? 'capacite'}`,
+            classe: 'rpg-target-prompt',
+            texte: attenteBoualem.montant
+              ? `Boualem contre l’effet : cliquez la créature de votre camp qui subira ${attenteBoualem.montant} blessure${attenteBoualem.montant > 1 ? 's' : ''}`
+              : 'Boualem contre l’effet : cliquez la créature de votre camp qui le subira — c’est vous qui choisissez, pas le lanceur',
+          }
         : attenteDestructionVisible
           ? {
             cle: `destruction:${attenteDestruction.carteId}`,
@@ -12197,10 +12237,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `${carteCiblee.name} accroché — choisissez la créature adverse à prendre en cale (coût ${duel.arriveeEnAttente?.abordage} ou moins)`
               : carteEstArme(carteCiblee)
                 ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
-                : (carteCiblee?.kind === 'magie' && cibleAllieeMagie
-                  && [...duel.joueur.creatures, ...duel.sorcier.creatures].some((e) => e.id === cibleAllieeMagie && e.carteId === 'boualem' && e.boualemContresortDisponible))
-                  ? 'Boualem contre le sort : choisissez une nouvelle cible légale pour le relancer'
-                  : carteCiblee?.id === 'feux-de-kitsune'
+                // Boualem n'apparaît plus ici : quand il contre un sort, la
+                // nouvelle cible est choisie par celui qui le JOUE, pas par le
+                // lanceur — c'est l'invite `attenteBoualem` qui guide ce clic.
+                : carteCiblee?.id === 'feux-de-kitsune'
                   ? (cibleAllieeMagie ? 'Choisissez une deuxième créature adverse (2 dégâts chacune), ou annulez pour infliger 4 à une cible' : 'Choisissez une créature adverse : 4 dégâts, ou sélectionnez-en une seconde pour 2 dégâts chacune')
                   : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
                   ? (cibleAllieeMagie
@@ -12815,11 +12855,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean((sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
+                      canTarget={Boolean(idsCiblesBoualem.has(entite.id)
+                        || (sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           && entite.id !== duel.arriveeEnAttente?.entiteId
                           && !rpgEstProtegee(entite, cardColors(carteCiblee))

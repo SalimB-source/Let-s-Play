@@ -405,6 +405,13 @@ Enfin, seuls les effets d'arrivée **qui désignent une cible** reçoivent un
 `cibleId` (`rpgJouerCreature`) : la création de jetons n'a pas de cible, donc
 elle ne peut pas être interceptée par le contresort de Boualem.
 
+Quand Boualem contre un effet qui le ciblait, l'effet n'est pas annulé : il est
+**relancé sur une nouvelle cible légale**, et c'est **celui qui joue Boualem**
+— jamais le lanceur du sort — qui la choisit, parmi ses propres créatures
+(`duel.boualemEnAttente`, résolu par `rpgResoudreContresortBoualem`). L'IA
+choisit seule à la place de son camp ; s'il ne reste aucune cible légale,
+l'effet se dissipe.
+
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la
 palette et la matière de celle de Tarek (direction artistique `RPG-CARD-ART.md`).
 

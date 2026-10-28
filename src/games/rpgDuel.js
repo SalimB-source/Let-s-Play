@@ -1114,18 +1114,41 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
   presenterEffet(duel, cote, carte.id);
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
+  const montant = Math.max(0, Number(activation.effet?.amount) || 0);
   let cibleFinale = cible;
   if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
     cible.boualemContresortDisponible = false;
-    cibleFinale = duel[cibleCamp].creatures.find((entite) => entite.id !== cible.id && entite.pv > 0);
-    if (!cibleFinale) {
+    const legales = ciblesContresortBoualem(duel, cibleCamp, cible.id, couleur);
+    if (!legales.length) {
       duel.log.push('Boualem contre l’effet adverse qui le ciblait ; aucune nouvelle cible légale.');
       rpgActionsEtat(duel);
       return { ok: true, contre: true };
     }
+    // Même règle que pour une magie : la nouvelle cible est choisie par celui
+    // qui joue Boualem, pas par l'utilisateur de la capacité.
+    if (controleurHumain(duel, cibleCamp)) {
+      duel.boualemEnAttente = {
+        cote: cibleCamp,
+        sourceCote: cote,
+        cibleId: cible.id,
+        effet: null,
+        sauf: null,
+        sourceElement: couleur,
+        sourceType: 'capacite',
+        sourceCarteId: carte.id,
+        montant,
+        couleur,
+        sourceNom: entite.name,
+      };
+      duel.log.push(cibleCamp === 'joueur'
+        ? `Boualem contre la capacité qui le ciblait : choisissez la créature de votre camp qui subira ${montant} blessure${montant > 1 ? 's' : ''}.`
+        : `Boualem contre la capacité qui le ciblait : son contrôleur choisit la créature qui subira ${montant} blessure${montant > 1 ? 's' : ''}.`);
+      rpgActionsEtat(duel);
+      return { ok: true, contre: true, boualemEnAttente: true };
+    }
+    cibleFinale = legales[0];
     duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cibleFinale.name}.`);
   }
-  const montant = Math.max(0, Number(activation.effet?.amount) || 0);
   if ((activation.effet?.type ?? 'degats') === 'degats') {
     rpgBlesserCreature(duel, cibleCamp, cibleFinale.id, montant, couleur, null, 'capacite');
   }
@@ -2904,6 +2927,26 @@ function transfertVie(duel, coteSource, montant, sourceCarteId = null) {
   return { perdu: n, gagne };
 }
 
+/**
+ * Qui tient Boualem ? Un camp humain désigne lui-même la nouvelle cible du
+ * contresort ; l'IA (et le sorcier d'un duel solo) choisit seule. En PvP, les
+ * deux sièges sont humains : chacun répond de son côté (`duel.pvp`).
+ */
+function controleurHumain(duel, cote) {
+  return cote === 'joueur' || Boolean(duel.pvp);
+}
+
+/**
+ * Les créatures qui peuvent recevoir l'effet contré : celles du camp qui joue
+ * Boualem — jamais Boualem lui-même, jamais un mort, jamais une créature
+ * protégée contre la couleur de la source. C'est la liste EXACTE dans laquelle
+ * le contrôleur de Boualem a le droit de choisir.
+ */
+function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement) {
+  return duel[defenseur].creatures.filter((entite) => entite.id !== cibleId && entite.pv > 0
+    && !rpgEstProtegee(entite, sourceElement));
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut
  *  l’entité source quand l’effet ne doit pas se viser elle-même. */
 function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
@@ -2917,12 +2960,36 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
       cibleBoualem.boualemContresortDisponible = false;
-      const cibleChoisie = sauf ? duel[adv].creatures.find((entite) => entite.id === sauf && entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement)) : null;
-      const nouvelleCible = cibleChoisie ?? duel[adv].creatures.find((entite) => entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement));
-      if (!nouvelleCible) {
+      const legales = ciblesContresortBoualem(duel, adv, cibleId, sourceElement);
+      if (!legales.length) {
         duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
         return;
       }
+      // Le choix de la nouvelle cible appartient à celui qui joue Boualem —
+      // jamais au lanceur du sort. Un contrôleur humain désigne donc sa
+      // créature (`duel.boualemEnAttente`) ; l'IA choisit seule.
+      if (controleurHumain(duel, adv)) {
+        duel.boualemEnAttente = {
+          cote: adv,
+          sourceCote: cote,
+          cibleId,
+          effet,
+          sauf,
+          sourceElement,
+          sourceType,
+          sourceCarteId,
+          montant: null,
+          couleur: null,
+        };
+        duel.log.push(adv === 'joueur'
+          ? 'Boualem contre l’effet qui le ciblait : choisissez la créature de votre camp qui le subira.'
+          : 'Boualem contre l’effet qui le ciblait : son contrôleur choisit la créature qui le subira.');
+        // L'effet n'est PAS résolu : il repartira quand le contrôleur de
+        // Boualem aura désigné sa nouvelle cible (`rpgResoudreContresortBoualem`).
+        return 'differe';
+      }
+      const cibleChoisie = sauf ? legales.find((entite) => entite.id === sauf) : null;
+      const nouvelleCible = cibleChoisie ?? legales[0];
       duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${nouvelleCible.name}.`);
       cibleId = nouvelleCible.id;
     }
@@ -4061,7 +4128,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
  * coup moins vif.
  */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
-  appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId);
+  // Un effet confié à l'attente de Boualem n'a rien frappé : pas de riposte
+  // tant que son contrôleur n'a pas désigné la nouvelle cible.
+  if (appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId) === 'differe') return;
   riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType);
 }
 
@@ -5053,6 +5122,53 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), null, attente.carteId);
   rpgActionsEtat(duel);
   return { ok: true, cible };
+}
+
+/**
+ * L'attente du contresort de Boualem : quand un sort ou un effet adverse prend
+ * Boualem pour cible, c'est **celui qui joue Boualem** — pas le lanceur — qui
+ * choisit la nouvelle cible. Le moteur a déjà consommé le contresort ; ici le
+ * contrôleur désigne la créature de son camp qui encaisse, et l'effet repart
+ * exactement tel qu'il avait été lancé. Sans cible légale, l'effet se dissipe.
+ */
+export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
+  const attente = duel.boualemEnAttente;
+  if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
+  const legales = ciblesContresortBoualem(duel, cote, attente.cibleId, attente.sourceElement);
+  if (!legales.length) {
+    duel.boualemEnAttente = null;
+    duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+    return { ok: false, raison: 'aucune-cible' };
+  }
+  const cible = legales.find((entite) => entite.id === cibleId);
+  if (!cible) return { ok: false, raison: 'cible' };
+  duel.boualemEnAttente = null;
+  duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cible.name}.`);
+  if (attente.effet) {
+    appliquer(duel, attente.sourceCote, attente.effet, cible.id,
+      attente.sauf ?? null, attente.sourceElement, attente.sourceType, attente.sourceCarteId);
+  } else if (attente.montant !== null && attente.montant !== undefined) {
+    rpgBlesserCreature(duel, cote, cible.id, attente.montant, attente.couleur, null, 'capacite', attente.sourceCarteId);
+    duel.log.push(`${attente.sourceNom ?? 'La capacité'} inflige ${attente.montant} blessures à ${cible.name}.`);
+  }
+  rpgActionsEtat(duel);
+  return { ok: true, cible };
+}
+
+/**
+ * Fait tomber une attente de Boualem devenue impossible : son camp s'est vidé
+ * (ou s'est entièrement protégé) entre le contresort et la désignation. Rend
+ * `true` quand quelque chose a été dissipé — la table relance alors le tour
+ * du sorcier mis en pause.
+ */
+export function rpgDissiperContresortBoualem(duel) {
+  const attente = duel.boualemEnAttente;
+  if (!attente) return false;
+  const legales = ciblesContresortBoualem(duel, attente.cote, attente.cibleId, attente.sourceElement);
+  if (legales.length) return false;
+  duel.boualemEnAttente = null;
+  duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+  return true;
 }
 
 /**

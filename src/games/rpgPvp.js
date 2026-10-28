@@ -49,6 +49,7 @@ import {
   rpgReglerHasard,
   rpgResoudreArriveeCiblee,
   rpgResoudreDestructionCiblee,
+  rpgResoudreContresortBoualem,
   rpgSyncCompteurEntites,
 } from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
@@ -86,6 +87,7 @@ export const RPG_PVP_INTENTIONS = [
   'resoudre-arrivee',
   'renoncer-arrivee',
   'resoudre-destruction',
+  'resoudre-boualem',
   'preparer-defausse-fin-tour',
   'defausser',
   'renoncer-magie-gratuite',
@@ -169,6 +171,9 @@ export function rpgPvpCoteActif(duel) {
   if (!duel) return null;
   if (duel.fin?.gagnant) return null;
   if (duel.destructionsEnAttente?.length) return duel.destructionsEnAttente[0].cote;
+  // Le contresort de Boualem donne la main à celui qui joue Boualem le temps
+  // de désigner sa nouvelle cible.
+  if (duel.boualemEnAttente?.cote) return duel.boualemEnAttente.cote;
   if (duel.defausseEnAttente?.cote && duel.defausseEnAttente.restant > 0) return duel.defausseEnAttente.cote;
   if (duel.phase === 'blocage') return rpgPvpAutreCote(duel.tour);
   if (duel.fenetreReponse) return rpgPvpAutreCote(duel.tour);
@@ -259,6 +264,9 @@ function retournerPartie(vue) {
     vue.destructionsEnAttente = vue.destructionsEnAttente.map((item) => (
       item?.cote ? { ...item, cote: remplace(item.cote) } : item
     ));
+  }
+  if (vue.boualemEnAttente?.cote) {
+    vue.boualemEnAttente = { ...vue.boualemEnAttente, cote: remplace(vue.boualemEnAttente.cote) };
   }
   if (vue.annonce?.cote) vue.annonce = { ...vue.annonce, cote: remplace(vue.annonce.cote) };
   if (vue.combatDeclare?.cote) {
@@ -508,6 +516,8 @@ function executerIntention(duel, cote, intention) {
       return { ok: true };
     case 'resoudre-destruction':
       return rpgResoudreDestructionCiblee(duel, cote, intention.cibleId ?? null);
+    case 'resoudre-boualem':
+      return rpgResoudreContresortBoualem(duel, cote, intention.cibleId ?? null);
     case 'preparer-defausse-fin-tour': {
       const restant = rpgPreparerDefausseFinDeTour(duel, cote);
       if (!restant) return { ok: false, raison: 'aucun-exces' };

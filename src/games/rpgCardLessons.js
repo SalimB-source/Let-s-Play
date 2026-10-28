@@ -197,7 +197,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['boualem'],
     title: 'Une capacité peut contrer sans être lancée',
-    text: 'Une fois par partie, si un effet ou une magie adverse cible Boualem, sa capacité le contre automatiquement. À la différence d’un éphémère, aucun clic ni paiement de mana n’est nécessaire : l’effet se déclenche depuis le champ de bataille.',
+    text: 'Une fois par partie, si un effet ou une magie adverse cible Boualem, sa capacité le contre automatiquement : aucun paiement de mana, l’effet se déclenche depuis le champ de bataille. Le sort n’est pas annulé pour autant — celui qui JOUE Boualem, jamais son adversaire lanceur, choisit la nouvelle cible légale parmi ses propres créatures, et l’effet repart tel qu’il a été lancé. S’il ne reste aucune cible légale, l’effet se dissipe.',
   },
   {
     id: 'furie',

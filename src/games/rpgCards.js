@@ -1104,7 +1104,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Héros',
-    text: 'Une fois par partie, quand un sort ou effet adverse cible Boualem, il le contre ; son lanceur le relance en choisissant une nouvelle cible légale.',
+    text: 'Une fois par partie, quand un sort ou effet adverse cible Boualem, il le contre. C’est celui qui joue Boualem — jamais le lanceur — qui choisit la nouvelle cible légale de l’effet sur son propre camp. Sans cible légale, l’effet se dissipe.',
     flavor: 'Moi je fais monter ce qui aide.',
   },
   {
