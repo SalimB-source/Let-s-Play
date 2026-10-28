@@ -56,7 +56,7 @@ meilleures raisons d'attaquer.
 | 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
 | 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Attaque ciblée + deux déclencheurs de combat |
-| 11 | sphère de rotation | rare | 3 | +1/+0 | Blessure au combat → 25 % renvoi en main (JoJo) |
+| 11 | sphère de rotation | rare | 3 | +1/+2 | Blessure au combat → 25 % renvoi avant dégâts (JoJo) |
 
 ---
 
@@ -347,17 +347,19 @@ qui se joue la table vide sans rien désigner.
 
 ### 11. sphère de rotation — rare — 3
 
-> **Arme — Boule d'acier.** Le porteur gagne +1/+0. Quand le porteur inflige
-> des blessures de combat à une créature : 25 % de chances de la renvoyer
-> dans la main de son propriétaire.
+> **Arme — Boule d'acier.** Le porteur gagne +1/+2. Quand le porteur se bat
+> avec une créature adverse : 25 % de chances de la renvoyer dans la main de
+> son propriétaire **avant d'assigner les dégâts de combat**.
 >
 > *« Une boule d'acier verte qui tourne rapidement sur elle-même dans le creux d'une main. »*
 
-`bonus: { atk: 1, def: 0 }` et `porteurBlesseCreature: { type: 'retour-main', cible: 'creature', chance: 0.25 }`.
+`element: 'eau'`, `colors: ['eau', 'sable']`, `bonus: { atk: 1, def: 2 }` et
+`porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 }`.
 
-Le moteur gère le tirage des 25 % via le hasard du duel (`hasardParDuel`) et
-passe l'identifiant de la créature blessée comme cible du `retour-main`. Une
-créature protégée contre la couleur Sable échappe au renvoi.
+Le moteur gère le tirage des 25 % via le hasard du duel (`hasardParDuel`)
+**avant** d'appeler `appliquerDegatsDeCombatSimultanes`. La créature renvoyée
+ne subit ni n'inflige de dégâts durant ce combat. Une créature protégée contre
+la couleur Eau ou Sable échappe au renvoi.
 
 Référence ouverte à *JoJo's Bizarre Adventure* : la sphère de rotation de
 Gyro Zepelli, lanceuse d'acier qui fait revenir ses cibles.

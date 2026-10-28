@@ -6495,7 +6495,7 @@ export function rpgLancerAttaque(
 
   // Les montants normaux restent simultanés, mais une source éliminée par
   // une capacité préalable ne peut plus infliger ses blessures de combat.
-  const coupsNormaux = degatsCombat
+  let coupsNormaux = degatsCombat
     .filter((coup) => duel[coup.coteSource].creatures.some((entite) => entite.id === coup.sourceId))
     .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, sourceCote: coteSource, sourceId }));
   // Capturer les cibles des armes avant que les morts ne soient retirées du battlefield
@@ -6508,6 +6508,34 @@ export function rpgLancerAttaque(
     const liste = ciblesParAttaquant.get(coup.sourceId) ?? [];
     if (!liste.some((c) => c.id === cible.id)) liste.push(cible);
     ciblesParAttaquant.set(coup.sourceId, liste);
+  }
+  // Sphère de rotation : avant d'assigner les dégâts de combat, 25 % de
+  // chances de renvoyer chaque créature adverse combattue dans la main de
+  // son propriétaire. La créature renvoyée ne subit ni n'inflige de dégâts.
+  const boulesRenvoies = new Set();
+  for (const [attaquantId, cibles] of ciblesParAttaquant) {
+    const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
+    if (!attaquant || !attaquant.arme || attaquant.arme.carteId !== 'sphere-de-rotation') continue;
+    const carte = armeById('sphere-de-rotation');
+    const rng = hasardParDuel.get(duel) ?? Math.random;
+    for (const cible of cibles) {
+      if (rng() >= 0.25) continue;
+      renvoyerEnMain(duel, adv, cible, cardColors(carte), null);
+      boulesRenvoies.add(cible.id);
+      duel.log.push(`${attaquant.name} fait tournoyer sa sphère de rotation : ${cible.name} retourne en main avant les dégâts.`);
+    }
+  }
+  // Retire les dégâts infligés par des créatures renvoyées en main.
+  if (boulesRenvoies.size > 0) {
+    coupsNormaux = coupsNormaux.filter((coup) => !boulesRenvoies.has(coup.sourceId));
+    // Rebuild ciblesParAttaquant without bounced creatures so declencherArmesAttaquants
+    // ne voit pas de cible invalide.
+    for (const [attaquantId, cibles] of ciblesParAttaquant) {
+      ciblesParAttaquant.set(
+        attaquantId,
+        cibles.filter((cible) => !boulesRenvoies.has(cible.id))
+      );
+    }
   }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
   // Contre-attaque : une attaque esquivée pendant l'échange est rendue à son
