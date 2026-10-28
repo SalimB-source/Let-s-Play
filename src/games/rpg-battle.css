@@ -3592,6 +3592,52 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
       0 8px 22px rgba(0, 0, 0, 0.62);
   }
 }
+/* ── Lueur dorée du Lien ───────────────────────────────────────────────────
+   Une carte liée dont l'ANCRE mythique est en jeu porte un renfort : elle
+   s'allume d'un or chaud, en main comme sur la table. C'est une information,
+   pas une jouabilité — elle reste allumée même si la carte ne se joue pas
+   maintenant (une arme liée posée sur la table, par exemple), et elle ne
+   remplace jamais la lueur de jouabilité, elle s'y ajoute.
+   ------------------------------------------------------------------------ */
+.rpg-hand__card.is-lien-actif,
+.rpg-card.is-lien-actif {
+  border-color: #f2c94c !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 240, 190, 0.95),
+    0 0 6px 2px rgba(242, 201, 76, 0.75),
+    0 0 18px 4px rgba(214, 158, 24, 0.55),
+    0 6px 16px rgba(0, 0, 0, 0.55);
+  filter: brightness(1.08) saturate(1.1);
+  animation: rpg-lien-dore 2.4s ease-in-out infinite;
+}
+.rpg-hand__card.is-lien-actif:hover:not(:disabled) {
+  border-color: #ffd964 !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 248, 214, 1),
+    0 0 8px 3px rgba(255, 214, 92, 0.9),
+    0 0 24px 6px rgba(214, 158, 24, 0.65),
+    0 8px 20px rgba(0, 0, 0, 0.6);
+}
+@keyframes rpg-lien-dore {
+  0%, 100% {
+    box-shadow:
+      0 0 0 2px rgba(255, 240, 190, 0.95),
+      0 0 6px 2px rgba(242, 201, 76, 0.75),
+      0 0 18px 4px rgba(214, 158, 24, 0.55),
+      0 6px 16px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(255, 250, 226, 1),
+      0 0 9px 3px rgba(255, 214, 92, 0.92),
+      0 0 26px 7px rgba(214, 158, 24, 0.68),
+      0 6px 16px rgba(0, 0, 0, 0.55);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-hand__card.is-lien-actif,
+  .rpg-card.is-lien-actif { animation: none !important; }
+}
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
 .rpg-hand__card.is-dragging { opacity: .58; transform: translateY(-22px) scale(.94); }
 .rpg-hand__flight-placeholder { display: block; flex: none; aspect-ratio: 4 / 5; visibility: hidden; pointer-events: none; }

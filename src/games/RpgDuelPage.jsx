@@ -2763,6 +2763,10 @@ export function RpgMassFreezeFx({ effet }) {
 export function TableCard({
   entite,
   cote,
+  // La carte de table porte-t-elle un Lien ACTIF (son ancre mythique est en
+  // jeu) ? Le parent le calcule — c'est lui qui voit les deux camps —, et la
+  // carte s'allume d'une lueur dorée pour dire qu'elle est renforcée.
+  lienActif = false,
   active,
   selected,
   blocking,
@@ -2892,6 +2896,7 @@ export function TableCard({
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         estSite ? 'rpg-card--site' : '',
+        lienActif ? 'is-lien-actif' : '',
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
@@ -9433,6 +9438,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && arriveeViseSorcier(carteCiblee));
   const attenteSiteBimini = duel.siteEnAttente?.cote === 'joueur'
     && duel.siteEnAttente?.recompense === 'bimini';
+  // Le Lien d'une carte POSÉE sur la table : une arme attachée dont l'ancre
+  // mythique tient sa rangée. Sert à allumer la carte d'une lueur dorée.
+  const lienActifSurTable = (entite, camp) => {
+    const arme = entite?.arme ? cardById(entite.arme.carteId) : null;
+    if (!arme?.lien) return false;
+    return lienSatisfait(arme, duel[camp]?.creatures ?? []);
+  };
+
   const modeCible = porteeCibleEnCours({
     carte: carteCiblee,
     attenteAbordage,
@@ -12965,6 +12978,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="ennemi"
+                      lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
@@ -13060,6 +13074,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="joueur"
+                      lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
@@ -13683,6 +13698,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
               const estMythique = cardRarityInfo(carte).key === 'mythique';
+              // La carte liée dont l'ancre mythique est en jeu : elle s'allume
+              // d'une lueur dorée, pour que le joueur voie qu'elle est renforcée
+              // AVANT de la jouer.
+              const lienActifMain = Boolean(carte.lien) && lienSatisfait(carte, duel.joueur.creatures);
               const estCreatureMythique = estMythique && (carte.kind === 'creature' || carte.kind === 'hero' || (!carte.kind && carte.atk != null && carte.def != null));
               const mythiqueJouable = baseJouable && estCreatureMythique;
               const enVol = carteEnVol?.phase === 'flying'
@@ -13733,6 +13752,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
                     mythiqueJouable ? 'is-mythique-jouable' : '',
+                    lienActifMain ? 'is-lien-actif' : '',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
@@ -13757,6 +13777,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
                   data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
+                  data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
