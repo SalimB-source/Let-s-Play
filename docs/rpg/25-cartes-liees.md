@@ -85,7 +85,13 @@ Les formes que prend ce cran :
 - **la dette annulée** (`effet: { def: 0 }`, Lien de porteur) : le Sabre
   maudit ne mord que la force quand la Flamme le tient ;
 - **le mot-clé prêté** (`effet: { bouclier: 1 }`) : le Rempart de dunes garde
-  sa taille et pose en plus la parade anti-sort, comme le ferait une arme ;
+  sa taille et pose en plus la parade anti-sort, comme le ferait une arme.
+  Comme c'est une **Magie Rapide**, on peut le jouer **en réponse** : le
+  sorcier annonce un sort de dégâts sur une de vos créatures, vous posez le
+  Rempart pendant la fenêtre de réponse, et le bouclier arrive **avant** la
+  résolution — le sort est bloqué et la créature gagne même les 3 PV. Sous la
+  Dame, un Rempart à 2 manas vaut donc un contre, et il le fait sans rien
+  changer au coût de la carte ;
 - **la portée** d'un renfort (`effet.atk/def`) pour le Serment.
 
 **Le Serment de la forge est une carte de Samouraïs** : son ancre est donc le

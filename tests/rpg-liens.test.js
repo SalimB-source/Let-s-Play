@@ -22,6 +22,7 @@ import {
   rpgBlesserCreature,
   rpgAttaquerSorcier,
   rpgFinDeTour,
+  rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DUEL_CARDS,
@@ -354,6 +355,26 @@ test('Rempart de dunes : +0/+3, et un bouclier avec La Dame aux ailes d’or', (
   assert.equal(res.bouclierBloque, true, 'le sort est bloqué, pas encaissé');
   assert.equal(riposte.cible.pv, avant, 'et la créature ne perd aucun PV');
   assert.equal(riposte.cible.bouclier, 0, 'le bouclier tombe en bloquant');
+
+  // Le cas qui fait vivre la carte : le sorcier ANNONCE un sort de dégâts sur
+  // une de vos créatures, et vous répondez par le Rempart pendant la fenêtre
+  // de réponse. Le bouclier arrive avant la résolution — le sort est bloqué,
+  // et le +0/+3 rend même les PV que la créature n'a pas perdus.
+  const reponse = monter(true);
+  const pvAvant = reponse.cible.pv;
+  reponse.duel.tour = 'sorcier';
+  donner(reponse.duel, 'sorcier', 'poigne-de-givre');
+  manaPlein(reponse.duel, 'sorcier');
+  reponse.duel.annonce = { cote: 'sorcier', carteId: 'poigne-de-givre', cibleId: reponse.cible.id };
+  donner(reponse.duel, 'joueur', 'rempart-de-dunes');
+  manaPlein(reponse.duel, 'joueur');
+  reponse.duel.fenetreReponse = true;
+  assert.equal(rpgLancerMagie(reponse.duel, 'joueur', 'rempart-de-dunes').ok, true,
+    'le Rempart se joue en réponse, hors de son tour');
+  assert.equal(reponse.cible.bouclier, 1, 'le bouclier est posé avant la résolution');
+  const resolution = rpgSorcierResoudreAnnonce(reponse.duel);
+  assert.equal(resolution.bouclierBloque, true, 'le sort annoncé est bloqué');
+  assert.equal(reponse.cible.pv, pvAvant + 3, 'la créature gagne les 3 PV du rempart, sans encaisser le sort');
 
   // Non consommé, il repart avec le tour, comme le +0/+3.
   const expire = monter(true);
