@@ -13744,17 +13744,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
-              // Une seule règle pour le halo de jouabilité — bleu pour ce qui se
-              // pose, la teinte de la famille pour un sort (voir « La lueur de
-              // jouabilité d'un sort », dans `rpg-battle.css`) —, le
+              // Une seule règle pour le halo de jouabilité — blanc pour toute
+              // la main, l'or pour une mythique (voir « La teinte de la lueur
+              // de jouabilité », dans `rpg-battle.css`) —, le
               // glisser-déposer et le clic : deux copies de la règle
               // finissaient par diverger, et une carte allumée mais injouable
               // enferme le joueur.
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
+              // La lueur de jouabilité est blanche pour toute la main ; la
+              // rareté seule la teinte — une mythique jouable s'allume d'or,
+              // créature, sort ou terrain (voir « Lueur d'or »,
+              // `rpg-battle.css`).
               const estMythique = cardRarityInfo(carte).key === 'mythique';
-              const estCreatureMythique = estMythique && (carte.kind === 'creature' || carte.kind === 'hero' || (!carte.kind && carte.atk != null && carte.def != null));
-              const mythiqueJouable = baseJouable && estCreatureMythique;
+              const mythiqueJouable = baseJouable && estMythique;
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
