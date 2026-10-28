@@ -60,6 +60,7 @@ import {
   etageEstVaincu,
   resumeTourHistoire,
   tourEstDebloquee,
+  tourEstTerminee,
 } from './rpgStory.js';
 import {
   deckHistoire,
@@ -4911,10 +4912,13 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     etagesVaincus: progressionHistoire?.etagesVaincus,
                     toursPayees: portefeuille?.toursPayees,
                   });
+                  // La même règle que la galerie : la tour ouverte se montre en
+                  // ruine dès que son dernier étage est déblayé.
+                  const termineeLibre = tourEstTerminee(tourLibre.id, progressionHistoire);
                   return (
                     <section key={tourLibre.id} className="rpg-story-tour">
                       <header className="rpg-story-tour__header">
-                        <RpgStoryTowerPreview tour={tourLibre} className="rpg-story-tour__banner" detail />
+                        <RpgStoryTowerPreview tour={tourLibre} className="rpg-story-tour__banner" detail detruite={termineeLibre} />
                         <div className="rpg-story-tour__heading">
                           <span className="rpg-mode-menu__eyebrow">CONQUÊTE · {resumeLibre.vaincus} / {resumeLibre.total} ÉTAGES DÉBLAYÉS</span>
                           <h3>{tourLibre.nom}</h3>
@@ -5015,19 +5019,23 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                       etagesVaincus: progressionHistoire?.etagesVaincus,
                       toursPayees: portefeuille?.toursPayees,
                     });
+                    // Tour terminée : tous les étages déblayés. La maquette
+                    // passe alors en ruine fumante (`RpgStoryTowerPreview`).
+                    const terminee = tourEstTerminee(tour.id, progressionHistoire);
                     return (
                       <button
                         key={tour.id}
                         type="button"
-                        className={`rpg-story-tower${ouverte ? '' : ' is-verrouillee'}`}
+                        className={`rpg-story-tower${ouverte ? '' : ' is-verrouillee'}${terminee ? ' is-terminee' : ''}`}
                         data-tour={tour.id}
                         data-tour-libre={tour.id}
                         data-tour-verrouillee={ouverte ? 'non' : 'oui'}
+                        data-tour-terminee={terminee ? 'oui' : 'non'}
                         disabled={!ouverte}
                         title={ouverte ? undefined : `Verrouillée — terminez ${prerequis?.nom ?? 'la tour précédente'}`}
                         onClick={() => { play('select'); setTourLibreOuverteId(tour.id); }}
                       >
-                        <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" />
+                        <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" detruite={terminee} />
                         <span className="rpg-story-tower__body">
                           <span className="rpg-mode-menu__eyebrow">{resume.vaincus} / {resume.total} ÉTAGES DÉBLAYÉS</span>
                           <strong className="rpg-story-tower__name">{tour.nom}</strong>

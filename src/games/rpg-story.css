@@ -140,10 +140,94 @@
 .rpg-story-stage.is-ready .rpg-story-stage__badge { display: inline-flex; }
 .rpg-story-stage__badge > span { width: 4px; height: 4px; border-radius: 50%; background: #ebc888; }
 
+/* ── La tour détruite : la brèche fume ───────────────────────────────────────
+   Une tour dont tous les étages sont déblayés ne se présente plus debout. En
+   3D, la maquette est réellement brisée et la fumée est un nuage de particules
+   (`rpgStoryTowerScene.js`) : ici on ne fait que la teinte et les volutes de
+   repli, celles qui s'affichent sur la peinture, sans WebGL2. */
+.rpg-story-stage.is-detruite {
+  --tower-glow: rgba(120, 96, 74, .2);
+  background:
+    radial-gradient(ellipse at 50% 86%, rgba(122, 100, 78, .22), transparent 68%),
+    radial-gradient(ellipse at 50% 28%, rgba(84, 78, 82, .18), transparent 72%),
+    linear-gradient(155deg, #191b20, #090a0f 78%);
+}
+.rpg-story-stage.is-detruite .rpg-story-stage__fallback {
+  filter: saturate(.45) brightness(.6) contrast(1.06);
+}
+.rpg-story-stage__fumee {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-story-stage.is-detruite:not(.is-ready) .rpg-story-stage__fumee { display: block; }
+.rpg-story-stage__fumee > i {
+  position: absolute;
+  bottom: 6%;
+  left: 14%;
+  width: 44%;
+  height: 66%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(228, 222, 212, .46), rgba(160, 152, 144, .18) 56%, transparent 78%);
+  filter: blur(7px);
+  transform-origin: 50% 100%;
+  animation: rpg-story-fumee 7.5s ease-in-out infinite;
+}
+.rpg-story-stage__fumee > i:nth-child(2) {
+  left: 32%;
+  width: 38%;
+  height: 78%;
+  animation-duration: 9.2s;
+  animation-delay: -2.6s;
+}
+.rpg-story-stage__fumee > i:nth-child(3) {
+  left: 52%;
+  width: 34%;
+  height: 58%;
+  animation-duration: 8.1s;
+  animation-delay: -4.7s;
+}
+@keyframes rpg-story-fumee {
+  0% { opacity: 0; transform: translate3d(0, 18%, 0) scale(.55) rotate(-6deg); }
+  35% { opacity: .9; }
+  100% { opacity: 0; transform: translate3d(7%, -48%, 0) scale(1.4) rotate(9deg); }
+}
+
+/* L'étiquette de la ruine : la même pastille que « VUE 3D », en bas à gauche,
+   visible même quand la 3D n'a pas démarré. */
+.rpg-story-stage__badge.rpg-story-stage__badge--ruine {
+  display: inline-flex;
+  top: auto;
+  right: auto;
+  bottom: 12px;
+  left: 12px;
+  border-color: rgba(226, 154, 116, .38);
+  background: rgba(26, 14, 11, .78);
+  color: #f0c3a2;
+}
+.rpg-story-stage__badge--ruine > span {
+  background: #e0764d;
+  box-shadow: 0 0 7px rgba(224, 118, 77, .9);
+  animation: rpg-story-braise 2.6s ease-in-out infinite;
+}
+@keyframes rpg-story-braise {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .rpg-story-tower { transition: none; }
   .rpg-story-tower:hover,
   .rpg-story-tower:focus-visible { transform: none; }
+  /* La ruine reste lisible : les volutes se figent au lieu de tourner. */
+  .rpg-story-stage__fumee > i {
+    animation: none;
+    opacity: .6;
+    transform: translate3d(2%, -24%, 0) scale(.95);
+  }
+  .rpg-story-stage__badge--ruine > span { animation: none; }
 }
 
 .rpg-story-tower__body {
