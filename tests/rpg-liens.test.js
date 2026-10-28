@@ -322,6 +322,29 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Les feuillets : 3 cartes au cimetière adverse, 4 avec le Maître des hiéroglyphes', () => {
+  const monter = (avecMaitre) => {
+    const duel = duelVide();
+    duel.sorcier.deck = Array.from({ length: 8 }, () => 'poigne-de-givre');
+    if (avecMaitre) poser(duel, 'joueur', 'maitre-des-hieroglyphes');
+    return duel;
+  };
+
+  const sans = monter(false);
+  lancer(sans, 'joueur', 'les-feuillets');
+  assert.equal(sans.sorcier.cimetiere.length, 3, 'sans ancre : 3 cartes');
+  assert.equal(sans.sorcier.deck.length, 5, 'le paquet adverse s’allège d’autant');
+
+  const avec = monter(true);
+  lancer(avec, 'joueur', 'les-feuillets');
+  assert.equal(avec.sorcier.cimetiere.length, 4, 'avec le Greffier : 4 cartes');
+  assert.equal(avec.sorcier.deck.length, 4);
+
+  const carte = cardById('les-feuillets');
+  assert.equal(carte.cost, 4, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'maitre-des-hieroglyphes', effet: { amount: 4 } });
+});
+
 test('La Grande Pesée : 3 PV, 4 avec La Dévoreuse — la pioche ne bouge pas', () => {
   const monter = (avecDevoreuse) => {
     const duel = duelVide();

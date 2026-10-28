@@ -353,7 +353,10 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Sorcellerie — Livre des morts · Ténèbres',
     effet: { type: 'defaussePaquet', amount: 3 },
     cibles: ['sorcier'],
-    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière.',
+    // Le Lien du Greffier : la plume n'efface pas trois lignes, elle en
+    // efface quatre. Le greffier tient le registre, l'adversaire le subit.
+    lien: { ancre: 'maitre-des-hieroglyphes', effet: { amount: 4 } },
+    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière. Lien du Greffier — si Le Maître des hiéroglyphes est en jeu, 4 cartes partent au cimetière à la place.',
     flavor: 'Sur trente feuillets, trois partent d’un seul souffle.',
   }),
   carte({
