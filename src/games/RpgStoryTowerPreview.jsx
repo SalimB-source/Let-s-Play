@@ -7,9 +7,9 @@ import { useEffect, useRef, useState } from 'react';
  *
  * `detruite` montre la tour une fois son dernier étage déblayé : la maquette
  * est brisée à mi-hauteur et sa brèche fume (voir `rpgStoryTowerScene.js`).
- * Sans WebGL2, la même ruine se lit sur la peinture : elle est assombrie, et
- * des volutes de fumée montent du socle (règles `.is-detruite` dans
- * `rpg-story.css`).
+ * Sans WebGL2, la même ruine se lit sur la peinture : elle est assombrie,
+ * quelques petites flammes dansent sur les gravats et une fumée grise, discrète,
+ * s'en échappe (règles `.is-detruite` dans `rpg-story.css`).
  */
 export default function RpgStoryTowerPreview({ tour, className = '', detail = false, detruite = false }) {
   const hostRef = useRef(null);
@@ -65,9 +65,15 @@ export default function RpgStoryTowerPreview({ tour, className = '', detail = fa
       <span className="rpg-story-stage__fallback" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}sablier-tours/${tour.miniature}")` }} />
       <canvas ref={canvasRef} className="rpg-story-stage__canvas" width="1" height="1" />
       {detruite && (
-        <span className="rpg-story-stage__fumee">
-          <i /><i /><i />
-        </span>
+        <>
+          {/* Le repli sans WebGL2 : quelques flammes courtes et une fumée grise. */}
+          <span className="rpg-story-stage__flammes">
+            <i /><i /><i />
+          </span>
+          <span className="rpg-story-stage__fumee">
+            <i /><i /><i />
+          </span>
+        </>
       )}
       <span className="rpg-story-stage__badge"><span /> VUE 3D</span>
       {detruite && (

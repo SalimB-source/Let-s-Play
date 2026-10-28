@@ -78,7 +78,8 @@ function smokeTexture() {
   return texture;
 }
 
-const RUIN_PARTICLES = 60;
+const RUIN_PARTICLES = 54;
+const RUIN_FLAMES = 5;
 
 /**
  * La version détruite d'une tour — une maquette, pas une seconde peinture.
@@ -86,9 +87,9 @@ const RUIN_PARTICLES = 60;
  * La tour est brisée à mi-hauteur par trois plans de coupe inclinés : leur
  * intersection dessine une brèche en dents de scie, jamais une section
  * horizontale. Un bouchon de gravats obture le fut pour qu'on ne voie pas
- * l'intérieur creux, des pierres et des braises jonchent le socle, et une
- * fumée de particules monte de la brèche. Chaque tour garde sa teinte : c'est
- * bien elle, en ruine.
+ * l'intérieur creux, des pierres et des braises jonchent le socle, quelques
+ * petites flammes danse sur les gravats et une fumée grise, discrète, s'en
+ * échappe. Chaque tour garde sa teinte : c'est bien elle, en ruine.
  */
 export function createStoryTowerRuin(model, theme, tourId) {
   const bounds = new THREE.Box3().setFromObject(model);
@@ -145,6 +146,50 @@ export function createStoryTowerRuin(model, theme, tourId) {
     spark.scale.setScalar(0.035 + (i % 3) * 0.014);
     group.add(spark);
   }
+  // Quelques petites flammes : deux cônes ouverts par foyer — l'orange dehors,
+  // le cœur jaune — posés sur les gravats de la brèche. Elles dansent ensemble
+  // sans jamais devenir un brasier.
+  const flameOuter = new THREE.MeshBasicMaterial({
+    name: 'flammes',
+    color: '#ff7a2f',
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const flameInner = new THREE.MeshBasicMaterial({
+    name: 'flammes-coeur',
+    color: '#ffcf7d',
+    transparent: true,
+    opacity: 0.72,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+  });
+  const tongue = new THREE.ConeGeometry(1, 1, 6, 1, true);
+  const flames = [];
+  for (let i = 0; i < RUIN_FLAMES; i += 1) {
+    const angle = i * 2.399963 + seed * 1.7;
+    const reach = capRadius * (0.24 + ((i * 0.41) % 1) * 0.56);
+    const x = Math.sin(angle) * reach, z = Math.cos(angle) * reach;
+    const y = cutY + ((i * 0.37) % 1) * 0.14;
+    const height = 0.26 + ((i * 0.53) % 1) * 0.22;
+    const width = height * 0.38;
+    const house = new THREE.Group();
+    house.name = `flamme-${tourId}-${i}`;
+    house.position.set(x, y, z);
+    const outer = new THREE.Mesh(tongue, flameOuter);
+    outer.position.y = height / 2;
+    outer.scale.set(width, height, width);
+    const inner = new THREE.Mesh(tongue, flameInner);
+    inner.position.y = height * 0.34;
+    inner.scale.set(width * 0.52, height * 0.62, width * 0.52);
+    house.add(outer, inner);
+    group.add(house);
+    flames.push({ house, outer, inner, height, width, phase: (i * 0.618034 + seed) % 1, rate: 1.5 + ((i * 0.29) % 1) * 1.4 });
+  }
+
   // La fumée : des volutes qui montent de la brèche et s'écartent.
   const texture = smokeTexture();
   const positions = new Float32Array(RUIN_PARTICLES * 3);
@@ -164,21 +209,36 @@ export function createStoryTowerRuin(model, theme, tourId) {
   // en unités de scène. La taille juste est donc posée au redimensionnement.
   const material = new THREE.PointsMaterial({
     map: texture,
-    color: '#e2dbd0',
-    size: 26,
+    color: '#8f8d8a',
+    size: 22,
     transparent: true,
-    opacity: 0.42,
+    opacity: 0.22,
     depthWrite: false,
     sizeAttenuation: true,
   });
   const smoke = new THREE.Points(geometry, material);
   smoke.name = `fumee-${tourId}`;
   group.add(smoke);
-  const plume = size.y * 0.42;
+  const plume = size.y * 0.36;
   const update = (delta) => {
-    if (delta > 0) for (const puff of puffs) {
-      puff.phase += delta * puff.climb * 0.34;
-      if (puff.phase > 1) puff.phase -= 1;
+    if (delta > 0) {
+      for (const puff of puffs) {
+        puff.phase += delta * puff.climb * 0.34;
+        if (puff.phase > 1) puff.phase -= 1;
+      }
+      for (const flame of flames) {
+        flame.phase += delta * flame.rate;
+        if (flame.phase > Math.PI * 2) flame.phase -= Math.PI * 2;
+      }
+    }
+    for (const flame of flames) {
+      // Le geste : la flamme s'étire, s'affine et penche tour à tour.
+      const sway = Math.sin(flame.phase);
+      const breath = Math.sin(flame.phase * 1.7 + 1.1);
+      flame.house.rotation.z = sway * 0.09;
+      flame.house.rotation.x = breath * 0.05;
+      flame.outer.scale.set(flame.width * (0.88 + breath * 0.12), flame.height * (0.82 + sway * 0.3), flame.width * (0.88 + breath * 0.12));
+      flame.inner.scale.set(flame.width * 0.52 * (0.9 - breath * 0.1), flame.height * 0.62 * (0.8 + sway * 0.34), flame.width * 0.52);
     }
     for (let i = 0; i < puffs.length; i += 1) {
       const puff = puffs[i];
@@ -193,11 +253,14 @@ export function createStoryTowerRuin(model, theme, tourId) {
   update(0);
   /** Une volute large au téléphone, plus fine sur la grande affiche. */
   const resize = (width, height, ratio) => {
-    material.size = Math.max(8, Math.min(width, height) * 0.24 * Math.max(1, ratio));
+    material.size = Math.max(7, Math.min(width, height) * 0.18 * Math.max(1, ratio));
   };
   const dispose = () => {
     chunk.dispose();
     braise.dispose();
+    tongue.dispose();
+    flameOuter.dispose();
+    flameInner.dispose();
     gravel.dispose();
     ember.dispose();
     geometry.dispose();

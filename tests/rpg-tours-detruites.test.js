@@ -52,6 +52,28 @@ test('la ruine 3D est bien la tour, brisée et fumante', () => {
       assert.ok(ruin.group.children.length >= 15, 'la ruine porte ses gravats, ses braises et sa fumée');
       const fumee = ruin.group.children.find((enfant) => enfant.name === `fumee-${tour.id}`);
       assert.ok(fumee.isPoints && fumee.geometry.attributes.position.count > 20, 'des volutes, pas un simple voile');
+      // Discrète : un gris moyen, une opacité basse, jamais un panache blanc.
+      assert.equal(`#${fumee.material.color.getHexString()}`, '#8f8d8a', 'la fumée est grise');
+      assert.ok(fumee.material.opacity <= 0.3, 'la fumée reste discrète');
+      assert.ok(!fumee.material.depthWrite, 'la fumée ne masque pas la maquette');
+
+      // Quelques petites flammes, courtes, posées sur les gravats de la brèche.
+      const flammes = ruin.group.children.filter((enfant) => enfant.name?.startsWith(`flamme-${tour.id}-`));
+      assert.ok(flammes.length >= 3 && flammes.length <= 8, `${tour.id} : quelques flammes, pas un brasier`);
+      assert.ok(flammes.length < 10, 'aucune nuée de flammes');
+      const hauteurs = [];
+      for (const flamme of flammes) {
+        assert.equal(flamme.children.length, 2, 'une langue orange et un cœur jaune');
+        const [dehors, coeur] = flamme.children;
+        assert.ok(dehors.material.transparent && dehors.material.blending === THREE.AdditiveBlending, 'les flammes s’ajoutent à la lumière');
+        assert.ok(coeur.material.color.getHex() > dehors.material.color.getHex(), 'le cœur est plus clair que la langue');
+        hauteurs.push(dehors.scale.y);
+      }
+      assert.ok(Math.max(...hauteurs) - Math.min(...hauteurs) > 0.02, 'les flammes n’ont pas toutes la même taille');
+      const avant = flammes.map((flamme) => flamme.children[0].scale.y);
+      ruin.update(0.25);
+      assert.ok(flammes.some((flamme, index) => flamme.children[0].scale.y !== avant[index]),
+        'les flammes dansent : elles s’étirent et s’affaissent');
       const positions = fumee.geometry.attributes.position.array.slice();
       ruin.update(0.4);
       assert.ok(!positions.every((valeur, index) => valeur === fumee.geometry.attributes.position.array[index]),
@@ -75,6 +97,7 @@ test('la vue de tour passe son état détruit à la scène et à la peinture de 
   assert.match(composant, /\$\{detruite \? ' is-detruite' : ''\}/, 'la classe de ruine est posée sur la scène');
   assert.match(composant, /data-tower-detruite=\{detruite \? 'oui' : 'non'\}/, 'l’état est lisible dans le DOM');
   assert.match(composant, /rpg-story-stage__fumee/, 'la peinture de repli reçoit ses volutes');
+  assert.match(composant, /rpg-story-stage__flammes/, 'la peinture de repli reçoit ses petites flammes');
   assert.match(composant, /\[tour\.id, detail, detruite\]/, 'changer d’état remonte la scène');
 });
 
@@ -97,8 +120,14 @@ test('la feuille des tours décrit la ruine et sa fumée', () => {
   assert.match(css, /\.rpg-story-stage\.is-detruite:not\(\.is-ready\) \.rpg-story-stage__fumee \{ display: block; \}/,
     'les volutes ne doublent pas la fumée 3D');
   assert.match(css, /@keyframes rpg-story-fumee \{[\s\S]{0,400}translate3d/, 'la fumée monte et se dissipe');
+  assert.match(css, /background: radial-gradient\(closest-side, rgba\(150, 148, 145, \.28\)/, 'la fumée du repli est grise et faible');
+  assert.match(css, /\.rpg-story-stage\.is-detruite:not\(\.is-ready\) \.rpg-story-stage__flammes \{ display: block; \}/,
+    'les flammes du repli ne doublent pas celles de la 3D');
+  assert.match(css, /@keyframes rpg-story-flamme \{[\s\S]{0,300}scale\(/, 'les flammes du repli dansent');
   assert.match(css, /\.rpg-story-stage__badge\.rpg-story-stage__badge--ruine \{[\s\S]{0,400}display: inline-flex;/,
     'l’étiquette « tour détruite » reste visible sans 3D');
-  assert.match(css, /prefers-reduced-motion: reduce\) \{[\s\S]{0,600}\.rpg-story-stage__fumee > i \{\n\s*animation: none;/,
+  assert.match(css, /prefers-reduced-motion: reduce\) \{[\s\S]{0,800}\.rpg-story-stage__fumee > i \{\n\s*animation: none;/,
     'le mouvement réduit fige la fumée au lieu de la supprimer');
+  assert.match(css, /\.rpg-story-stage__flammes > i \{ animation: none; opacity: \.8; transform: none; \}/,
+    'le mouvement réduit fige aussi les flammes');
 });
