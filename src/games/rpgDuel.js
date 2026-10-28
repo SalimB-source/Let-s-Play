@@ -1729,10 +1729,31 @@ export function rpgCoutEntite(entite) {
   return Math.max(1, imprime + Math.max(0, Number(entite.coutBonusArme) || 0));
 }
 
+function compteursDurabiliteArme(carteArme) {
+  return carteArme?.donne?.coupRapide || carteArme?.effet?.coupRapide || carteArme?.coupRapide ? 1 : 2;
+}
+
+/** Une arme perd un compteur après chaque attaque ou défense de son porteur. */
+function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
+  const porteur = duel[cote]?.creatures.find((entite) => entite.id === entiteId);
+  if (!porteur?.arme) return;
+  const carteArme = armeById(porteur.arme.carteId);
+  if (!carteArme) return;
+  const avant = Math.max(0, Math.floor(Number(porteur.arme.durabilite)
+    || compteursDurabiliteArme(carteArme)));
+  const restant = Math.max(0, avant - 1);
+  porteur.arme.durabilite = restant;
+  duel.log.push(`${carteArme.name} perd un compteur de durabilité après une ${action} de ${porteur.name} (${restant} restant${restant === 1 ? '' : 's'}).`);
+  if (restant === 0) {
+    duel.log.push(`${carteArme.name} n’a plus de compteur : elle est détruite.`);
+    retirerArme(duel, cote, porteur);
+  }
+}
+
 function attacherArme(duel, cote, entite, carteArme) {
   if (entite.mur || estSite(entite)) return;
   if (entite.arme) retirerArme(duel, cote, entite);
-  entite.arme = { carteId: carteArme.id };
+  entite.arme = { carteId: carteArme.id, durabilite: compteursDurabiliteArme(carteArme) };
   entite.atk += carteArme.bonus?.atk ?? 0;
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
@@ -5531,6 +5552,8 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
     if (!defenseur) continue;
     riposteDeContreAttaque(duel, defenseur, esquive.source);
   }
+  retirerUnCompteurDurabiliteArme(duel, cote, attaquant.id, 'attaque');
+  retirerUnCompteurDurabiliteArme(duel, autre(cote), cible.id, 'défense');
   rpgActionsEtat(duel);
   return { ok: true };
 }
@@ -6627,6 +6650,14 @@ export function rpgLancerAttaque(
   }));
   declencherButins(duel, cote, bilansContact);
   declencherTributs(duel, cote, bilansContact);
+  // Chaque attaquant et chaque bloqueur use l’arme qu’il a portée dans cet
+  // échange, même s’il n’a pas survécu jusqu’à la fenêtre des déclencheurs.
+  for (const attaquant of attaquants) {
+    retirerUnCompteurDurabiliteArme(duel, cote, attaquant.id, 'attaque');
+    for (const bloqueurId of new Set(affectations[attaquant.id] ?? [])) {
+      retirerUnCompteurDurabiliteArme(duel, adv, bloqueurId, 'défense');
+    }
+  }
   // L’attaque est passée : le blocage forcé « lors de votre prochaine attaque »
   // (l’Appât de la meute) a été dépensé par celle-ci.
   for (const entite of duel[adv].creatures) {
@@ -6693,6 +6724,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   }]);
   declencherButins(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
   declencherTributs(duel, cote, [{ id: attaquant.id, sorcier: frappeSorcier }]);
+  retirerUnCompteurDurabiliteArme(duel, cote, attaquant.id, 'attaque');
   rpgActionsEtat(duel);
   return { ok: true };
 }

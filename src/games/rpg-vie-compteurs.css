@@ -271,6 +271,7 @@
 }
 .rpg-card__compteur--heures { --rpg-compteur-grain: #e8f6ff; --rpg-compteur-veille: rgba(190, 230, 255, .9); }
 .rpg-card__compteur--sable { --rpg-compteur-grain: #ffe0a2; --rpg-compteur-veille: rgba(255, 220, 150, .9); }
+.rpg-card__compteur--durabilite { --rpg-compteur-grain: #d4b7ff; --rpg-compteur-veille: rgba(190, 145, 255, .9); }
 
 /* ── Pose : le compteur arrive du néant, une seule fois ────────────────── */
 .rpg-card__compteur.is-pose { animation: rpg-compteur-pose 420ms cubic-bezier(.2, .8, .3, 1); }
@@ -339,6 +340,10 @@
 .rpg-card__compteur--heures.is-derniere {
   border-color: #ffe0a8;
   box-shadow: 0 0 7px rgba(190, 230, 255, .5), inset 0 1px rgba(255, 255, 255, .3);
+}
+.rpg-card__compteur--durabilite.is-derniere {
+  border-color: #d5b3ff;
+  box-shadow: 0 0 7px rgba(190, 145, 255, .5), inset 0 1px rgba(255, 255, 255, .3);
 }
 .rpg-card__compteur--heures.is-derniere::before {
   content: '';

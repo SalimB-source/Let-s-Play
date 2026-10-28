@@ -177,8 +177,8 @@ test('le compteur de carte reste un losange chiffré de la feuille du duel', () 
   assert.match(composant, /className=\{classes\}\s*\n\s*data-compteur=\{type\}/,
     'le losange porte son repère data-compteur');
   assert.match(composant, /`rpg-card__compteur--\$\{type\}`/, 'la couleur du losange suit son type');
-  assert.match(composant, /const derniere = type === 'heures' && Number\(valeur\) === 1;/,
-    'la dernière Heure est reconnue sans dépendre du journal');
+  assert.match(composant, /const derniere = \['heures', 'sable', 'durabilite'\]\.includes\(type\) \&\& Number\(valeur\) === 1;/,
+    'la dernière unité de tout compteur, y compris la durabilité, est reconnue');
   assert.match(composant, /derniere \? 'is-derniere' : ''/, 'elle reçoit son état de veille');
   assert.match(composant, /<span>\{valeur\}<\/span>/, 'le chiffre du losange reste un simple span');
 });
@@ -225,7 +225,10 @@ test('la page du duel emploie les deux animations, sans changer la structure', (
   assert.match(page, /base=\{RPG_PV_SORCIER_BASE\}/, 'le maximum d’origine du sorcier est transmis');
   assert.match(page, /base=\{RPG_PV_JOUEUR\}/, 'celui du joueur aussi');
   assert.match(page, /<CompteurCarte type="heures" valeur=\{entite\.heures\.restants\} \/>/);
-  assert.match(page, /<CompteurCarte type="sable" valeur=\{entite\.arme\.compteurs\} \/>/);
+  assert.match(page, /type="durabilite"[\s\S]*?valeur=\{entite\.arme\.durabilite\}/,
+    'les compteurs de durabilité de l’arme s’affichent');
+  assert.match(page, /<CompteurCarte type="sable" valeur=\{entite\.arme\.compteurs\}/,
+    'les compteurs de sable de l’arme s’affichent');
   assert.doesNotMatch(page, /<span className="rpg-wizard-plate__hp-value">\{duel\./,
     'la page ne rend plus les chiffres de vie à la main');
 });

@@ -318,10 +318,11 @@ test('la Takouba de Tin Hinan : l’Attaque ciblée frappe une créature et pioc
   const mainAvant = duel.joueur.main.length;
   const pvMur = mur.pv;
   const pvSorcier = duel.sorcier.pv;
+  const atkAvant = porteur.atk;
   // Attaque ciblée sur le mur : l'attaque s'arrête sur la frappe.
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, [], { [porteur.id]: mur.id });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
-  assert.equal(mur.pv, pvMur - porteur.atk, 'l’Attaque ciblée a frappé le mur');
+  assert.equal(mur.pv, pvMur - atkAvant, 'l’Attaque ciblée a frappé le mur');
   assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour une créature blessée');
   assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’est arrêtée : le sorcier ne prend rien');
   assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,
@@ -338,12 +339,13 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   const mainAvant = duel.joueur.main.length;
   const pvMur = mur.pv;
   const pvSorcier = duel.sorcier.pv;
+  const atkAvant = porteur.atk;
   // Aucune proie désignée : le porteur attaque normalement, et aucun bloqueur
   // n'est assigné — le sorcier encaisse ses 5 dégâts.
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
   assert.equal(mur.pv, pvMur, 'la créature écartée n’a rien encaissé');
-  assert.equal(duel.sorcier.pv, pvSorcier - porteur.atk, 'le sorcier encaisse la frappe entière');
+  assert.equal(duel.sorcier.pv, pvSorcier - atkAvant, 'le sorcier encaisse la frappe entière');
   assert.equal(duel.joueur.main.length, mainAvant, 'aucune pioche : aucune créature n’a été blessée');
   const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');
   assert.equal(chiens.length, 1, 'le sorcier blessé lève un chien de sable');

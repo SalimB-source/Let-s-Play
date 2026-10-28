@@ -23,6 +23,7 @@ import {
   rpgLancerMagie,
   rpgBlesserCreature,
   rpgAttaquerCreature,
+  rpgAttaquerSorcier,
   rpgCiblesAttaqueRapide,
   rpgPeutBloquerAttaquant,
   rpgChoisirBloqueurs,
@@ -600,6 +601,50 @@ test('le bouclier de la Hache part avec l’arme, pas la morsure', () => {
   assert.equal(dune.atk, 4, '2 de la Dune + 2 de la Takouba, la Hache est repartie');
   assert.equal(dune.pv, 3, 'la blessure de la morsure, elle, ne se soigne pas');
   assert.ok(duel.joueur.cimetiere.includes('hache-de-la-banquise'));
+});
+
+test('les armes ont deux compteurs, sauf celles qui donnent Attaque ciblée', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'baton-des-citernes', porteur);
+  assert.equal(porteur.arme.durabilite, 2);
+  equiper(duel, 'joueur', 'armure-de-cendres', porteur);
+  assert.equal(porteur.arme.durabilite, 2, 'un remplacement repart avec deux compteurs');
+  equiper(duel, 'joueur', 'lance-de-givre', porteur);
+  assert.equal(porteur.arme.durabilite, 1, 'l’Attaque ciblée ne donne qu’un compteur');
+});
+
+test('l’Attaque ciblée use son unique compteur et détruit l’arme après l’attaque', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  equiper(duel, 'joueur', 'javelot-du-beffroi', porteur);
+  porteur.ready = true;
+  assert.equal(rpgAttaquerSorcier(duel, 'joueur', porteur.id).ok, true);
+  assert.equal(porteur.arme, null);
+  assert.ok(duel.joueur.cimetiere.includes('javelot-du-beffroi'));
+  assert.equal(porteur.coupRapide, false, 'le porteur perd Attaque ciblée avec l’arme détruite');
+});
+
+test('le compteur d’une arme baisse à l’attaque et à la défense, puis détruit l’arme à zéro', () => {
+  const duel = duelVide();
+  const bloqueur = poser(duel, 'sorcier', 'dune-marchante');
+  const attaquant1 = poser(duel, 'joueur', 'chien-du-guet');
+  attaquant1.ready = true;
+  equiper(duel, 'sorcier', 'baton-des-citernes', bloqueur);
+  assert.equal(bloqueur.arme.durabilite, 2);
+
+  const premier = rpgLancerAttaque(duel, 'joueur', [attaquant1.id], { [attaquant1.id]: [bloqueur.id] });
+  assert.equal(premier.ok, true);
+  assert.equal(bloqueur.arme.durabilite, 1, 'bloquer coûte un compteur après le combat');
+
+  const attaquant2 = poser(duel, 'joueur', 'chien-du-guet');
+  attaquant2.ready = true;
+  duel.attaqueJouee = null; // seconde résolution de combat dans ce test
+  const second = rpgLancerAttaque(duel, 'joueur', [attaquant2.id], { [attaquant2.id]: [bloqueur.id] });
+  assert.equal(second.ok, true);
+  assert.equal(bloqueur.arme, null, 'l’arme est détruite quand son compteur tombe à zéro');
+  assert.ok(duel.sorcier.cimetiere.includes('baton-des-citernes'));
+  assert.equal(bloqueur.atk, 2, 'le bonus d’attaque de l’arme a disparu');
 });
 
 test('un porteur qui succombe à la morsure ne porte rien : l’arme tombe avec lui', () => {
