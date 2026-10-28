@@ -21,7 +21,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
   <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
   <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
-  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path d="M14.5 3.5 20.5 9.5"/><path d="M13 5 5 13"/><path d="M3 21l5.5-5.5"/><path d="M8.5 15.5 4 20"/><path d="M17.5 3.5l3 3-3 3"/><path d="M9.5 9.5 6 6"/><path d="M6 6l-3 3"/><path d="M3 9l3 3 3-3"/></symbol>
+  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path d="M3 3 L21 21"/><path d="M21 3 L3 21"/><path d="M7 7 L5 5 M17 17 L19 19"/><path d="M17 7 L19 5 M7 17 L5 19"/><circle cx="12" cy="12" r="1.5"/></symbol>
   <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
   <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
