@@ -332,6 +332,28 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Haut-fond : -1/-2, -2/-3 sous Le Kraken — jusqu’à la fin du tour', () => {
+  const monter = (avecKraken) => {
+    const duel = duelVide();
+    const proie = poser(duel, 'sorcier', 'momie-de-lin');
+    if (avecKraken) poser(duel, 'joueur', 'kraken');
+    return { duel, proie };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'haut-fond', sans.proie.id);
+  assert.deepEqual([sans.proie.atk, sans.proie.def], [1, 2], 'sans ancre : 2/4 devient 1/2');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'haut-fond', avec.proie.id);
+  assert.deepEqual([avec.proie.atk, avec.proie.def], [0, 1], 'sous le Kraken : -2/-3');
+
+  const carte = cardById('haut-fond');
+  assert.equal(carte.cost, 1, 'le Lien n’escompte jamais le coût');
+  assert.equal(carte.effet.tours, 1, 'et la durée reste celle de l’imprimé');
+  assert.deepEqual(carte.lien, { ancre: 'kraken', effet: { atk: -2, def: -3 } });
+});
+
 test('Le Poids : 2 PV, et un -2/-2 ciblé en plus sous La Barbe Noire', () => {
   const monter = (avecLien) => {
     const duel = duelVide();

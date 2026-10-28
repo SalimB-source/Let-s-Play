@@ -390,7 +390,10 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Magie Rapide — Eau',
     cibles: ['creature'],
     effet: { type: 'debuff', atk: -1, def: -2, tours: 1 },
-    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour.',
+    // Le Lien du Kraken : la marée monte d'un cran — -2/-3 au lieu de -1/-2,
+    // jusqu'à la fin du tour comme l'imprimé.
+    lien: { ancre: 'kraken', effet: { atk: -2, def: -3 } },
+    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour. Lien du Kraken — si Le Kraken est en jeu, elle gagne -2/-3 à la place.',
     flavor: 'Le pilote connaît le sable sous la vague ; la vague, elle, ne prévient pas.',
   }),
   carte({
