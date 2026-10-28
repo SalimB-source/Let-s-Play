@@ -11,7 +11,7 @@ import {
   cardHybridGradient,
 } from '../src/games/rpgCards.js';
 
-/* Le filet de couleur : 2 px de la teinte de l'élément, partout où une face de
+/* Le filet de couleur : 3 px de la teinte de l'élément, partout où une face de
    carte est dessinée. Ces tests lisent les feuilles de style : ils ne prouvent
    pas le rendu, ils empêchent seulement le retour des deux réglages qui
    avaient effacé la couleur d'élément — l'anneau orné de 7 à 10 px et
@@ -31,12 +31,12 @@ function borduresNulles(css) {
   return css.match(/border-width:\s*0\s*(?:!important)?;/g) ?? [];
 }
 
-test('le filet fait 2 px, et c’est la seule épaisseur de cadre', () => {
-  assert.match(battle, /--rpg-card-filet:\s*2px;/, 'la variable du filet est déclarée sur .rpg-battle');
+test('le filet fait 3 px, et c’est la seule épaisseur de cadre', () => {
+  assert.match(battle, /--rpg-card-filet:\s*3px;/, 'la variable du filet est déclarée sur .rpg-battle');
   for (const [nom, css] of Object.entries({ battle, guide, atelier })) {
     assert.match(
       css,
-      /border-width:\s*var\(--rpg-card-filet,\s*2px\)/,
+      /border-width:\s*var\(--rpg-card-filet,\s*3px\)/,
       `${nom} : les faces prennent le filet, pas l'anneau orné`,
     );
   }
@@ -59,7 +59,7 @@ test('plus aucune face ne perd son cadre (fin de l’expérimentation)', () => {
 
 test('le filet garde la couleur et la matière de l’élément, sans le motif', () => {
   for (const [nom, css] of Object.entries({ battle, mobile, guide, atelier })) {
-    assert.match(css, /--rpg-frame-motif:\s*none;/, `${nom} : le motif se tait dans 2 px`);
+    assert.match(css, /--rpg-frame-motif:\s*none;/, `${nom} : le motif se tait dans 3 px`);
   }
   // La pile de fonds qui peint l'anneau est intacte : face, motif, matière.
   assert.match(battle, /background-image:\s*\n?\s*linear-gradient\(var\(--rpg-frame-fill/);
@@ -94,8 +94,8 @@ test('chaque face dessinée reçoit la couleur de son élément', () => {
   // vérifie donc sur les deux seules grilles de cartes restées dans l'atelier.
   assert.match(
     atelier,
-    /\.rpg-atelier__carte-art\[class\*="rpg-card--frame-"\] \{\s*border-width: var\(--rpg-card-filet, 2px\)/,
-    'les vignettes de l’atelier gardent le filet de 2 px',
+    /\.rpg-atelier__carte-art\[class\*="rpg-card--frame-"\] \{\s*border-width: var\(--rpg-card-filet, 3px\)/,
+    'les vignettes de l’atelier gardent le filet de 3 px',
   );
   assert.match(lire('RpgCardGuide.jsx'), /'--rpg-frame-color': cardFrameColor\(carte\)/);
 });
@@ -124,11 +124,11 @@ test('la diagonale des hybrides passe exactement par les coins', () => {
 test('au doigt, le filet reste — la feuille tactile ne le retire plus', () => {
   assert.match(
     mobile,
-    /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\] \{\s*border-width: var\(--rpg-card-filet, 2px\);/,
+    /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\] \{\s*border-width: var\(--rpg-card-filet, 3px\);/,
   );
   assert.match(
     mobile,
-    /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\n\.rpg-battle--touch \.card-row \.rpg-card,\s*\n\.rpg-battle--touch \.rpg-terrain \{\s*\n\s*border-width: var\(--rpg-card-filet, 2px\);/,
+    /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\n\.rpg-battle--touch \.card-row \.rpg-card,\s*\n\.rpg-battle--touch \.rpg-terrain \{\s*\n\s*border-width: var\(--rpg-card-filet, 3px\);/,
   );
   assert.doesNotMatch(mobile, /background-image:\s*none;/, 'la feuille tactile ne coupe plus la matière');
 });
