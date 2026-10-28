@@ -83,7 +83,7 @@ export const RPG_MAIN_DEPART = 5;
 export const RPG_ESQUIVE_CHANCE = 0.3;
 export const RPG_COULEURS = RPG_ELEMENTS;
 export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
-export const RPG_COUP_CRITIQUE_CHANCE = 0.3;
+export const RPG_COUP_CRITIQUE_CHANCE = 0.25;
 export const RPG_COUP_CRITIQUE_FOIS = 4;
 
 /**
@@ -1728,6 +1728,46 @@ function armeCarteDe(entite) {
 }
 
 /**
+ * LE COUP CRITIQUE CUMULABLE.
+ *
+ * Trois sources peuvent en donner un : la fiche imprimée d'une créature
+ * (Kagutsuchi, 25 % ×4) et chaque arme-sort qui en accorde un (Sabre maudit
+ * et Braise et sable, 25 % ×2). Elles s'**additionnent** — 25 % + 25 % = 50 %
+ * — et le multiplicateur retenu est le plus fort (×4).
+ *
+ * Avant ce calcul, une arme **écrasait** la valeur imprimée : équiper
+ * Kagutsuchi d'un Sabre maudit le faisait passer de ×4 à ×2. Le cumul répare
+ * la perte avant d'ajouter quoi que ce soit, et il se recalcule à chaque
+ * changement d'équipement (attachement, bris d'arme, retrait) : une arme
+ * détruite rend sa part de chance, pas celle de ses voisines.
+ */
+function recalculerCoupCritique(entite) {
+  const fiche = duelCardById(entite?.carteId)?.coupCritique ?? null;
+  let chance = 0;
+  let fois = 0;
+  const ajouter = (chanceSource, foisSource) => {
+    const valeur = Number(chanceSource) || 0;
+    if (valeur <= 0) return;
+    chance += valeur;
+    fois = Math.max(fois, Number(foisSource) || 2);
+  };
+  if (fiche) ajouter(fiche.chance ?? RPG_COUP_CRITIQUE_CHANCE, fiche.fois ?? RPG_COUP_CRITIQUE_FOIS);
+  for (const id of entite?.armes ?? []) {
+    const arme = magieById(id);
+    if (arme?.effet?.type === 'arme' && arme.effet.coupCritique) ajouter(arme.effet.coupCritique, 2);
+  }
+  // Aucune arme du prototype ne porte de critique aujourd'hui ; la règle reste
+  // la même si l'une d'elles en reçoit un (`donne.coupCritique`).
+  const prototype = armeCarteDe(entite);
+  if (prototype?.donne?.coupCritique) ajouter(prototype.donne.coupCritique, 2);
+  if (!chance) {
+    entite.coupCritique = null;
+    return;
+  }
+  entite.coupCritique = { chance: Math.min(1, chance), fois };
+}
+
+/**
  * LE BOUCLIER D'UNE CRÉATURE — une parade anti-sort, pas une armure.
  *
  * Tant qu'il tient, le bouclier bloque le premier sort adverse qui atteint
@@ -1938,6 +1978,9 @@ function retirerArme(duel, cote, entite) {
       ? { contre: impression.contre, toursRestants: impression.tours ?? Infinity }
       : null;
   }
+  // Une arme du prototype peut porter un critique (`donne.coupCritique`) : son
+  // départ le recalcule comme celui d'une arme-sort.
+  recalculerCoupCritique(entite);
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
 }
@@ -3265,7 +3308,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       porteur.pv += effet.def ?? 0;
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
-      if (effet.coupCritique) porteur.coupCritique = { chance: effet.coupCritique, fois: 2 };
+      // Le critique de l'arme s'ajoute à celui du porteur (25 % + 25 % = 50 %,
+      // multiplicateur le plus fort) au lieu de l'écraser.
+      if (effet.coupCritique) recalculerCoupCritique(porteur);
       duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : ${effet.atk >= 0 ? '+' : ''}${effet.atk}/${effet.def},${effet.coupCritique ? ' Coup critique.' : ''}`);
       return;
     }
@@ -4168,9 +4213,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         porteur.armes = [];
-        porteur.coupCritique = duelCardById(porteur.carteId)?.coupCritique
-          ? { ...duelCardById(porteur.carteId).coupCritique }
-          : null;
+        // Toutes les arme-sorts viennent de tomber : le critique revient à la
+        // seule fiche imprimée (ou disparaît s'il n'y en a pas).
+        recalculerCoupCritique(porteur);
         porteur.atk = Math.max(0, porteur.atk - atk);
         porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
         porteur.def = Math.max(1, porteur.def - def);

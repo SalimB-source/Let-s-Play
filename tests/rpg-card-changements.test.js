@@ -47,7 +47,7 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.deepEqual([values('volva-soigneuse').cost, values('volva-soigneuse').atk, values('volva-soigneuse').def, values('volva-soigneuse').furie], [3, 2, 3, 2]);
   assert.equal(values('braise-et-sable').effet.atk, 1);
   assert.equal(values('braise-et-sable').effet.coupRapide, true);
-  assert.equal(values('braise-et-sable').effet.coupCritique, 0.3);
+  assert.equal(values('braise-et-sable').effet.coupCritique, 0.25);
 });
 
 test('Tercio gagne +1/+0 au début de ses tours, jusqu’à +3/+0', () => {

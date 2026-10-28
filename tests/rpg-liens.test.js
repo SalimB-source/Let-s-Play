@@ -344,3 +344,35 @@ test('Feux de kitsune : 4 sur une cible ou 2 et 2 ; 5 ou 3 et 3 avec l’Oni', (
   assert.equal(avecPartage.avantA - avecPartage.a.pv, 3, 'avec l’Oni, en deux cibles : 3 dégâts');
   assert.equal(avecPartage.avantB - avecPartage.b.pv, 3, 'avec l’Oni, en deux cibles : 3 dégâts');
 });
+
+test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', () => {
+  // Les trois cartes à critique du catalogue portent le même 25 %.
+  const kagutsuchi = cardById('kagutsuchi-flamme-originelle');
+  const sabre = cardById('sabre-maudit');
+  const braise = cardById('braise-et-sable');
+  assert.deepEqual(kagutsuchi.coupCritique, { chance: 0.25, fois: 4 });
+  assert.equal(sabre.effet.coupCritique, 0.25);
+  assert.equal(braise.effet.coupCritique, 0.25);
+
+  const duel = duelVide();
+  const k = poser(duel, 'joueur', 'kagutsuchi-flamme-originelle');
+  assert.deepEqual(k.coupCritique, { chance: 0.25, fois: 4 }, 'seule : 25 % ×4');
+
+  // Une arme-sort ADDITIONNE sa chance, sans écraser le multiplicateur ×4.
+  donner(duel, 'joueur', 'sabre-maudit');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', k.id).ok, true);
+  assert.deepEqual(k.coupCritique, { chance: 0.5, fois: 4 }, 'avec le Sabre : 50 % ×4');
+
+  donner(duel, 'joueur', 'braise-et-sable');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'braise-et-sable', k.id).ok, true);
+  assert.deepEqual(k.coupCritique, { chance: 0.75, fois: 4 }, 'deux armes : 75 % ×4');
+
+  // Une créature sans critique imprimé ne reçoit que celui de l'arme.
+  const simple = poser(duel, 'joueur', 'ashigaru-des-braises');
+  donner(duel, 'joueur', 'sabre-maudit');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', simple.id).ok, true);
+  assert.deepEqual(simple.coupCritique, { chance: 0.25, fois: 2 });
+});

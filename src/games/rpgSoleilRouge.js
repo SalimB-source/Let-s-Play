@@ -125,8 +125,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
-    coupCritique: { chance: 0.3, fois: 4 },
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 30 % de chances de frapper 4 fois la créature adverse.',
+    coupCritique: { chance: 0.25, fois: 4 },
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 25 % de chances de frapper 4 fois la créature adverse.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -183,8 +183,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.3 },
-    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.25 },
+    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -193,11 +193,11 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
     typeLine: 'Arme — Lame de braise et de sable',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.3 },
+    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.25 },
     // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
     // une fois de plus. Attaque ciblée et coup critique restent intacts.
     lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. L’arme rejoint le cimetière quand son porteur quitte le jeu. Lien du Cavalier — si le Cavalier des deux sabres est en jeu, le porteur gagne +2/+0 à la place.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse. L’arme rejoint le cimetière quand son porteur quitte le jeu. Lien du Cavalier — si le Cavalier des deux sabres est en jeu, le porteur gagne +2/+0 à la place.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({
