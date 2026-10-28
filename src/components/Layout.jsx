@@ -43,42 +43,41 @@ export default function Layout({ children }) {
   const profileWrapRef = useRef(null);
   const paletteInputRef = useRef(null);
   const profileCloseTimerRef = useRef(null);
-  const gamesMenuWrapRef = useRef(null);
-  const gamesMenuCloseTimerRef = useRef(null);
+  const sectionMenuWrapRef = useRef(null);
+  const sectionMenuCloseTimerRef = useRef(null);
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState('');
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-  const [gamesMenuOpen, setGamesMenuOpen] = useState(false);
+  const [sectionMenuOpen, setSectionMenuOpen] = useState(false);
   const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
 
-  /* Sous-menu « Jeux » : le panneau s'ouvre au survol (ordinateur), au clic
-     sur le chevron, et au clavier dès que le focus entre dans l'entrée. Le
-     survol est temporisé à la sortie, sinon le panneau se refermait pendant
-     que la souris descendait de la pastille vers le panneau. */
-  const openGamesMenu = () => {
-    if (gamesMenuCloseTimerRef.current) {
-      clearTimeout(gamesMenuCloseTimerRef.current);
-      gamesMenuCloseTimerRef.current = null;
+  /* Menu « Actus » : le panneau s'ouvre au survol (ordinateur), au clic sur
+     le chevron et au clavier dès que le focus entre dans l'entrée. Le survol
+     est temporisé pour laisser le pointeur descendre vers le panneau. */
+  const openSectionMenu = () => {
+    if (sectionMenuCloseTimerRef.current) {
+      clearTimeout(sectionMenuCloseTimerRef.current);
+      sectionMenuCloseTimerRef.current = null;
     }
-    setGamesMenuOpen(true);
+    setSectionMenuOpen(true);
   };
 
-  const scheduleGamesMenuClose = () => {
-    if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
-    gamesMenuCloseTimerRef.current = setTimeout(() => setGamesMenuOpen(false), 200);
+  const scheduleSectionMenuClose = () => {
+    if (sectionMenuCloseTimerRef.current) clearTimeout(sectionMenuCloseTimerRef.current);
+    sectionMenuCloseTimerRef.current = setTimeout(() => setSectionMenuOpen(false), 200);
   };
 
-  const closeGamesMenu = () => {
-    if (gamesMenuCloseTimerRef.current) {
-      clearTimeout(gamesMenuCloseTimerRef.current);
-      gamesMenuCloseTimerRef.current = null;
+  const closeSectionMenu = () => {
+    if (sectionMenuCloseTimerRef.current) {
+      clearTimeout(sectionMenuCloseTimerRef.current);
+      sectionMenuCloseTimerRef.current = null;
     }
-    setGamesMenuOpen(false);
+    setSectionMenuOpen(false);
   };
 
-  const handleGamesMenuBlur = (event) => {
-    if (!gamesMenuWrapRef.current?.contains(event.relatedTarget)) closeGamesMenu();
+  const handleSectionMenuBlur = (event) => {
+    if (!sectionMenuWrapRef.current?.contains(event.relatedTarget)) closeSectionMenu();
   };
 
   const handleProfileMouseEnter = () => {
@@ -121,8 +120,8 @@ export default function Layout({ children }) {
       if (profileCloseTimerRef.current) {
         clearTimeout(profileCloseTimerRef.current);
       }
-      if (gamesMenuCloseTimerRef.current) {
-        clearTimeout(gamesMenuCloseTimerRef.current);
+      if (sectionMenuCloseTimerRef.current) {
+        clearTimeout(sectionMenuCloseTimerRef.current);
       }
     };
   }, []);
@@ -151,7 +150,7 @@ export default function Layout({ children }) {
         // élargi la fenêtre de mise en page (zoom Safari, version ordinateur,
         // WebView) : leur barre est celle du menu mobile, elle ne se cache pas.
         const isDesktop = !isPhoneLayout();
-        const anyOverlay = menuOpen || paletteOpen || profileMenuOpen || gamesMenuOpen;
+        const anyOverlay = menuOpen || paletteOpen || profileMenuOpen || sectionMenuOpen;
         if (isDesktop && !anyOverlay && y > 120 && goingDown) {
           setNavHidden(true);
         } else if (goingUp || y < 80 || !isDesktop) {
@@ -163,7 +162,7 @@ export default function Layout({ children }) {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, [menuOpen, paletteOpen, profileMenuOpen, gamesMenuOpen]);
+  }, [menuOpen, paletteOpen, profileMenuOpen, sectionMenuOpen]);
 
   // pill indicator qui glisse
   const updateIndicator = () => {
@@ -175,9 +174,8 @@ export default function Layout({ children }) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
       return;
     }
-    // L'entrée « Jeux » est une pastille composite (libellé + chevron du
-    // sous-menu) : c'est son enveloppe qui porte l'état actif, et c'est donc
-    // elle que la pastille jaune doit recouvrir.
+    // L'entrée « Actus » est une pastille composite (libellé + chevron) : son
+    // enveloppe porte l'état actif et reçoit la pastille jaune.
     const active = el.querySelector('.nav-item.active') || el.querySelector('a.active');
     if (!active) {
       setIndicator((p) => ({ ...p, opacity: 0 }));
@@ -206,8 +204,8 @@ export default function Layout({ children }) {
     setPaletteOpen(false);
     if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
     setProfileMenuOpen(false);
-    if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
-    setGamesMenuOpen(false);
+    if (sectionMenuCloseTimerRef.current) clearTimeout(sectionMenuCloseTimerRef.current);
+    setSectionMenuOpen(false);
     const target = location.hash ? document.getElementById(location.hash.slice(1)) : null;
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -246,8 +244,8 @@ export default function Layout({ children }) {
         setPaletteOpen(false);
         if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
         setProfileMenuOpen(false);
-        if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
-        setGamesMenuOpen(false);
+        if (sectionMenuCloseTimerRef.current) clearTimeout(sectionMenuCloseTimerRef.current);
+        setSectionMenuOpen(false);
         setSearchOpen(false);
       }
     };
@@ -268,9 +266,8 @@ export default function Layout({ children }) {
 
   const isActive = (path) => location.pathname === path
     || (path === '/communaute' && location.pathname === '/community');
-  // Une entrée de section reste active sur ses sous-pages (`/jeu/mirage-rush`,
-  // `/quizz/survival`) : c'est ce qui allume la pastille jaune sous « Jeux »
-  // aussi bien pour l'arcade que pour les quizz.
+  // Une entrée de section reste active sur ses sous-pages : la pastille d'Actus
+  // suit aussi bien News, Tests, Dossiers que les studios DZ Dev.
   const isSection = (path) => isActive(path) || location.pathname.startsWith(`${path}/`);
   const isRouteGroup = (item) => [item.to, ...(item.aliases || [])].some(isSection);
   const isHome = location.pathname === '/';
@@ -312,10 +309,10 @@ export default function Layout({ children }) {
         if (profileCloseTimerRef.current) clearTimeout(profileCloseTimerRef.current);
         setProfileMenuOpen(false);
       }
-      // Le sous-menu « Jeux » se referme aussi quand on clique ailleurs.
-      if (gamesMenuWrapRef.current && !gamesMenuWrapRef.current.contains(event.target)) {
-        if (gamesMenuCloseTimerRef.current) clearTimeout(gamesMenuCloseTimerRef.current);
-        setGamesMenuOpen(false);
+      // Le menu Actus se referme aussi quand on clique ailleurs.
+      if (sectionMenuWrapRef.current && !sectionMenuWrapRef.current.contains(event.target)) {
+        if (sectionMenuCloseTimerRef.current) clearTimeout(sectionMenuCloseTimerRef.current);
+        setSectionMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', closeOnOutsideClick);
@@ -369,20 +366,23 @@ export default function Layout({ children }) {
   const logoutLabel = t.nav.logout || 'Log out';
   const logoSrc = `${base}lets-play-logo.png`;
 
-  /* Les entrées de la barre. « Jeux-vidéo » et « Quizz » sont deux entrées
-     séparées : le sous-menu combiné causait des conflits tactiles sur mobile
-     (événements interceptés, swipe-back navigateur pendant l'intro de Mirage
-     Rush). Deux pastilles distinctes garantissent que chaque clic/tap atteint
-     la bonne cible. */
+  /* L'entrée Actus rassemble les quatre destinations éditoriales dans un seul
+     menu. Le lien parent conserve /news comme accès direct ; sa liste contient
+     News, Tests, Dossiers et DZ Dev. */
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },
-    { to: '/news', label: t.nav.news, num: '02', desc: 'NEWS / DROPS' },
-    { to: '/reviews', label: t.nav.reviews, num: '03', desc: 'REVIEWS / TESTS' },
-    { to: '/dossiers', label: t.nav.dossiers, num: '04', desc: 'DOSSIERS / DEEP' },
-    { to: '/dz-dev', label: 'Dz DEV', num: '05', desc: 'STUDIOS / ALGÉRIE', aliases: ['/dz-dev/hicosoft'] },
-    { to: '/communaute', label: t.nav.community || 'Communauté', num: '06', desc: 'COMMUNITY / TALK' },
-    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '07', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux', '/jeux-video', '/lets-play'] },
-    { to: '/quizz', label: t.nav.quiz, num: '08', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
+    {
+      to: '/news', label: t.nav.editorialMenu || 'Actus', num: '02', desc: 'NEWS / EDITORIAL',
+      submenu: [
+        { to: '/news', label: t.nav.news, desc: 'NEWS / DROPS' },
+        { to: '/reviews', label: t.nav.reviews, desc: 'REVIEWS / TESTS' },
+        { to: '/dossiers', label: t.nav.dossiers, desc: 'DOSSIERS / DEEP DIVES' },
+        { to: '/dz-dev', label: 'Dz DEV', desc: 'STUDIOS / ALGÉRIE', aliases: ['/dz-dev/hicosoft'] },
+      ],
+    },
+    { to: '/communaute', label: t.nav.community || 'Communauté', num: '03', desc: 'COMMUNITY / TALK' },
+    { to: '/jeu', label: t.nav.videoGames || t.nav.games || t.nav.game, num: '04', desc: 'ARCADE / MIRAGE RUSH · VICE CITY RUSH', aliases: ['/jeux', '/jeux-video', '/lets-play'] },
+    { to: '/quizz', label: t.nav.quiz, num: '05', desc: 'QUIZZ / SURVIVAL', aliases: ['/quiz', '/quizzes'] },
   ];
 
   const profileMeta = user?.user_metadata || {};
@@ -493,19 +493,18 @@ export default function Layout({ children }) {
                   );
                 }
 
-                // Entrée de section : le lien garde sa route (`/jeu`), le
-                // chevron ouvre le panneau — un bouton à part plutôt qu'un
-                // lien détourné, pour que le clic navigue toujours.
+                // Entrée de section : le lien garde son accès direct à News ;
+                // le chevron ouvre la liste des rubriques éditoriales.
                 const submenuId = `nav-submenu-${link.to.replace(/\W+/g, '-')}`;
                 return (
                   <div
                     key={link.to}
-                    ref={gamesMenuWrapRef}
-                    className={`nav-item nav-item--menu${active ? ' active' : ''}${gamesMenuOpen ? ' is-open' : ''}`}
-                    onMouseEnter={openGamesMenu}
-                    onMouseLeave={scheduleGamesMenuClose}
-                    onFocus={openGamesMenu}
-                    onBlur={handleGamesMenuBlur}
+                    ref={sectionMenuWrapRef}
+                    className={`nav-item nav-item--menu${active ? ' active' : ''}${sectionMenuOpen ? ' is-open' : ''}`}
+                    onMouseEnter={openSectionMenu}
+                    onMouseLeave={scheduleSectionMenuClose}
+                    onFocus={openSectionMenu}
+                    onBlur={handleSectionMenuBlur}
                   >
                     <Link
                       to={link.to}
@@ -519,10 +518,10 @@ export default function Layout({ children }) {
                     <button
                       type="button"
                       className="nav-submenu-toggle"
-                      aria-expanded={gamesMenuOpen}
+                      aria-expanded={sectionMenuOpen}
                       aria-controls={submenuId}
-                      aria-label={t.nav.gamesMenuAria || 'Afficher le menu'}
-                      onClick={() => (gamesMenuOpen ? closeGamesMenu() : openGamesMenu())}
+                      aria-label={t.nav.sectionMenuAria || 'Afficher le menu'}
+                      onClick={() => (sectionMenuOpen ? closeSectionMenu() : openSectionMenu())}
                     >
                       <svg viewBox="0 0 12 8" width="11" height="8" aria-hidden="true" focusable="false">
                         <path d="M1 1.6 6 6.4l5-4.8" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -537,7 +536,7 @@ export default function Layout({ children }) {
                             to={item.to}
                             className={`nav-submenu-link${itemActive ? ' is-current' : ''}`}
                             aria-current={itemActive ? 'page' : undefined}
-                            onClick={() => { setMenuOpen(false); closeGamesMenu(); }}
+                            onClick={() => { setMenuOpen(false); closeSectionMenu(); }}
                             style={{ '--i': idx + (subIdx + 1) / 10 }}
                           >
                             <span className="nav-submenu-mark" aria-hidden="true">↳</span>
@@ -562,9 +561,9 @@ export default function Layout({ children }) {
                 style={{ '--i': primaryLinks.length }}
               >
                 <span className="nav-link-main">
-                  {/* Numérotation HUD du menu mobile : 07 = Jeux-vidéo,
-                      08 = Quizz, 09 = messagerie, 10 = profil. */}
-                  <span className="nav-link-num">09</span>
+                  {/* Les deux accès utilitaires suivent les cinq rubriques :
+                      06 = messagerie, 07 = profil. */}
+                  <span className="nav-link-num">06</span>
                   <span className="nav-link-text">
                     {/* La messagerie a son propre logo : il remplace le libellé
                         texte, gardé pour les lecteurs d'écran. */}
@@ -585,7 +584,7 @@ export default function Layout({ children }) {
                 aria-label={profileAria}
               >
                 <span className="nav-link-main">
-                  <span className="nav-link-num">10</span>
+                  <span className="nav-link-num">07</span>
                   <span className="nav-profile-avatar" aria-hidden="true">
                     <span className="nav-profile-avatar-face">
                       {profileAvatar ? (
@@ -836,10 +835,8 @@ export default function Layout({ children }) {
                 <div className="cmd-palette-recent">
                   <small>Accès rapide</small>
                   <div className="cmd-palette-quick">
-                    {/* Les deux pages d'une entrée de section gardent leur
-                        raccourci : « Jeux » se déplie ici en Jeux-vidéo et
-                        Quizz, sinon les quizz disparaîtraient de l'accès
-                        rapide de la palette (⌘K). */}
+                    {/* La palette expose chaque sous-rubrique éditoriale même
+                        si la barre les rassemble sous une seule entrée. */}
                     {primaryLinks.flatMap((l) => (l.submenu
                       ? l.submenu.map((item) => ({ to: item.to, label: item.label }))
                       : [{ to: l.to, label: l.label }])
