@@ -123,6 +123,16 @@ const exilsParDuel = new WeakMap();
 // chemin (simultané) et n'y figure pas : la table y lit la couleur de la
 // source pour allumer la roue de feu de la Braise.
 const blessuresParDuel = new WeakMap();
+// Les transferts de vie du set Ténèbres (Tribut au contact, sorts « pesée ») :
+// le camp source reçoit la vie que l'autre perd. Hors de l'état JSON, comme les
+// blessures : la table y lit le balancement de la balance des Heures.
+const transfertsParDuel = new WeakMap();
+// Les Tributs qui ont touché le sorcier au combat : chaque événement nomme la
+// créature collectrice. Les sorts « pesée » passent par `transfertVie` sans
+// créature source et n'y figurent donc pas. Journal jumeau de celui des
+// transferts, hors état JSON : la table y trace le fil de sable qui relie la
+// créature à la plaque qui paye (`rpg-tribut-fil`).
+const tributsParDuel = new WeakMap();
 // Hors de l’état JSON : les sauvegardes restent sérialisables et les tests
 // peuvent fournir un générateur déterministe. Une partie restaurée utilise Math.random.
 const hasardParDuel = new WeakMap();
@@ -316,6 +326,52 @@ function journaliserRenvoiEnMain(duel, cote, entite) {
   const journal = renvoisParDuel.get(duel) ?? [];
   journal.push({ entityId: entite.id, carteId: entite.carteId, cote });
   renvoisParDuel.set(duel, journal);
+}
+
+/** Combien de transferts de vie (Tribut, pesée) le duel a vus depuis son début. */
+export function rpgNombreTransferts(duel) {
+  return transfertsParDuel.get(duel)?.length ?? 0;
+}
+
+/**
+ * Les transferts de vie parus depuis une position du journal (0 : tous).
+ * Chaque événement dit le camp qui **reçoit** la vie (`coteSource`), le
+ * montant déplacé et la carte source quand le moteur la connaît (un sort de
+ * pesée ; le Tribut au combat n'a pas de carte source).
+ */
+export function rpgTransfertsDepuis(duel, position = 0) {
+  return (transfertsParDuel.get(duel) ?? [])
+    .slice(Math.max(0, position))
+    .map((evenement) => ({ ...evenement }));
+}
+
+function journaliserTransfert(duel, coteSource, montant, sourceCarteId = null) {
+  const journal = transfertsParDuel.get(duel) ?? [];
+  journal.push({ coteSource, montant, sourceCarteId: sourceCarteId ?? null });
+  transfertsParDuel.set(duel, journal);
+}
+
+/** Combien de Tributs au contact le duel a vus depuis son début. */
+export function rpgNombreTributs(duel) {
+  return tributsParDuel.get(duel)?.length ?? 0;
+}
+
+/**
+ * Les Tributs au contact parus depuis une position du journal (0 : tous).
+ * Chaque événement nomme la créature collectrice (`entityId`), son camp et le
+ * montant déplacé. Une pesée lancée depuis la main n'y figure jamais : elle
+ * n'a pas de créature source et reste lisible via le journal des transferts.
+ */
+export function rpgTributsDepuis(duel, position = 0) {
+  return (tributsParDuel.get(duel) ?? [])
+    .slice(Math.max(0, position))
+    .map((evenement) => ({ ...evenement }));
+}
+
+function journaliserTribut(duel, cote, entiteId, montant) {
+  const journal = tributsParDuel.get(duel) ?? [];
+  journal.push({ entityId: entiteId, cote, montant });
+  tributsParDuel.set(duel, journal);
 }
 
 function journaliserExil(duel, cote, entite, sourceCarteId = null) {
@@ -2548,6 +2604,10 @@ function declencherTributs(duel, cote, bilans) {
     const montant = entite?.tribut ?? 0;
     if (!(montant > 0)) continue;
     transfertVie(duel, cote, montant);
+    // Le journal des Tributs retient la créature : le fil de sable de la table
+    // part de son emplacement réel, là où le journal des transferts, lui, ne
+    // connaît que le camp qui reçoit la vie.
+    journaliserTribut(duel, cote, entite.id, montant);
     duel.log.push(`Tribut : ${entite.name} touche le sorcier — ${
       cote === 'joueur' ? `le sorcier perd ${montant} PV, vous en gagnez ${montant}`
         : `vous perdez ${montant} PV, le sorcier en gagne ${montant}`}.`);
@@ -2772,7 +2832,7 @@ function declencherPrises(duel) {
  * dépasser 25, le maximum suit le gain (`rpgGagnerVie`). La perte peut
  * éteindre un sorcier : `rpgVainqueur` lit les PV comme après le combat.
  */
-function transfertVie(duel, coteSource, montant) {
+function transfertVie(duel, coteSource, montant, sourceCarteId = null) {
   const n = Math.max(0, Number(montant) || 0);
   if (!n) return { perdu: 0, gagne: 0 };
   const perdant = duel[autre(coteSource)];
@@ -2781,6 +2841,9 @@ function transfertVie(duel, coteSource, montant) {
   // la quête « le sorcier saigne ».
   perdant.degatsRecus = (perdant.degatsRecus ?? 0) + n;
   const gagne = rpgGagnerVie(duel, coteSource, n);
+  // Le journal reste hors de l'état JSON : la balance des Heures de la table
+  // s'y allume, sans alourdir la partie sérialisée.
+  journaliserTransfert(duel, coteSource, n, sourceCarteId);
   return { perdu: n, gagne };
 }
 
@@ -2950,7 +3013,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // chaîne porte la Grande Pesée.
       const montant = Math.max(0, Number(effet.amount) || 0);
       if (!montant) return;
-      transfertVie(duel, cote, montant);
+      transfertVie(duel, cote, montant, sourceCarteId);
       duel.log.push(`Transfert : ${adv === 'joueur' ? 'le joueur' : 'le sorcier'} perd ${montant} PV, ${cote === 'joueur' ? `vous en gagnez ${montant}` : `le sorcier en gagne ${montant}`}.`);
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;

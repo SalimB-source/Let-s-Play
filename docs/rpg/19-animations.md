@@ -74,9 +74,16 @@ portent une classe `is-*` posée puis retirée par un timer annulable.
 | Tutoriel (flèches, cibles, impacts, progression) | très couvert | `city-rush-tutorial.css` ne sert pas ici ; voir `rpg-tutorial-*` |
 
 **Les vrais trous**, confirmés par lecture des feuilles : les **compteurs
-d'Heures**, la **plaque de vie**, les **sites persistants**, les éléments
-**Sable / Ténèbres / Verre / Encre**, les mots-clés **Tribut, Cargaison,
+d'Heures**, la **plaque de vie**, les **sites persistants**, les deux
+éléments sans signature **Sable et Ténèbres** (le jeu n'en compte que cinq —
+`RPG_ELEMENTS = ['braise', 'eau', 'sable', 'neige', 'tenebres']` ; le Verre et
+l'Encre ne sont pas des éléments), les mots-clés **Tribut, Cargaison,
 Traque, Butin**, et **toute la respiration de la ville** entre deux duels.
+
+> **Mise à jour (octobre 2026).** La plaque de vie et les compteurs d'Heures
+> sont livrés (§5 bis). Les deux signatures d'élément manquantes le sont aussi
+> (§5 ter) : la **tempête de sable** pour le Sable et la **balance des Heures**
+> pour les transferts de vie Ténèbres (Tribut et sorts « pesée »).
 
 ---
 
@@ -121,10 +128,10 @@ animation qui clarifie l'état vaut dix animations de dégâts.
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
 | **Le grain du tour** · `rpg-astrolabe-grain` | À chaque passage de tour, un grain de sable traverse l'anneau de l'Astrolabe du HUD et tombe dans le verre du bas. Le compteur de tours devient un objet, pas un nombre. | 600 ms · SVG `stroke-dashoffset` | **P0** · S |
-| **Le sablier se retourne** · `rpg-fin-de-tour-retourne` | Le bouton « Fin du tour » se retourne en 3D (rotation Y, 240 ms) et devient la pastille dorée du tour suivant. Le geste le plus répété de la partie doit être le plus satisfaisant. | 480 ms · CSS `rotateY` | **P0** · S |
+| **Le sablier se retourne** · `rpg-fin-de-tour-retourne` ✅ | Le bouton « Fin du tour » se retourne en 3D (rotation Y de 90° à 0). Le geste le plus répété de la partie doit être le plus satisfaisant. Livré sur le libellé seul (§5 quater) ; la transformation en pastille dorée reste une piste d'enrichissement. | 480 ms · CSS `rotateY` | **P0** · S |
 | **Les Heures s'égrènent** · `rpg-heures-grain` ✅ | Un compteur d'Heures perd une unité : un grain traverse le losange, le verre s'éclaire et le chiffre repart. Chaque coup rejoue son geste, même deux coups rapprochés (variantes a/b). Aujourd'hui c'est un changement de texte. | 420 ms · CSS | **P0** · S |
 | **La dernière Heure** · `rpg-heures-derniere` ✅ | À **une** Heure restante, le verre se fêle et un liseré pulse : le joueur sait que l'effet tombe au prochain tour sans lire le journal. Le moteur retirant le compteur à zéro, la chute du dernier grain ne peut pas s'animer — l'état de veille la remplace. | 2 s en boucle · CSS | **P0** · S |
-| **La marée de mana** · `rpg-mana-maree` | Au début du tour, les pastilles de mana se remplissent **une par une**, de gauche à droite, avec une petite vague ; le débordement au-delà du plafond ondule au lieu de clignoter. Réutilise `rpg-flux-icone-allumee`. | 45 ms × n · CSS | **P0** · S |
+| **La marée de mana** · `rpg-mana-maree` ✅ | Au début du tour, les pastilles de mana se rallument **une par une**, de gauche à droite, avec une petite vague. Ne se déclenche que quand la réserve remonte (recharge), pas à la dépense ni au premier rendu ; voir §5 quater. L'ondulation de débordement au-delà du plafond reste une piste d'enrichissement. | 40 ms × n · CSS | **P0** · S |
 | **Intention révélée** · `rpg-intention-deplie` | L'intention ennemie imprimée sur le parchemin se déplie d'un coup sec, puis l'icône est **tamponnée** (échelle 1,3 → 1, encre). Le joueur doit voir le moment où il apprend ce qui vient. | 380 ms · CSS | P1 · S |
 | **Le sorcier réfléchit** · `rpg-sorcier-pendule` | Pendant le tour adverse, un pendule d'horloger oscille près de sa plaque, puis s'arrête net quand il joue. Remplace/complète `rpg-ai-thinking-pulse`, qui pulse sans raconter. | boucle ≤ 2 s · CSS | P2 · S |
 | **L'annonce adverse** · `rpg-annonce-pose` | Une carte jouée par le sorcier arrive par un rideau de sable qui s'écarte, la fiche se pose au milieu, puis repart en s'effaçant. Le bandeau existe ; il manque le **départ** propre. | 300 + 260 ms · CSS | P1 · S |
@@ -141,22 +148,26 @@ animation qui clarifie l'état vaut dix animations de dégâts.
 | **La cale se referme** · `rpg-cale-verrou` | Une carte envoyée en cale glisse derrière son ravisseur, puis un petit cadenas de sable se referme et devient le compteur de cale. `rpg-prisonniere-arrivee` fait glisser la carte ; il manque **la fermeture**. | 320 ms · CSS | P1 · S |
 | **La carte s'engage** · `rpg-carte-engagee` | Une créature qui attaque ou utilise un effet s'incline d'un quart de tour, son ombre s'allonge, et un liseré de sable marque qu'elle est dépensée jusqu'au prochain tour. | 240 ms · CSS | **P0** · S |
 | **Le jeton naît** · `rpg-jeton-sable` | Un jeton (Shabti, serviteur) sort **du sable** : la carte émerge du bas, encore couverte de grains, puis se nettoie. Aucune autre carte du jeu n'apparaît comme ça. | 600 ms · CSS | P1 · M |
-| **La destruction est du sable** · `rpg-carte-delitee` | Une carte détruite ne s'évapore pas : elle se délite en grains, et les grains **tombent sur le sol du plateau** (là où le sable s'accumule, cf. mécanique d'origine). Le cimetière se remplit visuellement. | 700 ms · canvas léger ou CSS | **P0** · M |
+| **La destruction est du sable** · `rpg-carte-delitee` ✅ | Une carte détruite ne s'évapore pas : elle se délite en grains, et les grains **tombent sur le sol du plateau** (là où le sable s'accumule, cf. mécanique d'origine). Le cimetière se remplit visuellement. Livré en particules CSS (transform/opacité, variables `--dx/--dy/--d`), sans canvas (§5 octies). | 700 ms · CSS | **P0** · M |
 | **Défausser** · `rpg-defausse` | Une carte défaussée glisse en biais, se retourne et rejoint le cimetière ; le compteur du cimetière encaisse. | 300 ms · WAAPI | P1 · S |
 
 ### E. Les éléments et les sorts
 
-Braise, Eau, Foudre, Neige et le soin ont leur signature. **Sable, Ténèbres,
-Verre et Encre n'en ont pas** — et ce sont eux qui portent l'histoire.
+Le jeu ne compte que **cinq éléments** (`RPG_ELEMENTS` : braise, eau, sable,
+neige, ténèbres). Braise, Eau et Neige ont leur signature de table (`RoueDeFeu`,
+`TourbillonEau`, `RpgMassFreezeFx`) ; la Foudre n'est pas un élément mais la
+cinématique d'une carte précise (le Maître du marteau). Le Sable et les
+Ténèbres avaient les deux seuls éléments muets — ils sont désormais livrés
+(§5 ter). Le Verre et l'Encre ne sont **pas** des éléments : « verre » ne nomme
+que des cartes (Vipère de verre) et « encre » une couleur typographique.
 
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
-| **Sable — l'érosion** · `rpg-sort-sable` | Une lame de poussière traverse la carte visée, qui se retrouve érodée (bord mangé, texture). Le sable retombe et **reste** au sol 1 s : c'est la ressource qui tombe. | 750 ms · SVG + CSS | **P0** · M |
-| **Ténèbres — la lumière se retire** · `rpg-sort-tenebres` | La zone s'assombrit en vignette locale (jamais l'écran), puis **la balance penche** : le fléau s'incline du côté qui perd des PV. Deux hiéroglyphes s'allument. Référence directe au set Balance des Heures. | 800 ms · CSS + SVG | **P0** · M |
-| **Verre — l'éclat** · `rpg-sort-verre` | La carte se fend en prismes, la lumière se diffracte, les éclats partent vers le cimetière. Le Verre est le camp de Fériel et Yamina : il doit être **beau**, pas agressif. | 700 ms · CSS + clip-path | P1 · M |
-| **Encre — le nom s'efface** · `rpg-sort-encre` | Une coulure noire descend sur la carte et efface **le nom** avant le reste (l'axe narratif du jeu : ce qui n'a plus de nom n'existe plus). Le plus fort du catalogue, à réserver aux sorts d'Encre. | 900 ms · SVG masque + CSS | P1 · M |
+| **Sable — la tempête** · `rpg-tempete-sable` ✅ | Une lame de poussière balaie chaque créature frappée par un sort Sable (Tempête de sable…), un voile ocre l'enveloppe, les bords s'érodent et six grains retombent au sol. Déclenchée par les blessures du journal dont `elements` contient `sable`, comme la roue de feu pour la Braise. | 900 ms · CSS | **P0** · M |
+| **Ténèbres — la balance des Heures** · `rpg-balance-tenebres` ✅ | Au centre de la table, un fléau s'incline du côté qui perd des PV, deux hiéroglyphes s'allument et cinq grains d'or filent de la coupelle basse vers la haute. Branchée sur un journal de transferts hors état : Tribut au contact comme sorts « pesée ». | 1 100 ms · CSS | **P0** · M |
+| **Ténèbres — le nom s'efface** · `rpg-nom-efface` (à faire) | *Nom effacé* (`defausse-adverse`) est un sort Ténèbres, pas une « Encre » : une coulure sombre raye le nom de la carte défaussée avant qu'elle rejoigne le cimetière. Geste à réserver à cette carte, à câbler sur la fenêtre de défausse. | 900 ms · SVG masque + CSS | P1 · M |
 | **Magie Rapide / Sorcellerie** · `rpg-famille-geste` | Deux gestes distincts, pas deux couleurs : la Magie Rapide **part** (trait latéral, 180 ms) ; la Sorcellerie **se prépare** (cercle qui se trace, 450 ms). `SortSigil` donne le signe, il manque le mouvement. | 180 / 450 ms · CSS | P1 · M |
-| **Contresort** · `rpg-contresort-rebond` | Le sort adverse heurte la réponse, se replie sur lui-même et repart. Aujourd'hui une bordure dorée suffit à le dire ; l'animation le rendrait **mémorable**. | 520 ms · CSS | P1 · M |
+| **Contresort** · `rpg-contresort-rebond` ✅ | Le sort adverse heurte la réponse, se replie sur lui-même et repart. La bordure dorée continue de l'identifier ; le rebond (520 ms, transform/opacité) le rend **mémorable**, sans toucher à l'arrivée des sorts normaux (§5 septies). | 520 ms · CSS | P1 · M |
 | **Écho** · `rpg-sort-echo-vague` | La seconde vague d'un sort à écho (Nuage de cendres) repart de la première, comme une marée qui revient, avec sa propre couleur. | 400 ms · CSS | P1 · S |
 | **Critique** · `rpg-crit-temps` | Un critique ne secoue pas plus fort : il **ralentit** 120 ms, la carte visée marque une tache d'encre, le chiffre éclate en deux puis se recompose. Le rare se joue au tempo, pas au volume. | 420 ms · WAAPI | **P0** · S |
 
@@ -167,11 +178,11 @@ Verre et Encre n'en ont pas** — et ce sont eux qui portent l'histoire.
 | **La vie est du sable** · `rpg-vie-ecoule` ✅ | La nappe de sable derrière le chiffre descend à la nouvelle part de vie, le chiffre **roule** jusqu'à sa nouvelle valeur et six grains quittent la plaque. C'est la métaphore fondatrice du jeu, appliquée là où on la regarde. | 420–780 ms · CSS + rAF | **P0** · S |
 | **La vie revient** · `rpg-vie-remonte` ✅ | Un soin fait remonter la nappe de sable et l'allume par le haut, le chiffre roule vers le haut. Même geste, sens inverse : on lit le soin sans lire le chiffre. | 540 ms · CSS + rAF | P1 · S |
 | **Au-delà de 25** · `rpg-vie-reserve` ✅ | La vie tenue dépasse le maximum d'origine : une **bande d'or** s'ouvre au-dessus du trait des 25 PV. La règle « la vie peut dépasser 25 » devient visible. | 420 ms · CSS | P1 · S |
-| **Déclaration d'attaque** · `rpg-ligne-de-charge` | Avant le bond, une ligne de sable se trace de l'attaquant à sa cible. Le joueur voit **qui** frappe **qui** avant l'impact, pas pendant. | 220 ms · SVG | **P0** · S |
+| **Déclaration d'attaque** · `rpg-ligne-de-charge` ✅ | Avant le bond, une ligne de sable se trace de l'attaquant à sa cible. Le joueur voit **qui** frappe **qui** avant l'impact, pas pendant. Livrée en div rotatif + CSS (transform/opacité) plutôt qu'en SVG (§5 sexies), en 220 ms de tracé sur 420 ms de vie. | 220 ms · CSS | **P0** · S |
 | **Blocage** · `rpg-blocage-etincelle` | Une flèche de blocage existe ; à l'impact, elle produit une étincelle et la carte bloqueuse recule d'un pixel. Le blocage doit se _sentir_ dans la carte, pas seulement dans le chiffre. | 260 ms · CSS | P1 · S |
 | **Dégâts cumulés** · `rpg-degats-cumul` | Plusieurs sources dans le même combat : les chiffres flottants s'additionnent au lieu de se chevaucher, le total reste 300 ms puis s'efface. Lisibilité pure. | 600 ms · CSS | P1 · S |
 | **Héros à zéro** · `rpg-heros-brise` | Un héros tombe : son portrait se fêle (verre), la carte reste sur la table en grisé **sans animation de disparition**. Au Sablier on ne meurt pas spectaculairement : on cesse d'être lisible. | 800 ms · CSS | **P0** · M |
-| **Victoire** · `rpg-victoire-table` | Le camp gagnant reste, l'autre s'efface en sable ; l'Astrolabe s'arrête sur le tour exact de la victoire. Le bilan s'ouvre **par-dessus**, sans couper la scène. | 1,2 s · CSS + WAAPI | **P0** · M |
+| **Victoire** · `rpg-victoire-table` ✅ | Le camp gagnant reste, l'autre s'efface en sable ; l'Astrolabe s'arrête sur le tour exact de la victoire. Le bilan s'ouvre **par-dessus**, sans couper la scène. Presque aucun JS : un attribut `data-vainqueur` pilote toute la scène CSS (§5 nonies). | 1 s · CSS | **P0** · M |
 | **Égalité** · `rpg-egalite-sabliers` | Match nul : les deux sabliers du HUD s'arrêtent ensemble, un grain tombe de chaque côté au même instant. Une égalité doit avoir sa propre image, sinon elle ressemble à un bug. | 700 ms · CSS | P1 · S |
 
 ### G. Les mots-clés des sets récents
@@ -181,7 +192,7 @@ la carte. Abordage en a déjà un (`rpg-abordage-*`) : les autres attendent.
 
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
-| **Tribut** · `rpg-tribut-fil` | Un fil de sable relie le payeur au bénéficiaire, les PV voyagent le long du fil et **arrivent** chez l'autre. Ténèbres, set Balance des Heures. | 550 ms · SVG + CSS | **P0** · M |
+| **Tribut** · `rpg-tribut-fil` ✅ | Un fil de sable relie le payeur au bénéficiaire, les PV voyagent le long du fil et **arrivent** chez l'autre. Ténèbres, set Balance des Heures. Livré en div rotatif + CSS (transform/opacité) plutôt qu'en SVG, pour rester dans la règle « pas de propriété de mise en page animée » (§5 quinques). | 550 ms · CSS | **P0** · M |
 | **Abordage — le seuil** · `rpg-abordage-tendu` | Quand la condition d'Abordage est atteinte, la chaîne existante **se tend** et le grappin mord : on sait que la carte vient de gagner son effet. | 300 ms · CSS | P1 · S |
 | **Cargaison** · `rpg-cargaison-debarque` | Une caisse descend le long d'un filin, s'ouvre, et sa valeur se pose sur la carte. Littérature de pirate, lisible en 400 ms. | 400 ms · SVG | P1 · M |
 | **Traque** · `rpg-traque-marque` | Une marque de sable en forme de viseur se pose sur la proie désignée, et reste tant que la Traque dure. L'information doit être **permanente**, pas un pop. | 220 ms posé · CSS | P1 · S |
@@ -242,8 +253,8 @@ tout le reste.
 
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
-| **Réglage de vitesse** · `rpg-anim-vitesse` | Un réglage dans les options du jeu : ×0,5 · ×1 · ×2, appliqué par une variable `--rpg-anim-scale` sur les durées et les délais. Indispensable pour les joueurs qui enchaînent les duels. | — · CSS variable | **P0** · S |
-| **Animations réduites (forcée)** · `rpg-anim-reduite` | Une case qui force le mode réduit **sans** dépendre de `prefers-reduced-motion` : fondu de 120 ms, état final immédiat, sons conservés. Bien des joueurs ignorent le réglage système. | — · classe `is-reduced` | **P0** · S |
+| **Réglage de vitesse** · `rpg-anim-vitesse` ✅ | Un réglage dans les options du jeu : ×0,5 · ×1 · ×2, appliqué par une variable `--rpg-anim-scale` sur les durées et les délais, et par `dureeAnimation()` sur les minuteurs JS. Indispensable pour les joueurs qui enchaînent les duels. Module pur `rpgAnimations.js`, carte « Animations de la table » (§5 decies). | — · CSS variable | **P0** · S |
+| **Animations réduites (forcée)** · `rpg-anim-reduite` ✅ | Une case qui force le mode réduit **sans** dépendre de `prefers-reduced-motion` : fondu de 120 ms, état final immédiat, sons conservés. Bien des joueurs ignorent le réglage système. Classe `.is-reduced` sur la coquille, indépendante du système (§5 decies). | — · classe `is-reduced` | **P0** · S |
 | **Mode lecture** · `rpg-mode-lecture` | Option « pas d'effets » qui remplace les animations par le journal de duel seul, en texte, avec les mêmes informations. Le Sablier doit rester jouable sur un vieux téléphone et pour qui ne supporte pas le mouvement. | — · rendu alternatif | P1 · M |
 
 ---
@@ -268,9 +279,18 @@ la fin.
 | 10 | `rpg-anim-vitesse` + `rpg-anim-reduite` | Sans elles, tout le reste est en dette d'accessibilité |
 
 **Ordre de production conseillé** : le lot ci-dessus (≈ 8–10 jours), puis
-`rpg-ville-sable-monte` et `rpg-ville-etage-perdu` (le monde, 4 j), puis les
-quatre éléments manquants (Sable, Ténèbres, Verre, Encre, 6 j), puis les
-mots-clés (Tribut et Cargaison d'abord, 3 j), puis le PvP (reconnexion et
+`rpg-ville-sable-monte` et `rpg-ville-etage-perdu` (le monde, 4 j). Les deux
+éléments muets (Sable et Ténèbres) sont livrés depuis octobre 2026 (§5 ter),
+ainsi que les deux gestes de tour `rpg-fin-de-tour-retourne` et
+`rpg-mana-maree` (§5 quater), le fil du Tribut `rpg-tribut-fil` (§5
+quinques) et la ligne de charge `rpg-ligne-de-charge` (§5 sexies). La
+vertical slice est désormais **soldée** : le rebond du contresort
+`rpg-contresort-rebond` (§5 septies), la destruction en sable
+`rpg-carte-delitee` (§5 octies), la scène de victoire `rpg-victoire-table`
+(§5 nonies) et les deux réglages d'accessibilité `rpg-anim-vitesse` /
+`rpg-anim-reduite` (§5 decies) ferment les dix postes du lot. Restent les
+mots-clés (Cargaison, Traque, 2 j — le transfert de vie du Tribut passe
+déjà par la balance, son tracé par le fil), puis le PvP (reconnexion et
 attente, 2 j). Le reste (P2) au fil de l'eau.
 
 ---
@@ -332,6 +352,321 @@ Trois décisions prises en codant, à garder pour la suite :
    compteur à zéro : on ne peut donc pas animer la chute du dernier grain.
    L'animation veille à **une** Heure restante — fêlure et liseré qui pulse —,
    ce qui prévient le joueur avant que l'effet ne tombe, sans mentir sur l'état.
+
+---
+
+## 5 ter. Livré — les deux signatures d'élément manquantes (octobre 2026)
+
+Le Sable et les Ténèbres étaient les deux seuls éléments sans signature de table
+(le jeu n'en compte que cinq ; Verre et Encre n'en sont pas). Les deux animations
+sont codées, vérifiées et suivent exactement les patrons de la roue de feu et du
+tourbillon d'eau.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| `TempeteSable` — voile ocre, lame de poussière qui balaie, érosion des bords, six grains qui retombent au sol | une blessure du journal dont `elements` contient `sable` (ex. *Tempête de sable*) | composant `TempeteSable` et état `tempetesSable` dans `RpgDuelPage.jsx`, `rpg-tempete-sable-*` dans `rpg-battle.css` |
+| `BalanceTenebres` — halo local, deux hiéroglyphes, fléau qui s'incline du côté qui perd des PV, cinq grains d'or qui traversent | le journal des transferts de vie : Tribut au contact et sorts « pesée » (`transfert`) | composant `BalanceTenebres` et état `balancesTenebres` dans `RpgDuelPage.jsx`, `rpg-balance-*` dans `rpg-battle.css` |
+| Journal moteur des transferts, hors état JSON (`WeakMap`) | tout passage par `transfertVie` | `rpgNombreTransferts` / `rpgTransfertsDepuis` dans `rpgDuel.js` |
+| Variantes `prefers-reduced-motion` (fondu supprimé, son et autres retours conservés) | — | bloc `prefers-reduced-motion` de `rpg-battle.css` ; la tempête n'est pas créée et la position du journal de transfert avance quand même |
+| Vérifications | rendu jsdom réel, feuille et câblage | `scripts/rpg-tempete-sable-check.mjs`, `scripts/rpg-balance-tenebres-check.mjs` (`npm run check:rpg-tempete-sable`, `check:rpg-balance-tenebres`), tests moteur dans `tests/rpg-tenebres.test.js` |
+
+Décisions prises en codant, à garder pour la suite :
+
+1. **Le Sable se détecte comme la Braise.** Aucun changement du moteur n'est
+   nécessaire : `rpgBlesserCreature` journalise déjà la couleur de la source, et
+   `rpgLancerMagie` lui passe `cardColors(carte)`. La page relève
+   `blessure.elements.includes('sable')` avec la même règle de fraîcheur que la
+   roue de feu, pour ne pas rallumer une ancienne blessure à l'action suivante.
+2. **La balance se branche sur un journal dédié, pas sur les soins.** Le journal
+   des soins ne dit que le camp qui gagne ; le transfert nomme aussi celui qui
+   perd. `transfertVie` est l'entonnoir unique du Tribut et des sorts de pesée,
+   donc un seul journal alimente les deux. Un lot de transferts simultanés ne
+   produit qu'**une** balance centrale (le calque ne dépend d'aucune position de
+   carte, il est centré dans `.card-table`).
+3. **Le Tribut au combat n'a pas de carte source** (`sourceCarteId: null`) :
+   seule une pesée lancée depuis la main transmet sa carte. Le sens du fléau et
+   le flux des grains (`--sens`) viennent du camp receveur, pas de la carte.
+
+---
+
+## 5 quater. Livré — le geste de fin de tour et la marée de mana (octobre 2026)
+
+Deux gestes du cœur du tour, jusqu'ici muets : le bouton qui rend la main au
+joueur et la recharge de la ressource la plus consultée. Tous deux sont des
+effets purs — aucun état du duel n'en dépend —, restent sous la seconde,
+uniquement en `transform`/`opacity`, et se réduisent à rien en mouvement réduit.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| `rpg-fin-de-tour-retourne` — le libellé du bouton se retourne en 3D (rotateY 90° → −12° → 0, perspective 440 px, 480 ms) | chaque nouveau tour dont `tour === 'joueur'`, détecté par rapport au tour précédent | état `flipTourNeuf` / réf. `tourPrecedentFlipRef` et `timerFlipRef` dans `RpgDuelPage.jsx`, `rpg-fin-de-tour-retourne` dans `rpg-battle.css` |
+| `rpg-mana-maree` — les orbes disponibles se rallument de gauche à droite en cascade (40 ms d'écart par emplacement, vague de 400 ms) | la réserve disponible **remonte** (`disponible` augmente), jamais quand elle descend, jamais au premier rendu | état `maree` / réf. `precedentDispoRef` et `timerMareeRef` dans `FluxManaTrack` (`RpgDuelPage.jsx`), `rpg-mana-maree` dans `rpg-mana-essai.css` |
+| Index de cascade exposé à la feuille | chaque orbe pose `style={{ '--mana-slot': index }}` | `FluxManaTrack`, délai `calc(var(--mana-slot, 0) * 40ms)` |
+| Variantes `prefers-reduced-motion` (geste supprimé, état et son conservés) | — | blocs `prefers-reduced-motion` des deux feuilles ; en outre `animationsReduites()` empêche le déclenchement côté React |
+| Vérifications | rendu jsdom réel de la piste, feuilles et câblage | `scripts/rpg-mana-maree-check.mjs` + `-smoke.jsx`, `scripts/rpg-fin-tour-retourne-check.mjs` (`npm run check:rpg-mana-maree`, `check:rpg-fin-tour-retourne`), aussi en bout de chaîne `check:rpg-ui` |
+
+Décisions prises en codant, à garder pour la suite :
+
+1. **Le flip porte sur le libellé, jamais sur le bouton.** La classe
+   `is-tour-neuf` est bien posée sur le `<button>`, mais la rotation s'applique à
+   `<span class="rpg-btn--endturn__label">` (boîtier `inline-block`) qui
+   entoure le texte. Les transform de survol, d'état désactivé et d'appui du
+   bouton restent intacts : la règle de non-empilement sur une même propriété
+   (§5, piège n°2) est respectée.
+2. **L'effet de tour lit `duelRef.current`, sans tableau de dépendances.** C'est
+   le même patron que les journaux de soins et de transferts : l'effet tourne à
+   chaque rendu et compare lui-même le tour courant au précédent. Mettre
+   `[duel.tour]` en dépendance plante au rendu — la constante `duel`
+   (`const duel = duelRef.current`) est déclarée plus bas dans le corps du
+   composant, donc encore dans sa zone morte temporelle quand le tableau est
+   évalué. Toute nouvelle dépendance inline à `duel` est un piège du même ordre.
+3. **La marée ne se lève que quand la réserve remonte.** Une dépense fait
+   descendre `disponible` et ne doit rien déclencher ; la recharge du tour la
+   fait remonter. Une référence mémorise la valeur du rendu précédent, initialisée
+   à la valeur courante pour que le premier rendu reste silencieux. La vague
+   s'applique aux deux camps, mais seuls les orbes `is-lit` bougent : les
+   emplacements vides ou déjà dépensés ne participent pas. La durée (800 ms)
+   couvre les dix orbes — 9 × 40 ms de décalage plus les 400 ms de la vague.
+4. **Tout est annulable et idempotent**, selon le patron `rpgMythicImpact` :
+   chaque minuteur est claironné au démontage de la page et dans le bloc de
+   reset d'un duel neuf, qui réarme aussi les références (un nouveau duel
+   n'hérite ni d'un flip ni d'une marée du précédent).
+
+---
+
+## 5 quinques. Livré — le fil de sable du Tribut (octobre 2026)
+
+Le mot-clé Tribut n'existait que dans le texte des cartes : le transfert de vie
+avait sa balance (§5 ter), mais rien ne disait quelle créature venait de
+ponctionner le sorcier. Le fil relie désormais la créature collectrice à la
+plaque qui paye, et trois grains d'or remontent le fil du payeur vers le
+bénéficiaire. Geste pur, sous la seconde, en `transform`/`opacity`, annulable.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| Journal moteur dédié, hors état JSON (`WeakMap`) : `{ entityId, cote, montant }` par contact au sorcier | `declencherTributs`, l'entonnoir unique du Tribut au combat (attaque groupée comme raccourci `rpgAttaquerSorcier`) | `tributsParDuel`, `rpgNombreTributs` / `rpgTributsDepuis` dans `rpgDuel.js` |
+| `TributFil` — trait doré qui se tend (`scaleX`), trois grains qui remontent le fil (`translateX` de la longueur à 0, décalés de 60 ms) | la page relève les nouveaux Tributs après chaque rendu, **un fil par créature** | composant `TributFil`, état `filsTribut` et réf. `tributsDuelRef` dans `RpgDuelPage.jsx`, `rpg-tribut-fil*` dans `rpg-battle.css` |
+| Géométrie figée à la capture : centre de la créature (`prendreInstantaneChamp`) vers le centre de la plaque adverse, longueur et angle calculés une fois | au relevé du journal, avant le rendu du calque | helper `geometrieFilTribut` dans `RpgDuelPage.jsx` |
+| Variantes `prefers-reduced-motion` (filet statique, grains effacés ; le fil n'est même pas créé côté React) | — | bloc `prefers-reduced-motion` dédié et bloc global `!important` de `rpg-battle.css` ; garde `animationsReduites()` dans l'effet |
+| Vérifications | moteur, rendu jsdom réel des deux camps, feuille et câblage | `tests/rpg-tenebres.test.js` (41 tests), `scripts/rpg-tribut-fil-check.mjs` + `-smoke.jsx` (`npm run check:rpg-tribut-fil`), aussi en bout de chaîne `check:rpg-ui` |
+
+Décisions prises en codant, à garder pour la suite :
+
+1. **Un journal jumeau de celui des transferts, pas une extension.** Le journal
+   des transferts ne connaît que le camp qui reçoit la vie ; le fil a besoin de
+   la créature source. Plutôt que d'alourdir son contrat (et la balance qui le
+   lit), `tributsParDuel` enregistre `entityId` / `cote` / `montant`. Les sorts
+   « pesée » passent par `transfertVie` sans créature source : ils ne peuvent
+   pas entrer dans ce journal — un check garantit un seul appel de
+   journalisation, dans `declencherTributs`.
+2. **Div rotatif plutôt que SVG.** La proposition initiale parlait de SVG ; le
+   fil est en fait un `div` absolu dont la rotation et la longueur sont figées
+   en style inline, le trait s'anime en `scaleX` et les grains en
+   `translateX(var(--fil-longueur))`. Aucune propriété de mise en page n'est
+   animée (le piège n°1 du §5), et le même jeu de keyframes sert aux deux camps
+   : seule la géométrie capturée change.
+3. **Le sens des grains suit la vie, pas l'attaque.** Le conteneur part de la
+   créature et pointe vers la plaque ; les grains naissent à l'extrémité
+   plaque (`translateX(longueur)`) et meurent à la créature (`translateX(0)`) :
+   la vie quitte le payeur et arrive chez le bénéficiaire, dans les deux camps.
+4. **La créature est garantie présente au relevé.** Un Tribut ne se déclenche
+   que sur un contact au sorcier : une créature bloquée ne le touche pas, donc
+   une créature qui ponctionne est toujours en vie et sur la table quand l'effet
+   lit son `entityId`. Un défaut de géométrie (DOM absent) retombe sur le centre
+   de la table au lieu de planter, comme les autres instantanés de champ.
+5. **Minuteries et chien de garde, sur le patron de la balance.** Chaque fil a
+   sa minuterie de 550 ms, toutes sont claironnées au démontage et au reset
+   d'un duel neuf (qui réarme aussi la position de lecture), et un chien de
+   garde fonde les fils fantômes quand une mise en veille d'onglet avale les
+   minuteries.
+
+---
+
+## 5 sexies. Livré — la ligne de charge des attaques (octobre 2026)
+
+L'attaque avait son bond (`fx-lunge`) et ses chocs, mais rien n'annonçait la
+cible avant l'impact : il fallait lire le bond pendant qu'il arrivait. Juste
+avant l'élan, un trait ocre se trace désormais du centre de l'attaquant vers sa
+cible, dans les deux camps. Geste pur, sous la seconde, en `transform`/
+`opacity`, sans aucune écriture moteur, annulable et invisible en mouvement
+réduit.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| `LigneCharge` — trait de sable qui se trace en 220 ms (`scaleX`) avec une pointe losange en tête, tient puis fond sur 420 ms de vie | les deux résolutions de combat locales (`resoudreAttaqueJoueur`, `resoudreAttaqueEnnemie`), **avant** `animerModificationsChamp` qui lance le bond | composant `LigneCharge`, état `lignesCharge` / réf. `chargeTimersRef` dans `RpgDuelPage.jsx`, `rpg-ligne-charge*` et keyframes `rpg-ligne-de-charge-*` dans `rpg-battle.css` |
+| Géométrie figée sur l'instantané d'avant combat : centre de l'attaquant vers une créature ou la plaque du sorcier défenseur | une ligne par attaquant, cible = coup rapide désigné → premier bloqueur → plaque (dérivée de `combat.ciblesAttaque` et des `blocages` vivants) | helper `geometrieLigneCharge` et fonction unique `declencherLignesCharge` dans `RpgDuelPage.jsx` |
+| Variantes `prefers-reduced-motion` (la ligne ne se trace pas ; le bond, le choc et les sons restent) | — | bloc `prefers-reduced-motion` dédié et bloc global `!important` de `rpg-battle.css` ; garde `animationsReduites()` à l'entrée du déclencheur |
+| Vérifications | rendu jsdom réel des trois variantes (créature / plaque, deux camps), feuille et câblage, moteur vérifié vierge de tout visuel | `scripts/rpg-ligne-charge-check.mjs` + `-smoke.jsx` (`npm run check:rpg-ligne-charge`), aussi en bout de chaîne `check:rpg-ui` |
+
+Décisions prises en codant, à garder pour la suite :
+
+1. **Aucun changement moteur, contrairement au Tribut.** Le moteur sait déjà
+   tout ce qu'il faut via l'objet `combat` : `ciblesAttaque` (coups rapides),
+   les `blocages` revivants et, par défaut, la plaque du sorcier. La cible de
+   chaque attaquant se dérive donc entièrement dans la page ; un check garantit
+   que `rpgDuel.js` ne contient ni classe ni nom de la ligne. La règle « le
+   moteur n'a aucun déclencheur visuel » reste intacte.
+2. **Div rotatif, pas SVG, et ocre de sable, pas or.** Comme le fil du Tribut
+   (§5 quinques, décision 2), la ligne est un `div` absolu dont la géométrie
+   est figée en style inline et qui ne s'anime qu'en `scaleX` : zéro propriété
+   de mise en page animée. Sa palette ocre (`#d6a854`, `rgba(240,215,154)`) la
+   distingue volontairement de l'or des transferts de vie — deux fils ne se
+   ressemblent pas sur la table.
+3. **La ligne précède le bond sans jamais l'attendre.** Elle est tracée dans le
+   même tick que le déclenchement de `fx-lunge` : les 220 ms de tracé se
+   déroulent pendant l'amorce du mouvement, donc la lecture « qui frappe qui »
+   précède l'impact sans ajouter de latence ni bloquer la moindre action. C'est
+   un signal, pas une porte.
+4. **La géométrie vient de l'instantané d'avant combat, pas d'un mesurage
+   vivant.** `champAvantAttaque = prendreInstantaneChamp()` est déjà capturé
+   avant la résolution ; le helper y lit les centres, ce qui garantit que la
+   ligne part de la place de repos de la créature, jamais de sa position en
+   plein bond. Un DOM absent retombe sur le centre de la table, comme pour le
+   Tribut.
+5. **Périmètre : les deux résolutions locales seulement.** Le combat PvP passe
+   par des chemins d'état distants (`pvpRef`, intentions) où les cibles ne sont
+   pas toutes présentes au moment du rendu ; la ligne y est simplement absente
+   plutôt que risquée sur une géométrie incomplète. Le solo et la résolution
+   locale, surfaces testables de la vertical slice, sont couverts des deux
+   côtés de la table.
+6. **Minuteries, chien de garde et reset, sur le patron de la balance.** Chaque
+   ligne a sa minuterie de 420 ms, toutes sont claironnées au démontage et au
+   reset d'un duel neuf, et un chien de garde fonde les lignes fantômes après
+   une mise en veille d'onglet.
+
+---
+
+## 5 septies. Livré — le rebond du contresort (octobre 2026)
+
+Le contresort n'existait que par sa bordure dorée : on lisait la réponse, pas
+le choc. La fiche centrale du sort joué (`rpg-spell-played`) porte déjà sa
+variante `--contre` quand l'annonce est une contre ; le geste est donc 100 %
+CSS, sans nouveau composant ni écriture moteur. La fiche heurte la réponse,
+s'écrase au centre (squash), repart vers l'origine du sort contré puis se
+stabilise, orientée par une variable de sens `--rebond` (1 joueur, −1 sorcier).
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| Keyframes `rpg-contresort-rebond` (520 ms) : translation depuis le camp du répondant, aplati `scale(1.07, .91)` à l'impact, renvoi de 12 px, repos stable | la fiche `rpg-spell-played--contre`, variante posée par le JSX d'annonce `${contre ? ' rpg-spell-played--contre' : ''}` | règle `.rpg-spell-played--contre` et keyframes dans la zone FX gardée de `rpg-battle.css` |
+| Sens selon le camp (`--rebond: 1` / `−1`), bordure dorée `rgba(255,206,110,.9)` conservée | variante `.rpg-spell-played--sorcier.rpg-spell-played--contre` | `rpg-battle.css` |
+| Les sorts normaux gardent leur arrivée `rpg-spell-arrival` de 280 ms ; le rebond ne déborde jamais hors de la variante contre | — | règle `.rpg-spell-played` de base, hors zone FX |
+| Mouvement réduit : arrivée instantanée, la bordure et le sur-titre suffisent | bloc `prefers-reduced-motion` et surcharge `.is-reduced` (§5 decies) | `rpg-battle.css` |
+| Vérifications | keyframes sans propriété de layout, sens des deux camps, périmètre limité à la variante, moteur vierge | `scripts/rpg-contresort-rebond-check.mjs` (`npm run check:rpg-contresort-rebond`), en bout de chaîne `check:rpg-ui` |
+
+Décisions :
+
+1. **Aucun composant nouveau.** L'habillage de l'annonce existe déjà ; seul un
+   jeu d'images clés dédié remplace l'arrivée tranquille de la fiche, et la
+   règle de base (les autres sorts) reste inchangée.
+2. **Le squash raconte le choc, pas le dégât.** L'aplatissement puis le renvoi
+   signalent la collision et le reflux du sort ; la fiche se stabilise à
+   `transform: none`, donc ses informations restent lisibles jusqu'à sa
+   disparition programmée.
+3. **Transform et opacity seulement, comme tout le lot.** Aucune propriété de
+   mise en page n'est animée ; le moteur ne contient ni la classe ni le nom du
+   rebond, vérifié par le check.
+
+## 5 octies. Livré — la destruction qui redevient du sable (octobre 2026)
+
+Une carte détruite s'évaporait vers le haut, à l'envers de la métaphore du jeu :
+au Sablier, la destruction **rend du sable**, qui tombe et s'accumule au sol.
+Le fantôme de destruction existant (`FantomeCarteDetruite`) gère déjà la
+géométrie, le cycle de vie et la variante Braise. Le délitement est un calque
+frère, douze grains qui s'échappent en éventail et tombent, réservé aux morts
+génériques.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| Calque `.rpg-carte-delitee` (absolu, `z-index: 54` sous le fantôme, `pointer-events: none`, `overflow: visible`) portant douze grains `.rpg-carte-delitee__grain` | rendu seulement pour une mort générique : `{!prise && !effet.bruleeParBraise && (…)}` — ni la prise en cale d'Abordage ni la combustion Braise ne font tomber de grains | composant du fantôme dans `RpgDuelPage.jsx`, styles dans `rpg-battle.css` |
+| Chute de 700 ms en `transform`/`opacity`, courbe qui accélère comme une pesanteur ; chaque grain porte ses variables figées `--gx` (départ en %), `--dx/--dy` (chute en px) et `--d` (décalage en ms) | `GRAINS_DELITEMENT` (tableau `Object.freeze` de douze jeux de coordonnées), `GRAINS_DELITEMENT.map(...)` | keyframes `rpg-carte-delitee-grain` dans `rpg-battle.css`, paramètres dans `RpgDuelPage.jsx` |
+| Le fantôme générique se tasse désormais vers le bas (`translate: 0 10px`) au lieu de s'évaporer ; la cinématique Braise (`rpg-card-burn`) reste intacte | keyframes `rpg-card-destroy` modifiée dans son seul état final | `rpg-battle.css` |
+| Mouvement réduit : aucun grain (opacité 0), la carte disparaît sans chute ; le bloc global `!important` couvre aussi le calque | blocs `prefers-reduced-motion` dédié et global, surcharge `.is-reduced` | `rpg-battle.css` |
+| Vérifications | rendu jsdom réel (douze grains, géométrie et variables), feuille, garde « ni prise ni Braise », moteur vierge de `rpg-carte-delitee` et de `GRAINS_DELITEMENT` | `scripts/rpg-carte-delitee-check.mjs` + `-smoke.jsx` (`npm run check:rpg-carte-delitee`), en bout de chaîne `check:rpg-ui` |
+
+Décisions :
+
+1. **Un calque frère, pas une variante du fantôme.** Le fantôme conserve son
+   cycle de vie et sa géométrie capturée ; le délitement s'y superpose en
+   reprenant exactement `left/width/height`, puis laisse les grains déborder
+   (`overflow: visible`) jusqu'au plateau.
+2. **Des particules CSS, pas un canvas.** La fiche catalogue envisageait un
+   canvas léger ; douze grains en `transform`/`opacity`, paramétrés par des
+   variables inline figées à la création, suffisent et restent dans la règle
+   « aucune propriété de mise en page animée ».
+3. **Le sable n'apparaît que sur une vraie mort.** Une carte prise en cale
+   repart chez son capteur, une carte Brûlée par la Braise a ses flammes :
+   forcer des grains dans ces deux cas mentirait sur ce qui arrive à la carte.
+4. **Chute vers le bas, jamais vers le haut.** L'ancienne évaporation
+   (`translate: 0 -20px`) est supprimée ; l'état final du fantôme et la chute
+   des grains vont dans le même sens, celui du sable qui se dépose.
+
+## 5 nonies. Livré — la victoire se joue sur la table (octobre 2026)
+
+La fin de partie basculait directement sur le panneau de bilan, sans dernier
+plan sur la table. Désormais, dès que le moteur connaît le vainqueur, la table
+le nomme et se met en scène : le camp perdant s'affaisse et pâlit comme du
+sable qui se dépose, l'Astrolabe se fige sur « DUEL TERMINÉ » et le bilan
+s'ouvre par-dessus sans couper l'image. Presque aucun JS : un seul attribut
+pilote toute la scène.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| Attribut `data-vainqueur` sur `.card-table` (posé avec `data-territoire-termine`), sans nouvel état ni porte | le moteur continue de décider seul via `rpgVainqueur(duel)` ; la page ne fait que relayer son résultat | `RpgDuelPage.jsx` |
+| Camp vaincu : affaissement d'une seconde (`rpg-victoire-sable`, fin `opacity: .22`, `translateY(12px) scale(.96)`), le gagnant reste en place | sélecteurs `.card-table[data-vainqueur="…"] .card-row--…` / `.rpg-wizard-plate--…` pour les deux camps | `rpg-battle.css`, zone FX de la victoire |
+| Astrolabe figé en 550 ms (`rpg-victoire-indicateur`, libellé « DUEL TERMINÉ ») et bilan en panneau borné (480 ms + 120 ms de silence de mise en scène), voile plein cadre pour la défaite | `.rpg-turn-indicator.is-finished`, `.rpg-overlay--win` / `--loss` ; le centrage `translate(-50%,-50%)` du panneau de victoire reste assuré par sa règle statique | `rpg-battle.css` |
+| Mouvement réduit : pas d'affaissement, une atténuation statique `opacity: .35` désigne le vaincu ; le bilan ne fait pas d'entrée en scène | bloc `prefers-reduced-motion` dédié et surcharge `.is-reduced` (fondu de 120 ms pour les panneaux) | `rpg-battle.css` |
+| Vérifications | attributs et libellé, keyframes sans propriété de layout, deux camps, centrage conservé, moteur vérifié vierge de `data-vainqueur` et de `rpg-victoire` | `scripts/rpg-victoire-table-check.mjs` (`npm run check:rpg-victoire-table`), en bout de chaîne `check:rpg-ui` |
+
+Décisions :
+
+1. **Un attribut, pas un état React de scène.** `data-vainqueur` est le seul
+   fil posé côté JSX ; toute la mise en scène découle de sélecteurs CSS
+   attribués, ce qui garde la fin purement déclarative et le moteur intact.
+2. **Le bilan passe par-dessus, jamais à la place.** Le panneau de victoire est
+   borné et centré, le plateau final (créatures, compteurs, main) reste visible
+   autour ; aucune porte, le panneau garde la main et le centrage par sa règle
+   structurelle, pas seulement par ses images clés.
+3. **Une seconde, pas plus.** L'affaissement tient en 1 s et tout est en
+   `transform`/`opacity` : la fin vaut le détour sans ralentir la lecture du
+   bilan ni la relance d'un duel.
+
+## 5 decies. Livré — les réglages d'animation, vitesse et mode réduit forcé (octobre 2026)
+
+Les deux derniers postes P0 de la vertical slice ferment sa dette
+d'accessibilité. Un module pur (`src/games/rpgAnimations.js`, sans React) porte
+deux préférences persistées sur l'appareil, sur le même modèle que le son : un
+accès `localStorage` tolérant qui ne plante pas en navigation privée ou dans
+une iframe restrictive.
+
+| Ce qui a été livré | Déclencheur | Où |
+| --- | --- | --- |
+| **Vitesse ×0,5 / ×1 / ×2** : catalogue figé `RPG_VITESSES_ANIMATION` (lente `0.5`, normale `1`, rapide `2`), exposé à la feuille via `--rpg-anim-scale` sur la coquille `.rpg-battle` et aux minuteurs via `dureeAnimation(ms)` | commande segmentée de la carte « Animations de la table », chaque choix écrit `letsplay_sablier_anim_vitesse_v1` | `rpgAnimations.js`, `RpgDuelPage.jsx`, styles `rpg-settings__segment*` dans `rpg-battle.css` |
+| Toutes les durées **et tous les délais** de la slice consomment la variable (`calc(<durée> * var(--rpg-anim-scale, 1))`), y compris les cascades `--d` et le décalage de la marée de mana | la variable est héritée de la coquille par toute la table, la barre d'actions comprise | `rpg-battle.css`, `rpg-mana-essai.css` |
+| Les six minuteurs JS passent par `dureeAnimation(...)` (marée, balance, tribut, ligne de charge, flip de tour, tempête), avec plancher de 16 ms, pour rester calés sur la durée réellement affichée | à l'ordonnancement de chaque effet, nettoyage et `expireA` utilisant la même valeur | `RpgDuelPage.jsx` |
+| **Mode réduit forcé** : case `rpg-anim-reduite` indépendante de `prefers-reduced-motion` ; `rpgAnimationsReduites(force)` = préférence joueur **OU** préférence système. La coquille prend `.is-reduced`, la table `data-anim-reduite` | le toggle écrit `letsplay_sablier_anim_reduite_v1` ('on'/'off') | `rpgAnimations.js`, `RpgDuelPage.jsx` |
+| En `.is-reduced` : fondu opacité de 120 ms sans délai pour les panneaux de fin, gestes et particules coupés (`animation: none`), état final immédiat ; aucun `display: none`, l'information reste là, et **les sons ne changent pas** (l'audio vit en JS) | keyframes `rpg-fondu-reduit` et bloc `.rpg-battle.is-reduced` en fin de zone FX | `rpg-battle.css` |
+| Valeurs illisibles ramenées à ×1, stockage absent sans erreur, états initialisés depuis les préférences | `readRpgVitessePref` / `readRpgReducedPref` avec replis | `rpgAnimations.js` |
+| Vérifications | tests unitaires du module avec `window` factice (vitesses, persistance, replis, mode réduit, tolérance au stockage), câblage page, consommation de la variable sur durées et délais, bloc `.is-reduced`, styles de réglages, moteur vérifié vierge de tout réglage visuel | `scripts/rpg-animation-reglages-check.mjs` (`npm run check:rpg-animation-reglages`), en bout de chaîne `check:rpg-ui` |
+
+Décisions :
+
+1. **La variable est posée sur la coquille `.rpg-battle`, pas sur la table.**
+   La barre d'actions et le bouton de fin de tour vivent hors de `.card-table`
+   mais dans la coquille : c'est le seul périmètre dont héritent à la fois la
+   table et le chrome, donc le seul qui scale vraiment tout le geste.
+2. **La vitesse agit deux fois, sinon elle ment.** Scaler les seules durées CSS
+   laisserait les minuteurs JS sur leur durée nominale, et le nettoyage couperait
+   un geste encore visible à ×2 (ou attendrait après une fin à ×0,5). Chaque
+   minuteur de la slice passe donc par `dureeAnimation`, sur le timer comme sur
+   la date de péremption `expireA`.
+3. **Le mode réduit n'est pas la vitesse nulle.** Il ne met pas les durées à
+   zéro : il ne fait pas naître les effets à spawn (garde JS existante
+   `animationsReduites()`), et pour les scènes CSS-only remplace le geste par un
+   fondu de 120 ms ou une atténuation statique. Les deux réglages restent
+   orthogonaux, et les bruitages sont conservés dans tous les cas.
+4. **Un module pur, testable sans DOM.** Toute la logique de préférence et de
+   calcul de durée est hors de React, importable et testable avec un `window`
+   factice ; la page ne fait que lire, écrire et relayer. Le moteur (`rpgDuel.js`)
+   reste strictement vierge de tout nom de réglage ou de classe visuelle.
 
 ---
 

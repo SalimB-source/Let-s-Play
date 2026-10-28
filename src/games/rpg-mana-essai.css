@@ -178,6 +178,34 @@
   .rpg-flux-track__slot.is-lit { animation: none; }
 }
 
+/* ── La marée de mana : la recharge du tour rallume les orbes en cascade ────
+   À chaque nouveau tour, la réserve revient à son maximum d'un coup. Plutôt
+   que dix allumages simultanés, les orbes disponibles s'illuminent de gauche
+   à droite avec une petite vague (40 ms d'écart). Seules les orbes allumées
+   bougent : les emplacements vides et les mana dépensés restent en place. La
+   classe `is-maree` ne vit que le temps de la vague ; elle rejoue donc à
+   chaque recharge sans toucher à l'état du duel. */
+.rpg-flux-track.is-maree .rpg-flux-track__slot.is-lit {
+  animation: rpg-mana-maree calc(.4s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .7, .35, 1) both;
+  animation-delay: calc(calc(var(--mana-slot, 0) * 40ms) * var(--rpg-anim-scale, 1));
+}
+@keyframes rpg-mana-maree {
+  0% { transform: scale(.55) translateY(3px); opacity: .35; filter: brightness(.6); }
+  55% {
+    transform: scale(1.16);
+    opacity: 1;
+    filter: brightness(1.5) drop-shadow(0 0 6px var(--mana-halo));
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 3px var(--mana-halo));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-flux-track.is-maree .rpg-flux-track__slot.is-lit { animation: none; }
+}
+
 /* Le plateau et la main restent bien lisibles et consultables (appui long /
    survol) sous un voile léger pendant le choix : le conteneur laisse passer
    les gestes vers les cartes, seuls les boutons captent le clic. */
