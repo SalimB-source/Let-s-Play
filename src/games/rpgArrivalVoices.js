@@ -2,10 +2,12 @@
  * Voix d'arrivée des créatures — un échantillon par carte, livré à la racine
  * de `public/`.
  *
- * Le lot « Game voices » dépose un court MP3 par créature (0,65 s à 3,06 s,
- * 80 kbps, 44,1 kHz) sous le nom de sa carte. Ce nom n'est presque jamais
- * l'identifiant de la carte, ni même son nom imprimé : le rapprochement est
- * fait ici, ligne par ligne, et chaque écart est consigné.
+ * Deux lots de fichiers ont été déposés à la racine de `public/` : le lot
+ * « Game voices » (37 MP3 courts, 0,65 s à 3,06 s) puis un second lot de
+ * 14 voix (14 MP3 de 1,07 s à 3,08 s, plus un WAV — le Tengu). Chacun porte le
+ * nom de sa carte, qui n'est presque jamais l'identifiant de la carte, ni même
+ * son nom imprimé : le rapprochement est fait ici, ligne par ligne, et chaque
+ * écart est consigné.
  *
  * Ce que ces fichiers ne sont pas :
  *  - les longues pistes de plateau (`Viking Howl.mp3`, `Egypt.mp3`,
@@ -32,8 +34,8 @@
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
 
 /**
- * Les 37 voix livrées, carte par carte. L'ordre suit la collection : Braise,
- * puis Ténèbres, Sable, Eau, Neige, et enfin les héros.
+ * Les 51 voix livrées, carte par carte. L'ordre suit la collection — Braise,
+ * Ténèbres, Sable, Eau, Neige, les héros — puis le second lot, rangé à part.
  */
 export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
   // ── Cour du Soleil rouge · Braise ───────────────────────────────────────
@@ -101,6 +103,38 @@ export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
   'ifrit-al-ahmar': 'Ifrit el ahmar.mp3',
   'maitre-du-marteau': 'Maitre du marteau.mp3',
   'maitre-des-corbeaux': 'Maitre des corbeaux.mp3',
+
+  // ── Deuxième lot : 14 voix de plus ──────────────────────────────────────
+  // Le lot suivant ne nomme pas non plus les cartes telles qu'elles
+  // s'impriment ; chaque écart est consigné ici.
+  //
+  // « Ashigaru » : le seul ashigaru du jeu, celui des braises.
+  'ashigaru-des-braises': 'Ashigaru.mp3',
+  // « Ronin du soleil rouge » sans macron : la carte s'écrit « Rōnin du Soleil
+  // rouge ».
+  'ronin-du-soleil-rouge': 'Ronin du soleil rouge.mp3',
+  // « Tengu » : la carte est le Tengu du mont ardent. Seule voix du lot en
+  // WAV — l'original 24 bits stéréo a été ramené en PCM 16 bits mono 44,1 kHz
+  // pour rester dans le poids d'une voix (137 Ko) et se décoder partout.
+  'tengu-du-mont-ardent': 'Tengu.wav',
+  'hatamoto-des-cendres': 'Hatamoto des cendres.mp3',
+  'gardienne-de-la-balance': 'Gardienne de la balance.mp3',
+  // « Prête de la bouche » : la carte est le **Prêtre** de la bouche — le
+  // fichier écrit la prêtresse.
+  'pretre-de-la-bouche': 'Prête de la bouche.mp3',
+  'ibis-des-comptes': 'Ibis des comptes.mp3',
+  'celle-qui-pese': 'Celle qui pèse.mp3',
+  // « Piloe de la carrera » : deux coquilles du lot pour la carte « Pilote de
+  // la Carreira ».
+  'pilote-de-la-carreira': 'Piloe de la carrera.mp3',
+  'le-renegat': 'Le renegat.mp3',
+  // « Djinn d'éclair » : le seul djinn du jeu est le Djinn de foudre.
+  'djinn-de-foudre': "Djinn d'éclair.mp3",
+  // « La dame des neufs mondes » : la carte s'imprime « LA DAME DES NEUF
+  // MONDES », au singulier.
+  'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',
+  'pere-des-corbeaux': 'Pere des corbeaux.mp3',
+  tarek: 'Tarek.mp3',
 });
 
 /** Les identifiants des cartes qui ont une voix, dans l'ordre de la table. */

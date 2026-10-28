@@ -44,10 +44,20 @@ const DEJA_BRANCHES = new Set([
   '26509 Thunder spark transition-full.mp3', // bruitage `foudre_marteau`
 ]);
 
+/**
+ * Les bruitages WAV de `public/` qui ne sont pas des voix : l'accueil nain et
+ * le dialogue pirate vivent déjà dans `rpgAudio.js` / `rpgDwarfAudio.js`.
+ */
+const WAV_DEJA_BRANCHES = new Set([
+  'Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav',
+  'Pirate_Dialogue_Alright.wav',
+]);
+
 const fichiersVoix = readdirSync(PUBLIC)
-  .filter((nom) => /\.mp3$/i.test(nom))
+  .filter((nom) => /\.(mp3|wav)$/i.test(nom))
   .map((nom) => ({ nom, taille: readFileSync(new URL(nom, PUBLIC)).byteLength }))
-  .filter(({ nom, taille }) => taille < 1_000_000 && !DEJA_BRANCHES.has(nom))
+  .filter(({ nom, taille }) => taille < 1_000_000
+    && !DEJA_BRANCHES.has(nom) && !WAV_DEJA_BRANCHES.has(nom))
   .map(({ nom }) => nom);
 
 function duelDeTest() {
@@ -69,7 +79,7 @@ function donner(duel, cote, carteId) {
 }
 
 test('chaque voix appartient à une créature ou à un héros du jeu', () => {
-  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 37, 'le lot « Game voices » compte 37 cartes');
+  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 51, 'les deux lots comptent 51 cartes');
   for (const carteId of RPG_ARRIVAL_VOICE_CARD_IDS) {
     const carte = cardById(carteId);
     assert.ok(carte, `${carteId} est une carte du jeu`);
@@ -104,6 +114,15 @@ test('le rapprochement des noms approximatifs est figé', () => {
     'maitre-des-hieroglyphes': 'Maitre des Hieroglyphes.mp3',
     'maitre-du-marteau': 'Maitre du marteau.mp3',
     'maitre-des-corbeaux': 'Maitre des corbeaux.mp3',
+    // Second lot : 14 voix, dont 8 dont le fichier ne dit pas la carte.
+    'ashigaru-des-braises': 'Ashigaru.mp3',
+    'ronin-du-soleil-rouge': 'Ronin du soleil rouge.mp3',
+    'tengu-du-mont-ardent': 'Tengu.wav',
+    'pretre-de-la-bouche': 'Prête de la bouche.mp3',
+    'pilote-de-la-carreira': 'Piloe de la carrera.mp3',
+    'djinn-de-foudre': "Djinn d'éclair.mp3",
+    'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',
+    tarek: 'Tarek.mp3',
   };
   for (const [carteId, fichier] of Object.entries(attendus)) {
     assert.equal(rpgArrivalVoiceFile(carteId), fichier, `${carteId} parle avec ${fichier}`);
@@ -112,7 +131,10 @@ test('le rapprochement des noms approximatifs est figé', () => {
   for (const carteId of ['susanoo', 'jormungandr', 'salem', 'yamina', 'boualem',
     'cavalier-des-deux-sabres', 'celui-qui-juge', 'jarl-au-marteau-de-guerre',
     'berserk-du-crepuscule', 'oni-de-la-fournaise', 'onna-musha-des-cendres',
-    'kenshi-de-la-forge', 'tojiro-le-pourfendeur', 'celui-qui-juge', 'salem']) {
+    'kenshi-de-la-forge', 'tojiro-le-pourfendeur', 'celui-qui-juge', 'salem',
+    // Second lot, dont le fichier porte le nom de la carte.
+    'hatamoto-des-cendres', 'gardienne-de-la-balance', 'ibis-des-comptes',
+    'celle-qui-pese', 'le-renegat', 'pere-des-corbeaux']) {
     assert.ok(rpgArrivalVoiceFile(carteId), `${carteId} a bien une voix`);
   }
 });
@@ -132,7 +154,7 @@ test('chaque voix est un fichier court livré dans public/, une seule fois', () 
 test('aucune voix du lot ne reste orpheline — et aucune musique ne s’y invite', () => {
   // À la racine de public/, tout MP3 de moins d'1 Mo est une voix de carte ;
   // les pistes de plateau pèsent toutes plus de 3 Mo.
-  assert.equal(fichiersVoix.length, 37, 'le dépôt livre exactement 37 voix de créature');
+  assert.equal(fichiersVoix.length, 51, 'le dépôt livre exactement 51 voix de créature');
   const attribues = new Set(Object.values(RPG_ARRIVAL_VOICE_FILES));
   for (const nom of fichiersVoix) {
     assert.ok(attribues.has(nom), `${nom} est attribué à une carte`);

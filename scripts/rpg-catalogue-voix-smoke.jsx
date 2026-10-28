@@ -106,6 +106,18 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     assert.ok(fichiersLus.slice(marque).some((src) => src.includes('Serpent')),
       'le fichier au nom de la carte est bien celui qui sonne');
     await fermerFiche('vipere-de-verre');
+
+    // ── 5 · Le second lot de voix arrive aussi jusqu'à la fiche ───────────
+    sonsJoues.length = 0;
+    marque = fichiersLus.length;
+    await cliquer(carteCatalogue('ibis-des-comptes'), 'l’Ibis des comptes s’ouvre');
+    await attendre(() => ficheOuverte('ibis-des-comptes'), 'la fiche de l’Ibis est ouverte');
+    // L'adresse est encodée (`Ibis%20des%20comptes.mp3`) : on la décode avant
+    // de la comparer au nom du fichier.
+    assert.ok(fichiersLus.slice(marque).some((src) => decodeURIComponent(src).includes('Ibis des comptes.mp3')),
+      'la voix du second lot est lue par la fiche');
+    assert.ok(!sonsJoues.some((son) => son.nom === 'hover'), 'et elle remplace l’effleurement');
+    await fermerFiche('ibis-des-comptes');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
     await act(async () => { root.unmount(); });

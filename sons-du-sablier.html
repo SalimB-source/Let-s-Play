@@ -177,8 +177,9 @@
       créatures sans voix gardent les accueils pirates, le quai des navires et la
       réplique naine. Les noms des fichiers ne sont pas ceux des cartes —
       « Damiyo » pour le Daimyō du Soleil rouge, « Shogun » pour le Samouraï du
-      Torii, « Serpent de verre » pour la Vipère de verre — le rapprochement est
-      consigné carte par carte.
+      Torii, « Serpent de verre » pour la Vipère de verre, « Djinn d’éclair » pour
+      le Djinn de foudre, « Piloe de la carrera » pour le Pilote de la Carreira —
+      le rapprochement est consigné carte par carte, lot par lot.
     </p>
     <div class="grid" id="liste-voix"></div>
   </section>
@@ -205,7 +206,7 @@
     </div>
     <div class="note">
       <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
-      <code>src/games/rpgArrivalVoices.js</code> (37 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
+      <code>src/games/rpgArrivalVoices.js</code> (51 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
       <code>src/games/rpgAmbientMusic.js</code> (10 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
@@ -427,6 +428,21 @@ const LIBELLES_VOIX = {
   'ifrit-al-ahmar': 'Ifrit al-Ahmar, seigneur des braises',
   'maitre-du-marteau': 'LE MAÎTRE DU MARTEAU',
   'maitre-des-corbeaux': 'LE MAÎTRE DES CORBEAUX',
+  // Second lot de voix.
+  'ashigaru-des-braises': 'Ashigaru des braises',
+  'ronin-du-soleil-rouge': 'Rōnin du Soleil rouge',
+  'tengu-du-mont-ardent': 'Tengu du mont ardent',
+  'hatamoto-des-cendres': 'Hatamoto des cendres',
+  'gardienne-de-la-balance': 'Gardienne de la balance',
+  'pretre-de-la-bouche': 'Prêtre de la bouche',
+  'ibis-des-comptes': 'Ibis des comptes',
+  'celle-qui-pese': 'Celle qui pèse',
+  'pilote-de-la-carreira': 'Pilote de la Carreira',
+  'le-renegat': 'Le Renégat',
+  'djinn-de-foudre': 'Djinn de foudre',
+  'dame-des-neuf-mondes': 'LA DAME DES NEUF MONDES',
+  'pere-des-corbeaux': 'LE PÈRE DES CORBEAUX',
+  tarek: 'TAREK',
 };
 const lv = $('#liste-voix');
 for (const [carteId, fichier] of Object.entries(RPG_ARRIVAL_VOICE_FILES)) {
