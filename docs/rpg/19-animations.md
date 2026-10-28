@@ -163,7 +163,7 @@ que des cartes (Vipère de verre) et « encre » une couleur typographique.
 
 | Nom · id proposé | Ce qui se joue | Durée · technique | P · coût |
 | --- | --- | --- | --- |
-| **Sable — la tempête** · `rpg-tempete-sable` ✅ | Une lame de poussière balaie chaque créature frappée par un sort Sable (Tempête de sable…), un voile ocre l'enveloppe, les bords s'érodent et six grains retombent au sol. Déclenchée par les blessures du journal dont `elements` contient `sable`, comme la roue de feu pour la Braise. | 900 ms · CSS | **P0** · M |
+| **Sable — la tempête** · `rpg-tempete-sable` ✅ | Une lame de poussière **descend** sur chaque créature frappée par un sort Sable (Tempête de sable…), un voile ocre l'enveloppe, les bords s'érodent et six grains retombent au sol. Un sort **de zone** couvre en plus tout le côté du plateau qu'il balaie : un mur de sable traverse la moitié de table, du bord à la frontière du territoire, semé de grains sur toute la largeur (`rpg-tempete-sable-zone`). Déclenchée par les blessures du journal dont `elements` contient `sable`, comme la roue de feu pour la Braise. | 900 ms (carte) / 1 100 ms (zone) · CSS | **P0** · M |
 | **Ténèbres — la balance des Heures** · `rpg-balance-tenebres` ✅ | Au centre de la table, un fléau s'incline du côté qui perd des PV, deux hiéroglyphes s'allument et cinq grains d'or filent de la coupelle basse vers la haute. Branchée sur un journal de transferts hors état : Tribut au contact comme sorts « pesée ». | 1 100 ms · CSS | **P0** · M |
 | **Ténèbres — le nom s'efface** · `rpg-nom-efface` (à faire) | *Nom effacé* (`defausse-adverse`) est un sort Ténèbres, pas une « Encre » : une coulure sombre raye le nom de la carte défaussée avant qu'elle rejoigne le cimetière. Geste à réserver à cette carte, à câbler sur la fenêtre de défausse. | 900 ms · SVG masque + CSS | P1 · M |
 | **Magie Rapide / Sorcellerie** · `rpg-famille-geste` | Deux gestes distincts, pas deux couleurs : la Magie Rapide **part** (trait latéral, 180 ms) ; la Sorcellerie **se prépare** (cercle qui se trace, 450 ms). `SortSigil` donne le signe, il manque le mouvement. | 180 / 450 ms · CSS | P1 · M |
@@ -364,7 +364,8 @@ tourbillon d'eau.
 
 | Ce qui a été livré | Déclencheur | Où |
 | --- | --- | --- |
-| `TempeteSable` — voile ocre, lame de poussière qui balaie, érosion des bords, six grains qui retombent au sol | une blessure du journal dont `elements` contient `sable` (ex. *Tempête de sable*) | composant `TempeteSable` et état `tempetesSable` dans `RpgDuelPage.jsx`, `rpg-tempete-sable-*` dans `rpg-battle.css` |
+| `TempeteSable` — voile ocre, lame de poussière qui **descend** sur la carte (balayage vertical), érosion des bords, six grains qui retombent au sol | une blessure du journal dont `elements` contient `sable` (ex. *Tempête de sable*) | composant `TempeteSable` et état `tempetesSable` dans `RpgDuelPage.jsx`, `rpg-tempete-sable-*` dans `rpg-battle.css` |
+| `TempeteSableZone` — tout un côté du plateau : nappe de poussière, mur qui descend du haut vers le bas avec son front clair, dix-neuf grains semés d'un bord à l'autre du côté | une blessure de sable dont la carte source vise une zone (`rpgSortViseUneZone`), pour **chaque camp frappé** | composant `TempeteSableZone` et état `tempetesSableZone` dans `RpgDuelPage.jsx`, `rpg-tempete-sable-zone-*` dans `rpg-battle.css`, ancrage `--rpg-frontiere` |
 | `BalanceTenebres` — halo local, deux hiéroglyphes, fléau qui s'incline du côté qui perd des PV, cinq grains d'or qui traversent | le journal des transferts de vie : Tribut au contact et sorts « pesée » (`transfert`) | composant `BalanceTenebres` et état `balancesTenebres` dans `RpgDuelPage.jsx`, `rpg-balance-*` dans `rpg-battle.css` |
 | Journal moteur des transferts, hors état JSON (`WeakMap`) | tout passage par `transfertVie` | `rpgNombreTransferts` / `rpgTransfertsDepuis` dans `rpgDuel.js` |
 | Variantes `prefers-reduced-motion` (fondu supprimé, son et autres retours conservés) | — | bloc `prefers-reduced-motion` de `rpg-battle.css` ; la tempête n'est pas créée et la position du journal de transfert avance quand même |
@@ -386,6 +387,15 @@ Décisions prises en codant, à garder pour la suite :
 3. **Le Tribut au combat n'a pas de carte source** (`sourceCarteId: null`) :
    seule une pesée lancée depuis la main transmet sa carte. Le sens du fléau et
    le flux des grains (`--sens`) viennent du camp receveur, pas de la carte.
+4. **Un sort de zone balaie le côté du plateau, pas une liste de cartes.** La
+   portée est lue sur la carte que la blessure nomme (`sourceCarteId`) avec la
+   fonction du moteur, exportée pour l'occasion (`rpgSortViseUneZone`) : la
+   table ne peut pas se désynchroniser de la résolution. Le calque n'est ancré
+   sur aucune carte — `--rpg-frontiere` (la même propriété typée que la découpe
+   des peintures) le cale sur la moitié de table touchée, et le côté vient du
+   camp des victimes (`blessure.cote`) : un sort qui inclut les alliés couvre
+   les deux moitiés. Les créatures traversées n'ajoutent pas leur lame de
+   carte : le mur les couvre déjà.
 
 ---
 
@@ -463,7 +473,10 @@ Décisions prises en codant, à garder pour la suite :
    en style inline, le trait s'anime en `scaleX` et les grains en
    `translateX(var(--fil-longueur))`. Aucune propriété de mise en page n'est
    animée (le piège n°1 du §5), et le même jeu de keyframes sert aux deux camps
-   : seule la géométrie capturée change.
+   : seule la géométrie capturée change. Le `div` porte `transform-origin: 0 0`
+   — sans lui, la rotation autour du milieu détachait le fil de la créature
+   comme de la plaque sur tout Tribut diagonal (voir §5 sexies, décision
+   4 bis).
 3. **Le sens des grains suit la vie, pas l'attaque.** Le conteneur part de la
    créature et pointe vers la plaque ; les grains naissent à l'extrémité
    plaque (`translateX(longueur)`) et meurent à la créature (`translateX(0)`) :
@@ -522,6 +535,13 @@ Décisions prises en codant, à garder pour la suite :
    ligne part de la place de repos de la créature, jamais de sa position en
    plein bond. Un DOM absent retombe sur le centre de la table, comme pour le
    Tribut.
+4 bis. **Le `div` tourne autour de son extrémité, pas de son milieu.** Le
+   calque est posé à `left/top` = centre de l'attaquant, puis tourné ; sans
+   `transform-origin: 0 0`, la rotation se fait autour du milieu du segment et
+   le trait démarre à quelques centaines de pixels du combattant (≈ 372 px à
+   droite et 256 px sous lui sur une attaque diagonale de 550 px), ce qui donne
+   l'impression d'un trait qui balaie l'écran au lieu de relier deux cartes.
+   Le fil du Tribut (§5 quinques) porte la même ancre, pour la même raison.
 5. **Périmètre : les deux résolutions locales seulement.** Le combat PvP passe
    par des chemins d'état distants (`pvpRef`, intentions) où les cibles ne sont
    pas toutes présentes au moment du rendu ; la ligne y est simplement absente

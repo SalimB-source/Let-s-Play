@@ -3705,7 +3705,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // `gelChance` (le Hurlement du blizzard, la Brume du fjord) : chaque
       // créature touchée tire son propre jet — le même hasard que le duel.
       const rngGel = hasardParDuel.get(duel) ?? Math.random;
-      const estUneZone = sortViseUneZone({ effet });
+      const estUneZone = rpgSortViseUneZone({ effet });
       // Les entités que la vague atteint vraiment (hors parade et protection,
       // esquive comprise) : chacune peut réveiller une Contre-attaque.
       const toucheesParLaVague = [];
@@ -5586,7 +5586,14 @@ function entiteCiblableParSort(entite, carte) {
 const CIBLES_SORT_ZONE = new Set([
   'creatures-adverses', 'toutes-alliees', 'toutes-creatures', 'toutes-autres', 'toutes',
 ]);
-const sortViseUneZone = (carte) => CIBLES_SORT_ZONE.has(carte?.effet?.cible);
+
+/**
+ * Le sort balaie-t-il tout un camp plutôt qu'une cible désignée ? La table s'en
+ * sert pour couvrir un côté entier du plateau — la tempête de sable de zone —
+ * au lieu de dessiner une lame par carte. Exporté pour que l'animation lise
+ * exactement la même table de cibles que la résolution du sort.
+ */
+export const rpgSortViseUneZone = (carte) => CIBLES_SORT_ZONE.has(carte?.effet?.cible);
 
 /**
  * Le bouclier d'une créature est une parade à usage unique : elle bloque le
@@ -5840,7 +5847,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // paiement (la parade bloque l'effet, pas le lancement). Un sort de zone
   // n'est jamais arrêté en entier : sa résolution épargne une à une les
   // créatures dont la parade est prête (`paradeZoneBloque`).
-  const bouclierBloquant = sortViseUneZone(carte) ? null : bouclierQuiBloque(duel, cote, cibleId);
+  const bouclierBloquant = rpgSortViseUneZone(carte) ? null : bouclierQuiBloque(duel, cote, cibleId);
   if (bouclierBloquant) {
     const montant = briserBouclier(bouclierBloquant);
     if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);

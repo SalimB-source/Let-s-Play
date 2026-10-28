@@ -5878,6 +5878,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-eclair-marteau * { animation: none !important; transition: none !important; }
   .rpg-tempete-sable,
   .rpg-tempete-sable *,
+  .rpg-tempete-sable-zone,
+  .rpg-tempete-sable-zone *,
   .rpg-balance-tenebres,
   .rpg-balance-tenebres * { animation: none !important; transition: none !important; }
   .rpg-tribut-fil,
@@ -6737,6 +6739,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 55;
   height: 0;
   pointer-events: none;
+  /* Le calque se tourne autour de son EXTRÉMITÉ mesurée (`left/top` = centre de
+     l'attaquant), pas autour de son milieu : sans cette ancre, une attaque
+     diagonale faisait partir le trait à quelques centaines de pixels du
+     combattant et balayait l'écran au lieu de le relier à sa cible — la même
+     ancre que la chaîne d'abordage. */
+  transform-origin: 0 0;
 }
 .rpg-ligne-charge__trait {
   position: absolute;
@@ -6797,6 +6805,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 56;
   height: 0;
   pointer-events: none;
+  /* Même ancre que la ligne de charge : le fil tourne autour du point de
+     départ mesuré (la créature), sinon un Tribut diagonal partait du milieu
+     du segment et ratait les deux extrémités qu'il doit joindre. */
+  transform-origin: 0 0;
 }
 .rpg-tribut-fil__trait {
   position: absolute;
@@ -6875,15 +6887,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-tempete-sable-voile calc(.9s * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
-/* La lame : un mur de sable qui traverse la carte de gauche à droite. */
+/* La lame : un mur de sable qui descend sur la carte, du haut vers le bas —
+   le même geste vertical que la vague de zone, à l'échelle d'une créature. */
 .rpg-tempete-sable__lame {
   position: absolute;
-  top: -8%;
-  bottom: -8%;
-  left: 0;
-  width: 46%;
+  left: -8%;
+  right: -8%;
+  top: 0;
+  height: 46%;
   border-radius: 50%;
-  background: linear-gradient(90deg,
+  background: linear-gradient(180deg,
     rgba(176, 130, 54, 0) 0%,
     rgba(214, 168, 84, .55) 34%,
     rgba(240, 215, 154, .92) 62%,
@@ -6936,10 +6949,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   100% { opacity: 0; scale: 1.18; }
 }
 @keyframes rpg-tempete-sable-lame {
-  0% { opacity: 0; transform: translateX(-130%) scaleX(.7); }
+  0% { opacity: 0; transform: translateY(-130%) scaleY(.7); }
   18% { opacity: 1; }
-  62% { opacity: 1; transform: translateX(70%) scaleX(1.1); }
-  100% { opacity: 0; transform: translateX(240%) scaleX(.85); }
+  62% { opacity: 1; transform: translateY(70%) scaleY(1.1); }
+  100% { opacity: 0; transform: translateY(240%) scaleY(.85); }
 }
 @keyframes rpg-tempete-sable-erosion {
   0% { opacity: 0; }
@@ -6954,6 +6967,128 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px));
     scale: .8;
     opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA TEMPÊTE DE SABLE DE ZONE — tout un côté du plateau
+   ──────────────────────────────────────────────────────────────────────────
+   Une Tempête de sable ne frappe pas une carte : elle couche le ciel sur un
+   camp entier. Le calque couvre donc la moitié de table que le sort traverse —
+   du bord du plateau à la frontière du territoire (`--rpg-frontiere`, la même
+   que la découpe des peintures) — et le mur de poussière y descend
+   **verticalement**, du haut vers le bas, précédé de son front et semé de
+   grains sur toute la largeur. Aucune propriété de mise en page n'est animée :
+   seuls la translation et l'opacité bougent, et le calque ne capte rien. */
+.rpg-tempete-sable-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 57;
+  overflow: hidden;
+  pointer-events: none;
+  animation: rpg-tempete-sable-zone-vie calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+/* Le sorcier tient la moitié haute de la table, le joueur la basse. */
+.rpg-tempete-sable-zone--sorcier {
+  top: 0;
+  height: var(--rpg-frontiere, 50%);
+}
+.rpg-tempete-sable-zone--joueur {
+  top: var(--rpg-frontiere, 50%);
+  bottom: 0;
+}
+
+/* La nappe : la poussière occupe tout le côté, pas seulement les cartes. */
+.rpg-tempete-sable-zone__voile {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%,
+      rgba(240, 215, 154, .34),
+      rgba(214, 168, 84, .16) 46%,
+      rgba(176, 130, 54, 0) 76%),
+    linear-gradient(180deg,
+      rgba(214, 168, 84, .24),
+      rgba(176, 130, 54, .09) 62%,
+      rgba(176, 130, 54, 0));
+  opacity: 0;
+  animation: rpg-tempete-sable-zone-voile calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+
+/* Le mur : une lame large comme le plateau, qui descend sur toute la moitié
+   de table. Son front clair marque le bas de la vague. */
+.rpg-tempete-sable-zone__lame {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 0;
+  height: 58%;
+  background: linear-gradient(180deg,
+    rgba(176, 130, 54, 0) 0%,
+    rgba(214, 168, 84, .26) 24%,
+    rgba(240, 215, 154, .62) 58%,
+    rgba(246, 226, 176, .9) 88%,
+    rgba(214, 168, 84, .34) 97%,
+    rgba(176, 130, 54, 0) 100%);
+  filter: blur(1.5px) saturate(1.08);
+  opacity: 0;
+  animation: rpg-tempete-sable-zone-lame calc(1.1s * var(--rpg-anim-scale, 1)) cubic-bezier(.32, .6, .34, 1) both;
+}
+.rpg-tempete-sable-zone__front {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg,
+    rgba(240, 215, 154, 0),
+    rgba(250, 240, 200, .82) 18%,
+    rgba(250, 240, 200, .9) 82%,
+    rgba(240, 215, 154, 0));
+  box-shadow: 0 0 18px rgba(240, 215, 154, .5);
+}
+
+/* Les grains : semés d'un bord à l'autre du côté balayé (`--x`), chacun avec
+   sa taille, sa dérive et son retard. */
+.rpg-tempete-sable-zone__grain {
+  position: absolute;
+  top: 0;
+  left: var(--x, 50%);
+  width: var(--taille, 5px);
+  height: var(--taille, 5px);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d79a, #d6a854 60%, #9c7434);
+  box-shadow: 0 0 7px rgba(235, 195, 110, .65);
+  opacity: 0;
+  animation: rpg-tempete-sable-zone-grain calc(1.1s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .6, .3, 1) both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+}
+
+@keyframes rpg-tempete-sable-zone-vie {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-tempete-sable-zone-voile {
+  0% { opacity: 0; }
+  24% { opacity: .92; }
+  70% { opacity: .68; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-tempete-sable-zone-lame {
+  0% { opacity: 0; transform: translateY(-118%) scaleY(.86); }
+  16% { opacity: .96; }
+  64% { opacity: .92; transform: translateY(52%) scaleY(1.04); }
+  100% { opacity: 0; transform: translateY(142%) scaleY(.9); }
+}
+@keyframes rpg-tempete-sable-zone-grain {
+  0% { opacity: 0; transform: translate3d(0, -12px, 0) scale(.5); }
+  18% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx, 0px), var(--dy, 0px), 0) scale(.85);
   }
 }
 
@@ -7178,6 +7313,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle.is-reduced .rpg-tempete-sable__lame,
 .rpg-battle.is-reduced .rpg-tempete-sable__erosion,
 .rpg-battle.is-reduced .rpg-tempete-sable__grain,
+.rpg-battle.is-reduced .rpg-tempete-sable-zone,
+.rpg-battle.is-reduced .rpg-tempete-sable-zone__voile,
+.rpg-battle.is-reduced .rpg-tempete-sable-zone__lame,
+.rpg-battle.is-reduced .rpg-tempete-sable-zone__front,
+.rpg-battle.is-reduced .rpg-tempete-sable-zone__grain,
 .rpg-battle.is-reduced .rpg-balance-tenebres,
 .rpg-battle.is-reduced .rpg-balance-tenebres__halo,
 .rpg-battle.is-reduced .rpg-balance-tenebres__glyphe,
