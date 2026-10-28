@@ -276,6 +276,8 @@ import {
   cardResonanceGroup,
   resonanceGroupLabel,
   armeById,
+  effetLie,
+  lienSatisfait,
   magieFamille,
   modificationStats,
   rpgValiderDeck,
@@ -11206,8 +11208,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     // Boualem ne fait plus choisir la nouvelle cible au LANCEUR : c'est celui
     // qui joue Boualem qui la désigne, de son côté (`duel.boualemEnAttente`).
-    // Feux de kitsune : choisissez une cible pour 4 dégâts, ou deux cibles
-    // distinctes pour répartir 2 dégâts sur chacune.
+    // Feux de kitsune : choisissez une cible pour le montant plein, ou deux
+    // cibles distinctes pour répartir le montant partagé sur chacune (les deux
+    // nombres montent d'un cran quand le Lien de l'Oni est actif).
     if (carteSource?.id === 'feux-de-kitsune') {
       if (!cibleAllieeMagie) {
         setCibleAllieeMagie(entite.id);
@@ -12363,6 +12366,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null);
   const casesEnnemi = casesParId(duel.sorcier);
   const casesJoueur = casesParId(duel.joueur);
+  // Les deux nombres d'un sort à cible double (les Feux de kitsune) se lisent
+  // sur l'effet **réellement résolu** : le Lien de l'Oni les monte, et l'invite
+  // doit annoncer les mêmes chiffres que le moteur.
+  const chiffresDoubleCible = (carte) => {
+    const effet = effetLie(carte, lienSatisfait(carte, duel.joueur.creatures)) ?? {};
+    return { unique: effet.amount ?? 0, partage: effet.secondAmount ?? 2 };
+  };
+  const feuxKitsune = chiffresDoubleCible(carteCiblee);
   const inviteActionJoueur = (mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande || Boolean(vainqueur))
     ? null
     : sacrificeEnCours
@@ -12425,7 +12436,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 // nouvelle cible est choisie par celui qui le JOUE, pas par le
                 // lanceur — c'est l'invite `attenteBoualem` qui guide ce clic.
                 : carteCiblee?.id === 'feux-de-kitsune'
-                  ? (cibleAllieeMagie ? 'Choisissez une deuxième créature adverse (2 dégâts chacune), ou annulez pour infliger 4 à une cible' : 'Choisissez une créature adverse : 4 dégâts, ou sélectionnez-en une seconde pour 2 dégâts chacune')
+                  ? (cibleAllieeMagie
+                    ? `Choisissez une deuxième créature adverse (${feuxKitsune.partage} dégâts chacune), ou annulez pour infliger ${feuxKitsune.unique} à une cible`
+                    : `Choisissez une créature adverse : ${feuxKitsune.unique} dégâts, ou sélectionnez-en une seconde pour ${feuxKitsune.partage} dégâts chacune`)
                   : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
                   ? (cibleAllieeMagie
                     ? 'Choisissez la créature adverse à affronter'

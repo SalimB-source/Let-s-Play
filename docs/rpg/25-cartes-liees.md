@@ -40,6 +40,7 @@ main, de la table, du catalogue et de l'atelier reste donc la seule vérité
 | **Sort** | Les champs de `lien.effet` **remplacent** ceux de l'effet imprimé (`2` dégâts → `3`) ; le reste de l'effet est inchangé (cible, durée, mots-clés). |
 | **Déclencheur** | `lien.remplace` réécrit un déclencheur de l'arme, pas seulement ses chiffres : le Masque du guetteur pioche alors **sans défausser** (`defausse: 0`). La fiche imprimée n'est jamais mutée. |
 | **Arme-sort** | Une magie de type `arme` (Braise et sable, Sabre maudit) s'attache à l'**imprimé** puis vit son Lien en continu, comme une arme du prototype : le renfort retombe quand l'ancre s'en va, et il part avec l'arme si on la brise. Le registre `lienArmesBonus` retient la part de **chaque** arme séparément. |
+| **Deux modes** | Un sort à cible double a deux montants : `amount` (une cible) et `secondAmount` (chacune des deux, 2 par défaut). Le Lien peut relever les deux, l'invite de ciblage annonce alors les chiffres du moteur au lieu des chiffres imprimés. |
 | **Coût** | **Inchangé.** Ni remise, ni surcoût, ni mana détruit. |
 | **Texte** | La règle s'imprime sur la carte (« Lien de Tin Hinan — … »), comme Abordage, Harakiri ou Malédiction. Un test vérifie que chaque Lien nomme une ancre mythique **qui existe** et que le texte la nomme : aucune fiche ne peut dériver de sa mécanique. |
 
@@ -58,6 +59,7 @@ mécanique sur des cartes du catalogue.
 | **Nuage de cendres** (magie, rare) | 5 | **2** dégâts à toutes + 1 d'écho | **3** dégâts à toutes + **1** d'écho | +1, écho inchangé | Susanoo (Braise, mythique, 6) |
 | **Brise-lame** (magie rapide, inhabituelle) | 3 | brise une arme adverse · pioche **1** | brise l'arme · pioche **2** | +1 carte | Orochi (Braise, mythique, 8) |
 | **Braise et sable** (arme-sort, rare) | 3 | +1/+0 · Attaque ciblée · critique 30 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
+| **Feux de kitsune** (magie, rare) | 5 | **4** dégâts à une créature, ou **2** à chacune de deux | **5** dégâts, ou **3** et **3** | +1 sur les deux modes | Oni de la fournaise (Braise, mythique, 5) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement

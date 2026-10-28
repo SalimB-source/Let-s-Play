@@ -3795,7 +3795,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
           .map((entite) => ({ entite, camp: campCible }));
-      const amountParCible = effet.choixDegats && cibleSecondaire ? 2 : (effet.amount ?? 0);
+      // Le mode « deux cibles » a son propre montant (`secondAmount`, 2 par
+      // défaut) : le Lien du Feux de kitsune le porte à 3, sans toucher au
+      // coup unique — les deux nombres du sort se règlent séparément.
+      const amountParCible = effet.choixDegats && cibleSecondaire
+        ? Math.max(0, Number(effet.secondAmount ?? 2) || 0)
+        : (effet.amount ?? 0);
       // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
       // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
       // la seconde est choisie automatiquement parmi les créatures adverses

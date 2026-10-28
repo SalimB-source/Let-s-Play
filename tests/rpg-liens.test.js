@@ -37,10 +37,10 @@ const donner = (duel, cote, id) => duel[cote].main.push(id);
 const manaPlein = (duel, cote) => { duel[cote].mana = { braise: 9, eau: 9, sable: 9, neige: 9, tenebres: 9 }; };
 
 /** Pose une créature et rend son entité. */
-const poser = (duel, cote, id) => {
+const poser = (duel, cote, id, cibleId = null) => {
   donner(duel, cote, id);
   manaPlein(duel, cote);
-  const res = rpgJouerCreature(duel, cote, id);
+  const res = rpgJouerCreature(duel, cote, id, cibleId);
   assert.equal(res.ok, true, `${id} entre en jeu`);
   return res.entite;
 };
@@ -54,10 +54,10 @@ const equiper = (duel, cote, armeId, porteur) => {
   return res.entite;
 };
 
-const lancer = (duel, cote, carteId, cibleId = null) => {
+const lancer = (duel, cote, carteId, cibleId = null, cibleAllieeId = null) => {
   donner(duel, cote, carteId);
   manaPlein(duel, cote);
-  const res = rpgLancerMagie(duel, cote, carteId, cibleId);
+  const res = rpgLancerMagie(duel, cote, carteId, cibleId, cibleAllieeId);
   assert.equal(res.ok, true, `${carteId} se lance`);
   return res;
 };
@@ -312,4 +312,35 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   const cavalier = duel.joueur.creatures.find((entite) => entite.carteId === 'cavalier-des-deux-sabres');
   rpgBlesserCreature(duel, 'joueur', cavalier.id, 99, 'braise');
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
+});
+
+test('Feux de kitsune : 4 sur une cible ou 2 et 2 ; 5 ou 3 et 3 avec l’Oni', () => {
+  // Une 3/6 encaisse les deux modes sans mourir : on lit les dégâts exacts.
+  // L'Oni frappe aussi à l'arrivée, donc on mesure toujours le **delta**.
+  const monter = (avecOni) => {
+    const duel = duelVide();
+    const a = poser(duel, 'sorcier', 'bakunawa');
+    const b = poser(duel, 'sorcier', 'bakunawa');
+    if (avecOni) poser(duel, 'joueur', 'oni-de-la-fournaise', a.id);
+    return { duel, a, b, avantA: a.pv, avantB: b.pv };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'feux-de-kitsune', sans.a.id);
+  assert.equal(sans.avantA - sans.a.pv, 4, 'sans ancre : 4 dégâts sur une seule cible');
+  assert.equal(sans.b.pv, sans.avantB, 'la seconde créature reste intacte');
+
+  const partage = monter(false);
+  lancer(partage.duel, 'joueur', 'feux-de-kitsune', partage.a.id, partage.b.id);
+  assert.equal(partage.avantA - partage.a.pv, 2, 'sans ancre, en deux cibles : 2 dégâts');
+  assert.equal(partage.avantB - partage.b.pv, 2, 'sans ancre, en deux cibles : 2 dégâts');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'feux-de-kitsune', avec.a.id);
+  assert.equal(avec.avantA - avec.a.pv, 5, 'avec l’Oni : 5 dégâts sur une seule cible');
+
+  const avecPartage = monter(true);
+  lancer(avecPartage.duel, 'joueur', 'feux-de-kitsune', avecPartage.a.id, avecPartage.b.id);
+  assert.equal(avecPartage.avantA - avecPartage.a.pv, 3, 'avec l’Oni, en deux cibles : 3 dégâts');
+  assert.equal(avecPartage.avantB - avecPartage.b.pv, 3, 'avec l’Oni, en deux cibles : 3 dégâts');
 });

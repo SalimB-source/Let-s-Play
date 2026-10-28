@@ -215,7 +215,10 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Sorcellerie — Feu follet · Braise',
     cibles: ['creature', 'creature'],
     effet: { type: 'degats', amount: 4, cible: 'creature', choixDegats: true },
-    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées.',
+    // Le Lien de la fournaise : l'Oni frappe deux fois, et les deux feux
+    // montent d'un cran — 5 sur une cible, 3 sur chacune des deux.
+    lien: { ancre: 'oni-de-la-fournaise', effet: { amount: 5, secondAmount: 3 } },
+    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées. Lien de l’Oni — si l’Oni de la fournaise est en jeu, infligez 5 dégâts à une créature ou 3 dégâts à chacune de deux créatures ciblées.',
     flavor: 'Ne suivez pas les lumières entre les cèdres : elles connaissent déjà votre chemin.',
   }),
   carte({
