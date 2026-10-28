@@ -95,6 +95,7 @@ import {
 } from './rpgAudio.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
+import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix } from './rpgArrivalVoices.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
@@ -190,6 +191,7 @@ import {
   rpgConsommerArriveesPirate,
   rpgConsommerArriveesNavire,
   rpgConsommerArriveesDwarf,
+  rpgConsommerArriveesCreature,
   rpgConsommerSoins,
   rpgJouerCreature,
   rpgAppliquerBannieresAttaque,
@@ -6134,7 +6136,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       else if (sonFeu) jouerSfx(sonFeu);
       // Les journaux WeakMap du moteur ne traversent pas l'instantané PvP :
       // l'arrivée d'une créature adverse s'y constate par différence de champ.
+      // La voix propre à la carte tient l'accueil ; le quai, le cri pirate et
+      // la réplique naine ne restent que pour les créatures sans voix.
+      jouerVoixArrivees(nouvellesCreaturesAdverses.map((entite) => ({ carteId: entite.carteId })));
       for (const entite of nouvellesCreaturesAdverses) {
+        if (rpgACarteUneVoix(entite.carteId)) continue;
         const carteNouvelle = cardById(entite.carteId);
         if (cardHasPrintedType(carteNouvelle, 'Navire')) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
         else if (rpgEstCartePirate(carteNouvelle)) jouerArriveePirate();
@@ -6625,6 +6631,28 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx(rpgSonArriveePirate(arriveesPiratesJoueesRef.current));
       arriveesPiratesJoueesRef.current += 1;
     }
+  };
+  // ── Voix d'arrivée des créatures ──
+  // Chaque carte du lot « Game voices » a son échantillon (`rpgArrivalVoices.js`).
+  // La voix remplace l'accueil générique — « Ahoy ! », le quai, la réplique
+  // naine — et non s'y ajoute. Une seule voix à la fois, trois au plus par
+  // relevé, décalées de 140 ms : deux créatures posées d'un même geste ne se
+  // coupent pas la parole au même instant.
+  const VOIX_ARRIVEE_MAX = 3;
+  const jouerVoixArrivee = (carteId, rang = 0) => {
+    const url = rpgArrivalVoiceUrl(carteId);
+    if (!url) return false;
+    try {
+      sfxRef.current?.unlock();
+      return sfxRef.current?.playCardVoice(url, rang * 0.14) ?? false;
+    } catch {
+      return false;
+    }
+  };
+  const jouerVoixArrivees = (entrees) => {
+    const cartes = (entrees ?? []).filter((entree) => rpgACarteUneVoix(entree?.carteId));
+    cartes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
+    return cartes.length;
   };
   const unlockSfx = () => {
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
@@ -7163,13 +7191,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (prisesLocales.length) jouerSfx(RPG_ABORDAGE_SFX);
   });
 
-  // ── Arrivées en jeu : accueil alterné pour les pirates, quai pour les
-  //    navires, et réplique naine pour quatre guerriers du Nord ──
+  // ── Arrivées en jeu : la voix propre de la carte d'abord ; à défaut, l'accueil
+  //    alterné des pirates, le quai des navires et la réplique naine ──
   const arriveesDuelRef = useRef(null);
   useEffect(() => {
     const duelCourant = duelRef.current;
     // Les journaux se vident à chaque relevé, y compris au premier rendu :
     // aucune arrivée survenue avant le montage ne doit sonner en différé.
+    const arrivees = rpgConsommerArriveesCreature(duelCourant);
     const navires = rpgConsommerArriveesNavire(duelCourant);
     const pirates = rpgConsommerArriveesPirate(duelCourant);
     const nains = rpgConsommerArriveesDwarf(duelCourant);
@@ -7177,9 +7206,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       arriveesDuelRef.current = duelCourant;
       return;
     }
-    if (navires.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
-    if (pirates.length) jouerArriveePirate(pirates.length);
-    if (nains.length) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
+    // Les voix propres d'abord ; les accueils génériques ne servent plus que
+    // les cartes qui n'en ont pas (le jeton et les cartes du lot silencieux).
+    jouerVoixArrivees(arrivees);
+    const naviresSansVoix = rpgArriveesSansVoix(navires);
+    const piratesSansVoix = rpgArriveesSansVoix(pirates);
+    const nainsSansVoix = rpgArriveesSansVoix(nains);
+    if (naviresSansVoix.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
+    if (piratesSansVoix.length) jouerArriveePirate(piratesSansVoix.length);
+    if (nainsSansVoix.length) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
   });
 
   // Compteur de séquence pour les animations de pioche.

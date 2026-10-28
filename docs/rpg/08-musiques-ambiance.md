@@ -45,6 +45,34 @@ indications de cartes (soin, zone, cloche de l'Astrolabe). Nappes et cloches
 reçoivent une réverbération stéréo très légère, générée à la volée ; les
 attaques triangulaires filtrées restent douces sur les haut-parleurs mobiles.
 
+## Les voix d'arrivée des créatures
+
+Un troisième étage sonore, indépendant des boucles : **chaque créature entre en
+jeu avec sa voix**. Le lot « Game voices » a livré 37 MP3 courts (0,65 s à
+3,06 s, 80 kbps) à la racine de `public/`, et `src/games/rpgArrivalVoices.js`
+les rattache carte par carte — le nom du fichier n'est presque jamais celui de
+la carte (« Damiyo » pour le Daimyō du Soleil rouge, « Shogun » pour le
+Samouraï du Torii, « Serpent de verre » pour la Vipère de verre, « Viking des
+trois hivers » pour le Berserk des trois hivers…).
+
+- **Déclencheur** : une entrée en jeu depuis la main, jamais un aperçu, une
+  pioche, une réanimation, un jeton ni un retour de cale. Le moteur journalise
+  toute arrivée (`rpgConsommerArriveesCreature`) et la page lit la voix.
+- **Priorité** : la voix de la carte **remplace** les accueils génériques (cri
+  pirate « Ahoy ! »/« Alright », quai des navires, réplique naine). Les cartes
+  sans fichier gardent ces trois accueils.
+- **Mixage** : gain de base 0,5 (`RPG_CARD_VOICE_VOLUME`), une seule voix à la
+  fois (la précédente se met en pause), trois au plus par relevé, décalées de
+  140 ms. Le son coupé et le curseur de volume s'appliquent comme aux autres
+  échantillons (`syncOutputGain`), et `destroy()` coupe les départs en attente.
+- **Écoute** : `sons-du-sablier.html` liste les 37 voix dans la section « Voix
+  d'arrivée des créatures ».
+
+Les fichiers plus longs de `public/` ne sont **pas** des voix : ce sont les
+pistes de plateau ci-dessus, plus deux bruitages déjà branchés
+(`viking warrior battle cry with horn.mp3` → `victoire`,
+`26509 Thunder spark transition-full.mp3` → `foudre_marteau`).
+
 ## Comment elle se déclenche
 
 La page du duel (`src/games/RpgDuelPage.jsx`) tient une instance de

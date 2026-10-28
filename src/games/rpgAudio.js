@@ -3,10 +3,11 @@
  *
  * Les bruitages du jeu sont les échantillons fournis (cartes, frappes, souffle
  * du feu, vagues, contres, renvois, chocs, pages, cri de victoire viking et
- * fanfare de défaite, coups blessants) lus sous forme de fichiers.
- * Le seul son encore synthétisé en WebAudio est l'effleurement de survol de
- * l'interface : tout le reste du catalogue synthétique a été retiré, et les
- * noms inconnus de `rpgSfx` restent silencieux.
+ * fanfare de défaite, coups blessants) lus sous forme de fichiers, et les voix
+ * d'arrivée des créatures (`rpgArrivalVoices.js` : un MP3 par carte, joué par
+ * `playCardVoice`). Le seul son encore synthétisé en WebAudio est
+ * l'effleurement de survol de l'interface : tout le reste du catalogue
+ * synthétique a été retiré, et les noms inconnus de `rpgSfx` restent muets.
  *
  * Deux couches :
  *  - `hz()` et `rpgSfx()` décrivent des événements purs, faciles à tester ;
@@ -72,6 +73,13 @@ const CHAIN_RATTLE_VOLUME = 0.62;
 const DOCK_SOUND_VOLUME = 0.62;
 const COLD_WIND_VOLUME = 0.58;
 const FOUDRE_MARTEAU_VOLUME = 0.58;
+// Les voix d'arrivée des créatures (une par carte, voir
+// `rpgArrivalVoices.js`) passent sous les bruitages de table : elles se
+// superposent à `card_place` sans l'écraser.
+const CARD_VOICE_VOLUME = 0.5;
+
+/** Le gain de base des voix d'arrivée des créatures. */
+export const RPG_CARD_VOICE_VOLUME = CARD_VOICE_VOLUME;
 
 /** Le cliquetis de chaînes joué lorsqu'une créature avec Abordage kidnappe une créature en cale. */
 export const RPG_ABORDAGE_SFX = 'abordage';
@@ -238,6 +246,12 @@ export class RpgAudioPlayer {
     this.dockSoundAudio = null;
     this.coldWindAudio = null;
     this.foudreMarteauAudio = null;
+    // Voix d'arrivée : un élément `<audio>` par carte, construit à la première
+    // entrée en jeu puis gardé pour le reste de la partie.
+    this.cardVoiceAudios = new Map();
+    this.cardVoiceCourante = null;
+    // Départs différés des voix d'un même relevé d'arrivées.
+    this.cardVoiceTimers = new Set();
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor === 'function') {
       try {
@@ -419,6 +433,12 @@ export class RpgAudioPlayer {
       audio.volume = this.sampleVolume(base);
       if (silent) audio.pause?.();
     }
+    // Les voix de cartes suivent la même règle : le son coupé les met en
+    // pause, le volume du jeu les atténue.
+    for (const voice of this.cardVoiceAudios.values()) {
+      voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
+      if (silent) voice.pause?.();
+    }
     if (!this.master) return;
     const now = this.ctx?.currentTime ?? 0;
     const parameter = this.master.gain;
@@ -428,6 +448,56 @@ export class RpgAudioPlayer {
       parameter.setTargetAtTime(target, now, 0.035);
     } else {
       parameter.value = target;
+    }
+  }
+
+  /**
+   * Joue la voix d'arrivée d'une créature (`rpgArrivalVoiceUrl(carte)`).
+   *
+   * Une seule voix à la fois : une nouvelle arrivée coupe la précédente plutôt
+   * que de la chevaucher — le duel ne pose qu'une carte par geste, et deux
+   * répliques simultanées ne se comprennent pas. `delay` (secondes) décale le
+   * départ : deux créatures posées d'un même relevé ne parlent pas en même
+   * temps. Renvoie `true` quand la voix a été lancée (ou programmée), `false`
+   * si le son est coupé, l'adresse vide ou le navigateur sans `Audio`.
+   */
+  playCardVoice(url, delay = 0) {
+    if (!url || this.muted || this.volume <= 0) return false;
+    const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
+    if (typeof AudioCtor !== 'function') return false;
+    const retard = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
+    if (retard > 0.001) {
+      const timer = setTimeout(() => {
+        this.cardVoiceTimers.delete(timer);
+        this.playCardVoiceNow(url, AudioCtor);
+      }, retard * 1000);
+      this.cardVoiceTimers.add(timer);
+      return true;
+    }
+    return this.playCardVoiceNow(url, AudioCtor);
+  }
+
+  playCardVoiceNow(url, AudioCtor) {
+    if (this.muted || this.volume <= 0) return false;
+    try {
+      let voice = this.cardVoiceAudios.get(url);
+      if (!voice) {
+        voice = new AudioCtor(url);
+        voice.preload = 'auto';
+        voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
+        this.cardVoiceAudios.set(url, voice);
+      }
+      if (this.cardVoiceCourante && this.cardVoiceCourante !== voice) {
+        try { this.cardVoiceCourante.pause(); } catch { /* déjà arrêtée */ }
+      }
+      this.cardVoiceCourante = voice;
+      voice.currentTime = 0;
+      voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
+      const playback = voice.play();
+      playback?.catch?.(() => {});
+      return true;
+    } catch {
+      return false;
     }
   }
 
@@ -802,6 +872,21 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.foudreMarteauAudio = null;
+    if (this.cardVoiceTimers) {
+      for (const timer of this.cardVoiceTimers) clearTimeout(timer);
+      this.cardVoiceTimers.clear();
+    }
+    if (this.cardVoiceAudios) {
+      for (const voice of this.cardVoiceAudios.values()) {
+        try {
+          voice.pause?.();
+          voice.removeAttribute?.('src');
+          voice.load?.();
+        } catch { /* élément audio déjà libéré */ }
+      }
+      this.cardVoiceAudios.clear();
+    }
+    this.cardVoiceCourante = null;
     if (context && typeof context.close === 'function') {
       try { context.close(); } catch { /* Contexte déjà fermé. */ }
     }
