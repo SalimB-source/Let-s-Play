@@ -122,7 +122,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
-  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier 1'],
+  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier'],
     'Salem affiche Rapidité, Attaque ciblée, Contre-attaque et sa parade anti-sort');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');

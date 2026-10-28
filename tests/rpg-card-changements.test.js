@@ -113,7 +113,8 @@ test('Tour de Neige gèle son attaquant bloqueur et Tour des Flots le renvoie en
     assert.equal(result.ok, true);
     if (expected === 'gel') assert.ok(attaquant.gelToursRestants > 0);
     else {
-      assert.ok(d.joueur.main.includes('chien-du-guet'));
+      assert.equal(tower.pv, tower.pvMax - 2, 'la Tour encaisse d’abord les dégâts de combat de l’attaquant');
+      assert.ok(d.joueur.main.includes('chien-du-guet'), 'le renvoi se résout après les blessures');
       assert.equal(d.joueur.creatures.includes(attaquant), false);
     }
   }

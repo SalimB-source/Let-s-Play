@@ -222,6 +222,19 @@
   color: var(--rpg-protection-couleur, #ffe9a0);
 }
 
+/* Le bouclier se distingue par une encre violette, cohérente avec son égide
+   animée sur le plateau. */
+.rpg-pastille[data-pastille='bouclier'],
+.rpg-card-icone[data-effet='bouclier'] {
+  border-color: rgba(186, 132, 255, .62);
+  color: #d5b3ff;
+}
+
+.rpg-pastille[data-pastille='bouclier'] .rpg-effet-icone,
+.rpg-card-icone[data-effet='bouclier'] .rpg-effet-icone {
+  color: #d5b3ff;
+}
+
 /* Un gain annoncé par Furie n'est pas un effet dépensé : il reste imprimé,
    mais attend son activation dans une version neutre, sans l'or des mots-clés
    réellement portés par la créature. */
