@@ -155,7 +155,12 @@ export function bonusArme(carte) {
  *                 imprimé (`{ amount: 3 }` transforme 2 dégâts en 3) ;
  *   - `remplace` : pour une arme, les déclencheurs qu'il réécrit quand l'ancre
  *                 est là (le Masque du guetteur pioche alors **sans**
- *                 défausser : `{ porteurBlesseSorcier: { defausse: 0, … } }`).
+ *                 défausser : `{ porteurBlesseSorcier: { defausse: 0, … } }`) ;
+ *   - `nominal` : `true` pour un **Lien de nom** — la paire n'ajoute aucun
+ *                 chiffre, elle existe déjà par une autre règle (le Sabre
+ *                 maudit sur la Flamme originelle : deux coups critiques qui
+ *                 se cumulent). Le drapeau est obligatoire pour qu'un Lien
+ *                 sans effet soit un choix dit, jamais un bonus oublié.
  *
  * Le Lien est toujours une **différence légère** : un cran, pas un
  * dédoublement. Une carte liée reste la même carte, un peu meilleure.

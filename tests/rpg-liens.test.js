@@ -76,6 +76,14 @@ test('chaque Lien nomme une ancre mythique qui existe, et son texte la nomme', (
     assert.match(carte.text, new RegExp(ancre.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
       `${carte.id} : le texte imprimé nomme ${ancre.name}`);
 
+    // Un Lien porte un effet, un bonus, un déclencheur réécrit — ou il est
+    // déclaré **nominal** : la paire tient par une autre règle du jeu et le
+    // Lien ne fait que la nommer. Jamais un Lien vide par oubli.
+    if (lien.nominal) {
+      assert.equal(lien.bonus, undefined, `${carte.id} : un Lien nominal n’ajoute pas de bonus`);
+      assert.equal(lien.effet, undefined, `${carte.id} : un Lien nominal n’ajoute pas d’effet`);
+      continue;
+    }
     if (carte.kind === 'arme') {
       assert.ok(lien.bonus, `${carte.id} : une arme liée porte un bonus de Lien`);
       assert.ok(lien.bonus.atk >= (carte.bonus?.atk ?? 0) && lien.bonus.def >= (carte.bonus?.def ?? 0),
@@ -375,4 +383,24 @@ test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', (
   manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', simple.id).ok, true);
   assert.deepEqual(simple.coupCritique, { chance: 0.25, fois: 2 });
+});
+
+test('Le Sabre maudit porte un Lien de nom : la paire tient par le cumul, sans chiffre ajouté', () => {
+  const sabre = cardById('sabre-maudit');
+  assert.deepEqual(sabre.lien, { ancre: 'kagutsuchi-flamme-originelle', nominal: true },
+    'le Lien de nom est déclaré, pas sous-entendu');
+  assert.equal(cardById('kagutsuchi-flamme-originelle').rarity, 'mythique');
+  assert.equal(lienSatisfait(sabre, ['kagutsuchi-flamme-originelle']), true);
+  // Le texte dit la vérité mesurable : la paire double la CHANCE, pas le ×4.
+  assert.match(sabre.text, /50 % de chances de frapper 4 fois/);
+
+  // Et c'est bien ce que fait le moteur, sans qu'aucun bonus de Lien n'existe.
+  const duel = duelVide();
+  const k = poser(duel, 'joueur', 'kagutsuchi-flamme-originelle');
+  donner(duel, 'joueur', 'sabre-maudit');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', k.id).ok, true);
+  assert.deepEqual(k.coupCritique, { chance: 0.5, fois: 4 },
+    'le sabre ne change que l’attaque et la défense ; la chance, c’est le cumul');
+  assert.deepEqual([k.atk, k.def], [4, 4], '+2/-2 du sabre, rien de plus');
 });
