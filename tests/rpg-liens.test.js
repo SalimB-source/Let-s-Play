@@ -329,6 +329,33 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Festin des vaillants : 2 PV rendus, 3 sous Eirik — aux créatures comme au sorcier', () => {
+  const monter = (avecEirik) => {
+    const duel = duelVide();
+    duel.joueur.pv = 10;
+    if (avecEirik) poser(duel, 'joueur', 'eirik-du-premier-serment');
+    const blesse = poser(duel, 'joueur', 'momie-de-lin');
+    // 3 blessures sur 4 PV : le festin a de la place pour soigner.
+    rpgBlesserCreature(duel, 'joueur', blesse.id, 3, 'braise', null, 'capacite');
+    return { duel, blesse };
+  };
+
+  const sans = monter(false);
+  assert.equal(sans.blesse.pv, 1);
+  lancer(sans.duel, 'joueur', 'festin-des-vaillants');
+  assert.equal(sans.blesse.pv, 3, 'sans ancre : +2 PV à la créature');
+  assert.equal(sans.duel.joueur.pv, 12, 'et +2 au sorcier');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'festin-des-vaillants');
+  assert.equal(avec.blesse.pv, 4, 'sous Eirik : +3 PV, plafonné à la défense');
+  assert.equal(avec.duel.joueur.pv, 13, 'et +3 au sorcier');
+
+  const carte = cardById('festin-des-vaillants');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'eirik-du-premier-serment', effet: { amount: 3, etJoueur: 3 } });
+});
+
 test('Cuirasse de sel : +0/+3, +0/+4 sous Bouchra — et l’Esquive se cumule', () => {
   const monter = (avecBouchra) => {
     const duel = duelVide();

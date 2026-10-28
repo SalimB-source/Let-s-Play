@@ -844,7 +844,7 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     {
       cost: 3,
       effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
-      text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie.',
+      text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Lien du Premier Serment — si Eirik du Premier Serment est en jeu, soignez-les de 3 et récupérez 3 points de vie à la place.',
     },
     'le Festin soigne les créatures alliées au lieu du sorcier',
   );

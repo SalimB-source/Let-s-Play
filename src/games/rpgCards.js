@@ -1766,7 +1766,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
-    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie.',
+    // Le Lien du Premier Serment : on mange plus, on tient plus longtemps.
+    // Le festin rend 3 au lieu de 2 — aux créatures comme au sorcier.
+    lien: { ancre: 'eirik-du-premier-serment', effet: { amount: 3, etJoueur: 3 } },
+    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Lien du Premier Serment — si Eirik du Premier Serment est en jeu, soignez-les de 3 et récupérez 3 points de vie à la place.',
     flavor: 'On boit au souvenir de ceux qui ne reviendront pas.',
   },
   {
