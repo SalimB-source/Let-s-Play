@@ -1800,7 +1800,10 @@ export const RPG_MAGIE_CARDS = [
     instant: true,
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature', gel: true },
-    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
+    // Le Lien du givre : la poigne serre un cran plus fort. Le gel, lui, ne
+    // s'achète pas au détail — il reste tel quel.
+    lien: { ancre: 'valkyrie-des-glaces', effet: { amount: 3 } },
+    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour. Lien de la Valkyrie — si la Valkyrie des glaces est en jeu, elle subit 3 dégâts à la place, le gel inchangé.',
     flavor: 'Le froid tient l’acier plus fermement que la main.',
   },
   {

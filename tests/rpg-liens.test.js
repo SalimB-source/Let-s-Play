@@ -322,6 +322,29 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Poigne de givre : 2 dégâts, 3 avec la Valkyrie des glaces, le gel inchangé', () => {
+  const monter = (avecValkyrie) => {
+    const duel = duelVide();
+    if (avecValkyrie) poser(duel, 'joueur', 'valkyrie-des-glaces');
+    const cible = poser(duel, 'sorcier', 'momie-de-lin');
+    return { duel, cible, avant: cible.pv };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'poigne-de-givre', sans.cible.id);
+  assert.equal(sans.avant - sans.cible.pv, 2, 'sans ancre : 2 dégâts');
+  assert.equal(sans.cible.gelToursRestants, 1, 'et le gel, à son coût plein');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'poigne-de-givre', avec.cible.id);
+  assert.equal(avec.avant - avec.cible.pv, 3, 'avec la Valkyrie : 3 dégâts');
+  assert.equal(avec.cible.gelToursRestants, 1, 'le gel, lui, ne bouge pas d’un cran');
+
+  const carte = cardById('poigne-de-givre');
+  assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'valkyrie-des-glaces', effet: { amount: 3 } });
+});
+
 test('Frappe d’iaijutsu : 2 dégâts, 3 avec Tojiro le pourfendeur', () => {
   const monter = (avecTojiro) => {
     const duel = duelVide();
