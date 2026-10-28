@@ -332,6 +332,32 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Courant de retour : renvoie une créature, et pioche 2 sous le Léviathan', () => {
+  const monter = (avecLeviathan) => {
+    const duel = duelVide();
+    // Le Léviathan renvoie TOUTES les autres créatures à son arrivée : on le
+    // pose avant la proie qu'on veut garder sur la table.
+    if (avecLeviathan) poser(duel, 'joueur', 'leviathan');
+    const proie = poser(duel, 'sorcier', 'momie-de-lin');
+    duel.joueur.deck = Array.from({ length: 8 }, () => 'poigne-de-givre');
+    return { duel, proie };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'courant-de-retour', sans.proie.id);
+  assert.equal(sans.duel.joueur.deck.length, 7, 'sans ancre : une carte piochée');
+  assert.ok(sans.duel.sorcier.main.includes('momie-de-lin'), 'la créature est renvoyée en main');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'courant-de-retour', avec.proie.id);
+  assert.equal(avec.duel.joueur.deck.length, 6, 'sous le Léviathan : deux cartes piochées');
+  assert.ok(avec.duel.sorcier.main.includes('momie-de-lin'), 'le renvoi ne change pas');
+
+  const carte = cardById('courant-de-retour');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'leviathan', effet: { pioche: 2 } });
+});
+
 test('Le Routier : 2 cartes piochées, 3 sous Bakunawa — une seule défaussée', () => {
   const monter = (avecBakunawa) => {
     const duel = duelVide();

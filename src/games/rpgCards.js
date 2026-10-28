@@ -2003,7 +2003,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['creature'],
     effet: { type: 'retour-main', cible: 'creature', pioche: 1 },
-    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte.',
+    // Le Lien du Léviathan : le petit frère de la grande marée. Le renvoi est
+    // le même, la carte qu'on en rapporte est une de plus.
+    lien: { ancre: 'leviathan', effet: { pioche: 2 } },
+    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. Lien du Léviathan — si le Léviathan est en jeu, piochez deux cartes à la place.',
     flavor: 'Ce que la vague emporte, le courant vous le raconte à l’oreille.',
   },
 ];
