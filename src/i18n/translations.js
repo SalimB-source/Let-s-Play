@@ -9,6 +9,7 @@ export const translations = {
     nav: {
       home: 'Home',
       news: 'News',
+      editorialMenu: 'Editorial',
       reviews: 'Reviews',
       dossiers: 'Dossiers',
       community: 'Community',
@@ -24,10 +25,9 @@ export const translations = {
       quiz: 'Quizzes',
       game: 'Game',
       games: 'Games',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'Show the games menu',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'Our games',
+      sectionMenuAria: 'Show the editorial menu',
       profile: 'Profile',
       levelShort: 'LVL',
       theme: { light: 'Light', dark: 'Dark', toLight: 'Switch to light theme', toDark: 'Switch to dark theme' },
@@ -175,8 +175,8 @@ export const translations = {
     },
     home: {
       eyebrow: 'Algeria’s gaming & pop culture show',
-      h1a: 'LEVEL UP',
-      h1b: 'YOUR REALITY.',
+      h1a: 'ALL THE NEWS,',
+      h1b: 'GAMING, TECH & CINEMA.',
       heroText: 'Reviews, previews, e-sport, tech and pop culture — the show for the community that never stopped playing. Every drop, every round, every story worth playing.',
       watchEpisodes: 'Watch the episodes',
       enterShow: 'See the news',
@@ -462,7 +462,7 @@ export const translations = {
   fr: {
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
-      home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
+      home: 'Accueil', news: 'News', editorialMenu: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
       account: 'Compte',
       menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
@@ -472,10 +472,9 @@ export const translations = {
       quiz: 'Quizz',
       game: 'Jeu',
       games: 'Jeux',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'Afficher le menu des jeux',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'Nos jeux',
+      sectionMenuAria: 'Afficher le menu Actus',
       profile: 'Profil',
       levelShort: 'NIV.',
       theme: { light: 'Clair', dark: 'Sombre', toLight: 'Passer au thème clair', toDark: 'Passer au thème sombre' },
@@ -618,7 +617,7 @@ export const translations = {
     },
     home: {
       eyebrow: 'L’émission gaming & pop culture de l’Algérie',
-      h1a: 'PASSE UN', h1b: 'NIVEAU AU RÉEL.',
+      h1a: 'TOUTE L’ACTU', h1b: 'GAMING, TECH ET CINÉMA.',
       heroText: 'Tests, avant-premières, e-sport, tech et pop culture — l’émission de la communauté qui n’a jamais arrêté de jouer. Chaque sortie, chaque round, chaque histoire qui mérite d’être jouée.',
       watchEpisodes: 'Regarder les épisodes',
       enterShow: 'Voir les actus',
@@ -902,7 +901,7 @@ export const translations = {
   ar: {
     meta: { title: 'Let’s Play — العب اللعبة' },
     nav: {
-      home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
+      home: 'الرئيسية', news: 'الأخبار', editorialMenu: 'المحتوى', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
       account: 'الحساب',
       menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
@@ -912,10 +911,9 @@ export const translations = {
       quiz: 'اختبارات',
       game: 'اللعبة',
       games: 'ألعاب',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'إظهار قائمة الألعاب',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'ألعابنا',
+      sectionMenuAria: 'إظهار قائمة الأخبار',
       profile: 'الملف',
       levelShort: 'المستوى',
       theme: { light: 'فاتح', dark: 'داكن', toLight: 'التبديل إلى المظهر الفاتح', toDark: 'التبديل إلى المظهر الداكن' },
@@ -1057,7 +1055,7 @@ export const translations = {
     },
     home: {
       eyebrow: 'برنامج الجزائر للألعاب والثقافة الشعبية',
-      h1a: 'ارتقِ', h1b: 'بواقعك.',
+      h1a: 'كل أخبار', h1b: 'الألعاب والتقنية والسينما.',
       heroText: 'مراجعات، عروض أولى، رياضات إلكترونية، تكنولوجيا وثقافة شعبية — البرنامج المخصص للمجتمع الذي لم يتوقف عن اللعب أبدًا. كل إصدار، كل جولة، كل قصة تستحق أن تُلعب.',
       watchEpisodes: 'شاهد الحلقات',
       enterShow: 'شاهد الأخبار',

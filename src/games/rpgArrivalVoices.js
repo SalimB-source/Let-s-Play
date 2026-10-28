@@ -29,6 +29,12 @@
  * Le lecteur reste muet si le joueur a coupé le son (voir `RpgAudioPlayer`).
  * Aucun aperçu, aucune pioche, aucune réanimation ne déclenche une voix :
  * seule une entrée en jeu depuis la main, comme les accueils qu'elle remplace.
+ *
+ * **La voix précède sa créature** : c'est la page qui décide *quand*, et elle
+ * annonce la carte avec le geste — départ du vol depuis la main, résolution de
+ * la carte annoncée par l'adversaire, déchirure du sacrifice — jamais après la
+ * pose. D'où le préchargement (`prechargerVoix`) : un fichier inconnu du
+ * navigateur ferait attendre la réplique jusqu'après l'atterrissage.
  */
 
 /** Base publique de Vite (`/Let-s-Play/` sur GitHub Pages, `/` ailleurs). */

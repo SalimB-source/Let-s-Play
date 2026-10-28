@@ -16,9 +16,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { RPG_ARROW_SFX, RPG_SFX_NAMES, RpgAudioPlayer, rpgSfx } from '../src/games/rpgAudio.js';
+import { gainEchantillon } from '../src/games/rpgNiveauxSons.js';
 import {
   RPG_MELEE_SFX,
   rpgFrappesCibleesReussies,
+  rpgFrappesCibleesTirees,
   rpgResolutionAToucheUneCible,
   rpgSonsResolutionCombat,
 } from '../src/games/rpgAttackAudio.js';
@@ -83,6 +85,23 @@ test('seules les frappes ciblées réellement portées comptent', () => {
   assert.deepEqual(rpgFrappesCibleesReussies({}), []);
 });
 
+test('tout tir parti compte comme flèche, raté compris — l’annulée non', () => {
+  const touchee = { attaquantId: 'a1', cibleId: 'c1', degats: 3 };
+  const ratee = { attaquantId: 'a2', cibleId: 'c2', rate: true };
+  const annulee = { attaquantId: 'a3', annule: true };
+  assert.deepEqual(rpgFrappesCibleesTirees(resumeDeTest({
+    coupsRapides: [touchee, ratee, annulee],
+  })), [touchee, ratee], 'la proie qui disparaît avant le tir n’envoie rien');
+  assert.deepEqual(rpgFrappesCibleesTirees(null), []);
+  // Deux attaquants ciblés dont un rate : une seule salve de flèches.
+  const sons = rpgSonsResolutionCombat(resumeDeTest({
+    coupsRapides: [touchee, ratee],
+  }));
+  assert.deepEqual(sons.map((son) => son.nom), [RPG_ARROW_SFX]);
+  assert.equal(sons[0].fleches, 2);
+  assert.equal(sons[0].touchees, 1);
+});
+
 test('une frappe ciblée seule ne joue que la flèche — jamais le coup d’épée', () => {
   const sons = rpgSonsResolutionCombat(resumeDeTest({
     coupsRapides: [{ attaquantId: 'a1', cibleId: 'c1', degats: 4 }],
@@ -115,10 +134,20 @@ test('deux attaquants, deux sons : la flèche d’abord, le choc ensuite', () =>
   assert.deepEqual(sons.map((son) => son.delai), [0.015, 0.015]);
 });
 
-test('une frappe ratée ou annulée ne fait siffler aucune flèche', () => {
-  assert.deepEqual(rpgSonsResolutionCombat(resumeDeTest({
-    coupsRapides: [{ attaquantId: 'a1', cibleId: 'c1', rate: true }],
-  })), []);
+test('une flèche ratée siffle quand même — et ne réveille aucun acier', () => {
+  // Le scénario exact de la plainte : une Attaque ciblée qui manche (30 %), la
+  // proie survit, aucun corps à corps, aucun dégât au sorcier. Le moteur ne
+  // rend que ce résumé-là, et il ne doit faire entendre QUE la flèche.
+  const rate = resumeDeTest({ coupsRapides: [{ attaquantId: 'a1', cibleId: 'c1', degats: 0, rate: true }] });
+  const sons = rpgSonsResolutionCombat(rate);
+  assert.deepEqual(sons.map((son) => son.nom), [RPG_ARROW_SFX], 'la flèche part, elle manque sa cible');
+  assert.equal(sons[0].fleches, 1);
+  assert.equal(sons[0].touchees, 0, 'le résumé distingue le tir du toucher');
+  assert.equal(rpgSonsResolutionCombat(rate).some((son) => son.nom === 'player_attack_hit'), false);
+  assert.equal(rpgSonsResolutionCombat(rate).some((son) => son.nom === 'block_impact'), false,
+    'le repli métallique de la page est mort : rien d’acier sur un raté');
+
+  // Une proie disparue avant le tir : l'arc ne se bande pas, silence.
   assert.deepEqual(rpgSonsResolutionCombat(resumeDeTest({
     coupsRapides: [{ attaquantId: 'a1', cibleId: 'c1', annule: true }],
   })), []);
@@ -165,10 +194,26 @@ test('RpgAudioPlayer route « fleche » vers arrow-shot.wav', () => {
     player.play(RPG_ARROW_SFX);
     assert.equal(lectures.length, 1);
     assert.ok(lectures[0].src.endsWith('arrow-shot.wav'), lectures[0].src);
-    assert.equal(lectures[0].volume, 0.6);
+    // Le volume n'est plus une constante réglée à la main : c'est la mesure du
+    // fichier (-16,4 LUFS) qui le ramène au niveau commun des sons du jeu.
+    assert.ok(Math.abs(lectures[0].volume - gainEchantillon(RPG_ARROW_SFX)) < 1e-9);
     player.destroy();
     assert.equal(player.arrowShotAudio, null, 'le démontage libère l’échantillon');
   } finally {
     globalThis.window = precedent;
   }
+});
+
+test('l’acier ne s’annonce que s’il va frapper', async () => {
+  const { rpgVagueAnnonceAcier } = await import('../src/games/rpgAttackAudio.js');
+  // Une vague qui ne tire que des flèches se valide en silence : chaque
+  // attaquant a sa proie désignée, aucune lame ne se lève.
+  assert.equal(rpgVagueAnnonceAcier(['a', 'b'], { a: 'x', b: 'y' }), false);
+  // Un attaquant sans proie part au corps à corps : l'acier s'annonce.
+  assert.equal(rpgVagueAnnonceAcier(['a', 'b'], { a: 'x' }), true);
+  // Avant toute désignation, rien n'est joué : rien n'est encore décidé.
+  assert.equal(rpgVagueAnnonceAcier(['a'], {}), true);
+  // Vague vide, entrées absentes : jamais d'erreur, jamais d'acier.
+  assert.equal(rpgVagueAnnonceAcier([], {}), false);
+  assert.equal(rpgVagueAnnonceAcier(undefined, undefined), false);
 });

@@ -48,10 +48,11 @@
      assez pour que le décor s'efface, assez peu pour qu'on le devine encore. */
   --rpg-plateau-flou: 3px;
   /* L'épaisseur du filet de couleur : la seule épaisseur de cadre qui reste
-     (voir « LE FILET DE COULEUR » en fin de feuille). Deux pixels, partout, du
+     (voir « LE FILET DE COULEUR » en fin de feuille). Trois pixels, partout, du
      plateau à la vignette de l'atelier : c'est assez pour nommer l'élément
-     d'un coup d'œil, trop peu pour manger l'illustration. */
-  --rpg-card-filet: 2px;
+     d'un coup d'œil, et le cran de plus détache la carte du bois sans manger
+     l'illustration. */
+  --rpg-card-filet: 3px;
   --rpg-card-border: clamp(7.2px, 0.768vw, 9.6px);
   --rpg-card-border-large: clamp(9.6px, 1.088vw, 12.8px);
   --rpg-card-border-small: clamp(6.4px, 0.544vw, 6.8px);
@@ -660,7 +661,6 @@
   padding: 6px 6px 5px;
   border-radius: var(--rpg-card-radius, 12px);
   background: #0c0c0e;
-  outline: 2px solid #000;                   /* le liseré noir extérieur */
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
   cursor: pointer;
   /* Une carte POSÉE sur la table est droite. L'éventail — et ses petites
@@ -3496,143 +3496,139 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    glisser-déposer, mana compris (`rpgPeutPayer`) ; l'empreinte, la même pour
    toute la main — anneau de 2 px, auréole rapprochée de 6 px, flou extérieur de
    18 px étalé de 4 px, ombre portée de 16 px ; et la densité, pleine, celle
-   d'un voyant qu'on repère d'un coup d'œil dans un éventail. La couleur, elle,
-   dépend de ce qu'on joue : l'azur est aux cartes qui se POSENT — créature,
-   héros, terrain, arme —, la Magie Rapide s'allume de l'or de son socle, et la
-   Sorcellerie de l'améthyste de la sienne (les deux triplets des familles sont
-   déclarés une fois pour toutes au bloc « Les familles de sorts », en fin de
-   feuille). L'azur écrit en repli de `var()` est donc la teinte de toute carte
-   qui ne déclare pas de famille : changer la couleur d'une famille ne se fait
-   qu'à un endroit, et le halo, lui, ne bouge pas d'un pixel — un Désert, un
-   Fennec, une Magie Rapide et une Sorcellerie s'allument exactement pareil,
-   seule la teinte les sépare.
+   d'un voyant qu'on repère d'un coup d'œil dans un éventail.
+
+   **Blanc pour toute la main, or pour les mythiques.** La lueur ne dit plus la
+   famille d'un sort (l'or de la Magie Rapide, l'améthyste de la Sorcellerie) :
+   elle ne dit qu'une chose — cette carte peut partir —, et le blanc le dit
+   sans mélange, du Désert au Fennec, de la Braise à l'Eau, de la créature au
+   sort. La rareté, elle, garde sa lueur : une **mythique** jouable s'allume
+   d'or (voir « Lueur d'or — carte mythique jouable » plus bas). Les deux
+   triplets `--rpg-play-halo` / `--rpg-play-halo-clair` restent la seule source
+   de teinte : blancs sur la règle commune — donc pour toute la main —, l'or
+   posé par la règle mythique.
 
    Le contraste est celui d'un voyant : l'anneau porte le reflet clair de la
-   famille (l'azur pâle en repli) plutôt que la teinte de base, une auréole
+   teinte (`--rpg-play-halo-clair`) plutôt que la teinte de base, une auréole
    courte le double vers l'intérieur du flou, le halo extérieur est presque
    opaque et l'ombre portée s'assombrit pour que la lueur paraisse plus claire
    encore. Le survol reprend les mêmes rayons, densité pleine. Rien de tout cela
    ne pousse la carte : le halo se peint sur son ombre, derrière la face. */
 .rpg-hand__card.is-playable {
+  /* Le blanc est la teinte de TOUTE la main jouable : il se pose ici, une fois,
+     et la seule règle qui le remplace est celle des mythiques (l'or, plus bas).
+     Les deux triplets sont en `r`, `g`, `b` séparés — la seule forme que
+     `rgba(var(--…), α)` sache lire. */
+  --rpg-play-halo: 255, 255, 255;
+  --rpg-play-halo-clair: 255, 255, 255;
   box-shadow:
-    0 0 0 2px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .98),
-    0 0 6px 1px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .82),
-    0 0 18px 4px rgba(var(--rpg-play-halo, 77, 125, 255), .92),
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), .98),
+    0 0 6px 1px rgba(var(--rpg-play-halo-clair), .82),
+    0 0 18px 4px rgba(var(--rpg-play-halo), .92),
     0 6px 16px rgba(0, 0, 0, .62);
 }
 .rpg-hand__card.is-playable:hover:not(:disabled) {
   box-shadow:
-    0 0 0 2px rgba(var(--rpg-play-halo-clair, 176, 197, 255), 1),
-    0 0 7px 1px rgba(var(--rpg-play-halo-clair, 176, 197, 255), .92),
-    0 0 24px 6px rgba(var(--rpg-play-halo, 77, 125, 255), 1),
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 7px 1px rgba(var(--rpg-play-halo-clair), .92),
+    0 0 24px 6px rgba(var(--rpg-play-halo), 1),
     0 12px 22px rgba(0, 0, 0, .68);
 }
-/* ── Lueur Kyûbi — créature mythique jouable (chakra lumineux) ───────────────
-   Coeur blanc-jaune incandescent (comme le chakra de Naruto en mode Kyûbi),
-   puis orange vif → braise rougeoyante. Beaucoup plus lumineuse que les
-   halos standards : double flou + halo externe diffus qui irradie.
+/* ── Lueur d'or — carte MYTHIQUE jouable ────────────────────────────────────
+   La main s'allume en blanc ; la rareté, elle, a sa lueur. Une mythique
+   jouable prend donc l'or — la seule couleur du halo qui ne soit pas le blanc
+   commun —, plus lumineuse que les autres : cœur blanc doré, puis or clair,
+   puis or profond qui irradie. Le cadre, lui, ne bouge pas : le halo se peint
+   derrière la face, la couleur de l'élément reste celle du filet.
+
+   Ce sont les mêmes variables que la règle commune, reposées ici une fois : la
+   teinte du halo n'est écrite qu'à deux endroits dans la feuille — le blanc de
+   la règle commune, l'or ici.
    ------------------------------------------------------------------------- */
 .rpg-hand__card.is-mythique-jouable.is-playable {
+  --rpg-play-halo: 255, 196, 8;
+  --rpg-play-halo-clair: 255, 243, 186;
   overflow: visible;
-  border-color: #ff8c1a !important;
   box-shadow:
-    0 0 0 2px rgba(255, 251, 235, 1),
-    0 0 5px 1px rgba(254, 249, 195, 0.98),
-    0 0 11px 2px rgba(253, 186, 116, 0.96),
-    0 0 16px 4px rgba(251, 113, 22, 0.92),
-    0 6px 16px rgba(0, 0, 0, 0.60);
-  filter: brightness(1.12) saturate(1.14);
-  animation: rpg-mythique-kyubi-pulse 0.9s ease-in-out infinite alternate;
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
+    0 0 11px 2px rgba(var(--rpg-play-halo), .92),
+    0 0 18px 4px rgba(var(--rpg-play-halo), .86),
+    0 6px 16px rgba(0, 0, 0, .60);
+  filter: brightness(1.1) saturate(1.12);
+  animation: rpg-mythique-halo-pulse 0.9s ease-in-out infinite alternate;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
-  border-color: #ffa726 !important;
   box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 1),
-    0 0 6px 1.5px rgba(255, 247, 205, 1),
-    0 0 13px 3px rgba(253, 186, 116, 1),
-    0 0 19px 5px rgba(251, 113, 22, 1),
-    0 8px 20px rgba(0, 0, 0, 0.62);
-  filter: brightness(1.18) saturate(1.16);
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 6px 1.5px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 13px 3px rgba(var(--rpg-play-halo), .96),
+    0 0 22px 6px rgba(var(--rpg-play-halo), .92),
+    0 8px 20px rgba(0, 0, 0, .62);
+  filter: brightness(1.16) saturate(1.16);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
   border-radius: inherit;
 }
-/* Le chakra ondule : halo condensé qui respire, collé à la carte */
-@keyframes rpg-mythique-kyubi-pulse {
+/* L'or respire : halo condensé qui ondule, collé à la carte */
+@keyframes rpg-mythique-halo-pulse {
   0% {
     box-shadow:
-      0 0 0 2px rgba(255, 251, 235, 1),
-      0 0 5px 1px rgba(254, 249, 195, 0.98),
-      0 0 11px 2px rgba(253, 186, 116, 0.96),
-      0 0 16px 4px rgba(251, 113, 22, 0.92),
-      0 6px 16px rgba(0, 0, 0, 0.60);
-    filter: brightness(1.12) saturate(1.14);
+      0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+      0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
+      0 0 11px 2px rgba(var(--rpg-play-halo), .92),
+      0 0 18px 4px rgba(var(--rpg-play-halo), .86),
+      0 6px 16px rgba(0, 0, 0, .60);
+    filter: brightness(1.1) saturate(1.12);
   }
   100% {
     box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 1),
-      0 0 6px 1.2px rgba(255, 247, 205, 0.99),
-      0 0 13px 3px rgba(253, 186, 116, 0.99),
-      0 0 19px 5px rgba(251, 113, 22, 0.96),
-      0 8px 20px rgba(0, 0, 0, 0.60);
-    filter: brightness(1.20) saturate(1.16);
+      0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+      0 0 6px 1.2px rgba(var(--rpg-play-halo-clair), .99),
+      0 0 13px 3px rgba(var(--rpg-play-halo), .96),
+      0 0 22px 5px rgba(var(--rpg-play-halo), .92),
+      0 8px 20px rgba(0, 0, 0, .60);
+    filter: brightness(1.18) saturate(1.16);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-hand__card.is-mythique-jouable.is-playable {
     animation: none !important;
-    filter: brightness(1.12) saturate(1.14);
-  }
-  .rpg-hand__card.is-mythique-jouable.is-playable {
+    filter: brightness(1.1) saturate(1.12);
     box-shadow:
-      0 0 0 2px rgba(255, 251, 235, 1),
-      0 0 5px 1px rgba(254, 249, 195, 0.98),
-      0 0 11px 2px rgba(253, 186, 116, 0.96),
-      0 0 16px 4px rgba(251, 113, 22, 0.92),
-      0 8px 22px rgba(0, 0, 0, 0.62);
+      0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+      0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
+      0 0 11px 2px rgba(var(--rpg-play-halo), .92),
+      0 0 18px 4px rgba(var(--rpg-play-halo), .86),
+      0 8px 22px rgba(0, 0, 0, .62);
   }
 }
-/* ── Lueur dorée du Lien ───────────────────────────────────────────────────
-   Une carte liée dont l'ANCRE mythique est en jeu porte un renfort : elle
-   s'allume d'un or chaud, en main comme sur la table. C'est une information,
-   pas une jouabilité — elle reste allumée même si la carte ne se joue pas
-   maintenant (une arme liée posée sur la table, par exemple), et elle ne
-   remplace jamais la lueur de jouabilité, elle s'y ajoute.
+/* ── Le sceau d'or du Lien ──────────────────────────────────────────────────
+   Une carte liée dont l'ANCRE mythique est en jeu porte un renfort : elle se
+   marque à l'or, en main comme sur la table. Mais l'or du halo appartient
+   déjà à la rareté — une mythique jouable s'allume d'or (« Lueur d'or » plus
+   haut) —, et le halo lui-même dit « cette carte peut partir ». Le Lien ne
+   prend donc ni l'un ni l'autre : il se peint à l'INTÉRIEUR de la face, un
+   filet d'or en `outline` plutôt qu'en `box-shadow`, pour composer avec le
+   halo de jouabilité au lieu de le remplacer — une carte liée et jouable
+   garde son halo blanc (ou son or de mythique) ET son filet doré.
+   Le filet respire lentement ; il reste allumé même quand la carte ne se joue
+   pas (une arme liée déjà posée sur la table), parce qu'il dit le renfort, pas
+   la disponibilité.
    ------------------------------------------------------------------------ */
 .rpg-hand__card.is-lien-actif,
 .rpg-card.is-lien-actif {
-  border-color: #f2c94c !important;
-  box-shadow:
-    0 0 0 2px rgba(255, 240, 190, 0.95),
-    0 0 6px 2px rgba(242, 201, 76, 0.75),
-    0 0 18px 4px rgba(214, 158, 24, 0.55),
-    0 6px 16px rgba(0, 0, 0, 0.55);
-  filter: brightness(1.08) saturate(1.1);
-  animation: rpg-lien-dore 2.4s ease-in-out infinite;
+  outline: 2px solid rgba(242, 201, 76, 0.95);
+  outline-offset: -5px;
+  animation: rpg-lien-dore 2.6s ease-in-out infinite;
 }
-.rpg-hand__card.is-lien-actif:hover:not(:disabled) {
-  border-color: #ffd964 !important;
-  box-shadow:
-    0 0 0 2px rgba(255, 248, 214, 1),
-    0 0 8px 3px rgba(255, 214, 92, 0.9),
-    0 0 24px 6px rgba(214, 158, 24, 0.65),
-    0 8px 20px rgba(0, 0, 0, 0.6);
+.rpg-hand__card.is-lien-actif:hover:not(:disabled),
+.rpg-card.is-lien-actif:hover:not(:disabled) {
+  outline-color: #ffd964;
 }
 @keyframes rpg-lien-dore {
-  0%, 100% {
-    box-shadow:
-      0 0 0 2px rgba(255, 240, 190, 0.95),
-      0 0 6px 2px rgba(242, 201, 76, 0.75),
-      0 0 18px 4px rgba(214, 158, 24, 0.55),
-      0 6px 16px rgba(0, 0, 0, 0.55);
-  }
-  50% {
-    box-shadow:
-      0 0 0 2px rgba(255, 250, 226, 1),
-      0 0 9px 3px rgba(255, 214, 92, 0.92),
-      0 0 26px 7px rgba(214, 158, 24, 0.68),
-      0 6px 16px rgba(0, 0, 0, 0.55);
-  }
+  0%, 100% { outline-color: rgba(242, 201, 76, 0.72); }
+  50% { outline-color: rgba(255, 233, 168, 1); }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-hand__card.is-lien-actif,
@@ -9742,7 +9738,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* La carte annoncée par l'adversaire est une carte agrandie, comme l'aperçu
    rapide : elle garde donc le grand gabarit de cadre (`--rpg-card-border-large`,
-   9,6–12,8 px) au lieu d'un filet fixe de 2 px, plus fin que celui de toutes les
+   9,6–12,8 px) au lieu d'un filet fixe de 3 px, plus fin que celui de toutes les
    autres cartes. Son badge de couleur suit la même échelle que les grandes
    faces du catalogue (pastille 28–38 px, glyphe 19 px, liseré 2 px) : plafonné
    à 23 px avec un glyphe de 13 px, il devenait illisible sur une face de
@@ -10116,8 +10112,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      et blanc ; les deux socles, eux, partagent la même voûte, où la teinte et
      le sigle suffisent à séparer les familles ;
    - la TEINTE du sceau — jaune pour la Magie Rapide, violet pour la
-     Sorcellerie, quel que soit l'élément de la carte ; le socle et le halo
-     jouable reprennent la couleur de la même famille ;
+     Sorcellerie, quel que soit l'élément de la carte ; le socle et le jeton
+     reprennent la couleur de la même famille (le halo de jouabilité, lui, ne
+     parle plus de famille : il est blanc, l'or restant aux mythiques) ;
    - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
      « Sorcellerie » — qui disent la règle à qui découvre le duel.
 
@@ -10289,31 +10286,22 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-ligne--rapide { color: #ffdf7f; }
 .rpg-sort-ligne--sorcellerie { color: #ddccff; }
 
-/* ── La teinte de la lueur de jouabilité ─────────────────────────────────────
+/* ── La teinte de la lueur de jouabilité : blanc, et l'or pour les mythiques ──
    Le halo d'une carte en main (`.rpg-hand__card.is-playable`, plus haut dans
    la feuille) répond à une seule question : « puis-je la jouer, là, tout de
    suite ? » — le mana est là, c'est mon tour, ou la fenêtre de réponse est
-   ouverte. Sur une créature, un héros ou un terrain, il prend le **blanc**.
-   Les armes gardent l'**azur** de la table. Sur
-   un sort, il prend la couleur de sa famille : **l'or** pour la Magie Rapide,
-   déjà la teinte du liseré de son socle et de sa ligne de type, et
-   l'**améthyste** pour la Sorcellerie, dont c'est la teinte du socle, du jeton
-   et de la ligne de type.
+   ouverte. Sa couleur ne dépend plus du TYPE ni de la FAMILLE de la carte :
+   toute la main s'allume en **blanc**, créature, héros, terrain, arme, Magie
+   Rapide, Sorcellerie. Seule la rareté change la teinte — une mythique prend
+   l'**or** (bloc « Lueur d'or », plus haut) —, et c'est la seule exception.
 
-   Deux triplets `r`, `g`, `b` séparés par des virgules, parce que c'est la
-   forme qu'attend `rgba(var(--rpg-play-halo), α)` dans la règle du halo : la
-   teinte et son reflet clair (celui du survol) se déclarent donc ici, avec la
-   signature des familles, et nulle part ailleurs. Le halo reste un ÉTAT, jamais
-   une couleur de cadre : une Braise rapide reçoit l'or de sa famille, pas le
-   rouge de son élément, et l'anneau de la carte n'a pas bougé.
+   Il n'y a donc plus rien à déclarer ici : le blanc est posé une fois sur la
+   règle commune (`--rpg-play-halo`, `--rpg-play-halo-clair`), et la seule
+   autre teinte de la feuille est l'or mythique. Le halo reste un
+   ÉTAT, jamais une couleur de cadre : le filet de la carte garde la teinte de
+   son élément, y compris sous une lueur d'or.
    ------------------------------------------------------------------------- */
-.rpg-hand__card--type-creature,
-.rpg-hand__card--type-terrain {
-  --rpg-play-halo: 255, 255, 255;
-  --rpg-play-halo-clair: 255, 255, 255;
-}
-.rpg-hand__card--famille-rapide { --rpg-play-halo: 255, 214, 25; --rpg-play-halo-clair: 255, 239, 156; }
-.rpg-hand__card--famille-sorcellerie { --rpg-play-halo: 179, 154, 224; --rpg-play-halo-clair: 236, 227, 255; }
+
 
 /* ── Le motif des magies et des terrains ──────────────────────────────────────
    La résille commune (posée par `.rpg-battle`) dit « ceci est un cadre » ; la
@@ -10906,7 +10894,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LE FILET DE COULEUR — 2 px, la teinte de l'élément (voir `--rpg-card-filet`)
+   LE FILET DE COULEUR — 3 px, la teinte de l'élément (voir `--rpg-card-filet`)
    ──────────────────────────────────────────────────────────────────────────
    Tout l'ornement des faces du Sablier tient dans l'anneau de bordure : le bord
    transparent, le fond de la face peint sur la padding-box, puis le motif et la
@@ -10914,9 +10902,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    ramené cet anneau à zéro (`border-width: 0`), et les cartes avaient perdu
    leur seule marque d'élément : un Braise et un Eau se ressemblaient.
 
-   On garde donc **le filet, et rien que le filet** : 2 px de la couleur de la
+   On garde donc **le filet, et rien que le filet** : 3 px de la couleur de la
    carte, là où le cadre orné en posait sept à dix. Le motif (résille, zellige)
-   est coupé — dans 2 px, il ne serait plus qu'un bruit de pixels — mais la
+   est coupé — dans 3 px, il ne serait plus qu'un bruit de pixels — mais la
    matière reste : aplat pour une mono, diagonale franche pour une hybride,
    dégradé pour les mythiques mono. C'est la couleur qui distingue, pas
    l'ornement.
@@ -10949,7 +10937,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-pile__card--top[class*="rpg-card--frame-"],
 .rpg-mulligan__card[class*="rpg-card--frame-"],
 .rpg-card-catalogue__art[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 2px) !important;
+  border-width: var(--rpg-card-filet, 3px) !important;
   border-style: solid !important;
   /* Le fond et la matière de l'anneau reviennent (ils sont déclarés par les
      règles « cadres ornés » plus haut) ; seul le motif se tait. */
@@ -10966,7 +10954,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
    cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
    « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
-   Le filet de 2 px dit déjà l'élément : une seconde trace colorée un cran plus
+   Le filet de 3 px dit déjà l'élément : une seconde trace colorée un cran plus
    loin ne serait qu'un doublon, on la laisse donc coupée partout, comme le fait
    déjà la feuille tactile. Le
    compteur ×N et la pastille d'engagement restent — ce sont eux qui disent
@@ -11618,6 +11606,66 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: saturate(.7) brightness(1.1) blur(.4px);
 }
 .rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
+
+/* Boîtier métallique : les créatures équipées d’une arme semblent placées
+   dans un étui d’acier aux coins arrondis. */
+.rpg-card.has-arme {
+  position: relative;
+  z-index: 1;
+}
+
+/* Cadre extérieur du boîtier — dépasse légèrement de la carte, coins bien arrondis. */
+.rpg-card.has-arme::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 22px;
+  background: linear-gradient(
+    145deg,
+    #9aa5ad 0%,
+    #c4ced6 30%,
+    #e8ecef 55%,
+    #c4ced6 80%,
+    #9aa5ad 100%
+  );
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.45),
+    inset 0 0 16px rgba(255, 255, 255, 0.7),
+    inset 0 0 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  transition: box-shadow 0.3s ease;
+}
+
+/* Liseré intérieur — bordure métallique juste sous les bords de la carte. */
+.rpg-card.has-arme::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: 0;
+  border-radius: 18px;
+  border: 2px solid #d1d9e0;
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.55);
+  pointer-events: none;
+}
+
+/* Fond intérieur légèrement relevé quand la carte porte une arme,
+   pour éviter l'aspect noir plat sous le boîtier. */
+.rpg-card.has-arme {
+  background: linear-gradient(180deg, #161a1e, #0f1215);
+}
+
+/* Hover : le boîtier métallique s’illumine quand la carte est survolée. */
+.rpg-card.has-arme:hover::before {
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, 0.5),
+    inset 0 0 20px rgba(255, 255, 255, 0.85),
+    inset 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
+
 .rpg-card__brume {
   position: absolute;
   inset: 0;

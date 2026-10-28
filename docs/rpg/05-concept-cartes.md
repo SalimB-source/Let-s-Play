@@ -214,7 +214,7 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
 | **Réanimation** | Ramène la dernière créature du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
 | **Auras** | Tarek, Amani, Kenshi, Bou Jeloud : la carte ne grandit que les créatures des deux cases ADJACENTES, jamais elle-même ; une case vide coupe le voisinage (`voisines` dans `rpgDuel.js`) | Valorisée au plus pour DEUX voisins, pas selon toute la table déjà posée. |
-| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier` (Guerrier, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier` (Guerrier, qui peut le garder ou le donner, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
 
 Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
 au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée
@@ -567,8 +567,10 @@ Sur les cartes de sort, le **losange jaune** (Magie Rapide, éclair) et le
 **rond violet** (Sorcellerie, étincelle) gardent leurs formes et leurs couleurs
 de famille, quel que soit l'élément de la carte, y compris pour une hybride.
 L'élément reste indiqué par la pastille, le cadre et le coût. Le bandeau de
-famille et la lueur de carte jouable reprennent les mêmes teintes (or pour la
-Magie Rapide, améthyste pour la Sorcellerie).
+famille reprend les mêmes teintes (or pour la Magie Rapide, améthyste pour la
+Sorcellerie). La **lueur de carte jouable**, elle, ne dit plus la famille : elle
+est blanche pour toute la main, et l'or n'y sert qu'à une carte **mythique**
+jouable — la rareté, pas le sort.
 
 ### Le chiffre d'un effet s'écrit sur la carte
 
@@ -599,6 +601,37 @@ phrase de règle — or une face de carte n'imprime pas la règle, et « donne
   (` · -2/-2` derrière le type), et les lecteurs d'écran reçoivent la valeur
   (« Effet sur les statistiques : -2 attaque, -2 défense ») sur la carte en
   main comme sur l'aperçu.
+
+### Un effet dépensé reste écrit, en gris
+
+Tenacité qui a déjà sauvé son porteur, Bouclier qui a bloqué son sort : l'effet
+ne s'efface pas de la face, il **se grise** (`is-epuisee`, `effet-icons.css`) —
+icône, mot, pastille de l'aperçu et lignes de règle. Le joueur voit ce qu'il a
+dépensé au lieu de deviner pourquoi la carte a changé.
+
+Le bouclier **prêté** suit la même règle. Une Parade de verre ou la Hache de la
+banquise ne s'impriment pas sur la fiche de la créature : c'est
+`bouclierEpuise` (`rpgDuel.js`, posé par `briserBouclier`) qui garde la trace
+de la parade tombée, et `IconesCarte` / `effetsEpuisesPourEntite`
+(`effetIcons.js`) qui rallument son icône violette en gris. Sans cette trace,
+l'icône s'évaporait à la chute du bouclier et le joueur ne savait plus si la
+protection avait été rompue ou si elle n'avait jamais existé.
+
+### Le bouclier d'arrivée se désigne
+
+Trois cartes portent un `arrivee.bouclier` : le Guerrier au bouclier rond, la
+Veilleuse des citernes et la Tour de sable. Elles le **donnent**, elles ne se
+contentent pas de le garder : `choisirCible: true` ouvre la désignation sur la
+table (`arriveeEnAttente` puis `rpgResoudreArriveeCiblee`) et le bouclier va à
+la créature alliée touchée. Salem reste en `cible: 'soi'` : le sien ne se prête
+pas.
+
+Le Guerrier ajoute `cibleSoi: true` — sa parade peut rester sur lui. Sans cette
+exception, un Guerrier seul sur le champ n'aurait aucune cible légale
+(`arriveeACibleLegale` ne retient que les autres créatures amies), la carte
+serait injouable et la leçon Neige n'aurait plus de bouclier à faire tomber.
+Le texte imprimé le dit : « une créature alliée ciblée — ou lui-même — reçoit
+un bouclier ».
 
 ## 7. Les contres (deck Marée des abysses)
 

@@ -34,7 +34,8 @@ import {
   rpgJouerCreature,
   rpgNouveauDuel,
 } from '../src/games/rpgDuel.js';
-import { RPG_CARD_VOICE_VOLUME, RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import { RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import { gainVoixArrivee } from '../src/games/rpgNiveauxSons.js';
 
 const PUBLIC = new URL('../public/', import.meta.url);
 
@@ -51,6 +52,8 @@ const DEJA_BRANCHES = new Set([
 const WAV_DEJA_BRANCHES = new Set([
   'Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav',
   'Pirate_Dialogue_Alright.wav',
+  // Le foley de glace, source du bruitage `freeze_impact` (`ice-freeze.wav`).
+  'IceFoley 6095_90_1.wav',
 ]);
 
 const fichiersVoix = readdirSync(PUBLIC)
@@ -272,7 +275,9 @@ test('RpgAudioPlayer joue la voix de la carte, une seule à la fois', () => {
     assert.equal(player.playCardVoice(dame), true);
     assert.equal(FakeAudio.lectures.length, 1);
     assert.ok(FakeAudio.lectures[0].src.endsWith("dame%20aux%20ailes%20d'or.mp3"));
-    assert.equal(FakeAudio.lectures[0].volume, RPG_CARD_VOICE_VOLUME);
+    // Chaque voix est ramenée au niveau commun d'après la mesure de son
+    // fichier : « La Dame aux ailes d'or » est mesurée à -20,0 LUFS.
+    assert.ok(Math.abs(FakeAudio.lectures[0].volume - gainVoixArrivee("dame aux ailes d'or.mp3")) < 1e-9);
 
     // La deuxième arrivée coupe la première : le duel ne les chevauche pas.
     assert.equal(player.playCardVoice(rpgArrivalVoiceUrl('salem')), true);
@@ -286,6 +291,41 @@ test('RpgAudioPlayer joue la voix de la carte, une seule à la fois', () => {
     assert.equal(FakeAudio.instances.length, avant, 'aucun élément audio de plus');
     assert.equal(player.cardVoiceAudios.size, 2);
     assert.equal(player.cardVoiceAudios.get(dame).paused, false);
+  } finally {
+    player.destroy();
+    rendre();
+  }
+});
+
+test('une voix préchargée attend sans jouer, et se coupe si la créature est contrée', () => {
+  const { player, rendre } = playerDeTest();
+  try {
+    const url = rpgArrivalVoiceUrl('susanoo');
+    // Le lecteur construit les bruitages du catalogue ; la voix, elle, n'existe
+    // pas encore.
+    const elementsAvant = FakeAudio.instances.length;
+    // Précharger n'est pas jouer : le fichier est prêt, l'enceinte se tait.
+    assert.equal(player.prechargerVoix(url), true);
+    assert.equal(FakeAudio.lectures.length, 0, 'préparer une voix ne la joue pas');
+    assert.equal(FakeAudio.instances.length, elementsAvant + 1, 'un seul élément audio est créé');
+    assert.equal(FakeAudio.instances.at(-1).preload, 'auto', 'l’élément télécharge son fichier d’avance');
+
+    // La lecture réutilise l'élément préparé : pas de second téléchargement au
+    // moment du geste, la voix part tout de suite.
+    assert.equal(player.playCardVoice(url), true);
+    assert.equal(FakeAudio.instances.length, elementsAvant + 1, 'aucun élément de plus à la lecture');
+    assert.equal(FakeAudio.lectures.length, 1);
+    assert.equal(player.cardVoiceAudios.get(url).paused, false);
+
+    // Une créature contrée n'achève pas son cri.
+    player.couperVoix();
+    assert.equal(player.cardVoiceAudios.get(url).paused, true, 'la voix est coupée');
+    assert.equal(player.cardVoiceCourante, null, 'plus aucune voix en cours');
+    player.couperVoix(); // sans voix en cours, rien ne casse
+
+    // Une adresse vide ne prépare rien.
+    assert.equal(player.prechargerVoix(null), false);
+    assert.equal(player.prechargerVoix(''), false);
   } finally {
     player.destroy();
     rendre();

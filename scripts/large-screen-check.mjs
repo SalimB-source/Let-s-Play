@@ -15,9 +15,9 @@
  *      reels, les 3 cartes du hub d'actu, les 3 formats et les 3 statistiques
  *      remplissent exactement une rangée ; une colonne de plus y laisserait un
  *      trou. Seules les grilles alimentées par des données peuvent en gagner.
- *   3. **Des paliers qui ne montent plus.** Le conteneur doit s'élargir à
- *      chaque palier, et les trois conteneurs du site (`.wrap`, `.nav`,
- *      `.hero-content`) doivent avancer ensemble.
+ *   3. **Un shell qui dépasse sa limite.** Les trois conteneurs du site
+ *      (`.wrap`, `.nav`, `.hero-content`) doivent rester plafonnés à 1240 px
+ *      à chaque palier et avancer ensemble.
  *
  *   npm run check:large-screen
  */
@@ -103,18 +103,16 @@ if (wideTiers !== 3) {
   problems.push(`[${rel}] ${wideTiers} palier(s) ≥ 1441 px au lieu de 3 (1440 / 1920 / 2560)`);
 }
 
-// 2) Le conteneur s'élargit à chaque palier, et les trois conteneurs suivent.
+// 2) Le conteneur reste plafonné à 1240px, et les trois conteneurs suivent.
 const shells = [...source.matchAll(/--lp-shell:\s*min\((\d+)px,\s*calc\(100% - (\d+)px\)\)/g)]
   .map((m) => ({ max: Number(m[1]), gutter: Number(m[2]) }));
 if (shells.length !== wideTiers) {
   problems.push(`[${rel}] ${shells.length} définition(s) de --lp-shell pour ${wideTiers} palier(s)`);
 }
-for (let i = 1; i < shells.length; i += 1) {
-  if (shells[i].max <= shells[i - 1].max) {
-    problems.push(`[${rel}] le palier ${i + 1} (${shells[i].max}px) n'est pas plus large que le précédent (${shells[i - 1].max}px)`);
-  }
-}
 for (const { max, gutter } of shells) {
+  if (max !== 1240) {
+    problems.push(`[${rel}] conteneur plafonné à ${max}px au lieu de 1240px`);
+  }
   if (max - gutter <= 0) {
     problems.push(`[${rel}] la gouttière (${gutter}px) annule la largeur maximale du conteneur (${max}px)`);
   }
@@ -157,5 +155,5 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`Grand écran : ${wideTiers} paliers (${shells.map((s) => `${s.max}px`).join(' → ')}), ${gridSelectors} sélecteur(s) de grille recadré(s).`);
+console.log(`Grand écran : ${wideTiers} paliers (conteneur plafonné à 1240px), ${gridSelectors} sélecteur(s) de grille recadré(s).`);
 console.log('OK — paliers ordonnés, conteneurs synchronisés, garde-fous téléphone et grilles fixes respectés.\n');

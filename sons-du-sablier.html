@@ -77,16 +77,6 @@
   .sfx .play-ico{color:var(--or-clair); font-size:11px}
   .sfx .nom-code{display:block; color:var(--brun); font-size:10px; font-family:ui-monospace, monospace}
   .sfx.en-lecture{border-color:var(--or-clair); box-shadow:0 0 0 1px var(--or-clair), 0 0 14px rgba(217,164,65,.35)}
-  .tour-card{position:relative}
-  .tour-card .lecture{position:absolute; top:12px; right:12px; font-size:11px; color:var(--or-clair); display:none}
-  .tour-card.en-lecture{border-color:var(--or-clair)}
-  .tour-card.en-lecture .lecture{display:inline}
-  .tour-btns{display:flex; gap:8px}
-  .mini{
-    appearance:none; border:1px solid var(--or); border-radius:8px; color:var(--or-clair);
-    background:rgba(217,164,65,.1); padding:6px 12px; cursor:pointer; font-size:12.5px; font-weight:600;
-  }
-  .mini:hover{background:rgba(217,164,65,.22)}
   .alerte{font-size:11.5px; color:#e6a; ;}
   .note{
     font-size:12px; color:var(--sable); border:1px dashed var(--bordure); border-radius:10px;
@@ -105,23 +95,23 @@
     <span id="total-global" class="compte"></span>
   </div>
   <p class="sous-titre">
-    Répertoire complet de la bande-son du jeu : musiques de plateaux (fichiers), échantillons
-    WAV/MP3 — les seuls bruitages encore joués par le duel, plus le bip de survol, dernier son
-    synthétisé conservé — et les dix ambiances des Tours de Bab El (<code>rpgAmbientMusic.js</code>).
-    Cliquez pour écouter — la synthèse se réveille au premier geste, comme en jeu.
+    Répertoire complet de la bande-son du jeu : musiques de plateaux, échantillons WAV/MP3 et
+    l'effleurement de survol. <b>Plus un seul son n'est synthétisé</b> : tout sort d'un fichier,
+    le survol comme les bruitages. <b>La musique d'un duel vient de sa table</b> : chaque plateau
+    a son morceau, il n'existe plus de boucle d'ambiance par tour.
+    Cliquez pour écouter — le contexte audio se réveille au premier geste, comme en jeu.
   </p>
   <nav class="toc">
     <a href="#musiques">♪ Musiques de plateaux</a>
     <a href="#autres-pistes">+ Pistes du dépôt</a>
-    <a href="#ambiances">🏰 Ambiances des 10 Tours</a>
     <a href="#echantillons">▶ Échantillons (fichiers)</a>
     <a href="#voix">🗣 Voix des créatures</a>
-    <a href="#synthese">✦ Survol — dernier son synthétisé</a>
+    <a href="#synthese">✦ Survol — l’effleurement</a>
     <a href="#annexe">⚠ Annexe</a>
   </nav>
   <div class="barre">
     <button class="btn" id="stop-tout">■ Tout arrêter</button>
-    <span class="vol">Volume synthèse &amp; ambiances <input id="volume" type="range" min="0" max="100" value="100"></span>
+    <span class="vol">Volume de la salle <input id="volume" type="range" min="0" max="100" value="100"></span>
     <span id="statut" style="font-size:12px;color:var(--sable)"></span>
   </div>
 </header>
@@ -132,7 +122,9 @@
     <p class="intro">
       Jouées en boucle sur le plateau correspondant pendant les duels
       (source : <code>src/games/rpgPlateauMusic.js</code>). Le choix du plateau dépend du deck —
-      et les plateaux à plusieurs pistes en tirent une au hasard à chaque duel.
+      et les plateaux à plusieurs pistes en tirent une au hasard à chaque duel. <b>Toutes les
+      tables du jeu sont ici</b> : c'est d'elles que vient le son des duels, il n'y a plus
+      d'ambiance de tour pour prendre le relais.
     </p>
     <div class="grid" id="liste-musiques"></div>
   </section>
@@ -142,17 +134,6 @@
     <p class="intro">Fichiers livrés à la racine du dépôt ou dans <code>public/audio/</code> mais
     non référencées par le code du jeu à ce jour.</p>
     <div class="grid" id="liste-autres"></div>
-  </section>
-
-  <section id="ambiances">
-    <h2>🏰 Ambiances des Tours de Bab El <span class="compte">10 boucles · mode Histoire</span></h2>
-    <p class="intro">
-      Une boucle de 8 mesures par tour, entièrement synthétisée en WebAudio — aucun fichier
-      (<code>src/games/rpgAmbientMusic.js</code>). En jeu, elles tournent doucement sous les
-      bruitages ; ici le niveau est remonté pour l'écoute. Attention, quelques secondes de mise
-      en place à la clôture de boucle : attendez un instant à l'appui.
-    </p>
-    <div class="grid" id="liste-ambiances"></div>
   </section>
 
   <section id="echantillons">
@@ -185,11 +166,15 @@
   </section>
 
   <section id="synthese">
-    <h2>✦ Bruitage synthétisé — le survol <span class="compte" id="compte-synthese"></span></h2>
+    <h2>✦ L’effleurement — le survol <span class="compte">1 fichier</span></h2>
     <p class="intro">
-      Le jeu ne conserve qu'un seul bruitage synthétisé en WebAudio : l'effleurement de survol de
-      l'interface. Toutes les autres séquences de <code>rpgSfx()</code> ont été retirées — les actions
-      sonnent via les échantillons ci-dessus, ou se taisent en attendant de nouveaux fichiers.
+      <b>Le jeu ne synthétise plus rien.</b> Le survol était le dernier son fabriqué par du code —
+      une sinusoïde de 55 ms sur A4, qu'on entendait comme un bip d'interface posé sur la pose des
+      cartes. C'est maintenant un extrait du vrai enregistrement de carte
+      (<code>src/games/assets/hover.wav</code>, découpé dans <code>card-draw.wav</code> par
+      <code>tools/make-son-survol.py</code>), joué à 0,05 — soit 17,4 dB sous le niveau commun : un
+      froissement qu'on distingue à peine, jamais un événement. Le moteur de synthèse (oscillateurs, bruit blanc, réverbération)
+      a été supprimé.
     </p>
     <div id="liste-synthese"></div>
   </section>
@@ -205,24 +190,28 @@
       dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
     </div>
     <div class="note">
-      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
+      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (23 bruitages nommés pour 22 fichiers : <code>hit.wav</code> sert <code>degats</code> et <code>degats_sorcier</code> ; tous en fichiers — la pose de carte a été retirée, le survol est devenu un fichier <code>hover.wav</code>, <code>pirate-ahoy.mp3</code> reste réservé aux arrivées pirates, <code>arrow-shot.wav</code> à l’Attaque ciblée, et la vague d’Eau a quitté le catalogue avec le souffle des sorts),
       <code>src/games/rpgArrivalVoices.js</code> (60 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
-      <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
-      <code>src/games/rpgAmbientMusic.js</code> (10 ambiances des Tours),
-      <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
-      (routage élémentaire : souffle de feu réservé aux sorts et effets qui blessent, Eau → vague,
+      <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux : le son des duels),
+      <code>src/games/rpgNiveauxSons.js</code> (niveaux mesurés, gain commun de lecture),
+      <code>src/games/rpgFireAudio.js</code> · <code>rpgFoudreAudio.js</code> · <code>rpgSortAudio.js</code>
+      (routage : souffle de feu réservé aux effets qui blessent, un sort ne joue plus de souffle d'élément,
       attaques de créatures → frappe commune ; l'acier du Samouraï et le tonnerre du marteau ont été
       retirés avec le catalogue synthétique).
     </div>
   </section>
 </main>
 
-<footer>Le Sablier de Bab El · Let's Play — inventaire d'écoute (le seul bruitage synthétisé restant, identique au jeu)</footer>
+<footer>Le Sablier de Bab El · Let's Play — inventaire d'écoute (aucun son synthétisé : tout sort d'un fichier, comme en jeu)</footer>
 
 <script type="module">
-import { RpgAudioPlayer, rpgSfx, RPG_SFX_NAMES } from './src/games/rpgAudio.js';
-import { RpgAmbientMusic, RPG_AMBIENT_THEMES } from './src/games/rpgAmbientMusic.js';
+import { RpgAudioPlayer } from './src/games/rpgAudio.js';
 import { RPG_ARRIVAL_VOICE_FILES } from './src/games/rpgArrivalVoices.js';
+import {
+  RPG_NIVEAU_CIBLE_LUFS,
+  gainEchantillon,
+  gainVoixArrivee,
+} from './src/games/rpgNiveauxSons.js';
 
 const $ = (sel) => document.querySelector(sel);
 const statut = $('#statut');
@@ -244,6 +233,15 @@ const MUSIQUES = [
   { plateau: 'Les Abysses Phosphorescentes', fichier: './public/audio/deep-sea-underwater-ambience.mp3',
     code: 'audio/deep-sea-underwater-ambience.mp3',
     desc: 'Ambiance sous-marine — la faille luminescente, variante des Ruines.' },
+  { plateau: 'La Nécropole des dalles · le Palais du Pharaon', fichier: './public/Egypt.mp3',
+    code: 'Egypt.mp3',
+    desc: 'Égypte — la nécropole au pied des pyramides, et la salle du trône des Juges du sommet : deux tables, un même morceau.' },
+  { plateau: 'Le Cimetière des noms effacés', fichier: './public/Le Sceau de Sang (Instrumental).mp3',
+    code: 'Le Sceau de Sang (Instrumental).mp3',
+    desc: 'Le Sceau de Sang, instrumental — la table attitrée de la Tour Oubliée, ses six paquets et ses cinq étages.' },
+  { plateau: 'La Fosse de l’Oubliée', fichier: './public/Le Sceau de Sang (Instrumental) (1).mp3',
+    code: 'Le Sceau de Sang (Instrumental) (1).mp3',
+    desc: 'La variante du même instrumental — le double merveilleux du cimetière, au fond du puits.' },
   { plateau: 'Le Cercle des corbeaux', fichier: './public/raspberrymusic - A Vikings.mp3',
     code: 'raspberrymusic - A Vikings.mp3',
     desc: 'A Vikings, de raspberrymusic — la clairière des neuf nuits : les quatre étages de la Tour du Corbeau, et le plateau quand le profil le choisit.' },
@@ -261,20 +259,81 @@ const AUTRES = [
   { plateau: 'La Cour de l’Empereur', fichier: './public/CherryBlossomStrings(Extended).mp3',
     code: 'CherryBlossomStrings(Extended).mp3', desc: 'Cordes des cerisiers — 2ᵉ piste de la Cour, tirée au hasard avec Bushido.', branche: true },
   { plateau: 'Thème principal (hors parties)', fichier: './public/Desert Solitude with Percussion.mp3',
-    code: 'Desert Solitude with Percussion.mp3', desc: 'Solitude du désert avec percussions — le thème qui tourne en boucle hors des duels.', branche: true, meta: 'Boucle hors parties · ' },
+    code: 'Desert Solitude with Percussion.mp3', desc: 'Solitude du désert avec percussions — le thème qui tourne en boucle hors des duels, et la piste du Sablier renversé, la dernière table du jeu.', branche: true, meta: 'Boucle hors parties · ' },
 ];
 
 /* Sépare les pistes branchées aux plateaux (les Vikings & bushido vivent dans les
    tableaux multi-pistes du jeu) : on les ajoute aux deux premières sections. */
-function carteAudio(item, extraMeta = '') {
+/**
+ * Une carte d'écoute. `gain` est le gain de niveau commun du jeu
+ * (`src/games/rpgNiveauxSons.js`) : la salle d'écoute le pose sur le fichier,
+ * sans quoi la pose de carte (-37 LUFS) serait inaudible à côté du coup
+ * d'épée (-6 LUFS) — c'est précisément l'écart que le jeu corrige.
+ */
+function carteAudio(item, extraMeta = '', gain = 1) {
   const card = document.createElement('div');
   card.className = 'card';
+  const niveau = Math.abs(gain - 1) < 0.005
+    ? ''
+    : `<div class="meta">Niveau commun : ${gain > 1 ? '+' : ''}${(20 * Math.log10(gain)).toFixed(1)} dB → ${RPG_NIVEAU_CIBLE_LUFS} LUFS</div>`;
   card.innerHTML = `
     <h3>${item.plateau}</h3>
     <div class="meta">${extraMeta}🎵 ${item.code}</div>
     <p class="desc">${item.desc}</p>
-    <audio controls preload="metadata" src="${encodeURI(item.fichier)}"></audio>`;
+    ${niveau}
+    <audio controls preload="metadata" data-gain="${gain}" src="${encodeURI(item.fichier)}"></audio>`;
   return card;
+}
+
+/**
+ * Applique les gains au premier geste : un élément `<audio>` plafonne à 1,
+ * alors que plusieurs fichiers remontent au-dessus. On refait donc la chaîne du
+ * jeu — un nœud de gain par fichier, un bus, un limiteur — en miniature.
+ */
+let volumeGlobal = 1;
+let contexteSalle = null;
+let busSalle = null;
+function brancherNiveauxSalle() {
+  if (contexteSalle) return;
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return;
+  contexteSalle = new AudioContextCtor();
+  const bus = contexteSalle.createGain();
+  bus.gain.value = volumeGlobal;
+  busSalle = bus;
+  if (typeof contexteSalle.createDynamicsCompressor === 'function') {
+    const limiteur = contexteSalle.createDynamicsCompressor();
+    limiteur.threshold.value = -1.5;
+    limiteur.knee.value = 3;
+    limiteur.ratio.value = 20;
+    limiteur.attack.value = 0.001;
+    limiteur.release.value = 0.2;
+    bus.connect(limiteur);
+    limiteur.connect(contexteSalle.destination);
+  } else {
+    bus.connect(contexteSalle.destination);
+  }
+  document.querySelectorAll('audio[data-gain]').forEach((audio) => {
+    const gain = Number(audio.dataset.gain);
+    if (!Number.isFinite(gain) || Math.abs(gain - 1) < 0.005) {
+      audio.volume = Math.max(0, Math.min(1, gain));
+      return;
+    }
+    if (typeof contexteSalle.createMediaElementSource !== 'function') {
+      audio.volume = Math.max(0, Math.min(1, gain));
+      return;
+    }
+    try {
+      const source = contexteSalle.createMediaElementSource(audio);
+      const noeud = contexteSalle.createGain();
+      noeud.gain.value = gain;
+      source.connect(noeud);
+      noeud.connect(bus);
+      audio.volume = 1;
+    } catch {
+      audio.volume = Math.max(0, Math.min(1, gain));
+    }
+  });
 }
 const lm = $('#liste-musiques');
 MUSIQUES.forEach(m => lm.appendChild(carteAudio(m)));
@@ -285,59 +344,8 @@ const la = $('#liste-autres');
 AUTRES.filter(a => !a.branche).forEach(a => la.appendChild(carteAudio(a, '')));
 $('#compte-autres').textContent = `${la.children.length} pistes`;
 
-/* ── 2 · Ambiances des Tours ──────────────────────────────────────── */
-const TOURS = [
-  { id: 'tour-des-listes',      titre: '1 · La Tour des Listes' },
-  { id: 'tour-du-souk',         titre: '2 · La Tour du Souk' },
-  { id: 'tour-des-sables',      titre: '3 · La Tour des Sables' },
-  { id: 'tour-des-abysses',     titre: '4 · La Tour des Abysses' },
-  { id: 'tour-des-corsaires',   titre: '5 · La Tour des Corsaires' },
-  { id: 'tour-du-fjord',        titre: '6 · La Tour du Fjord' },
-  { id: 'tour-du-soleil-rouge', titre: '7 · La Tour du Soleil rouge' },
-  { id: 'tour-de-la-necropole', titre: '8 · La Tour de la Nécropole' },
-  { id: 'tour-du-corbeau',      titre: '9 · La Tour du Corbeau' },
-  { id: 'tour-du-sablier-renverse', titre: '10 · La Tour du Sablier renversé' },
-];
-const ambient = new RpgAmbientMusic();
-let tourEnCours = null;
-
-const listeAmb = $('#liste-ambiances');
-TOURS.forEach(({ id, titre }) => {
-  const theme = RPG_AMBIENT_THEMES[id];
-  const card = document.createElement('div');
-  card.className = 'card tour-card';
-  card.dataset.tour = id;
-  card.innerHTML = `
-    <span class="lecture">● en écoute…</span>
-    <h3>${titre}</h3>
-    <div class="meta">${theme.bpm} BPM · « ${theme.nom} »</div>
-    <p class="desc">${theme.ambiance}</p>
-    <div class="tour-btns">
-      <button class="mini jouer">▶ Écouter</button>
-      <button class="mini arreter">■ Stop</button>
-    </div>`;
-  card.querySelector('.jouer').addEventListener('click', async () => {
-    ambient.setTour(id);
-    await ambient.start();
-    if (ambient.musicBus) ambient.musicBus.gain.value = 0.55;   // niveau relevé pour l’écoute
-    if (ambient.droneBus) ambient.droneBus.gain.value = 0.32;
-    ambient.setVolume(volumeGlobal);
-    tourEnCours = id;
-    document.querySelectorAll('.tour-card').forEach(c => c.classList.toggle('en-lecture', c.dataset.tour === id));
-    statut.textContent = `Ambiance : ${titre}`;
-  });
-  card.querySelector('.arreter').addEventListener('click', () => {
-    ambient.stop(); tourEnCours = null;
-    document.querySelectorAll('.tour-card').forEach(c => c.classList.remove('en-lecture'));
-    statut.textContent = '';
-  });
-  listeAmb.appendChild(card);
-});
-
-/* ── 3 · Échantillons ─────────────────────────────────────────────── */
+/* ── 2 · Échantillons ─────────────────────────────────────────────── */
 const ECHANTILLONS = [
-  { nom: 'Pose d’une carte', fichier: './src/games/assets/card-place.wav', code: 'card_place · card-place.wav',
-    desc: 'La carte se pose sur la table.' },
   { nom: 'Pioche', fichier: './src/games/assets/card-draw.wav', code: 'card_draw · card-draw.wav',
     desc: 'Une carte quitte le paquet vers la main.' },
   { nom: 'Attaquants confirmés', fichier: './src/games/assets/attackers-confirm.mp3', code: 'attackers_confirm · attackers-confirm.mp3',
@@ -345,17 +353,15 @@ const ECHANTILLONS = [
   { nom: 'Coup d’attaque du joueur', fichier: './src/games/assets/player-attack-hit.wav', code: 'player_attack_hit · player-attack-hit.wav',
     desc: 'La frappe du joueur qui touche.' },
   { nom: 'Flèche de l’Attaque ciblée', fichier: './src/games/assets/arrow-shot.wav', code: 'fleche · arrow-shot.wav',
-    desc: 'Une créature qui frappe une proie désignée tire : corde, encoche et sifflement d’empennage. Jamais le coup d’épée par-dessus.' },
+    desc: 'Une créature qui frappe une proie désignée tire : corde, encoche et sifflement d’empennage — y compris quand la flèche manque. Jamais le coup d’épée par-dessus.' },
   { nom: 'Souffle de Braise', fichier: './src/games/assets/flame-gust.wav', code: 'flame_gust · flame-gust.wav',
-    desc: 'Le vent de feu des sorts et effets Braise qui blessent (jamais les attaques).' },
-  { nom: 'Vague d’Eau', fichier: './src/games/assets/water-wave.wav', code: 'water_wave · water-wave.wav',
-    desc: 'Le ressac des magies Eau.' },
+    desc: 'Le vent de feu des effets Braise qui blessent : une arrivée, une capacité de combat. Plus jamais au lancement d’un sort.' },
   { nom: 'Carte contrée', fichier: './src/games/assets/card-countered.wav', code: 'card_countered · card-countered.wav',
     desc: 'Un contresort vient d’annuler la carte.' },
   { nom: 'Créature renvoyée', fichier: './src/games/assets/creature-return.wav', code: 'creature_return · creature-return.wav',
     desc: 'Renvoi en main (Ressac, Courant de retour…).' },
   { nom: 'Impact de blocage', fichier: './src/games/assets/block-impact.mp3', code: 'block_impact · block-impact.mp3',
-    desc: 'Le choc du bloqueur.' },
+    desc: 'Le choc d’acier du bloqueur qu’on désigne. Jamais une frappe : une Attaque ciblée ne fait entendre que sa flèche.' },
   { nom: 'Coup de destruction', fichier: './src/games/assets/destruction-hit.mp3', code: 'destruction_hit · destruction-hit.mp3',
     desc: 'La carte détruite s’effondre.' },
   { nom: 'Page tournée', fichier: './src/games/assets/page-turn.mp3', code: 'page_turn · page-turn.mp3',
@@ -376,7 +382,11 @@ const ECHANTILLONS = [
     desc: 'L’ambiance du quai quand un navire (type imprimé « Navire ») accoste : Brûlot, Cotre, Galion, Hollandais volant, Drakkar.' },
 ];
 const le = $('#liste-echantillons');
-ECHANTILLONS.forEach(e => le.appendChild(carteAudio({ plateau: e.nom, ...e })));
+ECHANTILLONS.forEach(e => le.appendChild(carteAudio(
+  { plateau: e.nom, ...e },
+  '',
+  gainEchantillon(e.code.split(' ')[0]),
+)));
 $('#compte-echantillons').textContent = `${le.children.length} fichiers`;
 
 /* Annexe : le cri du cowboy appartient à Mirage Rush, pas au Sablier. */
@@ -387,7 +397,7 @@ lane.appendChild(carteAudio({
   desc: 'Jeu Mirage Rush : cri de victoire tous les 5 ramassages consécutifs. Listé ici car il partage le dossier d’assets du Sablier.',
 }));
 
-/* ── 3 bis · Voix d’arrivée des créatures ─────────────────────────── */
+/* ── 2 bis · Voix d’arrivée des créatures ─────────────────────────── */
 // Le rapprochement carte ↔ fichier vit dans le module du jeu ; la salle
 // d’écoute n’en garde qu’un libellé lisible par carte.
 const LIBELLES_VOIX = {
@@ -461,72 +471,46 @@ for (const [carteId, fichier] of Object.entries(RPG_ARRIVAL_VOICE_FILES)) {
     fichier: `./public/${fichier}`,
     code: fichier,
     desc: `Arrivée en jeu de la carte <code>${carteId}</code> — voix propre à la carte, jouée à la place des accueils génériques.`,
-  }));
+  }, '', gainVoixArrivee(fichier)));
 }
 $('#compte-voix').textContent = `${lv.children.length} voix · une par carte`;
 
-/* ── 4 · Bruitages synthétisés ────────────────────────────────────── */
+/* ── 3 · L'effleurement ────────────────────────────────────────────── */
 const player = new RpgAudioPlayer();
-const SAMPLE_KINDS = new Set(ECHANTILLONS.map(e => e.code.split(' ')[0]));
-const EST_ECHANTILLON = (name) => rpgSfx(name)?.[0]?.kind === 'sample';
-
-const GROUPES = [
-  { titre: 'Interface — le seul son encore synthétisé', items: [
-    ['hover', 'Survol', 'carte survolée — dernier bruitage WebAudio du jeu'],
-  ]},
-];
-
-let compteSynth = 0;
 const ls = $('#liste-synthese');
-GROUPES.forEach(({ titre, items }) => {
-  const groupe = document.createElement('div');
-  groupe.className = 'sfx-groupe';
-  groupe.innerHTML = `<h4>${titre}</h4>`;
-  const chips = document.createElement('div');
-  chips.className = 'chips';
-  items.forEach(([name, label, desc]) => {
-    if (!RPG_SFX_NAMES.includes(name) || EST_ECHANTILLON(name)) return;
-    compteSynth += 1;
-    const chip = document.createElement('button');
-    chip.className = 'sfx';
-    chip.title = desc;
-    chip.innerHTML = `<span class="play-ico">▶</span><span>${label}<span class="nom-code">${name}</span></span>`;
-    chip.addEventListener('click', () => {
-      player.unlock();
-      player.setMuted(false);
-      player.setVolume(volumeGlobal);
-      player.play(name);
-      chip.classList.add('en-lecture');
-      window.setTimeout(() => chip.classList.remove('en-lecture'), 900);
-      statut.textContent = `Bruitage : ${label}`;
-    });
-    chips.appendChild(chip);
-  });
-  groupe.appendChild(chips);
-  ls.appendChild(groupe);
-});
-$('#compte-synthese').textContent = `${compteSynth} séquence conservée`;
+{
+  // Un fichier, plus une synthèse : le survol se réécoute comme le reste du
+  // catalogue, et le curseur global de la salle s'y applique aussi.
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <h3>Survol des cartes</h3>
+    <div class="meta">🎵 hover.wav — découpé dans card-draw.wav</div>
+    <p class="desc">Le froissement d'une carte effleurée, pris entre les deux chocs de la glissière
+      d'un vrai enregistrement. En jeu : 0,05, soit 17,4 dB sous le niveau commun — un murmure
+      qu'on devine plus qu'on ne l'entend.</p>
+    <audio controls preload="metadata" data-gain="0.05" src="./src/games/assets/hover.wav"></audio>`;
+  ls.appendChild(card);
+}
 
 /* ── Contrôles globaux ────────────────────────────────────────────── */
-let volumeGlobal = 1;
 $('#volume').addEventListener('input', (e) => {
   volumeGlobal = Number(e.target.value) / 100;
   player.setVolume(volumeGlobal);
-  ambient.setVolume(volumeGlobal);
+  // Les cartes d'échantillons et de voix passent par le bus de la salle.
+  if (busSalle) busSalle.gain.value = volumeGlobal;
 });
 $('#stop-tout').addEventListener('click', () => {
-  ambient.stop(); tourEnCours = null;
-  document.querySelectorAll('.tour-card').forEach(c => c.classList.remove('en-lecture'));
   document.querySelectorAll('audio').forEach(a => { a.pause(); });
   player.setVolume(0.0001); window.setTimeout(() => player.setVolume(volumeGlobal), 60);
   statut.textContent = 'Tout est arrêté.';
 });
 
-const total = MUSIQUES.length + AUTRES.length + TOURS.length + ECHANTILLONS.length + compteSynth;
+const total = MUSIQUES.length + AUTRES.length + ECHANTILLONS.length + 1; // + le survol
 $('#total-global').textContent = `${total} sons indexés`;
 // Première interaction : réveille le contexte WebAudio (comme en jeu).
-window.addEventListener('pointerdown', () => player.unlock(), { once: true });
-window.addEventListener('keydown', () => player.unlock(), { once: true });
+window.addEventListener('pointerdown', () => { player.unlock(); brancherNiveauxSalle(); }, { once: true });
+window.addEventListener('keydown', () => { player.unlock(); brancherNiveauxSalle(); }, { once: true });
 </script>
 </body>
 </html>

@@ -247,15 +247,18 @@ Trente paires sont en jeu. Une carte liée reste lisible sans elles — mais au
 moment où son ancre mythique tient une place sur la rangée du joueur, il faut
 que ça se voie **avant** de la jouer.
 
-- **En main** : la carte porte `is-lien-actif` (et `data-lien-actif="true"`),
-  un liseré et un halo **or** (`#f2c94c`), qui respirent doucement — **et
-  seulement si elle est jouable maintenant**. L'or dit « renforcée *et*
-  disponible » ; sur une carte éteinte, il promettrait une action impossible.
-- **Sur la table** : une arme liée déjà posée s'allume du même or tant que son
-  ancre tient sa rangée (`lienActifSurTable`), et s'éteint dès qu'elle part.
-- **Deux signaux, jamais confondus** : la lueur de jouabilité d'une mythique
-  (Kyûbi, orange) dit « tu peux la poser maintenant » ; la lueur du Lien
-  (or) dit « elle est renforcée ». Une carte peut porter les deux.
-- **Mouvement** : `prefers-reduced-motion` fige la pulsation, le halo reste.
+- **En main** : la carte porte `is-lien-actif` (et `data-lien-actif="true"`) —
+  un **filet d'or** (`#f2c94c`) peint **à l'intérieur** de la face, qui respire
+  lentement, **et seulement si la carte est jouable maintenant**. Le filet dit
+  « renforcée *et* disponible » ; sur une carte éteinte, il promettrait une
+  action impossible.
+- **Sur la table** : une arme liée déjà posée porte le même filet tant que son
+  ancre tient sa rangée (`lienActifSurTable`), et le perd dès qu'elle part.
+- **Trois signaux, jamais confondus** : le **halo blanc** dit « cette carte peut
+  partir » ; le halo prend l'**or** sur une mythique (la rareté) ; le **filet
+  doré du Lien** (intérieur) dit « elle est renforcée ». Le filet est posé en
+  `outline` plutôt qu'en `box-shadow` justement pour cohabiter avec le halo :
+  une carte liée et jouable garde son halo *et* son filet.
+- **Mouvement** : `prefers-reduced-motion` fige la respiration, le filet reste.
 
 Contrôles : `tests/rpg-lien-lueur.test.js`.

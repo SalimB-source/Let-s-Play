@@ -83,6 +83,11 @@ export function rendreCartesBouclier() {
       guerrier({ bouclier: 0, bouclierEpuise: true }),
       { montant: 1, restant: 0, lumiere: false, token: 2 },
     ),
+    // Une parade prêtée par un sort (Parade de verre) sur une créature qui
+    // n'en imprime pas : l'icône violette vit avec le bouclier…
+    paradePretee: rendreTable({ bouclier: 1 }),
+    // … et reste sur la face, grisée, quand le sort l'a fait tomber.
+    paradePreteeTombe: rendreTable({ bouclier: 0, bouclierEpuise: true }),
     // Le bouclier de lumière de la Dame aux ailes d'or : la même égide,
     // teinte d'or. Salem n'en porte plus : il a la parade anti-sort.
     lumiere: rendreTable(Dame({ bouclierLumiere: true })),

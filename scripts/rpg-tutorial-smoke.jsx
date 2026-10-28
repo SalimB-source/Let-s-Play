@@ -391,6 +391,11 @@ export async function checkRpgTutorialAutresLecons(assert) {
     await avancerInfos(harnais, 'guerrier');
     await harnais.click(harnais.card('guerrier-au-bouclier-rond'), 'le Guerrier au bouclier rond');
     await act(async () => { await wait(850); });
+    assert.equal(harnais.step(), 'guerrier-cible',
+      'le Guerrier demande à qui revient le bouclier : à lui, ou à une autre créature alliée');
+    await harnais.click(harnais.carteChamp('equipe', 'guerrier-au-bouclier-rond'),
+      'le Guerrier, porteur de son propre bouclier');
+    await act(async () => { await wait(300); });
     assert.equal(harnais.step(), 'bouclier');
     await harnais.click(harnais.next(), 'la règle du Bouclier');
     assert.equal(harnais.step(), 'valkyrie');

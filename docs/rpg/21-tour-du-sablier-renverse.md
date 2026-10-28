@@ -134,10 +134,10 @@ tout l'arbre avant la profondeur maximale.
 - **Peinture de repli** : `public/sablier-tours/tour-du-sablier-renverse.jpg`
   (1536×1024, comme les huit autres) — chaque étage y brille de la couleur
   de son élément.
-- **Musique** (`rpgAmbientMusic.js`) : « Le retournement du Sablier », 72 BPM —
-  bourdon des deux chambres, tic-tac qui bascule toujours dans le même sens,
-  grains de sable en souffle aigu, mélodie en miroir (deux mesures qui
-  descendent, deux qui remontent).
+- **Musique** (`rpgPlateauMusic.js`) : la table du Sablier renversé joue le
+  thème principal, `public/Desert Solitude with Percussion.mp3` — le morceau
+  du seuil revient pour la dernière table du jeu. Il n'y a plus d'ambiance
+  synthétisée par tour : le son vient du plateau.
 - **Récompenses** : le barème commun des tours libres (crédits au premier
   déblayage et au rejeu, butin de la tour au sommet). Aucune carte n'est
   exclusive à la tour : son enjeu est le mur lui-même.
@@ -175,10 +175,10 @@ pas fermé.
 - `src/games/rpgTableSceneThemes.js` — l'éclairage 3D de la chambre de verre.
 - `src/games/rpgStoryTowerModels.js` — la maquette 3D (et le grand mât qui
   porte la Tour des Corsaires à la hauteur des autres).
-- `src/games/rpgAmbientMusic.js` — l'ambiance « Le retournement du Sablier ».
+- `src/games/rpgPlateauMusic.js` — la piste du Sablier renversé (le thème principal).
 - `public/sablier-tours/tour-du-sablier-renverse.jpg` — la peinture de repli.
 - Tests : `tests/rpg-story.test.js` (la tour, ses types, ses meilleures
   cartes), `tests/rpg-ia.test.js` (le niveau), `tests/rpg-story-3d.test.js`,
-  `tests/rpg-ambient-music.test.js` ; couverture générique par
+  `tests/rpg-conquete-music.test.js` ; couverture générique par
   `tests/rpg-decks-puissance.test.js`, `tests/rpg-plateaux.test.js`,
   `tests/rpg-credits.test.js` et `tests/rpg-boosters.test.js`.

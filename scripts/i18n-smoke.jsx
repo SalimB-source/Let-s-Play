@@ -12,6 +12,7 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import Layout from '../src/components/Layout';
 import Home from '../src/pages/Home';
 import News from '../src/pages/News';
+import Actus from '../src/pages/Actus';
 import CinemaNews from '../src/pages/CinemaNews';
 import TechNews from '../src/pages/TechNews';
 import Calendar from '../src/pages/Calendar';
@@ -40,6 +41,7 @@ export { translations };
 
 export const ROUTES = [
   ['/', Home],
+  ['/actus', Actus],
   ['/news', News],
   ['/news/cinema', CinemaNews],
   ['/news/tech', TechNews],

@@ -263,15 +263,15 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LE FILET DE COULEUR — 2 px (jumeau du bloc de fin de `rpg-battle.css`)
+   LE FILET DE COULEUR — 3 px (jumeau du bloc de fin de `rpg-battle.css`)
    ──────────────────────────────────────────────────────────────────────────
-   L'exemple du guide porte le même filet que les faces du duel : 2 px de la
+   L'exemple du guide porte le même filet que les faces du duel : 3 px de la
    couleur de la carte, sans le motif — à cette épaisseur, une résille n'est
    qu'un bruit de pixels. La matière reste celle du gabarit déclaré plus haut :
    aplat pour une mono, diagonale pour une hybride, dégradé pour une mythique.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-card-guide__example[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 2px) !important;
+  border-width: var(--rpg-card-filet, 3px) !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
 }

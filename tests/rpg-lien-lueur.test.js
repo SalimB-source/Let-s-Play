@@ -53,29 +53,35 @@ test('Lueur dorée : la carte posée sur la table s’allume aussi', () => {
   assert.match(page, /lienActif=\{lienActifSurTable\(entite, 'sorcier'\)\}/);
 });
 
-test('Lueur dorée : le style est un or chaud, animé mais respectueux', () => {
+test('Le sceau du Lien : un filet d’or à l’intérieur, pas un halo', () => {
   const or = corpsDe('\\.rpg-hand__card\\.is-lien-actif,\\s*\\n\\.rpg-card\\.is-lien-actif');
-  assert.match(or, /border-color:\s*#f2c94c/, 'le liseré du Lien est doré');
-  assert.match(or, /box-shadow:[\s\S]*rgba\(242, 201, 76/, 'le halo du Lien est doré');
-  assert.match(or, /animation:\s*rpg-lien-dore/, 'la lueur respire');
+  assert.match(or, /outline:\s*2px solid rgba\(242, 201, 76/, 'le filet du Lien est doré');
+  assert.match(or, /outline-offset:\s*-5px/, 'le filet se peint à l’intérieur de la face');
+  assert.match(or, /animation:\s*rpg-lien-dore/, 'le filet respire');
+  // Le halo et la couleur du filet d'élément appartiennent au jeu : le Lien
+  // s'y ajoute, il ne les remplace pas.
+  assert.doesNotMatch(or, /box-shadow/, 'le Lien ne prend pas le halo de jouabilité');
+  assert.doesNotMatch(or, /border-color/, 'la couleur d’élément du cadre ne bouge pas');
+  assert.doesNotMatch(or, /filter:/, 'le Lien ne retouche pas la lumière de la carte');
   assert.match(battleCss, /@keyframes rpg-lien-dore/);
   assert.match(
     battleCss,
     /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-hand__card\.is-lien-actif,\s*\n\s*\.rpg-card\.is-lien-actif \{ animation: none !important; \}/,
-    'la lueur se fige pour qui refuse le mouvement',
+    'le filet se fige pour qui refuse le mouvement',
   );
 });
 
 test('Lueur dorée : elle ne remplace pas la lueur de jouabilité d’une mythique', () => {
-  // Deux informations différentes : « cette carte se joue maintenant » (or de
-  // Kyûbi) et « cette carte est renforcée par son ancre » (or du Lien). La
-  // seconde ne doit pas effacer la première : les classes cohabitent.
+  // Deux informations différentes : « cette carte se joue maintenant » (halo
+  // blanc, or pour une mythique) et « cette carte est renforcée par son ancre »
+  // (filet doré du Lien). La seconde ne doit pas effacer la première : les
+  // classes cohabitent, et le filet est en `outline` pour ça.
   const main = page.slice(page.indexOf("'rpg-hand__card rpg-hand__card--img'"));
   const bloc = main.slice(0, main.indexOf("].filter(Boolean).join(' ')"));
   assert.match(bloc, /mythiqueJouable \? 'is-mythique-jouable' : ''/);
   assert.match(bloc, /lienActifMain \? 'is-lien-actif' : ''/);
-  // Et le liseré ne s'allume que sur une carte réellement jouable : une carte
-  // dorée mais éteinte promettrait une action impossible.
+  // Et le filet ne s'allume que sur une carte réellement jouable : un cadre
+  // doré sur une carte éteinte promettrait une action impossible.
   assert.match(
     page,
     /const lienActifMain = baseJouable/,

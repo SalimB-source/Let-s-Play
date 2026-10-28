@@ -30,7 +30,7 @@ tout.
 | Cerveau adverse | `src/games/rpgAI.js` | niveaux `recit` / `normale` / `veilleur` / `sablier`, styles tactiques |
 | Économie | `src/games/rpgCredits.js`, `rpgEvenementsDuel.js` | `GAINS`, `creditsDeVictoire`, `gainsDeTour`, butin de tour payé **une fois** |
 | Hors catalogue | `rpgCards.js` (`RPG_JETON_CARDS`, `CATALOG`) | un précédent existe : les jetons sont peints par `cardById` **sans** entrer dans `RPG_DUEL_CARDS` |
-| Appareil des tours | `rpgStoryTowerModels.js`, `rpgAmbientMusic.js`, `rpgPlateaux.js` | maquette 3D, ambiance, plateau attitré |
+| Appareil des tours | `rpgStoryTowerModels.js`, `rpgPlateaux.js` | maquette 3D, plateau attitré |
 | Progression | `rpgStory.js` | victoires, récit, fusion entre appareils |
 
 **Le levier central** : `RPG_DUEL_CARDS` est la définition du *catalogue*. Une
@@ -278,7 +278,6 @@ mythiques uniques, une couleur).
 - **`public/sablier-tours/tour-oubliee.jpg`** : miniature de repli.
 - **`src/games/rpgStoryTowerModels.js`** : maquette 3D (fosse sans fond, chaînes
   rompues, cloche fêlée, encre du registre) et thème de pierre unique.
-- **`src/games/rpgAmbientMusic.js`** : 62 BPM, thème « Le registre effacé ».
 - **`src/games/rpgPlateaux.js`** — la tour a **deux tables**, dans cet ordre :
 
   1. **Le Cimetière des noms effacés** (`plateau-cimetiere-des-noms-effaces.jpg`,
@@ -312,12 +311,12 @@ mythiques uniques, une couleur).
   espaces —
   `public/Le Sceau de Sang (Instrumental).mp3` pour le cimetière,
   `public/Le Sceau de Sang (Instrumental) (1).mp3` pour la Fosse. Les deux
-  plateaux sont donc **musicaux** (`RPG_PLATEAUX_MUSICAUX`) : la boucle
-  d'ambiance de la tour ne démarre plus pendant leurs duels.
+  plateaux sont donc **musicaux** (`RPG_PLATEAUX_MUSICAUX`), comme toutes les
+  tables du jeu : il n'existe plus d'ambiance de tour pour prendre le relais.
   ⚠️ **Les deux MP3 doivent être présents dans `public/` sous ces noms exacts**
-  (espaces et parenthèses compris). Tant qu'ils manquent, le test
-  `rpg-ambient-music` le signale en diagnostic et les deux tables sont muettes,
-  faute de repli d'ambiance.
+  (espaces et parenthèses compris). Tant qu'ils manquent, les deux tables sont
+  muettes : `npm run check:rpg` le signale (`tests/rpg-tour-oubliee.test.js`
+  et `tests/rpg-plateaux.test.js`).
 - **`public/cards/*.jpg`** : 24 peintures plein art **4:5** (1024×1280),
   direction « Encre et cauchemar » — noir bleuté, violet, or terni, folklore
   maghrébin, sans texte ni bordure.

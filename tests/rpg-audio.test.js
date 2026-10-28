@@ -1,15 +1,17 @@
 /**
  * Couche pure des bruitages + lecteur WebAudio sans carte son réelle.
- * Le catalogue est réduit aux échantillons fournis et au seul bip de survol :
- * les anciennes synthèses ont été retirées du jeu, et les tests vérifient
- * autant ce qui reste que ce qui doit rester muet.
+ *
+ * **Tout le catalogue est fait de fichiers** : plus une seule forme d'onde
+ * fabriquée par du code. Le moteur de synthèse a été supprimé, et l'ancien bip
+ * de survol est devenu un extrait du vrai enregistrement de carte
+ * (`hover.wav`). Les tests vérifient autant ce qui reste que ce qui doit
+ * rester muet.
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
-  hz,
   rpgSfx,
   rpgSonArriveePirate,
   RPG_PIRATE_ARRIVEES_SFX,
@@ -21,21 +23,13 @@ import {
   RpgAudioPlayer,
 } from '../src/games/rpgAudio.js';
 
-test('hz : le la de référence et ses voisins', () => {
-  assert.equal(Math.round(hz('A4')), 440);
-  assert.equal(Math.round(hz('C4')), 262);
-  assert.equal(Math.round(hz('A5')), 880);
-  assert.equal(Math.round(hz('F#4')), Math.round(hz('G4') * 2 ** (-1 / 12)));
-  assert.equal(hz('nimportequoi'), 0);
-});
-
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
-    'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
+    'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
     'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'hover',
     'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
-    'foudre_marteau', 'water_wave',
-  ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
+    'foudre_marteau',
+  ].sort(), 'le son du duel = les échantillons de la table, survol compris');
   for (const name of RPG_SFX_NAMES) {
     const sequence = rpgSfx(name);
     assert.ok(Array.isArray(sequence) && sequence.length > 0, `séquence manquante : ${name}`);
@@ -121,7 +115,7 @@ test('la défaite et les coups blessants jouent les fichiers fournis', () => {
   assert.ok(existsSync(new URL('../src/games/assets/hit.wav', import.meta.url)));
 });
 
-test('toutes les synthèses retirées restent muettes — le survol est la seule survivante', () => {
+test('toutes les synthèses retirées restent muettes, sans repli synthétique', () => {
   const retires = [
     'apparition', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip',
     'explore', 'souffle', 'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap',
@@ -134,11 +128,12 @@ test('toutes les synthèses retirées restent muettes — le survol est la seule
     assert.ok(!RPG_SFX_NAMES.includes(name), `${name} n'est plus déclaré au catalogue`);
     assert.equal(rpgSfx(name), null, `${name} se joue en silence`);
   }
-  // Le seul son encore synthétisé : un effleurement de survol, court et filtré.
-  const survol = rpgSfx('hover');
-  assert.ok(survol, 'le survol reste au catalogue');
-  assert.ok(survol.every((event) => event.kind === 'tone'));
-  assert.ok(survol.every((event) => event.dur <= 0.1), 'le survol reste un frémissement');
+  // Aucune séquence du catalogue ne fabrique de son : tout est un fichier.
+  for (const name of RPG_SFX_NAMES) {
+    const sequence = rpgSfx(name);
+    assert.ok(sequence.every((event) => event.kind === 'sample'),
+      `${name} : le catalogue ne contient que des échantillons`);
+  }
 });
 
 test('toutes les séquences ont des départs, durées et gains valides', () => {
@@ -147,22 +142,22 @@ test('toutes les séquences ont des départs, durées et gains valides', () => {
       assert.ok(event.at >= 0, `${name} : départ négatif`);
       assert.ok(event.dur > 0, `${name} : durée nulle`);
       assert.ok(event.g > 0 && event.g <= 1, `${name} : gain hors limites`);
-      if (event.kind === 'tone' || event.kind === 'bell') {
-        assert.ok(hz(event.n) > 0, `${name} : note invalide ${event.n}`);
-      }
-      if (event.slideTo) assert.ok(hz(event.slideTo) > 0, `${name} : glissé invalide ${event.slideTo}`);
-      if (event.pan !== undefined) assert.ok(event.pan >= -1 && event.pan <= 1, `${name} : panoramique hors limites`);
-      if (event.filter !== undefined) assert.ok(event.filter >= 40, `${name} : filtre trop bas`);
-      if (event.filterTo !== undefined) assert.ok(event.filterTo >= 40, `${name} : destination du filtre trop basse`);
-      if (event.send !== undefined) assert.ok(event.send >= 0 && event.send <= 0.6, `${name} : réverbération hors limites`);
+      assert.equal(event.kind, 'sample', `${name} : un fichier, pas une synthèse`);
     }
   }
 });
 
-test('le survol reste feutré plutôt que chiptune', () => {
-  for (const event of rpgSfx('hover')) {
-    if (event.kind === 'tone') assert.notEqual(event.w, 'square', 'jamais de bip carré brut');
-  }
+test('le survol est un vrai froissement de papier, à peine audible', () => {
+  const [survol] = rpgSfx('hover');
+  assert.equal(survol.kind, 'sample', 'le survol est un fichier, plus une sinusoïde');
+  assert.ok(survol.dur <= 0.1, 'le survol reste un frémissement');
+  // Son fichier mesure -11,4 LUFS : à 0,05 il joue vers -37,4 LUFS, 17,4 dB
+  // sous les bruitages. Au-delà de 0,08 (≈ -33 LUFS), le balayage d'une main
+  // de cartes redevient un clic — c'est le reproche qui a fait baisser la dose.
+  assert.ok(survol.g > 0 && survol.g <= 0.08,
+    'sa dose le garde loin sous le niveau commun : un froissement qu’on devine');
+  assert.ok(existsSync(new URL('../src/games/assets/hover.wav', import.meta.url)),
+    'hover.wav est livré avec le jeu (tools/make-son-survol.py)');
 });
 
 function fakeParam(value = 0) {
@@ -239,26 +234,27 @@ class FakeAudioContext {
 const originalWindow = globalThis.window;
 test.after(() => { globalThis.window = originalWindow; });
 
-test('le lecteur construit la chaîne moderne, joue le survol et respecte le mute', () => {
+test('le lecteur ne construit qu’un bus de fichiers : aucun oscillateur, aucune réverbération', () => {
   globalThis.window = { AudioContext: FakeAudioContext };
   const player = new RpgAudioPlayer();
-  player.setMuted(true);
   player.unlock();
   const context = player.ctx;
 
   assert.ok(context instanceof FakeAudioContext, 'un contexte audio est créé après le geste');
-  assert.equal(context.counters.compressors, 1, 'les crêtes passent par un limiteur');
-  assert.equal(context.counters.convolvers, 1, 'la réverbération est procédurale');
-  assert.equal(player.master.gain.value, 0.0001, 'le choix muet posé avant le déverrouillage est conservé');
+  assert.equal(context.counters.compressors, 1, 'un seul limiteur : celui du bus des échantillons');
+  assert.equal(context.counters.convolvers, 0, 'plus de réverbération de convolution');
+  assert.equal(player.master, undefined, 'plus de gain maître de synthèse');
+  assert.ok(player.busEchantillons, 'le bus des échantillons est la sortie du jeu');
+  assert.deepEqual(player.busEchantillons.connections, [player.limiteurEchantillons],
+    'les fichiers passent par le limiteur avant la sortie');
 
-  player.setMuted(false);
+  // Aucun <audio> dans ce faux navigateur : rien n'est planifié, et surtout
+  // aucune synthèse ne vient masquer le fichier manquant.
   player.play('hover', 0.05);
   for (const name of RPG_SFX_NAMES) player.play(name);
-  assert.ok(context.counters.oscillators > 0, 'le survol est planifié');
-  assert.ok(context.counters.filters > 0, 'sa matière passe par un filtre');
-  // Les échantillons passent par leurs éléments <audio>, absents du faux
-  // navigateur : aucune synthèse de bruit ne subsiste dans le catalogue.
-  assert.equal(context.counters.sources, 0, 'aucune source de bruit n’est planifiée');
+  assert.equal(context.counters.oscillators, 0, 'plus un seul oscillateur');
+  assert.equal(context.counters.filters + context.counters.panners, 0, 'plus de filtre ni de panoramique');
+  assert.equal(context.counters.sources, 0, 'aucune source de bruit planifiée');
 
   const beforeMute = { ...context.counters };
   player.setMuted(true);
@@ -283,17 +279,20 @@ test('lecteur sans navigateur ou sans WebAudio : il reste muet sans planter', ()
   assert.ok(true);
 });
 
-test('setVolume ajuste le gain des sons du jeu et coupe la lecture à zéro', () => {
+test('setVolume ajuste le gain de chaque fichier, dose du survol comprise', () => {
   globalThis.window = { AudioContext: FakeAudioContext };
   const player = new RpgAudioPlayer();
   player.unlock();
+  const survol = player.echantillonsParNom.get('hover');
+  assert.ok(survol, 'le survol est un échantillon comme les autres');
+  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.05) < 1e-6,
+    'sa dose discrète reste loin sous le niveau commun');
+
   player.setVolume(0.5);
   assert.equal(player.volume, 0.5);
-  assert.ok(Math.abs(player.master.gain.value - 0.11) < 1e-6, 'le gain maître est réduit de moitié');
+  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.025) < 1e-6, 'le volume du jeu divise la dose');
 
-  const beforeZero = { ...player.ctx.counters };
   player.setVolume(0);
-  player.play('hover');
-  assert.deepEqual(player.ctx.counters, beforeZero, 'à volume 0, aucun oscillateur supplémentaire n’est planifié');
+  assert.equal(player.gainEchantillon(survol), 0, 'à volume 0, le survol est muet');
   player.destroy();
 });

@@ -186,16 +186,15 @@ img{max-width:100%}
 .brand{display:inline-flex;align-items:center;flex:none}
 /* Lockup empilé « Let's / Play » : le fichier fait 1248 × 905 (ratio 1,379).
    `aspect-ratio` + `object-fit:contain` verrouillent ce dessin — la barre peut
-   se resserrer ou changer de hauteur, l'image se contente de grandir ou de
-   réduire, elle ne peut plus être écrasée en largeur (y compris si un cache
-   ou un CDN servait un autre fichier du même nom). La hauteur suit celle de
-   l'île : 42 px dans une île de 64 px (58 px une fois la page défilée), ce
-   qui laisse 8 px d'air au-dessus et au-dessous du logo. */
+   se resserrer ou changer de hauteur, l'image ne peut pas être écrasée en
+   largeur. Le logo fait 50 px dans l'île de 64 px, puis 44 px dans l'île
+   réduite à 58 px au défilement, ce qui conserve une marge verticale visible. */
 .brand-logo{
-  height:42px;width:auto;aspect-ratio:1248/905;object-fit:contain;
+  height:50px;width:auto;aspect-ratio:1248/905;object-fit:contain;
   flex:none;display:block;
-  transition:transform .22s cubic-bezier(.16,1,.3,1)
+  transition:height .22s cubic-bezier(.16,1,.3,1),transform .22s cubic-bezier(.16,1,.3,1)
 }
+.nav.scrolled .brand-logo{height:44px}
 .brand-logo:hover{transform:scale(1.04)}
 .nav-links{display:flex;align-items:center;flex:1;min-width:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
 .nav-primary{
@@ -562,14 +561,14 @@ img{max-width:100%}
 .nav-links a.nav-account{transition:all .22s}
 
 /* ============ NAV — ENTRÉE DE SECTION & SOUS-MENU ============ */
-/* « Jeux » est une entrée de section : elle garde sa route (`/jeu`) et un
-   chevron ouvre un panneau de deux pages — Jeux-vidéo (`/jeu`) et Quizz
-   (`/quizz`). Un seul jeu de styles pour deux usages :
+/* « Actus » est une entrée de section : elle garde son accès direct à News et
+   son chevron ouvre les rubriques News, Tests, Dossiers et DZ Dev. Un seul jeu
+   de styles pour deux usages :
      - ordinateur : panneau de verre qui se déplie sous la pastille, au survol,
        au clic sur le chevron ou dès que le focus entre dans l'entrée ;
-     - téléphone : plus de panneau du tout, les deux pages sont posées sous
-       « Jeux » dans le menu plein écran (voir la requête média en fin de
-       section) — rien à survoler sur un écran tactile.
+     - téléphone : les quatre rubriques s'affichent directement sous Actus
+       dans le menu plein écran (voir la requête média en fin de section) —
+       rien à survoler sur un écran tactile.
    L'enveloppe `.nav-item` porte la pastille (hover, état actif) et non le lien :
    la pastille jaune qui glisse (`.nav-pill-indicator`) est mesurée sur elle,
    donc elle recouvre le libellé ET le chevron. */
@@ -594,7 +593,7 @@ img{max-width:100%}
 .nav-item--menu.is-open .nav-submenu-toggle{color:#fff}
 /* Le chevron suit l'ÉTAT du panneau, pas le survol : sans cela, le clic qui
    referme pendant qu'on survole laissait la flèche retournée sur un panneau
-   fermé. (`:hover` ouvre par le JS — voir `openGamesMenu`.) */
+   fermé. Le survol ouvre par le JS (`openSectionMenu`). */
 .nav-item--menu.is-open .nav-submenu-toggle{transform:rotate(180deg)}
 /* Sur la pastille jaune, le chevron garde l'encre sombre du libellé. */
 .nav-item--menu.active .nav-submenu-toggle{color:#0a0b1a}
@@ -622,29 +621,24 @@ img{max-width:100%}
 .nav-item--menu.is-open .nav-submenu{
   opacity:1;visibility:visible;pointer-events:auto;transform:translate(-50%,0) scale(1);
 }
-/* Les deux pages : même famille visuelle que le menu du compte. */
+/* Les rubriques : même famille visuelle que le menu du compte. */
 .nav-primary .nav-submenu a{
-  display:flex;align-items:flex-start;gap:10px;
-  padding:10px 12px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:11px 14px;border-radius:12px;
   font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;
   color:rgba(238,240,255,.86);
   background:rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.05);
-  transition:background .2s, border-color .2s, color .2s, transform .18s;
+  transition:background .2s, border-color .2s, color .2s;
 }
 .nav-primary .nav-submenu a:hover{
   background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12);color:#fff;
-  transform:translateX(2px);
 }
 .nav-primary .nav-submenu a.is-current{
   background:rgba(255,214,25,.10);border-color:rgba(255,214,25,.3);color:#fff;
 }
-.nav-submenu-mark{font-size:12px;line-height:1.2;color:var(--cyan);opacity:.85}
-.nav-submenu-text{display:flex;flex-direction:column;gap:4px;min-width:0}
+.nav-submenu-text{display:block;width:100%;min-width:0;text-align:center}
 .nav-submenu-label{font-family:var(--display);font-weight:800;font-size:12.5px;letter-spacing:.02em}
-.nav-submenu-desc{font:500 9px var(--mono);letter-spacing:.16em;color:var(--dim)}
-.nav-primary .nav-submenu a.is-current .nav-submenu-mark{color:var(--yellow)}
-.nav-primary .nav-submenu a.is-current .nav-submenu-desc{color:rgba(255,214,25,.72)}
 
 /* Téléphone : le panneau devient une liste de sous-entrées, toujours ouverte. */
 @media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
@@ -661,11 +655,10 @@ img{max-width:100%}
        fermé : `.nav-links` couvre tout l'écran (inset:0, z-index:1000) et se
        masque par `opacity:0` + `pointer-events:none`, mais la propriété
        s'hérite — un enfant `auto` redevient cliquable dans un parent `none`.
-       « Jeux-vidéo » et « Quizz » étaient donc des liens invisibles posés au
-       milieu de la page : un appui sur « JOUER » ou « LANCER LA PARTIE »
-       tombait dessus et quittait le jeu pour la grille des quizz. Ici, le
-       sous-menu hérite du calque : transparent aux touches menu fermé,
-       cliquable menu ouvert (ci-dessous). */
+       les sous-entrées News, Tests, Dossiers et DZ Dev pourraient devenir des
+       liens invisibles au milieu de la page et voler un appui de jeu. Ici, le
+       sous-menu hérite du calque : transparent menu fermé, cliquable menu
+       ouvert (ci-dessous). */
   }
   /* Menu fermé, rien du panneau bureau ne compte : l'état « survol » de la
      barre ordinateur (`is-open`, piloté par le JS de survol/focus) ne doit
@@ -677,7 +670,7 @@ img{max-width:100%}
   .nav-links.open .nav-submenu{pointer-events:auto}
   .nav-submenu::before{display:none}
   .nav-primary .nav-submenu a{
-    width:100%;min-height:40px;
+    width:100%;min-height:40px;justify-content:flex-start;text-align:left;
     padding:9px 4px 9px 0;border-radius:0;
     background:transparent;border:0;border-bottom:1px solid rgba(148,130,255,.12);
     color:rgba(238,240,255,.7);
@@ -691,9 +684,8 @@ img{max-width:100%}
     border-color:rgba(34,211,238,.28);
     transform:none;
   }
-  .nav-submenu-mark{font-size:14px;line-height:1}
+  .nav-submenu-text{text-align:left}
   .nav-submenu-label{font-size:clamp(16px,4.6vw,19px)}
-  .nav-submenu-desc{font-size:8px}
   /* Arabe : la liste des sous-entrées se décale de l'autre côté. */
   [dir="rtl"] .nav-submenu{padding:0 30px 6px 0}
   [dir="rtl"] .nav-primary .nav-submenu a:hover,
@@ -836,9 +828,17 @@ img{max-width:100%}
 .eyebrow{display:inline-flex;align-items:center;gap:10px;margin:0;font:500 11px var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--cyan)}
 .live-dot{width:8px;height:8px;background:var(--yellow);border-radius:50%;box-shadow:0 0 10px var(--yellow);animation:pulse 1.6s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+/* Le titre du héros tient sur deux lignes. La ligne mise en avant
+   (« Gaming, Tech et Cinéma ») est plus longue que l'ancienne : à 110px elle
+   mesure ~1650px, soit 15 fois son corps, et passait donc à la ligne dans la
+   colonne de 1240px — ~110px de hauteur en plus, qui poussaient la bande
+   « le plus attendu » sous la ligne de flottaison. Le corps est borné à 6vw
+   pour que ce rapport (15 × 6vw ≈ 90vw) reste toujours sous la largeur de la
+   colonne (fenêtre − 56px) ; à partir de 769px seulement, la règle mobile
+   prenant le relais en dessous. */
 .hero h1{
   font-family:var(--display);font-weight:800;
-  font-size:clamp(46px,8.4vw,110px);line-height:1;letter-spacing:.005em;
+  font-size:clamp(40px,6vw,88px);line-height:1;letter-spacing:.005em;
   margin:26px 0 28px;text-transform:uppercase;
 }
 .hero h1 em{font-style:normal;color:var(--cyan);text-shadow:0 0 26px rgba(34,211,238,.65),0 0 80px rgba(34,211,238,.35)}
@@ -1455,8 +1455,8 @@ img{max-width:100%}
     border-bottom-color:rgba(34,211,238,.28);
   }
   .brand{position:relative;z-index:1002}
-  /* Barre mobile : 68 px de haut, le logo peut monter à 40 px. */
-  .brand-logo{height:40px}
+  /* Barre mobile : 68 px de haut, le logo garde 40 px même après scroll. */
+  .brand-logo,.nav.scrolled .brand-logo{height:40px}
 
   /* Menu button — morphing burger */
   .menu-button{
@@ -1897,7 +1897,10 @@ img{max-width:100%}
   [dir=\"rtl\"] .mobile-menu-hud{right:auto;left:0}
 
   .hero{padding:104px 0 92px}
-  .hero h1{font-size:clamp(36px,9.6vw,52px)}
+  /* 34px de plancher (au lieu de 36) : sous 375px de large, « TOUTE L’ACTU »
+     ne tenait plus dans la colonne et le titre du héros passait à quatre
+     lignes. */
+  .hero h1{font-size:clamp(34px,9.6vw,52px)}
   .hero-content{margin-bottom:88px}
   .hero-frame{display:none}
   .featured{padding:70px 0 40px}

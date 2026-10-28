@@ -29,6 +29,9 @@ const DECK = [
  */
 export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
   const sonsJoues = [];
+  // Le survol est désormais un fichier comme les autres (`hover.wav`) : une
+  // « voix » est donc tout fichier lu *sauf* l'effleurement.
+  const voixLancees = (depuis) => fichiersLus.slice(depuis).filter((src) => !src.includes('hover.wav'));
   const jouerOriginal = RpgAudioPlayer.prototype.play;
   RpgAudioPlayer.prototype.play = function espionCatalogue(nom, delai) {
     sonsJoues.push({ nom, delai });
@@ -84,7 +87,7 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     await attendre(() => ficheOuverte('tercio-de-cuivre'), 'la fiche du Tercio est ouverte');
     assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
       'une créature sans échantillon garde l’effleurement');
-    assert.deepEqual(fichiersLus.slice(marque), [],
+    assert.deepEqual(voixLancees(marque), [],
       'aucune voix n’est lancée pour une créature muette');
     await fermerFiche('tercio-de-cuivre');
 
@@ -95,7 +98,7 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     await attendre(() => ficheOuverte('haut-fond'), 'la fiche de Haut-fond est ouverte');
     assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
       'une magie garde l’effleurement');
-    assert.deepEqual(fichiersLus.slice(marque), [], 'une magie ne joue aucune voix');
+    assert.deepEqual(voixLancees(marque), [], 'une magie ne joue aucune voix');
     await fermerFiche('haut-fond');
 
     // ── 4 · La Vipère de verre parle « Serpent de verre » ─────────────────

@@ -14,6 +14,7 @@ import {
   RpgAudioPlayer,
   rpgSfx,
 } from '../src/games/rpgAudio.js';
+import { gainEchantillon } from '../src/games/rpgNiveauxSons.js';
 import { cardById } from '../src/games/rpgCards.js';
 
 test('Thunder Spark est conservé intact dans public et dans les assets du jeu', () => {
@@ -85,7 +86,9 @@ test('RpgAudioPlayer lit le fichier Thunder Spark et respecte le mute', () => {
     const player = new RpgAudioPlayer();
     player.unlock();
     assert.match(player.foudreMarteauAudio.src, /thunder-spark-transition-full\.mp3$/);
-    assert.equal(player.foudreMarteauAudio.volume, 0.58);
+    // Thunder Spark est mesuré à -15,0 LUFS : son niveau commun passe par un
+    // gain calculé, plus par une constante réglée à la main.
+    assert.ok(Math.abs(player.foudreMarteauAudio.volume - gainEchantillon(RPG_FOUDRE_MARTEAU_SFX)) < 1e-9);
 
     player.play(RPG_FOUDRE_MARTEAU_SFX);
     assert.equal(lectures.length, 1, 'la lecture SFX démarre le sample');
