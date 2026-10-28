@@ -2,9 +2,10 @@
  * Voix d'arrivée des créatures — un échantillon par carte, livré à la racine
  * de `public/`.
  *
- * Deux lots de fichiers ont été déposés à la racine de `public/` : le lot
- * « Game voices » (37 MP3 courts, 0,65 s à 3,06 s) puis un second lot de
- * 14 voix (14 MP3 de 1,07 s à 3,08 s, plus un WAV — le Tengu). Chacun porte le
+ * Trois lots de fichiers ont été déposés : le lot « Game voices » (37 MP3
+ * courts, 0,65 s à 3,06 s), puis 14 voix (1,07 s à 3,08 s, plus un WAV — le
+ * Tengu), puis 9 voix de héros et de créatures (1,88 s à 3,97 s). Tous vivent à
+ * la racine de `public/`, sauf le Tengu, ramené en PCM 16 bits mono. Chacun porte le
  * nom de sa carte, qui n'est presque jamais l'identifiant de la carte, ni même
  * son nom imprimé : le rapprochement est fait ici, ligne par ligne, et chaque
  * écart est consigné.
@@ -34,8 +35,9 @@
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
 
 /**
- * Les 51 voix livrées, carte par carte. L'ordre suit la collection — Braise,
- * Ténèbres, Sable, Eau, Neige, les héros — puis le second lot, rangé à part.
+ * Les 60 voix livrées, carte par carte. L'ordre suit la collection — Braise,
+ * Ténèbres, Sable, Eau, Neige, les héros — puis les lots suivants, rangés à
+ * part, dans l'ordre où ils sont arrivés.
  */
 export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
   // ── Cour du Soleil rouge · Braise ───────────────────────────────────────
@@ -135,6 +137,24 @@ export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
   'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',
   'pere-des-corbeaux': 'Pere des corbeaux.mp3',
   tarek: 'Tarek.mp3',
+
+  // ── Troisième lot : 9 voix de plus ──────────────────────────────────────
+  // Les héros et les créatures des crêtes, du Hoggar et des ergs.
+  'amani-des-ksour': 'Amani.mp3',
+  'amayas-du-hoggar': 'Amayas.mp3',
+  'bouchra-guerriere-des-cretes': 'Bouchra.mp3',
+  // « Eirick » : la carte s'écrit « Eirik du Premier Serment ». Une lettre de
+  // trop dans le fichier, la voix est la sienne.
+  'eirik-du-premier-serment': 'Eirick.mp3',
+  // « Ifrit furtif » : le fichier dit le nom imprimé, la carte est
+  // `ifrit-des-ergs` — à ne pas confondre avec Ifrit al-Ahmar, le héros, qui a
+  // déjà sa voix.
+  'ifrit-des-ergs': 'Ifrit furtif.MP3',
+  'guerrier-au-bouclier-rond': 'Guerrier au bouclier rond.mp3',
+  'sahir-des-braises': 'Sahir des braises.mp3',
+  'tiziri-du-djurdjura': 'Tiziri.mp3',
+  // « Volva » sans tréma : la carte est la Völva soigneuse.
+  'volva-soigneuse': 'Volva.mp3',
 });
 
 /** Les identifiants des cartes qui ont une voix, dans l'ordre de la table. */

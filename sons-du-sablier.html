@@ -206,7 +206,7 @@
     </div>
     <div class="note">
       <b>Sources :</b> <code>src/games/rpgAudio.js</code> (19 bruitages : le survol synthétisé + 18 entrées échantillons — <code>hit.wav</code> partagé par les deux coups, <code>pirate-ahoy.mp3</code> réservé aux arrivées pirates),
-      <code>src/games/rpgArrivalVoices.js</code> (51 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
+      <code>src/games/rpgArrivalVoices.js</code> (60 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux),
       <code>src/games/rpgAmbientMusic.js</code> (10 ambiances des Tours),
       <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
@@ -443,6 +443,16 @@ const LIBELLES_VOIX = {
   'dame-des-neuf-mondes': 'LA DAME DES NEUF MONDES',
   'pere-des-corbeaux': 'LE PÈRE DES CORBEAUX',
   tarek: 'TAREK',
+  // Troisième lot de voix.
+  'amani-des-ksour': 'Amani, gardienne des ksour',
+  'amayas-du-hoggar': 'Amayas, guide du Hoggar',
+  'bouchra-guerriere-des-cretes': 'Bouchra, guerrière des crêtes',
+  'eirik-du-premier-serment': 'Eirik du Premier Serment',
+  'ifrit-des-ergs': 'Ifrit furtif',
+  'guerrier-au-bouclier-rond': 'Guerrier au bouclier rond',
+  'sahir-des-braises': 'Sahir des braises',
+  'tiziri-du-djurdjura': 'Tiziri, voix du Djurdjura',
+  'volva-soigneuse': 'Völva soigneuse',
 };
 const lv = $('#liste-voix');
 for (const [carteId, fichier] of Object.entries(RPG_ARRIVAL_VOICE_FILES)) {

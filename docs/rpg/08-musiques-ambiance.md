@@ -48,7 +48,7 @@ attaques triangulaires filtrées restent douces sur les haut-parleurs mobiles.
 ## Les voix d'arrivée des créatures
 
 Un troisième étage sonore, indépendant des boucles : **chaque créature entre en
-jeu avec sa voix**. Deux lots ont livré 51 fichiers courts (de 0,65 s à 3,08 s)
+jeu avec sa voix**. Trois lots ont livré 60 fichiers courts (de 0,65 s à 3,97 s)
 à la racine de `public/` — 50 MP3 et un WAV, le Tengu, ramené en PCM 16 bits
 mono — et `src/games/rpgArrivalVoices.js`
 les rattache carte par carte — le nom du fichier n'est presque jamais celui de
@@ -66,7 +66,7 @@ trois hivers » pour le Berserk des trois hivers…).
   fois (la précédente se met en pause), trois au plus par relevé, décalées de
   140 ms. Le son coupé et le curseur de volume s'appliquent comme aux autres
   échantillons (`syncOutputGain`), et `destroy()` coupe les départs en attente.
-- **Écoute** : `sons-du-sablier.html` liste les 51 voix dans la section « Voix
+- **Écoute** : `sons-du-sablier.html` liste les 60 voix dans la section « Voix
   d'arrivée des créatures ».
 - **La fiche parle** : ouvrir une carte en grand — le clic du catalogue, le
   clic droit ou l'appui long ailleurs dans le jeu — joue la voix de la créature

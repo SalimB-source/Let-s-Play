@@ -79,7 +79,7 @@ function donner(duel, cote, carteId) {
 }
 
 test('chaque voix appartient à une créature ou à un héros du jeu', () => {
-  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 51, 'les deux lots comptent 51 cartes');
+  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 60, 'les trois lots comptent 60 cartes');
   for (const carteId of RPG_ARRIVAL_VOICE_CARD_IDS) {
     const carte = cardById(carteId);
     assert.ok(carte, `${carteId} est une carte du jeu`);
@@ -123,6 +123,14 @@ test('le rapprochement des noms approximatifs est figé', () => {
     'djinn-de-foudre': "Djinn d'éclair.mp3",
     'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',
     tarek: 'Tarek.mp3',
+    // Troisième lot : 9 voix, dont 4 au nom approché.
+    'eirik-du-premier-serment': 'Eirick.mp3',
+    'ifrit-des-ergs': 'Ifrit furtif.MP3',
+    'volva-soigneuse': 'Volva.mp3',
+    'amani-des-ksour': 'Amani.mp3',
+    'amayas-du-hoggar': 'Amayas.mp3',
+    'bouchra-guerriere-des-cretes': 'Bouchra.mp3',
+    'tiziri-du-djurdjura': 'Tiziri.mp3',
   };
   for (const [carteId, fichier] of Object.entries(attendus)) {
     assert.equal(rpgArrivalVoiceFile(carteId), fichier, `${carteId} parle avec ${fichier}`);
@@ -134,7 +142,9 @@ test('le rapprochement des noms approximatifs est figé', () => {
     'kenshi-de-la-forge', 'tojiro-le-pourfendeur', 'celui-qui-juge', 'salem',
     // Second lot, dont le fichier porte le nom de la carte.
     'hatamoto-des-cendres', 'gardienne-de-la-balance', 'ibis-des-comptes',
-    'celle-qui-pese', 'le-renegat', 'pere-des-corbeaux']) {
+    'celle-qui-pese', 'le-renegat', 'pere-des-corbeaux',
+    // Troisième lot, dont le fichier porte le nom de la carte.
+    'guerrier-au-bouclier-rond', 'sahir-des-braises']) {
     assert.ok(rpgArrivalVoiceFile(carteId), `${carteId} a bien une voix`);
   }
 });
@@ -154,7 +164,7 @@ test('chaque voix est un fichier court livré dans public/, une seule fois', () 
 test('aucune voix du lot ne reste orpheline — et aucune musique ne s’y invite', () => {
   // À la racine de public/, tout MP3 de moins d'1 Mo est une voix de carte ;
   // les pistes de plateau pèsent toutes plus de 3 Mo.
-  assert.equal(fichiersVoix.length, 51, 'le dépôt livre exactement 51 voix de créature');
+  assert.equal(fichiersVoix.length, 60, 'le dépôt livre exactement 60 voix de créature');
   const attribues = new Set(Object.values(RPG_ARRIVAL_VOICE_FILES));
   for (const nom of fichiersVoix) {
     assert.ok(attribues.has(nom), `${nom} est attribué à une carte`);
