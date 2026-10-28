@@ -329,6 +329,29 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Hurlement du blizzard : 2 dégâts à toutes, 3 sous Le Géant des banquises', () => {
+  const monter = (avecGeant) => {
+    const duel = duelVide();
+    const a = poser(duel, 'sorcier', 'momie-de-lin');
+    const b = poser(duel, 'sorcier', 'momie-de-lin');
+    if (avecGeant) poser(duel, 'joueur', 'geant-des-banquises');
+    return { duel, a, b };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'hurlement-du-blizzard');
+  assert.deepEqual([sans.a.pv, sans.b.pv], [2, 2], 'sans ancre : 2 dégâts sur 4 PV');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'hurlement-du-blizzard');
+  assert.deepEqual([avec.a.pv, avec.b.pv], [0, 0], 'sous le Géant : 3 dégâts, elles tombent');
+
+  const carte = cardById('hurlement-du-blizzard');
+  assert.equal(carte.cost, 4, 'le Lien n’escompte jamais le coût');
+  assert.equal(carte.effet.gelChance, 0.25, 'la chance de gel ne bouge pas');
+  assert.deepEqual(carte.lien, { ancre: 'geant-des-banquises', effet: { amount: 3 } });
+});
+
 test('Festin des vaillants : 2 PV rendus, 3 sous Eirik — aux créatures comme au sorcier', () => {
   const monter = (avecEirik) => {
     const duel = duelVide();

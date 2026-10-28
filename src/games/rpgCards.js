@@ -1797,7 +1797,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.25 },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée.',
+    // Le Lien du Géant : le hurlement gagne un cran — 3 dégâts. La chance de
+    // gel ne bouge pas : c'est le souffle qui grandit, pas le froid.
+    lien: { ancre: 'geant-des-banquises', effet: { amount: 3 } },
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée. Lien du Géant — si Le Géant des banquises est en jeu, 3 dégâts à toutes les créatures adverses à la place, la chance de gel inchangée.',
     flavor: 'Le vent hurle si fort que la neige devient des lames.',
   },
   // ── Le lot du gel : magies rapides et sorcelleries du Serment ────────────

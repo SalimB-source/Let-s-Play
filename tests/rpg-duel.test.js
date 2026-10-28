@@ -4790,7 +4790,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const dune2 = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
   donner(duel, 'joueur', 'hurlement-du-blizzard');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'hurlement-du-blizzard').ok, true);
-  assert.equal(dune2.pv, 2, 'le Hurlement du blizzard balaie toutes les créatures adverses');
+  // Le Géant des banquises est dans le camp du lanceur : son Lien porte le
+  // Hurlement de 2 à 3 dégâts, et la Dune de 4 PV tombe à 1.
+  assert.equal(dune2.pv, 1, 'le Hurlement du blizzard balaie toutes les créatures adverses — 3 dégâts sous le Géant');
 
   donner(duel, 'joueur', 'eclair-du-marteau');
   const pvSorcierAvantEclair = duel.sorcier.pv;
