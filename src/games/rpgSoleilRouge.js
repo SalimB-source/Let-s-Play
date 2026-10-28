@@ -100,7 +100,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -125,8 +125,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
-    coupCritique: { chance: 0.3, fois: 4 },
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 30 % de chances de frapper 4 fois la créature adverse.',
+    coupCritique: { chance: 0.25, fois: 4 },
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Coup critique — En combat, 25 % de chances de frapper 4 fois la créature adverse.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -160,7 +160,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Humain · Samouraï',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
@@ -183,8 +183,13 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.3 },
-    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.25 },
+    // Le Lien de la Flamme : sur Kagutsuchi, le sabre ne mord **que la
+    // force** — la défense imprimée reste intacte (+2/+0 au lieu de +2/-2).
+    // Et comme les coups critiques se cumulent, sa frappe quadruple passe de
+    // 25 % à 50 % de chances SANS que ce Lien ait à l'écrire.
+    lien: { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
+    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Avec Kagutsuchi, Flamme originelle, en jeu : +2/+0 au lieu de +2/-2.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -193,8 +198,11 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
     typeLine: 'Arme — Lame de braise et de sable',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.3 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. L’arme rejoint le cimetière quand son porteur quitte le jeu.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.25 },
+    // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
+    // une fois de plus. Attaque ciblée et coup critique restent intacts.
+    lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse. L’arme rejoint le cimetière quand son porteur quitte le jeu. Avec Cavalier des deux sabres en jeu : +2/+0 au lieu de +1/+0.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({
@@ -203,7 +211,10 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Magie Rapide — Technique · Braise',
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée.',
+    // Le Lien du Pourfendeur : la frappe gagne le cran qui manquait, celui qui
+    // finit le duel — 3 au lieu de 2, pour 1 mana.
+    lien: { ancre: 'tojiro-le-pourfendeur', effet: { amount: 3 } },
+    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée. Avec Tojiro, le pourfendeur, en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le fourreau n’a pas fini de résonner que le duel est terminé.',
   }),
   carte({
@@ -212,7 +223,10 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Sorcellerie — Feu follet · Braise',
     cibles: ['creature', 'creature'],
     effet: { type: 'degats', amount: 4, cible: 'creature', choixDegats: true },
-    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées.',
+    // Le Lien de la fournaise : l'Oni frappe deux fois, et les deux feux
+    // montent d'un cran — 5 sur une cible, 3 sur chacune des deux.
+    lien: { ancre: 'oni-de-la-fournaise', effet: { amount: 5, secondAmount: 3 } },
+    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées. Avec Oni de la fournaise en jeu : 5 dégâts, ou 3 sur chacune des deux.',
     flavor: 'Ne suivez pas les lumières entre les cèdres : elles connaissent déjà votre chemin.',
   }),
   carte({
@@ -221,7 +235,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Sorcellerie — Serment · Braise',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
-    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour.',
+    lien: { ancre: 'daimyo-du-soleil-rouge', effet: { atk: 3, def: 1 } },
+    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];

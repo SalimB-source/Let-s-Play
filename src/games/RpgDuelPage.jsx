@@ -275,6 +275,8 @@ import {
   cardResonanceGroup,
   resonanceGroupLabel,
   armeById,
+  effetLie,
+  lienSatisfait,
   magieFamille,
   modificationStats,
   rpgValiderDeck,
@@ -1095,7 +1097,11 @@ const RPG_DECK_FAMILLES = [
   { id: 'terrains', nom: 'Terrains', note: 'Les sources de mana du deck' },
 ];
 
-function targetMode(carte) {
+function targetMode(carte, lienActif = false) {
+  // Un Lien peut exiger une cible que la fiche n'imprime pas : le Poids de la
+  // Barbe Noire désigne en plus une créature adverse pour -3/-3. La table
+  // s'allume alors sur la créature, pas sur la plaque du sorcier.
+  if (lienActif && carte?.lien?.cible === 'creature' && carte?.lien?.debuff) return 'ennemi';
   // Une arrivée en jeu qui désigne sa cible : sa portée vient du moteur
   // (`arriveeCiblePortee`), la même règle que celle qui exige et valide la
   // désignation — l'exil du Susanoo choisit dans les deux camps, le duel du
@@ -1140,6 +1146,7 @@ export function porteeCibleEnCours({
   attenteAbordage = false,
   attenteSiteBimini = false,
   cibleAllieeMagie = null,
+  lienActif = false,
 } = {}) {
   if (attenteSiteBimini) return 'allie';
   // Le Grappin accroché : la cale attend une proie ADVERSE. Seule une arme qui
@@ -1151,7 +1158,7 @@ export function porteeCibleEnCours({
   if (carte?.effet?.type === 'combat' && carte?.effet?.sourceCible === 'creature-amie') {
     return cibleAllieeMagie ? 'ennemi' : 'allie';
   }
-  return targetMode(carte);
+  return targetMode(carte, lienActif);
 }
 
 function FaceDownHand({ count, drawAnimations = [] }) {
@@ -2755,6 +2762,10 @@ export function RpgMassFreezeFx({ effet }) {
 export function TableCard({
   entite,
   cote,
+  // La carte de table porte-t-elle un Lien ACTIF (son ancre mythique est en
+  // jeu) ? Le parent le calcule — c'est lui qui voit les deux camps —, et la
+  // carte s'allume d'une lueur dorée pour dire qu'elle est renforcée.
+  lienActif = false,
   active,
   selected,
   blocking,
@@ -2884,6 +2895,7 @@ export function TableCard({
         cardMotifClass(carte),
         carte?.kind === 'hero' ? 'rpg-card--legendaire' : '',
         estSite ? 'rpg-card--site' : '',
+        lienActif ? 'is-lien-actif' : '',
         entite.envol ? 'is-envol' : '',
         entite.rapidite ? 'has-rapidite' : '',
         entite.infiltration ? 'has-infiltration' : '',
@@ -2963,7 +2975,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? ', Attaque ciblée : peut frapper une créature adverse avant le combat avec 30 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.durabilite ? `, son arme porte ${entite.arme.durabilite} compteur${entite.arme.durabilite > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort adverse qui la cible' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? ', Attaque ciblée : peut frapper une créature adverse avant le combat avec 25 % de chances de rater et arrêter là son attaque, sinon elle attaque l’adversaire normalement (100 %)' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, protection contre ${protectionLabel} pendant encore ${entite.protection.toursRestants} tour${entite.protection.toursRestants > 1 ? 's' : ''}` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.durabilite ? `, son arme porte ${entite.arme.durabilite} compteur${entite.arme.durabilite > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort adverse qui la cible' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img
@@ -9493,11 +9505,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     && arriveeViseSorcier(carteCiblee));
   const attenteSiteBimini = duel.siteEnAttente?.cote === 'joueur'
     && duel.siteEnAttente?.recompense === 'bimini';
+  // Le Lien d'une carte POSÉE sur la table : une arme attachée dont l'ancre
+  // mythique tient sa rangée. Sert à allumer la carte d'une lueur dorée.
+  const lienActifSurTable = (entite, camp) => {
+    const arme = entite?.arme ? cardById(entite.arme.carteId) : null;
+    if (!arme?.lien) return false;
+    return lienSatisfait(arme, duel[camp]?.creatures ?? []);
+  };
+
   const modeCible = porteeCibleEnCours({
     carte: carteCiblee,
     attenteAbordage,
     attenteSiteBimini,
     cibleAllieeMagie,
+    lienActif: Boolean(carteCiblee) && lienSatisfait(carteCiblee, duel.joueur.creatures),
   });
   const ciblesCoupRapideLegales = (attaquant, cote = 'joueur') => {
     const carte = cardById(attaquant?.carteId);
@@ -10945,7 +10966,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     if (carte.kind === 'magie') {
       signalerTutoriel('magie-choisie', { cardId: carteId });
-      const cible = targetMode(carte);
+      const cible = targetMode(carte, lienSatisfait(carte, duel.joueur.creatures));
       if (cible) {
         setCibleAllieeMagie(null);
         // Même verdict que le halo de la main (`rpgSortACibleValide`, via
@@ -11283,8 +11304,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     // Boualem ne fait plus choisir la nouvelle cible au LANCEUR : c'est celui
     // qui joue Boualem qui la désigne, de son côté (`duel.boualemEnAttente`).
-    // Feux de kitsune : choisissez une cible pour 4 dégâts, ou deux cibles
-    // distinctes pour répartir 2 dégâts sur chacune.
+    // Feux de kitsune : choisissez une cible pour le montant plein, ou deux
+    // cibles distinctes pour répartir le montant partagé sur chacune (les deux
+    // nombres montent d'un cran quand le Lien de l'Oni est actif).
     if (carteSource?.id === 'feux-de-kitsune') {
       if (!cibleAllieeMagie) {
         setCibleAllieeMagie(entite.id);
@@ -11683,8 +11705,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  // Le Lien qui exige une cible supplémentaire détourne la désignation vers la
+  // créature : la plaque du sorcier n'est plus une cible légale pour ce sort.
+  const sorcierEstCibleDuSort = Boolean(carteCiblee?.cibles?.includes('sorcier'))
+    && !(carteCiblee?.lien?.cible === 'creature' && modeCible === 'ennemi');
+
   const cliquerSorcier = () => {
-    if (cibleEnCours && carteCiblee?.cibles?.includes('sorcier')) {
+    if (cibleEnCours && sorcierEstCibleDuSort) {
       jouerSfx('select');
       lancerMagie(cibleEnCours, 'sorcier');
       return;
@@ -12453,6 +12480,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     : null);
   const casesEnnemi = casesParId(duel.sorcier);
   const casesJoueur = casesParId(duel.joueur);
+  // Les deux nombres d'un sort à cible double (les Feux de kitsune) se lisent
+  // sur l'effet **réellement résolu** : le Lien de l'Oni les monte, et l'invite
+  // doit annoncer les mêmes chiffres que le moteur.
+  const chiffresDoubleCible = (carte) => {
+    const effet = effetLie(carte, lienSatisfait(carte, duel.joueur.creatures)) ?? {};
+    return { unique: effet.amount ?? 0, partage: effet.secondAmount ?? 2 };
+  };
+  const feuxKitsune = chiffresDoubleCible(carteCiblee);
   const inviteActionJoueur = (mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande || Boolean(vainqueur))
     ? null
     : sacrificeEnCours
@@ -12515,7 +12550,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 // nouvelle cible est choisie par celui qui le JOUE, pas par le
                 // lanceur — c'est l'invite `attenteBoualem` qui guide ce clic.
                 : carteCiblee?.id === 'feux-de-kitsune'
-                  ? (cibleAllieeMagie ? 'Choisissez une deuxième créature adverse (2 dégâts chacune), ou annulez pour infliger 4 à une cible' : 'Choisissez une créature adverse : 4 dégâts, ou sélectionnez-en une seconde pour 2 dégâts chacune')
+                  ? (cibleAllieeMagie
+                    ? `Choisissez une deuxième créature adverse (${feuxKitsune.partage} dégâts chacune), ou annulez pour infliger ${feuxKitsune.unique} à une cible`
+                    : `Choisissez une créature adverse : ${feuxKitsune.unique} dégâts, ou sélectionnez-en une seconde pour ${feuxKitsune.partage} dégâts chacune`)
                   : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
                   ? (cibleAllieeMagie
                     ? 'Choisissez la créature adverse à affronter'
@@ -12943,7 +12980,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         </div>
 
-        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (carteCiblee?.cibles?.includes('sorcier') || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
+        <button type="button" className={`rpg-wizard-plate rpg-wizard-plate--ennemi${cibleEnCours && (sorcierEstCibleDuSort || arriveeViseSorcierEnAttente) ? ' is-ciblable' : ''}${sortJoue?.cible.targetPlate === 'sorcier' ? ' is-spell-target' : ''}${classeSoinPlaque(soinSorcier)}`} onClick={cliquerSorcier}
           data-tutorial-target={cibleTutoriel('opponent-health') ? 'opponent-health' : undefined}
           data-soin={soinSorcier ? soinSorcier.montant : undefined}
           data-menace-letale={menaceLetaleActive ? 'true' : undefined}
@@ -13031,6 +13068,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="ennemi"
+                      lienActif={lienActifSurTable(entite, 'sorcier')}
                       caseEssai={casesEnnemi?.get(entite.id) ?? null}
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
@@ -13126,6 +13164,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       key={entite.id}
                       entite={entite}
                       cote="joueur"
+                      lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
@@ -13758,6 +13797,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // `rpg-battle.css`).
               const estMythique = cardRarityInfo(carte).key === 'mythique';
               const mythiqueJouable = baseJouable && estMythique;
+              // La carte liée dont l'ancre mythique est en jeu : elle s'allume
+              // d'une lueur dorée, pour que le joueur voie qu'elle est renforcée
+              // AVANT de la jouer. Seulement si elle est JOUABLE maintenant —
+              // un liseré d'or sur une carte éteinte promettrait une action
+              // qu'on ne peut pas faire.
+              const lienActifMain = baseJouable
+                && Boolean(carte.lien)
+                && lienSatisfait(carte, duel.joueur.creatures);
               const enVol = carteEnVol?.phase === 'flying'
                 && carteEnVol.carteId === carteId
                 && groupe.indices.includes(carteEnVol.handIndex);
@@ -13806,6 +13853,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'is-targeting is-pose-en-cours' : '',
                     jouable ? 'is-playable' : 'is-unplayable',
                     mythiqueJouable ? 'is-mythique-jouable' : '',
+                    lienActifMain ? 'is-lien-actif' : '',
                     carteGlissee === carteId ? 'is-dragging' : '',
                     enVol ? `rpg-card-flight is-flying${estTerrain ? ' rpg-card-flight--terrain' : ''}` : '',
                   ].filter(Boolean).join(' ')}
@@ -13830,6 +13878,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-rpg-flight-card-id={enVol ? carteId : undefined}
                   data-jouable={jouable ? 'true' : 'false'}
                   data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
+                  data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
                   aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >

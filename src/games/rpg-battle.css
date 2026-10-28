@@ -3603,6 +3603,37 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
       0 8px 22px rgba(0, 0, 0, .62);
   }
 }
+/* ── Le sceau d'or du Lien ──────────────────────────────────────────────────
+   Une carte liée dont l'ANCRE mythique est en jeu porte un renfort : elle se
+   marque à l'or, en main comme sur la table. Mais l'or du halo appartient
+   déjà à la rareté — une mythique jouable s'allume d'or (« Lueur d'or » plus
+   haut) —, et le halo lui-même dit « cette carte peut partir ». Le Lien ne
+   prend donc ni l'un ni l'autre : il se peint à l'INTÉRIEUR de la face, un
+   filet d'or en `outline` plutôt qu'en `box-shadow`, pour composer avec le
+   halo de jouabilité au lieu de le remplacer — une carte liée et jouable
+   garde son halo blanc (ou son or de mythique) ET son filet doré.
+   Le filet respire lentement ; il reste allumé même quand la carte ne se joue
+   pas (une arme liée déjà posée sur la table), parce qu'il dit le renfort, pas
+   la disponibilité.
+   ------------------------------------------------------------------------ */
+.rpg-hand__card.is-lien-actif,
+.rpg-card.is-lien-actif {
+  outline: 2px solid rgba(242, 201, 76, 0.95);
+  outline-offset: -5px;
+  animation: rpg-lien-dore 2.6s ease-in-out infinite;
+}
+.rpg-hand__card.is-lien-actif:hover:not(:disabled),
+.rpg-card.is-lien-actif:hover:not(:disabled) {
+  outline-color: #ffd964;
+}
+@keyframes rpg-lien-dore {
+  0%, 100% { outline-color: rgba(242, 201, 76, 0.72); }
+  50% { outline-color: rgba(255, 233, 168, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-hand__card.is-lien-actif,
+  .rpg-card.is-lien-actif { animation: none !important; }
+}
 .rpg-hand__card.is-unplayable { filter: saturate(.58) brightness(.82); cursor: zoom-in; }
 .rpg-hand__card.is-dragging { opacity: .58; transform: translateY(-22px) scale(.94); }
 .rpg-hand__flight-placeholder { display: block; flex: none; aspect-ratio: 4 / 5; visibility: hidden; pointer-events: none; }

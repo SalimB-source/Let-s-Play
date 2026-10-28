@@ -137,7 +137,7 @@ imprimé.
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 4, def: -2, coupRapide: true },
-    text: 'Arme — Le porteur gagne +4/-2 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse de votre choix (30 % de chances de rater ; 100 % de chances de toucher s’il attaque l’adversaire) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
+    text: 'Arme — Le porteur gagne +4/-2 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse de votre choix (25 % de chances de rater ; 100 % de chances de toucher s’il attaque l’adversaire) — elle encaisse sa force sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque normalement. Le sabre reste attaché et rejoint le cimetière quand le porteur quitte le jeu. Si sa défense tombe à 0, le porteur meurt.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
 ```

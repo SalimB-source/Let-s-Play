@@ -347,7 +347,7 @@ agressif du Sable.
   ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
   sur trois seulement est annulée — la mythique se joue en tempo, pas en mur.
 - **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
-  adverse de votre choix (30 % de chances de rater, 100 % contre le sorcier) :
+  adverse de votre choix (25 % de chances de rater, 100 % contre le sorcier) :
   ses **3 dégâts** passent **sans riposte** et son attaque s'arrête là. C'est la
   mécanique des archers du Soleil rouge, et son grand arc la rend naturelle.
 - **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend

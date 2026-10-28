@@ -355,8 +355,8 @@ test('Bouchra esquive l’attaque qui devait la tuer — pas de bouclier, mais r
   const attaquant = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   attaquant.ready = true;
 
-  // 29 % : sous le seuil de 30 %, l’attaque est annulée en entier.
-  rpgReglerHasard(duel, () => 0.29);
+  // 24 % : sous le seuil de 25 %, l’attaque est annulée en entier.
+  rpgReglerHasard(duel, () => 0.24);
   const combat = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [bouchra.id] });
   assert.equal(combat.ok, true, JSON.stringify(combat));
   assert.equal(bouchra.pv, 1, 'l’attaque esquivée ne lui retire rien');
@@ -847,7 +847,7 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     {
       cost: 3,
       effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
-      text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie.',
+      text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Avec Eirik du Premier Serment en jeu : 3 PV au lieu de 2, aux créatures comme à vous.',
     },
     'le Festin soigne les créatures alliées au lieu du sorcier',
   );
@@ -2083,17 +2083,17 @@ test('l’Attaque ciblée frappe la créature désignée, et l’attaque s’arr
   ]);
 });
 
-test('l’Attaque ciblée a 30 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
-  assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.30);
+test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+  assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.25);
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
-    assert.match(carte.text, /30\s*%/, `${carte.id} précise les 30 % de chances de rater`);
+    assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }
 
-  // Jet < 0.30 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
-  const duelRate = duelDeBase({ rng: () => 0.29 });
+  // Jet < 0.25 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
+  const duelRate = duelDeBase({ rng: () => 0.24 });
   donnerMana(duelRate, 'joueur', 20);
   donnerMana(duelRate, 'sorcier', 20);
   donner(duelRate, 'joueur', 'feriel');
@@ -2103,15 +2103,15 @@ test('l’Attaque ciblée a 30 % de chances de rater une créature, mais touche 
   const pvSorcierAvant = duelRate.sorcier.pv;
   const resRate = rpgLancerAttaque(duelRate, 'joueur', [ferielRate.id], {}, null, null, { [ferielRate.id]: fennecRate.id });
   assert.equal(resRate.ok, true);
-  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.30 marque l’attaque ciblée comme ratée');
+  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.25 marque l’attaque ciblée comme ratée');
   assert.equal(resRate.resume.coupsRapides[0].degats, 0, 'aucun dégât infligé en cas d’échec');
   assert.equal(fennecRate.pv, fennecRate.pvMax, 'la créature ciblée reste indemne');
   assert.equal(duelRate.sorcier.pv, pvSorcierAvant, 'l’attaque s’arrête quand même : le sorcier ne prend rien');
   assert.equal(ferielRate.attaquee, true, 'l’attaquant est engagé malgré le raté');
   assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Attaque ciblée contre Fennec des décombres')));
 
-  // Jet >= 0.30 : la frappe rapide touche sa cible.
-  const duelTouche = duelDeBase({ rng: () => 0.30 });
+  // Jet >= 0.25 : la frappe rapide touche sa cible.
+  const duelTouche = duelDeBase({ rng: () => 0.25 });
   donnerMana(duelTouche, 'joueur', 20);
   donnerMana(duelTouche, 'sorcier', 20);
   donner(duelTouche, 'joueur', 'feriel');
@@ -2585,7 +2585,7 @@ test('Tour de Braise : 0/4 et 1 dégât de sort à la créature qu’elle bloque
 
 test('le dégât de sort de la Tour de Braise peut être esquivé', () => {
   let jets = 0;
-  const duel = duelDeBase({ rng: () => { jets += 1; return 0.29; } });
+  const duel = duelDeBase({ rng: () => { jets += 1; return 0.24; } });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'tour-de-braise');
@@ -2781,7 +2781,7 @@ test('Sahir : une parade ne prévient plus les dégâts du partage', () => {
   sahir.ready = true;
   bloqueurs[0].bouclier = 1;
   const pvEsquive = bloqueurs[0].pv;
-  // Jet d'esquive manqué (au-dessus du seuil de 30 %) : l'Onna-musha encaisse
+  // Jet d'esquive manqué (au-dessus du seuil de 25 %) : l'Onna-musha encaisse
   // la blessure normale, que le test veut voir passer.
   rpgReglerHasard(duel, () => 0.9);
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
@@ -3390,8 +3390,8 @@ test('capacité à l’arrivée : la Vipère inocule son venin à une créature 
   assert.equal(chien.atk, 0, 'le Chien 2/2 perd ses 2 attaques');
   assert.ok(chien.empecheAttaqueToursRestants > 0, 'et ne peut plus attaquer avant la fin de son prochain tour');
 });
-test('Esquive : 30 % des attaques, Magies et Sorcelleries sont annulées entièrement', () => {
-  assert.equal(RPG_ESQUIVE_CHANCE, 0.30);
+test('Esquive : 25 % des attaques, Magies et Sorcelleries sont annulées entièrement', () => {
+  assert.equal(RPG_ESQUIVE_CHANCE, 0.25);
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -3402,8 +3402,8 @@ test('Esquive : 30 % des attaques, Magies et Sorcelleries sont annulées entièr
   porteuse.ready = true;
   assert.equal(esquiveuse.esquive, true, 'l’Onna-musha imprime Esquive, sans chiffre');
 
-  // À 29 %, le jet est encore sous le seuil de 30 % : l’attaque ne porte pas du tout.
-  rpgReglerHasard(duel, () => 0.29);
+  // À 24 %, le jet est encore sous le seuil de 25 % : l’attaque ne porte pas du tout.
+  rpgReglerHasard(duel, () => 0.24);
   const combat = rpgLancerAttaque(duel, 'sorcier', [porteuse.id], { [porteuse.id]: [esquiveuse.id] });
   assert.equal(combat.ok, true);
   assert.equal(esquiveuse.pv, 3, 'l’attaque esquivée est annulée en entier');
@@ -3418,15 +3418,15 @@ test('Esquive : 30 % des attaques, Magies et Sorcelleries sont annulées entièr
   assert.equal(esquiveuse.pv, 3, 'la Sorcellerie est esquivée à 29 %');
   assert.ok(duel.log.some((ligne) => /esquive le sort/.test(ligne)), 'le journal distingue le sort esquivé');
 
-  // À 30 %, le jet échoue : la Magie Rapide inflige normalement ses 3 dégâts.
-  rpgReglerHasard(duel, () => 0.30);
+  // À 25 %, le jet échoue : la Magie Rapide inflige normalement ses 3 dégâts.
+  rpgReglerHasard(duel, () => 0.25);
   donner(duel, 'sorcier', 'trait-de-braise');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', esquiveuse.id).ok, true);
-  assert.equal(esquiveuse.pv, 0, 'au seuil de 30 %, l’Esquive échoue et la Magie Rapide frappe');
+  assert.equal(esquiveuse.pv, 0, 'au seuil de 25 %, l’Esquive échoue et la Magie Rapide frappe');
 });
 
 test('Esquive annule l’effet d’un sort sur sa cible, mais jamais une capacité', () => {
-  const duel = duelDeBase({ rng: () => 0.29 });
+  const duel = duelDeBase({ rng: () => 0.24 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'onna-musha-des-cendres');
@@ -3478,8 +3478,8 @@ test('Esquive : le jet se tente pour chaque attaquant d’un combat', () => {
   const premierePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
   const secondePorteuse = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
 
-  // Premier coup esquivé à 29 %, second coup encaissé : deux jets indépendants.
-  const jets = [0.29, 0.9];
+  // Premier coup esquivé à 24 %, second coup encaissé : deux jets indépendants.
+  const jets = [0.24, 0.9];
   rpgReglerHasard(duel, () => (jets.length ? jets.shift() : 0.9));
   const combat = rpgLancerAttaque(duel, 'joueur', [esquiveuse.id], {
     [esquiveuse.id]: [premierePorteuse.id, secondePorteuse.id],
@@ -4793,7 +4793,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const dune2 = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
   donner(duel, 'joueur', 'hurlement-du-blizzard');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'hurlement-du-blizzard').ok, true);
-  assert.equal(dune2.pv, 2, 'le Hurlement du blizzard balaie toutes les créatures adverses');
+  // Le Géant des banquises est dans le camp du lanceur : son Lien porte le
+  // Hurlement de 2 à 3 dégâts, et la Dune de 4 PV tombe à 1.
+  assert.equal(dune2.pv, 1, 'le Hurlement du blizzard balaie toutes les créatures adverses — 3 dégâts sous le Géant');
 
   donner(duel, 'joueur', 'eclair-du-marteau');
   const pvSorcierAvantEclair = duel.sorcier.pv;

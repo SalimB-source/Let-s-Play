@@ -137,7 +137,7 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   assert.equal(kagutsuchiCarte.resonanceTribu, undefined);
   assert.doesNotMatch(kagutsuchiCarte.text, /Résonance samouraï/);
   assert.equal(kagutsuchiCarte.coupRapide, true);
-  assert.deepEqual(kagutsuchiCarte.coupCritique, { chance: 0.3, fois: 4 });
+  assert.deepEqual(kagutsuchiCarte.coupCritique, { chance: 0.25, fois: 4 });
   assert.deepEqual([kagutsuchiCarte.atk, kagutsuchiCarte.def], [2, 6]);
   assert.equal(kagutsuchiCarte.honneur, 0);
   assert.match(kagutsuchiCarte.text, /Attaque ciblée — /);

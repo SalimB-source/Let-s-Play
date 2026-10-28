@@ -4,7 +4,7 @@
  * Le jeu n'a que deux frappes de créature :
  *
  *  - **l'Attaque ciblée** (le coup rapide) est un **tir à distance** : la
- *    créature désigne sa proie avant le combat, 30 % de chances de rater, et
+ *    créature désigne sa proie avant le combat, 25 % de chances de rater, et
  *    son attaque s'arrête sur la frappe. Elle siffle comme une flèche
  *    (`fleche`, `arrow-shot.wav`) — **y compris quand la flèche manque sa
  *    cible** : un tir qui rate reste un tir, et il n'y a aucun repli d'acier
