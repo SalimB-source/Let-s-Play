@@ -324,6 +324,33 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Lettre de marque : le seuil d’Abordage passe au coût plein sous Le Chasseur d’Ocracoke', () => {
+  const monter = (avecChasseur) => {
+    const duel = duelVide();
+    // Une proie de coût 5, hors de portée du barème ordinaire (coût − 1 : 4).
+    const proie = poser(duel, 'sorcier', 'jarl-au-marteau-de-guerre');
+    if (avecChasseur) poser(duel, 'joueur', 'le-chasseur-d-ocracoke');
+    lancer(duel, 'joueur', 'lettre-de-marque');
+    // Le capteur coûte 5 : seuil 4 sans le Lien, 5 avec.
+    const preneur = poser(duel, 'joueur', 'jarl-au-marteau-de-guerre');
+    return { duel, proie, preneur };
+  };
+
+  const sans = monter(false);
+  assert.equal(sans.preneur.enCale ?? null, null,
+    'sans le Chasseur : la proie de coût 5 échappe au seuil de 4');
+  assert.equal(sans.duel.sorcier.creatures.includes(sans.proie), true, 'elle reste sur la table');
+
+  const avec = monter(true);
+  assert.equal(avec.preneur.enCale?.carteId, 'jarl-au-marteau-de-guerre',
+    'avec le Chasseur : le seuil au coût plein la met en cale');
+  assert.equal(avec.duel.sorcier.creatures.includes(avec.proie), false, 'la proie a quitté la table');
+
+  const carte = cardById('lettre-de-marque');
+  assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'le-chasseur-d-ocracoke', effet: { seuilPlein: true } });
+});
+
 test('Lame de mer : -3/-3, -4/-4 avec Le Seigneur des mâchoires — l’exil inchangé', () => {
   const monter = (avecSeigneur) => {
     const duel = duelVide();

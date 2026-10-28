@@ -2899,13 +2899,27 @@ function synchroniserCaleComble(entite) {
  * sans que le Pilote puisse s'armer lui-même à sa propre arrivée. Renvoie
  * `null` quand la carte n'accoste pas.
  */
-function seuilAbordage(carte, camp, prochaineOfferte = Boolean(camp?.prochaineArriveeAbordage)) {
+function seuilAbordage(
+  carte,
+  camp,
+  prochaineOfferte = Boolean(camp?.prochaineArriveeAbordage),
+  // Le Lien du Chasseur : la lettre qu'il scelle ouvre un coût de plus. Le
+  // seuil passe au coût **plein** — la prochaine créature prend ce qu'elle
+  // coûte elle-même, là où toutes les autres lettres s'arrêtent à coût − 1.
+  //
+  // Ce drapeau est lu en **instantané**, comme `prochaineOfferte` : le sceau
+  // est consommé par la pose, avant que la prise ne soit tirée. Le relire
+  // sur le camp à ce moment-là donnerait toujours `false`, et la lettre du
+  // Chasseur retomberait au barème ordinaire.
+  seuilPlein = Boolean(camp?.prochaineArriveeAbordageSeuilPlein) && prochaineOfferte,
+) {
   if (Number.isFinite(carte?.abordage)) return carte.abordage;
   // Pas de contrôle de `kind` ici : les fiches des sets n'en portent pas
   // toutes (seules les magies et les armes l'impriment), et la fonction ne
   // sert que pour des créatures posées par `rpgJouerCreature`.
   if ((camp?.abordageDesArrivees || prochaineOfferte) && carte?.kind !== 'magie' && carte?.kind !== 'arme') {
-    return Math.max(0, (Number(carte.cost) || 0) - 1);
+    const cout = Math.max(0, Number(carte.cost) || 0);
+    return seuilPlein ? cout : Math.max(0, cout - 1);
   }
   return null;
 }
@@ -4186,7 +4200,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // est consommé par cette pose et meurt de toute façon avec le tour
       // (`rpgFinDeTour`). La Lettre enchaîne sur une pioche (`pioche: 1`).
       duel[cote].prochaineArriveeAbordage = true;
-      duel.log.push('La prochaine créature jouée ce tour a Abordage.');
+      // Le sceau du Chasseur porte le seuil au coût plein ; une lettre
+      // ordinaire repose la règle imprimée (coût − 1) si elle est jouée après.
+      duel[cote].prochaineArriveeAbordageSeuilPlein = Boolean(effet.seuilPlein);
+      duel.log.push(`La prochaine créature jouée ce tour a Abordage${effet.seuilPlein ? ' au seuil de son coût plein' : ''}.`);
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;
     }
@@ -4912,6 +4929,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
   const prochainAbordageOffert = Boolean(camp.prochaineArriveeAbordage);
+  const prochainAbordageSeuilPlein = Boolean(camp.prochaineArriveeAbordageSeuilPlein);
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
@@ -5015,7 +5033,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // seuil) — sinon la pose est refusée, comme pour l'exil. Sans désignation
   // (la page pose d'abord, l'IA ne désigne pas), la prize se choisit après
   // la pose : la table s'allume ou l'IA pioche seule.
-  const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert);
+  const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
   if (seuilAbordagePose !== null && cibleId && !arriveeCiblePortee(carte)) {
     const cibleVisee = duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId);
     if (!cibleVisee || !priseEnCaleLegale(cibleVisee, cardColors(carte), seuilAbordagePose)) {
@@ -5067,7 +5085,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   camp.main.splice(camp.main.indexOf(carteId), 1);
   // La pose est engagée : le sceau du Pilote est dépensé par cette créature
   // (les seuils de SA prise restent lus sur l'instantané de début de pose).
-  if (prochainAbordageOffert) camp.prochaineArriveeAbordage = false;
+  if (prochainAbordageOffert) {
+    camp.prochaineArriveeAbordage = false;
+    camp.prochaineArriveeAbordageSeuilPlein = false;
+  }
   const entite = creerEntiteCreature(carte);
   if (carte.kind === 'site') {
     entite.heures = {
@@ -5107,7 +5128,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
     // d'Abordage : les deux seront résolus l'un après l'autre.
     if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte, entite.id)) {
-      const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert);
+      const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
       duel.arriveeEnAttente = {
         cote,
         entiteId: entite.id,
@@ -5139,7 +5160,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // de marque étend aux arrivées sans imprimé
   // (`camp.abordageDesArrivees`). Seules les créatures **jouées depuis la
   // main** accostent : les jetons créés par effet ne prennent rien.
-  const seuilAbordageArrivee = seuilAbordage(carte, camp, prochainAbordageOffert);
+  const seuilAbordageArrivee = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
   if (seuilAbordageArrivee !== null && !duel.arriveeEnAttente) {
     const couleursAbordage = cardColors(carte);
     const ciblesPossibles = () => duel[autre(cote)].creatures
@@ -7182,6 +7203,7 @@ export function rpgFinDeTour(duel) {
   // n'accostent plus.
   duel[duel.tour].abordageDesArrivees = false;
   duel[duel.tour].prochaineArriveeAbordage = false;
+  duel[duel.tour].prochaineArriveeAbordageSeuilPlein = false;
   // La faveur du Kraken non utilisée s'éteint avec le tour.
   duel.magieGratuite = null;
   detruireEphemeres(duel);

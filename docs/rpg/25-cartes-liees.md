@@ -71,6 +71,7 @@ mécanique sur des cartes du catalogue.
 | **Trait de braise** (magie rapide, commune) | 3 | **3** dégâts à une créature ou un sorcier | **4** dégâts | le chiffre de son propre souffle | La Lionne du midi ardent (Braise, mythique, 6) |
 | **Rempart de dunes** (magie rapide, commune) | 2 | +0/+3 jusqu'à la fin du tour | +0/+3 **et un bouclier** | la Dame prête sa lumière | La Dame aux ailes d'or (Sable, mythique, 5) |
 | **Lame de mer** (sorcellerie, commune) | 3 | **−3/−3**, exil si la défense tombe | **−4/−4**, exil inchangé | une morsure qui tue par la structure | Le Seigneur des mâchoires (Eau, mythique, 6) |
+| **Lettre de marque** (sorcellerie, commune) | 2 | Abordage de la prochaine créature, **seuil coût − 1** | Abordage **au seuil du coût plein** | la lettre du Chasseur ouvre un coût de plus | Le Chasseur d'Ocracoke (Sable, mythique, 6) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -85,6 +86,11 @@ Les formes que prend ce cran :
   sans défausser, ce qui change la carte sans changer un seul nombre ;
 - **la dette annulée** (`effet: { def: 0 }`, Lien de porteur) : le Sabre
   maudit ne mord que la force quand la Flamme le tient ;
+- **une règle déplacée d'un cran** (`effet: { seuilPlein: true }`) : la Lettre
+  de marque du Chasseur arme l'Abordage au **coût plein** au lieu de coût − 1.
+  Ce drapeau est lu en **instantané** par `seuilAbordage`, comme le sceau du
+  Pilote : le sceau est consommé par la pose avant que la prise ne soit tirée,
+  donc le relire sur le camp donnerait toujours `false` ;
 - **le mot-clé prêté** (`effet: { bouclier: 1 }`) : le Rempart de dunes garde
   sa taille et pose en plus la parade anti-sort, comme le ferait une arme.
   Comme c'est une **Magie Rapide**, on peut le jouer **en réponse** : le
@@ -204,6 +210,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des dix-huit paires entrent dans le prototype.
+2. B : lesquelles des dix-neuf paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

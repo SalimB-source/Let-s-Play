@@ -372,7 +372,11 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // Le sceau n'arme que la SEULE prochaine créature jouée (le même drapeau
     // que le Pilote), puis le greffier pioche une carte.
     effet: { type: 'prochaine-arrivee-abordage', pioche: 1 },
-    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte.',
+    // Le Lien du Chasseur : sa lettre ouvre un coût de plus. La prochaine
+    // créature accoste avec un seuil au **coût plein** (au lieu de coût − 1),
+    // donc elle prend des proies qu'aucune autre lettre ne couvre.
+    lien: { ancre: 'le-chasseur-d-ocracoke', effet: { seuilPlein: true } },
+    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte. Lien du Chasseur — si Le Chasseur d’Ocracoke est en jeu, cette créature accoste au seuil de son coût plein.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({
