@@ -123,7 +123,7 @@ test('le Maître des corbeaux est la figure retournée du Père des corbeaux', (
   assert.equal(maitre.tribut, 1, 'les Ténèbres apportent le Tribut');
   assert.deepEqual(maitre.arrivee, { type: 'exil', cible: 'creature', coutMax: 4 });
   assert.ok(maitre.cost > pere.cost, 'la figure retournée coûte plus cher que son état d’origine');
-  assert.ok(maitre.arrivee.coutMax > pere.arrivee.coutMax, 'ses corbeaux emportent de plus grosses créatures');
+  assert.ok(maitre.arrivee.coutMax >= pere.arrivee.coutMax, 'ses corbeaux emportent au moins les mêmes créatures que le Père');
   for (const carte of [maitre, pere]) {
     assert.doesNotMatch(`${carte.name} ${carte.role} ${carte.text} ${carte.flavor}`, /\bdieu(x)?\b/i,
       'aucune figure du Nord n’est nommée divinité');

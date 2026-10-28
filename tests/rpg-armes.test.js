@@ -131,7 +131,7 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
   const armesParDeck = {
     'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
     'cour-des-djinns': [],
-    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'masque-du-guetteur'],
+    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'lame-des-ergs', 'masque-du-guetteur'],
     'maree-des-abysses': ['baton-des-citernes'],
     'serment-des-neuf-hivers': ['lance-de-givre'],
     'serment-du-soleil-rouge': [],

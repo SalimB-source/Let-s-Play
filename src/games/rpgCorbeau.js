@@ -69,6 +69,7 @@ export const RPG_CORBEAU_CREATURES = [
     rarity: 'rare',
     provocation: true,
     furie: 2,
+    overkill: true,
     tribut: 2,
     typeLine: 'Créature — Berserk viking',
     text: 'Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible. Furie 2 — Quand il survit à des blessures, il gagne +2 ATQ. Tribut 2 — Quand il touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',

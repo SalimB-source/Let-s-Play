@@ -66,6 +66,8 @@ export const COLLECTION_DEPART = RPG_DUEL_CARDS
   // Le Corbeau des neuf nuits (doc 22) est le set du dernier sommet : même
   // ses communes se découvrent étage par étage, jamais offertes d'entrée.
   .filter((carte) => carte.set !== 'corbeau-des-neuf-nuits')
+  // Le Serment des Neuf Hivers est révélé au Fjord, pas donné d'entrée.
+  .filter((carte) => carte.set !== 'serment-des-neuf-hivers')
   .map((carte) => carte.id);
 
 /**
@@ -110,7 +112,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
-  'sables-3': ['anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
+  'sables-3': ['braise-et-sable', 'anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
   // Tour des Abysses — les bêtes marines ; ce qui remonte du fond est gelé :
   // les premières cartes de Neige précèdent la tour du Fjord.
   'abysses-1': ['kraken', 'baton-des-citernes'],
@@ -118,7 +120,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
   'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc'],
   // Tour du Fjord — le Serment au complet.
-  'fjord-1': ['eirik-du-premier-serment', 'jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
+  'fjord-1': ['volva-soigneuse', 'eirik-du-premier-serment', 'jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
   'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
   // Le Grand Hiver tombe avec les derniers hivers du Serment ; la Hache de la
   // banquise, commune, rejoint d'elle-même la dotation de départ.

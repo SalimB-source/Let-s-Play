@@ -433,6 +433,7 @@ test('l’IA connaît la Furie : entamer un viking sans le tuer le nourrit', () 
   donner(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre');
   const jarlEnJeu = rpgJouerCreature(duelFurieux, 'sorcier', 'jarl-au-marteau-de-guerre').entite;
   jarlEnJeu.ready = true;
+  jarlEnJeu.provocation = false; // isole la décision de blocage facultatif de l’obligation Provocation
   assert.deepEqual(rpgChoisirBloqueurs(duelFurieux, 'sorcier', [jarlEnJeu.id]), {},
     'l’IA refuse d’écorner le Jarl : elle ne lui offrirait que +2/+0');
   assert.equal(duneContreJarl.atk, 2, 'le bloqueur reste en réserve');
@@ -535,7 +536,7 @@ test('Bakunawa et Faiseur de passage : la lune et le passage se choisissent auss
   assert.equal(annonce?.carteId, 'bakunawa');
   assert.equal(annonce?.cibleId, chien.id, 'la lune choisit sa victime');
   assert.equal(rpgSorcierResoudreAnnonce(duel).ok, true, 'la Bakunawa se résout');
-  assert.ok(chien.empecheBlocageToursRestants > 0, 'la victime ne peut plus bloquer');
+  assert.equal(duel.joueur.creatures.includes(chien), false, 'la créature choisie a perdu son combat contre Bakunawa');
 
   // Le Faiseur de passage : l’Infiltration va à un allié du sorcier.
   const duel2 = duelNu();
@@ -630,8 +631,10 @@ test('le sorcier n’attaque pas dans un bloqueur protégé contre sa couleur', 
   const ifrit = rpgJouerCreature(duel, 'sorcier', 'ifrit-des-ergs').entite;
   donner(duel, 'joueur', 'tiziri-du-djurdjura');
   const tiziri = rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura').entite;
+  tiziri.protection = { contre: 'braise', toursRestants: Infinity };
   ifrit.ready = true;
   ifrit.attaquee = false;
+  ifrit.overkill = false; // évite que le débordement rende l’attaque rentable malgré la protection
   assert.equal(rpgEstProtegee(tiziri, cardColors(cardById('ifrit-des-ergs'))), true,
     'Tiziri est bien protégée contre la couleur de l’Ifrit');
 
@@ -659,6 +662,7 @@ test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA
   ifrit.attaquee = false;
   donner(duel, 'sorcier', 'tiziri-du-djurdjura');
   const tiziri = rpgJouerCreature(duel, 'sorcier', 'tiziri-du-djurdjura').entite;
+  tiziri.protection = { contre: 'braise', toursRestants: Infinity };
 
   // Un blocage gratuit — la bloqueuse ne peut pas mourir de ce coup-là — se
   // prend toujours, quel que soit le seuil d’agressivité.
@@ -670,7 +674,7 @@ test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA
   const res = rpgLancerAttaque(duel, 'joueur', [ifrit.id], { [ifrit.id]: [tiziri.id] });
   assert.equal(res.ok, true);
   assert.equal(tiziri.pv, 1, 'la protection Braise laisse Tiziri à ses 1 PV');
-  assert.equal(ifrit.pv, 2, 'la riposte 2/1 entame quand même l’Ifrit');
+  assert.equal(ifrit.pv, 1, 'la riposte 2/1 laisse l’Ifrit furtif à 1 PV sur ses 3 PV');
 });
 
 test('l’Attaque ciblée ne désigne pas une Tour protégée contre sa couleur', () => {

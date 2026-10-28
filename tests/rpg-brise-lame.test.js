@@ -117,8 +117,8 @@ test('Brise-lame détruit aussi le Sabre maudit (arme portée par une magie)', (
   const ennemi = poser(duel, 'sorcier', 'momie-de-lin');
   duel.sorcier.main.push('sabre-maudit');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'sabre-maudit', ennemi.id).ok, true);
-  assert.deepEqual([ennemi.atk, ennemi.def], [3, 4], '+1/+0 appliqué');
-  assert.equal(ennemi.coupRapide, true, 'Attaque ciblée donnée par le sabre');
+  assert.deepEqual([ennemi.atk, ennemi.def], [4, 2], '+2/-2 appliqué');
+  assert.equal(ennemi.coupRapide, false, 'le Sabre maudit ne donne pas Attaque ciblée');
   duel.tour = 'joueur';
   donnerBriseLame(duel);
   const res = rpgLancerMagie(duel, 'joueur', 'brise-lame', ennemi.id);

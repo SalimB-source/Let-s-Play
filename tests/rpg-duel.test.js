@@ -127,7 +127,7 @@ const PLEIN_ART_45 = [
   'djinn-de-foudre', 'sonneur-fele', 'silence-decume',
   // Le lot du gel du Serment : six peintures en fresque, livrées au ratio de
   // la face comme le reste de la collection.
-  'poigne-de-givre', 'grand-voile-blanc', 'appat-de-la-meute',
+  'poigne-de-givre', 'braise-et-sable', 'volva-soigneuse', 'grand-voile-blanc', 'appat-de-la-meute',
   'verglas', 'defi-du-jarl', 'embuscade',
   // Le Grand Hiver et la Hache de la banquise, les deux dernières cartes du
   // Serment : la première en huile, la seconde dans la dérogation
@@ -164,7 +164,7 @@ const PLEIN_ART_45 = [
   'bouchra-guerriere-des-cretes',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
   // du Mur de boucliers, de l’Éclair du marteau et de la Brume du fjord.
-  'loup-des-neiges', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
+  'loup-des-neiges', 'volva-soigneuse', 'braise-et-sable', 'poigne-de-givre', 'mur-de-boucliers', 'eclair-du-marteau', 'brume-du-fjord',
   // Le Corbeau des neuf nuits : les six peintures du set hybride Neige +
   // Ténèbres, livrées au format exact de la face.
   'corbeau-de-givre', 'veilleuse-au-corbeau-noir', 'berserk-du-crepuscule',
@@ -234,7 +234,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 87,
+  assert.equal(RPG_CREATURE_CARDS.length, 88,
     'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -659,8 +659,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     { cost: festin.cost, effet: festin.effet, text: festin.text },
     {
       cost: 3,
-      effet: { type: 'soin-creatures', amount: 1 },
-      text: 'Soignez chacune de vos créatures de 1.',
+      effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
+      text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie.',
     },
     'le Festin soigne les créatures alliées au lieu du sorcier',
   );
@@ -691,8 +691,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   const corbeau = cardById('valkyrie-au-corbeau');
   assert.deepEqual(
     { cost: corbeau.cost, atk: corbeau.atk, def: corbeau.def, envol: corbeau.envol },
-    { cost: 5, atk: 3, def: 4, envol: true },
-    'la Valkyrie au corbeau devient une 3/4 pour 5',
+    { cost: 4, atk: 2, def: 4, envol: true },
+    'la Valkyrie au corbeau devient une 2/4 pour 4',
   );
   assert.equal(corbeau.resonance, undefined, 'plus de Résonance viking');
   assert.equal(corbeau.resonanceTribu, undefined);
@@ -706,7 +706,7 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.equal(embuscade.cost, 5);
   assert.deepEqual(embuscade.effet, {
     type: 'buff', atk: -2, def: -2, minimum: 1,
-    cible: 'creatures-adverses', blocageForce: 'tour',
+    cible: 'creatures-adverses', blocageForce: 'tour', tours: 1,
   }, 'seul son coût change');
 
   const eclair = cardById('eclair-du-marteau');
@@ -757,12 +757,12 @@ test('la Valkyrie au corbeau porte Furie 2 et révèle sa peinture alternative',
   donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', carte.id);
   const valkyrie = rpgJouerCreature(duel, 'joueur', carte.id).entite;
-  assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv], [3, 4, 4]);
+  assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv], [2, 4, 4]);
 
   rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, 'braise');
   assert.deepEqual(
     [valkyrie.atk, valkyrie.def, valkyrie.pv, valkyrie.pvMax, valkyrie.furieBonusAtk, valkyrie.furieDeclenchee],
-    [5, 3, 3, 4, 2, true],
+    [4, 3, 3, 4, 2, true],
     'blessée sous sa DEF de base 4, elle gagne +2/+0 et passe à 5/3',
   );
   assert.match(cardArtFurie(carte),
@@ -813,8 +813,8 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
   const premiere = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
   assert.deepEqual(
     [premiere.atk, premiere.def, premiere.pv, premiere.pvMax, premiere.envol],
-    [3, 4, 4, 4, true],
-    'la Valkyrie entre à ses statistiques imprimées 3/4',
+    [2, 4, 4, 4, true],
+    'la Valkyrie entre à ses statistiques imprimées 2/4',
   );
   assert.deepEqual(duel.joueur.main, ['guerrier-au-bouclier-rond'],
     'un tirage à 0 prend le premier exemplaire Viking du deck');
@@ -832,7 +832,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   rpgReglerHasard(duel, () => 0.999);
   const seconde = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
-  assert.deepEqual([seconde.atk, seconde.def, seconde.pv], [3, 4, 4]);
+  assert.deepEqual([seconde.atk, seconde.def, seconde.pv], [2, 4, 4]);
   assert.deepEqual(duel.joueur.main, ['guerrier-au-bouclier-rond', 'jarl-au-marteau-de-guerre']);
   assert.deepEqual(duel.joueur.deck, ['loup-des-neiges', 'brume-du-fjord', 'scalde-des-runes']);
 
@@ -859,6 +859,7 @@ test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', ()
     'valkyrie-au-corbeau',
     'jormungandr',
     'serpent-du-monde',
+    'tiziri-du-djurdjura',
   ];
   assert.deepEqual(
     RPG_DUEL_CARDS.filter(arriveeConsulteDeck).map((carte) => carte.id).sort(),
@@ -1205,9 +1206,9 @@ test('le Père des corbeaux : 3/5 à 6 avec Envol et Attaque ciblée, et ses cor
   assert.equal(carte.envol, true, 'le Père des corbeaux a Envol');
   assert.equal(carte.coupRapide, true, 'il gagne Attaque ciblée dans sa révision');
   assert.equal(carte.activation, undefined, 'sa foudre activée a disparu');
-  assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature', coutMax: 3 });
+  assert.deepEqual(carte.arrivee, { type: 'exil', cible: 'creature', coutMax: 4 });
   assert.match(carte.text, /Envol/);
-  assert.match(carte.text, /coût 3 ou moins/);
+  assert.match(carte.text, /coût 4 ou moins/);
 
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 30);
@@ -1862,7 +1863,7 @@ test('le Djinn de foudre gagne Rapidité en plus de son Attaque ciblée', () => 
 test('Fériel est une mythique 4 mana 3/2 avec Rapidité et Attaque ciblée', () => {
   const feriel = cardById('feriel');
   assert.deepEqual({ cost: feriel.cost, atk: feriel.atk, def: feriel.def, rarity: feriel.rarity, rapidite: feriel.rapidite, coupRapide: feriel.coupRapide }, {
-    cost: 4, atk: 3, def: 2, rarity: 'mythique', rapidite: true, coupRapide: true,
+    cost: 3, atk: 3, def: 2, rarity: 'mythique', rapidite: true, coupRapide: true,
   });
   assert.equal(feriel.arrivee, undefined, 'son ancien effet de dégâts à l’arrivée est retiré');
   assert.match(feriel.text, /Rapidité/);
@@ -3162,10 +3163,10 @@ test('la Valkyrie des glaces protège contre tous les sorts', () => {
 
 test('Ifrit al-Ahmar gagne Attaque ciblée et perd sa vague de 3 dégâts à toutes les créatures', () => {
   const carte = cardById('ifrit-al-ahmar');
-  assert.deepEqual([carte.atk, carte.def], [4, 4]);
+  assert.deepEqual([carte.atk, carte.def], [3, 7]);
   assert.equal(carte.coupRapide, true, 'sa révision lui donne Attaque ciblée');
   assert.equal(carte.arrivee, undefined, 'la vague qui frappait toute la table a disparu');
-  assert.match(carte.text, /^Attaque ciblée/);
+  assert.match(carte.text, /Attaque ciblée/);
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -3178,7 +3179,7 @@ test('Ifrit al-Ahmar gagne Attaque ciblée et perd sa vague de 3 dégâts à tou
   assert.equal(pose.ok, true);
   assert.equal(adverse.pv, 4, 'plus aucune vague : la créature adverse est intacte');
   assert.equal(alliee.pv, 4, 'la créature alliée aussi');
-  assert.equal(pose.entite.pv, 4, 'l’Ifrit entre à ses 4 PV complets, sans s’être blessé');
+  assert.equal(pose.entite.pv, 7, 'l’Ifrit entre à ses 7 PV complets, sans s’être blessé');
 });
 
 test('capacité à l’arrivée : le Guetteur pose ses compteurs d’Heures', () => {
@@ -3399,7 +3400,7 @@ test('Salem arrive avec Bouclier, Rapidité et Contre-attaque — plus de boucli
   const coup = rpgBlesserCreature(duel, 'joueur', salem.id, 1, ['braise'], null, 'attaque');
   assert.equal(coup.recus, 1, 'les dégâts passent entièrement');
   assert.equal(coup.absorbes, 0, 'rien n’est absorbé');
-  assert.equal(salem.pv, 2, 'Salem tombe de 3 à 2 PV');
+  assert.equal(salem.pv, 3, 'Salem tombe de 4 à 3 PV');
   assert.equal(salem.bouclier, 1, 'et la parade reste prête');
 });
 
@@ -3886,7 +3887,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 46, 'Brise-lame rejoint les magies du catalogue');
+  assert.equal(RPG_MAGIE_CARDS.length, 47, 'Brise-lame rejoint les magies du catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -4129,8 +4130,8 @@ test('Verglas : 1 dégât et gel de masse sur la table adverse', () => {
   fennec.ready = true;
   donner(duel, 'joueur', 'verglas');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'verglas').ok, true);
-  assert.equal(seigneur.pv, 5, 'le Seigneur prend le dégât de grêle');
-  assert.equal(fennec.pv, 2, 'le jet à 50 % dépasse le seuil : l’Esquive échoue et la grêle passe');
+  assert.equal(seigneur.pv, 4, 'le Seigneur prend 2 dégâts de verglas');
+  assert.equal(fennec.pv, 1, 'le jet à 50 % dépasse le seuil : l’Esquive échoue et la grêle passe');
   assert.ok(seigneur.gelToursRestants > 0 && fennec.gelToursRestants > 0,
     'toute la table adverse est gelée');
   assert.equal(rpgLancerAttaque(duel, 'sorcier', [seigneur.id, fennec.id], {}).raison, 'pas-pret',
@@ -4303,13 +4304,13 @@ test('Embuscade force un multi-blocage : la page précalcule la répartition, «
     'le combat résout avec tous ses bloqueurs forcés');
 });
 
-test('le plein art du Serment est livré : les vingt-neuf cartes Neige sont dédiées, aucune provisoire', () => {
+test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune provisoire', () => {
   // La liste des illustrations provisoires est vide : le deck Neige et sa
   // variante de Glacier sont entièrement peints.
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 29, 'vingt-neuf cartes Neige au catalogue, sans le Glacier ni sa variante');
+  assert.equal(cartesNeige.length, 30, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4385,7 +4386,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 29, 'les vingt-neuf peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 30, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {
@@ -4445,8 +4446,8 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   duel.joueur.deck = ['jarl-au-marteau-de-guerre'];
   donner(duel, 'joueur', 'valkyrie-au-corbeau');
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau').entite;
-  assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv, valkyrie.envol], [3, 4, 4, true],
-    'la Valkyrie arrive en 3/4 avec Envol');
+  assert.deepEqual([valkyrie.atk, valkyrie.def, valkyrie.pv, valkyrie.envol], [2, 4, 4, true],
+    'la Valkyrie arrive en 2/4 avec Envol');
   assert.ok(duel.joueur.main.includes('jarl-au-marteau-de-guerre'),
     'son arrivée met le Viking du deck dans la main du joueur');
   assert.deepEqual([loup.atk, loup.def, loup.pv], [2, 2, 2],
@@ -4545,9 +4546,9 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
     [4, 1, 1, 4, true, 2],
     'les 3 dégâts du bloqueur laissent le Berserk 2/4 à 1 PV : Furie 2 porte son attaque à 4',
   );
-  assert.equal(attaque.resume.frappeSorcier, 0);
-  assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk,
-    'bloqué, le Berserk ne touche pas le sorcier');
+  assert.equal(attaque.resume.frappeSorcier, 1, 'Overkill laisse passer le point de dégât excédentaire');
+  assert.equal(duel.sorcier.pv, pvSorcierAvantBerserk - 1,
+    'Overkill transmet au sorcier le dégât excédentaire');
 
   // Magies : sorcelleries et magies rapides. Le Mur de boucliers se vérifie
   // sur la Valkyrie au corbeau, toujours en jeu (le Loup allié est tombé sous
@@ -4573,10 +4574,10 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const pvBerserkAvantFestin = berserk.pv;
   const pvDuneAvantFestin = dune.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'festin-des-vaillants').ok, true);
-  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 10,
-    'le Festin ne soigne plus le sorcier qui le lance');
-  assert.equal(berserk.pv, pvBerserkAvantFestin + 1,
-    'chaque créature alliée blessée récupère 1 PV');
+  assert.equal(duel.joueur.pv, RPG_PV_JOUEUR - 8,
+    'le Festin soigne aussi son lanceur de 2 PV');
+  assert.equal(berserk.pv, pvBerserkAvantFestin + 2,
+    'chaque créature alliée blessée récupère 2 PV');
   assert.deepEqual(
     [berserk.furieDeclenchee, berserk.furieBonusAtk],
     [true, 2],

@@ -10276,6 +10276,34 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       equiperArme(carteId, entite.id);
       return true;
     }
+    const boualemProtege = cibleAllieeMagie
+      ? [...duel.joueur.creatures, ...duel.sorcier.creatures].find((e) => e.id === cibleAllieeMagie
+        && e.carteId === 'boualem' && e.boualemContresortDisponible)
+      : null;
+    if (boualemProtege && carteSource?.kind === 'magie') {
+      const carteId = cibleEnCours;
+      const nouvelleCibleId = entite.id;
+      setCibleEnCours(null);
+      setCibleAllieeMagie(null);
+      lancerMagie(carteId, boualemProtege.id, nouvelleCibleId);
+      return true;
+    }
+    // Feux de kitsune : choisissez une cible pour 4 dégâts, ou deux cibles
+    // distinctes pour répartir 2 dégâts sur chacune.
+    if (carteSource?.id === 'feux-de-kitsune') {
+      if (!cibleAllieeMagie) {
+        setCibleAllieeMagie(entite.id);
+        jouerSfx('select');
+        force();
+        return true;
+      }
+      const carteId = cibleEnCours;
+      const premiereId = cibleAllieeMagie;
+      setCibleEnCours(null);
+      setCibleAllieeMagie(null);
+      lancerMagie(carteId, entite.id, entite.id === premiereId ? null : premiereId);
+      return true;
+    }
     // Le Défi du Jarl : deux désignations — votre champion, puis la créature
     // adverse qui devra lui tenir tête.
     if (carteSource?.effet?.type === 'combat' && carteSource?.effet?.sourceCible === 'creature-amie') {
@@ -10290,6 +10318,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       setCibleEnCours(null);
       setCibleAllieeMagie(null);
       lancerMagie(carteId, entite.id, championId);
+      return true;
+    }
+    if (carteSource?.kind === 'magie' && entite.carteId === 'boualem' && entite.boualemContresortDisponible) {
+      setCibleAllieeMagie(entite.id);
+      jouerSfx('select');
+      force();
       return true;
     }
     lancerMagie(cibleEnCours, entite.id);
@@ -11420,7 +11454,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               ? `${carteCiblee.name} accroché — choisissez la créature adverse à prendre en cale (coût ${duel.arriveeEnAttente?.abordage} ou moins)`
               : carteEstArme(carteCiblee)
                 ? `Choisissez une créature alliée à équiper avec ${carteCiblee.name}`
-                : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
+                : (carteCiblee?.kind === 'magie' && cibleAllieeMagie
+                  && [...duel.joueur.creatures, ...duel.sorcier.creatures].some((e) => e.id === cibleAllieeMagie && e.carteId === 'boualem' && e.boualemContresortDisponible))
+                  ? 'Boualem contre le sort : choisissez une nouvelle cible légale pour le relancer'
+                  : carteCiblee?.id === 'feux-de-kitsune'
+                  ? (cibleAllieeMagie ? 'Choisissez une deuxième créature adverse (2 dégâts chacune), ou annulez pour infliger 4 à une cible' : 'Choisissez une créature adverse : 4 dégâts, ou sélectionnez-en une seconde pour 2 dégâts chacune')
+                  : (carteCiblee?.effet?.type === 'combat' && carteCiblee?.effet?.sourceCible === 'creature-amie')
                   ? (cibleAllieeMagie
                     ? 'Choisissez la créature adverse à affronter'
                     : `Choisissez votre créature pour ${carteCiblee.name}`)

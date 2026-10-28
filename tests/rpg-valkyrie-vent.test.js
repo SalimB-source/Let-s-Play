@@ -5,14 +5,14 @@ import { cardById } from '../src/games/rpgCards.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 
-test('la Valkyrie déclenche le vent froid sans modifier son effet d’arrivée', () => {
+test('la Valkyrie déclenche le vent froid et s’épargne de sa propre vague', () => {
   const animation = page.slice(page.indexOf('const declencherGelMasse ='), page.indexOf('const annoncerMagie ='));
   assert.match(animation, /'valkyrie-des-glaces'\]\.includes\(id\)/);
   assert.match(animation, /jouerSfx\('cold_wind'\)/);
   assert.match(page, /effet.carteId === 'valkyrie-des-glaces' \? 'Valkyrie des glaces — vent froid'/);
   assert.deepEqual(cardById('valkyrie-des-glaces').arrivee, {
-    type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, gelChance: 0.25,
-  }, 'la vague couvre les deux camps, celui de la Valkyrie compris');
+    type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25,
+  }, 'la vague couvre les alliés et les ennemis, sans blesser la Valkyrie qui la déclenche');
 });
 
 test('le souffle froid couvre toute la table quand l’effet inclut les alliés', () => {

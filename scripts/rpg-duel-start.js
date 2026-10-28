@@ -1,3 +1,18 @@
+import { RPG_DECKS_MAISON_STORAGE_KEY } from '../src/games/rpgDeckBuilder.js';
+import { RPG_ACQUIS_STORAGE_KEY } from '../src/games/rpgCollection.js';
+
+/** Prépare une étagère maison jouable pour les tests de navigation UI. */
+export function installerDeckMaisonDeTest(cardIds, id = 'maison-test-ui') {
+  const cartes = [...new Set(Array.isArray(cardIds) ? cardIds : [])];
+  const stockage = globalThis.window?.localStorage ?? globalThis.localStorage;
+  if (!stockage) return;
+  stockage.setItem(RPG_DECKS_MAISON_STORAGE_KEY, JSON.stringify({
+    decks: [{ id, nom: 'Deck test', cardIds, boxArt: cartes[0] ?? null }],
+    supprimes: [],
+  }));
+  stockage.setItem(RPG_ACQUIS_STORAGE_KEY, JSON.stringify({ version: 1, gel: true, cartes }));
+}
+
 /**
  * Démarrage d'un duel dans les scénarios de vérification.
  * --------------------------------------------------------

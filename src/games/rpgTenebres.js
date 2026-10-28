@@ -268,9 +268,10 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'mythique',
     rapidite: true,
     tenacite: true,
+    overkill: true,
     tribut: 2,
     typeLine: 'Créature légendaire — Souverain crocodile du Nil',
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Les dégâts excédentaires passent au sorcier adverse. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2.',
     flavor: 'Il tient le fleuve comme on tient une porte : la crue monte, et c’est lui qui décide de ce qu’elle emporte.',
   }),
 ];

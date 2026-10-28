@@ -238,7 +238,7 @@ test('la parade de Salem bloque un sort sans riposter ; le suivant se paie au so
   assert.equal(bloque.bouclierBloque, true, 'la parade arrête le premier sort');
   assert.equal(bloque.bouclierEntityId, salem.id);
   assert.equal(salem.bouclier, 0, 'et tombe en entier');
-  assert.equal(salem.pv, 3, 'aucun dégât ne passe');
+  assert.equal(salem.pv, 4, 'aucun dégât ne passe');
   assert.equal(salem.gelToursRestants ?? 0, 0, 'ni le gel du sort');
   assert.equal(duel.sorcier.pv, pvSorcierAvant,
     'aucun effet du sort ne se résout : la Contre-attaque non plus ne riposte pas');
@@ -249,9 +249,9 @@ test('la parade de Salem bloque un sort sans riposter ; le suivant se paie au so
   const deuxieme = rpgLancerMagie(duel, 'sorcier', 'poigne-de-givre', salem.id);
   assert.equal(deuxieme.ok, true);
   assert.equal(deuxieme.bouclierBloque, undefined, 'plus rien ne bloque');
-  assert.equal(salem.pv, 1, 'les 2 dégâts passent (3 → 1)');
-  assert.equal(duel.sorcier.pv, pvSorcierAvant - 4,
-    'la Contre-attaque de Salem frappe le lanceur de ses 4 dégâts d’attaque');
+  assert.equal(salem.pv, 2, 'les 2 dégâts passent (4 → 2)');
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 3,
+    'la Contre-attaque de Salem frappe le lanceur de ses 3 dégâts d’attaque');
   assert.ok(duel.log.some((ligne) => /Contre-attaque : SALEM renvoie le sort/.test(ligne)),
     'le journal annonce la riposte');
 });
@@ -262,6 +262,6 @@ test('la parade de Salem n’absorbe pas les dégâts de capacité', () => {
   const coup = rpgBlesserCreature(duel, 'joueur', salem.id, 1, 'braise', null, 'capacite');
   assert.equal(coup.recus, 1, 'le coup porte');
   assert.equal(coup.absorbes, 0, 'rien n’est absorbé');
-  assert.equal(salem.pv, 2, 'Salem tombe à 2 PV');
+  assert.equal(salem.pv, 3, 'Salem tombe à 3 PV');
   assert.equal(salem.bouclier, 1, 'la parade attend toujours un sort adverse');
 });

@@ -193,7 +193,7 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   const mainAvantValkyrie = duel.joueur.main.length;
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');
   assert.equal(valkyrie.ok, true);
-  assert.deepEqual([valkyrie.entite.atk, valkyrie.entite.def, valkyrie.entite.pv], [3, 4, 4]);
+  assert.deepEqual([valkyrie.entite.atk, valkyrie.entite.def, valkyrie.entite.pv], [2, 4, 4]);
   assert.deepEqual(
     [guerrier.entite.atk, guerrier.entite.pv, guerrier.entite.pvMax, guerrier.entite.resonance],
     [2, 2, 2, 0],
@@ -217,7 +217,7 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
     'le sort bloqué ne fait aucun dégât : la 2/2 reste intacte',
   );
   assert.ok(!ennemi.furieDeclenchee, 'le Guerrier n’a plus de Furie');
-  assert.equal(duel.joueur.mana.neige, 0, 'les trois cartes de la leçon consomment les dix manas');
+  assert.equal(duel.joueur.mana.neige, 2, 'les trois cartes de la leçon consomment huit des dix manas');
 
   preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'furie'));
   const berserk = duel.joueur.creatures.find((entite) => entite.carteId === 'berserk-des-trois-hivers');
