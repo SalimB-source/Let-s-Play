@@ -4,8 +4,14 @@ import { useEffect, useRef, useState } from 'react';
  * Une vue 3D décorative, jamais un bouton dans le bouton de la galerie.
  * La peinture d'origine reste le repli pour les appareils sans WebGL2.
  * Three.js et les modèles ne sont téléchargés qu'en mode Histoire, à vue.
+ *
+ * `detruite` montre la tour une fois son dernier étage déblayé : la maquette
+ * est brisée à mi-hauteur et sa brèche fume (voir `rpgStoryTowerScene.js`).
+ * Sans WebGL2, la même ruine se lit sur la peinture : elle est assombrie, et
+ * des volutes de fumée montent du socle (règles `.is-detruite` dans
+ * `rpg-story.css`).
  */
-export default function RpgStoryTowerPreview({ tour, className = '', detail = false }) {
+export default function RpgStoryTowerPreview({ tour, className = '', detail = false, detruite = false }) {
   const hostRef = useRef(null);
   const canvasRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -25,6 +31,7 @@ export default function RpgStoryTowerPreview({ tour, className = '', detail = fa
           canvas: canvasRef.current,
           tourId: tour.id,
           detail,
+          detruite,
           onReady: () => { if (!disposed) setReady(true); },
           onUnavailable: () => { if (!disposed) setReady(false); },
         });
@@ -44,19 +51,28 @@ export default function RpgStoryTowerPreview({ tour, className = '', detail = fa
       observer?.disconnect();
       scene?.dispose();
     };
-  }, [tour.id, detail]);
+  }, [tour.id, detail, detruite]);
 
   return (
     <span
       ref={hostRef}
-      className={`rpg-story-stage ${className}${ready ? ' is-ready' : ''}`}
+      className={`rpg-story-stage ${className}${ready ? ' is-ready' : ''}${detruite ? ' is-detruite' : ''}`}
       data-tower-model={tour.id}
+      data-tower-detruite={detruite ? 'oui' : 'non'}
       data-renderer={ready ? '3d' : 'fallback'}
       aria-hidden="true"
     >
       <span className="rpg-story-stage__fallback" style={{ backgroundImage: `url("${import.meta.env.BASE_URL}sablier-tours/${tour.miniature}")` }} />
       <canvas ref={canvasRef} className="rpg-story-stage__canvas" width="1" height="1" />
+      {detruite && (
+        <span className="rpg-story-stage__fumee">
+          <i /><i /><i />
+        </span>
+      )}
       <span className="rpg-story-stage__badge"><span /> VUE 3D</span>
+      {detruite && (
+        <span className="rpg-story-stage__badge rpg-story-stage__badge--ruine"><span /> TOUR DÉTRUITE</span>
+      )}
     </span>
   );
 }

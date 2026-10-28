@@ -23,8 +23,11 @@
   padding: 14px 14px 12px;
   border: 1px solid rgba(232, 194, 113, .18);
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(24, 19, 21, .74), rgba(11, 10, 14, .62));
-  box-shadow: inset 0 1px 0 rgba(255, 231, 175, .05);
+  /* Le fond bleu : la piste se détache du reste du menu de Jouer. */
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(58, 108, 196, .5), transparent 72%),
+    linear-gradient(180deg, rgba(21, 44, 88, .92), rgba(10, 20, 42, .86));
+  box-shadow: inset 0 1px 0 rgba(190, 219, 255, .1);
   /* La section elle-même reste parcourable si la timeline devient haute. */
   max-height: clamp(320px, 62vh, 560px);
   overflow-y: auto;
@@ -45,7 +48,8 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 0 0 8px;
-  background: linear-gradient(180deg, rgba(20, 17, 19, .96) 72%, rgba(20, 17, 19, 0));
+  /* L'entête suit le fond bleu de la section. */
+  background: linear-gradient(180deg, rgba(17, 35, 69, .96) 72%, rgba(17, 35, 69, 0));
 }
 .rpg-piste__eyebrow {
   color: rgba(232, 194, 113, .78);

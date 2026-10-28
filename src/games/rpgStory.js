@@ -118,6 +118,16 @@ export function resumeTourHistoire(tourId, progression) {
   return { total: tour.etages.length, vaincus, prochainId: prochain?.id ?? null };
 }
 
+/**
+ * La tour est terminée : son dernier étage est déblayé. C'est ce que la
+ * galerie de la Conquête regarde pour montrer la tour en ruine fumante — une
+ * règle, pas une comparaison d'écran.
+ */
+export function tourEstTerminee(tourId, progression) {
+  const resume = resumeTourHistoire(tourId, progression);
+  return resume.total > 0 && resume.vaincus >= resume.total;
+}
+
 function browserStorage() {
   return stockageProgression();
 }
