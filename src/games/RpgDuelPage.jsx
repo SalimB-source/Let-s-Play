@@ -3147,12 +3147,6 @@ export function TableCard({
             ×{critiqueFx.fois}
           </span>
         )}
-        {armes.length > 0 && (
-          <>
-            <span className="rpg-card__arme-coin rpg-card__arme-coin--bl" aria-hidden="true" />
-            <span className="rpg-card__arme-coin rpg-card__arme-coin--br" aria-hidden="true" />
-          </>
-        )}
       </button>
   );
 

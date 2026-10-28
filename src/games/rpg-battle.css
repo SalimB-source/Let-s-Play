@@ -11573,64 +11573,59 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
 
-/* Coins métalliques : les créatures équipées d’une arme affichent des renforts
-   d’acier aux quatre coins de la carte. */
+/* Boîtier métallique : les créatures équipées d’une arme semblent placées
+   dans un étui d’acier aux coins arrondis. */
 .rpg-card.has-arme {
   position: relative;
-  overflow: clip;
+  z-index: 1;
 }
-.rpg-card.has-arme::before,
-.rpg-card.has-arme::after,
-.rpg-card.has-arme .rpg-card__arme-coin {
+
+/* Cadre extérieur du boîtier métallique — légèrement plus grand que la carte. */
+.rpg-card.has-arme::before {
   content: "";
   position: absolute;
-  z-index: 10;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    #7f8c8d 0%,
+    #bdc3c7 20%,
+    #eef2f3 50%,
+    #bdc3c7 80%,
+    #7f8c8d 100%
+  );
+  box-shadow:
+    0 0 18px rgba(0, 0, 0, 0.7),
+    inset 0 0 14px rgba(255, 255, 255, 0.8),
+    inset 0 0 2px rgba(0, 0, 0, 0.5);
   pointer-events: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #b9c4cc;
-  background: linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 50%, #95a5a6 100%);
-  box-shadow: 0 0 6px rgba(0, 0, 0, .55), inset 0 0 4px rgba(255, 255, 255, .45);
-  border-radius: 2px;
+  transition: box-shadow 0.3s ease, transform 0.35s ease;
 }
-.rpg-card.has-arme::before {
-  top: 6px;
-  left: 6px;
-  border-right: none;
-  border-bottom: none;
-}
+
+/* Liseré intérieur du boîtier — garde le contenu de la carte bien contenu. */
 .rpg-card.has-arme::after {
-  top: 6px;
-  right: 6px;
-  border-left: none;
-  border-bottom: none;
-}
-.rpg-card.has-arme .rpg-card__arme-coin--bl,
-.rpg-card.has-arme .rpg-card__arme-coin--br {
-  bottom: 6px;
-  top: auto;
-}
-.rpg-card.has-arme .rpg-card__arme-coin--bl {
-  left: 6px;
-  border-right: none;
-  border-top: none;
-}
-.rpg-card.has-arme .rpg-card__arme-coin--br {
-  right: 6px;
-  border-left: none;
-  border-top: none;
-}
-.rpg-card__arme-coin {
+  content: "";
   position: absolute;
-  z-index: 10;
+  inset: 1px;
+  z-index: 0;
+  border-radius: 14px;
+  border: 1.5px solid #b9c4cc;
+  box-shadow:
+    inset 0 0 10px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.4);
   pointer-events: none;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #b9c4cc;
-  background: linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 50%, #95a5a6 100%);
-  box-shadow: 0 0 6px rgba(0, 0, 0, .55), inset 0 0 4px rgba(255, 255, 255, .45);
-  border-radius: 2px;
 }
+
+/* Hover : le boîtier métallique s’illumine quand la carte est survolée. */
+.rpg-card.has-arme:hover::before {
+  box-shadow:
+    0 0 24px rgba(184, 202, 210, 0.9),
+    inset 0 0 18px rgba(255, 255, 255, 0.9),
+    inset 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+
 .rpg-card__brume {
   position: absolute;
   inset: 0;
