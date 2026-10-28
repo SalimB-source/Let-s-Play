@@ -14,6 +14,7 @@
  */
 
 import { libelleModificationStats, modificationStats } from './rpgCards.js';
+import { estLigneDeLien } from './rpgLienTexte.js';
 
 /** Les symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
@@ -530,6 +531,11 @@ export function iconePourLigne(carte, ligne = '') {
   const texte = String(ligne).replace(/magie rapide/giu, ' ');
   const phrase = texte.trim();
 
+  // La phrase d'un LIEN — « Avec <ancre> en jeu : … » — ne porte aucune icône :
+  // elle ne décrit pas ce que fait la carte, elle dit ce que son ancre y
+  // ajoute. Le pictogramme d'un effet (dégâts, pioche, soin) mentirait sur une
+  // phrase conditionnelle, et l'aperçu répétait l'icône de la ligne du dessus.
+  if (estLigneDeLien(phrase)) return null;
   if (carte?.kind === 'magie' && TYPES_SANS_ICONE_LIGNE.has(carte.effet?.type)) return null;
   if (/^(?:Mur|Doit bloquer|Priorité d’attaque rapide)\s*—/u.test(phrase)) return null;
   if (/^Si\b/u.test(phrase)) return null;

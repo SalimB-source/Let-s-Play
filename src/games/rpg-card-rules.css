@@ -19,3 +19,31 @@
   vertical-align: -.08em;
   white-space: nowrap;
 }
+
+/* ── La phrase du Lien ──────────────────────────────────────────────────────
+   Elle ne dit pas ce que la carte fait : elle dit ce que son ancre mythique y
+   ajoute, et seulement quand cette ancre tient une place. Elle s'écrit donc en
+   retrait — grisée, comme une promesse en attente — et prend l'or du Lien, en
+   gras, dès que le renfort est réel (`data-lien-actif`, posé par l'écran de
+   duel : l'ancre en jeu **et** la carte jouable).
+   ------------------------------------------------------------------------ */
+.rpg-card-rules__lien {
+  color: inherit;
+  font-weight: inherit;
+  opacity: .52;
+}
+
+/* Dans un bloc de règles, chaque ligne réserve la place de son icône (14 px et
+   5 px de marge). La phrase de Lien n'en a pas : elle garde cette réserve en
+   retrait, pour que son texte s'aligne sur celui des autres lignes au lieu de
+   se coller au filet. */
+.rpg-hover-card-preview__rules .rpg-card-rules__lien {
+  padding-left: 19px;
+}
+
+.rpg-card-rules__lien.is-actif,
+.rpg-card-rules__lien[data-lien-actif="true"] {
+  color: #f2c94c;
+  font-weight: 800;
+  opacity: 1;
+}

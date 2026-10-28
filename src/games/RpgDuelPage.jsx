@@ -3368,7 +3368,7 @@ function useLumiereCartes(actif = true) {
   }, [actif]);
 }
 
-export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null }) {
+export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null, lienActif = false }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
 
@@ -3531,7 +3531,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         <div className="rpg-hover-card-preview__rules" aria-label="Effet">
           {descriptionLignes.map((ligne, index) => (
             <span key={`${index}-${ligne}`}>
-              <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} />
+              <RpgCardRules carte={carte} text={ligne} effetsEpuises={effetsEpuisesActifs} lienActif={lienActif} />
             </span>
           ))}
         </div>
@@ -10341,6 +10341,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (reponseApresBlocage ? carte.instant : monTour || (reponseActive && carte.instant))
       && (lancementGratuit || rpgPeutPayer(duel.joueur, carte));
   };
+  /* L'or de la ligne de Lien dans l'aperçu : le renfort doit être RÉEL
+     (l'ancre tient la rangée du joueur) ET la carte prête à partir — les deux
+     conditions du filet doré de la main. Tant qu'il en manque une, la phrase
+     reste grise : elle dit une promesse, pas un fait. */
+  const lienAllumeDansLApercu = (carte) => Boolean(carte?.lien)
+    && lienSatisfait(carte, duel.joueur.creatures)
+    && peutJouerCarte(carte);
   const aReponseJouableEnMain = Boolean(apercuAnnonceOuvert && duel.joueur.main.some((carteId) => {
     const carte = cardById(carteId);
     return Boolean(carte?.instant && peutJouerCarte(carte));
@@ -13942,6 +13949,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {apercuSurvol && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
+            lienActif={lienAllumeDansLApercu(cardById(apercuSurvol.carteId))}
             armes={cartesDesIds(apercuSurvol.armesIds)}
             furieDeclenchee={Boolean(apercuSurvol.furie)}
             statsFurie={apercuSurvol.furie}
