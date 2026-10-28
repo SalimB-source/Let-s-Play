@@ -1114,20 +1114,47 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
   presenterEffet(duel, cote, carte.id);
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
+  const montant = Math.max(0, Number(activation.effet?.amount) || 0);
   let cibleFinale = cible;
+  let campFinal = cibleCamp;
   if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
     cible.boualemContresortDisponible = false;
-    cibleFinale = duel[cibleCamp].creatures.find((entite) => entite.id !== cible.id && entite.pv > 0);
-    if (!cibleFinale) {
+    const legales = ciblesContresortBoualem(duel, cibleCamp, cible.id, couleur);
+    if (!legales.length) {
       duel.log.push('Boualem contre l’effet adverse qui le ciblait ; aucune nouvelle cible légale.');
       rpgActionsEtat(duel);
       return { ok: true, contre: true };
     }
+    // Même règle que pour une magie : la nouvelle cible est choisie par celui
+    // qui joue Boualem, pas par l'utilisateur de la capacité.
+    if (controleurHumain(duel, cibleCamp)) {
+      duel.boualemEnAttente = {
+        cote: cibleCamp,
+        sourceCote: cote,
+        cibleId: cible.id,
+        effet: null,
+        sauf: null,
+        sourceElement: couleur,
+        sourceType: 'capacite',
+        sourceCarteId: carte.id,
+        montant,
+        couleur,
+        sourceNom: entite.name,
+      };
+      duel.log.push(cibleCamp === 'joueur'
+        ? `Boualem contre la capacité qui le ciblait : choisissez la créature de votre camp qui subira ${montant} blessure${montant > 1 ? 's' : ''}.`
+        : `Boualem contre la capacité qui le ciblait : son contrôleur choisit la créature qui subira ${montant} blessure${montant > 1 ? 's' : ''}.`);
+      rpgActionsEtat(duel);
+      return { ok: true, contre: true, boualemEnAttente: true };
+    }
+    // L'IA vise de préférence le camp du lanceur de la capacité.
+    const choisie = legales.find(({ camp }) => camp === cote) ?? legales[0];
+    cibleFinale = choisie.entite;
+    campFinal = choisie.camp;
     duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cibleFinale.name}.`);
   }
-  const montant = Math.max(0, Number(activation.effet?.amount) || 0);
   if ((activation.effet?.type ?? 'degats') === 'degats') {
-    rpgBlesserCreature(duel, cibleCamp, cibleFinale.id, montant, couleur, null, 'capacite');
+    rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite');
   }
   duel.log.push(`${entite.name} inflige ${montant} blessures à ${cibleFinale.name}.`);
   rpgActionsEtat(duel);
@@ -2904,11 +2931,37 @@ function transfertVie(duel, coteSource, montant, sourceCarteId = null) {
   return { perdu: n, gagne };
 }
 
+/**
+ * Qui tient Boualem ? Un camp humain désigne lui-même la nouvelle cible du
+ * contresort ; l'IA (et le sorcier d'un duel solo) choisit seule. En PvP, les
+ * deux sièges sont humains : chacun répond de son côté (`duel.pvp`).
+ */
+function controleurHumain(duel, cote) {
+  return cote === 'joueur' || Boolean(duel.pvp);
+}
+
+/**
+ * Les créatures qui peuvent recevoir l'effet contré : celles du camp qui joue
+ * Boualem — jamais Boualem lui-même, jamais un mort, jamais une créature
+ * protégée contre la couleur de la source. C'est la liste EXACTE dans laquelle
+ * le contrôleur de Boualem a le droit de choisir.
+ */
+function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, sourceType = null) {
+  return ['joueur', 'sorcier'].flatMap((camp) => duel[camp].creatures
+    .filter((entite) => entite.id !== cibleId && entite.pv > 0
+      && !rpgEstProtegee(entite, sourceElement)
+      && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType))
+    .map((entite) => ({ entite, camp })));
+}
+
 /** Applique un effet de capacité (arrivée / destruction). `sauf` exclut
  *  l’entité source quand l’effet ne doit pas se viser elle-même. */
-function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
+function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null) {
   presenterEffet(duel, cote, sourceCarteId);
   const adv = autre(cote);
+  // Un effet relancé par le contresort de Boualem peut tomber sur une créature
+  // des DEUX camps (`cibleCamp`). Par défaut, la cible est adverse.
+  let campCible = cibleCamp ?? adv;
   // Boualem ne contre que l'effet qui le **cible vraiment** : un effet de zone,
   // un renfort de camp ou une arrivée qui crée des jetons n'a pas de cible et
   // ne doit donc jamais déclencher son contresort (le moteur ne transmet un
@@ -2917,14 +2970,43 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
       cibleBoualem.boualemContresortDisponible = false;
-      const cibleChoisie = sauf ? duel[adv].creatures.find((entite) => entite.id === sauf && entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement)) : null;
-      const nouvelleCible = cibleChoisie ?? duel[adv].creatures.find((entite) => entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement));
-      if (!nouvelleCible) {
+      const legales = ciblesContresortBoualem(duel, adv, cibleId, sourceElement, sourceType);
+      if (!legales.length) {
         duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
         return;
       }
-      duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${nouvelleCible.name}.`);
-      cibleId = nouvelleCible.id;
+      // Le choix de la nouvelle cible appartient à celui qui joue Boualem —
+      // jamais au lanceur du sort. Un contrôleur humain désigne donc sa
+      // créature (`duel.boualemEnAttente`) ; l'IA choisit seule.
+      if (controleurHumain(duel, adv)) {
+        duel.boualemEnAttente = {
+          cote: adv,
+          sourceCote: cote,
+          cibleId,
+          effet,
+          sauf,
+          sourceElement,
+          sourceType,
+          sourceCarteId,
+          montant: null,
+          couleur: null,
+        };
+        duel.log.push(adv === 'joueur'
+          ? 'Boualem contre l’effet qui le ciblait : choisissez la créature qui le subira — la vôtre ou celle du lanceur.'
+          : 'Boualem contre l’effet qui le ciblait : son contrôleur choisit la créature qui le subira.');
+        // L'effet n'est PAS résolu : il repartira quand le contrôleur de
+        // Boualem aura désigné sa nouvelle cible (`rpgResoudreContresortBoualem`).
+        return 'differe';
+      }
+      // L'IA relance de préférence sur le camp du lanceur : c'est son
+      // adversaire, elle ne se punit pas elle-même s'il y a mieux à prendre.
+      const choisie = legales.find(({ entite }) => entite.id === sauf)
+        ?? legales.find(({ camp }) => camp === cote)
+        ?? legales[0];
+      duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${choisie.entite.name}.`);
+      cibleId = choisie.entite.id;
+      cibleCamp = choisie.camp;
+      campCible = choisie.camp;
     }
   }
   // Une Magie ou une Sorcellerie hostile qui désigne une créature peut voir
@@ -2936,7 +3018,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     // répéter dans l'effet ; leur cible reste toujours une créature adverse.
     || ['debuff', 'empeche-blocage'].includes(effet.type));
   if (sourceType === 'magie' && effet.type !== 'degats' && viseUneCreatureAdverse) {
-    const cibleSort = duel[adv].creatures.find((entite) => entite.id === cibleId);
+    const cibleSort = duel[campCible].creatures.find((entite) => entite.id === cibleId);
     if (cibleSort && tenterEsquive(duel, cibleSort, sourceType)) {
       // La pioche éventuelle (Courant de retour) appartient au lanceur : elle
       // ne dépend pas de l'effet esquivé par la cible et se résout normalement.
@@ -3478,7 +3560,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // L’Appât de la meute : la créature adverse ciblée doit bloquer si elle
       // le peut lors de la prochaine attaque du lanceur (le marqueur est
       // dépensé par cette attaque, voir `rpgLancerAttaque`).
-      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      const entite = duel[campCible].creatures.find((candidate) => candidate.id === cibleId);
       if (!entite || rpgEstProtegee(entite, sourceElement)
         || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       entite.blocageForce = { par: cote, portee: effet.portee === 'tour' ? 'tour' : 'attaque' };
@@ -3513,12 +3595,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     }
     case 'combat': {
       const combattant = duel[cote].creatures.find((entite) => entite.id === sauf);
-      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      const cible = duel[campCible].creatures.find((entite) => entite.id === cibleId);
       if (!combattant || !cible) return;
       duel.log.push(`${combattant.name} se bat contre ${cible.name} (${combattant.atk} / ${cible.atk}).`);
       appliquerDegatsDeCombatSimultanes(duel, [
         {
-          cote: adv,
+          cote: campCible,
           entiteId: cible.id,
           amount: combattant.atk,
           sourceElement,
@@ -3534,7 +3616,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           amount: cible.atk,
           sourceElement: cardColors(duelCardById(cible.carteId)),
           sourceType: 'capacite',
-          sourceCote: adv,
+          sourceCote: campCible,
           sourceId: cible.id,
         },
       ]);
@@ -3595,8 +3677,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             .flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
             .filter(({ entite }) => !(effet.exclutSoi && entite.id === sauf))
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
-        : duel[adv].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
-          .map((entite) => ({ entite, camp: adv }));
+        : duel[campCible].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
+          .map((entite) => ({ entite, camp: campCible }));
       const amountParCible = effet.choixDegats && cibleSecondaire ? 2 : (effet.amount ?? 0);
       // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
       // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
@@ -3705,7 +3787,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
           && !paradeZoneBloque(duel, entite, sourceType, adv, cote))
-        : duel[adv].creatures.filter((entite) => entite.id === cibleId
+        : duel[campCible].creatures.filter((entite) => entite.id === cibleId
           && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
           && !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
@@ -3834,7 +3916,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // (`empecheAttaque`) ou de bloquer (`empecheBlocage`) jusqu'à la fin de
       // son prochain tour. La langue de l'Eau : elle ronge, elle ne brûle pas
       // (`minimum` empêche de tuer par la statistique seule — l'Embuscade).
-      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      const entite = duel[campCible].creatures.find((candidate) => candidate.id === cibleId);
       if (!entite || rpgEstProtegee(entite, sourceElement)) return;
       if (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
@@ -3883,7 +3965,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // La lune dévorée de Bakunawa : la créature adverse ciblée reste sur la
       // table, mais la défense s'éteint — elle ne peut pas bloquer jusqu'à la
       // fin de son prochain tour.
-      const entite = duel[adv].creatures.find((candidate) => candidate.id === cibleId);
+      const entite = duel[campCible].creatures.find((candidate) => candidate.id === cibleId);
       if (!entite || rpgEstProtegee(entite, sourceElement)
         || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       entite.empecheBlocageToursRestants = Math.max(
@@ -3937,13 +4019,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'destruction-arme': {
       // Brise-lame : l'arme équipée tombe au cimetière de son porteur, ses
       // bonus et ses mots-clés repartent ; la créature, elle, reste en jeu.
-      const porteur = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      const porteur = duel[campCible].creatures.find((entite) => entite.id === cibleId);
       if (!porteur || porteur.id === sauf) return;
       if (rpgEstProtegee(porteur, sourceElement)
         || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
       const armes = armesPortees(porteur);
       if (!armes.length) return;
-      if (porteur.arme) retirerArme(duel, adv, porteur);
+      if (porteur.arme) retirerArme(duel, campCible, porteur);
       const armesSorts = porteur.armes ?? [];
       if (armesSorts.length) {
         let atk = 0;
@@ -3969,7 +4051,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             || Boolean(armeCarteDe(porteur)?.donne?.coupRapide)
             || (porteur.coupRapideTemporaire ?? 0) > 0;
         }
-        duel[adv].cimetiere.push(...armesSorts);
+        duel[campCible].cimetiere.push(...armesSorts);
       }
       const source = cardById(sourceCarteId)?.name ?? 'Le sort';
       duel.log.push(`${source} brise ${armes.map((id) => cardById(id)?.name ?? id).join(', ')} : ${porteur.name} perd son équipement.`);
@@ -3982,14 +4064,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Le Kraken coule un navire : la cible désignée doit porter le type
       // imprimé « Navire » (la validation de pose et `arriveeCiblePortee`
       // garantissent la cible, on revérifie ici comme pour l'exil).
-      const victime = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
       if (!victime || victime.id === sauf) return;
       const fiche = duelCardById(victime.carteId);
       if (!cardHasPrintedType(fiche, 'Navire')) return;
       if (rpgEstProtegee(victime, sourceElement)
         || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
       const nom = victime.name;
-      enterrer(duel, adv, victime, sourceElement ? [sourceElement] : []);
+      enterrer(duel, campCible, victime, sourceElement ? [sourceElement] : []);
       duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le Kraken'} coule ${nom}.`);
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
@@ -4060,8 +4142,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
  * déclenche la riposte comme un effet encaissé — l'Esquive ne rend pas le
  * coup moins vif.
  */
-function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null) {
-  appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId);
+function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null) {
+  // Un effet confié à l'attente de Boualem n'a rien frappé : pas de riposte
+  // tant que son contrôleur n'a pas désigné la nouvelle cible.
+  if (appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId, cibleCamp) === 'differe') return;
+  // Une créature du camp du lanceur, frappée par ricochet, ne riposte pas
+  // contre son propre camp.
+  if (cibleCamp && cibleCamp !== autre(cote)) return;
   riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType);
 }
 
@@ -5053,6 +5140,54 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), null, attente.carteId);
   rpgActionsEtat(duel);
   return { ok: true, cible };
+}
+
+/**
+ * L'attente du contresort de Boualem : quand un sort ou un effet adverse prend
+ * Boualem pour cible, c'est **celui qui joue Boualem** — pas le lanceur — qui
+ * choisit la nouvelle cible. Le moteur a déjà consommé le contresort ; ici le
+ * contrôleur désigne la créature de son camp qui encaisse, et l'effet repart
+ * exactement tel qu'il avait été lancé. Sans cible légale, l'effet se dissipe.
+ */
+export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
+  const attente = duel.boualemEnAttente;
+  if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
+  const legales = ciblesContresortBoualem(duel, cote, attente.cibleId, attente.sourceElement, attente.sourceType);
+  if (!legales.length) {
+    duel.boualemEnAttente = null;
+    duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+    return { ok: false, raison: 'aucune-cible' };
+  }
+  const cible = legales.find(({ entite }) => entite.id === cibleId);
+  if (!cible) return { ok: false, raison: 'cible' };
+  duel.boualemEnAttente = null;
+  duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cible.entite.name}.`);
+  if (attente.effet) {
+    appliquer(duel, attente.sourceCote, attente.effet, cible.entite.id,
+      attente.sauf ?? null, attente.sourceElement, attente.sourceType, attente.sourceCarteId,
+      cible.camp);
+  } else if (attente.montant !== null && attente.montant !== undefined) {
+    rpgBlesserCreature(duel, cible.camp, cible.entite.id, attente.montant, attente.couleur, null, 'capacite', attente.sourceCarteId);
+    duel.log.push(`${attente.sourceNom ?? 'La capacité'} inflige ${attente.montant} blessures à ${cible.entite.name}.`);
+  }
+  rpgActionsEtat(duel);
+  return { ok: true, cible };
+}
+
+/**
+ * Fait tomber une attente de Boualem devenue impossible : son camp s'est vidé
+ * (ou s'est entièrement protégé) entre le contresort et la désignation. Rend
+ * `true` quand quelque chose a été dissipé — la table relance alors le tour
+ * du sorcier mis en pause.
+ */
+export function rpgDissiperContresortBoualem(duel) {
+  const attente = duel.boualemEnAttente;
+  if (!attente) return false;
+  const legales = ciblesContresortBoualem(duel, attente.cote, attente.cibleId, attente.sourceElement, attente.sourceType);
+  if (legales.length) return false;
+  duel.boualemEnAttente = null;
+  duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+  return true;
 }
 
 /**
