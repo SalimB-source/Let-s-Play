@@ -154,13 +154,11 @@ sans eux, elle ignorait `<meta viewport>` et l'app affichait la mise en page PC.
 
 ## Grand écran (≥ 1440 px)
 
-Tout le site éditorial tient dans un seul conteneur, `.wrap`, plafonné à
-**1240 px** — `.nav` et `.hero-content` reprennent la même valeur. C'est un bon
-choix de lecture sur un portable, mais sur un écran de bureau ce plafond laisse
-la page au milieu du fond : 340 px de vide de chaque côté en 1920, plus de
-660 px en 2560. Les grilles restaient figées à quatre colonnes (vignettes de
-plus en plus grosses) et les colonnes de texte s'allongeaient jusqu'à 150
-caractères.
+Tout le site éditorial garde un conteneur maximal de **1240 px** — `.wrap`,
+`.nav` et `.hero-content` partagent cette limite. Même sur un écran large, le
+contenu reste centré et les lignes de lecture ne s'étirent pas sur toute la
+fenêtre. Les grilles conservent leur densité habituelle au lieu d'ajouter des
+colonnes qui rapetissent les cartes.
 
 **`src/large-screen.css`** est la surcouche qui règle ça. Importée après les
 feuilles de page et juste avant `theme.css` (qui ne s'occupe que des couleurs),
@@ -169,17 +167,18 @@ tablette et portable est inchangé.
 
 Trois paliers, dans l'esprit des points de rupture déjà utilisés (801 / 1201 px) :
 
-| Palier | Conteneur | Grilles de cartes | Rythme vertical |
-|---|---|---|---|
-| ≥ 1440 px | 1360 px | inchangées (4 colonnes) | 110 → 124 px |
-| ≥ 1920 px | 1760 px | 5 colonnes | 140 px |
-| ≥ 2560 px | 2240 px | 6 colonnes | 160 px |
+| Palier | Conteneur maximal | Grilles de cartes | Rythme vertical |
+|---|---:|---|---|
+| ≥ 1440 px | 1240 px | inchangées | 110 → 124 px |
+| ≥ 1920 px | 1240 px | inchangées | 140 px |
+| ≥ 2560 px | 1240 px | inchangées | 160 px |
 
 Le conteneur est piloté par une seule variable par palier (`--lp-shell`), que
 les trois conteneurs du site consomment ensemble — impossible d'en élargir un
 sans les autres. Les titres montent d'un cran au palier 2 (les plafonds de
 `clamp()` étaient atteints dès ~1300 px), et le corps du texte d'un article
 passe à 18 px au palier 3 **sans allonger la mesure de lecture** (68 caractères).
+La limite de 1240 px s'applique également aux grilles et aux colonnes d'articles.
 
 ### Deux règles à connaître avant d'y toucher
 
@@ -203,11 +202,10 @@ Toute requête `min-width` de ce fichier doit porter son garde-fou téléphone
 npm run check:large-screen   # paliers, conteneurs, garde-fous et grilles fixes
 ```
 
-`check:large-screen` relit la feuille, vérifie que les trois paliers sont
-ordonnés et que le conteneur s'élargit à chacun, que `.wrap` / `.nav` /
-`.hero-content` avancent ensemble, que chaque requête média garde sa condition
-téléphone, et qu'aucune grille à nombre d'éléments fixe ne reçoit de colonne
-supplémentaire. C'est le filet qui rend la règle n° 1 vérifiable.
+`check:large-screen` relit la feuille, vérifie que les trois paliers restent
+plafonnés à 1240 px, que `.wrap` / `.nav` / `.hero-content` avancent ensemble,
+que chaque requête média garde sa condition téléphone, et qu'aucune grille à
+nombre d'éléments fixe ne reçoit de colonne supplémentaire.
 
 ## Mirage Rush : le plein écran
 

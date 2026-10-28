@@ -7,6 +7,7 @@ import './news-article.css';
 import './components/SpoilerAlert.css';
 import './auth/auth.css';
 import './news-carousel.css';
+import './actus.css';
 import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
@@ -56,6 +57,7 @@ import GameLoadBoundary from './games/GameLoadBoundary.jsx';
  * allure partout.
  */
 const News = lazy(() => import('./pages/News'));
+const Actus = lazy(() => import('./pages/Actus'));
 const AllNews = lazy(() => import('./pages/AllNews'));
 const GamingNews = lazy(() => import('./pages/GamingNews'));
 const CinemaNews = lazy(() => import('./pages/CinemaNews'));
@@ -141,6 +143,7 @@ function App() {
               <Suspense fallback={<RouteLoading />}>
               <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/actus" element={<Actus />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/articles" element={<AllNews />} />
             <Route path="/news/gaming" element={<GamingNews />} />

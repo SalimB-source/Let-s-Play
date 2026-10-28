@@ -9,6 +9,7 @@ export const translations = {
     nav: {
       home: 'Home',
       news: 'News',
+      editorialMenu: 'Editorial',
       reviews: 'Reviews',
       dossiers: 'Dossiers',
       community: 'Community',
@@ -24,10 +25,9 @@ export const translations = {
       quiz: 'Quizzes',
       game: 'Game',
       games: 'Games',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'Show the games menu',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'Our games',
+      sectionMenuAria: 'Show the editorial menu',
       profile: 'Profile',
       levelShort: 'LVL',
       theme: { light: 'Light', dark: 'Dark', toLight: 'Switch to light theme', toDark: 'Switch to dark theme' },
@@ -462,7 +462,7 @@ export const translations = {
   fr: {
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
-      home: 'Accueil', news: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
+      home: 'Accueil', news: 'News', editorialMenu: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
       account: 'Compte',
       menu: 'Menu', menuAria: 'Ouvrir le menu', langAria: 'Changer de langue',
       search: { placeholder: 'Rechercher…', submit: 'Rechercher', noResults: 'Aucun résultat', viewAll: 'Voir tous les résultats' },
@@ -472,10 +472,9 @@ export const translations = {
       quiz: 'Quizz',
       game: 'Jeu',
       games: 'Jeux',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'Afficher le menu des jeux',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'Nos jeux',
+      sectionMenuAria: 'Afficher le menu Actus',
       profile: 'Profil',
       levelShort: 'NIV.',
       theme: { light: 'Clair', dark: 'Sombre', toLight: 'Passer au thème clair', toDark: 'Passer au thème sombre' },
@@ -902,7 +901,7 @@ export const translations = {
   ar: {
     meta: { title: 'Let’s Play — العب اللعبة' },
     nav: {
-      home: 'الرئيسية', news: 'الأخبار', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
+      home: 'الرئيسية', news: 'الأخبار', editorialMenu: 'المحتوى', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
       account: 'الحساب',
       menu: 'القائمة', menuAria: 'افتح القائمة', langAria: 'تغيير اللغة',
       search: { placeholder: 'بحث…', submit: 'بحث', noResults: 'لا توجد نتائج', viewAll: 'عرض كل النتائج' },
@@ -912,10 +911,9 @@ export const translations = {
       quiz: 'اختبارات',
       game: 'اللعبة',
       games: 'ألعاب',
-      // Sous-menu de l'entrée « Jeux » (voir `primaryLinks` dans Layout.jsx) :
-      // la section se déplie en deux pages, les jeux de la maison et les quizz.
-      videoGames: "Let's Play",
-      gamesMenuAria: 'إظهار قائمة الألعاب',
+      // Entrée « Actus » : News, Tests, Dossiers et DZ Dev.
+      videoGames: 'ألعابنا',
+      sectionMenuAria: 'إظهار قائمة الأخبار',
       profile: 'الملف',
       levelShort: 'المستوى',
       theme: { light: 'فاتح', dark: 'داكن', toLight: 'التبديل إلى المظهر الفاتح', toDark: 'التبديل إلى المظهر الداكن' },

@@ -4,26 +4,24 @@
 
    Pourquoi ce fichier
    -------------------
-   Tout le site éditorial tient dans un seul conteneur, `.wrap`, plafonné à
-   **1240 px** (`.nav` et `.hero-content` reprennent la même valeur). Ce
-   plafond est un choix de lecture confortable sur un portable, mais sur un
-   écran de bureau il laisse la page au milieu d'un océan de fond : 340 px de
-   vide de chaque côté en 1920, plus de 660 px en 2560. Les grilles d'articles
-   restaient elles aussi figées à quatre colonnes, avec des vignettes de plus
-   en plus grosses, et les colonnes de texte longues de 150 caractères.
+   Le site éditorial garde un conteneur maximal de **1240 px** (`.wrap`, `.nav`
+   et `.hero-content`) même sur les écrans larges. Les paliers de ce fichier
+   règlent le rythme vertical et la typographie, sans dilater la mise en page
+   ni tasser les cartes en ajoutant des colonnes. Le vide extérieur est réparti
+   de part et d'autre d'un contenu centré, plutôt que rempli par des lignes
+   trop longues.
 
    Ce fichier ne touche à rien en dessous de 1440 px : c'est une **surcouche**,
    importée après les feuilles de page (et avant `theme.css`, qui ne s'occupe
    que des couleurs). Trois paliers, dans l'esprit des points de rupture déjà
    utilisés ailleurs (801 / 1201 px) :
 
-     1. **1440 px** — portables 1440p / 1512p, grands moniteurs : le conteneur
-        s'élargit, le rythme vertical respire.
-     2. **1920 px** — écrans Full HD et plus : les grilles de cartes gagnent une
-        colonne (les vignettes gardent leur taille au lieu de gonfler), les
-        titres montent d'un cran, la prose est bornée.
-     3. **2560 px** — 1440p et ultra-larges : une colonne de plus, le conteneur
-        atteint son plafond définitif.
+     1. **1440 px** — grands moniteurs : conteneur plafonné à 1240 px, rythme
+        vertical légèrement augmenté.
+     2. **1920 px** — écrans Full HD et plus : conteneur toujours plafonné à
+        1240 px ; certains titres montent d'un cran.
+     3. **2560 px** — 1440p et ultra-larges : même conteneur centré, avec un
+        rythme vertical et une taille de texte adaptés.
 
    Trois règles à respecter en y touchant
    --------------------------------------
@@ -47,11 +45,11 @@
 
 /* --------------------------------------------------------------------------
    PALIER 1 — 1440 px et plus
-   Le conteneur passe de 1240 à 1360 px (gouttière de 48 px en 1440), le
-   rythme vertical des sections de 110 à 124 px.
+   Le conteneur reste plafonné à 1240 px ; le rythme vertical des sections
+   passe de 110 à 124 px.
    -------------------------------------------------------------------------- */
 @media(min-width:1440px) and (hover:hover), (min-width:1440px) and (min-device-width:601px){
-  :root{--lp-shell:min(1360px,calc(100% - 96px))}
+  :root{--lp-shell:min(1240px,calc(100% - 96px))}
   .wrap,.nav,.hero-content{width:var(--lp-shell)}
 
   .featured,.featured-dossiers,.show,.formats,.latest,.latest-tests,
@@ -60,21 +58,21 @@
     padding-top:124px;
   }
 
-  /* Colonne de lecture d'un article : `space-between` envoyait la colonne
-     latérale à l'autre bout du conteneur (près de 600 px entre le texte et
-     les encarts). On la garde à distance fixe, le texte aligné à gauche comme
-     le reste de la page. */
+  /* Colonne de lecture d'un article : garder le texte et les encarts comme
+     un seul groupe centré dans le conteneur maximal de 1240 px. */
   .article-layout{
-    grid-template-columns:minmax(0,760px) 300px;
-    justify-content:start;
-    gap:clamp(64px,6vw,110px);
+    width:var(--lp-shell);
+    grid-template-columns:minmax(0,820px) 280px;
+    justify-content:center;
+    gap:clamp(48px,4vw,64px);
   }
 
   /* Idem pour les dossiers : le lecteur vidéo et la colonne des chapitres
      restent côte à côte au lieu de s'écarter avec la largeur. */
   .dossier-reading{
-    grid-template-columns:minmax(0,1180px) 310px;
-    gap:0 clamp(70px,5vw,110px);
+    grid-template-columns:minmax(0,840px) 280px;
+    justify-content:center;
+    gap:0 56px;
   }
 
   /* Sous-titres : une mesure de ligne tenable une fois le conteneur élargi. */
@@ -83,18 +81,12 @@
 
 /* --------------------------------------------------------------------------
    PALIER 2 — 1920 px et plus (Full HD)
-   Conteneur à 1760 px. Les grilles alimentées par les données passent à cinq
-   colonnes : à quatre, les vignettes 16/10 auraient mesuré 430 px de large.
-   (La grille des tests compte dix entrées : cinq colonnes font exactement
-   deux rangées pleines.)
+   Le conteneur reste plafonné à 1240 px. Les cartes conservent une densité
+   adaptée à cette largeur ; seuls les titres et le rythme vertical évoluent.
    -------------------------------------------------------------------------- */
 @media(min-width:1920px) and (hover:hover), (min-width:1920px) and (min-device-width:601px){
-  :root{--lp-shell:min(1760px,calc(100% - 128px))}
+  :root{--lp-shell:min(1240px,calc(100% - 96px))}
   .wrap,.nav,.hero-content{width:var(--lp-shell)}
-
-  .latest-tests-grid,.news-carousel.is-grid,.search-results-grid,.release-grid{
-    grid-template-columns:repeat(5,minmax(0,1fr));
-  }
 
   /* Rythme vertical : 110 → 140 px. */
   .featured,.featured-dossiers,.show,.formats,.latest,.latest-tests,
@@ -108,10 +100,9 @@
 
   /* Titres : les plafonds de `clamp()` étaient atteints dès 1300 px de large ;
      on les relève pour que la hiérarchie tienne sur un grand écran. */
-  /* Même contrainte que dans src/styles.css : la ligne « Gaming, Tech et
-     Cinéma » du héros doit tenir sur une seule ligne — 15 fois son corps —
-     donc 112px au maximum pour une colonne de 1760px en Full HD. */
-  .hero h1{font-size:clamp(80px,6vw,112px)}
+  /* Garder le grand titre du héros lisible sans dépasser la largeur utile
+     du shell fixé à 1240 px. */
+  .hero h1{font-size:clamp(80px,5vw,96px)}
   .latest-tests-head h2,.featured-dossiers-head h2,.live-head h2,.reels-head h2,
   .latest h2,.carousel-head h2{font-size:clamp(64px,3.6vw,78px)}
   .page-h2{font-size:clamp(54px,3.1vw,66px)}
@@ -128,17 +119,11 @@
 
 /* --------------------------------------------------------------------------
    PALIER 3 — 2560 px et plus (1440p, ultra-larges)
-   Conteneur à 2240 px — son plafond définitif : au-delà, les éléments d'une
-   même rangée s'éloignent trop pour se lire d'un coup d'œil.
+   Conteneur toujours plafonné à 1240 px, même sur les écrans ultra-larges.
    -------------------------------------------------------------------------- */
 @media(min-width:2560px) and (hover:hover), (min-width:2560px) and (min-device-width:601px){
-  :root{--lp-shell:min(2240px,calc(100% - 192px))}
+  :root{--lp-shell:min(1240px,calc(100% - 96px))}
   .wrap,.nav,.hero-content{width:var(--lp-shell)}
-
-  /* La grille des tests passe à six colonnes, le flux d'articles aussi. Le
-     calendrier et la recherche gardent cinq colonnes : leurs cellules portent
-     beaucoup de texte, des cartes plus étroites les rendraient illisibles. */
-  .latest-tests-grid,.news-carousel.is-grid{grid-template-columns:repeat(6,minmax(0,1fr))}
 
   .featured,.featured-dossiers,.show,.formats,.latest,.latest-tests,
   .social-carousel,.live-section,.reels-section,.partners,.partners-how,
@@ -158,9 +143,6 @@
   .dossier-lead{font-size:28px}
   .article-dek,.dossier-dek{font-size:20px}
 
-  /* Colonne de lecture : le lecteur vidéo est déjà borné à 1180 px au
-     palier 2 ; on donne juste un peu plus d'air au texte et à la colonne
-     des chapitres. */
-  .article-layout{grid-template-columns:minmax(0,860px) 320px}
-  .dossier-reading{grid-template-columns:minmax(0,1320px) 340px}
+  /* Les colonnes de lecture restent dans le shell de 1240 px ; seule la
+     taille du corps de texte monte légèrement pour le confort. */
 }
