@@ -660,7 +660,6 @@
   padding: 6px 6px 5px;
   border-radius: var(--rpg-card-radius, 12px);
   background: #0c0c0e;
-  outline: 2px solid #000;                   /* le liseré noir extérieur */
   box-shadow: 0 12px 28px rgba(0, 0, 0, .65), 0 2px 6px rgba(0, 0, 0, .5);
   cursor: pointer;
   /* Une carte POSÉE sur la table est droite. L'éventail — et ses petites
