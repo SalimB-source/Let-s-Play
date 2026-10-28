@@ -22,6 +22,7 @@ import {
   rpgBlesserCreature,
   rpgBouclierEstActif,
   rpgFinDeTour,
+  rpgResoudreArriveeCiblee,
 } from '../src/games/rpgDuel.js';
 import { cardById } from '../src/games/rpgCards.js';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
@@ -60,6 +61,53 @@ test('les sources de bouclier n’annoncent plus qu’une parade', () => {
     assert.match(carte.text, /prochain sort adverse/, `${id} annonce le sort bloqué`);
     assert.doesNotMatch(carte.text, /prévient les|prochains dégâts/, `${id} ne parle plus d’absorption`);
   }
+});
+
+test('le bouclier du Guerrier se donne : à lui-même ou à une autre créature alliée', () => {
+  // Le texte imprimé doit dire les deux destinations : c'est lui qui annonce
+  // au joueur que la parade se désigne.
+  assert.match(cardById('guerrier-au-bouclier-rond').text, /une créature alliée ciblée — ou lui-même/,
+    'le Guerrier annonce les deux porteurs possibles');
+  assert.equal(cardById('guerrier-au-bouclier-rond').arrivee.cibleSoi, true,
+    'l’arrivée accepte la créature qui la porte');
+
+  // 1. Seul sur le champ, le Guerrier garde sa parade : la désignation porte
+  // sur lui-même, et l'attente se referme.
+  const duel = duelVide();
+  duel.tour = 'joueur';
+  manaPlein(duel, 'joueur');
+  donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
+  const seul = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
+  assert.equal(seul.ok, true);
+  assert.equal(seul.arriveeEnAttente, true, 'la table attend la désignation du porteur');
+  assert.equal(seul.entite.bouclier ?? 0, 0, 'aucun bouclier n’est posé avant le choix');
+  const designe = rpgResoudreArriveeCiblee(duel, 'joueur', seul.entite.id);
+  assert.equal(designe.ok, true, 'le Guerrier peut se désigner lui-même');
+  assert.equal(seul.entite.bouclier, 1, 'la parade reste sur le Guerrier');
+  assert.equal(duel.arriveeEnAttente, null, 'l’attente est levée');
+
+  // 2. Avec un allié, la même pose prête la parade : le Guerrier reste nu.
+  const duelAllie = duelVide();
+  duelAllie.tour = 'joueur';
+  manaPlein(duelAllie, 'joueur');
+  donner(duelAllie, 'joueur', 'chien-du-guet');
+  donner(duelAllie, 'joueur', 'guerrier-au-bouclier-rond');
+  const chien = rpgJouerCreature(duelAllie, 'joueur', 'chien-du-guet').entite;
+  const pret = rpgJouerCreature(duelAllie, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
+  assert.equal(pret.arriveeEnAttente, true);
+  assert.equal(rpgResoudreArriveeCiblee(duelAllie, 'joueur', chien.id).ok, true);
+  assert.equal(chien.bouclier, 1, 'l’allié désigné reçoit le bouclier');
+  assert.equal(pret.entite.bouclier ?? 0, 0, 'le Guerrier ne le garde pas en plus');
+
+  // 3. Une pose directe (sans désignation) retombe sur le porteur : la carte
+  // reste jouable par l’IA et par les scripts, et son bouclier ne se perd pas.
+  const duelDirect = duelVide();
+  duelDirect.tour = 'joueur';
+  manaPlein(duelDirect, 'joueur');
+  donner(duelDirect, 'joueur', 'guerrier-au-bouclier-rond');
+  const direct = rpgJouerCreature(duelDirect, 'joueur', 'guerrier-au-bouclier-rond');
+  assert.equal(direct.ok, true);
+  assert.equal(direct.entite.bouclier, 1, 'sans cible désignée, le Guerrier se couvre lui-même');
 });
 
 test('le bouclier bloque tout le premier sort adverse qui cible la créature', () => {

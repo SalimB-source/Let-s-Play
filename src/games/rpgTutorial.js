@@ -24,7 +24,7 @@
  *    (`reclamerRecompenseTutoriel`) et retenu dans le portefeuille.
  */
 import { RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
-import { rpgJouerCreature } from './rpgDuel.js';
+import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
 // l'étagère du joueur (vide depuis les coffrets de bienvenue).
@@ -92,7 +92,14 @@ function poserCreatureSurChamp(duel, cote, cardId, { ready = false } = {}) {
     res.entite.ready = ready;
     res.entite.attaquee = false;
   }
-  if (duel.arriveeEnAttente?.entiteId === res.entite?.id) duel.arriveeEnAttente = null;
+  if (duel.arriveeEnAttente?.entiteId === res.entite?.id) {
+    // Une scène de leçon est muette : quand l'arrivée sait se prendre pour
+    // cible (le Guerrier au bouclier rond garde sa parade), la créature posée
+    // se désigne elle-même plutôt que de laisser une attente ouverte. Les
+    // arrivées qui exigent une autre cible retombent sur la levée simple.
+    rpgResoudreArriveeCiblee(duel, cote, res.entite.id);
+    if (duel.arriveeEnAttente?.entiteId === res.entite.id) duel.arriveeEnAttente = null;
+  }
   return res.entite;
 }
 
@@ -940,8 +947,19 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '.rpg-hand__card[data-card-id="guerrier-au-bouclier-rond"]',
         eyebrow: 'ÉTAPE 2 · LE REMPART',
         title: 'Posez le Guerrier',
-        text: 'Touchez le Guerrier au bouclier rond. Il coûte deux manas. À son arrivée, il reçoit un bouclier : le premier sort adverse qui le ciblera sera bloqué.',
+        text: 'Touchez le Guerrier au bouclier rond. Il coûte deux manas. À son arrivée, il reçoit un bouclier — ou le donne à une autre créature alliée : le premier sort adverse qui l’atteindra sera bloqué.',
         on: 'creature-jouee',
+        cardId: 'guerrier-au-bouclier-rond',
+        side: 'top',
+      },
+      {
+        id: 'guerrier-cible',
+        kind: 'action',
+        target: '.card-row--equipe .rpg-card[data-card-id="guerrier-au-bouclier-rond"]',
+        eyebrow: 'ÉTAPE 2 · LE REMPART',
+        title: 'Gardez le bouclier pour lui',
+        text: 'Le bouclier peut aller à une autre créature alliée, ou rester sur le Guerrier : touchez-le pour le garder. Il bloquera le premier sort adverse qui le ciblera.',
+        on: 'arrivee-designee',
         cardId: 'guerrier-au-bouclier-rond',
         side: 'top',
       },
@@ -951,7 +969,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'RÈGLE · BOUCLIER',
         title: 'Une parade contre un sort',
-        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature, puis le bouclier tombe. Un sort qui la cible est payé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque ou une capacité passent normalement, tout comme un sort allié. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
+        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est payé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque ou une capacité passent normalement, tout comme un sort allié. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
         nextLabel: 'Appeler la Valkyrie',
         side: 'top',
       },

@@ -266,8 +266,8 @@ const apercuDom = (html) => {
       'seul le Bouclier est grisé');
     // La description du Guerrier reste écrite : la phrase du bouclier est ce
     // que la carte fait (l'état « tombé » grise la pastille et le libellé).
-    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint est bloqué/,
-      'l’aperçu écrit la nouvelle règle du Guerrier : un sort adverse bloqué');
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier/,
+      'l’aperçu écrit la règle du Guerrier : le bouclier se donne, à un allié ou à lui-même');
   } finally {
     dom.window.close();
   }

@@ -11180,6 +11180,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: entite.id });
+      // La désignation d'arrivée vient d'aboutir : la leçon guidée du Guerrier
+      // au bouclier rond peut passer à l'étape suivante (`arrivee-designee`).
+      signalerTutoriel('arrivee-designee', { cardId: carteSource?.id, entiteId: entite.id });
       // L'attente peut subsister pour l'autre effet (ex. Abordage après une
       // cible d'arrivée, ou l'inverse) : on garde la cible en cours pour le
       // prochain clic, sinon on la lève.
@@ -13048,7 +13051,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       canTarget={Boolean(idsCiblesBoualem.has(entite.id)
                         || (sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
-                          && entite.id !== duel.arriveeEnAttente?.entiteId
+                          // La créature qui vient d'arriver n'est jamais sa
+                          // propre cible, sauf quand l'arrivée l'autorise
+                          // (`cibleSoi`, le bouclier du Guerrier).
+                          && (entite.id !== duel.arriveeEnAttente?.entiteId
+                            || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && !rpgEstProtegee(entite, cardColors(carteCiblee))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
                           && cibleRespecteCoutMax(carteCiblee, entite))
