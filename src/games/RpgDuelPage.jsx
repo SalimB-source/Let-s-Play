@@ -95,8 +95,9 @@ import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix } from './rpgArrivalVoices.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
-import { rpgWaterSoundFor } from './rpgWaterAudio.js';
-import { rpgSonsResolutionCombat } from './rpgAttackAudio.js';
+import { sonArriveeALaDesignation, sonArriveeAuPose } from './rpgArriveeAudio.js';
+import { sonSortAuLancement } from './rpgSortAudio.js';
+import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckCreation from './RpgDeckCreation.jsx';
@@ -6213,14 +6214,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
     const idsAvantAdverse = new Set((avant.sorcier?.creatures ?? []).map((e) => e.id));
     const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
+    // Une arrivée adverse qui désigne encore sa cible ne sonne pas à la pose :
+    // son souffle part quand l'adversaire désigne sa victime, et seulement si
+    // la victime encaisse (`arriveeAdverseClose`). Même règle que pour le
+    // joueur (`finaliserPoseCreature` / `resoudreCible`).
+    const arriveeAdverseEnAttente = entrant.arriveeEnAttente?.cote === 'sorcier'
+      ? entrant.arriveeEnAttente.carteId : null;
+    const arriveeAdverseClose = avant.arriveeEnAttente?.cote === 'sorcier'
+      && avant.arriveeEnAttente.carteId !== arriveeAdverseEnAttente
+      ? avant.arriveeEnAttente.carteId : null;
+    // Les PV des créatures du joueur : une arrivée « renoncée » ne blesse rien
+    // et ne fait donc pas de flamme.
+    const pvCreaturesJoueur = (etat) => (etat?.joueur?.creatures ?? [])
+      .reduce((total, entite) => total + (entite.pv ?? 0), 0);
+    const degatsChezJoueur = pvCreaturesJoueur(entrant) < pvCreaturesJoueur(avant);
     if (nouvellesCreaturesAdverses.length) {
-      jouerSfx('card_place');
+      // Plus de bruit de pose : une créature entre en jeu avec sa voix
+      // (`rpgArrivalVoices.js`) ou l'accueil de son élément, jamais avec un
+      // claquement de carte.
       const sonFoudre = nouvellesCreaturesAdverses
         .map((entite) => rpgFoudreSoundFor(cardById(entite.carteId), 'arrival'))
         .find(Boolean);
       const sonFeu = rpgFireSoundFor(cardById(nouvellesCreaturesAdverses[0].carteId), 'arrival');
-      if (sonFoudre) jouerSfx(sonFoudre);
-      else if (sonFeu) jouerSfx(sonFeu);
+      // Le souffle d'une arrivée encore en attente de cible est tu : il sonne
+      // au clic de désignation, comme côté joueur.
+      const souffleDiffere = Boolean(arriveeAdverseEnAttente)
+        && nouvellesCreaturesAdverses.some((entite) => entite.carteId === arriveeAdverseEnAttente);
+      if (!souffleDiffere) {
+        if (sonFoudre) jouerSfx(sonFoudre);
+        else if (sonFeu) jouerSfx(sonFeu);
+      }
       // Les journaux WeakMap du moteur ne traversent pas l'instantané PvP :
       // l'arrivée d'une créature adverse s'y constate par différence de champ.
       // La voix propre à la carte tient l'accueil ; le quai, le cri pirate et
@@ -6233,6 +6256,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         else if (rpgEstCartePirate(carteNouvelle)) jouerArriveePirate();
         else if (rpgDwarfSoundFor(carteNouvelle, 'arrival')) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
       }
+    }
+
+    if (arriveeAdverseClose && degatsChezJoueur) {
+      jouerSfx(sonArriveeALaDesignation(cardById(arriveeAdverseClose)));
     }
 
     const cimetiereAvantLen = avant.sorcier?.cimetiere?.length ?? 0;
@@ -6257,7 +6284,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             blocages: Object.fromEntries(ids.map((id) => [id, courant.blocages?.[id] ?? []]).filter(([id]) => vivants.has(id))),
           };
         }
-        jouerSfx('attackers_confirm');
+        // L'acier ne s'annonce que s'il va frapper : une vague de flèches se
+        // tait jusqu'à la résolution (`rpgAttackAudio.js`).
+        if (rpgVagueAnnonceAcier(ids, entrant.combatDeclare.ciblesAttaque)) jouerSfx('attackers_confirm');
         animerEntites(ids, 'attack', 650);
         return {
           coteAttaquant: 'sorcier',
@@ -10274,10 +10303,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!monTour || reponseApresBlocage || mulliganOuvert) { jouerSfx('erreur'); return; }
     const etatAvantAction = JSON.stringify(duel);
     const res = rpgPoserTerrain(duel, 'joueur', carteId);
-    if (res.ok) {
-      conserverAnnulation(etatAvantAction);
-      jouerSfx('card_place');
-    } else { jouerSfx('erreur'); }
+    if (res.ok) conserverAnnulation(etatAvantAction);
+    else jouerSfx('erreur');
     force();
     // Le Souk est prévenu **après** le rendu du plateau : `noterEvenementDuel`
     // met à jour la bourse, qui vit dans la même page — un état de bourse mis à
@@ -10417,16 +10444,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (contre) {
       jouerSfx('card_countered');
     } else {
-      // Un sort de soin garde le son commun des magies : le soin lui-même se
-      // fait entendre quand les PV remontent vraiment (`soin_vie`, relevé du
-      // journal des soins) — jamais deux carillons pour un seul geste, et
-      // rien de plus qu'une magie s'il est lancé à pleine vie.
-      const son = sonForce
-        ?? rpgFoudreSoundFor(carte, 'spell')
-        ?? rpgWaterSoundFor(carte, 'spell')
-        ?? rpgFireSoundFor(carte, 'spell')
-        ?? (carte?.effet?.type === 'bouclier' ? 'bouclier' : 'magie');
-      jouerSfx(son);
+      // Un sort ne joue plus le souffle de son élément (`rpgSortAudio.js`) : ni
+      // vague d'Eau, ni vent de Braise par-dessus la magie qu'on vient de
+      // lancer. Le soin, lui, se fait entendre quand les PV remontent vraiment
+      // (`soin_vie`, relevé du journal des soins).
+      const son = sonSortAuLancement(carte, { sonForce });
+      if (son) jouerSfx(son);
       if (!vague) declencherGelMasse(carte, camp);
     }
     // Chaque camp a sa fiche et son minuteur : deux sorts dans la même seconde
@@ -10511,7 +10534,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (res.ok) {
-      jouerSfx('card_place');
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         [res.renvoiEntityId]);
       invaliderAnnulation();
@@ -10642,17 +10664,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
         res.sacrificeId ? [res.sacrificeId] : []);
-      jouerSfx('card_place');
-      const sonFoudre = rpgFoudreSoundFor(carte, 'arrival');
-      if (sonFoudre) jouerSfx(sonFoudre);
-      else {
-        const sonEffetBraise = rpgFireSoundFor(carte, 'arrival');
-        if (sonEffetBraise) jouerSfx(sonEffetBraise);
-        else {
-          const sonEau = rpgWaterSoundFor(carte, 'arrival');
-          if (sonEau) jouerSfx(sonEau);
-        }
-      }
+      // Une arrivée qui désigne encore sa cible ne sonne pas ici : sa flamme
+      // (ou son tonnerre) appartient au geste qui blesse, et part au clic qui
+      // désigne la victime (`resoudreCible`, `rpgArriveeAudio.js`). La Tour de
+      // Braise ne brûle donc plus avant que le joueur ait choisi la créature
+      // qui prend le dégât.
+      const sonArrivee = sonArriveeAuPose(carte, { arriveeEnAttente: Boolean(res.arriveeEnAttente) });
+      if (sonArrivee) jouerSfx(sonArrivee);
       // Le filtre inclut aussi le vent d’arrivée de la Valkyrie (sans gel).
       declencherGelMasse(carte, 'joueur');
       signalerTutoriel('creature-jouee', { cardId: carteId, entiteId: res.entite?.id });
@@ -10733,7 +10751,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     } else if (res.ok) {
       conserverAnnulation(etatAvantAction);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      jouerSfx('card_place');
       signalerTutoriel('arme-equipee', { cardId: carteId, entiteId: cibleId });
       // Le Grappin d'abordage : l'attachement ouvre une désignation de prize
       // (`duel.arriveeEnAttente.abordage`) — la table adverse s'allume sur
@@ -11157,12 +11174,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return true;
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: entite.id });
+      // La désignation d'arrivée vient d'aboutir : la leçon guidée du Guerrier
+      // au bouclier rond peut passer à l'étape suivante (`arrivee-designee`).
+      signalerTutoriel('arrivee-designee', { cardId: carteSource?.id, entiteId: entite.id });
       // L'attente peut subsister pour l'autre effet (ex. Abordage après une
       // cible d'arrivée, ou l'inverse) : on garde la cible en cours pour le
       // prochain clic, sinon on la lève.
       if (!duel.arriveeEnAttente) setCibleEnCours(null);
       if (arriveeConsulteDeck(carteSource)) invaliderAnnulation();
-      jouerSfx(carteSource.arrivee?.type === 'retour-main' ? 'creature_return' : 'select');
+      // Le souffle appartient à l'effet qui vient de frapper : il part
+      // maintenant, sur la cible désignée — jamais à la pose de la carte.
+      jouerSfx(sonArriveeALaDesignation(carteSource));
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
       return true;
@@ -11467,7 +11489,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
 
-    jouerSfx('attackers_confirm');
     // L’Attaque ciblée est un choix : seules les proies réellement désignées
     // arrêtent leur attaquant, les autres créatures partent vers le sorcier.
     const ciblesFinales = Object.fromEntries(ids.flatMap((id) => {
@@ -11476,6 +11497,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         .find((entite) => entite.id === ciblesAttaque[id]);
       return cible ? [[id, cible.id]] : [];
     }));
+    // L'acier ne s'annonce que s'il va frapper : une vague qui ne tire que des
+    // flèches se valide en silence, et l'Attaque ciblée ne fait entendre que sa
+    // flèche à la résolution (`rpgAttackAudio.js`).
+    if (rpgVagueAnnonceAcier(ids, ciblesFinales)) jouerSfx('attackers_confirm');
 
     if (modePvp) {
       invaliderAnnulation();
@@ -11553,7 +11578,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const declarerAttaqueAvecTous = () => {
     const ids = prets.map((entite) => entite.id);
     if (!ids.length || attaqueJouee) { jouerSfx('erreur'); return; }
-    jouerSfx('attackers_confirm');
+    // Toute la vague est faite d'archers : pas de lames qui se lèvent, la
+    // flèche parlera à la résolution (`rpgAttackAudio.js`).
+    const tousAuxArcs = ids.every((id) => duel.joueur.creatures
+      .find((entite) => entite.id === id)?.coupRapide);
+    if (!tousAuxArcs) jouerSfx('attackers_confirm');
     setPhase(true);
     signalerTutoriel('attaque-declaree', { entites: ids });
     setAttaquants(ids);
@@ -11590,7 +11619,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-arrivee', cibleId: 'sorcier' });
       if (!duel.arriveeEnAttente) setCibleEnCours(null);
-      jouerSfx('select');
+      // Le souffle de l'arrivée part sur le visage frappé, pas à la pose.
+      jouerSfx(sonArriveeALaDesignation(carteCiblee));
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       force();
       return;
@@ -11761,10 +11791,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
         const carteReponse = cardById(reponse.carteId);
-        jouerSfx(rpgFoudreSoundFor(carteReponse, 'spell')
-          ?? rpgWaterSoundFor(carteReponse, 'spell')
-          ?? rpgFireSoundFor(carteReponse, 'spell')
-          ?? 'magie');
+        const sonReponse = sonSortAuLancement(carteReponse);
+        if (sonReponse) jouerSfx(sonReponse);
         if (carteReponse?.kind === 'magie') {
           annoncerMagieSorcier(carteReponse, describeAnnouncedMagicTarget(
             carteReponse, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
@@ -11836,9 +11864,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
-    } else if (!sonsCombat.length) {
-      jouerSfx('block_impact', 0.2);
     }
+    // Rien d'autre ici : une Attaque ciblée ne fait entendre que sa flèche. Le
+    // repli `block_impact` qui suivait un raté était de l'acier — le joueur y
+    // entendait l'épée qu'il n'avait pas demandée (`rpgAttackAudio.js`).
     // La ligne de charge se trace avant le bond : cible désignée (coup
     // rapide), premier bloqueur, ou la plaque du sorcier en attaque directe.
     const ciblesChargeJoueur = Object.fromEntries(attaquantsVivants.map((id) => [
@@ -11936,9 +11965,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       const reponse = rpgSorcierMagieRapide(duel, rng);
       if (reponse) {
         const carte = cardById(reponse.carteId);
-        jouerSfx(reponse.renvoiMain
+        const sonReponse = reponse.renvoiMain
           ? 'creature_return'
-          : rpgFoudreSoundFor(carte, 'spell') ?? rpgWaterSoundFor(carte, 'spell') ?? rpgFireSoundFor(carte, 'spell') ?? 'magie');
+          : sonSortAuLancement(carte);
+        if (sonReponse) jouerSfx(sonReponse);
         annoncerMagieSorcier(carte, describeAnnouncedMagicTarget(
           carte, reponse.cibleId ?? null, duel, sorcierArtId, portraitSorcierAdverse,
         ));
@@ -12110,9 +12140,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok) {
       const sonEffetBraise = res.renvoiMain
         ? 'creature_return'
-        : rpgFoudreSoundFor(carteAnnoncee, 'spell')
-          ?? rpgWaterSoundFor(carteAnnoncee, 'spell')
-          ?? rpgFireSoundFor(carteAnnoncee, 'spell')
+        : sonSortAuLancement(carteAnnoncee)
           ?? rpgFoudreSoundFor(carteAnnoncee, 'arrival')
           ?? rpgFireSoundFor(carteAnnoncee, 'arrival');
       if (sonEffetBraise) jouerSfx(sonEffetBraise);
@@ -13017,7 +13045,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       canTarget={Boolean(idsCiblesBoualem.has(entite.id)
                         || (sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
-                          && entite.id !== duel.arriveeEnAttente?.entiteId
+                          // La créature qui vient d'arriver n'est jamais sa
+                          // propre cible, sauf quand l'arrivée l'autorise
+                          // (`cibleSoi`, le bouclier du Guerrier).
+                          && (entite.id !== duel.arriveeEnAttente?.entiteId
+                            || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && !rpgEstProtegee(entite, cardColors(carteCiblee))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
                           && cibleRespecteCoutMax(carteCiblee, entite))

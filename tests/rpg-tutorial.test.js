@@ -10,6 +10,7 @@ import {
   rpgNouveauDuel,
   rpgOuvrirFenetreReponse,
   rpgPeutMulligan,
+  rpgResoudreArriveeCiblee,
   rpgSorcierResoudreAnnonce,
 } from '../src/games/rpgDuel.js';
 import { RPG_DECKS_ARCHETYPES, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
@@ -187,8 +188,12 @@ test('la leçon Neige appelle un Viking, bloque un sort et active deux Furies', 
   assert.ok(tutoriel.steps.some((etape) => etape.id === 'appel-viking'),
     'la leçon nomme la nouvelle arrivée de la Valkyrie');
   const duel = duelDeLecon(tutoriel);
-  const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond');
+  // Le Guerrier ne choisit plus tout seul : la table désigne le porteur du
+  // bouclier — lui-même, ou une autre créature alliée.
+  const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
   assert.equal(guerrier.ok, true);
+  assert.equal(guerrier.arriveeEnAttente, true, 'le Guerrier attend qu’on désigne le porteur du bouclier');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', guerrier.entite.id).ok, true);
   assert.equal(guerrier.entite.bouclier, 1, 'le Guerrier arrive avec une parade');
   const mainAvantValkyrie = duel.joueur.main.length;
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-au-corbeau');

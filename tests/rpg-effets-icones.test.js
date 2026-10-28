@@ -191,11 +191,19 @@ test('Tenacité et Bouclier ne se grisent qu’une fois dépensés sur la table'
     bouclierEpuise: true,
   }), ['bouclier'], 'le bouclier de lumière touché est épuisé');
 
+  // Une parade prêtée (Parade de verre, Hache de la banquise) ne s'imprime pas
+  // sur la fiche : c'est `bouclierEpuise` qui garde la trace de sa chute, pour
+  // que son icône violette reste affichée en gris au lieu de s'évaporer.
   assert.deepEqual(effetsEpuisesPourEntite(cardById('chien-du-guet'), {
     bouclier: 0,
     bouclierLumiere: false,
     bouclierEpuise: true,
-  }), [], 'une carte sans Bouclier imprimé n’a aucun texte de Bouclier à griser');
+  }), ['bouclier'], 'une parade prêtée laisse son Bouclier grisé une fois tombée');
+  assert.deepEqual(effetsEpuisesPourEntite(cardById('chien-du-guet'), {
+    bouclier: 0,
+    bouclierLumiere: false,
+    bouclierEpuise: false,
+  }), [], 'une créature qui n’a jamais rien bloqué ne porte aucune grisaille');
   assert.deepEqual(effetsEpuisesPourEntite(maitre, null), [],
     'sans entité — main, catalogue — rien n’est jamais épuisé');
 });

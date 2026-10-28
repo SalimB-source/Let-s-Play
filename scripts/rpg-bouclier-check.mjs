@@ -92,7 +92,8 @@ const apercuDom = (html) => {
     assert.ok(racine.classList.contains('has-bouclier'), 'le Guerrier nomme son bouclier');
     assert.equal(racine.getAttribute('data-bouclier'), '1', 'la carte expose le point encore en place');
     assert.equal(racine.getAttribute('data-effets-epuises'), null, 'un bouclier debout n’est pas épuisé');
-    assert.match(racine.getAttribute('aria-label') ?? '', /bouclier 1/i, 'la description lue nomme le bouclier de 1');
+    assert.match(racine.getAttribute('aria-label') ?? '', /bouclier : bloque le prochain sort adverse/i,
+      'la description lue nomme le bouclier debout et ce qu’il fait');
     const egide = racine.querySelector('.rpg-bouclier-egide');
     assert.ok(egide, 'l’égide animée cerne la créature protégée');
     assert.equal(egide.getAttribute('data-bouclier'), '1', 'le calque porte la valeur encore debout');
@@ -204,6 +205,36 @@ const apercuDom = (html) => {
   }
 }
 
+// ── 2 bis. Une parade prêtée : l'icône reste, grisée, une fois tombée ──────
+{
+  const { dom, racine } = carteDom(rendu.paradePretee);
+  try {
+    const badge = racine.querySelector('.rpg-card-icone[data-effet="bouclier"]');
+    assert.ok(badge, 'la Parade de verre en place affiche son icône Bouclier');
+    assert.equal(badge.classList.contains('is-epuisee'), false, 'et en pleine couleur');
+    assert.equal(racine.getAttribute('data-effets-epuises'), null, 'rien n’est encore dépensé');
+  } finally {
+    dom.window.close();
+  }
+}
+
+{
+  const { dom, racine } = carteDom(rendu.paradePreteeTombe);
+  try {
+    assert.equal(racine.querySelector('.rpg-bouclier-egide'), null, 'l’égide est tombée avec la parade');
+    assert.equal(racine.getAttribute('data-effets-epuises'), 'bouclier',
+      'la fiche transmet la parade tombée aux aperçus');
+    const badge = racine.querySelector('.rpg-card-icone[data-effet="bouclier"]');
+    assert.ok(badge, 'l’icône Bouclier prêtée reste sur la face');
+    assert.ok(badge.classList.contains('is-epuisee'), 'mais grisée, puisque la parade est tombée');
+    assert.equal(badge.getAttribute('data-effet-epuise'), 'true');
+    assert.match(racine.getAttribute('aria-label') ?? '', /bouclier tombé/i,
+      'la description lue dit le bouclier tombé');
+  } finally {
+    dom.window.close();
+  }
+}
+
 // ── 3. Les aperçus : icône et texte entiers se grisent une fois dépensés ───
 {
   const { dom, racine } = apercuDom(apercus.guerrierActif);
@@ -225,8 +256,8 @@ const apercuDom = (html) => {
     const pastille = racine.querySelector('.rpg-pastille[data-pastille="bouclier"]');
     assert.ok(pastille, 'la pastille Bouclier est rendue');
     assert.ok(pastille.classList.contains('is-epuisee'), 'icône et mot du Bouclier sont grisés');
-    assert.equal(pastille.textContent, 'Bouclier 1',
-      'le mot seul reste écrit : l’aperçu n’écrit plus d’explication sous le mot-clé');
+    assert.equal(pastille.textContent, 'Bouclier',
+      'le mot seul reste écrit, sans chiffre : une parade ne se compte pas');
     assert.match(pastille.getAttribute('aria-label') ?? '', /tombé/,
       'la pastille grise annonce elle aussi son état « tombé » aux lecteurs d’écran');
     // Le Guerrier a perdu sa Furie dans sa révision : plus aucune autre
@@ -235,8 +266,8 @@ const apercuDom = (html) => {
       'seul le Bouclier est grisé');
     // La description du Guerrier reste écrite : la phrase du bouclier est ce
     // que la carte fait (l'état « tombé » grise la pastille et le libellé).
-    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui le cible est bloqué/,
-      'l’aperçu écrit la nouvelle règle du Guerrier : un sort adverse bloqué');
+    assert.match(racine.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier/,
+      'l’aperçu écrit la règle du Guerrier : le bouclier se donne, à un allié ou à lui-même');
   } finally {
     dom.window.close();
   }
@@ -306,7 +337,7 @@ assert.match(moteur, /function briserBouclier\(entite\) \{[\s\S]*?entite\.boucli
   'le bouclier tombe en entier et marque sa chute');
 assert.match(moteur, /function bouclierQuiBloque\(duel, cote, cibleId\) \{[\s\S]*?duel\[autre\(cote\)\]\.creatures/,
   'seul un sort adverse qui désigne la créature rencontre la parade');
-assert.match(moteur, /const bouclierBloquant = sortViseUneZone\(carte\) \? null : bouclierQuiBloque\(duel, cote, cibleId\);[\s\S]*?const montant = briserBouclier\(bouclierBloquant\);[\s\S]*?bouclierBloque: true,/,
+assert.match(moteur, /const bouclierBloquant = rpgSortViseUneZone\(carte\) \? null : bouclierQuiBloque\(duel, cote, cibleId\);[\s\S]*?const montant = briserBouclier\(bouclierBloquant\);[\s\S]*?bouclierBloque: true,/,
   'le lancement du sort bloqué consomme la parade et le dit au résultat');
 assert.match(moteur, /const CIBLES_SORT_ZONE = new Set\(\[[\s\S]*?'toutes-creatures'/,
   'les portées de zone restent nommées, pour distinguer les vagues des sorts ciblants');
@@ -360,7 +391,7 @@ assert.match(css, /\.rpg-bouclier-egide,\s*\.rpg-bouclier-impact \{[\s\S]*?point
   'l’égide et son impact sont des calques non interactifs');
 assert.match(css, /\.rpg-bouclier-egide \{[\s\S]*?z-index: 2;[\s\S]*?animation: rpg-bouclier-entre/,
   'l’égide entre en se formant, sous les repères venus après elle');
-assert.match(css, /--rpg-bouclier-teinte: 142, 224, 255;/, 'le bouclier ordinaire est glacé');
+assert.match(css, /--rpg-bouclier-teinte: 186, 132, 255;/, 'le bouclier ordinaire est glacé');
 assert.match(css, /\.rpg-bouclier-egide--lumiere,[\s\S]*?--rpg-bouclier-teinte: 255, 222, 130;/,
   'le bouclier de lumière passe à l’or pâle');
 assert.doesNotMatch(css, /\.rpg-bouclier-egide__anneau|rpg-bouclier-orbite|conic-gradient\(from 0deg,\s*transparent 0 63%/,

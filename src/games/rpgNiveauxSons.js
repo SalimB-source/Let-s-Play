@@ -2,12 +2,12 @@
  * Le niveau d'écoute commun des sons du Sablier.
  * ---------------------------------------------
  *
- * Les échantillons du duel viennent de sources très différentes : une carte
- * posée enregistrée très bas (`card_place`, -37 LUFS), un coup d'épée saturé
- * (`player_attack_hit`, -6 LUFS), un cri viking, la voix d'une carte… À volume
- * d'élément égal, l'écart entendu allait de un à trente-deux décibels : la pose
- * d'une carte était inaudible, le coup d'épée assourdissant, et deux voix
- * d'arrivée sur trois passaient sous les bruitages de table.
+ * Les échantillons du duel viennent de sources très différentes : une pioche
+ * enregistrée très bas (`card_draw`, -32 LUFS avant normalisation), un coup
+ * d'épée saturé (`player_attack_hit`, -6 LUFS), un cri viking, la voix d'une
+ * carte… À volume d'élément égal, l'écart entendu allait de un à trente-deux
+ * décibels : la pioche était inaudible, le coup d'épée assourdissant, et deux
+ * voix d'arrivée sur trois passaient sous les bruitages de table.
  *
  * Ce module ramène **tous** ces fichiers au même niveau d'écoute :
  * `RPG_NIVEAU_CIBLE_LUFS` (-20 LUFS), mesuré selon ITU-R BS.1770 — la mesure
@@ -29,22 +29,23 @@
  *
  * Deux gestes, dans cet ordre :
  *
- *  1. **les fichiers trop pointus sont remontés dans le fichier.** La pose de
- *     carte demandait +17 dB alors que sa crête ne laissait que 10 dB de marge :
- *     aucun gain de lecture ne pouvait la rendre audible sans saturer.
+ *  1. **les fichiers trop pointus sont remontés dans le fichier.** La pioche
+ *     demandait +12 dB alors que sa crête ne laissait pas la marge : aucun gain
+ *     de lecture ne pouvait la rendre audible sans saturer.
  *     `tools/mesure-sons-sablier.py --egaliser` réécrit ces WAV (gain + limiteur
- *     à pré-lecture, crête à -1 dBFS) — trois fichiers : `card-place.wav`,
- *     `card-draw.wav` et la voix du Tengu. Les MP3 fournis, eux, ne sont pas
- *     réécrits ;
+ *     à pré-lecture, crête à -1 dBFS) — `card-draw.wav` et la voix du Tengu.
+ *     Les MP3 fournis, eux, ne sont pas réécrits ;
  *  2. **le gain de lecture** ramène le reste, borné par ce que la crête permet
  *     (`RPG_PLAFOND_CRETE_DBFS`) : les deux voix MP3 sans marge — « Celle qui
  *     pèse » et « Le Maître des hiéroglyphes » — restent ainsi 4,1 dB et 1,4 dB
  *     sous le niveau commun. Tout le reste tombe pile dessus.
  *
- * Le survol de l'interface (`hover`) garde son murmure : c'est le seul son
- * encore synthétisé, il se déclenche à chaque carte effleurée et reste
- * volontairement très en dessous du niveau commun — un son d'événement, lui,
- * se remarque. Les musiques ont leur propre chaîne et leur propre réglage.
+ * Le survol de l'interface (`hover`) garde son murmure : son fichier est joué à
+ * 0,05 du niveau commun (`DOSE_SURVOL`, dans `rpgAudio.js`), 17,4 dB sous les
+ * bruitages, parce qu'il se déclenche à chaque carte effleurée — le balayage
+ * d'une main de cartes en fait une nappe, alors qu'un son d'événement se
+ * remarque.
+ * Les musiques ont leur propre chaîne et leur propre réglage.
  */
 
 /** Le niveau d'écoute commun : -20 LUFS, la sonie d'un bruitage de table. */
@@ -87,12 +88,10 @@ export function gainDepuisMesure(mesure, cible = RPG_NIVEAU_CIBLE_LUFS, plafond 
  * sur le fichier livré dans `src/games/assets/`.
  */
 export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
-  card_place: [-21.52, -1.0],
   card_draw: [-20.16, -1.0],
   attackers_confirm: [-13.43, -2.73],
   player_attack_hit: [-5.95, 0.0],
   flame_gust: [-16.65, -0.15],
-  water_wave: [-20.9, -6.05],
   card_countered: [-16.85, -2.16],
   creature_return: [-18.86, -1.0],
   block_impact: [-17.01, 0.03],

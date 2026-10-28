@@ -148,23 +148,30 @@ quelque chose que l'interface ne dit pas est un effet de trop.
   mixé différemment. Après dix heures de jeu, le joueur doit le reconnaître
   avant de le voir.
 
-### 5.1 Signature sonore procédurale
+### 5.1 Une signature faite de fichiers
 
-`src/games/rpgAudio.js` garde cette promesse sans asset ni chargement réseau,
-avec une palette modernisée : transitoires filtrés, glissés de hauteur, couches
-sinusoïdales/triangulaires et bruit filtré plutôt que des bips carrés. Les
-événements ont des timbres et des espaces stéréo distincts ; une courte
-réverbération procédurale relie les cartes au plateau, et un limiteur évite les
-pics lorsque les impacts se superposent. La **cloche à partiels** (fondamental
-+ deux harmoniques) garde exactement sa signature pour l'Astrolabe.
+`src/games/rpgAudio.js` ne synthétise plus rien : **chaque son du duel est un
+fichier livré avec le jeu**, dans `src/games/assets/` ou `public/` — pose de
+carte, pioche, confirmation d'attaque, frappes, souffle du feu, vagues, contres,
+renvois, chocs, pages, victoire viking, fanfare de défaite, blessures, voix
+d'arrivée des créatures, et jusqu'au froissement du survol.
 
-Chaque événement du jeu a sa séquence : apparition d'une vague (arpège
-montant), victoire (fanfare), défaite (descente), frappe, soin, zone, souffle,
-heure dépensée en exploration. La couche « qui joue quoi » est pure et testée
-(`tests/rpg-audio.test.js`) ; le lecteur WebAudio ne s'éveille qu'au premier
-geste joueur (politique autoplay des navigateurs), se libère à la fermeture de
-la page, reste muet si l'audio manque, et le bouton du son dans l'en-tête
-mémorise le choix pour la musique comme pour les bruitages.
+- **Le catalogue** (`rpgSfx`, `RPG_SFX_NAMES`) décrit un événement `sample` par
+  nom jouable ; un nom absent se joue **en silence**, sans repli synthétique.
+- **Le niveau** vient de la mesure, pas d'un réglage : chaque fichier est mesuré
+  en LUFS (`tools/mesure-sons-sablier.py`) et ramené à -20 LUFS, borné par sa
+  crête (`src/games/rpgNiveauxSons.js`).
+- **Le survol** est un extrait de 80 ms du vrai enregistrement de carte
+  (`hover.wav`, découpé par `tools/make-son-survol.py`), joué à 0,05 : son
+  fichier mesure -11,4 LUFS, il joue donc vers -37,4 LUFS, 17,4 dB sous les
+  bruitages de table — un froissement qu'on distingue à peine, jamais un
+  événement sonore.
+
+La couche « qui joue quoi » est pure et testée (`tests/rpg-audio.test.js`) ; le
+lecteur WebAudio ne s'éveille qu'au premier geste joueur (politique autoplay des
+navigateurs), se libère à la fermeture de la page, reste muet si l'audio manque,
+et le bouton du son dans l'en-tête mémorise le choix pour la musique comme pour
+les bruitages.
 
 ## 6. Accessibilité
 

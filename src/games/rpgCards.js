@@ -672,8 +672,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Quand il arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
+    text: 'Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {

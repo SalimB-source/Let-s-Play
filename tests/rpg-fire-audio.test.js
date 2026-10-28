@@ -33,9 +33,10 @@ test('seules les arrivées qui blessent jouent le souffle', () => {
   // Une arrivée qui frappe : le souffle est à sa place.
   assert.equal(rpgFireSoundFor('braisier-du-souk', 'arrival'), RPG_FIRE_SFX);
   assert.equal(rpgFireSoundFor('lionne-du-midi-ardent', 'arrival'), RPG_FIRE_SFX);
-  // Une arrivée qui ne blesse rien reste sur `card_place` : le Daimyō lève ses
-  // Samouraïs, le Sahir pioche, l’Ifrit attend son tour. Ifrit al-Ahmar a perdu
-  // sa vague de dégâts pour Attaque ciblée : son arrivée est désormais silencieuse.
+  // Une arrivée qui ne blesse rien reste muette (le bruit de pose de carte a
+  // été retiré) : le Daimyō lève ses Samouraïs, le Sahir pioche, l’Ifrit attend
+  // son tour. Ifrit al-Ahmar a perdu sa vague de dégâts pour Attaque ciblée :
+  // son arrivée est silencieuse.
   assert.equal(rpgFireSoundFor('ifrit-al-ahmar', 'arrival'), null,
     'sa révision retire l’arrivée qui frappait toute la table');
   assert.equal(rpgFireSoundFor('daimyo-du-soleil-rouge', 'arrival'), null,

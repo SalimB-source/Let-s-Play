@@ -730,7 +730,10 @@ test('la Furie du Nord : +X/+0 sous la DEF de base, éteinte par le soin et rall
   // Le Guerrier au bouclier rond a perdu sa Furie dans sa révision : c’est
   // un 2/2 dont la parade bloque un sort adverse sans absorber de dégâts.
   donner(duel, 'joueur', 'guerrier-au-bouclier-rond');
-  const guerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond').entite;
+  // Le bouclier d'arrivée se désigne : le Guerrier le garde pour lui.
+  const poseGuerrier = rpgJouerCreature(duel, 'joueur', 'guerrier-au-bouclier-rond', null, { cibleDifferee: true });
+  rpgResoudreArriveeCiblee(duel, 'joueur', poseGuerrier.entite.id);
+  const guerrier = poseGuerrier.entite;
   assert.deepEqual([guerrier.atk, guerrier.def, guerrier.bouclier], [2, 2, 1]);
   assert.equal(guerrier.furie, undefined, 'plus aucune Furie imprimée');
   assert.equal(rpgBlesserCreature(duel, 'joueur', guerrier.id, 1, 'braise').recus, 1,
