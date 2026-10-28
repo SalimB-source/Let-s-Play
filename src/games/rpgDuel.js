@@ -5940,6 +5940,7 @@ export function rpgChoisirAttaquants(duel, cote = 'sorcier', options = {}) {
  */
 function declencherArmesAttaquants(duel, cote, bilans) {
   let declenche = false;
+  const adv = autre(cote);
   for (const bilan of bilans) {
     const carte = bilan.armeId ? armeById(bilan.armeId) : null;
     if (!carte) continue;
@@ -5949,11 +5950,39 @@ function declencherArmesAttaquants(duel, cote, bilans) {
     if (carte.porteurBlesseCreature && bilan.creature > 0) effets.push(carte.porteurBlesseCreature);
     if (carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
     for (const effet of effets) {
-      // Aucune cible : ces déclencheurs ne désignent rien, Boualem ne peut
-      // donc pas les contrer (même règle que les arrivées qui créent des
-      // jetons).
-      appliquer(duel, cote, effet, null, bilan.id, cardColors(carte), null, carte.id);
-      declenche = true;
+      // Retour-main avec chance sur chaque créature blessée (Steel Ball :
+      // 25 % par créature touchée par le porteur). Les cibles sont des
+      // entites capturées avant que les dégâts de combat ne les retire
+      // éventuellement du battlefield : une créature tuée par ce même combat
+      // peut encore être renvoyée en main au lieu d'aller au cimetière.
+      if (effet.type === 'retour-main' && effet.chance) {
+        const cibles = bilan.cibles ?? [];
+        let declencheUn = false;
+        for (const cible of cibles) {
+          const rng = hasardParDuel.get(duel) ?? Math.random;
+          const jet = rng();
+          if (jet >= effet.chance) continue;
+          // Chercher la cible sur le battlefield adverse
+          let cibleVivante = duel[adv].creatures.find((entite) => entite.id === cible.id);
+          if (cibleVivante) {
+            renvoyerEnMain(duel, adv, cibleVivante, cardColors(carte), null);
+            declencheUn = true;
+            continue;
+          }
+          // Déjà tuée par le combat : la sortir du cimetière pour la remettre en main.
+          const carteIndex = duel[adv].cimetiere.indexOf(cible.carteId);
+          if (carteIndex >= 0) {
+            duel[adv].cimetiere.splice(carteIndex, 1);
+            duel[adv].main.push(cible.carteId);
+            duel.log.push(`${cible.name} revient dans la main de son propriétaire (Steel Ball).`);
+            declencheUn = true;
+          }
+        }
+        if (declencheUn) declenche = true;
+      } else {
+        appliquer(duel, cote, effet, null, bilan.id, cardColors(carte), null, carte.id);
+        declenche = true;
+      }
     }
   }
   if (!declenche) return;
@@ -6469,6 +6498,17 @@ export function rpgLancerAttaque(
   const coupsNormaux = degatsCombat
     .filter((coup) => duel[coup.coteSource].creatures.some((entite) => entite.id === coup.sourceId))
     .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, sourceCote: coteSource, sourceId }));
+  // Capturer les cibles des armes avant que les morts ne soient retirées du battlefield
+  // par `appliquerDegatsDeCombatSimultanes`.
+  const ciblesParAttaquant = new Map();
+  for (const coup of coupsNormaux) {
+    if (coup.sourceCote !== cote || coup.cote !== adv || !coup.entiteId) continue;
+    const cible = duel[adv].creatures.find((entite) => entite.id === coup.entiteId);
+    if (!cible) continue;
+    const liste = ciblesParAttaquant.get(coup.sourceId) ?? [];
+    if (!liste.some((c) => c.id === cible.id)) liste.push(cible);
+    ciblesParAttaquant.set(coup.sourceId, liste);
+  }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
   // Contre-attaque : une attaque esquivée pendant l'échange est rendue à son
   // auteur, une seule fois par défenseur, après les blessures simultanées.
@@ -6528,6 +6568,7 @@ export function rpgLancerAttaque(
     armeId,
     creature: blessuresCreatures.get(id) ?? 0,
     sorcier: blessuresSorcier.get(id) ?? 0,
+    cibles: ciblesParAttaquant.get(id) ?? [],
   })));
   // Butin : les créatures du Sable qui ont touché le sorcier piochent puis
   // défaussent — même bilan, même fenêtre que les armes. Tribut : même

@@ -2118,6 +2118,22 @@ export const RPG_ARME_CARDS = [
     text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
+  {
+    id: 'steel-ball',
+    name: 'steel ball',
+    element: 'sable',
+    kind: 'arme',
+    typeLine: 'Arme — Boule d\'acier',
+    cost: 3,
+    rarity: 'rare',
+    bonus: { atk: 1, def: 0 },
+    // Quand le porteur blesse une créature au combat : 25 % de chances de la
+    // renvoyer dans la main de son propriétaire (référence JoJo). Le moteur
+    // gère `chance` et `cibles` dans `declencherArmesAttaquants`.
+    porteurBlesseCreature: { type: 'retour-main', cible: 'creature', chance: 0.25 },
+    text: 'Arme — Le porteur gagne +1/+0. Quand le porteur inflige des blessures de combat à une créature : 25 % de chances de la renvoyer dans la main de son propriétaire.',
+    flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
+  },
 ];
 
 export function armeById(id) {

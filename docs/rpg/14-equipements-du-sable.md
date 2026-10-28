@@ -1,6 +1,6 @@
 # 14 — Le lot d'équipements du Sable
 
-**Dix cartes Arme** pour l'élément **Sable**, dessinées dans l'esprit des
+**Onze cartes Arme** pour l'élément **Sable**, dessinées dans l'esprit des
 *Equipment* de Magic the Gathering et traduites dans la grammaire du Sablier.
 
 **État : lot codé.** Les dix fiches vivent dans `RPG_ARME_CARDS`
@@ -56,6 +56,7 @@ meilleures raisons d'attaquer.
 | 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
 | 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Attaque ciblée + deux déclencheurs de combat |
+| 11 | Steel ball | rare | 3 | +1/+0 | Blessure au combat → 25 % renvoi en main (JoJo) |
 
 ---
 
@@ -343,3 +344,20 @@ qui se joue la table vide sans rien désigner.
 - **Pas de bonus négatif ailleurs que sur le Licou** : un +X/−Y gratuit sur
   plusieurs cartes rendrait le Sable trop punitif pour ses propres créatures,
   qui sont justement petites et nombreuses.
+
+### 11. Steel ball — rare — 3
+
+> **Arme — Boule d'acier.** Le porteur gagne +1/+0. Quand le porteur inflige
+> des blessures de combat à une créature : 25 % de chances de la renvoyer
+> dans la main de son propriétaire.
+>
+> *« Une boule d'acier verte qui tourne rapidement sur elle-même dans le creux d'une main. »*
+
+`bonus: { atk: 1, def: 0 }` et `porteurBlesseCreature: { type: 'retour-main', cible: 'creature', chance: 0.25 }`.
+
+Le moteur gère le tirage des 25 % via le hasard du duel (`hasardParDuel`) et
+passe l'identifiant de la créature blessée comme cible du `retour-main`. Une
+créature protégée contre la couleur Sable échappe au renvoi.
+
+Référence ouverte à *JoJo's Bizarre Adventure* : la Steel Ball de Gyro
+Zepelli, lanceuse d'acier qui fait revenir ses cibles.
