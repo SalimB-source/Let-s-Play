@@ -16,6 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { RPG_ARROW_SFX, RPG_SFX_NAMES, RpgAudioPlayer, rpgSfx } from '../src/games/rpgAudio.js';
+import { gainEchantillon } from '../src/games/rpgNiveauxSons.js';
 import {
   RPG_MELEE_SFX,
   rpgFrappesCibleesReussies,
@@ -165,7 +166,9 @@ test('RpgAudioPlayer route « fleche » vers arrow-shot.wav', () => {
     player.play(RPG_ARROW_SFX);
     assert.equal(lectures.length, 1);
     assert.ok(lectures[0].src.endsWith('arrow-shot.wav'), lectures[0].src);
-    assert.equal(lectures[0].volume, 0.6);
+    // Le volume n'est plus une constante réglée à la main : c'est la mesure du
+    // fichier (-16,4 LUFS) qui le ramène au niveau commun des sons du jeu.
+    assert.ok(Math.abs(lectures[0].volume - gainEchantillon(RPG_ARROW_SFX)) < 1e-9);
     player.destroy();
     assert.equal(player.arrowShotAudio, null, 'le démontage libère l’échantillon');
   } finally {

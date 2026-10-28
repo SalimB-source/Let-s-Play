@@ -106,12 +106,9 @@ decks de la tour et se révèlent en montant.
   pour les quatre étages et pour le plateau quand le profil le choisit. Le
   relais de conquête 60/40 s'applique comme aux autres plateaux : face à une
   table sans piste, c'est le Cercle qui fournit la musique.
-- **Ambiance de tour** (`rpgAmbientMusic.js`) : « La neige tombe dans le noir »,
-  68 BPM — bourdon du Nord, froissements d'ailes, croassement mat une mesure
-  sur deux, grains de givre, et une complainte de quatre notes qui tourne puis
-  se tait. Elle reste l'identité sonore de la tour et s'écoute dans la salle
-  d'écoute ; en duel, elle s'efface devant la piste du plateau pour ne pas
-  jouer deux musiques à la fois.
+- **Aucune ambiance de tour** : `rpgAmbientMusic.js` a été supprimé. Le Cercle
+  des corbeaux porte seul le son de ses quatre étages — c'est la piste du
+  plateau, et rien d'autre, qui joue pendant les duels.
 - **Récompenses** : le barème commun des tours libres (50 ◈ par étage, 200 ◈
   pour la tour), aucune carte exclusive. L'enjeu est le set lui-même et le
   retournement de sa figure.
@@ -128,9 +125,7 @@ decks de la tour et se révèlent en montant.
 | `src/games/rpgPlateaux.js` | Le Cercle des corbeaux et la correspondance des quatre decks |
 | `src/games/rpgPlateauMusic.js` | la piste MP3 du Cercle des corbeaux |
 | `src/games/rpgStoryTowerModels.js` | la maquette 3D et son thème |
-| `src/games/rpgAmbientMusic.js` | l'ambiance de la tour |
 | `public/raspberrymusic - A Vikings.mp3` | la piste viking du plateau |
-| `tests/rpg-ambient-music.test.js` | le branchement de la piste et le fichier livré |
 | `src/games/rpgCardArt.js` | la révision de cache `corbeau-neuf-nuits-v1` et celles des deux faces de Furie |
 | `public/cards/*.jpg` | les six peintures plein art 1024×1280, plus les deux faces de Furie `berserk-du-crepuscule-furie.jpg` et `valkyrie-des-neuf-nuits-furie.jpg` (révisions `corbeau-furie-crepuscule-v1` / `corbeau-furie-neuf-nuits-v1`) |
 | `tests/rpg-corbeau.test.js` | le set, la tour, les révélations et les règles en jeu |

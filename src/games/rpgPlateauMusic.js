@@ -4,7 +4,9 @@
  * - Hors parties (menus, atelier de decks, souk, catalogue, récit, paramètres…) :
  *   `Desert Solitude with Percussion.mp3` tourne en boucle comme thème principal.
  * - En partie (`ecran === 'partie'`) : le thème principal s'efface au profit de la
- *   piste du plateau du duel (ou de la boucle d'ambiance synthétisée de la tour).
+ *   piste du plateau du duel. **Tout plateau a son morceau** : le son du duel
+ *   vient de la table, jamais d'une ambiance de tour — il n'existe plus de
+ *   boucle synthétisée par tour pour doubler ou remplacer la piste du plateau.
  */
 
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
@@ -54,9 +56,13 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // le nom contient des espaces.
   'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
   'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
-  // Le Palais du Pharaon et le Sablier renversé restent sans piste dédiée :
-  // en Histoire, la boucle d'ambiance de la tour prend le relais
-  // (`RpgAmbientMusic`) quand aucun des deux camps n'a de musique.
+  // Le Palais du Pharaon : la même Égypte que la Nécropole des dalles, la
+  // salle du trône des Juges. Aucune piste dédiée n'avait été livrée : le
+  // morceau du plateau voisin fait le pont plutôt qu'un silence.
+  'palais-du-pharaon': `${RPG_PUBLIC_BASE}Egypt.mp3`,
+  // Le Sablier renversé, table des Veilleurs absolus et du dernier duel :
+  // le thème principal revient là où tout se retourne.
+  'sablier-renverse': RPG_MAIN_THEME_FILE,
 });
 export const RPG_PLATEAUX_MUSICAUX = Object.freeze(new Set(Object.keys(RPG_PLATEAU_MUSIC_FILES)));
 

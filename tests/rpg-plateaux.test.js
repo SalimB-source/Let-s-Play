@@ -21,6 +21,7 @@ import {
   vignettePlateauRelative,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_DECKS_ARCHETYPES } from '../src/games/rpgCards.js';
+import { RPG_PLATEAU_MUSIC_FILES, RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { RPG_STORY_DECKS, RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 
 
@@ -488,7 +489,12 @@ test('un deck joueur illisible ne cède pas le terrain au deck adverse si son ca
 
 test('la page découpe la table : chaque camp reçoit le plateau de son deck', () => {
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-  assert.match(page, /const modeLibre = !modeTutoriel && !etageCourant;/);
+  // La musique part du geste qui lance la partie (autoplay), et c'est la piste
+  // du plateau qui joue : plus d'ambiance de tour pour prendre le relais.
+  assert.match(page, /musiquePlateau\?\.setPlateau\(plateau\.id, \{ reroll: true \}\)/,
+    'la piste de la table est choisie au lancement du duel');
+  assert.match(page, /if \(sonActif && RPG_PLATEAUX_MUSICAUX\.has\(plateau\.id\)\) \{\n      void musiquePlateau\?\.start\(\);/,
+    'toute table musicale lance sa piste, duel du récit comme duel libre');
   assert.match(page, /const resolutionPlateaux = resoudrePlateauxDuDuel\(\{/,
     'la page résout un plateau par camp au lancement de la partie');
   assert.match(page, /const plateau = resolutionPlateaux\.joueur\.plateau;/,
@@ -848,4 +854,21 @@ test('la Tour du Sablier renversé a son plateau : la chambre de verre du sablie
   assert.ok(existsSync(new URL('../public/profil/plateaux/sablier-renverse.webp', import.meta.url)),
     'la vignette du sablier est livrée dans public/profil/plateaux/');
   assert.equal(vignettePlateauRelative(sablier), 'profil/plateaux/sablier-renverse.webp');
+});
+
+test('chaque table du jeu a son morceau de musique, et le fichier est livré', () => {
+  // La musique d'un duel vient du plateau : aucune table ne se joue en silence,
+  // et chaque piste déclarée existe vraiment dans `public/`.
+  const muettes = RPG_PLATEAUX.map((plateau) => plateau.id)
+    .filter((id) => !RPG_PLATEAUX_MUSICAUX.has(id));
+  assert.deepEqual(muettes, [], 'aucun plateau n’est sans musique');
+  for (const [id, pistes] of Object.entries(RPG_PLATEAU_MUSIC_FILES)) {
+    const fichiers = Array.isArray(pistes) ? pistes : [pistes];
+    assert.ok(fichiers.length > 0, `${id} : au moins une piste`);
+    for (const fichier of fichiers) {
+      const nom = decodeURIComponent(String(fichier).replace(/^\//, ''));
+      assert.ok(existsSync(new URL(`../public/${nom}`, import.meta.url)),
+        `${id} : la piste ${nom} est livrée dans public/`);
+    }
+  }
 });

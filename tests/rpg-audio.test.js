@@ -247,7 +247,8 @@ test('le lecteur construit la chaîne moderne, joue le survol et respecte le mut
   const context = player.ctx;
 
   assert.ok(context instanceof FakeAudioContext, 'un contexte audio est créé après le geste');
-  assert.equal(context.counters.compressors, 1, 'les crêtes passent par un limiteur');
+  assert.equal(context.counters.compressors, 2,
+    'deux limiteurs : la chaîne des synthèses et le bus des échantillons');
   assert.equal(context.counters.convolvers, 1, 'la réverbération est procédurale');
   assert.equal(player.master.gain.value, 0.0001, 'le choix muet posé avant le déverrouillage est conservé');
 

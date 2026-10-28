@@ -9,6 +9,12 @@
  * l'effleurement de survol de l'interface : tout le reste du catalogue
  * synthétique a été retiré, et les noms inconnus de `rpgSfx` restent muets.
  *
+ * Tous ces fichiers sont joués **au même niveau d'écoute** : chaque échantillon
+ * est mesuré (LUFS, ITU-R BS.1770) et son gain en découle — voir
+ * `rpgNiveauxSons.js`, engendré par `tools/mesure-sons-sablier.py`. Le lecteur
+ * applique ce gain par un nœud WebAudio, dans un bus commun qui finit sur un
+ * limiteur ; sans routage des médias, il retombe sur le volume de l'élément.
+ *
  * Deux couches :
  *  - `hz()` et `rpgSfx()` décrivent des événements purs, faciles à tester ;
  *  - `RpgAudioPlayer` ne s'éveille qu'après un geste joueur, ménage les pics
@@ -16,6 +22,7 @@
  */
 
 import { RPG_DWARF_DIALOGUE_SFX } from './rpgDwarfAudio.js';
+import { gainEchantillon, gainVoixArrivee } from './rpgNiveauxSons.js';
 
 /** Tonnerre partagé par l'Éclair du marteau et l'arrivée du Maître. */
 export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';
@@ -31,61 +38,73 @@ export function clampRpgVolume(value) {
   if (!Number.isFinite(num)) return 1;
   return Math.max(0, Math.min(1, num));
 }
-const CARD_PLACE_SAMPLE_URL = new URL('./assets/card-place.wav', import.meta.url);
-const CARD_DRAW_SAMPLE_URL = new URL('./assets/card-draw.wav', import.meta.url);
-const ATTACKERS_CONFIRM_SAMPLE_URL = new URL('./assets/attackers-confirm.mp3', import.meta.url);
-const PLAYER_ATTACK_HIT_SAMPLE_URL = new URL('./assets/player-attack-hit.wav', import.meta.url);
-const FLAME_GUST_SAMPLE_URL = new URL('./assets/flame-gust.wav', import.meta.url);
-const WATER_WAVE_SAMPLE_URL = new URL('./assets/water-wave.wav', import.meta.url);
-const CARD_COUNTERED_SAMPLE_URL = new URL('./assets/card-countered.wav', import.meta.url);
-const CREATURE_RETURN_SAMPLE_URL = new URL('./assets/creature-return.wav', import.meta.url);
-const BLOCK_IMPACT_SAMPLE_URL = new URL('./assets/block-impact.mp3', import.meta.url);
-const DESTRUCTION_HIT_SAMPLE_URL = new URL('./assets/destruction-hit.mp3', import.meta.url);
-const PAGE_TURN_SAMPLE_URL = new URL('./assets/page-turn.mp3', import.meta.url);
-const VICTORY_CRY_SAMPLE_URL = new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url);
-const GAME_LOST_SAMPLE_URL = new URL('./assets/game-lost.mp3', import.meta.url);
-const HIT_SAMPLE_URL = new URL('./assets/hit.wav', import.meta.url);
-const PIRATE_AHOY_SAMPLE_URL = new URL('./assets/pirate-ahoy.mp3', import.meta.url);
-const PIRATE_DIALOGUE_SAMPLE_URL = new URL('./assets/pirate-dialogue-alright.wav', import.meta.url);
-const DWARF_DIALOGUE_SAMPLE_URL = new URL('./assets/dwarf-dialogue-my-axe-shall-speak-for-me.wav', import.meta.url);
-const CHAIN_RATTLE_SAMPLE_URL = new URL('./assets/chain-rattle.wav', import.meta.url);
-const DOCK_SOUND_SAMPLE_URL = new URL('./assets/dock-sound.mp3', import.meta.url);
-const COLD_WIND_SAMPLE_URL = new URL('./assets/cold-wind.wav', import.meta.url);
-const ICE_FREEZE_SAMPLE_URL = new URL('./assets/ice-freeze.wav', import.meta.url);
-const FOUDRE_MARTEAU_SAMPLE_URL = new URL('./assets/thunder-spark-transition-full.mp3', import.meta.url);
-// La flèche de l'Attaque ciblée : un échantillon généré par
-// `tools/make-arrow-shot.mjs` (corde lâchée + souffle du trait + empennage).
-const ARROW_SHOT_SAMPLE_URL = new URL('./assets/arrow-shot.wav', import.meta.url);
-const CARD_PLACE_VOLUME = 0.62;
-const CARD_DRAW_VOLUME = 0.52;
-const ATTACKERS_CONFIRM_VOLUME = 0.58;
-const PLAYER_ATTACK_HIT_VOLUME = 0.64;
-const FLAME_GUST_VOLUME = 0.56;
-const WATER_WAVE_VOLUME = 0.58;
-const CARD_COUNTERED_VOLUME = 0.6;
-const CREATURE_RETURN_VOLUME = 0.58;
-const BLOCK_IMPACT_VOLUME = 0.58;
-const DESTRUCTION_HIT_VOLUME = 0.6;
-const PAGE_TURN_VOLUME = 0.5;
-const VICTORY_CRY_VOLUME = 0.6;
-const GAME_LOST_VOLUME = 0.6;
-const HIT_VOLUME = 0.62;
-const PIRATE_AHOY_VOLUME = 0.62;
-const PIRATE_DIALOGUE_VOLUME = 0.62;
-const DWARF_DIALOGUE_VOLUME = 0.62;
-const CHAIN_RATTLE_VOLUME = 0.62;
-const DOCK_SOUND_VOLUME = 0.62;
-const COLD_WIND_VOLUME = 0.58;
-const ICE_FREEZE_VOLUME = 0.62;
-const FOUDRE_MARTEAU_VOLUME = 0.58;
-const ARROW_SHOT_VOLUME = 0.6;
-// Les voix d'arrivée des créatures (une par carte, voir
-// `rpgArrivalVoices.js`) passent sous les bruitages de table : elles se
-// superposent à `card_place` sans l'écraser.
-const CARD_VOICE_VOLUME = 0.5;
+/**
+ * Le registre des échantillons du duel : nom du bruitage, fichier livré dans
+ * `assets/`, et champ historique du lecteur (les tests et la page de la salle
+ * d'écoute lisent encore `player.arrowShotAudio`).
+ *
+ * Chaque fichier est joué par son propre élément `<audio>`, puis ramené au
+ * **même niveau d'écoute** que tous les autres sons du jeu par un gain calculé
+ * à partir de sa mesure (`rpgNiveauxSons.js`, mesuré par
+ * `tools/mesure-sons-sablier.py`). Les anciennes constantes de volume, réglées
+ * à la main entre 0,5 et 0,64, laissaient trente-deux décibels d'écart entre la
+ * pose d'une carte et un coup d'épée.
+ */
+const ECHANTILLONS_FICHIERS = Object.freeze([
+  ['card_place', new URL('./assets/card-place.wav', import.meta.url), 'cardPlaceAudio'],
+  ['card_draw', new URL('./assets/card-draw.wav', import.meta.url), 'cardDrawAudio'],
+  ['attackers_confirm', new URL('./assets/attackers-confirm.mp3', import.meta.url), 'attackersConfirmAudio'],
+  ['player_attack_hit', new URL('./assets/player-attack-hit.wav', import.meta.url), 'playerAttackHitAudio'],
+  ['flame_gust', new URL('./assets/flame-gust.wav', import.meta.url), 'flameGustAudio'],
+  ['water_wave', new URL('./assets/water-wave.wav', import.meta.url), 'waterWaveAudio'],
+  ['card_countered', new URL('./assets/card-countered.wav', import.meta.url), 'cardCounteredAudio'],
+  ['creature_return', new URL('./assets/creature-return.wav', import.meta.url), 'creatureReturnAudio'],
+  ['block_impact', new URL('./assets/block-impact.mp3', import.meta.url), 'blockImpactAudio'],
+  ['destruction_hit', new URL('./assets/destruction-hit.mp3', import.meta.url), 'destructionHitAudio'],
+  ['page_turn', new URL('./assets/page-turn.mp3', import.meta.url), 'pageTurnAudio'],
+  ['victoire', new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url), 'victoryCryAudio'],
+  ['defaite', new URL('./assets/game-lost.mp3', import.meta.url), 'gameLostAudio'],
+  // Le même coup sec sert la blessure des deux camps.
+  ['degats', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
+  ['degats_sorcier', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
+  // Prise en cale par Abordage : cliquetis de chaînes métalliques.
+  ['abordage', new URL('./assets/chain-rattle.wav', import.meta.url), 'chainRattleAudio'],
+  // Une carte pirate jouée depuis la main entre en jeu : « Ahoy ! ».
+  ['pirate_arrivee', new URL('./assets/pirate-ahoy.mp3', import.meta.url), 'pirateAhoyAudio'],
+  // L'autre accueil pirate, joué une arrivée sur deux : « Alright ».
+  ['pirate_dialogue', new URL('./assets/pirate-dialogue-alright.wav', import.meta.url), 'pirateDialogueAudio'],
+  // « My axe shall speak for me » pour les guerriers du Nord.
+  ['dwarf_dialogue', new URL('./assets/dwarf-dialogue-my-axe-shall-speak-for-me.wav', import.meta.url), 'dwarfDialogueAudio'],
+  // Un navire accoste : l'ambiance du quai.
+  ['navire_arrivee', new URL('./assets/dock-sound.mp3', import.meta.url), 'dockSoundAudio'],
+  // Souffle froid du gel de masse : vent hivernal.
+  ['cold_wind', new URL('./assets/cold-wind.wav', import.meta.url), 'coldWindAudio'],
+  // Impact de glace fourni (IceFoley6095_90_1.wav).
+  ['freeze_impact', new URL('./assets/ice-freeze.wav', import.meta.url), 'iceFreezeAudio'],
+  // Thunder Spark Transition, partagé par l'Éclair du marteau et l'arrivée du Maître.
+  ['foudre_marteau', new URL('./assets/thunder-spark-transition-full.mp3', import.meta.url), 'foudreMarteauAudio'],
+  // La flèche de l'Attaque ciblée : un échantillon généré par
+  // `tools/make-arrow-shot.mjs` (corde lâchée + souffle du trait + empennage).
+  ['fleche', new URL('./assets/arrow-shot.wav', import.meta.url), 'arrowShotAudio'],
+]);
 
-/** Le gain de base des voix d'arrivée des créatures. */
-export const RPG_CARD_VOICE_VOLUME = CARD_VOICE_VOLUME;
+/** Les noms des échantillons jouables, dans l'ordre du registre. */
+export const RPG_ECHANTILLONS_NAMES = Object.freeze(ECHANTILLONS_FICHIERS.map(([nom]) => nom));
+
+/**
+ * Le bus des échantillons : tous les fichiers du duel s'y rejoignent, avant un
+ * limiteur de secours. Le gain de chaque fichier est déjà borné par sa crête
+ * (`rpgNiveauxSons.js`), et les fichiers trop pointus ont été remontés dans le
+ * fichier même : le limiteur ne sert plus qu'aux sons qui se superposent — deux
+ * frappes et une voix sur la même image.
+ */
+const LIMITEUR_ECHANTILLONS = Object.freeze({
+  threshold: -0.3,
+  knee: 1,
+  ratio: 20,
+  attack: 0.001,
+  release: 0.2,
+});
 
 /** Le cliquetis de chaînes joué lorsqu'une créature avec Abordage kidnappe une créature en cale. */
 export const RPG_ABORDAGE_SFX = 'abordage';
@@ -248,108 +267,44 @@ export class RpgAudioPlayer {
     this.noiseBuffer = null;
     this.muted = false;
     this.volume = 1;
-    this.cardPlaceAudio = null;
-    this.cardDrawAudio = null;
-    this.attackersConfirmAudio = null;
-    this.playerAttackHitAudio = null;
-    this.flameGustAudio = null;
-    this.waterWaveAudio = null;
-    this.cardCounteredAudio = null;
-    this.creatureReturnAudio = null;
-    this.blockImpactAudio = null;
-    this.destructionHitAudio = null;
-    this.pageTurnAudio = null;
-    this.victoryCryAudio = null;
-    this.gameLostAudio = null;
-    this.hitAudio = null;
-    this.pirateAhoyAudio = null;
-    this.pirateDialogueAudio = null;
-    this.dwarfDialogueAudio = null;
-    this.chainRattleAudio = null;
-    this.dockSoundAudio = null;
-    this.coldWindAudio = null;
-    this.iceFreezeAudio = null;
-    this.foudreMarteauAudio = null;
-    this.arrowShotAudio = null;
+    // Le bus des échantillons : un nœud de gain par fichier — c'est lui qui
+    // applique le niveau mesuré — puis un limiteur avant la sortie.
+    this.busEchantillons = null;
+    this.limiteurEchantillons = null;
+    // Le registre vivant : `{ nom, audio, gain, noeud }`, un par fichier. Deux
+    // noms peuvent partager le même fichier (`degats`, `degats_sorcier`) : ils
+    // partagent alors l'élément et son nœud.
+    this.echantillons = [];
+    this.echantillonsParNom = new Map();
     // Voix d'arrivée : un élément `<audio>` par carte, construit à la première
     // entrée en jeu puis gardé pour le reste de la partie.
     this.cardVoiceAudios = new Map();
+    this.voixEntrees = new Map();
     this.cardVoiceCourante = null;
     // Départs différés des voix d'un même relevé d'arrivées.
     this.cardVoiceTimers = new Set();
+
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
-    if (typeof AudioCtor === 'function') {
-      try {
-        this.cardPlaceAudio = new AudioCtor(CARD_PLACE_SAMPLE_URL.href);
-        this.cardPlaceAudio.preload = 'auto';
-        this.cardPlaceAudio.volume = CARD_PLACE_VOLUME;
-        this.cardDrawAudio = new AudioCtor(CARD_DRAW_SAMPLE_URL.href);
-        this.cardDrawAudio.preload = 'auto';
-        this.cardDrawAudio.volume = CARD_DRAW_VOLUME;
-        this.attackersConfirmAudio = new AudioCtor(ATTACKERS_CONFIRM_SAMPLE_URL.href);
-        this.attackersConfirmAudio.preload = 'auto';
-        this.attackersConfirmAudio.volume = ATTACKERS_CONFIRM_VOLUME;
-        this.playerAttackHitAudio = new AudioCtor(PLAYER_ATTACK_HIT_SAMPLE_URL.href);
-        this.playerAttackHitAudio.preload = 'auto';
-        this.playerAttackHitAudio.volume = PLAYER_ATTACK_HIT_VOLUME;
-        this.flameGustAudio = new AudioCtor(FLAME_GUST_SAMPLE_URL.href);
-        this.flameGustAudio.preload = 'auto';
-        this.flameGustAudio.volume = FLAME_GUST_VOLUME;
-        this.waterWaveAudio = new AudioCtor(WATER_WAVE_SAMPLE_URL.href);
-        this.waterWaveAudio.preload = 'auto';
-        this.waterWaveAudio.volume = WATER_WAVE_VOLUME;
-        this.cardCounteredAudio = new AudioCtor(CARD_COUNTERED_SAMPLE_URL.href);
-        this.cardCounteredAudio.preload = 'auto';
-        this.cardCounteredAudio.volume = CARD_COUNTERED_VOLUME;
-        this.creatureReturnAudio = new AudioCtor(CREATURE_RETURN_SAMPLE_URL.href);
-        this.creatureReturnAudio.preload = 'auto';
-        this.creatureReturnAudio.volume = CREATURE_RETURN_VOLUME;
-        this.blockImpactAudio = new AudioCtor(BLOCK_IMPACT_SAMPLE_URL.href);
-        this.blockImpactAudio.preload = 'auto';
-        this.blockImpactAudio.volume = BLOCK_IMPACT_VOLUME;
-        this.destructionHitAudio = new AudioCtor(DESTRUCTION_HIT_SAMPLE_URL.href);
-        this.destructionHitAudio.preload = 'auto';
-        this.destructionHitAudio.volume = DESTRUCTION_HIT_VOLUME;
-        this.pageTurnAudio = new AudioCtor(PAGE_TURN_SAMPLE_URL.href);
-        this.pageTurnAudio.preload = 'auto';
-        this.pageTurnAudio.volume = PAGE_TURN_VOLUME;
-        this.victoryCryAudio = new AudioCtor(VICTORY_CRY_SAMPLE_URL.href);
-        this.victoryCryAudio.preload = 'auto';
-        this.victoryCryAudio.volume = VICTORY_CRY_VOLUME;
-        this.gameLostAudio = new AudioCtor(GAME_LOST_SAMPLE_URL.href);
-        this.gameLostAudio.preload = 'auto';
-        this.gameLostAudio.volume = GAME_LOST_VOLUME;
-        this.hitAudio = new AudioCtor(HIT_SAMPLE_URL.href);
-        this.hitAudio.preload = 'auto';
-        this.hitAudio.volume = HIT_VOLUME;
-        this.pirateAhoyAudio = new AudioCtor(PIRATE_AHOY_SAMPLE_URL.href);
-        this.pirateAhoyAudio.preload = 'auto';
-        this.pirateAhoyAudio.volume = PIRATE_AHOY_VOLUME;
-        this.pirateDialogueAudio = new AudioCtor(PIRATE_DIALOGUE_SAMPLE_URL.href);
-        this.pirateDialogueAudio.preload = 'auto';
-        this.pirateDialogueAudio.volume = PIRATE_DIALOGUE_VOLUME;
-        this.dwarfDialogueAudio = new AudioCtor(DWARF_DIALOGUE_SAMPLE_URL.href);
-        this.dwarfDialogueAudio.preload = 'auto';
-        this.dwarfDialogueAudio.volume = DWARF_DIALOGUE_VOLUME;
-        this.chainRattleAudio = new AudioCtor(CHAIN_RATTLE_SAMPLE_URL.href);
-        this.chainRattleAudio.preload = 'auto';
-        this.chainRattleAudio.volume = CHAIN_RATTLE_VOLUME;
-        this.dockSoundAudio = new AudioCtor(DOCK_SOUND_SAMPLE_URL.href);
-        this.dockSoundAudio.preload = 'auto';
-        this.dockSoundAudio.volume = DOCK_SOUND_VOLUME;
-        this.coldWindAudio = new AudioCtor(COLD_WIND_SAMPLE_URL.href);
-        this.coldWindAudio.preload = 'auto';
-        this.coldWindAudio.volume = COLD_WIND_VOLUME;
-        this.iceFreezeAudio = new AudioCtor(ICE_FREEZE_SAMPLE_URL.href);
-        this.iceFreezeAudio.preload = 'auto';
-        this.iceFreezeAudio.volume = ICE_FREEZE_VOLUME;
-        this.foudreMarteauAudio = new AudioCtor(FOUDRE_MARTEAU_SAMPLE_URL.href);
-        this.foudreMarteauAudio.preload = 'auto';
-        this.foudreMarteauAudio.volume = FOUDRE_MARTEAU_VOLUME;
-        this.arrowShotAudio = new AudioCtor(ARROW_SHOT_SAMPLE_URL.href);
-        this.arrowShotAudio.preload = 'auto';
-        this.arrowShotAudio.volume = ARROW_SHOT_VOLUME;
-      } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
+    const parUrl = new Map();
+    for (const [nom, url, champ] of ECHANTILLONS_FICHIERS) {
+      let entree = parUrl.get(url.href);
+      if (!entree) {
+        let audio = null;
+        if (typeof AudioCtor === 'function') {
+          try {
+            audio = new AudioCtor(url.href);
+            audio.preload = 'auto';
+          } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
+        }
+        entree = { nom, audio, gain: gainEchantillon(nom), noeud: null };
+        if (audio) audio.volume = this.volumeElement(entree);
+        parUrl.set(url.href, entree);
+        this.echantillons.push(entree);
+      }
+      this.echantillonsParNom.set(nom, entree);
+      // Le champ historique reste lisible (`player.arrowShotAudio`,
+      // `player.foudreMarteauAudio`…) et repasse à null au démontage.
+      this[champ] = entree.audio;
     }
   }
 
@@ -358,9 +313,79 @@ export class RpgAudioPlayer {
     return Math.max(MIN_GAIN, MASTER_VOLUME * this.volume);
   }
 
-  sampleVolume(baseVolume) {
-    if (this.muted || this.volume <= 0) return 0;
-    return Math.max(0, Math.min(1, baseVolume * this.volume));
+  /**
+   * Le gain d'un échantillon : son niveau mesuré (`rpgNiveauxSons.js`) fois le
+   * volume des sons choisi par le joueur. Il peut dépasser 1 — c'est tout
+   * l'intérêt du nœud de gain WebAudio : l'ambiance de quai, mesurée à
+   * -23 LUFS, remonte de 3 dB pour rejoindre les autres.
+   */
+  gainEchantillon(entree) {
+    if (!entree || this.muted || this.volume <= 0) return 0;
+    return entree.gain * this.volume;
+  }
+
+  /**
+   * Le volume d'élément `<audio>`, borné à 1 par la norme. Il ne sert que de
+   * repli quand le fichier ne peut pas passer par le nœud de gain (navigateur
+   * sans `createMediaElementSource`) : les sons remontés y perdent alors ce
+   * que la pleine échelle ne permet pas.
+   */
+  volumeElement(entree) {
+    return Math.max(0, Math.min(1, this.gainEchantillon(entree)));
+  }
+
+  /** Applique le gain courant à une entrée, par son nœud ou, à défaut, par son élément. */
+  appliquerGain(entree) {
+    if (!entree) return;
+    const gain = this.gainEchantillon(entree);
+    if (entree.noeud) {
+      entree.noeud.gain.value = gain;
+      if (entree.audio) entree.audio.volume = 1;
+    } else if (entree.audio) {
+      entree.audio.volume = Math.max(0, Math.min(1, gain));
+    }
+    if (gain <= 0 && entree.audio) {
+      try { entree.audio.pause?.(); } catch { /* élément déjà arrêté */ }
+    }
+  }
+
+  /**
+   * Fait passer un échantillon par son nœud de gain, dans le bus du duel.
+   *
+   * Un élément `<audio>` ne peut être branché qu'une fois (`createMediaElementSource`
+   * refuse la seconde fois) : le nœud est donc mémorisé sur l'entrée. Un
+   * navigateur sans routage des médias, ou un contexte refusé, laisse
+   * l'échantillon sur son élément — il joue, simplement sans le gain des sons
+   * remontés.
+   */
+  routerEchantillon(entree) {
+    if (!entree || entree.noeud || !entree.audio) return;
+    const context = this.ctx;
+    if (!context || !this.busEchantillons) return;
+    if (typeof context.createMediaElementSource !== 'function') return;
+    try {
+      const source = context.createMediaElementSource(entree.audio);
+      const noeud = context.createGain();
+      noeud.gain.value = this.gainEchantillon(entree);
+      source.connect(noeud);
+      noeud.connect(this.busEchantillons);
+      entree.noeud = noeud;
+      entree.source = source;
+      entree.audio.volume = 1;
+    } catch {
+      entree.noeud = null;
+      entree.audio.volume = this.volumeElement(entree);
+    }
+  }
+
+  /** Rend un élément `<audio>` au navigateur (démontage, ou voix remplacée). */
+  libererAudio(audio) {
+    if (!audio) return;
+    try {
+      audio.pause?.();
+      audio.removeAttribute?.('src');
+      audio.load?.();
+    } catch { /* élément audio déjà libéré */ }
   }
 
   unlock() {
@@ -417,6 +442,26 @@ export class RpgAudioPlayer {
           this.reverbReturn.connect(this.master);
         }
       }
+
+      // Le bus des échantillons ne passe pas par le gain maître : les fichiers
+      // sont déjà ramenés au niveau commun par leur propre nœud, et le gain
+      // maître est calibré pour les synthèses (0,22). Le limiteur du bus
+      // écrête les trois fichiers remontés au-delà de la pleine échelle et
+      // empêche deux sons superposés de saturer.
+      this.busEchantillons = context.createGain();
+      this.busEchantillons.gain.value = 1;
+      if (typeof context.createDynamicsCompressor === 'function') {
+        this.limiteurEchantillons = context.createDynamicsCompressor();
+        this.limiteurEchantillons.threshold.value = LIMITEUR_ECHANTILLONS.threshold;
+        this.limiteurEchantillons.knee.value = LIMITEUR_ECHANTILLONS.knee;
+        this.limiteurEchantillons.ratio.value = LIMITEUR_ECHANTILLONS.ratio;
+        this.limiteurEchantillons.attack.value = LIMITEUR_ECHANTILLONS.attack;
+        this.limiteurEchantillons.release.value = LIMITEUR_ECHANTILLONS.release;
+        this.busEchantillons.connect(this.limiteurEchantillons);
+        this.limiteurEchantillons.connect(context.destination);
+      } else {
+        this.busEchantillons.connect(context.destination);
+      }
     } catch {
       this.ctx = null;
       this.master = null;
@@ -425,6 +470,8 @@ export class RpgAudioPlayer {
       this.reverb = null;
       this.reverbFilter = null;
       this.reverbReturn = null;
+      this.busEchantillons = null;
+      this.limiteurEchantillons = null;
       if (context && typeof context.close === 'function') {
         try { context.close(); } catch { /* Contexte incomplet ou déjà fermé. */ }
       }
@@ -432,46 +479,16 @@ export class RpgAudioPlayer {
     }
 
     if (context.state === 'suspended' && typeof context.resume === 'function') context.resume().catch(() => {});
+
+    for (const entree of this.echantillons) this.routerEchantillon(entree);
   }
 
   syncOutputGain() {
-    const silent = this.muted || this.volume <= 0;
-    const samples = [
-      [this.cardPlaceAudio, CARD_PLACE_VOLUME],
-      [this.cardDrawAudio, CARD_DRAW_VOLUME],
-      [this.attackersConfirmAudio, ATTACKERS_CONFIRM_VOLUME],
-      [this.playerAttackHitAudio, PLAYER_ATTACK_HIT_VOLUME],
-      [this.flameGustAudio, FLAME_GUST_VOLUME],
-      [this.waterWaveAudio, WATER_WAVE_VOLUME],
-      [this.cardCounteredAudio, CARD_COUNTERED_VOLUME],
-      [this.creatureReturnAudio, CREATURE_RETURN_VOLUME],
-      [this.blockImpactAudio, BLOCK_IMPACT_VOLUME],
-      [this.destructionHitAudio, DESTRUCTION_HIT_VOLUME],
-      [this.pageTurnAudio, PAGE_TURN_VOLUME],
-      [this.victoryCryAudio, VICTORY_CRY_VOLUME],
-      [this.gameLostAudio, GAME_LOST_VOLUME],
-      [this.hitAudio, HIT_VOLUME],
-      [this.pirateAhoyAudio, PIRATE_AHOY_VOLUME],
-      [this.pirateDialogueAudio, PIRATE_DIALOGUE_VOLUME],
-      [this.dwarfDialogueAudio, DWARF_DIALOGUE_VOLUME],
-      [this.chainRattleAudio, CHAIN_RATTLE_VOLUME],
-      [this.dockSoundAudio, DOCK_SOUND_VOLUME],
-      [this.coldWindAudio, COLD_WIND_VOLUME],
-      [this.iceFreezeAudio, ICE_FREEZE_VOLUME],
-      [this.foudreMarteauAudio, FOUDRE_MARTEAU_VOLUME],
-      [this.arrowShotAudio, ARROW_SHOT_VOLUME],
-    ];
-    for (const [audio, base] of samples) {
-      if (!audio) continue;
-      audio.volume = this.sampleVolume(base);
-      if (silent) audio.pause?.();
-    }
-    // Les voix de cartes suivent la même règle : le son coupé les met en
-    // pause, le volume du jeu les atténue.
-    for (const voice of this.cardVoiceAudios.values()) {
-      voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
-      if (silent) voice.pause?.();
-    }
+    // Chaque échantillon porte son niveau mesuré : le volume du jeu les
+    // atténue tous ensemble, le son coupé les met en pause.
+    for (const entree of this.echantillons) this.appliquerGain(entree);
+    // Les voix de cartes suivent la même règle — chacune avec son niveau.
+    for (const entree of this.voixEntrees.values()) this.appliquerGain(entree);
     if (!this.master) return;
     const now = this.ctx?.currentTime ?? 0;
     const parameter = this.master.gain;
@@ -513,20 +530,29 @@ export class RpgAudioPlayer {
   playCardVoiceNow(url, AudioCtor) {
     if (this.muted || this.volume <= 0) return false;
     try {
-      let voice = this.cardVoiceAudios.get(url);
-      if (!voice) {
-        voice = new AudioCtor(url);
-        voice.preload = 'auto';
-        voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
-        this.cardVoiceAudios.set(url, voice);
+      let entree = this.voixEntrees.get(url);
+      if (!entree) {
+        const audio = new AudioCtor(url);
+        audio.preload = 'auto';
+        // Le niveau de la voix vient de la mesure de son fichier
+        // (`rpgNiveauxSons.js`) : les voix enregistrées très bas — « Celle qui
+        // pèse », « La dame des neufs mondes », le Tengu — remontent au même
+        // niveau d'écoute que les bruitages de table.
+        entree = { nom: url, audio, gain: gainVoixArrivee(url), noeud: null };
+        audio.volume = this.volumeElement(entree);
+        this.voixEntrees.set(url, entree);
+        // `cardVoiceAudios` reste la carte des éléments, lue par les tests et
+        // par la salle d'écoute.
+        this.cardVoiceAudios.set(url, audio);
+        this.routerEchantillon(entree);
       }
-      if (this.cardVoiceCourante && this.cardVoiceCourante !== voice) {
-        try { this.cardVoiceCourante.pause(); } catch { /* déjà arrêtée */ }
+      if (this.cardVoiceCourante && this.cardVoiceCourante !== entree) {
+        try { this.cardVoiceCourante.audio.pause(); } catch { /* déjà arrêtée */ }
       }
-      this.cardVoiceCourante = voice;
-      voice.currentTime = 0;
-      voice.volume = this.sampleVolume(CARD_VOICE_VOLUME);
-      const playback = voice.play();
+      this.cardVoiceCourante = entree;
+      this.appliquerGain(entree);
+      entree.audio.currentTime = 0;
+      const playback = entree.audio.play();
       playback?.catch?.(() => {});
       return true;
     } catch {
@@ -546,22 +572,16 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === RPG_DWARF_DIALOGUE_SFX || name === 'navire_arrivee' || name === 'cold_wind' || name === RPG_FREEZE_IMPACT_SFX || name === RPG_FOUDRE_MARTEAU_SFX || name === RPG_ARROW_SFX) {
-      const sample = name === 'card_place'
-        ? this.cardPlaceAudio
-        : name === 'card_draw' ? this.cardDrawAudio
-          : name === 'attackers_confirm' ? this.attackersConfirmAudio
-                : name === 'player_attack_hit' ? this.playerAttackHitAudio
-                : name === 'flame_gust' ? this.flameGustAudio
-                : name === 'water_wave' ? this.waterWaveAudio
-                : name === 'card_countered' ? this.cardCounteredAudio
-                : name === 'creature_return' ? this.creatureReturnAudio
-                : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryCryAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FREEZE_IMPACT_SFX ? this.iceFreezeAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : name === RPG_ARROW_SFX ? this.arrowShotAudio : this.hitAudio;
-      if (!sample) return;
+    const entree = this.echantillonsParNom.get(name);
+    if (entree) {
+      if (!entree.audio) return;
+      // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
+      // que l'échantillon rejoint le bus, s'il ne l'a pas déjà fait.
+      this.routerEchantillon(entree);
+      this.appliquerGain(entree);
       try {
-        sample.currentTime = 0;
-        const playback = sample.play();
+        entree.audio.currentTime = 0;
+        const playback = entree.audio.play();
         playback?.catch?.(() => {});
       } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
       return;
@@ -737,193 +757,32 @@ export class RpgAudioPlayer {
     this.reverbFilter = null;
     this.reverbReturn = null;
     this.noiseBuffer = null;
-    if (this.cardPlaceAudio) {
+    this.busEchantillons = null;
+    this.limiteurEchantillons = null;
+    for (const entree of this.echantillons) {
+      this.libererAudio(entree.audio);
       try {
-        this.cardPlaceAudio.pause?.();
-        this.cardPlaceAudio.removeAttribute?.('src');
-        this.cardPlaceAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
+        entree.source?.disconnect?.();
+        entree.noeud?.disconnect?.();
+      } catch { /* nœud déjà libéré */ }
+      entree.noeud = null;
+      entree.source = null;
+      entree.audio = null;
     }
-    this.cardPlaceAudio = null;
-    if (this.cardDrawAudio) {
-      try {
-        this.cardDrawAudio.pause?.();
-        this.cardDrawAudio.removeAttribute?.('src');
-        this.cardDrawAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.cardDrawAudio = null;
-    if (this.attackersConfirmAudio) {
-      try {
-        this.attackersConfirmAudio.pause?.();
-        this.attackersConfirmAudio.removeAttribute?.('src');
-        this.attackersConfirmAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.attackersConfirmAudio = null;
-    if (this.playerAttackHitAudio) {
-      try {
-        this.playerAttackHitAudio.pause?.();
-        this.playerAttackHitAudio.removeAttribute?.('src');
-        this.playerAttackHitAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.playerAttackHitAudio = null;
-    if (this.flameGustAudio) {
-      try {
-        this.flameGustAudio.pause?.();
-        this.flameGustAudio.removeAttribute?.('src');
-        this.flameGustAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.flameGustAudio = null;
-    if (this.waterWaveAudio) {
-      try {
-        this.waterWaveAudio.pause?.();
-        this.waterWaveAudio.removeAttribute?.('src');
-        this.waterWaveAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.waterWaveAudio = null;
-    if (this.cardCounteredAudio) {
-      try {
-        this.cardCounteredAudio.pause?.();
-        this.cardCounteredAudio.removeAttribute?.('src');
-        this.cardCounteredAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.cardCounteredAudio = null;
-    if (this.creatureReturnAudio) {
-      try {
-        this.creatureReturnAudio.pause?.();
-        this.creatureReturnAudio.removeAttribute?.('src');
-        this.creatureReturnAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.creatureReturnAudio = null;
-    if (this.blockImpactAudio) {
-      try {
-        this.blockImpactAudio.pause?.();
-        this.blockImpactAudio.removeAttribute?.('src');
-        this.blockImpactAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.blockImpactAudio = null;
-    if (this.destructionHitAudio) {
-      try {
-        this.destructionHitAudio.pause?.();
-        this.destructionHitAudio.removeAttribute?.('src');
-        this.destructionHitAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.destructionHitAudio = null;
-    if (this.pageTurnAudio) {
-      try {
-        this.pageTurnAudio.pause?.();
-        this.pageTurnAudio.removeAttribute?.('src');
-        this.pageTurnAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.pageTurnAudio = null;
-    if (this.victoryCryAudio) {
-      try {
-        this.victoryCryAudio.pause?.();
-        this.victoryCryAudio.removeAttribute?.('src');
-        this.victoryCryAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.victoryCryAudio = null;
-    if (this.gameLostAudio) {
-      try {
-        this.gameLostAudio.pause?.();
-        this.gameLostAudio.removeAttribute?.('src');
-        this.gameLostAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.gameLostAudio = null;
-    if (this.hitAudio) {
-      try {
-        this.hitAudio.pause?.();
-        this.hitAudio.removeAttribute?.('src');
-        this.hitAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.hitAudio = null;
-    if (this.pirateAhoyAudio) {
-      try {
-        this.pirateAhoyAudio.pause?.();
-        this.pirateAhoyAudio.removeAttribute?.('src');
-        this.pirateAhoyAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.pirateAhoyAudio = null;
-    if (this.pirateDialogueAudio) {
-      try {
-        this.pirateDialogueAudio.pause?.();
-        this.pirateDialogueAudio.removeAttribute?.('src');
-        this.pirateDialogueAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.pirateDialogueAudio = null;
-    if (this.dwarfDialogueAudio) {
-      try {
-        this.dwarfDialogueAudio.pause?.();
-        this.dwarfDialogueAudio.removeAttribute?.('src');
-        this.dwarfDialogueAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.dwarfDialogueAudio = null;
-    if (this.chainRattleAudio) {
-      try {
-        this.chainRattleAudio.pause?.();
-        this.chainRattleAudio.removeAttribute?.('src');
-        this.chainRattleAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.chainRattleAudio = null;
-    if (this.dockSoundAudio) {
-      try {
-        this.dockSoundAudio.pause?.();
-        this.dockSoundAudio.removeAttribute?.('src');
-        this.dockSoundAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.dockSoundAudio = null;
-    if (this.coldWindAudio) {
-      try {
-        this.coldWindAudio.pause?.();
-        this.coldWindAudio.removeAttribute?.('src');
-        this.coldWindAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.coldWindAudio = null;
-    if (this.iceFreezeAudio) {
-      try {
-        this.iceFreezeAudio.pause?.();
-        this.iceFreezeAudio.removeAttribute?.('src');
-        this.iceFreezeAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.iceFreezeAudio = null;
-    if (this.foudreMarteauAudio) {
-      try {
-        this.foudreMarteauAudio.pause?.();
-        this.foudreMarteauAudio.removeAttribute?.('src');
-        this.foudreMarteauAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.foudreMarteauAudio = null;
-    if (this.arrowShotAudio) {
-      try {
-        this.arrowShotAudio.pause?.();
-        this.arrowShotAudio.removeAttribute?.('src');
-        this.arrowShotAudio.load?.();
-      } catch { /* élément audio déjà libéré */ }
-    }
-    this.arrowShotAudio = null;
+    // Les champs historiques (`player.arrowShotAudio`…) repassent à null.
+    for (const [, , champ] of ECHANTILLONS_FICHIERS) this[champ] = null;
     if (this.cardVoiceTimers) {
       for (const timer of this.cardVoiceTimers) clearTimeout(timer);
       this.cardVoiceTimers.clear();
+    }
+    if (this.voixEntrees) {
+      for (const entree of this.voixEntrees.values()) {
+        try {
+          entree.source?.disconnect?.();
+          entree.noeud?.disconnect?.();
+        } catch { /* nœud déjà libéré */ }
+      }
+      this.voixEntrees.clear();
     }
     if (this.cardVoiceAudios) {
       for (const voice of this.cardVoiceAudios.values()) {

@@ -17,13 +17,18 @@ test('20 points d’écart : seuils inclusifs 60/40 et hystérésis dans la band
   assert.equal(campMusicalDuTerritoire(0), 'sorcier');
 });
 
-test('chaque camp impose son thème, avec repli quand le terrain est sans piste', () => {
+test('chaque camp impose son thème, et chaque table garde sa propre piste', () => {
   assert.equal(plateauMusicalDuCamp('sorcier', JAPON, MER), MER);
   assert.equal(plateauMusicalDuCamp('joueur', JAPON, MER), JAPON);
   assert.equal(plateauMusicalDuCamp('sorcier', JAPON, 'necropole-des-dalles'), 'necropole-des-dalles');
   assert.equal(plateauMusicalDuCamp('joueur', 'necropole-des-dalles', MER), 'necropole-des-dalles');
-  assert.equal(plateauMusicalDuCamp('sorcier', 'necropole-des-dalles', 'palais-du-pharaon'), 'necropole-des-dalles');
+  // Le Palais du Pharaon a son morceau : le camp dominant ne l'échange plus
+  // contre la piste de l'autre table.
+  assert.equal(plateauMusicalDuCamp('sorcier', 'necropole-des-dalles', 'palais-du-pharaon'), 'palais-du-pharaon');
   assert.equal(plateauMusicalDuCamp('joueur', 'palais-du-pharaon', 'palais-du-pharaon'), 'palais-du-pharaon');
+  // Le repli ne sert plus qu'à un plateau hors catalogue, jamais à un oubli.
+  assert.equal(plateauMusicalDuCamp('sorcier', JAPON, 'plateau-inconnu'), JAPON);
+  assert.equal(plateauMusicalDuCamp('joueur', 'plateau-inconnu', MER), MER);
 });
 
 test('la Place du Souk fournit sa musique quand son camp domine', () => {
@@ -31,15 +36,16 @@ test('la Place du Souk fournit sa musique quand son camp domine', () => {
   assert.equal(plateauMusicalDuCamp('joueur', 'place-du-souk', MER), 'place-du-souk');
 });
 
-test('le Cercle des corbeaux fournit sa piste même quand la conquête donne la main à l’adversaire', () => {
+test('le Cercle des corbeaux et le Sablier renversé ont chacun leur piste', () => {
   const CORBEAU = 'cercle-des-corbeaux';
   const SABLIER = 'sablier-renverse';
   assert.equal(plateauMusicalDuCamp('joueur', CORBEAU, SABLIER), CORBEAU);
-  assert.equal(plateauMusicalDuCamp('sorcier', CORBEAU, SABLIER), CORBEAU,
-    'le camp adverse sans piste reprend la musique du Cercle');
+  // Le Sablier renversé joue le thème principal : il ne reprend plus la piste
+  // du Cercle quand la conquête lui donne la main.
+  assert.equal(plateauMusicalDuCamp('sorcier', CORBEAU, SABLIER), SABLIER);
   assert.equal(plateauMusicalDuCamp('sorcier', MER, CORBEAU), CORBEAU);
-  assert.equal(plateauMusicalDuCamp('joueur', SABLIER, 'palais-du-pharaon'), SABLIER,
-    'deux plateaux sans piste restent silencieux');
+  assert.equal(plateauMusicalDuCamp('joueur', SABLIER, 'palais-du-pharaon'), SABLIER);
+  assert.equal(plateauMusicalDuCamp('sorcier', SABLIER, 'palais-du-pharaon'), 'palais-du-pharaon');
 });
 
 function installerAudio(t) {

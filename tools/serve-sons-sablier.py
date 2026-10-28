@@ -4,7 +4,8 @@
 `/` mène directement à `sons-du-sablier.html` (sinon l'aperçu tomberait sur le
 `index.html` du site React, qui exige une compilation Vite pour fonctionner).
 Tout le reste du dépôt est servi tel quel — la page en a besoin : elle joue les
-modules `src/games/rpgAudio.js` et `rpgAmbientMusic.js` à l'identique de l'en-jeu.
+modules `src/games/rpgAudio.js` et `src/games/rpgNiveauxSons.js` à l'identique
+de l'en-jeu.
 """
 import os
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler

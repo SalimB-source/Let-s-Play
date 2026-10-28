@@ -5461,19 +5461,16 @@ sur sa tuile — plus « au gré du deck » (dossier 20 §6.1).
   soleil. Le tribunal du sommet (`juges-de-la-necropole`) siège au **Palais du
   Pharaon**, dans la salle du trône — le dedans après le dehors, le dallage
   d'albâtre, le trône et les colonnes de lotus, sans rien qui encombre le
-  centre. La Nécropole des dalles joue désormais `public/Egypt.mp3` ; le
-  Palais du Pharaon n'a pas de piste dédiée. Si aucun des deux camps n'a de
-  musique de plateau, l'ambiance synthétique de la Tour prend le relais en
-  Histoire, et le duel libre reste silencieux.
+  centre. La Nécropole des dalles joue désormais `public/Egypt.mp3`, et le
+  Palais du Pharaon le même morceau : **chaque table a sa piste**, il n'existe
+  plus d'ambiance synthétique de tour pour prendre le relais.
 - **Le Cercle des corbeaux a sa piste.** Les quatre étages de la Tour du
   Corbeau — et le plateau quand le profil le choisit — jouent
   `public/raspberrymusic - A Vikings.mp3`, un seul MP3 en boucle déclaré dans
   `RPG_PLATEAU_MUSIC_FILES`. Le relais de conquête 60/40 le traite comme les
-  autres plateaux musicaux : face au Sablier renversé ou au Palais du Pharaon,
-  qui n'ont pas de piste, c'est le Cercle qui fournit la musique. En Histoire,
-  la boucle synthétisée « La neige tombe dans le noir » s'efface pendant le
-  duel ; elle reste l'ambiance de la tour dans la salle d'écoute. La piste est
-  aussi présentée dans `sons-du-sablier.html`.
+  autres plateaux musicaux. En duel, c'est la seule musique : la boucle
+  synthétisée « La neige tombe dans le noir » a disparu avec les ambiances de
+  tour. La piste est aussi présentée dans `sons-du-sablier.html`.
 - **La Terre de Damnation a été retirée.** La Cour des Djinns et les paquets
   de Braise se jouent désormais sur la Table des Heures.
 - **Le sable désigne qui impose son terrain.** Au lancement du duel, un tirage
@@ -8675,17 +8672,16 @@ La victoire suit le même calcul et donne donc la musique au vainqueur.
 - Chaque morceau est choisi une seule fois par terrain pendant le duel et
   reprend à sa position précédente quand son camp revient. Les terrains
   partageant le même fichier ne lancent jamais deux copies simultanées.
-- Si un terrain n’a pas de piste dédiée (le Palais du Pharaon, le Sablier
-  renversé), l’autre camp fournit la musique — le Cercle des corbeaux joue
-  alors `raspberrymusic - A Vikings.mp3` même quand la conquête donne la main
-  à l’adversaire. Si aucun n’en a, l’ambiance de tour reste disponible en
-  Histoire ; le duel libre reste silencieux, comme avant.
+- Chaque terrain a sa piste — le Palais du Pharaon joue `Egypt.mp3`, le
+  Sablier renversé le thème principal. Si l’un des deux camps n’en avait pas,
+  l’autre fournirait la musique ; le relais ne laisse jamais un duel sans fond
+  sonore par oubli de réglage.
 - Volume, son coupé, pause d’onglet et démontage s’appliquent aux deux pistes,
   y compris pendant un fondu. Une mise à jour PvP dans un onglet masqué ne
   relance pas l’audio. Un refus d’autoplay garde l’ancien thème ; le prochain
   geste peut réessayer sans couper vers le silence.
-- L’ambiance synthétique de la tour ne redémarre pas au rétablissement du son
-  lorsqu’une piste de plateau est disponible : pas de double musique.
+- Une seule musique à la fois : l’ambiance synthétique de la tour a été
+  retirée du jeu, donc plus de double piste au rétablissement du son.
 
 `src/games/rpgConqueteMusic.js` contient le sélecteur à hystérésis et le relais
 entre lecteurs `RpgPlateauMusic`. La page utilise les mêmes PV et le même
@@ -8694,7 +8690,7 @@ duel. Le décor et la musique ne se déplacent pas mutuellement.
 
 Contrôle : `npm run check:rpg-conquete-music` (23 tests audio/sélection et le
 rendu de la vraie page dans jsdom avec lecteurs audio simulés),
-`npm run check:rpg-ambient-ui`, `npm run check:rpg-territoire`, `npm run build`.
+`npm run check:rpg-territoire`, `npm run build`.
 Ces contrôles n’équivalent pas à une écoute dans un navigateur réel.
 
 
@@ -8879,8 +8875,8 @@ elle a les meilleures cartes de son identité**.
 - **Le tour complet d'une tour** : maquette 3D en silhouette de sablier
   (pierre améthyste, anneau d'or aux cinq gemmes, sablier géant du parvis),
   peinture de repli `public/sablier-tours/tour-du-sablier-renverse.jpg`,
-  ambiance WebAudio « Le retournement du Sablier » (72 BPM, grains comptés et
-  mélodie en miroir), crédits et butin de tour au barème commun. Le récit
+  piste du plateau — le thème principal, `Desert Solitude with Percussion.mp3`,
+  sur la dernière table du jeu —, crédits et butin de tour au barème commun. Le récit
   « La Dernière Liste » n'est pas touché : huit actes, comme avant. Au
   passage, la Tour des Corsaires reçoit le grand mât de vigie qui la porte à
   la hauteur des autres maquettes.
@@ -8892,7 +8888,7 @@ elle a les meilleures cartes de son identité**.
 
 Contrôles : `npm run check:rpg` (la tour et ses types dans
 `tests/rpg-story.test.js`, le niveau `sablier` dans `tests/rpg-ia.test.js`, la
-maquette et l'ambiance dans leurs suites, plus la couverture générique des
+maquette et la musique du plateau dans leurs suites, plus la couverture générique des
 decks composés, des plateaux, des crédits et des boosters). Conception :
 `docs/rpg/21-tour-du-sablier-renverse.md`.
 
@@ -9213,11 +9209,14 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
   cri pirate et la réplique naine — et rien ne change pour eux.
 - **Quelques règles d'écoute.** Une seule voix à la fois (la précédente est
   mise en pause), trois au plus par relevé d'arrivées, décalées de 140 ms : le
-  raid d'un même geste ne se coupe pas la parole. Le gain de base est de 0,5
-  (`RPG_CARD_VOICE_VOLUME`), sous les bruitages de table, et le lecteur reste
-  muet quand le joueur a coupé le son ou baissé le volume — `playCardVoice`
-  partage la règle de `syncOutputGain`, et `destroy()` coupe les départs en
-  attente.
+  raid d'un même geste ne se coupe pas la parole. Chaque voix est ramenée au
+  **niveau d'écoute commun des sons du jeu** (-20 LUFS, voir
+  `src/games/rpgNiveauxSons.js`), d'après la mesure de son fichier : les trois
+  voix enregistrées très bas — « Celle qui pèse » (-29,5 LUFS), « La dame des
+  neufs mondes » (-28,6) et le Tengu (-29,5) — remontent de 9 dB là où
+  « Susanoo » (-13,5) descend de 6 dB. Le lecteur reste muet quand le joueur a
+  coupé le son ou baissé le volume — `playCardVoice` partage la règle de
+  `syncOutputGain`, et `destroy()` coupe les départs en attente.
 - **Le moteur ne juge pas la carte.** `rpgConsommerArriveesCreature` journalise
   **toute** entrée en jeu depuis la main (jamais un jeton, une réanimation ou
   un retour de cale) ; c'est la page qui lit la voix de la carte, en solo comme
@@ -9263,3 +9262,64 @@ galiotes garde son « Ahoy ! », le Kenshi de la forge joue son propre MP3.
 `tests/rpg-catalogue-voix.test.js` ouvre les fiches du catalogue : Susanoo et
 la Vipère de verre y parlent, le Tercio de cuivre et la magie Haut-fond y
 gardent l'effleurement.
+
+## Le Sablier : tous les sons au même niveau d'écoute
+
+Les échantillons du duel n'ont pas la même origine : la pose d'une carte
+(`card-place.wav`) a été enregistrée très bas, le coup d'épée
+(`player-attack-hit.wav`) sature, les 60 voix d'arrivée viennent de trois lots
+distincts. Les volumes étaient réglés à la main entre 0,5 et 0,64, si bien que
+l'écart **entendu** atteignait **trente-deux décibels** : la carte posée était
+inaudible, la frappe assourdissante, et deux voix sur trois passaient sous les
+bruitages de table.
+
+- **La mesure remplace le réglage.** `src/games/rpgNiveauxSons.js` porte, pour
+  chaque fichier, son niveau intégré en LUFS (ITU-R BS.1770, filtres K, blocs
+  de 400 ms recouvrant à 75 %, double interrupteur de silence) et sa crête en
+  dBFS. Le gain en découle : `gain = 10 ** ((cible - lufs) / 20)`. Tout le jeu
+  écoute donc à **-20 LUFS** — 6 dB au-dessus des musiques de plateau, qui
+  gardent leur chaîne et leur curseur.
+- **Le tableau est engendré, pas tapé.** `tools/mesure-sons-sablier.py` mesure
+  les 24 échantillons et les 60 voix (lecture des WAV maison — trois fichiers
+  portent un bloc `bext` non UTF-8 que les lecteurs stricts refusent — et des
+  MP3 par PyAV), puis affiche la table, les gains et le niveau obtenu :
+
+  ```bash
+  python3 tools/mesure-sons-sablier.py            # la table et l'écart obtenu
+  python3 tools/mesure-sons-sablier.py --js       # le littéral à recopier
+  python3 tools/mesure-sons-sablier.py --egaliser # remonte les WAV trop pointus
+  ```
+
+- **Les fichiers trop pointus sont remontés dans le fichier.** La pose de
+  carte demandait +17 dB, alors que sa crête ne laissait que 10 dB de marge :
+  aucun gain de lecture ne pouvait la rendre audible sans saturer.
+  `tools/mesure-sons-sablier.py --egaliser` réécrit ces WAV (gain + limiteur à
+  pré-lecture, crête à -1 dBFS) — trois fichiers seulement : `card-place.wav`
+  (-37,1 → -21,5 LUFS), `card-draw.wav` (-32,5 → -20,2) et la voix du Tengu
+  (-29,5 → -20,5). L'outil itère jusqu'à ce que le niveau soit atteint, puis
+  réécrit le WAV en PCM 16 bits, mêmes canaux, même fréquence. Les MP3 fournis
+  ne sont pas réécrits.
+- **Le gain de lecture passe par un nœud WebAudio.** Un élément `<audio>`
+  plafonne à `volume = 1` : le lecteur branche chaque fichier sur son
+  `GainNode` (`routerEchantillon`), dans un bus commun qui finit sur un
+  limiteur de secours (-0,3 dBFS) pour les sons qui se superposent. Chaque gain
+  est borné par ce que la crête autorise (`RPG_PLAFOND_CRETE_DBFS`, -0,5
+  dBFS) : deux voix MP3 sans marge restent ainsi un peu sous le niveau commun —
+  « Celle qui pèse » (-24,1 LUFS, 4,1 dB sous la cible) et « Le Maître des
+  hiéroglyphes » (-21,4). Tous les autres fichiers tombent à moins de 0,1 dB de
+  la cible. Sans `createMediaElementSource` (navigateur ancien), le gain
+  retombe sur `audio.volume`, borné à 1.
+- **Le survol reste un murmure.** Le seul son encore synthétisé se déclenche à
+  chaque carte effleurée : il garde son gain de synthèse et ne figure pas dans
+  la table. Idem pour les musiques de plateau (curseur `volumeMusique`).
+- **La salle d'écoute suit.** `sons-du-sablier.html` applique les mêmes gains
+  (petit bus WebAudio + limiteur, monté au premier geste) et affiche sur chaque
+  carte l'écart appliqué — « -6,5 dB → -20 LUFS » pour Susanoo, « +1,7 dB »
+  pour la Valkyrie du corbeau.
+
+Contrôles : `npm run check:rpg` (dont `tests/rpg-niveaux-sons.test.js` : table
+complète des deux familles, niveau atteint pour les 84 fichiers — et le seul
+écart admis, celui que la crête impose —, formule et bords, gain posé sur chaque
+nœud, repli sans routage des médias, volume et mute, démontage) — et `node --test tests/rpg-audio.test.js
+tests/rpg-foudre-audio.test.js tests/rpg-fleche-audio.test.js
+tests/rpg-voix-arrivees.test.js`, qui figent le routage de chaque échantillon.
