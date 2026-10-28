@@ -108,7 +108,10 @@
 
   /* Titres : les plafonds de `clamp()` étaient atteints dès 1300 px de large ;
      on les relève pour que la hiérarchie tienne sur un grand écran. */
-  .hero h1{font-size:clamp(88px,6.6vw,130px)}
+  /* Même contrainte que dans src/styles.css : la ligne « Gaming, Tech et
+     Cinéma » du héros doit tenir sur une seule ligne — 15 fois son corps —
+     donc 112px au maximum pour une colonne de 1760px en Full HD. */
+  .hero h1{font-size:clamp(80px,6vw,112px)}
   .latest-tests-head h2,.featured-dossiers-head h2,.live-head h2,.reels-head h2,
   .latest h2,.carousel-head h2{font-size:clamp(64px,3.6vw,78px)}
   .page-h2{font-size:clamp(54px,3.1vw,66px)}

@@ -79,7 +79,7 @@ const CONTEXTS = {
   // .hero h1 — accueil
   hero: (vw) => ({
     width: wrapOf(vw),
-    size: vw > 800 ? clamp(46, vw * 0.084, 110) : clamp(36, vw * 0.096, 52),
+    size: vw > 800 ? clamp(40, vw * 0.06, 88) : clamp(34, vw * 0.096, 52),
     ls: 0.005, weight: 800, split: true,
   }),
   // .page-hero h1 — colonne 1.1fr de « 1.1fr .9fr » (gap 48), 1 colonne ≤800px
