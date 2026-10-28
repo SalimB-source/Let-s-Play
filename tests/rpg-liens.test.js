@@ -332,6 +332,37 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Déflection : contre un sort et pioche 1, pioche 2 sous Jörmungandr', () => {
+  const monter = (avecSerpent) => {
+    const duel = duelVide();
+    if (avecSerpent) poser(duel, 'joueur', 'jormungandr');
+    duel.joueur.deck = Array.from({ length: 10 }, () => 'poigne-de-givre');
+    // Le sorcier a annoncé un sort : c'est ce que le contre vise.
+    donner(duel, 'sorcier', 'poigne-de-givre');
+    manaPlein(duel, 'sorcier');
+    duel.annonce = { cote: 'sorcier', carteId: 'poigne-de-givre' };
+    donner(duel, 'joueur', 'maree-contraire');
+    manaPlein(duel, 'joueur');
+    return duel;
+  };
+
+  const sans = monter(false);
+  const avantSans = sans.joueur.deck.length;
+  const resSans = rpgLancerMagie(sans, 'joueur', 'maree-contraire');
+  assert.equal(resSans.contre, true, 'sans ancre : le sort est contré');
+  assert.equal(avantSans - sans.joueur.deck.length, 1, 'et une seule carte piochée');
+
+  const avec = monter(true);
+  const avantAvec = avec.joueur.deck.length;
+  const resAvec = rpgLancerMagie(avec, 'joueur', 'maree-contraire');
+  assert.equal(resAvec.contre, true, 'sous le Serpent du monde : le sort est contré');
+  assert.equal(avantAvec - avec.joueur.deck.length, 2, 'et deux cartes piochées');
+
+  const carte = cardById('maree-contraire');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'jormungandr', effet: { pioche: 2 } });
+});
+
 test('Courant de retour : renvoie une créature, et pioche 2 sous le Léviathan', () => {
   const monter = (avecLeviathan) => {
     const duel = duelVide();

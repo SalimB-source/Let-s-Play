@@ -82,6 +82,7 @@ mécanique sur des cartes du catalogue.
 | **Haut-fond** (magie rapide, commune) | 1 | −**1/−2** jusqu'à la fin du tour | **−2/−3** | la marée monte d'un cran | Le Kraken (Eau, mythique, 8) |
 | **Le Routier** (sorcellerie, inhabituelle) | 3 | pioche **2**, défausse 1 | pioche **3**, défausse 1 | la carte marine porte plus loin | Bakunawa (Eau, mythique, 4) |
 | **Courant de retour** (sorcellerie, rare) | 3 | renvoie une créature adverse, pioche **1** | renvoie, pioche **2** | le petit frère de la grande marée | Le Léviathan (Eau, mythique, 8) |
+| **Déflection** (magie rapide, rare, id `maree-contraire`) | 3 | contre un sort annoncé, pioche **1** | contre, pioche **2** | le serpent remonte le courant | Jörmungandr (Eau, mythique, 8) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -234,6 +235,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des vingt-neuf paires entrent dans le prototype.
+2. B : lesquelles des trente paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

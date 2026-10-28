@@ -5960,7 +5960,16 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
     duel.annonce = null;
     duel.fenetreReponse = false;
   }
-  for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+  // Le Lien d'un contresort se lit ici : la carte ne passe pas par la
+  // résolution ordinaire des magies (elle rend la main tout de suite), donc
+  // c'est `contrerAnnonce` qui applique son renfort — la Déflection du Serpent
+  // du monde pioche deux cartes au lieu d'une.
+  const lienActif = lienSatisfait(carte, camp.creatures);
+  const effetContre = effetLie(carte, lienActif);
+  if (lienActif) {
+    duel.log.push(`Lien — ${duelCardById(carte.lien.ancre)?.name ?? 'l’ancre'} renforce ${carte.name}.`);
+  }
+  for (let i = 0; i < (effetContre.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
   duel.log.push(cote === 'joueur'
     ? `Vous contrez ${cible.name} avec ${carte.name}.`
     : `Le sorcier contre ${cible.name} avec ${carte.name}.`);

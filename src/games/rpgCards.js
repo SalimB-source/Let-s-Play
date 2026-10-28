@@ -1972,7 +1972,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'sort', pioche: 1 },
-    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte.',
+    // Le Lien du Serpent du monde : le contre est le même, la marée rend deux
+    // cartes au lieu d'une — le serpent remonte le courant dans l'autre sens.
+    lien: { ancre: 'jormungandr', effet: { pioche: 2 } },
+    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte. Lien du Serpent du monde — si Jörmungandr est en jeu, piochez deux cartes à la place.',
     flavor: 'Le sorcier assis n’esquive pas le sort : il l’écoute revenir.',
   },
   // ── Renvoi en main (deck Marée des abysses) ────────────────────────────
