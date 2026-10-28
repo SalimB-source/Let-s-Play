@@ -322,6 +322,38 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('La Grande Pesée : 3 PV, 4 avec La Dévoreuse — la pioche ne bouge pas', () => {
+  const monter = (avecDevoreuse) => {
+    const duel = duelVide();
+    duel.joueur.pvMax = 20;
+    duel.joueur.pv = 20;
+    duel.sorcier.pvMax = 20;
+    duel.sorcier.pv = 20;
+    // La Dévoreuse exile une créature à l'arrivée : on la pose avant toute
+    // proie adverse, elle entre alors sans cible à désigner.
+    if (avecDevoreuse) poser(duel, 'joueur', 'la-devoreuse');
+    for (let i = 0; i < 4; i += 1) duel.joueur.deck.push('poigne-de-givre');
+    return duel;
+  };
+
+  const sans = monter(false);
+  lancer(sans, 'joueur', 'la-grande-pesee');
+  assert.equal(sans.sorcier.pv, 17, 'sans ancre : le sorcier adverse perd 3 PV');
+  assert.equal(sans.joueur.pv, 22, 'et vous en gagnez 3, après le 1 PV payé');
+  assert.equal(sans.joueur.main.length, 2, 'puis deux cartes piochées');
+
+  const avec = monter(true);
+  lancer(avec, 'joueur', 'la-grande-pesee');
+  assert.equal(avec.sorcier.pv, 16, 'avec La Dévoreuse : 4 PV');
+  assert.equal(avec.joueur.pv, 23, 'et vous en gagnez 4');
+  assert.equal(avec.joueur.main.length, 2, 'la pioche reste à deux cartes');
+
+  const carte = cardById('la-grande-pesee');
+  assert.equal(carte.cost, 5, 'le Lien n’escompte jamais le coût');
+  assert.equal(carte.prixPv, 1, 'ni le prix en PV');
+  assert.deepEqual(carte.lien, { ancre: 'la-devoreuse', effet: { amount: 4 } });
+});
+
 test('Poigne de givre : 2 dégâts, 3 avec la Valkyrie des glaces, le gel inchangé', () => {
   const monter = (avecValkyrie) => {
     const duel = duelVide();

@@ -65,6 +65,7 @@ mécanique sur des cartes du catalogue.
 | **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | **+2/+0** · critique **50 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
 | **Frappe d'iaijutsu** (magie rapide, rare) | 1 | **2** dégâts à une créature | **3** dégâts | un cran, et la carte la plus jouable du set | Tojiro, le pourfendeur (Braise, mythique, 6) |
 | **Poigne de givre** (magie rapide, commune) | 2 | **2** dégâts + gel | **3** dégâts, gel inchangé | le gel ne s'achète pas au détail | Valkyrie des glaces (Neige, mythique, 6) |
+| **La Grande Pesée** (sorcellerie, rare) | 5 | −3 PV adverse / +3 / pioche 2 | **−4 / +4** | le même verbe : peser, c'est déjà manger | La Dévoreuse (Ténèbres, mythique, 6) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -190,6 +191,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des douze paires entrent dans le prototype.
+2. B : lesquelles des treize paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

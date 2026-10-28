@@ -366,7 +366,10 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Sorcellerie — Pesée · Ténèbres',
     effet: { type: 'transfert', amount: 3, pioche: 2 },
     cibles: ['sorcier'],
-    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes.',
+    // Le Lien de la Dévoreuse : la pesée mord un cran plus loin — 4 au lieu
+    // de 3. La pioche, elle, ne bouge pas : c'est le plateau, pas la gueule.
+    lien: { ancre: 'la-devoreuse', effet: { amount: 4 } },
+    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes. Lien de la Dévoreuse — si La Dévoreuse est en jeu, il perd 4 PV et vous en gagnez 4 à la place, puis vous piochez deux cartes.',
     flavor: 'Le cœur est pesé, le nom est lu, la page est tournée.',
   }),
 ];
