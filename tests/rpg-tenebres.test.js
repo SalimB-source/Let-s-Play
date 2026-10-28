@@ -41,8 +41,12 @@ import {
   rpgBlesserCreature,
   rpgMulligan,
   rpgMulliganSorcier,
+  rpgNombreTransferts,
+  rpgNombreTributs,
   rpgNouveauDuel,
   rpgPeutPayer,
+  rpgTributsDepuis,
+  rpgTransfertsDepuis,
 } from '../src/games/rpgDuel.js';
 import { choisirCarteIA } from '../src/games/rpgAI.js';
 import { EFFETS_SPRITE, effetIcon, iconePourLigne, pastillesPourCarte } from '../src/games/effetIcons.js';
@@ -179,6 +183,46 @@ test('moteur : le transfert déplace des PV, jamais des dégâts', () => {
   assert.equal(duel.sorcier.pv, sorcierAvant - 2, 'le sorcier perd 2 PV');
   assert.equal(duel.joueur.pv, 22, 'le joueur en gagne 2');
   assert.ok(duel.log.some((ligne) => /Transfert :/u.test(ligne)));
+  // Le journal hors-état nomme le camp qui reçoit la vie et la carte source,
+  // pour que la table allume sa balance des Heures.
+  assert.equal(rpgNombreTransferts(duel), 1);
+  assert.deepEqual(rpgTransfertsDepuis(duel), [
+    { coteSource: 'joueur', montant: 2, sourceCarteId: 'le-poids' },
+  ]);
+  assert.deepEqual(rpgTransfertsDepuis(duel, 1), [], 'la position de lecture borne le journal');
+});
+
+test('moteur : le Tribut au combat remplit le même journal, sans carte source', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.joueur.pv = 18;
+  // Une créature prête portant Tribut 1, comme dans le test de Tribut existant :
+  // elle touche le sorcier, la vie change de camp sans passer par un sort.
+  duel.joueur.creatures.push({
+    id: 'tribut-journal-test',
+    carteId: 'chacal-du-seuil',
+    name: 'Chacal du seuil',
+    atk: 1,
+    pv: 1,
+    pvMax: 1,
+    tribut: 1,
+    ready: true,
+    attaquee: false,
+    jeton: false,
+    armes: [],
+    emplacement: 0,
+  });
+  const pvJoueurAvant = duel.joueur.pv;
+  const pvSorcierAvant = duel.sorcier.pv;
+  const attaque = rpgAttaquerSorcier(duel, 'joueur', 'tribut-journal-test');
+  assert.equal(attaque.ok, true, JSON.stringify(attaque));
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 2, 'la frappe d’attaque puis le Tribut');
+  assert.equal(duel.joueur.pv, pvJoueurAvant + 1, 'le joueur encasse le Tribut');
+  const transferts = rpgTransfertsDepuis(duel);
+  assert.equal(transferts.length, 1);
+  assert.equal(transferts[0].coteSource, 'joueur');
+  assert.equal(transferts[0].montant, 1);
+  assert.equal(transferts[0].sourceCarteId, null, 'un Tribut au combat n’a pas de carte sort source');
 });
 
 test('moteur : le Prix en PV refuse la carte sous le seuil, rien n’est payé', () => {
@@ -292,6 +336,102 @@ test('moteur : deux Tributs qui touchent le sorcier au même combat se cumulent'
     'chaque Chacal déclenche son propre Tribut');
   assert.equal(duel.sorcier.pv, avant.sorcier - 2 - 2, 'deux frappes + deux Tributs');
   assert.equal(duel.joueur.pv, avant.joueur + 2, 'les deux transferts de vie se cumulent');
+});
+
+test('moteur : le journal de Tribut nomme la créature collectrice, sans les pesées', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.joueur.pv = 18;
+  duel.joueur.creatures.push({
+    id: 'tribut-fil-test',
+    carteId: 'chacal-du-seuil',
+    name: 'Chacal du seuil',
+    atk: 1,
+    pv: 1,
+    pvMax: 1,
+    tribut: 1,
+    ready: true,
+    attaquee: false,
+    jeton: false,
+    armes: [],
+    emplacement: 0,
+  });
+  const attaque = rpgAttaquerSorcier(duel, 'joueur', 'tribut-fil-test');
+  assert.equal(attaque.ok, true, JSON.stringify(attaque));
+  assert.equal(rpgNombreTributs(duel), 1, 'un contact au sorcier = un Tribut journalisé');
+  assert.deepEqual(rpgTributsDepuis(duel), [
+    { entityId: 'tribut-fil-test', cote: 'joueur', montant: 1 },
+  ]);
+  assert.deepEqual(rpgTributsDepuis(duel, 1), [], 'la position de lecture borne le journal');
+
+  // Une pesée lancée depuis la main remplit bien le journal des transferts,
+  // mais jamais celui des Tributs : aucun fil ne doit partir d'une créature.
+  const duelPesee = nouveau();
+  installerMana(duelPesee);
+  duelPesee.joueur.main.push('le-poids');
+  duelPesee.joueur.pv = 20;
+  const pesee = rpgLancerMagie(duelPesee, 'joueur', 'le-poids');
+  assert.equal(pesee.ok, true, JSON.stringify(pesee));
+  assert.equal(rpgNombreTransferts(duelPesee), 1, 'la pesée reste un transfert de vie');
+  assert.equal(rpgNombreTributs(duelPesee), 0, 'une pesée n’a pas de créature source : pas de Tribut');
+});
+
+test('moteur : chaque créature qui touche le sorcier laisse son propre Tribut', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.joueur.pv = 18;
+  for (let i = 0; i < 2; i += 1) {
+    duel.joueur.creatures.push({
+      id: `chacal-fil-${i}`,
+      carteId: 'chacal-du-seuil',
+      name: `Chacal ${i}`,
+      atk: 1,
+      pv: 1,
+      pvMax: 1,
+      def: 1,
+      tribut: 1,
+      ready: true,
+      attaquee: false,
+      jeton: false,
+      armes: [],
+      emplacement: i,
+    });
+  }
+  const res = rpgLancerAttaque(duel, 'joueur', ['chacal-fil-0', 'chacal-fil-1'], {
+    'chacal-fil-0': [],
+    'chacal-fil-1': [],
+  });
+  assert.equal(res.ok, true, JSON.stringify(res));
+  assert.deepEqual(rpgTributsDepuis(duel), [
+    { entityId: 'chacal-fil-0', cote: 'joueur', montant: 1 },
+    { entityId: 'chacal-fil-1', cote: 'joueur', montant: 1 },
+  ], 'la table peut tracer un fil par créature, pas un fil fusionné');
+});
+
+test('moteur : un Tribut du sorcier nomme le camp adverse', () => {
+  const duel = nouveau();
+  installerMana(duel);
+  duel.sorcier.pv = 20;
+  duel.sorcier.creatures.push({
+    id: 'chacal-ennemi',
+    carteId: 'chacal-du-seuil',
+    name: 'Chacal adverse',
+    atk: 1,
+    pv: 1,
+    pvMax: 1,
+    def: 1,
+    tribut: 1,
+    ready: true,
+    attaquee: false,
+    jeton: false,
+    armes: [],
+    emplacement: 0,
+  });
+  const attaque = rpgAttaquerSorcier(duel, 'sorcier', 'chacal-ennemi');
+  assert.equal(attaque.ok, true, JSON.stringify(attaque));
+  assert.deepEqual(rpgTributsDepuis(duel), [
+    { entityId: 'chacal-ennemi', cote: 'sorcier', montant: 1 },
+  ], 'le fil se trace aussi quand c’est le sorcier qui encaisse le Tribut');
 });
 
 test('moteur : deux « Nom effacé » cumulent leurs défausses pour le joueur', () => {

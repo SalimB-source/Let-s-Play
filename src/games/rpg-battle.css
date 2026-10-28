@@ -3696,10 +3696,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-spell-arrival .28s ease-out both;
 }
 /* Contresort (joué par le joueur ou par le sorcier) : bordure dorée, pour qu'on
-   le reconnaisse d'un coup d'œil comme une réponse qui défait la carte visée. */
+   le reconnaisse d'un coup d'œil comme une réponse qui défait la carte visée.
+   Le rebond (`rpg-contresort-rebond`) remplace l'arrivée tranquille : la fiche
+   bondit depuis le camp du répondant, s'écrase au centre (squash), encaisse le
+   choc en arrière puis se stabilise. `--rebond` oriente le geste selon le camp
+   (1 = joueur, vers le haut ; -1 = sorcier, vers le bas). La fiche termine au
+   repos : son texte reste lisible pendant toute sa durée de vie (3,6 s). */
 .rpg-spell-played--contre {
+  --rebond: 1;
   border-color: rgba(255, 206, 110, .9);
   box-shadow: 0 12px 30px rgba(0, 0, 0, .65), 0 0 18px rgba(255, 196, 92, .28), inset 0 1px rgba(255, 255, 255, .1);
+  animation: rpg-contresort-rebond calc(.52s * var(--rpg-anim-scale, 1)) cubic-bezier(.35, .7, .3, 1) both;
+}
+/* Un contre du sorcier repart vers le bas, d'où venait sa réponse. */
+.rpg-spell-played--sorcier.rpg-spell-played--contre {
+  --rebond: -1;
 }
 /* Seconde vague d'un sort à écho (le Nuage de cendres) : bordure braise,
    pour qu'on la reconnaisse comme le même sort qui retombe au tour suivant
@@ -3809,6 +3820,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-spell-played { animation: none; }
+  /* Le contresort ne rebondit pas : sa bordure dorée et son sur-titre
+     continuent à l'identifier, sans le geste. */
+  .rpg-spell-played--contre { animation: none; }
 }
 
 /* Les dimensions favorisent l’illustration full art et la lisibilité des repères de carte. */
@@ -5253,7 +5267,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes rpg-card-destroy {
   0% { opacity: 1; filter: brightness(1); scale: 1; translate: 0 0; }
   22% { opacity: 1; filter: brightness(1.8) sepia(.65) saturate(1.7); scale: 1.04; }
-  100% { opacity: 0; filter: blur(5px) grayscale(1); scale: .4; translate: 0 -20px; }
+  /* La carte se délite : elle se tasse vers le bas (le sable tombe), elle ne
+     s'évapore plus vers le haut. Les grains de `.rpg-carte-delitee` font le
+     reste du récit, jusqu'au sol du plateau. */
+  100% { opacity: 0; filter: blur(3px) grayscale(1); scale: .55; translate: 0 10px; }
 }
 
 /* Une source Braise consume l'illustration depuis le bas, sans changer les
@@ -5855,6 +5872,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-roue-feu *,
   .rpg-eclair-marteau,
   .rpg-eclair-marteau * { animation: none !important; transition: none !important; }
+  .rpg-tempete-sable,
+  .rpg-tempete-sable *,
+  .rpg-balance-tenebres,
+  .rpg-balance-tenebres * { animation: none !important; transition: none !important; }
+  .rpg-tribut-fil,
+  .rpg-tribut-fil * { animation: none !important; transition: none !important; }
+  .rpg-ligne-charge,
+  .rpg-ligne-charge * { animation: none !important; transition: none !important; }
+  .rpg-carte-delitee,
+  .rpg-carte-delitee * { animation: none !important; transition: none !important; }
   .rpg-attack-arrow__shaft,
   .rpg-attack-arrow__glow,
   .rpg-blocker-arrow__shaft,
@@ -6557,6 +6584,611 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     padding: 6px 8px;
     font-size: 10px;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA VICTOIRE SUR LA TABLE — le camp vaincu s'efface en sable
+   ──────────────────────────────────────────────────────────────────────────
+   Dès que le duel bascule, `.card-table` reçoit `data-vainqueur` : le camp
+   perdant s'affaisse et pâlit comme du sable qui se dépose, le camp gagnant
+   reste en place, l'indicateur de tour se fige sur « DUEL TERMINÉ » et le
+   panneau de bilan s'ouvre par-dessus sans couper la scène. Transform et
+   opacity seulement, aucune porte : le bilan garde toute la main. */
+.card-table[data-vainqueur="joueur"] .card-row--ennemi,
+.card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
+.card-table[data-vainqueur="sorcier"] .card-row--equipe,
+.card-table[data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
+  animation: rpg-victoire-sable calc(1s * var(--rpg-anim-scale, 1)) cubic-bezier(.4, .1, .6, 1) both;
+}
+@keyframes rpg-victoire-sable {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  55% { opacity: .6; }
+  100% { opacity: .22; transform: translateY(12px) scale(.96); }
+}
+/* L'Astrolabe s'arrête : l'indicateur se fige d'un dernier mouvement sec. */
+.rpg-turn-indicator.is-finished {
+  animation: rpg-victoire-indicateur calc(.55s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .7, .3, 1) both;
+}
+@keyframes rpg-victoire-indicateur {
+  0% { opacity: .3; transform: translateY(-6px) scale(.95); }
+  100% { opacity: 1; transform: none; }
+}
+/* Le bilan s'ouvre par-dessus la scène. La variante de victoire est centrée
+   par translate(-50%, -50%) : l'image d'arrivée doit le conserver, d'où deux
+   jeux d'images clés distincts (le voile de défaite, lui, est plein cadre). */
+.rpg-overlay--win {
+  animation: rpg-victoire-panneau-win calc(.48s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .7, .3, 1) calc(.12s * var(--rpg-anim-scale, 1)) both;
+}
+@keyframes rpg-victoire-panneau-win {
+  0% { opacity: 0; transform: translate(-50%, -50%) translateY(14px) scale(.97); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.rpg-overlay--loss {
+  animation: rpg-victoire-panneau-loss calc(.48s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .7, .3, 1) calc(.12s * var(--rpg-anim-scale, 1)) both;
+}
+@keyframes rpg-victoire-panneau-loss {
+  0% { opacity: 0; transform: translateY(14px) scale(.97); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-table[data-vainqueur] .card-row--ennemi,
+  .card-table[data-vainqueur] .card-row--equipe,
+  .card-table[data-vainqueur] .rpg-wizard-plate--ennemi,
+  .card-table[data-vainqueur] .rpg-wizard-plate--joueur,
+  .rpg-turn-indicator.is-finished,
+  .rpg-overlay--win,
+  .rpg-overlay--loss { animation: none; }
+  /* Le camp vaincu reste désigné par une simple atténuation, sans mouvement. */
+  .card-table[data-vainqueur="joueur"] .card-row--ennemi,
+  .card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
+  .card-table[data-vainqueur="sorcier"] .card-row--equipe,
+  .card-table[data-vainqueur="sorcier"] .rpg-wizard-plate--joueur { opacity: .35; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA CARTE DÉLITÉE — la destruction qui redevient du sable
+   ──────────────────────────────────────────────────────────────────────────
+   Quand une créature meurt (hors combustion Braise et hors prise en cale),
+   douze grains s'échappent de son fantôme et tombent en éventail jusqu'au
+   plateau, comme le sable qui s'accumule. Calque frère du fantôme de
+   destruction : même géométrie, vie identique, mais overflow visible pour que
+   les grains passent le bord de la carte. Chute en transform/opacity seulement
+   (translate + scale), avec une courbe qui accélère comme une pesanteur. */
+.rpg-carte-delitee {
+  position: absolute;
+  z-index: 54;
+  pointer-events: none;
+  overflow: visible;
+}
+.rpg-carte-delitee__grain {
+  position: absolute;
+  left: var(--gx, 50%);
+  top: var(--gy, 60%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f7e6bd, #d6a854 60%, #8f6a2c);
+  box-shadow: 0 0 6px rgba(214, 168, 84, .6);
+  opacity: 0;
+  animation: rpg-carte-delitee-grain calc(.7s * var(--rpg-anim-scale, 1)) cubic-bezier(.4, .1, .6, 1) both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+}
+@keyframes rpg-carte-delitee-grain {
+  0% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx, 0px), var(--dy, 80px)) scale(.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-carte-delitee__grain { animation: none; opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE REBOND DU CONTRESORT — la réponse qui heurte et renvoie le sort adverse
+   ──────────────────────────────────────────────────────────────────────────
+   La fiche du contresort (`.rpg-spell-played--contre`) arrive depuis le camp
+   du répondant, s'écrase au centre (squash), encaisse le choc en sens inverse
+   puis se stabilise au repos. Transform et opacity seulement : aucune mise en
+   page, et la fiche redevient parfaitement stable et lisible à la fin du geste.
+   Le sens vertical est piloté par `--rebond` (1 = joueur, -1 = sorcier). */
+@keyframes rpg-contresort-rebond {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(var(--rebond, 1) * 28px)) scale(.82) rotate(calc(var(--rebond, 1) * 5deg));
+  }
+  32% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+  /* L'impact au centre : la fiche s'aplatit un instant comme un ressort. */
+  44% {
+    opacity: 1;
+    transform: scale(1.07, .91);
+  }
+  /* Le choc la renvoie vers l'origine du sort contré, en légère rotation. */
+  58% {
+    opacity: 1;
+    transform: translateY(calc(var(--rebond, 1) * -12px)) scale(.95, 1.05) rotate(calc(var(--rebond, 1) * -4deg));
+  }
+  76% {
+    opacity: 1;
+    transform: translateY(calc(var(--rebond, 1) * 5px)) scale(1.01) rotate(calc(var(--rebond, 1) * 1.5deg));
+  }
+  /* Repos complet : la fiche garde ses informations pendant ses 3,6 s de vie. */
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA LIGNE DE CHARGE — qui frappe qui, annoncé avant le bond
+   ──────────────────────────────────────────────────────────────────────────
+   Juste avant l'élan de l'attaquant, un trait de sable se trace de son centre
+   vers sa cible (créature ou plaque du sorcier) en 220 ms, tient un instant
+   puis s'efface. Même grammaire que le fil du Tribut : le conteneur porte une
+   géométrie figée par React, seules `transform` et `opacity` bougent. Le ocre
+   de sable la distingue de l'or des transferts de vie. */
+.rpg-ligne-charge {
+  position: absolute;
+  z-index: 55;
+  height: 0;
+  pointer-events: none;
+}
+.rpg-ligne-charge__trait {
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(214, 168, 84, .15), #d6a854 55%, rgba(240, 215, 154, .95));
+  box-shadow: 0 0 7px rgba(214, 168, 84, .5);
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0;
+  animation: rpg-ligne-de-charge-trace calc(.42s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .7, .35, 1) both;
+}
+.rpg-ligne-charge__pointe {
+  position: absolute;
+  left: 100%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: radial-gradient(circle at 35% 30%, #f7e6bd, #d6a854 65%, #8f6a2c);
+  box-shadow: 0 0 8px rgba(240, 215, 154, .8);
+  opacity: 0;
+  animation: rpg-ligne-de-charge-pointe calc(.42s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .7, .35, 1) both;
+}
+@keyframes rpg-ligne-de-charge-trace {
+  0% { transform: scaleX(0); opacity: 0; }
+  12% { opacity: 1; }
+  52% { transform: scaleX(1); opacity: 1; }
+  78% { transform: scaleX(1); opacity: .9; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes rpg-ligne-de-charge-pointe {
+  0% { transform: translateX(0) rotate(45deg) scale(.4); opacity: 0; }
+  12% { opacity: 1; }
+  52% { transform: translateX(0) rotate(45deg) scale(1); opacity: 1; }
+  78% { opacity: .9; }
+  100% { transform: translateX(0) rotate(45deg) scale(.8); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-ligne-charge__trait,
+  .rpg-ligne-charge__pointe { animation: none; opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE FIL DE SABLE DU TRIBUT — le mot-clé Tribut du set Ténèbres
+   ──────────────────────────────────────────────────────────────────────────
+   Quand une créature qui porte Tribut touche le sorcier adverse, un fil doré
+   relie son emplacement à la plaque qui paye, et trois grains d'or remontent
+   le fil du payeur vers le bénéficiaire. Le conteneur ne fait que porter la
+   géométrie figée par React (position, longueur, angle) : aucune propriété de
+   mise en page n'est animée. Le trait se tend par `scaleX`, les grains
+   remontent par `translateX` — transform et opacity seulement. */
+.rpg-tribut-fil {
+  position: absolute;
+  z-index: 56;
+  height: 0;
+  pointer-events: none;
+}
+.rpg-tribut-fil__trait {
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(229, 192, 107, .12), #e5c06b 55%, rgba(255, 243, 207, .95));
+  box-shadow: 0 0 8px rgba(240, 215, 154, .55);
+  transform-origin: left center;
+  transform: scaleX(0);
+  opacity: 0;
+  animation: rpg-tribut-fil-trait calc(.55s * var(--rpg-anim-scale, 1)) cubic-bezier(.35, .7, .3, 1) both;
+}
+.rpg-tribut-fil__grain {
+  position: absolute;
+  left: 0;
+  top: -3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3cf, #e5c06b 60%, #a87f33);
+  box-shadow: 0 0 9px rgba(240, 215, 154, .9);
+  opacity: 0;
+  animation: rpg-tribut-fil-grain calc(.4s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .65, .35, 1) both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+}
+@keyframes rpg-tribut-fil-trait {
+  0% { transform: scaleX(0); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: scaleX(1); opacity: .85; }
+}
+@keyframes rpg-tribut-fil-grain {
+  0% { transform: translateX(var(--fil-longueur, 0px)) scale(.5); opacity: 0; }
+  18% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(0) scale(.9); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-tribut-fil__trait { animation: none; transform: none; opacity: .55; }
+  .rpg-tribut-fil__grain { animation: none; opacity: 0; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA TEMPÊTE DE SABLE — la signature de l'élément Sable
+   ──────────────────────────────────────────────────────────────────────────
+   La Braise a sa roue de feu, l'Eau son tourbillon, la Neige son gel : le
+   Sable manquait de voix. Quand un sort de l'élément frappe une créature, une
+   lame de poussière balaie sa carte, les bords s'érodent et quelques grains
+   retombent au sol — la ressource-sable qui s'accumule, la métaphore du jeu.
+   Le calque reprend la place et l'inclinaison de la carte (comme le
+   tourbillon), ne capte aucun geste et n'anime que translate/opacity. */
+.rpg-tempete-sable {
+  position: absolute;
+  z-index: 57;
+  transform: rotate(var(--rpg-fx-rotation, 0rad));
+  transform-origin: center;
+  pointer-events: none;
+  overflow: visible;
+  /* L'enveloppe de vie : la lame arrive, tient, puis rend la table. */
+  animation: rpg-tempete-sable-vie calc(.9s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+
+/* Le voile ocre : un halo de poussière qui enveloppe la carte un instant. */
+.rpg-tempete-sable__voile {
+  position: absolute;
+  inset: -12%;
+  border-radius: 40%;
+  background: radial-gradient(closest-side,
+    rgba(240, 215, 154, .5),
+    rgba(214, 168, 84, .28) 48%,
+    rgba(176, 130, 54, 0) 78%);
+  filter: blur(2px);
+  opacity: 0;
+  animation: rpg-tempete-sable-voile calc(.9s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+
+/* La lame : un mur de sable qui traverse la carte de gauche à droite. */
+.rpg-tempete-sable__lame {
+  position: absolute;
+  top: -8%;
+  bottom: -8%;
+  left: 0;
+  width: 46%;
+  border-radius: 50%;
+  background: linear-gradient(90deg,
+    rgba(176, 130, 54, 0) 0%,
+    rgba(214, 168, 84, .55) 34%,
+    rgba(240, 215, 154, .92) 62%,
+    rgba(235, 195, 110, .35) 86%,
+    rgba(176, 130, 54, 0) 100%);
+  filter: blur(1.5px) saturate(1.15);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: rpg-tempete-sable-lame calc(.9s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .65, .35, 1) both;
+}
+
+/* L'érosion : les bords de la carte se mangent, puis gardent la poussière. */
+.rpg-tempete-sable__erosion {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rpg-card-radius, 12px);
+  box-shadow:
+    inset 0 0 0 2px rgba(235, 195, 110, .55),
+    inset 10px 0 18px rgba(176, 130, 54, .4),
+    inset -10px 0 18px rgba(176, 130, 54, .4),
+    inset 0 12px 16px rgba(120, 84, 32, .35);
+  opacity: 0;
+  animation: rpg-tempete-sable-erosion calc(.9s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+
+/* Les grains arrachés à la lame : ils tombent et se posent au sol. */
+.rpg-tempete-sable__grain {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d79a, #d6a854 60%, #9c7434);
+  box-shadow: 0 0 7px rgba(235, 195, 110, .7);
+  opacity: 0;
+  animation: rpg-tempete-sable-grain calc(.9s * var(--rpg-anim-scale, 1)) cubic-bezier(.25, .6, .3, 1) both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+}
+
+@keyframes rpg-tempete-sable-vie {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  76% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-tempete-sable-voile {
+  0% { opacity: 0; scale: .7; }
+  30% { opacity: .95; scale: 1.05; }
+  100% { opacity: 0; scale: 1.18; }
+}
+@keyframes rpg-tempete-sable-lame {
+  0% { opacity: 0; transform: translateX(-130%) scaleX(.7); }
+  18% { opacity: 1; }
+  62% { opacity: 1; transform: translateX(70%) scaleX(1.1); }
+  100% { opacity: 0; transform: translateX(240%) scaleX(.85); }
+}
+@keyframes rpg-tempete-sable-erosion {
+  0% { opacity: 0; }
+  34% { opacity: 1; }
+  78% { opacity: .85; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-tempete-sable-grain {
+  0% { translate: -50% -50%; scale: .5; opacity: 0; }
+  16% { opacity: 1; }
+  100% {
+    translate: calc(-50% + var(--dx, 0px)) calc(-50% + var(--dy, 0px));
+    scale: .8;
+    opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA BALANCE DES HEURES — la signature du set Ténèbres (transfert de vie)
+   ──────────────────────────────────────────────────────────────────────────
+   Tribut au contact et sorts « pesée » déplacent la vie d'un camp à l'autre.
+   Au centre de la table, un fléau s'incline du côté qui perd des PV, ses deux
+   coupelles marquent le poids et des grains d'or filent de la coupelle basse
+   vers la haute. Calque décoratif, centré, qui ne capte aucun geste. */
+.rpg-balance-tenebres {
+  --sens: 1;
+  position: absolute;
+  z-index: 58;
+  left: 50%;
+  top: 50%;
+  width: clamp(150px, 30%, 224px);
+  aspect-ratio: 3 / 2.4;
+  translate: -50% -50%;
+  pointer-events: none;
+  animation: rpg-balance-vie calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+/* Le sens du flux de grains : inversé quand c'est le sorcier qui reçoit. */
+.rpg-balance-tenebres--gagne-sorcier { --sens: -1; }
+
+/* Le halo sombre : une vignette locale, jamais un voile plein écran. */
+.rpg-balance-tenebres__halo {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side,
+    rgba(38, 22, 54, .72),
+    rgba(24, 14, 36, .42) 52%,
+    rgba(24, 14, 36, 0) 80%);
+  opacity: 0;
+  animation: rpg-balance-halo calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+
+/* Les deux hiéroglyphes : un de chaque côté, qui s'allument puis s'éteignent. */
+.rpg-balance-tenebres__glyphe {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(229, 192, 107, .9);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(229, 192, 107, .65);
+  opacity: 0;
+  animation: rpg-balance-glyphe calc(1.1s * var(--rpg-anim-scale, 1)) ease-out both;
+}
+.rpg-balance-tenebres__glyphe--sorcier { top: 6%; left: 12%; }
+.rpg-balance-tenebres__glyphe--joueur { bottom: 6%; right: 12%; animation-delay: calc(.12s * var(--rpg-anim-scale, 1)); }
+
+/* La balance : pilier central et fléau qui pivote sur son axe. */
+.rpg-balance-tenebres__balance {
+  position: absolute;
+  inset: 0;
+}
+.rpg-balance-tenebres__pilier {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  bottom: 12%;
+  width: 4px;
+  translate: -50% 0;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #f0d79a, #b08236);
+  box-shadow: 0 0 8px rgba(229, 192, 107, .5);
+}
+.rpg-balance-tenebres__fleau {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 28%;
+  height: 4px;
+  border-radius: 2px;
+  transform-origin: center;
+  background: linear-gradient(90deg, #b08236, #f0d79a 50%, #b08236);
+  box-shadow: 0 0 10px rgba(229, 192, 107, .55);
+  animation: rpg-balance-incline calc(1.1s * var(--rpg-anim-scale, 1)) cubic-bezier(.35, .7, .3, 1) both;
+}
+/* Le joueur gagne : la coupelle du sorcier (à gauche) s'abaisse. */
+.rpg-balance-tenebres--gagne-joueur .rpg-balance-tenebres__fleau {
+  --inclinaison: -9deg;
+}
+/* Le sorcier gagne : la coupelle du joueur (à droite) s'abaisse. */
+.rpg-balance-tenebres--gagne-sorcier .rpg-balance-tenebres__fleau {
+  --inclinaison: 9deg;
+}
+.rpg-balance-tenebres__plateau {
+  position: absolute;
+  top: 2px;
+  display: block;
+  width: 26%;
+}
+.rpg-balance-tenebres__plateau--sorcier { left: 0; }
+.rpg-balance-tenebres__plateau--joueur { right: 0; }
+/* Le fil qui tient la coupelle, puis la coupelle elle-même. */
+.rpg-balance-tenebres__coupelle {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  width: 100%;
+  height: 10px;
+  translate: -50% 0;
+  border: 2px solid rgba(229, 192, 107, .92);
+  border-top: none;
+  border-radius: 0 0 50% 50%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .5), 0 0 8px rgba(229, 192, 107, .35);
+  animation: rpg-balance-coupelle calc(1.1s * var(--rpg-anim-scale, 1)) ease-in-out both;
+}
+.rpg-balance-tenebres__coupelle::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 1.5px;
+  height: 12px;
+  background: rgba(229, 192, 107, .8);
+}
+
+/* Les grains d'or : de la coupelle basse (le perdant) vers la haute. */
+.rpg-balance-tenebres__grain {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff3cf, #e5c06b 60%, #a87f33);
+  box-shadow: 0 0 9px rgba(240, 215, 154, .9);
+  opacity: 0;
+  animation: rpg-balance-grain calc(1.1s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .65, .35, 1) both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+}
+
+@keyframes rpg-balance-vie {
+  0% { opacity: 0; scale: .82; }
+  14% { opacity: 1; scale: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; scale: 1.04; }
+}
+@keyframes rpg-balance-halo {
+  0% { opacity: 0; }
+  24% { opacity: 1; }
+  78% { opacity: .9; }
+  100% { opacity: 0; }
+}
+@keyframes rpg-balance-glyphe {
+  0% { opacity: 0; scale: .4; }
+  30% { opacity: 1; scale: 1.15; }
+  70% { opacity: .95; scale: 1; }
+  100% { opacity: 0; scale: .9; }
+}
+@keyframes rpg-balance-incline {
+  0% { transform: rotate(0deg); }
+  55% { transform: rotate(var(--inclinaison, -9deg)); }
+  80% { transform: rotate(var(--inclinaison, -9deg)); }
+  100% { transform: rotate(calc(var(--inclinaison, -9deg) * .6)); }
+}
+@keyframes rpg-balance-coupelle {
+  0%, 100% { translate: -50% 0; }
+  55% { translate: -50% 2px; }
+}
+@keyframes rpg-balance-grain {
+  0% {
+    translate: -50% -50%;
+    scale: .45;
+    opacity: 0;
+  }
+  18% { opacity: 1; }
+  100% {
+    translate: calc(-50% + (var(--dx, 0px) * var(--sens, 1))) calc(-50% + var(--dy, 0px));
+    scale: .85;
+    opacity: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MODE RÉDUIT FORCÉ (rpg-anim-reduite) — la classe `.is-reduced` sur `.rpg-battle`
+   ──────────────────────────────────────────────────────────────────────────
+   Indépendant de `prefers-reduced-motion` système : c'est un réglage joueur,
+   persisté, qui raccourcit les FX de la table à un fondu de 120 ms, supprime
+   les délais et fige l'état final immédiatement. Les gestes qui déplacent la
+   table (rebond, bascule, chute de grains, affaissement) sont coupés comme
+   dans le mode réduit système ; seuls les panneaux de fin gardent un court
+   fondu. Les sons restent joués — ils vivent côté JS, ce bloc ne les touche
+   pas. Les FX à spawn (tempête, balance, tribut…) ne sont de toute façon pas
+   rendus par le JS quand le mode réduit est actif. */
+@keyframes rpg-fondu-reduit {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Les panneaux de fin : un simple fondu de 120 ms, sans délai ni translation.
+   Le centrage de `.rpg-overlay--win` reste assuré par sa règle statique. */
+.rpg-battle.is-reduced .rpg-overlay--win,
+.rpg-battle.is-reduced .rpg-overlay--loss {
+  animation-name: rpg-fondu-reduit;
+  animation-duration: 120ms;
+  animation-delay: 0ms;
+}
+/* L'Astrolabe se fige sans dernier mouvement. */
+.rpg-battle.is-reduced .rpg-turn-indicator.is-finished {
+  animation: none;
+  opacity: 1;
+}
+/* Le camp vaincu reste désigné par une atténuation statique, sans affaissement. */
+.rpg-battle.is-reduced .card-table[data-vainqueur="joueur"] .card-row--ennemi,
+.rpg-battle.is-reduced .card-table[data-vainqueur="joueur"] .rpg-wizard-plate--ennemi,
+.rpg-battle.is-reduced .card-table[data-vainqueur="sorcier"] .card-row--equipe,
+.rpg-battle.is-reduced .card-table[data-vainqueur="sorcier"] .rpg-wizard-plate--joueur {
+  animation: none;
+  opacity: .35;
+}
+/* Particules, tracés et gestes de mouvement : état final immédiat, rien ne bouge. */
+.rpg-battle.is-reduced .rpg-carte-delitee__grain,
+.rpg-battle.is-reduced .rpg-ligne-charge__trait,
+.rpg-battle.is-reduced .rpg-ligne-charge__pointe,
+.rpg-battle.is-reduced .rpg-tribut-fil__trait,
+.rpg-battle.is-reduced .rpg-tribut-fil__grain,
+.rpg-battle.is-reduced .rpg-tempete-sable,
+.rpg-battle.is-reduced .rpg-tempete-sable__voile,
+.rpg-battle.is-reduced .rpg-tempete-sable__lame,
+.rpg-battle.is-reduced .rpg-tempete-sable__erosion,
+.rpg-battle.is-reduced .rpg-tempete-sable__grain,
+.rpg-battle.is-reduced .rpg-balance-tenebres,
+.rpg-battle.is-reduced .rpg-balance-tenebres__halo,
+.rpg-battle.is-reduced .rpg-balance-tenebres__glyphe,
+.rpg-battle.is-reduced .rpg-balance-tenebres__fleau,
+.rpg-battle.is-reduced .rpg-balance-tenebres__coupelle,
+.rpg-battle.is-reduced .rpg-balance-tenebres__grain,
+.rpg-battle.is-reduced .rpg-spell-played--contre,
+.rpg-battle.is-reduced .rpg-btn--endturn.is-tour-neuf .rpg-btn--endturn__label,
+.rpg-battle.is-reduced .rpg-flux-track.is-maree .rpg-flux-track__slot.is-lit {
+  animation: none;
+}
+/* Le tracé du Tribut garde son information, statique et sans translation. */
+.rpg-battle.is-reduced .rpg-tribut-fil__trait {
+  transform: none;
+  opacity: .55;
 }
 
 /* ── Le décor 3D de la table (RpgTableScene3D) ───────────────────────────────
@@ -7982,6 +8614,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: rgba(54, 47, 33, .76);
   color: rgba(245, 232, 207, .6);
   box-shadow: none;
+}
+
+/* Le retournement du bouton « Fin du tour » au nouveau tour du joueur.
+   Le flip porte sur le libellé, jamais sur le bouton : le survol, l'état
+   désactivé et la pression gardent leurs propres transformations. La classe
+   `is-tour-neuf` ne vit que 480 ms, le temps du geste, sans rien bloquer. */
+.rpg-btn--endturn__label {
+  display: inline-block;
+}
+.rpg-btn--endturn.is-tour-neuf .rpg-btn--endturn__label {
+  animation: rpg-fin-de-tour-retourne calc(.48s * var(--rpg-anim-scale, 1)) cubic-bezier(.4, .2, .25, 1) both;
+}
+@keyframes rpg-fin-de-tour-retourne {
+  0% { transform: perspective(440px) rotateY(90deg); opacity: .2; }
+  60% { transform: perspective(440px) rotateY(-12deg); opacity: 1; }
+  100% { transform: perspective(440px) rotateY(0deg); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-btn--endturn.is-tour-neuf .rpg-btn--endturn__label { animation: none; }
 }
 
 @media (max-width: 900px) {
@@ -10378,6 +11029,67 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font-size: 11px;
   font-weight: 900;
   letter-spacing: .08em;
+}
+/* Réglage de vitesse des animations (×0,5 / ×1 / ×2) : commande segmentée
+   qui écrit --rpg-anim-scale sur la coquille `.rpg-battle`. */
+.rpg-settings__speed {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(238, 216, 171, .18);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .04);
+}
+.rpg-settings__speed-label {
+  display: grid;
+  gap: 2px;
+}
+.rpg-settings__speed-label strong {
+  color: #fff3d6;
+  font-size: 14px;
+  font-weight: 800;
+}
+.rpg-settings__speed-label small {
+  color: rgba(242, 226, 194, .76);
+  font-size: 12px;
+}
+.rpg-settings__segment {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(238, 216, 171, .22);
+  border-radius: 12px;
+  background: rgba(8, 7, 12, .6);
+}
+.rpg-settings__segment-btn {
+  padding: 9px 6px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: rgba(242, 226, 194, .82);
+  font-family: var(--display, sans-serif);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, color .16s ease, transform .14s ease;
+}
+.rpg-settings__segment-btn:hover {
+  border-color: rgba(246, 207, 103, .45);
+  background: rgba(244, 192, 79, .1);
+  color: #ffe8a8;
+}
+.rpg-settings__segment-btn:active { transform: translateY(1px); }
+.rpg-settings__segment-btn.is-active {
+  border-color: rgba(246, 207, 103, .62);
+  background: linear-gradient(135deg, rgba(244, 192, 79, .26), rgba(206, 134, 42, .14));
+  color: #ffedc0;
+  box-shadow: inset 0 0 0 1px rgba(246, 207, 103, .25);
+}
+.rpg-settings__segment-btn:focus-visible {
+  outline: 2px solid rgba(246, 207, 103, .7);
+  outline-offset: 2px;
 }
 .rpg-settings__mute-all {
   display: inline-flex;
