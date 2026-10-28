@@ -2888,6 +2888,7 @@ export function TableCard({
         entite.infiltration ? 'has-infiltration' : '',
         (entite.bouclier ?? 0) > 0 || entite.bouclierLumiere ? 'has-bouclier' : '',
         entite.bouclierLumiere ? 'has-bouclier-lumiere' : '',
+        armes.length > 0 ? 'has-arme' : '',
         carte?.resonance ? 'has-resonance' : '',
         carte?.aura ? 'has-aura' : '',
         gelee ? 'is-frozen' : '',
@@ -3145,6 +3146,12 @@ export function TableCard({
           <span key={critiqueFx.token} className="rpg-card__critique" aria-hidden="true">
             ×{critiqueFx.fois}
           </span>
+        )}
+        {armes.length > 0 && (
+          <>
+            <span className="rpg-card__arme-coin rpg-card__arme-coin--bl" aria-hidden="true" />
+            <span className="rpg-card__arme-coin rpg-card__arme-coin--br" aria-hidden="true" />
+          </>
         )}
       </button>
   );

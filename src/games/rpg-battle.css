@@ -11572,6 +11572,65 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   filter: saturate(.7) brightness(1.1) blur(.4px);
 }
 .rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
+
+/* Coins métalliques : les créatures équipées d’une arme affichent des renforts
+   d’acier aux quatre coins de la carte. */
+.rpg-card.has-arme {
+  position: relative;
+  overflow: clip;
+}
+.rpg-card.has-arme::before,
+.rpg-card.has-arme::after,
+.rpg-card.has-arme .rpg-card__arme-coin {
+  content: "";
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #b9c4cc;
+  background: linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 50%, #95a5a6 100%);
+  box-shadow: 0 0 6px rgba(0, 0, 0, .55), inset 0 0 4px rgba(255, 255, 255, .45);
+  border-radius: 2px;
+}
+.rpg-card.has-arme::before {
+  top: 6px;
+  left: 6px;
+  border-right: none;
+  border-bottom: none;
+}
+.rpg-card.has-arme::after {
+  top: 6px;
+  right: 6px;
+  border-left: none;
+  border-bottom: none;
+}
+.rpg-card.has-arme .rpg-card__arme-coin--bl,
+.rpg-card.has-arme .rpg-card__arme-coin--br {
+  bottom: 6px;
+  top: auto;
+}
+.rpg-card.has-arme .rpg-card__arme-coin--bl {
+  left: 6px;
+  border-right: none;
+  border-top: none;
+}
+.rpg-card.has-arme .rpg-card__arme-coin--br {
+  right: 6px;
+  border-left: none;
+  border-top: none;
+}
+.rpg-card__arme-coin {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #b9c4cc;
+  background: linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 50%, #95a5a6 100%);
+  box-shadow: 0 0 6px rgba(0, 0, 0, .55), inset 0 0 4px rgba(255, 255, 255, .45);
+  border-radius: 2px;
+}
 .rpg-card__brume {
   position: absolute;
   inset: 0;
