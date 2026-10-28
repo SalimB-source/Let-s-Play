@@ -174,6 +174,17 @@ trois hivers » pour le Berserk des trois hivers…).
 - **Déclencheur** : une entrée en jeu depuis la main, jamais un aperçu, une
   pioche, une réanimation, un jeton ni un retour de cale. Le moteur journalise
   toute arrivée (`rpgConsommerArriveesCreature`) et la page lit la voix.
+- **Timing — la voix précède le plateau.** La réplique ne se joue plus *après*
+  la pose : la page l'annonce avec le geste, **avant** que la créature ne
+  touche sa rangée — au départ du vol de la carte depuis la main (720 ms de
+  vol), à l'instant où la carte annoncée par l'adversaire se résout, ou pendant
+  la déchirure du sacrifice (860 ms) qui fait la place. Le relevé d'arrivée
+  consomme ensuite ces annonces (`voixAvanceesRef`) pour ne pas faire parler la
+  carte deux fois. Les voix de la main — et celle de la carte annoncée — sont
+  **préchargées** en silence (`RpgAudioPlayer.prechargerVoix`) : sans cela, le
+  premier geste téléchargerait le MP3 et la réplique n'arriverait qu'une fois la
+  créature posée. Si la créature est contrée ou la pose refusée, la voix déjà
+  partie se tait (`couperVoix`).
 - **Priorité** : la voix de la carte **remplace** les accueils génériques (cri
   pirate « Ahoy ! »/« Alright », quai des navires, réplique naine). Les cartes
   sans fichier gardent ces trois accueils.

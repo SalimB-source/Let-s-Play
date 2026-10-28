@@ -73,6 +73,14 @@ export async function checkRpgVoixArrivees(assert, fichiersLus = []) {
     sons.push(nom);
     return jouerOriginal.call(this, nom, delai);
   };
+  // Le préchargement d'une voix : muet, il prépare le fichier pour que la
+  // réplique puisse partir avec le geste, avant la pose.
+  const precharges = [];
+  const prechargerOriginal = RpgAudioPlayer.prototype.prechargerVoix;
+  RpgAudioPlayer.prototype.prechargerVoix = function espionPrechargement(url) {
+    precharges.push(url);
+    return prechargerOriginal.call(this, url);
+  };
 
   const container = document.createElement('div');
   document.body.append(container);
@@ -177,15 +185,29 @@ export async function checkRpgVoixArrivees(assert, fichiersLus = []) {
       await choisirMana('braise');
       const kenshi = carteEnMain('Kenshi de la forge');
       if (kenshi?.getAttribute('draggable') === 'true') {
+        // La voix du Kenshi est préparée pendant qu'il est encore en main :
+        // c'est ce qui lui permet de partir à l'instant du geste.
+        assert.ok(precharges.some((url) => decodeURIComponent(url).includes('Kenshi de la forge.mp3')),
+          'la voix de la carte en main est préchargée, sans être jouée');
         sons.length = 0;
         const lecturesAvant = fichiersLus.length;
         await glisserSurTable(kenshi);
+        // **La voix précède le plateau** : au sortir du geste, la carte vole
+        // encore — la créature n'est pas sur sa rangée — et sa réplique est
+        // déjà partie.
+        assert.equal(carteSurTable('equipe', 'kenshi-de-la-forge'), null,
+          'la voix part avant que la créature ne touche le plateau');
+        assert.ok(fichiersLus.slice(lecturesAvant)
+          .some((src) => decodeURIComponent(src).includes('Kenshi de la forge.mp3')),
+        'le Kenshi parle dès que sa carte quitte la main, pas à l’atterrissage');
         await attendre(() => carteSurTable('equipe', 'kenshi-de-la-forge'),
           'Kenshi de la forge arrive sur la table');
-        await act(async () => { await wait(200); });
+        await act(async () => { await wait(400); });
         const nouvelles = fichiersLus.slice(lecturesAvant);
-        assert.ok(nouvelles.some((src) => decodeURIComponent(src).includes('Kenshi de la forge.mp3')),
-          'l’arrivée du Kenshi joue son propre échantillon (public/Kenshi de la forge.mp3)');
+        const lecturesKenshi = nouvelles
+          .filter((src) => decodeURIComponent(src).includes('Kenshi de la forge.mp3'));
+        assert.equal(lecturesKenshi.length, 1,
+          'la voix ne se rejoue pas quand la créature touche le plateau');
         assert.ok(!nouvelles.some((src) => /pirate-ahoy|dock-sound|dwarf-dialogue/i.test(src)),
           'la voix propre de la carte remplace les accueils génériques');
         kenshiPose = true;
@@ -196,6 +218,7 @@ export async function checkRpgVoixArrivees(assert, fichiersLus = []) {
     assert.ok(kenshiPose, 'le Kenshi de la forge a fini par entrer en jeu');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
+    RpgAudioPlayer.prototype.prechargerVoix = prechargerOriginal;
     await act(async () => { root.unmount(); });
     container.remove();
   }

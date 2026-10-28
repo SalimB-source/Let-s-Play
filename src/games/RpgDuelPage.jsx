@@ -6750,9 +6750,64 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return false;
     }
   };
+  // ── La voix précède le plateau ──
+  // Une créature ne parle plus **après** son atterrissage : sa voix part quand
+  // sa carte quitte la main — pendant le vol, donc avant qu'elle ne touche sa
+  // rangée — ou, chez l'adversaire, dès que la carte annoncée se résout, avant
+  // que la créature ne soit peinte. `voixAvanceesRef` retient les cartes déjà
+  // annoncées pour que le relevé des arrivées, un rendu plus tard, ne les fasse
+  // pas parler une seconde fois.
+  const voixAvanceesRef = useRef([]);
+  // Une annonce jamais confirmée (pose refusée, carte contrée) n'attend pas
+  // indéfiniment : elle expire, sinon elle avalerait la voix d'un homonyme.
+  const VOIX_AVANCEE_TTL = 8000;
+  const retirerVoixAvancee = (carteId) => {
+    const rang = voixAvanceesRef.current.findIndex((entree) => entree.carteId === carteId);
+    if (rang < 0) return false;
+    voixAvanceesRef.current.splice(rang, 1);
+    return true;
+  };
+  /** La voix est-elle déjà partie avec le geste ? (l'annonce est consommée) */
+  const voixAvanceeConsommee = (carteId) => {
+    const maintenant = Date.now();
+    voixAvanceesRef.current = voixAvanceesRef.current
+      .filter((entree) => maintenant - entree.at <= VOIX_AVANCEE_TTL);
+    return retirerVoixAvancee(carteId);
+  };
+  /**
+   * Annonce une créature par sa voix, **avant** qu'elle n'entre en jeu. Les
+   * cartes sans échantillon (terrains, magies, armes, lot silencieux) ne font
+   * rien ici : leur accueil générique reste au relevé d'arrivée.
+   */
+  const annoncerVoixArrivee = (carteId) => {
+    if (!carteId || !rpgACarteUneVoix(carteId)) return false;
+    if (voixAvanceesRef.current.some((entree) => entree.carteId === carteId)) return false;
+    if (!jouerVoixArrivee(carteId)) return false;
+    voixAvanceesRef.current.push({ carteId, at: Date.now() });
+    return true;
+  };
+  /** La créature n'entre pas (contrée) : la voix déjà partie se tait. */
+  const retirerVoixArrivee = (carteId) => {
+    if (!retirerVoixAvancee(carteId)) return false;
+    try { sfxRef.current?.couperVoix(); } catch { /* audio indisponible */ }
+    return true;
+  };
+  // Le fichier d'une voix est préchargé dès que la carte est en main — et pour
+  // la carte annoncée par l'adversaire, qui peut tomber au clic suivant. Sans
+  // cela, le premier geste téléchargerait le MP3 et la réplique n'arriverait
+  // qu'une fois la créature posée. Rien ne joue : l'élément reste muet.
+  const voixPrechargeesRef = useRef(new Set());
+  const prechargerVoixCarte = (carteId) => {
+    const url = rpgArrivalVoiceUrl(carteId);
+    if (!url || voixPrechargeesRef.current.has(url)) return;
+    voixPrechargeesRef.current.add(url);
+    try { sfxRef.current?.prechargerVoix(url); } catch { /* audio indisponible */ }
+  };
   const jouerVoixArrivees = (entrees) => {
     const cartes = (entrees ?? []).filter((entree) => rpgACarteUneVoix(entree?.carteId));
-    cartes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
+    // Une voix déjà partie avec le geste ne se rejoue pas à l'atterrissage.
+    const restantes = cartes.filter((entree) => !voixAvanceeConsommee(entree.carteId));
+    restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
   // ── La fiche d'une carte parle ──
@@ -7344,6 +7399,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (naviresSansVoix.length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
     if (piratesSansVoix.length) jouerArriveePirate(piratesSansVoix.length);
     if (nainsSansVoix.length) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
+  });
+
+  // ── Les voix de la main se préparent en silence ──
+  // Une voix ne peut précéder sa créature que si son fichier est déjà là : au
+  // premier geste, le navigateur téléchargerait le MP3, et la réplique
+  // n'arriverait qu'une fois la carte posée. On prépare les voix de la main et
+  // celle de la carte annoncée par l'adversaire — jamais plus d'une fois par
+  // fichier, et sans rien jouer.
+  useEffect(() => {
+    const duelCourant = duelRef.current;
+    if (ecran !== 'partie' || !duelCourant) return;
+    for (const carteId of duelCourant.joueur?.main ?? []) prechargerVoixCarte(carteId);
+    if (duelCourant.annonce?.carteId) prechargerVoixCarte(duelCourant.annonce.carteId);
   });
 
   // Compteur de séquence pour les animations de pioche.
@@ -9586,6 +9654,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? origine.handIndex
       : Number.isInteger(handIndex) ? handIndex : Number(source?.dataset.handIndex);
     carteOrigineVolRef.current = null;
+    // **La voix part maintenant, pas à l'atterrissage.** La carte vient de
+    // quitter la main : la créature ne touchera sa rangée qu'au bout du vol
+    // (720 ms), et elle parle déjà — c'est le geste qui l'annonce, pas sa
+    // pose. Une disposition réduite saute le vol : la voix, elle, précède
+    // toujours le rendu qui peint la créature.
+    annoncerVoixArrivee(carte.id);
     if (!Number.isInteger(index) || index < 0 || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       resoudreAction();
       return;
@@ -10652,10 +10726,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       });
     }
     if (res.ok && res.contre && res.parIA) {
-      // Le sorcier contre la créature : elle n'entre pas en jeu.
+      // Le sorcier contre la créature : elle n'entre pas en jeu — sa voix,
+      // partie avec le vol, se tait au lieu de parler dans le vide.
+      retirerVoixArrivee(carteId);
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
       annoncerContreSorcier(res);
     } else if (res.ok) {
+      // Filet : une arrivée sans vol (leçon, disposition réduite, effet) est
+      // annoncée ici, juste avant que la table ne peigne la créature.
+      annoncerVoixArrivee(carteId);
       // Une arrivée qui pioche ou fouille le deck a déjà montré/déplacé des
       // cartes : la pose devient irréversible, comme un sort résolu.
       if (arriveeConsulteDeck(carte) && !res.arriveeEnAttente) invaliderAnnulation();
@@ -10687,6 +10766,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.ok && !(res.contre && res.parIA)) {
       noterEvenementDuel({ type: 'creature-invoquee', cardId: carteId });
       noterEvenementDuel({ type: 'carte-jouee', cardId: carteId });
+    } else if (!res.ok) {
+      // Pose refusée : rien n'est entré, aucune voix ne doit rester en attente.
+      retirerVoixArrivee(carteId);
     }
   };
 
@@ -10723,6 +10805,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // souffle restait allumé pour toute créature sacrifiée, quelle que soit sa
     // couleur — c'est le bruit de la carte détruite qui reste.
     jouerSfx('destruction');
+    // La remplaçante ne touchera le plateau qu'après la déchirure (860 ms) :
+    // sa voix part maintenant, avec le geste qui la destine à cette case.
+    annoncerVoixArrivee(carteId);
     const duree = animationsReduites() ? 60 : 860;
     later(() => {
       const enCours = sacrificeEnCoursRef.current;
@@ -12133,10 +12218,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     );
     setApercuSurvol(null);
     jouerSfx('pass');
+    // La créature annoncée parle **avant** sa résolution : le clic qui la
+    // laisse passer est le geste qui l'annonce, pas l'instant où elle touche
+    // le plateau. Une magie ou une arme n'a pas de voix : rien ne sonne ici.
+    annoncerVoixArrivee(carteAnnoncee?.id);
     const champAvant = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     const degatsJoueurAvantResolution = prendreInstantaneDegatsJoueur();
     const res = rpgSorcierResoudreAnnonce(duel);
+    // La carte n'a pas pu se résoudre (mana envolé, cible disparue) : rien
+    // n'entre en jeu, la voix déjà partie se tait.
+    if (!res.ok) retirerVoixArrivee(carteAnnoncee?.id);
     if (res.ok) {
       const sonEffetBraise = res.renvoiMain
         ? 'creature_return'

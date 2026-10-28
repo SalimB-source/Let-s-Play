@@ -9315,6 +9315,14 @@ bruitages de table.
   avec lui son bruit de fond et ses artéfacts. Une créature entre désormais en
   jeu avec sa voix d'arrivée (ou le souffle de son élément), un sort avec le son
   de son élément, un terrain et une arme en silence.
+- **La voix précède le plateau.** La réplique d'une créature ne suit plus sa
+  pose : elle part au geste qui l'annonce — le départ du vol de la carte depuis
+  la main, l'instant où la carte annoncée par l'adversaire se résout, la
+  déchirure qui fait la place à la remplaçante — donc **avant** que la créature
+  ne touche sa rangée. Les fichiers de la main sont préchargés
+  (`RpgAudioPlayer.prechargerVoix`) pour que la voix démarre à l'instant du
+  geste au lieu d'attendre le téléchargement du MP3 ; une créature contrée coupe
+  la voix qui venait de partir (`couperVoix`).
 - **Le survol reste un murmure, mais c'est un fichier.**
   `src/games/assets/hover.wav` est un extrait du vrai enregistrement de carte
   (`card-draw.wav`), découpé par `tools/make-son-survol.py` : c'était le dernier
