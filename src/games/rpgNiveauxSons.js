@@ -41,8 +41,10 @@
  *     sous le niveau commun. Tout le reste tombe pile dessus.
  *
  * Le survol de l'interface (`hover`) garde son murmure : son fichier est joué à
- * 0,22 du niveau commun (`DOSE_SURVOL`, dans `rpgAudio.js`) parce qu'il se
- * déclenche à chaque carte effleurée — un son d'événement, lui, se remarque.
+ * 0,05 du niveau commun (`DOSE_SURVOL`, dans `rpgAudio.js`), 17,4 dB sous les
+ * bruitages, parce qu'il se déclenche à chaque carte effleurée — le balayage
+ * d'une main de cartes en fait une nappe, alors qu'un son d'événement se
+ * remarque.
  * Les musiques ont leur propre chaîne et leur propre réglage.
  */
 

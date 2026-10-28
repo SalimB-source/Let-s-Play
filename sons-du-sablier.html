@@ -172,8 +172,8 @@
       une sinusoïde de 55 ms sur A4, qu'on entendait comme un bip d'interface posé sur la pose des
       cartes. C'est maintenant un extrait du vrai enregistrement de carte
       (<code>src/games/assets/hover.wav</code>, découpé dans <code>card-draw.wav</code> par
-      <code>tools/make-son-survol.py</code>), joué à 0,22 — soit 4,5 dB sous le niveau commun : un
-      froissement, pas un événement. Le moteur de synthèse (oscillateurs, bruit blanc, réverbération)
+      <code>tools/make-son-survol.py</code>), joué à 0,05 — soit 17,4 dB sous le niveau commun : un
+      froissement qu'on distingue à peine, jamais un événement. Le moteur de synthèse (oscillateurs, bruit blanc, réverbération)
       a été supprimé.
     </p>
     <div id="liste-synthese"></div>
@@ -489,9 +489,9 @@ const ls = $('#liste-synthese');
     <h3>Survol des cartes</h3>
     <div class="meta">🎵 hover.wav — découpé dans card-draw.wav</div>
     <p class="desc">Le froissement d'une carte effleurée, pris entre les deux chocs de la glissière
-      d'un vrai enregistrement. En jeu : 0,22, soit 4,5 dB sous le niveau commun, pour rester un
-      murmure.</p>
-    <audio controls preload="metadata" data-gain="0.22" src="./src/games/assets/hover.wav"></audio>`;
+      d'un vrai enregistrement. En jeu : 0,05, soit 17,4 dB sous le niveau commun — un murmure
+      qu'on devine plus qu'on ne l'entend.</p>
+    <audio controls preload="metadata" data-gain="0.05" src="./src/games/assets/hover.wav"></audio>`;
   ls.appendChild(card);
 }
 

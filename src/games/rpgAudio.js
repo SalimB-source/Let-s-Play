@@ -36,11 +36,13 @@ export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';
 /**
  * La dose du survol : le seul son du jeu qui n'est pas un événement, mais un
  * effleurement. Il se déclenche à chaque carte touchée, parfois plusieurs fois
- * par seconde — il reste donc **sous** le niveau commun. Son fichier mesure
- * -11,4 LUFS ; à 0,22 il joue vers -24,5 LUFS, soit 4,5 dB sous les bruitages
- * de table : un froissement de papier qu'on entend sans l'écouter.
+ * par seconde, et **les cartes de la main** en sont le terrain de jeu — le
+ * joueur les balaie du regard en permanence. Il reste donc très **sous** le
+ * niveau commun : son fichier mesure -11,4 LUFS, et à 0,05 il joue vers
+ * -37,4 LUFS, soit 17,4 dB sous les bruitages de table. C'est un froissement
+ * qu'on distingue à peine — le geste se voit, le son se devine.
  */
-const DOSE_SURVOL = 0.22;
+const DOSE_SURVOL = 0.05;
 
 export function clampRpgVolume(value) {
   const num = Number(value);

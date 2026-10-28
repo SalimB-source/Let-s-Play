@@ -273,8 +273,9 @@ def mesurer(chemin: Path) -> dict:
 # ── Inventaire ──────────────────────────────────────────────────────────────
 # Le survol est le seul son du jeu qui ne vise pas le niveau commun : il se
 # déclenche à chaque carte effleurée et garde une dose discrète
-# (`DOSE_SURVOL`, dans `src/games/rpgAudio.js`). Il n'entre donc pas dans la
-# table des niveaux — le mesurer ici ferait proposer un gain de +13 dB.
+# (`DOSE_SURVOL = 0.05`, dans `src/games/rpgAudio.js`). Il n'entre donc pas
+# dans la table des niveaux — le mesurer ici ferait proposer un gain de +13 dB,
+# et ramènerait ce froissement au niveau d'un événement.
 SANS_NIVEAU_COMMUN = frozenset({'hover'})
 
 

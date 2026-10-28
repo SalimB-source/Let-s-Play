@@ -147,12 +147,15 @@ test('toutes les séquences ont des départs, durées et gains valides', () => {
   }
 });
 
-test('le survol est un vrai froissement de papier, joué en murmurme', () => {
+test('le survol est un vrai froissement de papier, à peine audible', () => {
   const [survol] = rpgSfx('hover');
   assert.equal(survol.kind, 'sample', 'le survol est un fichier, plus une sinusoïde');
   assert.ok(survol.dur <= 0.1, 'le survol reste un frémissement');
-  assert.ok(survol.g > 0 && survol.g <= 0.3,
-    'sa dose le garde sous le niveau commun : c’est un effleurement, pas un événement');
+  // Son fichier mesure -11,4 LUFS : à 0,05 il joue vers -37,4 LUFS, 17,4 dB
+  // sous les bruitages. Au-delà de 0,08 (≈ -33 LUFS), le balayage d'une main
+  // de cartes redevient un clic — c'est le reproche qui a fait baisser la dose.
+  assert.ok(survol.g > 0 && survol.g <= 0.08,
+    'sa dose le garde loin sous le niveau commun : un froissement qu’on devine');
   assert.ok(existsSync(new URL('../src/games/assets/hover.wav', import.meta.url)),
     'hover.wav est livré avec le jeu (tools/make-son-survol.py)');
 });
@@ -282,12 +285,12 @@ test('setVolume ajuste le gain de chaque fichier, dose du survol comprise', () =
   player.unlock();
   const survol = player.echantillonsParNom.get('hover');
   assert.ok(survol, 'le survol est un échantillon comme les autres');
-  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.22) < 1e-6,
-    'sa dose discrète reste sous le niveau commun');
+  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.05) < 1e-6,
+    'sa dose discrète reste loin sous le niveau commun');
 
   player.setVolume(0.5);
   assert.equal(player.volume, 0.5);
-  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.11) < 1e-6, 'le volume du jeu divise la dose');
+  assert.ok(Math.abs(player.gainEchantillon(survol) - 0.025) < 1e-6, 'le volume du jeu divise la dose');
 
   player.setVolume(0);
   assert.equal(player.gainEchantillon(survol), 0, 'à volume 0, le survol est muet');

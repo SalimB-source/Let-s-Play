@@ -162,9 +162,10 @@ d'arrivée des créatures, et jusqu'au froissement du survol.
   en LUFS (`tools/mesure-sons-sablier.py`) et ramené à -20 LUFS, borné par sa
   crête (`src/games/rpgNiveauxSons.js`).
 - **Le survol** est un extrait de 80 ms du vrai enregistrement de carte
-  (`hover.wav`, découpé par `tools/make-son-survol.py`), joué à 0,22 : son
-  fichier mesure -11,4 LUFS, il joue donc vers -24,5 LUFS, 4,5 dB sous les
-  bruitages de table — un effleurement, pas un événement.
+  (`hover.wav`, découpé par `tools/make-son-survol.py`), joué à 0,05 : son
+  fichier mesure -11,4 LUFS, il joue donc vers -37,4 LUFS, 17,4 dB sous les
+  bruitages de table — un froissement qu'on distingue à peine, jamais un
+  événement sonore.
 
 La couche « qui joue quoi » est pure et testée (`tests/rpg-audio.test.js`) ; le
 lecteur WebAudio ne s'éveille qu'au premier geste joueur (politique autoplay des

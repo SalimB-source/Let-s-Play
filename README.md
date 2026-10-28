@@ -9319,9 +9319,11 @@ bruitages de table.
   `src/games/assets/hover.wav` est un extrait du vrai enregistrement de carte
   (`card-draw.wav`), découpé par `tools/make-son-survol.py` : c'était le dernier
   son synthétisé du jeu — une sinusoïde de 55 ms sur A4, qu'on entendait comme
-  un bip d'interface posé sur la pose des cartes. Il garde une **dose** de 0,22
-  (sous le niveau commun, parce qu'un effleurement n'est pas un événement) et
-  ne figure donc pas dans la table. Les musiques de plateau gardent leur propre
+  un bip d'interface posé sur la pose des cartes. Sa **dose** est de 0,05 : à
+  -37,4 LUFS, 17,4 dB sous le niveau commun, c'est un froissement qu'on
+  distingue à peine — 0,22 s'entendait encore comme un clic en balayant une
+  main de cartes. Un effleurement n'est pas un événement : il ne figure donc
+  pas dans la table des niveaux. Les musiques de plateau gardent leur propre
   curseur `volumeMusique`.
 - **La salle d'écoute suit.** `sons-du-sablier.html` applique les mêmes gains
   (petit bus WebAudio + limiteur, monté au premier geste) et affiche sur chaque

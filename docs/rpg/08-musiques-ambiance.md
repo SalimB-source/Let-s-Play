@@ -60,9 +60,11 @@ un **fichier** : `src/games/assets/hover.wav`, un extrait de 80 ms de la
 glissière de `card-draw.wav`, découpé par `tools/make-son-survol.py`. Il
 remplace la sinusoïde de 55 ms qui était le dernier son fabriqué par du code —
 sur une carte qu'on s'apprête à poser, ce bip se confondait avec le geste et
-donnait à la pose une couleur d'interface. Sa **dose** de 0,22 le garde 4,5 dB sous le
-niveau commun (son fichier mesure -11,4 LUFS, il joue vers -24,5), sans entrée
-dans la table des niveaux : un effleurement n'est pas un événement, et
+donnait à la pose une couleur d'interface. Sa **dose** de 0,05 le garde 17,4 dB
+sous le niveau commun (son fichier mesure -11,4 LUFS, il joue vers -37,4) : sur
+une main de cartes qu'on balaie du regard, 0,22 s'entendait encore comme un
+clic. Il n'a pas d'entrée dans la table des niveaux — un effleurement n'est pas
+un événement, et
 `tools/mesure-sons-sablier.py` l'écarte de la mesure (`SANS_NIVEAU_COMMUN`). Les **musiques** ont leur propre chaîne et leur propre curseur ;
 elles ne sont pas dans cette table.
 

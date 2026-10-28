@@ -228,15 +228,16 @@ test('le lecteur pose sur chaque échantillon le gain de sa mesure', () => {
     // dose de catalogue — nulle part ailleurs que sur le survol.
     for (const entree of player.echantillons) {
       // Le gain du nœud = niveau mesuré du fichier × dose de catalogue. Les
-      // doses valent 1 partout, sauf pour le survol (0,22) : un effleurement
-      // discret, pas un événement.
+      // doses valent 1 partout, sauf pour le survol (0,05) : un effleurement
+      // à peine audible, pas un événement.
       const dose = rpgSfx(entree.nom)[0].g;
       assert.ok(Math.abs(entree.noeud.gain.value - gainEchantillon(entree.nom) * dose) < 1e-9,
         `${entree.nom} : gain ${entree.noeud.gain.value}`);
       assert.equal(entree.audio.volume, 1, 'l’élément ne coupe pas ce que le nœud règle');
     }
-    // Le survol reste bien en dessous du niveau commun.
-    assert.ok(player.echantillonsParNom.get('hover').noeud.gain.value < 0.25);
+    // Le survol reste très en dessous du niveau commun : 17,4 dB sous les
+    // bruitages, un froissement qu'on devine (dose 0,05, fichier -11,4 LUFS).
+    assert.ok(player.echantillonsParNom.get('hover').noeud.gain.value <= 0.08);
     // La pioche a été remontée **dans son fichier** (gain + limiteur hors
     // ligne) : à la lecture, son gain reste dans la marge de crête, et le
     // limiteur du bus n'a plus qu'un rôle de secours.
