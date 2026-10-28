@@ -1394,15 +1394,22 @@ function tirerHasardElectricite(aleatoire = Math.random) {
  *  s'élargissent au-delà du cadre en s'effaçant, sur un liseré qui reste
  *  allumé. `variante` ne change que la teinte — bleue pour la résonance,
  *  jaune pour les cartes qui impriment une aura (la forge des Samouraïs, les
- *  Ksour, le héros du sable). Le calque est purement décoratif
- *  (`aria-hidden`) : l'effet est déjà annoncé par l'icône et par la
- *  description lue de la carte. Les ondes sont décalées d'un tiers de cycle
- *  pour qu'une nouvelle vague parte toujours avant que la précédente ne
- *  s'éteigne. */
+ *  Ksour, le héros du sable), violette pour la Malédiction (La Barbe Noire) :
+ *  même sonar, même cadence, une couleur par sens de l'effet. Le calque est
+ *  purement décoratif (`aria-hidden`) : l'effet est déjà annoncé par l'icône
+ *  et par la description lue de la carte. Les ondes sont décalées d'un tiers
+ *  de cycle pour qu'une nouvelle vague parte toujours avant que la précédente
+ *  ne s'éteigne. */
+const CLASSE_VARIANTE_ONDES = Object.freeze({
+  aura: 'rpg-card__resonance--aura',
+  malediction: 'rpg-card__resonance--malediction',
+});
+
 function AuraOndes({ variante = 'resonance', phase = 0 }) {
+  const teinte = CLASSE_VARIANTE_ONDES[variante] ?? '';
   return (
     <span
-      className={`rpg-card__resonance${variante === 'aura' ? ' rpg-card__resonance--aura' : ''}`}
+      className={`rpg-card__resonance${teinte ? ` ${teinte}` : ''}`}
       style={{ '--rpg-resonance-phase': `${(-phase).toFixed(2)}s` }}
       aria-hidden="true"
     >
@@ -2904,6 +2911,7 @@ export function TableCard({
         armes.length > 0 ? 'has-arme' : '',
         carte?.resonance ? 'has-resonance' : '',
         carte?.aura ? 'has-aura' : '',
+        carte?.malediction ? 'has-malediction' : '',
         gelee ? 'is-frozen' : '',
         active ? 'is-active' : '',
         selected ? 'is-selected' : '',
@@ -2991,6 +2999,9 @@ export function TableCard({
       )}
       {carte?.resonance ? <AuraOndes phase={phaseAura(entite)} /> : null}
       {carte?.aura ? <AuraOndes variante="aura" phase={phaseAura(entite)} /> : null}
+      {/* La Malédiction projette le même sonar, en violet : la source du malus
+          se lit à sa couleur, comme celle d'un bonus. */}
+      {carte?.malediction ? <AuraOndes variante="malediction" phase={phaseAura(entite)} /> : null}
       {/* Envol : un souffle de lumière traverse lentement la face, comme une
           aile qui passe — décalé lui aussi par entité. */}
       {entite.envol && (

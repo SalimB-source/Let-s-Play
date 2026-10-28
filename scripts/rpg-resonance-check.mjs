@@ -115,7 +115,7 @@ assert.match(duel, /carte\?\.resonance \? 'has-resonance' : '',/,
 
 // ── 2. Le calque : décoratif, trois ondes, une phase par carte ──────────────
 const composant = duel.slice(
-  duel.indexOf('function AuraOndes'),
+  duel.indexOf('/** L\'aura de sonar'),
   duel.indexOf("/* ── Soins : l'éclat d'un gain de vie"),
 );
 assert.match(composant, /\{\[1, 2, 3\]\.map\(/, 'trois ondes naissent du cœur de la carte');
@@ -137,11 +137,11 @@ assert.ok(debut > 0, 'la feuille porte un bloc consacré à la résonance');
 assert.ok(fin > debut, 'le bloc de la résonance précède celui de l’infiltration, sans le recouvrir');
 const resonanceCss = battleCss.slice(debut, fin);
 
-assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\)\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
-  'les ondes sortent du cadre, sans rendre la carte transparente (résonance comme aura)');
-assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\) > :is\(\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost\)\s*\{[^}]*border-radius:\s*inherit;/s,
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura, \.has-malediction\)\s*\{[^}]*overflow:\s*clip;[^}]*overflow-clip-margin:\s*58px;/s,
+  'les ondes sortent du cadre, sans rendre la carte transparente (résonance, aura, malédiction)');
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura, \.has-malediction\) > :is\(\.rpg-card__img, \.rpg-card__blood, \.rpg-card__frost\)\s*\{[^}]*border-radius:\s*inherit;/s,
   'une fois le débordement ouvert, les calques pleine face gardent l’arrondi');
-assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura\) \.rpg-card__img\s*\{[^}]*animation:\s*none !important;/s,
+assert.match(resonanceCss, /\.rpg-card:is\(\.has-resonance, \.has-aura, \.has-malediction\) \.rpg-card__img\s*\{[^}]*animation:\s*none !important;/s,
   'le survol ne fait plus déborder l’illustration agrandie');
 assert.match(resonanceCss, /\.rpg-card__resonance\s*\{[^}]*position:\s*absolute;[^}]*inset:\s*0;[^}]*z-index:\s*1;[^}]*pointer-events:\s*none;/s,
   'le calque couvre la face, passe sous les repères de jeu et ne capte aucun geste');
