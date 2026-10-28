@@ -60,14 +60,13 @@
     padding-top:124px;
   }
 
-  /* Colonne de lecture d'un article : `space-between` envoyait la colonne
-     latérale à l'autre bout du conteneur (près de 600 px entre le texte et
-     les encarts). On la garde à distance fixe, le texte aligné à gauche comme
-     le reste de la page. */
+  /* Colonne de lecture d'un article : garder le texte et les encarts comme
+     un seul groupe centré dans le conteneur. Le centrage évite que l'ensemble
+     paraisse collé au bord gauche quand le shell s'élargit. */
   .article-layout{
     width:var(--lp-shell);
     grid-template-columns:minmax(0,880px) 300px;
-    justify-content:start;
+    justify-content:center;
     gap:clamp(56px,5vw,84px);
   }
 

@@ -364,7 +364,7 @@
   position:relative;
   width:min(1240px,calc(100% - 56px));
   grid-template-columns:minmax(0,1fr) 280px;
-  justify-content:start;
+  justify-content:center;
   gap:clamp(44px,5vw,72px);
   padding-top:16px;
 }
