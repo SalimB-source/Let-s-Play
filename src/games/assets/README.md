@@ -110,7 +110,18 @@ game entirely.
   - Bitter Cold Wind by DRAGON-STUDIO — https://pixabay.com/sound-effects/nature-bitter-cold-wind-482876/
   - Cold Wind Sound Effect — https://pixabay.com/sound-effects/cold-wind-sound-effect-127448/
   - Wind Artic Cold by cobratronik — https://freesound.org/people/cobratronik/sounds/117136/ (CC0)
-- **Usage** : SFX `cold_wind` joué dans `declencherGelMasse` (verglas, brume-du-fjord, hurlement-du-blizzard, geant-des-banquises), avec throttle 900ms. Volume 0.58, même bus que `flame_gust`/`water_wave`.
+- **Usage** : SFX `cold_wind` conservé pour le souffle d’exil, avec throttle 900ms. Volume 0.58, même bus que `flame_gust`/`water_wave`.
 - **Animation** : `rpg-cold-breath-descend 1.4s` souffle froid simple qui descend sur créatures adverses (joueur→ennemi top 5%, sorcier→joueur bottom 15%), 5 particules brume / 8 verglas.
 - **Remplacement futur** : pour un MP3 Pixabay, télécharger et convertir via ffmpeg `ffmpeg -y -i input.mp3 -t 2.2 -af afade=t=in:st=0:d=0.15,afade=t=out:st=2.05:d=0.15 src/games/assets/cold-wind.wav`.
 
+## Impact de gel : `ice-freeze.wav`
+
+`ice-freeze.wav` est la copie sans ré-encodage du fichier fourni par l’utilisateur
+`IceFoley6095_90_1.wav` (WAV PCM 16 bits, stéréo, 44,1 kHz, 1,068 s).
+
+- **Usage** : SFX `freeze_impact`, joué une fois lorsqu’une créature passe réellement
+  de non gelée à gelée. Le relevé avant/après couvre les sorts ciblés et de zone,
+  les capacités d’arrivée et les gels déclenchés en combat, sans le rejouer au simple
+  décompte de fin de tour.
+- **Volume** : 0.62, sous le même contrôle de volume et de sourdine que les autres
+  échantillons du duel.

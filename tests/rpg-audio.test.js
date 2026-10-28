@@ -17,6 +17,7 @@ import {
   RPG_PIRATE_DIALOGUE_SFX,
   RPG_SFX_NAMES,
   RPG_FOUDRE_MARTEAU_SFX,
+  RPG_FREEZE_IMPACT_SFX,
   RpgAudioPlayer,
 } from '../src/games/rpgAudio.js';
 
@@ -31,7 +32,7 @@ test('hz : le la de référence et ses voisins', () => {
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw', 'card_place',
-    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'hover',
+    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'hover',
     'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
     'foudre_marteau', 'water_wave',
   ].sort(), 'le son du duel = la synthèse du survol + les échantillons de la table');
@@ -92,6 +93,14 @@ test('Thunder Spark est un sample partagé par les deux marteaux', () => {
   assert.deepEqual(rpgSfx(RPG_FOUDRE_MARTEAU_SFX), [{ kind: 'sample', at: 0, dur: 3.422, g: 1 }]);
   assert.ok(existsSync(new URL('../src/games/assets/thunder-spark-transition-full.mp3', import.meta.url)),
     'Thunder Spark Transition voyage dans src/games/assets');
+});
+
+test('le gel joue le Foley de glace fourni', () => {
+  assert.equal(RPG_FREEZE_IMPACT_SFX, 'freeze_impact');
+  assert.ok(RPG_SFX_NAMES.includes(RPG_FREEZE_IMPACT_SFX));
+  assert.deepEqual(rpgSfx(RPG_FREEZE_IMPACT_SFX), [{ kind: 'sample', at: 0, dur: 1.068, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/ice-freeze.wav', import.meta.url)),
+    'IceFoley6095_90_1.wav voyage dans src/games/assets/ice-freeze.wav');
 });
 
 test('la victoire est le cri de guerre viking, livré avec le jeu', () => {

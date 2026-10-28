@@ -9662,6 +9662,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         def: entite.def,
         pv: entite.pv,
         pvMax: entite.pvMax ?? null,
+        gelToursRestants: entite.gelToursRestants ?? 0,
         bouclier: entite.bouclier ?? 0,
         bouclierLumiere: Boolean(entite.bouclierLumiere),
         armeId: entite.arme?.carteId ?? null,
@@ -9701,6 +9702,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ...duel.joueur.terrains,
       ...duel.sorcier.terrains,
     ].map((entite) => [entite.id, entite]));
+    // Le moteur n'expose pas un journal séparé pour le gel. Le passage de
+    // 0 à une durée positive dans le relevé avant/après couvre les sorts
+    // ciblés, les gels de zone, les arrivées et les capacités de combat, sans
+    // rejouer le son lors du simple décompte de fin de tour.
+    const nouvellesGelees = avant.some((entite) => {
+      if (entite.isTerrain) return false;
+      const apres = vivants.get(entite.entityId);
+      return Boolean(apres)
+        && (entite.gelToursRestants ?? 0) <= 0
+        && (apres.gelToursRestants ?? 0) > 0;
+    });
+    if (nouvellesGelees) jouerSfx('freeze_impact');
     // Le journal du moteur dit quelles créatures sont retournées en main —
     // y compris celles qu'un **effet de créature** (le rebond du Sonneur fêlé,
     // le reflux du Léviathan) a renvoyées, sans que l'action le dise. Les
@@ -10282,8 +10295,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const token = ++sequenceGelMasseRef.current;
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
     setGelMasseFx({ type, camp, token, carteId: id, touteLaTable });
-    // Son de vent froid — réel échantillon CC0 (cold-wind.wav), pas de synthèse
-    jouerSfx('cold_wind');
     const duree = type === 'brume' ? 2800 : type === 'blizzard' ? 3200 : type === 'geant' ? 3400 : 3000;
     timerGelMasseRef.current = window.setTimeout(() => setGelMasseFx((cur) => (cur?.token === token ? null : cur)), duree);
   };
