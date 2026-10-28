@@ -1409,35 +1409,73 @@ function appliquerMaledictions(duel) {
  * s'en va (morte, renvoyée, exilée), le bonus retombe à l'imprimé. Aucune
  * arme n'est jamais perdue : elle est seulement moins belle sans son mythe.
  *
- * Comme les Auras, chaque entité ne retient que l'écart qu'elle a déjà reçu
- * (`lienArmeBonus`) — l'imprimé reste posé une fois pour toutes par
- * `attacherArme`, et ce module ne déplace que le supplément. Un écart négatif
- * ne descend jamais sous 1 PV : perdre le Lien ne tue personne.
+ * Le calcul couvre les **deux** familles d'armes, parce qu'elles ne se posent
+ * pas au même endroit : celle du prototype (`entite.arme`, une seule) et
+ * l'arme-sort des magies (`entite.armes`, une liste — le Sabre maudit, Braise
+ * et sable). Chacune a sa fiche : `bonus` pour la première, `effet.atk/def`
+ * pour la seconde.
+ *
+ * Comme les Auras, chaque entité ne retient que l'écart qu'elle a déjà reçu,
+ * arme par arme (`lienArmesBonus`) — l'imprimé reste posé une fois pour toutes
+ * par l'attachement, et ce module ne déplace que le supplément. Un écart
+ * négatif ne descend jamais sous 1 PV : perdre le Lien ne tue personne.
  */
 function appliquerLiensArmes(duel) {
   for (const cote of ['joueur', 'sorcier']) {
-    const camp = duel[cote];
-    const champ = camp.creatures;
+    const champ = duel[cote].creatures;
     for (const entite of champ) {
-      // `duelCardById` ne couvre que créatures et héros : une arme se lit par
-      // `armeById`, comme partout ailleurs dans le moteur.
-      const arme = armeCarteDe(entite);
-      const lien = arme ? lienDeCarte(arme) : null;
-      const base = arme?.bonus ?? { atk: 0, def: 0 };
-      const total = lien && lienSatisfait(arme, champ)
-        ? { atk: lien.bonus?.atk ?? base.atk ?? 0, def: lien.bonus?.def ?? base.def ?? 0 }
-        : { atk: base.atk ?? 0, def: base.def ?? 0 };
-      const voulu = { atk: total.atk - (base.atk ?? 0), def: total.def - (base.def ?? 0) };
-      const deja = entite.lienArmeBonus ?? { atk: 0, def: 0 };
-      const dAtk = voulu.atk - (deja.atk ?? 0);
-      const dDef = voulu.def - (deja.def ?? 0);
+      const deja = entite.lienArmesBonus ?? {};
+      // Toutes les armes attachées, prototype et sorts mêlés : le registre ne
+      // retient que celles qui portent un Lien.
+      const portees = [];
+      if (entite.arme?.carteId) portees.push(armeById(entite.arme.carteId));
+      for (const id of entite.armes ?? []) portees.push(magieById(id));
+
+      const suivant = {};
+      let dAtk = 0;
+      let dDef = 0;
+      let journal = null;
+      for (const arme of portees) {
+        const lien = arme ? lienDeCarte(arme) : null;
+        if (!arme || !lien) continue;
+        const base = arme.kind === 'arme'
+          ? (arme.bonus ?? { atk: 0, def: 0 })
+          : { atk: arme.effet?.atk ?? 0, def: arme.effet?.def ?? 0 };
+        // Une arme du prototype renforce par `lien.bonus` ; une arme-sort
+        // (Braise et sable, Sabre maudit), qui se joue comme une magie, porte
+        // son renfort dans `lien.effet` — les deux disent la même chose.
+        const renfort = lien.bonus ?? lien.effet;
+        if (!renfort || (renfort.atk === undefined && renfort.def === undefined)) continue;
+        const actif = lienSatisfait(arme, champ);
+        const voulu = actif
+          ? { atk: (renfort.atk ?? base.atk ?? 0) - (base.atk ?? 0), def: (renfort.def ?? base.def ?? 0) - (base.def ?? 0) }
+          : { atk: 0, def: 0 };
+        suivant[arme.id] = voulu;
+        const avant = deja[arme.id] ?? { atk: 0, def: 0 };
+        dAtk += (voulu.atk ?? 0) - (avant.atk ?? 0);
+        dDef += (voulu.def ?? 0) - (avant.def ?? 0);
+        if (actif !== (avant.atk !== 0 || avant.def !== 0)) {
+          journal = { arme, actif, base };
+        }
+      }
+      // Un Lien qui n'a plus d'arme (arme brisée, remplacée) rend ce qu'il
+      // avait prêté : le registre ne garde jamais un écart sans porteur.
+      for (const [id, avant] of Object.entries(deja)) {
+        if (suivant[id]) continue;
+        dAtk -= avant.atk ?? 0;
+        dDef -= avant.def ?? 0;
+      }
+      entite.lienArmesBonus = suivant;
       if (!dAtk && !dDef) continue;
-      entite.lienArmeBonus = { atk: voulu.atk, def: voulu.def };
       entite.atk = Math.max(0, entite.atk + dAtk);
       entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + dDef);
       entite.def = Math.max(1, entite.def + dDef);
       entite.pv = Math.max(1, entite.pv + dDef);
-      duel.log.push(dAtk + dDef > 0
+      if (!journal) continue;
+      const { arme, actif, base } = journal;
+      const renfort = arme.lien.bonus ?? arme.lien.effet;
+      const total = actif ? { atk: renfort.atk ?? base.atk, def: renfort.def ?? base.def } : base;
+      duel.log.push(actif
         ? `Lien — ${arme.name} se réveille sur ${entite.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`
         : `Lien — ${entite.name} perd la faveur de ${arme.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`);
     }
@@ -1864,9 +1902,11 @@ function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
   const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
   // Le supplément du Lien part avec l'arme : `appliquerLiensArmes` ne le
-  // retrouvera plus, puisque plus aucune arme n'est attachée.
-  const lienBonus = entite.lienArmeBonus ?? { atk: 0, def: 0 };
-  entite.lienArmeBonus = { atk: 0, def: 0 };
+  // retrouvera plus, puisque plus aucune arme n'est attachée. Le registre est
+  // armé par arme — on ne retire que la part de CELLE-CI, les armes-sorts
+  // restées en place gardent la leur.
+  const lienBonus = entite.lienArmesBonus?.[carteArme?.id] ?? { atk: 0, def: 0 };
+  if (entite.lienArmesBonus && carteArme) delete entite.lienArmesBonus[carteArme.id];
   entite.arme = null;
   if (!carteArme) return;
   entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0) - (lienBonus.atk ?? 0));
@@ -4113,6 +4153,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           atk += Number(carteArme.effet.atk) || 0;
           def += Number(carteArme.effet.def) || 0;
           coupRapide = coupRapide || Boolean(carteArme.effet.coupRapide);
+          // La part de Lien de cette arme-sort part avec elle : le registre
+          // du porteur ne garde pas un supplément sans arme qui le porte.
+          const lienPart = porteur.lienArmesBonus?.[id];
+          if (lienPart) {
+            atk += lienPart.atk ?? 0;
+            def += lienPart.def ?? 0;
+            delete porteur.lienArmesBonus[id];
+          }
         }
         porteur.armes = [];
         porteur.coupCritique = duelCardById(porteur.carteId)?.coupCritique
@@ -5953,7 +6001,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // laisse donc le sort se résoudre au tarif imprimé — jouer son sort avant
   // de perdre son mythe est une vraie décision de tempo.
   const effetLieActif = lienSatisfait(carte, camp.creatures);
-  const effetBrut = effetLie(carte, effetLieActif);
+  // Une arme-sort s'attache à l'imprimé : son Lien est ensuite tenu en
+  // continu par `appliquerLiensArmes` (il retombe quand l'ancre s'en va),
+  // exactement comme celui d'une arme du prototype.
+  const effetBrut = carte.effet?.type === 'arme'
+    ? carte.effet
+    : effetLie(carte, effetLieActif);
   if (effetLieActif) {
     const ancre = duelCardById(carte.lien.ancre);
     duel.log.push(`Lien — ${ancre?.name ?? 'l’ancre'} renforce ${carte.name}.`);
@@ -5968,7 +6021,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   appliquer(duel, cote, effet, cibleId,
     cibleAllieeId ?? null,
     cardColors(carte), 'magie', carteId);
-  if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
+  if (carte.effet.type === 'arme') {
+    // L'arme-sort vient de s'attacher : son Lien se relève dans la foulée.
+    appliquerLiensArmes(duel);
+  } else {
+    camp.cimetiere.push(carteId);
+  }
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
   // Une Esquive annule le renvoi : la cible est toujours sur la table et la

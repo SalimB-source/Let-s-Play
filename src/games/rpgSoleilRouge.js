@@ -194,7 +194,10 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     typeLine: 'Arme — Lame de braise et de sable',
     cibles: ['creature-amie'],
     effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.3 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. L’arme rejoint le cimetière quand son porteur quitte le jeu.',
+    // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
+    // une fois de plus. Attaque ciblée et coup critique restent intacts.
+    lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Coup critique — 30 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. L’arme rejoint le cimetière quand son porteur quitte le jeu. Lien du Cavalier — si le Cavalier des deux sabres est en jeu, le porteur gagne +2/+0 à la place.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({

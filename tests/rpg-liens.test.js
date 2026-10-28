@@ -292,3 +292,24 @@ test('Brise-lame : pioche 1 sans Orochi, pioche 2 avec lui — la lame tombe dan
   assert.equal(avec.duel.joueur.main.length, 2, 'avec Orochi : deux cartes piochées');
   assert.equal(avec.porteur.arme, null, 'et la lame tombe toujours');
 });
+
+test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée intacte', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'ashigaru-des-braises');
+  const atkNu = porteur.atk;
+  donner(duel, 'joueur', 'braise-et-sable');
+  manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'braise-et-sable', porteur.id).ok, true,
+    'l’arme-sort s’attache à l’allié');
+  assert.equal(porteur.atk, atkNu + 1, 'sans ancre : +1/+0');
+  assert.equal(porteur.coupRapide, true, 'Attaque ciblée est toujours donnée');
+
+  poser(duel, 'joueur', 'cavalier-des-deux-sabres');
+  assert.equal(porteur.atk, atkNu + 2, 'avec le Cavalier : +2/+0');
+  assert.equal(porteur.coupRapide, true, 'et le Lien ne retire pas Attaque ciblée');
+
+  // Le Lien suit son ancre : le Cavalier tombe, la lame redevient +1/+0.
+  const cavalier = duel.joueur.creatures.find((entite) => entite.carteId === 'cavalier-des-deux-sabres');
+  rpgBlesserCreature(duel, 'joueur', cavalier.id, 99, 'braise');
+  assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
+});
