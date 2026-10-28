@@ -324,6 +324,32 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Lame de mer : -3/-3, -4/-4 avec Le Seigneur des mâchoires — l’exil inchangé', () => {
+  const monter = (avecSeigneur) => {
+    const duel = duelVide();
+    if (avecSeigneur) poser(duel, 'joueur', 'seigneur-des-machoires');
+    const cible = poser(duel, 'sorcier', 'momie-de-lin');
+    return { duel, cible };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'lame-de-mer', sans.cible.id);
+  assert.deepEqual([sans.cible.atk, sans.cible.def], [0, 1], 'sans ancre : 2/4 devient 0/1');
+  assert.equal(sans.duel.sorcier.creatures.length, 1, 'elle survit à la morsure');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'lame-de-mer', avec.cible.id);
+  assert.equal(avec.duel.sorcier.creatures.length, 0, 'avec les Mâchoires : la défense tombe à 0, elle est détruite');
+  assert.equal(avec.duel.sorcier.exil.includes('momie-de-lin'), true,
+    'et elle est exilée, pas enterrée — l’exil ne bouge pas');
+  assert.equal(avec.duel.sorcier.cimetiere.includes('momie-de-lin'), false);
+
+  const carte = cardById('lame-de-mer');
+  assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
+  assert.equal(carte.effet.exilEnMourant, true, 'le Lien ne retire pas l’exil');
+  assert.deepEqual(carte.lien, { ancre: 'seigneur-des-machoires', effet: { atk: -4, def: -4 } });
+});
+
 test('Rempart de dunes : +0/+3, et un bouclier avec La Dame aux ailes d’or', () => {
   const monter = (avecDame) => {
     const duel = duelVide();

@@ -1593,7 +1593,10 @@ export const RPG_MAGIE_CARDS = [
     // `exilEnMourant` : si la créature ne survit pas à la morsure, elle est
     // exilée au lieu de rejoindre le cimetière (case 'debuff' du moteur).
     effet: { type: 'debuff', atk: -3, def: -3, cible: 'creature', exilEnMourant: true },
-    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière.',
+    // Le Lien des Mâchoires : la lame mord un cran plus profond — -4/-4.
+    // L'exil, lui, ne change pas : ce qui tombe sous la morsure disparaît.
+    lien: { ancre: 'seigneur-des-machoires', effet: { atk: -4, def: -4 } },
+    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière. Lien des Mâchoires — si Le Seigneur des mâchoires est en jeu, elle donne -4/-4 à la place, l’exil inchangé.',
     flavor: 'La vague coupe plus propre que le couteau.',
   },
   {
