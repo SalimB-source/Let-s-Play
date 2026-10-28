@@ -89,8 +89,16 @@ Ce qui reste à l'arrivée d'une carte :
 |---|---|
 | Créature (les deux camps) | sa voix d'arrivée (`rpgArrivalVoices.js`), sinon le souffle de son élément, sinon **rien** |
 | Créature à arrivée **ciblée** | le souffle part au clic qui désigne la victime, pas à la pose (`rpgArriveeAudio.js`) |
-| Sort | le son de son élément (feu, eau, foudre), sinon rien |
+| Sort | **rien** à l'annonce — plus de souffle d'élément (`rpgSortAudio.js`) |
 | Terrain, arme équipée | rien — le geste se lit à l'écran |
+
+Un sort ne joue donc plus le souffle de son élément : ni le vent de Braise
+(`flame_gust`), ni la vague d'Eau, qui tombait sur quatorze magies — jusqu'aux
+cartes hybrides Sable comme la Lettre de marque ou le Grand Débarquement. Ces
+deux nappes de bruit passaient pour un son d'interface synthétique posé sur le
+sort avant même que son effet se lise. Seul l'Éclair du marteau garde son
+tonnerre : il *est* le sort. La vague d'Eau a quitté le catalogue avec son
+fichier (`water-wave.wav`, `rpgWaterAudio.js`).
 
 **Le souffle appartient à l'effet, pas à la carte.** Une arrivée qui désigne
 encore sa cible — la Tour de Braise et ses 1 dégât, l'Oni de la fournaise, la
@@ -221,6 +229,18 @@ tire rien. La page n'a donc aucun repli métallique derrière une Attaque ciblé
 l'ancien `block_impact` joué sur un raté (`RpgDuelPage.jsx`) était exactement
 l'acier que le joueur entendait encore. `block_impact` ne sert plus qu'à la
 sélection d'un bloqueur, où il annonce un choix et non une frappe.
+
+**L'acier ne s'annonce que s'il va frapper.** La validation de la vague
+d'attaque jouait `attackers_confirm` (`attackers-confirm.mp3`), un choc de
+lames — y compris pour une vague d'archers qui n'allumera aucune épée. C'était
+le dernier acier d'une Attaque ciblée : on l'entendait au clic sur
+« Confirmer l'attaque », juste avant la flèche. `rpgVagueAnnonceAcier(ids,
+ciblesCoupRapide)` ne le laisse jouer que s'il reste un attaquant qui frappera
+au corps à corps ; une vague entièrement composée d'archers se valide en
+silence, et « Attaquer avec tous » ne lève les lames que si la vague contient
+autre chose qu'eux. Conséquence : **le geste d'une Attaque ciblée ne fait
+entendre que la flèche** — `tests/rpg-fleche-audio-ui.test.js` le vérifie sur le
+`<audio>` réellement alimenté, `attackers-confirm.mp3` compris.
 
 `tests/rpg-fleche-audio.test.js` vérifie le catalogue, le partage
 tir/toucher (`rpgFrappesCibleesTirees`, `rpgFrappesCibleesReussies`), le cas

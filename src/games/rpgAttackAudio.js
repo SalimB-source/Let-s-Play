@@ -30,6 +30,24 @@ import { RPG_ARROW_SFX } from './rpgAudio.js';
 export const RPG_MELEE_SFX = 'player_attack_hit';
 
 /**
+ * **L'acier ne s'annonce que s'il va frapper.**
+ *
+ * `attackers_confirm` est un choc de lames : il annonce la vague d'attaque au
+ * moment où on la valide. Une vague qui ne tire que des flèches ne dégaine pas
+ * d'épée — l'Attaque ciblée fait entendre sa flèche, et rien d'autre. Ce
+ * prédicat répond à la question « reste-t-il un attaquant qui frappera au corps
+ * à corps ? » ; `ciblesCoupRapide` associe un attaquant à la proie qu'il a
+ * désignée (`{ [attaquantId]: cibleId }`).
+ *
+ * Avant la désignation des proies, l'appelant passe les cartes de la vague :
+ * un archer (`coupRapide`) qui n'a pas encore choisi peut encore finir au corps
+ * à corps, mais un archer désigné, non.
+ */
+export function rpgVagueAnnonceAcier(attaquantsIds = [], ciblesCoupRapide = {}) {
+  return attaquantsIds.some((id) => !ciblesCoupRapide?.[id]);
+}
+
+/**
  * Les frappes ciblées réellement portées : ni annulées (la proie avait
  * disparu), ni ratées (le coup rapide a manqué sa cible).
  */

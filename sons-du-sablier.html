@@ -190,12 +190,12 @@
       dans <code>public/</code> en même temps ; cette page suit les nouveaux chemins.
     </div>
     <div class="note">
-      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (24 bruitages nommés pour 23 fichiers : <code>hit.wav</code> sert <code>degats</code> et <code>degats_sorcier</code> ; tous en fichiers — la pose de carte a été retirée, le survol est devenu un fichier <code>hover.wav</code>, <code>pirate-ahoy.mp3</code> reste réservé aux arrivées pirates, <code>arrow-shot.wav</code> à l’Attaque ciblée),
+      <b>Sources :</b> <code>src/games/rpgAudio.js</code> (23 bruitages nommés pour 22 fichiers : <code>hit.wav</code> sert <code>degats</code> et <code>degats_sorcier</code> ; tous en fichiers — la pose de carte a été retirée, le survol est devenu un fichier <code>hover.wav</code>, <code>pirate-ahoy.mp3</code> reste réservé aux arrivées pirates, <code>arrow-shot.wav</code> à l’Attaque ciblée, et la vague d’Eau a quitté le catalogue avec le souffle des sorts),
       <code>src/games/rpgArrivalVoices.js</code> (60 voix d’arrivée de créature, une par carte, livrées à la racine de <code>public/</code>),
       <code>src/games/rpgPlateauMusic.js</code> (musiques de plateaux : le son des duels),
       <code>src/games/rpgNiveauxSons.js</code> (niveaux mesurés, gain commun de lecture),
-      <code>src/games/rpgFireAudio.js</code> · <code>rpgWaterAudio.js</code> · <code>rpgFoudreAudio.js</code>
-      (routage élémentaire : souffle de feu réservé aux sorts et effets qui blessent, Eau → vague,
+      <code>src/games/rpgFireAudio.js</code> · <code>rpgFoudreAudio.js</code> · <code>rpgSortAudio.js</code>
+      (routage : souffle de feu réservé aux effets qui blessent, un sort ne joue plus de souffle d'élément,
       attaques de créatures → frappe commune ; l'acier du Samouraï et le tonnerre du marteau ont été
       retirés avec le catalogue synthétique).
     </div>
@@ -355,9 +355,7 @@ const ECHANTILLONS = [
   { nom: 'Flèche de l’Attaque ciblée', fichier: './src/games/assets/arrow-shot.wav', code: 'fleche · arrow-shot.wav',
     desc: 'Une créature qui frappe une proie désignée tire : corde, encoche et sifflement d’empennage — y compris quand la flèche manque. Jamais le coup d’épée par-dessus.' },
   { nom: 'Souffle de Braise', fichier: './src/games/assets/flame-gust.wav', code: 'flame_gust · flame-gust.wav',
-    desc: 'Le vent de feu des sorts et effets Braise qui blessent (jamais les attaques).' },
-  { nom: 'Vague d’Eau', fichier: './src/games/assets/water-wave.wav', code: 'water_wave · water-wave.wav',
-    desc: 'Le ressac des magies Eau.' },
+    desc: 'Le vent de feu des effets Braise qui blessent : une arrivée, une capacité de combat. Plus jamais au lancement d’un sort.' },
   { nom: 'Carte contrée', fichier: './src/games/assets/card-countered.wav', code: 'card_countered · card-countered.wav',
     desc: 'Un contresort vient d’annuler la carte.' },
   { nom: 'Créature renvoyée', fichier: './src/games/assets/creature-return.wav', code: 'creature_return · creature-return.wav',

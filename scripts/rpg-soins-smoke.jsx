@@ -151,7 +151,7 @@ async function scenarioDuel(assert, sons) {
     assert.ok(sons.includes('soin_vie'), 'le soin du joueur se fait entendre (soin_vie)');
     assert.equal(sons.filter((nom) => nom === 'soin_vie').length, 1, 'un seul carillon pour un seul soin');
     assert.ok(!sons.includes('soin_long'), 'le sort ne rejoue plus l’ancien son de soin par-dessus le carillon');
-    assert.ok(sons.includes('water_wave'), 'une magie d’Eau garde son bruit de vague au lancement');
+    assert.ok(!sons.includes('water_wave'), 'une magie d’Eau ne joue plus de vague au lancement');
 
     // ── 3. L'éclat s'éteint de lui-même ─────────────────────────────────────
     await act(async () => { await wait(RPG_SOIN_DUREE + 150); });

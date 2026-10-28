@@ -203,3 +203,17 @@ test('RpgAudioPlayer route « fleche » vers arrow-shot.wav', () => {
     globalThis.window = precedent;
   }
 });
+
+test('l’acier ne s’annonce que s’il va frapper', async () => {
+  const { rpgVagueAnnonceAcier } = await import('../src/games/rpgAttackAudio.js');
+  // Une vague qui ne tire que des flèches se valide en silence : chaque
+  // attaquant a sa proie désignée, aucune lame ne se lève.
+  assert.equal(rpgVagueAnnonceAcier(['a', 'b'], { a: 'x', b: 'y' }), false);
+  // Un attaquant sans proie part au corps à corps : l'acier s'annonce.
+  assert.equal(rpgVagueAnnonceAcier(['a', 'b'], { a: 'x' }), true);
+  // Avant toute désignation, rien n'est joué : rien n'est encore décidé.
+  assert.equal(rpgVagueAnnonceAcier(['a'], {}), true);
+  // Vague vide, entrées absentes : jamais d'erreur, jamais d'acier.
+  assert.equal(rpgVagueAnnonceAcier([], {}), false);
+  assert.equal(rpgVagueAnnonceAcier(undefined, undefined), false);
+});

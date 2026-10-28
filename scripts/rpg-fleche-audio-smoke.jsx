@@ -199,6 +199,10 @@ export async function checkRpgFlecheAudio(assert, fichiersLus = []) {
       `la frappe ciblée joue la flèche (sons : ${noms.join(', ') || 'aucun'})`);
     assert.ok(!noms.includes('player_attack_hit'),
       `une frappe ciblée seule ne joue plus le coup d’épée (sons : ${noms.join(', ')})`);
+    assert.ok(!noms.includes('attackers_confirm'),
+      `l’acier ne s’annonce pas pour une vague de flèches (sons : ${noms.join(', ') || 'aucun'})`);
+    assert.ok(!fichiersLus.slice(fichiersAvant).some((src) => src.includes('attackers-confirm')),
+      'aucun choc de lames ne se charge pendant l’Attaque ciblée');
     assert.ok(!noms.includes('block_impact'),
       'l’attaque s’arrête sur sa proie : aucun choc de blocage');
     // Le fichier réellement lu par l'élément <audio>.

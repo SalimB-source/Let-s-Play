@@ -9280,7 +9280,7 @@ bruitages de table.
   écoute donc à **-20 LUFS** — 6 dB au-dessus des musiques de plateau, qui
   gardent leur chaîne et leur curseur.
 - **Le tableau est engendré, pas tapé.** `tools/mesure-sons-sablier.py` mesure
-  les 23 échantillons et les 60 voix (lecture des WAV maison — trois fichiers
+  les 22 échantillons et les 60 voix (lecture des WAV maison — trois fichiers
   portent un bloc `bext` non UTF-8 que les lecteurs stricts refusent — et des
   MP3 par PyAV), puis affiche la table, les gains et le niveau obtenu :
 

@@ -1,12 +1,16 @@
 /**
  * Routing du bruitage de feu du Sablier.
  *
- * `flame_gust` est réservé aux sorts et effets qui BLESSENT une créature ou
- * un joueur : les sorts de dégâts et la table rase, les arrivées qui
- * frappent — **une fois leur cible désignée** (`rpgArriveeAudio.js`) —, les
- * capacités de combat qui blessent la créature combattue et les effets de
- * mort qui infligent des dégâts. Une Braise qui ne blesse pas
- * (renfort, jetons, pioche, retour parmi les siens…) ne met pas le feu.
+ * `flame_gust` est réservé aux effets de créature qui BLESSENT : les arrivées
+ * qui frappent — **une fois leur cible désignée** (`rpgArriveeAudio.js`) —, les
+ * capacités de combat qui blessent la créature combattue et les effets de mort
+ * qui infligent des dégâts. Une Braise qui ne blesse pas (renfort, jetons,
+ * pioche, retour parmi les siens…) ne met pas le feu.
+ *
+ * Un **sort**, lui, ne joue plus de souffle au lancement : ni le vent de Braise
+ * (ce module), ni la vague d'Eau qui n'existe plus — voir `rpgSortAudio.js`.
+ * `rpgFireSoundFor(carte, 'spell')` reste pour les tests et les appelants qui
+ * veulent savoir si un sort *brûle*, mais la page ne s'en sert plus pour sonner.
  *
  * Les attaques de créatures, elles, ne brûlent pas : toutes les frappes —
  * le Samouraï comme l'Ifrit — partagent `player_attack_hit`, le même

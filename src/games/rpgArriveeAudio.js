@@ -18,13 +18,11 @@
  */
 import { rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { rpgFireSoundFor } from './rpgFireAudio.js';
-import { rpgWaterSoundFor } from './rpgWaterAudio.js';
 
 /** Le souffle de l'élément d'une arrivée, `null` si la carte n'en a pas. */
 export function sonArriveeElement(carte) {
   return rpgFoudreSoundFor(carte, 'arrival')
     ?? rpgFireSoundFor(carte, 'arrival')
-    ?? rpgWaterSoundFor(carte, 'arrival')
     ?? null;
 }
 
