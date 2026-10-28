@@ -161,6 +161,11 @@ test('une zone réveille la parade même quand l’interface transmet un identif
 test('la parade de zone absorbe aussi le gel attaché au sort (Verglas)', () => {
   const { duel, protegee } = scene();
   const voisine = poser(duel, 'sorcier', 'chien-du-guet');
+  // Verglas inflige 2 dégâts ; lui donner assez de PV pour vérifier aussi
+  // que le gel s’applique bien à une survivante.
+  voisine.pv = 3;
+  voisine.pvMax = 3;
+  voisine.def = 3;
   donner(duel, 'joueur', 'verglas');
   manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'verglas').ok, true);
@@ -168,7 +173,7 @@ test('la parade de zone absorbe aussi le gel attaché au sort (Verglas)', () => 
   assert.equal(protegee.gelToursRestants ?? 0, 0, 'ni gel');
   assert.equal(protegee.bouclier, 0, 'la parade tombe');
   assert.ok((voisine.gelToursRestants ?? 0) > 0, 'la voisine, elle, est gelée');
-  assert.equal(voisine.pv, voisine.pvMax - 1, 'et blessée par la grêle');
+  assert.equal(voisine.pv, voisine.pvMax - 2, 'et blessée par les 2 dégâts de la grêle');
 });
 
 test('la parade épargne sa porteuse d’une destruction de zone (Neige noire), sans geler', () => {
@@ -356,7 +361,7 @@ test('la parade de Salem bloque un sort sans riposter ; le suivant se paie au so
   assert.equal(bloque.bouclierBloque, true, 'la parade arrête le premier sort');
   assert.equal(bloque.bouclierEntityId, salem.id);
   assert.equal(salem.bouclier, 0, 'et tombe en entier');
-  assert.equal(salem.pv, 3, 'aucun dégât ne passe');
+  assert.equal(salem.pv, 4, 'aucun dégât ne passe');
   assert.equal(salem.gelToursRestants ?? 0, 0, 'ni le gel du sort');
   assert.equal(duel.sorcier.pv, pvSorcierAvant,
     'aucun effet du sort ne se résout : la Contre-attaque non plus ne riposte pas');
@@ -367,9 +372,9 @@ test('la parade de Salem bloque un sort sans riposter ; le suivant se paie au so
   const deuxieme = rpgLancerMagie(duel, 'sorcier', 'poigne-de-givre', salem.id);
   assert.equal(deuxieme.ok, true);
   assert.equal(deuxieme.bouclierBloque, undefined, 'plus rien ne bloque');
-  assert.equal(salem.pv, 1, 'les 2 dégâts passent (3 → 1)');
-  assert.equal(duel.sorcier.pv, pvSorcierAvant - 4,
-    'la Contre-attaque de Salem frappe le lanceur de ses 4 dégâts d’attaque');
+  assert.equal(salem.pv, 2, 'les 2 dégâts passent (4 → 2)');
+  assert.equal(duel.sorcier.pv, pvSorcierAvant - 3,
+    'la Contre-attaque de Salem frappe le lanceur de ses 3 dégâts d’attaque');
   assert.ok(duel.log.some((ligne) => /Contre-attaque : SALEM renvoie le sort/.test(ligne)),
     'le journal annonce la riposte');
 });
@@ -380,6 +385,6 @@ test('la parade de Salem n’absorbe pas les dégâts de capacité', () => {
   const coup = rpgBlesserCreature(duel, 'joueur', salem.id, 1, 'braise', null, 'capacite');
   assert.equal(coup.recus, 1, 'le coup porte');
   assert.equal(coup.absorbes, 0, 'rien n’est absorbé');
-  assert.equal(salem.pv, 2, 'Salem tombe à 2 PV');
+  assert.equal(salem.pv, 3, 'Salem tombe à 3 PV');
   assert.equal(salem.bouclier, 1, 'la parade attend toujours un sort adverse');
 });

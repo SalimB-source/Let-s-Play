@@ -618,7 +618,7 @@ test('Haut-fond amollit la prise : -1/-2 pour un tour, la vague rend son dû', (
   assert.equal(tercio.atk, 0, 'le Tercio 1/4 s’affaisse sur le sable sous la vague');
   assert.equal(tercio.pv, 2);
   rpgFinDeTour(duel);
-  assert.equal(tercio.atk, 1, 'à la fin du tour du sorcier, la vague se retire');
+  assert.equal(tercio.atk, 2, 'la vague se retire puis le Tercio gagne +1 au début de son tour');
   assert.equal(tercio.pv, 4);
 });
 
@@ -1144,7 +1144,7 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
 
   const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
   assert.equal(res.ok, true);
-  assert.equal(cible.atk, 4, 'le Tercio 1/4 consacré par Bimini frappe à 1 + 3');
+  assert.equal(cible.atk, 7, 'le Tercio a grandi trois fois (+3) avant la consécration (+3)');
   assert.equal(cible.pvMax, 7);
   assert.equal(cible.pv, 7, 'la créature est entièrement soignée après le +3/+3');
   assert.equal(cible.def, 7);

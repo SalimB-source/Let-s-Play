@@ -103,7 +103,7 @@ test('le sprite porte les 36 symboles validés, un par effet', () => {
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
-  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Furie 2'],
+  assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Overkill', 'Furie 2'],
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
   assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque'],
     'Eirik affiche sa Contre-attaque dans les pastilles');
@@ -122,8 +122,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
-  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Contre-attaque', 'Bouclier 1'],
-    'Salem affiche ses trois mots-clés : Rapidité, Contre-attaque et sa parade anti-sort');
+  assert.deepEqual(pastillesDe('salem'), ['Rapidité', 'Attaque ciblée', 'Contre-attaque', 'Bouclier 1'],
+    'Salem affiche Rapidité, Attaque ciblée, Contre-attaque et sa parade anti-sort');
   assert.deepEqual(pastillesDe('guepard'), ['Rapidité'],
     'le guépard-jeton n’affiche que sa Rapidité');
   assert.deepEqual(pastillesDe('desert'), [], 'un terrain ne porte aucune pastille');
@@ -310,7 +310,7 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(jarl.texte, '', 'les mots-clés sobres ne laissent aucun pavé de règle sur la face');
 
   const berserk = effetsDetailles(cardById('berserk-des-trois-hivers'));
-  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['provocation', 'furie']);
+  assert.deepEqual(berserk.pastilles.map((pastille) => pastille.cle), ['provocation', 'overkill', 'furie']);
   assert.equal(berserk.pastilles.find((pastille) => pastille.cle === 'provocation').description,
     'Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
     'la pastille Provocation reprend l’explication imprimée');

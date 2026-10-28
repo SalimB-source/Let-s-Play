@@ -2,7 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RpgAudioPlayer } from '../src/games/rpgAudio.js';
-import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
+import { installerDeckMaisonDeTest, lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -128,6 +128,7 @@ export async function checkRpgAbordageAudio(assert, fichiersLus = []) {
   };
 
   try {
+    installerDeckMaisonDeTest(DECK_JOUEUR, 'maison-abordage-smoke');
     await act(async () => {
       root.render(<RpgDuelPage joueurDeck={DECK_JOUEUR} sorcierDeck={DECK_SORCIER} rng={() => 0.999} />);
     });

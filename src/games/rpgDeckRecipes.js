@@ -307,8 +307,8 @@ export const RPG_RECETTES_HISTOIRE = {
   'gardes-du-fjord': {
     identite: ['neige'],
     terrains: [],
-    creatures: 16,
-    magies: 12,
+    creatures: 12,
+    magies: 16,
     armes: 2,
     ...rampeEtage(1, 4),
     signature: [
@@ -328,8 +328,8 @@ export const RPG_RECETTES_HISTOIRE = {
   'meute-des-neiges': {
     identite: ['neige'],
     terrains: [],
-    creatures: 16,
-    magies: 12,
+    creatures: 12,
+    magies: 16,
     armes: 2,
     ...rampeEtage(2, 4),
     signature: [
@@ -384,10 +384,13 @@ export const RPG_RECETTES_HISTOIRE = {
   'gardes-du-soleil': {
     identite: ['braise'],
     terrains: [],
-    creatures: 20,
-    magies: 10,
+    creatures: 18,
+    magies: 12,
     armes: 0,
     ...rampeEtage(1, 4),
+    // Le vivier Braise manque de communes pour 20 créatures : un quatrième
+    // rare complète le paquet sans laisser le deck de campagne incomplet.
+    raresMax: 4,
     signature: [
       ['ashigaru-des-braises', 2],
       ['hatamoto-des-cendres', 2],
@@ -403,8 +406,8 @@ export const RPG_RECETTES_HISTOIRE = {
   'lames-du-soleil': {
     identite: ['braise'],
     terrains: [],
-    creatures: 20,
-    magies: 10,
+    creatures: 18,
+    magies: 12,
     armes: 0,
     ...rampeEtage(2, 4),
     signature: [

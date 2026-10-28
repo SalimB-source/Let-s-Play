@@ -43,12 +43,12 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 × 1280 et collectionnables', () => {
-  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 18, 'le terrain Braise du Soleil rouge est retiré');
+test('Soleil rouge : dix-neuf cartes uniques, illustrées en 1024 × 1280 et collectionnables', () => {
+  assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 19, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     assert.equal(cardById(carte.id).set, RPG_SOLEIL_ROUGE_SET_ID);
-    assert.deepEqual(cardColors(carte.id), ['braise']);
+    assert.ok(cardColors(carte.id).includes('braise'), `${carte.id} porte Braise`);
     assert.equal(cardArtId(carte.id), carte.id);
     assert.ok(COLLECTION_DEPART.includes(carte.id) || carteReveleePar(carte.id));
     const jpg = readFileSync(new URL(`../public/cards/${carte.id}.jpg`, import.meta.url));
@@ -64,7 +64,7 @@ test('Soleil rouge : dix-huit cartes mono-Braise uniques, illustrées en 1024 ×
     }
     assert.deepEqual(dimensions, [1024, 1280], carte.id);
   }
-  assert.equal(empreintes.size, 18, 'une illustration dédiée par carte');
+  assert.equal(empreintes.size, 19, 'une illustration dédiée par carte');
 });
 
 test('le deck Soleil rouge est valide et concentre sa signature culturelle', () => {
@@ -344,19 +344,20 @@ test('les feux de kitsune coûtent 5 et infligent 4 blessures à une créature c
   assert.equal(carte.cost, 5);
   assert.equal(carte.instant, undefined, 'c’est une sorcellerie');
   assert.match(carte.typeLine, /^Sorcellerie/);
-  assert.deepEqual(carte.cibles, ['creature']);
-  assert.deepEqual(carte.effet, { type: 'degats', amount: 4, cible: 'creature' });
-  assert.match(carte.text, /Sorcellerie.*4 blessures à une créature ciblée/);
+  assert.deepEqual(carte.cibles, ['creature', 'creature']);
+  assert.deepEqual(carte.effet, { type: 'degats', amount: 4, cible: 'creature', choixDegats: true });
+  assert.match(carte.text, /4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées/);
   const duel = duelTest();
   const allie = jouer(duel, 'joueur', 'chien-du-guet');
   const cible = jouer(duel, 'sorcier', 'seigneur-des-machoires');
-  const fragile = jouer(duel, 'sorcier', 'porteuse-de-cruches');
-  const autreAdv = jouer(duel, 'sorcier', 'chien-du-guet');
+  const fragile = jouer(duel, 'sorcier', 'chien-du-guet');
+  const autreAdv = jouer(duel, 'sorcier', 'porteuse-de-cruches');
   const vieJoueur = duel.joueur.pv;
   const vieSorcier = duel.sorcier.pv;
-  sort(duel, 'feux-de-kitsune', cible.id);
-  assert.equal(cible.def, 2, 'la créature ciblée subit 4 blessures');
-  assert.equal(autreAdv.def, 2, 'les autres créatures adverses ne sont pas touchées');
+  duel.joueur.main.push('feux-de-kitsune');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'feux-de-kitsune', cible.id, autreAdv.id).ok, true);
+  assert.equal(cible.def, 4, 'la première cible subit 2 dégâts');
+  assert.equal(autreAdv.def, 1, 'la seconde cible subit 2 dégâts');
   assert.equal(allie.def, 2, 'les alliés sont épargnés');
   sort(duel, 'feux-de-kitsune', fragile.id);
   assert.ok(!duel.sorcier.creatures.includes(fragile), 'une créature de défense 4 ou moins est détruite');
@@ -392,6 +393,7 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       // kaiga : Tojiro, rendu à sa peinture nihonga à la demande.
       'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
       'feux-de-kitsune': 'braise-souls-cendres-v6',
+      'braise-et-sable': 'braise-et-sable-souls-v1',
       'sabre-maudit': 'braise-souls-cendres-v5',
       'frappe-iaijutsu': 'braise-souls-cendres-v6',
       'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',

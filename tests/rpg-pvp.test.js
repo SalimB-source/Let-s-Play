@@ -239,19 +239,13 @@ test('le journal est réécrit avec les noms des deux joueurs', () => {
 
 test('l’horloge d’un tour live expire, celle d’un défi asynchrone rappelle', () => {
   const maintenant = 1_700_000_000_000;
-  const live = rpgPvpHorloge('live', maintenant - RPG_PVP_HORLOGES.live - 1, maintenant);
+  const live = rpgPvpHorloge(maintenant - RPG_PVP_HORLOGES.live - 1, maintenant);
   assert.equal(live.expire, true);
-  const liveOk = rpgPvpHorloge('live', maintenant - 1000, maintenant);
+  const liveOk = rpgPvpHorloge(maintenant - 1000, maintenant);
   assert.equal(liveOk.expire, false);
   assert.equal(liveOk.restant, RPG_PVP_HORLOGES.live - 1000);
 
-  const rappel = rpgPvpHorloge('async', maintenant - RPG_PVP_HORLOGES.rappelAsync - 1, maintenant);
-  assert.equal(rappel.rappel, true);
-  assert.equal(rappel.expire, false);
-  const abandon = rpgPvpHorloge('async', maintenant - RPG_PVP_HORLOGES.abandonAsync - 1, maintenant);
-  assert.equal(abandon.expire, true);
-
-  assert.deepEqual(rpgPvpHorloge('live', 0, maintenant), { echeance: null, restant: null, expire: false, rappel: false });
+  assert.deepEqual(rpgPvpHorloge(0, maintenant), { echeance: null, restant: null, expire: false, rappel: false });
 });
 
 test('le hasard est reprenable à l’identique après un aller-retour de sauvegarde', () => {

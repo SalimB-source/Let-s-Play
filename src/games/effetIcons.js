@@ -276,6 +276,13 @@ export function pastillesPourCarte(carte) {
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
+  // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
+  // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
+  // convoi, et le déclencheur de prise du Négociant.
+  if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
+  // Le Grappin dynamique : son seuil se lit sur le porteur, pas sur la fiche —
+  // la pastille nomme le mot-clé sans chiffre.
+  if (carte.abordageDynamique) ajouter('abordage', 'Abordage');
   // L'Overkill peut être imprimé, prêté par une arme, accordé par un sort
   // (le Mur de boucliers) ou par la Furie (le Maître du marteau) : la pastille
   // suit l'effet, pas seulement la fiche.
@@ -322,13 +329,6 @@ export function pastillesPourCarte(carte) {
   }
   if (carte.butin) ajouter('butin', 'Butin');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
-  // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
-  // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
-  // convoi, et le déclencheur de prise du Négociant.
-  if (carte.abordage) ajouter('abordage', 'Abordage', Number.isFinite(carte.abordage) ? carte.abordage : null);
-  // Le Grappin dynamique : son seuil se lit sur le porteur, pas sur la fiche —
-  // la pastille nomme le mot-clé sans chiffre.
-  if (carte.abordageDynamique) ajouter('abordage', 'Abordage');
   // La Malédiction (La Barbe Noire) : -2/-0 à toutes les créatures adverses
   // tant que la source reste en jeu — sans adjacence, contrairement à l'Aura.
   if (carte.malediction) ajouter('malediction', 'Malédiction');

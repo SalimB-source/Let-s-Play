@@ -1093,19 +1093,24 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
   presenterEffet(duel, cote, carte.id);
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
+  let cibleFinale = cible;
   if (cible.carteId === 'boualem' && cible.boualemContresortDisponible) {
     cible.boualemContresortDisponible = false;
-    duel.log.push('Boualem contre l’effet adverse qui le ciblait.');
-    rpgActionsEtat(duel);
-    return { ok: true, contre: true };
+    cibleFinale = duel[cibleCamp].creatures.find((entite) => entite.id !== cible.id && entite.pv > 0);
+    if (!cibleFinale) {
+      duel.log.push('Boualem contre l’effet adverse qui le ciblait ; aucune nouvelle cible légale.');
+      rpgActionsEtat(duel);
+      return { ok: true, contre: true };
+    }
+    duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${cibleFinale.name}.`);
   }
   const montant = Math.max(0, Number(activation.effet?.amount) || 0);
   if ((activation.effet?.type ?? 'degats') === 'degats') {
-    rpgBlesserCreature(duel, cibleCamp, cible.id, montant, couleur, null, 'capacite');
+    rpgBlesserCreature(duel, cibleCamp, cibleFinale.id, montant, couleur, null, 'capacite');
   }
-  duel.log.push(`${entite.name} inflige ${montant} blessures à ${cible.name}.`);
+  duel.log.push(`${entite.name} inflige ${montant} blessures à ${cibleFinale.name}.`);
   rpgActionsEtat(duel);
-  return { ok: true, cibleId: cible.id };
+  return { ok: true, cibleId: cibleFinale.id };
 }
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
@@ -1908,6 +1913,20 @@ function synchroniserFurieEntite(duel, entite) {
     duel.log.push(mots.length
       ? `${entite.name} entre en furie : +${furie}/+0, ${mots.join(' et ')}.`
       : `${entite.name} entre en furie : +${furie}/+0.`);
+    const soin = Number(duelCardById(entite.carteId)?.soinFurie) || 0;
+    if (soin > 0) {
+      const cote = ['joueur', 'sorcier'].find((camp) => duel?.[camp]?.creatures?.some((c) => c.id === entite.id));
+      if (cote) for (const allie of duel[cote].creatures) {
+        if (allie.id !== entite.id && allie.pv > 0) {
+          const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
+          const pvAvant = allie.pv;
+          allie.pv = Math.min(plafond, allie.pv + soin);
+          allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
+          if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
+          synchroniserFurieEntite(duel, allie);
+        }
+      }
+    }
   } else if (duel && pv > 0 && !active && etaitActive) {
     duel.log.push(`${entite.name} retrouve sa DEF de base : la furie retombe.`);
   }
@@ -2348,6 +2367,23 @@ function degatsCreatureCombattue(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
   if (carte.combat.quand && carte.combat.quand !== quand) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
+}
+
+/** Effet de blocage des Tours de Neige et des Flots. Il se résout après les
+ * capacités pré-combat : le gel laisse les blessures du combat se résoudre,
+ * tandis que le renvoi met fin à l'échange. */
+function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId) {
+  const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId);
+  const attaquant = duel[autre(coteBloqueur)]?.creatures.find((e) => e.id === attaquantId);
+  const combat = bloqueur && duelCardById(bloqueur.carteId)?.combat;
+  if (!combat || combat.quand !== 'blocage' || !attaquant) return;
+  if (combat.type === 'gel') {
+    gelerEntite(duel, attaquant);
+    duel.log.push(`${attaquant.name} est gelée par ${bloqueur.name}.`);
+  } else if (combat.type === 'retour-main') {
+    renvoyerEnMain(duel, autre(coteBloqueur), attaquant, cardColors(duelCardById(bloqueur.carteId)), 'capacite');
+    duel.log.push(`${bloqueur.name} renvoie ${attaquant.name} dans la main de son propriétaire.`);
+  }
 }
 
 /** Prépare les dégâts des capacités « quand cette créature attaque ou bloque ».
@@ -2860,8 +2896,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
       cibleBoualem.boualemContresortDisponible = false;
-      duel.log.push(`Boualem contre l’effet adverse qui le ciblait.`);
-      return;
+      const cibleChoisie = sauf ? duel[adv].creatures.find((entite) => entite.id === sauf && entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement)) : null;
+      const nouvelleCible = cibleChoisie ?? duel[adv].creatures.find((entite) => entite.id !== cibleId && entite.pv > 0 && !rpgEstProtegee(entite, sourceElement));
+      if (!nouvelleCible) {
+        duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
+        return;
+      }
+      duel.log.push(`Boualem contre l’effet qui le ciblait : il est relancé sur ${nouvelleCible.name}.`);
+      cibleId = nouvelleCible.id;
     }
   }
   // Une Magie ou une Sorcellerie hostile qui désigne une créature peut voir
@@ -3004,7 +3046,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       porteur.pv += effet.def ?? 0;
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
-      duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : +${effet.atk}/${effet.def}, Attaque ciblée.`);
+      if (effet.coupCritique) porteur.coupCritique = { chance: effet.coupCritique, fois: 2 };
+      duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : ${effet.atk >= 0 ? '+' : ''}${effet.atk}/${effet.def},${effet.coupCritique ? ' Coup critique.' : ''}`);
       return;
     }
     case 'transfert': {
@@ -3522,13 +3565,18 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // deux camps sans s'épargner. La Valkyrie des glaces ajoute
       // `exclutSoi` : le vent froid prend les deux camps, mais jamais la
       // Valkyrie elle-même (son id est passé via `sauf`).
+      const cibleSecondaire = effet.choixDegats && sauf
+        ? duel[adv].creatures.find((entite) => entite.id === sauf && entite.id !== cibleId)
+        : null;
       let cibles = effet.cible === 'toutes-creatures'
         ? (effet.inclutAllies
           ? [cote, adv]
             .flatMap((camp) => duel[camp].creatures.map((entite) => ({ entite, camp })))
             .filter(({ entite }) => !(effet.exclutSoi && entite.id === sauf))
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
-        : duel[adv].creatures.filter((entite) => entite.id === cibleId).map((entite) => ({ entite, camp: adv }));
+        : duel[adv].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
+          .map((entite) => ({ entite, camp: adv }));
+      const amountParCible = effet.choixDegats && cibleSecondaire ? 2 : (effet.amount ?? 0);
       // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
       // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
       // la seconde est choisie automatiquement parmi les créatures adverses
@@ -3563,7 +3611,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // dégât, ni gel associé, et la parade tombe. Les autres cibles sont
         // frappées normalement.
         if (paradeZoneBloque(duel, cible, sourceType, campCible, cote)) continue;
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, effet.amount ?? 0, sourceElement, null, sourceType, sourceCarteId);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (blessure.protegee) continue;
@@ -3689,7 +3737,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           return Boolean(carteAuCimetiere) && !magieById(id) && !armeById(id)
             && carteAuCimetiere.kind !== 'terrain';
         },
-        'carte-cimetiere': (id) => Boolean(cardById(id)),
+        'carte-cimetiere': (id) => {
+          if (!cardById(id)) return false;
+          if (!effet.types?.length) return true;
+          return (effet.types.includes('arme') && (Boolean(armeById(id)) || magieById(id)?.effet?.type === 'arme'))
+            || (effet.types.includes('magie') && Boolean(magieById(id)));
+        },
       }[effet.cible ?? 'carte-cimetiere'] ?? ((id) => Boolean(cardById(id)));
       const fin = sourceCarteId && camp.cimetiere[camp.cimetiere.length - 1] === sourceCarteId
         ? camp.cimetiere.length - 1
@@ -3883,6 +3936,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           coupRapide = coupRapide || Boolean(carteArme.effet.coupRapide);
         }
         porteur.armes = [];
+        porteur.coupCritique = duelCardById(porteur.carteId)?.coupCritique
+          ? { ...duelCardById(porteur.carteId).coupCritique }
+          : null;
         porteur.atk = Math.max(0, porteur.atk - atk);
         porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
         porteur.def = Math.max(1, porteur.def - def);
@@ -3916,6 +3972,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le Kraken'} coule ${nom}.`);
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
+      return;
+    }
+    case 'recherche-deck-categories': {
+      const categories = Array.isArray(effet.categories) ? effet.categories : [];
+      const camp = duel[cote];
+      const index = camp.deck.findIndex((id) => {
+        const fiche = cardById(id) ?? magieById(id) ?? armeById(id);
+        const ligne = fiche?.typeLine ?? '';
+        return categories.some((categorie) => ligne.includes(categorie));
+      });
+      const source = cardById(sourceCarteId)?.name ?? 'La capacité';
+      if (index < 0) {
+        duel.log.push(`${source} ne trouve aucune Magie Rapide ni Sorcellerie dans le deck.`);
+      } else {
+        const [id] = camp.deck.splice(index, 1);
+        camp.main.push(id);
+        duel.log.push(`${source} trouve ${cardById(id)?.name ?? id} dans le deck et l’ajoute à la main.`);
+      }
       return;
     }
     case 'recherche-deck': {
@@ -5268,6 +5342,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, carteAttaquant, cible, attaquant, 'attaque');
   ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, autre(cote), carteCible, attaquant, cible, 'blocage');
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  resoudreCapaciteBlocage(duel, autre(cote), cible.id, attaquant.id);
 
   const coupsNormaux = [];
   // La Traque du Chasseur paie aussi dans ce duel de créatures : il y
@@ -5505,6 +5580,12 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   }
 
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
+    if (carte.effet.choixDegats && cibleAllieeId) {
+      const premiere = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      const seconde = duel[adv].creatures.find((entite) => entite.id === cibleAllieeId);
+      if (!premiere || !seconde || premiere.id === seconde.id) return { ok: false, raison: 'cible' };
+      if (rpgEstProtegee(premiere, cardColors(carte)) || rpgEstProtegee(seconde, cardColors(carte))) return { ok: false, raison: 'protection' };
+    }
     if (cibleId === 'sorcier') {
       if (!carte.cibles?.includes('sorcier')) return { ok: false, raison: 'cible' };
     } else {
@@ -5627,7 +5708,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
   // d’`appliquer` lit sa source dans ce paramètre.
   appliquer(duel, cote, effet, cibleId,
-    carte.effet.type === 'combat' ? (cibleAllieeId ?? null) : null,
+    cibleAllieeId ?? null,
     cardColors(carte), 'magie', carteId);
   if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
@@ -6003,6 +6084,11 @@ export function rpgLancerAttaque(
       return jet;
     });
     appliquerDegatsDeCombatSimultanes(apresCapacites, degatsAvantCombat);
+    for (const attaquant of attaquants) {
+      for (const bloqueurId of affectations[attaquant.id] ?? []) {
+        resoudreCapaciteBlocage(apresCapacites, adv, bloqueurId, attaquant.id);
+      }
+    }
     let rejoues = 0;
     hasardParDuel.set(duel, () => (rejoues < jets.length ? jets[rejoues++] : rngSource()));
   }
@@ -6104,6 +6190,11 @@ export function rpgLancerAttaque(
   duel.attaqueJouee = cote;
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  for (const attaquant of attaquants) {
+    for (const bloqueurId of affectations[attaquant.id] ?? []) {
+      resoudreCapaciteBlocage(duel, adv, bloqueurId, attaquant.id);
+    }
+  }
   // La Traque du Chasseur, côté combat bloqué : ses frappes contre les proies
   // de la course portent le bonus — noté ici, journalisé après l’échange.
   const traquesCombat = [];
@@ -6501,6 +6592,23 @@ function resoudreRetoursProgrammes(duel) {
       placerDansEmplacement(duel, cote, entite);
       // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
       appliquerArriveeDeRetour(duel, cote, carte, entite);
+      if (carte.retourDeclenche) {
+        const adversaire = autre(cote);
+        for (const cible of [...duel[adversaire].creatures]) {
+          rpgBlesserCreature(duel, adversaire, cible.id, carte.retourDeclenche.degats ?? 1, cardColors(carte), null, 'capacite', carte.id);
+        }
+        for (const allie of duel[cote].creatures) {
+          if (allie.pv <= 0) continue;
+          const soin = Math.max(0, Number(carte.retourDeclenche.soin) || 0);
+          const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
+          const pvAvant = allie.pv;
+          allie.pv = Math.min(plafond, allie.pv + soin);
+          allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
+          if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
+          synchroniserFurieEntite(duel, allie);
+        }
+        duel.log.push(`${carte.name} renaît : 1 dégât à chaque créature adverse et 1 soin à chaque créature alliée.`);
+      }
     }
   }
   rafraichirAuras(duel);
@@ -6666,6 +6774,16 @@ export function rpgFinDeTour(duel) {
     if (duel.defausseEnAttente?.cote === duel.tour) duel.defausseEnAttente = null;
   }
   duel.tour = autre(duel.tour);
+  for (const entite of duel[duel.tour].creatures) {
+    const croissance = duelCardById(entite.carteId)?.croissanceTour;
+    if (!croissance) continue;
+    const maximum = Math.max(0, Number(croissance.maximum) || 0);
+    const actuel = Math.max(0, Number(entite.croissanceTourAtk) || 0);
+    if (actuel >= maximum) continue;
+    entite.atk += 1;
+    entite.croissanceTourAtk = actuel + 1;
+    duel.log.push(`${entite.name} gagne +1/+0 au début du tour (maximum +${maximum}/+0).`);
+  }
   duel.phase = 'debut';
   // Nouveau tour, nouvelle phase d'attaque : le camp qui vient de jouer a
   // consommé la sienne, l'autre ouvre la sienne.

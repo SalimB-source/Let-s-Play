@@ -85,10 +85,10 @@ test('le résultat se lit de mon côté', () => {
 
 test('le message d’invitation et son contenu typé', () => {
   assert.match(messageDefi({ nom: 'Salim' }), /Salim te défie au Sablier/);
-  assert.match(messageDefi({ nom: 'Salim', mode: 'async' }), /quand tu veux/);
+  assert.match(messageDefi({ nom: 'Salim', mode: 'async' }), /ouvre le défi pour choisir ton deck/);
 
   assert.deepEqual(payloadDefi({ code: 'ab12cd34', mode: 'async', deckNom: 'Veilleurs du Désert' }), {
-    code: 'AB12CD34', mode: 'async', deckNom: 'Veilleurs du Désert',
+    code: 'AB12CD34', mode: 'live', deckNom: 'Veilleurs du Désert',
   });
   assert.equal(payloadDefi({ code: 'trop-court' }), null);
   // Le mode inconnu retombe sur le direct plutôt que de casser la carte.

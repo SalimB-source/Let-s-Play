@@ -65,7 +65,7 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
     const { cardById, convertirDeckSansTerrain } = await vite.ssrLoadModule('/src/games/rpgCards.js');
     const { useSablierBourse } = await vite.ssrLoadModule('/src/games/useSablierBourse.js');
     const { default: RpgDuelPage } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
-    const { passerMulligan } = await vite.ssrLoadModule('/scripts/rpg-duel-start.js');
+    const { passerMulligan, installerDeckMaisonDeTest } = await vite.ssrLoadModule('/scripts/rpg-duel-start.js');
 
     const premiereTour = RPG_STORY_TOURS[0];
     const etagesPremiereTour = premiereTour.etages.map((etage) => etage.id);
@@ -179,7 +179,7 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
         .find((bouton) => bouton.textContent.replace(/\s+/g, ' ').trim().endsWith('Deck'));
       await cliquer(ongletDeck, 'onglet Deck');
       const boitierJoueur = [...container.querySelectorAll('.rpg-deck-choice__button')]
-        .find((bouton) => bouton.textContent.includes('DECK JOUEUR'));
+        .find((bouton) => /DECK (?:JOUEUR|MAISON)/.test(bouton.textContent));
       await cliquer(boitierJoueur, 'boîtier DECK JOUEUR');
       await cliquer(container.querySelector('.rpg-deck-detail__play'), 'bouton Jouer avec ce deck');
     };
@@ -258,6 +258,7 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
       trait.cost = 0;
       trait.effet = { ...originalTrait.effet, amount: 99 };
 
+      installerDeckMaisonDeTest(deckTest, 'maison-ui-victoire');
       const containerVictoire = document.createElement('div');
       document.body.appendChild(containerVictoire);
       const rootVictoire = createRoot(containerVictoire);
@@ -336,6 +337,7 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
         boostersOfferts: 0,
       }));
 
+      installerDeckMaisonDeTest(deckTest, 'maison-ui-defaite');
       const containerDefaite = document.createElement('div');
       document.body.appendChild(containerDefaite);
       const rootDefaite = createRoot(containerDefaite);
@@ -404,6 +406,7 @@ test('Montée de niveau : aucun paquet ne s’ouvre pendant une partie en cours,
 
       RPG_STORY_DECKS[premierEtage.deck] = Array(20).fill('tislit-des-aures');
 
+      installerDeckMaisonDeTest(deckTest, 'maison-ui-campagne');
       const containerCampagne = document.createElement('div');
       document.body.appendChild(containerCampagne);
       const rootCampagne = createRoot(containerCampagne);
