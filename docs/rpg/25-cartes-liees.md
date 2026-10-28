@@ -74,6 +74,7 @@ mécanique sur des cartes du catalogue.
 | **Lettre de marque** (sorcellerie, commune) | 2 | Abordage de la prochaine créature, **seuil coût − 1** | Abordage **au seuil du coût plein** | la lettre du Chasseur ouvre un coût de plus | Le Chasseur d'Ocracoke (Sable, mythique, 6) |
 | **Le Grand Débarquement** (sorcellerie, rare) | 5 | cales pleines : **+2/+2** et Overkill | **+3/+2** et Overkill | l'assaut mord, il ne tient pas | La Barbe-Rousse, amiral des deux mers (Sable, mythique, 6) |
 | **Lame des ergs** (arme vivante, rare) | 4 | chien de sable 1/1, porteur **+3/+1** | +3/+1 **et un bouclier** | sous le berger, la lame couvre au lieu de grandir | TAREK (Sable, mythique, 5) |
+| **Javelot du beffroi** (arme, commune) | 2 | porteur **+2/+0** et Attaque ciblée | **+3/+0** et Attaque ciblée | la riposte du Contre-attaquant mord plus fort | Le roi Kusayla (Sable, mythique, 5) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -215,6 +216,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des vingt et une paires entrent dans le prototype.
+2. B : lesquelles des vingt-deux paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.

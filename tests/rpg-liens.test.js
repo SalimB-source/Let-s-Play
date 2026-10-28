@@ -329,6 +329,30 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Javelot du beffroi : +2/+0, +3/+0 sous Le roi Kusayla — dans les deux ordres', () => {
+  const monter = (avecKusayla, apresAttache = false) => {
+    const duel = duelVide();
+    if (avecKusayla && !apresAttache) poser(duel, 'joueur', 'kusayla-roi-des-imazighen');
+    const porteur = poser(duel, 'joueur', 'momie-de-lin');
+    equiper(duel, 'joueur', 'javelot-du-beffroi', porteur);
+    if (avecKusayla && apresAttache) poser(duel, 'joueur', 'kusayla-roi-des-imazighen');
+    return porteur;
+  };
+
+  const sans = monter(false);
+  assert.deepEqual([sans.atk, sans.def], [4, 4], 'sans ancre : chien 2/4 + javeline 2/0');
+
+  const avant = monter(true);
+  assert.deepEqual([avant.atk, avant.def], [5, 4], 'sous le Roi : +3/+0, quel que soit l’ordre');
+
+  const apres = monter(true, true);
+  assert.deepEqual([apres.atk, apres.def], [5, 4], 'l’ancre posée après l’arme relève le Lien aussi');
+
+  const carte = cardById('javelot-du-beffroi');
+  assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } });
+});
+
 test('Lame des ergs : +3/+1 au chien de sable, et un bouclier sous TAREK', () => {
   const monter = (avecTarek) => {
     const duel = duelVide();
