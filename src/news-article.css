@@ -362,10 +362,10 @@
 .article-cover strong{font-size:clamp(25px,3vw,38px);letter-spacing:.06em;text-shadow:0 4px 18px rgba(0,0,0,.7)}
 .article-layout{
   position:relative;
-  width:min(1080px,calc(100% - 56px));
-  grid-template-columns:minmax(0,720px) 248px;
-  justify-content:space-between;
-  gap:48px;
+  width:min(1240px,calc(100% - 56px));
+  grid-template-columns:minmax(0,1fr) 280px;
+  justify-content:start;
+  gap:clamp(44px,5vw,72px);
   padding-top:16px;
 }
 .article-body{
@@ -461,6 +461,7 @@
   clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,0 100%);
 }
 .article-video-frame{
+  max-width:100%;
   border-color:rgba(34,211,238,.42);
   clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
 }

@@ -65,9 +65,10 @@
      les encarts). On la garde à distance fixe, le texte aligné à gauche comme
      le reste de la page. */
   .article-layout{
-    grid-template-columns:minmax(0,760px) 300px;
+    width:var(--lp-shell);
+    grid-template-columns:minmax(0,880px) 300px;
     justify-content:start;
-    gap:clamp(64px,6vw,110px);
+    gap:clamp(56px,5vw,84px);
   }
 
   /* Idem pour les dossiers : le lecteur vidéo et la colonne des chapitres
@@ -161,6 +162,6 @@
   /* Colonne de lecture : le lecteur vidéo est déjà borné à 1180 px au
      palier 2 ; on donne juste un peu plus d'air au texte et à la colonne
      des chapitres. */
-  .article-layout{grid-template-columns:minmax(0,860px) 320px}
+  .article-layout{grid-template-columns:minmax(0,1000px) 340px;gap:clamp(72px,5vw,110px)}
   .dossier-reading{grid-template-columns:minmax(0,1320px) 340px}
 }
