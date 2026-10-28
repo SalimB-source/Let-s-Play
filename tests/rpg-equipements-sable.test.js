@@ -83,7 +83,8 @@ const equiper = (duel, cote, armeId, entite = null) => {
 test('le lot compte dix équipements de Sable, tous peints', () => {
   assert.equal(cartesDuLot.length, 10);
   for (const carte of cartesDuLot) {
-    assert.equal(carte.element, 'sable', `${carte.id} est une carte de Sable`);
+    const estSable = carte.element === 'sable' || (Array.isArray(carte.colors) && carte.colors.includes('sable'));
+    assert.ok(estSable, `${carte.id} est une carte de Sable (élément ou couleurs)`);
     assert.equal(carte.kind, 'arme', `${carte.id} est une arme`);
     assert.match(carte.typeLine, /^Arme — /, `${carte.id} affiche sa ligne de type`);
     assert.ok(Number.isInteger(carte.bonus?.atk) && Number.isInteger(carte.bonus?.def),
@@ -350,34 +351,36 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
 
 // ── La sphère de rotation ──────────────────────────────────────────────────
 
-test('la sphère de rotation donne +1/+0 à son porteur', () => {
+test('la sphère de rotation donne +1/+2 à son porteur', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
-  assert.equal(porteur.atk, 3, '+1/+0');
-  assert.equal(porteur.def, 2, 'aucune modification de défense');
+  assert.equal(porteur.atk, 3, '+1/+2');
+  assert.equal(porteur.def, 4, 'bonus de défense +2');
 });
 
-test('la sphère de rotation renvoie la créature blessée avec 25 % de chance', () => {
+test('la sphère de rotation renvoie la créature adverse en main avant les dégâts avec 25 % de chance', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/2 avec la sphère de rotation
+  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/4 avec la sphère de rotation
   const bloqueur = poser(duel, 'sorcier', 'chien-du-guet'); // 2/2 en blocage
   equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
   rendrePret(duel, porteur);
   rendrePret(duel, bloqueur);
 
-  // Jet à 0.20 < 0.25 : le renvoi fonctionne.
+  // Jet à 0.20 < 0.25 : le renvoi fonctionne AVANT les dégâts.
   rpgReglerHasard(duel, () => 0.20);
   const mainAvant = duel.sorcier.main.length;
+  const pvAvant = porteur.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [bloqueur.id] });
   assert.equal(res.ok, true);
-  assert.equal(duel.sorcier.main.length, mainAvant + 1, 'la créature adverse retourne en main');
-  assert.equal(duel.sorcier.creatures.length, 0, 'la créature a quitté la table');
+  assert.equal(duel.sorcier.main.length, mainAvant + 1, 'la créature adverse retourne en main avant les dégâts');
+  assert.equal(duel.sorcier.creatures.length, 0, 'la créature a quitté le battlefield');
+  assert.equal(porteur.pv, pvAvant, 'le porteur n’a pas subi de dégâts (renvoi avant les dégâts)');
 
-  // Jet à 0.30 >= 0.25 : pas de renvoi (la créature encaisse les dégâts mais reste en vie).
+  // Jet à 0.30 >= 0.25 : pas de renvoi, les dégâts de combat sont échangés normalement.
   const duel2 = duelVide();
-  const porteur2 = poser(duel2, 'joueur', 'chien-du-guet');
-  const bloqueur2 = poser(duel2, 'sorcier', 'dune-marchante'); // 2/5, survit aux 3 dégâts du porteur
+  const porteur2 = poser(duel2, 'joueur', 'chien-du-guet'); // 2/2 → 3/4
+  const bloqueur2 = poser(duel2, 'sorcier', 'dune-marchante'); // 2/4
   equiper(duel2, 'joueur', 'sphere-de-rotation', porteur2);
   rendrePret(duel2, porteur2);
   rendrePret(duel2, bloqueur2);
@@ -386,8 +389,9 @@ test('la sphère de rotation renvoie la créature blessée avec 25 % de chance',
   const res2 = rpgLancerAttaque(duel2, 'joueur', [porteur2.id], { [porteur2.id]: [bloqueur2.id] });
   assert.equal(res2.ok, true);
   assert.equal(duel2.sorcier.main.length, mainAvant2, 'pas de renvoi au-dessus du seuil');
-  assert.equal(duel2.sorcier.creatures.length, 1, 'la créature reste en vie sur le battlefield');
-  assert.ok(bloqueur2.pv > 0, 'la créature a survécu aux dégâts');
+  assert.equal(duel2.sorcier.creatures.length, 1, 'la créature reste sur le battlefield');
+  assert.equal(bloqueur2.pv, 1, 'la créature encaisse 3 dégâts (4 - 3 = 1)');
+  assert.equal(porteur2.pv, 2, 'le porteur encaisse 2 dégâts en riposte (4 - 2 = 2)');
 });
 
 test('la Jitte simplifiée n’offre plus rien à activer : l’IA passe son chemin', () => {

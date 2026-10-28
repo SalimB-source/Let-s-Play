@@ -2121,17 +2121,19 @@ export const RPG_ARME_CARDS = [
   {
     id: 'sphere-de-rotation',
     name: 'sphère de rotation',
-    element: 'sable',
+    element: 'eau',
+    colors: ['eau', 'sable'],
     kind: 'arme',
     typeLine: 'Arme — Boule d\'acier',
     cost: 3,
     rarity: 'rare',
-    bonus: { atk: 1, def: 0 },
-    // Quand le porteur blesse une créature au combat : 25 % de chances de la
-    // renvoyer dans la main de son propriétaire (référence JoJo). Le moteur
-    // gère `chance` et `cibles` dans `declencherArmesAttaquants`.
-    porteurBlesseCreature: { type: 'retour-main', cible: 'creature', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +1/+0. Quand le porteur inflige des blessures de combat à une créature : 25 % de chances de la renvoyer dans la main de son propriétaire.',
+    bonus: { atk: 1, def: 2 },
+    // Quand le porteur se bat avec une créature : 25 % de chances de la
+    // renvoyer dans la main de son propriétaire AVANT d'assigner les dégâts
+    // de combat (référence JoJo). Le moteur gère ce déclenchement pré-dégâts
+    // dans `rpgLancerAttaque` (avant `appliquerDegatsDeCombatSimultanes`).
+    porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 },
+    text: 'Arme — Le porteur gagne +1/+2. Quand le porteur se bat avec une créature adverse : 25 % de chances de la renvoyer dans la main de son propriétaire avant d\'assigner les dégâts de combat.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
 ];
