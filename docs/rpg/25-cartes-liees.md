@@ -78,7 +78,7 @@ mécanique sur des cartes du catalogue.
 | **Cuirasse de sel** (arme, commune) | 2 | porteur **+0/+3** et Esquive | **+0/+4** et Esquive | rend jouable une 3/1, et l'Esquive s'ajoute à la sienne (50 %) | Bouchra, guerrière des crêtes (Sable, mythique, 2) |
 | **Festin des vaillants** (sorcellerie, commune) | 3 | soigne **2** aux créatures et **2** au sorcier | **3** et **3** | le banquet du Premier Serment | Eirik du Premier Serment (Neige, mythique, 1) |
 | **Hurlement du blizzard** (sorcellerie, rare) | 4 | **2** dégâts à toutes les créatures adverses, gel 25 % | **3** dégâts, gel inchangé | le souffle grandit, pas le froid | Le Géant des banquises (Neige, mythique, 6) |
-| **Le Poids** (magie rapide, commune) | 3 | −**2** PV au sorcier, +2 pour vous | −**3** / +3 **et −3/−3 à une créature ciblée** | le poids s'abat deux fois | La Barbe Noire, la malédiction (Ténèbres, mythique, 5) |
+| **Le Poids** (magie rapide, commune) | 3 | −**2** PV au sorcier, +2 pour vous | identique **+ −2/−2 à une créature ciblée** | le sort ne change pas, il frappe en plus | La Barbe Noire, la malédiction (Ténèbres, mythique, 5) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -99,8 +99,8 @@ Les formes que prend ce cran :
   Pilote : le sceau est consommé par la pose avant que la prise ne soit tirée,
   donc le relire sur le camp donnerait toujours `false` ;
 - **une cible supplémentaire** (`lien.cible` + `lien.debuff`) : le Poids de la
-  Barbe Noire garde son transfert et désigne **en plus** une créature adverse
-  qui encaisse −3/−3. La fiche imprimée ne change pas de cibles ; c'est la
+  Barbe Noire garde **exactement** son transfert de 2 PV et désigne **en plus**
+  une créature adverse qui encaisse −2/−2. La fiche imprimée ne change pas de cibles ; c'est la
   table qui s'allume sur la créature quand l'ancre est en jeu, et le sort
   refuse de partir s'il ne reste aucune proie légale ;
 - **le cumul d'un mot-clé à jet** : l'Esquive et le coup critique s'**additionnent**.

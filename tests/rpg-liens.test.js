@@ -96,7 +96,10 @@ test('chaque Lien nomme une ancre mythique qui existe, et son texte la nomme', (
       assert.ok(lien.bonus.atk >= (carte.bonus?.atk ?? 0) && lien.bonus.def >= (carte.bonus?.def ?? 0),
         `${carte.id} : le Lien ne retire jamais de statistiques`);
     } else {
-      assert.ok(lien.effet, `${carte.id} : un sort lié porte un effet de Lien`);
+      // Un sort lié renforce son effet (`effet`), ou exige une cible
+      // supplémentaire (`cible` + `debuff`, le Poids de la Barbe Noire).
+      assert.ok(lien.effet || (lien.cible && lien.debuff),
+        `${carte.id} : un sort lié porte un effet de Lien`);
     }
   }
 });
@@ -329,7 +332,7 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
-test('Le Poids : 2 PV, 3 et un -3/-3 ciblé sous La Barbe Noire', () => {
+test('Le Poids : 2 PV, et un -2/-2 ciblé en plus sous La Barbe Noire', () => {
   const monter = (avecLien) => {
     const duel = duelVide();
     duel.joueur.pv = 20;
@@ -351,9 +354,9 @@ test('Le Poids : 2 PV, 3 et un -3/-3 ciblé sous La Barbe Noire', () => {
 
   const avec = monter(true);
   lancer(avec.duel, 'joueur', 'le-poids', avec.proie.id);
-  assert.equal(avec.duel.sorcier.pv, 17, 'sous la Malédiction : 3 PV');
-  assert.equal(avec.duel.joueur.pv, 23, 'et 3 PV pour vous');
-  assert.deepEqual([avec.proie.atk, avec.proie.def], [0, 1], 'ET la créature ciblée perd -3/-3');
+  assert.equal(avec.duel.sorcier.pv, 18, 'sous la Malédiction : le transfert ne bouge pas (2 PV)');
+  assert.equal(avec.duel.joueur.pv, 22, 'et 2 PV pour vous');
+  assert.deepEqual([avec.proie.atk, avec.proie.def], [0, 2], 'ET la créature ciblée perd -2/-2');
 
   // Sans créature adverse à désigner, le sort ne se lance pas : le mana reste
   // entier et la carte reste en main.
@@ -370,9 +373,8 @@ test('Le Poids : 2 PV, 3 et un -3/-3 ciblé sous La Barbe Noire', () => {
   assert.equal(carte.cost, 3, 'le Lien n’escompte jamais le coût');
   assert.deepEqual(carte.lien, {
     ancre: 'la-barbe-noire',
-    effet: { amount: 3 },
     cible: 'creature',
-    debuff: { atk: -3, def: -3 },
+    debuff: { atk: -2, def: -2 },
   });
 });
 
