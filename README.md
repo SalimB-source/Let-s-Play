@@ -9188,7 +9188,7 @@ réplique naine « My axe shall speak for me »). Chaque voix est désormais
 attachée à sa carte et jouée **à son arrivée en jeu**.
 
 - **Le rapprochement est un fichier, pas une intuition.** Le nouveau module
-  `src/games/rpgArrivalVoices.js` porte la table des 37 voix, carte par carte,
+  `src/games/rpgArrivalVoices.js` porte la table des 51 voix, carte par carte,
   et consigne chaque écart de nom : « Damiyo » pour le **Daimyō du Soleil
   rouge**, « Shogun » pour le **Samouraï du Torii** (la carte qui se promeut en
   Shogun), « Géant de glace » pour le **Géant des banquises**, « Viking des
@@ -9223,7 +9223,7 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
   un retour de cale) ; c'est la page qui lit la voix de la carte, en solo comme
   en PvP, où l'arrivée adverse se constate par différence de champ.
 - **La salle d'écoute suit.** `sons-du-sablier.html` gagne une section « Voix
-  d'arrivée des créatures » : les 37 échantillons, chacun avec son nom de
+  d'arrivée des créatures » : les 51 échantillons, chacun avec son nom de
   fichier et la carte qu'il salue.
 - **La fiche d'une créature parle.** Ouvrir une carte en grand — le clic du
   catalogue, le clic droit ou l'appui long ailleurs dans le jeu — joue la voix
@@ -9234,7 +9234,18 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
   magies, armes et les créatures du lot sans échantillon — gardent
   l'effleurement `hover`, pour que l'ouverture reste audible.
 
-Contrôles : `tests/rpg-voix-arrivees.test.js` (les 37 cartes existent et sont
+- **Deuxième lot, 14 voix de plus.** Ashigaru, Rōnin du Soleil rouge, Tengu du
+  mont ardent, Hatamoto des cendres, Gardienne de la balance, Prêtre de la
+  bouche, Ibis des comptes, Celle qui pèse, Pilote de la Carreira, Le Renégat,
+  Djinn de foudre, LA DAME DES NEUF MONDES, LE PÈRE DES CORBEAUX et TAREK
+  passent de muets à parlants. Le lot a ses propres écarts de nom — « Prête »
+  pour le **Prêtre** de la bouche, « Djinn d'éclair » pour le **Djinn de
+  foudre**, « Piloe de la carrera » pour le **Pilote de la Carreira**, « neufs
+  mondes » pour les **neuf mondes** — et une voix en WAV : `Tengu.wav`, livré en
+  24 bits stéréo, ramené en PCM 16 bits mono 44,1 kHz (137 Ko) pour se décoder
+  partout sans peser plus qu'une voix.
+
+Contrôles : `tests/rpg-voix-arrivees.test.js` (les 51 cartes existent et sont
 des créatures ou des héros, aucun fichier n'est attribué deux fois, aucune voix
 du lot ne reste orpheline et aucune musique n'entre dans la table, encodage des
 adresses, journal du moteur, priorité sur les accueils génériques, lecteur —
