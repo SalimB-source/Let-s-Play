@@ -50,6 +50,7 @@ export async function checkNav(assert) {
   const menu = home.node.querySelector('.nav-item--menu');
   assert.ok(menu, 'Actus est une entrée de menu déroulant');
   assert.equal(menu.querySelector(':scope > a .nav-link-label').textContent, 'Actus', 'le déclencheur s’appelle Actus');
+  assert.equal(menu.querySelector(':scope > a').getAttribute('href'), '/actus', 'le déclencheur ouvre la nouvelle page Actus');
   const entries = [...menu.querySelectorAll('.nav-submenu a')];
   assert.deepEqual(
     entries.map((a) => a.getAttribute('href')),
@@ -94,6 +95,7 @@ export async function checkNav(assert) {
   await home.unmount();
 
   for (const [path, expectedRoute] of [
+    ['/actus', null],
     ['/news', '/news'],
     ['/reviews', '/reviews'],
     ['/dossiers', '/dossiers'],
@@ -102,7 +104,7 @@ export async function checkNav(assert) {
     const page = await mountAt(path);
     const activeMenu = page.node.querySelector('.nav-item--menu');
     assert.equal(activeMenu.classList.contains('active'), true, `${path} active le menu Actus`);
-    assert.equal(submenuLink(activeMenu, expectedRoute)?.classList.contains('is-current'), true, `${path} marque la rubrique courante`);
+    if (expectedRoute) assert.equal(submenuLink(activeMenu, expectedRoute)?.classList.contains('is-current'), true, `${path} marque la rubrique courante`);
     await page.unmount();
   }
 

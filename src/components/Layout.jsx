@@ -366,13 +366,12 @@ export default function Layout({ children }) {
   const logoutLabel = t.nav.logout || 'Log out';
   const logoSrc = `${base}lets-play-logo.png`;
 
-  /* L'entrée Actus rassemble les quatre destinations éditoriales dans un seul
-     menu. Le lien parent conserve /news comme accès direct ; sa liste contient
-     News, Tests, Dossiers et DZ Dev. */
+  /* L'entrée Actus ouvre le hub éditorial ; son menu donne aussi un accès direct
+     à News, Tests, Dossiers et DZ Dev. */
   const primaryLinks = [
     { to: '/', label: t.nav.home, num: '01', desc: 'HOME / INDEX' },
     {
-      to: '/news', label: t.nav.editorialMenu || 'Actus', num: '02', desc: 'NEWS / EDITORIAL',
+      to: '/actus', label: t.nav.editorialMenu || 'Actus', num: '02', desc: 'NEWS / EDITORIAL',
       submenu: [
         { to: '/news', label: t.nav.news, desc: 'NEWS / DROPS' },
         { to: '/reviews', label: t.nav.reviews, desc: 'REVIEWS / TESTS' },
@@ -464,7 +463,7 @@ export default function Layout({ children }) {
                 style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
               />
               {primaryLinks.map((link, idx) => {
-                const active = link.submenu ? link.submenu.some(isRouteGroup) : (link.aliases ? isRouteGroup(link) : isActive(link.to));
+                const active = link.submenu ? (isActive(link.to) || link.submenu.some(isRouteGroup)) : (link.aliases ? isRouteGroup(link) : isActive(link.to));
                 const body = (
                   <>
                     <span className="nav-link-main">
