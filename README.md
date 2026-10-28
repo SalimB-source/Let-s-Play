@@ -9188,7 +9188,7 @@ réplique naine « My axe shall speak for me »). Chaque voix est désormais
 attachée à sa carte et jouée **à son arrivée en jeu**.
 
 - **Le rapprochement est un fichier, pas une intuition.** Le nouveau module
-  `src/games/rpgArrivalVoices.js` porte la table des 51 voix, carte par carte,
+  `src/games/rpgArrivalVoices.js` porte la table des 60 voix, carte par carte,
   et consigne chaque écart de nom : « Damiyo » pour le **Daimyō du Soleil
   rouge**, « Shogun » pour le **Samouraï du Torii** (la carte qui se promeut en
   Shogun), « Géant de glace » pour le **Géant des banquises**, « Viking des
@@ -9223,7 +9223,7 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
   un retour de cale) ; c'est la page qui lit la voix de la carte, en solo comme
   en PvP, où l'arrivée adverse se constate par différence de champ.
 - **La salle d'écoute suit.** `sons-du-sablier.html` gagne une section « Voix
-  d'arrivée des créatures » : les 51 échantillons, chacun avec son nom de
+  d'arrivée des créatures » : les 60 échantillons, chacun avec son nom de
   fichier et la carte qu'il salue.
 - **La fiche d'une créature parle.** Ouvrir une carte en grand — le clic du
   catalogue, le clic droit ou l'appui long ailleurs dans le jeu — joue la voix
@@ -9245,7 +9245,15 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
   24 bits stéréo, ramené en PCM 16 bits mono 44,1 kHz (137 Ko) pour se décoder
   partout sans peser plus qu'une voix.
 
-Contrôles : `tests/rpg-voix-arrivees.test.js` (les 51 cartes existent et sont
+- **Troisième lot, 9 voix de plus.** Amani, Amayas, Bouchra, Eirik du Premier
+  Serment, Ifrit furtif, le Guerrier au bouclier rond, Sahir des braises, Tiziri
+  et la Völva soigneuse passent de muets à parlants — les héros et les créatures
+  des crêtes, du Hoggar et des ergs. Écarts du lot : « Eirick » pour **Eirik**
+  du Premier Serment, « Volva » sans tréma pour la **Völva** soigneuse,
+  « Ifrit furtif » pour la carte `ifrit-des-ergs` — à ne pas confondre avec
+  Ifrit al-Ahmar, le héros, qui avait déjà la sienne.
+
+Contrôles : `tests/rpg-voix-arrivees.test.js` (les 60 cartes existent et sont
 des créatures ou des héros, aucun fichier n'est attribué deux fois, aucune voix
 du lot ne reste orpheline et aucune musique n'entre dans la table, encodage des
 adresses, journal du moteur, priorité sur les accueils génériques, lecteur —

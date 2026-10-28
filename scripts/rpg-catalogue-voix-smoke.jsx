@@ -118,6 +118,16 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
       'la voix du second lot est lue par la fiche');
     assert.ok(!sonsJoues.some((son) => son.nom === 'hover'), 'et elle remplace l’effleurement');
     await fermerFiche('ibis-des-comptes');
+
+    // ── 6 · Le troisième lot parle aussi (« Volva » → la Völva) ───────────
+    sonsJoues.length = 0;
+    marque = fichiersLus.length;
+    await cliquer(carteCatalogue('volva-soigneuse'), 'la Völva soigneuse s’ouvre');
+    await attendre(() => ficheOuverte('volva-soigneuse'), 'la fiche de la Völva est ouverte');
+    assert.ok(fichiersLus.slice(marque).some((src) => decodeURIComponent(src).includes('Volva.mp3')),
+      'l’écart de nom du troisième lot (« Volva » pour la Völva) tient jusqu’à la page');
+    assert.ok(!sonsJoues.some((son) => son.nom === 'hover'), 'et la voix remplace l’effleurement');
+    await fermerFiche('volva-soigneuse');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
     await act(async () => { root.unmount(); });
