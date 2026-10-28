@@ -86,6 +86,10 @@ const blocFil = extraireBloc(css, '.rpg-tribut-fil {');
 assert.match(blocFil, /position:\s*absolute;/, 'le fil est un calque absolu de la table');
 assert.match(blocFil, /z-index:\s*56;/, 'il passe sous la balance (58) et la tempête (57), au-dessus des cartes');
 assert.match(blocFil, /pointer-events:\s*none;/, 'il ne capte aucun geste de la table');
+// Même piège que la ligne de charge : un fil tourné autour de son milieu ne
+// relie plus ni la créature ni la plaque.
+assert.match(blocFil, /transform-origin:\s*0 0;|transform-origin:\s*0 50%;/,
+  'le fil se tourne autour de son point de départ mesuré, pas de son milieu');
 assert.match(css, /\.rpg-tribut-fil__trait\s*\{[^}]*animation:\s*rpg-tribut-fil-trait calc\(\.55s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.35, \.7, \.3, 1\) both;/s,
   'le trait se tend en 550 ms');
 assert.match(css, /\.rpg-tribut-fil__grain\s*\{[^}]*animation:\s*rpg-tribut-fil-grain calc\(\.4s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.3, \.65, \.35, 1\) both;/s,

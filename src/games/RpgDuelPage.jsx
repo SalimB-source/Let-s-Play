@@ -209,6 +209,7 @@ import {
   rpgExils,
   rpgNombreBlessures,
   rpgBlessuresDepuis,
+  rpgSortViseUneZone,
   rpgNombreTransferts,
   rpgTransfertsDepuis,
   rpgNombreTributs,
@@ -1607,8 +1608,12 @@ const DUREE_ROUE_FEU = 900;
 // La foudre du marteau : l'impact, puis les arcs qui s'éteignent.
 const DUREE_ECLAIR_MARTEAU = 950;
 
-// La tempête de sable : la lame balaie la carte, les grains retombent au sol.
+// La tempête de sable : la lame descend sur la carte, les grains retombent au sol.
 const DUREE_TEMPETE_SABLE = 900;
+
+// La tempête de zone : le mur de poussière traverse toute une moitié de table,
+// du bord haut au bord bas — plus long qu'une lame de carte.
+const DUREE_TEMPETE_SABLE_ZONE = 1100;
 
 // La balance des Heures (Ténèbres) : le fléau s'incline, les grains traversent.
 const DUREE_BALANCE_TENEBRES = 1100;
@@ -1637,6 +1642,32 @@ const GRAINS_TEMPETE = Object.freeze([
   { dx: 38, dy: 50, d: 90 },
   { dx: 54, dy: 22, d: 260 },
   { dx: -12, dy: 44, d: 160 },
+]);
+
+// Les grains de la tempête de zone : semés d'un bord à l'autre du côté balayé,
+// pas seulement sur les cartes. `x` est un pourcentage de la largeur du
+// plateau, `d` le retard du grain, `dy` sa chute — figés une fois pour toutes,
+// pour qu'aucun hasard moteur ne se glisse dans un effet purement visuel.
+const GRAINS_TEMPETE_ZONE = Object.freeze([
+  { x: 3, d: 40, dx: -14, dy: 260, t: 5 },
+  { x: 8, d: 190, dx: 10, dy: 340, t: 4 },
+  { x: 14, d: 90, dx: -8, dy: 300, t: 6 },
+  { x: 19, d: 280, dx: 16, dy: 220, t: 3 },
+  { x: 25, d: 20, dx: -18, dy: 380, t: 5 },
+  { x: 31, d: 150, dx: 12, dy: 280, t: 4 },
+  { x: 36, d: 330, dx: -10, dy: 240, t: 6 },
+  { x: 42, d: 70, dx: 20, dy: 360, t: 3 },
+  { x: 47, d: 220, dx: -16, dy: 300, t: 5 },
+  { x: 53, d: 10, dx: 8, dy: 400, t: 4 },
+  { x: 58, d: 260, dx: -12, dy: 250, t: 6 },
+  { x: 63, d: 110, dx: 18, dy: 330, t: 3 },
+  { x: 68, d: 350, dx: -20, dy: 290, t: 5 },
+  { x: 74, d: 60, dx: 14, dy: 370, t: 4 },
+  { x: 79, d: 240, dx: -8, dy: 230, t: 6 },
+  { x: 84, d: 130, dx: 18, dy: 320, t: 3 },
+  { x: 89, d: 310, dx: -14, dy: 280, t: 5 },
+  { x: 94, d: 30, dx: 10, dy: 390, t: 4 },
+  { x: 97, d: 200, dx: -6, dy: 260, t: 6 },
 ]);
 
 // Les grains d'or qui traversent la balance, de la coupelle basse (le camp qui
@@ -1710,11 +1741,12 @@ export function TourbillonEau({ effet, onTermine = null }) {
  *
  * La Braise a sa roue de feu, l'Eau son tourbillon, la Neige son gel : le Sable
  * manquait de signature. Quand une bénédiction ou un sort de l'élément frappe
- * une créature, une lame de poussière balaie sa carte, les bords s'érodent et
- * quelques grains retombent **au sol** — la ressource-sable qui s'accumule, la
- * métaphore fondatrice du jeu. Le calque reprend la place et l'inclinaison de
- * la créature touchée (mesurées avant l'action), ne capte aucun geste et rend
- * la table à sa dernière image ; la minuterie du parent n'est qu'un filet.
+ * une créature, une lame de poussière **descend** sur sa carte, les bords
+ * s'érodent et quelques grains retombent **au sol** — la ressource-sable qui
+ * s'accumule, la métaphore fondatrice du jeu. Le calque reprend la place et
+ * l'inclinaison de la créature touchée (mesurées avant l'action), ne capte
+ * aucun geste et rend la table à sa dernière image ; la minuterie du parent
+ * n'est qu'un filet.
  */
 export function TempeteSable({ effet, onTermine = null }) {
   return (
@@ -1743,6 +1775,52 @@ export function TempeteSable({ effet, onTermine = null }) {
           key={grain.d}
           className="rpg-tempete-sable__grain"
           style={{ '--dx': `${grain.dx}px`, '--dy': `${grain.dy}px`, '--d': `${grain.d}ms` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * La tempête de sable d'un **sort de zone** : tout un côté du plateau.
+ *
+ * Une Tempête de sable ne frappe pas une carte, elle couche le ciel sur un
+ * camp : les créatures tombent ensemble, et la poussière ne s'arrête pas aux
+ * cartes. Le calque couvre donc la moitié de table que le sort balaie — du
+ * bord du plateau à la frontière du territoire (`--rpg-frontiere`) — et un mur
+ * de poussière y descend **verticalement**, du haut vers le bas, précédé de son
+ * front, avec des grains semés sur toute la largeur. Il ne capte aucun geste,
+ * n'anime que translation et opacité, et rend la table à sa dernière image ;
+ * la minuterie du parent n'est qu'un filet.
+ */
+export function TempeteSableZone({ effet, onTermine = null }) {
+  const camp = effet.camp === 'joueur' ? 'joueur' : 'sorcier';
+  return (
+    <div
+      className={`rpg-tempete-sable-zone rpg-tempete-sable-zone--${camp}`}
+      data-rpg-sable-zone={camp}
+      data-rpg-sable-zone-fx="sable"
+      aria-hidden="true"
+      onAnimationEnd={(event) => {
+        if (event.target !== event.currentTarget || event.pseudoElement) return;
+        onTermine?.(effet.effectId);
+      }}
+    >
+      <i className="rpg-tempete-sable-zone__voile" />
+      <i className="rpg-tempete-sable-zone__lame">
+        <i className="rpg-tempete-sable-zone__front" />
+      </i>
+      {GRAINS_TEMPETE_ZONE.map((grain) => (
+        <i
+          key={grain.x}
+          className="rpg-tempete-sable-zone__grain"
+          style={{
+            '--x': `${grain.x}%`,
+            '--dx': `${grain.dx}px`,
+            '--dy': `${grain.dy}px`,
+            '--d': `${grain.d}ms`,
+            '--taille': `${grain.t}px`,
+          }}
         />
       ))}
     </div>
@@ -6873,9 +6951,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // roue, le temps que l'éclair tombe et que ses arcs s'éteignent.
   const [eclairsMarteau, setEclairsMarteau] = useState([]);
   // Les tempêtes de sable des sorts Sable : une par créature frappée, sur la
-  // relève d'emplacement de la roue de feu. La lame balaie, les grains
+  // relève d'emplacement de la roue de feu. La lame descend, les grains
   // retombent au sol.
   const [tempetesSable, setTempetesSable] = useState([]);
+  // Les tempêtes de zone : un calque par côté de plateau balayé par un sort
+  // Sable (`{ camp, carteId, token, effectId, expireA }`), le temps que le
+  // mur de poussière traverse la moitié de table.
+  const [tempetesSableZone, setTempetesSableZone] = useState([]);
   // Les balances des Heures des transferts Ténèbres (Tribut, pesée) : un
   // calque central par événement, le temps que le fléau s'incline.
   const [balancesTenebres, setBalancesTenebres] = useState([]);
@@ -7480,6 +7562,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(id);
   }, [tempetesSable]);
 
+  // Même chien de garde pour la vague de zone : un côté de plateau ne reste
+  // jamais couvert de poussière si la minuterie se perd.
+  useEffect(() => {
+    if (!tempetesSableZone.length) return undefined;
+    const derniere = Math.max(...tempetesSableZone.map((effet) => effet.expireA ?? 0));
+    const delai = Math.max(80, derniere - Date.now() + 80);
+    const id = window.setTimeout(() => setTempetesSableZone((current) => nettoyerFantomes(current)), delai);
+    return () => window.clearTimeout(id);
+  }, [tempetesSableZone]);
+
   // La balance des Heures non plus : son fléau ne reste pas incliné hors de son
   // transfert si la minuterie se perd.
   useEffect(() => {
@@ -7514,6 +7606,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return restants.length === current.length ? current : restants;
       });
       setTempetesSable((current) => {
+        const restants = nettoyerFantomes(current);
+        return restants.length === current.length ? current : restants;
+      });
+      setTempetesSableZone((current) => {
         const restants = nettoyerFantomes(current);
         return restants.length === current.length ? current : restants;
       });
@@ -7765,6 +7861,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setRouesFeu([]);
     setEclairsMarteau([]);
     setTempetesSable([]);
+    setTempetesSableZone([]);
     setBalancesTenebres([]);
     balanceTimersRef.current.forEach((id) => window.clearTimeout(id));
     balanceTimersRef.current = [];
@@ -9763,11 +9860,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (fraiche) brulees.set(entite.entityId, entite);
       }
     }
-    // Le Sable, comme la Braise, se lit dans les éléments de la blessure. Une
-    // Tempête de sable balaie plusieurs créatures d'un coup : chacune reçoit sa
-    // propre lame sur son emplacement. Même règle de fraîcheur : une ancienne
+    // Le Sable, comme la Braise, se lit dans les éléments de la blessure. Un
+    // sort **de zone** ne s'arrête pas aux cartes : il balaie tout un côté du
+    // plateau (voir `zonesSable`), et les créatures qu'il traverse n'ont pas
+    // besoin d'une seconde lame. Un sort qui ne désigne qu'une créature garde
+    // la sienne, sur son emplacement. Même règle de fraîcheur : une ancienne
     // blessure de sable ne rallume rien à l'action suivante.
     const sableuses = new Map();
+    const zonesSable = new Map();
     if (!mouvementReduit) {
       const sableParEntite = new Map();
       for (const blessure of blessuresNouvelles) {
@@ -9783,6 +9883,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             && (apres.bouclier ?? 0) === blessure.bouclierApres
           : blessure.mortelle;
         if (fraiche) sableuses.set(entite.entityId, entite);
+        // La vague de zone : la blessure nomme la carte du coup, et la portée
+        // de cette carte dit qu'elle balaie un camp entier. Le côté balayé est
+        // celui de la victime, jamais celui du lanceur : un sort qui inclut
+        // les alliés couvre les deux moitiés de table, une par camp frappé.
+        const carteSource = fraiche && blessure.sourceCarteId
+          ? cardById(blessure.sourceCarteId)
+          : null;
+        if (carteSource && rpgSortViseUneZone(carteSource)) {
+          const camp = blessure.cote === 'sorcier' ? 'sorcier' : 'joueur';
+          if (!zonesSable.has(camp)) zonesSable.set(camp, { camp, carteId: blessure.sourceCarteId });
+        }
       }
     }
     // La foudre du marteau : la couleur ne suffit pas — plein de Neige
@@ -9923,22 +10034,48 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }, DUREE_ECLAIR_MARTEAU);
     }
 
-    // La tempête de sable : une par créature frappée par un sort Sable. Comme
-    // la roue de feu, elle joue sur l'emplacement relevé avant l'action — la
-    // créature tuée par la lame a déjà commencé son adieu par ailleurs.
+    // La vague de zone : un sort Sable qui vise tout un camp couche le ciel sur
+    // la moitié de table qu'il traverse. Un calque par camp frappé, ancré sur
+    // la frontière du territoire (`--rpg-frontiere` côté feuille) : le mur de
+    // poussière y descend du haut vers le bas, sur les cartes comme sur le
+    // reste du plateau.
+    if (zonesSable.size) {
+      const token = ++sequenceAnimationRef.current;
+      const effetsZone = [...zonesSable.values()].map((zone) => ({
+        ...zone,
+        token,
+        effectId: `sable-zone-${token}-${zone.camp}`,
+        expireA: Date.now() + dureeAnimation(DUREE_TEMPETE_SABLE_ZONE) + 400,
+      }));
+      setTempetesSableZone((current) => [...nettoyerFantomes(current), ...effetsZone]);
+      programmerNettoyageVisuel(() => {
+        const ids = new Set(effetsZone.map((effet) => effet.effectId));
+        setTempetesSableZone((current) => current.filter((effet) => !ids.has(effet.effectId)));
+      }, dureeAnimation(DUREE_TEMPETE_SABLE_ZONE));
+    }
+
+    // La tempête de sable d'une carte : une par créature frappée par un sort
+    // Sable qui ne balaie pas une zone. Comme la roue de feu, elle joue sur
+    // l'emplacement relevé avant l'action — la créature tuée par la lame a
+    // déjà commencé son adieu par ailleurs. Un côté déjà couvert par la vague
+    // n'ajoute pas une lame par carte : le mur de poussière passe dessus.
     if (sableuses.size) {
       const token = ++sequenceAnimationRef.current;
-      const effetsSable = [...sableuses.values()].map((entite) => ({
-        ...entite,
-        token,
-        effectId: `sable-${token}-${entite.entityId}`,
-        expireA: Date.now() + dureeAnimation(DUREE_TEMPETE_SABLE) + 400,
-      }));
-      setTempetesSable((current) => [...nettoyerFantomes(current), ...effetsSable]);
-      programmerNettoyageVisuel(() => {
-        const ids = new Set(effetsSable.map((effet) => effet.effectId));
-        setTempetesSable((current) => current.filter((effet) => !ids.has(effet.effectId)));
-      }, dureeAnimation(DUREE_TEMPETE_SABLE));
+      const effetsSable = [...sableuses.values()]
+        .filter((entite) => !zonesSable.has(entite.camp))
+        .map((entite) => ({
+          ...entite,
+          token,
+          effectId: `sable-${token}-${entite.entityId}`,
+          expireA: Date.now() + dureeAnimation(DUREE_TEMPETE_SABLE) + 400,
+        }));
+      if (effetsSable.length) {
+        setTempetesSable((current) => [...nettoyerFantomes(current), ...effetsSable]);
+        programmerNettoyageVisuel(() => {
+          const ids = new Set(effetsSable.map((effet) => effet.effectId));
+          setTempetesSable((current) => current.filter((effet) => !ids.has(effet.effectId)));
+        }, dureeAnimation(DUREE_TEMPETE_SABLE));
+      }
     }
 
     // Renvoi en main : la créature quitte la table dans un tourbillon d'eau.
@@ -12994,7 +13131,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           />
         ))}
 
-        {/* Sable : la lame de poussière balaie chaque créature frappée par un sort. */}
+        {/* Sable de zone : le mur de poussière descend sur tout un côté du
+            plateau, de la carte au décor. */}
+        {tempetesSableZone.map((effet) => (
+          <TempeteSableZone
+            key={effet.effectId}
+            effet={effet}
+            onTermine={(effectId) => setTempetesSableZone((current) => current.filter((autre) => autre.effectId !== effectId))}
+          />
+        ))}
+
+        {/* Sable d'une carte : la lame de poussière descend sur la créature frappée. */}
         {tempetesSable.map((effet) => (
           <TempeteSable
             key={effet.effectId}

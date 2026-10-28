@@ -85,6 +85,11 @@ const blocRacine = extraireBloc(css, '.rpg-ligne-charge {');
 assert.match(blocRacine, /position:\s*absolute;/, 'la ligne est un calque absolu de la table');
 assert.match(blocRacine, /z-index:\s*55;/, 'elle passe sous le fil du Tribut (56), la tempête (57) et la balance (58)');
 assert.match(blocRacine, /pointer-events:\s*none;/, 'elle ne capte aucun geste de la table');
+// Le div est tourné : son origine doit être son EXTRÉMITÉ mesurée, sinon la
+// rotation autour du milieu détache la ligne de l'attaquant (jusqu'à plusieurs
+// centaines de pixels sur une attaque diagonale) et elle balaie l'écran.
+assert.match(blocRacine, /transform-origin:\s*0 0;|transform-origin:\s*0 50%;/,
+  'la ligne se tourne autour de son extrémité, pas de son milieu : elle relie vraiment l’attaquant à sa cible');
 assert.match(css, /\.rpg-ligne-charge__trait\s*\{[^}]*animation:\s*rpg-ligne-de-charge-trace calc\(\.42s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.3, \.7, \.35, 1\) both;/s,
   'le tracé vit 420 ms au total (220 ms de tracé, puis tenue et fondu)');
 assert.match(css, /\.rpg-ligne-charge__pointe\s*\{[^}]*animation:\s*rpg-ligne-de-charge-pointe calc\(\.42s \* var\(--rpg-anim-scale, 1\)\) cubic-bezier\(\.3, \.7, \.35, 1\) both;/s,
