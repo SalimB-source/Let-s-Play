@@ -2763,6 +2763,16 @@ function annulerBonusTemporaires(duel, tourFerme) {
           || Boolean(armeCarteDe(entite)?.donne?.coupRapide)
           || entite.coupRapideTemporaire > 0;
       }
+      // Le bouclier prêté par le Rempart repart avec le tour — s'il n'a pas
+      // été consommé. Celui d'une arme encore tenue reste : il ne vient pas
+      // du sort.
+      if (entry.bouclier) {
+        if (entite.bouclier > 0 && !entite.arme?.bouclier) {
+          entite.bouclier = 0;
+          entite.bouclierEpuise = false;
+        }
+        entite.bouclierDuSort = false;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -3654,6 +3664,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       const bonusOverkill = effet.overkill ? 1 : 0;
       const bonusCoupRapide = effet.coupRapide ? 1 : 0;
+      // `bouclier` (le Rempart de dunes sous les Ailes d'or) : le sort pose la
+      // parade anti-sort sur chaque créature touchée, comme le ferait une arme.
+      // Le bouclier est binaire dans ce jeu ; il ne s'empile pas.
+      const bonusBouclier = effet.bouclier ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -3670,7 +3684,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.coupRapide = true;
           if (temporaire) entite.coupRapideTemporaire = (entite.coupRapideTemporaire ?? 0) + bonusCoupRapide;
         }
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, tour: duel.tour });
+        if (bonusBouclier && !(entite.bouclier > 0)) {
+          entite.bouclier = 1;
+          entite.bouclierEpuise = false;
+          entite.bouclierDuSort = true;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, bouclier: bonusBouclier, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {

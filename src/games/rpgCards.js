@@ -1611,7 +1611,11 @@ export const RPG_MAGIE_CARDS = [
     // de l’échange. `tours: 1` = le bonus ne dépasse pas le tour pendant lequel
     // il a été joué (carnet `bonusTemporaires` du moteur, soldé à `rpgFinDeTour`).
     effet: { type: 'buff', atk: 0, def: 3, tours: 1 },
-    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour.',
+    // Le Lien des Ailes d'or : la Dame prête sa lumière. Le rempart garde sa
+    // taille (+0/+3), mais chaque créature touchée reçoit en plus un bouclier
+    // — la parade anti-sort du jeu, celle qu'elle porte elle-même.
+    lien: { ancre: 'dame-aux-ailes-d-or', effet: { bouclier: 1 } },
+    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour. Lien des Ailes d’or — si La Dame aux ailes d’or est en jeu, elles gagnent aussi un bouclier : le prochain sort adverse qui atteint chacune est bloqué, même un sort de zone.',
     flavor: 'Le vent bâtit plus vite que les maçons, et il emporte aussi vite.',
   },
   {

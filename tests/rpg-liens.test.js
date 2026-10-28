@@ -21,6 +21,7 @@ import {
   rpgLancerMagie,
   rpgBlesserCreature,
   rpgAttaquerSorcier,
+  rpgFinDeTour,
 } from '../src/games/rpgDuel.js';
 import {
   RPG_DUEL_CARDS,
@@ -320,6 +321,50 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   const cavalier = duel.joueur.creatures.find((entite) => entite.carteId === 'cavalier-des-deux-sabres');
   rpgBlesserCreature(duel, 'joueur', cavalier.id, 99, 'braise');
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
+});
+
+test('Rempart de dunes : +0/+3, et un bouclier avec La Dame aux ailes d’or', () => {
+  const monter = (avecDame) => {
+    const duel = duelVide();
+    if (avecDame) poser(duel, 'joueur', 'dame-aux-ailes-d-or');
+    const cible = poser(duel, 'joueur', 'momie-de-lin');
+    return { duel, cible };
+  };
+
+  const sans = monter(false);
+  lancer(sans.duel, 'joueur', 'rempart-de-dunes');
+  assert.deepEqual([sans.cible.atk, sans.cible.def], [2, 7], 'sans ancre : +0/+3, sur 2/4');
+  assert.equal(sans.cible.bouclier ?? 0, 0, 'et aucun bouclier');
+
+  const avec = monter(true);
+  lancer(avec.duel, 'joueur', 'rempart-de-dunes');
+  assert.deepEqual([avec.cible.atk, avec.cible.def], [2, 7], 'avec les Ailes d’or : le rempart garde sa taille');
+  assert.equal(avec.cible.bouclier, 1, 'mais la créature reçoit un bouclier');
+
+  // Le bouclier est la parade anti-sort : il bloque la Magie Rapide adverse
+  // jouée en fenêtre de réponse, et tombe.
+  const riposte = monter(true);
+  lancer(riposte.duel, 'joueur', 'rempart-de-dunes');
+  const avant = riposte.cible.pv;
+  donner(riposte.duel, 'sorcier', 'poigne-de-givre');
+  manaPlein(riposte.duel, 'sorcier');
+  riposte.duel.fenetreReponse = true;
+  const res = rpgLancerMagie(riposte.duel, 'sorcier', 'poigne-de-givre', riposte.cible.id);
+  assert.equal(res.ok, true);
+  assert.equal(res.bouclierBloque, true, 'le sort est bloqué, pas encaissé');
+  assert.equal(riposte.cible.pv, avant, 'et la créature ne perd aucun PV');
+  assert.equal(riposte.cible.bouclier, 0, 'le bouclier tombe en bloquant');
+
+  // Non consommé, il repart avec le tour, comme le +0/+3.
+  const expire = monter(true);
+  lancer(expire.duel, 'joueur', 'rempart-de-dunes');
+  rpgFinDeTour(expire.duel);
+  assert.equal(expire.cible.bouclier, 0, 'le bouclier prêté ne survit pas au tour');
+  assert.equal(expire.cible.def, 4, 'ni le rempart');
+
+  const carte = cardById('rempart-de-dunes');
+  assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'dame-aux-ailes-d-or', effet: { bouclier: 1 } });
 });
 
 test('Trait de braise : 3 dégâts, 4 avec La Lionne du midi ardent — le chiffre de son souffle', () => {
