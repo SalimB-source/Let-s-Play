@@ -123,7 +123,7 @@ export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
 
 /**
  * Le trait de l'**Attaque ciblée** : une flèche, pas une épée. La frappe
- * ciblée d'une créature (coup rapide, 30 % de chances de rater) est un tir à
+ * ciblée d'une créature (coup rapide, 25 % de chances de rater) est un tir à
  * distance : elle siffle, et le coup d'épée commun (`player_attack_hit`)
  * reste au corps à corps — les deux ne se superposent jamais pour un même
  * attaquant.

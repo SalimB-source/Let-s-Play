@@ -93,7 +93,7 @@ difficile à tuer au combat — et donne enfin une cible d'équipement aux créa
 
 ### 3. Javelot du beffroi — commune — 2
 
-> **Arme — Javelot.** Le porteur gagne +2/+0 et **Attaque ciblée** : 30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
+> **Arme — Javelot.** Le porteur gagne +2/+0 et **Attaque ciblée** : 25 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
 >
 > *« Il ne vise pas l'homme. Il vise la fenêtre derrière lui. »*
 
@@ -236,7 +236,7 @@ même traitement que les jetons de Tarek.
 
 ### 10. Takouba de Tin Hinan — mythique (1 par deck) — 4
 
-> **Arme — Takouba.** Le porteur gagne +3/+2 et **Attaque ciblée** (30 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
+> **Arme — Takouba.** Le porteur gagne +3/+2 et **Attaque ciblée** (25 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
 > porteur inflige des blessures de combat à une créature, piochez une carte.
 > Quand il en inflige au sorcier adverse, créez un jeton chien de sable 1/1.**
 >

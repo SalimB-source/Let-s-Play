@@ -581,7 +581,7 @@ export const EFFET_DEFINITIONS = {
   envol: 'Ne peut être bloquée que par une créature avec Envol.',
   infiltration: 'Ne peut pas être bloquée.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
-  coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+  coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',

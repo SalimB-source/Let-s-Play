@@ -386,7 +386,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     rarity: 'commune',
     coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({

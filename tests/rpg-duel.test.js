@@ -2080,17 +2080,17 @@ test('l’Attaque ciblée frappe la créature désignée, et l’attaque s’arr
   ]);
 });
 
-test('l’Attaque ciblée a 30 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
-  assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.30);
+test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche toujours l’adversaire à 100 %', () => {
+  assert.equal(RPG_COUP_RAPIDE_ECHEC_CHANCE, 0.25);
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
-    assert.match(carte.text, /30\s*%/, `${carte.id} précise les 30 % de chances de rater`);
+    assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }
 
-  // Jet < 0.30 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
-  const duelRate = duelDeBase({ rng: () => 0.29 });
+  // Jet < 0.25 : la frappe rapide contre une créature rate, l’attaque s’arrête là.
+  const duelRate = duelDeBase({ rng: () => 0.24 });
   donnerMana(duelRate, 'joueur', 20);
   donnerMana(duelRate, 'sorcier', 20);
   donner(duelRate, 'joueur', 'feriel');
@@ -2100,15 +2100,15 @@ test('l’Attaque ciblée a 30 % de chances de rater une créature, mais touche 
   const pvSorcierAvant = duelRate.sorcier.pv;
   const resRate = rpgLancerAttaque(duelRate, 'joueur', [ferielRate.id], {}, null, null, { [ferielRate.id]: fennecRate.id });
   assert.equal(resRate.ok, true);
-  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.30 marque l’attaque ciblée comme ratée');
+  assert.equal(resRate.resume.coupsRapides[0].rate, true, 'le jet sous 0.25 marque l’attaque ciblée comme ratée');
   assert.equal(resRate.resume.coupsRapides[0].degats, 0, 'aucun dégât infligé en cas d’échec');
   assert.equal(fennecRate.pv, fennecRate.pvMax, 'la créature ciblée reste indemne');
   assert.equal(duelRate.sorcier.pv, pvSorcierAvant, 'l’attaque s’arrête quand même : le sorcier ne prend rien');
   assert.equal(ferielRate.attaquee, true, 'l’attaquant est engagé malgré le raté');
   assert.ok(duelRate.log.some((ligne) => ligne.includes('rate son Attaque ciblée contre Fennec des décombres')));
 
-  // Jet >= 0.30 : la frappe rapide touche sa cible.
-  const duelTouche = duelDeBase({ rng: () => 0.30 });
+  // Jet >= 0.25 : la frappe rapide touche sa cible.
+  const duelTouche = duelDeBase({ rng: () => 0.25 });
   donnerMana(duelTouche, 'joueur', 20);
   donnerMana(duelTouche, 'sorcier', 20);
   donner(duelTouche, 'joueur', 'feriel');

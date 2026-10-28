@@ -558,7 +558,7 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -589,13 +589,13 @@ export const RPG_CREATURE_CARDS = [
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
-    // insaisissable (Esquive, 30 %) : ce qu'elle ne pare pas, elle l'évite.
+    // insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle l'évite.
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -740,7 +740,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1174,7 +1174,7 @@ export const RPG_HERO_CARDS = [
     rapidite: true,
     contreAttaque: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (30 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (25 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1218,7 +1218,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1297,7 +1297,7 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1317,7 +1317,7 @@ export const RPG_HERO_CARDS = [
     coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1358,7 +1358,7 @@ export const RPG_HERO_CARDS = [
     art: 'dame-des-neuf-mondes',
     coupRapide: true,
     arrivee: { type: 'soin', amount: 8 },
-    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (30 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
+    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (25 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',
   },
   {
@@ -2085,7 +2085,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2138,7 +2138,7 @@ export const RPG_ARME_CARDS = [
     donne: { esquive: true },
     // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4). Son
     // Esquive, elle, se CUMULE avec celle que la guerrière imprime : deux
-    // sources valent deux jets à 30 %, donc 60 %.
+    // sources valent 25 % + 25 %, donc 50 %.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
     text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas). Lien de Bouchra — si Bouchra, guerrière des crêtes est en jeu, le porteur gagne +0/+4 à la place, et l’Esquive s’ajoute à celle qu’il porte déjà.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
@@ -2156,7 +2156,7 @@ export const RPG_ARME_CARDS = [
     // Le Lien du Roi : le trait prend un point de plus — la riposte du
     // Contre-attaquant mord alors un cran plus fort.
     lien: { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Lien du Roi — si Le roi Kusayla est en jeu, le porteur gagne +3/+0 à la place.',
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Lien du Roi — si Le roi Kusayla est en jeu, le porteur gagne +3/+0 à la place.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2256,7 +2256,7 @@ export const RPG_ARME_CARDS = [
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {

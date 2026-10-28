@@ -84,7 +84,9 @@ export const RPG_MAIN_DEPART = 5;
 // les sources s'additionnent (deux Esquives valent 50 %, voir `recalculerEsquive`).
 export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
-export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
+// L'Attaque ciblée rate sa proie 25 % du temps — le même barème que le coup
+// critique et l'Esquive. Contre le sorcier, elle touche toujours (100 %).
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
 export const RPG_COUP_CRITIQUE_CHANCE = 0.25;
 export const RPG_COUP_CRITIQUE_FOIS = 4;
 
