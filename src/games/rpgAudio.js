@@ -52,6 +52,9 @@ const CHAIN_RATTLE_SAMPLE_URL = new URL('./assets/chain-rattle.wav', import.meta
 const DOCK_SOUND_SAMPLE_URL = new URL('./assets/dock-sound.mp3', import.meta.url);
 const COLD_WIND_SAMPLE_URL = new URL('./assets/cold-wind.wav', import.meta.url);
 const FOUDRE_MARTEAU_SAMPLE_URL = new URL('./assets/thunder-spark-transition-full.mp3', import.meta.url);
+// La flèche de l'Attaque ciblée : un échantillon généré par
+// `tools/make-arrow-shot.mjs` (corde lâchée + souffle du trait + empennage).
+const ARROW_SHOT_SAMPLE_URL = new URL('./assets/arrow-shot.wav', import.meta.url);
 const CARD_PLACE_VOLUME = 0.62;
 const CARD_DRAW_VOLUME = 0.52;
 const ATTACKERS_CONFIRM_VOLUME = 0.58;
@@ -73,6 +76,7 @@ const CHAIN_RATTLE_VOLUME = 0.62;
 const DOCK_SOUND_VOLUME = 0.62;
 const COLD_WIND_VOLUME = 0.58;
 const FOUDRE_MARTEAU_VOLUME = 0.58;
+const ARROW_SHOT_VOLUME = 0.6;
 // Les voix d'arrivée des créatures (une par carte, voir
 // `rpgArrivalVoices.js`) passent sous les bruitages de table : elles se
 // superposent à `card_place` sans l'écraser.
@@ -114,6 +118,15 @@ export function rpgSonArriveePirate(index = 0) {
 
 /** L'ambiance de quai (« Dock Sound ») jouée quand un navire arrive en jeu. */
 export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
+
+/**
+ * Le trait de l'**Attaque ciblée** : une flèche, pas une épée. La frappe
+ * ciblée d'une créature (coup rapide, 30 % de chances de rater) est un tir à
+ * distance : elle siffle, et le coup d'épée commun (`player_attack_hit`)
+ * reste au corps à corps — les deux ne se superposent jamais pour un même
+ * attaquant.
+ */
+export const RPG_ARROW_SFX = 'fleche';
 
 /** Souffle froid du gel de masse (Verglas / Brume / Blizzard / Géant) — vent hivernal. */
 export const RPG_COLD_WIND_SFX = 'cold_wind';
@@ -178,6 +191,9 @@ const RPG_SFX_TABLE = {
   cold_wind: [{ kind: 'sample', at: 0, dur: 2.0, g: 1 }],
   // Thunder Spark Transition (MPEG-1 Layer III, 320 kbps, 44.1 kHz, 3.422 s).
   [RPG_FOUDRE_MARTEAU_SFX]: [{ kind: 'sample', at: 0, dur: 3.422, g: 1 }],
+  // La flèche de l'Attaque ciblée (arrow-shot.wav, 0.55 s, PCM 16 bits,
+  // 44,1 kHz mono — `tools/make-arrow-shot.mjs`).
+  [RPG_ARROW_SFX]: [{ kind: 'sample', at: 0, dur: 0.55, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */
@@ -246,6 +262,7 @@ export class RpgAudioPlayer {
     this.dockSoundAudio = null;
     this.coldWindAudio = null;
     this.foudreMarteauAudio = null;
+    this.arrowShotAudio = null;
     // Voix d'arrivée : un élément `<audio>` par carte, construit à la première
     // entrée en jeu puis gardé pour le reste de la partie.
     this.cardVoiceAudios = new Map();
@@ -318,6 +335,9 @@ export class RpgAudioPlayer {
         this.foudreMarteauAudio = new AudioCtor(FOUDRE_MARTEAU_SAMPLE_URL.href);
         this.foudreMarteauAudio.preload = 'auto';
         this.foudreMarteauAudio.volume = FOUDRE_MARTEAU_VOLUME;
+        this.arrowShotAudio = new AudioCtor(ARROW_SHOT_SAMPLE_URL.href);
+        this.arrowShotAudio.preload = 'auto';
+        this.arrowShotAudio.volume = ARROW_SHOT_VOLUME;
       } catch { /* l’échantillon reste optionnel si Audio n’est pas disponible */ }
     }
   }
@@ -427,6 +447,7 @@ export class RpgAudioPlayer {
       [this.dockSoundAudio, DOCK_SOUND_VOLUME],
       [this.coldWindAudio, COLD_WIND_VOLUME],
       [this.foudreMarteauAudio, FOUDRE_MARTEAU_VOLUME],
+      [this.arrowShotAudio, ARROW_SHOT_VOLUME],
     ];
     for (const [audio, base] of samples) {
       if (!audio) continue;
@@ -513,7 +534,7 @@ export class RpgAudioPlayer {
 
   play(name, delay = 0) {
     if (!this.ctx || !this.master || this.muted || this.volume <= 0) return;
-    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === RPG_DWARF_DIALOGUE_SFX || name === 'navire_arrivee' || name === 'cold_wind' || name === RPG_FOUDRE_MARTEAU_SFX) {
+    if (name === 'card_place' || name === 'card_draw' || name === 'attackers_confirm' || name === 'player_attack_hit' || name === 'flame_gust' || name === 'water_wave' || name === 'card_countered' || name === 'creature_return' || name === 'block_impact' || name === 'destruction_hit' || name === 'page_turn' || name === 'victoire' || name === 'defaite' || name === 'degats' || name === 'degats_sorcier' || name === 'abordage' || name === 'pirate_arrivee' || name === 'pirate_dialogue' || name === RPG_DWARF_DIALOGUE_SFX || name === 'navire_arrivee' || name === 'cold_wind' || name === RPG_FOUDRE_MARTEAU_SFX || name === RPG_ARROW_SFX) {
       const sample = name === 'card_place'
         ? this.cardPlaceAudio
         : name === 'card_draw' ? this.cardDrawAudio
@@ -524,7 +545,7 @@ export class RpgAudioPlayer {
                 : name === 'card_countered' ? this.cardCounteredAudio
                 : name === 'creature_return' ? this.creatureReturnAudio
                 : name === 'block_impact' ? this.blockImpactAudio
-                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryCryAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : this.hitAudio;
+                  : name === 'destruction_hit' ? this.destructionHitAudio : name === 'page_turn' ? this.pageTurnAudio : name === 'victoire' ? this.victoryCryAudio : name === 'defaite' ? this.gameLostAudio : name === 'abordage' ? this.chainRattleAudio : name === 'pirate_arrivee' ? this.pirateAhoyAudio : name === 'pirate_dialogue' ? this.pirateDialogueAudio : name === RPG_DWARF_DIALOGUE_SFX ? this.dwarfDialogueAudio : name === 'navire_arrivee' ? this.dockSoundAudio : name === 'cold_wind' ? this.coldWindAudio : name === RPG_FOUDRE_MARTEAU_SFX ? this.foudreMarteauAudio : name === RPG_ARROW_SFX ? this.arrowShotAudio : this.hitAudio;
       if (!sample) return;
       try {
         sample.currentTime = 0;
@@ -872,6 +893,14 @@ export class RpgAudioPlayer {
       } catch { /* élément audio déjà libéré */ }
     }
     this.foudreMarteauAudio = null;
+    if (this.arrowShotAudio) {
+      try {
+        this.arrowShotAudio.pause?.();
+        this.arrowShotAudio.removeAttribute?.('src');
+        this.arrowShotAudio.load?.();
+      } catch { /* élément audio déjà libéré */ }
+    }
+    this.arrowShotAudio = null;
     if (this.cardVoiceTimers) {
       for (const timer of this.cardVoiceTimers) clearTimeout(timer);
       this.cardVoiceTimers.clear();

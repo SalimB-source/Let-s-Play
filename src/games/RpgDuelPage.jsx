@@ -98,6 +98,7 @@ import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
 import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix } from './rpgArrivalVoices.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { rpgWaterSoundFor } from './rpgWaterAudio.js';
+import { rpgSonsResolutionCombat } from './rpgAttackAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckCreation from './RpgDeckCreation.jsx';
@@ -11536,15 +11537,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       void envoyerIntentionPvp({ type: 'bloquer', blocages, repartitions: repartitionsDeclarees });
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
-    const frappeCreature = res.resume.paires.length > 0
-      || res.resume.coupsRapides.some((coup) => !coup.annule && !coup.rate);
+    // La flèche de l'Attaque ciblée et le coup d'épée du corps à corps sont
+    // deux sons distincts : une frappe ciblée seule ne fait plus entendre
+    // l'acier (`rpgAttackAudio.js`).
+    const sonsCombat = rpgSonsResolutionCombat(res.resume, { sonMelee: sonAttaque ?? 'player_attack_hit' });
     const attaquantsRates = (res.resume.coupsRapides ?? [])
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
+    for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     // La ligne de charge se trace avant le bond : qui frappe qui, lisible
     // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
@@ -11635,18 +11638,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
 
-    const frappeCreature = res.resume.paires.length > 0
-      || res.resume.coupsRapides.some((coup) => !coup.annule && !coup.rate);
+    // Une frappe ciblée siffle comme une flèche ; le corps à corps garde le
+    // coup d'épée. Les deux peuvent coexister (deux attaquants), jamais se
+    // remplacer (`rpgAttackAudio.js`).
+    const sonsCombat = rpgSonsResolutionCombat(res.resume, { sonMelee: sonAttaque ?? 'player_attack_hit' });
     const attaquantsRates = (res.resume.coupsRapides ?? [])
       .filter((coup) => coup.rate)
       .map((coup) => coup.attaquantId);
     if (attaquantsRates.length) declencherMissEntites(attaquantsRates);
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
-    if (frappeCreature) jouerSfx(sonAttaque ?? 'player_attack_hit', 0.015);
+    for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
-    } else if (!frappeCreature) {
+    } else if (!sonsCombat.length) {
       jouerSfx('block_impact', 0.2);
     }
     // La ligne de charge se trace avant le bond : cible désignée (coup

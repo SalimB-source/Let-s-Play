@@ -73,6 +73,35 @@ pistes de plateau ci-dessus, plus deux bruitages déjà branchés
 (`viking warrior battle cry with horn.mp3` → `victoire`,
 `26509 Thunder spark transition-full.mp3` → `foudre_marteau`).
 
+## Les deux frappes de créature
+
+Le duel n'a que **deux** sons de frappe pour les créatures, et ils ne se
+superposent jamais pour un même attaquant (`src/games/rpgAttackAudio.js`) :
+
+- **Attaque ciblée** → `fleche` (`src/games/assets/arrow-shot.wav`, 0,55 s,
+  gain 0,6). La créature désigne sa proie avant le combat : son attaque est un
+  tir, elle s'arrête sur sa frappe et le sorcier ne perd rien. Le fichier est
+  généré par `tools/make-arrow-shot.mjs` (corde lâchée, claquement d'encoche,
+  souffle de bande et sifflement d'empennage descendant), reproductible à
+  l'octet près, aucun aléatoire.
+- **Corps à corps** → `player_attack_hit` (`player-attack-hit.wav`), ou le
+  souffle de l'élément quand une capacité de combat qui blesse se déclenche
+  (`rpgCombatSound`). C'est le cas d'une créature bloquée et de la plaque du
+  sorcier.
+
+`rpgSonsResolutionCombat(resume, { sonMelee, sonFleche, delai })` lit le résumé
+du moteur et rend les sons dans l'ordre d'écoute : la flèche d'abord (décalée de
+15 ms pour ne pas s'écraser sur le choc), le corps à corps ensuite. Une
+résolution peut demander les deux — deux attaquants différents — mais **une
+frappe ciblée seule ne joue jamais le coup d'épée**, même quand l'attaquante est
+la seule à attaquer. C'est le reproche d'origine : le son commun, perçu comme
+un sabre, couvrait la flèche.
+
+`tests/rpg-fleche-audio.test.js` vérifie le catalogue, le filtrage des frappes
+ratées ou annulées et le routage du lecteur ; `tests/rpg-fleche-audio-ui.test.js`
+joue la vraie page du duel (jsdom) sur une Attaque ciblée seule et contrôle le
+`<audio>` réellement alimenté.
+
 ## Comment elle se déclenche
 
 La page du duel (`src/games/RpgDuelPage.jsx`) tient une instance de
