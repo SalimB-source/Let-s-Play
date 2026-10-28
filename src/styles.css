@@ -623,7 +623,7 @@ img{max-width:100%}
 }
 /* Les rubriques : même famille visuelle que le menu du compte. */
 .nav-primary .nav-submenu a{
-  display:flex;align-items:center;justify-content:flex-start;
+  display:flex;align-items:center;justify-content:center;text-align:center;
   padding:11px 14px;border-radius:12px;
   font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;
   color:rgba(238,240,255,.86);
@@ -637,7 +637,7 @@ img{max-width:100%}
 .nav-primary .nav-submenu a.is-current{
   background:rgba(255,214,25,.10);border-color:rgba(255,214,25,.3);color:#fff;
 }
-.nav-submenu-text{display:block;min-width:0}
+.nav-submenu-text{display:block;width:100%;min-width:0;text-align:center}
 .nav-submenu-label{font-family:var(--display);font-weight:800;font-size:12.5px;letter-spacing:.02em}
 
 /* Téléphone : le panneau devient une liste de sous-entrées, toujours ouverte. */
@@ -670,7 +670,7 @@ img{max-width:100%}
   .nav-links.open .nav-submenu{pointer-events:auto}
   .nav-submenu::before{display:none}
   .nav-primary .nav-submenu a{
-    width:100%;min-height:40px;
+    width:100%;min-height:40px;justify-content:flex-start;text-align:left;
     padding:9px 4px 9px 0;border-radius:0;
     background:transparent;border:0;border-bottom:1px solid rgba(148,130,255,.12);
     color:rgba(238,240,255,.7);
@@ -684,6 +684,7 @@ img{max-width:100%}
     border-color:rgba(34,211,238,.28);
     transform:none;
   }
+  .nav-submenu-text{text-align:left}
   .nav-submenu-label{font-size:clamp(16px,4.6vw,19px)}
   /* Arabe : la liste des sous-entrées se décale de l'autre côté. */
   [dir="rtl"] .nav-submenu{padding:0 30px 6px 0}
