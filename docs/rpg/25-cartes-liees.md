@@ -55,6 +55,7 @@ mécanique sur des cartes du catalogue.
 | **Vent rouge** (magie, rare) | 3 | **2** dégâts à toutes les créatures adverses | **3** dégâts | +1 dégât | Daimyō du Soleil rouge (Braise, mythique, 5) |
 | **Serment de la forge** (magie, mythique) | 4 | +2/+1 · Attaque ciblée | **+3/+1** · Attaque ciblée | +1/+0 | Daimyō du Soleil rouge (Braise, mythique, 5) |
 | **Nuage de cendres** (magie, rare) | 5 | **2** dégâts à toutes + 1 d'écho | **3** dégâts à toutes + **1** d'écho | +1, écho inchangé | Susanoo (Braise, mythique, 6) |
+| **Brise-lame** (magie rapide, inhabituelle) | 3 | brise une arme adverse · pioche **1** | brise l'arme · pioche **2** | +1 carte | Orochi (Braise, mythique, 8) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement

@@ -271,3 +271,24 @@ test('Nuage de cendres : 2 dégâts sans Susanoo, 3 avec — et l’écho reste 
   assert.equal(avec.sorcier.degatsEchos?.at(-1)?.amount, 1,
     'l’écho garde son dégât : le Lien ne touche que la première vague');
 });
+
+test('Brise-lame : pioche 1 sans Orochi, pioche 2 avec lui — la lame tombe dans les deux cas', () => {
+  const monter = () => {
+    const duel = duelVide();
+    duel.joueur.deck = ['chacal-du-seuil', 'chacal-du-seuil', 'chacal-du-seuil', 'chacal-du-seuil'];
+    const porteur = poser(duel, 'sorcier', 'gardienne-de-la-balance');
+    equiper(duel, 'sorcier', 'javelot-du-beffroi', porteur);
+    return { duel, porteur };
+  };
+
+  const sans = monter();
+  lancer(sans.duel, 'joueur', 'brise-lame', sans.porteur.id);
+  assert.equal(sans.duel.joueur.main.length, 1, 'sans ancre : une carte piochée');
+  assert.equal(sans.porteur.arme, null, 'la lame est brisée quand même');
+
+  const avec = monter();
+  poser(avec.duel, 'joueur', 'orochi');
+  lancer(avec.duel, 'joueur', 'brise-lame', avec.porteur.id);
+  assert.equal(avec.duel.joueur.main.length, 2, 'avec Orochi : deux cartes piochées');
+  assert.equal(avec.porteur.arme, null, 'et la lame tombe toujours');
+});

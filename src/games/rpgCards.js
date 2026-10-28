@@ -1524,7 +1524,10 @@ export const RPG_MAGIE_CARDS = [
     // (prototype `entite.arme` ou Sabre maudit `entite.armes`). La pioche
     // reste acquise même si l'Esquive annule la destruction.
     effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 },
-    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte.',
+    // Le Lien du serpent : les écailles d'Orochi brisent l'acier sans se
+    // refermer — la lame tombe, et le lanceur pioche une carte de plus.
+    lien: { ancre: 'orochi', effet: { pioche: 2 } },
+    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte. Lien d’Orochi — si Orochi est en jeu, piochez deux cartes à la place.',
     flavor: 'Le fer retourne au feu ; la main qui le tenait reste vide.',
   },
   {
