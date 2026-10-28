@@ -412,13 +412,18 @@ export function effetsFurieInactifs(carte, entite = null) {
 }
 
 /**
- * Les effets imprimés qu'une créature posée a déjà dépensés : sa Tenacité
+ * Les effets d'une créature posée qu'elle a déjà dépensés : sa Tenacité
  * quand elle l'a sauvée une fois, son Bouclier quand il a bloqué son sort
  * (Salem, Guerrier, Parade de verre…) ou que le bouclier de lumière de la
  * Dame aux ailes d'or a été touché. L'aperçu grise alors
  * la pastille, son explication et les lignes de règle de cet effet. Une carte
  * en main ou au catalogue n'a pas d'entité : rien n'y est jamais épuisé. Un
  * nouveau bouclier réarme l'état — tant qu'il tient, rien n'est grisé.
+ *
+ * Le bouclier **prêté** compte comme les autres : une Parade de verre ou la
+ * Hache de la banquise ne s'impriment pas sur la fiche de la créature, mais
+ * `bouclierEpuise` garde la trace de la parade tombée, pour que son icône
+ * violette reste affichée en gris au lieu de s'évaporer sans laisser de trace.
  */
 export function effetsEpuisesPourEntite(carte, entite) {
   if (!carte || !entite) return [];
@@ -429,9 +434,12 @@ export function effetsEpuisesPourEntite(carte, entite) {
     || Boolean(carte.donne?.bouclier);
   const bouclierActif = Number(entite.bouclier) > 0 || Boolean(entite.bouclierLumiere);
   // Les entités du moteur portent `bouclierEpuise` ; les fixtures anciennes
-  // qui ne le portent pas retombent sur la simple absence de bouclier.
-  const bouclierTombe = entite.bouclierEpuise === true || entite.bouclierEpuise === undefined;
-  if (bouclierImprime && !bouclierActif && bouclierTombe) epuises.push('bouclier');
+  // qui ne le portent pas retombent sur la simple absence de bouclier d'une
+  // carte qui en imprime un. Sans bouclier imprimé, seul `bouclierEpuise`
+  // témoigne qu'une parade a existé — c'est le cas d'un bouclier prêté.
+  const bouclierTombe = entite.bouclierEpuise === true
+    || (bouclierImprime && entite.bouclierEpuise === undefined);
+  if (!bouclierActif && bouclierTombe) epuises.push('bouclier');
   return epuises;
 }
 

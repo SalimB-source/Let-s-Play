@@ -293,11 +293,18 @@ export function PastillesCarte({
   );
 }
 
+/** La carte dont la parade est le bouclier de lumière (la Dame aux ailes d'or). */
+function estBouclierDeLumiere(carte) {
+  return (carte?.effet?.type ?? carte?.arrivee?.type) === 'bouclier-lumiere';
+}
+
 /**
  * Les badges d'une face de carte : l'icône seule, en pastille ronde.
  * `entite` (sur la table) ajoute ses états vivants — infiltration accordée,
- * esquive courante, bouclier en place — aux mots-clés imprimés de la fiche.
+ * esquive courante, bouclier en place ou tombé — aux mots-clés imprimés de la
+ * fiche.
  */
+
 export function IconesCarte({ carte, entite = null, className = '' }) {
   const pastilles = pastillesPourCarte(carte);
   const ajouter = (cle, label, valeur = null, details = {}) => {
@@ -314,6 +321,14 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
     if (entite.esquive) ajouter('esquive', 'Esquive', null);
     if (entite.contreAttaque && !carte?.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
     if (entite.bouclier) ajouter('bouclier', 'Bouclier', Number(entite.bouclier) || null);
+    // Une parade prêtée (Parade de verre, Hache de la banquise) ne s'imprime
+    // pas sur la fiche : une fois tombée, son icône reste — grisée — pour que
+    // le joueur voie ce qu'il vient de perdre plutôt qu'un vide inexpliqué. Le
+    // bouclier de lumière, lui, garde son égide dorée et sa propre lecture : il
+    // ne se déguise pas en bouclier ordinaire une fois touché.
+    else if (entite.bouclierEpuise === true && !estBouclierDeLumiere(carte)) {
+      ajouter('bouclier', 'Bouclier');
+    }
     if (entite.protection?.toursRestants > 0 || entite.protection?.permanente) {
       const contres = [...new Set([entite.protection?.contre].flat(Infinity).filter(Boolean))];
       const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };

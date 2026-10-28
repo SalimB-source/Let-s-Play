@@ -600,6 +600,21 @@ phrase de règle — or une face de carte n'imprime pas la règle, et « donne
   (« Effet sur les statistiques : -2 attaque, -2 défense ») sur la carte en
   main comme sur l'aperçu.
 
+### Un effet dépensé reste écrit, en gris
+
+Tenacité qui a déjà sauvé son porteur, Bouclier qui a bloqué son sort : l'effet
+ne s'efface pas de la face, il **se grise** (`is-epuisee`, `effet-icons.css`) —
+icône, mot, pastille de l'aperçu et lignes de règle. Le joueur voit ce qu'il a
+dépensé au lieu de deviner pourquoi la carte a changé.
+
+Le bouclier **prêté** suit la même règle. Une Parade de verre ou la Hache de la
+banquise ne s'impriment pas sur la fiche de la créature : c'est
+`bouclierEpuise` (`rpgDuel.js`, posé par `briserBouclier`) qui garde la trace
+de la parade tombée, et `IconesCarte` / `effetsEpuisesPourEntite`
+(`effetIcons.js`) qui rallument son icône violette en gris. Sans cette trace,
+l'icône s'évaporait à la chute du bouclier et le joueur ne savait plus si la
+protection avait été rompue ou si elle n'avait jamais existé.
+
 ## 7. Les contres (deck Marée des abysses)
 
 Le deck **Marée des abysses** (`RPG_DECK_MAREE_BASE`, mono-Eau, 16 Mer) joue la

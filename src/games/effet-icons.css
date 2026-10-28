@@ -235,6 +235,14 @@
   color: #d5b3ff;
 }
 
+/* Une parade tombée garde son bouclier, mais gris : la règle violette
+   ci-dessus est plus spécifique que `.is-epuisee`, elle ne doit pas survivre
+   à la chute (le filtre gris du conteneur suffisait de loin, pas de près). */
+.rpg-pastille.is-epuisee[data-pastille='bouclier'] .rpg-effet-icone,
+.rpg-card-icone.is-epuisee[data-effet='bouclier'] .rpg-effet-icone {
+  color: #a9a9a9;
+}
+
 /* Un gain annoncé par Furie n'est pas un effet dépensé : il reste imprimé,
    mais attend son activation dans une version neutre, sans l'or des mots-clés
    réellement portés par la créature. */
