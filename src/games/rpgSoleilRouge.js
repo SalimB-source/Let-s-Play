@@ -100,7 +100,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -160,7 +160,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Humain · Samouraï',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({

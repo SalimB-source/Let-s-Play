@@ -595,7 +595,7 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -1278,7 +1278,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -2136,7 +2136,11 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas).',
+    // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4). Son
+    // Esquive, elle, se CUMULE avec celle que la guerrière imprime : deux
+    // sources valent deux jets à 30 %, donc 60 %.
+    lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas). Lien de Bouchra — si Bouchra, guerrière des crêtes est en jeu, le porteur gagne +0/+4 à la place, et l’Esquive s’ajoute à celle qu’il porte déjà.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {

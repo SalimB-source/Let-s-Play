@@ -329,6 +329,36 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   assert.equal(porteur.atk, atkNu + 1, 'le Lien d’une arme-sort retombe aussi');
 });
 
+test('Cuirasse de sel : +0/+3, +0/+4 sous Bouchra — et l’Esquive se cumule', () => {
+  const monter = (avecBouchra) => {
+    const duel = duelVide();
+    if (avecBouchra) poser(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+    const porteur = poser(duel, 'joueur', 'momie-de-lin');
+    equiper(duel, 'joueur', 'cuirasse-de-sel', porteur);
+    return porteur;
+  };
+
+  const sans = monter(false);
+  assert.deepEqual([sans.atk, sans.def], [2, 7], 'sans ancre : +0/+3 sur 2/4');
+  assert.equal(sans.esquiveChance, 0.25, 'une seule source : 25 %');
+
+  const avec = monter(true);
+  assert.deepEqual([avec.atk, avec.def], [2, 8], 'sous Bouchra : +0/+4');
+
+  // LE point de la carte : Bouchra imprime Esquive ET porte la Cuirasse, les
+  // deux sources s'ADDITIONNENT — 25 % + 25 % = 50 %, jamais un seul jet.
+  const duel = duelVide();
+  const bouchra = poser(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  assert.equal(bouchra.esquiveChance, 0.25, 'Bouchra nue : 25 %, son Esquive imprimée');
+  equiper(duel, 'joueur', 'cuirasse-de-sel', bouchra);
+  assert.equal(bouchra.esquiveChance, 0.5, 'cuirassée : 50 %, les deux Esquives s’ajoutent');
+  assert.deepEqual([bouchra.atk, bouchra.def], [3, 5], 'et +0/+4 en défense');
+
+  const carte = cardById('cuirasse-de-sel');
+  assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
+  assert.deepEqual(carte.lien, { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } });
+});
+
 test('Javelot du beffroi : +2/+0, +3/+0 sous Le roi Kusayla — dans les deux ordres', () => {
   const monter = (avecKusayla, apresAttache = false) => {
     const duel = duelVide();

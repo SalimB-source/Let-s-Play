@@ -80,7 +80,9 @@ export const RPG_MAIN_DEPART = 5;
  * annulé, pas diminué. Les capacités ne sont jamais esquivées. Le tirage vient
  * du hasard du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
-export const RPG_ESQUIVE_CHANCE = 0.3;
+// L'Esquive obéit au même barème que le coup critique : 25 % par source, et
+// les sources s'additionnent (deux Esquives valent 50 %, voir `recalculerEsquive`).
+export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
 export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
 export const RPG_COUP_CRITIQUE_CHANCE = 0.25;
@@ -1618,6 +1620,7 @@ function creerEntiteCreature(carte) {
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
+    esquiveChance: carte.esquive ? RPG_ESQUIVE_CHANCE : 0,
     // Contre-attaque (Tojiro, Eirik) : la créature rend chaque coup porté
     // CONTRE elle — Attaque ciblée, capacité qui la cible, sort qui la désigne —
     // même quand une Esquive a annulé les blessures.
@@ -1768,6 +1771,34 @@ function recalculerCoupCritique(entite) {
 }
 
 /**
+ * L'ESQUIVE SE CUMULE — chaque source ajoute ses 25 %.
+ *
+ * Une créature qui imprime Esquive ET porte une arme qui la donne (la
+ * Cuirasse de sel) esquive à 50 %, pas à 25 % : deux protections valent deux
+ * protections, comme deux coups critiques valent deux coups critiques. Le
+ * plafond reste 100 %.
+ *
+ * `entite.esquive` demeure le drapeau lu par l'IA et les aperçus ; c'est
+ * `entite.esquiveChance` que `tenterEsquive` jette réellement.
+ */
+function recalculerEsquive(entite) {
+  if (!entite) return;
+  let chance = 0;
+  const fiche = duelCardById(entite.carteId);
+  if (fiche?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  // Les armes-sorts attachées vivent dans `entite.armes` ; leur Lien peut
+  // prêter l'Esquive aussi (lire `donne` **après** fusion du Lien).
+  for (const id of entite.armes ?? []) {
+    const arme = magieById(id);
+    if (arme?.donne?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  }
+  const prototype = armeCarteDe(entite);
+  if (prototype?.donne?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  entite.esquive = chance > 0;
+  entite.esquiveChance = Math.min(1, chance);
+}
+
+/**
  * LE BOUCLIER D'UNE CRÉATURE — une parade anti-sort, pas une armure.
  *
  * Tant qu'il tient, le bouclier bloque le premier sort adverse qui atteint
@@ -1894,7 +1925,7 @@ function attacherArme(duel, cote, entite, carteArme) {
     entite.bouclier = 1;
     entite.bouclierEpuise = false;
   }
-  if (carteArme.donne?.esquive) entite.esquive = true;
+  if (carteArme.donne?.esquive) recalculerEsquive(entite);
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
@@ -1956,7 +1987,7 @@ function retirerArme(duel, cote, entite) {
   if (bouclierRestant) {
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
   }
-  if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
+  if (carteArme.donne?.esquive) recalculerEsquive(entite);
   if (carteArme.donne?.envol) {
     // L'arme rendue ne retire pas l'Envol que la Furie prête encore.
     entite.envol = Boolean(duelCardById(entite.carteId)?.envol)
@@ -2286,7 +2317,8 @@ function bonusTraquePirates(attaquant, cible) {
 function tenterEsquive(duel, entite, sourceType) {
   if (!['attaque', 'magie'].includes(sourceType) || !entite?.esquive) return false;
   const rng = hasardParDuel.get(duel) ?? Math.random;
-  const reussie = rng() < RPG_ESQUIVE_CHANCE;
+  const chance = Number.isFinite(entite.esquiveChance) ? entite.esquiveChance : RPG_ESQUIVE_CHANCE;
+  const reussie = rng() < chance;
   if (reussie) {
     duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : 'l’attaque'}.`);
   }
@@ -3335,6 +3367,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // Le critique de l'arme s'ajoute à celui du porteur (25 % + 25 % = 50 %,
       // multiplicateur le plus fort) au lieu de l'écraser.
       if (effet.coupCritique) recalculerCoupCritique(porteur);
+      // Une arme-sort peut prêter l'Esquive (`donne.esquive`) : elle s'ajoute
+      // à celle du porteur, elle ne la remplace pas.
+      if (cardById(sourceCarteId)?.donne?.esquive) recalculerEsquive(porteur);
       duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : ${effet.atk >= 0 ? '+' : ''}${effet.atk}/${effet.def},${effet.coupCritique ? ' Coup critique.' : ''}`);
       return;
     }
@@ -4249,9 +4284,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         porteur.armes = [];
-        // Toutes les arme-sorts viennent de tomber : le critique revient à la
-        // seule fiche imprimée (ou disparaît s'il n'y en a pas).
+        // Toutes les arme-sorts viennent de tomber : le critique et l'Esquive
+        // reviennent à la seule fiche imprimée (ou disparaissent).
         recalculerCoupCritique(porteur);
+        recalculerEsquive(porteur);
         porteur.atk = Math.max(0, porteur.atk - atk);
         porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
         porteur.def = Math.max(1, porteur.def - def);

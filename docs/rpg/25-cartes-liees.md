@@ -75,6 +75,7 @@ mécanique sur des cartes du catalogue.
 | **Le Grand Débarquement** (sorcellerie, rare) | 5 | cales pleines : **+2/+2** et Overkill | **+3/+2** et Overkill | l'assaut mord, il ne tient pas | La Barbe-Rousse, amiral des deux mers (Sable, mythique, 6) |
 | **Lame des ergs** (arme vivante, rare) | 4 | chien de sable 1/1, porteur **+3/+1** | +3/+1 **et un bouclier** | sous le berger, la lame couvre au lieu de grandir | TAREK (Sable, mythique, 5) |
 | **Javelot du beffroi** (arme, commune) | 2 | porteur **+2/+0** et Attaque ciblée | **+3/+0** et Attaque ciblée | la riposte du Contre-attaquant mord plus fort | Le roi Kusayla (Sable, mythique, 5) |
+| **Cuirasse de sel** (arme, commune) | 2 | porteur **+0/+3** et Esquive | **+0/+4** et Esquive | rend jouable une 3/1, et l'Esquive s'ajoute à la sienne (50 %) | Bouchra, guerrière des crêtes (Sable, mythique, 2) |
 
 **La mesure du Lien : un cran, jamais un dédoublement.** C'est la règle de
 calibrage : le Lien ne doit pas transformer une carte en bombe, seulement
@@ -94,6 +95,12 @@ Les formes que prend ce cran :
   Ce drapeau est lu en **instantané** par `seuilAbordage`, comme le sceau du
   Pilote : le sceau est consommé par la pose avant que la prise ne soit tirée,
   donc le relire sur le camp donnerait toujours `false` ;
+- **le cumul d'un mot-clé à jet** : l'Esquive et le coup critique s'**additionnent**.
+  L'Esquive vaut **25 %** par source ; une créature qui l'imprime et porte la
+  Cuirasse de sel esquive donc à 50 %. Le calcul vit dans `recalculerEsquive`,
+  le même patron que `recalculerCoupCritique` : il relit la fiche imprimée,
+  les armes-sorts attachées et l'arme du prototype, et pose
+  `entite.esquiveChance` que `tenterEsquive` jette réellement ;
 - **le mot-clé prêté à une arme** (`lien.donne: { bouclier: 1 }`) : la Lame
   des ergs ne change aucun chiffre sous TAREK, elle couvre son porteur de la
   parade anti-sort. Fusionné avec le `donne` imprimé à l'attachement ;
@@ -216,6 +223,6 @@ montrer où se trouve la limite.
 ### C. Ce qu'il reste à décider, en une ligne
 
 1. A1 à A4 : les quatre arbitrages ci-dessus.
-2. B : lesquelles des vingt-deux paires entrent dans le prototype.
+2. B : lesquelles des vingt-trois paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.
