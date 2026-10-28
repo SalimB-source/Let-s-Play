@@ -9225,6 +9225,14 @@ attachée à sa carte et jouée **à son arrivée en jeu**.
 - **La salle d'écoute suit.** `sons-du-sablier.html` gagne une section « Voix
   d'arrivée des créatures » : les 37 échantillons, chacun avec son nom de
   fichier et la carte qu'il salue.
+- **La fiche d'une créature parle.** Ouvrir une carte en grand — le clic du
+  catalogue, le clic droit ou l'appui long ailleurs dans le jeu — joue la voix
+  de la créature ouverte, la même que son arrivée en jeu (`jouerSonFiche` dans
+  `RpgDuelPage.jsx`). Feuilleter le catalogue, c'est donc entendre les
+  créatures les unes après les autres : `playCardVoice` ne laisse qu'une voix à
+  la fois, la nouvelle coupe la précédente. Les cartes muettes — terrains,
+  magies, armes et les créatures du lot sans échantillon — gardent
+  l'effleurement `hover`, pour que l'ouverture reste audible.
 
 Contrôles : `tests/rpg-voix-arrivees.test.js` (les 37 cartes existent et sont
 des créatures ou des héros, aucun fichier n'est attribué deux fois, aucune voix
@@ -9233,3 +9241,6 @@ adresses, journal du moteur, priorité sur les accueils génériques, lecteur �
 une voix à la fois, son coupé, décalage et démontage), et
 `tests/rpg-voix-arrivees-ui.test.js`, qui monte la vraie page : la Mousse des
 galiotes garde son « Ahoy ! », le Kenshi de la forge joue son propre MP3.
+`tests/rpg-catalogue-voix.test.js` ouvre les fiches du catalogue : Susanoo et
+la Vipère de verre y parlent, le Tercio de cuivre et la magie Haut-fond y
+gardent l'effleurement.
