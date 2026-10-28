@@ -407,9 +407,10 @@ elle ne peut pas être interceptée par le contresort de Boualem.
 
 Quand Boualem contre un effet qui le ciblait, l'effet n'est pas annulé : il est
 **relancé sur une nouvelle cible légale**, et c'est **celui qui joue Boualem**
-— jamais le lanceur du sort — qui la choisit, parmi ses propres créatures
-(`duel.boualemEnAttente`, résolu par `rpgResoudreContresortBoualem`). L'IA
-choisit seule à la place de son camp ; s'il ne reste aucune cible légale,
+— jamais le lanceur du sort — qui la choisit, parmi **toutes les créatures de
+la table**, y compris celles du lanceur (`duel.boualemEnAttente`, résolu par
+`rpgResoudreContresortBoualem`). L'IA choisit seule à la place de son camp et
+vise de préférence le camp du lanceur ; s'il ne reste aucune cible légale,
 l'effet se dissipe.
 
 Illustration : `public/cards/chien-de-sable.jpg`, peinture plein art 4:5 dans la

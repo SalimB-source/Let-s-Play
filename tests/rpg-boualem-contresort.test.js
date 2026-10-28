@@ -32,6 +32,7 @@ test('la carte et la leçon disent que c’est celui qui joue Boualem qui choisi
   const carte = cardById('boualem');
   assert.match(carte.text, /celui qui joue Boualem/, 'la carte nomme le joueur de Boualem');
   assert.match(carte.text, /jamais le lanceur/, 'la carte écarte explicitement le lanceur');
+  assert.match(carte.text, /y compris celles du lanceur/, 'la carte ouvre la cible au camp du lanceur');
   assert.doesNotMatch(carte.text, /son lanceur le relance/, 'l’ancienne règle — le lanceur choisit — a disparu');
   const lecon = RPG_CARD_LESSONS.find((entree) => entree.id === 'capacite-de-boualem');
   assert.match(lecon.text, /celui qui JOUE Boualem/i, 'la leçon suit la même règle');
@@ -62,6 +63,39 @@ test('le sort du sorcier sur Boualem attend le choix du joueur, qui seul le rés
   assert.equal(choix.ok, true);
   assert.equal(d.boualemEnAttente, null, 'l’attente se referme');
   assert.equal(temoin.pv, temoin.pvMax - 2, 'l’effet repart exactement tel qu’il avait été lancé');
+});
+
+test('la nouvelle cible peut aussi être une créature du lanceur', () => {
+  const d = duel();
+  const boualem = poser(d, 'joueur', 'boualem');
+  poser(d, 'joueur', 'dune-marchante');
+  // Deux créatures du sorcier : celle qui lance, et une autre, libre.
+  const lanceuse = poser(d, 'sorcier', 'chien-du-guet');
+  const voisine = poser(d, 'sorcier', 'chien-du-guet');
+  d.sorcier.main.push('poigne-de-givre');
+  d.tour = 'sorcier';
+  rpgLancerMagie(d, 'sorcier', 'poigne-de-givre', boualem.id);
+  assert.equal(d.boualemEnAttente?.cote, 'joueur');
+  // Le camp de Boualem choisit — et il peut renvoyer le sort chez le lanceur.
+  const res = rpgResoudreContresortBoualem(d, 'joueur', voisine.id);
+  assert.equal(res.ok, true, 'une créature du camp adverse est une cible légale');
+  assert.equal(voisine.pv, voisine.pvMax - 2, 'le sort relancé frappe la créature du lanceur');
+  assert.equal(lanceuse.pv, lanceuse.pvMax, 'les autres ne sont pas touchées');
+  assert.equal(boualem.pv, boualem.pvMax);
+});
+
+test('l’IA relance de préférence sur le camp du lanceur', () => {
+  const d = duel();
+  const boualemSorcier = poser(d, 'sorcier', 'boualem');
+  const sien = poser(d, 'sorcier', 'chien-du-guet');
+  const proie = poser(d, 'joueur', 'dune-marchante');
+  d.joueur.main.push('poigne-de-givre');
+  d.tour = 'joueur';
+  rpgLancerMagie(d, 'joueur', 'poigne-de-givre', boualemSorcier.id);
+  assert.equal(d.boualemEnAttente, undefined, 'le sorcier n’attend personne');
+  assert.equal(proie.pv, proie.pvMax - 2, 'la foudre repart sur la créature du lanceur');
+  assert.equal(sien.pv, sien.pvMax, 'l’IA ne frappe pas son propre camp quand elle peut l’éviter');
+  assert.equal(boualemSorcier.pv, boualemSorcier.pvMax);
 });
 
 test('quand Boualem appartient au sorcier, l’IA choisit sa nouvelle cible toute seule', () => {
@@ -153,5 +187,8 @@ test('la page ne fait plus choisir la nouvelle cible au lanceur du sort', () => 
   assert.match(page, /rpgResoudreContresortBoualem\(duel, 'joueur', entite\.id\)/,
     'le clic du contrôleur résout l’attente');
   assert.match(page, /type: 'resoudre-boualem'/, 'le clic est transmis au serveur en PvP');
-  assert.match(page, /c’est vous qui choisissez, pas le lanceur/, 'le bandeau dit qui choisit');
+  assert.match(page, /la vôtre ou celle du lanceur/, 'le bandeau dit qui choisit et quelles créatures sont visées');
+  assert.match(page, /const resoudreBoualemClic = \(entite\)/, 'un seul chemin de clic pour les deux camps');
+  assert.match(page, /const cliquerCreatureEnnemie = \(entite\) => \{[\s\S]{0,400}?resoudreBoualemClic\(entite\)/,
+    'une créature du lanceur peut aussi être cliquée');
 });

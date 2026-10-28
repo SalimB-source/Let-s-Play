@@ -9198,10 +9198,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const attenteBoualem = duel.boualemEnAttente?.cote === 'joueur'
     ? duel.boualemEnAttente
     : null;
+  // La victime du contresort peut être n'importe quelle créature légale :
+  // celles du camp de Boualem COMME celles du lanceur du sort.
   const idsCiblesBoualem = new Set(attenteBoualem
-    ? duel.joueur.creatures
+    ? [...duel.joueur.creatures, ...duel.sorcier.creatures]
       .filter((entite) => entite.id !== attenteBoualem.cibleId && entite.pv > 0
-        && !rpgEstProtegee(entite, attenteBoualem.sourceElement))
+        && !rpgEstProtegee(entite, attenteBoualem.sourceElement)
+        && !rpgEstProtegeeDesSorts(entite, attenteBoualem.sourceElement, attenteBoualem.sourceType))
       .map((entite) => entite.id)
     : []);
   const attenteBoualemVisible = Boolean(attenteBoualem && idsCiblesBoualem.size > 0);
@@ -11137,6 +11140,30 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     force();
   };
 
+  /**
+   * Le contresort de Boualem attend sa victime : c'est le camp qui JOUE
+   * Boualem qui clique — jamais le lanceur du sort — et la victime peut être
+   * une créature de son camp comme une créature du lanceur. Rend `true` quand
+   * le clic a été consommé par cette attente.
+   */
+  const resoudreBoualemClic = (entite) => {
+    if (duel.boualemEnAttente?.cote !== 'joueur') return false;
+    const champAvantAction = prendreInstantaneChamp();
+    const debutJournalDestructions = rpgNombreDestructions(duel);
+    const res = rpgResoudreContresortBoualem(duel, 'joueur', entite.id);
+    if (!res.ok) {
+      jouerSfx('erreur');
+      force();
+      return true;
+    }
+    if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-boualem', cibleId: entite.id });
+    jouerSfx('select');
+    animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
+    if (!modePvp) reprendreSorcier();
+    force();
+    return true;
+  };
+
   const cliquerCreatureJoueur = (entite) => {
     // Le déchirement est en cours : la table attend la pose qui le suit.
     if (sacrificeEnCoursRef.current) return;
@@ -11147,24 +11174,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       clicApresGlisserBloqueurRef.current = null;
       return;
     }
-    // Le contresort de Boualem attend la victime : c'est le camp qui joue
-    // Boualem qui clique — jamais le lanceur du sort.
-    if (duel.boualemEnAttente?.cote === 'joueur') {
-      const champAvantAction = prendreInstantaneChamp();
-      const debutJournalDestructions = rpgNombreDestructions(duel);
-      const res = rpgResoudreContresortBoualem(duel, 'joueur', entite.id);
-      if (!res.ok) {
-        jouerSfx('erreur');
-        force();
-        return;
-      }
-      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-boualem', cibleId: entite.id });
-      jouerSfx('select');
-      animerModificationsChamp(champAvantAction, [], debutJournalDestructions);
-      if (!modePvp) reprendreSorcier();
-      force();
-      return;
-    }
+    if (resoudreBoualemClic(entite)) return;
     // Désignation du sacrifice (champ d'essai plein) : ce clic désigne la
     // créature qui fait la place — sa carte se déchire sur la table, puis la
     // pose se termine contre le sacrifice choisi (`dechirerEtPoser`).
@@ -11232,6 +11242,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Une créature attend sa case dans votre rangée : le camp adverse n'a
     // rien à recevoir de ce geste-là.
     if (poseEnCours) { jouerSfx('erreur'); force(); return; }
+    // Boualem : l'effet contré peut aussi être relancé sur une créature du
+    // lanceur — c'est toujours celui qui joue Boualem qui clique.
+    if (resoudreBoualemClic(entite)) return;
     if (cibleEnCours) {
       resoudreCible(entite, 'ennemi');
       return;
@@ -12210,8 +12223,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             cle: `boualem:${attenteBoualem.cibleId}:${attenteBoualem.sourceCarteId ?? 'capacite'}`,
             classe: 'rpg-target-prompt',
             texte: attenteBoualem.montant
-              ? `Boualem contre l’effet : cliquez la créature de votre camp qui subira ${attenteBoualem.montant} blessure${attenteBoualem.montant > 1 ? 's' : ''}`
-              : 'Boualem contre l’effet : cliquez la créature de votre camp qui le subira — c’est vous qui choisissez, pas le lanceur',
+              ? `Boualem contre l’effet : cliquez la créature qui subira ${attenteBoualem.montant} blessure${attenteBoualem.montant > 1 ? 's' : ''} — la vôtre ou celle du lanceur`
+              : 'Boualem contre l’effet : cliquez la créature qui le subira — la vôtre ou celle du lanceur, c’est vous qui choisissez',
           }
         : attenteDestructionVisible
           ? {
@@ -12761,10 +12774,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesDestruction.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesDestruction.has(entite.id) || idsCiblesBoualem.has(entite.id)}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id) || Object.values(ciblesAttaque).includes(entite.id)}
                       canTarget={Boolean(
                         idsCiblesDestruction.has(entite.id)
+                        || idsCiblesBoualem.has(entite.id)
                         || (cibleEnCours && ['ennemi', 'tous'].includes(modeCible)
                           && !attenteAbordage
       && !(carteCiblee?.effet?.type === 'destruction-arme' && !armesPortees(entite).length)
