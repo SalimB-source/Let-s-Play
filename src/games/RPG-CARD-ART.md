@@ -324,6 +324,14 @@ peinture intacte, une **face de Furie** au même ratio et dans la même
 composition, ensanglantée et enragée : `berserk-du-crepuscule-furie.jpg` et
 `valkyrie-des-neuf-nuits-furie.jpg` (voir la dérogation Furie plus bas).
 
+### Le Berserk du crépuscule rapproché
+
+Les deux peintures du Berserk ont été recadrées plus serré : la face calme
+est agrandie d'environ 25 %, et la Furie, déjà plus proche, d'environ 12 %.
+Le visage reste dégagé sous le bandeau de nom ; le format 4:5 et les scènes
+sont conservés. Les fichiers gardent leur nom et les révisions de cache passent
+à `corbeau-crepuscule-cadrage-v3` et `corbeau-furie-crepuscule-cadrage-v3`.
+
 ### Le recadrage du Berserk du crépuscule (octobre 2026)
 
 Sur la carte posée, le **Berserk du crépuscule** était mal cadré : le peintre
