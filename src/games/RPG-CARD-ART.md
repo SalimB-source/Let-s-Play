@@ -1734,7 +1734,7 @@ dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
 elles sont. Les trois images hors facture et les deux cartes trop sombres sont
 les seules candidates à une reprise, et elles attendent un arbitrage.
 
-## Le filet de couleur — 2 px, la teinte de l'élément (octobre 2026)
+## Le filet de couleur — 3 px, la teinte de l'élément (octobre 2026)
 
 La couleur d'élément des cartes (Sable `#d8bc86`, Braise `#e0412a`, Eau
 `#3f9fe8`, Neige `#a9e0f5`, Ténèbres `#4b2e83`, et les diagonales des
@@ -1742,15 +1742,17 @@ hybrides) n'était plus lisible nulle part : l'anneau orné de 7 à 10 px avait
 été coupé par l'expérimentation « plus aucun cadre », et un Braise ressemblait
 à un Eau.
 
-Les faces des cartes portent donc désormais un **filet de 2 px** — et rien
+Les faces des cartes portent donc désormais un **filet de 3 px** — et rien
 d'autre. Ce n'est pas un retour de l'anneau : le motif (résille de Bab El,
 zellige des mythiques) est coupé, parce qu'à cette épaisseur il n'est plus
 qu'un bruit de pixels. Seule la matière reste — aplat pour une mono, deux
 aplats en diagonale pour une hybride, dégradé pour une mythique mono — et
 c'est elle qui nomme l'élément d'un coup d'œil.
 
-L'épaisseur tient dans une variable, `--rpg-card-filet: 2px` (`rpg-battle.css`,
-en tête), et les trois feuilles qui peignent des faces la reprennent :
+L'épaisseur tient dans une variable, `--rpg-card-filet: 3px` (`rpg-battle.css`,
+en tête) — deux pixels à l'origine, un cran de plus depuis octobre 2026 pour
+détacher la carte du bois et du tapis sans toucher à l'illustration —, et les
+quatre feuilles qui peignent des faces la reprennent :
 
 | Feuille | Faces |
 |---|---|
@@ -1813,7 +1815,7 @@ invisible à l'œil.
 
 **Les couleurs d'élément ne vivent plus dans la peinture.** Le bleu de l'Eau,
 le violet des Ténèbres et le doré du Sable ont quitté les images ; c'est le
-**filet de 2 px** de chaque carte qui nomme son élément, et lui seul. Les
+**filet de 3 px** de chaque carte qui nomme son élément, et lui seul. Les
 peintures, elles, retournent à la lumière de leur scène.
 
 Pour l'Eau et les Ténèbres, la marque de cache devient `sans-teinte-v1`

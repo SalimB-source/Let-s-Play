@@ -766,15 +766,15 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LE FILET DE COULEUR — 2 px (jumeau du bloc de fin de `rpg-battle.css`)
+   LE FILET DE COULEUR — 3 px (jumeau du bloc de fin de `rpg-battle.css`)
    ──────────────────────────────────────────────────────────────────────────
    La vignette de l'atelier reprend l'anneau du gabarit — fond de face sur la
-   padding-box, matière sur la border-box — mais réduit à un filet de 2 px de la
+   padding-box, matière sur la border-box — mais réduit à un filet de 3 px de la
    couleur de la carte, sans motif. Les pastilles, le liseré de survol, le grisé
    des cartes verrouillées et la jauge de quota ne bougent pas.
    ══════════════════════════════════════════════════════════════════════════ */
 .rpg-atelier__carte-art[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 2px) !important;
+  border-width: var(--rpg-card-filet, 3px) !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
   animation: none !important;

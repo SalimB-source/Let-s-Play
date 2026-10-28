@@ -1390,10 +1390,10 @@
    feuille tactile le retirait donc entièrement, et les cartes perdaient leur
    seule marque d'élément.
 
-   Le filet de 2 px (`--rpg-card-filet`, `rpg-battle.css`) rend ce retrait
+   Le filet de 3 px (`--rpg-card-filet`, `rpg-battle.css`) rend ce retrait
    inutile : il tient dans une vignette de 40 px comme dans une carte de 168 px,
    et il est le même partout — main, table, terrains, catalogue, aperçus,
-   mulligan, guide et atelier. Seul le motif se tait : dans 2 px, une résille
+   mulligan, guide et atelier. Seul le motif se tait : dans 3 px, une résille
    n'est plus qu'un bruit de pixels. La couleur, elle, reste.
 
    Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
@@ -1404,7 +1404,7 @@
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .card-row .rpg-card,
 .rpg-battle--touch .rpg-terrain {
-  border-width: var(--rpg-card-filet, 2px);
+  border-width: var(--rpg-card-filet, 3px);
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
 }
@@ -1441,11 +1441,11 @@
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge__pip { border-width: 1.5px; }
 
 /* Toutes les faces, y compris catalogue, mulligan, aperçus et atelier : le
-   même filet de 2 px qu'au clavier, à la couleur de l'élément. Les pastilles et
+   même filet de 3 px qu'au clavier, à la couleur de l'élément. Les pastilles et
    les états interactifs restent. La spécificité couvre aussi les variantes
    ornées et les cartes annoncées. */
 .rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
-  border-width: var(--rpg-card-filet, 2px);
+  border-width: var(--rpg-card-filet, 3px);
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
 }

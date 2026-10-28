@@ -33,7 +33,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
  *
  * Le doré du Sable, lui, est retiré par mesure carte par carte
  * (`scripts/retirer-filtre-dore-sable.sh`, marque `sable-souls-desore-v3`).
- * Le filet de 2 px reste, lui, la seule marque d'élément — il ne dépend plus de
+ * Le filet de 3 px reste, lui, la seule marque d'élément — il ne dépend plus de
  * la peinture.
  */
 const SANS_TEINTE = 'sans-teinte-v1';
