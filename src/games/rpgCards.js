@@ -1535,7 +1535,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien de la Lionne : le trait devient son souffle — 4 dégâts, le
     // chiffre exact qu'elle imprime à l'arrivée. La braise se répond.
     lien: { ancre: 'lionne-du-midi-ardent', effet: { amount: 4 } },
-    text: '3 dégâts à une créature ou un sorcier ciblés. Lien de la Lionne — si La Lionne du midi ardent est en jeu, 4 dégâts à la place — le chiffre de son souffle.',
+    text: '3 dégâts à une créature ou un sorcier ciblés. Avec La Lionne du midi ardent en jeu : 4 dégâts au lieu de 3.',
     flavor: 'Une étincelle suffit, au souk.',
   },
   {
@@ -1556,7 +1556,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du serpent : les écailles d'Orochi brisent l'acier sans se
     // refermer — la lame tombe, et le lanceur pioche une carte de plus.
     lien: { ancre: 'orochi', effet: { pioche: 2 } },
-    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte. Lien d’Orochi — si Orochi est en jeu, piochez deux cartes à la place.',
+    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte. Avec Orochi en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Le fer retourne au feu ; la main qui le tenait reste vide.',
   },
   {
@@ -1571,7 +1571,7 @@ export const RPG_MAGIE_CARDS = [
     cibles: ['soi'],
     effet: { type: 'soin', amount: 4 },
     lien: { ancre: 'source-de-bimini', effet: { amount: 6 } },
-    text: 'Vous récupérez 4 points de vie. Lien de la Source — si La Source de Bimini est en jeu, vous en récupérez 6.',
+    text: 'Vous récupérez 4 points de vie. Avec La Source de Bimini en jeu : 6 PV au lieu de 4.',
     flavor: 'Elle a le goût d’avant le sable.',
   },
   {
@@ -1604,7 +1604,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien des Mâchoires : la lame mord un cran plus profond — -4/-4.
     // L'exil, lui, ne change pas : ce qui tombe sous la morsure disparaît.
     lien: { ancre: 'seigneur-des-machoires', effet: { atk: -4, def: -4 } },
-    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière. Lien des Mâchoires — si Le Seigneur des mâchoires est en jeu, elle donne -4/-4 à la place, l’exil inchangé.',
+    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière. Avec Le Seigneur des mâchoires en jeu : -4/-4 au lieu de -3/-3.',
     flavor: 'La vague coupe plus propre que le couteau.',
   },
   {
@@ -1626,7 +1626,7 @@ export const RPG_MAGIE_CARDS = [
     // taille (+0/+3), mais chaque créature touchée reçoit en plus un bouclier
     // — la parade anti-sort du jeu, celle qu'elle porte elle-même.
     lien: { ancre: 'dame-aux-ailes-d-or', effet: { bouclier: 1 } },
-    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour. Lien des Ailes d’or — si La Dame aux ailes d’or est en jeu, elles gagnent aussi un bouclier : le prochain sort adverse qui atteint chacune est bloqué, même un sort de zone.',
+    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour. Avec La Dame aux ailes d’or en jeu : un bouclier en plus, sur chaque créature.',
     flavor: 'Le vent bâtit plus vite que les maçons, et il emporte aussi vite.',
   },
   {
@@ -1644,7 +1644,7 @@ export const RPG_MAGIE_CARDS = [
     // rend létale sur les petites créatures — 4 au lieu de 3, sur toute la
     // rangée adverse, sans exception ni ciblage.
     lien: { ancre: 'faucon-du-zenith', effet: { amount: 4 } },
-    text: '3 dégâts à toutes les créatures adverses. Lien du Zénith — si Le Faucon du zénith est en jeu, 4 dégâts à toutes les créatures adverses à la place.',
+    text: '3 dégâts à toutes les créatures adverses. Avec Le Faucon du zénith en jeu : 4 dégâts au lieu de 3.',
     flavor: 'Le ciel se couche. Personne n’est invité.',
   },
   {
@@ -1710,7 +1710,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien de la tempête : Susanoo ne change pas la seconde vague, il
     // alourdit la première — le nuage tombe plus dru quand le kami est là.
     lien: { ancre: 'susanoo', effet: { amount: 3 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant. Lien de Susanoo — si Susanoo est en jeu, le nuage inflige 3 dégâts à la première vague.',
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant. Avec Susanoo en jeu : 3 dégâts à la première vague, au lieu de 2.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {
@@ -1727,7 +1727,7 @@ export const RPG_MAGIE_CARDS = [
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
     lien: { ancre: 'daimyo-du-soleil-rouge', effet: { amount: 3 } },
-    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses. Lien du Daimyō — si le Daimyō du Soleil rouge est en jeu, elle en inflige 3.',
+    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses. Avec Daimyō du Soleil rouge en jeu : 3 dégâts au lieu de 2.',
     flavor: 'La poussière rougit, puis le vent l’emporte.',
   },
   // ── Serment des Neuf Hivers : le combat physique et le combat magique ──
@@ -1774,7 +1774,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du Premier Serment : on mange plus, on tient plus longtemps.
     // Le festin rend 3 au lieu de 2 — aux créatures comme au sorcier.
     lien: { ancre: 'eirik-du-premier-serment', effet: { amount: 3, etJoueur: 3 } },
-    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Lien du Premier Serment — si Eirik du Premier Serment est en jeu, soignez-les de 3 et récupérez 3 points de vie à la place.',
+    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Avec Eirik du Premier Serment en jeu : 3 PV au lieu de 2, aux créatures comme à vous.',
     flavor: 'On boit au souvenir de ceux qui ne reviendront pas.',
   },
   {
@@ -1805,7 +1805,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du Géant : le hurlement gagne un cran — 3 dégâts. La chance de
     // gel ne bouge pas : c'est le souffle qui grandit, pas le froid.
     lien: { ancre: 'geant-des-banquises', effet: { amount: 3 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée. Lien du Géant — si Le Géant des banquises est en jeu, 3 dégâts à toutes les créatures adverses à la place, la chance de gel inchangée.',
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée. Avec Géant des banquises en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le vent hurle si fort que la neige devient des lames.',
   },
   // ── Le lot du gel : magies rapides et sorcelleries du Serment ────────────
@@ -1831,7 +1831,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du givre : la poigne serre un cran plus fort. Le gel, lui, ne
     // s'achète pas au détail — il reste tel quel.
     lien: { ancre: 'valkyrie-des-glaces', effet: { amount: 3 } },
-    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour. Lien de la Valkyrie — si la Valkyrie des glaces est en jeu, elle subit 3 dégâts à la place, le gel inchangé.',
+    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour. Avec Valkyrie des glaces en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le froid tient l’acier plus fermement que la main.',
   },
   {
@@ -1975,7 +1975,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du Serpent du monde : le contre est le même, la marée rend deux
     // cartes au lieu d'une — le serpent remonte le courant dans l'autre sens.
     lien: { ancre: 'jormungandr', effet: { pioche: 2 } },
-    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte. Lien du Serpent du monde — si Jörmungandr est en jeu, piochez deux cartes à la place.',
+    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte. Avec Jörmungandr en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Le sorcier assis n’esquive pas le sort : il l’écoute revenir.',
   },
   // ── Renvoi en main (deck Marée des abysses) ────────────────────────────
@@ -2009,7 +2009,7 @@ export const RPG_MAGIE_CARDS = [
     // Le Lien du Léviathan : le petit frère de la grande marée. Le renvoi est
     // le même, la carte qu'on en rapporte est une de plus.
     lien: { ancre: 'leviathan', effet: { pioche: 2 } },
-    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. Lien du Léviathan — si le Léviathan est en jeu, piochez deux cartes à la place.',
+    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. Avec Léviathan en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Ce que la vague emporte, le courant vous le raconte à l’oreille.',
   },
 ];
@@ -2059,7 +2059,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
     lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Lien de Tin Hinan — si Tin Hinan, mère des pistes est en jeu, le porteur gagne +3/+1 à la place.',
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Avec Tin Hinan, mère des pistes, en jeu : +3/+1 au lieu de +2/+0.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2157,7 +2157,7 @@ export const RPG_ARME_CARDS = [
     // Esquive, elle, se CUMULE avec celle que la guerrière imprime : deux
     // sources valent 25 % + 25 %, donc 50 %.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas). Lien de Bouchra — si Bouchra, guerrière des crêtes est en jeu, le porteur gagne +0/+4 à la place, et l’Esquive s’ajoute à celle qu’il porte déjà.',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3, et l’Esquive s’ajoute à celle du porteur.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2173,7 +2173,7 @@ export const RPG_ARME_CARDS = [
     // Le Lien du Roi : le trait prend un point de plus — la riposte du
     // Contre-attaquant mord alors un cran plus fort.
     lien: { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Lien du Roi — si Le roi Kusayla est en jeu, le porteur gagne +3/+0 à la place.',
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avec Le roi Kusayla en jeu : +3/+0 au lieu de +2/+0.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2221,7 +2221,7 @@ export const RPG_ARME_CARDS = [
       bonus: { atk: 2, def: 2 },
       remplace: { porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 0 } },
     },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Lien du Passeur — si Le Passeur au masque de chacal est en jeu, le porteur gagne +2/+2 et la pioche ne défausse plus.',
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Avec Le Passeur au masque de chacal en jeu : +2/+2, et la pioche ne défausse plus.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2253,7 +2253,7 @@ export const RPG_ARME_CARDS = [
     // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
     // sans qu'un seul de ses chiffres imprints ne bouge.
     lien: { ancre: 'tarek', donne: { bouclier: 1 } },
-    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Lien du Berger — si TAREK est en jeu, le porteur gagne aussi un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Avec TAREK en jeu : un bouclier sur le porteur, en plus.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {

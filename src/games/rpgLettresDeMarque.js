@@ -376,7 +376,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // créature accoste avec un seuil au **coût plein** (au lieu de coût − 1),
     // donc elle prend des proies qu'aucune autre lettre ne couvre.
     lien: { ancre: 'le-chasseur-d-ocracoke', effet: { seuilPlein: true } },
-    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte. Lien du Chasseur — si Le Chasseur d’Ocracoke est en jeu, cette créature accoste au seuil de son coût plein.',
+    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte. Avec Le Chasseur d’Ocracoke en jeu : au seuil de son coût plein, au lieu du coût moins un.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({
@@ -393,7 +393,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // Le Lien du Kraken : la marée monte d'un cran — -2/-3 au lieu de -1/-2,
     // jusqu'à la fin du tour comme l'imprimé.
     lien: { ancre: 'kraken', effet: { atk: -2, def: -3 } },
-    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour. Lien du Kraken — si Le Kraken est en jeu, elle gagne -2/-3 à la place.',
+    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour. Avec Le Kraken en jeu : -2/-3 au lieu de -1/-2.',
     flavor: 'Le pilote connaît le sable sous la vague ; la vague, elle, ne prévient pas.',
   }),
   carte({
@@ -409,7 +409,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // Le Lien du Serpent : la carte marine porte un cran plus loin — trois
     // cartes piochées, une défaussée. Ce qu'on jette ne change pas.
     lien: { ancre: 'bakunawa', effet: { pioche: 3 } },
-    text: 'Piochez deux cartes, puis défaussez une carte. Lien du Serpent — si Bakunawa est en jeu, piochez trois cartes, puis défaussez une carte.',
+    text: 'Piochez deux cartes, puis défaussez une carte. Avec Bakunawa en jeu : 3 cartes piochées au lieu de 2.',
     flavor: 'Les routes de la mer se copient à la main, jamais à l’imprimé.',
   }),
   carte({
@@ -428,7 +428,7 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // mord un cran plus fort (+3/+2) — la défense ne bouge pas, un assaut
     // ne tient pas, il frappe.
     lien: { ancre: 'la-barbe-rousse', effet: { atk: 3, def: 2 } },
-    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill. Lien de l’Amiral — si La Barbe-Rousse, amiral des deux mers est en jeu, elles gagnent +3/+2 et Overkill à la place.',
+    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill. Avec La Barbe-Rousse, amiral des deux mers, en jeu : +3/+2 au lieu de +2/+2.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];

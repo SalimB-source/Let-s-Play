@@ -189,7 +189,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Et comme les coups critiques se cumulent, sa frappe quadruple passe de
     // 25 % à 50 % de chances SANS que ce Lien ait à l'écrire.
     lien: { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
-    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Lien de la Flamme — sur Kagutsuchi, Flamme originelle, le sabre ne mord que la force : le porteur gagne +2/+0 au lieu de +2/-2, et son critique s’ajoute à sa frappe quadruple (50 % de chances de frapper 4 fois).',
+    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Avec Kagutsuchi, Flamme originelle, en jeu : +2/+0 au lieu de +2/-2.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -202,7 +202,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
     // une fois de plus. Attaque ciblée et coup critique restent intacts.
     lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse. L’arme rejoint le cimetière quand son porteur quitte le jeu. Lien du Cavalier — si le Cavalier des deux sabres est en jeu, le porteur gagne +2/+0 à la place.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse. L’arme rejoint le cimetière quand son porteur quitte le jeu. Avec Cavalier des deux sabres en jeu : +2/+0 au lieu de +1/+0.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({
@@ -214,7 +214,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Le Lien du Pourfendeur : la frappe gagne le cran qui manquait, celui qui
     // finit le duel — 3 au lieu de 2, pour 1 mana.
     lien: { ancre: 'tojiro-le-pourfendeur', effet: { amount: 3 } },
-    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée. Lien du Pourfendeur — si Tojiro, le pourfendeur est en jeu, inflige 3 dégâts à la place.',
+    text: 'Magie Rapide — Inflige 2 dégâts à une créature ciblée. Avec Tojiro, le pourfendeur, en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le fourreau n’a pas fini de résonner que le duel est terminé.',
   }),
   carte({
@@ -226,7 +226,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Le Lien de la fournaise : l'Oni frappe deux fois, et les deux feux
     // montent d'un cran — 5 sur une cible, 3 sur chacune des deux.
     lien: { ancre: 'oni-de-la-fournaise', effet: { amount: 5, secondAmount: 3 } },
-    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées. Lien de l’Oni — si l’Oni de la fournaise est en jeu, infligez 5 dégâts à une créature ou 3 dégâts à chacune de deux créatures ciblées.',
+    text: 'Sorcellerie — Infligez 4 dégâts à une créature ou 2 dégâts à chacune de deux créatures ciblées. Avec Oni de la fournaise en jeu : 5 dégâts, ou 3 sur chacune des deux.',
     flavor: 'Ne suivez pas les lumières entre les cèdres : elles connaissent déjà votre chemin.',
   }),
   carte({
@@ -236,7 +236,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
     lien: { ancre: 'daimyo-du-soleil-rouge', effet: { atk: 3, def: 1 } },
-    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Lien du Daimyō — si le Daimyō du Soleil rouge est en jeu, elles gagnent +3/+1 à la place.',
+    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];

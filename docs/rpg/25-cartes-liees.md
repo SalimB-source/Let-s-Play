@@ -238,3 +238,22 @@ montrer où se trouve la limite.
 2. B : lesquelles des trente paires entrent dans le prototype.
 3. Et si le Lien se généralise : pastille « Lien » dans `effetIcons.js` et
    liseré sur la carte quand l'ancre est en jeu.
+
+---
+
+## Le Lien se voit : la lueur dorée
+
+Trente paires sont en jeu. Une carte liée reste lisible sans elles — mais au
+moment où son ancre mythique tient une place sur la rangée du joueur, il faut
+que ça se voie **avant** de la jouer.
+
+- **En main** : la carte porte `is-lien-actif` (et `data-lien-actif="true"`),
+  un liseré et un halo **or** (`#f2c94c`), qui respirent doucement.
+- **Sur la table** : une arme liée déjà posée s'allume du même or tant que son
+  ancre tient sa rangée (`lienActifSurTable`), et s'éteint dès qu'elle part.
+- **Deux signaux, jamais confondus** : la lueur de jouabilité d'une mythique
+  (Kyûbi, orange) dit « tu peux la poser maintenant » ; la lueur du Lien
+  (or) dit « elle est renforcée ». Une carte peut porter les deux.
+- **Mouvement** : `prefers-reduced-motion` fige la pulsation, le halo reste.
+
+Contrôles : `tests/rpg-lien-lueur.test.js`.

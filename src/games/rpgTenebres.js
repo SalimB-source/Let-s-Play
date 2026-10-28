@@ -349,7 +349,7 @@ export const RPG_TENEBRES_MAGIES = [
       cible: 'creature',
       debuff: { atk: -2, def: -2 },
     },
-    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2. Lien de la Malédiction — si La Barbe Noire, la malédiction est en jeu, une créature adverse ciblée gagne en plus -2/-2.',
+    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2. Avec La Barbe Noire, la malédiction, en jeu : -2/-2 à une créature adverse ciblée, en plus.',
     flavor: 'Deux grains tombent de chaque côté ; la table ne bouge pas.',
   }),
   carte({
@@ -364,7 +364,7 @@ export const RPG_TENEBRES_MAGIES = [
     // Le Lien du Greffier : la plume n'efface pas trois lignes, elle en
     // efface quatre. Le greffier tient le registre, l'adversaire le subit.
     lien: { ancre: 'maitre-des-hieroglyphes', effet: { amount: 4 } },
-    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière. Lien du Greffier — si Le Maître des hiéroglyphes est en jeu, 4 cartes partent au cimetière à la place.',
+    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière. Avec Le Maître des hiéroglyphes en jeu : 4 cartes au lieu de 3.',
     flavor: 'Sur trente feuillets, trois partent d’un seul souffle.',
   }),
   carte({
@@ -380,7 +380,7 @@ export const RPG_TENEBRES_MAGIES = [
     // Le Lien de la Dévoreuse : la pesée mord un cran plus loin — 4 au lieu
     // de 3. La pioche, elle, ne bouge pas : c'est le plateau, pas la gueule.
     lien: { ancre: 'la-devoreuse', effet: { amount: 4 } },
-    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes. Lien de la Dévoreuse — si La Dévoreuse est en jeu, il perd 4 PV et vous en gagnez 4 à la place, puis vous piochez deux cartes.',
+    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes. Avec La Dévoreuse en jeu : 4 PV au lieu de 3.',
     flavor: 'Le cœur est pesé, le nom est lu, la page est tournée.',
   }),
 ];
