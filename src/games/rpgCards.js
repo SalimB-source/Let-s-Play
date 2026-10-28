@@ -176,10 +176,12 @@ export function bonusArme(carte) {
  * Le Lien est toujours une **différence légère** : un cran, pas un
  * dédoublement. Une carte liée reste la même carte, un peu meilleure.
  *
- * Le texte imprimé porte la règle (« Lien de Tin Hinan — … ») comme il porte
- * déjà Abordage, Harakiri ou Malédiction ; `tests/rpg-liens.test.js` vérifie
- * que chaque lien a une ancre mythique existante et que son texte la nomme,
- * pour qu'aucune fiche ne dérive de sa mécanique.
+ * Le texte imprimé dit **la différence seule**, jamais le rappel de l'effet
+ * de base : « Avec <ancre> en jeu : <ce qui change>. » — par exemple
+ * « Avec la Valkyrie des glaces en jeu : 3 dégâts au lieu de 2. »
+ * `tests/rpg-liens.test.js` vérifie que chaque lien a une ancre mythique
+ * existante et que son texte la nomme, pour qu'aucune fiche ne dérive de sa
+ * mécanique.
  */
 export function lienDeCarte(carte) {
   return carte?.lien?.ancre ? carte.lien : null;
