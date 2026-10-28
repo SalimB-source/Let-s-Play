@@ -6655,6 +6655,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     cartes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
+  // ── La fiche d'une carte parle ──
+  // Ouvrir une créature en grand — le clic du catalogue, le clic droit ou
+  // l'appui long ailleurs dans le jeu — fait entendre sa voix d'arrivée, celle
+  // qu'elle a en entrant en jeu. C'est la même lecture (une seule voix à la
+  // fois : `playCardVoice` coupe la précédente), donc feuilleter le catalogue
+  // ne superpose pas les répliques.
+  //
+  // Les cartes muettes gardent l'effleurement `hover` : les terrains, les
+  // magies, les armes, et les créatures du lot sans échantillon
+  // (`rpgACarteUneVoix` faux) n'ont rien à dire — un silence à l'ouverture
+  // laisserait croire que le clic n'a pas été pris.
+  const jouerSonFiche = (carte) => {
+    if (jouerVoixArrivee(carte?.id ?? carte)) return true;
+    jouerSfx('hover');
+    return false;
+  };
   const unlockSfx = () => {
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
     if (ecran === 'partie' && sonActif && !document.hidden) void musiquePlateauRef.current?.start();
@@ -8421,7 +8437,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         touchDragRef.current = null;
         masquerApercuSurvol();
         unlockSfx();
-        jouerSfx('hover');
+        jouerSonFiche(carte);
         // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
         carteSourceApercuRef.current = hote;
         setApercuAppuiArmes(armesDeLaCarte);
@@ -8454,7 +8470,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     annulerAppuiLong();
     masquerApercuSurvol();
     unlockSfx();
-    jouerSfx('hover');
+    jouerSonFiche(carte);
     setApercuCatalogueArmes(armes);
     setApercuCatalogueFurie(furie);
     setApercuCatalogueEffetsEpuises(effetsEpuises);

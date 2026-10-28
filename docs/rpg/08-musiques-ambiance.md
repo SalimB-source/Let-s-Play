@@ -67,6 +67,13 @@ trois hivers » pour le Berserk des trois hivers…).
   échantillons (`syncOutputGain`), et `destroy()` coupe les départs en attente.
 - **Écoute** : `sons-du-sablier.html` liste les 37 voix dans la section « Voix
   d'arrivée des créatures ».
+- **La fiche parle** : ouvrir une carte en grand — le clic du catalogue, le
+  clic droit ou l'appui long ailleurs dans le jeu — joue la voix de la créature
+  ouverte (`jouerSonFiche`, `RpgDuelPage.jsx`). Une voix à la fois : feuilleter
+  le catalogue ne superpose pas les répliques, chaque fiche coupe la
+  précédente. Les cartes sans échantillon (terrains, magies, armes, créatures
+  du lot silencieux) gardent l'effleurement `hover`, pour que l'ouverture reste
+  audible.
 
 Les fichiers plus longs de `public/` ne sont **pas** des voix : ce sont les
 pistes de plateau ci-dessus, plus deux bruitages déjà branchés
