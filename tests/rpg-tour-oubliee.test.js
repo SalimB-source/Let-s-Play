@@ -66,7 +66,6 @@ import {
 } from '../src/games/rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from '../src/games/rpgManaEssai.js';
 import { RPG_NIVEAUX_IA, rpgProfilIA } from '../src/games/rpgAI.js';
-import { RPG_AMBIENT_BPM } from '../src/games/rpgAmbientMusic.js';
 import {
   plateauDeDeck,
   plateauParId,
@@ -74,6 +73,7 @@ import {
   varianteFantaisisteDe,
 } from '../src/games/rpgPlateaux.js';
 import { RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
+import { RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
 import { cardArtFurie } from '../src/games/rpgCardArt.js';
 
 const CHEMIN = (relatif) => fileURLToPath(new URL(`../public/${relatif}`, import.meta.url));
@@ -412,7 +412,10 @@ test('chaque étage de la tour a son paquet, son plateau connu et son ambiance',
     ['inhabituelle', 'rare', 'mythique', 'mythique', 'mythique'],
   );
   assert.equal(RPG_TOUR_OUBLIEE.etages.at(-1).avatar, 'l-oublie');
-  assert.ok(RPG_AMBIENT_BPM['tour-oubliee'] >= 55 && RPG_AMBIENT_BPM['tour-oubliee'] <= 110);
+  // Le son de la tour vient de ses tables : le cimetière et la Fosse ont
+  // chacune leur instrumental, et aucun étage ne joue d'ambiance de tour.
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has('cimetiere-des-noms-effaces'), 'le cimetière est musical');
+  assert.ok(RPG_PLATEAUX_MUSICAUX.has('fosse-de-l-oubliee'), 'la Fosse est musicale');
   assert.ok(existsSync(CHEMIN('sablier-tours/tour-oubliee.jpg')), 'la miniature de repli est livrée');
 });
 

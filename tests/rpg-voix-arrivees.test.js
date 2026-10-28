@@ -34,7 +34,8 @@ import {
   rpgJouerCreature,
   rpgNouveauDuel,
 } from '../src/games/rpgDuel.js';
-import { RPG_CARD_VOICE_VOLUME, RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import { RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import { gainVoixArrivee } from '../src/games/rpgNiveauxSons.js';
 
 const PUBLIC = new URL('../public/', import.meta.url);
 
@@ -51,6 +52,8 @@ const DEJA_BRANCHES = new Set([
 const WAV_DEJA_BRANCHES = new Set([
   'Dwarf_Dialogue_Vocal_My_Axe_Shall_Speak_For_Me.wav',
   'Pirate_Dialogue_Alright.wav',
+  // Le foley de glace, source du bruitage `freeze_impact` (`ice-freeze.wav`).
+  'IceFoley 6095_90_1.wav',
 ]);
 
 const fichiersVoix = readdirSync(PUBLIC)
@@ -272,7 +275,9 @@ test('RpgAudioPlayer joue la voix de la carte, une seule à la fois', () => {
     assert.equal(player.playCardVoice(dame), true);
     assert.equal(FakeAudio.lectures.length, 1);
     assert.ok(FakeAudio.lectures[0].src.endsWith("dame%20aux%20ailes%20d'or.mp3"));
-    assert.equal(FakeAudio.lectures[0].volume, RPG_CARD_VOICE_VOLUME);
+    // Chaque voix est ramenée au niveau commun d'après la mesure de son
+    // fichier : « La Dame aux ailes d'or » est mesurée à -20,0 LUFS.
+    assert.ok(Math.abs(FakeAudio.lectures[0].volume - gainVoixArrivee("dame aux ailes d'or.mp3")) < 1e-9);
 
     // La deuxième arrivée coupe la première : le duel ne les chevauche pas.
     assert.equal(player.playCardVoice(rpgArrivalVoiceUrl('salem')), true);

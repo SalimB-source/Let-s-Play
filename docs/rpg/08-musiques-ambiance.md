@@ -8,42 +8,104 @@ decks, catalogue, Souk, récit, journal, paramètres…), le thème principal du
 `RpgMainThemeMusic` dans `src/games/rpgPlateauMusic.js`) tourne en boucle et
 suit le réglage général du son (`sonActif`) ainsi que le curseur de volume des
 musiques (`volumeMusique`). Dès qu'une partie démarre (`ecran === 'partie'`), il
-s'interrompt immédiatement au profit de la musique du plateau ou de la tour,
-puis reprend au retour dans les menus.
+s'interrompt immédiatement au profit de la musique du plateau, puis reprend au
+retour dans les menus. Il revient aussi comme morceau du **Sablier renversé**,
+la dernière table du jeu (voir plus bas).
 
-## Musiques d'ambiance des plateaux et des tours
+## Le niveau d'écoute commun des sons
 
-En partie (`ecran === 'partie'`), les plateaux qui ont une piste dédiée
-utilisent leur MP3 via `RpgPlateauMusic`. La Nécropole des dalles, le plateau
-égyptien, joue `public/Egypt.mp3` ; **le Cercle des corbeaux**, la clairière
-de la Tour du Corbeau, joue `public/raspberrymusic - A Vikings.mp3` (une seule
-piste, en boucle). Les autres terrains peuvent rester sans piste propre ; les
-boucles synthétisées en WebAudio des Tours de Bab El
-(`src/games/rpgAmbientMusic.js`) prennent le relais en mode Histoire.
+Les échantillons du duel viennent de sources très différentes : la pose d'une
+carte enregistrée très bas (`card-place.wav`, -37 LUFS), un coup d'épée saturé
+(`player-attack-hit.wav`, -6 LUFS), un cri viking, les 60 voix d'arrivée. Les
+anciennes constantes réglées à la main (0,5 à 0,64) laissaient **trente-deux
+décibels** d'écart entre la pose d'une carte — inaudible — et la frappe —
+assourdissante.
 
-Chacune des **Tours de Bab El** dispose de sa propre boucle musicale
-d'ambiance, intégralement **synthétisée en WebAudio** (`src/games/rpgAmbientMusic.js`).
-Lorsqu'un plateau possède une piste dédiée, elle remplace la boucle de la Tour
-pour éviter de faire jouer deux musiques en même temps : ainsi « La neige tombe
-dans le noir » (Tour du Corbeau, 68 BPM) reste l'identité de la tour — on
-l'écoute dans la salle d'écoute — mais se tait pendant les duels joués au
-Cercle des corbeaux, où le MP3 viking prend la main.
+`src/games/rpgNiveauxSons.js` porte désormais **la mesure de chaque fichier**
+(niveau intégré LUFS selon ITU-R BS.1770, et crête en dBFS), et le gain en
+découle :
 
-La classe `RpgAmbientMusic` suit le même contrat de cycle de vie que la bande-son
-de *Vice City Rush* (`cityRushAudio.js`) :
+    gain = 10 ** ((RPG_NIVEAU_CIBLE_LUFS - lufs_mesure) / 20)
 
-- `setTour(tourId)` sélectionne la tour (donc la boucle) ;
-- `start()` / `stop()` / `pause()` / `resume()` pilotent la lecture ;
-- `setMuted(muted)` coupe sans détruire les nœuds ;
-- la musique est planifiée par une grille de 8 mesures × 16 pas (128 pas par boucle),
-  entre 66 et 92 BPM — plus lent que la course, c'est une tension de duel,
-  pas une poursuite.
+Tout le jeu écoute donc au même niveau, **-20 LUFS** — soit 6 dB au-dessus des
+musiques de plateau (~-26 LUFS une fois le gain 0,16 appliqué), et loin
+au-dessus du thème principal hors parties. Le tableau des niveaux n'est jamais
+réglé à la main :
 
-Le niveau de la musique reste en dessous des bruitages du duel
-(`rpgAudio.js`) : le duel reste lisible, la musique ne couvre jamais les
-indications de cartes (soin, zone, cloche de l'Astrolabe). Nappes et cloches
-reçoivent une réverbération stéréo très légère, générée à la volée ; les
-attaques triangulaires filtrées restent douces sur les haut-parleurs mobiles.
+    python3 tools/mesure-sons-sablier.py            # mesure, gains et écart obtenu
+    python3 tools/mesure-sons-sablier.py --js       # le littéral à recopier après un ajout
+    python3 tools/mesure-sons-sablier.py --egaliser # remonte les WAV trop pointus
+
+Le geste tient en deux temps :
+
+1. **les fichiers trop pointus sont remontés dans le fichier** — la pose de
+   carte demandait +17 dB quand sa crête ne laissait que 10 dB de marge. On
+   lance `python3 tools/mesure-sons-sablier.py --egaliser` : l'outil applique le
+   gain puis un **limiteur à pré-lecture** (fenêtre de 5 ms, relâchement de
+   120 ms) qui écrête à -1 dBFS, itère jusqu'à ce que la cible soit atteinte,
+   et réécrit le WAV (PCM 16 bits, mêmes canaux, même fréquence). Trois
+   fichiers : `card-place.wav` (-37,1 → -21,5 LUFS), `card-draw.wav` (-32,5 →
+   -20,2) et la voix du Tengu (-29,5 → -20,5). Les MP3 fournis ne sont pas
+   réécrits ;
+2. **le gain de lecture** ramène chaque fichier au niveau commun, par un
+   **nœud WebAudio** (`createMediaElementSource` + `GainNode`), dans un bus
+   commun qui finit sur un limiteur de secours (-0,3 dBFS) pour les sons qui se
+   superposent. Chaque gain reste borné par la marge de crête
+   (`RPG_PLAFOND_CRETE_DBFS`, -0,5 dBFS) : les deux voix MP3 sans marge —
+   « Celle qui pèse » (-24,1 LUFS) et « Le Maître des hiéroglyphes » (-21,4) —
+   restent 4,1 dB et 1,4 dB sous la cible. Sans routage des médias (navigateur
+   ancien), le gain retombe sur `audio.volume`, borné à 1.
+
+Le **survol** de l'interface reste un murmure volontaire (le seul son encore
+synthétisé) : il se déclenche à chaque carte effleurée, et un son d'événement
+se remarque là où un effleurement doit passer inaperçu. Les **musiques** ont
+leur propre chaîne et leur propre curseur ; elles ne sont pas dans cette table.
+
+## Le son du duel vient du plateau
+
+**Tout plateau a son morceau.** En partie (`ecran === 'partie'`), la musique
+est celle de la table : `RPG_PLATEAU_MUSIC_FILES` (`src/games/rpgPlateauMusic.js`)
+associe chaque `plateauId` à un MP3 de `public/`, joué en boucle par
+`RpgPlateauMusic`. Il n'existe **plus de boucle d'ambiance par tour** : le
+module `rpgAmbientMusic.js` et ses dix thèmes synthétisés ont été retirés, pour
+que la musique d'un duel ne double jamais celle du plateau qui l'accueille.
+
+Quelques tables, pour mémoire :
+
+| Table | Piste |
+|---|---|
+| Nécropole des dalles | `public/Egypt.mp3` |
+| Palais du Pharaon | `public/Egypt.mp3` (même Égypte, la salle du trône des Juges) |
+| Cercle des corbeaux | `public/raspberrymusic - A Vikings.mp3` |
+| Village Viking, Îles Célestes | `Viking Howl.mp3`, `Viking Howl (Take 2).mp3`, `audio/full-track.mp3` (tirage au lancement du duel) |
+| Cour de l'Empereur | `audio/WayOfTheBushidoWithGeishaVocals.mp3`, `CherryBlossomStrings(Extended).mp3` |
+| Cimetière des noms effacés / Fosse de l'Oubliée | `Le Sceau de Sang (Instrumental).mp3` et sa variante |
+| Abysses phosphorescentes | `audio/deep-sea-underwater-ambience.mp3` |
+| Sablier renversé | `Desert Solitude with Percussion.mp3` — le thème principal, pour la dernière table du jeu |
+
+Les plateaux d'une même famille partagent parfois un fichier (la route
+caravanière, le Souk et le Désert de verre jouent `arabian-travel.mp3`) : le
+lecteur de conquête ne redémarre alors pas la piste au passage d'un terrain à
+l'autre. `tests/rpg-plateaux.test.js` vérifie que **chaque** table du jeu a son
+morceau et que le fichier est livré.
+
+## Deux lecteurs, trois usages
+
+- **`RpgMainThemeMusic`** (`rpgPlateauMusic.js`) — le thème principal, hors
+  parties : menus, atelier, catalogue, Souk, récit, journal, paramètres.
+- **`RpgPlateauMusic`** — un plateau, une piste, en boucle, avec sa propre
+  reprise en pause et son volume (`BASE_PLATEAU_VOLUME`, 0,16 avant le curseur
+  du joueur).
+- **`RpgConqueteMusic`** (`rpgConqueteMusic.js`) — le relais des duels : il
+  choisit la piste du camp qui mène au territoire (`campMusicalDuTerritoire`,
+  60/40 avec hystérésis) et fond de l'une à l'autre en 1,2 s. Un lecteur par
+  fichier garde la position pendant les allers-retours ; un fondu ne démarre
+  qu'après un `play()` accepté, donc une politique d'autoplay refuse le fondu
+  plutôt que de laisser le silence.
+
+Le niveau de la musique reste en dessous des bruitages du duel (`rpgAudio.js`,
+-20 LUFS) : le duel reste lisible, la musique ne couvre jamais les indications
+de cartes (soin, zone, cloche de l'Astrolabe).
 
 ## Les voix d'arrivée des créatures
 
@@ -62,10 +124,11 @@ trois hivers » pour le Berserk des trois hivers…).
 - **Priorité** : la voix de la carte **remplace** les accueils génériques (cri
   pirate « Ahoy ! »/« Alright », quai des navires, réplique naine). Les cartes
   sans fichier gardent ces trois accueils.
-- **Mixage** : gain de base 0,5 (`RPG_CARD_VOICE_VOLUME`), une seule voix à la
-  fois (la précédente se met en pause), trois au plus par relevé, décalées de
-  140 ms. Le son coupé et le curseur de volume s'appliquent comme aux autres
-  échantillons (`syncOutputGain`), et `destroy()` coupe les départs en attente.
+- **Mixage** : le niveau commun des sons du jeu (voir plus bas), mesuré
+  fichier par fichier ; une seule voix à la fois (la précédente se met en
+  pause), trois au plus par relevé, décalées de 140 ms. Le son coupé et le
+  curseur de volume s'appliquent comme aux autres échantillons
+  (`syncOutputGain`), et `destroy()` coupe les départs en attente.
 - **Écoute** : `sons-du-sablier.html` liste les 60 voix dans la section « Voix
   d'arrivée des créatures ».
 - **La fiche parle** : ouvrir une carte en grand — le clic du catalogue, le
@@ -87,7 +150,8 @@ Le duel n'a que **deux** sons de frappe pour les créatures, et ils ne se
 superposent jamais pour un même attaquant (`src/games/rpgAttackAudio.js`) :
 
 - **Attaque ciblée** → `fleche` (`src/games/assets/arrow-shot.wav`, 0,55 s,
-  gain 0,6). La créature désigne sa proie avant le combat : son attaque est un
+  ramenée au niveau commun). La créature désigne sa proie avant le combat :
+  son attaque est un
   tir, elle s'arrête sur sa frappe et le sorcier ne perd rien. Le fichier est
   généré par `tools/make-arrow-shot.mjs` (corde lâchée, claquement d'encoche,
   souffle de bande et sifflement d'empennage descendant), reproductible à
@@ -112,81 +176,31 @@ joue la vraie page du duel (jsdom) sur une Attaque ciblée seule et contrôle le
 
 ## Comment elle se déclenche
 
-La page du duel (`src/games/RpgDuelPage.jsx`) tient une instance de
-`RpgAmbientMusic` pour toute sa vie :
+La page du duel (`src/games/RpgDuelPage.jsx`) tient les deux lecteurs pour
+toute sa vie : `RpgMainThemeMusic` hors parties, `RpgConqueteMusic` en partie.
 
-- lancer un étage (`demarrerEtage`) choisit la tour de cet étage et démarre
-  sa boucle **dans le geste joueur** — les navigateurs n'accordent un contexte
-  audio qu'à un tel geste ;
-- rentrer au menu, lancer un duel libre ou couper le son arrête la boucle
-  (`stop()`), sans détruire les nœuds ;
-- un onglet mis de côté met la boucle en pause (`pause()`), elle reprend au
-  retour (`resume()`) ;
+- entrer dans un duel démarre la piste du plateau **dans le geste joueur** —
+  les navigateurs n'accordent un contexte audio qu'à un tel geste ;
+- rentrer au menu, quitter le duel ou couper le son arrête la lecture
+  (`stop()` / `pause()`), sans détruire les nœuds ;
+- un onglet mis de côté met la piste en pause (`pause()`), elle reprend au
+  retour — le duel libre comme celui du récit ;
 - le bouton ♫ de la barre du duel — ou la touche `M` — coupe et rend la
   musique et les bruitages. La préférence est mémorisée sur l'appareil
   (`letsplay_sablier_sound_v1`), comme celle de Vice City Rush, et le son
   revient par défaut.
 
-Le mode Histoire est la seule scène qui fait jouer de la musique : un duel
-libre n'a pas de tour, donc pas de boucle. Le rendu est vérifié par
-`npm run check:rpg-ambient-ui`, qui rend la page et compte les nœuds audio
-réellement planifiés.
+La table suit le camp qui mène au territoire : un duel libre comme un étage du
+récit joue la piste du plateau du camp dominant, et le changement de camp fait
+un fondu plutôt qu'une coupure.
 
-## Les cinq ambiances d'origine
+## Ce qui a été retiré
 
-Les cinq premières tours ont leur fiche ci-dessous. Les tours ouvertes depuis
-(les Corsaires, le Soleil rouge, la Nécropole, le Corbeau, le Sablier renversé)
-suivent le même contrat — une boucle par tour, un thème déclaré dans
-`RPG_AMBIENT_THEMES` — et se lisent dans le code ; celle du **Corbeau** est
-détaillée au dossier 22, §5.
-
-### 1. La Tour des Listes — *Le Grand Horloger compte ses noms*
-- **BPM** : 78
-- **Tonalité** : Dm · Bb · F · Am (mineure administrative, descendante)
-- **Textures** : tic-tac métronomique de bois, clochettes hautes qui tintent
-  toutes les quatre mesures, gratte de plume sur le registre.
-- **Métaphore sonore** : la Chambre des Heures classe les quartiers
-  évacuables ; chaque tic-tac est un nom de plus sur la liste.
-
-### 2. La Tour du Souk — *Les étals ne ferment jamais*
-- **BPM** : 92
-- **Tonalité** : Em9 · F · Am · G7 (accords orientaux avec secondes)
-- **Textures** : darbouka sur les temps 1/3, claquements secs sur 2/4,
-  ouds et zurna/nay qui vous hèlent du fond des étals ; une rumeur
-  chuchotée et continue pour la foule lointaine, basse bondissante du
-  guitarrón.
-- **Métaphore sonore** : trente étals suspendus, trente marchands qui
-  négocient — rien ne se vend à perte.
-
-### 3. La Tour des Sables — *Le zénith sur le portail*
-- **BPM** : 70
-- **Tonalité** : Dm7 · Gm7 · Bb · A (grave, solennelle, large)
-- **Textures** : gongs profonds tous les deux temps, cordes très lentes
-  en dessous, vent de sable qui couvre tout en permanence, tintements
-  métalliques sporadiques (clous dans la porte, éclats de verre sous le
-  sable), crépitement aigu des grains du sablier. Le cor du zénith
-  n'entre qu'à la seconde moitié de la boucle.
-- **Métaphore sonore** : la dernière tour au-dessus du portail. Ce qui
-  s'y joue décide de ce que Bab El devient.
-
-### 4. La Tour des Abysses — *Les cloches du fond répondent*
-- **BPM** : 66
-- **Tonalité** : Cm7 · Abmaj7 · Ebm7 · Bb7 (flottante, renversée)
-- **Textures** : nappe sinusoïdale étouffée par l'eau, ressac grave et
-  continu au ralenti, cloches sous-marines toutes les deux mesures
-  (partiels aigus atténués), bulles et gouttes d'eau au hasard, chants
-  de baleine lointains à la seconde moitié de la boucle.
-- **Métaphore sonore** : une tour d'eau sans un grain de sable. L'abîme
-  répond à chaque carte, rien ne passe sans contre.
-
-### 5. La Tour du Fjord — *Neuf hivers de mémoire et de glace*
-- **BPM** : 84
-- **Tonalité** : Dm · F · C · Gm7 (mineure nordique), bourdon de quinte
-  ouverte (D/A) tenu en permanence comme une tampagne.
-- **Textures** : grosse caisse sourde sur 1/3 (pas de la garde), chocs
-  de boucliers sur 2/4, vent froid aigu en permanence sur les hautes
-  fréquences, cri aigu du cor (Gjallarhorn) une fois par boucle,
-  crissements de neige sous les pieds, complainte des scaldes en
-  seconde moitié.
-- **Métaphore sonore** : neuf hivers de mémoire et de glace, tenus par
-  des serments qu'on ne prononce pas deux fois.
+Les dix boucles d'ambiance par tour (« Le Grand Horloger compte ses noms »,
+« Les étals ne ferment jamais » … « Le retournement du Sablier ») étaient
+synthétisées en WebAudio par `rpgAmbientMusic.js`. Elles ont été **supprimées
+avec le module**, leurs tests (`tests/rpg-ambient-music.test.js`) et leur
+vérification d'interface (`check:rpg-ambient-ui`) : la musique d'un duel vient
+de sa table, un point c'est tout. L'historique Git garde les thèmes, leurs
+tempos et leurs textures, si l'un d'eux doit revenir un jour sous forme de
+fichier.

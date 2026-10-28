@@ -70,7 +70,6 @@ import {
   tourHistoireParId,
 } from './rpgStoryTours.js';
 import { useRpgStory } from './useRpgStory.js';
-import { resumeRecitHistoire } from './rpgStoryFlow.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
@@ -79,7 +78,6 @@ import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExempla
 import { rpgDelaiReflexionIA } from './rpgAI.js';
 import { RpgConqueteMusic, campMusicalDuTerritoire, plateauMusicalDuCamp } from './rpgConqueteMusic.js';
 import { avatarDeProfil, vignetteAvatar } from './rpgAvatars.js';
-import { RpgAmbientMusic } from './rpgAmbientMusic.js';
 import {
   RpgMainThemeMusic,
   RPG_PLATEAUX_MUSICAUX,
@@ -6556,12 +6554,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Dégâts cumulés annoncés au Souk pour le duel en cours (voir l'effet dédié).
   const degatsSorcierRef = useRef({ duel: null, annonces: 0 });
   const campagneDuelRef = useRef(null);
-  // Son du jeu en deux couches : le mode Histoire porte une boucle par tour
-  // (`rpgAmbientMusic.js`), tandis que les bruitages tactiles (`rpgAudio.js`)
-  // restent disponibles dans tous les duels. Les deux lecteurs partagent le
-  // même réglage et sont libérés au démontage.
+  // Son du jeu : la musique vient de la table (`rpgPlateauMusic.js` /
+  // `rpgConqueteMusic.js`) et les bruitages tactiles de `rpgAudio.js`. Les
+  // deux lecteurs partagent le même réglage et sont libérés au démontage.
   const musiqueThemeRef = useRef(null);
-  const musiqueRef = useRef(null);
   const musiquePlateauRef = useRef(null);
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
@@ -6595,16 +6591,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     writeRpgVolumePref(RPG_MUSIC_VOLUME_KEY, volumeMusique);
     if (volumeMusique > 0) dernierVolumeMusiqueRef.current = volumeMusique;
     musiqueThemeRef.current?.setVolume(volumeMusique);
-    musiqueRef.current?.setVolume(volumeMusique);
     musiquePlateauRef.current?.setVolume(volumeMusique);
   }, [volumeMusique]);
   useEffect(() => {
     musiqueThemeRef.current = reprendreThemePrincipal() ?? new RpgMainThemeMusic();
     musiqueThemeRef.current.setVolume(volumeMusique);
     musiqueThemeRef.current.setMuted(!sonActif);
-    musiqueRef.current = new RpgAmbientMusic();
-    musiqueRef.current.setVolume(volumeMusique);
-    musiqueRef.current.setMuted(!sonActif);
     musiquePlateauRef.current = new RpgConqueteMusic();
     musiquePlateauRef.current.setVolume(volumeMusique);
     musiquePlateauRef.current.setMuted(!sonActif);
@@ -6614,8 +6606,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => {
       musiqueThemeRef.current?.destroy();
       musiqueThemeRef.current = null;
-      musiqueRef.current?.destroy();
-      musiqueRef.current = null;
       musiquePlateauRef.current?.destroy();
       musiquePlateauRef.current = null;
       sfxRef.current?.destroy();
@@ -6625,7 +6615,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     sfxRef.current?.setMuted(!sonActif);
     musiqueThemeRef.current?.setMuted(!sonActif);
-    musiqueRef.current?.setMuted(!sonActif);
     musiquePlateauRef.current?.setMuted(!sonActif);
   }, [sonActif]);
   const changerVolumeSfx = (valeur) => {
@@ -6659,12 +6648,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // rien vécu de la campagne. Même famille que le récit et le journal — plein
   // écran, hors duel.
   const lectureHistoire = ecran === 'recit' || ecran === 'journal' || ecran === 'bab-el';
-  const tourHistoireId = lectureHistoire
-    ? (resumeRecitHistoire(progressionHistoire.recit)?.acte?.tourId ?? 'tour-des-listes')
-    : histoireEtageId
-      ? etageHistoireParId(histoireEtageId)?.tour?.id ?? null
-      : null;
-  useEffect(() => { musiqueRef.current?.setTour(tourHistoireId); }, [tourHistoireId]);
   useEffect(() => {
     const musiqueTheme = musiqueThemeRef.current;
     if (!musiqueTheme) return;
@@ -7771,7 +7754,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // terrain contre son double merveilleux ; sans la prop (tests, scénarios),
     // les classiques sont gardés. Le plateau du joueur reste le principal : la
     // musique démarre sur son thème, puis suit la conquête à 60/40.
-    const modeLibre = !modeTutoriel && !etageCourant;
     const resolutionPlateaux = resoudrePlateauxDuDuel({
       deckJoueur: deckEssai ?? (modeTutoriel ? deckJoueurSelectionne : joueurDeck ?? deckJoueurSelectionne),
       deckAdverse: adversaireEssai ?? (modeTutoriel
@@ -7786,9 +7768,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPlateauAdverseId(resolutionPlateaux.adversaire.plateau.id);
     // `play()` doit partir directement du geste qui lance le duel : un effet
     // React différé peut être refusé par la politique d'autoplay du navigateur.
+    // Toutes les tables ont leur piste — plus d'ambiance de tour pour démarrer
+    // à la place —, donc le duel du récit comme le duel libre lance sa musique ici.
     const musiquePlateau = musiquePlateauRef.current;
     musiquePlateau?.setPlateau(plateau.id, { reroll: true });
-    if (modeLibre && sonActif && RPG_PLATEAUX_MUSICAUX.has(plateau.id)) {
+    if (sonActif && RPG_PLATEAUX_MUSICAUX.has(plateau.id)) {
       void musiquePlateau?.start();
     }
     duelRef.current = rpgNouveauDuel({
@@ -8062,13 +8046,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   }, [sessionMusicale, campMusical]);
   const plateauMusiqueId = plateauMusicalDuCamp(campMusical, plateauId, plateauAdverseId);
   useEffect(() => {
-    const musique = musiqueRef.current;
-    if (!musique || (ecran === 'partie' && !duel)) return;
-    const plateauMusical = RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId);
-    if (ecran === 'partie' && tourHistoireId && sonActif && !plateauMusical && !document.hidden) musique.start();
-    else musique.stop();
-  }, [ecran, lectureHistoire, tourHistoireId, plateauMusiqueId, sonActif, Boolean(duel)]);
-  useEffect(() => {
     const musique = musiquePlateauRef.current;
     if (!musique || (ecran === 'partie' && !duel)) return;
     musique.setPlateau(plateauMusiqueId);
@@ -8085,11 +8062,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         if (document.hidden) musiqueTheme.pause();
         else if (ecran !== 'partie' && sonActif) musiqueTheme.resume();
       }
-      const musique = musiqueRef.current;
-      if (musique) {
-        if (document.hidden) musique.pause();
-        else if (ecran === 'partie' && tourHistoireId && sonActif && !RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) musique.start();
-      }
       const musiquePlateau = musiquePlateauRef.current;
       if (musiquePlateau) {
         if (document.hidden) musiquePlateau.pause();
@@ -8098,13 +8070,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     document.addEventListener('visibilitychange', surVisibilite);
     return () => document.removeEventListener('visibilitychange', surVisibilite);
-  }, [ecran, lectureHistoire, tourHistoireId, plateauMusiqueId, sonActif]);
+  }, [ecran, sonActif]);
   const basculerSon = () => setSonActif((actif) => {
     const prochain = !actif;
     if (prochain) {
       if (ecran === 'partie') {
-        if (tourHistoireId && !RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) musiqueRef.current?.start();
-        if (RPG_PLATEAUX_MUSICAUX.has(plateauMusiqueId)) void musiquePlateauRef.current?.start();
+        void musiquePlateauRef.current?.start();
       } else {
         void musiqueThemeRef.current?.start();
       }
@@ -8675,7 +8646,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('keydown', surTouche);
     return () => window.removeEventListener('keydown', surTouche);
-  }, [ecran, tourHistoireId, plateauId]);
+  }, [ecran, plateauId]);
 
   // Raccourcis clavier PC en duel (façon MTG Arena / Runeterra) :
   // - 1 / 2 / 3 (ou Digit1..3 sur AZERTY) : choisir la couleur de mana en début de tour
@@ -8792,8 +8763,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // Le contexte audio naît dans le geste qui lance l'étage : les navigateurs
     // n'accordent le son qu'à un tel geste, l'effet ci-dessus ne sert qu'aux
     // reprises (retour au duel, préférence rendue).
-    musiqueRef.current?.setTour(etageHistoireParId(etageId)?.tour?.id ?? null);
-    musiqueRef.current?.start();
     sfxRef.current?.unlock();
   };
 

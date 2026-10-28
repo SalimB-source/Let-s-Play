@@ -155,7 +155,7 @@ Une relecture depuis le journal ne remplace pas le choix enregistré.
 | Révélations des vingt étages, collection, acquis figés | `src/games/rpgCollection.js` |
 | Ouverture des cartes d’un étage au Souk après victoire | `noterVictoireEtage` dans `src/games/useDecksSablier.js` |
 | Illustrations des cinq tours, portraits de Salem, Yamina, Fériel, Boualem et Tarek | `public/sablier-tours/`, `public/cards/` |
-| Musique d'ambiance selon la tour | `src/games/rpgAmbientMusic.js` |
+| Musique du duel, selon le plateau | `src/games/rpgPlateauMusic.js` |
 
 Important : **la progression Histoire n'est pas encore synchronisée avec le
 compte**. La table `rpg_sablier_progress` transporte actuellement les decks

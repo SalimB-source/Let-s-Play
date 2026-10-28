@@ -318,7 +318,7 @@ l'étage dit où la carte entre dans la ville, le Souk la vend.
 - `npm run check:rpg-story-3d-ui` : les cinq maquettes de la version courante
   coexistent avec la campagne ; rotation, chargement à vue, navigation au clavier,
   défilement mobile, perte de contexte et repli sans WebGL vérifiés.
-- `npm run check:rpg-ui`, `check:rpg-fullscreen`, `check:rpg-ambient-ui`,
+- `npm run check:rpg-ui`, `check:rpg-fullscreen`,
   `check:rpg-deck-ui`, `check:rpg-tutorial-ui` et `npm run build` réussis.
 
 **Point préexistant relevé :** `npm run check:rpg-mobile` échoue sur son assertion
