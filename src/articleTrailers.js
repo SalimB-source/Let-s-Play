@@ -34,6 +34,7 @@ export const TRAILER_KINDS = {
   extrait: 'EXTRAIT',
   coulisses: 'COULISSES',
   replay: 'REPLAY',
+  presentation: 'PRÉSENTATION',
 };
 
 /** Libellé d'une nature de vidéo (« BANDE-ANNONCE », « TEASER », « EXTRAIT »). */
@@ -51,6 +52,7 @@ const KIND_BADGES = {
   extrait: 'EXTRAIT OFFICIEL',
   coulisses: 'COULISSES OFFICIELLES',
   replay: 'REPLAY OFFICIEL',
+  presentation: 'PRÉSENTATION OFFICIELLE',
 };
 
 /** Pastille affichée sous le lecteur d'une vidéo. */
@@ -65,6 +67,7 @@ const KIND_HINTS = {
   extrait: 'Extrait officiel intégré à l’article',
   coulisses: 'Coulisses officielles intégrées à l’article',
   replay: 'Replay officiel intégré à l’article',
+  presentation: 'Présentation officielle intégrée à l’article',
 };
 
 /** Lien public d'une vidéo YouTube (aucun embed codé en dur hors de lib/). */
@@ -73,6 +76,59 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // Cinéma et tech du 29.10.2026 : vidéos publiées par les sociétés concernées.
+  'cinema/jumanji-open-world-nouvelle-bande-annonce': {
+    label: 'JUMANJI: OPEN WORLD', meta: 'SONY PICTURES · JAKE KASDAN',
+    items: [{ id: 'nIw1O3zvOfE', kind: 'trailer', title: 'JUMANJI: OPEN WORLD - New Trailer (4K)', channel: 'Sony Pictures Entertainment', verified: '29.10.2026', note: 'Nouvelle bande-annonce officielle publiée le 28 octobre 2026 par le distributeur Sony Pictures.' }],
+    credit: 'Vidéo officielle : Sony Pictures Entertainment, sur YouTube.',
+  },
+  'cinema/dune-part-three-bande-annonce-finale': {
+    label: 'DUNE: PART THREE', meta: 'WARNER BROS. · DENIS VILLENEUVE',
+    items: [{ id: 'Ycfws22aNhA', kind: 'trailer', title: 'Dune: Part Three | Final Trailer', channel: 'Warner Bros. Pictures International', verified: '29.10.2026', note: 'Bande-annonce finale officielle publiée le 27 octobre 2026 par la chaîne internationale du distributeur.' }],
+    credit: 'Vidéo officielle : Warner Bros. Pictures International, sur YouTube.',
+  },
+  'tech/genie-4-mondes-interactifs-audio': {
+    label: 'GENIE 4', meta: 'GOOGLE DEEPMIND · RECHERCHE',
+    items: [{ id: 'sFfPkUJd_Jk', kind: 'presentation', title: 'Genie 4: A new generation of world simulation', channel: 'Google DeepMind', verified: '29.10.2026', note: 'Présentation officielle publiée le 27 octobre 2026 : les séquences montrent des interactions enregistrées par Google DeepMind.' }],
+    credit: 'Vidéo officielle : Google DeepMind, sur YouTube.',
+  },
+  'tech/apple-macbook-pro-14-m6': {
+    label: 'MACBOOK PRO · M6', meta: 'APPLE · 14 POUCES',
+    items: [{ id: 'vT-o5hh1cVc', kind: 'presentation', title: 'The new MacBook Pro with M6 delivers blazing-fast performance and up to 24 hours of battery life.', channel: 'Apple', verified: '29.10.2026', note: 'Présentation promotionnelle publiée par Apple le 27 octobre 2026. Les performances et l’autonomie sont des chiffres du fabricant.' }],
+    credit: 'Vidéo officielle : Apple, sur YouTube.',
+  },
+
+  // Édition gaming du 29.10.2026 : chaînes officielles vérifiées sur leurs pages YouTube.
+  'phantom-blade-zero-sortie-ps5-pc': {
+    label: 'PHANTOM BLADE ZERO', meta: 'S-GAME · PLAYSTATION',
+    items: [
+      { id: 'ZX8mHo0aSbc', kind: 'teaser', title: 'Phantom Blade Zero - Special Teaser | PS5 Games', channel: 'PlayStation', verified: '29.10.2026', note: 'Teaser officiel publié le 2 juin 2026, avant la sortie du jeu : il présente Phantom Blade Zero et annonce sa date de lancement.' },
+      { id: 'cr5y9l0Wje8', kind: 'trailer', title: 'Phantom Blade Zero - Launch Trailer | PS5 Games', channel: 'PlayStation', verified: '29.10.2026', note: 'Bande-annonce officielle de lancement publiée le 23 octobre 2026. YouTube la soumet à une vérification d’âge, qui peut empêcher sa lecture intégrée ; le lien permet de l’ouvrir sur YouTube.' },
+    ],
+    credit: 'Vidéos officielles : PlayStation, sur YouTube. Phantom Blade Zero est développé par S-GAME.',
+  },
+  'no-mans-sky-forsaken-mise-a-jour': {
+    label: 'NO MAN’S SKY: FORSAKEN', meta: 'HELLO GAMES · PLAYSTATION',
+    items: [
+      { id: 'CRxQ9HK6H1o', kind: 'trailer', title: "No Man's Sky: Forsaken Trailer | PS5 & PS4 Games", channel: 'PlayStation', verified: '29.10.2026', note: 'Bande-annonce officielle de la mise à jour Forsaken publiée par PlayStation le 28 octobre 2026.' },
+    ],
+    credit: 'Vidéo officielle : PlayStation, sur YouTube. No Man’s Sky est développé par Hello Games.',
+  },
+  'playstation-plus-jeux-novembre-2026': {
+    label: 'PLAYSTATION PLUS · NOVEMBRE 2026', meta: 'PLAYSTATION ACCESS',
+    items: [
+      { id: 'CtcxPqTAftE', kind: 'presentation', title: 'PlayStation Plus Monthly Games - November 2026', channel: 'PlayStation Access', verified: '29.10.2026', note: 'Présentation en anglais des trois jeux mensuels de novembre, publiée le 28 octobre 2026 par la chaîne officielle PlayStation UK.' },
+    ],
+    credit: 'Vidéo officielle : PlayStation Access, chaîne YouTube de PlayStation UK.',
+  },
+  'pokemon-unite-fermeture-mars-2027': {
+    label: 'POKÉMON UNITE', meta: 'THE POKÉMON COMPANY',
+    items: [
+      { id: 'j86TTIMWBYY', kind: 'trailer', title: 'Pokémon UNITE Now Available on Nintendo Switch!', channel: 'Pokémon UNITE', verified: '29.10.2026', note: 'Bande-annonce officielle de lancement sur Nintendo Switch publiée le 21 juillet 2021. Elle illustre le jeu et ne constitue pas une annonce de sa fermeture.' },
+    ],
+    credit: 'Vidéo officielle : chaîne Pokémon UNITE, sur YouTube.',
+  },
+
   // ---- Édition du dimanche 18.10.2026 --------------------------------------
   // Titres et chaînes contrôlés sur les pages YouTube publiques le 18.10.2026.
   // Gaming : la présentation officielle d'Ocarina of Time sur Switch 2 est la

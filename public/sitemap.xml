@@ -4,6 +4,16 @@
   <url><loc>https://salimb-source.github.io/Let-s-Play/news</loc><priority>0.9</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/articles</loc><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech</loc><priority>0.9</priority></url>
+  <!-- Actualités cinéma et tech du 29.10.2026. -->
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/jumanji-open-world-nouvelle-bande-annonce</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/dune-part-three-bande-annonce-finale</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/genie-4-mondes-interactifs-audio</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/apple-macbook-pro-14-m6</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <!-- Actualités gaming du 29.10.2026. -->
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/phantom-blade-zero-sortie-ps5-pc</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/no-mans-sky-forsaken-mise-a-jour</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/playstation-plus-jeux-novembre-2026</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/pokemon-unite-fermeture-mars-2027</loc><lastmod>2026-10-29</lastmod><priority>0.8</priority></url>
   <!-- Édition du dimanche 18.10.2026 — deux actus gaming, cinéma & séries. -->
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/zelda-ocarina-of-time-switch-2-affichages-hud</loc><lastmod>2026-10-18</lastmod><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/peak-console-edition-crossplay-22-octobre</loc><lastmod>2026-10-18</lastmod><priority>0.8</priority></url>

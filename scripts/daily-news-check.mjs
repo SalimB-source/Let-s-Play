@@ -11,6 +11,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-18.js';
+import { dailyStories as cultureTechStories20261029, dailyNewsListing as cultureTechListing20261029, dailySeoEntries as cultureTechSeo20261029 } from '../src/news/daily/2026-10-29-cinema-tech.js';
+import { dailyStories as gamingStories20261029, dailyNewsListing as gamingListing20261029, dailySeoEntries as gamingSeo20261029, editionDate as gamingDate20261029 } from '../src/news/daily/2026-10-29-gaming.js';
 import { dailyStories as dailyStories20261011, dailyNewsListing as dailyNewsListing20261011, dailySeoEntries as dailySeoEntries20261011, editionDate as editionDate20261011, editionIsoDate as editionIsoDate20261011 } from '../src/news/daily/2026-10-11.js';
 import { dailyStories as dailyStories20261014, dailyNewsListing as dailyNewsListing20261014, dailySeoEntries as dailySeoEntries20261014, editionDate as editionDate20261014, editionIsoDate as editionIsoDate20261014 } from '../src/news/daily/2026-10-14.js';
 import { dailyStories as dailyStories20261015, dailyNewsListing as dailyNewsListing20261015, dailySeoEntries as dailySeoEntries20261015, editionDate as editionDate20261015, editionIsoDate as editionIsoDate20261015 } from '../src/news/daily/2026-10-15.js';
@@ -203,6 +205,7 @@ const pages = new Map(renderPages().map(({ route, html }) => [route, new JSDOM(h
 
 const hub = pages.get('/news').querySelector('#actus-du-jour');
 const cards = [...hub.querySelectorAll('.news-carousel-card')];
+const todayListing = [gamingListing20261029[0], cultureTechListing20261029.find((story) => story.to.startsWith('/news/cinema/')), cultureTechListing20261029.find((story) => story.to.startsWith('/news/tech/'))];
 assert.equal(cards.length, 3, 'les trois articles de l’édition ouvrent le hub Actus');
 assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'les trois actus du jour de la page Actus remplissent les 3 colonnes');
 const archiveLink = hub.querySelector('.news-headlines-head .news-headlines-all');
@@ -226,7 +229,7 @@ for (const card of archiveCards) {
   assert.equal(card.querySelector('img').getAttribute('loading'), 'lazy');
   assert.doesNotMatch(card.querySelector('img').getAttribute('src'), /\/Let-s-Play\/\/\/Let-s-Play\//, 'pas de double préfixe de miniature');
 }
-for (const [index, story] of dailyNewsListing.entries()) {
+for (const [index, story] of todayListing.entries()) {
   const archiveCard = archive.querySelector(`.news-carousel-card[href="${story.to}"]`);
   assert.ok(archiveCard);
   assert.equal(archiveCard.innerHTML, cards[index].innerHTML, `${story.to} : même carte que dans les actualités du jour`);
@@ -235,10 +238,10 @@ assert.ok(expectedRoutes.some((route) => route.startsWith('/news/cinema/')));
 assert.ok(expectedRoutes.some((route) => route.startsWith('/news/tech/')));
 assert.ok(autoSearchEntries.length > 0);
 assert.ok(archive.querySelector('.arrow-link[href="/news"]'), 'retour au hub');
-assert.ok(hub.querySelector('.section-label').textContent.includes(editionDate));
-assert.deepEqual(cards.map((card) => card.getAttribute('href')), dailyNewsListing.map((story) => story.to));
+assert.ok(hub.querySelector('.section-label').textContent.includes(gamingDate20261029));
+assert.deepEqual(cards.map((card) => card.getAttribute('href')), todayListing.map((story) => story.to));
 for (const [index, card] of cards.entries()) {
-  const story = dailyNewsListing[index];
+  const story = todayListing[index];
   assert.equal(card.querySelector('img').getAttribute('src'), imageUrl(story.image));
   assert.equal(card.querySelector('img').getAttribute('alt'), story.alt);
   assertTrailerFlag(card, story.to);
@@ -271,24 +274,33 @@ const ramayanaDoc = pages.get('/news/cinema/ramayana-rise-of-a-legend-nouvelle-b
 assert.equal(getArticleTrailerEntry('cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce').items.length, 3, 'Ramayana : nouvelle bande-annonce et deux vidéos de contexte');
 assert.equal(ramayanaDoc.querySelectorAll('.article-gallery-item').length, 3, 'Ramayana : trois photogrammes de la nouvelle bande-annonce');
 
-// Chaque hub d'univers met en avant sa première actu de l'édition : les clés se
-// lisent par préfixe, l'édition du jour comptant deux actus gaming.
-for (const category of ['gaming', 'cinema']) {
-  const key = keyOf(category);
-  assert.ok(key, `${category} : une actu du jour dans cet univers`);
+// Les hubs cinéma et tech ouvrent sur leurs nouvelles actus du 29 octobre.
+for (const category of ['cinema', 'tech']) {
+  const story = cultureTechListing20261029.find((item) => item.to.startsWith(`/news/${category}/`));
   const doc = pages.get(`/news/${category}`);
   const featured = doc.querySelector('.news-featured-story');
-  assert.equal(featured.querySelector('.daily-news-copy').getAttribute('href'), `/news/${key}`);
-  assert.equal(featured.querySelector('img').getAttribute('src'), imageUrl(dailyStories[key].thumbnail));
-  assert.ok(featured.querySelector('.news-kicker').textContent.includes(editionDate));
-  assertTrailerFlag(featured, key);
-  assert.ok(doc.querySelector('.section-label').textContent.includes(editionDate));
+  assert.equal(featured.querySelector('.daily-news-copy').getAttribute('href'), story.to);
+  assert.equal(featured.querySelector('img').getAttribute('src'), imageUrl(story.image));
+  assert.ok(featured.querySelector('.news-kicker').textContent.includes(gamingDate20261029));
+  assertTrailerFlag(featured, story.to);
+  assert.ok(doc.querySelector('.section-label').textContent.includes(gamingDate20261029));
 }
-// Sans actu tech le 18.10, le hub tech ouvre sur la dernière édition disponible.
-const techHub = pages.get('/news/tech');
-const techFeatured = techHub.querySelector('.news-featured-story');
-assert.equal(techFeatured.querySelector('.daily-news-copy').getAttribute('href'), '/news/tech/google-ai-overviews-liens-mis-en-avant');
-assert.ok(techFeatured.querySelector('.news-kicker').textContent.includes('17.10.2026'));
+for (const [key, story] of Object.entries(cultureTechStories20261029)) {
+  const route = `/news/${key}`;
+  const doc = pages.get(route);
+  assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`);
+  assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), story.thumbnail);
+  assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`));
+  const entry = getArticleTrailerEntry(key);
+  assert.ok(entry?.items?.length);
+  assert.equal(doc.querySelector('.article-trailer iframe').getAttribute('src'), youTubeEmbedUrl(entry.items[0].id));
+  assert.ok(doc.querySelector(`a[href="${trailerWatchUrl(entry.items[0].id)}"]`));
+  assert.ok(archive.querySelector(`.news-carousel-card[href="${route}"]`));
+  assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === route));
+  assert.equal(cultureTechSeo20261029[route].published, '2026-10-29');
+  assert.ok(read('public/sitemap.xml').includes(`${route}</loc>`));
+  assert.equal(story.date, gamingDate20261029);
+}
 
 // La deuxième actu gaming de l'édition reste publiée dans la grille du hub,
 // juste après la une.
@@ -299,17 +311,44 @@ for (const key of keys.filter((candidate) => universeOf(candidate) === 'gaming')
   assert.equal(card.querySelector('h2').textContent, `${dailyStories[key].title} ${dailyStories[key].accent}`);
   assertTrailerFlag(card, `/news/${key}`);
 }
+// La sélection gaming du 29 est accessible dans le hub, l'accueil et l'archive.
+const newKeys = Object.keys(gamingStories20261029);
+assert.equal(newKeys.length, 4);
+assert.equal(gamingHub.querySelector('.news-featured-story .daily-news-copy').getAttribute('href'), `/news/${newKeys[0]}`);
+for (const [key, story] of Object.entries(gamingStories20261029)) {
+  const route = `/news/${key}`;
+  const doc = pages.get(route);
+  assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`);
+  assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`));
+  assert.ok(archive.querySelector(`.news-carousel-card[href="${route}"]`));
+  assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === route));
+  assert.equal(gamingSeo20261029[route].published, '2026-10-29');
+  assert.ok(read('public/sitemap.xml').includes(`${route}</loc>`));
+  assert.match(story.thumbnail, /^https:\/\//, `${key} : visuel officiel distant`);
+  assert.equal(story.image, story.thumbnail);
+  assert.ok(story.imageCredit.includes('OFFICIEL'));
+  if (story.fallbackImage && !/^https?:\/\//.test(story.fallbackImage)) assert.ok(fs.existsSync(path.join(root, 'public', story.fallbackImage)));
+  assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), story.thumbnail);
+  const entry = getArticleTrailerEntry(key);
+  assert.ok(entry?.items?.length, `${key} : vidéo officielle déclarée`);
+  const player = doc.querySelector('.article-trailer iframe');
+  assert.ok(player, `${key} : lecteur vidéo intégré`);
+  assert.equal(player.getAttribute('src'), youTubeEmbedUrl(entry.items[0].id));
+  assert.ok(doc.querySelector(`a[href="${trailerWatchUrl(entry.items[0].id)}"]`));
+  assertTrailerFlag(archive.querySelector(`.news-carousel-card[href="${route}"]`), route);
+  assert.equal(story.date, gamingDate20261029);
+}
 const home = pages.get('/').querySelector('.home-news-card');
-assert.equal(home.querySelector('.daily-news-copy').getAttribute('href'), `/news/${keys[0]}`);
-assert.equal(home.querySelector('img').getAttribute('src'), `/Let-s-Play/${dailyStories[keys[0]].thumbnail}`);
-assert.ok(home.querySelector('.news-kicker').textContent.includes(editionDate));
+assert.equal(home.querySelector('.daily-news-copy').getAttribute('href'), `/news/${newKeys[0]}`);
+assert.equal(home.querySelector('img').getAttribute('src'), gamingStories20261029[newKeys[0]].thumbnail);
+assert.ok(home.querySelector('.news-kicker').textContent.includes(gamingDate20261029));
 
 // EN et AR conservent aussi la date de publication et les trois cartes.
 for (const lang of ['en', 'ar']) {
   const html = renderPages(lang).find((page) => page.route === '/news').html;
   const doc = new JSDOM(html).window.document;
   assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 3);
-  assert.ok(doc.querySelector('#actus-du-jour .section-label').textContent.includes(editionDate));
+  assert.ok(doc.querySelector('#actus-du-jour .section-label').textContent.includes(gamingDate20261029));
   const button = doc.querySelector('#actus-du-jour .news-headlines-all');
   assert.equal(button.getAttribute('href'), '/news/articles');
   assert.ok(button.textContent.includes(lang === 'en' ? 'View all articles' : 'عرض كل المقالات'));
@@ -362,4 +401,4 @@ assert.equal(document.querySelectorAll('iframe').length, 0);
 assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
 await act(async () => anthropicRoot.unmount());
 
-console.log('Éditions des 16, 17 et 18.10.2026 : OK — 11 articles, hubs, accueil, archives, recherche, SEO et lecteurs.');
+console.log('Éditions gaming du 29 et archives des 16–18.10.2026 : OK — articles, hubs, accueil, archives, recherche, SEO et lecteurs.');

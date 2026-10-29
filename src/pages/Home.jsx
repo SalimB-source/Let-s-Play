@@ -8,7 +8,7 @@ import VideoThumb from '../components/VideoThumb';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-29-gaming';
 import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
@@ -55,6 +55,8 @@ const djezzyEpisode = {
   title: '2026 World Cup changed mobile football games — 7ouma Arena by Djezzy',
   tone: 'djezzy',
 };
+
+const newsImageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${image}`;
 
 // La une de l'accueil suit l'actu gaming de l'édition du jour.
 const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
@@ -248,14 +250,14 @@ export default function Home() {
         </div>
         <article className="daily-news-card home-news-card">
           <div className="daily-news-image home-news-video">
-            <ScrollAutoplayVideo
+            {featuredNews.video ? <ScrollAutoplayVideo
               id={featuredNews.video}
               title={featuredNews.videoTitle}
-              poster={`${base}${featuredNews.poster}`}
+              poster={newsImageUrl(featuredNews.poster)}
               showControls={false}
               coverYoutubeOverlayOnPause
               resumeLabel={newsHead.resumeVideo}
-            />
+            /> : <img src={newsImageUrl(featuredNews.poster)} alt={featuredNews.alt} onError={(event) => { if (featuredNews.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = newsImageUrl(featuredNews.fallbackImage); } }} />}
             <span className="news-feature-badge">{featuredNews.badge}</span>
           </div>
           <Link
