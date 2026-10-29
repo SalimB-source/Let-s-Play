@@ -574,30 +574,21 @@ assert.match(battlePage, /⚔<\/span> Jouer\s*<\/button>/,
 assert.match(battlePage, /cardFrameClass\(carte\)/,
   'les cartes en main, sur table et les aperçus portent leur élément');
 const frameCss = battleCss.slice(battleCss.lastIndexOf('/* Le cadre suit la COULEUR'));
-// L'épaisseur du cadre suit la largeur de la carte : trois gabarits en `vw`,
-// bornés, posés sur `.rpg-battle`, et chaque format prend le sien — la
-// couleur et la matière restant communes.
-const gabarits = battleCss.match(/\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-large:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);\s*--rpg-card-border-small:\s*clamp\(([\d.]+)px, ([\d.]+)vw, ([\d.]+)px\);/);
-assert.ok(gabarits, 'les trois gabarits de cadre (normal, grand, petit) sont déclarés en `clamp(px, vw, px)` sur `.rpg-battle`');
-const [normalMin, normalVw, normalMax, grandMin, grandVw, grandMax, petitMin, petitVw, petitMax] = gabarits.slice(1).map(Number);
-assert.ok(petitMax <= normalMin && normalMax <= grandMin + 1 && petitVw < normalVw && normalVw < grandVw,
-  `les gabarits s'emboîtent : petit (${petitMin}–${petitMax}px) < normal (${normalMin}–${normalMax}px) < grand (${grandMin}–${grandMax}px)`);
-// La mesure commune est la plaque des armes : 1,6 fois l'ancien gabarit, soit
-// ≈ 7 % de la largeur — une carte en main fait clamp(104px, 9.6vw, 136px), la
-// face de l'aperçu 232 px, un terrain clamp(74px, 6.6vw, 96px). Un anneau
-// franc, qui ne mange pas l'illustration pour autant (jamais plus de 9 %).
-assert.ok(normalMax / 136 >= 0.06 && normalMax / 136 <= 0.09 && normalMin / 104 >= 0.06,
-  `le gabarit normal fait 6 à 9 % d'une carte en main (reçu : ${(normalMax / 136 * 100).toFixed(1)} % au plus large)`);
-assert.ok(grandMax / 232 >= 0.045 && grandMax / 232 <= 0.07,
-  `le grand gabarit fait 4,5 à 7 % de la face de l'aperçu (reçu : ${(grandMax / 232 * 100).toFixed(1)} %)`);
-assert.ok(petitMax / 96 <= 0.09 && petitMin / 74 >= 0.06,
-  `le petit gabarit fait 6 à 9 % d'un terrain (reçu : ${(petitMin / 74 * 100).toFixed(1)}–${(petitMax / 96 * 100).toFixed(1)} %)`);
-// Les valeurs exactes : chaque gabarit vaut 1,6 fois celui qu'avaient les
-// autres cartes avant que la plaque des armes ne devienne la mesure commune.
-assert.match(battleCss, /\.rpg-battle\s*\{\s*--rpg-card-border:\s*clamp\(7\.2px, 0\.768vw, 9\.6px\);\s*--rpg-card-border-large:\s*clamp\(9\.6px, 1\.088vw, 12\.8px\);\s*--rpg-card-border-small:\s*clamp\(6\.4px, 0\.544vw, 6\.8px\);\s*--rpg-card-border-strong:\s*clamp\(8px, 0\.928vw, 10\.4px\);/,
-  'tous les gabarits (normal, grand, petit, renforcé) valent la plaque des armes : 1,6 fois leur ancienne épaisseur');
-assert.match(mobileCss, /--rpg-card-border:\s*clamp\(4px, 1\.76vw, 8px\);\s*--rpg-card-border-strong:\s*clamp\(4\.8px, 1\.92vw, 8\.8px\);/s,
-  'au doigt aussi, le gabarit normal vaut la plaque des armes (1,6 fois l’ancien bord tactile)');
+// Plus aucun cadre : les quatre gabarits d'épaisseur valent zéro, en clair,
+// sur la coque du duel comme sur la coque tactile. C'est ce qui couvre aussi
+// les faces sans classe de cadre (une carte en Furie, la vignette de l'atelier).
+for (const gabarit of ['', '-large', '-small', '-strong']) {
+  assert.match(battleCss, new RegExp(`--rpg-card-border${gabarit}:\\s*0px;`),
+    `le gabarit ${gabarit || 'normal'} vaut zéro : plus d'anneau sur les faces`);
+}
+assert.doesNotMatch(battleCss, /--rpg-card-border[\w-]*:\s*clamp\(/,
+  'aucun gabarit de cadre ne mesure plus une épaisseur');
+for (const gabarit of ['', '-strong']) {
+  assert.match(mobileCss, new RegExp(`--rpg-card-border${gabarit}:\\s*0px;`),
+    `au doigt aussi, le gabarit ${gabarit || 'normal'} vaut zéro`);
+}
+assert.doesNotMatch(mobileCss, /--rpg-card-border[\w-]*:\s*clamp\(/,
+  'la feuille tactile ne mesure plus aucun cadre');
 // Plus aucune épaisseur propre aux armes : la plaque est commune à toutes
 // les cartes, sur chaque face du duel, au doigt, dans l'atelier et le guide.
 for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l’atelier', atelierCss], ['le guide', guideCss]]) {
@@ -607,11 +598,11 @@ for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l
 }
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*(?!0\b)\d/s,
   'au doigt, les terrains n’ont aucun filet fixe : ni la couleur de l’élément (le petit gabarit hors disposition tactile), ni un cran de 1 ou 2 px');
-// Au doigt, AUCUNE face ne porte plus de cadre (voir « Sans cadre, au doigt »,
-// en fin de `rpg-mobile.css`) : bord à zéro sur toute la coque tactile, et la
-// même condition pour le menu, qui n'a pas la classe tactile. Le clavier, lui,
-// garde son filet de 3 px. Les piles perdent leur ombre décalée, colorée du
-// cadre de la carte.
+// AUCUNE face ne porte de cadre, nulle part (voir « PLUS AUCUN CADRE », en fin
+// de `rpg-battle.css`, et son jumeau tactile en fin de `rpg-mobile.css`) : bord
+// à zéro sur toute la coque tactile, et la même condition pour le menu, qui n'a
+// pas la classe tactile. Les piles perdent leur ombre décalée, colorée du cadre
+// de la carte.
 const sansCadre = mobileCss.slice(mobileCss.indexOf('/* ── Sans cadre, au doigt'));
 assert.ok(sansCadre.length > 1000, 'la feuille tactile porte le bloc « Sans cadre, au doigt »');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0 !important;/,
@@ -620,8 +611,8 @@ assert.match(sansCadre, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--fr
   'au doigt, toutes les faces de la coque tactile — aperçu, mulligan, piles, annonces, catalogue — perdent leur cadre');
 assert.match(sansCadre, /@media \(pointer: coarse\), \(max-width: 1100px\) \{[\s\S]*?\.rpg-battle \.rpg-atelier__carte-art\[class\*="rpg-card--frame-"\]\[class\],\s*\n\s*\.rpg-battle \.rpg-card-catalogue__art\[class\*="rpg-card--frame-"\]\[class\] \{\s*\n\s*border-width: 0 !important;/,
   'le menu (atelier, catalogue), qui n’a pas la classe tactile, perd son cadre à la même condition : doigt, stylet ou fenêtre étroite');
-assert.match(battleCss, /--rpg-card-filet:\s*3px;/,
-  'le clavier garde son filet de 3 px : le retrait ne vaut que pour l’écran tactile');
+assert.doesNotMatch(battleCss, /--rpg-card-filet:\s*[1-9]/,
+  'le filet de couleur a disparu : aucun écran ne mesure plus un anneau');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-card-stack,\s*\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-stacked \{\s*box-shadow: none;\s*\}/,
   'au doigt, une pile — cartes homonymes ou terrains — n’a plus d’ombre de pile : le compteur ×N la dit');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-partially-tapped \{\s*box-shadow: 0 0 0 1px rgba\(255, 217, 168, \.45\);\s*\}/,

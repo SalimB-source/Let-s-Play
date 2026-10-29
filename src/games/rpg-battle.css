@@ -26,37 +26,25 @@
   color-scheme: dark;
 }
 
-/* ── Cadres responsive : l'épaisseur suit la carte. Toutes les faces
-   partagent la même plaque commune : ≈ 7 % de la largeur de la carte
-   (contre ≈ 4,5 % pour le bord d'une carte Magic, 2,8 mm sur 63 mm) — un
-   anneau large où la couleur de l'élément et le motif gravé se lisent
-   franchement, sans manger l'illustration (le tout est en `border-box` :
-   la taille extérieure des cartes ne bouge pas). Comme les cartes sont
-   dimensionnées en `vw`, le cadre l'est aussi pour les suivre. Trois
-   gabarits, chacun calé sur la largeur des cartes qu'il habille — et, dans
-   chaque gabarit, une seule épaisseur, arme ou non :
-   - normal : cartes en main (104–136 px) et sur la table (108–146 px), atelier ;
-   - grand : face de l'aperçu rapide (190–232 px), catalogue et mulligan
-     (≈ 180–270 px) — l'aperçu est une carte agrandie, son cadre grandit avec ;
-   - petit : terrains (74–96 px), dessus des piles et vignette de magie jouée.
-   Au doigt, `rpg-mobile.css` pose son gabarit normal (`clamp(4px, 1.76vw,
-   8px)` : des cartes plus petites, au bord déjà proportionnellement plus
-   épais) ; les deux autres suivent le `vw` et tombent d'eux-mêmes à leur
-   plancher. */
+/* ── Cadres : plus d'épaisseur du tout, sur aucune face
+   Les quatre gabarits de cadre (`--rpg-card-border`, `-large`, `-small`,
+   `-strong`) valaient 7 à 13 px et servaient de plaque commune à toutes les
+   faces — main, table, terrains, aperçu, mulligan, catalogue, atelier. Ils
+   tombent à zéro avec la décision d'octobre 2026 : la peinture va d'un bord à
+   l'autre, comme sur une face de Furie. Les variables restent, à zéro, pour
+   que chaque déclaration `border: var(--rpg-card-border…)` des faces lise la
+   même réponse — y compris celles qui n'ont pas de classe de cadre (une carte
+   en Furie, par exemple), que la règle finale « PLUS AUCUN CADRE » ne vise pas.
+   Le tout est en `border-box` : la taille extérieure des cartes ne bouge pas,
+   c'est l'illustration qui gagne l'anneau. */
 .rpg-battle {
   /* Flou du plateau derrière une carte consultée (appui long, fiche, sort joué) :
      assez pour que le décor s'efface, assez peu pour qu'on le devine encore. */
   --rpg-plateau-flou: 3px;
-  /* L'épaisseur du filet de couleur : la seule épaisseur de cadre qui reste
-     (voir « LE FILET DE COULEUR » en fin de feuille). Trois pixels, partout, du
-     plateau à la vignette de l'atelier : c'est assez pour nommer l'élément
-     d'un coup d'œil, et le cran de plus détache la carte du bois sans manger
-     l'illustration. */
-  --rpg-card-filet: 3px;
-  --rpg-card-border: clamp(7.2px, 0.768vw, 9.6px);
-  --rpg-card-border-large: clamp(9.6px, 1.088vw, 12.8px);
-  --rpg-card-border-small: clamp(6.4px, 0.544vw, 6.8px);
-  --rpg-card-border-strong: clamp(8px, 0.928vw, 10.4px);
+  --rpg-card-border: 0px;
+  --rpg-card-border-large: 0px;
+  --rpg-card-border-small: 0px;
+  --rpg-card-border-strong: 0px;
   --rpg-card-radius: clamp(6px, 0.9vw, 12px);
   --rpg-card-radius-sm: clamp(5px, 0.7vw, 8px);
 }
@@ -741,8 +729,6 @@
   box-shadow: inset 0 0 22px rgba(0, 0, 0, .6);
   background: linear-gradient(115deg, transparent 42%, rgba(255, 248, 220, .14) 50%, transparent 58%);
 }
-
-.rpg-card--legendaire .rpg-card__art { border-color: var(--rpg-frame-color, #d8bc86); }
 
 .rpg-card__art img {
   width: 100%;
@@ -9316,9 +9302,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    terrains, dans l’aperçu au survol et pendant les animations ; seule sa matière change.
    La rareté, elle, n’est annoncée que par le badge de l’aperçu. Le sélecteur
    vise toute classe de cadre : une nouvelle combinaison n’a rien à ajouter ici.
-   L’épaisseur, elle, suit la largeur de la carte (voir les variables
-   `--rpg-card-border*` en tête de fichier) : un gabarit par format, la couleur
-   et la matière restant communes. */
+   L’épaisseur, elle, est nulle partout (voir les variables
+   `--rpg-card-border*`, à zéro, en tête de fichier) : plus aucun anneau où
+   peindre la couleur. */
 .rpg-card[class*="rpg-card--frame-"],
 .rpg-hand__card[class*="rpg-card--frame-"],
 .rpg-card-destruction-fx {
@@ -10942,34 +10928,37 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   LE FILET DE COULEUR — 3 px, la teinte de l'élément (voir `--rpg-card-filet`)
+   PLUS AUCUN CADRE — la peinture d'un bord à l'autre
    ──────────────────────────────────────────────────────────────────────────
-   Tout l'ornement des faces du Sablier tient dans l'anneau de bordure : le bord
-   transparent, le fond de la face peint sur la padding-box, puis le motif et la
-   matière de l'élément sur la border-box. L'essai « plus aucun cadre » avait
-   ramené cet anneau à zéro (`border-width: 0`), et les cartes avaient perdu
-   leur seule marque d'élément : un Braise et un Eau se ressemblaient.
+   Décision (octobre 2026, elle remplace le « filet de couleur ») : les faces
+   de cartes n'ont plus d'anneau du tout. Pas de filet de 3 px, pas d'anneau
+   orné de 7 à 10 px : la largeur est zéro, en clair, et toutes les faces la
+   prennent — du plateau à la vignette de l'atelier. La variable
+   `--rpg-card-filet` a disparu avec le filet qu'elle mesurait : une épaisseur
+   nulle n'a rien à configurer.
 
-   On garde donc **le filet, et rien que le filet** : 3 px de la couleur de la
-   carte, là où le cadre orné en posait sept à dix. Le motif (résille, zellige)
-   est coupé — dans 3 px, il ne serait plus qu'un bruit de pixels — mais la
-   matière reste : aplat pour une mono, diagonale franche pour une hybride,
-   dégradé pour les mythiques mono. C'est la couleur qui distingue, pas
-   l'ornement.
+   Pourquoi c'est tenable : l'anneau coloré n'était plus la seule marque de
+   l'élément. La pastille de mana le nomme (couleur + symbole), le fond de la
+   face le reprend, la ligne de couleur de la fiche l'écrit. L'anneau, lui,
+   rognait l'illustration de 3 px sur les quatre côtés — les faces de Furie,
+   peintes plein cadre, paraissaient plus grandes que les autres.
+
+   Ce que la règle laisse intact : le fond de la face (première couche de la
+   pile de fonds, qui garde son grain), les pastilles, les badges, les liserés
+   de sélection, les halos d'état (jouable, mythique, Lien) et les ombres.
+   Rien d'autre n'est touché : les états se lisent toujours sur `box-shadow`,
+   jamais sur la bordure.
 
    Les `!important` restent : cette règle doit l'emporter sur les dizaines de
    `border-width` dispersés plus haut (annonce, palettes, paliers `vw`, mobile).
-   Rien d'autre n'est touché — pastilles, badges, liserés de sélection, halos
-   d'état et ombres restent exactement où ils étaient.
-
-   Les deux jumeaux vivent en fin de `rpg-deck-atelier.css` (la vignette de
-   l'atelier) et de `rpg-card-guide.css` (l'exemple du guide) : mêmes 2 px, même
-   couleur, même silence du motif.
+   Les jumeaux vivent en fin de `rpg-deck-atelier.css` (la vignette de
+   l'atelier) et de `rpg-card-guide.css` (l'exemple du guide) : même largeur
+   nulle, même silence.
 
    Le panneau `.rpg-hover-card-preview` n'est **pas** dans la liste : il porte
    aussi la classe du cadre (pour l'inclinaison) mais ne déclare aucune
    bordure — la seule face de l'aperçu, c'est `__face`, qui, elle, est bien
-   peinte par la pile de fonds. Lui donner 2 px y dessinerait un liseré crème
+   concernée. Lui donner un bord y dessinerait un liseré crème
    (`currentColor`) autour de la fiche.
 
    L'animation, elle, n'est pas touchée : `animation: none !important` emportait
@@ -10985,16 +10974,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-pile__card--top[class*="rpg-card--frame-"],
 .rpg-mulligan__card[class*="rpg-card--frame-"],
 .rpg-card-catalogue__art[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 3px) !important;
+  /* Zéro : plus d'anneau. La pile de fonds de l'ancien cadre (fond de la face,
+     motif, matière) reste déclarée plus haut, mais sans bordure elle se
+     peindrait sur la face entière : on garde donc la première couche — le fond,
+     celui qui donne son grain à la face — aux dimensions de la carte, et l'on
+     met le motif et la matière à une taille nulle. */
+  border-width: 0 !important;
   border-style: solid !important;
-  /* Le fond et la matière de l'anneau reviennent (ils sont déclarés par les
-     règles « cadres ornés » plus haut) ; seul le motif se tait. */
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
+  background-size: 100% 100%, 0 0, 0 0 !important;
 }
 
-/* La teinte de matière d'une mythique ne teintait que son anneau : à 2 px, elle
-   reste utile dans le filet, donc plus d'aplat derrière l'illustration. */
+/* La teinte de matière d'une mythique ne teintait que son anneau : sans anneau,
+   plus d'aplat derrière l'illustration non plus. */
 .rpg-card--mythique[class*="rpg-card--frame-"] {
   background-color: transparent !important;
 }
@@ -11002,11 +10995,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* L'ombre décalée des piles était peinte avec `--rpg-frame-color` : c'est le
    cadre en double, un cran plus loin de la carte (mobile.css le dit déjà :
    « la couleur du cadre, au bord de la face : c'était le cadre, en double »).
-   Le filet de 3 px dit déjà l'élément : une seconde trace colorée un cran plus
-   loin ne serait qu'un doublon, on la laisse donc coupée partout, comme le fait
-   déjà la feuille tactile. Le
-   compteur ×N et la pastille d'engagement restent — ce sont eux qui disent
-   la pile. L'engagement partiel garde sa bague, qui dit un état.
+   Puisque plus aucune face ne porte d'anneau, la couleur de l'élément ne se
+   peint pas non plus un cran plus loin : la trace colorée part avec le cadre,
+   partout, comme le fait déjà la feuille tactile. Le compteur ×N et la
+   pastille d'engagement restent — ce sont eux qui disent la pile.
+   L'engagement partiel garde sa bague, qui dit un état.
    (Deux règles à retirer si l'on veut garder la profondeur des piles.) */
 .rpg-card-stack,
 .rpg-terrain.rpg-terrain-stack.is-stacked {

@@ -115,10 +115,11 @@
   /* La marge qui tient les terrains hors du cadre illustré — le cadre peint
      occupe ~4,2 % de la largeur de la table, quelle que soit la taille. */
   --terrain-inset: clamp(24px, 4.2vw, 160px);
-  /* La plaque des armes, devenue l'épaisseur de toutes les cartes (voir les
-     gabarits en tête de `rpg-battle.css`) : ×1,6 l'ancien bord tactile. */
-  --rpg-card-border: clamp(4px, 1.76vw, 8px);
-  --rpg-card-border-strong: clamp(4.8px, 1.92vw, 8.8px);
+  /* Plus d'épaisseur de cadre, au doigt comme au clavier (voir les gabarits,
+     à zéro, en tête de `rpg-battle.css`) : ces deux variables restent, à zéro,
+     pour les `border: var(…)` de la feuille tactile. */
+  --rpg-card-border: 0px;
+  --rpg-card-border-strong: 0px;
   --rpg-card-radius: clamp(7px, 1.1vw, 12px);
   --rpg-card-radius-sm: clamp(6px, 0.9vw, 10px);
   /* Les repères de la grille, nommés une fois — le rail du tour et la barre de
@@ -605,9 +606,9 @@
   --rpg-terrain-w: clamp(44px, calc(var(--duel-card) * .8), 72px);
   --rpg-terrain-h: calc(var(--rpg-terrain-w) * 1.25);
 }
-/* Les terrains gardent le petit gabarit de cadre de `rpg-battle.css`
-   (`--rpg-card-border-small`) : au doigt aussi, une carte posée a l'épaisseur
-   de toutes les autres — la plaque des armes —, la vignette seule rétrécit. */
+/* Les terrains restent sur le petit gabarit de `rpg-battle.css`
+   (`--rpg-card-border-small`, zéro) : pas d'anneau non plus au doigt, seule la
+   vignette rétrécit. */
 .rpg-battle--touch .rpg-terrain { flex: 0 0 var(--rpg-terrain-w); width: var(--rpg-terrain-w); height: var(--rpg-terrain-h); border-radius: var(--rpg-card-radius-sm, 8px); }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
 .rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
@@ -663,8 +664,8 @@
     0 0 18px 5px rgba(239, 49, 43, .76),
     0 0 30px 8px rgba(222, 38, 34, .45);
 }
-/* Pas de renfort propre aux armes au doigt : leur plaque est l'épaisseur
-   commune (`--rpg-card-border`), sur la table, en main et dans les piles. */
+/* Pas de renfort propre aux armes au doigt : plus d'épaisseur commune
+   (`--rpg-card-border`, zéro), ni sur la table, ni en main, ni dans les piles. */
 /* ── La colonne de droite : le tour, puis les commandes, au-dessus de la main ─
    Sur PC, l'indicateur de tour, les cinq phases, « Annuler » et « Fin du
    tour » forment une colonne posée juste au-dessus des deux commandes de
@@ -1044,9 +1045,10 @@
    fausse épaisseur ni compteur ; les doublons forment une pile. Les terrains
    épuisés restent inclinés et les piles mixtes indiquent combien sont engagés. */
 .rpg-terrain.rpg-terrain-stack { flex-shrink: 0; position: relative; display: block; }
-.rpg-terrain.rpg-terrain-stack.is-stacked {
-  box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5);
-}
+/* Plus de cran coloré derrière une pile de terrains : la couleur de l'élément
+   ne se peint plus au bord d'une face, elle ne se peint pas non plus un cran
+   plus loin. La fin de `rpg-battle.css` coupe ces ombres de pile ; ici, on ne
+   les déclare même plus. */
 .rpg-terrain.rpg-terrain-stack:hover:not(.is-tapped) { transform: none; }
 .rpg-terrain.rpg-terrain-stack.is-tapped { transform: rotate(12deg) translateY(1px); }
 .rpg-terrain-stack__count,
@@ -1077,7 +1079,7 @@
   font-size: 8px;
 }
 .rpg-terrain.rpg-terrain-stack.is-partially-tapped {
-  box-shadow: 2px 2px 0 #15121a, 4px 4px 0 var(--rpg-frame-color, #f1f3f5), 0 0 0 1px rgba(255, 217, 168, .45);
+  box-shadow: 0 0 0 1px rgba(255, 217, 168, .45);
 }
 .rpg-battle--touch .rpg-terrain.rpg-terrain-stack {
   /* Deux types côte à côte dans le rail le plus étroit (568 × 320 : 116 px de
@@ -1104,15 +1106,12 @@
   display: block;
   flex: 0 0 auto;
 }
-/* Les ombres décalées sont portées par le bloc de la pile, jamais par la carte
-   elle-même : `.rpg-card.is-pret`, `.is-ciblable`, `.is-blocking` et consorts
-   pilotent leur propre `box-shadow` (halo de jouabilité, bleu pour ce qui se
-   pose et teinté de la famille pour un sort, halo de cible) et ce fichier est
-   chargé après `rpg-battle.css` — il les écraserait. Le bloc reprend le rayon
-   de la carte et sa couleur de cadre (`cardFrameStyle` posé sur la pile). */
+/* Les états de la carte pilotent leur propre `box-shadow` (halo de jouabilité,
+   bleu pour ce qui se pose et teinté de la famille pour un sort, halo de
+   cible) : le bloc de la pile ne peint donc plus rien par-dessus. Il garde
+   seulement le rayon de la carte, pour que son contenu reste découpé rond. */
 .rpg-card-stack {
   border-radius: 12px;
-  box-shadow: 3px 3px 0 #15121a, 6px 6px 0 var(--rpg-frame-color, #f1f3f5);
 }
 .rpg-hand__pile-count,
 .rpg-card-stack__count,
@@ -1382,25 +1381,22 @@
   .rpg-battle--touch .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 }
 
-/* ── Sans cadre, au doigt : plus aucun anneau sur une face ───────────────────
-   Sur téléphone et dans l'APK, **aucune carte ne porte de cadre** : ni la main,
-   ni les cartes posées, ni les terrains, ni l'aperçu, ni le mulligan, ni le
-   catalogue ou les annonces. La face est son illustration, jusqu'au bord. Le
-   clavier, lui, garde le filet de 3 px de la couleur de l'élément
-   (`--rpg-card-filet`, `rpg-battle.css`) : la retouche ne vaut que pour l'écran
-   tactile.
+/* ── Sans cadre, au doigt : la règle du plateau, resserrée ici ───────────────
+   Les faces n'ont plus d'anneau nulle part (voir « PLUS AUCUN CADRE » en fin de
+   `rpg-battle.css`) : ce bloc ne fait donc plus qu'appliquer, au doigt, la même
+   largeur nulle aux trois surfaces du duel — main, table, terrains — avec la
+   spécificité qui gagne sur les paliers `vw` de la feuille principale.
 
    Pourquoi le retrait plutôt qu'un filet amaigri : sur une carte en main de
    62 px (844 × 390, cinq cartes), 3 px de bordure pèsent déjà un vingtième de
    la face, et la couleur de l'élément est de toute façon annoncée par la
    pastille, le coût et la ligne de type. Sur un écran qu'on tient à bout de
-   bras, la peinture compte plus que l'anneau.
+   bras — comme sur un écran de bureau —, la peinture compte plus que l'anneau.
 
-   `!important` : la règle du filet, en fin de `rpg-battle.css`, est elle-même
+   `!important` : la règle de fin de `rpg-battle.css` est elle-même
    `!important` et vise les mêmes classes `rpg-card--frame-*`. Celle-ci la
    dépasse par la spécificité — deux classes et deux attributs, contre une
-   classe et un attribut —, et c'est la seule façon propre de gagner sans
-   toucher au duel à la souris.
+   classe et un attribut.
 
    Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
    `border-box`, chaque face garde sa largeur, son 4:5 et sa mesure
