@@ -93,7 +93,7 @@ import {
 } from './rpgAudio.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
-import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix } from './rpgArrivalVoices.js';
+import { rpgACarteUneVoix, rpgArrivalVoiceUrl, rpgArriveesSansVoix, rpgRetoursTenaciteEntreEtats } from './rpgArrivalVoices.js';
 import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { sonArriveeALaDesignation, sonArriveeAuPose } from './rpgArriveeAudio.js';
 import { sonSortAuLancement } from './rpgSortAudio.js';
@@ -6496,6 +6496,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if ((entrant.joueur?.pv ?? 0) < (avant.joueur?.pv ?? 0)) declencherImpactEcran('received');
     if ((entrant.sorcier?.pv ?? 0) < (avant.sorcier?.pv ?? 0)) declencherImpactEcran('dealt');
 
+    const retoursTenacite = rpgRetoursTenaciteEntreEtats(avant, entrant);
+    jouerVoixArrivees(retoursTenacite.filter((entree) => entree.cote === 'joueur'));
     const idsAvantAdverse = new Set((avant.sorcier?.creatures ?? []).map((e) => e.id));
     const nouvellesCreaturesAdverses = (entrant.sorcier?.creatures ?? []).filter((e) => !idsAvantAdverse.has(e.id));
     // Une arrivée adverse qui désigne encore sa cible ne sonne pas à la pose :
@@ -6532,7 +6534,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // l'arrivée d'une créature adverse s'y constate par différence de champ.
       // La voix propre à la carte tient l'accueil ; le quai, le cri pirate et
       // la réplique naine ne restent que pour les créatures sans voix.
-      jouerVoixArrivees(nouvellesCreaturesAdverses.map((entite) => ({ carteId: entite.carteId })));
+      jouerVoixArrivees(nouvellesCreaturesAdverses.map((entite) => (
+        retoursTenacite.find((entree) => entree.entityId === entite.id) ?? { carteId: entite.carteId }
+      )));
       for (const entite of nouvellesCreaturesAdverses) {
         if (rpgACarteUneVoix(entite.carteId)) continue;
         const carteNouvelle = cardById(entite.carteId);
@@ -7093,7 +7097,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const jouerVoixArrivees = (entrees) => {
     const cartes = (entrees ?? []).filter((entree) => rpgACarteUneVoix(entree?.carteId));
     // Une voix déjà partie avec le geste ne se rejoue pas à l'atterrissage.
-    const restantes = cartes.filter((entree) => !voixAvanceeConsommee(entree.carteId));
+    const restantes = cartes.filter((entree) => entree.origine === 'tenacite' || !voixAvanceeConsommee(entree.carteId));
     restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
@@ -8373,6 +8377,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           if (prochain.phase === 'blocage' && prochain.combatDeclare?.cote === 'sorcier') {
             prochain.fenetreReponse = true;
           }
+          jouerVoixArrivees(rpgRetoursTenaciteEntreEtats(duelRef.current, prochain));
           duelRef.current = prochain;
           if (reponse.seq !== undefined) pvpSeqAppliqueRef.current = reponse.seq;
         }
