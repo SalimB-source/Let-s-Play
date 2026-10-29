@@ -1414,9 +1414,9 @@
   flex: 1 1 0;
 }
 
-/* ═══ FILET DE 2 PX DES ILLUSTRATIONS (INVARIANT `rpg-cadre-filet.test.js`) ═══ */
+/* ═══ FILET DE 3 PX DES ILLUSTRATIONS (INVARIANT `rpg-cadre-filet.test.js`) ═══ */
 .rpg-atelier__carte-art[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 2px) !important;
+  border-width: var(--rpg-card-filet, 3px) !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
   animation: none !important;

@@ -20,6 +20,11 @@ import {
   cardReceivesResonance,
   resonanceGroupLabel,
   duelCardById,
+  carteLiee,
+  effetLie,
+  lienDeCarte,
+  lienSatisfait,
+  signeStat,
   jetonById,
   magieById,
   terrainById,
@@ -75,10 +80,14 @@ export const RPG_MAIN_DEPART = 5;
  * annulé, pas diminué. Les capacités ne sont jamais esquivées. Le tirage vient
  * du hasard du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
-export const RPG_ESQUIVE_CHANCE = 0.3;
+// L'Esquive obéit au même barème que le coup critique : 25 % par source, et
+// les sources s'additionnent (deux Esquives valent 50 %, voir `recalculerEsquive`).
+export const RPG_ESQUIVE_CHANCE = 0.25;
 export const RPG_COULEURS = RPG_ELEMENTS;
-export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.3;
-export const RPG_COUP_CRITIQUE_CHANCE = 0.3;
+// L'Attaque ciblée rate sa proie 25 % du temps — le même barème que le coup
+// critique et l'Esquive. Contre le sorcier, elle touche toujours (100 %).
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
+export const RPG_COUP_CRITIQUE_CHANCE = 0.25;
 export const RPG_COUP_CRITIQUE_FOIS = 4;
 
 /**
@@ -1399,6 +1408,85 @@ function appliquerMaledictions(duel) {
 }
 
 /**
+ * Le Lien d'une arme : tant que l'ancre nommée par l'arme tient une place sur
+ * la rangée du **même camp**, le porteur porte le bonus renforcé ; l'ancre
+ * s'en va (morte, renvoyée, exilée), le bonus retombe à l'imprimé. Aucune
+ * arme n'est jamais perdue : elle est seulement moins belle sans son mythe.
+ *
+ * Le calcul couvre les **deux** familles d'armes, parce qu'elles ne se posent
+ * pas au même endroit : celle du prototype (`entite.arme`, une seule) et
+ * l'arme-sort des magies (`entite.armes`, une liste — le Sabre maudit, Braise
+ * et sable). Chacune a sa fiche : `bonus` pour la première, `effet.atk/def`
+ * pour la seconde.
+ *
+ * Comme les Auras, chaque entité ne retient que l'écart qu'elle a déjà reçu,
+ * arme par arme (`lienArmesBonus`) — l'imprimé reste posé une fois pour toutes
+ * par l'attachement, et ce module ne déplace que le supplément. Un écart
+ * négatif ne descend jamais sous 1 PV : perdre le Lien ne tue personne.
+ */
+function appliquerLiensArmes(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const champ = duel[cote].creatures;
+    for (const entite of champ) {
+      const deja = entite.lienArmesBonus ?? {};
+      // Toutes les armes attachées, prototype et sorts mêlés : le registre ne
+      // retient que celles qui portent un Lien.
+      const portees = [];
+      if (entite.arme?.carteId) portees.push(armeById(entite.arme.carteId));
+      for (const id of entite.armes ?? []) portees.push(magieById(id));
+
+      const suivant = {};
+      let dAtk = 0;
+      let dDef = 0;
+      let journal = null;
+      for (const arme of portees) {
+        const lien = arme ? lienDeCarte(arme) : null;
+        if (!arme || !lien) continue;
+        const base = arme.kind === 'arme'
+          ? (arme.bonus ?? { atk: 0, def: 0 })
+          : { atk: arme.effet?.atk ?? 0, def: arme.effet?.def ?? 0 };
+        // Une arme du prototype renforce par `lien.bonus` ; une arme-sort
+        // (Braise et sable, Sabre maudit), qui se joue comme une magie, porte
+        // son renfort dans `lien.effet` — les deux disent la même chose.
+        const renfort = lien.bonus ?? lien.effet;
+        if (!renfort || (renfort.atk === undefined && renfort.def === undefined)) continue;
+        const actif = lienSatisfait(arme, champ, entite.carteId);
+        const voulu = actif
+          ? { atk: (renfort.atk ?? base.atk ?? 0) - (base.atk ?? 0), def: (renfort.def ?? base.def ?? 0) - (base.def ?? 0) }
+          : { atk: 0, def: 0 };
+        suivant[arme.id] = voulu;
+        const avant = deja[arme.id] ?? { atk: 0, def: 0 };
+        dAtk += (voulu.atk ?? 0) - (avant.atk ?? 0);
+        dDef += (voulu.def ?? 0) - (avant.def ?? 0);
+        if (actif !== (avant.atk !== 0 || avant.def !== 0)) {
+          journal = { arme, actif, base };
+        }
+      }
+      // Un Lien qui n'a plus d'arme (arme brisée, remplacée) rend ce qu'il
+      // avait prêté : le registre ne garde jamais un écart sans porteur.
+      for (const [id, avant] of Object.entries(deja)) {
+        if (suivant[id]) continue;
+        dAtk -= avant.atk ?? 0;
+        dDef -= avant.def ?? 0;
+      }
+      entite.lienArmesBonus = suivant;
+      if (!dAtk && !dDef) continue;
+      entite.atk = Math.max(0, entite.atk + dAtk);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + dDef);
+      entite.def = Math.max(1, entite.def + dDef);
+      entite.pv = Math.max(1, entite.pv + dDef);
+      if (!journal) continue;
+      const { arme, actif, base } = journal;
+      const renfort = arme.lien.bonus ?? arme.lien.effet;
+      const total = actif ? { atk: renfort.atk ?? base.atk, def: renfort.def ?? base.def } : base;
+      duel.log.push(actif
+        ? `Lien — ${arme.name} se réveille sur ${entite.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`
+        : `Lien — ${entite.name} perd la faveur de ${arme.name} (${signeStat(total.atk)}/${signeStat(total.def)}).`);
+    }
+  }
+}
+
+/**
  * Rafraîchit tous les effets de présence après un changement du champ de
  * bataille (arrivée, mort, renvoi, retour programmé) : l'aura Sable de Tarek
  * et l'égide d'Amani sur chaque camp, les auras « buff-autres » du Kenshi et
@@ -1416,6 +1504,9 @@ function rafraichirAuras(duel) {
   appliquerAuraAmani(duel, 'sorcier');
   appliquerAurasBuffAutres(duel);
   appliquerMaledictions(duel);
+  // Le Lien d'une arme : il se lève et retombe avec son ancre, sur le même
+  // rafraîchissement que les auras — une arrivée comme une mort le déplace.
+  appliquerLiensArmes(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
@@ -1531,6 +1622,7 @@ function creerEntiteCreature(carte) {
     auraAmaniBonus: 0,
     boualemContresortDisponible: carte.id === 'boualem',
     esquive: Boolean(carte.esquive),
+    esquiveChance: carte.esquive ? RPG_ESQUIVE_CHANCE : 0,
     // Contre-attaque (Tojiro, Eirik) : la créature rend chaque coup porté
     // CONTRE elle — Attaque ciblée, capacité qui la cible, sort qui la désigne —
     // même quand une Esquive a annulé les blessures.
@@ -1638,6 +1730,74 @@ function creerEntiteCreature(carte) {
 /** La fiche de l'arme portée par une entité, ou null. */
 function armeCarteDe(entite) {
   return entite?.arme ? armeById(entite.arme.carteId) : null;
+}
+
+/**
+ * LE COUP CRITIQUE CUMULABLE.
+ *
+ * Trois sources peuvent en donner un : la fiche imprimée d'une créature
+ * (Kagutsuchi, 25 % ×4) et chaque arme-sort qui en accorde un (Sabre maudit
+ * et Braise et sable, 25 % ×2). Elles s'**additionnent** — 25 % + 25 % = 50 %
+ * — et le multiplicateur retenu est le plus fort (×4).
+ *
+ * Avant ce calcul, une arme **écrasait** la valeur imprimée : équiper
+ * Kagutsuchi d'un Sabre maudit le faisait passer de ×4 à ×2. Le cumul répare
+ * la perte avant d'ajouter quoi que ce soit, et il se recalcule à chaque
+ * changement d'équipement (attachement, bris d'arme, retrait) : une arme
+ * détruite rend sa part de chance, pas celle de ses voisines.
+ */
+function recalculerCoupCritique(entite) {
+  const fiche = duelCardById(entite?.carteId)?.coupCritique ?? null;
+  let chance = 0;
+  let fois = 0;
+  const ajouter = (chanceSource, foisSource) => {
+    const valeur = Number(chanceSource) || 0;
+    if (valeur <= 0) return;
+    chance += valeur;
+    fois = Math.max(fois, Number(foisSource) || 2);
+  };
+  if (fiche) ajouter(fiche.chance ?? RPG_COUP_CRITIQUE_CHANCE, fiche.fois ?? RPG_COUP_CRITIQUE_FOIS);
+  for (const id of entite?.armes ?? []) {
+    const arme = magieById(id);
+    if (arme?.effet?.type === 'arme' && arme.effet.coupCritique) ajouter(arme.effet.coupCritique, 2);
+  }
+  // Aucune arme du prototype ne porte de critique aujourd'hui ; la règle reste
+  // la même si l'une d'elles en reçoit un (`donne.coupCritique`).
+  const prototype = armeCarteDe(entite);
+  if (prototype?.donne?.coupCritique) ajouter(prototype.donne.coupCritique, 2);
+  if (!chance) {
+    entite.coupCritique = null;
+    return;
+  }
+  entite.coupCritique = { chance: Math.min(1, chance), fois };
+}
+
+/**
+ * L'ESQUIVE SE CUMULE — chaque source ajoute ses 25 %.
+ *
+ * Une créature qui imprime Esquive ET porte une arme qui la donne (la
+ * Cuirasse de sel) esquive à 50 %, pas à 25 % : deux protections valent deux
+ * protections, comme deux coups critiques valent deux coups critiques. Le
+ * plafond reste 100 %.
+ *
+ * `entite.esquive` demeure le drapeau lu par l'IA et les aperçus ; c'est
+ * `entite.esquiveChance` que `tenterEsquive` jette réellement.
+ */
+function recalculerEsquive(entite) {
+  if (!entite) return;
+  let chance = 0;
+  const fiche = duelCardById(entite.carteId);
+  if (fiche?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  // Les armes-sorts attachées vivent dans `entite.armes` ; leur Lien peut
+  // prêter l'Esquive aussi (lire `donne` **après** fusion du Lien).
+  for (const id of entite.armes ?? []) {
+    const arme = magieById(id);
+    if (arme?.donne?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  }
+  const prototype = armeCarteDe(entite);
+  if (prototype?.donne?.esquive) chance += RPG_ESQUIVE_CHANCE;
+  entite.esquive = chance > 0;
+  entite.esquiveChance = Math.min(1, chance);
 }
 
 /**
@@ -1767,7 +1927,7 @@ function attacherArme(duel, cote, entite, carteArme) {
     entite.bouclier = 1;
     entite.bouclierEpuise = false;
   }
-  if (carteArme.donne?.esquive) entite.esquive = true;
+  if (carteArme.donne?.esquive) recalculerEsquive(entite);
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
@@ -1814,16 +1974,22 @@ function attacherArme(duel, cote, entite, carteArme) {
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
   const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
+  // Le supplément du Lien part avec l'arme : `appliquerLiensArmes` ne le
+  // retrouvera plus, puisque plus aucune arme n'est attachée. Le registre est
+  // armé par arme — on ne retire que la part de CELLE-CI, les armes-sorts
+  // restées en place gardent la leur.
+  const lienBonus = entite.lienArmesBonus?.[carteArme?.id] ?? { atk: 0, def: 0 };
+  if (entite.lienArmesBonus && carteArme) delete entite.lienArmesBonus[carteArme.id];
   entite.arme = null;
   if (!carteArme) return;
-  entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0));
-  entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0));
-  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0));
+  entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0) - (lienBonus.atk ?? 0));
+  entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
+  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
   entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
   if (bouclierRestant) {
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
   }
-  if (carteArme.donne?.esquive) entite.esquive = Boolean(duelCardById(entite.carteId)?.esquive);
+  if (carteArme.donne?.esquive) recalculerEsquive(entite);
   if (carteArme.donne?.envol) {
     // L'arme rendue ne retire pas l'Envol que la Furie prête encore.
     entite.envol = Boolean(duelCardById(entite.carteId)?.envol)
@@ -1845,6 +2011,9 @@ function retirerArme(duel, cote, entite) {
       ? { contre: impression.contre, toursRestants: impression.tours ?? Infinity }
       : null;
   }
+  // Une arme du prototype peut porter un critique (`donne.coupCritique`) : son
+  // départ le recalcule comme celui d'une arme-sort.
+  recalculerCoupCritique(entite);
   duel[cote].cimetiere.push(carteArme.id);
   duel.log.push(`${entite.name} se sépare de ${carteArme.name} : l’arme rejoint le cimetière.`);
 }
@@ -2150,7 +2319,8 @@ function bonusTraquePirates(attaquant, cible) {
 function tenterEsquive(duel, entite, sourceType) {
   if (!['attaque', 'magie'].includes(sourceType) || !entite?.esquive) return false;
   const rng = hasardParDuel.get(duel) ?? Math.random;
-  const reussie = rng() < RPG_ESQUIVE_CHANCE;
+  const chance = Number.isFinite(entite.esquiveChance) ? entite.esquiveChance : RPG_ESQUIVE_CHANCE;
+  const reussie = rng() < chance;
   if (reussie) {
     duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : 'l’attaque'}.`);
   }
@@ -2627,6 +2797,16 @@ function annulerBonusTemporaires(duel, tourFerme) {
           || Boolean(armeCarteDe(entite)?.donne?.coupRapide)
           || entite.coupRapideTemporaire > 0;
       }
+      // Le bouclier prêté par le Rempart repart avec le tour — s'il n'a pas
+      // été consommé. Celui d'une arme encore tenue reste : il ne vient pas
+      // du sort.
+      if (entry.bouclier) {
+        if (entite.bouclier > 0 && !entite.arme?.bouclier) {
+          entite.bouclier = 0;
+          entite.bouclierEpuise = false;
+        }
+        entite.bouclierDuSort = false;
+      }
       effaces.push(entite.name);
     }
     camp.bonusTemporaires = restants;
@@ -2753,13 +2933,27 @@ function synchroniserCaleComble(entite) {
  * sans que le Pilote puisse s'armer lui-même à sa propre arrivée. Renvoie
  * `null` quand la carte n'accoste pas.
  */
-function seuilAbordage(carte, camp, prochaineOfferte = Boolean(camp?.prochaineArriveeAbordage)) {
+function seuilAbordage(
+  carte,
+  camp,
+  prochaineOfferte = Boolean(camp?.prochaineArriveeAbordage),
+  // Le Lien du Chasseur : la lettre qu'il scelle ouvre un coût de plus. Le
+  // seuil passe au coût **plein** — la prochaine créature prend ce qu'elle
+  // coûte elle-même, là où toutes les autres lettres s'arrêtent à coût − 1.
+  //
+  // Ce drapeau est lu en **instantané**, comme `prochaineOfferte` : le sceau
+  // est consommé par la pose, avant que la prise ne soit tirée. Le relire
+  // sur le camp à ce moment-là donnerait toujours `false`, et la lettre du
+  // Chasseur retomberait au barème ordinaire.
+  seuilPlein = Boolean(camp?.prochaineArriveeAbordageSeuilPlein) && prochaineOfferte,
+) {
   if (Number.isFinite(carte?.abordage)) return carte.abordage;
   // Pas de contrôle de `kind` ici : les fiches des sets n'en portent pas
   // toutes (seules les magies et les armes l'impriment), et la fonction ne
   // sert que pour des créatures posées par `rpgJouerCreature`.
   if ((camp?.abordageDesArrivees || prochaineOfferte) && carte?.kind !== 'magie' && carte?.kind !== 'arme') {
-    return Math.max(0, (Number(carte.cost) || 0) - 1);
+    const cout = Math.max(0, Number(carte.cost) || 0);
+    return seuilPlein ? cout : Math.max(0, cout - 1);
   }
   return null;
 }
@@ -3172,7 +3366,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       porteur.pv += effet.def ?? 0;
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
-      if (effet.coupCritique) porteur.coupCritique = { chance: effet.coupCritique, fois: 2 };
+      // Le critique de l'arme s'ajoute à celui du porteur (25 % + 25 % = 50 %,
+      // multiplicateur le plus fort) au lieu de l'écraser.
+      if (effet.coupCritique) recalculerCoupCritique(porteur);
+      // Une arme-sort peut prêter l'Esquive (`donne.esquive`) : elle s'ajoute
+      // à celle du porteur, elle ne la remplace pas.
+      if (cardById(sourceCarteId)?.donne?.esquive) recalculerEsquive(porteur);
       duel.log.push(`${(cardById(sourceCarteId)?.name ?? 'Une arme')} s’attache à ${porteur.name} : ${effet.atk >= 0 ? '+' : ''}${effet.atk}/${effet.def},${effet.coupCritique ? ' Coup critique.' : ''}`);
       return;
     }
@@ -3516,6 +3715,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const bonusTribut = Math.max(0, Number(effet.tribut) || 0);
       const bonusOverkill = effet.overkill ? 1 : 0;
       const bonusCoupRapide = effet.coupRapide ? 1 : 0;
+      // `bouclier` (le Rempart de dunes sous les Ailes d'or) : le sort pose la
+      // parade anti-sort sur chaque créature touchée, comme le ferait une arme.
+      // Le bouclier est binaire dans ce jeu ; il ne s'empile pas.
+      const bonusBouclier = effet.bouclier ? 1 : 0;
       for (const entite of ciblesBuff) {
         const bonusAttaque = effet.atk ?? 0;
         const bonusDefense = effet.def ?? 0;
@@ -3532,7 +3735,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.coupRapide = true;
           if (temporaire) entite.coupRapideTemporaire = (entite.coupRapideTemporaire ?? 0) + bonusCoupRapide;
         }
-        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, tour: duel.tour });
+        if (bonusBouclier && !(entite.bouclier > 0)) {
+          entite.bouclier = 1;
+          entite.bouclierEpuise = false;
+          entite.bouclierDuSort = true;
+        }
+        if (temporaire) carnet.push({ entiteId: entite.id, atk: bonusAttaque, def: bonusDefense, tribut: bonusTribut, overkill: bonusOverkill, coupRapide: bonusCoupRapide, bouclier: bonusBouclier, tour: duel.tour });
         // Un malus qui ronge jusqu'à l'os tue sa victime (la Lame de verre) —
         // et la mort est attribuée à la couleur de la source, pour le journal.
         if (!(entite.pv > 0) && plancher <= 0) {
@@ -3702,7 +3910,12 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           : duel[adv].creatures.map((entite) => ({ entite, camp: adv })))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId || entite.id === cibleSecondaire?.id)
           .map((entite) => ({ entite, camp: campCible }));
-      const amountParCible = effet.choixDegats && cibleSecondaire ? 2 : (effet.amount ?? 0);
+      // Le mode « deux cibles » a son propre montant (`secondAmount`, 2 par
+      // défaut) : le Lien du Feux de kitsune le porte à 3, sans toucher au
+      // coup unique — les deux nombres du sort se règlent séparément.
+      const amountParCible = effet.choixDegats && cibleSecondaire
+        ? Math.max(0, Number(effet.secondAmount ?? 2) || 0)
+        : (effet.amount ?? 0);
       // Oni de la fournaise : `nombre: 2` inflige 3 dégâts à deux créatures
       // (ou à une seule s’il n’y en a qu’une). Le joueur désigne la première ;
       // la seconde est choisie automatiquement parmi les créatures adverses
@@ -4024,7 +4237,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // est consommé par cette pose et meurt de toute façon avec le tour
       // (`rpgFinDeTour`). La Lettre enchaîne sur une pioche (`pioche: 1`).
       duel[cote].prochaineArriveeAbordage = true;
-      duel.log.push('La prochaine créature jouée ce tour a Abordage.');
+      // Le sceau du Chasseur porte le seuil au coût plein ; une lettre
+      // ordinaire repose la règle imprimée (coût − 1) si elle est jouée après.
+      duel[cote].prochaineArriveeAbordageSeuilPlein = Boolean(effet.seuilPlein);
+      duel.log.push(`La prochaine créature jouée ce tour a Abordage${effet.seuilPlein ? ' au seuil de son coût plein' : ''}.`);
       for (let i = 0; i < (effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
       return;
     }
@@ -4060,11 +4276,20 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           atk += Number(carteArme.effet.atk) || 0;
           def += Number(carteArme.effet.def) || 0;
           coupRapide = coupRapide || Boolean(carteArme.effet.coupRapide);
+          // La part de Lien de cette arme-sort part avec elle : le registre
+          // du porteur ne garde pas un supplément sans arme qui le porte.
+          const lienPart = porteur.lienArmesBonus?.[id];
+          if (lienPart) {
+            atk += lienPart.atk ?? 0;
+            def += lienPart.def ?? 0;
+            delete porteur.lienArmesBonus[id];
+          }
         }
         porteur.armes = [];
-        porteur.coupCritique = duelCardById(porteur.carteId)?.coupCritique
-          ? { ...duelCardById(porteur.carteId).coupCritique }
-          : null;
+        // Toutes les arme-sorts viennent de tomber : le critique et l'Esquive
+        // reviennent à la seule fiche imprimée (ou disparaissent).
+        recalculerCoupCritique(porteur);
+        recalculerEsquive(porteur);
         porteur.atk = Math.max(0, porteur.atk - atk);
         porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
         porteur.def = Math.max(1, porteur.def - def);
@@ -4749,6 +4974,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
   const prochainAbordageOffert = Boolean(camp.prochaineArriveeAbordage);
+  const prochainAbordageSeuilPlein = Boolean(camp.prochaineArriveeAbordageSeuilPlein);
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
@@ -4852,7 +5078,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // seuil) — sinon la pose est refusée, comme pour l'exil. Sans désignation
   // (la page pose d'abord, l'IA ne désigne pas), la prize se choisit après
   // la pose : la table s'allume ou l'IA pioche seule.
-  const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert);
+  const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
   if (seuilAbordagePose !== null && cibleId && !arriveeCiblePortee(carte)) {
     const cibleVisee = duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId);
     if (!cibleVisee || !priseEnCaleLegale(cibleVisee, cardColors(carte), seuilAbordagePose)) {
@@ -4904,7 +5130,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   camp.main.splice(camp.main.indexOf(carteId), 1);
   // La pose est engagée : le sceau du Pilote est dépensé par cette créature
   // (les seuils de SA prise restent lus sur l'instantané de début de pose).
-  if (prochainAbordageOffert) camp.prochaineArriveeAbordage = false;
+  if (prochainAbordageOffert) {
+    camp.prochaineArriveeAbordage = false;
+    camp.prochaineArriveeAbordageSeuilPlein = false;
+  }
   const entite = creerEntiteCreature(carte);
   if (carte.kind === 'site') {
     entite.heures = {
@@ -4944,7 +5173,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
     // d'Abordage : les deux seront résolus l'un après l'autre.
     if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte, entite.id)) {
-      const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert);
+      const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
       duel.arriveeEnAttente = {
         cote,
         entiteId: entite.id,
@@ -4976,7 +5205,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // de marque étend aux arrivées sans imprimé
   // (`camp.abordageDesArrivees`). Seules les créatures **jouées depuis la
   // main** accostent : les jetons créés par effet ne prennent rien.
-  const seuilAbordageArrivee = seuilAbordage(carte, camp, prochainAbordageOffert);
+  const seuilAbordageArrivee = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
   if (seuilAbordageArrivee !== null && !duel.arriveeEnAttente) {
     const couleursAbordage = cardColors(carte);
     const ciblesPossibles = () => duel[autre(cote)].creatures
@@ -5277,7 +5506,14 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
       return { ok: true, entite: null };
     }
   }
-  attacherArme(duel, cote, cible, carte);
+  // Le Lien du Berger : l'arme couvre son porteur sans changer de chiffres.
+  // `lien.donne` se fusionne avec le `donne` imprimé, et c'est la fiche
+  // fusionnée que lit `attacherArme` (bouclier, esquive, Envol…).
+  const lienActif = lienSatisfait(carte, camp.creatures);
+  const donneLie = lienActif && carte.lien?.donne
+    ? { ...carte.donne, ...carte.lien.donne }
+    : carte.donne;
+  attacherArme(duel, cote, cible, { ...carte, donne: donneLie });
   const bonusSigne = (valeur) => {
     const nombre = Number(valeur) || 0;
     return nombre < 0 ? `−${Math.abs(nombre)}` : `+${nombre}`;
@@ -5293,6 +5529,10 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     appliquerAuraSable(duel, cote);
     majResonance(duel);
   }
+  // Le Lien de l'arme se pose tout de suite si son ancre est déjà en jeu (et
+  // reste à 0 sinon) : c'est le même calcul que celui du rafraîchissement des
+  // auras, appliqué ici pour que la carte posée affiche déjà ses bons chiffres.
+  appliquerLiensArmes(duel);
   rpgActionsEtat(duel);
   return { ok: true, entite: cible };
 }
@@ -5729,7 +5969,16 @@ function contrerAnnonce(duel, cote, carte, annonce = duel.annonce) {
     duel.annonce = null;
     duel.fenetreReponse = false;
   }
-  for (let i = 0; i < (carte.effet.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
+  // Le Lien d'un contresort se lit ici : la carte ne passe pas par la
+  // résolution ordinaire des magies (elle rend la main tout de suite), donc
+  // c'est `contrerAnnonce` qui applique son renfort — la Déflection du Serpent
+  // du monde pioche deux cartes au lieu d'une.
+  const lienActif = lienSatisfait(carte, camp.creatures);
+  const effetContre = effetLie(carte, lienActif);
+  if (lienActif) {
+    duel.log.push(`Lien — ${duelCardById(carte.lien.ancre)?.name ?? 'l’ancre'} renforce ${carte.name}.`);
+  }
+  for (let i = 0; i < (effetContre.pioche ?? 0); i += 1) rpgPiocher(duel, cote);
   duel.log.push(cote === 'joueur'
     ? `Vous contrez ${cible.name} avec ${carte.name}.`
     : `Le sorcier contre ${cible.name} avec ${carte.name}.`);
@@ -5747,6 +5996,33 @@ function choisirContreIA(duel, carte) {
       && rpgPeutPayer(duel.sorcier, c))
     .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
   return candidats[0] ?? null;
+}
+
+/**
+ * La cible SUPPLÉMENTAIRE qu'un Lien exige (le Poids de la Barbe Noire, qui
+ * désigne en plus une créature adverse pour -3/-3).
+ *
+ * `null` quand le Lien n'en demande pas, ou quand son ancre n'est pas en jeu.
+ * Sinon la créature désignée si elle est légale — une créature adverse, ni
+ * protégée par la couleur du sort, ni protégée des sorts. Sans désignation
+ * (l'IA, un sort poussé sans cible), la meilleure proie est retenue : le Lien
+ * frappe toujours, il ne se contente pas de ne rien faire.
+ */
+function cibleDuLien(duel, cote, carte, cibleId, { auto = false } = {}) {
+  const lien = carte?.lien;
+  if (!lien?.cible || !lien?.debuff) return null;
+  if (!lienSatisfait(carte, duel[cote].creatures)) return null;
+  const adv = autre(cote);
+  const legales = duel[adv].creatures.filter((entite) => entite.pv > 0
+    && !estSite(entite)
+    && !rpgEstProtegee(entite, cardColors(carte))
+    && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'magie'));
+  if (!legales.length) return null;
+  const designee = cibleId && cibleId !== 'sorcier'
+    ? legales.find((entite) => entite.id === cibleId)
+    : null;
+  if (designee) return designee;
+  return auto ? legales.slice().sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0))[0] : null;
 }
 
 /** Lancer une magie : sorcellerie pendant son tour, magie rapide aussi en réponse. */
@@ -5779,6 +6055,20 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (rpgEstProtegeeDesSorts(visee, cardColors(carte)) || estSite(visee)) return { ok: false, raison: 'protection' };
   }
 
+  // Le Lien qui exige une cible supplémentaire : sans créature adverse
+  // légale, le sort ne se lance pas — et le mana reste entier, comme pour un
+  // renvoi sans cible. Une créature désignée mais protégée est refusée.
+  if (carte.lien?.cible && carte.lien?.debuff && lienSatisfait(carte, camp.creatures)) {
+    const advLien = autre(cote);
+    const legales = duel[advLien].creatures.filter((entite) => entite.pv > 0
+      && !estSite(entite)
+      && !rpgEstProtegee(entite, cardColors(carte))
+      && !rpgEstProtegeeDesSorts(entite, cardColors(carte), 'magie'));
+    if (!legales.length) return { ok: false, raison: 'cible' };
+    if (cibleId && cibleId !== 'sorcier' && !legales.some((entite) => entite.id === cibleId)) {
+      return { ok: false, raison: 'cible' };
+    }
+  }
   if (carte.effet.type === 'degats' && carte.effet.cible === 'creature') {
     if (carte.effet.choixDegats && cibleAllieeId) {
       const premiere = duel[adv].creatures.find((entite) => entite.id === cibleId);
@@ -5900,17 +6190,48 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       renvoiEntityId: null,
     };
   }
-  const effet = carte.effet.type === 'degats'
-    && carte.effet.cible === 'creature'
+  // Le Lien se lit **à la résolution** : l'ancre doit tenir sa place sur la
+  // rangée du lanceur à cet instant précis. Une ancre tuée en réponse au sort
+  // laisse donc le sort se résoudre au tarif imprimé — jouer son sort avant
+  // de perdre son mythe est une vraie décision de tempo.
+  const effetLieActif = lienSatisfait(carte, camp.creatures);
+  const lienActif = effetLieActif;
+  // Une arme-sort s'attache à l'imprimé : son Lien est ensuite tenu en
+  // continu par `appliquerLiensArmes` (il retombe quand l'ancre s'en va),
+  // exactement comme celui d'une arme du prototype.
+  const effetBrut = carte.effet?.type === 'arme'
+    ? carte.effet
+    : effetLie(carte, effetLieActif);
+  if (effetLieActif) {
+    const ancre = duelCardById(carte.lien.ancre);
+    duel.log.push(`Lien — ${ancre?.name ?? 'l’ancre'} renforce ${carte.name}.`);
+  }
+  const effet = effetBrut.type === 'degats'
+    && effetBrut.cible === 'creature'
     && cibleId === 'sorcier'
-    ? { ...carte.effet, cible: 'sorcier' }
-    : carte.effet;
+    ? { ...effetBrut, cible: 'sorcier' }
+    : effetBrut;
   // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
   // d’`appliquer` lit sa source dans ce paramètre.
   appliquer(duel, cote, effet, cibleId,
     cibleAllieeId ?? null,
     cardColors(carte), 'magie', carteId);
-  if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
+  // Le Lien à cible supplémentaire (le Poids de la Barbe Noire) : la créature
+  // désignée encaisse son malus APRÈS le transfert de vie. Le Lien se lit à la
+  // résolution, comme tous les autres.
+  if (lienActif) {
+    const cibleLien = cibleDuLien(duel, cote, carte, cibleId, { auto: true });
+    if (cibleLien) {
+      appliquer(duel, cote, { type: 'debuff', ...carte.lien.debuff, cible: 'creature' },
+        cibleLien.id, null, cardColors(carte), 'magie', carteId);
+    }
+  }
+  if (carte.effet.type === 'arme') {
+    // L'arme-sort vient de s'attacher : son Lien se relève dans la foulée.
+    appliquerLiensArmes(duel);
+  } else {
+    camp.cimetiere.push(carteId);
+  }
   duel.log.push(`${cote === 'joueur' ? 'Vous lancez' : 'Le sorcier lance'} ${carte.name}.`);
   rpgActionsEtat(duel);
   // Une Esquive annule le renvoi : la cible est toujours sur la table et la
@@ -5986,8 +6307,12 @@ function declencherArmesAttaquants(duel, cote, bilans) {
   let declenche = false;
   const adv = autre(cote);
   for (const bilan of bilans) {
-    const carte = bilan.armeId ? armeById(bilan.armeId) : null;
-    if (!carte) continue;
+    const brut = bilan.armeId ? armeById(bilan.armeId) : null;
+    if (!brut) continue;
+    // Le Lien d'une arme se lit ici aussi : le Masque du guetteur pioche
+    // **sans défausser** quand son Passeur est en jeu, et ce déclencheur se
+    // résout au moment des blessures, pas à l'attachement de l'arme.
+    const carte = carteLiee(brut, lienSatisfait(brut, duel[cote].creatures));
     const effets = [];
     if (carte.porteurAttaque) effets.push(carte.porteurAttaque);
     if (carte.porteurBlesse && bilan.creature + bilan.sorcier > 0) effets.push(carte.porteurBlesse);
@@ -6993,6 +7318,7 @@ export function rpgFinDeTour(duel) {
   // n'accostent plus.
   duel[duel.tour].abordageDesArrivees = false;
   duel[duel.tour].prochaineArriveeAbordage = false;
+  duel[duel.tour].prochaineArriveeAbordageSeuilPlein = false;
   // La faveur du Kraken non utilisée s'éteint avec le tour.
   duel.magieGratuite = null;
   detruireEphemeres(duel);

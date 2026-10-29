@@ -5,9 +5,9 @@
  * souffle du feu, vagues, contres, renvois, chocs, pages, cri de victoire
  * viking et fanfare de défaite, coups blessants) sont les échantillons
  * fournis, les voix d'arrivée des créatures sont des MP3
- * (`rpgArrivalVoices.js`, joués par `playCardVoice`), et l'effleurement de
- * survol lui-même est un extrait du vrai enregistrement de carte
- * (`hover.wav`, découpé par `tools/make-son-survol.py`).
+ * (`rpgArrivalVoices.js`, préchargés par `prechargerVoix` puis joués par
+ * `playCardVoice`), et l'effleurement de survol lui-même est un extrait du vrai
+ * enregistrement de carte (`hover.wav`, découpé par `tools/make-son-survol.py`).
  *
  * Il n'y a **plus une seule forme d'onde fabriquée par du code** : le moteur
  * de synthèse (oscillateurs, bruit blanc, réverbération de convolution) a été
@@ -154,7 +154,7 @@ export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
 
 /**
  * Le trait de l'**Attaque ciblée** : une flèche, pas une épée. La frappe
- * ciblée d'une créature (coup rapide, 30 % de chances de rater) est un tir à
+ * ciblée d'une créature (coup rapide, 25 % de chances de rater) est un tir à
  * distance : elle siffle, et le coup d'épée commun (`player_attack_hit`)
  * reste au corps à corps — les deux ne se superposent jamais pour un même
  * attaquant.
@@ -438,25 +438,68 @@ export class RpgAudioPlayer {
     return this.playCardVoiceNow(url, AudioCtor);
   }
 
+  /**
+   * L'élément d'une voix, créé à la première demande — lecture **ou simple
+   * préchargement** — puis gardé pour le reste de la partie.
+   *
+   * Le niveau de la voix vient de la mesure de son fichier
+   * (`rpgNiveauxSons.js`) : les voix enregistrées très bas — « Celle qui
+   * pèse », « La dame des neufs mondes », le Tengu — remontent au même niveau
+   * d'écoute que les bruitages de table.
+   */
+  entreeVoix(url, AudioCtor) {
+    let entree = this.voixEntrees.get(url);
+    if (entree) return entree;
+    const audio = new AudioCtor(url);
+    audio.preload = 'auto';
+    entree = { nom: url, audio, gain: gainVoixArrivee(url), noeud: null };
+    audio.volume = this.volumeElement(entree);
+    this.voixEntrees.set(url, entree);
+    // `cardVoiceAudios` reste la carte des éléments, lue par les tests et
+    // par la salle d'écoute.
+    this.cardVoiceAudios.set(url, audio);
+    this.routerEchantillon(entree);
+    return entree;
+  }
+
+  /**
+   * Prépare la voix d'une carte **sans la jouer**.
+   *
+   * La voix d'arrivée précède sa créature : elle part au geste qui pose la
+   * carte. Encore faut-il que le fichier soit là — sinon le premier `<audio>`
+   * télécharge son MP3 et la réplique n'arrive qu'une fois la créature déjà
+   * sur le plateau. Préchargé en silence, l'échantillon démarre à l'instant du
+   * geste. Renvoie `true` quand l'élément est prêt (ou l'était déjà).
+   */
+  prechargerVoix(url) {
+    if (!url) return false;
+    const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
+    if (typeof AudioCtor !== 'function') return false;
+    try {
+      return Boolean(this.entreeVoix(url, AudioCtor)?.audio);
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Coupe la voix en cours : une créature contrée n'achève pas son cri, et la
+   * voix suivante ne doit pas hériter du sien.
+   */
+  couperVoix() {
+    const entree = this.cardVoiceCourante;
+    this.cardVoiceCourante = null;
+    if (!entree?.audio) return;
+    try {
+      entree.audio.pause();
+      entree.audio.currentTime = 0;
+    } catch { /* élément déjà arrêté */ }
+  }
+
   playCardVoiceNow(url, AudioCtor) {
     if (this.muted || this.volume <= 0) return false;
     try {
-      let entree = this.voixEntrees.get(url);
-      if (!entree) {
-        const audio = new AudioCtor(url);
-        audio.preload = 'auto';
-        // Le niveau de la voix vient de la mesure de son fichier
-        // (`rpgNiveauxSons.js`) : les voix enregistrées très bas — « Celle qui
-        // pèse », « La dame des neufs mondes », le Tengu — remontent au même
-        // niveau d'écoute que les bruitages de table.
-        entree = { nom: url, audio, gain: gainVoixArrivee(url), noeud: null };
-        audio.volume = this.volumeElement(entree);
-        this.voixEntrees.set(url, entree);
-        // `cardVoiceAudios` reste la carte des éléments, lue par les tests et
-        // par la salle d'écoute.
-        this.cardVoiceAudios.set(url, audio);
-        this.routerEchantillon(entree);
-      }
+      const entree = this.entreeVoix(url, AudioCtor);
       if (this.cardVoiceCourante && this.cardVoiceCourante !== entree) {
         try { this.cardVoiceCourante.audio.pause(); } catch { /* déjà arrêtée */ }
       }

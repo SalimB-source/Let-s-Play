@@ -126,21 +126,21 @@ test('la Cuirasse de sel donne +0/+3 et Esquive contre les attaques comme contre
   assert.equal(porteur.def, 5);
   assert.equal(porteur.esquive, true, 'l’arme donne le mot-clé, sans chiffre');
 
-  // Jet forcé à 29 %, sous le seuil de 30 % : l’attaque entière est esquivée.
-  rpgReglerHasard(duel, () => 0.29);
+  // Jet forcé à 24 %, sous le seuil de 25 % : l’attaque entière est esquivée.
+  rpgReglerHasard(duel, () => 0.24);
   const attaquant = poser(duel, 'sorcier', 'chien-du-guet');
   rendrePret(duel, attaquant);
   const res = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [porteur.id] });
   assert.equal(res.ok, true);
   assert.equal(porteur.pv, 5, 'l’attaque esquivée ne laisse aucun dégât sur 5 de défense');
 
-  // Le même seuil s’applique aux sorts : à 29 %, la magie est esquivée ;
-  // à 30 %, le jet échoue et ses 3 dégâts passent.
+  // Le même seuil s’applique aux sorts : à 24 %, la magie est esquivée ;
+  // à 25 %, le jet échoue et ses 3 dégâts passent.
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 5, 'la magie est esquivée à 29 %');
-  rpgReglerHasard(duel, () => 0.30);
+  assert.equal(porteur.pv, 5, 'la magie est esquivée à 24 %');
+  rpgReglerHasard(duel, () => 0.25);
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 2, 'à 30 %, l’Esquive échoue et la magie retire ses 3 points');
+  assert.equal(porteur.pv, 2, 'à 25 %, l’Esquive échoue et la magie retire ses 3 points');
 });
 
 test('le Javelot du beffroi donne l’Attaque ciblée, que le remplacement retire', () => {

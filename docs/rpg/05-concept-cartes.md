@@ -347,7 +347,7 @@ agressif du Sable.
   ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
   sur trois seulement est annulée — la mythique se joue en tempo, pas en mur.
 - **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
-  adverse de votre choix (30 % de chances de rater, 100 % contre le sorcier) :
+  adverse de votre choix (25 % de chances de rater, 100 % contre le sorcier) :
   ses **3 dégâts** passent **sans riposte** et son attaque s'arrête là. C'est la
   mécanique des archers du Soleil rouge, et son grand arc la rend naturelle.
 - **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend
@@ -567,8 +567,10 @@ Sur les cartes de sort, le **losange jaune** (Magie Rapide, éclair) et le
 **rond violet** (Sorcellerie, étincelle) gardent leurs formes et leurs couleurs
 de famille, quel que soit l'élément de la carte, y compris pour une hybride.
 L'élément reste indiqué par la pastille, le cadre et le coût. Le bandeau de
-famille et la lueur de carte jouable reprennent les mêmes teintes (or pour la
-Magie Rapide, améthyste pour la Sorcellerie).
+famille reprend les mêmes teintes (or pour la Magie Rapide, améthyste pour la
+Sorcellerie). La **lueur de carte jouable**, elle, ne dit plus la famille : elle
+est blanche pour toute la main, et l'or n'y sert qu'à une carte **mythique**
+jouable — la rareté, pas le sort.
 
 ### Le chiffre d'un effet s'écrit sur la carte
 

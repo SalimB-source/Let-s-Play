@@ -297,6 +297,41 @@ test('RpgAudioPlayer joue la voix de la carte, une seule à la fois', () => {
   }
 });
 
+test('une voix préchargée attend sans jouer, et se coupe si la créature est contrée', () => {
+  const { player, rendre } = playerDeTest();
+  try {
+    const url = rpgArrivalVoiceUrl('susanoo');
+    // Le lecteur construit les bruitages du catalogue ; la voix, elle, n'existe
+    // pas encore.
+    const elementsAvant = FakeAudio.instances.length;
+    // Précharger n'est pas jouer : le fichier est prêt, l'enceinte se tait.
+    assert.equal(player.prechargerVoix(url), true);
+    assert.equal(FakeAudio.lectures.length, 0, 'préparer une voix ne la joue pas');
+    assert.equal(FakeAudio.instances.length, elementsAvant + 1, 'un seul élément audio est créé');
+    assert.equal(FakeAudio.instances.at(-1).preload, 'auto', 'l’élément télécharge son fichier d’avance');
+
+    // La lecture réutilise l'élément préparé : pas de second téléchargement au
+    // moment du geste, la voix part tout de suite.
+    assert.equal(player.playCardVoice(url), true);
+    assert.equal(FakeAudio.instances.length, elementsAvant + 1, 'aucun élément de plus à la lecture');
+    assert.equal(FakeAudio.lectures.length, 1);
+    assert.equal(player.cardVoiceAudios.get(url).paused, false);
+
+    // Une créature contrée n'achève pas son cri.
+    player.couperVoix();
+    assert.equal(player.cardVoiceAudios.get(url).paused, true, 'la voix est coupée');
+    assert.equal(player.cardVoiceCourante, null, 'plus aucune voix en cours');
+    player.couperVoix(); // sans voix en cours, rien ne casse
+
+    // Une adresse vide ne prépare rien.
+    assert.equal(player.prechargerVoix(null), false);
+    assert.equal(player.prechargerVoix(''), false);
+  } finally {
+    player.destroy();
+    rendre();
+  }
+});
+
 test('une voix ne se joue jamais quand le son est coupé', () => {
   const { player, rendre } = playerDeTest();
   try {

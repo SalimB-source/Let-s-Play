@@ -112,7 +112,7 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'inhabituelle',
     coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -203,7 +203,7 @@ export const RPG_TENEBRES_CREATURES = [
     coupRapide: true,
     arrivee: { type: 'pioche', amount: 2 },
     typeLine: 'Créature légendaire — Greffier à tête d’ibis',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
     flavor: 'Son calame note le verdict sans trembler, et le fleuve lui-même attend qu’il ait fini la ligne.',
   }),
   carte({
@@ -222,7 +222,7 @@ export const RPG_TENEBRES_CREATURES = [
     // qu'en Ténèbres. Son tribut passe à 3.
     protectionSorts: true,
     typeLine: 'Créature légendaire — Déesse solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({
@@ -341,7 +341,15 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Magie Rapide — Ténèbres',
     effet: { type: 'transfert', amount: 2 },
     cibles: ['sorcier'],
-    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2.',
+    // Le Lien de la Barbe Noire : le sort reste exactement le même (2 PV
+    // transférés), et le poids s'abat EN PLUS sur une créature adverse
+    // ciblée, qui perd -2/-2. `lien.cible` dit au jeu qu'il faut la désigner.
+    lien: {
+      ancre: 'la-barbe-noire',
+      cible: 'creature',
+      debuff: { atk: -2, def: -2 },
+    },
+    text: 'Le sorcier adverse perd 2 PV et vous en gagnez 2. Avec La Barbe Noire, la malédiction, en jeu : -2/-2 à une créature adverse ciblée, en plus.',
     flavor: 'Deux grains tombent de chaque côté ; la table ne bouge pas.',
   }),
   carte({
@@ -353,7 +361,10 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Sorcellerie — Livre des morts · Ténèbres',
     effet: { type: 'defaussePaquet', amount: 3 },
     cibles: ['sorcier'],
-    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière.',
+    // Le Lien du Greffier : la plume n'efface pas trois lignes, elle en
+    // efface quatre. Le greffier tient le registre, l'adversaire le subit.
+    lien: { ancre: 'maitre-des-hieroglyphes', effet: { amount: 4 } },
+    text: 'Les 3 cartes du dessus du paquet adverse partent au cimetière. Avec Le Maître des hiéroglyphes en jeu : 4 cartes au lieu de 3.',
     flavor: 'Sur trente feuillets, trois partent d’un seul souffle.',
   }),
   carte({
@@ -366,7 +377,10 @@ export const RPG_TENEBRES_MAGIES = [
     typeLine: 'Sorcellerie — Pesée · Ténèbres',
     effet: { type: 'transfert', amount: 3, pioche: 2 },
     cibles: ['sorcier'],
-    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes.',
+    // Le Lien de la Dévoreuse : la pesée mord un cran plus loin — 4 au lieu
+    // de 3. La pioche, elle, ne bouge pas : c'est le plateau, pas la gueule.
+    lien: { ancre: 'la-devoreuse', effet: { amount: 4 } },
+    text: 'Payez 1 PV : le sorcier adverse perd 3 PV, vous en gagnez 3, puis piochez deux cartes. Avec La Dévoreuse en jeu : 4 PV au lieu de 3.',
     flavor: 'Le cœur est pesé, le nom est lu, la page est tournée.',
   }),
 ];

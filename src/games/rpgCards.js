@@ -136,6 +136,112 @@ export function bonusArme(carte) {
   return null;
 }
 
+/**
+ * ── Le Lien ────────────────────────────────────────────────────────────────
+ *
+ * Une carte **liée** se joue toujours, à son coût imprimé — mais elle donne
+ * plus quand son **ancre** est en jeu : la créature mythique dont elle porte
+ * le nom, le masque, la lame ou le serment. Rien n'est jamais perdu quand
+ * l'ancre dort au fond du paquet : la carte n'est jamais une carte morte, elle
+ * est seulement une carte **ordinaire**.
+ *
+ * La fiche porte `lien` :
+ *   - `ancre`   : l'identifiant de la carte mythique exigée **sur le champ du
+ *                 lanceur** (créature, héros ou Site — tout ce qui tient une
+ *                 place sur la rangée) ;
+ *   - `bonus`   : pour une arme, le bonus de porteur **total** avec le lien
+ *                 (`{ atk: 3, def: 1 }` remplace `{ atk: 2, def: 0 }`) ;
+ *   - `effet`   : pour un sort, les champs qui **remplacent** ceux de l'effet
+ *                 imprimé (`{ amount: 3 }` transforme 2 dégâts en 3) ;
+ *   - `remplace` : pour une arme, les déclencheurs qu'il réécrit quand l'ancre
+ *                 est là (le Masque du guetteur pioche alors **sans**
+ *                 défausser : `{ porteurBlesseSorcier: { defausse: 0, … } }`) ;
+ *   - `nominal` : `true` pour un **Lien de nom** — la paire n'ajoute aucun
+ *                 chiffre, elle existe déjà par une autre règle. Le drapeau
+ *                 est obligatoire pour qu'un Lien sans effet soit un choix
+ *                 dit, jamais un bonus oublié ;
+ *   - `cible` : une **cible supplémentaire** que le Lien exige (le Poids de
+ *                 la Barbe Noire désigne en plus une créature adverse). La
+ *                 fiche imprimée garde ses propres cibles ;
+ *   - `debuff` : l'effet de malus appliqué à cette cible supplémentaire
+ *                 (`{ atk, def }`, permanent comme la Lame de mer) ;
+ *   - `donne` : les mots-clés prêtés au porteur d'une arme (le Sabre du
+ *                 Berger donne un bouclier). Fusionné avec le `donne` imprimé
+ *                 à l'attachement, il ne remplace rien ;
+ *   - `porteur` : `true` pour un **Lien de porteur** — l'ancre doit être la
+ *                 créature qui tient l'arme (le Sabre maudit ne mord que la
+ *                 force entre les mains de la Flamme), et non simplement être
+ *                 en jeu.
+ *
+ * Le Lien est toujours une **différence légère** : un cran, pas un
+ * dédoublement. Une carte liée reste la même carte, un peu meilleure.
+ *
+ * Le texte imprimé dit **la différence seule**, jamais le rappel de l'effet
+ * de base : « Avec <ancre> en jeu : <ce qui change>. » — par exemple
+ * « Avec la Valkyrie des glaces en jeu : 3 dégâts au lieu de 2. »
+ * `tests/rpg-liens.test.js` vérifie que chaque lien a une ancre mythique
+ * existante et que son texte la nomme, pour qu'aucune fiche ne dérive de sa
+ * mécanique.
+ */
+export function lienDeCarte(carte) {
+  return carte?.lien?.ancre ? carte.lien : null;
+}
+
+/**
+ * L'ancre est-elle sur le champ ? `cartesEnJeu` accepte des cartes ou des
+ * entités.
+ *
+ * `porteurCarteId` sert aux Liens **de porteur** (`lien.porteur`, le Sabre
+ * maudit sur la Flamme originelle) : l'ancre doit alors être la créature qui
+ * porte l'arme, et non n'importe qui sur la rangée. Sans ce troisième
+ * paramètre — un sort, une arme du prototype — la règle reste « l'ancre est
+ * en jeu ».
+ */
+export function lienSatisfait(carte, cartesEnJeu = [], porteurCarteId = null) {
+  const lien = lienDeCarte(carte);
+  if (!lien) return false;
+  if (lien.porteur) return Boolean(porteurCarteId) && porteurCarteId === lien.ancre;
+  return (cartesEnJeu ?? []).some((entree) => {
+    const id = typeof entree === 'string' ? entree : (entree?.carteId ?? entree?.id);
+    if (id !== lien.ancre) return false;
+    // Une entité à 0 PV est déjà morte : elle ne tient plus sa place. Un
+    // identifiant nu (une carte, pas un état) n'a pas de PV et compte.
+    if (entree && typeof entree === 'object' && Number(entree.pv) <= 0) return false;
+    return true;
+  });
+}
+
+/** L'effet d'un sort, renforcé par son lien quand l'ancre est en jeu. */
+export function effetLie(carte, actif = false) {
+  const effet = carte?.effet ?? null;
+  if (!effet || !actif) return effet;
+  const renfort = lienDeCarte(carte)?.effet;
+  return renfort ? { ...effet, ...renfort } : effet;
+}
+
+/** Le bonus de porteur **total** d'une arme — celui du lien remplace l'imprimé. */
+export function bonusArmeLie(carte, actif = false) {
+  const base = carte?.bonus ?? (carteEstArme(carte)
+    ? { atk: carte.effet?.atk ?? 0, def: carte.effet?.def ?? 0 }
+    : { atk: 0, def: 0 });
+  const renfort = lienDeCarte(carte)?.bonus;
+  if (!actif || !renfort) return { atk: base.atk ?? 0, def: base.def ?? 0 };
+  return { atk: renfort.atk ?? base.atk ?? 0, def: renfort.def ?? base.def ?? 0 };
+}
+
+/**
+ * La carte telle que le moteur doit la lire **à cet instant** : une arme dont
+ * l'ancre est en jeu rend sa fiche imprimée avec les déclencheurs réécrits par
+ * `lien.remplace` (le Masque du guetteur pioche sans défausser). Renvoie la
+ * fiche elle-même quand le Lien est muet, pour ne pas allouer inutilement
+ * dans les chemins de combat.
+ */
+export function carteLiee(carte, actif = false) {
+  const renfort = lienDeCarte(carte)?.remplace;
+  if (!actif || !renfort) return carte;
+  return { ...carte, ...renfort };
+}
+
 /** Un nombre signé pour l'affichage d'un changement de statistique :
  *  « +2 », « -2 », « 0 » — jamais « +-2 ». */
 export function signeStat(valeur = 0) {
@@ -459,7 +565,7 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -490,13 +596,13 @@ export const RPG_CREATURE_CARDS = [
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
-    // insaisissable (Esquive, 30 %) : ce qu'elle ne pare pas, elle l'évite.
+    // insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle l'évite.
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -641,7 +747,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1075,7 +1181,7 @@ export const RPG_HERO_CARDS = [
     rapidite: true,
     contreAttaque: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (30 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (25 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1119,7 +1225,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1179,7 +1285,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 30 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1198,7 +1304,7 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1218,7 +1324,7 @@ export const RPG_HERO_CARDS = [
     coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (30 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1259,7 +1365,7 @@ export const RPG_HERO_CARDS = [
     art: 'dame-des-neuf-mondes',
     coupRapide: true,
     arrivee: { type: 'soin', amount: 8 },
-    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (30 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
+    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (25 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',
   },
   {
@@ -1428,7 +1534,10 @@ export const RPG_MAGIE_CARDS = [
     instant: true,
     cibles: ['creature', 'sorcier'],
     effet: { type: 'degats', amount: 3, cible: 'creature' },
-    text: '3 dégâts à une créature ou un sorcier ciblés.',
+    // Le Lien de la Lionne : le trait devient son souffle — 4 dégâts, le
+    // chiffre exact qu'elle imprime à l'arrivée. La braise se répond.
+    lien: { ancre: 'lionne-du-midi-ardent', effet: { amount: 4 } },
+    text: '3 dégâts à une créature ou un sorcier ciblés. Avec La Lionne du midi ardent en jeu : 4 dégâts au lieu de 3.',
     flavor: 'Une étincelle suffit, au souk.',
   },
   {
@@ -1446,7 +1555,10 @@ export const RPG_MAGIE_CARDS = [
     // (prototype `entite.arme` ou Sabre maudit `entite.armes`). La pioche
     // reste acquise même si l'Esquive annule la destruction.
     effet: { type: 'destruction-arme', cible: 'creature', pioche: 1 },
-    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte.',
+    // Le Lien du serpent : les écailles d'Orochi brisent l'acier sans se
+    // refermer — la lame tombe, et le lanceur pioche une carte de plus.
+    lien: { ancre: 'orochi', effet: { pioche: 2 } },
+    text: 'Magie Rapide — Détruisez une arme équipée à une créature adverse, puis piochez une carte. Avec Orochi en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Le fer retourne au feu ; la main qui le tenait reste vide.',
   },
   {
@@ -1460,7 +1572,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin', amount: 4 },
-    text: 'Vous récupérez 4 points de vie.',
+    lien: { ancre: 'source-de-bimini', effet: { amount: 6 } },
+    text: 'Vous récupérez 4 points de vie. Avec La Source de Bimini en jeu : 6 PV au lieu de 4.',
     flavor: 'Elle a le goût d’avant le sable.',
   },
   {
@@ -1490,7 +1603,10 @@ export const RPG_MAGIE_CARDS = [
     // `exilEnMourant` : si la créature ne survit pas à la morsure, elle est
     // exilée au lieu de rejoindre le cimetière (case 'debuff' du moteur).
     effet: { type: 'debuff', atk: -3, def: -3, cible: 'creature', exilEnMourant: true },
-    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière.',
+    // Le Lien des Mâchoires : la lame mord un cran plus profond — -4/-4.
+    // L'exil, lui, ne change pas : ce qui tombe sous la morsure disparaît.
+    lien: { ancre: 'seigneur-des-machoires', effet: { atk: -4, def: -4 } },
+    text: 'La Lame de mer donne -3/-3 à une créature ciblée. Si sa défense tombe en dessous de 1, elle est détruite et exilée au lieu de rejoindre le cimetière. Avec Le Seigneur des mâchoires en jeu : -4/-4 au lieu de -3/-3.',
     flavor: 'La vague coupe plus propre que le couteau.',
   },
   {
@@ -1508,7 +1624,11 @@ export const RPG_MAGIE_CARDS = [
     // de l’échange. `tours: 1` = le bonus ne dépasse pas le tour pendant lequel
     // il a été joué (carnet `bonusTemporaires` du moteur, soldé à `rpgFinDeTour`).
     effet: { type: 'buff', atk: 0, def: 3, tours: 1 },
-    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour.',
+    // Le Lien des Ailes d'or : la Dame prête sa lumière. Le rempart garde sa
+    // taille (+0/+3), mais chaque créature touchée reçoit en plus un bouclier
+    // — la parade anti-sort du jeu, celle qu'elle porte elle-même.
+    lien: { ancre: 'dame-aux-ailes-d-or', effet: { bouclier: 1 } },
+    text: 'Magie Rapide — Vos créatures gagnent +0/+3 jusqu’à la fin du tour. Avec La Dame aux ailes d’or en jeu : un bouclier en plus, sur chaque créature.',
     flavor: 'Le vent bâtit plus vite que les maçons, et il emporte aussi vite.',
   },
   {
@@ -1522,7 +1642,11 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
-    text: '3 dégâts à toutes les créatures adverses.',
+    // Le Lien du Zénith : sous le faucon, la tempête gagne le cran qui la
+    // rend létale sur les petites créatures — 4 au lieu de 3, sur toute la
+    // rangée adverse, sans exception ni ciblage.
+    lien: { ancre: 'faucon-du-zenith', effet: { amount: 4 } },
+    text: '3 dégâts à toutes les créatures adverses. Avec Le Faucon du zénith en jeu : 4 dégâts au lieu de 3.',
     flavor: 'Le ciel se couche. Personne n’est invité.',
   },
   {
@@ -1585,7 +1709,10 @@ export const RPG_MAGIE_CARDS = [
     // seconde vague, qui tombe au début du prochain tour du lanceur — après
     // le tour adverse, sur ce qu'il y a alors à brûler (voir `degatsEchos`).
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', echo: { amount: 1, tours: 1 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant.',
+    // Le Lien de la tempête : Susanoo ne change pas la seconde vague, il
+    // alourdit la première — le nuage tombe plus dru quand le kami est là.
+    lien: { ancre: 'susanoo', effet: { amount: 3 } },
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, puis 1 autre dégât au début de votre tour suivant. Avec Susanoo en jeu : 3 dégâts à la première vague, au lieu de 2.',
     flavor: 'Le vent tourne ; la poussière devient un voile brûlant.',
   },
   {
@@ -1601,7 +1728,8 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
-    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses.',
+    lien: { ancre: 'daimyo-du-soleil-rouge', effet: { amount: 3 } },
+    text: 'Une rafale chargée de sable et de braises inflige 2 dégâts à toutes les créatures adverses. Avec Daimyō du Soleil rouge en jeu : 3 dégâts au lieu de 2.',
     flavor: 'La poussière rougit, puis le vent l’emporte.',
   },
   // ── Serment des Neuf Hivers : le combat physique et le combat magique ──
@@ -1645,7 +1773,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'commune',
     cibles: ['soi'],
     effet: { type: 'soin-creatures', amount: 2, etJoueur: 2 },
-    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie.',
+    // Le Lien du Premier Serment : on mange plus, on tient plus longtemps.
+    // Le festin rend 3 au lieu de 2 — aux créatures comme au sorcier.
+    lien: { ancre: 'eirik-du-premier-serment', effet: { amount: 3, etJoueur: 3 } },
+    text: 'Soignez chacune de vos créatures de 2 et récupérez 2 points de vie. Avec Eirik du Premier Serment en jeu : 3 PV au lieu de 2, aux créatures comme à vous.',
     flavor: 'On boit au souvenir de ceux qui ne reviendront pas.',
   },
   {
@@ -1673,7 +1804,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['toutes'],
     effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.25 },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée.',
+    // Le Lien du Géant : le hurlement gagne un cran — 3 dégâts. La chance de
+    // gel ne bouge pas : c'est le souffle qui grandit, pas le froid.
+    lien: { ancre: 'geant-des-banquises', effet: { amount: 3 } },
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée. Avec Géant des banquises en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le vent hurle si fort que la neige devient des lames.',
   },
   // ── Le lot du gel : magies rapides et sorcelleries du Serment ────────────
@@ -1696,7 +1830,10 @@ export const RPG_MAGIE_CARDS = [
     instant: true,
     cibles: ['creature'],
     effet: { type: 'degats', amount: 2, cible: 'creature', gel: true },
-    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
+    // Le Lien du givre : la poigne serre un cran plus fort. Le gel, lui, ne
+    // s'achète pas au détail — il reste tel quel.
+    lien: { ancre: 'valkyrie-des-glaces', effet: { amount: 3 } },
+    text: 'Magie Rapide — Une créature adverse ciblée subit 2 dégâts et ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour. Avec Valkyrie des glaces en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le froid tient l’acier plus fermement que la main.',
   },
   {
@@ -1837,7 +1974,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['soi'],
     effet: { type: 'contresort', cible: 'sort', pioche: 1 },
-    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte.',
+    // Le Lien du Serpent du monde : le contre est le même, la marée rend deux
+    // cartes au lieu d'une — le serpent remonte le courant dans l'autre sens.
+    lien: { ancre: 'jormungandr', effet: { pioche: 2 } },
+    text: 'Magie Rapide — Contre un sort annoncé par le sorcier, puis piochez une carte. Avec Jörmungandr en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Le sorcier assis n’esquive pas le sort : il l’écoute revenir.',
   },
   // ── Renvoi en main (deck Marée des abysses) ────────────────────────────
@@ -1868,7 +2008,10 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['creature'],
     effet: { type: 'retour-main', cible: 'creature', pioche: 1 },
-    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte.',
+    // Le Lien du Léviathan : le petit frère de la grande marée. Le renvoi est
+    // le même, la carte qu'on en rapporte est une de plus.
+    lien: { ancre: 'leviathan', effet: { pioche: 2 } },
+    text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. Avec Léviathan en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Ce que la vague emporte, le courant vous le raconte à l’oreille.',
   },
 ];
@@ -1917,7 +2060,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué).',
+    lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Avec Tin Hinan, mère des pistes, en jeu : +3/+1 au lieu de +2/+0.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -1960,7 +2104,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2011,7 +2155,12 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 3 },
     donne: { esquive: true },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (30 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas).',
+    // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4), rien
+    // de plus — le texte ne dit que la différence. Le CUMUL d'Esquive
+    // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
+    // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
+    lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas ; elle s’ajoute à celle d’une créature qui esquive déjà). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2024,7 +2173,10 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 30 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
+    // Le Lien du Roi : le trait prend un point de plus — la riposte du
+    // Contre-attaquant mord alors un cran plus fort.
+    lien: { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } },
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avec Le roi Kusayla en jeu : +3/+0 au lieu de +2/+0.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2067,7 +2219,12 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 1 },
     porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 1 },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une.',
+    lien: {
+      ancre: 'passeur-au-masque-de-chacal',
+      bonus: { atk: 2, def: 2 },
+      remplace: { porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 0 } },
+    },
+    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Avec Le Passeur au masque de chacal en jeu : +2/+2, et la pioche ne défausse plus.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2095,7 +2252,11 @@ export const RPG_ARME_CARDS = [
     // Arme vivante (Batterskull) : jouable la main vide, elle fait naître le
     // chien de sable qui la portera (`rpgJouerArme` accepte `cibleId: null`).
     armeVivante: { jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1.',
+    // Le Lien du Berger : sous Tarek, la lame ne grandit pas — elle couvre.
+    // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
+    // sans qu'un seul de ses chiffres imprints ne bouge.
+    lien: { ancre: 'tarek', donne: { bouclier: 1 } },
+    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Avec TAREK en jeu : un bouclier sur le porteur, en plus.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
@@ -2115,7 +2276,7 @@ export const RPG_ARME_CARDS = [
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (30 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {

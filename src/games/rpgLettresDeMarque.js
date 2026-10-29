@@ -161,7 +161,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     croissanceTour: { atk: 1, maximum: 3 },
     coupRapide: true,
     typeLine: 'Créature — Humain · Tercio',
-    text: 'Au début de chacun de vos tours, le Tercio gagne +1/+0, jusqu’à +3/+0. Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
+    text: 'Au début de chacun de vos tours, le Tercio gagne +1/+0, jusqu’à +3/+0. Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là.',
     flavor: 'Personne n’aboie sur un pont de cuivre.',
   }),
   carte({
@@ -222,7 +222,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     abordage: 4,
     cargaison: 1,
     typeLine: 'Créature — Navire · Galion',
-    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 4 — quand le Galion arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 4 — quand le Galion arrive en jeu, la créature adverse ciblée de coût 4 ou moins est prise en sa cale : elle ne déclenche rien. Cargaison 1 — Quand le Galion meurt ou est pris en cale, piochez une carte.',
     flavor: 'L’argent voyage en convoi ; le roi voyage en prière.',
   }),
   // L’identifiant historique demeure (collections et decks sauvegardés) :
@@ -242,7 +242,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     abordage: 3,
     caleComble: { atk: 2, butin: true },
     typeLine: 'Créature légendaire — Navire · Vaisseau fantôme',
-    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (30 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 3 — quand le Hollandais arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, le Hollandais gagne +2/+0 et Butin.',
+    text: 'Attaque ciblée — quand il est sélectionné pour attaquer, il peut frapper une créature adverse de votre choix avant le combat (25 % de chances de rater ; il touche à 100 % contre l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Abordage 3 — quand le Hollandais arrive en jeu, la créature adverse ciblée de coût 3 ou moins est prise en sa cale. Tant que sa cale est occupée, le Hollandais gagne +2/+0 et Butin.',
     flavor: 'Il ne cherche plus un port : il embarque ceux que la mer a oublié de rendre.',
   }),
   carte({
@@ -260,7 +260,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     traquePirates: 3,
     primeChasseur: true,
     typeLine: 'Créature légendaire — Humain · Chasseur de pirates',
-    text: 'Rapidité. Attaque ciblée — quand il frappe une créature avant le combat, il a 30 % de chances de rater ; il touche à 100 % contre l’adversaire. Traque — quand le Chasseur attaque une créature avec Abordage, Butin ou une cale occupée, il gagne +3/+0 contre elle pour ce combat. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
+    text: 'Rapidité. Attaque ciblée — quand il frappe une créature avant le combat, il a 25 % de chances de rater ; il touche à 100 % contre l’adversaire. Traque — quand le Chasseur attaque une créature avec Abordage, Butin ou une cale occupée, il gagne +3/+0 contre elle pour ce combat. Prime — quand le Chasseur détruit une créature avec Abordage, Butin ou une cale occupée, piochez une carte.',
     flavor: 'Dans les brumes d’Ocracoke, il reconnaît un pirate au silence qui précède son tir.',
   }),
   carte({
@@ -372,7 +372,11 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     // Le sceau n'arme que la SEULE prochaine créature jouée (le même drapeau
     // que le Pilote), puis le greffier pioche une carte.
     effet: { type: 'prochaine-arrivee-abordage', pioche: 1 },
-    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte.',
+    // Le Lien du Chasseur : sa lettre ouvre un coût de plus. La prochaine
+    // créature accoste avec un seuil au **coût plein** (au lieu de coût − 1),
+    // donc elle prend des proies qu'aucune autre lettre ne couvre.
+    lien: { ancre: 'le-chasseur-d-ocracoke', effet: { seuilPlein: true } },
+    text: 'La prochaine créature que vous jouez ce tour a Abordage — au seuil de son coût moins un. Piochez une carte. Avec Le Chasseur d’Ocracoke en jeu : au seuil de son coût plein, au lieu du coût moins un.',
     flavor: 'Le sceau de la Chambre change un pillard en officier — le temps d’un assaut.',
   }),
   carte({
@@ -386,7 +390,10 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Magie Rapide — Eau',
     cibles: ['creature'],
     effet: { type: 'debuff', atk: -1, def: -2, tours: 1 },
-    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour.',
+    // Le Lien du Kraken : la marée monte d'un cran — -2/-3 au lieu de -1/-2,
+    // jusqu'à la fin du tour comme l'imprimé.
+    lien: { ancre: 'kraken', effet: { atk: -2, def: -3 } },
+    text: 'La créature adverse ciblée gagne -1/-2 jusqu’à la fin du tour. Avec Le Kraken en jeu : -2/-3 au lieu de -1/-2.',
     flavor: 'Le pilote connaît le sable sous la vague ; la vague, elle, ne prévient pas.',
   }),
   carte({
@@ -399,7 +406,10 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Sorcellerie — Carte marine · Eau',
     cibles: ['soi'],
     effet: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
-    text: 'Piochez deux cartes, puis défaussez une carte.',
+    // Le Lien du Serpent : la carte marine porte un cran plus loin — trois
+    // cartes piochées, une défaussée. Ce qu'on jette ne change pas.
+    lien: { ancre: 'bakunawa', effet: { pioche: 3 } },
+    text: 'Piochez deux cartes, puis défaussez une carte. Avec Bakunawa en jeu : 3 cartes piochées au lieu de 2.',
     flavor: 'Les routes de la mer se copient à la main, jamais à l’imprimé.',
   }),
   carte({
@@ -414,7 +424,11 @@ export const RPG_LETTRES_DE_MARQUE_MAGIES = [
     typeLine: 'Sorcellerie — Assaut · Sable + Eau',
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 2, overkill: true, caleOccupeeSeulement: true, cible: 'toutes-alliees', tours: 1 },
-    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill.',
+    // Le Lien de la Barbe-Rousse : les cales pleines débordent. L'assaut
+    // mord un cran plus fort (+3/+2) — la défense ne bouge pas, un assaut
+    // ne tient pas, il frappe.
+    lien: { ancre: 'la-barbe-rousse', effet: { atk: 3, def: 2 } },
+    text: 'Jusqu’à la fin du tour, chacune de vos créatures qui détient une créature en sa cale gagne +2/+2 et Overkill. Avec La Barbe-Rousse, amiral des deux mers, en jeu : +3/+2 au lieu de +2/+2.',
     flavor: 'Ce jour-là, tout le quai monta à l’assaut — jusqu’aux lapins de la cale.',
   }),
 ];

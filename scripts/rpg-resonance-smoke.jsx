@@ -39,6 +39,17 @@ export function rendreCartes() {
       carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres'),
       html: carteRendue('fennec-des-decombres', { aura: 2, auraParGroupe: { sable: 2 } }),
     },
+    // La Malédiction porte exactement le même sonar, en violet ; la créature
+    // maudite (son `maledictionBonus` à -2) ne projette rien — seule la source
+    // rayonne.
+    malediction: {
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'la-barbe-noire'),
+      html: carteRendue('la-barbe-noire'),
+    },
+    maledictionNeutre: {
+      carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'fennec-des-decombres'),
+      html: carteRendue('fennec-des-decombres', { maledictionBonus: -2 }),
+    },
     source: { carte: source, html: carteRendue('samourai-du-torii') },
     corbeau: {
       carte: RPG_DUEL_CARDS.find((carte) => carte.id === 'valkyrie-au-corbeau'),
