@@ -14506,6 +14506,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     padding: 0;
     grid-template-rows: minmax(0, 1fr) auto;
   }
+  /* ── L'ACCUEIL S'ANCRE SUR LA COUCHE DU JEU, PAS SUR `100dvh` ────────────
+     Le verrou « un seul écran » de l'accueil mesure `100dvh` (plus haut dans
+     la feuille). Or en paysage, cette hauteur « dynamique » peut dépasser la
+     zone réellement peinte (barre d'outils du navigateur, barres système qui
+     vont et viennent) : le bouton « Jouer » de la colonne et les jalons des
+     quêtes (Cachet, Souk) étaient alors peints SOUS le bord de l'écran, sans
+     aucun défilement pour les atteindre. Le menu est une couche absolue
+     calée sur `.rpg-battle` (fixe, `inset: 0`) — c'est elle qui dit la
+     hauteur vraiment visible : tout se mesure en pourcentages de cette
+     couche. Si malgré tout la place vient à manquer, la colonne d'onglets
+     garde son propre défilement interne (`overflow-y: auto`) : « Jouer »
+     reste toujours atteignable. */
+  .rpg-mode-menu.rpg-mode-menu--jouer {
+    height: auto;
+    max-height: none;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__content {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__header {
+    height: 100%;
+    max-height: 100%;
+  }
   .rpg-mode-menu__content > :not(.rpg-mode-menu__header):not(.rpg-mode-menu__footer) {
     grid-column: 1;
     grid-row: 1;
@@ -14539,13 +14564,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     z-index: 30;
     align-self: start;
     width: 100%;
-    height: 100vh;
-    height: 100dvh;
-    min-height: 0;
-    max-height: 100dvh;
     margin: 0;
     padding: calc(6px + env(safe-area-inset-top, 0px)) calc(4px + env(safe-area-inset-right, 0px)) 0 4px;
     box-sizing: border-box;
+    /* `svh` plutôt que `dvh` : la hauteur « dynamique » peut dépasser la zone
+       réellement peinte quand la barre d'outils du navigateur va et vient en
+       paysage — le bas de la colonne (« Jouer ») passait alors sous le bord de
+       l'écran, hors d'atteinte. La petite hauteur (`svh`) est garantie
+       visible ; sur l'accueil, la colonne suit carrément la couche du jeu
+       (règle `--jouer` plus bas). */
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+    max-height: 100svh;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-rows: auto minmax(0, 1fr);
