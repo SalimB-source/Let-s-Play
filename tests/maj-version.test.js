@@ -103,6 +103,40 @@ test('le panneau est monté à la racine, pas dans une page', () => {
     'après « Plus tard », le rappel reste discret et ne couvre rien');
 });
 
+/**
+ * Le receveur des fonctions d'horloge — la panne du 29 octobre 2026.
+ *
+ * Chrome exige que `setTimeout` soit appelé sur `window`. Rassemblé dans un
+ * objet pour être remplaçable en test, il se retrouvait appelé en méthode
+ * (`minuterie.setTimeout(...)`) et levait `TypeError: Illegal invocation`.
+ * L'appel vivait dans un effet monté à la racine : toute la page blanchissait,
+ * en production seulement (en développement, la veille est coupée). Ce faux
+ * horloge reproduit Chrome et refuse tout receveur autre que l'objet global.
+ */
+function horlogeStricte() {
+  const strict = (nom) => function () {
+    if (this !== globalThis) throw new TypeError(`Illegal invocation (${nom})`);
+    return nom.startsWith('clear') ? 0 : 1;
+  };
+  return {
+    setTimeout: strict('setTimeout'),
+    clearTimeout: strict('clearTimeout'),
+    setInterval: strict('setInterval'),
+    clearInterval: strict('clearInterval'),
+  };
+}
+
+test('la veille ne lève pas « Illegal invocation » sur un moteur strict', () => {
+  let arreter = null;
+  assert.doesNotThrow(() => {
+    arreter = demarrerVeilleMaj({
+      fetchImpl: async () => reponse({ buildId: 'abc123' }),
+      minuterie: horlogeStricte(),
+    });
+  }, 'démarrer la veille ne doit jamais lever : le panneau est monté à la racine');
+  assert.doesNotThrow(() => arreter(), 'arrêter la veille non plus');
+});
+
 test('deux identités différentes font une nouvelle version — et rien d’autre', () => {
   assert.equal(estNouvelleVersion({ buildId: 'abc123' }, 'def456'), true);
   assert.equal(estNouvelleVersion({ buildId: 'abc123' }, 'abc123'), false, 'même build : rien à faire');
