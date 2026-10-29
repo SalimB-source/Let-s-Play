@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { scoreTier, scoreLabel } from '../reviewsData';
+import { getTest, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoModal from '../components/VideoModal';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
@@ -47,6 +47,7 @@ export default function Reviews(){
   const c = t.reviews.article;
   const d = t.reviews.dossiers;
   const sr = t.reviews.shortReview;
+  const featuredReview = getTest('call-of-duty-modern-warfare-4');
   const tcl = tclFeature[lang] || tclFeature.fr;
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
@@ -87,10 +88,41 @@ export default function Reviews(){
 
   return (
     <>
-      {/* La grille « DERNIERS TESTS » (gameTests) est masquée pour
-          l'instant : le short review ouvre la page. */}
+      {/* Test original à la une. L'ancienne grille des tests reste masquée ;
+          on conserve aussi le short review et les dossiers ci-dessous. */}
+      {featuredReview && (
+        <section className="written-review-section wrap" id="test-a-la-une">
+          <div className="section-label"><span><b>TEST ÉCRIT</b> / À LA UNE</span><span>{featuredReview.date} · CAMPAGNE SOLO</span></div>
+          <div className="written-review-heading">
+            <p className="eyebrow"><span className="live-dot" /> LE REGARD DE LA RÉDACTION</p>
+            <h1>LE TEST <em>DE CHAFT.</em></h1>
+          </div>
+          <article className="written-review-card">
+            <Link className="written-review-link" to={featuredReview.route}>
+              <div className="written-review-image">
+                <img src={featuredReview.image} alt={featuredReview.alt} />
+                <span className="written-review-image-credit">VISUEL OFFICIEL · ACTIVISION</span>
+                <span className="written-review-score" aria-label={`Note de la campagne : ${scoreLabel(featuredReview.score, lang)} sur 10`}>
+                  <small>NOTRE NOTE</small>
+                  <strong>{scoreLabel(featuredReview.score, lang)}<i>/10</i></strong>
+                </span>
+              </div>
+              <div className="written-review-copy">
+                <span className="written-review-kicker">CALL OF DUTY · CAMPAGNE SOLO</span>
+                <h2>{featuredReview.headingName}</h2>
+                <p>{featuredReview.excerpt}</p>
+                <div className="written-review-meta">
+                  <span>{featuredReview.byline}</span>
+                  <span>TESTÉ SUR PC · ENV. 9 H</span>
+                </div>
+                <span className="written-review-read">LIRE LE TEST <Arrow /></span>
+              </div>
+            </Link>
+          </article>
+        </section>
+      )}
 
-      {/* Short review d'abord : le test en 90 s, transcrit, avec la note. */}
+      {/* Short review : le test en 90 s, transcrit, avec la note. */}
       <section className="short-review-section wrap" id="short-review">
         <div className="section-label"><span>{sr.label1}</span><span>{sr.label2}</span></div>
         <div className="short-review-head">

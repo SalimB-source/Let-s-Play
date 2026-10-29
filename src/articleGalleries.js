@@ -17,6 +17,19 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // Test original de Chaft : visuels de campagne publiés par l'éditeur, et
+  // non des captures de la partie PC de la rédaction.
+  'call-of-duty-modern-warfare-4': {
+    label: 'MODERN WARFARE 4',
+    meta: 'ACTIVISION · CAMPAGNE',
+    items: [
+      { src: 'screenshots/modern-warfare-4/campagne-convoi.webp', alt: 'Des soldats avancent aux côtés d’un char dans une rue enfumée de Modern Warfare 4', caption: '01 / La guerre sur le terrain' },
+      { src: 'screenshots/modern-warfare-4/campagne-combat.webp', alt: 'Un soldat couvert de boue vise dans un champ de bataille en feu', caption: '02 / Au cœur des combats' },
+      { src: 'screenshots/modern-warfare-4/campagne-infiltration.webp', alt: 'Un soldat équipé de lunettes de vision nocturne progresse dans un bâtiment sombre', caption: '03 / Opération dans l’ombre' },
+    ],
+    credit: 'Couverture et images officielles de la campagne publiées par Activision / Infinity Ward. Visuels promotionnels : ils ne sont pas issus de la partie PC testée par Chaft.',
+    creditSources: [{ label: 'Call of Duty — présentation officielle de la campagne', href: 'https://www.callofduty.com/blog/2026/09/call-of-duty-modern-warfare-4-tokyo-games-show-campaign-trailer' }],
+  },
   // ---- Édition du dimanche 18.10.2026 ----------------------------------------
   // Photogrammes prélevés automatiquement par YouTube (au quart, à la moitié et
   // aux trois quarts) sur les vidéos officielles citées : les légendes situent

@@ -127,7 +127,7 @@ const dzDev = [
 
 const reviews = gameTests.map((test) => ({
   type: 'review', title: test.name, description: test.excerpt, route: test.route,
-  keywords: [test.platforms, test.genre, test.studio, test.cardTitle].join(' '),
+  keywords: [test.platforms, test.genre, test.studio, test.cardTitle, test.byline].filter(Boolean).join(' '),
   meta: `${test.score}/10 · ${test.platforms}`, image: test.image,
 }));
 

@@ -53,7 +53,7 @@ export const ROUTES = [
   ['/reviews/onimusha', Onimusha],
   ['/news/onimusha-million', OnimushaMillion],
   ['/reviews', Reviews],
-  ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle]),
+  ...gameTests.filter((test) => !test.legacy).map((test) => [test.route, TestArticle, '/reviews/:slug']),
   ['/dossiers', Dossiers],
   ['/auth', Auth],
   ['/jeu', Games],
