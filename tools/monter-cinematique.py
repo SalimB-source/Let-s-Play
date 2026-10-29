@@ -181,6 +181,90 @@ def rendre_t12(src, tmp, seg, n, duree, fi, fo, timeline):
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "17", seg])
 
 
+# Découpage multi-plans (V2) : quand la narration nomme un personnage, on le montre.
+# T07 : groupe + un plan par compagnon, répartis au prorata du texte dit.
+TEXTE_PLANS_T7 = [
+    ("cine-t07-cinq-4k.jpg", "zin", "At his side: "),
+    ("cine-t07a-yamina-4k.jpg", "zin_slow", "Yamina, the clockmaker, who signed a List at nineteen — and has been trying to repair the irreparable ever since. "),
+    ("cine-t07b-feriel-4k.jpg", "zin_slow", "Fériel, the glassblower, who turns sand into shields. "),
+    ("cine-t07c-boualem-4k.jpg", "zin_slow", "Boualem, the well-digger, who found something beneath the city… and does not speak of it. "),
+    ("cine-t07d-tarek-4k.jpg", "zin_slow", "And Tarek, the porter, who carries the Chamber's crates — and its secrets."),
+]
+# T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre).
+PLANS_T8 = [
+    ("cine-t08-greffe-4k.jpg", "zin_slow"),
+    ("cine-t08b-salem-4k.jpg", "static"),
+    ("cine-t08c-scribe-4k.jpg", "static"),
+    ("cine-t08d-registre-4k.jpg", "static"),
+]
+# T10 : le thé, puis le visage de Mahieddine sur « He never lies ».
+PLANS_T10 = [
+    ("cine-t10-the-4k.jpg", "zin_slow"),
+    ("cine-t10b-mahieddine-4k.jpg", "static"),
+]
+DUREE_PLAN_MIN = 1.0
+
+
+def position_coupe_t10():
+    """Position (s) de « He never lies » dans T10.mp3 : le [pause] ElevenLabs
+    avant « He omits » contient un souffle qui le coupe en deux silences ;
+    le début du premier (~10,8 s) marque la fin de « He never lies ».
+    Repli : 75 % de la prise."""
+    audio = os.path.join(VO, "T10.mp3")
+    duree = duree_mp3(audio)
+    r = subprocess.run([FF, "-v", "info", "-i", audio, "-af",
+                        "silencedetect=noise=-32dB:d=0.5", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    debuts = []
+    for ligne in r.stderr.splitlines():
+        if "silence_start" in ligne:
+            try:
+                debuts.append(float(ligne.split("silence_start:")[1].split()[0]))
+            except ValueError:
+                pass
+    tardifs = [s for s in debuts if s > duree * 0.55]
+    if tardifs:
+        # « He never lies » ≈ 1,5 s ; on coupe 1,8 s avant la fin de la
+        # phrase (biais volontaire : un peu tôt plutôt qu'en plein mot).
+        return min(max(min(tardifs) - 1.8, duree * 0.5), duree * 0.93)
+    return duree * 0.75
+
+
+def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
+    """Découpe un bloc en plans : [(image, mouvement, debut_abs, fin_abs)]."""
+    if bloc == "T07":
+        span_deb = debuts_vo[0][1]
+        span_fin = span_deb + debuts_vo[0][2]
+        poids = [len(texte) for _, _, texte in TEXTE_PLANS_T7]
+        total = sum(poids)
+        bornes = [span_deb]
+        for p in poids[:-1]:
+            bornes.append(bornes[-1] + (span_fin - span_deb) * p / total)
+        bornes.append(span_fin)
+        for k in range(1, len(bornes) - 1):
+            if bornes[k] - bornes[k - 1] < DUREE_PLAN_MIN:
+                bornes[k] = bornes[k - 1] + DUREE_PLAN_MIN
+        plans = []
+        for k, ((img_p, mouv_p, _), deb, fin) in enumerate(
+                zip(TEXTE_PLANS_T7, bornes[:-1], bornes[1:])):
+            plans.append((img_p, mouv_p,
+                          debut_bloc if k == 0 else deb,
+                          fin_bloc if k == len(TEXTE_PLANS_T7) - 1 else fin))
+        return plans
+    if bloc == "T08":
+        plans = []
+        for k, ((img_p, mouv_p), (vo, deb, d)) in enumerate(zip(PLANS_T8, debuts_vo)):
+            fin = debuts_vo[k + 1][1] if k + 1 < len(debuts_vo) else fin_bloc
+            plans.append((img_p, mouv_p, debut_bloc if k == 0 else deb, fin))
+        return plans
+    if bloc == "T10":
+        vo, deb, d = debuts_vo[0]
+        coupe = deb + position_coupe_t10()
+        (img1, mouv1), (img2, mouv2) = PLANS_T10
+        return [(img1, mouv1, debut_bloc, coupe), (img2, mouv2, coupe, fin_bloc)]
+    return [(img, mouv, debut_bloc, fin_bloc)]
+
+
 def fmt_vtt(sec):
     h, r = divmod(sec, 3600)
     m, s = divmod(r, 60)
@@ -191,20 +275,29 @@ def main():
     os.makedirs(MONTAGE, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="cine-")
 
-    # 1. Timeline : positions absolues de chaque prise VO.
+    # 1. Timeline : positions absolues de chaque prise VO, puis découpage en plans.
+    # Les fondus restent aux frontières des blocs ; les plans d'un même bloc
+    # s'enchaînent en cut sec, calés sur la narration.
     timeline = []  # (fichier_vo, debut_abs, duree)
-    segments = []  # (bloc, image, mouvement, debut_abs, duree, fi, fo)
+    segments = []  # (nom, image, mouvement, debut_abs, duree, fi, fo)
     t = 0.0
     for bloc, img, mouv, tete, queue, fi, fo, prises in BLOCS:
         pos = t + tete
+        debuts_vo = []
         for vo, gap in prises:
             pos += gap
             d = duree_mp3(os.path.join(VO, vo))
             timeline.append((vo, pos, d))
+            debuts_vo.append((vo, pos, d))
             pos += d
-        duree_seg = (pos - t) + queue
-        segments.append((bloc, img, mouv, t, duree_seg, fi, fo))
-        t += duree_seg
+        fin_bloc = pos + queue
+        plans = plans_du_bloc(bloc, img, mouv, t, fin_bloc, debuts_vo)
+        for k, (img_p, mouv_p, deb_p, fin_p) in enumerate(plans):
+            nom = bloc if len(plans) == 1 else f"{bloc}p{k + 1}"
+            segments.append((nom, img_p, mouv_p, deb_p, fin_p - deb_p,
+                             fi if k == 0 else 0.0,
+                             fo if k == len(plans) - 1 else 0.0))
+        t = fin_bloc
     duree_tot = t
     print(f"Timeline : {len(timeline)} prises, duree totale {duree_tot:.1f}s")
 

@@ -104,6 +104,14 @@ l'autoplay est bloqué). Nouveaux plans : `cine-t07a-yamina`,
 `t08d-registre`, `t10b-mahieddine` + refonte des 12 tableaux. V1 conservée
 dans l'historique git.
 
+**Montage V2 livré (octobre 2026).** 20 plans : T7 = groupe + 4 portraits
+calés au prorata du texte, T8 = greffe / Salem / Scribe / registre calés
+sur les attaques VO, T10 = thé puis visage sur « He never lies » (coupe
+détectée par le silence, ≈ 9 s). Cuts secs intra-bloc, fondus aux
+frontières. MP4 3 min 27, ~36 Mo. Sous-titres : fond supprimé, 20 px,
+`line:-4`. Vérifié : 4 frames de calage (Yamina, Scribe, Mahieddine,
+titre), build vert.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
