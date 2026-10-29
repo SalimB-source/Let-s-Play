@@ -33,15 +33,31 @@ try {
   dom.window.close();
 }
 
-// ── La page ne force le plein écran qu’au doigt, dans le geste du lancement ─
+// ── Au doigt, le plein écran est obligatoire ; à la souris, il reste un choix ─
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-assert.doesNotMatch(page, /entrerPleinEcran\(\{ pinned: true, native: false \}\)/,
-  'aucune couche immersive n’est posée automatiquement au montage');
-assert.doesNotMatch(page, /addEventListener\('pointerdown', upgrade/,
-  'un toucher ordinaire ne déclenche pas le plein écran natif');
+// Le verrou suit la coque tactile : la même condition que `rpg-battle--touch`.
+assert.match(page, /const pleinEcranVerrouille = viewport\.mobile;/,
+  'le plein écran obligatoire suit exactement la condition du duel tactile (téléphone, tablette, APK)');
+// La couche immersive est posée d’elle-même, mais seulement sous ce verrou.
+assert.match(page, /if \(!pleinEcranVerrouille\) return undefined;\s*\n\s*\/\/ 1\. La couche immersive[\s\S]*?entrerPleinEcran\(\{ pinned: true, native: false \}\);/,
+  'au doigt seulement, la couche immersive est posée au montage — sans geste, et sans demande native');
+// Le natif, lui, part dans un geste : le navigateur l’exige.
+assert.match(page, /const demanderNatif = \(\) => \{ entrerPleinEcran\(\{ pinned: true \}\); \};\s*\n\s*window\.addEventListener\('pointerdown', demanderNatif, true\);/,
+  'le plein écran natif part au premier appui, et repart s’il a été refermé');
+// Une sortie imposée par le navigateur est rattrapée côté hook.
+assert.match(page, /onNativeExit: \(\) => \{\s*\n\s*if \(mobileRef\.current\) rentrerPleinEcranRef\.current\?\.\(\);/,
+  'une sortie imposée par le navigateur (geste « retour ») repose la couche immersive au doigt');
+// Aucune sortie : ni bouton au menu, ni bouton dans la barre du duel, ni touche F.
+assert.match(page, /onToggleFullscreen=\{pleinEcranVerrouille \? null : basculerPleinEcran\}/,
+  'au doigt, le menu ne reçoit aucune bascule : son bouton plein écran n’existe pas');
+assert.match(page, /\{onToggleFullscreen && \(\s*\n\s*<button\s*\n\s*type="button"\s*\n\s*className=\{`rpg-mode-menu__fullscreen/,
+  'le bouton du menu n’est monté que si une bascule existe');
+assert.match(page, /\{!pleinEcranVerrouille && \(\s*\n\s*<button\s*\n\s*type="button"\s*\n\s*className=\{`rpg-duel-nav__fullscreen/,
+  'celui de la barre du duel non plus');
+assert.match(page, /if \(pleinEcranVerrouille\) return undefined;\s*\n\s*const surTouche = \(event\) => \{/,
+  'au doigt, la touche F ne referme plus le plein écran');
+// À la souris, rien ne change : la touche F, la bascule et le lancement.
 assert.match(page, /const demanderPleinEcranEtPaysage = \(\) => \{\s*\n\s*const veutPaysage = Boolean\(window\.LetsPlayAndroid\)\s*\n\s*\|\| Boolean\(window\.matchMedia\?\.\('\(pointer: coarse\)'\)\.matches\);\s*\n\s*if \(veutPaysage\) entrerPleinEcran\(\);\s*\n\s*landscapeRef\.current\?\.enter\(\{ fullscreen: false \}\);/,
   'au doigt, lancer une partie demande le plein écran natif dans le geste puis verrouille le paysage ; sur ordinateur, rien');
-assert.match(page, /onToggleFullscreen=\{basculerPleinEcran\}/,
-  'le bouton laisse le plein écran disponible sur demande explicite');
-console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre dans la page ; au doigt, le lancement demande le plein écran natif puis le paysage ; le bouton explicite reste disponible.');
+console.log('check:rpg-fullscreen ✓ — le Sablier s’ouvre dans la page à la souris (plein écran à la demande, touche F) ; au doigt, il est plein écran du premier au dernier écran, sans aucune sortie.');
 process.exit(0);
