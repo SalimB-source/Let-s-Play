@@ -1,0 +1,66 @@
+# Les vérifications web qui manquaient — routage du site et mise à jour.
+#
+# Le 29 octobre, `vercel.json` a reçu une règle SPA écrite
+# `/((?!api/|version.json).*)`. Le `|` dans le groupe de tête de lecture ne passe
+# pas la compilation des routes de Vercel : **toutes** les URL du site se sont
+# mises à répondre 500, pendant que le build, le déploiement et le statut Vercel
+# restaient verts. Aucun test ne lisait ce fichier — il n'y avait rien pour le
+# voir avant les visiteurs.
+#
+# Ce workflow est volontairement petit : deux fichiers de test, aucun build, une
+# minute au plus. Il tourne quand le routage ou le protocole de mise à jour
+# bougent, pas à chaque commit.
+name: Vérifications web
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'vercel.json'
+      - 'vite.config.js'
+      - 'src/updates/**'
+      - 'src/components/MiseAJourDisponible.jsx'
+      - 'tests/vercel-config.test.js'
+      - 'tests/maj-version.test.js'
+      - 'tests/maj-version-ui.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-checks.yml'
+  pull_request:
+    paths:
+      - 'vercel.json'
+      - 'vite.config.js'
+      - 'src/updates/**'
+      - 'src/components/MiseAJourDisponible.jsx'
+      - 'tests/vercel-config.test.js'
+      - 'tests/maj-version.test.js'
+      - 'tests/maj-version-ui.test.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  routage-et-maj:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Le routage du site
+        run: npm run check:vercel
+
+      - name: La mise à jour au lancement
+        run: npm run check:maj-version
