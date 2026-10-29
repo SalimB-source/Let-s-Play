@@ -5,10 +5,26 @@ Toute nouvelle carte du duel doit recevoir une illustration **full art** avant d
 ## Format des fichiers
 
 - Fichier local `public/cards/<identifiant>.jpg`, au ratio **exact 4:5** de la
-  face (1024×1280 livrés), illustration plein cadre jusqu'aux bords : aucune
-  marge, aucun liseré blanc, aucun fond rapporté. Les peintures livrées dans un
-  autre cadrage sont recadrées **puis** validées par le garde-fou
-  `PLEIN_ART_45` de `tests/rpg-duel.test.js`, qui mesure le ratio dans le JPEG.
+  face, illustration plein cadre jusqu'aux bords : aucune marge, aucun liseré
+  blanc, aucun fond rapporté. Les peintures livrées dans un autre cadrage sont
+  recadrées **puis** validées par le garde-fou `PLEIN_ART_45` de
+  `tests/rpg-duel.test.js`, qui mesure le ratio dans le JPEG.
+- **Une peinture se reçoit en 1024×1280 et se livre en 768×960.** Une face ne
+  s'affiche jamais plus large que ~270 px sur la table et 232 px dans le
+  catalogue : le 1024×1280 transportait quatre fois les pixels utiles, 103 Mo
+  de JPEG, 63 % du paquet du jeu. Le passage se fait par
+  `npm run art:aleger` (`scripts/aleger-art-cartes.sh`) : redimensionnement à
+  768 de large, rognage centré au 4:5 exact, qualité 72, progressif, sans
+  métadonnées — 39 Mo au total, sans différence visible à l'écran. Le script ne
+  retouche jamais un fichier déjà à 768 px : il est sûr à relancer, et il
+  reprend les peintures neuves au passage suivant.
+- La géométrie livrée est **une constante** : `CARD_ART_LARGEUR` /
+  `CARD_ART_HAUTEUR` dans `src/games/rpgCardArt.js`. Une peinture déposée en
+  1024×1280 fait échouer `tests/rpg-art-allegee.test.js` (format **et** poids :
+  260 Ko par fichier, 48 Mo pour le catalogue) jusqu'à son passage par
+  `art:aleger`.
+- Les mentions « 1024×1280 » plus bas dans ce document datent de la réception
+  des peintures : elles décrivent le fichier d'origine, pas le fichier livré.
 - Le champ `art` d’une carte ne sert qu’à pointer vers une illustration dédiée existante (`cardArtId`). Pour une nouvelle carte, utiliser son propre identifiant et livrer le JPG correspondant.
 - Pas de cadre, bordure, bannière, cartouche vide, nom, texte, coût, symbole d’élément, statistique ou autre interface dessinée dans l’image. L’interface du jeu superpose elle-même les repères lisibles.
 - Illustration peinte, détaillée et cinématographique, avec un cadrage conçu pour rester clair dans une carte portrait et un aperçu réduit.

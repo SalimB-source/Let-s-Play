@@ -74,7 +74,7 @@ import {
 } from '../src/games/rpgPlateaux.js';
 import { RPG_PLATEAUX } from '../src/games/rpgPlateaux.js';
 import { RPG_PLATEAUX_MUSICAUX } from '../src/games/rpgPlateauMusic.js';
-import { cardArtFurie } from '../src/games/rpgCardArt.js';
+import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArtFurie } from '../src/games/rpgCardArt.js';
 
 const CHEMIN = (relatif) => fileURLToPath(new URL(`../public/${relatif}`, import.meta.url));
 
@@ -201,7 +201,7 @@ test('la face de Furie de l’Ifrit d’encre est livrée en 4:5, plein cadre et
   const chemin = CHEMIN('cards/ifrit-d-encre-furie.jpg');
   assert.ok(existsSync(chemin), 'la peinture de Furie accompagne la carte intacte');
   const mesure = bordureDeLaPeinture(chemin);
-  assert.deepEqual([mesure.width, mesure.height], [1024, 1280],
+  assert.deepEqual([mesure.width, mesure.height], [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
     'format exact 4:5 de la face, comme les autres doubles de Furie');
   for (const part of mesure.clair) {
     assert.ok(part < 0.2, `liseré blanc sur un bord (${Math.round(part * 100)} %)`);

@@ -1191,7 +1191,7 @@ test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures 
     'source-de-bimini', 'source-de-bimini-2', 'source-de-bimini-1', 'source-de-bimini-0',
     'le-tresor-de-lima', 'le-tresor-de-lima-1', 'le-tresor-de-lima-0',
   ]) {
-    assert.ok(existsSync(art(id)), `${id} a sa peinture plein art 1024 × 1280`);
+    assert.ok(existsSync(art(id)), `${id} a sa peinture plein art`);
   }
   assert.ok(puissanceCarte(cardById('source-de-bimini')) > 40, 'le Site mythique valorise sa récompense différée');
 });

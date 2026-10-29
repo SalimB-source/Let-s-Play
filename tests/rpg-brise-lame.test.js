@@ -7,6 +7,7 @@ import {
   RPG_MAGIE_CARDS, cardById, magieById,
 } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
+import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR } from '../src/games/rpgCardArt.js';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerMagie,
   rpgSortACibleValide,
@@ -67,7 +68,8 @@ test('Brise-lame : fiche Braise, coût 3, Magie Rapide inhabituelle et illustré
   assert.equal(cardById('brise-lame'), carte);
   const peinture = CHEMIN('public/cards/brise-lame.jpg');
   assert.ok(existsSync(peinture), 'la peinture est livrée');
-  assert.deepEqual(dimensionsJpeg(peinture), [1024, 1280], 'plein art 4:5');
+  assert.deepEqual(dimensionsJpeg(peinture), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
+    'plein art 4:5 au format livré');
   assert.match(readFileSync(CHEMIN('src/games/rpgCardArt.js'), 'utf8'),
     /'brise-lame': 'braise-brise-lame-v2'/, 'révision de cache dédiée');
 });
