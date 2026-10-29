@@ -1224,8 +1224,8 @@ les pages du registre ouvert — **aucun caractère lisible**, conformément à 
 règle du set. Toujours **ni lampe, ni vase, ni génie qui s'échappe** : la
 consigne de repaint de l'Ifrit d'encre vaut aussi pour sa Furie.
 
-À l'écran, cette peinture remplace la face intacte pleine page, sans filet de
-couleur, tant que `entite.furieDeclenchee` est vrai ; la vignette rouge animée
+À l'écran, cette peinture remplace la face intacte pleine page, sans anneau,
+tant que `entite.furieDeclenchee` est vrai ; la vignette rouge animée
 l'accompagne, sur la table comme dans les aperçus. `tests/rpg-tour-oubliee.test.js`
 et `check:rpg-furie-preview` verrouillent le fichier, son ratio 4:5, son plein
 cadre et sa révision de cache. **Teryel aux sept cornes**, l'autre porteur de
@@ -1734,46 +1734,51 @@ dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
 elles sont. Les trois images hors facture et les deux cartes trop sombres sont
 les seules candidates à une reprise, et elles attendent un arbitrage.
 
-## Le filet de couleur — 3 px, la teinte de l'élément (octobre 2026)
+## Plus aucun cadre — la peinture d'un bord à l'autre (octobre 2026)
 
 La couleur d'élément des cartes (Sable `#d8bc86`, Braise `#e0412a`, Eau
 `#3f9fe8`, Neige `#a9e0f5`, Ténèbres `#4b2e83`, et les diagonales des
-hybrides) n'était plus lisible nulle part : l'anneau orné de 7 à 10 px avait
-été coupé par l'expérimentation « plus aucun cadre », et un Braise ressemblait
-à un Eau.
+hybrides) ne se peint plus **au bord** d'une face : les cartes n'ont plus
+d'anneau du tout. Ni l'anneau orné de 7 à 10 px, ni le filet de 3 px qui lui
+avait succédé. La peinture va d'un bord à l'autre, comme sur une face de Furie,
+et les coins restent arrondis.
 
-Les faces des cartes portent donc désormais un **filet de 3 px** — et rien
-d'autre. Ce n'est pas un retour de l'anneau : le motif (résille de Bab El,
-zellige des mythiques) est coupé, parce qu'à cette épaisseur il n'est plus
-qu'un bruit de pixels. Seule la matière reste — aplat pour une mono, deux
-aplats en diagonale pour une hybride, dégradé pour une mythique mono — et
-c'est elle qui nomme l'élément d'un coup d'œil.
+Ce n'est pas une perte de repère : la pastille de mana nomme l'élément (couleur
+et symbole), le fond de la face le reprend, la diagonale du coût hybride le
+montre et la fiche l'écrit. L'anneau, lui, rognait l'illustration de 3 px sur
+les quatre côtés — les faces de Furie, peintes plein cadre, paraissaient plus
+grandes que les autres.
 
-L'épaisseur tient dans une variable, `--rpg-card-filet: 3px` (`rpg-battle.css`,
-en tête) — deux pixels à l'origine, un cran de plus depuis octobre 2026 pour
-détacher la carte du bois et du tapis sans toucher à l'illustration —, et les
-quatre feuilles qui peignent des faces la reprennent :
+**Comment.** Les quatre gabarits d'épaisseur valent zéro, en clair, dans
+`rpg-battle.css` (`--rpg-card-border`, `-large`, `-small`, `-strong`) et dans
+`rpg-mobile.css` pour la coque tactile ; la règle finale « PLUS AUCUN CADRE »
+repose la largeur nulle en `!important` sur les neuf sélecteurs de faces, avec
+ses jumelles en fin de `rpg-card-guide.css` et de `rpg-deck-atelier.css`. Les
+variables restent, à zéro, pour que les faces **sans** classe de cadre (une
+carte en Furie, la vignette de l'atelier) lisent la même réponse.
+
+La pile de fonds de l'ancien anneau (fond de la face, motif, matière) reste
+déclarée : le fond garde son grain, mais le motif et la matière se replient à
+une taille nulle (`background-size: 100% 100%, 0 0, 0 0 !important`), sinon
+sans bordure ils recouvriraient toute la carte. Chaque face étant en
+`border-box`, elle garde sa largeur, son 4:5 et sa mesure : c'est
+l'illustration qui gagne l'anneau, pas la face qui grandit.
 
 | Feuille | Faces |
 |---|---|
 | `rpg-battle.css` | main, table, terrains, aperçu au survol, paquet, mulligan, destruction, sort joué, catalogue |
 | `rpg-card-guide.css` | l'exemple du guide |
 | `rpg-deck-atelier.css` | la vignette de l'atelier de deck et celle de l'assistant de deck |
-| `rpg-mobile.css` | **aucune** : au doigt et dans l'APK, les faces n'ont plus de cadre du tout (voir « Au doigt, plus aucun cadre ») |
+| `rpg-mobile.css` | les mêmes, au doigt et dans l'APK, avec la spécificité qui gagne sur les paliers `vw` |
 
-Le filet ne mange pas l'illustration : chaque face est en `border-box`, elle
-garde sa largeur, son 4:5 et sa mesure, et le plein art reste plein cadre
-jusqu'au filet. Le liseré noir de 2 px (`outline`) qui détache les cartes du
-bois ne bouge pas.
-
-**Au doigt, plus aucun cadre.** La feuille tactile retire le filet sur toutes les
-faces qu'elle contient — `.rpg-battle.rpg-battle--touch
-[class*="rpg-card--frame-"][class]` et `border-width: 0 !important` —, et la
-même condition (`(pointer: coarse), (max-width: 1100px)`) l'enlève aussi à
-l'atelier et au catalogue, qui vivent dans la coque du menu. La couleur de
-l'élément reste lisible : pastille, coût et ligne de type la portent, et la
-pastille garde son propre bord. Le duel à la souris, lui, garde son filet de
-3 px.
+**Au doigt comme au clavier.** C'était vrai au doigt depuis les retouches
+tactiles ; c'est désormais vrai partout. La feuille tactile garde son bloc
+« Sans cadre, au doigt » — bord à zéro sur la main, la table et les terrains —,
+et la même condition (`(pointer: coarse), (max-width: 1100px)`) vaut pour
+l'atelier et le catalogue, qui vivent dans la coque du menu. La pastille
+d'élément garde son propre bord : la couleur reste une **donnée**
+(`cardFrameColor`, `cardFrameClass`, `--rpg-frame-color`), lue par les badges,
+les fiches et le coût hybride.
 
 **Sens de la diagonale des hybrides.** Une carte à deux couleurs est coupée par
 la diagonale qui monte du **coin bas-gauche au coin haut-droit** : la première
@@ -1785,16 +1790,15 @@ pastille, parce que le dégradé est décrit avec des mots-clés de coin
 sur un carré — sur une face 4:5, la séparation tombait à 10 % des bords et la
 première couleur n'atteignait jamais son coin. Les arrêts restent nets (50/50,
 et 33/33/33 ou 25 × 4 pour les combinaisons à trois et quatre éléments). La
-pastille de coût hybride (`cardHybridGradient`) suit la même diagonale.
+pastille de coût hybride (`cardHybridGradient`) suit la même diagonale — c'est
+même la seule chose qui reste de cette couleur au bord d'une face.
 
-Une face échappe volontairement au filet : la **Furie déclenchée**, dont la
-peinture alternative occupe toute la face sans être rognée.
-
-Le catalogue ne recevait pas la couleur de son élément (il retombait sur le
-repli clair `#f1f3f5`) : `cardFrameStyle` y est désormais posé comme sur les
-faces du duel. `tests/rpg-cadre-filet.test.js` verrouille l'ensemble — la
-largeur, l'absence de `border-width: 0` sur les faces, la matière intacte et
-la couleur posée sur le catalogue, l'atelier et le guide.
+Le catalogue reçoit toujours la couleur de son élément (`cardFrameStyle` y est
+posé comme sur les faces du duel) : elle sert d'encre aux badges.
+`tests/rpg-cadre-filet.test.js` verrouille l'ensemble — les quatre gabarits à
+zéro, la cascade jsdom qui rend `0px` au clavier comme au doigt, l'absence de
+liseré coloré sur les légendaires et de cran coloré derrière les piles, et la
+couleur d'élément conservée comme donnée.
 
 ## Le virage de couleur est retiré (octobre 2026)
 
@@ -1823,9 +1827,11 @@ premier lot. Erreur mesurée en validation croisée : **0,89 / 255** par canal �
 invisible à l'œil.
 
 **Les couleurs d'élément ne vivent plus dans la peinture.** Le bleu de l'Eau,
-le violet des Ténèbres et le doré du Sable ont quitté les images ; c'est le
-**filet de 3 px** de chaque carte qui nomme son élément, et lui seul. Les
-peintures, elles, retournent à la lumière de leur scène.
+le violet des Ténèbres et le doré du Sable ont quitté les images ; c'est la
+**pastille de mana** (couleur et symbole) qui nomme l'élément, avec le fond de
+la face et la ligne de couleur de la fiche — plus aucun filet ne le peint au
+bord des cartes depuis octobre 2026. Les peintures, elles, retournent à la
+lumière de leur scène.
 
 Pour l'Eau et les Ténèbres, la marque de cache devient `sans-teinte-v1`
 (constante `SANS_TEINTE` dans `rpgCardArt.js`) : elle ne décrit plus une

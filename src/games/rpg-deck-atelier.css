@@ -1414,11 +1414,14 @@
   flex: 1 1 0;
 }
 
-/* ═══ FILET DE 3 PX DES ILLUSTRATIONS (INVARIANT `rpg-cadre-filet.test.js`) ═══ */
+/* ═══ AUCUN CADRE SUR LES ILLUSTRATIONS (INVARIANT `rpg-cadre-filet.test.js`) ═══ */
 .rpg-atelier__carte-art[class*="rpg-card--frame-"] {
-  border-width: var(--rpg-card-filet, 3px) !important;
+  border-width: 0 !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
+  /* La vignette garde son fond (#171218) ; seule la matière de l'anneau se
+     replie à zéro, sinon elle recouvrirait toute l'illustration. */
+  background-size: 100% 100%, 0 0, 0 0 !important;
   animation: none !important;
 }
 

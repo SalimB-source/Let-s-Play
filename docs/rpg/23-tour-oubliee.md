@@ -347,8 +347,8 @@ mythiques uniques, une couleur).
   le corps fissuré s'est ouvert sur une braise blanche, la gueule hurle, la
   flamme violette se déchaîne et l'encre noire jaillit en fouets sur les
   rayonnages. Les pages du registre ne portent que des éclaboussures : aucun
-  texte lisible, ni latin ni arabe. Plein cadre, sans bordure, et affichée
-  sans filet de couleur sous la vignette rouge de Furie. L'autre porteur de
+  texte lisible, ni latin ni arabe. Plein cadre, sans bordure — comme toutes
+  les faces depuis octobre 2026 — et affichée sous la vignette rouge de Furie. L'autre porteur de
   Furie du set, **Teryel aux sept cornes**, n'a pas encore de double
   déclenché.
 

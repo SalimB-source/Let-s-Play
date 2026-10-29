@@ -6968,117 +6968,100 @@ ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
 rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
 Playwright demandent un navigateur, absent de cet environnement.
 
-## Le Sablier : plus aucun cadre de carte au doigt
+## Le Sablier : plus aucun cadre de carte, nulle part
 
-« Enlève le cadre des cartes sur mobile seulement. »
+« Enlève les cadres colorés. » — « Plus aucun, et partout. »
 
-Sur téléphone et dans l'APK, **aucune carte ne porte d'anneau** : ni la main, ni
-les cartes posées, ni les terrains du rail de mana, ni l'aperçu, ni le mulligan,
-ni les paquets et le cimetière, ni les annonces, ni le catalogue ou l'atelier de
-deck. La face est son illustration, jusqu'au bord. **Le clavier ne bouge pas** :
-il garde le filet de 3 px de la couleur de l'élément (voir « la signature des
-familles de sorts » et `RPG-CARD-ART.md`).
+**Aucune face de carte ne porte d'anneau** : ni la main, ni les cartes posées,
+ni les terrains du rail de mana, ni l'aperçu au survol, ni le mulligan, ni les
+paquets et le cimetière, ni l'annonce d'un sort, ni le catalogue, ni l'exemple
+du guide, ni l'atelier de deck. La face est son illustration, jusqu'au bord, et
+les coins restent arrondis. C'était déjà vrai au doigt depuis les retouches
+tactiles ; c'est désormais vrai **au clavier aussi**, et les deux feuilles
+disent la même chose au lieu de se contredire.
 
-**Pourquoi le retrait plutôt qu'un filet amaigri.** Sur une carte en main de
-62 px (844 × 390, cinq cartes), 3 px de bordure pèsent déjà un vingtième de la
-face — et la couleur de l'élément est de toute façon annoncée par la pastille,
-par le coût et par la ligne de type. Sur un écran qu'on tient à bout de bras, la
-peinture compte plus que l'anneau. C'est l'arbitrage inverse de celui du grand
-écran, où le filet nomme l'élément d'un coup d'œil dans un éventail large.
+**Pourquoi c'est tenable.** L'anneau coloré n'était pas la seule marque de
+l'élément : la pastille de mana le nomme (couleur et symbole), le fond de la
+face le reprend, le coût hybride garde sa diagonale, la fiche écrit sa ligne
+de couleur. L'anneau, lui, rognait l'illustration de 3 px sur les quatre côtés —
+les faces de Furie, peintes plein cadre, paraissaient plus grandes que les
+autres. Le budget de la grille tactile ne bouge pas : tout est en `border-box`,
+donc chaque face garde sa largeur, son 4:5 et sa mesure (`--duel-card` pour la
+main, `--rpg-field-card` pour la table, les 40/48 px du rail pour les terrains) ;
+c'est l'illustration qui gagne l'anneau, pas la face qui grandit.
 
-| | Clavier | Doigt / APK |
-| --- | --- | --- |
-| Main, table, terrains | filet de 3 px | **aucun cadre** |
-| Aperçu, mulligan, paquets, annonces | filet de 3 px | **aucun cadre** |
-| Catalogue, atelier de deck | filet de 3 px | **aucun cadre** (coque du menu) |
-| Pastille d'élément, coût, compteurs ×N | leurs propres bords | inchangés |
-| États (sélection, cible, attaquant), halos | inchangés | inchangés |
+**Comment, en deux leviers.**
 
-**Comment.** Deux règles, en fin de `rpg-mobile.css` :
+1. Les quatre gabarits d'épaisseur valent zéro, en clair, sur la coque du duel
+   (`rpg-battle.css`) comme sur la coque tactile (`rpg-mobile.css`) :
 
-```css
-.rpg-battle--touch .rpg-hand .rpg-hand__card,
-.rpg-battle--touch .card-row .rpg-card,
-.rpg-battle--touch .rpg-terrain { border-width: 0 !important; }
+   ```css
+   --rpg-card-border: 0px;
+   --rpg-card-border-large: 0px;
+   --rpg-card-border-small: 0px;
+   --rpg-card-border-strong: 0px;
+   ```
 
-.rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
-  border-width: 0 !important;
-}
-```
+   C'est ce qui couvre les faces **sans** classe de cadre — une carte en Furie,
+   par exemple, dont la peinture alternative remplace la classe `--frame-*` — et
+   la vignette de l'atelier, qui lit la même variable.
 
-Le `!important` n'est pas une facilité : la règle du filet, en fin de
-`rpg-battle.css`, est elle-même `!important` et vise les mêmes classes. La
-seconde règle la dépasse par la **spécificité** — deux classes et deux
-attributs contre une classe et un attribut —, sans que le duel à la souris ait à
-changer d'un pixel.
+2. La règle finale « PLUS AUCUN CADRE », en fin de `rpg-battle.css`, repose la
+   largeur nulle en `!important` sur les neuf sélecteurs de faces (main, table,
+   terrains, aperçu, magie jouée, destruction, dessus de pile, mulligan,
+   catalogue), et ses jumelles en fin de `rpg-card-guide.css` et de
+   `rpg-deck-atelier.css`. Elle doit l'emporter sur les dizaines de
+   `border-width` dispersées plus haut (annonce, palettes, paliers `vw`,
+   media queries) : d'où les `!important`.
 
-Le menu (`atelier`, `catalogue`) garde sa propre coque, sans la classe tactile
-du duel : il passe donc par la **même condition** que celle qui pose
-`rpg-battle--touch` dans `RpgDuelPage` — doigt, stylet, ou fenêtre de
-1100 px au plus :
+**La pile de fonds de l'anneau.** Le fond, le motif et la matière de l'ancien
+cadre restent déclarés (ils donnent son grain à la face), mais sans bordure ils
+se peindraient sur toute la carte : la règle finale garde donc la première
+couche — le fond — aux dimensions de la face et replie les deux autres à une
+taille nulle (`background-size: 100% 100%, 0 0, 0 0 !important`).
 
-```css
-@media (pointer: coarse), (max-width: 1100px) {
-  .rpg-battle .rpg-atelier__carte-art[class*="rpg-card--frame-"][class],
-  .rpg-battle .rpg-card-catalogue__art[class*="rpg-card--frame-"][class] {
-    border-width: 0 !important;
-  }
-}
-```
+**Rien d'autre ne bouge.** Les pastilles d'élément, les disques de coût, les
+compteurs `×N`, les ombres, les halos de jouabilité (dont la ligne de Lien
+dorée) et les `outline` d'état (sélection, cible, attaquant déclaré) restent
+exactement où ils étaient. La couleur de l'élément reste une **donnée** :
+`cardFrameColor` / `cardFrameClass` alimentent toujours `--rpg-frame-color`,
+que les badges et les fiches lisent.
 
-La spécificité est montée d'un cran à dessein : le filet de l'atelier est posé
-par `rpg-deck-atelier.css`, chargée par `RpgDeckCreation.jsx` — un ordre
-d'import qui ne nous appartient pas. Deux classes et deux attributs l'emportent
-quel que soit cet ordre.
-
-**Rien d'autre ne change.** La règle ne touche qu'à `border-width` : les
-pastilles d'élément, les disques de coût, les compteurs `×N`, les ombres, les
-halos de jouabilité et les `outline` d'état (sélection dorée, cible, attaquant
-déclaré) restent exactement où ils étaient. Aucune géométrie ne bouge non plus :
-tout est en `border-box`, donc chaque face garde sa largeur, son 4:5 et sa
-mesure (`--duel-card` pour la main, `--rpg-field-card` pour la table, les
-40/48 px du rail pour les terrains) — c'est l'illustration qui gagne l'anneau,
-pas la face qui grandit. Le budget de la grille tactile et le contrat de
-`check:rpg-mobile` (aucun recouvrement dans la main, cibles tactiles) sont donc
-inchangés.
-
-**Les piles n'ont pas d'ombre non plus.** Elles se signalaient par deux ombres
-décalées — un cran sombre, puis la couleur du cadre : le cadre, en double. Le
-compteur `×N` et la pastille `↻N` d'engagement restent seuls à dire la pile, et
-le compteur se touche pour déplier. Une exception : l'engagement **partiel**
-d'une pile de terrains garde sa bague discrète (`0 0 0 1px rgba(255, 217, 168,
-.45)`) — elle dit un état, pas une épaisseur.
+**Les piles n'ont pas d'ombre colorée non plus.** Elles se signalaient par deux
+ombres décalées — un cran sombre, puis la couleur du cadre : le cadre, en
+double. Le compteur `×N` et la pastille `↻N` d'engagement restent seuls à dire
+la pile, et le compteur se touche pour déplier. Une exception : l'engagement
+**partiel** d'une pile de terrains garde sa bague discrète (`0 0 0 1px rgba(255,
+217, 168, .45)`) — elle dit un état, pas une épaisseur. Le halo des héros
+(`.rpg-card--legendaire`) reste lui aussi : il est flou, il déborde de la face,
+et il ne dessine aucun anneau net.
 
 ### Où vit le code
 
-- `src/games/rpg-mobile.css` — le bloc « Sans cadre, au doigt » (la main
-  `.rpg-battle--touch .rpg-hand .rpg-hand__card`, la table
-  `.rpg-battle--touch .card-row .rpg-card` — elle couvre les cartes dépliées
-  d'une pile, enfants de `.card-row` —, les terrains
-  `.rpg-battle--touch .rpg-terrain`, puis toutes les faces de la coque tactile
-  par `[class*="rpg-card--frame-"]`), la condition du menu (atelier, catalogue)
-  juste après, et « Les piles, au doigt » (`.rpg-card-stack` et
-  `.rpg-terrain.rpg-terrain-stack.is-stacked` passent à `box-shadow: none`) ;
-- `src/games/rpg-battle.css` — les gabarits `--rpg-card-border*`, le filet
-  `--rpg-card-filet`, l'anneau orné et l'ombre décalée des piles de terrains,
-  **inchangés** : ce sont la mesure du duel à la souris.
+- `src/games/rpg-battle.css` — les gabarits `--rpg-card-border*` (zéro), le bloc
+  final « PLUS AUCUN CADRE » et sa règle de `background-size` ;
+- `src/games/rpg-mobile.css` — les mêmes gabarits à zéro pour la coque tactile,
+  le bloc « Sans cadre, au doigt » (main, table, terrains, avec la spécificité
+  qui gagne sur les paliers `vw`) et « Les piles, au doigt » ;
+- `src/games/rpg-card-guide.css` et `src/games/rpg-deck-atelier.css` — les deux
+  jumelles, même largeur nulle et même silence du motif.
 
 ### Vérifications
 
 ```bash
-npm run check:rpg-cadre-filet   # le filet, et son retrait au doigt
+npm run check:rpg-cadre-filet   # plus aucun cadre, clavier comme doigt
 npm run check:rpg               # le moteur et le catalogue
 npm run build                   # le bundle se construit
 ```
 
-`tests/rpg-cadre-filet.test.js` lit les deux feuilles, puis monte la cascade
-réelle dans jsdom, deux fois : la coque `rpg-battle--touch` rend
-`border-top-width: 0px` sur la main, la table et le terrain, et la pastille
-d'élément garde son bord ; la coque `rpg-battle` rend `3px` sur les trois. Les
-assertions de source tiennent le reste : le filet de 3 px reste la mesure du
-clavier, la feuille tactile ne redessine plus **aucun** filet
-(`border-width: var(--rpg-card-filet…)` n'y apparaît plus), et le bloc du retrait
-ne pose aucun `outline` — les états gardent les leurs.
+`tests/rpg-cadre-filet.test.js` lit les feuilles, puis monte la cascade réelle
+dans jsdom, deux fois : la coque `rpg-battle` **et** la coque
+`rpg-battle--touch` rendent `border-top-width: 0px` sur les sept faces testées
+(main, table, terrain, aperçu, mulligan, dessus de pile, catalogue), et la
+pastille d'élément garde son bord. Les assertions de source tiennent le reste :
+les quatre gabarits valent zéro, aucune feuille ne mesure plus un `filet`,
+la règle finale ne pose ni `animation: none` ni `outline`, et aucune ombre
+tactile ne repeint la couleur du cadre.
 
 
 ## Le Sablier : couleur et coût de même diamètre, catalogue compris
@@ -7596,9 +7579,9 @@ rangée.
 l'orange** — la seule autre teinte de la feuille —, plus chaude, tout aussi
 concentrée : liseré doré `255, 214, 120`, or `255, 152, 14`, halo de 12 px qui
 respire jusqu'à 17 px (`rpg-mythique-halo-pulse`, 0,9 s). C'est une respiration,
-pas une dilatation : la lueur ne quitte jamais les bords de la face. Le cadre ne
-bouge pas d'un pixel — le halo se peint derrière la face, le filet garde la
-couleur de l'élément, même sous l'or.
+pas une dilatation : la lueur ne quitte jamais les bords de la face. Rien ne
+bouge d'un pixel — le halo se peint derrière la face, et aucune face ne porte
+plus de filet de couleur (voir « plus aucun cadre de carte, nulle part »).
 
 | Carte allumée en main | Lueur de jouabilité |
 | --- | --- |
