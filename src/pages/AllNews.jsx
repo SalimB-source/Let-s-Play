@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchIndex } from '../search/searchIndex';
 import { autoSearchEntries, autoNewsListing } from '../lib/autoNews';
+import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-10-29-cinema-tech';
+import { dailyNewsListing as gamingNews20261029 } from '../news/daily/2026-10-29-gaming';
 import { dailyNewsListing } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
@@ -20,7 +22,7 @@ export const allNewsArticles = [...new Map(
 // Réutiliser les données éditoriales lorsqu’elles sont disponibles : mêmes
 // titres, badges, dates/sources, miniatures et sentiments que les cartes Actus.
 const newsListingByRoute = new Map(
-  [...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing].map((story) => [story.to, story]),
+  [...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing, ...gamingNews20261029, ...cultureTechNews20261029].map((story) => [story.to, story]),
 );
 
 const COPY = {

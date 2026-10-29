@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
+import { dailySeoEntries as cultureTechSeo20261029 } from '../news/daily/2026-10-29-cinema-tech';
+import { dailySeoEntries as gamingSeo20261029 } from '../news/daily/2026-10-29-gaming';
 import { dailySeoEntries } from '../news/daily/2026-10-18';
 import { dailySeoEntries as dailySeoEntries20261011 } from '../news/daily/2026-10-11';
 import { dailySeoEntries as dailySeoEntries20261014 } from '../news/daily/2026-10-14';
@@ -15,6 +17,8 @@ const SITE_NAME = 'Let’s Play';
 const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.jpg`;
 
 const pageMeta = {
+  ...cultureTechSeo20261029,
+  ...gamingSeo20261029,
   ...dailySeoEntries,
   ...dailySeoEntries20261017,
   ...dailySeoEntries20261016,
