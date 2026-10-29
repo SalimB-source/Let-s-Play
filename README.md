@@ -8413,7 +8413,7 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   `npm run desktop:web` (pack hors ligne élagué), `npm run desktop:setup`,
   `npm run desktop:run` (lancer sans installer), `npm run desktop:dist`
   (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le pack
-  dans un navigateur), `npm run check:desktop` (29 vérifications sans Electron).
+  dans un navigateur), `npm run check:desktop` (33 vérifications sans Electron).
 - CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
   build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
   committé). La Release publie aussi des copies au nom fixe

@@ -293,6 +293,21 @@ if (npmInstall.status !== 0) {
   process.exit(npmInstall.status ?? 1);
 }
 
+// npm installe parfois une dépendance **imbriquée** sous son parent quand deux
+// versions se disputent la racine : `electron-updater@6.8.11` garde son
+// `semver` dans `node_modules/electron-updater/node_modules/semver`. Or
+// electron-builder ne recopie pas ce sous-dossier sous un motif
+// `node_modules/<module>/**` — le module est bien dans l'asar, son code non.
+// Résultat, chez le joueur, à la première ligne : « Cannot find module
+// 'semver' » (version 1.0.2993). On aplatit systématiquement avant de vérifier.
+const npmDedupe = spawnSync('npm', [
+  'dedupe', '--prefix', SCENE, '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund',
+], { stdio: 'inherit', shell: process.platform === 'win32' });
+if (npmDedupe.status !== 0) {
+  console.error('[desktop] npm dedupe a échoué : des modules runtime peuvent rester imbriqués.');
+  process.exit(npmDedupe.status ?? 1);
+}
+
 // ---------------------------------------------------------------------------
 // Garde-fou : `node_modules` n'est embarqué que module par module
 // ---------------------------------------------------------------------------
@@ -312,12 +327,47 @@ const modulesAutorises = new Set(
     .map(([, nom]) => nom),
 );
 const dossierModules = join(SCENE, 'node_modules');
-const modulesInstalles = readdirSync(dossierModules, { withFileTypes: true })
-  .filter((entree) => entree.isDirectory() && entree.name !== '.bin')
-  .flatMap((entree) => (entree.name.startsWith('@')
-    ? readdirSync(join(dossierModules, entree.name)).map((nom) => `${entree.name}/${nom}`)
-    : [entree.name]));
-const modulesOublies = modulesInstalles.filter((nom) => !modulesAutorises.has(nom));
+
+/** Tous les modules d'un `node_modules`, **y compris les imbriqués**.
+ *
+ * La version précédente ne lisait que le premier niveau : `semver`, glissé
+ * sous `electron-updater`, était donc invisible pour le garde-fou — qui a
+ * laissé passer un exécutable incapable de démarrer. */
+function listerModules(dossier) {
+  const trouves = [];
+  const visiter = (courant, prefixe = '') => {
+    for (const entree of readdirSync(courant, { withFileTypes: true })) {
+      if (!entree.isDirectory() || entree.name === '.bin') continue;
+      const paquets = entree.name.startsWith('@')
+        ? readdirSync(join(courant, entree.name)).map((nom) => (
+          [`${entree.name}/${nom}`, join(courant, entree.name, nom)]
+        ))
+        : [[entree.name, join(courant, entree.name)]];
+      for (const [nom, chemin] of paquets) {
+        const relatif = prefixe ? `${prefixe}/node_modules/${nom}` : nom;
+        trouves.push({ nom, relatif });
+        const sousDossier = join(chemin, 'node_modules');
+        if (existsSync(sousDossier)) visiter(sousDossier, relatif);
+      }
+    }
+  };
+  if (existsSync(dossier)) visiter(dossier);
+  return trouves;
+}
+
+const modules = listerModules(dossierModules);
+const modulesPlats = modules.filter(({ relatif }) => !relatif.includes('/node_modules/'));
+const modulesImbriques = modules.filter(({ relatif }) => relatif.includes('/node_modules/'));
+
+if (modulesImbriques.length) {
+  console.error(`[desktop] module(s) imbriqué(s) dans un autre : ${modulesImbriques.map(({ relatif }) => relatif).join(', ')}`);
+  console.error('          electron-builder ne recopie pas ces sous-dossiers : l’exécutable');
+  console.error('          planterait au lancement sur « Cannot find module ». Aplatissez');
+  console.error('          l’arbre (npm dedupe) avant de reconstruire.');
+  process.exit(1);
+}
+
+const modulesOublies = modulesPlats.map(({ nom }) => nom).filter((nom) => !modulesAutorises.has(nom));
 if (modulesOublies.length) {
   console.error(`[desktop] dépendance(s) absente(s) de electron-builder.yml : ${modulesOublies.join(', ')}`);
   for (const nom of modulesOublies) {
@@ -328,10 +378,10 @@ if (modulesOublies.length) {
 const octetsModules = total(dossierModules, lister(dossierModules));
 if (octetsModules > 32 * 1024 * 1024) {
   console.error(`[desktop] dépendances runtime trop lourdes : ${tailleLisible(octetsModules)} `
-    + `pour ${modulesInstalles.length} modules — le pack ne doit contenir que la coque.`);
+    + `pour ${modulesPlats.length} modules — le pack ne doit contenir que la coque.`);
   process.exit(1);
 }
-console.log(`[desktop] dépendances runtime : ${modulesInstalles.length} modules, ${tailleLisible(octetsModules)}`);
+console.log(`[desktop] dépendances runtime : ${modulesPlats.length} modules, ${tailleLisible(octetsModules)}`);
 console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers + electron-updater)`);
 
 // ---------------------------------------------------------------------------

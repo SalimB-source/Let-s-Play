@@ -74,6 +74,11 @@ files:
   - 'node_modules/lodash.isequal/**'
   - 'node_modules/ms/**'
   - 'node_modules/sax/**'
+  # `semver` : `electron-updater` compare les versions avec (out/AppUpdater.js).
+  # Oublié jusqu'à la 1.0.2993 — l'exécutable installé mourait au lancement sur
+  # « Cannot find module 'semver' ». `npm dedupe` (scripts/desktop-bundle.mjs)
+  # le hisse à la racine de desktop/pack/node_modules, là où ce motif le prend.
+  - 'node_modules/semver/**'
   - 'node_modules/tiny-typed-emitter/**'
   - 'node_modules/universalify/**'
   - '!app-icons{,/**/*}'

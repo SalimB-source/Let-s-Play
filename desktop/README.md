@@ -245,9 +245,10 @@ workflow à la main en cochant `pack_hors_ligne`. Il est alors publié sous un n
 
 `.github/workflows/desktop-windows.yml` :
 
-1. `verifs` (ubuntu) : `npm run check:desktop` — 29 vérifications sans Electron
+1. `verifs` (ubuntu) : `npm run check:desktop` — 33 vérifications sans Electron
    (commutateurs GPU, serveur local, anti-évasion, isolation de la fenêtre,
-   empaquetage, mode de démarrage, relance de mise à jour) ;
+   empaquetage, **fermeture complète des modules de `electron-updater`** lue
+   dans le verrou, mode de démarrage, relance de mise à jour) ;
 2. `installeur` (windows-latest) : version dérivée, **coque seule**,
    `electron-builder`, artefacts de run, puis — sur `main` seulement — GitHub
    Release sur le tag `desktop` (lien de téléchargement permanent, remplacé à
