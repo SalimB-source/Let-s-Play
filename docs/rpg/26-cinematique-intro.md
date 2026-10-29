@@ -112,6 +112,21 @@ frontières. MP4 3 min 27, ~36 Mo. Sous-titres : fond supprimé, 20 px,
 `line:-4`. Vérifié : 4 frames de calage (Yamina, Scribe, Mahieddine,
 titre), build vert.
 
+**Montage V3 livré (octobre 2026).** 24 plans : T1 = panoramique puis
+montée sur « a desert that rises », T5 = creux + macro du sable
+(`cine-t05b-sable`), T9 = duel / cartes (`cine-t09b-cartes`) / punch-in
+sur « So we will fight ». Langage caméra varié (16 mouvements :
+poussées, panos, diagonales, montées). Post : voile de sable procédural
+en boucle (majorité tombante + grains qui montent — exception volontaire
+au garde-fou, demandée : pluie de mémoire), 4 pulses de lumière (glas
+T2, « So we will fight », portail, halo du titre), étalonnage chaud,
+vignette, grain film. Son : whooshes de transition synthétiques (11),
+slots d'ambiances prêts (`audio/amb/`, ignorés si absents : vent,
+scintillement, salon de thé, bourdon, coup de cloche réel). MP4
+3 min 27, ~71 Mo (CRF25/slow). Vérifié : contact sheet 5 moments
+(pulses, macro sable, halo titre) + crop voile de sable, niveaux
+−23,1/−4,4 dB, build vert.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)

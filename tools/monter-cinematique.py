@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier.
+"""Montage de la cinematique d'intro EN du Sablier (V3).
 
-Assemble : 12 tableaux 4K (Ken Burns) + 15 prises VO + nappe musicale
-+ 3 cloches synthetiques + carton titre -> MP4 1080p + sous-titres EN recales.
+Assemble : 22 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
++ carton titre -> MP4 1080p + sous-titres EN recales.
+
+V3 : langage camera varie (poussees, panoramiques, diagonales, montees),
+decoupage multi-plans cale narration (T1/T5/T7/T8/T9/T10), voile de sable
+procedural, pulses de lumiere, vignettage + grain film, whooshes de
+transition synthetiques, et nappes d'ambiance optionnelles.
 
 Entrees : public/sablier-cinematic/4k/*.jpg, audio/en/T*.mp3,
           public/Desert Solitude with Percussion.mp3
+          audio/amb/*.mp3 (optionnel, voir AMB + README du dossier)
 Sorties : public/sablier-cinematic/montage/cine-intro-en-1080p.mp4
           public/sablier-cinematic/montage/sous-titres-en.vtt
 Usage : python3 tools/monter-cinematique.py
@@ -18,6 +24,7 @@ from PIL import Image, ImageDraw, ImageFont
 import tempfile
 
 import imageio_ffmpeg
+import numpy as np
 from mutagen.mp3 import MP3
 
 FF = imageio_ffmpeg.get_ffmpeg_exe()
@@ -25,6 +32,7 @@ RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CINE = os.path.join(RACINE, "public", "sablier-cinematic")
 K4 = os.path.join(CINE, "4k")
 VO = os.path.join(CINE, "audio", "en")
+AMB_DIR = os.path.join(CINE, "audio", "amb")
 MONTAGE = os.path.join(CINE, "montage")
 MUSIQUE = os.path.join(RACINE, "public", "Desert Solitude with Percussion.mp3")
 FPS = 24
@@ -40,7 +48,7 @@ def duree_mp3(chemin):
 def run(cmd, **kw):
     r = subprocess.run(cmd, capture_output=True, text=True, **kw)
     if r.returncode != 0:
-        print("ECHEC:", " ".join(cmd[:6]), "...", file=sys.stderr)
+        print(f"ECHEC (code {r.returncode}):", " ".join(cmd[:8]), "...", file=sys.stderr)
         print(r.stderr[-3000:], file=sys.stderr)
         raise SystemExit(1)
     return r
@@ -48,18 +56,18 @@ def run(cmd, **kw):
 
 # (bloc, image, mouvement, tête, queue, fade_in, fade_out, [(vo, gap_avant)])
 BLOCS = [
-    ("T01", "cine-t01-bab-el-4k.jpg", "zin", 2.2, 0.9, 0.8, 0.35, [("T01.mp3", 0)]),
+    ("T01", "cine-t01-bab-el-4k.jpg", "panR", 2.2, 0.9, 0.8, 0.35, [("T01.mp3", 0)]),
     ("T02", "cine-t02-astrolabe-4k.jpg", "zin_slow", 0.6, 0.5, 0.35, 0.0, [("T02.mp3", 0)]),
     ("T03", "cine-t03-reprise-4k.jpg", "panD", 0.6, 0.9, 0.0, 0.35, [("T03.mp3", 0)]),
-    ("T04", "cine-t04-liste-4k.jpg", "panR", 0.6, 0.9, 0.35, 0.35, [("T04.mp3", 0)]),
+    ("T04", "cine-t04-liste-4k.jpg", "panL", 0.6, 0.9, 0.35, 0.35, [("T04.mp3", 0)]),
     ("T05", "cine-t05-creux-4k.jpg", "zout", 0.6, 0.9, 0.35, 0.35, [("T05.mp3", 0)]),
     ("T06", "cine-t06-sondeur-4k.jpg", "panD", 0.6, 0.9, 0.35, 0.35, [("T06.mp3", 0)]),
-    ("T07", "cine-t07-cinq-4k.jpg", "zin", 0.6, 0.9, 0.35, 0.35, [("T07.mp3", 0)]),
+    ("T07", "cine-t07-cinq-4k.jpg", "panR", 0.6, 0.9, 0.35, 0.35, [("T07.mp3", 0)]),
     ("T08", "cine-t08-greffe-4k.jpg", "zin_slow", 0.6, 0.9, 0.35, 0.35,
      [("T08a.mp3", 0), ("T08b.mp3", 0.5), ("T08c.mp3", 0.6), ("T08d.mp3", 2.0)]),
-    ("T09", "cine-t09-duel-4k.jpg", "zin", 0.6, 0.9, 0.35, 0.35, [("T09.mp3", 0)]),
-    ("T10", "cine-t10-the-4k.jpg", "zin_slow", 0.6, 1.5, 0.35, 0.35, [("T10.mp3", 0)]),
-    ("T11", "cine-t11-portail-4k.jpg", "zin", 0.6, 1.0, 0.35, 0.35, [("T11.mp3", 0)]),
+    ("T09", "cine-t09-duel-4k.jpg", "drift_DR", 0.6, 0.9, 0.35, 0.35, [("T09.mp3", 0)]),
+    ("T10", "cine-t10-the-4k.jpg", "settle", 0.6, 1.5, 0.35, 0.35, [("T10.mp3", 0)]),
+    ("T11", "cine-t11-portail-4k.jpg", "rise", 0.6, 1.0, 0.35, 0.35, [("T11.mp3", 0)]),
     ("T12", "cine-t12-titre-4k.jpg", "static", 2.0, 3.0, 0.35, 1.5, [("T12.mp3", 0)]),
 ]
 
@@ -110,24 +118,34 @@ CUES = {
     "T12.mp3": [("…you hold the cards.", None)],
 }
 
+# Langage caméra : nom -> (z0, z1, x0, x1, y0, y1).
+# z = facteur de zoom ; x/y = position relative (0..1) de la fenêtre de crop.
+MOVES = {
+    "zin": (1.00, 1.08, .5, .5, .5, .5),
+    "zin_slow": (1.00, 1.045, .5, .5, .5, .5),
+    "zin_fort": (1.00, 1.14, .5, .5, .5, .5),
+    "push": (1.02, 1.10, .5, .5, .52, .48),
+    "push_L": (1.04, 1.12, .58, .42, .5, .5),
+    "push_R": (1.04, 1.12, .42, .58, .5, .5),
+    "zout": (1.08, 1.00, .5, .5, .5, .5),
+    "settle": (1.09, 1.05, .5, .5, .45, .52),
+    "panR": (1.10, 1.10, 0., 1., .5, .5),
+    "panL": (1.10, 1.10, 1., 0., .5, .5),
+    "panD": (1.10, 1.10, .5, .5, 0., 1.),
+    "panU": (1.10, 1.10, .5, .5, 1., 0.),
+    "rise": (1.05, 1.12, .5, .5, .62, .38),
+    "drift_DR": (1.08, 1.12, .35, .65, .35, .65),
+    "drift_UL": (1.08, 1.12, .65, .35, .65, .35),
+    "static": (1.00, 1.015, .5, .5, .5, .5),
+}
+
 
 def filtre_zoompan(mouvement, n):
-    cx = "x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2'"
-    if mouvement == "zin":
-        zp = f"z='1+0.07*on/{n}'"
-    elif mouvement == "zin_slow":
-        zp = f"z='1+0.035*on/{n}'"
-    elif mouvement == "zout":
-        zp = f"z='1.07-0.07*on/{n}'"
-    elif mouvement == "static":
-        zp = f"z='1+0.015*on/{n}'"
-    elif mouvement == "panR":
-        return f"zoompan=z=1.09:x='(iw-iw/zoom)*on/{n}':y='(ih-ih/zoom)/2':d={n}:s={W}x{H}:fps={FPS}"
-    elif mouvement == "panD":
-        return f"zoompan=z=1.09:x='(iw-iw/zoom)/2':y='(ih-ih/zoom)*on/{n}':d={n}:s={W}x{H}:fps={FPS}"
-    else:
-        raise ValueError(mouvement)
-    return f"zoompan={zp}:{cx}:d={n}:s={W}x{H}:fps={FPS}"
+    z0, z1, x0, x1, y0, y1 = MOVES[mouvement]
+    return (f"zoompan=z='{z0}+({z1}-{z0})*on/{n}':"
+            f"x='(iw-iw/zoom)*({x0}+({x1}-{x0})*on/{n})':"
+            f"y='(ih-ih/zoom)*({y0}+({y1}-{y0})*on/{n})':"
+            f"d={n}:s={W}x{H}:fps={FPS}")
 
 
 def composer_titre_4k(src, dst):
@@ -181,28 +199,67 @@ def rendre_t12(src, tmp, seg, n, duree, fi, fo, timeline):
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "17", seg])
 
 
-# Découpage multi-plans (V2) : quand la narration nomme un personnage, on le montre.
-# T07 : groupe + un plan par compagnon, répartis au prorata du texte dit.
-TEXTE_PLANS_T7 = [
-    ("cine-t07-cinq-4k.jpg", "zin", "At his side: "),
-    ("cine-t07a-yamina-4k.jpg", "zin_slow", "Yamina, the clockmaker, who signed a List at nineteen — and has been trying to repair the irreparable ever since. "),
-    ("cine-t07b-feriel-4k.jpg", "zin_slow", "Fériel, the glassblower, who turns sand into shields. "),
-    ("cine-t07c-boualem-4k.jpg", "zin_slow", "Boualem, the well-digger, who found something beneath the city… and does not speak of it. "),
-    ("cine-t07d-tarek-4k.jpg", "zin_slow", "And Tarek, the porter, who carries the Chamber's crates — and its secrets."),
-]
+# Découpage multi-plans : quand la narration nomme un personnage ou un objet,
+# on le montre. Blocs découpés au prorata du texte dit : [(image, mouv, texte)].
+SPLITS_TEXTE = {
+    "T01": [
+        ("cine-t01-bab-el-4k.jpg", "panR",
+         "There are cities built on stone. Bab El is built on time. "
+         "Nine tiers of copper and limestone, raised around a portal that never opened. "),
+        ("cine-t01-bab-el-4k.jpg", "rise", "And beneath it… a desert that rises."),
+    ],
+    "T05": [
+        ("cine-t05-creux-4k.jpg", "zout",
+         "Here, sand does not fall from the sky — it rises from the ground. "
+         "And it keeps the trace. Where someone has fallen, "),
+        ("cine-t05b-sable-4k.jpg", "zin_slow",
+         "the sand keeps their weight as a hollow. "
+         "The poor sell sand heavy with memories. The rich pay to have it sifted. "
+         "Nothing that falls is lost… to everyone."),
+    ],
+    "T07": [
+        ("cine-t07-cinq-4k.jpg", "panR", "At his side: "),
+        ("cine-t07a-yamina-4k.jpg", "push_L",
+         "Yamina, the clockmaker, who signed a List at nineteen — and has been trying to repair the irreparable ever since. "),
+        ("cine-t07b-feriel-4k.jpg", "push_R", "Fériel, the glassblower, who turns sand into shields. "),
+        ("cine-t07c-boualem-4k.jpg", "push_L",
+         "Boualem, the well-digger, who found something beneath the city… and does not speak of it. "),
+        ("cine-t07d-tarek-4k.jpg", "push_R",
+         "And Tarek, the porter, who carries the Chamber's crates — and its secrets."),
+    ],
+    "T09": [
+        ("cine-t09-duel-4k.jpg", "drift_DR",
+         "One recourse remains. An old right, one even the Chamber honours: trial by duel. "),
+        ("cine-t09b-cartes-4k.jpg", "push",
+         "The cards are fragments of memory, and pacts. "
+         "A keeper who loses must open their archives… or grant passage. "),
+        ("cine-t09-duel-4k.jpg", "zin_fort", "So we will fight. Not to kill. To be written."),
+    ],
+}
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre).
 PLANS_T8 = [
     ("cine-t08-greffe-4k.jpg", "zin_slow"),
-    ("cine-t08b-salem-4k.jpg", "static"),
-    ("cine-t08c-scribe-4k.jpg", "static"),
-    ("cine-t08d-registre-4k.jpg", "static"),
+    ("cine-t08b-salem-4k.jpg", "push"),
+    ("cine-t08c-scribe-4k.jpg", "push"),
+    ("cine-t08d-registre-4k.jpg", "settle"),
 ]
 # T10 : le thé, puis le visage de Mahieddine sur « He never lies ».
 PLANS_T10 = [
-    ("cine-t10-the-4k.jpg", "zin_slow"),
-    ("cine-t10b-mahieddine-4k.jpg", "static"),
+    ("cine-t10-the-4k.jpg", "settle"),
+    ("cine-t10b-mahieddine-4k.jpg", "push"),
 ]
 DUREE_PLAN_MIN = 1.0
+
+# Nappes d'ambiance optionnelles : (fichier, bloc_debut, bloc_fin, niveau).
+# Les fichiers absents sont ignorés (le film reste mixable sans eux).
+# bloc None/None = tout le film. Boucles : prévoir des fichiers bouclables.
+AMB = [
+    ("wind-desert-loop.mp3", None, None, 0.10),
+    ("sand-shimmer-loop.mp3", "T05", "T05", 0.12),
+    ("tea-room-tone.mp3", "T10", "T10", 0.10),
+    ("deep-drone-loop.mp3", "T11", "T12", 0.13),
+]
+FADE_AMB = 2.0
 
 
 def position_coupe_t10():
@@ -232,10 +289,11 @@ def position_coupe_t10():
 
 def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     """Découpe un bloc en plans : [(image, mouvement, debut_abs, fin_abs)]."""
-    if bloc == "T07":
+    if bloc in SPLITS_TEXTE:
+        parties = SPLITS_TEXTE[bloc]
         span_deb = debuts_vo[0][1]
         span_fin = span_deb + debuts_vo[0][2]
-        poids = [len(texte) for _, _, texte in TEXTE_PLANS_T7]
+        poids = [len(texte) for _, _, texte in parties]
         total = sum(poids)
         bornes = [span_deb]
         for p in poids[:-1]:
@@ -246,10 +304,10 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
                 bornes[k] = bornes[k - 1] + DUREE_PLAN_MIN
         plans = []
         for k, ((img_p, mouv_p, _), deb, fin) in enumerate(
-                zip(TEXTE_PLANS_T7, bornes[:-1], bornes[1:])):
+                zip(parties, bornes[:-1], bornes[1:])):
             plans.append((img_p, mouv_p,
                           debut_bloc if k == 0 else deb,
-                          fin_bloc if k == len(TEXTE_PLANS_T7) - 1 else fin))
+                          fin_bloc if k == len(parties) - 1 else fin))
         return plans
     if bloc == "T08":
         plans = []
@@ -265,6 +323,104 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     return [(img, mouv, debut_bloc, fin_bloc)]
 
 
+def generer_sable(chemin, duree_boucle=6.0):
+    """Voile de sable procedural en boucle parfaite (fond noir, pour un
+    melange screen) : grains qui tombent + quelques-uns qui montent
+    (ici, le sable monte)."""
+    import cv2
+    n = round(duree_boucle * FPS)
+    rng = np.random.default_rng(7)
+    n_tombe, n_monte = 420, 90
+    parts = []
+    for _ in range(n_tombe):
+        parts.append((rng.uniform(0, W), rng.uniform(0, H + 80),
+                      rng.uniform(60, 280), rng.uniform(0, 36),
+                      rng.integers(1, 4), rng.uniform(0, 2 * np.pi),
+                      rng.uniform(0.25, 0.9)))
+    for _ in range(n_monte):
+        parts.append((rng.uniform(0, W), rng.uniform(0, H + 80),
+                      rng.uniform(-70, -30), rng.uniform(0, 20),
+                      rng.integers(1, 3), rng.uniform(0, 2 * np.pi),
+                      rng.uniform(0.12, 0.35)))
+    cmd = [FF, "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "bgr24",
+           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+           "-pix_fmt", "yuv420p", chemin]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL)
+    teinte = np.array([150.0, 190.0, 255.0], dtype=np.float32)  # BGR ambre
+    for k in range(n):
+        t = k / FPS
+        toile = np.zeros((H, W, 3), dtype=np.float32)
+        for x0, y0, v, sway, cyc, ph, lum in parts:
+            y = (y0 + v * t) % (H + 80) - 40
+            x = x0 + sway * np.sin(2 * np.pi * cyc * t / duree_boucle + ph)
+            lng = abs(v) * 0.04 + 1.0
+            cv2.line(toile, (int(x), int(y)), (int(x), int(y - np.sign(v) * lng)),
+                     (teinte * lum).tolist(), 1, cv2.LINE_AA)
+        proc.stdin.write(np.clip(toile, 0, 255).astype(np.uint8).tobytes())
+    proc.stdin.close()
+    if proc.wait() != 0:
+        raise SystemExit("ENCODAGE SABLE ECHOUE")
+    return chemin
+
+
+def generer_flare(chemin, teinte=(255, 196, 130), cx=0.5, cy=0.40, force=1.0):
+    """Halo radial + strie anamorphique sur fond noir (pour un melange screen)."""
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    xx /= W
+    yy /= H
+    dx = (xx - cx) * W / (0.55 * W)
+    dy = (yy - cy) * H / (0.55 * W)
+    r2 = dx * dx + dy * dy
+    halo = np.exp(-r2 * 6) * 0.85 + np.exp(-r2 * 24) * 0.6 + np.exp(-r2 * 60) * 0.9
+    strie = (np.exp(-((yy - cy) * H / 14.0) ** 2)
+             * np.exp(-((xx - cx) * W / (0.5 * W)) ** 2) * 0.8)
+    img = np.clip(halo + strie, 0, 1.2) * force
+    rvb = (img[:, :, None] * np.array(teinte, dtype=np.float32)).clip(0, 255)
+    Image.fromarray(rvb.astype(np.uint8)).save(chemin)
+    return chemin
+
+
+def generer_lumiere(chemin, duree_tot, pulses, assets):
+    """Couche de lumiere plein-film (fond noir, pour un melange screen).
+    Pre-rendue en numpy : des entrees -loop + trim dans le graphe ffmpeg
+    bufferiseraient des milliers de frames (OOM)."""
+    import cv2
+    n = max(2, round(duree_tot * FPS))
+    halos = {}
+    for nom, asset in assets.items():
+        bgr = cv2.imread(asset, cv2.IMREAD_COLOR)
+        halos[nom] = bgr.astype(np.float32) / 255.0
+    cmd = [FF, "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "bgr24",
+           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-",
+           "-c:v", "libx264", "-preset", "veryfast", "-crf", "18",
+           "-pix_fmt", "yuv420p", chemin]
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL)
+    for k in range(n):
+        t = k / FPS
+        toile = np.zeros((H, W, 3), dtype=np.float32)
+        for nom, T, ain, hold, aout, op in pulses:
+            if t < T:
+                e = 0.0
+            elif t < T + ain:
+                e = (t - T) / ain
+            elif t < T + ain + hold:
+                e = 1.0
+            elif t < T + ain + hold + aout:
+                e = 1.0 - (t - T - ain - hold) / aout
+            else:
+                e = 0.0
+            if e > 0:
+                toile += halos[nom] * (op * e)
+        proc.stdin.write(np.clip(toile * 255.0, 0, 255).astype(np.uint8).tobytes())
+    proc.stdin.close()
+    if proc.wait() != 0:
+        raise SystemExit("ENCODAGE LUMIERE ECHOUE")
+    return chemin
+
+
 def fmt_vtt(sec):
     h, r = divmod(sec, 3600)
     m, s = divmod(r, 60)
@@ -273,6 +429,7 @@ def fmt_vtt(sec):
 
 def main():
     os.makedirs(MONTAGE, exist_ok=True)
+    os.makedirs(AMB_DIR, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="cine-")
 
     # 1. Timeline : positions absolues de chaque prise VO, puis découpage en plans.
@@ -280,8 +437,10 @@ def main():
     # s'enchaînent en cut sec, calés sur la narration.
     timeline = []  # (fichier_vo, debut_abs, duree)
     segments = []  # (nom, image, mouvement, debut_abs, duree, fi, fo)
+    spans = {}  # bloc -> (debut_abs, fin_abs)
+    frontieres = []  # fins de blocs internes (whooshes)
     t = 0.0
-    for bloc, img, mouv, tete, queue, fi, fo, prises in BLOCS:
+    for bi, (bloc, img, mouv, tete, queue, fi, fo, prises) in enumerate(BLOCS):
         pos = t + tete
         debuts_vo = []
         for vo, gap in prises:
@@ -291,6 +450,9 @@ def main():
             debuts_vo.append((vo, pos, d))
             pos += d
         fin_bloc = pos + queue
+        spans[bloc] = (t, fin_bloc)
+        if bi < len(BLOCS) - 1:
+            frontieres.append(fin_bloc)
         plans = plans_du_bloc(bloc, img, mouv, t, fin_bloc, debuts_vo)
         for k, (img_p, mouv_p, deb_p, fin_p) in enumerate(plans):
             nom = bloc if len(plans) == 1 else f"{bloc}p{k + 1}"
@@ -299,13 +461,27 @@ def main():
                              fo if k == len(plans) - 1 else 0.0))
         t = fin_bloc
     duree_tot = t
-    print(f"Timeline : {len(timeline)} prises, duree totale {duree_tot:.1f}s")
+    print(f"Timeline : {len(timeline)} prises, {len(segments)} plans, duree totale {duree_tot:.1f}s")
 
     # Cloches : ouverture, cut de T2 (fin VO T02), titre final (juste avant T12).
     fin_t02 = next(d + p for v, p, d in timeline if v == "T02.mp3")
     deb_t12 = next(p for v, p, d in timeline if v == "T12.mp3")
     cloches = [0.2, fin_t02 - 0.15, deb_t12 - 0.4]
     print("Cloches à :", [f"{c:.2f}s" for c in cloches])
+
+    # Pulses de lumière : (asset, T, montee, plateau, descente, opacite).
+    deb_t09p3 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T09p3")
+    deb_t11, fin_t11 = spans["T11"]
+    deb_t12bloc, _ = spans["T12"]
+    d_vo12 = next(d for v, p, d in timeline if v == "T12.mp3")
+    carton_abs = deb_t12bloc + 2.0 + d_vo12 - 0.4
+    halo_hold = max(0.0, duree_tot - carton_abs - 1.5 - 2.0)
+    pulses = [
+        ("gold", fin_t02 - 0.15, 0.6, 1.2, 2.0, 0.55),  # le glas de l'Astrolabe
+        ("gold", deb_t09p3, 0.4, 0.8, 1.5, 0.50),  # « So we will fight »
+        ("portal", deb_t11 + (fin_t11 - deb_t11) * 0.4, 1.0, 2.0, 2.5, 0.60),
+        ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre
+    ]
 
     # 2. Segments vidéo.
     listes_concat = []
@@ -318,7 +494,6 @@ def main():
             vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}")
         seg = os.path.join(tmp, f"seg{i:02d}.mp4")
         if bloc == "T12":
-            d_vo12 = next(d for v, p, d in timeline if v == "T12.mp3")
             print(f"  {bloc} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
             rendre_t12(os.path.join(K4, img), tmp, seg, n, duree, fi, fo, timeline)
             listes_concat.append(f"file '{seg}'")
@@ -328,7 +503,7 @@ def main():
              "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
              seg])
         listes_concat.append(f"file '{seg}'")
-        print(f"  {bloc} : {duree:.1f}s ({n} img)")
+        print(f"  {bloc} : {duree:.1f}s ({n} img, {mouv})")
     liste = os.path.join(tmp, "concat.txt")
     with open(liste, "w") as f:
         f.write("\n".join(listes_concat))
@@ -337,22 +512,74 @@ def main():
     run([FF, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", liste,
          "-c", "copy", video])
 
-    # 3. Cloche synthétique (partiels inharmoniques amortis, ~sol grave).
-    bell = os.path.join(tmp, "bell.wav")
-    partiels = "sin(2*PI*98*t)+0.55*sin(2*PI*198*t)+0.35*sin(2*PI*269*t)"
-    partiels += "+0.22*sin(2*PI*369*t)+0.12*sin(2*PI*530*t)"
-    run([FF, "-y", "-v", "error", "-f", "lavfi",
-         "-i", f"aevalsrc=exprs='exp(-2.5*t)*({partiels})':s=44100:d=5",
-         "-af", "lowpass=f=3200,volume=0.4,aformat=channel_layouts=stereo",
-         bell])
+    # 3. Post-production : étalonnage + voile de sable + couche lumière
+    # pré-rendue + vignette + grain.
+    sable = generer_sable(os.path.join(tmp, "sable.mp4"))
+    flare_gold = generer_flare(os.path.join(tmp, "flare-gold.png"))
+    flare_portal = generer_flare(os.path.join(tmp, "flare-portal.png"),
+                                 teinte=(170, 215, 255), cy=0.45)
+    assets = {"gold": flare_gold, "portal": flare_portal}
+    lumiere = generer_lumiere(os.path.join(tmp, "lumiere.mp4"), duree_tot, pulses, assets)
+    cmd = [FF, "-y", "-v", "error", "-i", video, "-stream_loop", "-1", "-i", sable,
+           "-i", lumiere]
+    fc = [f"[0:v]fps={FPS},eq=saturation=1.06,"
+          f"colortemperature=temperature=5200:mix=0.12[v0]",
+          f"[1:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p,"
+          f"fade=t=in:st=0:d=3,fade=t=out:st={duree_tot - 3:.2f}:d=3[s]",
+          "[v0][s]blend=all_mode=screen:all_opacity=0.50[v1]",
+          f"[2:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p[l]",
+          "[v1][l]blend=all_mode=screen:all_opacity=1.0[v2]",
+          "[v2]vignette=angle=PI/4.6,noise=alls=5:allf=t,format=yuv420p[vout]"]
+    video_post = os.path.join(tmp, "video-post.mp4")
+    run(cmd + ["-filter_complex", ";".join(fc), "-map", "[vout]",
+               "-t", f"{duree_tot:.2f}",
+               "-c:v", "libx264", "-preset", "fast", "-crf", "21",
+               video_post])
+    print(f"Post : {os.path.getsize(video_post) / 1e6:.1f} Mo")
 
-    # 4. Mix audio : VO + nappe (duckée) + cloches.
+    # 4. Cloche (réelle si fournie, sinon synthétique : partiels inharmoniques).
+    bell_src = None
+    for cand in ("bell-hit.wav", "bell-hit.mp3"):
+        if os.path.exists(os.path.join(AMB_DIR, cand)):
+            bell_src = os.path.join(AMB_DIR, cand)
+            break
+    bell = os.path.join(tmp, "bell.wav")
+    if bell_src:
+        print(f"Cloche réelle : {bell_src}")
+        run([FF, "-y", "-v", "error", "-i", bell_src, "-af",
+             "aresample=44100,aformat=channel_layouts=stereo", bell])
+    else:
+        partiels = "sin(2*PI*98*t)+0.55*sin(2*PI*198*t)+0.35*sin(2*PI*269*t)"
+        partiels += "+0.22*sin(2*PI*369*t)+0.12*sin(2*PI*530*t)"
+        run([FF, "-y", "-v", "error", "-f", "lavfi",
+             "-i", f"aevalsrc=exprs='exp(-2.5*t)*({partiels})':s=44100:d=5",
+             "-af", "lowpass=f=3200,volume=0.4,aformat=channel_layouts=stereo",
+             bell])
+
+    # 5. Whoosh de transition (bruit rose filtré, un par frontière de bloc).
+    whoosh = os.path.join(tmp, "whoosh.wav")
+    run([FF, "-y", "-v", "error", "-f", "lavfi", "-i",
+         "anoisesrc=color=pink:d=1.4:seed=7", "-af",
+         "highpass=f=150,lowpass=f=900,volume='0.9*sin(PI*t/1.4)':eval=frame,"
+         "aresample=44100,aformat=channel_layouts=stereo", whoosh])
+
+    # 6. Mix audio : VO + nappe (duckée) + cloches + whooshes + ambiances.
     cmd = [FF, "-y", "-v", "error"]
     for vo, _, _ in timeline:
         cmd += ["-i", os.path.join(VO, vo)]
     n_vo = len(timeline)
-    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE]
-    i_bell, i_m1, i_m2 = n_vo, n_vo + 1, n_vo + 2
+    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE, "-i", whoosh]
+    i_bell, i_m1, i_m2, i_wh = n_vo, n_vo + 1, n_vo + 2, n_vo + 3
+    idx_entrees = []
+    for fichier, bdeb, bfin, niveau in AMB:
+        chemin = os.path.join(AMB_DIR, fichier)
+        if os.path.exists(chemin):
+            idx_entrees.append((n_vo + 4 + len(idx_entrees), fichier, bdeb, bfin, niveau))
+            cmd += ["-stream_loop", "-1", "-i", chemin]
+    if idx_entrees:
+        print("Ambiances :", [f for _, f, _, _, _ in idx_entrees])
+    else:
+        print("Ambiances : aucune (voir audio/amb/README.md)")
     fc = []
     for k, (vo, debut, _) in enumerate(timeline):
         ms = int(debut * 1000)
@@ -369,20 +596,41 @@ def main():
     fc.append(f"[bed0]atrim=0:{duree_tot:.2f},afade=t=in:st=0:d=2,volume=0.15[bed]")
     fc.append("[bed][vo_key]sidechaincompress=threshold=0.03:ratio=3:"
               "attack=250:release=1000[duck]")
-    fc.append(f"[vo_mix][duck][cloches]amix=3:normalize=0,"
+    n_wh = len(frontieres)
+    fc.append(f"[{i_wh}]asplit={n_wh}" + "".join(f"[w{j}]" for j in range(n_wh)))
+    for j, front in enumerate(frontieres):
+        ms = int(max(0.0, front - 0.7) * 1000)
+        fc.append(f"[w{j}]adelay={ms}|{ms}[ww{j}]")
+    fc.append("".join(f"[ww{j}]" for j in range(n_wh)) +
+              f"amix={n_wh}:normalize=0,volume=0.30[whooshes]")
+    bus = ["[vo_mix]", "[duck]", "[cloches]", "[whooshes]"]
+    if idx_entrees:
+        for m, (idx, fichier, bdeb, bfin, niveau) in enumerate(idx_entrees):
+            deb = spans[bdeb][0] if bdeb else 0.0
+            fin = spans[bfin][1] if bfin else duree_tot
+            fc.append(f"[{idx}]aresample=44100,aformat=channel_layouts=stereo,"
+                      f"atrim=0:{fin - deb:.2f},"
+                      f"afade=t=in:st=0:d={FADE_AMB},"
+                      f"afade=t=out:st={fin - deb - FADE_AMB:.2f}:d={FADE_AMB},"
+                      f"adelay={int(deb * 1000)}|{int(deb * 1000)},"
+                      f"volume={niveau}[amb{m}]")
+        fc.append("".join(f"[amb{m}]" for m in range(len(idx_entrees))) +
+                  f"amix={len(idx_entrees)}:normalize=0[amb]")
+        bus.append("[amb]")
+    fc.append("".join(bus) + f"amix={len(bus)}:normalize=0,"
               f"afade=t=out:st={duree_tot - 3:.2f}:d=3,"
               f"alimiter=limit=0.95,apad=whole_dur={duree_tot:.2f}[mix]")
     mix = os.path.join(tmp, "mix.m4a")
     run(cmd + ["-filter_complex", ";".join(fc), "-map", "[mix]",
                "-c:a", "aac", "-b:a", "160k", "-ar", "44100", mix])
 
-    # 5. Mux final.
+    # 7. Mux final.
     final = os.path.join(MONTAGE, "cine-intro-en-1080p.mp4")
-    run([FF, "-y", "-v", "error", "-i", video, "-i", mix,
+    run([FF, "-y", "-v", "error", "-i", video_post, "-i", mix,
          "-c", "copy", "-movflags", "+faststart", final])
     print(f"MP4 : {final} ({os.path.getsize(final) / 1e6:.1f} Mo)")
 
-    # 6. Sous-titres EN recalés (répartition au prorata des caractères).
+    # 8. Sous-titres EN recalés (répartition au prorata des caractères).
     lignes = ["WEBVTT - Le Sablier, intro EN (recalé sur la VO définitive)", ""]
     for vo, debut, duree in timeline:
         cues = CUES[vo]
