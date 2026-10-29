@@ -1,6 +1,6 @@
 // Tests de la rédaction Let's Play — vignettes, notes et articles complets.
-// Les tests reprennent la sélection et les verdicts d'ActuGaming, reformulés
-// dans le ton maison par la rédaction Let's Play (source citée en bas d'article).
+// Les tests adaptés d'autres publications citent leur source en bas d'article ;
+// les tests originaux portent la signature de leur auteur.
 import { baseUrl as base } from './data';
 import { youTubeEmbedUrl } from './lib/videoPlayback';
 
@@ -10,6 +10,84 @@ export const scoreTier = (score) => (score >= 8.5 ? 'is-hit' : score >= 7.5 ? 'i
 export const scoreLabel = (score, lang = 'fr') => String(score).replace('.', lang === 'en' ? '.' : ',');
 
 export const gameTests = [
+  {
+    slug: 'call-of-duty-modern-warfare-4',
+    route: '/reviews/call-of-duty-modern-warfare-4',
+    name: 'CALL OF DUTY: MODERN WARFARE 4',
+    headingName: 'MODERN WARFARE 4',
+    compactHeading: true,
+    accent: 'LE SOLO FRAPPE FORT.',
+    cardTitle: 'MODERN WARFARE 4 : LE SOLO FRAPPE FORT.',
+    eyebrow: 'TEST · CALL OF DUTY · CAMPAGNE SOLO',
+    date: '29.10.2026',
+    dateLong: '29 OCTOBRE 2026',
+    platforms: 'PC · PS5 · XBOX SERIES X|S · SWITCH 2',
+    genre: 'FPS · CAMPAGNE SOLO',
+    studio: 'INFINITY WARD · ACTIVISION',
+    duration: 'ENV. 9 H EN DIFFICILE',
+    readTime: 4,
+    score: 8,
+    image: img('modern-warfare-4.webp'),
+    alt: 'Visuel officiel de la campagne de Modern Warfare 4 : le capitaine Price et Valeria dans un véhicule',
+    coverKicker: 'LA CAMPAGNE, PASSÉE AU CRIBLE',
+    byline: 'PAR CHAFT · RÉDACTEUR EN CHEF',
+    testContext: 'Campagne terminée sur PC en environ 9 heures, en difficulté élevée. Cette note concerne uniquement le mode solo, pas le multijoueur ni le mode DMZ.',
+    excerpt: 'Une campagne intense, spectaculaire et prenante : Chaft retrouve le Call of Duty qu’il aime, malgré quelques longueurs.',
+    dek: 'Action nerveuse, mise en scène spectaculaire et double récit : Chaft a terminé la campagne de Modern Warfare 4 sur PC. Son verdict ? Un retour en forme, malgré quelques accrocs.',
+    lead: 'Je vais être honnête : cela faisait longtemps qu’une campagne Call of Duty ne m’avait pas autant accroché. Modern Warfare 4 m’a redonné cette envie d’enchaîner les missions et d’aller jusqu’au bout. Pour moi, c’est la meilleure campagne de la série depuis Modern Warfare en 2019.',
+    sections: [
+      {
+        h2: 'PARK ET PRICE, DEUX VISAGES DE LA GUERRE',
+        ps: [
+          'L’histoire nous plonge dans une invasion massive de la Corée du Sud par les forces nord-coréennes. Sur le terrain, on découvre le conflit aux côtés de Park, un jeune soldat sud-coréen, et de son unité, projetés brutalement au cœur de la guerre. Leur point de vue donne au récit une tension immédiate : on vit l’invasion à hauteur d’homme.',
+          'En parallèle, le capitaine Price poursuit sa traque de Makarov en dehors des circuits officiels. Ses opérations clandestines mettent ses alliances et ses relations avec les membres de la Task Force 141 à l’épreuve. J’ai aimé cette double approche : d’un côté, l’horreur du conflit sur le terrain ; de l’autre, les loyautés fragiles et les trahisons dans l’ombre.',
+        ],
+      },
+      {
+        pull: { text: 'De l’action, de la tension, des séquences spectaculaires et surtout une vraie envie d’aller jusqu’au bout.', by: 'CHAFT, RÉDACTEUR EN CHEF DE LET’S PLAY' },
+      },
+      {
+        h2: 'UN GAMEPLAY QUI GARDE TOUT SON PUNCH',
+        ps: [
+          'En jeu, les sensations de tir sont excellentes : les armes ont du punch et les affrontements sont nerveux. La campagne varie les approches entre combats urbains, opérations plus discrètes et situations qui demandent de réfléchir avant de foncer.',
+          'Le rythme donne souvent envie de lancer la mission suivante dès que la précédente se termine. Mention spéciale à la séquence à Paris, l’un des grands moments de mon aventure : spectaculaire et franchement mémorable. C’est du Call of Duty dans ce qu’il sait faire de mieux, avec cette impression de participer à un blockbuster interactif.',
+        ],
+      },
+      {
+        h2: 'UNE MISE EN SCÈNE QUI SE FAIT ENTENDRE',
+        ps: [
+          'Sur la version PC que j’ai testée, les environnements détaillés, les effets de destruction et les cinématiques donnent de l’ampleur à l’aventure. Le jeu sait utiliser sa mise en scène pour nous faire ressentir le conflit plutôt que simplement nous le raconter.',
+          'Le travail sonore mérite lui aussi d’être souligné : tirs, explosions et ambiance donnent du poids aux affrontements. C’est l’une des grandes réussites de cette campagne et une raison de plus de rester accroché à l’écran.',
+        ],
+      },
+      {
+        h2: 'QUELQUES ACCROCS DANS LE RYTHME',
+        ps: [
+          'Tout n’est pas aussi maîtrisé. Certaines séquences plus ouvertes cassent un peu l’élan, notamment une mission dont il faut nettoyer la carte avant de pouvoir progresser. Là où les passages les plus dirigés donnent envie d’enchaîner, cette parenthèse m’a paru moins entraînante.',
+          'L’histoire de Price aurait aussi mérité davantage de développement : son parcours m’a parfois semblé moins marquant, même si la fin a davantage d’impact. Enfin, la campagne reste relativement courte : il m’a fallu environ neuf heures pour la terminer en difficulté élevée.',
+        ],
+      },
+      {
+        h2: 'VERDICT : UNE CAMPAGNE À NE PAS MANQUER',
+        ps: [
+          'J’ai adoré cette campagne. Entre son scénario prenant, ses tirs efficaces et sa réalisation spectaculaire, Modern Warfare 4 retrouve l’énergie que j’attends de la licence. Quelques passages moins rythmés et une intrigue de Price qui aurait pu être plus approfondie l’empêchent d’atteindre l’exceptionnel, mais le plaisir est bien là. Ma note pour la campagne : 8/10. Et vous, vous partagez mon avis ? Dites-le-moi en commentaire !',
+        ],
+      },
+    ],
+    pros: [
+      'Un double récit prenant, entre Park et Price',
+      'Des sensations de tir solides et des combats nerveux',
+      'Une mise en scène spectaculaire, notamment à Paris',
+      'Des environnements détaillés et un son percutant',
+    ],
+    cons: [
+      'Certaines séquences ouvertes ralentissent le rythme',
+      'L’histoire de Price aurait mérité plus de profondeur',
+      'Une campagne relativement courte : environ 9 h en difficile',
+    ],
+    verdictTitle: 'LE SOLO RETROUVE SON SOUFFLE',
+    verdictText: 'Une campagne prenante et spectaculaire : malgré quelques longueurs et un Price parfois en retrait, c’est pour moi le meilleur solo Call of Duty depuis Modern Warfare en 2019.',
+  },
   {
     slug: 'wolverine',
     route: '/reviews/wolverine',

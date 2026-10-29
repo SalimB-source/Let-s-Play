@@ -1,0 +1,52 @@
+/* Test écrit à la une de /reviews : même langage HUD que les autres pages,
+   sans réactiver l'ancienne grille de tests masquée. */
+.written-review-section{padding:128px 0 48px}
+.written-review-heading{padding:32px 0 26px}
+.written-review-heading h1{margin:14px 0 0;font:800 clamp(32px,4.4vw,58px)/1.05 var(--display);text-transform:uppercase;letter-spacing:-.02em}
+.written-review-heading h1 em{font-style:normal;color:var(--cyan)}
+.written-review-card{border:1px solid var(--line-strong);background:var(--panel);overflow:hidden;box-shadow:0 24px 70px -48px rgba(34,211,238,.55)}
+.written-review-link{display:grid;grid-template-columns:1.04fr .96fr;min-height:360px;color:inherit;text-decoration:none}
+.written-review-link:focus-visible{outline:3px solid var(--cyan);outline-offset:-4px}
+.written-review-image{position:relative;min-width:0;min-height:360px;overflow:hidden;background:#080b13}
+.written-review-image img{display:block;width:100%;height:100%;position:absolute;inset:0;object-fit:cover;object-position:center;transition:transform .5s ease}
+.written-review-image::after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(5,6,15,.84));pointer-events:none}
+.written-review-link:hover .written-review-image img{transform:scale(1.04)}
+.written-review-image-credit{position:absolute;z-index:1;left:20px;bottom:18px;color:#fff;font:500 10px var(--mono);letter-spacing:.12em}
+.written-review-score{position:absolute;z-index:1;top:18px;left:18px;display:flex;flex-direction:column;gap:3px;background:var(--yellow);color:#10111b;padding:12px 16px;clip-path:polygon(0 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%)}
+.written-review-score small{font:700 9px var(--mono);letter-spacing:.15em}
+.written-review-score strong{font:800 44px/.95 var(--display)}
+.written-review-score i{font:700 14px var(--mono);font-style:normal}
+.written-review-copy{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;min-width:0;padding:clamp(28px,3.6vw,48px)}
+.written-review-kicker{color:var(--cyan);font:700 11px var(--mono);letter-spacing:.16em}
+.written-review-copy h2{margin:16px 0;color:var(--ink);font:800 clamp(27px,3vw,42px)/1.08 var(--display);letter-spacing:-.02em}
+.written-review-copy > p{max-width:48ch;margin:0;color:var(--muted);font-size:16px;line-height:1.65}
+.written-review-meta{display:flex;flex-wrap:wrap;gap:8px 15px;margin-top:24px;color:var(--dim);font:600 10px/1.5 var(--mono);letter-spacing:.08em}
+.written-review-meta span:first-child{color:var(--cyan)}
+.written-review-read{display:inline-flex;align-items:center;gap:10px;margin-top:24px;padding-bottom:6px;border-bottom:1px solid var(--yellow-ink);color:var(--yellow-ink);font:700 11px var(--mono);letter-spacing:.14em}
+.written-review-link:hover .written-review-read{color:var(--cyan);border-color:var(--cyan)}
+.written-review-section + .short-review-section{padding-top:56px}
+
+/* Les longs noms de jeux peuvent demander un titre de héros plus compact.
+   Le titre posé sur l'image reste clair même en thème clair. */
+.article-heading.article-heading-compact h1{font-size:clamp(30px,3.7vw,50px)}
+.article-heading-compact .article-cover strong{color:#fff}
+.review-test-context{display:grid;gap:7px;margin:0 0 28px;padding:17px 20px;border:1px solid var(--line-strong);background:linear-gradient(110deg,rgba(34,211,238,.08),transparent),var(--panel)}
+.review-test-context strong{color:var(--cyan);font:700 10px var(--mono);letter-spacing:.13em}
+.review-test-context p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+
+@media(max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .written-review-section{padding:104px 0 36px}
+  .written-review-heading{padding:28px 0 22px}
+  .written-review-heading h1{font-size:clamp(27px,7.5vw,40px)}
+  .written-review-section .section-label{font-size:clamp(9px,2.5vw,10px);letter-spacing:.1em}
+  .written-review-link{grid-template-columns:1fr}
+  .written-review-image{min-height:0;aspect-ratio:16/10}
+  .written-review-copy{padding:26px clamp(20px,6vw,24px) 28px}
+  .written-review-copy h2{font-size:clamp(25px,7vw,34px)}
+  .written-review-section + .short-review-section{padding-top:45px}
+  .article-heading.article-heading-compact h1{font-size:clamp(24px,7.2vw,36px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .written-review-image img{transition:none}
+  .written-review-link:hover .written-review-image img{transform:none}
+}

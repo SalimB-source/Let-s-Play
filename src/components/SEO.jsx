@@ -55,6 +55,15 @@ const pageMeta = {
     description: 'Retrouvez les tests et analyses de jeux vidéo de Let’s Play : gameplay, technique, direction artistique et verdict.',
     type: 'website',
   },
+  '/reviews/call-of-duty-modern-warfare-4': {
+    title: 'Test Call of Duty: Modern Warfare 4 — la campagne par Chaft — Let’s Play',
+    description: 'Chaft a terminé la campagne de Modern Warfare 4 sur PC : scénario, gameplay, réalisation, défauts et verdict 8/10.',
+    image: 'reviews/modern-warfare-4.webp',
+    type: 'article',
+    published: '2026-10-29',
+    section: 'Tests',
+    author: 'Chaft',
+  },
   '/dossiers': {
     title: 'Dossiers gaming et pop culture — Let’s Play',
     description: 'Des dossiers de fond sur l’histoire du jeu vidéo, les générations de consoles, les studios et la culture gaming.',
@@ -374,7 +383,7 @@ export default function SEO() {
     document.title = meta.title;
     document.documentElement.lang = lang || 'fr';
     upsertMeta('name', 'description', meta.description);
-    upsertMeta('name', 'author', SITE_NAME);
+    upsertMeta('name', 'author', meta.author || SITE_NAME);
     upsertMeta('name', 'robots', 'index, follow, max-image-preview:large');
     upsertMeta('property', 'og:site_name', SITE_NAME);
     upsertMeta('property', 'og:type', meta.type || 'website');
@@ -408,7 +417,7 @@ export default function SEO() {
       { '@type': 'WebSite', '@id': `${SITE_URL}/#website`, name: SITE_NAME, url: `${SITE_URL}/`, publisher: { '@id': `${SITE_URL}/#organization` }, inLanguage: lang || 'fr' },
     ];
     if (meta.type === 'article') {
-      graph.push({ '@type': 'NewsArticle', headline: meta.title.replace(' — Let’s Play', ''), description: meta.description, image: [image], datePublished: meta.published, dateModified: meta.published, author: { '@type': 'Organization', name: SITE_NAME }, publisher: { '@id': `${SITE_URL}/#organization` }, mainEntityOfPage: canonical, articleSection: meta.section });
+      graph.push({ '@type': 'NewsArticle', headline: meta.title.replace(' — Let’s Play', ''), description: meta.description, image: [image], datePublished: meta.published, dateModified: meta.published, author: meta.author ? { '@type': 'Person', name: meta.author } : { '@type': 'Organization', name: SITE_NAME }, publisher: { '@id': `${SITE_URL}/#organization` }, mainEntityOfPage: canonical, articleSection: meta.section });
     }
     structured.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
   }, [canonical, image, lang, meta]);

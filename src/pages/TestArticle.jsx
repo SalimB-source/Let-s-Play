@@ -12,6 +12,7 @@ function Check(){ return <span aria-hidden="true">✓</span>; }
 function Cross(){ return <span aria-hidden="true">–</span>; }
 
 const COVER_NAMES = {
+  'call-of-duty-modern-warfare-4': 'MODERN WARFARE 4',
   wolverine: 'WOLVERINE',
   orbitals: 'ORBITALS',
   'zero-company': 'ZERO COMPANY',
@@ -39,12 +40,12 @@ export default function TestArticle(){
         <span><b>TEST</b> / {a.genre}</span>
         <span>{a.dateLong} · {a.studio.split(' · ')[0]}</span>
       </div>
-      <div className="article-heading">
+      <div className={`article-heading${a.compactHeading ? ' article-heading-compact' : ''}`}>
         <div>
           <p className="eyebrow"><span className="live-dot" /> {a.eyebrow}</p>
-          <h1>{a.name}<br/><em>{a.accent}</em></h1>
+          <h1>{a.headingName || a.name}<br/><em>{a.accent}</em></h1>
           <p className="article-dek">{a.dek}</p>
-          <div className="article-byline"><span>{c.byline}</span><span>{a.readTime || 7} {c.readLabel}</span><span className="article-platforms">{a.platforms}</span></div>
+          <div className="article-byline"><span>{a.byline || c.byline}</span><span>{a.readTime || 7} {c.readLabel}</span><span className="article-platforms">{a.platforms}</span></div>
         </div>
         <div className="article-cover hud-frame">
           <img src={a.image} alt={a.alt} />
@@ -56,6 +57,13 @@ export default function TestArticle(){
     <main className="article-layout article-layout-test wrap">
       <article className="article-body">
         <p className="article-lead">{a.lead}</p>
+
+        {a.testContext && (
+          <div className="review-test-context" role="note">
+            <strong>CONDITIONS DU TEST</strong>
+            <p>{a.testContext}</p>
+          </div>
+        )}
 
         {a.video && (
           <figure className="article-video">
@@ -102,9 +110,11 @@ export default function TestArticle(){
           </div>
         </div>
 
-        <p className="article-source">
-          {c.source} <a href={a.sourceUrl} target="_blank" rel="noreferrer">{c.sourceText}</a> — {c.sourceNote}
-        </p>
+        {a.sourceUrl && (
+          <p className="article-source">
+            {c.source} <a href={a.sourceUrl} target="_blank" rel="noreferrer">{c.sourceText}</a> — {c.sourceNote}
+          </p>
+        )}
       </article>
 
       <aside className="article-aside article-aside-test">
