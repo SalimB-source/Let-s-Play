@@ -94,6 +94,38 @@ export async function lireVersionDistante({
 }
 
 /**
+ * Les quatre fonctions d'horloge, appelées **avec l'objet global comme
+ * receveur**.
+ *
+ * Le détail qui a coûté une page blanche, le 29 octobre 2026 : rassemblées dans
+ * un objet (pour les rendre remplaçables en test), elles se retrouvaient
+ * appelées en méthode — `minuterie.setTimeout(...)`. Chrome exige que
+ * `setTimeout` soit appelé sur `window` : avec un autre receveur, il lève
+ * `TypeError: Illegal invocation`. L'appel a lieu dans un effet de
+ * `MiseAJourDisponible`, monté à la racine : l'exception vidait la page
+ * entière, sur **toutes** les visites en production — alors que le build, le
+ * déploiement, les tests et le mode développement restaient verts (en dev, la
+ * veille est coupée).
+ */
+const HORLOGE = {
+  setTimeout: (...arguments_) => globalThis.setTimeout(...arguments_),
+  clearTimeout: (...arguments_) => globalThis.clearTimeout(...arguments_),
+  setInterval: (...arguments_) => globalThis.setInterval(...arguments_),
+  clearInterval: (...arguments_) => globalThis.clearInterval(...arguments_),
+};
+
+/**
+ * Appelle une méthode d'horloge avec `globalThis` comme receveur, quel que soit
+ * l'objet fourni : c'est la seule forme que Chrome accepte pour `setTimeout`,
+ * `setInterval` et leurs `clear`.
+ */
+function appelerHorloge(minuterie, nom, ...arguments_) {
+  const fonction = minuterie?.[nom];
+  if (typeof fonction !== 'function') return undefined;
+  return fonction.apply(globalThis, arguments_);
+}
+
+/**
  * Veille sur les versions : une vérification différée au lancement, puis une
  * toutes les `intervalleMs`, plus une à chaque retour sur l'onglet (le cas du
  * téléphone qu'on reprend après une nuit). `onNouvelleVersion` n'est appelé
@@ -109,7 +141,7 @@ export function demarrerVeilleMaj({
   delaiInitialMs = DELAI_PREMIERE_VERIF_MS,
   intervalleMs = INTERVALLE_VERIF_MS,
   documentRef = typeof document === 'undefined' ? null : document,
-  minuterie = { setTimeout, clearTimeout, setInterval, clearInterval },
+  minuterie = HORLOGE,
 } = {}) {
   let arrete = false;
   let dejaSignale = '';
@@ -136,15 +168,17 @@ export function demarrerVeilleMaj({
     verifier();
   };
 
-  minuteries.push(minuterie.setTimeout(verifier, delaiInitialMs));
-  if (intervalleMs > 0) minuteries.push(minuterie.setInterval(verifier, intervalleMs));
+  minuteries.push(appelerHorloge(minuterie, 'setTimeout', verifier, delaiInitialMs));
+  if (intervalleMs > 0) {
+    minuteries.push(appelerHorloge(minuterie, 'setInterval', verifier, intervalleMs));
+  }
   documentRef?.addEventListener?.('visibilitychange', auRetour);
 
   return () => {
     arrete = true;
     for (const id of minuteries) {
-      minuterie.clearTimeout?.(id);
-      minuterie.clearInterval?.(id);
+      appelerHorloge(minuterie, 'clearTimeout', id);
+      appelerHorloge(minuterie, 'clearInterval', id);
     }
     minuteries = [];
     documentRef?.removeEventListener?.('visibilitychange', auRetour);
