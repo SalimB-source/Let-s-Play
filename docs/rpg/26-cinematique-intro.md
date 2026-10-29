@@ -127,6 +127,16 @@ scintillement, salon de thé, bourdon, coup de cloche réel). MP4
 (pulses, macro sable, halo titre) + crop voile de sable, niveaux
 −23,1/−4,4 dB, build vert.
 
+**Montage V4 livré (octobre 2026).** 33 plans, 30 tableaux : inserts
+cloche du glas (T2), rue vivante AVANT / reprise APRES (T3),
+affichage de la Liste (T4), visage de Salem (T6), mains de Yamina
+(T7), rue vide APRES « exist nowhere » (T8), regard de Mahieddine sur
+« He omits » (T10, coupe au silence ≈ 13,1 s), sceau du portail (T11).
+Micro-respiration (±0,4 %, 4 s) sur les gros plans de visages.
+MP4 3 min 27, ~76 Mo (CRF25/slow). Vérifié : contact sheet 8 inserts
++ likeness Salem/Mahieddine vs refs, build vert. Ambiances sonores
+attendues (l'utilisateur les fournira).
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)

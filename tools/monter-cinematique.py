@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V3).
+"""Montage de la cinematique d'intro EN du Sablier (V4).
 
-Assemble : 22 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 30 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
-V3 : langage camera varie (poussees, panoramiques, diagonales, montees),
-decoupage multi-plans cale narration (T1/T5/T7/T8/T9/T10), voile de sable
-procedural, pulses de lumiere, vignettage + grain film, whooshes de
-transition synthetiques, et nappes d'ambiance optionnelles.
+V4 : gros plans d'expressions (Salem, regard de Mahieddine), inserts
+(cloche, rue vivante, affichage de la Liste, mains de Yamina, rue
+vide, sceau du portail), sequences avant/apres (T3, T8), micro-
+respiration sur les visages, et decoupage etendu (T2/T3/T4/T6/T11,
+T8d et T10 en 3 plans).
 
 Entrees : public/sablier-cinematic/4k/*.jpg, audio/en/T*.mp3,
           public/Desert Solitude with Percussion.mp3
@@ -118,13 +119,16 @@ CUES = {
     "T12.mp3": [("…you hold the cards.", None)],
 }
 
-# Langage caméra : nom -> (z0, z1, x0, x1, y0, y1).
+# Langage caméra : nom -> (z0, z1, x0, x1, y0, y1[, respiration]).
 # z = facteur de zoom ; x/y = position relative (0..1) de la fenêtre de crop.
+# respiration = amplitude d'une oscillation (période 4 s) qui donne vie aux visages.
 MOVES = {
     "zin": (1.00, 1.08, .5, .5, .5, .5),
     "zin_slow": (1.00, 1.045, .5, .5, .5, .5),
     "zin_fort": (1.00, 1.14, .5, .5, .5, .5),
+    "zin_resp": (1.00, 1.06, .5, .5, .5, .5, 0.004),
     "push": (1.02, 1.10, .5, .5, .52, .48),
+    "push_resp": (1.02, 1.08, .5, .5, .52, .48, 0.004),
     "push_L": (1.04, 1.12, .58, .42, .5, .5),
     "push_R": (1.04, 1.12, .42, .58, .5, .5),
     "zout": (1.08, 1.00, .5, .5, .5, .5),
@@ -141,8 +145,13 @@ MOVES = {
 
 
 def filtre_zoompan(mouvement, n):
-    z0, z1, x0, x1, y0, y1 = MOVES[mouvement]
-    return (f"zoompan=z='{z0}+({z1}-{z0})*on/{n}':"
+    params = MOVES[mouvement]
+    z0, z1, x0, x1, y0, y1 = params[:6]
+    resp = params[6] if len(params) > 6 else 0.0
+    z = f"{z0}+({z1}-{z0})*on/{n}"
+    if resp:
+        z += f"+{resp}*sin(2*PI*on/{4 * FPS})"
+    return (f"zoompan=z='{z}':"
             f"x='(iw-iw/zoom)*({x0}+({x1}-{x0})*on/{n})':"
             f"y='(ih-ih/zoom)*({y0}+({y1}-{y0})*on/{n})':"
             f"d={n}:s={W}x{H}:fps={FPS}")
@@ -208,6 +217,26 @@ SPLITS_TEXTE = {
          "Nine tiers of copper and limestone, raised around a portal that never opened. "),
         ("cine-t01-bab-el-4k.jpg", "rise", "And beneath it… a desert that rises."),
     ],
+    "T02": [
+        ("cine-t02-astrolabe-4k.jpg", "zin_slow",
+         "Above the ninth tier turns the Astrolabe. "
+         "It does not count the hours. It counts the cycles we have left. "),
+        ("cine-t02b-cloche-4k.jpg", "push", "And when it tolls…"),
+    ],
+    "T03": [
+        ("cine-t03b-rue-4k.jpg", "panR",
+         "The first tier is already lost. Then the second. Then the third. "),
+        ("cine-t03-reprise-4k.jpg", "panD",
+         "Today, we live on the fourth. Everyone knows. And everyone keeps living."),
+    ],
+    "T04": [
+        ("cine-t04-liste-4k.jpg", "panL",
+         "What holds the city together is no king, no god. "
+         "It is an administration: the Chamber of Hours. "),
+        ("cine-t04b-liste-4k.jpg", "push",
+         "Every cycle, it publishes the List — those evacuated first… and the others. "
+         "Its agents carry no weapons. They carry ledgers."),
+    ],
     "T05": [
         ("cine-t05-creux-4k.jpg", "zout",
          "Here, sand does not fall from the sky — it rises from the ground. "
@@ -217,10 +246,19 @@ SPLITS_TEXTE = {
          "The poor sell sand heavy with memories. The rich pay to have it sifted. "
          "Nothing that falls is lost… to everyone."),
     ],
+    "T06": [
+        ("cine-t06-sondeur-4k.jpg", "panD",
+         "Salem goes down into the condemned tiers before the taking, to make sure no one is left. "
+         "Hooked pole, rope, notebook. "),
+        ("cine-t06b-salem-4k.jpg", "push_resp",
+         "He always brings someone back. And it is never enough."),
+    ],
     "T07": [
         ("cine-t07-cinq-4k.jpg", "panR", "At his side: "),
         ("cine-t07a-yamina-4k.jpg", "push_L",
-         "Yamina, the clockmaker, who signed a List at nineteen — and has been trying to repair the irreparable ever since. "),
+         "Yamina, the clockmaker, who signed a List at nineteen — "),
+        ("cine-t07e-mains-4k.jpg", "zin_slow",
+         "and has been trying to repair the irreparable ever since. "),
         ("cine-t07b-feriel-4k.jpg", "push_R", "Fériel, the glassblower, who turns sand into shields. "),
         ("cine-t07c-boualem-4k.jpg", "push_L",
          "Boualem, the well-digger, who found something beneath the city… and does not speak of it. "),
@@ -235,18 +273,36 @@ SPLITS_TEXTE = {
          "A keeper who loses must open their archives… or grant passage. "),
         ("cine-t09-duel-4k.jpg", "zin_fort", "So we will fight. Not to kill. To be written."),
     ],
+    "T11": [
+        ("cine-t11-portail-4k.jpg", "rise",
+         "And behind it all, the sealed portal. "),
+        ("cine-t11b-sceau-4k.jpg", "zin_slow",
+         "No one knows who built it. No one knows what it holds back. "),
+        ("cine-t11-portail-4k.jpg", "zin_fort",
+         "But the Astrolabe will toll again. And this time…"),
+    ],
 }
-# T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre).
+# T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
+# puis la rue vide sur « Twelve living souls… who exist nowhere ».
 PLANS_T8 = [
     ("cine-t08-greffe-4k.jpg", "zin_slow"),
     ("cine-t08b-salem-4k.jpg", "push"),
     ("cine-t08c-scribe-4k.jpg", "push"),
     ("cine-t08d-registre-4k.jpg", "settle"),
 ]
-# T10 : le thé, puis le visage de Mahieddine sur « He never lies ».
+TEXTE_T08D = [
+    ("cine-t08d-registre-4k.jpg", "settle",
+     "The district has been officially empty since yesterday. "
+     "With no registration, no shelter in the upper tiers. "),
+    ("cine-t08e-rue-vide-4k.jpg", "zout",
+     "Twelve living souls… who exist nowhere."),
+]
+# T10 : le thé, puis le visage de Mahieddine sur « He never lies »,
+# puis son regard sur « He omits ».
 PLANS_T10 = [
     ("cine-t10-the-4k.jpg", "settle"),
-    ("cine-t10b-mahieddine-4k.jpg", "push"),
+    ("cine-t10b-mahieddine-4k.jpg", "push_resp"),
+    ("cine-t10c-regard-4k.jpg", "zin_resp"),
 ]
 DUREE_PLAN_MIN = 1.0
 
@@ -262,29 +318,43 @@ AMB = [
 FADE_AMB = 2.0
 
 
-def position_coupe_t10():
-    """Position (s) de « He never lies » dans T10.mp3 : le [pause] ElevenLabs
-    avant « He omits » contient un souffle qui le coupe en deux silences ;
-    le début du premier (~10,8 s) marque la fin de « He never lies ».
-    Repli : 75 % de la prise."""
+def silences_t10():
+    """Silences détectés dans T10.mp3 : [(debut, fin|None)]. Le [pause]
+    ElevenLabs avant « He omits » contient un souffle qui le coupe en
+    deux silences (débuts ~10,8 s et ~12,3 s)."""
     audio = os.path.join(VO, "T10.mp3")
-    duree = duree_mp3(audio)
     r = subprocess.run([FF, "-v", "info", "-i", audio, "-af",
                         "silencedetect=noise=-32dB:d=0.5", "-f", "null", "-"],
                        capture_output=True, text=True)
-    debuts = []
+    debuts, fins = [], []
     for ligne in r.stderr.splitlines():
         if "silence_start" in ligne:
             try:
                 debuts.append(float(ligne.split("silence_start:")[1].split()[0]))
             except ValueError:
                 pass
+        elif "silence_end" in ligne:
+            try:
+                fins.append(float(ligne.split("silence_end:")[1].split()[0]))
+            except ValueError:
+                pass
+    return debuts, fins
+
+
+def position_coupes_t10():
+    """Coupes visage + regard dans T10.mp3 : le visage apparaît sur
+    « He never lies » (1,8 s avant la fin de la phrase), le regard
+    juste après la pause, sur « He omits ». Replis : 75 % / 88 %."""
+    duree = duree_mp3(os.path.join(VO, "T10.mp3"))
+    debuts, fins = silences_t10()
     tardifs = [s for s in debuts if s > duree * 0.55]
-    if tardifs:
-        # « He never lies » ≈ 1,5 s ; on coupe 1,8 s avant la fin de la
-        # phrase (biais volontaire : un peu tôt plutôt qu'en plein mot).
-        return min(max(min(tardifs) - 1.8, duree * 0.5), duree * 0.93)
-    return duree * 0.75
+    visage = min(max(min(tardifs) - 1.8, duree * 0.5), duree * 0.93) if tardifs else duree * 0.75
+    fins_tardives = [f for f in fins if f > duree * 0.55]
+    if fins_tardives:
+        regard = min(max(max(fins_tardives) + 0.15, visage + 1.0), duree * 0.96)
+    else:
+        regard = min(max(duree * 0.88, visage + 1.0), duree * 0.96)
+    return visage, regard
 
 
 def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
@@ -314,12 +384,24 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
         for k, ((img_p, mouv_p), (vo, deb, d)) in enumerate(zip(PLANS_T8, debuts_vo)):
             fin = debuts_vo[k + 1][1] if k + 1 < len(debuts_vo) else fin_bloc
             plans.append((img_p, mouv_p, debut_bloc if k == 0 else deb, fin))
+        # T08d : registre puis rue vide, au prorata du texte.
+        (img1, mouv1, txt1), (img2, mouv2, txt2) = TEXTE_T08D
+        _, _, deb_d, fin_d = plans[-1][0], plans[-1][1], debuts_vo[-1][1], fin_bloc
+        coupe = deb_d + (fin_d - deb_d) * len(txt1) / (len(txt1) + len(txt2))
+        if coupe - deb_d < DUREE_PLAN_MIN:
+            coupe = deb_d + DUREE_PLAN_MIN
+        plans[-1] = (img1, mouv1, debuts_vo[-1][1], coupe)
+        plans.append((img2, mouv2, coupe, fin_d))
+        # Le premier plan garde la tête de bloc.
+        plans[0] = (plans[0][0], plans[0][1], debut_bloc, plans[0][3])
         return plans
     if bloc == "T10":
         vo, deb, d = debuts_vo[0]
-        coupe = deb + position_coupe_t10()
-        (img1, mouv1), (img2, mouv2) = PLANS_T10
-        return [(img1, mouv1, debut_bloc, coupe), (img2, mouv2, coupe, fin_bloc)]
+        visage, regard = position_coupes_t10()
+        (img1, mouv1), (img2, mouv2), (img3, mouv3) = PLANS_T10
+        return [(img1, mouv1, debut_bloc, deb + visage),
+                (img2, mouv2, deb + visage, deb + regard),
+                (img3, mouv3, deb + regard, fin_bloc)]
     return [(img, mouv, debut_bloc, fin_bloc)]
 
 
