@@ -18,7 +18,7 @@ import { Component } from 'react';
 export default class GardeErreur extends Component {
   constructor(props) {
     super(props);
-    this.state = { erreur: null };
+    this.state = { erreur: null, pile: '' };
   }
 
   static getDerivedStateFromError(erreur) {
@@ -29,10 +29,16 @@ export default class GardeErreur extends Component {
     // La console reste le premier endroit où regarder quand on branche un
     // téléphone : le panneau, lui, n'affiche que l'essentiel.
     console.error('[garde-erreur] rendu interrompu :', erreur, infos?.componentStack || '');
+    // La pile des composants est ce qui permet de corriger : « Illegal
+    // invocation » ne dit rien, « dans TableDeDuel » dit tout. On garde les
+    // dernières lignes, les seules qui désignent le coupable.
+    const brut = String(infos?.componentStack || '');
+    const lignes = brut.split('\n').map((ligne) => ligne.trim()).filter(Boolean);
+    this.setState({ pile: lignes.slice(0, 8).join('\n') });
   }
 
   render() {
-    const { erreur } = this.state;
+    const { erreur, pile } = this.state;
     if (!erreur) return this.props.children;
 
     const message = erreur?.message ? String(erreur.message) : String(erreur);
@@ -60,7 +66,7 @@ export default class GardeErreur extends Component {
               color: '#a9a9bb', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere',
             }}
           >
-            {message}
+            {pile ? `${message}\n\n${pile}` : message}
           </pre>
           <button
             type="button"
