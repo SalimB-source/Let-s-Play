@@ -33,6 +33,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Le numéro de version Android est dérivé du nombre de commits :
+          # sans clone complet, il reculerait et les mises à jour refuseraient
+          # de s'installer par-dessus une APK déjà présente.
+          fetch-depth: 0
 
       - name: JDK 21
         uses: actions/setup-java@v4
@@ -68,6 +73,22 @@ jobs:
             echo "→ secrets absents : signature avec la clé committée (android/keystore)."
           fi
 
+      # ── Numéro de version dérivé du dépôt ─────────────────────────────────
+      # Même principe que l'installeur PC : `versionCode` ne recule jamais et
+      # change à chaque build, sinon Android refuse la mise à jour par-dessus
+      # l'APK déjà installée (« Application non installée »).
+      #   versionCode = max(plancher du fichier, nombre de commits)
+      #   versionName = 1.<versionCode>
+      - name: Version dérivée du build
+        run: |
+          set -euo pipefail
+          PLANCHER=$(grep -oE "versionCodeEnv\.toInteger\(\) : [0-9]+" android/app/build.gradle | grep -oE "[0-9]+$")
+          COMMITS=$(git rev-list --count HEAD)
+          CODE=$(( PLANCHER > COMMITS ? PLANCHER : COMMITS ))
+          echo "ANDROID_VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.$CODE" >> "$GITHUB_ENV"
+          echo "→ versionCode $CODE, versionName 1.$CODE (plancher $PLANCHER, $COMMITS commits)"
+
       - name: Construire l'APK signée
         run: |
           set -o pipefail
@@ -84,9 +105,8 @@ jobs:
 
       - name: Renommer l'APK avec la version
         run: |
-          VERSION=$(grep versionName android/app/build.gradle | cut -d"'" -f2)
           cp android/app/build/outputs/apk/release/lets-play-release.apk \
-             "lets-play-v${VERSION}.apk"
+             "lets-play-v${ANDROID_VERSION_NAME}.apk"
           ls -la lets-play-v*.apk
 
       - name: Publier l'artefact
@@ -111,8 +131,12 @@ jobs:
             echo ""
             echo "**Mises à jour du site** : automatiques dans l'app — pas besoin de réinstaller l'APK pour voir les nouvelles actus."
             echo ""
-            echo "- **Version** : \`$APK\`"
+            echo "- **Version** : \`$APK\` (versionCode $ANDROID_VERSION_CODE)"
             echo "- **Commit** : \`${GITHUB_SHA::7}\`"
+            echo ""
+            echo "**Si l'écran reste noir** : l'application utilise le moteur d'affichage du téléphone"
+            echo "(\`Android System WebView\`). Mettez-le à jour dans le Play Store, ainsi que Chrome."
+            echo "La page de secours de l'application affiche la version du moteur et le message d'erreur."
           } > notes.md
           gh release delete apk --yes --cleanup-tag 2>/dev/null || true
           git push origin :refs/tags/apk 2>/dev/null || true

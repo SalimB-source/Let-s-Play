@@ -39,6 +39,7 @@
     "check:rpg-cadre-filet": "node --test tests/rpg-cadre-filet.test.js",
     "check:maj-version": "node --test tests/maj-version.test.js tests/maj-version-ui.test.js",
     "check:vercel": "node --test tests/vercel-config.test.js",
+    "check:navigateurs": "node --test tests/navigateurs-anciens.test.js",
     "check:rpg-mana-essai": "node --test tests/rpg-mana-essai.test.js",
     "check:rpg-hasard": "node --test tests/rpg-hasard.test.js",
     "check:rpg-credits": "node --test tests/rpg-credits.test.js",
@@ -199,13 +200,13 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",
-    "@vitejs/plugin-react": "latest",
+    "@vitejs/plugin-react": "6.1.1",
     "jpeg-js": "^0.4.4",
     "jsdom": "^30.1.1",
     "playwright": "^1.64.0",
-    "react": "latest",
-    "react-dom": "latest",
-    "vite": "latest"
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "vite": "8.2.2"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

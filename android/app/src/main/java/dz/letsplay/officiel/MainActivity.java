@@ -31,6 +31,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Coque Android du site Let's Play (https://let-s-play-nu.vercel.app).
@@ -319,6 +321,28 @@ public class MainActivity extends Activity {
         callAudioRouted = false;
     }
 
+    /**
+     * Version du moteur d'affichage (« Android System WebView »), telle que
+     * l'utilisateur peut la lire dans le Play Store — p. ex. « 104.0.5112.97 ».
+     *
+     * Pourquoi l'exposer au site : c'est la première question à trancher quand
+     * une page ne s'affiche pas dans l'application mais s'affiche dans Chrome.
+     * Le panneau de secours d'`index.html` l'affiche, ce qui évite un
+     * aller-retour de questions et une capture d'écran de paramètres.
+     */
+    private String versionMoteur() {
+        try {
+            String ua = WebSettings.getDefaultUserAgent(this);
+            Matcher moteur = Pattern.compile("Chrome/([0-9.]+)").matcher(ua);
+            if (moteur.find()) {
+                return moteur.group(1);
+            }
+            return ua;
+        } catch (RuntimeException erreur) {
+            return "";
+        }
+    }
+
     /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio`. */
     private final class CallAudioBridge {
         /** Scoped to the duel: the rest of the application keeps its orientation. */
@@ -339,6 +363,12 @@ public class MainActivity extends Activity {
                     refreshLayout.setEnabled(false);
                 }
             });
+        }
+
+        /** Version du moteur d'affichage, pour le panneau de secours du site. */
+        @JavascriptInterface
+        public String webViewVersion() {
+            return versionMoteur();
         }
 
         @JavascriptInterface

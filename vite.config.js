@@ -97,6 +97,31 @@ function sablierArbitreVitePlugin() {
   };
 }
 
+/**
+ * Le plancher de compatibilité du site — `build.target`
+ * ====================================================
+ * Sans cette ligne, Vite 8 vise son « baseline » par défaut (Chromium ~107,
+ * Safari ~16, 2023). Le bundle sort alors avec de la syntaxe que des moteurs
+ * plus anciens ne savent pas LIRE : le module ne s'exécute pas du tout, React
+ * ne monte rien, et l'écran reste noir — sans le moindre message.
+ *
+ * C'est ce qui est arrivé à l'APK Android le 29 octobre 2026 : Chrome (son
+ * propre APK, toujours à jour) affichait le site, la WebView du même téléphone
+ * non. `Android System WebView` se met à jour par le Play Store, séparément,
+ * et certains fabricants la gelent.
+ *
+ * 2020 est un plancher raisonnable : au-delà, on ne gagne presque rien et on
+ * laisse dehors des téléphones encore en service. La sortie perd les
+ * affectations logiques (`??=`, `||=`, `&&=`) et descend les classes au
+ * prototype ; les API récentes, elles, sont comblées à l'exécution
+ * (`src/lib/navigateursAnciens.js`), et une page de secours prend le relais
+ * quand le moteur est encore plus ancien (`index.html`).
+ *
+ * Sous ce plancher, on ne descend pas : `?.` et `??` coûtent déjà cher en
+ * taille, et le message de secours vaut mieux qu'un bundle de 2 Mo.
+ */
+const CIBLES = ['chrome80', 'safari13.1', 'firefox78', 'edge80'];
+
 export default defineConfig({
   plugins: [react(), sablierArbitreVitePlugin(), sablierVersionJsonPlugin(buildId)],
   base: desktopBuild || process.env.VERCEL ? '/' : '/Let-s-Play/',
@@ -112,7 +137,8 @@ export default defineConfig({
     // Comparé à `version.json` au lancement pour proposer la mise à jour.
     __BUILD_ID__: JSON.stringify(buildId),
   },
-  ...(desktopBuild
-    ? { build: { outDir: 'desktop/dist-web', emptyOutDir: true } }
-    : {}),
+  build: {
+    target: CIBLES,
+    ...(desktopBuild ? { outDir: 'desktop/dist-web', emptyOutDir: true } : {}),
+  },
 });
