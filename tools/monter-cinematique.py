@@ -57,18 +57,18 @@ def run(cmd, **kw):
 
 # (bloc, image, mouvement, tête, queue, fade_in, fade_out, [(vo, gap_avant)])
 BLOCS = [
-    ("T01", "cine-t01-bab-el-4k.jpg", "panR", 2.2, 0.9, 0.8, 0.35, [("T01.mp3", 0)]),
-    ("T02", "cine-t02-astrolabe-4k.jpg", "zin_slow", 0.6, 0.5, 0.35, 0.0, [("T02.mp3", 0)]),
-    ("T03", "cine-t03-reprise-4k.jpg", "panD", 0.6, 0.9, 0.0, 0.35, [("T03.mp3", 0)]),
-    ("T04", "cine-t04-liste-4k.jpg", "panL", 0.6, 0.9, 0.35, 0.35, [("T04.mp3", 0)]),
-    ("T05", "cine-t05-creux-4k.jpg", "zout", 0.6, 0.9, 0.35, 0.35, [("T05.mp3", 0)]),
-    ("T06", "cine-t06-sondeur-4k.jpg", "panD", 0.6, 0.9, 0.35, 0.35, [("T06.mp3", 0)]),
-    ("T07", "cine-t07-cinq-4k.jpg", "panR", 0.6, 0.9, 0.35, 0.35, [("T07.mp3", 0)]),
-    ("T08", "cine-t08-greffe-4k.jpg", "zin_slow", 0.6, 0.9, 0.35, 0.35,
+    ("T01", "cine-t01-bab-el-4k.jpg", "panR", 1.5, 0.6, 0.8, 0.35, [("T01.mp3", 0)]),
+    ("T02", "cine-t02-astrolabe-4k.jpg", "zin_slow", 0.35, 0.5, 0.35, 0.0, [("T02.mp3", 0)]),
+    ("T03", "cine-t03-reprise-4k.jpg", "panD", 0.35, 0.45, 0.0, 0.35, [("T03.mp3", 0)]),
+    ("T04", "cine-t04-liste-4k.jpg", "panL", 0.35, 0.45, 0.35, 0.35, [("T04.mp3", 0)]),
+    ("T05", "cine-t05-creux-4k.jpg", "zout", 0.35, 0.45, 0.35, 0.35, [("T05.mp3", 0)]),
+    ("T06", "cine-t06-sondeur-4k.jpg", "panD", 0.35, 0.45, 0.35, 0.35, [("T06.mp3", 0)]),
+    ("T07", "cine-t07-cinq-4k.jpg", "panR", 0.35, 0.45, 0.35, 0.35, [("T07.mp3", 0)]),
+    ("T08", "cine-t08-greffe-4k.jpg", "zin_slow", 0.35, 0.45, 0.35, 0.35,
      [("T08a.mp3", 0), ("T08b.mp3", 0.5), ("T08c.mp3", 0.6), ("T08d.mp3", 2.0)]),
-    ("T09", "cine-t09-duel-4k.jpg", "drift_DR", 0.6, 0.9, 0.35, 0.35, [("T09.mp3", 0)]),
-    ("T10", "cine-t10-the-4k.jpg", "settle", 0.6, 1.5, 0.35, 0.35, [("T10.mp3", 0)]),
-    ("T11", "cine-t11-portail-4k.jpg", "rise", 0.6, 1.0, 0.35, 0.35, [("T11.mp3", 0)]),
+    ("T09", "cine-t09-duel-4k.jpg", "drift_DR", 0.35, 0.45, 0.35, 0.35, [("T09.mp3", 0)]),
+    ("T10", "cine-t10-the-4k.jpg", "settle", 0.35, 1.2, 0.35, 0.35, [("T10.mp3", 0)]),
+    ("T11", "cine-t11-portail-4k.jpg", "rise", 0.35, 0.6, 0.35, 0.35, [("T11.mp3", 0)]),
     ("T12", "cine-t12-titre-4k.jpg", "static", 2.0, 3.0, 0.35, 1.5, [("T12.mp3", 0)]),
 ]
 
@@ -516,6 +516,28 @@ def generer_lumiere(chemin, duree_tot, pulses, assets):
     return chemin
 
 
+def generer_stinger(chemin, duree=0.6):
+    """Impact court pour les cuts durs : thump grave + snap (mono)."""
+    import wave
+    sr = 44100
+    n = int(duree * sr)
+    t = np.arange(n) / sr
+    f = 130 * (45 / 130) ** (t / duree)
+    phase = 2 * np.pi * np.cumsum(f) / sr
+    thump = np.sin(phase) * np.exp(-t * 9)
+    rng = np.random.default_rng(99)
+    snap = rng.standard_normal(n) * np.exp(-t * 45) * 0.6
+    snap[1:] = snap[1:] - 0.9 * snap[:-1]
+    x = thump + snap
+    x = (x / np.abs(x).max() * 0.7).astype(np.float32)
+    with wave.open(chemin, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+    return chemin
+
+
 def fmt_vtt(sec):
     h, r = divmod(sec, 3600)
     m, s = divmod(r, 60)
@@ -584,6 +606,8 @@ def main():
         ("portal", deb_t11 + (fin_t11 - deb_t11) * 0.4, 1.0, 2.0, 2.5, 0.60),
         ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre
     ]
+    cuts = [(deb, dur) for (_, _, _, deb, dur, _, _) in segments if deb > 0.01]
+    print(f"Cuts durs : {len(cuts)}")
 
     if not audio_only:
         # 2. Segments vidéo.
@@ -666,18 +690,22 @@ def main():
          "highpass=f=150,lowpass=f=900,volume='0.9*sin(PI*t/1.4)':eval=frame,"
          "aresample=44100,aformat=channel_layouts=stereo", whoosh])
 
-    # 6. Mix audio : VO + nappe (duckée) + cloches + whooshes + ambiances.
+    # 5b. Stinger d'impact (un par cut dur).
+    stinger = generer_stinger(os.path.join(tmp, "stinger.wav"))
+
+    # 6. Mix audio : VO + nappe (duckée) + cloches + whooshes + stingers + ambiances.
     cmd = [FF, "-y", "-v", "error"]
     for vo, _, _ in timeline:
         cmd += ["-i", os.path.join(VO, vo)]
     n_vo = len(timeline)
-    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE, "-i", whoosh]
+    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE, "-i", whoosh, "-i", stinger]
     i_bell, i_m1, i_m2, i_wh = n_vo, n_vo + 1, n_vo + 2, n_vo + 3
+    i_st = n_vo + 4
     idx_entrees = []
     for fichier, bdeb, bfin, niveau in AMB:
         chemin = os.path.join(AMB_DIR, fichier)
         if os.path.exists(chemin):
-            idx_entrees.append((n_vo + 4 + len(idx_entrees), fichier, bdeb, bfin, niveau))
+            idx_entrees.append((n_vo + 5 + len(idx_entrees), fichier, bdeb, bfin, niveau))
             cmd += ["-stream_loop", "-1", "-i", chemin]
     if idx_entrees:
         print("Ambiances :", [f for _, f, _, _, _ in idx_entrees])
@@ -706,7 +734,16 @@ def main():
         fc.append(f"[w{j}]adelay={ms}|{ms}[ww{j}]")
     fc.append("".join(f"[ww{j}]" for j in range(n_wh)) +
               f"amix={n_wh}:normalize=0,volume=0.30[whooshes]")
-    bus = ["[vo_mix]", "[duck]", "[cloches]", "[whooshes]"]
+    n_st = len(cuts)
+    fc.append(f"[{i_st}]asplit={n_st}" + "".join(f"[s{j}]" for j in range(n_st)))
+    for j, (deb, dur) in enumerate(cuts):
+        ms = int(deb * 1000)
+        g = 0.5 if dur >= 3.0 else 0.28
+        fc.append(f"[s{j}]aresample=44100,aformat=channel_layouts=stereo,"
+                  f"adelay={ms}|{ms},volume={g}[ss{j}]")
+    fc.append("".join(f"[ss{j}]" for j in range(n_st)) +
+              f"amix={n_st}:normalize=0[stingers]")
+    bus = ["[vo_mix]", "[duck]", "[cloches]", "[whooshes]", "[stingers]"]
     if idx_entrees:
         for m, (idx, fichier, bdeb, bfin, niveau) in enumerate(idx_entrees):
             deb = spans[bdeb][0] if bdeb else 0.0
@@ -722,6 +759,7 @@ def main():
         bus.append("[amb]")
     fc.append("".join(bus) + f"amix={len(bus)}:normalize=0,"
               f"afade=t=out:st={duree_tot - 3:.2f}:d=3,"
+              f"atrim=0:{duree_tot:.2f},"
               f"alimiter=limit=0.95,apad=whole_dur={duree_tot:.2f}[mix]")
     mix = os.path.join(tmp, "mix.m4a")
     run(cmd + ["-filter_complex", ";".join(fc), "-map", "[mix]",

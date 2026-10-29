@@ -153,6 +153,15 @@ confrontation Salem/Scribe sur « where they are written ». Pulses
 reprise + confrontation. MP4 3 min 27, ~80 Mo (CRF25/slow). Vérifié :
 contact sheet 8 nouveaux plans + likeness, build vert.
 
+**Montage V5.1 (octobre 2026).** Rythme : têtes/queues resserrées
+(3 min 20 au lieu de 3 min 27), 38 stingers d'impact synthétisés
+(thump + snap, gain réduit sur les plans < 3 s) sur tous les cuts
+durs, mix borné à la durée exacte (`atrim`, la cloche 8 s dépassait).
+Vérifié : énergie/niveaux (−22,8/−4,5 dB), transitions T10/T11 à la
+frame près (dump + diff numpy), build vert. Note méthode : le `-ss`
+avant `-i` de ce build ffmpeg cherche vers l'AVANT (keyframes) —
+toujours vérifier les timings par dump numéroté ou `-ss` après `-i`.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
