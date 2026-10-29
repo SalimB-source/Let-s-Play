@@ -35,6 +35,19 @@
    (détection : `estRouteSablier` dans SocialDock.jsx), en restant sous les
    appels (1900), qui doivent toujours pouvoir la couvrir. */
 .social-dock--sablier { z-index: 1600; }
+
+/* Téléphone en paysage dans le MENU du Sablier : la barre de navigation du jeu
+   est une colonne collée à droite (voir la fin de `rpg-battle.css`) et son
+   bouton « Jouer » vit exactement là où se pose le lanceur « Let's Talk » —
+   la bulle le recouvrait. Dans le menu, la messagerie a déjà son onglet dans
+   cette barre (même pastille de non-lus) : le lanceur replié s'efface donc,
+   et seulement lui — la fenêtre ouverte (`is-open`) reste affichée, et sur le
+   plateau du duel (où `.rpg-mode-menu` n'existe pas) rien ne change.
+   `:has()` : si le navigateur ne le connaît pas, la règle est ignorée et l'on
+   retrouve simplement le comportement précédent. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
+  body:has(.rpg-mode-menu) .social-dock--sablier:not(.is-open) { display: none; }
+}
 .social-dock > * { pointer-events: auto; }
 
 /* Conteneur du lanceur. Les pastilles de notification dépassent légèrement
