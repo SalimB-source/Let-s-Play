@@ -15,6 +15,21 @@
 # Contrairement à l'APK, l'exécutable N'EST PAS committé sur la branche :
 # ~180 Mo par build saturerait le dépôt. Le téléchargement passe par la Release.
 #
+# **Le paquet web est dans l'exécutable** : un correctif du jeu (src/, public/,
+# index.html, vite.config.js) ne part donc pas tout seul sur les PC installés.
+# D'où les déclencheurs ci-dessous — tout changement du site reconstruit
+# l'installeur — et la version dérivée du dépôt (étape « Version dérivée du
+# build ») : chaque build publié porte un numéro plus grand que le précédent,
+# donc `electron-updater` le voit et le propose au lancement. Sans ce numéro,
+# reconstruire à l'identique ne changerait rien pour les joueurs.
+#
+# Coût : ~10 min de runner Windows et ~215 Mo d'artefacts par build publié. La
+# Release du tag `desktop` est supprimée puis recréée à chaque fois : le stockage
+# ne s'accumule pas, seul le téléchargement est renouvelé.
+#
+# Une pull request qui touche la coque est construite pour vérification (sans
+# publication) ; les changements purement web n'y déclenchent rien.
+#
 # Lancement manuel : onglet Actions → « Installeur PC (Windows) » → Run workflow.
 
 name: Installeur PC (Windows)
@@ -24,12 +39,28 @@ on:
   push:
     branches:
       - main
-      - 'arena/**'
     paths:
+      # La coque elle-même.
+      - 'desktop/**'
+      - 'scripts/desktop-bundle.mjs'
+      - 'scripts/desktop-check.mjs'
+      # …et tout ce qui part dans le paquet web embarqué.
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/desktop-windows.yml'
+  pull_request:
+    paths:
+      # Une PR ne construit la coque que si elle y touche : un correctif du jeu
+      # sera de toute façon embarqué au merge, sur `main`.
       - 'desktop/**'
       - 'scripts/desktop-bundle.mjs'
       - 'scripts/desktop-check.mjs'
       - 'vite.config.js'
+      - 'index.html'
       - '.github/workflows/desktop-windows.yml'
 
 permissions:
@@ -39,7 +70,11 @@ permissions:
 
 concurrency:
   group: desktop-windows
-  cancel-in-progress: true
+  # Une PR peut annuler son propre build ; un build de `main` ne doit jamais
+  # être coupé en pleine publication (l'étape Release supprime le tag `desktop`
+  # avant de le recréer : une annulation au mauvais moment laisserait le lien de
+  # téléchargement cassé). Les builds de `main` font donc la queue.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verifs:
@@ -75,12 +110,45 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # L'étape « Version dérivée du build » compte les commits du dépôt :
+          # un clone superficiel renverrait 1 et casserait la numérotation.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
+      # La version est celle du fichier (majeure.mineure) et son correctif suit
+      # le dépôt : le plus grand entre le nombre de commits, le numéro de run
+      # et le correctif déjà écrit. Strictement croissante, donc vue par
+      # `electron-updater` — et une montée manuelle en 1.1.0 garde la priorité.
+      - name: Version dérivée du build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=$(node -p "require('./desktop/package.json').version")
+          MAJEUR=${BASE%%.*}
+          RESTE=${BASE#*.}
+          MINEUR=${RESTE%%.*}
+          CORRECTIF=${RESTE#*.}
+          COMMITS=$(git rev-list --count HEAD)
+          RUN=${GITHUB_RUN_NUMBER:-0}
+          VERSION=$(node -e '
+            const [majeur, mineur, base, commits, run] = process.argv.slice(1).map(Number);
+            console.log(`${majeur}.${mineur}.${Math.max(base, commits, run)}`);
+          ' "$MAJEUR" "$MINEUR" "$CORRECTIF" "$COMMITS" "$RUN")
+          node -e '
+            const fs = require("node:fs");
+            const p = "desktop/package.json";
+            const pkg = JSON.parse(fs.readFileSync(p, "utf8"));
+            pkg.version = process.argv[1];
+            fs.writeFileSync(p, `${JSON.stringify(pkg, null, 2)}\n`);
+          ' "$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "::notice title=Version du build::v$VERSION (fichier : v$BASE · commits : $COMMITS · run : $RUN)"
 
       - name: Dépendances du site
         run: npm ci
@@ -162,11 +230,14 @@ jobs:
       # Les annotations de step sont plafonnées à 10 : le rapport complet des
       # tailles part en commentaire de la pull request, lisible via l'API.
       - name: Rapport de tailles en PR
-        if: github.event_name == 'push'
+        # Utile sur la PR qui touche la coque ; un build de `main` n'a pas de PR
+        # (le rapport part alors dans le log du run).
+        if: github.event_name == 'pull_request'
         # Un échec de commentaire ne doit jamais priver le run de ses artefacts.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUM: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           {
@@ -192,9 +263,12 @@ jobs:
             ls -la desktop/stage 2>/dev/null || echo 'stage ABSENT'
             echo '```'
           } > report.md
-          # Checkout en HEAD détaché : `gh pr view` ne sait pas retrouver la
-          # branche ; on cherche la PR par sa tête via l'API.
-          NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
+          # Le numéro vient de l'événement `pull_request` ; à défaut, on cherche
+          # la PR par sa tête (un checkout détaché ne permet pas `gh pr view`).
+          NUM=${PR_NUM:-}
+          if [ -z "$NUM" ]; then
+            NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
+          fi
           if [ -n "$NUM" ]; then
             gh pr comment "$NUM" --body-file report.md
           else

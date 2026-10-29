@@ -216,19 +216,45 @@ dit ce que le jeu a réussi à faire.
 
 `.github/workflows/desktop-windows.yml` :
 
-1. `verifs` (ubuntu) : `npm run check:desktop` — 20 vérifications sans Electron
+1. `verifs` (ubuntu) : `npm run check:desktop` — 25 vérifications sans Electron
    (commutateurs GPU, serveur local, anti-évasion, isolation de la fenêtre,
-   empaquetage) ;
-2. `installeur` (windows-latest) : paquet élagué, `electron-builder`, artefacts
-   de run, puis — sur `main` seulement — GitHub Release sur le tag `desktop`
-   (lien de téléchargement permanent, remplacé à chaque build). La Release
-   contient `latest.yml` et les `.blockmap` nécessaires à `electron-updater`.
+   empaquetage, relance de mise à jour) ;
+2. `installeur` (windows-latest) : version dérivée, paquet élagué,
+   `electron-builder`, artefacts de run, puis — sur `main` seulement — GitHub
+   Release sur le tag `desktop` (lien de téléchargement permanent, remplacé à
+   chaque build). La Release contient `latest.yml` et les `.blockmap` nécessaires
+   à `electron-updater`.
 
-Pour une nouvelle publication destinée aux installations existantes, incrémentez
-`desktop/package.json` et `desktop/package-lock.json` (champ `version`) avant le
-merge sur `main` : le mécanisme compare les versions sémantiques et n'installe
-pas deux builds portant la même version. L'update automatique concerne
-l'installateur Windows NSIS ; le portable se met à jour par remplacement manuel.
+### Quand un build part, et sous quel numéro
+
+Le paquet web est **dans** l'exécutable : un correctif du jeu ne rejoint un PC
+installé que si l'installeur est reconstruit. Le workflow part donc sur `main`
+dès qu'un fichier embarqué change — `desktop/**`, `src/**`, `public/**`,
+`index.html`, `vite.config.js`, `package.json`/`package-lock.json` — en plus du
+lancement manuel. Une pull request ne construit que si elle touche la coque
+(`desktop/**`, `vite.config.js`, `index.html`, le workflow) : un correctif du jeu
+sera embarqué au merge, pas avant.
+
+La **version** est calculée avant l'empaquetage : majeure et mineure viennent de
+`desktop/package.json` (1.0), et le correctif est
+
+```
+max(correctif du fichier, nombre de commits du dépôt, numéro de run)
+```
+
+Donc chaque build publié porte un numéro **strictement plus grand** que le
+précédent : `electron-updater` le voit et le propose au lancement. Plus besoin
+de bumper à la main à chaque correctif — et une montée volontaire en `1.1.0`
+garde la priorité. Le clone de l'étape `installeur` est complet
+(`fetch-depth: 0`), sans quoi le compte des commits vaudrait 1.
+
+Coût : ~10 min de runner Windows et ~215 Mo par build publié. La Release du tag
+`desktop` est supprimée puis recréée à chaque fois, donc le stockage ne
+s'accumule pas — seul le téléchargement est renouvelé.
+
+L'update automatique concerne l'installateur Windows NSIS ; le portable se met à
+jour par remplacement manuel (et par la bascule « jouer en version en ligne »
+proposée au lancement).
 
 L'exécutable **n'est pas committé** sur la branche (≈ 180 Mo par build) : le
 téléchargement passe par la Release, contrairement à l'APK Android qui, lui, est

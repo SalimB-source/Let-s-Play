@@ -8408,11 +8408,14 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
 - Commandes : `npm run desktop:web` (paquet élagué), `npm run desktop:setup`,
   `npm run desktop:run` (lancer sans installer), `npm run desktop:dist`
   (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le paquet
-  dans un navigateur), `npm run check:desktop` (22 vérifications sans Electron).
+  dans un navigateur), `npm run check:desktop` (25 vérifications sans Electron).
 - CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
   build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
   committé). La Release publie aussi des copies au nom fixe
   (`le-sablier-de-bab-el-setup.exe`) : ce sont elles que le site fait télécharger.
+  Le build part à **chaque changement du site** (le paquet web est dans l'exe) et
+  sa **version est dérivée du dépôt** — voir « la mise à jour se propose au
+  lancement ».
 - **Écran d'entrée du jeu** : sur `/jeu/sablier-de-bab-el`, le site propose
   d'abord « Télécharger pour Windows » ou « Jouer dans le navigateur »
   (`src/games/RpgEntryChoice.jsx`). Le duel reste paresseux tant que le choix
@@ -8471,13 +8474,28 @@ renseignement que le client compare, et il n'a rien de secret.
   ligne** pour la session. Le paquet local reste installé et jouable hors
   connexion ; le menu indique le mode courant.
 
-> Limite assumée : la relance PC ne peut installer que ce qui est **publié**.
-> Tant que la Release `desktop` n'est pas reconstruite, un PC garde son paquet
-> — d'où la bascule « jouer en ligne », qui donne les correctifs du jour sans
-> attendre.
+**L'installeur se reconstruit tout seul.** Le paquet web est dans l'exécutable :
+un correctif du jeu ne rejoint un PC installé que si l'installeur est refait.
+`.github/workflows/desktop-windows.yml` part donc sur `main` dès qu'un fichier
+embarqué change — `desktop/**`, `src/**`, `public/**`, `index.html`,
+`vite.config.js`, `package.json`/`package-lock.json` — en plus du lancement
+manuel (une PR ne construit que si elle touche la coque). La **version** est
+calculée avant l'empaquetage :
+
+```
+1.0.max(correctif du fichier, nombre de commits, numéro de run)
+```
+
+Chaque build publié porte donc un numéro strictement plus grand que le
+précédent : `electron-updater` le voit et le propose au lancement, sans bump
+manuel. La Release du tag `desktop` est supprimée puis recréée à chaque build,
+donc le stockage ne s'accumule pas. La bascule « jouer en ligne » reste utile
+pour la fenêtre de quelques minutes entre le merge et la publication du nouvel
+installeur.
 
 Vérification : `npm run check:maj-version` (protocole, veille, cascade de
-rechargement, panneau monté pour de vrai, coque PC).
+rechargement, panneau monté pour de vrai, coque PC) et `npm run check:desktop`
+(dont les déclencheurs et la numérotation du workflow).
 
 ## Le Sablier : la table au doigt reprend la composition du PC
 

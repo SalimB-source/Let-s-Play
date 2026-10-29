@@ -299,5 +299,45 @@ for (const [cle, fichiers] of groupes) {
 assert.equal(collisionsActives, 0, 'collision de casse visée par un import sans extension');
 ok('aucun import sans extension ne vise deux fichiers de même casse');
 
+// ---------------------------------------------------------------------------
+// 6) La mise à jour part toute seule
+// ---------------------------------------------------------------------------
+// Le paquet web est DANS l'exécutable : un correctif du jeu ne joint les PC
+// installés que si l'installeur est reconstruit et si sa version augmente. Un
+// déclencheur qui oublie `src/**`, ou une version figée, et les joueurs restent
+// sur la version du jour de l'installation — sans que rien ne le signale.
+console.log('6. La mise à jour part toute seule');
+const workflow = readFileSync(join(RACINE, '.github', 'workflows', 'desktop-windows.yml'), 'utf8');
+assert.match(workflow, /branches:\s*\n\s*- main\s*\n\s*paths:/,
+  'le workflow doit partir sur `main` (une PR ne doit pas publier de Release)');
+for (const chemin of ["'src/**'", "'public/**'", "'index.html'", "'vite.config.js'"]) {
+  assert.ok(workflow.includes(chemin), `les changements du site doivent reconstruire l'installeur : ${chemin} absent des chemins`);
+}
+ok('déclencheurs : la coque et le paquet web (src, public, index.html, vite.config.js) sur `main`');
+
+assert.match(workflow, /- name: Version dérivée du build/,
+  'la version publiée doit être dérivée du dépôt, sinon une reconstruction ne se voit pas');
+assert.match(workflow, /git rev-list --count HEAD/,
+  'le correctif de version suit le nombre de commits');
+assert.match(workflow, /Math\.max\(base, commits, run\)/,
+  'la version ne doit jamais reculer : correctif = max(fichier, commits, run)');
+assert.match(workflow, /pkg\.version = process\.argv\[1\]/,
+  'la version calculée doit être écrite dans desktop/package.json avant l’empaquetage');
+assert.match(workflow, /fetch-depth:\s*0/,
+  'le compte des commits exige un clone complet');
+assert.ok(
+  workflow.lastIndexOf('- name: Version dérivée du build') < workflow.indexOf('- name: Paquet web élagué'),
+  'la version doit être posée avant la fabrication du pack (elle part dans pack/package.json)',
+);
+assert.match(bundle, /version:\s*paquetCoque\.version/,
+  'le projet empaqueté reprend la version de la coque');
+assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/,
+  'la Release ne se publie que depuis `main`');
+assert.match(workflow, /gh release delete desktop/,
+  'la Release du tag `desktop` est remplacée à chaque build (stockage borné)');
+assert.match(workflow, /cancel-in-progress:\s*\$\{\{ github\.event_name == 'pull_request' \}\}/,
+  'un build de `main` ne doit pas être annulé en pleine publication de la Release');
+ok('version dérivée (max fichier/commits/run), posée avant le pack, publiée sur `main` seulement');
+
 console.log('');
 console.log(`check:desktop — ${reussites} vérifications, aucune en échec.`);
