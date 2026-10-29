@@ -8421,6 +8421,64 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   passe en une seule colonne.
   `npm run check:rpg-entry-choice`.
 
+## Le Sablier : la mise à jour se propose au lancement
+
+« Fais en sorte que le jeu pousse à faire la mise à jour au lancement. »
+
+Un jeu qui vit dans un onglet — ou dans la WebView de l'APK — ne sait jamais
+qu'une nouvelle version est en ligne : `index.html` est relu, les fichiers
+`assets/` portent leur empreinte dans leur nom, mais rien ne se recharge tout
+seul. Et l'installeur PC, lui, embarque une **copie** du site : sans nouvelle
+Release, il peut jouer une version vieille de plusieurs semaines.
+
+**L'identité d'un build.** `vite.config.js` calcule un jeton — le commit
+(`VERCEL_GIT_COMMIT_SHA`, `GITHUB_SHA`), ou l'horloge en local —, le grave dans
+le bundle (`__BUILD_ID__`) et écrit `version.json` à la racine de la sortie
+(`{ buildId, builtAt }`, servi avec `Cache-Control: no-store`). C'est le seul
+renseignement que le client compare, et il n'a rien de secret.
+
+**Côté navigateur, APK et webview.** `src/components/MiseAJourDisponible.jsx`
+(module testable : `src/updates/maj-site.js`) monte à la racine du site, hors de
+`Layout` :
+
+- **2,5 s après le lancement**, il relit `version.json` sans cache et compare
+  au build chargé ; s'ils diffèrent, un panneau s'ouvre — « Une nouvelle version
+  est en ligne » — avec **Recharger maintenant** (choix par défaut) et
+  **Plus tard** ;
+- le rechargement passe par une URL neuve (`?maj=<buildId>`) : c'est la seule
+  façon de faire relire `index.html` à une WebView qui l'a en cache. Les
+  fichiers JS/CSS, eux, n'ont pas ce problème — leur nom change à chaque build ;
+- **Plus tard** (ou **Échap**) range le panneau et laisse une pastille discrète
+  en bas de l'écran, qui le rouvre : la relance ne se perd pas ;
+- la veille se répète **toutes les quinze minutes** et à chaque retour sur
+  l'onglet (au plus une fois par minute) : une appli laissée ouverte toute la
+  nuit se met à jour le matin ;
+- hors ligne, ou si `version.json` répond n'importe quoi, **rien ne s'affiche** :
+  une vérification ratée est une vérification sans réponse ;
+- en développement, la veille est coupée : l'identité change à chaque
+  démarrage du serveur, se comparer à soi-même ferait clignoter le panneau.
+
+**Côté PC installé.** Deux relances, dans `desktop/main.js` :
+
+- **l'installeur** est cherché 2 s après l'ouverture (au lieu de 8 s), puis
+  toutes les six heures ; le dialogue de fin de téléchargement propose
+  « Redémarrer et installer » par défaut et signale que l'installation se fera
+  de toute façon à la fermeture. Un échec silencieux (démarrage hors ligne) est
+  réessayé une fois au bout d'une minute ;
+- **le paquet embarqué** est comparé au site en ligne : si le site est plus
+  récent — cas normal, l'installeur n'est republié que sur `desktop/**`, le
+  paquet web ou `vite.config.js` — la coque propose de **jouer en version en
+  ligne** pour la session. Le paquet local reste installé et jouable hors
+  connexion ; le menu indique le mode courant.
+
+> Limite assumée : la relance PC ne peut installer que ce qui est **publié**.
+> Tant que la Release `desktop` n'est pas reconstruite, un PC garde son paquet
+> — d'où la bascule « jouer en ligne », qui donne les correctifs du jour sans
+> attendre.
+
+Vérification : `npm run check:maj-version` (protocole, veille, cascade de
+rechargement, panneau monté pour de vrai, coque PC).
+
 ## Le Sablier : la table au doigt reprend la composition du PC
 
 Le duel tactile avait sa propre composition : un duel en miroir autour de la

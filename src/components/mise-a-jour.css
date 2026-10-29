@@ -1,0 +1,148 @@
+/* ── « Une nouvelle version est en ligne » ───────────────────────────────────
+   Une seule feuille pour les deux états : le panneau centré (au lancement, une
+   fois) et la pastille discrète qu'il laisse derrière lui si l'on répond
+   « Plus tard ». Le vocabulaire visuel est celui du site — panneau sombre,
+   filet violet, or de la maison pour l'action principale —, pas celui du
+   Sablier : ce n'est pas un élément de jeu, c'est la coquille qui se met à
+   jour.
+
+   `z-index` au-dessus des surcouches existantes (appels, succès, messagerie se
+   tiennent sous 9000) : la mise à jour doit pouvoir couvrir n'importe quel
+   écran, y compris pendant un duel.
+   ------------------------------------------------------------------------ */
+.maj-site {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(4, 5, 12, .72);
+  backdrop-filter: blur(3px);
+  animation: maj-site-voile .18s ease-out both;
+}
+
+.maj-site__panneau {
+  width: min(420px, 100%);
+  padding: 22px 22px 18px;
+  border: 1px solid var(--line-strong, rgba(148, 130, 255, .36));
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(124, 58, 237, .22), transparent 62%),
+    var(--panel, #0b0d1e);
+  box-shadow: 0 26px 60px -22px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 255, 255, .03) inset;
+  color: var(--ink, #eef0ff);
+  text-align: left;
+  animation: maj-site-panneau .22s cubic-bezier(.2, .9, .3, 1.1) both;
+}
+
+.maj-site__sur-titre {
+  margin: 0 0 6px;
+  color: var(--yellow, #ffd619);
+  font: 800 10px/1.2 var(--mono, 'Google Sans', sans-serif);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.maj-site__titre {
+  margin: 0 0 10px;
+  font: 800 19px/1.25 var(--display, 'Google Sans', sans-serif);
+  letter-spacing: -.01em;
+}
+
+.maj-site__texte {
+  margin: 0 0 8px;
+  color: var(--muted, rgba(214, 220, 255, .64));
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.maj-site__date {
+  margin: 0 0 14px;
+  color: var(--dim, rgba(214, 220, 255, .4));
+  font: 600 11px/1.3 var(--mono, 'Google Sans', sans-serif);
+}
+
+.maj-site__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.maj-site__bouton {
+  flex: 1 1 auto;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--line-strong, rgba(148, 130, 255, .36));
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .04);
+  color: var(--ink, #eef0ff);
+  font: 700 13px/1.1 var(--body, 'Google Sans', sans-serif);
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease, background .12s ease;
+}
+
+.maj-site__bouton:hover { background: rgba(255, 255, 255, .08); }
+.maj-site__bouton:active { transform: translateY(1px); }
+.maj-site__bouton:focus-visible { outline: 2px solid var(--yellow, #ffd619); outline-offset: 2px; }
+
+.maj-site__bouton--ok {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffe063, var(--yellow, #ffd619));
+  color: #14121f;
+}
+
+.maj-site__bouton--ok:hover { filter: brightness(1.06); background: linear-gradient(180deg, #ffe063, var(--yellow, #ffd619)); }
+
+/* La pastille : le rappel qui reste après « Plus tard », sans rien couvrir. */
+.maj-site__pastille {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 9400;
+  padding: 9px 14px;
+  border: 1px solid rgba(255, 214, 25, .55);
+  border-radius: 999px;
+  background: rgba(10, 11, 24, .94);
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .8);
+  color: var(--yellow, #ffd619);
+  font: 800 12px/1 var(--body, 'Google Sans', sans-serif);
+  cursor: pointer;
+  animation: maj-site-pastille .24s ease-out both;
+}
+
+.maj-site__pastille:hover { background: rgba(20, 21, 40, .98); }
+
+@keyframes maj-site-voile {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes maj-site-panneau {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes maj-site-pastille {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Sur téléphone, la pastille ne doit pas passer sous la barre du navigateur ni
+   masquer les commandes du duel : elle remonte au-dessus de la zone sûre. */
+@media (max-width: 640px) {
+  .maj-site__pastille {
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  .maj-site__panneau { padding: 18px 16px 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maj-site,
+  .maj-site__panneau,
+  .maj-site__pastille { animation: none; }
+}

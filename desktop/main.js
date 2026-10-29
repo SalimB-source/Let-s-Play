@@ -88,6 +88,12 @@ let urlJeu = `${REMOTE_ORIGIN}${ROUTE_JEU}`;
 let verificationMajManuelle = false;
 let verificationMajEnCours = false;
 let telechargementMajEnCours = false;
+/** Une relance de la vérification après un échec silencieux (démarrage hors ligne). */
+let relanceMajFaite = false;
+/** Le paquet web embarqué, quand il existe (mode local). */
+let dossierPaquet = null;
+/** Une seule proposition par session : « jouer en ligne » ne se redemande pas. */
+let sitePlusRecentPropose = false;
 
 async function demarrer() {
   if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -97,6 +103,7 @@ async function demarrer() {
 
   // 2) Le paquet local, s'il est embarqué.
   const paquet = MODE_FORCE === 'online' ? null : dossierPaquetWeb();
+  dossierPaquet = paquet;
   if (paquet) {
     try {
       serveurLocal = await startLocalServer({
@@ -120,6 +127,7 @@ async function demarrer() {
   creerFenetre();
   construireMenu();
   configurerMiseAJour();
+  configurerVerificationSite();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) creerFenetre();
@@ -273,6 +281,13 @@ function signalerErreurMaj(erreur) {
   verificationMajManuelle = false;
   telechargementMajEnCours = false;
   console.error('[desktop:update] échec :', erreur);
+  // Démarrage hors ligne, réseau qui n'a pas encore repris : une relance, une
+  // seule et sans rien dire, une minute plus tard. Une erreur *visible* (le
+  // joueur a cliqué « Rechercher une mise à jour ») reste un dialogue.
+  if (!erreurVisible && !relanceMajFaite) {
+    relanceMajFaite = true;
+    planifierVerificationMaj(60000);
+  }
   if (erreurVisible) {
     afficherDialogue({
       type: 'error',
@@ -340,9 +355,9 @@ function configurerMiseAJour() {
     const { response } = await afficherDialogue({
       type: 'info',
       title: 'Mise à jour prête',
-      message: `La version ${info.version} a été téléchargée.`,
-      detail: 'Installez-la maintenant, ou continuez à jouer : elle s’installera à la fermeture de l’application.',
-      buttons: ['Redémarrer et installer', 'Plus tard'],
+      message: `La version ${info.version} est téléchargée.`,
+      detail: 'Redémarrer maintenant l’installe tout de suite — sinon elle s’installe à la fermeture du jeu, sans rien redemander.',
+      buttons: ['Redémarrer et installer', 'Plus tard (à la fermeture)'],
       defaultId: 0,
       cancelId: 1,
     });
@@ -351,9 +366,88 @@ function configurerMiseAJour() {
 
   autoUpdater.on('error', signalerErreurMaj);
 
-  // Une vérification au démarrage, différée pour laisser la fenêtre s'ouvrir.
-  const temporisateur = setTimeout(() => lancerVerificationMaj(false), 8000);
+  // Au lancement, tôt : le joueur est encore au menu, c'est le meilleur moment
+  // pour installer. Puis toutes les six heures, pour une session qui dure.
+  planifierVerificationMaj(2000);
+  const battement = setInterval(() => lancerVerificationMaj(false), 6 * 60 * 60 * 1000);
+  battement.unref?.();
+}
+
+/** Programme une vérification silencieuse (jamais deux en même temps). */
+function planifierVerificationMaj(delaiMs) {
+  const temporisateur = setTimeout(() => lancerVerificationMaj(false), delaiMs);
   temporisateur.unref?.();
+}
+
+/** Le site en ligne est-il plus récent que le paquet embarqué ?
+ *
+ * L'installateur Windows embarque une copie du site : sans nouvelle Release,
+ * un PC peut jouer une version vieille de plusieurs semaines, alors que la
+ * version en ligne contient les correctifs du jour. `version.json` (écrit par
+ * `vite.config.js`, gravé dans le bundle) donne l'identité du build : si les
+ * deux diffèrent, on propose de jouer en ligne — le paquet local reste là,
+ * jouable hors connexion, et l'installateur, lui, continue de se mettre à jour
+ * par `autoUpdater`. Rien à faire hors ligne : on ne dit rien.
+ */
+function configurerVerificationSite() {
+  const temporisateur = setTimeout(verifierSitePlusRecent, 3000);
+  temporisateur.unref?.();
+}
+
+function lireBuildLocal() {
+  if (!dossierPaquet) return '';
+  try {
+    const donnees = JSON.parse(readFileSync(join(dossierPaquet, 'version.json'), 'utf8'));
+    return typeof donnees?.buildId === 'string' ? donnees.buildId.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+async function verifierSitePlusRecent() {
+  if (sitePlusRecentPropose || mode !== 'local' || !dossierPaquet) return;
+  if (typeof fetch !== 'function') return;
+  const buildLocal = lireBuildLocal();
+  // Un build local (`local-…`) n'est pas comparable à un déploiement.
+  if (!buildLocal || buildLocal.startsWith('local-')) return;
+
+  let distant = null;
+  try {
+    const controleur = new AbortController();
+    const minuterie = setTimeout(() => controleur.abort(), 6000);
+    const reponse = await fetch(`${REMOTE_ORIGIN}/version.json?v=${Date.now()}`, {
+      cache: 'no-store',
+      signal: controleur.signal,
+    });
+    clearTimeout(minuterie);
+    if (reponse.ok) distant = await reponse.json();
+  } catch {
+    return; // hors ligne : le paquet local est justement là pour ça
+  }
+
+  const buildDistant = typeof distant?.buildId === 'string' ? distant.buildId.trim() : '';
+  if (!buildDistant || buildDistant === buildLocal || buildDistant.startsWith('local-')) return;
+
+  sitePlusRecentPropose = true;
+  console.log(`[desktop:site] paquet ${buildLocal} / en ligne ${buildDistant}`);
+  const { response } = await afficherDialogue({
+    type: 'info',
+    title: 'Une version plus récente est en ligne',
+    message: 'L’application installée embarque une copie du site plus ancienne que celle en ligne.',
+    detail: 'Jouer en version en ligne donne accès aux correctifs du jour. L’application reste installée et jouable hors connexion, et l’installateur, quand il est republié, s’installe à la fermeture du jeu.',
+    buttons: ['Jouer en version en ligne', 'Rester dans l’application'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response === 0) basculerEnLigne();
+}
+
+function basculerEnLigne() {
+  mode = 'online';
+  urlJeu = `${REMOTE_ORIGIN}${ROUTE_JEU}`;
+  construireMenu();
+  console.log(`[desktop] bascule en ligne : ${urlJeu}`);
+  fenetrePrincipale?.loadURL(urlJeu).catch(() => afficherHorsLigne());
 }
 
 function lancerVerificationMaj(manuelle) {

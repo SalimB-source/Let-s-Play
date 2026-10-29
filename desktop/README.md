@@ -12,11 +12,23 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
 - Cible : Windows 10/11 x64 (Linux et macOS possibles en local, non produits par la CI)
 - Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
   `le-sablier-de-bab-el-<version>-portable.exe`)
-- Mise à jour automatique : `electron-updater` vérifie la Release GitHub `desktop`
-  au démarrage et depuis **Aide → Rechercher une mise à jour…**. L'installeur
-  Windows télécharge la nouvelle version en arrière-plan, puis propose de
-  redémarrer pour l'installer (ou l'installe à la prochaine fermeture). La
-  version portable reste à mettre à jour en téléchargeant son nouvel `.exe`.
+- **Mise à jour proposée au lancement** : `electron-updater` interroge la
+  Release GitHub `desktop` **2 secondes après l'ouverture** — le joueur est
+  encore au menu, c'est le moment d'installer —, puis toutes les six heures, et
+  depuis **Aide → Rechercher une mise à jour…**. Un téléchargement silencieux
+  qui échoue (démarrage hors ligne) est réessayé une fois, une minute plus tard.
+  Une fois l'installeur téléchargé, le dialogue propose **Redémarrer et
+  installer** (choix par défaut) ; s'il attend, il s'installe à la fermeture du
+  jeu. La version portable reste à mettre à jour en téléchargeant son nouvel
+  `.exe`.
+- **Le paquet embarqué n'est jamais une impasse** : au lancement, la coque
+  compare l'identité de son paquet (`version.json`, écrit par `vite.config.js`)
+  à celle du site en ligne. Si le site est plus récent — l'installeur n'est
+  republié que quand `desktop/**` ou le site change, et pas à chaque correctif —
+  elle propose de **jouer en version en ligne** pour la session. Rien à faire
+  hors connexion : la comparaison échoue en silence et le jeu démarre comme
+  avant. Le menu indique ensuite le mode courant (*paquet local* / *site en
+  ligne*).
 - Poids réel mesuré en CI : **~215 Mo par installeur** (dont ~117 Mo de jeu :
   cartes, plateaux, musiques ; le reste est le runtime Electron compressé).
   L'archive `app.asar` ne contient que la coque (~100 Ko) : l'empaquetage se
