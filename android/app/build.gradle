@@ -22,6 +22,16 @@ if (keystorePath == null && fallbackStoreFile.exists() && fallbackPropsFile.exis
     keystoreAlias = props.getProperty('keyAlias') ?: 'letsplay'
 }
 
+// ── Numéro de version ───────────────────────────────────────────────────────
+// Le correctif vient du dépôt, pas de ce fichier : la CI calcule
+// `versionCode = max(ce fichier, nombre de commits)` et le passe en variable
+// d'environnement (voir .github/workflows/android-apk.yml). Sans ça, une APK
+// reconstruite gardait le même `versionCode` — Android refuse alors la mise à
+// jour par-dessus l'ancienne (« Application non installée »), et le numéro
+// affiché ne dit plus rien de ce que contient le fichier.
+def versionCodeEnv = System.getenv('ANDROID_VERSION_CODE')
+def versionNameEnv = System.getenv('ANDROID_VERSION_NAME')
+
 android {
     namespace 'dz.letsplay.officiel'
     compileSdk 35
@@ -30,8 +40,11 @@ android {
         applicationId 'dz.letsplay.officiel'
         minSdk 23          // Android 6.0+
         targetSdk 35
-        versionCode 5
-        versionName '1.0.4'
+        // Plancher : la CI ne descend jamais en dessous. On l'incrémente à la
+        // main seulement si un build hors CI doit passer au-dessus d'une APK
+        // déjà installée.
+        versionCode versionCodeEnv != null && versionCodeEnv.isInteger() ? versionCodeEnv.toInteger() : 6
+        versionName versionNameEnv != null && !versionNameEnv.isEmpty() ? versionNameEnv : '1.0.5'
     }
 
     signingConfigs {

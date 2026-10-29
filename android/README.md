@@ -10,7 +10,8 @@ accéder à la messagerie, il faut se connecter dans l'application.
 
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`
-- Version actuelle : **1.0.3** (versionCode 4 — voir `app/build.gradle`)
+- Version : dérivée par la CI (`versionCode` = max(plancher du fichier, nombre
+  de commits), `versionName` = `1.0.<versionCode>`) — voir `app/build.gradle`
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`
   dans `app/src/main/java/dz/letsplay/officiel/MainActivity.java`)
 - Android minimum : 6.0 (API 23) · cible : API 35
@@ -134,8 +135,40 @@ ci-dessus sert de clé d'upload.
 
 ## Monter en version
 
-Dans `android/app/build.gradle` : augmenter `versionCode` (entier, +1 à chaque
-publication) et `versionName` (ex. « 1.1.0 »), puis relancer le workflow.
+Rien à faire à la main : la CI calcule le numéro avant de compiler
+(`.github/workflows/android-apk.yml`, étape « Version dérivée du build »).
+
+- `versionCode` = max(plancher écrit dans `app/build.gradle`, nombre de commits) ;
+- `versionName` = `1.0.<versionCode>`.
+
+Pourquoi : un `versionCode` figé empêchait Android d'installer une APK
+reconstruite par-dessus l'ancienne (« Application non installée »), et le
+numéro affiché ne disait plus rien du contenu. Le plancher du fichier ne sert
+qu'aux builds hors CI.
+
+## Écran noir : le moteur d'affichage du téléphone
+
+L'app est une **WebView** : elle utilise le moteur `Android System WebView` du
+téléphone, qui se met à jour par le Play Store — séparément de Chrome, et
+parfois gelé par le fabricant. Un moteur ancien ne sait pas lire le bundle
+compilé : rien ne s'exécute, et l'écran reste noir.
+
+Trois garde-fous, posés après l'incident du 29 octobre 2026 (Chrome affichait
+le site, l'app non, sur le même téléphone) :
+
+1. `vite.config.js` fixe un plancher de syntaxe (`build.target`, Chrome 80) au
+   lieu de laisser Vite viser son « baseline » de l'année ;
+2. `src/lib/navigateursAnciens.js` comble les API récentes utilisées par le
+   jeu (`Object.hasOwn`, `Array.prototype.at`, `structuredClone`,
+   `randomUUID`) ;
+3. `index.html` affiche une **amorce** dès le HTML, puis un **panneau de
+   secours** qui nomme le moteur (version demandée à l'app par
+   `LetsPlayAndroid.webViewVersion()`), les fonctions manquantes et le message
+   d'erreur — au lieu d'un rectangle noir.
+
+Si un joueur signale un écran noir : lui faire ouvrir le Play Store, mettre à
+jour « Android System WebView » et Chrome. Le panneau de secours affiche la
+version exacte, ce qui tranche en une capture d'écran.
 
 ## Générer les icônes
 

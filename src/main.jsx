@@ -1,3 +1,9 @@
+// EN PREMIER, et volontairement : ce module comble les API récentes
+// (`Object.hasOwn`, `Array.prototype.at`, `structuredClone`, `randomUUID`) sur
+// les moteurs anciens — la WebView Android de l'APK, en particulier. Placé
+// avant tous les autres imports, il est évalué avant le premier module qui
+// s'en sert. Voir `src/lib/navigateursAnciens.js`.
+import './lib/navigateursAnciens.js';
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
@@ -43,6 +49,7 @@ import { normalizePhoneViewport } from './lib/phoneLayout';
 import { applyLaneCountForDevice } from './games/mirageLanes';
 import GameLoadBoundary from './games/GameLoadBoundary.jsx';
 import MiseAJourDisponible from './components/MiseAJourDisponible';
+import GardeErreur from './components/GardeErreur';
 
 /**
  * Pages à la demande — le shell (barre, thème, contexte de compte) se charge
@@ -316,7 +323,36 @@ normalizePhoneViewport();
 // au moment de construire la partie.
 applyLaneCountForDevice();
 
-createRoot(document.getElementById('root')).render(<App />);
+createRoot(document.getElementById('root')).render(
+  // Le filet de dernier recours : une erreur de rendu non rattrapée vidait la
+  // page sans rien dire (écran noir dans l'APK). Voir `GardeErreur.jsx`.
+  <GardeErreur>
+    <App />
+  </GardeErreur>,
+);
+
+/**
+ * Retire l'amorce de `index.html` dès que React a posé son premier écran.
+ *
+ * L'amorce est du HTML pur : elle s'affiche même si le module compilé ne
+ * s'exécute jamais (moteur trop ancien) — c'est le script de secours
+ * d'`index.html` qui prend alors le relais avec un message lisible. Ici, on ne
+ * la retire que lorsque `#root` a réellement des enfants : retirer à l'aveugle
+ * laisserait un écran vide pendant tout le temps de montage.
+ */
+function retirerAmorce() {
+  const racine = document.getElementById('root');
+  const amorce = document.getElementById('amorce');
+  if (!amorce) return;
+  if (racine && racine.childElementCount > 0) {
+    amorce.remove();
+    return;
+  }
+  // Douze secondes au plus : au-delà, c'est le panneau de secours qui parle.
+  if (typeof performance !== 'undefined' && performance.now() > 12000) return;
+  requestAnimationFrame(retirerAmorce);
+}
+requestAnimationFrame(retirerAmorce);
 
 setTimeout(normalizePhoneViewport, 400);
 setTimeout(normalizePhoneViewport, 1500);

@@ -68,6 +68,182 @@
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      L'amorce, puis le secours — visibles avant tout JavaScript compilé.
+
+      Pourquoi ce bloc existe : le 29 octobre, l'APK Android affichait un écran
+      noir alors que le même site s'ouvrait dans Chrome, sur le même téléphone.
+      La WebView du téléphone était plus ancienne que le bundle compilé : le
+      module ne s'exécutait jamais, React ne montait rien, et rien ne le disait.
+      Un écran noir sans message est le pire des diagnostics.
+
+      Ce que ça change : `#amorce` s'affiche dès l'arrivée du HTML (pas besoin
+      de JavaScript compilé), et le script ci-dessous — volontairement écrit en
+      ES5, il doit tourner sur un moteur de 2015 — le remplace par un panneau
+      lisible si React n'est toujours pas monté au bout de dix secondes, ou dès
+      qu'une erreur est signalée. Le panneau dit la version du moteur, les API
+      qui manquent, et le texte de l'erreur : de quoi corriger sans deviner.
+
+      `src/main.jsx` retire `#amorce` dès que `#root` a des enfants ; le
+      panneau de secours, lui, ne s'affiche jamais si le site a démarré.
+    -->
+    <div id="amorce" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0b12;color:#e8e8f0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;text-align:center;padding:24px;box-sizing:border-box;">
+      <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(232,232,240,.18);border-top-color:#f5c451;animation:amorce-tour 900ms linear infinite;"></div>
+      <p style="margin:0;font-size:15px;letter-spacing:.02em;">Chargement de Let’s Play…</p>
+      <style>@keyframes amorce-tour{to{transform:rotate(360deg)}}</style>
+    </div>
+
+    <div id="secours" style="display:none;position:fixed;inset:0;overflow:auto;background:#0b0b12;color:#e8e8f0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding:22px;box-sizing:border-box;">
+      <div style="max-width:520px;margin:0 auto;">
+        <h1 style="font-size:20px;margin:0 0 10px;">Le site n’a pas pu démarrer</h1>
+        <p style="font-size:15px;line-height:1.5;margin:0 0 16px;color:#c9c9d6;">
+          La page est bien arrivée, mais le programme qui l’anime n’a pas tourné.
+          Dans une application, c’est le plus souvent le moteur d’affichage du
+          téléphone (« Android System WebView ») qui est trop ancien.
+        </p>
+        <p id="secours-piste" style="font-size:15px;line-height:1.5;margin:0 0 16px;padding:12px 14px;border-radius:10px;background:#171726;border:1px solid #2a2a3d;color:#f5c451;"></p>
+        <p id="secours-detail" style="font-size:13px;line-height:1.5;margin:0 0 16px;padding:12px 14px;border-radius:10px;background:#12121c;border:1px solid #262636;color:#a9a9bb;white-space:pre-wrap;overflow-wrap:anywhere;"></p>
+        <button id="secours-recharger" type="button" style="font-size:16px;padding:12px 20px;border-radius:10px;border:1px solid #f5c451;background:#f5c451;color:#1a1205;font-weight:600;cursor:pointer;">Réessayer</button>
+      </div>
+    </div>
+
+    <script>
+      /*
+       * ES5 strict : ce script doit s'exécuter sur un moteur qui ne comprend ni
+       * les fonctions fléchées, ni `const`, ni les gabarits de chaînes. C'est
+       * précisément le cas de figure qu'il sert à diagnostiquer.
+       */
+      (function () {
+        var DELAI_MS = 10000;
+        var erreurs = [];
+        var affiche = false;
+
+        /* Le site a-t-il démarré ? `src/main.jsx` retire `#amorce` au premier
+         * rendu : tant qu'elle est là, rien ne tourne encore. Une fois le site
+         * en marche, aucune erreur — image manquante, vidéo refusée, appel
+         * réseau — ne doit recouvrir l'écran d'un panneau. */
+        function demarrageEnCours() {
+          return document.getElementById('amorce') !== null;
+        }
+
+        function noter(message) {
+          if (!message) return;
+          var texte = String(message);
+          if (erreurs.length < 4 && erreurs.indexOf(texte) === -1) erreurs.push(texte);
+          if (demarrageEnCours()) montrerSecours('erreur');
+        }
+
+        window.addEventListener('error', function (evenement) {
+          // Ressource qui n'a pas pu être chargée : seules la feuille de style
+          // et un script empêchent le site de démarrer. Une image ou une vidéo
+          // manquante ne justifie pas un panneau plein écran.
+          if (evenement && evenement.target && evenement.target.tagName) {
+            var balise = evenement.target.tagName;
+            if (balise !== 'SCRIPT' && balise !== 'LINK') return;
+            noter('Ressource introuvable : '
+              + (evenement.target.src || evenement.target.href || balise));
+            return;
+          }
+          var texte = evenement && evenement.message ? evenement.message : 'Erreur inconnue';
+          if (evenement && evenement.filename) texte += ' (' + evenement.filename + ':' + evenement.lineno + ')';
+          noter(texte);
+        }, true);
+
+        window.addEventListener('unhandledrejection', function (evenement) {
+          var raison = evenement && evenement.reason;
+          noter('Promesse rejetée : ' + (raison && raison.message ? raison.message : raison));
+        });
+
+        window.onerror = function (message) { noter(message); };
+
+        /* Version du moteur d'affichage, lue dans l'agent utilisateur. */
+        function versionMoteur() {
+          var ua = navigator.userAgent || '';
+          var chrome = /Chrome\/(\d+)/.exec(ua);
+          var firefox = /Firefox\/(\d+)/.exec(ua);
+          var safari = /Version\/(\d+)[.\d]* Safari/.exec(ua);
+          if (chrome) return { nom: 'Chromium / WebView', version: parseInt(chrome[1], 10) };
+          if (firefox) return { nom: 'Firefox', version: parseInt(firefox[1], 10) };
+          if (safari) return { nom: 'Safari', version: parseInt(safari[1], 10) };
+          return { nom: 'moteur inconnu', version: 0 };
+        }
+
+        /* Les API dont le site a besoin ; listées pour être nommées. */
+        function manquantes() {
+          var liste = [];
+          if (typeof Object.hasOwn !== 'function') liste.push('Object.hasOwn');
+          if (typeof Array.prototype.at !== 'function') liste.push('Array.prototype.at');
+          if (typeof structuredClone !== 'function') liste.push('structuredClone');
+          if (!window.crypto || typeof window.crypto.randomUUID !== 'function') liste.push('crypto.randomUUID');
+          return liste;
+        }
+
+        function versionWebViewApk() {
+          try {
+            if (window.LetsPlayAndroid && typeof window.LetsPlayAndroid.webViewVersion === 'function') {
+              return String(window.LetsPlayAndroid.webViewVersion());
+            }
+          } catch (e) { /* pont absent : navigateur, pas l'APK */ }
+          return '';
+        }
+
+        function montrerSecours(cause) {
+          if (affiche) return;
+          // Sécurité : si le site tourne déjà, on ne recouvre rien.
+          if (cause === 'erreur' && !demarrageEnCours()) return;
+          affiche = true;
+          var amorce = document.getElementById('amorce');
+          if (amorce) amorce.style.display = 'none';
+          var secours = document.getElementById('secours');
+          if (!secours) return;
+          secours.style.display = 'block';
+
+          var moteur = versionMoteur();
+          var ancien = moteur.version > 0 && moteur.version < 92;
+          var api = manquantes();
+          var piste = document.getElementById('secours-piste');
+          if (piste) {
+            if (ancien || api.length) {
+              piste.textContent = 'Moteur d’affichage trop ancien (' + moteur.nom
+                + (moteur.version ? ' ' + moteur.version : '') + '). Mettez à jour « Android System WebView »'
+                + ' et Chrome dans le Play Store, puis rouvrez cette page.';
+            } else {
+              piste.textContent = 'Réessayez : la connexion a peut-être été coupée pendant le chargement.';
+            }
+          }
+
+          var lignes = [];
+          lignes.push(cause === 'delai'
+            ? 'Le site n’a pas fini de démarrer après ' + Math.round(DELAI_MS / 1000) + ' secondes.'
+            : 'Le site a signalé une erreur au démarrage.');
+          lignes.push('Moteur : ' + moteur.nom + (moteur.version ? ' ' + moteur.version : ''));
+          var apk = versionWebViewApk();
+          if (apk) lignes.push('WebView de l’application : ' + apk);
+          if (api.length) lignes.push('Fonctions manquantes : ' + api.join(', '));
+          if (erreurs.length) lignes.push('Erreur : ' + erreurs.join(' | '));
+          lignes.push('Page : ' + location.href);
+          var detail = document.getElementById('secours-detail');
+          if (detail) detail.textContent = lignes.join('\n');
+        }
+
+        var bouton = document.getElementById('secours-recharger');
+        if (bouton) bouton.onclick = function () { location.reload(); };
+
+        /*
+         * Le délai court à partir de maintenant : si React a monté ses
+         * premiers éléments, `src/main.jsx` retire `#amorce` et ce contrôle
+         * ne fait rien. Il ne se déclenche donc jamais sur un site qui marche,
+         * même lentement (le module compilé peut mettre dix secondes sur un
+         * réseau de téléphone, mais il retire l'amorce dès son premier rendu).
+         */
+        setTimeout(function () {
+          var amorce = document.getElementById('amorce');
+          if (amorce && amorce.style.display !== 'none') montrerSecours('delai');
+        }, DELAI_MS);
+      })();
+    </script>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
