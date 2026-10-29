@@ -12914,6 +12914,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             décor que le temps de l'aperçu, flou (voir `rpg-battle.css`).
             `aria-hidden` : il ne montre rien que la table ne montre déjà. */}
         <span className="rpg-plateau-fond" aria-hidden="true" />
+        {/* La vignette du plateau : deux dégradés noirs, en haut et en bas du
+            cadre. Elle passe **derrière** tout ce que la table pose — la main
+            comprise, qui la recouvre de ses cartes — et ne prend jamais le
+            pointeur : c'est un fond, pas un voile. Voir « La vignette du
+            plateau » dans `rpg-battle.css`. */}
+        <span className="rpg-plateau-vignette" aria-hidden="true" />
         {/* Les peintures restent plein cadre : la découpe franche du terrain
             adverse suit la frontière du territoire, marquée par un trait doré.
             Aucun déplacement des cartes, des zones de dépôt ou des commandes. */}

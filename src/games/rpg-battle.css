@@ -2689,17 +2689,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Table de duel façon TCG : mains opposées, deux champs, piles et vies ──
-   Le plateau est une **peinture**, et rien ne la recouvre : ni voile, ni
-   vignette. Les bandes noires dégradées d'autrefois (haut et bas du cadre)
-   noircissaient un tiers de chaque tableau — l'Erg du Sahara et les Ruines de
-   Tipaza y perdaient leurs dunes et leur mosaïque, et la table ressemblait à
-   une fenêtre sale. La lisibilité ne vient plus d'un filtre posé sur l'image,
-   mais de **chaque élément d'interface**, qui porte désormais son propre fond
-   (voir « Le chrome de la table », plus bas) : les plaques des sorciers, la
-   capsule du tour, la barre de navigation du duel, les compteurs des piles et
-   le journal ont tous de quoi tenir l'encre crème sur n'importe quel fond.
-   Les cartes, elles, se détachent par leur ombre : `box-shadow`, jamais un
-   aplat sur le décor. */
+   Le plateau est une **peinture**. Un temps, il n'y avait rien dessus : ni
+   voile, ni vignette — les bandes noires dégradées d'alors noircissaient un
+   tiers de chaque tableau, l'Erg du Sahara et les Ruines de Tipaza y perdaient
+   leurs dunes et leur mosaïque, et la table ressemblait à une fenêtre sale.
+
+   La vignette est revenue, mais **slim et aux deux bords seulement** (voir « La
+   vignette du plateau », plus bas) : quelques dizaines de pixels d'ombre en
+   haut et en bas du cadre, là où se posent la navigation et la main, et rien
+   sur les deux tiers du milieu — les dunes, la mosaïque et les cartes gardent
+   leur peinture. La lisibilité des textes, elle, ne dépend toujours pas de ce
+   fond : chaque élément d'interface porte son propre chrome (voir « Le chrome
+   de la table », plus bas) — les plaques des sorciers, la capsule du tour, la
+   barre de navigation du duel, les compteurs des piles et le journal ont tous
+   de quoi tenir l'encre crème sur n'importe quel fond. Les cartes, elles, se
+   détachent par leur ombre : `box-shadow`, jamais un aplat sur le décor. */
 .card-table {
   isolation: isolate;
   background-position: center;
@@ -2834,6 +2838,43 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .card-table--decoupee,
   .rpg-plateau-lisere { transition: none; }
 }
+
+/* ── La vignette du plateau : deux bandes noires, en haut et en bas ──────────
+   Le cadre se referme sur ses bords : un dégradé noir au ras du haut, un autre
+   au ras du bas, et rien au milieu. Ce n'est pas le voile d'autrefois — celui
+   prenait un tiers de la hauteur et noircissait la peinture de part en part —
+   mais une **vignette** : deux bandes qui se fondent en une vingtaine de pour
+   cent de la hauteur, assez pour asseoir la barre de navigation et les cartes
+   de la main, trop courtes pour manger le champ de bataille.
+
+   Elle vit derrière tout ce que la table pose (`z-index: 0`, peinte avant les
+   cartes, les rangées et la main, qui sont des frères suivants) : la main ne
+   flotte donc pas sur un trou noir, elle **recouvre** le bord de la vignette,
+   et ses cartes gardent leur propre ombre par-dessus. `pointer-events: none` :
+   c'est un fond, jamais une cible. Les pourcentages suivent la hauteur de la
+   table — sur un téléphone en paysage comme sur un écran 1440 × 900, la bande
+   du bas couvre la rangée de la main sans jamais atteindre les champs. */
+.rpg-plateau-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom,
+      rgba(6, 5, 9, .82) 0,
+      rgba(6, 5, 9, .54) 5%,
+      rgba(6, 5, 9, .2) 10%,
+      rgba(6, 5, 9, 0) 17%),
+    linear-gradient(to top,
+      rgba(6, 5, 9, .9) 0,
+      rgba(6, 5, 9, .66) 6%,
+      rgba(6, 5, 9, .28) 13%,
+      rgba(6, 5, 9, 0) 23%);
+}
+/* Sous un aperçu, la peinture passe au flou : la vignette, elle, reste nette —
+   un dégradé flouté ne montre rien de plus, et le bord du cadre doit rester
+   fermé derrière la carte consultée. */
+.card-table[data-apercu-carte] .rpg-plateau-vignette { opacity: .72; }
 
 /* ── Le plateau derrière une carte consultée ─────────────────────────────────
    Une carte ouverte en grand — l'appui long d'une seconde, la fiche d'un clic

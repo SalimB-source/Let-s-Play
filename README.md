@@ -6395,7 +6395,7 @@ l'application. Le premier : **le voile noir du plateau**. Le second : **le
 sablier des cartes en main**, qui tombait à côté sur téléphone — on croyait
 jouer une carte, c'en était une autre.
 
-### 1. Le plateau est une peinture, rien ne la recouvre
+### 1. Le plateau est une peinture, plus de voile dessus
 
 Chaque table portait un **dégradé noir en haut et en bas** (`--rpg-plateau-voile`)
 et, à la souris, une vignette centrale par famille de terrain. L'intention était
@@ -6426,7 +6426,13 @@ même partout : *deux tiers d'ombre, un tiers de peinture* — soit un fond sous
 
 Les cartes, elles, se détachent par leur **ombre** (`box-shadow`), jamais par un
 aplat sur le décor : c'est la règle du duel tactile — aucun panneau opaque sur le
-champ de bataille — qui reste entière. Le doigt reçoit exactement le même
+champ de bataille — qui reste entière.
+
+**Une exception, revenue plus tard et volontairement bornée : la vignette des
+deux bords** (voir « Le Sablier : la vignette du plateau », plus bas). Ce n'est
+pas le voile : deux dégradés noirs de quelques dizaines de pixels, en haut et en
+bas du cadre, qui s'éteignent avant le premier champ — la peinture du milieu, les
+dunes, la mosaïque et les cartes n'y perdent rien. Le doigt reçoit exactement le même
 traitement que la souris ; il ajoute simplement ses propres capsules à
 l'échelle du téléphone (barre de navigation et plaques des sorciers, resserrées
 dans la première rangée de la grille tactile).
@@ -6507,6 +6513,55 @@ déplacement des commandes).
 L'APK n'a pas besoin d'être reconstruite : le duel vit dans la page servie par le
 site, donc les deux correctifs — le voile et la main — arrivent dans l'application
 dès que le site est déployé, au prochain lancement du jeu.
+
+
+## Le Sablier : la vignette du plateau, en haut et en bas
+
+« Ajoute une vignette noire en haut et en bas du plateau, en dessous de la
+main. »
+
+Le cadre se referme sur ses bords. Deux **dégradés noirs** entrent par le haut et
+par le bas de la table et se fondent avant d'atteindre le champ de bataille : la
+navigation et les plaques du sorcier se posent sur une ombre, la rangée de la
+main sort d'une pénombre, et le milieu de la table — les dunes de l'Erg, la
+mosaïque de Tipaza, les cartes posées — garde sa peinture intacte.
+
+**Ce n'est pas le voile d'autrefois.** Celui-là prenait un tiers de la hauteur,
+noircissait la peinture de part en part et faisait ressembler chaque table à une
+fenêtre sale ; il a été retiré (voir « le voile noir retiré », plus haut). La
+vignette est une **bande** : `17 %` de la hauteur en haut, `23 %` en bas, avec
+quatre paliers de transparence qui s'éteignent à zéro — `rgba(6, 5, 9, .82)` au
+ras du bord haut, `.9` au ras du bord bas, rien au-delà. Sur un 1440 × 900, cela
+fait 153 px et 207 px : la main (198 px) tient dans la bande du bas, et la
+première rangée de cartes du PC commence à `21 %` — au-dessus de la bande haute,
+jamais dedans.
+
+| | Valeur | Ce que ça donne |
+| --- | --- | --- |
+| Bande du haut | `0 → 17 %`, `.82 → 0` | le cadre se referme sous la navigation et les plaques du sorcier |
+| Bande du bas | `0 → 23 %`, `.9 → 0` | la main se détache du décor, ses cartes gardent leur ombre |
+| Milieu de la table | `17 % → 77 %` | peinture nette : ni voile, ni filtre |
+| Pointeur | `pointer-events: none` | c'est un fond, jamais une cible |
+| Sous un aperçu | `opacity: .72` | la peinture passe au flou, le bord du cadre reste fermé |
+
+**Elle passe derrière la main.** Le calque (`.rpg-plateau-vignette`) est monté
+juste après le jumeau de la peinture (`.rpg-plateau-fond`), donc **avant** les
+rangées, les cartes et le dock de la main dans l'ordre du document : à
+`z-index: 0` contre `42` pour la main, ce sont les cartes qui recouvrent la
+vignette, et non l'inverse. Un fond noir sous la main ne mange donc aucune carte :
+il donne du relief à celles qui débordent de la bande.
+
+Les pourcentages suivent la hauteur de la table : la même proportion sur un
+1440 × 900, sur un 844 × 390 au doigt et sur l'APK en paysage — nulle part la
+bande du bas ne rejoint la rangée des cartes posées (`49 %` au PC).
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat : le calque est monté dans la
+page (`<span class="rpg-plateau-vignette" aria-hidden="true" />`), il est en
+`position: absolute; inset: 0`, `pointer-events: none`, `z-index: 0`, il porte
+**deux** `linear-gradient` (`to bottom`, `to top`) qui s'éteignent à `17 %` et
+`23 %`, aucun aplat ni `inset` d'ombre, et il est placé **avant** la main dans le
+document. Les assertions du voile, elles, restent : pas de `--rpg-plateau-voile`,
+pas de `.card-table::before`, pas de vignette par plateau.
 
 
 ## Le Sablier : les six decks de départ recréés
