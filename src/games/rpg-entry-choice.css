@@ -201,6 +201,96 @@
   text-transform: uppercase;
 }
 
+/*
+ * L'invite de rotation de l'écran d'entrée — une bande, pas un mur.
+ * ----------------------------------------------------------------
+ * Le Sablier se joue en paysage (voir `PaysageSablier.jsx`) : debout, au doigt,
+ * cet écran le dit et propose d'activer le paysage. Elle ne recouvre pas la
+ * carte : c'est justement en portrait qu'on vient télécharger l'APK, couper le
+ * bouton de téléchargement serait une régression. Styles autonomes, l'écran
+ * d'entrée ne charge pas `rpg-mobile.css` (chunk du duel).
+ */
+.rpg-rotate-prompt--bandeau {
+  position: sticky;
+  /* Sous la barre de navigation du site (`.nav`, fixe, 68 px) : collée à
+     `top: 10px`, la bande passait dessous en portrait. */
+  top: calc(68px + 10px);
+  z-index: 20;
+  grid-column: 1 / -1;
+  justify-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+  width: min(880px, 100%);
+  margin-bottom: 8px;
+  padding: 10px 18px;
+  text-align: center;
+  color: #fff0cf;
+  border: 1px solid rgba(244, 206, 120, 0.5);
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(97, 64, 32, 0.96), rgba(16, 13, 19, 0.96));
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.rpg-rotate-prompt--bandeau .rpg-rotate-prompt__icon {
+  font: 24px/1 Georgia, serif;
+  color: #f4ce78;
+}
+
+.rpg-rotate-prompt--bandeau p {
+  margin: 0;
+  max-width: 48ch;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.rpg-rotate-prompt--bandeau strong {
+  color: #f4ce78;
+}
+
+.rpg-rotate-prompt__bouton {
+  min-height: 44px;
+  padding: 0 20px;
+  font: 700 13px/1 'Orbitron', system-ui, sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #1b1206;
+  background: #f4ce78;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.rpg-rotate-prompt__bouton:focus-visible {
+  outline: 2px solid #fff0cf;
+  outline-offset: 3px;
+}
+
+/* Téléphone couché : le jeu s'ouvre ici, la carte se resserre pour que les
+   trois choix tiennent sans faire défiler un écran entier. */
+@media (max-height: 540px) and (orientation: landscape) {
+  .rpg-entry-choice {
+    padding: 12px 14px 20px;
+    align-content: start;
+  }
+
+  .rpg-entry-choice__titre {
+    font-size: clamp(22px, 4vw, 34px);
+  }
+
+  .rpg-entry-choice__accroche {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .rpg-entry-choice__carte {
+    gap: 12px;
+  }
+}
+
 @media (max-width: 720px) {
   .rpg-entry-choice__choix {
     grid-template-columns: minmax(0, 1fr);

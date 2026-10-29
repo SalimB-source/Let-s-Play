@@ -1,5 +1,49 @@
 import { requestNativeFullscreen, exitNativeFullscreen, nativeFullscreenElement } from './gameFullscreen.js';
 
+/**
+ * Le paysage du Sablier appartient à la **route**, pas au duel
+ * -----------------------------------------------------------
+ * Deux écrans le réclament : la route `/jeu/sablier-de-bab-el` (menu, atelier,
+ * souk, mode histoire — voir `PaysageSablier.jsx`) et le duel lui-même. Ils se
+ * superposent : le duel ouvre sa session à l'intérieur de celle de la route.
+ *
+ * D'où ce compteur de module : le système n'est prévenu qu'à la **première**
+ * ouverture et à la **dernière** fermeture. Sans lui, revenir du duel au menu
+ * relâchait le verrou et l'écran repassait en portrait — exactement le défaut
+ * qu'on corrige.
+ */
+let sessionsOuvertes = 0;
+
+/**
+ * Le verrou d'orientation a-t-il été réellement pris — par n'importe quelle
+ * session ? Il faut le savoir : le duel peut avoir verrouillé là où la route,
+ * montée hors plein écran, n'y était pas parvenue. Sans ce drapeau, la dernière
+ * session quittée ne rendait pas l'écran (son `ownsOrientation` à faux) et le
+ * site restait coincé en paysage.
+ */
+let verrouPris = false;
+
+/** Session ouverte par ce module — les tests s'en servent, pas l'application. */
+export function sessionsPaysageOuvertes() {
+  return sessionsOuvertes;
+}
+
+/** Remise à zéro réservée aux tests : une session ne survit pas à un test. */
+export function reinitialiserSessionsPaysage() {
+  sessionsOuvertes = 0;
+  verrouPris = false;
+}
+
+/** Le pont Android, sous son nouveau nom comme sous l'ancien. */
+function annoncerPaysage(win, actif) {
+  const pont = win?.LetsPlayAndroid;
+  if (!pont) return;
+  try {
+    if (typeof pont.setPaysageSablier === 'function') pont.setPaysageSablier(actif);
+    else pont.setDuelLandscape?.(actif);
+  } catch { /* pont d'une APK plus ancienne : rien à casser */ }
+}
+
 /** Délai (ms) laissé à la page pour obtenir le plein écran avant de verrouiller
  * le paysage : `screen.orientation.lock` est refusé tant que le document n'est
  * pas en plein écran, et la demande de la page est en vol dans le même geste. */
@@ -40,6 +84,10 @@ function attendrePleinEcran(doc, timeoutMs = FULLSCREEN_WAIT_MS) {
  * promise must never lock the screen again after the player leaves the duel. */
 export function createRpgLandscapeSession(win = window, doc = document) {
   let active = false;
+  // Cette session a-t-elle déjà compté dans `sessionsOuvertes` ? `enter()` peut
+  // être appelé plusieurs fois (reprise de partie, retour au plateau) : une
+  // session ne compte qu'une fois.
+  let annonce = false;
   let generation = 0;
   let ownsFullscreen = false;
   let ownsOrientation = false;
@@ -78,6 +126,7 @@ export function createRpgLandscapeSession(win = window, doc = document) {
           return false;
         }
         ownsOrientation = true;
+        verrouPris = true;
         libererRattrapage();
         return true;
       })
@@ -92,7 +141,11 @@ export function createRpgLandscapeSession(win = window, doc = document) {
       active = true;
       const token = ++generation;
       if (needsLandscape) {
-        try { win.LetsPlayAndroid?.setDuelLandscape?.(true); } catch { /* older APK */ }
+        if (!annonce) {
+          annonce = true;
+          sessionsOuvertes += 1;
+          if (sessionsOuvertes === 1) annoncerPaysage(win, true);
+        }
         // Un `enter()` qui remplace le précédent reprend l'écouteur avec le
         // nouveau jeton — un seul rattrapage armé par session.
         libererRattrapage();
@@ -138,10 +191,19 @@ export function createRpgLandscapeSession(win = window, doc = document) {
       active = false;
       generation++;
       libererRattrapage();
-      try { win.LetsPlayAndroid?.setDuelLandscape?.(false); } catch { /* older APK */ }
-      if (ownsOrientation) {
+      // Le paysage n'est rendu qu'à la dernière session : le duel qui se referme
+      // sur le menu laisse l'écran en paysage, c'est la route qui le tient.
+      let derniere = false;
+      if (annonce) {
+        annonce = false;
+        sessionsOuvertes = Math.max(0, sessionsOuvertes - 1);
+        derniere = sessionsOuvertes === 0;
+        if (derniere) annoncerPaysage(win, false);
+      }
+      if (derniere && (ownsOrientation || verrouPris)) {
         try { win.screen.orientation.unlock?.(); } catch { /* already unlocked */ }
       }
+      if (derniere) verrouPris = false;
       ownsOrientation = false;
       if (ownsFullscreen) exitNativeFullscreen(doc);
       ownsFullscreen = false;

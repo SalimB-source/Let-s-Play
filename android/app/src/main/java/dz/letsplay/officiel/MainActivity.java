@@ -43,24 +43,49 @@ import java.util.regex.Pattern;
  * fonctionnalité native.
  */
 public class MainActivity extends Activity {
-    private boolean duelLandscapeActive = false;
-    private int orientationBeforeDuel = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+    private boolean paysageSablierActif = false;
+    private int orientationAvantPaysage = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
 
-    private void restoreDuelOrientation() {
-        if (!duelLandscapeActive) return;
-        duelLandscapeActive = false;
-        setRequestedOrientation(orientationBeforeDuel);
+    /** Rend l'écran à sa rotation naturelle (portrait compris). */
+    private void rendreOrientation() {
+        if (!paysageSablierActif) return;
+        paysageSablierActif = false;
+        setRequestedOrientation(orientationAvantPaysage);
     }
 
-    private boolean isTrustedDuelPage() {
-        if (webView == null || webView.getUrl() == null) return false;
+    /** Chemins du Sablier, avec et sans le préfixe de base de GitHub Pages. */
+    private static final String[] CHEMINS_SABLIER = {
+        "/jeu/sablier-de-bab-el",
+        "/Let-s-Play/jeu/sablier-de-bab-el",
+    };
+
+    /**
+     * Sommes-nous **dans le Sablier** ? (écran d'entrée, menu, atelier, souk,
+     * mode histoire, duel — tous sous `/jeu/sablier-de-bab-el`).
+     *
+     * Avant, seul le chemin exact du duel était reconnu : le paysage se
+     * relâchait dès le retour au menu. Le jeu se joue pourtant en paysage de
+     * bout en bout ; c'est donc toute la section qui compte.
+     */
+    private boolean estPageSablier() {
+        String path = cheminCourant();
+        if (path == null) return false;
+        for (String base : CHEMINS_SABLIER) {
+            if (path.equals(base) || path.equals(base + "/") || path.startsWith(base + "/")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Le chemin courant, si la page affichée est bien le site en https. */
+    private String cheminCourant() {
+        if (webView == null || webView.getUrl() == null) return null;
         Uri page = Uri.parse(webView.getUrl());
-        String path = page.getPath();
-        return "https".equals(page.getScheme()) && SITE_HOST.equals(page.getHost())
-            && path != null && (path.equals("/jeu/sablier-de-bab-el")
-                || path.equals("/jeu/sablier-de-bab-el/")
-                || path.equals("/Let-s-Play/jeu/sablier-de-bab-el"));
+        if (!"https".equals(page.getScheme()) || !SITE_HOST.equals(page.getHost())) return null;
+        return page.getPath();
     }
+
 
 
     /** Domaine servi dans la WebView — toute autre URL part vers une app externe. */
@@ -170,13 +195,13 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 refreshLayout.setRefreshing(false);
-                if (!isTrustedDuelPage()) restoreDuelOrientation();
+                if (!estPageSablier()) rendreOrientation();
                 // Le tirage vers le bas recharge la page : sur le duel, ce
                 // geste détruirait la partie en cours — et tant que le doigt
                 // traîne, la WebView reçoit des `pointercancel` qui annulent
                 // l'appui long des cartes. Le pull-to-refresh se désarme sur
                 // la page du jeu, comme l'orientation y est verrouillée.
-                refreshLayout.setEnabled(!isTrustedDuelPage());
+                refreshLayout.setEnabled(!estPageSablier());
             }
         });
 
@@ -345,24 +370,38 @@ public class MainActivity extends Activity {
 
     /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio`. */
     private final class CallAudioBridge {
-        /** Scoped to the duel: the rest of the application keeps its orientation. */
+        /**
+         * Paysage pour **toute la section Sablier** (écran d'entrée, menu,
+         * atelier, souk, histoire, duel). Le site l'appelle à l'ouverture de la
+         * route et le relâche en la quittant ; son compteur de sessions fait que
+         * refermer le duel ne rend pas l'écran à la rotation.
+         */
         @JavascriptInterface
-        public void setDuelLandscape(boolean active) {
+        public void setPaysageSablier(boolean active) {
             runOnUiThread(() -> {
                 if (!active) {
-                    restoreDuelOrientation();
+                    rendreOrientation();
                     refreshLayout.setEnabled(true);
-                } else if (isTrustedDuelPage()) {
-                    if (!duelLandscapeActive) orientationBeforeDuel = getRequestedOrientation();
-                    duelLandscapeActive = true;
+                } else if (estPageSablier()) {
+                    if (!paysageSablierActif) orientationAvantPaysage = getRequestedOrientation();
+                    paysageSablierActif = true;
+                    // SENSOR_LANDSCAPE : les deux sens de rotation, jamais le
+                    // portrait — y compris sur tablette, où la place ne change
+                    // rien à la mise en page prévue pour le paysage.
                     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
                     // Même en pleine navigation SPA (aucun `onPageFinished` à la
-                    // main) : sur le duel, le pull-to-refresh est désarmé — il
-                    // rechargerait la partie, et sa prise de doigt annule les
-                    // appuis longs des cartes en cours.
+                    // main) : sur le Sablier, le pull-to-refresh est désarmé — il
+                    // rechargerait la page en pleine partie, et sa prise de doigt
+                    // annule les appuis longs des cartes en cours.
                     refreshLayout.setEnabled(false);
                 }
             });
+        }
+
+        /** Ancien nom, gardé pour une page plus ancienne restée en cache. */
+        @JavascriptInterface
+        public void setDuelLandscape(boolean active) {
+            setPaysageSablier(active);
         }
 
         /** Version du moteur d'affichage, pour le panneau de secours du site. */

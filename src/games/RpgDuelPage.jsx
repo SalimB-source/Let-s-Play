@@ -8,6 +8,7 @@ import { convertirDeckSansTerrain } from './rpgCards.js';
 
 import { Fragment, memo, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import './rpg-battle.css';
+import InvitePaysage from './InvitePaysage.jsx';
 import './rpg-mobile.css';
 import './rpg-story.css';
 import './rpg-deckbox.css';
@@ -6410,6 +6411,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => { window.removeEventListener('resize', update); landscapeRef.current?.leave(); };
   }, []);
   useEffect(() => {
+    // Quitter la partie referme **cette** session de paysage, pas le paysage :
+    // la route du Sablier (`PaysageSablier.jsx`) en tient une depuis le menu, et
+    // le compteur de `rpgLandscape.js` ne rend l'écran à la rotation qu'à la
+    // dernière fermeture. Le menu reste donc en paysage, comme la partie.
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
 
@@ -6736,6 +6741,17 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     demanderPleinEcranEtPaysage();
     setEcran('partie');
   };
+  // Menu, atelier, souk, mode histoire : debout au doigt, l'écran entier invite
+  // à tourner — l'orientation est déjà verrouillée côté application, mais un
+  // navigateur ne tourne pas un écran sans plein écran ni geste. Le duel a la
+  // sienne, plus bas (avec « Retour au menu ») ; le menu se contente d'inviter.
+  const invitePaysage = viewport.portrait ? (
+    <InvitePaysage
+      titre="Le Sablier se joue en paysage"
+      texte="Tournez l’appareil pour retrouver toute la largeur du menu."
+      onActiver={demanderPleinEcranEtPaysage}
+    />
+  ) : null;
   // Decks maison et collection : l'atelier écrit dans le casier local, le compte
   // connecté synchronise le tout en tâche de fond (`useDecksSablier.js`).
   const {
@@ -9277,6 +9293,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene={ecran} onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
+        {invitePaysage}
         {ecran === 'bab-el' ? (
           <RpgStoryBabEl
             onCommencer={commencerCampagne}
@@ -9340,6 +9357,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
+        {invitePaysage}
         <GameModeMenu
           bloqueAccueil={!modePvp && (!accueilPret || bienvenueActive)}
           screen={ecran}

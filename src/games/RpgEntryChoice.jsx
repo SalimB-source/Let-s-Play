@@ -3,6 +3,7 @@ import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
 import GameLoadBoundary from './GameLoadBoundary.jsx';
 import { importerAvecReprise } from './chargementJeu.js';
+import InvitePaysage, { usePortraitAuDoigt } from './InvitePaysage.jsx';
 import {
   RpgMainThemeMusic,
   deposerThemePrincipal,
@@ -100,6 +101,10 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const [meta, setMeta] = useState(null);
   const [androidMeta, setAndroidMeta] = useState(null);
   const [estWindows, setEstWindows] = useState(true);
+  // Le Sablier se joue en paysage : debout, au doigt, l'écran d'entrée invite à
+  // tourner l'appareil (bande et non mur : les liens de téléchargement restent
+  // atteignables — c'est justement en portrait qu'on installe l'APK).
+  const portrait = usePortraitAuDoigt();
   const themeRef = useRef(null);
 
   useEffect(() => () => {
@@ -197,6 +202,12 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
 
   return (
     <div className="rpg-entry-choice">
+      {portrait && (
+        <InvitePaysage
+          variante="bandeau"
+          texte="Tournez l’appareil pour entrer dans le jeu."
+        />
+      )}
       <div className="rpg-entry-choice__carte">
         <p className="rpg-entry-choice__surtitre">Let’s Play · arcade</p>
         <h1 className="rpg-entry-choice__titre">Le Sablier de Bab El</h1>
