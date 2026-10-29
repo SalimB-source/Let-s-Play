@@ -1,4 +1,4 @@
-/* Cinématique d'intro du Sablier — plein écran, sombre dans les deux thèmes. */
+/* Cinématique d'intro du Sablier — plein écran, un seul bouton : Passer. */
 
 .rpg-cine {
   position: fixed;
@@ -8,6 +8,7 @@
   align-items: center;
   justify-content: center;
   background: #000;
+  cursor: pointer;
 }
 
 .rpg-cine__video {
@@ -17,134 +18,52 @@
   background: #000;
 }
 
-/* Gros bouton de lancement (repli si l'autoplay est refusé). */
-.rpg-cine__lancer {
+/* Discret rappel « toucher pour lancer » si l'autoplay est refusé. */
+.rpg-cine__toucher {
   position: absolute;
   inset: 0;
   margin: auto;
-  width: min(420px, 86vw);
+  width: fit-content;
   height: fit-content;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 1.6rem 1.4rem;
-  border: 1px solid rgba(216, 198, 144, 0.55);
-  border-radius: 14px;
-  background: rgba(8, 7, 13, 0.82);
-  color: #f3ead2;
-  font: inherit;
-  cursor: pointer;
-}
-
-.rpg-cine__lancer:hover {
-  border-color: #d8c690;
-  background: rgba(20, 17, 30, 0.92);
-}
-
-.rpg-cine__lancer-icone {
-  font-size: 2.2rem;
+  font-size: 3rem;
   line-height: 1;
-  color: #d8c690;
+  color: rgba(216, 198, 144, 0.85);
+  text-shadow: 0 0 24px rgba(0, 0, 0, 0.9);
+  animation: rpg-cine-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
 }
 
-.rpg-cine__lancer small {
-  color: #b9ac85;
-  font-size: 0.85rem;
-}
-
-/* Barre de lecture discrète, en bas. */
-.rpg-cine__barre {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 0.9rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0));
-}
-
-.rpg-cine__bouton {
-  flex: none;
-  min-width: 2.6rem;
-  min-height: 2.6rem;
-  padding: 0 0.6rem;
-  border: 1px solid rgba(216, 198, 144, 0.35);
-  border-radius: 9px;
-  background: rgba(8, 7, 13, 0.7);
-  color: #f3ead2;
-  font: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.rpg-cine__bouton:hover {
-  border-color: #d8c690;
+@keyframes rpg-cine-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }
 
 .rpg-cine__passer {
-  padding: 0 1rem;
+  position: absolute;
+  right: max(1rem, env(safe-area-inset-right, 0px));
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  padding: 0.7rem 1.2rem;
+  border: 1px solid rgba(216, 198, 144, 0.6);
+  border-radius: 10px;
+  background: rgba(8, 7, 13, 0.75);
+  color: #f3ead2;
+  font: inherit;
   font-weight: 700;
-  border-color: rgba(216, 198, 144, 0.6);
+  cursor: pointer;
 }
 
-.rpg-cine__bouton:focus-visible,
-.rpg-cine__lancer:focus-visible,
-.rpg-cine__progression:focus-visible {
+.rpg-cine__passer:hover {
+  border-color: #d8c690;
+  background: rgba(20, 17, 30, 0.9);
+}
+
+.rpg-cine__passer:focus-visible {
   outline: 2px solid #d8c690;
   outline-offset: 2px;
 }
 
-.rpg-cine__progression {
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  min-height: 2.6rem;
-  padding: 0;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.rpg-cine__progression-piste {
-  display: block;
-  width: 100%;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(243, 234, 210, 0.22);
-  overflow: hidden;
-}
-
-.rpg-cine__progression-remplie {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: #d8c690;
-}
-
-.rpg-cine__duree {
-  flex: none;
-  color: #b9ac85;
-  font-size: 0.85rem;
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 560px) {
-  .rpg-cine__duree {
-    display: none;
-  }
-  .rpg-cine__barre {
-    gap: 0.45rem;
-    padding-left: 0.6rem;
-    padding-right: 0.6rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .rpg-cine__bouton,
-  .rpg-cine__lancer {
-    transition: none;
+  .rpg-cine__toucher {
+    animation: none;
   }
 }

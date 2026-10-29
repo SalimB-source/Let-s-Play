@@ -94,6 +94,16 @@ cinématique d'intro » dans le pied du mode Histoire (`RpgDuelPage`).
 Vérifié : `check:rpg-entry-choice` vert, `npm run build` vert, MP4 + VTT
 présents dans `dist/`.
 
+**V2 dark-fantasy (en cours, octobre 2026).** Direction revue : style
+« Dark Souls / Elden Ring » (noir profond, clair-obscur, brume, braise),
+un plan par personnage synchronisé avec la narration, visages verrouillés
+sur les portraits canoniques via références. Lecteur simplifié : plus de
+barre de lecture, un seul bouton « Passer » (toucher l'écran = lecture si
+l'autoplay est bloqué). Nouveaux plans : `cine-t07a-yamina`,
+`t07b-feriel`, `t07c-boualem`, `t07d-tarek`, `t08b-salem`, `t08c-scribe`,
+`t08d-registre`, `t10b-mahieddine` + refonte des 12 tableaux. V1 conservée
+dans l'historique git.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
