@@ -5586,8 +5586,8 @@ là où il se passe.
 
 - **Ce qui est jouable s'allume.** Le halo de la main (`is-playable`,
   `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? » —
-  **blanc** pour toute la main, **or** pour une carte mythique (voir « la lueur
-  de jouabilité — blanc pour la main, or pour les mythiques »). Une carte
+  **azur** pour toute la main, **or** pour une carte mythique (voir « la lueur
+  de jouabilité — l'azur de l'arène, l'or pour les mythiques »). Une carte
   refusée reste éteinte, en main, avec son bruitage d'erreur — plus personne
   n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain ce
   tour ».
@@ -7391,14 +7391,14 @@ armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
 | **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
 | **Forme du jeton** | losange — l'éclair au centre | médaillon rond |
 | **Teinte** | or (`#ffd619`) — le socle et le jeton | améthyste (`#b39ae0`), la couleur du contre |
-| **Lueur en main** | blanc, comme toute la main | blanc, comme toute la main |
+| **Lueur en main** | azur, comme toute la main | azur, comme toute la main |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
 
 La dernière ligne ne se lit pas sur la face mais **dans la main** : c'est la
-lueur de jouabilité, celle qui s'allume quand la carte est payable — blanche
+lueur de jouabilité, celle qui s'allume quand la carte est payable — en azur
 pour toutes les cartes, l'or étant réservé aux mythiques (voir « la lueur de
-jouabilité — blanc pour la main, or pour les mythiques », plus bas). La famille,
+jouabilité — l'azur de l'arène, l'or pour les mythiques », plus bas). La famille,
 elle, se lit sur la carte elle-même, où qu'elle soit : socle, jeton, mot et
 ligne de type teintée.
 
@@ -7536,42 +7536,55 @@ surfaces le portent. Les planches de contrôle — `sablier-motifs-cadres.png` e
 sa loupe `sablier-motifs-cadres-zoom.png` — se refont par capture Chromium (voir
 la recette des captures du Sablier).
 
-## Le Sablier : la lueur de jouabilité — blanc pour la main, or pour les mythiques
+## Le Sablier : la lueur de jouabilité — l'azur de l'arène, l'or pour les mythiques
 
 La main répond à une seule question — « puis-je jouer cette carte, là, tout de
 suite ? » — et elle y répond d'une seule manière : le halo de `is-playable`,
 allumé sur le verdict de `peutJouerCarte()`, mana compris.
 
-**Ce halo est blanc pour toute la main.** Un temps, sa teinte disait autre chose
-que la jouabilité : l'or pour la Magie Rapide, l'améthyste pour la Sorcellerie,
-l'azur pour le reste. Trois voyants pour trois informations, alors que la
-question est unique — et le socle du sort, son jeton et sa ligne de type disent
-déjà la famille, sans allumer la carte. La lueur ne parle donc plus que de
-l'instant : **elle est blanche**, du Désert au Fennec, de la Braise à l'Eau, de
-la créature au sort.
+**Ce halo est en azur, et il se serre contre la carte.** La teinte ne dit plus
+rien de la famille d'un sort — un temps, l'or disait Magie Rapide, l'améthyste
+Sorcellerie, l'azur le reste, trois voyants pour une seule question. Elle ne dit
+plus qu'une chose : *cette carte peut partir*. Le blanc a fait ce travail un
+moment ; il est remplacé par **le cyan des cartes jouables de MTG Arena**
+(`0, 180, 255`, reflet `130, 238, 255`), et l'empreinte a été resserrée dans le
+même esprit : le halo se colle aux bords de la face au lieu de rayonner.
 
-**La rareté, elle, a sa lueur.** Une carte **mythique** jouable prend l'**or** —
-la seule autre teinte de la feuille —, plus lumineuse que le blanc commun :
-cœur blanc doré, or clair, or profond qui irradie, et une respiration lente
-(`rpg-mythique-halo-pulse`) qui la fait vivre dans l'éventail. Le cadre ne bouge
-pas d'un pixel : le halo se peint derrière la face, le filet garde la couleur de
-l'élément, même sous l'or.
+| | Avant | Maintenant |
+| --- | --- | --- |
+| Anneau | 2 px, teinte claire | 2 px, teinte claire, densité pleine |
+| Liseré | 6 px de flou, 1 px d'étalement | **3 px**, sans étalement |
+| Halo extérieur | 18 px de flou, 4 px d'étalement | **9 px de flou, 1 px d'étalement** |
+| Envergure | 22 px au repos, 30 px au survol | **10 px au repos, 17 px au survol** |
+
+C'est la lecture de l'arène de MTG Arena : un liseré lumineux qui suit le corps
+de la carte et s'éteint en une dizaine de pixels. Une carte jouable se repère
+d'un coup d'œil dans l'éventail, sans éclairer ses voisines ni déborder de la
+rangée.
+
+**La rareté, elle, a sa lueur.** Une carte **mythique** jouable prend l'**or et
+l'orange** — la seule autre teinte de la feuille —, plus chaude, tout aussi
+concentrée : liseré doré `255, 214, 120`, or `255, 152, 14`, halo de 12 px qui
+respire jusqu'à 17 px (`rpg-mythique-halo-pulse`, 0,9 s). C'est une respiration,
+pas une dilatation : la lueur ne quitte jamais les bords de la face. Le cadre ne
+bouge pas d'un pixel — le halo se peint derrière la face, le filet garde la
+couleur de l'élément, même sous l'or.
 
 | Carte allumée en main | Lueur de jouabilité |
 | --- | --- |
-| Créature, héros, terrain, arme, Magie Rapide, Sorcellerie | blanc — `255, 255, 255` (repos et survol) |
-| **Mythique** (quel que soit son type) | or — `255, 196, 8`, reflet de survol `255, 243, 186` |
+| Créature, héros, terrain, arme, Magie Rapide, Sorcellerie | azur — `0, 180, 255`, reflet `130, 238, 255` |
+| **Mythique** (quel que soit son type) | or/orange — `255, 152, 14`, reflet `255, 214, 120` |
 | Carte non jouable | aucune lueur (`is-unplayable`) |
 
 **Un seul halo, une seule empreinte.** La règle commune de `is-playable`
-décide de tout : l'allumage, l'empreinte (anneau de 2 px, auréole rapprochée de
-6 px, flou extérieur de 18 px étalé de 4 px, ombre portée de 16 px) et la
-densité — pleine, celle d'un voyant qu'on repère d'un coup d'œil dans un
-éventail : anneau `.98`, auréole `.82`, flou `.92`, ombre `.62` pour que la
-lueur paraisse plus claire encore. Au survol, les mêmes rayons, densité pleine.
-La teinte tient dans deux triplets, déclarés **une seule fois** par la règle
-commune (blancs) et **une seule fois** par la règle mythique (l'or) : `r`, `g`,
-`b` séparés, la seule forme que `rgba(var(--…), α)` sache lire.
+décide de tout : l'allumage, l'empreinte et la densité — pleine, celle d'un
+voyant qu'on repère d'un coup d'œil dans un éventail (anneau `1`, liseré `.95`,
+halo `.9`, ombre `.62` pour que la lueur paraisse plus claire encore). Au
+survol, les mêmes rayons à peine élargis, densité pleine. La teinte tient dans
+deux triplets, déclarés **une seule fois** par la règle commune (l'azur) et
+**une seule fois** par la règle mythique (l'or) : `r`, `g`, `b` séparés, la
+seule forme que `rgba(var(--…), α)` sache lire. Aucun repli écrit dans le
+`var()` : la feuille ne porte que ces deux couleurs de halo.
 
 Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
 carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
@@ -7583,15 +7596,15 @@ reste éteinte, mythique comprise.
 
 - `src/games/rpg-battle.css` — **la règle commune**, au bloc de la main
   (`.rpg-hand__card.is-playable`, et son survol) : elle allume, donne
-  l'empreinte, la densité, et **déclare le blanc** (`--rpg-play-halo`,
+  l'empreinte concentrée et **déclare l'azur** (`--rpg-play-halo`,
   `--rpg-play-halo-clair`). C'est la teinte de toute la main ;
 - `src/games/rpg-battle.css`, encore — le bloc « Lueur d'or — carte MYTHIQUE
-  jouable », juste après : mêmes variables, passées à l'or, et une empreinte un
-  cran plus large (jusqu'à 18 px de flou étalé de 4 px) avec l'animation. La
-  feuille ne porte **que ces deux teintes** ; les déclarations de famille
-  (`--famille-rapide`, `--famille-sorcellerie`) et l'azur de repli ont disparu
-  du halo — les classes de famille restent sur la face, elles servent au socle,
-  au jeton et à la ligne de type ;
+  jouable », juste après : mêmes variables, passées à l'or et à l'orange, et une
+  respiration `rpg-mythique-halo-pulse`. La feuille ne porte **que ces deux
+  teintes** ; les déclarations de famille (`--famille-rapide`,
+  `--famille-sorcellerie`) et l'azur d'autrefois ont disparu du halo — les
+  classes de famille restent sur la face, elles servent au socle, au jeton et à
+  la ligne de type ;
 - `src/games/RpgDuelPage.jsx` — `mythiqueJouable = baseJouable && estMythique` :
   la classe `is-mythique-jouable` (et son `data-mythique-jouable`) se pose sur
   **toute** carte mythique jouable, plus seulement sur les créatures. Une
@@ -7603,33 +7616,34 @@ reste éteinte, mythique comprise.
 
 ```bash
 npm run check:rpg-sort-signature   # la lueur et la signature des familles
-npm run check:rpg                  # 1160/1160 — le moteur et le catalogue
+npm run check:rpg                  # le moteur et le catalogue
 npm run build                      # le bundle se construit
 ```
 
 `scripts/rpg-sort-signature-check.mjs` tient le contrat : la règle commune
-déclare bien le blanc pur pour les deux triplets, ses cinq couches lisent
-`var(--rpg-play-halo)` / `var(--rpg-play-halo-clair)` sans teinte écrite en dur,
-elle ne touche **jamais** `border-color`, aucune famille de sort ne déclare plus
-de teinte de halo (ni ambre, ni améthyste, ni azur), et le bloc mythique est le
-seul autre endroit où une couleur de halo s'écrit — **or** (`r > 200`,
-`g > 150`, `b < 80`), reflet de survol plus clair, animation
-`rpg-mythique-halo-pulse`, ancien orange « Kyûbi » (`251, 113, 22`) disparu,
-et pas de `border-color` non plus. Puis la cascade réelle, montée par jsdom sur
-la feuille entière : Magie Rapide, Sorcellerie, créature, terrain et arme jouables
-reçoivent tous `255,255,255` — et une mythique jouable, sort ou créature, reçoit
-l'or. Le volet du contraste exige 22 px d'envergure au repos et 30 px au survol,
-avec des densités toutes supérieures à `.8` (`.9` au survol) : une lueur qui
-gagnerait 12 px de flou échoue.
+déclare bien l'azur (`0, 180, 255` et son reflet cyan `130, 238, 255`), ses
+couches lisent `var(--rpg-play-halo)` / `var(--rpg-play-halo-clair)` sans teinte
+écrite en dur, elle ne touche **jamais** `border-color`, aucune famille de sort
+ne déclare plus de teinte de halo, le blanc ne subsiste nulle part dans la
+lueur, et le bloc mythique est le seul autre endroit où une couleur de halo
+s'écrit — **or/orange** (`r > 200`, `g > 120`, `b < 80`), reflet plus clair,
+animation `rpg-mythique-halo-pulse`, ancien orange « Kyûbi » (`251, 113, 22`)
+disparu, et pas de `border-color` non plus. **L'empreinte est mesurée** :
+l'envergure vaut 10 px au repos et 17 px au survol — jamais les 22 px ni les
+30 px d'avant —, la lueur mythique reste sous 20 px, et toutes les densités
+tiennent au-dessus de `.8` (`.9` au survol). Puis la cascade réelle, montée par
+jsdom sur la feuille entière : Magie Rapide, Sorcellerie, créature, terrain et
+arme jouables reçoivent tous `0,180,255` — et une mythique jouable, sort ou
+créature, reçoit l'or.
 
 **Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
-Le blanc doit se lire sur la table sombre **sans éblouir** : bord franc, flou
-dense, mais aucune carte voisine recouverte dans l'éventail, et rien de masqué —
-ni le coût, ni la pastille d'élément, ni le socle. L'or doit rester réservé aux
-mythiques : une main ordinaire n'en montre pas un seul pixel, et une mythique
-éteinte (mana manquant) ne s'allume pas. Le blanc, lui, ne doit pas se confondre
-avec la lueur d'une carte ciblée sur la table (`is-ciblable`) ni avec le liseré
-de sélection.
+L'azur doit se lire sur la table sombre comme sur les peintures claires (Erg du
+Sahara, Ruines de Tipaza) **sans éclairer la carte voisine** : la lueur meurt à
+10 px, elle ne doit ni recouvrir le coût, ni la pastille d'élément, ni le socle,
+ni dépasser dans le rang de cartes. L'or doit rester réservé aux mythiques : une
+main ordinaire n'en montre pas un seul pixel, et une mythique éteinte (mana
+manquant) ne s'allume pas. L'azur, enfin, ne doit pas se confondre avec le bleu
+de l'Eau ni avec la lueur d'une carte ciblée sur la table (`is-ciblable`).
 
 ## Le Sablier : la créature se pose avant de désigner sa cible
 

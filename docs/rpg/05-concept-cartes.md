@@ -569,8 +569,9 @@ de famille, quel que soit l'élément de la carte, y compris pour une hybride.
 L'élément reste indiqué par la pastille, le cadre et le coût. Le bandeau de
 famille reprend les mêmes teintes (or pour la Magie Rapide, améthyste pour la
 Sorcellerie). La **lueur de carte jouable**, elle, ne dit plus la famille : elle
-est blanche pour toute la main, et l'or n'y sert qu'à une carte **mythique**
-jouable — la rareté, pas le sort.
+est en azur — le cyan des cartes jouables de MTG Arena, serré contre la face —
+pour toute la main, et l'or n'y sert qu'à une carte **mythique** jouable — la
+rareté, pas le sort.
 
 ### Le chiffre d'un effet s'écrit sur la carte
 
