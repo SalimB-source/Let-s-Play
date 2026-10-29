@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V4).
+"""Montage de la cinematique d'intro EN du Sablier (V5).
 
-Assemble : 30 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 37 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
-V4 : gros plans d'expressions (Salem, regard de Mahieddine), inserts
-(cloche, rue vivante, affichage de la Liste, mains de Yamina, rue
-vide, sceau du portail), sequences avant/apres (T3, T8), micro-
-respiration sur les visages, et decoupage etendu (T2/T3/T4/T6/T11,
-T8d et T10 en 3 plans).
+V5 : cohérence tour (étages-balcons, pas de villages), sable qui monte
+montré (T1b, colonne T5), T01 sans répétition, 41 plans au total :
+T7 = 10 facettes des compagnons, T8 = confrontation Salem/Scribe,
+pulses reprise + confrontation.
 
 Entrees : public/sablier-cinematic/4k/*.jpg, audio/en/T*.mp3,
           public/Desert Solitude with Percussion.mp3
@@ -216,7 +215,7 @@ SPLITS_TEXTE = {
         ("cine-t01-bab-el-4k.jpg", "panR",
          "There are cities built on stone. Bab El is built on time. "
          "Nine tiers of copper and limestone, raised around a portal that never opened. "),
-        ("cine-t01-bab-el-4k.jpg", "rise", "And beneath it… a desert that rises."),
+        ("cine-t01b-montee-4k.jpg", "rise", "And beneath it… a desert that rises."),
     ],
     "T02": [
         ("cine-t02-astrolabe-4k.jpg", "zin_slow",
@@ -244,7 +243,8 @@ SPLITS_TEXTE = {
          "And it keeps the trace. Where someone has fallen, "),
         ("cine-t05b-sable-4k.jpg", "zin_slow",
          "the sand keeps their weight as a hollow. "
-         "The poor sell sand heavy with memories. The rich pay to have it sifted. "
+         "The poor sell sand heavy with memories. The rich pay to have it sifted. "),
+        ("cine-t05c-colonne-4k.jpg", "rise",
          "Nothing that falls is lost… to everyone."),
     ],
     "T06": [
@@ -256,15 +256,18 @@ SPLITS_TEXTE = {
     ],
     "T07": [
         ("cine-t07-cinq-4k.jpg", "panR", "At his side: "),
-        ("cine-t07a-yamina-4k.jpg", "push_L",
-         "Yamina, the clockmaker, who signed a List at nineteen — "),
+        ("cine-t07f-yamina-profil-4k.jpg", "push_R", "Yamina, the clockmaker, "),
+        ("cine-t07a-yamina-4k.jpg", "push_L", "who signed a List at nineteen — "),
         ("cine-t07e-mains-4k.jpg", "zin_slow",
          "and has been trying to repair the irreparable ever since. "),
-        ("cine-t07b-feriel-4k.jpg", "push_R", "Fériel, the glassblower, who turns sand into shields. "),
-        ("cine-t07c-boualem-4k.jpg", "push_L",
-         "Boualem, the well-digger, who found something beneath the city… and does not speak of it. "),
-        ("cine-t07d-tarek-4k.jpg", "push_R",
-         "And Tarek, the porter, who carries the Chamber's crates — and its secrets."),
+        ("cine-t07b-feriel-4k.jpg", "push_R", "Fériel, the glassblower, "),
+        ("cine-t07g-feriel-fournaise-4k.jpg", "push", "who turns sand into shields. "),
+        ("cine-t07c-boualem-4k.jpg", "push_L", "Boualem, the well-digger, "),
+        ("cine-t07h-boualem-puits-4k.jpg", "push",
+         "who found something beneath the city… and does not speak of it. "),
+        ("cine-t07d-tarek-4k.jpg", "push_R", "And Tarek, the porter, "),
+        ("cine-t07i-tarek-fardeau-4k.jpg", "push",
+         "who carries the Chamber's crates — and its secrets."),
     ],
     "T09": [
         ("cine-t09-duel-4k.jpg", "drift_DR",
@@ -284,12 +287,16 @@ SPLITS_TEXTE = {
     ],
 }
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
-# puis la rue vide sur « Twelve living souls… who exist nowhere ».
+# Scribe puis confrontation, registre puis rue vide.
 PLANS_T8 = [
     ("cine-t08-greffe-4k.jpg", "zin_slow"),
     ("cine-t08b-salem-4k.jpg", "push"),
     ("cine-t08c-scribe-4k.jpg", "push"),
     ("cine-t08d-registre-4k.jpg", "settle"),
+]
+TEXTE_T08C = [
+    ("cine-t08c-scribe-4k.jpg", "push", "I'm not asking where they are. "),
+    ("cine-t08g-face-a-face-4k.jpg", "push", "I'm asking where they are written."),
 ]
 TEXTE_T08D = [
     ("cine-t08d-registre-4k.jpg", "settle",
@@ -358,6 +365,19 @@ def position_coupes_t10():
     return visage, regard
 
 
+def _soussplit_texte(plans, idx, parties):
+    """Découpe plans[idx] en deux au prorata du texte dit."""
+    _, _, deb0, fin0 = plans[idx]
+    (img1, mouv1, txt1), (img2, mouv2, txt2) = parties
+    coupe = deb0 + (fin0 - deb0) * len(txt1) / (len(txt1) + len(txt2))
+    if coupe - deb0 < DUREE_PLAN_MIN:
+        coupe = deb0 + DUREE_PLAN_MIN
+    if fin0 - coupe < DUREE_PLAN_MIN:
+        coupe = fin0 - DUREE_PLAN_MIN
+    return (plans[:idx] + [(img1, mouv1, deb0, coupe),
+                           (img2, mouv2, coupe, fin0)] + plans[idx + 1:])
+
+
 def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     """Découpe un bloc en plans : [(image, mouvement, debut_abs, fin_abs)]."""
     if bloc in SPLITS_TEXTE:
@@ -385,16 +405,8 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
         for k, ((img_p, mouv_p), (vo, deb, d)) in enumerate(zip(PLANS_T8, debuts_vo)):
             fin = debuts_vo[k + 1][1] if k + 1 < len(debuts_vo) else fin_bloc
             plans.append((img_p, mouv_p, debut_bloc if k == 0 else deb, fin))
-        # T08d : registre puis rue vide, au prorata du texte.
-        (img1, mouv1, txt1), (img2, mouv2, txt2) = TEXTE_T08D
-        _, _, deb_d, fin_d = plans[-1][0], plans[-1][1], debuts_vo[-1][1], fin_bloc
-        coupe = deb_d + (fin_d - deb_d) * len(txt1) / (len(txt1) + len(txt2))
-        if coupe - deb_d < DUREE_PLAN_MIN:
-            coupe = deb_d + DUREE_PLAN_MIN
-        plans[-1] = (img1, mouv1, debuts_vo[-1][1], coupe)
-        plans.append((img2, mouv2, coupe, fin_d))
-        # Le premier plan garde la tête de bloc.
-        plans[0] = (plans[0][0], plans[0][1], debut_bloc, plans[0][3])
+        plans = _soussplit_texte(plans, 2, TEXTE_T08C)  # Scribe puis confrontation
+        plans = _soussplit_texte(plans, 4, TEXTE_T08D)  # registre puis rue vide
         return plans
     if bloc == "T10":
         vo, deb, d = debuts_vo[0]
@@ -512,10 +524,10 @@ def fmt_vtt(sec):
 
 def main():
     os.makedirs(MONTAGE, exist_ok=True)
+    os.makedirs(AMB_DIR, exist_ok=True)
     audio_only = "--audio-only" in sys.argv
     if audio_only:
         print("Mode : audio seul (vidéo réutilisée)")
-    os.makedirs(AMB_DIR, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="cine-")
 
     # 1. Timeline : positions absolues de chaque prise VO, puis découpage en plans.
@@ -556,6 +568,8 @@ def main():
     print("Cloches à :", [f"{c:.2f}s" for c in cloches])
 
     # Pulses de lumière : (asset, T, montee, plateau, descente, opacite).
+    deb_t03p2 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T03p2")
+    deb_t08p4 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T08p4")
     deb_t09p3 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T09p3")
     deb_t11, fin_t11 = spans["T11"]
     deb_t12bloc, _ = spans["T12"]
@@ -564,6 +578,8 @@ def main():
     halo_hold = max(0.0, duree_tot - carton_abs - 1.5 - 2.0)
     pulses = [
         ("gold", fin_t02 - 0.15, 0.6, 1.2, 2.0, 0.55),  # le glas de l'Astrolabe
+        ("gold", deb_t03p2, 0.4, 0.6, 1.2, 0.45),  # la reprise frappe l'étage
+        ("gold", deb_t08p4, 0.3, 0.5, 1.0, 0.40),  # confrontation
         ("gold", deb_t09p3, 0.4, 0.8, 1.5, 0.50),  # « So we will fight »
         ("portal", deb_t11 + (fin_t11 - deb_t11) * 0.4, 1.0, 2.0, 2.5, 0.60),
         ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre

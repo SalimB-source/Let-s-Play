@@ -144,6 +144,15 @@ salon de thé 48 s, bourdon 48 s, cloche 7 partiels. Mode
 inchangés (−23,1/−4,4 dB). Remplaçables par de vrais enregistrements
 (mêmes noms de fichiers).
 
+**Montage V5 livré (octobre 2026).** 39 plans, 37 tableaux : cohérence
+tour (étages-balcons, fin des rues « village » : T3 AVANT/APRES et T8
+rue vide refondus), sable qui monte montré (nouveau T1b sous la tour +
+colonne T5), T01 sans répétition. T7 = 10 facettes (profil Yamina,
+fournaise de Fériel, puits de Boualem, fardeau de Tarek), T8 =
+confrontation Salem/Scribe sur « where they are written ». Pulses
+reprise + confrontation. MP4 3 min 27, ~80 Mo (CRF25/slow). Vérifié :
+contact sheet 8 nouveaux plans + likeness, build vert.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
