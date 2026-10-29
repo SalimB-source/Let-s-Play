@@ -191,6 +191,31 @@
   color: #aeb3d6;
 }
 
+.rpg-entry-choice__cine {
+  margin: 0.4rem 0 0;
+  text-align: center;
+}
+
+.rpg-entry-choice__cine-lien {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid rgba(232, 183, 92, 0.45);
+  border-radius: 10px;
+  background: transparent;
+  color: #e8b75c;
+  font: inherit;
+  cursor: pointer;
+}
+
+.rpg-entry-choice__cine-lien:hover {
+  border-color: #e8b75c;
+  background: rgba(232, 183, 92, 0.08);
+}
+
+.rpg-entry-choice__cine-lien:focus-visible {
+  outline: 2px solid #e8b75c;
+  outline-offset: 2px;
+}
+
 .rpg-entry-choice__chargement {
   min-height: 60vh;
   display: grid;

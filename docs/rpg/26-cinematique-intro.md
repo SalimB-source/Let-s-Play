@@ -83,6 +83,17 @@ d'Astrolabe synthétisées (0,2 s / cut T2 / titre final). Sous-titres EN
 recalés sur la VO définitive : `montage/sous-titres-en.vtt`. Relancer le
 script régénère tout (monter une prise VO = remplacer son MP3 et relancer).
 
+**Intégration jeu livrée (octobre 2026).** `src/games/RpgIntroCinematic.jsx`
+(+ `rpg-intro-cinematic.css`) : overlay plein écran avec la vidéo, ses
+sous-titres EN, lecture/pause, son, progression cliquable et bouton
+« Passer » (Échap aussi) ; le thème du menu se tait pendant la lecture.
+Déclencheurs : première entrée dans le navigateur via `RpgEntryChoice`
+(marqué vu en `letsplay_sablier_cine_v1`, fin ou skip), lien « Regarder la
+cinématique d'intro » sur l'écran d'entrée, et bouton « ▶ Revoir la
+cinématique d'intro » dans le pied du mode Histoire (`RpgDuelPage`).
+Vérifié : `check:rpg-entry-choice` vert, `npm run build` vert, MP4 + VTT
+présents dans `dist/`.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
