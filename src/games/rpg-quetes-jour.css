@@ -1,263 +1,374 @@
-/* ── Les quêtes du jour, dans l'onglet Jouer ───────────────────────────────────
-   La colonne de droite du menu. La grille qui la place existe déjà
-   (`.rpg-mode-menu__play`, deux colonnes jusqu'à 820 px) : ici, il n'y a que la
-   carte elle-même — l'habit du Sablier, laiton et nuit, et des barres lisibles
-   d'un coup d'œil. */
+/* ── Rampe horizontale des quêtes du jour (en bas de l'accueil « Jouer ») ────
+   Inspirée de la rampe inférieure de MTG Arena : trois médaillons d'or avec
+   anneau d'avancement circulaire + capsule sombre d'objectif côte à côte,
+   suivis sur la même ligne du Cachet du cycle et de la Bourse du Souk, posés
+   au-dessus d'un socle d'encadrement gravé. */
 
 .rpg-quests-jour {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   min-width: 0;
-  padding: 16px 15px 15px;
+  width: 100%;
+  padding: 4px 2px 2px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+.rpg-quests-jour__rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(10px, 1.3vw, 20px);
+  min-width: 0;
+}
+
+.rpg-quests-jour__vide {
+  margin: 0;
+  padding: 12px 16px;
   border: 1px solid rgba(236, 219, 183, .16);
-  border-radius: 20px;
-  background:
-    radial-gradient(120% 80% at 100% 0%, rgba(201, 150, 57, .16), rgba(0, 0, 0, 0) 62%),
-    linear-gradient(168deg, rgba(38, 28, 17, .92), rgba(16, 13, 14, .94));
-  box-shadow: 0 18px 44px rgba(0, 0, 0, .34);
-}
-
-.rpg-quests-jour__tete { display: grid; gap: 5px; }
-.rpg-quests-jour__tete h3 {
-  margin: 0;
-  color: #ffe7af;
-  font-size: clamp(17px, 2.1vw, 21px);
-  letter-spacing: .01em;
-}
-.rpg-quests-jour__compte { margin: 0; color: rgba(247, 237, 218, .58); font-size: 12px; }
-
-/* Titre et solde sur la même ligne : « Quêtes du jour » à gauche, la bourse à
-   droite — ce qu'on a déjà, avant de décider de jouer. */
-.rpg-quests-jour__tete-ligne {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.rpg-quests-jour__solde-mini {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-  padding: 3px 10px 3px 9px;
-  border: 1px solid rgba(232, 194, 113, .42);
   border-radius: 999px;
-  background: rgba(14, 11, 12, .6);
-  color: #ffe7af;
-  white-space: nowrap;
-  font-size: 13px;
+  background: rgba(12, 12, 16, .74);
+  color: rgba(247, 237, 218, .72);
+  font-size: 12px;
 }
-.rpg-quests-jour__solde-mini .rpg-credit { font-size: 15px; }
-.rpg-quests-jour__solde-mini strong {
-  font: 800 15px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-.rpg-quests-jour__solde-mini em {
-  color: rgba(247, 237, 218, .5);
-  font: 700 8px/1 var(--mono, monospace);
-  font-style: normal;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-}
-/* L'icône de marché du lien vers le Souk : 1em, comme la pièce. */
-.rpg-market { width: 1.15em; height: 1.15em; flex: none; }
 
-.rpg-quests-jour__liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rpg-quests-jour__liste {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 1.15vw, 16px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
 
 .rpg-quests-jour__quete {
-  display: grid;
-  gap: 7px;
-  padding: 10px 11px;
-  border: 1px solid rgba(236, 219, 183, .14);
-  border-radius: 14px;
-  background: rgba(12, 10, 11, .5);
-  transition: border-color .25s ease, background .25s ease;
-}
-/* Terminée et pas encore encaissée : la carte s'allume. C'est le moment où le
-   panneau doit donner envie de cliquer. */
-.rpg-quests-jour__quete.is-terminee {
-  border-color: rgba(231, 191, 101, .55);
-  background: linear-gradient(150deg, rgba(201, 150, 57, .18), rgba(12, 10, 11, .55));
-}
-.rpg-quests-jour__quete.is-reclamee { opacity: .62; }
-/* La quête active (en cours, pas encore terminée) : un fond bleu clair pour la
-   repérer d'un coup d'œil à côté des quêtes terminées (doré) et réclamées
-   (atténuées). Le texte reste clair, donc le contraste tient. */
-.rpg-quests-jour__quete.is-encours {
-  border-color: rgba(120, 180, 235, .55);
-  background: linear-gradient(150deg, rgba(120, 175, 235, .26), rgba(16, 20, 32, .6));
-}
-
-.rpg-quests-jour__quete-tete {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-}
-.rpg-quests-jour__quete-tete strong { min-width: 0; color: #f7edda; font-size: 12.5px; line-height: 1.3; }
-.rpg-quests-jour__palier {
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: rgba(236, 219, 183, .1);
-  color: rgba(247, 237, 218, .68);
-  font: 800 8.5px/1.5 var(--mono, monospace);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.rpg-quests-jour__gain {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: #ffe7af;
-  font: 800 11.5px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.rpg-quests-jour__gain .rpg-credit { font-size: 1.15em; }
-
-/* Ce qu'il faut faire pour finir la quête : lue, pas devinée. Le Souk le dit
-   déjà ; le panneau Jouer le taisait — un joueur ne peut pas décider de jouer
-   sans savoir ce qu'on lui demande. Petit marqueur doré, texte lisible. */
-.rpg-quests-jour__quete-texte {
   display: flex;
-  align-items: baseline;
-  gap: 6px;
-  margin: 0;
-  color: rgba(247, 237, 218, .74);
-  font-size: 11.5px;
-  line-height: 1.5;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
-.rpg-quests-jour__quete-texte-icone {
-  flex: none;
-  color: #e8c77f;
-  font-size: 7.5px;
-  line-height: 1;
-  transform: translateY(1px);
-}
-.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__quete-texte { color: rgba(247, 237, 218, .9); }
-.rpg-quests-jour__quete.is-reclamee .rpg-quests-jour__quete-texte { opacity: .7; }
 
+/* Fraction d'avancement centrée au-dessus du médaillon (façon « 28/45 ») */
 .rpg-quests-jour__jauge {
-  position: relative;
-  height: 16px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 6px;
+}
+.rpg-quests-jour__jauge-texte {
+  color: #f4ebd8;
+  font: 800 12px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .92);
+  white-space: nowrap;
+}
+.rpg-quests-jour__jauge-piste {
+  flex: 1 1 auto;
+  max-width: 72px;
+  height: 4px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .42);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .5);
+  background: rgba(255, 255, 255, .14);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .65);
   overflow: hidden;
 }
 .rpg-quests-jour__jauge-remplie {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(201, 150, 57, .85), #ffd98a);
+  background: linear-gradient(90deg, #df8824, #ffd87a);
   transition: width .35s ease;
 }
-.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__jauge-remplie,
-.rpg-quests-jour__quete.is-reclamee .rpg-quests-jour__jauge-remplie {
-  background: linear-gradient(90deg, #d9a63c, #fff0c4);
-}
-.rpg-quests-jour__jauge-texte {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  color: #fff6e3;
-  font: 800 9.5px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
-}
 
-.rpg-quests-jour__encore { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9.5px/1.4 var(--mono, monospace); letter-spacing: .04em; }
-.rpg-quests-jour__pris { margin: 0; color: rgba(247, 237, 218, .58); font: 800 9.5px/1.4 var(--mono, monospace); letter-spacing: .1em; text-transform: uppercase; }
-.rpg-quests-jour__reclamer {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 44px; /* la taille du doigt, comme partout ailleurs */
-  justify-content: center;
-}
-.rpg-quests-jour__reclamer .rpg-credit { font-size: 1.15em; }
-
-/* Le Cachet du cycle : la récompense des trois quêtes, mise à part. */
-.rpg-quests-jour__cachet {
-  display: grid;
-  gap: 8px;
-  padding: 10px 11px;
-  border: 1px dashed rgba(236, 219, 183, .2);
-  border-radius: 14px;
-  background: rgba(12, 10, 11, .38);
-}
-.rpg-quests-jour__cachet.is-pret {
-  border-style: solid;
-  border-color: rgba(231, 191, 101, .6);
-  background: linear-gradient(150deg, rgba(201, 150, 57, .22), rgba(12, 10, 11, .5));
-  animation: rpg-quests-jour-appel 3.4s ease-in-out infinite;
-}
-@keyframes rpg-quests-jour-appel {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(231, 191, 101, .28); }
-  50% { box-shadow: 0 0 0 6px rgba(231, 191, 101, 0); }
-}
-.rpg-quests-jour__cachet-texte { margin: 0; color: rgba(247, 237, 218, .66); font-size: 11.5px; line-height: 1.45; }
-.rpg-quests-jour__cachet-texte .rpg-mode-menu__eyebrow { display: block; margin-bottom: 3px; }
-.rpg-quests-jour__cachet-gain {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: rgba(255, 231, 175, .72);
-  font: 800 12px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-
-.rpg-quests-jour__serie { margin: 0; color: rgba(247, 237, 218, .5); font: 700 9.5px/1.6 var(--mono, monospace); letter-spacing: .05em; }
-.rpg-quests-jour__semaine {
-  margin-top: 6px;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Le pied : le solde, et ce qu'il achète. `margin-top: auto` le pose en bas de
-   la colonne quand le héros est plus haut que les quêtes. */
-.rpg-quests-jour__pied {
-  margin-top: auto;
-  display: grid;
-  gap: 9px;
-  padding-top: 11px;
-  border-top: 1px solid rgba(236, 219, 183, .14);
-}
-.rpg-quests-jour__solde {
+/* Médaillon circulaire à gauche + capsule sombre glissée derrière à droite */
+.rpg-quests-jour__corps {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin: 0;
-  color: #ffe7af;
+  min-width: 0;
 }
-.rpg-quests-jour__solde .rpg-credit { font-size: 19px; }
-.rpg-quests-jour__solde strong {
-  font: 800 21px/1 var(--mono, monospace);
+
+.rpg-quests-jour__medaillon {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  width: 58px;
+  height: 58px;
+  padding: 3px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background:
+    conic-gradient(from -90deg, #ffb43b 0 var(--q-pct, 0%), rgba(255, 238, 198, .18) var(--q-pct, 0%) 100%);
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, .68),
+    0 0 0 1px rgba(10, 8, 7, .88);
+}
+
+.rpg-quests-jour__medaillon-coeur {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid rgba(255, 231, 168, .55);
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 35% 26%, rgba(255, 230, 152, .46), rgba(188, 128, 36, .34) 48%, rgba(36, 23, 10, .96) 100%);
+  box-shadow: inset 0 2px 5px rgba(255, 244, 206, .34), inset 0 -3px 6px rgba(0, 0, 0, .65);
+  color: #fff6dc;
+}
+.rpg-quests-jour__medaillon-coeur .rpg-credit {
+  font-size: 14px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8));
+}
+.rpg-quests-jour__medaillon-coeur strong {
+  font: 900 16px/1 Georgia, 'Times New Roman', serif;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  color: #fffaf0;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .95), 0 0 8px rgba(0, 0, 0, .75);
 }
-.rpg-quests-jour__solde em {
-  color: rgba(247, 237, 218, .5);
-  font: 700 9px/1 var(--mono, monospace);
-  font-style: normal;
-  letter-spacing: .14em;
+
+.rpg-quests-jour__capsule {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 46px;
+  margin-left: -18px;
+  padding: 6px 12px 6px 26px;
+  border: 1px solid rgba(236, 219, 183, .2);
+  border-radius: 0 999px 999px 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: linear-gradient(90deg, rgba(11, 12, 16, .92), rgba(18, 20, 27, .84));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .06);
+  transition: border-color .22s ease, background .22s ease;
+}
+
+.rpg-quests-jour__quete.is-encours .rpg-quests-jour__capsule {
+  border-color: rgba(214, 186, 128, .26);
+}
+.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__medaillon {
+  background: conic-gradient(#ffd46b 0 100%);
+  box-shadow: 0 0 18px rgba(246, 184, 62, .52), 0 6px 16px rgba(0, 0, 0, .7);
+}
+.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__capsule {
+  border-color: rgba(243, 196, 94, .68);
+  background: linear-gradient(90deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
+}
+.rpg-quests-jour__quete.is-reclamee {
+  opacity: .56;
+}
+
+.rpg-quests-jour__quete-texte {
+  margin: 0;
+  min-width: 0;
+  color: #efe5d0;
+  font-size: 11.5px;
+  line-height: 1.28;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rpg-quests-jour__pris {
+  flex: none;
+  margin: 0;
+  color: #e8cf93;
+  font: 800 9.5px/1.2 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rpg-quests-jour__reclamer {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.rpg-quests-jour__reclamer .rpg-credit { font-size: 1.12em; }
+
+/* ── Jalons de droite : Cachet du cycle + Série & Bourse du Souk ──────────── */
+.rpg-quests-jour__jalons {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(10px, 1.1vw, 16px);
+  flex: none;
+}
+
+.rpg-quests-jour__cachet,
+.rpg-quests-jour__etape-souk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.rpg-quests-jour__compte,
+.rpg-quests-jour__serie {
+  margin: 0;
+  color: rgba(247, 237, 218, .82);
+  font: 800 11px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, .92);
+  white-space: nowrap;
+}
+
+.rpg-quests-jour__jeton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rpg-quests-jour__medaillon--cachet {
+  width: 54px;
+  height: 54px;
+}
+.rpg-quests-jour__cachet.is-pris .rpg-quests-jour__medaillon--cachet {
+  opacity: .56;
+}
+.rpg-quests-jour__jeton-sous {
+  color: rgba(244, 226, 188, .72);
+  font: 800 8.5px/1 var(--mono, monospace);
+  letter-spacing: .12em;
   text-transform: uppercase;
 }
+
+.rpg-quests-jour__jeton-btn {
+  flex-direction: column;
+  gap: 1px;
+  width: 58px;
+  height: 58px;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: 50%;
+  animation: rpg-quests-jour-appel 2.8s ease-in-out infinite;
+}
+@keyframes rpg-quests-jour-appel {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 193, 84, .42), 0 6px 16px rgba(0, 0, 0, .65); }
+  50% { box-shadow: 0 0 0 7px rgba(245, 193, 84, 0), 0 6px 16px rgba(0, 0, 0, .65); }
+}
+
+.rpg-quests-jour__semaine {
+  min-height: 44px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+/* Bouton Bourse & Souk : sceau doré + solde + flèche */
+.rpg-market { width: 1.15em; height: 1.15em; flex: none; }
+
 .rpg-quests-jour__souk {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
+  gap: 8px;
+  min-height: 48px;
+  padding: 5px 14px 5px 7px;
+  border: 1px solid rgba(235, 196, 112, .42);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(42, 30, 15, .94), rgba(16, 14, 16, .94));
+  color: #ffe7af;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .52), inset 0 1px 0 rgba(255, 240, 196, .16);
+}
+.rpg-quests-jour__souk:hover,
+.rpg-quests-jour__souk:focus-visible {
+  border-color: rgba(255, 219, 138, .82);
+  background: linear-gradient(135deg, rgba(64, 45, 19, .96), rgba(24, 19, 16, .96));
+}
+.rpg-quests-jour__souk-sceau {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 224, 150, .48);
+  background: radial-gradient(circle at 35% 30%, rgba(245, 196, 94, .42), rgba(54, 34, 12, .94));
+  color: #ffe8b0;
+  font-size: 16px;
+}
+.rpg-quests-jour__souk-texte {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+.rpg-quests-jour__solde-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  color: #fff2cc;
+  white-space: nowrap;
+}
+.rpg-quests-jour__solde-mini .rpg-credit { font-size: 13px; }
+.rpg-quests-jour__solde-mini strong {
+  font: 800 13.5px/1 var(--mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-quests-jour__souk-lien {
+  color: rgba(242, 214, 152, .8);
+  font: 800 9px/1 var(--mono, monospace);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1080px) {
+  .rpg-quests-jour__rail {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .rpg-quests-jour__jalons {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 700px) {
+  .rpg-quests-jour__liste {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .rpg-quests-jour__medaillon {
+    width: 44px;
+    height: 44px;
+  }
+  .rpg-quests-jour__medaillon-coeur strong { font-size: 13px; }
+  .rpg-quests-jour__capsule {
+    min-height: 38px;
+    padding: 4px 10px 4px 22px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .rpg-quests-jour__jeton-btn,
   .rpg-quests-jour__cachet.is-pret { animation: none; }
   .rpg-quests-jour__jauge-remplie,
-  .rpg-quests-jour__quete { transition: none; }
+  .rpg-quests-jour__capsule { transition: none; }
 }

@@ -8232,6 +8232,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr)); gap: 13px; align-items: stretch; }
 .rpg-card-catalogue__card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   overflow: hidden;
   border: 1px solid rgba(235, 215, 176, .17);
@@ -8405,15 +8407,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   left: 8px;
   bottom: 8px;
 }
-.rpg-card-catalogue__details { display: grid; gap: 7px; padding: 11px 12px 13px; }
+.rpg-card-catalogue__details { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 12px; }
 .rpg-card-catalogue__title { display: flex; align-items: start; justify-content: space-between; gap: 7px; }
 .rpg-card-catalogue__title h3 { min-width: 0; margin: 0; color: #fff0d4; font: 700 15px/1.17 Georgia, serif; }
 .rpg-card-catalogue__type { margin: 0; color: rgba(229, 203, 149, .8); font: italic 10px/1.3 Georgia, serif; }
-.rpg-card-catalogue__meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; color: rgba(244, 233, 214, .72); font: 800 8px/1.25 var(--mono, monospace); }
+.rpg-card-catalogue__meta { margin-top: auto; padding-top: 2px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 5px; color: rgba(244, 233, 214, .72); font: 800 8px/1.25 var(--mono, monospace); }
 .rpg-card-catalogue__meta b { color: #f3d891; white-space: nowrap; }
 .rpg-card-catalogue__meta .is-terrain { color: #d7c498; }
 .rpg-card-catalogue__meta .is-hybrid { color: #f0ce84; }
-.rpg-card-catalogue__rules { margin: 0; padding-top: 7px; border-top: 1px solid rgba(240, 226, 204, .1); color: rgba(244, 233, 214, .68); font: 10px/1.45 Georgia, serif; }
 /* Les illustrations alternatives — les anciennes peintures gagnées à la barre
    d'XP. Elles se posent SOUS la fiche de la carte qu'elles doublent, en petit :
    une vignette de face, sa légende à droite. Fermée, la tuile ne charge aucune
@@ -10797,7 +10798,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__hero-copy h2 { font-size: clamp(30px, 4vw, 51px); }
 .rpg-mode-menu__hero-copy p { max-width: 55ch; }
 .rpg-menu-button--primary { border-color: #e1aa52 !important; background: linear-gradient(110deg, #a14d17, #e27c22 55%, #ffc45c) !important; box-shadow: 0 0 22px #e27c2255; }
-.rpg-quests-jour { align-self: stretch; border-radius: 9px; background: linear-gradient(155deg, rgba(31,28,24,.97), rgba(12,13,14,.97)); }
+.rpg-quests-jour { align-self: stretch; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 @media (max-width: 820px) {
  .rpg-mode-menu__content { gap: 12px; }
  .rpg-mode-menu__play,
@@ -11045,6 +11046,39 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
   transition: none;
+}
+
+/* ── Reflet lumineux réservé aux previews clic droit ─────────────────────────
+   Uniquement monté quand la fiche est ouverte par un clic droit : le point
+   chaud doré et son écharpe irisée glissent sous le curseur à la manière du
+   booster du Souk, sans toucher aux cartes posées ni aux aperçus de survol. */
+.rpg-hover-card-preview__lumiere {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    radial-gradient(
+      115% 95% at var(--rpg-lumiere-x, 50%) var(--rpg-lumiere-y, 30%),
+      rgba(255, 248, 222, .62) 0%,
+      rgba(255, 204, 114, .22) 36%,
+      transparent 68%
+    ),
+    linear-gradient(
+      calc(115deg + var(--rpg-lumiere-angle, 0deg)),
+      transparent 24%,
+      rgba(255, 220, 140, .24) 44%,
+      rgba(164, 228, 255, .18) 50%,
+      rgba(244, 182, 255, .16) 56%,
+      transparent 76%
+    );
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+  transition: opacity .22s ease;
+}
+.rpg-hover-card-preview__face.is-suit-la-souris .rpg-hover-card-preview__lumiere {
+  opacity: var(--rpg-lumiere-opacite, 1);
 }
 
 /* La défausse est un choix confirmé : la carte retenue reste nettement
@@ -12386,126 +12420,127 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 
-/* La grille de quatre cartes a besoin d'un peu plus de largeur que l'ancien
-   carré 2 × 2 : le bloc de copie suit, sans déborder de la colonne du héros. */
-.rpg-mode-menu--jouer .rpg-mode-menu__hero-copy { width: min(920px, 100%); }
-
 /* ══════════════════════════════════════════════════════════════════════════
-   ACCUEIL DU SABLIER — LES QUATRE PORTES
+   ACCUEIL DU SABLIER — LES QUATRE BANNIÈRES DE MODES (FAÇON MTG ARENA)
    ──────────────────────────────────────────────────────────────────────────
-   La page Jouer est l'accueil : l'onglet « Jouer » est de retour, Histoire
-   reste une carte. Quatre modes deviennent des cartes carrées, chacune avec une
-   grande icône dessinée, rangées en quatre colonnes sur PC :
-
-     Mode histoire | Duel en ligne | Jouer | Conquête
-
-   « Jouer » remplace « Partie rapide » et garde son action (choisir un deck
-   puis affronter l'ordinateur). « Conquête », quatrième carte, ouvre les Tours
-   de Bab El. « Apprendre à jouer » n'est plus une carte : c'est un lien texte
-   sous la grille, avec une petite icône et une flèche (voir `rpg-tutorial.css`).
-   Le carré vient de `aspect-ratio: 1` : les quatre cartes gardent le même
-   format du téléphone au grand écran.
+   Les quatre modes (« Mode histoire », « Duel en ligne », « Jouer »,
+   « Conquête ») sont empilés l'un au-dessus de l'autre sur toute la largeur de
+   leur colonne. Chaque bannière affiche en plein cadre une miniature tirée des
+   cartes du jeu et ne porte que son titre sur un ruban sombre en bas.
    ══════════════════════════════════════════════════════════════════════════ */
-.rpg-mode-menu__hero-actions > .rpg-menu-button {
+.rpg-mode-menu__hero-actions > .rpg-mode-carte {
   position: relative;
-  min-height: 0;
-  aspect-ratio: 1;
+  width: 100%;
+  min-height: clamp(54px, 8.8vh, 132px);
+  padding: 0 !important;
+  border-radius: 7px;
+  border: 1px solid rgba(235, 201, 128, .32) !important;
+  background: #0b0c11 !important;
+  color: #fff5df !important;
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, .54),
+    inset 0 1px 0 rgba(255, 242, 205, .18) !important;
+  overflow: hidden;
+  isolation: isolate;
+  display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: clamp(6px, 1.1vw, 12px);
-  padding: clamp(10px, 1.6vw, 18px);
-  border-radius: 16px;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: 0;
   text-align: center;
   letter-spacing: 0;
-}
-.rpg-mode-carte__icone {
-  flex: none;
-  width: clamp(42px, 5.2vw, 64px);
-  height: clamp(42px, 5.2vw, 64px);
-  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .28));
-}
-.rpg-mode-carte .rpg-menu-button__text {
-  justify-items: center;
-  gap: 5px;
-  text-align: center;
-}
-.rpg-mode-carte .rpg-menu-button__text strong {
-  font: 800 clamp(11px, 1.05vw, 15px)/1.2 var(--mono, monospace);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-.rpg-mode-carte .rpg-menu-button__text small {
-  max-width: 20ch;
-  font-size: clamp(8px, .8vw, 10px);
-  line-height: 1.35;
-  opacity: .82;
-}
-.rpg-mode-carte .rpg-menu-button__arrow {
-  position: absolute;
-  right: 12px;
-  bottom: 8px;
-  margin-left: 0;
-  font-size: 13px;
-  opacity: .6;
-}
-/* La règle « primary » du hub pose un dégradé orange en `!important` : le
-   récit garde son bleu, sinon les deux cartes du haut se ressemblent. */
-.rpg-mode-menu__hero-actions .rpg-menu-button--histoire {
-  border-color: #dcf1fd !important;
-  background: linear-gradient(135deg, #bfe2f7, #6fb3dc) !important;
-  color: #10314a !important;
-  box-shadow: 0 10px 26px rgba(96, 165, 210, .28) !important;
-}
-.rpg-mode-menu__hero-actions .rpg-menu-button--histoire:hover,
-.rpg-mode-menu__hero-actions .rpg-menu-button--histoire:focus-visible {
-  background: linear-gradient(135deg, #dbf1ff, #8cc6e9) !important;
-  color: #0b2739 !important;
-}
-@media (max-width: 620px),
-  (hover: none) and (pointer: coarse) and (orientation: portrait),
-  (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
-  .rpg-mode-menu__hero-actions { gap: 8px; }
-  .rpg-mode-menu__hero-actions > .rpg-menu-button {
-    gap: 6px;
-    padding: 9px 6px;
-    border-radius: 14px;
-  }
-  .rpg-mode-carte__icone { width: clamp(34px, 10vw, 50px); height: clamp(34px, 10vw, 50px); }
-  .rpg-mode-carte .rpg-menu-button__text strong { font-size: 10px; }
-  .rpg-mode-carte .rpg-menu-button__text small { font-size: 8px; max-width: 17ch; }
-  .rpg-mode-carte .rpg-menu-button__arrow { right: 8px; bottom: 6px; font-size: 11px; }
+  transition:
+    border-color .22s ease,
+    box-shadow .22s ease,
+    transform .2s ease;
 }
 
-/* Le duel en ligne : laiton plein, la couleur des actions principales du hub. */
-.rpg-menu-button--en-ligne {
+.rpg-mode-carte__art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--art-pos, 50% 22%);
+  pointer-events: none;
+  user-select: none;
+  transition: transform .38s cubic-bezier(.22, 1, .36, 1), filter .28s ease;
+}
+
+.rpg-mode-carte::after,
+.rpg-mode-carte.rpg-menu-button--glow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  animation: none;
+  background: linear-gradient(
+    180deg,
+    rgba(8, 9, 13, .06) 0%,
+    rgba(8, 9, 13, .16) 44%,
+    rgba(7, 8, 12, .84) 74%,
+    rgba(6, 7, 10, .95) 100%
+  );
+}
+
+.rpg-mode-carte .rpg-menu-button__text {
   position: relative;
-  border-color: #f2d79a;
-  background: linear-gradient(135deg, #e8c676, #bb8135);
-  color: #241a06;
-  box-shadow: 0 10px 26px rgba(197, 139, 53, .22), inset 0 1px rgba(255, 246, 220, .5);
+  z-index: 2;
+  width: 100%;
+  padding: clamp(8px, 1.1vh, 12px) 16px clamp(7px, .95vh, 11px);
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
-/* La grande icône de chaque carte suit l'encre du mode : aucun médaillon
-   intermédiaire, le dessin porte seul la lecture. */
-.rpg-mode-menu__hero-actions .rpg-mode-icone { color: inherit; }
-.rpg-menu-button--en-ligne .rpg-menu-button__text small { color: #46320f; opacity: .88; }
-.rpg-menu-button--en-ligne:hover,
-.rpg-menu-button--en-ligne:focus-visible {
-  border-color: #ffe9b8;
-  background: linear-gradient(135deg, #f7dca4, #d79f4d);
-  color: #1c130b;
-  box-shadow: 0 12px 30px rgba(197, 139, 53, .3), inset 0 1px rgba(255, 250, 235, .6);
+
+.rpg-mode-carte .rpg-menu-button__text strong {
+  font: 700 clamp(14px, 1.2vw, 18px)/1.14 Georgia, 'Times New Roman', serif;
+  letter-spacing: .02em;
+  text-transform: none;
+  color: #fff5df;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, .96), 0 1px 2px rgba(0, 0, 0, .95);
 }
-/* Pastille « en ligne » : vivante, mais immobile si le joueur a réduit les
-   animations. */
+
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:hover,
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:focus-visible {
+  border-color: rgba(255, 220, 140, .88) !important;
+  background: #10121a !important;
+  color: #fffaf0 !important;
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, .68),
+    0 0 20px rgba(235, 168, 58, .3),
+    inset 0 0 0 1px rgba(255, 232, 174, .34) !important;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:hover .rpg-mode-carte__art,
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:focus-visible .rpg-mode-carte__art {
+  transform: scale(1.055);
+  filter: brightness(1.08) saturate(1.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-carte__art { transition: none; }
+  .rpg-mode-menu__hero-actions > .rpg-mode-carte:hover .rpg-mode-carte__art,
+  .rpg-mode-menu__hero-actions > .rpg-mode-carte:focus-visible .rpg-mode-carte__art {
+    transform: none;
+  }
+}
+
+/* Pastille « en ligne » : vivante sur le ruban sombre, immobile si réduit. */
 .rpg-menu-button__live {
   display: inline-block;
   width: 7px;
   height: 7px;
   margin-left: 8px;
   border-radius: 50%;
-  background: #3f6b2c;
-  box-shadow: 0 0 0 3px rgba(63, 107, 44, .18);
-  vertical-align: .06em;
+  background: #56d364;
+  box-shadow: 0 0 8px rgba(86, 211, 100, .65);
+  vertical-align: .08em;
   animation: rpg-en-ligne-pulse 1.8s ease-in-out infinite;
 }
 @keyframes rpg-en-ligne-pulse {
@@ -12514,37 +12549,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-menu-button__live { animation: none; }
-}
-
-/* « Jouer » : une carte sombre ourlée de braise, pas un aplat orange. */
-.rpg-menu-button--partie-rapide {
-  border-color: rgba(232, 106, 44, .5);
-  background: rgba(30, 17, 11, .8);
-  color: #ffd9b8;
-  box-shadow: none;
-}
-.rpg-menu-button--partie-rapide .rpg-mode-icone { color: #ff9a5c; }
-.rpg-menu-button--partie-rapide:hover,
-.rpg-menu-button--partie-rapide:focus-visible {
-  border-color: #ffb86a;
-  background: rgba(96, 44, 20, .86);
-  color: #fff3e5;
-}
-
-/* « Conquête » : nuit bleutée, tour dorée — la quatrième carte des Tours. */
-.rpg-menu-button--conquete {
-  border-color: rgba(232, 194, 113, .62);
-  background: linear-gradient(155deg, rgba(27, 45, 53, .95), rgba(11, 15, 20, .97));
-  color: #f6dfb0;
-  box-shadow: 0 10px 26px rgba(18, 47, 58, .34);
-}
-.rpg-menu-button--conquete .rpg-mode-icone { color: #f2c566; }
-.rpg-menu-button--conquete .rpg-menu-button__text small { color: #e6d2a7; opacity: .82; }
-.rpg-menu-button--conquete:hover,
-.rpg-menu-button--conquete:focus-visible {
-  border-color: #f2d79a;
-  background: linear-gradient(155deg, rgba(39, 64, 73, .98), rgba(16, 22, 28, .98));
-  color: #fff3d5;
 }
 
 /* L'onglet Jouer reprend la grande icône des cartes, à la taille des autres
@@ -13038,131 +13042,1300 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    un `aria-label` : sans lui, un onglet réduit à son icône (masquée aux
    lecteurs d'écran) n'aurait plus de nom accessible.
 
-   Les sélecteurs passent par `.rpg-mode-menu__header` : `rpg-profil.css` et
-   les feuilles des onglets arrivent APRÈS cette feuille dans le graphe des
-   modules, et leurs règles de même spécificité l'emporteraient sinon.
-   ══════════════════════════════════════════════════════════════════════════ */
-@media (max-width: 820px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
-  /* Un petit peu d'espace en haut avant la barre de navigation. */
-  .rpg-mode-menu__content { padding-top: 12px; }
+/* ══════════════════════════════════════════════════════════════════════════
+   BARRE DE NAVIGATION VERTICALE À GAUCHE, GROUPE JEU EN BAS & ICÔNES 3D
+   ──────────────────────────────────────────────────────────────────────────
+   Sur bureau et tablette paysage, la barre quitte le haut de l'écran pour
+   devenir une colonne latérale fixe à gauche (`100dvh`, `position: sticky`) :
+     - tout en haut : le sablier de la marque et les pastilles 3D (plein écran,
+       quitter vers les jeux), suivis du groupe joueur (Profil, Paramètres,
+       Messagerie) ;
+     - en bas de la colonne (`margin-top: auto` sur Deck) : les trois onglets
+       de jeu et de collection — Deck, Souk (avec solde ◈) et Catalogue —
+       regroupés tout près du gros bouton 3D « Jouer » ancré au pied ;
+     - sur chaque onglet : un véritable cabochon / bouton 3D (`.rpg-mode-menu__icone-3d`)
+       doté d'un biseau lumineux, d'une tranche extrudée sombre, d'un reflet
+       spéculaire et d'un enfoncement mécanique au clic.
 
-  /* La barre : une rangée unique, les onglets côte à côte à parts égales. */
+   Les sélecteurs passent par `.rpg-mode-menu__header` pour devancer en
+   spécificité `rpg-profil.css` et les feuilles chargées après `rpg-battle.css`.
+   Sur téléphone en portrait (plus bas), la barre reprend sa rangée compacte
+   de touches 3D en haut de l'écran afin de laisser toute la largeur aux cartes.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-mode-menu__content {
+  --rpg-sidebar-w: clamp(216px, 18.5vw, 260px);
+  width: 100%;
+  min-height: 100%;
+  padding: 0;
+  gap: 0;
+  grid-template-columns: var(--rpg-sidebar-w) minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  align-items: stretch;
+}
+.rpg-mode-menu__content > :not(.rpg-mode-menu__header):not(.rpg-mode-menu__footer) {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+.rpg-mode-menu__footer {
+  grid-column: 2;
+  grid-row: 2;
+  margin-top: 18px;
+  padding: 12px clamp(18px, 3.8vw, 56px) 22px;
+}
+.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 0; }
+.rpg-mode-menu--reprise .rpg-mode-menu__footer { padding-bottom: 108px; }
+.rpg-menu-button--resume.rpg-menu-button--floating {
+  left: var(--rpg-sidebar-w, 0px);
+  max-width: calc(100% - var(--rpg-sidebar-w, 0px) - 28px);
+}
+
+.rpg-mode-menu__header {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  align-self: start;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 16px 7px 0;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "brand fullscreen quitter"
+    "modes modes modes";
+  align-items: center;
+  column-gap: 6px;
+  row-gap: 14px;
+  border-bottom: 0;
+  border-right: 1px solid rgba(240, 214, 158, .22);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(226, 118, 32, .16), transparent 56%),
+    linear-gradient(180deg, rgba(20, 18, 22, .97) 0%, rgba(12, 11, 15, .96) 58%, rgba(16, 12, 11, .98) 100%);
+  box-shadow: 10px 0 32px rgba(0, 0, 0, .52), inset -1px 0 0 rgba(255, 232, 182, .05);
+  backdrop-filter: blur(16px);
+}
+.rpg-mode-menu__brand {
+  grid-area: brand;
+  min-width: 0;
+  min-height: 0;
+  margin-right: 0;
+  padding-left: 6px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.rpg-mode-menu__accueil {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 3px;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 250, 234, .34),
+    inset 0 -4px 8px rgba(0, 0, 0, .35),
+    0 3px 0 #09070b,
+    0 6px 12px rgba(0, 0, 0, .5);
+  transition: transform .15s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.rpg-mode-menu__accueil:hover,
+.rpg-mode-menu__accueil:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 252, 240, .48),
+    0 4px 0 #09070b,
+    0 8px 15px rgba(0, 0, 0, .55);
+}
+.rpg-mode-menu__accueil:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .45), 0 1px 0 #09070b;
+}
+.rpg-mode-menu__accueil .rpg-mode-icone {
+  width: 22px;
+  height: 22px;
+}
+.rpg-mode-menu__brand h1 {
+  margin: 0;
+  font-size: clamp(18px, 1.45vw, 22px);
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-mode-menu__fullscreen,
+.rpg-mode-menu__quitter {
+  order: 0;
+  min-width: 32px;
+  min-height: 32px;
+  margin-left: 0;
+  margin-bottom: 3px;
+  padding: 6px;
+  border-radius: 9px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 250, 234, .28),
+    0 3px 0 #09070b,
+    0 5px 10px rgba(0, 0, 0, .46);
+  transition: transform .15s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.rpg-mode-menu__fullscreen { grid-area: fullscreen; }
+.rpg-mode-menu__quitter { grid-area: quitter; }
+.rpg-mode-menu__fullscreen:hover,
+.rpg-mode-menu__fullscreen:focus-visible,
+.rpg-mode-menu__quitter:hover,
+.rpg-mode-menu__quitter:focus-visible {
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 252, 240, .42),
+    0 4px 0 #09070b,
+    0 7px 14px rgba(0, 0, 0, .52);
+}
+.rpg-mode-menu__fullscreen:active,
+.rpg-mode-menu__quitter:active {
+  transform: translateY(2px);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, .45), 0 1px 0 #09070b;
+}
+.rpg-mode-menu__fullscreen .rpg-fullscreen-icon { width: 14px; height: 14px; }
+.rpg-mode-menu__quitter svg { width: 14px; height: 14px; }
+
+.rpg-mode-menu__header .rpg-mode-menu__switch {
+  grid-area: modes;
+  order: 0;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  margin: 0;
+  padding: 12px 8px 90px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 6px;
+  border: 0;
+  border-top: 1px solid rgba(240, 220, 178, .12);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
+
+/* ── BOUTONS 3D POUR LES ICÔNES DES ONGLETS (.rpg-mode-menu__icone-3d) ──────
+   Chaque icône d'onglet est sertie dans une touche mécanique 3D :
+     - biseau supérieur clair (`inset 0 1.5px 0`) et galbe inférieur ombré ;
+     - tranche solide de 4 px (`0 4px 0 var(--icone-3d-tranche)`) ;
+     - dôme spéculaire `::after` sur la moitié haute ;
+     - levée au survol (`translateY(-2px)` + tranche 6 px) et course
+       d'enfoncement au clic (`translateY(2px)` + tranche 1 px). */
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d {
+  --icone-3d-haut: #3c2e22;
+  --icone-3d-bas: #19120d;
+  --icone-3d-tranche: #0a0705;
+  --icone-3d-bord: rgba(242, 206, 134, .48);
+  --icone-3d-eclat: rgba(248, 208, 124, .34);
+  --icone-3d-encre: #f5d382;
+  position: relative;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  margin: 0 0 3px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid var(--icone-3d-bord);
+  border-radius: 10px;
+  background:
+    radial-gradient(120% 88% at 50% 16%, var(--icone-3d-eclat) 0%, transparent 66%),
+    linear-gradient(180deg, var(--icone-3d-haut) 0%, var(--icone-3d-bas) 100%);
+  color: var(--icone-3d-encre);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 252, 236, .38),
+    inset 0 -5px 9px rgba(0, 0, 0, .4),
+    0 4px 0 var(--icone-3d-tranche),
+    0 7px 13px rgba(0, 0, 0, .54);
+  transform: translateY(0);
+  transition:
+    transform .15s cubic-bezier(.2, .8, .2, 1),
+    box-shadow .16s ease,
+    border-color .16s ease,
+    filter .16s ease;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d::after {
+  content: '';
+  position: absolute;
+  inset: 1px 2px auto 2px;
+  height: 44%;
+  border-radius: 8px 8px 50% 50% / 7px 7px 4px 4px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .01));
+  pointer-events: none;
+}
+
+/* Matières 3D propres à chaque famille d'onglet, harmonisées au laiton du Sablier. */
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--profil {
+  --icone-3d-haut: #473320;
+  --icone-3d-bas: #1e150d;
+  --icone-3d-tranche: #0d0804;
+  --icone-3d-bord: rgba(244, 204, 126, .54);
+  --icone-3d-eclat: rgba(250, 210, 128, .36);
+  --icone-3d-encre: #f8d88c;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--parametres {
+  --icone-3d-haut: #343946;
+  --icone-3d-bas: #181b23;
+  --icone-3d-tranche: #0a0c11;
+  --icone-3d-bord: rgba(218, 212, 198, .44);
+  --icone-3d-eclat: rgba(226, 224, 240, .28);
+  --icone-3d-encre: #ebe1ca;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--messagerie {
+  --icone-3d-haut: #194452;
+  --icone-3d-bas: #0c222a;
+  --icone-3d-tranche: #051015;
+  --icone-3d-bord: rgba(126, 228, 244, .54);
+  --icone-3d-eclat: rgba(112, 226, 245, .34);
+  --icone-3d-encre: #92ecfa;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--deck {
+  --icone-3d-haut: #553216;
+  --icone-3d-bas: #261508;
+  --icone-3d-tranche: #120903;
+  --icone-3d-bord: rgba(250, 198, 104, .6);
+  --icone-3d-eclat: rgba(255, 190, 92, .4);
+  --icone-3d-encre: #ffd888;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--souk {
+  --icone-3d-haut: #523e12;
+  --icone-3d-bas: #241a06;
+  --icone-3d-tranche: #110c02;
+  --icone-3d-bord: rgba(254, 218, 114, .64);
+  --icone-3d-eclat: rgba(255, 220, 108, .42);
+  --icone-3d-encre: #ffe285;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--catalogue {
+  --icone-3d-haut: #312e58;
+  --icone-3d-bas: #17152c;
+  --icone-3d-tranche: #090815;
+  --icone-3d-bord: rgba(206, 192, 255, .52);
+  --icone-3d-eclat: rgba(190, 174, 255, .36);
+  --icone-3d-encre: #e4dcff;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d--progression {
+  --icone-3d-haut: #1d3c6e;
+  --icone-3d-bas: #0d1d38;
+  --icone-3d-tranche: #060e1d;
+  --icone-3d-bord: rgba(142, 198, 255, .6);
+  --icone-3d-eclat: rgba(120, 186, 255, .42);
+  --icone-3d-encre: #ffd982;
+}
+
+/* Symboles gravés à l'intérieur des touches 3D. */
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-icone {
+  position: relative;
+  z-index: 1;
+  width: 21px;
+  height: 21px;
+  display: block;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .68));
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-menu__souk-piece {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 19px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .65));
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-menu__messagerie-mark {
+  position: relative;
+  z-index: 1;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 19px;
+  margin: 0;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .62));
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d span.rpg-mode-menu__profil-embleme {
+  position: relative;
+  z-index: 1;
+  width: auto;
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--icone-3d-encre);
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .65));
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d img.rpg-mode-menu__profil-embleme {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border-radius: 7px;
+  border: 1px solid rgba(255, 226, 156, .58);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .55);
+}
+
+/* Les sept onglets de navigation au-dessus du bouton Jouer : alignés à gauche,
+   touche 3D de 36 px à gauche, compteurs et pastilles poussés à droite. */
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre) {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: 5px 10px 5px 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: #d2ccc2;
+  font: 650 13.5px/1.2 system-ui, -apple-system, sans-serif;
+  letter-spacing: .015em;
+  text-align: left;
+  text-transform: none;
+  white-space: nowrap;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre) span.rpg-mode-menu__onglet-libelle {
+  display: inline;
+  margin: 0;
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre):hover,
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre):focus-visible {
+  border-color: rgba(235, 195, 110, .24);
+  border-radius: 12px;
+  background: rgba(235, 195, 110, .09);
+  color: #fff2dc;
+  outline: none;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre):hover .rpg-mode-menu__icone-3d,
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre):focus-visible .rpg-mode-menu__icone-3d {
+  transform: translateY(-2px);
+  border-color: rgba(255, 232, 168, .86);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 254, 244, .52),
+    inset 0 -5px 9px rgba(0, 0, 0, .32),
+    0 6px 0 var(--icone-3d-tranche),
+    0 11px 18px rgba(0, 0, 0, .58),
+    0 0 14px var(--icone-3d-eclat);
+  filter: brightness(1.08);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre):active .rpg-mode-menu__icone-3d {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, .5),
+    0 1px 0 var(--icone-3d-tranche),
+    0 3px 6px rgba(0, 0, 0, .42);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre).is-active {
+  border-color: rgba(241, 154, 68, .38);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(241, 124, 39, .24) 0%, rgba(201, 150, 57, .09) 76%, rgba(201, 150, 57, .02) 100%);
+  color: #fff3dd;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre).is-active .rpg-mode-menu__icone-3d {
+  border-color: rgba(255, 226, 150, .92);
+  color: #fff3ca;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 254, 242, .54),
+    inset 0 -4px 8px rgba(0, 0, 0, .28),
+    0 4px 0 var(--icone-3d-tranche),
+    0 8px 16px rgba(0, 0, 0, .56),
+    0 0 16px rgba(246, 152, 48, .44);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre).is-active::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 9px;
+  bottom: 9px;
+  right: auto;
+  width: 3px;
+  height: auto;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, #ffd175, #f05c1d);
+  box-shadow: 0 0 10px rgba(255, 128, 43, .85);
+}
+
+/* Souk : le solde ◈ et la pastille se rangent à droite de la ligne. */
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-solde {
+  margin-left: auto;
+  padding: 3px 7px;
+  border: 1px solid rgba(232, 194, 113, .24);
+  border-radius: 999px;
+  background: rgba(232, 194, 113, .11);
+  color: #f6d890;
+  font-size: 11px;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk .rpg-mode-menu__bourse-pastille {
+  position: static;
+  margin-left: 4px;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk span.rpg-mode-menu__onglet-libelle + .rpg-mode-menu__bourse-pastille {
+  margin-left: auto;
+}
+
+/* Onglet Progression d'XP (clôture le groupe du haut : Deck, Souk, Catalogue, Progression). */
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__progression {
+  margin-bottom: 10px;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__progression .rpg-mode-menu__progression-xp {
+  margin-left: auto;
+  padding: 2px 7px;
+  border: 1px solid rgba(142, 198, 255, .32);
+  border-radius: 999px;
+  background: rgba(38, 82, 152, .32);
+  color: #cbe3ff;
+  font: 800 10px/1.2 var(--mono, ui-monospace, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__progression .rpg-mode-menu__progression-pastille {
+  min-width: 18px;
+  height: 18px;
+  margin-left: 4px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffcf6b, #df7a1c);
+  color: #1c0f03;
+  font: 900 10px/1 var(--mono, ui-monospace, monospace);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
+}
+
+/* ── LIEN DU TUTORIEL AU-DESSUS DU TRAIT + GROUPE DU BAS (PROFIL, PARAMÈTRES, MESSAGERIE) ──
+   `margin-top: auto` sur `button.rpg-mode-menu__apprendre` absorbe l'espace
+   libre de la colonne pour poser le lien « Apprendre à jouer » juste au-dessus
+   du trait doré (`::before`) qui précède Profil, Paramètres et Messagerie. */
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre {
+  position: relative;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  margin-top: auto;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #e8c477;
+  font: 700 12px/1.2 var(--mono, ui-monospace, monospace);
+  letter-spacing: .03em;
+  text-align: left;
+  text-transform: none;
+  white-space: nowrap;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre:hover,
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre:focus-visible {
+  border-color: rgba(235, 195, 110, .24);
+  background: rgba(235, 195, 110, .08);
+  color: #fff2c6;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  outline: none;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre.is-active {
+  border-color: rgba(241, 184, 88, .42);
+  background: linear-gradient(90deg, rgba(226, 166, 62, .22), rgba(201, 150, 57, .05));
+  color: #fff5d8;
+}
+
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire {
+  color: rgba(224, 216, 200, .82);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
+  margin-left: 0;
+  margin-top: 10px;
+  padding-left: 8px;
+  box-shadow: none;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 6px;
+  right: 6px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(244, 206, 126, .38), rgba(244, 206, 126, .08));
+  pointer-events: none;
+}
+
+/* Profil dans la colonne verticale : le mot « Profil » reste affiché même sous
+   1100 px, le niveau se cale à droite, et la jauge d'XP court sous le libellé. */
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil {
+  padding-bottom: 12px;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil span.rpg-mode-menu__onglet-libelle {
+  display: inline;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil .rpg-mode-menu__profil-niveau {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: #f4d690;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil .rpg-mode-menu__profil-xp {
+  position: absolute;
+  left: 55px;
+  right: 10px;
+  bottom: 4px;
+  width: auto;
+  height: 4px;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil .rpg-mode-menu__profil-pastille {
+  position: static;
+  margin-left: 4px;
+}
+
+/* Messagerie : pastille poussée à droite de la ligne. */
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__messagerie .rpg-mode-menu__messagerie-pastille {
+  position: static;
+  margin-left: auto;
+}
+
+/* ── LE BOUTON 3D « JOUER » TOUT EN BAS : TEXTE SEUL & DÉGRADÉ ANIMÉ ───────
+   Sans icône de deck : uniquement le texte « JOUER » centré, serti dans un
+   bouton 3D dont le dégradé braise → or → ambre ondule en continu. */
+@keyframes rpg-jouer-degrade-mouvement {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+  position: relative;
+  bottom: auto;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 54px;
+  margin-top: 8px;
+  padding: 12px 18px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border: 1px solid rgba(255, 232, 166, .92);
+  border-radius: 13px;
+  background-color: #d6671a;
+  background-image: linear-gradient(
+    115deg,
+    #b8430e 0%,
+    #ea7c20 22%,
+    #ffd468 46%,
+    #fff1aa 53%,
+    #f08a24 78%,
+    #bd460f 100%
+  );
+  background-size: 260% 260%;
+  animation: rpg-jouer-degrade-mouvement 3.8s ease-in-out infinite;
+  color: #1f1104;
+  font: 900 15.5px/1 system-ui, -apple-system, sans-serif;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 252, 235, .72),
+    inset 0 -7px 12px rgba(132, 42, 4, .26),
+    0 5px 0 #6e2606,
+    0 8px 16px rgba(232, 118, 28, .34);
+  transition: transform .15s cubic-bezier(.2, .8, .2, 1), box-shadow .18s ease, border-color .18s ease;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer span.rpg-mode-menu__onglet-libelle {
+  display: inline;
+  margin: 0;
+  color: #1f1104;
+  font-weight: 900;
+  text-shadow: 0 1px 0 rgba(255, 248, 220, .48);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer:hover,
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer:focus-visible {
+  border-color: #fff6d2;
+  border-radius: 13px;
+  animation-duration: 2.2s;
+  color: #180c02;
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 253, 242, .8),
+    inset 0 -7px 12px rgba(132, 42, 4, .22),
+    0 7px 0 #6e2606,
+    0 10px 18px rgba(241, 132, 35, .44);
+  outline: none;
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 2px 5px rgba(88, 28, 3, .38),
+    0 2px 0 #6e2606,
+    0 4px 10px rgba(232, 118, 28, .32);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer.is-active {
+  border-color: #fff5d0;
+  border-radius: 13px;
+  color: #1a0d02;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 249, 220, .82),
+    inset 0 -7px 12px rgba(132, 42, 4, .24),
+    0 5px 0 #6e2606,
+    0 8px 16px rgba(241, 132, 35, .38);
+}
+.rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer.is-active::after {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__accueil,
+  .rpg-mode-menu__fullscreen,
+  .rpg-mode-menu__quitter,
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+    transition: none;
+    animation: none;
+  }
+  .rpg-mode-menu__accueil:hover,
+  .rpg-mode-menu__fullscreen:hover,
+  .rpg-mode-menu__quitter:hover,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):hover .rpg-mode-menu__icone-3d,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):focus-visible .rpg-mode-menu__icone-3d,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer:hover,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer:focus-visible {
+    transform: none;
+  }
+}
+
+/* Sur les fenêtres basses (≤ 760 px de hauteur), les entrées de la colonne
+   resserrent légèrement leur pas pour laisser respirer l'écart central tout en
+   gardant le bouton « Jouer » aligné au niveau des quêtes du jour. */
+@media (min-width: 701px) and (max-height: 760px) {
+  .rpg-mode-menu__header { padding: 12px 6px 0; row-gap: 10px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch { padding: 8px 6px 76px; gap: 3px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre) {
+    min-height: 39px;
+    padding: 3px 9px 3px 7px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre {
+    min-height: 30px;
+    padding: 4px 9px;
+    margin-bottom: 2px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
+    margin-top: 8px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil {
+    padding-bottom: 10px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d {
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+    min-height: 46px;
+    margin-top: 6px;
+    padding: 9px 14px;
+  }
+}
+
+/* ── PAGE D'ACCUEIL (« JOUER ») VERROUILLÉE SUR UN SEUL ÉCRAN SANS SCROLL ──
+   Architecture inspirée de MTG Arena :
+   - Rangée supérieure (`minmax(0, 1fr)`) : grande vitrine illustrée à gauche
+     + les 4 bannières larges de modes empilées verticalement à droite.
+   - Rangée inférieure (`auto`, `grid-column: 1 / -1`) : la rampe horizontale
+     des quêtes du jour et des médaillons de récompenses en dessous. */
+.rpg-mode-menu.rpg-mode-menu--jouer {
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__content {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  max-height: 100dvh;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+  width: min(1520px, 100%);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  margin: 0 auto;
+  /* Retrait inférieur de 62 px (+ pied de page de ~24 px = ~86 px depuis le bas) :
+     la grande image conserve toute sa stature (`minmax(0, 1fr)`) et les quêtes
+     remontent exactement à la hauteur de l'onglet « Messagerie » à gauche. */
+  padding: clamp(12px, 1.8vh, 22px) clamp(16px, 2.6vw, 42px) 62px;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1.38fr) minmax(290px, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: clamp(12px, 1.6vh, 18px) clamp(14px, 1.6vw, 24px);
+  overflow: hidden;
+}
+
+/* Vitrine gauche : illustration cadrée plein format + bandeau sombre en bas */
+.rpg-mode-menu--jouer .rpg-mode-menu__hero {
+  grid-column: 1;
+  grid-row: 1;
+  position: relative;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  border-radius: 8px;
+  border: 1px solid rgba(236, 204, 134, .32);
+  background: #090a0e;
+  box-shadow:
+    0 20px 46px rgba(0, 0, 0, .62),
+    inset 0 1px 0 rgba(255, 240, 200, .18);
+  overflow: hidden;
+}
+.rpg-mode-menu__hero-keyart {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 34%;
+  pointer-events: none;
+  user-select: none;
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__hero-copy {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: none;
+  margin-top: auto;
+  padding: clamp(20px, 3.2vh, 36px) clamp(18px, 2.2vw, 28px) clamp(12px, 1.6vh, 18px);
+  box-sizing: border-box;
+  background: linear-gradient(
+    180deg,
+    rgba(7, 8, 12, 0) 0%,
+    rgba(7, 8, 12, .78) 38%,
+    rgba(6, 7, 10, .95) 100%
+  );
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__hero-copy h2 {
+  margin: 4px 0 0;
+  font-size: clamp(20px, min(2.4vw, 3.6vh), 32px);
+  line-height: 1.08;
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__hero-copy > p {
+  margin: 6px 0 0;
+  max-width: 60ch;
+  font-size: clamp(11.5px, 1.45vh, 13px);
+  line-height: 1.42;
+  color: rgba(247, 237, 218, .82);
+}
+
+/* Colonne droite : les 3 modes empilés l'un au-dessus de l'autre en largeur */
+.rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+.rpg-mode-menu--jouer .rpg-mode-menu__hero-actions {
+  width: 100%;
+  max-width: none;
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+/* Rampe inférieure pleine largeur : quêtes du jour flottant librement sans fond */
+.rpg-mode-menu--jouer .rpg-quests-jour {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+
+.rpg-mode-menu--jouer .rpg-mode-menu__footer {
+  margin-top: 0;
+  padding: 4px clamp(16px, 2.6vw, 42px) 6px;
+}
+.rpg-mode-menu--jouer.rpg-mode-menu--reprise .rpg-mode-menu__footer {
+  padding-bottom: 6px;
+}
+
+/* Tablette paysage / fenêtre intermédiaire : conserve la vitrine à gauche, les
+   3 bannières empilées à droite et les quêtes alignées au niveau de Messagerie. */
+@media (min-width: 701px) and (max-width: 1140px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    grid-template-columns: minmax(0, 1.12fr) minmax(260px, 1fr);
+    padding: 10px clamp(12px, 1.8vw, 22px) 62px;
+    gap: 10px 14px;
+  }
+}
+
+@media (min-width: 701px) and (max-height: 760px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    padding-bottom: 44px;
+  }
+}
+
+/* ── ÉCRAN DÉDIÉ À LA PROGRESSION D'XP (.rpg-xp-screen — style Mastery MTG Arena) ── */
+.rpg-mode-menu--progression .rpg-xp-screen {
+  width: min(1240px, 100%);
+  min-height: calc(100dvh - 36px);
+  margin: 0 auto;
+  padding: clamp(18px, 2.6vh, 32px) clamp(16px, 3vw, 44px);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.rpg-xp-screen__scene {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: clamp(18px, 2.2vw, 28px);
+  border: 1px solid rgba(226, 189, 117, 0.22);
+  border-radius: 14px;
+  background:
+    radial-gradient(85% 70% at 18% 0%, rgba(72, 118, 196, 0.16), transparent 65%),
+    radial-gradient(80% 75% at 85% 100%, rgba(196, 132, 48, 0.12), transparent 68%),
+    linear-gradient(180deg, rgba(14, 15, 24, 0.9), rgba(10, 10, 16, 0.95));
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 238, 198, 0.08);
+}
+
+.rpg-xp-screen__maitrise {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.2vw, 26px);
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(226, 189, 117, 0.16);
+}
+
+.rpg-xp-screen__blason {
+  position: relative;
+  flex: 0 0 auto;
+  width: 118px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+}
+
+.rpg-xp-screen__blason-ailes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.65));
+}
+
+.rpg-xp-screen__blason-coeur {
+  position: relative;
+  z-index: 1;
+  margin-top: -10px;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(240, 200, 118, 0.55);
+  background: radial-gradient(circle at 40% 32%, rgba(56, 76, 120, 0.65), rgba(16, 15, 26, 0.96) 74%);
+  color: #ffe6a8;
+  font-size: 24px;
+  line-height: 1;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.65);
+}
+
+.rpg-xp-screen__blason-niveau {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 38px;
+  padding: 4px 10px 5px;
+  border: 1.5px solid #f7d588;
+  border-radius: 6px 6px 12px 12px;
+  background: linear-gradient(180deg, #5d4019 0%, #2a1b0b 100%);
+  color: #fff5d9;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 240, 198, 0.45);
+}
+
+.rpg-xp-screen__corps {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rpg-xp-screen__ligne-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.rpg-xp-screen__titres {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rpg-xp-screen__surtitre {
+  color: rgba(235, 205, 146, 0.75);
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.rpg-xp-screen__titres h2 {
+  margin: 0;
+  color: #fff4dc;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(20px, 2.3vw, 28px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+
+.rpg-xp-screen__souk-pill {
+  padding: 8px 18px;
+  border: 1.5px solid rgba(246, 204, 122, 0.78);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(64, 48, 28, 0.92), rgba(32, 23, 14, 0.96));
+  color: #fff3d2;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 238, 198, 0.25);
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.rpg-xp-screen__souk-pill:hover,
+.rpg-xp-screen__souk-pill:focus-visible {
+  border-color: #ffe5a3;
+  box-shadow: 0 0 16px rgba(242, 190, 96, 0.35), 0 6px 14px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.rpg-xp-screen__barre {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(6, 10, 20, 0.78);
+  border: 1px solid rgba(226, 194, 132, 0.28);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.rpg-xp-screen__barre-remplie {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4b8fe8 0%, #86c9ff 45%, #f4be5c 100%);
+  box-shadow: 0 0 12px rgba(134, 201, 255, 0.5);
+  transition: width 0.35s ease;
+}
+
+.rpg-xp-screen__compteur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 14px;
+  color: rgba(235, 226, 208, 0.74);
+  font-size: 13px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.rpg-xp-screen__compteur strong {
+  color: #ffe5a3;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.rpg-xp-screen .rpg-piste {
+  margin: 0;
+  max-height: none;
+}
+
+@media (max-width: 640px) {
+  .rpg-xp-screen__maitrise {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .rpg-xp-screen__blason {
+    margin: 0 auto;
+  }
+
+  .rpg-xp-screen__ligne-titre {
+    justify-content: center;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ONGLETS DES MODES — TÉLÉPHONE PORTRAIT : TOUCHES 3D CÔTE À CÔTE EN HAUT
+   ──────────────────────────────────────────────────────────────────────────
+   Sur un téléphone étroit (≤ 700 px ou portrait tactile), une colonne fixe à
+   gauche rognerait les cartes et l'atelier : la barre repasse en haut sur une
+   seule rangée de touches 3D à parts égales, et le bouton « Jouer » y conserve
+   son texte et son dégradé animé bien visibles.
+   ══════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 700px),
+  (hover:none) and (pointer:coarse) and (orientation:portrait),
+  (hover:none) and (pointer:coarse) and (max-device-width:600px) {
+  .rpg-mode-menu__content {
+    --rpg-sidebar-w: 0px;
+    padding-top: 12px;
+    padding-bottom: 22px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__content {
+    padding-top: 0;
+    padding-bottom: 6px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .rpg-mode-menu__content > :not(.rpg-mode-menu__header):not(.rpg-mode-menu__footer) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .rpg-mode-menu__footer {
+    grid-column: 1;
+    grid-row: 3;
+    padding: 10px 14px 0;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__footer {
+    padding: 4px 12px 2px;
+  }
+  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 100px; }
+  .rpg-mode-menu--jouer.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 6px; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__footer { padding-bottom: 0; }
+  .rpg-menu-button--resume.rpg-menu-button--floating {
+    left: 0;
+    max-width: calc(100% - 24px);
+  }
+
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-content: start;
+    padding: 8px 12px 4px;
+    gap: 8px;
+    align-items: stretch;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero {
+    grid-column: 1;
+    grid-row: 1;
+    height: auto;
+    min-height: 108px;
+    max-height: 18vh;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy {
+    padding: 12px 12px 10px;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy h2 {
+    font-size: clamp(16px, 4.6vw, 21px);
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy > p {
+    display: none;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions > .rpg-mode-carte {
+    min-height: 44px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour {
+    grid-column: 1;
+    grid-row: 3;
+    max-height: 30vh;
+    overflow-y: auto;
+  }
+
+  .rpg-mode-menu__header {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    height: auto;
+    max-height: none;
+    min-height: 48px;
+    padding: 0 12px;
+    row-gap: 0;
+    border-right: 0;
+    border-bottom: 1px solid rgba(240, 220, 178, .22);
+    background: linear-gradient(180deg, rgba(24, 25, 26, .97), rgba(12, 13, 14, .94));
+    box-shadow: 0 6px 22px #0008;
+  }
+  .rpg-mode-menu__brand { min-height: 48px; margin-right: auto; }
+  .rpg-mode-menu__fullscreen { order: 2; margin-left: 8px; }
+  .rpg-mode-menu__quitter { order: 2; margin-left: 5px; }
+
+  /* La barre : une rangée unique, les touches 3D côte à côte à parts égales. */
   .rpg-mode-menu__header .rpg-mode-menu__switch {
+    order: 3;
+    flex-direction: row;
     flex-wrap: nowrap;
-    gap: 2px;
+    align-items: center;
+    width: calc(100% + 24px);
+    height: auto;
+    flex: 0 0 calc(100% + 24px);
+    margin: 0 -12px;
+    padding: 5px 6px 7px;
+    gap: 3px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    overflow-x: auto;
+    overflow-y: hidden;
   }
   .rpg-mode-menu__header .rpg-mode-menu__switch button,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre),
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre,
   .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil,
   .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk,
-  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__messagerie {
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__progression,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__messagerie,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+    position: relative;
     flex: 1 1 0;
+    width: auto;
     min-width: 0;
-    min-height: 48px;
+    min-height: 42px;
+    margin-top: 0;
+    margin-bottom: 0;
     padding: 0 2px;
+    justify-content: center;
     gap: 0;
+    border-radius: 10px;
+    text-decoration: none;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    margin: 0 0 3px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre).is-active::after,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre.is-active::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: auto;
+    bottom: -2px;
+    width: auto;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: linear-gradient(90deg, #ffb34a, #f05c1d);
   }
 
-  /* Le texte part : seules les icônes restent. */
-  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-libelle,
+  /* Le texte des entrées à icône part sur mobile ; celui de « Jouer » (sans icône) reste affiché. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre) span.rpg-mode-menu__onglet-libelle,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil span.rpg-mode-menu__onglet-libelle,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre .rpg-mode-menu__apprendre-texte,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre .rpg-mode-menu__apprendre-arrow,
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-solde,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__progression-xp,
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-niveau,
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-xp {
     display: none;
   }
 
-  /* Les icônes, un cran au-dessus. */
-  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__onglet-icone {
-    font-size: 18px;
-    line-height: 1;
-  }
-  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__souk-piece { font-size: 17px; }
-  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__profil-embleme { font-size: 18px; }
-  .rpg-mode-menu__header .rpg-mode-menu__switch button img.rpg-mode-menu__profil-embleme { width: 26px; height: 26px; }
-  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__messagerie-mark { width: 18px; height: 18px; }
-
-  /* Les pastilles d'état se posent en coin d'icône : sans texte autour, à
-     l'inline elles décentreraient l'icône dans son onglet. */
+  /* Les pastilles d'état se posent en coin d'onglet : sans texte autour, à
+     l'inline elles décentreraient la touche 3D dans son onglet. */
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-pastille,
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__progression-pastille,
   .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__messagerie-pastille {
     position: absolute;
-    top: 3px;
-    right: 3px;
+    z-index: 3;
+    top: 1px;
+    right: 2px;
     margin: 0;
   }
 
-  /* Même sans libellés, le groupe Profil / Paramètres / Messagerie se voit :
-     un léger fond et un filet avant lui, sans casser le partage égal. */
+  /* Séparation discrète entre le groupe jeu/progression et le groupe joueur. */
   .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire {
-    background: rgba(255, 255, 255, .035);
+    background: transparent;
   }
   .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
-    box-shadow: inset 1px 0 0 rgba(240, 221, 183, .28);
+    margin-top: 0;
+    box-shadow: inset 1px 0 0 rgba(240, 221, 183, .26);
   }
-}
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire::before {
+    display: none;
+  }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   BARRE DE NAVIGATION — PC : PLUS HAUTE, SUR SA PROPRE RANGÉE
-   ──────────────────────────────────────────────────────────────────────────
-   La barre porte sept onglets : Jouer et les trois écrans de jeu à gauche,
-   puis Profil, Paramètres et Messagerie dans un groupe séparé à droite. La
-   Conquête a quitté la barre et vit comme carte dans Jouer. Sur PC, la barre
-   quitte la ligne de la marque : une première rangée garde le sablier et les
-   commandes, la barre d'onglets prend toute la largeur en dessous. Un peu d'air
-   au-dessus du header (et sur son `top` sticky) évite qu'elle colle au bord de
-   l'écran ; les onglets gagnent en hauteur et en taille de police.
-   ══════════════════════════════════════════════════════════════════════════ */
-@media (min-width: 821px) {
-  .rpg-mode-menu__content { padding-top: 12px; }
-  .rpg-mode-menu__header {
-    top: 12px;
-    flex-wrap: wrap;
-    align-items: center;
-    min-height: 104px;
-    padding-top: 10px;
-    padding-bottom: 0;
-    row-gap: 10px;
+  /* Sur mobile aussi, le bouton « Jouer » affiche son texte sur son dégradé animé. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+    position: relative;
+    bottom: auto;
+    flex: 1.35 1 0;
+    min-height: 38px;
+    margin-bottom: 3px;
+    padding: 0 7px;
+    font-size: 10.5px;
+    letter-spacing: .08em;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 251, 232, .62),
+      0 3px 0 #6e2606,
+      0 5px 12px rgba(232, 118, 28, .38);
   }
-  .rpg-mode-menu__brand { margin-right: auto; }
-  .rpg-mode-menu__accueil { width: 44px; height: 44px; }
-  .rpg-mode-menu__accueil .rpg-mode-icone { width: 27px; height: 27px; }
-  .rpg-mode-menu__brand h1 { font-size: clamp(26px, 2.4vw, 34px); }
-  .rpg-mode-menu__fullscreen,
-  .rpg-mode-menu__quitter { min-width: 44px; min-height: 44px; }
-  .rpg-mode-menu__switch {
-    order: 3;
-    width: 100%;
-    flex: 0 0 100%;
-    min-height: 56px;
-    border-top: 1px solid rgba(255, 255, 255, .08);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .rpg-mode-menu__switch::-webkit-scrollbar { display: none; }
-  .rpg-mode-menu__switch button,
-  .rpg-mode-menu__switch button.rpg-mode-menu__souk {
-    min-height: 56px;
-    padding: 0 clamp(14px, 1.8vw, 28px);
-    font-size: clamp(13px, 1.15vw, 16px);
-  }
-  /* Groupe secondaire : un filet à gauche, de l'air avant lui, une encre plus
-     discrète. `box-shadow` plutôt qu'une bordure : le thème des onglets remet
-     `border: 0` sur l'onglet actif, le filet doit rester visible dans ce cas. */
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
-    margin-left: auto;
-    padding-left: clamp(24px, 3vw, 48px);
-    box-shadow: -1px 0 0 rgba(240, 221, 183, .3);
-  }
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire {
-    color: rgba(219, 211, 196, .62);
-  }
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire span.rpg-mode-menu__onglet-icone {
-    color: #c8ad76;
-  }
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire:hover,
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire:focus-visible,
-  .rpg-mode-menu__switch button.rpg-mode-menu__onglet--secondaire.is-active {
-    color: #fff0d2;
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer span.rpg-mode-menu__onglet-libelle {
+    display: inline;
   }
 }
 

@@ -190,23 +190,8 @@
     radial-gradient(100% 70% at 100% 0%, rgba(168, 117, 237, .12), transparent 60%),
     rgba(15, 12, 15, .84);
 }
-.rpg-souk__direct .rpg-souk__section-tete > div { min-width: 0; }
-.rpg-souk__direct .rpg-souk__section-tete p { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.rpg-souk__direct .rpg-souk__section-tete { align-items: center; }
 .rpg-souk__direct-rafraichir { flex: none; min-height: 44px; }
-.rpg-souk__direct-resume { margin: -2px 0 13px; color: rgba(247, 237, 218, .66); font-size: 12px; line-height: 1.55; }
-.rpg-souk__direct-resume strong { color: #ffe7af; }
-/* Le décompte des cartes déjà au quota : une ligne, pas une alerte — ce n'est
-   pas une punition, c'est l'étal qui dit où il en est. */
-.rpg-souk__direct-complet {
-  margin: -6px 0 13px;
-  padding: 7px 10px;
-  border: 1px solid rgba(160, 214, 140, .26);
-  border-radius: 9px;
-  background: rgba(89, 130, 70, .1);
-  color: #cfe7c2;
-  font: 700 9.5px/1.5 var(--mono, monospace);
-  letter-spacing: .02em;
-}
 .rpg-souk__direct-cartes {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -218,18 +203,78 @@
 .rpg-souk__direct-carte {
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr auto auto;
+  grid-template-rows: auto 1fr auto;
   min-width: 0;
   gap: 8px;
   padding: 8px;
-  border: 1px solid rgba(225, 179, 63, .4);
+  border: 1px solid rgba(186, 170, 142, .32);
   border-radius: 12px;
-  background: linear-gradient(165deg, rgba(42, 32, 20, .88), rgba(14, 12, 15, .96));
+  background: linear-gradient(165deg, rgba(30, 26, 22, .9), rgba(13, 12, 15, .96));
   box-shadow: 0 9px 22px rgba(0, 0, 0, .28);
 }
+@keyframes rpg-souk-mythique-degrade {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.rpg-souk__direct-carte.is-inhabituelle {
+  border-color: rgba(104, 154, 216, .42);
+  background-color: #111d2e;
+  background-image: linear-gradient(
+    130deg,
+    #0d1624 0%,
+    #132338 24%,
+    #1d395c 46%,
+    #244770 54%,
+    #15263d 76%,
+    #0e1828 100%
+  );
+  background-size: 260% 260%;
+  animation: rpg-souk-mythique-degrade 5.2s ease-in-out infinite;
+  box-shadow:
+    inset 0 1px 0 rgba(164, 206, 255, .1),
+    0 9px 22px rgba(5, 11, 22, .46);
+}
+.rpg-souk__direct-carte.is-rare {
+  border-color: rgba(208, 170, 88, .44);
+  background-color: #21190c;
+  background-image: linear-gradient(
+    130deg,
+    #18130a 0%,
+    #291f0e 24%,
+    #4a3614 46%,
+    #5c4319 54%,
+    #2d2210 76%,
+    #1a140b 100%
+  );
+  background-size: 260% 260%;
+  animation: rpg-souk-mythique-degrade 5.2s ease-in-out infinite;
+  box-shadow:
+    inset 0 1px 0 rgba(245, 216, 148, .12),
+    0 9px 22px rgba(18, 12, 4, .46);
+}
 .rpg-souk__direct-carte.is-mythique {
-  border-color: rgba(168, 117, 237, .54);
-  background: linear-gradient(165deg, rgba(48, 30, 63, .72), rgba(14, 12, 18, .96));
+  border-color: rgba(146, 102, 198, .44);
+  background-color: #1b1129;
+  background-image: linear-gradient(
+    130deg,
+    #140d1f 0%,
+    #211433 24%,
+    #351d52 46%,
+    #432466 54%,
+    #241638 76%,
+    #160e22 100%
+  );
+  background-size: 260% 260%;
+  animation: rpg-souk-mythique-degrade 5.2s ease-in-out infinite;
+  box-shadow:
+    inset 0 1px 0 rgba(196, 158, 240, .1),
+    0 9px 22px rgba(12, 6, 22, .46);
+}
+.rpg-souk__direct-carte.is-inhabituelle:hover,
+.rpg-souk__direct-carte.is-rare:hover,
+.rpg-souk__direct-carte.is-mythique:hover {
+  animation-duration: 3s;
 }
 .rpg-souk__direct-carte.is-achetee { border-color: rgba(160, 214, 140, .55); }
 /* « complet » = le quota du deck est atteint : rien de plus à acheter. C'est le
@@ -240,11 +285,13 @@
   position: relative;
   aspect-ratio: 4 / 5;
   overflow: hidden;
-  border: 2px solid rgba(240, 209, 148, .34);
+  border: 2px solid rgba(206, 192, 168, .3);
   border-radius: 8px;
   background: #121014;
 }
-.is-mythique .rpg-souk__direct-art { border-color: rgba(190, 150, 244, .52); }
+.is-inhabituelle .rpg-souk__direct-art { border-color: rgba(110, 160, 222, .38); }
+.is-rare .rpg-souk__direct-art { border-color: rgba(214, 178, 96, .4); }
+.is-mythique .rpg-souk__direct-art { border-color: rgba(154, 110, 206, .38); }
 .rpg-souk__direct-art > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .rpg-souk__direct-rarete {
   position: absolute;
@@ -252,32 +299,44 @@
   left: 6px;
   padding: 3px 6px;
   border-radius: 999px;
-  background: rgba(39, 28, 13, .88);
-  color: #ffe7af;
+  background: rgba(20, 28, 40, .86);
+  color: #bcd3f0;
   font: 900 7px/1.2 var(--mono, monospace);
   letter-spacing: .1em;
   text-transform: uppercase;
   text-shadow: 0 1px 2px #000;
 }
-.is-mythique .rpg-souk__direct-rarete { background: rgba(61, 35, 83, .9); color: #ead8ff; }
+.is-inhabituelle .rpg-souk__direct-rarete { background: rgba(14, 26, 44, .88); color: #bed6f2; }
+.is-rare .rpg-souk__direct-rarete { background: rgba(42, 30, 10, .88); color: #efd596; }
+.is-mythique .rpg-souk__direct-rarete { background: rgba(30, 17, 46, .88); color: #d8c2f0; }
 .rpg-souk__direct-copies { position: absolute; top: 5px; right: 5px; min-width: 30px; min-height: 23px; padding: 3px 6px; font-size: 11px; }
-.rpg-souk__direct-corps { min-width: 0; }
-.rpg-souk__direct-corps h4 { margin: 0 0 4px; color: #fff0d4; font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
-.rpg-souk__direct-corps p { margin: 0; color: rgba(247, 237, 218, .52); font-size: 9px; line-height: 1.35; }
-/* Le stock se lit sous le nom : « il manque le 2ᵉ exemplaire » ou « quota
-   atteint ». Trois couleurs, trois réponses — le joueur n'a jamais à deviner
-   pourquoi un bouton est grisé. Sélecteurs à deux classes : ils passent devant
-   `.rpg-souk__direct-corps p` sans avoir besoin d'un `!important`. */
-.rpg-souk__direct-corps .rpg-souk__direct-stock {
-  margin-top: 3px;
-  color: rgba(247, 237, 218, .46);
-  font: 700 8.5px/1.4 var(--mono, monospace);
-  letter-spacing: .02em;
+.rpg-souk__direct-corps {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 2px 0;
 }
-.rpg-souk__direct-carte.is-disponible .rpg-souk__direct-stock { color: #ffd98a; }
-.rpg-souk__direct-carte.is-sans-solde .rpg-souk__direct-stock { color: #f0b9a4; }
-.rpg-souk__direct-carte.is-achetee .rpg-souk__direct-stock,
-.rpg-souk__direct-carte.is-complet .rpg-souk__direct-stock { color: #c8e9b6; }
+.rpg-souk__direct-corps h4 {
+  margin: 0;
+  color: #eadcc4;
+  font-size: 12.5px;
+  line-height: 1.22;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.rpg-souk__direct-carte.is-inhabituelle .rpg-souk__direct-corps h4 {
+  color: #e2ecf8;
+  text-shadow: 0 1px 3px rgba(6, 12, 22, .75);
+}
+.rpg-souk__direct-carte.is-rare .rpg-souk__direct-corps h4 {
+  color: #f0e5cc;
+  text-shadow: 0 1px 3px rgba(16, 10, 4, .75);
+}
+.rpg-souk__direct-carte.is-mythique .rpg-souk__direct-corps h4 {
+  color: #ebe2f5;
+  text-shadow: 0 1px 3px rgba(10, 5, 18, .75);
+}
 .rpg-souk__direct-acheter {
   display: inline-flex;
   align-items: center;
@@ -290,16 +349,29 @@
   text-align: center;
 }
 .rpg-souk__direct-carte.is-disponible .rpg-souk__direct-acheter {
-  border-color: rgba(232, 194, 113, .55);
-  background: linear-gradient(180deg, rgba(105, 70, 26, .72), rgba(35, 24, 15, .92));
-  color: #ffe7af;
+  border-color: rgba(186, 170, 142, .36);
+  background: linear-gradient(180deg, rgba(54, 46, 36, .78), rgba(22, 19, 17, .92));
+  color: #eadcc4;
+}
+.rpg-souk__direct-carte.is-inhabituelle.is-disponible .rpg-souk__direct-acheter {
+  border-color: rgba(108, 158, 220, .44);
+  background: linear-gradient(180deg, rgba(24, 48, 82, .82), rgba(11, 20, 34, .94));
+  color: #d4e5f7;
+}
+.rpg-souk__direct-carte.is-rare.is-disponible .rpg-souk__direct-acheter {
+  border-color: rgba(208, 172, 92, .46);
+  background: linear-gradient(180deg, rgba(82, 58, 20, .82), rgba(28, 20, 8, .94));
+  color: #f0dfB4;
+}
+.rpg-souk__direct-carte.is-mythique.is-disponible .rpg-souk__direct-acheter {
+  border-color: rgba(150, 106, 202, .44);
+  background: linear-gradient(180deg, rgba(48, 26, 74, .82), rgba(18, 10, 28, .94));
+  color: #e2d4f2;
 }
 .rpg-souk__direct-carte.is-achetee .rpg-souk__direct-acheter { color: #c8e9b6; }
-.rpg-souk__direct-refus { margin: -3px 0 0; color: #f0b9a4; font: 700 8px/1.4 var(--mono, monospace); text-align: center; }
 .rpg-souk__direct-message { margin: 12px 0 0; padding: 9px 11px; border-radius: 9px; font-size: 11px; line-height: 1.45; }
 .rpg-souk__direct-message.is-ok { border: 1px solid rgba(160, 214, 140, .32); background: rgba(89, 130, 70, .12); color: #d6edc8; }
 .rpg-souk__direct-message.is-erreur { border: 1px solid rgba(240, 185, 164, .3); background: rgba(130, 62, 45, .12); color: #f0b9a4; }
-.rpg-souk__direct-pied { display: flex; justify-content: space-between; gap: 6px 14px; flex-wrap: wrap; margin-top: 12px; color: rgba(247, 237, 218, .43); font: 700 8.5px/1.45 var(--mono, monospace); letter-spacing: .03em; }
 @media (max-width: 980px), (orientation: portrait) {
   .rpg-souk__direct-cartes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -514,51 +586,78 @@
 }
 .rpg-souk__rayon--souk { --foil-1: #8a5a1e; --foil-2: #2b1f10; --foil-ink: #ffe7af; --foil-shine: rgba(255, 226, 160, .55); }
 
-.rpg-souk__paquet {
-  --pw: clamp(104px, 8.4vw, 148px);       /* largeur du sachet */
-  --ph: calc(var(--pw) * 1.42);           /* hauteur */
-  --pd: calc(var(--pw) * .12);            /* épaisseur */
-  position: relative;
-  display: block;
+.rpg-souk__paquet-vitrine {
   width: 100%;
-  /* Le bas respire plus : le paquet flotte, l'étiquette de prix se loge dessous. */
-  padding: 6px 0 42px;
+  display: flex;
+  justify-content: center;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.rpg-souk__paquet-vitrine.is-sans-solde { cursor: grab; }
+.rpg-souk__paquet-vitrine.is-saisi,
+.rpg-souk__paquet-vitrine.is-saisi .rpg-souk__paquet { cursor: grabbing; }
+
+.rpg-souk__paquet {
+  --pw: clamp(180px, 16.5vw, 240px);      /* largeur du sachet */
+  --ph: calc(var(--pw) * 1.42);           /* hauteur */
+  --pd: calc(var(--pw) * .009);           /* tranche ultra-fine (~2px) d'une feuille métallisée scellée */
+  --paquet-pad-top: 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  row-gap: 32px;
+  row-gap: clamp(28px, 2.8vw, 38px);
+  width: 100%;
+  /* Le sachet flotte au-dessus du bouton d'achat avec un franc espace libre. */
+  padding: var(--paquet-pad-top) 0 6px;
   border: 0;
   background: none;
-  cursor: pointer;
+  cursor: grab;
   perspective: calc(var(--pw) * 6.5);
-  perspective-origin: 50% 40%;
+  perspective-origin: 50% 38%;
 }
-.rpg-souk__paquet:disabled { cursor: not-allowed; }
+/* Quand le bouton est désactivé (solde < 140), les événements pointeur passent
+   sur `.rpg-souk__paquet-vitrine` : le booster reste 100 % manipulable en 3D. */
+.rpg-souk__paquet:disabled {
+  pointer-events: none;
+  cursor: grab;
+}
+.rpg-souk__paquet:not(:disabled) .rpg-souk__paquet-prix { cursor: pointer; }
 .rpg-souk__paquet:focus-visible { outline: none; }
 .rpg-souk__paquet:focus-visible .rpg-souk__paquet-scene { outline: 2px solid rgba(231, 191, 101, .8); outline-offset: 4px; border-radius: 6px; }
 
-/* Ombre portée : le paquet est posé, pas collé au fond. */
+/* Ombre portée : fine ligne d'ombre sous un sachet métallisé ultra-plat. */
 .rpg-souk__paquet-ombre {
   position: absolute;
   left: 50%;
-  /* Juste sous le sachet, au-dessus de l'étiquette : le paquet ne touche
-     jamais l'étagère. */
-  bottom: calc(42px + var(--pw) * .04);
-  width: calc(var(--pw) * 1.05);
-  height: calc(var(--pw) * .22);
+  /* Juste sous le sachet, au-dessus de l'espace qui le sépare du bouton Acheter. */
+  top: calc(var(--paquet-pad-top) + var(--ph) - var(--pw) * .022);
+  width: calc(var(--pw) * .9);
+  height: calc(var(--pw) * .075);
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, .62), rgba(0, 0, 0, 0) 70%);
-  filter: blur(3px);
-  transition: opacity .3s ease, width .3s ease;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, .6), rgba(0, 0, 0, 0) 70%);
+  filter: blur(3.5px);
+  pointer-events: none;
+  transition: opacity .3s ease, width .3s ease, transform .18s ease;
 }
 
 /* La scène : le balancement continu, décalé d'un paquet à l'autre. */
 .rpg-souk__paquet-scene {
   position: relative;
   display: block;
+  flex: none;
   width: var(--pw);
   height: var(--ph);
   margin: 0 auto;
   transform-style: preserve-3d;
   animation: rpg-souk-paquet-sway 7.5s ease-in-out infinite alternate;
   animation-delay: calc(var(--i, 0) * -1.9s);
+}
+.rpg-souk__paquet.is-saisi .rpg-souk__paquet-scene {
+  animation-play-state: paused;
 }
 @keyframes rpg-souk-paquet-sway {
   from { transform: rotateY(-7deg) translateY(0); }
@@ -569,46 +668,38 @@
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  /* Posé de trois quarts : on voit la face et la tranche droite. */
+  /* Posé de trois quarts : on voit la face et le filet métallique ultra-fin. */
   transform: rotateX(-7deg) rotateY(24deg);
-  transition: transform .5s cubic-bezier(.2, .8, .2, 1);
+  transition: transform .58s cubic-bezier(.18, .88, .28, 1.06);
 }
+.rpg-souk__paquet-vitrine:hover .rpg-souk__paquet-corps,
 .rpg-souk__paquet:hover .rpg-souk__paquet-corps,
 .rpg-souk__paquet:focus-visible .rpg-souk__paquet-corps { transform: rotateX(-4deg) rotateY(11deg) translateY(calc(var(--pw) * -.05)) scale(1.03); }
+.rpg-souk__paquet-vitrine:hover .rpg-souk__paquet-ombre,
 .rpg-souk__paquet:hover .rpg-souk__paquet-ombre,
-.rpg-souk__paquet:focus-visible .rpg-souk__paquet-ombre { width: calc(var(--pw) * .92); opacity: .78; }
+.rpg-souk__paquet:focus-visible .rpg-souk__paquet-ombre { width: calc(var(--pw) * .84); opacity: .76; }
 
-/* Le paquet suit le pointeur : tant que la souris bouge dessus, son tilt
-   remplace la pose fixe du survol — `--tilt-x/-y` viennent de la souris,
-   posés en JS image par image (`requestAnimationFrame`), et la transition
-   courte garde le geste nerveux sans saccade. La souris relâchée (`is-pointe`
-   retiré), le paquet revient à sa pose fixe par la transition plus lente du
-   survol normal. */
-.rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps {
-  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(calc(var(--pw) * -.06)) scale(1.05);
-  transition: transform .09s linear;
-}
-.rpg-souk__paquet.is-pointe .rpg-souk__paquet-ombre {
-  width: calc(var(--pw) * .9);
-  opacity: .82;
-  transform: translateX(calc(-50% + (var(--tilt-y, 0deg) / 1deg) * -.6px));
-}
-/* Un reflet de verre qui glisse exactement sous le pointeur — la carte
-   « sent » la souris, elle ne se contente pas de pencher. */
+/* Un reflet holographique et doré qui glisse exactement sous le pointeur,
+   posé AU-DESSUS de l'illustration de Salem (`z-index: 3`). */
 .rpg-souk__paquet-face--avant::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(220px circle at var(--glare-x, 50%) var(--glare-y, 30%), rgba(255, 255, 255, .65), transparent 62%);
+  z-index: 3;
+  background:
+    radial-gradient(calc(var(--pw) * 1.15) circle at var(--glare-x, 50%) var(--glare-y, 30%), rgba(255, 248, 222, .62) 0%, rgba(255, 204, 114, .22) 36%, transparent 68%),
+    linear-gradient(calc(115deg + var(--foil-angle, 0deg)), transparent 24%, rgba(255, 220, 140, .24) 44%, rgba(164, 228, 255, .18) 50%, rgba(244, 182, 255, .16) 56%, transparent 76%);
   opacity: 0;
-  transition: opacity .25s ease;
-  mix-blend-mode: soft-light;
+  transition: opacity .22s ease;
+  mix-blend-mode: screen;
   pointer-events: none;
 }
-.rpg-souk__paquet.is-pointe .rpg-souk__paquet-face--avant::before { opacity: 1; }
+.rpg-souk__paquet.is-pointe .rpg-souk__paquet-face--avant::before,
+.rpg-souk__paquet.is-saisi .rpg-souk__paquet-face--avant::before { opacity: 1; }
 
-/* Les faces : le sachet est un pavé mince, ses chants sont la tranche. */
-.rpg-souk__paquet-face {
+/* Les faces : le sachet est une feuille métallique ultra-fine scellée sur ses six côtés. */
+.rpg-souk__paquet-face,
+.rpg-souk__paquet-chant {
   position: absolute;
   box-sizing: border-box;
   overflow: hidden;
@@ -616,40 +707,93 @@
   -webkit-backface-visibility: hidden;
   background: linear-gradient(165deg, var(--foil-1), var(--foil-2) 78%);
 }
-.rpg-souk__paquet-face--avant { inset: 0; transform: translateZ(calc(var(--pd) / 2)); border-radius: calc(var(--pw) * .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); }
-.rpg-souk__paquet-face--dos { inset: 0; transform: rotateY(180deg) translateZ(calc(var(--pd) / 2)); border-radius: calc(var(--pw) * .06); filter: brightness(.6); }
-.rpg-souk__paquet-face--tranche { top: 0; left: calc((var(--pw) - var(--pd)) / 2); width: var(--pd); height: 100%; transform: rotateY(90deg) translateZ(calc(var(--pw) / 2)); filter: brightness(.72); }
+.rpg-souk__paquet-face--avant {
+  inset: 0;
+  transform: translateZ(calc(var(--pd) / 2));
+  border-radius: calc(var(--pw) * .014);
+  box-shadow: inset 0 0 0 1px rgba(246, 214, 144, .45), inset 0 0 14px rgba(0, 0, 0, .38);
+}
+.rpg-souk__paquet-face--dos {
+  inset: 0;
+  transform: rotateY(180deg) translateZ(calc(var(--pd) / 2));
+  border-radius: calc(var(--pw) * .014);
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .38) 0 2px, rgba(255, 232, 174, .1) 2px 4px) 0 0 / 100% 6.5% no-repeat,
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .38) 0 2px, rgba(255, 232, 174, .1) 2px 4px) 0 100% / 100% 6.5% no-repeat,
+    radial-gradient(circle at 50% 44%, rgba(240, 192, 96, .24), transparent 58%),
+    linear-gradient(165deg, #4b3316 0%, #1d140a 56%, #110c07 100%);
+  box-shadow: inset 0 0 0 1px rgba(240, 202, 122, .4);
+}
+.rpg-souk__paquet-dos-sceau {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 18px 16px;
+  border: 1px solid rgba(244, 206, 126, .34);
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(28, 19, 10, .82), rgba(14, 10, 6, .92));
+  color: #f4d488;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 240, 196, .22);
+}
+.rpg-souk__paquet-dos-sceau b { font-size: calc(var(--pw) * .22); line-height: 1; font-weight: 400; }
+.rpg-souk__paquet-dos-sceau small { font: 800 9.5px/1 var(--mono, monospace); letter-spacing: .2em; text-transform: uppercase; color: rgba(248, 224, 168, .82); }
+.rpg-souk__paquet-face--tranche {
+  top: calc(var(--pw) * .012);
+  left: calc((var(--pw) - var(--pd)) / 2);
+  width: var(--pd);
+  height: calc(100% - var(--pw) * .024);
+  transform: rotateY(90deg) translateZ(calc(var(--pw) / 2));
+  background: linear-gradient(180deg, #ecd08b 0%, #b88438 35%, #5e3c13 72%, #d8ae58 100%);
+}
+.rpg-souk__paquet-chant {
+  top: calc(var(--pw) * .012);
+  left: calc((var(--pw) - var(--pd)) / 2);
+  width: var(--pd);
+  height: calc(100% - var(--pw) * .024);
+  transform: rotateY(-90deg) translateZ(calc(var(--pw) / 2));
+  background: linear-gradient(180deg, #dfc078 0%, #a6742e 38%, #4d300f 74%, #c69a45 100%);
+}
 .rpg-souk__paquet-face--dessus,
-.rpg-souk__paquet-face--dessous { left: 0; top: calc((var(--ph) - var(--pd)) / 2); width: 100%; height: var(--pd); }
+.rpg-souk__paquet-face--dessous {
+  left: calc(var(--pw) * .012);
+  top: calc((var(--ph) - var(--pd)) / 2);
+  width: calc(100% - var(--pw) * .024);
+  height: var(--pd);
+}
 .rpg-souk__paquet-face--dessus { transform: rotateX(90deg) translateZ(calc(var(--ph) / 2)); filter: brightness(1.14); }
 .rpg-souk__paquet-face--dessous { transform: rotateX(-90deg) translateZ(calc(var(--ph) / 2)); filter: brightness(.5); }
 
 /* Les sertissages : les deux bords écrasés d'un sachet scellé. */
 .rpg-souk__paquet-sertissage {
   position: absolute;
-  left: 3%;
-  right: 3%;
-  height: calc(var(--ph) * .07);
-  border-radius: 2px;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  height: calc(var(--ph) * .062);
   background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, .42) 0 2px, rgba(255, 255, 255, .1) 2px 4px),
-    linear-gradient(180deg, var(--foil-1), var(--foil-2));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .16);
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .44) 0 2px, rgba(255, 240, 198, .16) 2px 4px),
+    linear-gradient(180deg, #9b6a28, #3d2810);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 210, .28), 0 2px 6px rgba(0, 0, 0, .45);
 }
-.rpg-souk__paquet-sertissage:first-child { top: 3.5%; }
-.rpg-souk__paquet-sertissage:last-child { bottom: 3.5%; }
+.rpg-souk__paquet-sertissage--haut,
+.rpg-souk__paquet-sertissage:first-child { top: 0; border-bottom: 1px solid rgba(255, 224, 150, .34); }
+.rpg-souk__paquet-sertissage--bas,
+.rpg-souk__paquet-sertissage:last-child { bottom: 0; border-top: 1px solid rgba(255, 224, 150, .28); }
 
 /* Le reflet : une bande de métal qui traverse la face, lentement. */
 .rpg-souk__paquet-face--avant::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(112deg, transparent 32%, var(--foil-shine) 46%, rgba(255, 255, 255, .9) 50%, var(--foil-shine) 54%, transparent 68%);
+  z-index: 3;
+  background: linear-gradient(112deg, transparent 34%, var(--foil-shine) 47%, rgba(255, 255, 255, .82) 50%, var(--foil-shine) 53%, transparent 66%);
   background-size: 280% 280%;
   background-position: 130% 0;
   animation: rpg-souk-paquet-reflet 6.5s ease-in-out infinite;
   animation-delay: calc(var(--i, 0) * -1.3s);
-  opacity: .75;
+  opacity: .58;
   mix-blend-mode: screen;
   pointer-events: none;
 }
@@ -674,7 +818,7 @@
   left: 6%;
   right: 6%;
   color: var(--foil-ink);
-  font: 800 clamp(11px, 1.5vw, 15px)/1.15 var(--mono, monospace);
+  font: 800 clamp(14px, 1.65vw, 20px)/1.15 var(--mono, monospace);
   letter-spacing: .1em;
   text-align: center;
   text-transform: uppercase;
@@ -682,21 +826,21 @@
 }
 .rpg-souk__paquet-meta {
   position: absolute;
-  bottom: 16%;
+  bottom: 14%;
   left: 6%;
   right: 6%;
   display: grid;
-  gap: 2px;
+  gap: 4px;
   justify-items: center;
   color: rgba(255, 255, 255, .72);
-  font: 700 8px/1.4 var(--mono, monospace);
+  font: 700 clamp(9.5px, .95vw, 11.5px)/1.35 var(--mono, monospace);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
 .rpg-souk__paquet-meta em {
-  padding: 1px 5px;
+  padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, .34);
+  background: rgba(0, 0, 0, .38);
   color: #fff6e0;
   font-style: normal;
 }
@@ -705,15 +849,12 @@
    son reflet la traverse tant que l'achat est possible. Le paquet étant le
    bouton, c'est elle qui donne l'envie de cliquer. */
 .rpg-souk__paquet-prix {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
+  position: relative;
   display: inline-flex;
   align-items: baseline;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 18px 9px;
+  gap: 6px;
+  padding: 10px 22px 11px;
   border: 1px solid rgba(255, 226, 158, .78);
   border-radius: 999px;
   background:
@@ -775,14 +916,14 @@
   content: '';
   position: absolute;
   left: 50%;
-  top: 50%;
-  width: calc(var(--pw) * 1.7);
-  height: calc(var(--ph) * 1.2);
-  transform: translate(-50%, -52%);
+  top: calc(var(--paquet-pad-top) + var(--ph) * .5);
+  width: calc(var(--pw) * 1.65);
+  height: calc(var(--ph) * 1.15);
+  transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 203, 104, .2), transparent 68%);
-  filter: blur(7px);
-  opacity: .5;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(255, 203, 104, .22), transparent 68%);
+  filter: blur(8px);
+  opacity: .55;
   pointer-events: none;
   transition: opacity .3s ease, transform .3s ease;
 }
@@ -795,60 +936,91 @@
 }
 .rpg-souk__paquet:not(:disabled):hover .rpg-souk__paquet-prix,
 .rpg-souk__paquet:not(:disabled):focus-visible .rpg-souk__paquet-prix {
-  transform: translateX(-50%) translateY(-2px) scale(1.04);
+  transform: translateY(-2px) scale(1.04);
   filter: brightness(1.12);
 }
 .rpg-souk__paquet:not(:disabled):hover::before,
-.rpg-souk__paquet:not(:disabled):focus-visible::before { opacity: 1; transform: translate(-50%, -55%) scale(1.1); }
+.rpg-souk__paquet:not(:disabled):focus-visible::before { opacity: 1; transform: translate(-50%, -53%) scale(1.08); }
 /* Refusé (rayon fermé ou bourse trop légère) : l'étiquette s'éteint, elle ne
    clignote plus, mais elle reste lisible — c'est un objectif, pas un mur. */
 .rpg-souk__paquet:disabled .rpg-souk__paquet-prix { filter: grayscale(.35) brightness(.9); }
 .rpg-souk__paquet:disabled .rpg-souk__paquet-prix::after { animation: none; }
 
-/* Quand le paquet porte l'illustration d'une carte mythique, celle-ci recouvre
-   la face avant : le sachet devient la vitrine de son prix. Le rune cède la
-   place à l'image ; le nom et la récompense restent lisibles sur un voile. */
+/* Quand le paquet porte l'illustration de Salem, on cadre serré sur le buste,
+   le regard et l'orbe du héros pour qu'il occupe généreusement tout le sachet,
+   avec une légère parallaxe sous le pointeur. */
 .rpg-souk__paquet-carte {
   position: absolute;
   inset: 0;
+  z-index: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: calc(var(--pw) * .06);
+  object-position: 50% 50%;
+  border-radius: calc(var(--pw) * .014);
+  transform-origin: 51% 20%;
+  transform: translate3d(var(--art-x, 0px), var(--art-y, 0px), 0) scale(1.58);
+  transition: transform .14s ease-out;
+  pointer-events: none;
 }
 .rpg-souk__paquet-voile {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, .12) 0%, rgba(0, 0, 0, 0) 38%, rgba(0, 0, 0, .62) 100%);
+  z-index: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 7, 4, .22) 0%,
+    rgba(10, 7, 4, 0) 18%,
+    rgba(10, 7, 4, .05) 58%,
+    rgba(8, 6, 4, .8) 100%
+  );
+  pointer-events: none;
 }
 .rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-rune { display: none; }
 .rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-nom {
-  color: #fff;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, .9);
+  z-index: 2;
+  top: auto;
+  bottom: 23%;
+  color: #fff6dc;
+  letter-spacing: .16em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .95), 0 1px 2px #000;
 }
 .rpg-souk__paquet-face--avant.has-carte .rpg-souk__paquet-meta {
-  color: rgba(255, 255, 255, .92);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, .85);
-}
-.rpg-souk__paquet-mythique-tag {
-  position: absolute;
-  top: 6%;
-  left: 6%;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #b07be0, #7b3fb0);
-  color: #fff;
-  font: 800 7px/1 var(--mono, monospace);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  z-index: 2;
+  bottom: 8.5%;
+  color: rgba(255, 250, 236, .95);
+  text-shadow: 0 1px 5px rgba(0, 0, 0, .92);
 }
 .rpg-souk__paquet.is-ferme { filter: grayscale(.55) brightness(.72); }
-/* Sans solde, le rayon reste attirant — c'est un objectif, pas une porte
-   fermée — mais le paquet s'éteint doucement. */
-.rpg-souk__paquet:disabled:not(.is-ferme) { filter: saturate(.8) brightness(.9); }
-.rpg-souk__paquet:disabled .rpg-souk__paquet-scene { animation: none; }
-.rpg-souk__paquet:disabled .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg) scale(.94); }
+/* Même sans solde, le booster de Salem garde tout son éclat et son balancement
+   naturel : seule l'étiquette « Acheter · 140 » en dessous est assombrie. */
+.rpg-souk__paquet:disabled .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg); }
+
+/* Le paquet interactif : au survol (`is-pointe`), en rotation libre 360° au
+   glissé (`is-saisi`) ou en pirouette (`is-pirouette`), il répond en 3D même
+   quand le bouton d'achat est désactivé faute de crédits. */
+.rpg-souk__rayon .rpg-souk__paquet.is-pirouette .rpg-souk__paquet-corps {
+  transform: rotateX(var(--tilt-x, -7deg)) rotateY(var(--tilt-y, 24deg));
+  transition: transform .68s cubic-bezier(.18, .88, .28, 1.06);
+}
+.rpg-souk__rayon .rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(calc(var(--pw) * -.06)) scale(1.05);
+  transition: transform .09s linear;
+}
+.rpg-souk__rayon .rpg-souk__paquet.is-saisi .rpg-souk__paquet-corps {
+  transform: rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translateY(calc(var(--pw) * -.07)) scale(1.07);
+  transition: none;
+}
+.rpg-souk__rayon .rpg-souk__paquet.is-pointe .rpg-souk__paquet-ombre,
+.rpg-souk__rayon .rpg-souk__paquet.is-saisi .rpg-souk__paquet-ombre {
+  width: calc(var(--pw) * .9);
+  opacity: .84;
+  transform: translateX(calc(-50% + (var(--tilt-y, 0deg) / 1deg) * -.45px));
+}
+.rpg-souk__paquet-vitrine:hover .rpg-souk__paquet::before {
+  opacity: 1;
+  transform: translate(-50%, -53%) scale(1.08);
+}
 
 /* La pièce du crédit, dans les montants de l'écran : un cran plus grosse que le
    texte qui l'entoure — 11 px dans une ligne de quête, 10 px dans une ligne de
@@ -872,16 +1044,16 @@
 /* Un seul paquet : il se pose au centre de l'étagère, assez large pour que le
    sachet et son étiquette respirent — et il rétrécit avec l'écran. */
 .rpg-souk__rayons[data-souk-rayons-nombre="1"] {
-  grid-template-columns: minmax(0, 420px);
+  grid-template-columns: minmax(0, 480px);
   justify-content: center;
 }
 .rpg-souk__rayon {
   position: relative;
   display: grid;
-  gap: 9px;
+  gap: 14px;
   align-content: start;
   justify-items: stretch;
-  padding: clamp(12px, 1.3vw, 16px);
+  padding: clamp(16px, 1.8vw, 24px);
   border: 1px solid rgba(235, 215, 176, .18);
   border-radius: 16px;
   background:
@@ -934,7 +1106,7 @@
 .rpg-souk__rayon-taux { margin: 0; color: #e8c77f; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .08em; text-transform: uppercase; }
 .rpg-souk__rayon-reste { margin: 0; color: rgba(247, 237, 218, .52); font: 700 10px/1.5 var(--mono, monospace); }
 .rpg-souk__rayon footer { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 2px; }
-.rpg-souk__rayon-refus { flex: 1 1 100%; margin: 0; color: #f0b9a4; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .04em; }
+.rpg-souk__rayon-refus { flex: 1 1 100%; margin: 0; color: #f0b9a4; font: 700 9.5px/1.5 var(--mono, monospace); letter-spacing: .04em; text-align: center; }
 .rpg-souk__rayon footer .rpg-menu-button { flex: 1 1 auto; min-height: 44px; }
 /* Le coffret n'est pas l'appel principal (le paquet l'est), mais il se voit :
    c'est la seule offre qui promet une mythique. */
@@ -1204,9 +1376,9 @@
 
 /* Le mouvement ne sert à rien : la barre se pose d'un coup. */
 @media (max-width: 420px) {
-  /* Le paquet garde sa taille : c'est l'étiquette, dessous, qui attire l'œil. */
-  .rpg-souk__paquet { --pw: clamp(92px, 27vw, 118px); }
-  .rpg-souk__paquet-prix { padding: 7px 13px 8px; }
+  /* Le paquet garde sa prestance, séparé de l'étiquette d'achat dessous. */
+  .rpg-souk__paquet { --pw: clamp(144px, 44vw, 176px); row-gap: 24px; }
+  .rpg-souk__paquet-prix { padding: 8px 16px 9px; }
   .rpg-souk__jours { gap: 4px; }
   /* Sept cartes dans 320 px : la médaille rétrécit plutôt que de déborder. */
   .rpg-souk__jour-medaille { width: 30px; height: 30px; }
@@ -1338,9 +1510,14 @@
   .rpg-souk__paquet-ombre { transition: none; }
   /* Le paquet ne suit plus le pointeur : la souris reste sans effet, le
      script ne pose même plus les variables de tilt (voir RpgSouk.jsx). */
-  .rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg); }
+  .rpg-souk__rayon .rpg-souk__paquet.is-pointe .rpg-souk__paquet-corps,
+  .rpg-souk__rayon .rpg-souk__paquet.is-saisi .rpg-souk__paquet-corps,
+  .rpg-souk__rayon .rpg-souk__paquet.is-pirouette .rpg-souk__paquet-corps { transform: rotateX(-7deg) rotateY(24deg); }
   .rpg-souk__paquet-face--avant::before { display: none; }
   /* L'appel du comptoir et les cachets du calendrier se posent sans bouger. */
+  .rpg-souk__direct-carte.is-inhabituelle,
+  .rpg-souk__direct-carte.is-rare,
+  .rpg-souk__direct-carte.is-mythique,
   .rpg-souk__paquet-prix,
   .rpg-souk__paquet-prix::after,
   .rpg-souk__jour.is-aujourdhui,
@@ -1463,7 +1640,15 @@
   background: linear-gradient(110deg, transparent 22%, #ffe9b233 45%, transparent 65%);
   border: 7px double #e3bd7566;
 }
-.rpg-souk__sachet-corps img { width: 100%; height: 100%; object-fit: cover; opacity: .65; }
+.rpg-souk__sachet-corps img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  transform-origin: 51% 20%;
+  transform: scale(1.55);
+  opacity: .72;
+}
 .rpg-souk__sachet-marque, .rpg-souk__sachet-legende, .rpg-souk__sachet-rune {
   position: absolute; left: 0; right: 0; text-align: center; color: #ffe7af; text-shadow: 0 2px 5px #000;
 }

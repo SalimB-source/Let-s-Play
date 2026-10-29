@@ -69,6 +69,22 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     await cliquer(ongletCatalogue(), 'l’onglet Catalogue est dans le menu');
     await attendre(() => carteCatalogue('susanoo'), 'la grille du catalogue est affichée', 8000);
 
+    // ── 0 · Grille épurée : nom, type, couleur et ATQ/DÉF sans description ─
+    const mousse = container.querySelector('.rpg-card-catalogue__card[data-card-id="mousse-des-galiotes"]');
+    assert.ok(mousse, 'Mousse des galiotes figure dans la grille du catalogue');
+    assert.equal(mousse.querySelector('.rpg-card-catalogue__title h3')?.textContent.trim(), 'Mousse des galiotes',
+      'la vignette garde le nom de la carte');
+    assert.match(mousse.querySelector('.rpg-card-catalogue__type')?.textContent ?? '', /Humain · Mousse/,
+      'la vignette garde la ligne de type');
+    assert.match(mousse.querySelector('.rpg-card-catalogue__meta')?.textContent ?? '', /Sable · Désert[\s\S]*⚔\s*1\s*·\s*🛡\s*2/,
+      'la vignette garde la couleur et l’ATQ/DÉF');
+    assert.equal(container.querySelector('.rpg-card-catalogue__rules'), null,
+      'aucune description de règle n’est imprimée dans la grille du catalogue');
+    assert.equal(container.querySelector('.rpg-card-catalogue__pastilles'), null,
+      'aucune pastille de description n’est imprimée dans la grille du catalogue');
+    assert.ok(!mousse.textContent.includes('Aucune capacité'),
+      'Mousse des galiotes n’affiche plus « Aucune capacité. »');
+
     // ── 1 · Une créature qui a une voix parle ──────────────────────────────
     sonsJoues.length = 0;
     let marque = fichiersLus.length;

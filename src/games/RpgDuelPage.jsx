@@ -134,7 +134,14 @@ import {
   illustrationsAffichees as illustrationsAfficheesDuPortefeuille,
   recompenseEtage,
 } from './rpgCredits.js';
-import { glypheEmbleme, niveauDeXp, progressionDeXp, pseudoLisible, xpLisible } from './rpgProfil.js';
+import {
+  glypheEmbleme,
+  niveauDeXp,
+  progressionDeXp,
+  pseudoLisible,
+  rangDeNiveau,
+  xpLisible,
+} from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
   preparerDuelTutoriel,
@@ -3379,25 +3386,29 @@ function useLumiereCartes(actif = true) {
   }, [actif]);
 }
 
-export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null, lienActif = false }) {
+export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null, lienActif = false, lumiereSouris = null }) {
   const faceRef = useRef(null);
   const carteId = carte?.id ?? null;
+  const avecLumiere = Boolean(lumiereSouris);
+  const pointDepartRef = useRef(lumiereSouris);
+  pointDepartRef.current = lumiereSouris;
 
   // L'aperçu est la seule carte qui suit le curseur : sa face s'incline vers
   // lui, et revient au repos par inertie dès qu'il s'en éloigne.
   //
   // L'écoute est portée par la fenêtre, pas par le panneau : l'aperçu est posé
   // en `pointer-events: none` pour ne pas voler le survol à la carte qu'il
-  // commente. On ne penche donc que quand le curseur est vraiment sur la face —
-  // une marge de quelques pixels autour, le temps que le volet se place.
+  // commente. Sur une fiche ouverte au clic droit (`avecLumiere`), le reflet
+  // lumineux suit en plus le curseur sur et autour de la carte.
   //
   // Rien au doigt : là il n'y a pas de curseur à suivre, et le volet se referme
   // d'un toucher — incliner une fiche qu'on referme n'aurait pas de sens.
   useEffect(() => {
     const face = faceRef.current;
     if (!face) return undefined;
-    if (!window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
-    const MAX = 9;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return undefined;
+    if (!avecLumiere && !window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
+    const MAX = avecLumiere ? 11 : 9;
     const MARGE = 28;
     let frame = 0;
     let point = null;
@@ -3411,10 +3422,10 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
        lui rognerait les bords. On annule exactement cette agrandissement par un
        facteur d'échelle calculé sur la taille réelle de la face. La carte garde
        donc son gabarit et ne sort plus de son cadre. */
-    const facteurCadre = (point) => {
-      const tx = (point.inclineX * Math.PI) / 180;
-      const ty = (point.inclineY * Math.PI) / 180;
-      const z = (point.demiA * Math.abs(Math.sin(ty))) + (point.demiB * Math.abs(Math.sin(tx)));
+    const facteurCadre = (pointCourant) => {
+      const tx = (pointCourant.inclineX * Math.PI) / 180;
+      const ty = (pointCourant.inclineY * Math.PI) / 180;
+      const z = (pointCourant.demiA * Math.abs(Math.sin(ty))) + (pointCourant.demiB * Math.abs(Math.sin(tx)));
       const k = focale / Math.max(focale - z, 1);
       return Math.min(1, 1 / (Math.cos(ty) * k), 1 / (Math.cos(tx) * k)) * 0.995;
     };
@@ -3424,6 +3435,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       face.style.setProperty('--rpg-face-3d-x', `${point.inclineX.toFixed(2)}deg`);
       face.style.setProperty('--rpg-face-3d-y', `${point.inclineY.toFixed(2)}deg`);
       face.style.setProperty('--rpg-face-3d-s', `${facteurCadre(point).toFixed(4)}`);
+      if (avecLumiere) {
+        face.style.setProperty('--rpg-lumiere-x', `${point.gx.toFixed(1)}%`);
+        face.style.setProperty('--rpg-lumiere-y', `${point.gy.toFixed(1)}%`);
+        face.style.setProperty('--rpg-lumiere-angle', `${point.angle.toFixed(1)}deg`);
+        face.style.setProperty('--rpg-lumiere-opacite', `${point.opacite.toFixed(3)}`);
+      }
       face.classList.add('is-suit-la-souris');
       pose = true;
     };
@@ -3436,35 +3453,75 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       face.style.setProperty('--rpg-face-3d-x', '0deg');
       face.style.setProperty('--rpg-face-3d-y', '0deg');
       face.style.setProperty('--rpg-face-3d-s', '1');
+      if (avecLumiere) {
+        face.style.removeProperty('--rpg-lumiere-opacite');
+      }
+    };
+    const mesurerPoint = (clientX, clientY) => {
+      const boite = face.getBoundingClientRect();
+      if (!boite.width || !boite.height) return;
+      const dx = clientX - boite.left;
+      const dy = clientY - boite.top;
+      if (!avecLumiere) {
+        const surLaFace = dx >= -MARGE && dx <= boite.width + MARGE
+          && dy >= -MARGE && dy <= boite.height + MARGE;
+        if (!surLaFace) { figer(); return; }
+        const nx = borne(((dy / boite.height) - 0.5) * 2);
+        const ny = borne(((dx / boite.width) - 0.5) * -2);
+        point = {
+          inclineX: nx * MAX,
+          inclineY: ny * MAX,
+          demiA: boite.width / 2,
+          demiB: boite.height / 2,
+          gx: 50,
+          gy: 30,
+          angle: 0,
+          opacite: 0,
+        };
+      } else {
+        const horsX = dx < 0 ? -dx : (dx > boite.width ? dx - boite.width : 0);
+        const horsY = dy < 0 ? -dy : (dy > boite.height ? dy - boite.height : 0);
+        const distance = Math.hypot(horsX, horsY);
+        const rayon = Math.max(boite.width, boite.height) * 1.45;
+        if (distance > rayon) { figer(); return; }
+        const intensite = distance <= MARGE
+          ? 1
+          : Math.max(0.28, 1 - (distance - MARGE) / rayon);
+        const nx = borne(((dy / boite.height) - 0.5) * 2) * intensite;
+        const ny = borne(((dx / boite.width) - 0.5) * -2) * intensite;
+        point = {
+          inclineX: nx * MAX,
+          inclineY: ny * MAX,
+          demiA: boite.width / 2,
+          demiB: boite.height / 2,
+          gx: Math.max(-12, Math.min(112, (dx / boite.width) * 100)),
+          gy: Math.max(-12, Math.min(112, (dy / boite.height) * 100)),
+          angle: borne(((dx / boite.width) - 0.5) * 2) * 26,
+          opacite: intensite,
+        };
+      }
+      if (!frame) frame = window.requestAnimationFrame(appliquer);
     };
     const suivre = (event) => {
       if (event.pointerType === 'touch') return;
-      const boite = face.getBoundingClientRect();
-      if (!boite.width || !boite.height) return;
-      const dx = event.clientX - boite.left;
-      const dy = event.clientY - boite.top;
-      const surLaFace = dx >= -MARGE && dx <= boite.width + MARGE
-        && dy >= -MARGE && dy <= boite.height + MARGE;
-      if (!surLaFace) { figer(); return; }
-      const nx = borne(((dy / boite.height) - 0.5) * 2);
-      const ny = borne(((dx / boite.width) - 0.5) * -2);
-      point = {
-        inclineX: nx * MAX,
-        inclineY: ny * MAX,
-        demiA: boite.width / 2,
-        demiB: boite.height / 2,
-      };
-      // Un `pointermove` par image : la face suit le curseur sans qu'on
-      // réécrive ses variables une fois par pixel parcouru.
-      if (!frame) frame = window.requestAnimationFrame(appliquer);
+      mesurerPoint(event.clientX, event.clientY);
     };
     window.addEventListener('pointermove', suivre, { passive: true });
+    if (avecLumiere) window.addEventListener('mousemove', suivre, { passive: true });
+    const depart = pointDepartRef.current;
+    if (avecLumiere && depart && typeof depart === 'object' && (depart.x > 0 || depart.y > 0)) {
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        mesurerPoint(depart.x, depart.y);
+      });
+    }
     return () => {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener('pointermove', suivre);
+      if (avecLumiere) window.removeEventListener('mousemove', suivre);
       figer();
     };
-  }, [carteId]);
+  }, [carteId, avecLumiere]);
 
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
@@ -3616,6 +3673,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
       {estEnFurie && <VignetteFurie />}
+      {avecLumiere && <span className="rpg-hover-card-preview__lumiere" data-preview-lumiere="" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
@@ -3880,6 +3938,7 @@ function ApercuCarteCatalogue({
   prisonniere = null, surface = 'CATALOGUE', onFermer,
   niveau = 1, portefeuille = null, credits = 0, avecVitrine = true, possede = true,
   onAcheterIllustration = null, onBasculerIllustration = null, onPlaySfx = null,
+  clicDroit = null,
 }) {
   const boutonFermerRef = useRef(null);
   // Le focus va au bouton Fermer sans faire défiler la grille : le catalogue
@@ -3895,12 +3954,13 @@ function ApercuCarteCatalogue({
       aria-modal="true"
       aria-label={`Fiche de ${carte.name}`}
       data-catalogue-preview={carte.id}
+      data-clic-droit={clicDroit ? 'true' : undefined}
       onClick={onFermer}
     >
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__duo">
         <div className="rpg-card-peek__panel">
-          <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} />
+          <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} lumiereSouris={clicDroit} />
         </div>
         {avecVitrine ? (
           <VitrineIllustration
@@ -4566,6 +4626,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [partieRapideOuverte, setPartieRapideOuverte] = useState(false);
   const [partieRapideChoix, setPartieRapideChoix] = useState(null);
   const detailRef = useRef(null);
+  const menuScrollRef = useRef(null);
   // L’onglet Messagerie porte la pastille du site : les messages non lus
   // d’abord, les demandes d’amis sinon — le détail est dans l’`aria-label`.
   // `?? {}` : sans fournisseur (vérifications jsdom), le contexte est inerte.
@@ -4754,6 +4815,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
   return (
     <section
+      ref={menuScrollRef}
       className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
       inert={bloqueAccueil || undefined}
       style={{ backgroundImage: menuBackground }}
@@ -4763,14 +4825,18 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     >
       <div className="rpg-mode-menu__content">
         <header className="rpg-mode-menu__header">
-          {/* L'onglet Jouer est de retour dans la barre ; le sablier de la
-              marque reste un raccourci d'accueil, utile depuis les écrans
-              profonds et sur les petits formats. */}
+          {/* Sur PC et tablette paysage, l'en-tête devient une barre latérale
+              verticale collée à gauche : marque et commandes tout en haut,
+              onglets au centre, et le bouton « Jouer » tout en bas, bien visible. */}
           <div className="rpg-mode-menu__brand">
             <button
               type="button"
               className="rpg-mode-menu__accueil"
-              onClick={() => { play('menu'); onChangeScreen('jouer'); }}
+              onClick={() => {
+                play('menu');
+                onChangeScreen('jouer');
+                menuScrollRef.current?.scrollTo?.({ top: 0, behavior: 'auto' });
+              }}
               title="Accueil — Jouer"
               aria-label="Accueil — Jouer"
             >
@@ -4808,22 +4874,24 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
             </svg>
           </a>
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
-            {/* Sept onglets seulement : la Conquête vit désormais comme carte
-                dans Jouer. Les quatre modes de jeu restent à gauche ; Profil,
-                Paramètres et Messagerie forment un groupe à part, à droite. */}
-            <button type="button" className={screen === 'jouer' ? 'is-active' : ''} aria-current={screen === 'jouer' ? 'page' : undefined} aria-label="Jouer" onClick={() => { play('menu'); onChangeScreen('jouer'); }}>
-              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__onglet-icone--jouer" aria-hidden="true">
-                <RpgModeIcon nom="jouer" />
+            {/* En haut de la barre verticale : Deck, Souk, Catalogue et l'onglet
+                dédié à la Progression d'XP. En bas (`margin-top: auto` sur Profil) :
+                Profil, Paramètres et Messagerie, juste au-dessus du bouton
+                « Jouer » (texte seul, dégradé animé). */}
+            <button
+              type="button"
+              className={screen === 'decks' ? 'is-active' : ''}
+              aria-current={screen === 'decks' ? 'page' : undefined}
+              aria-label="Deck"
+              onClick={() => { play('menu'); onChangeScreen('decks'); }}
+            >
+              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--deck" aria-hidden="true">
+                <RpgModeIcon nom="deck" />
               </span>
-              <span className="rpg-mode-menu__onglet-libelle">Jouer</span>
-            </button>
-            <button type="button" className={screen === 'decks' ? 'is-active' : ''} aria-current={screen === 'decks' ? 'page' : undefined} aria-label="Deck" onClick={() => { play('menu'); onChangeScreen('decks'); }}>
-              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">▤</span>
               <span className="rpg-mode-menu__onglet-libelle">Deck</span>
             </button>
             {/* Le jeton de la bourse vit sur l'onglet du Souk : le solde ◈ et
-                ce qui attend d'être réclamé sont lisibles sans ouvrir l'écran,
-                et l'onglet mène au reste. */}
+                ce qui attend d'être réclamé sont lisibles sans ouvrir l'écran. */}
             <button
               type="button"
               className={`rpg-mode-menu__souk${screen === 'souk' ? ' is-active' : ''}`}
@@ -4832,7 +4900,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               data-souk-onglet={credits}
               onClick={() => { play('menu'); onChangeScreen('souk'); }}
             >
-              <RpgMarketIcon className="rpg-mode-menu__souk-piece" />
+              <span className="rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--souk" aria-hidden="true">
+                <RpgMarketIcon className="rpg-mode-menu__souk-piece" />
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Souk</span>
               <span className="rpg-mode-menu__bourse-solde" data-souk-bourse={credits}>
                 {creditsLisible(credits)}
@@ -4844,16 +4914,48 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               )}
             </button>
             <button type="button" className={screen === 'catalogue' ? 'is-active' : ''} aria-current={screen === 'catalogue' ? 'page' : undefined} aria-label="Catalogue" onClick={() => { play('menu'); onChangeScreen('catalogue'); }}>
-              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">▧</span>
+              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--catalogue" aria-hidden="true">
+                <RpgModeIcon nom="catalogue" />
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Catalogue</span>
             </button>
+            <button
+              type="button"
+              className={`rpg-mode-menu__progression${screen === 'progression' ? ' is-active' : ''}`}
+              aria-current={screen === 'progression' ? 'page' : undefined}
+              aria-label={`Progression d’XP — niveau ${niveauOnglet} (${barreOnglet.percent} %)`}
+              data-progression-onglet={niveauOnglet}
+              onClick={() => { play('menu'); onChangeScreen('progression'); }}
+            >
+              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--progression" aria-hidden="true">
+                <RpgModeIcon nom="progression" />
+              </span>
+              <span className="rpg-mode-menu__onglet-libelle">Progression</span>
+              <span className="rpg-mode-menu__progression-xp" aria-hidden="true">{barreOnglet.percent}%</span>
+              {paquetsDePalierEnAttente > 0 && (
+                <span className="rpg-mode-menu__progression-pastille" aria-hidden="true">
+                  {paquetsDePalierEnAttente}
+                </span>
+              )}
+            </button>
 
-            {/* Groupe secondaire : un filet, un peu d'air, et une encre plus
-                discrète pour dire que ces onglets ne sont pas des modes de jeu. */}
-            {/* Le profil ouvre la barre, comme une pièce d'identité : l'emblème,
-                le niveau, et la barre d'XP en miniature — le palier qui attend
-                son paquet porte une pastille. L'aria-label dit le chiffre que la
-                miniature ne peut pas écrire. */}
+            {/* Lien du tutoriel dans la barre de navigation : poussé en bas
+                par `margin-top: auto` pour se tenir juste au-dessus du trait
+                doré qui précède Profil. */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__apprendre rpg-menu-button--tutorial${screen === 'tutoriels' ? ' is-active' : ''}`}
+              aria-current={screen === 'tutoriels' ? 'page' : undefined}
+              aria-label={`Apprendre à jouer — ${RPG_TUTORIELS.length} leçons guidées`}
+              onClick={() => { play('select'); onChangeScreen('tutoriels'); }}
+            >
+              <RpgModeIcon nom="tutoriel" className="rpg-mode-menu__apprendre-icone" />
+              <span className="rpg-mode-menu__apprendre-texte">Apprendre à jouer</span>
+              <span className="rpg-mode-menu__apprendre-arrow" aria-hidden="true">↗</span>
+            </button>
+
+            {/* Groupe secondaire sous le trait doré (`::before` sur Profil),
+                juste au-dessus du bouton « Jouer ». */}
             <button
               type="button"
               className={`rpg-mode-menu__profil rpg-mode-menu__onglet--secondaire rpg-mode-menu__onglet--groupe-secondaire${screen === 'profil' ? ' is-active' : ''}`}
@@ -4862,17 +4964,19 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               data-profil-onglet={niveauOnglet}
               onClick={() => { play('menu'); onChangeScreen('profil'); }}
             >
-              {avatarOnglet ? (
-                <img
-                  className="rpg-mode-menu__profil-embleme rpg-mode-menu__profil-visage"
-                  src={vignetteAvatar(avatarOnglet.id, import.meta.env.BASE_URL)}
-                  alt=""
-                  aria-hidden="true"
-                  data-profil-onglet-avatar={avatarOnglet.id}
-                />
-              ) : (
-                <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
-              )}
+              <span className="rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--profil" aria-hidden="true">
+                {avatarOnglet ? (
+                  <img
+                    className="rpg-mode-menu__profil-embleme rpg-mode-menu__profil-visage"
+                    src={vignetteAvatar(avatarOnglet.id, import.meta.env.BASE_URL)}
+                    alt=""
+                    aria-hidden="true"
+                    data-profil-onglet-avatar={avatarOnglet.id}
+                  />
+                ) : (
+                  <span className="rpg-mode-menu__profil-embleme" aria-hidden="true">{glypheEmbleme(profil)}</span>
+                )}
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Profil</span>
               <span className="rpg-mode-menu__profil-niveau" data-profil-niveau={niveauOnglet}>NIV. {niveauOnglet}</span>
               <span className="rpg-mode-menu__profil-xp" aria-hidden="true">
@@ -4885,16 +4989,13 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               )}
             </button>
             <button type="button" className={`rpg-mode-menu__onglet--secondaire${screen === 'parametres' ? ' is-active' : ''}`} aria-current={screen === 'parametres' ? 'page' : undefined} aria-label="Paramètres" onClick={() => { play('menu'); onChangeScreen('parametres'); }}>
-              <span className="rpg-mode-menu__onglet-icone" aria-hidden="true">⚙</span>
+              <span className="rpg-mode-menu__onglet-icone rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--parametres" aria-hidden="true">
+                <RpgModeIcon nom="parametres" />
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Paramètres</span>
             </button>
-            {/* La messagerie a son onglet, comme le Souk ou le Catalogue : la
-                fenêtre sociale du site flotte en bas de l’écran, mais le jeu
-                est une couche plein écran (surtout en plein écran natif de
-                l’APK) qui la recouvre — sur mobile, la messagerie n’apparaît
-                pas en bas de l’écran. Elle vit donc DANS le jeu, dans son
-                propre onglet, avec la bulle « Let’s Talk » et la pastille des
-                non-lus (les défis du duel en ligne passent par elle). */}
+            {/* La messagerie a son onglet : la fenêtre sociale du site est
+                recouverte par la couche plein écran du jeu (surtout dans l’APK). */}
             <button
               type="button"
               className={`rpg-mode-menu__messagerie rpg-mode-menu__onglet--secondaire${screen === 'messagerie' ? ' is-active' : ''}`}
@@ -4903,7 +5004,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               data-rpg-messagerie-onglet={messageriePastille}
               onClick={() => { play('menu'); onChangeScreen('messagerie'); }}
             >
-              <LetsTalkMark className="rpg-mode-menu__messagerie-mark" typing={messagerieNonLus > 0} />
+              <span className="rpg-mode-menu__icone-3d rpg-mode-menu__icone-3d--messagerie" aria-hidden="true">
+                <LetsTalkMark className="rpg-mode-menu__messagerie-mark" typing={messagerieNonLus > 0} />
+              </span>
               <span className="rpg-mode-menu__onglet-libelle">Messagerie</span>
               {messageriePastille > 0 && (
                 <span className="rpg-mode-menu__messagerie-pastille" aria-hidden="true">
@@ -4911,13 +5014,36 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 </span>
               )}
             </button>
+
+            {/* Bouton principal « Jouer » ancré tout en bas de la barre latérale
+                gauche : texte seul (sans icône de deck) et dégradé animé. */}
+            <button
+              type="button"
+              className={`rpg-mode-menu__jouer${screen === 'jouer' ? ' is-active' : ''}`}
+              aria-current={screen === 'jouer' ? 'page' : undefined}
+              aria-label="Jouer"
+              onClick={() => {
+                play('select');
+                onChangeScreen('jouer');
+                menuScrollRef.current?.scrollTo?.({ top: 0, behavior: 'auto' });
+              }}
+            >
+              <span className="rpg-mode-menu__onglet-libelle">Jouer</span>
+            </button>
           </nav>
         </header>
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            {/* Pas de fond : le titre et les boutons posent sur le décor de la page. */}
+            {/* Vitrine gauche : grande illustration cadrée du Sablier de Bab El,
+                à la manière de l'affiche vedette de l'accueil MTG Arena. */}
             <section className="rpg-mode-menu__hero">
+              <img
+                className="rpg-mode-menu__hero-keyart"
+                src={`${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg`}
+                alt=""
+                aria-hidden="true"
+              />
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
@@ -4927,65 +5053,61 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               <div className="rpg-mode-menu__hero-copy">
                 <span className="rpg-mode-menu__eyebrow">
                   <span className="rpg-eyebrow-dot" />
-                  UN DUEL · DEUX DECKS · 30 CARTES · SANS TERRAIN
+                  PORTES DE BAB EL · 30 CARTES · SANS TERRAIN
                 </span>
-                <h2>Le sable se souvient.<br /><em>À vous d’écrire la suite.</em></h2>
-                <p>Déclarez vos attaques, choisissez vos bloqueurs et remportez la bataille des portes de Bab El. Chaque carte compte, chaque mana compte, chaque choix façonne votre victoire.</p>
-                <div className="rpg-mode-menu__hero-actions">
-                  {/* Quatre modes carrés en quatre colonnes sur PC (deux sur
-                      téléphone), une grande icône par mode. « Jouer » garde
-                      l'accès au choix du deck contre l'ordinateur ; « Conquête »
-                      est la quatrième carte et ouvre les Tours de Bab El. */}
-                  <button type="button" className="rpg-mode-carte rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire rpg-menu-button--glow" onClick={() => { play('select'); onContinueRecit?.(); }}>
-                    <RpgModeIcon nom="histoire" className="rpg-mode-carte__icone" />
-                    <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                      <strong>Mode histoire</strong>
-                      <small>La campagne des Tours de Bab El</small>
-                    </span>
-                    <span className="rpg-mode-carte__arrow rpg-menu-button__arrow" aria-hidden="true">→</span>
-                  </button>
-                  <a className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne" href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`} onClick={() => play('select')}>
-                    <RpgModeIcon nom="en-ligne" className="rpg-mode-carte__icone" />
-                    <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                      <strong>
-                        Duel en ligne
-                        <span className="rpg-menu-button__live" aria-hidden="true" />
-                        <span className="sr-only">(en ligne)</span>
-                      </strong>
-                      <small>Défier un ami par lien, ou entrer un code</small>
-                    </span>
-                    <span className="rpg-mode-carte__arrow rpg-menu-button__arrow" aria-hidden="true">→</span>
-                  </a>
-                  <button type="button" className="rpg-mode-carte rpg-menu-button rpg-menu-button--partie-rapide" onClick={() => { play('select'); setPartieRapideChoix(playerDeck?.id ?? decksTous.filter((deck) => deckSeJoue(deck, collection, exemplaires))[0]?.id ?? ''); setPartieRapideOuverte(true); }}>
-                    <RpgModeIcon nom="jouer" className="rpg-mode-carte__icone" />
-                    <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                      <strong>Jouer</strong>
-                      <small>Choisir un deck et affronter l’ordinateur</small>
-                    </span>
-                  </button>
-                  <button type="button" className="rpg-mode-carte rpg-menu-button rpg-menu-button--conquete" onClick={() => { play('select'); onChangeScreen('tours'); }}>
-                    <RpgModeIcon nom="conquete" className="rpg-mode-carte__icone" />
-                    <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                      <strong>Conquête</strong>
-                      <small>Gravissez les Tours de Bab El</small>
-                    </span>
-                    <span className="rpg-mode-carte__arrow rpg-menu-button__arrow" aria-hidden="true">→</span>
-                  </button>
-                </div>
-                {/* Le tutoriel quitte la grille : un simple lien texte, une
-                    petite icône et une flèche, sous les quatre modes. */}
-                <button type="button" className="rpg-mode-menu__apprendre rpg-menu-button--tutorial" onClick={() => { play('select'); onChangeScreen('tutoriels'); }}>
-                  <RpgModeIcon nom="tutoriel" className="rpg-mode-menu__apprendre-icone" />
-                  <span>Apprendre à jouer</span>
-                  <small>{RPG_TUTORIELS.length} leçons guidées · récompenses en <RpgCreditIcon /></small>
-                  <span className="rpg-mode-menu__apprendre-arrow" aria-hidden="true">↗</span>
-                </button>
+                <h2>Le sable se souvient. <em>À vous d’écrire la suite.</em></h2>
+                <p>Bâtissez votre deck, ouvrez vos paquets au Souk et affrontez les sorciers des cinq éléments.</p>
               </div>
-              {/* Le halo doré reste : simple lumière, pas un fond. */}
               <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
-            {/* La colonne de droite du menu : ce qu'il y a à gagner aujourd'hui,
-                avec de quoi l'encaisser sans quitter l'écran. */}
+
+            {/* Colonne droite : les trois modes de jeu empilés l'un au-dessus
+                de l'autre en largeur, chacun illustré d'une miniature tirée des
+                cartes du jeu et ne portant que son titre. */}
+            <section className="rpg-mode-menu__modes-col" aria-label="Modes de jeu">
+              <div className="rpg-mode-menu__hero-actions">
+                <button
+                  type="button"
+                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire"
+                  style={{ '--art-pos': '50% 20%' }}
+                  onClick={() => { play('select'); onContinueRecit?.(); }}
+                >
+                  <img className="rpg-mode-carte__art" src={cardArt('salem')} alt="" aria-hidden="true" />
+                  <span className="rpg-mode-carte__texte rpg-menu-button__text">
+                    <strong>Mode histoire</strong>
+                  </span>
+                </button>
+                <a
+                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne"
+                  style={{ '--art-pos': '50% 24%' }}
+                  href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`}
+                  onClick={() => play('select')}
+                >
+                  <img className="rpg-mode-carte__art" src={cardArt('bouchra-guerriere-des-cretes')} alt="" aria-hidden="true" />
+                  <span className="rpg-mode-carte__texte rpg-menu-button__text">
+                    <strong>
+                      Duel en ligne
+                      <span className="rpg-menu-button__live" aria-hidden="true" />
+                      <span className="sr-only">(en ligne)</span>
+                    </strong>
+                  </span>
+                </a>
+                <button
+                  type="button"
+                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--conquete"
+                  style={{ '--art-pos': '50% 30%' }}
+                  onClick={() => { play('select'); onChangeScreen('tours'); }}
+                >
+                  <img className="rpg-mode-carte__art" src={cardArt('tour-des-tenebres')} alt="" aria-hidden="true" />
+                  <span className="rpg-mode-carte__texte rpg-menu-button__text">
+                    <strong>Conquête</strong>
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            {/* Rampe inférieure sur toute la largeur : les quêtes du jour et
+                les jalons en médaillons alignés sous la vitrine et les modes. */}
             <RpgQuetesDuJour
               quetes={quetes}
               credits={credits}
@@ -4993,19 +5115,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
               onOuvrirSouk={() => { onChangeScreen('souk'); }}
-              onPlaySfx={play}
-            />
-            {/* Ce que rapportent les prochains niveaux : la piste des gains, là
-                où l'on décide de sa soirée. Elle prend la place du bloc
-                « L'histoire · Bab El », parti au lancement du mode Histoire pour
-                un nouveau joueur (`RpgStoryBabEl`) — un décor qu'on relit à
-                chaque passage contre un seuil qu'on franchit une fois. */}
-            <RpgPisteGains
-              profil={profil}
-              paquetsEnAttente={paquetsDePalierEnAttente}
-              onChoisirCadre={onChoisirCadre}
-              onChoisirTitre={onChoisirTitre}
-              onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
               onPlaySfx={play}
             />
           </main>
@@ -5489,6 +5598,114 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
             onPlaySfx={play}
             onExit={() => onChangeScreen('jouer')}
           />
+        ) : screen === 'progression' ? (
+          <main className="rpg-xp-screen" aria-label="Progression d’XP — Le Chemin" data-progression-xp>
+            <div className="rpg-xp-screen__scene">
+              <header className="rpg-xp-screen__maitrise" aria-label="Niveau actuel et jauge d’expérience">
+                {(() => {
+                  const { rang } = rangDeNiveau(barreOnglet.niveau);
+                  const rAnneau = 36;
+                  const circonference = 2 * Math.PI * rAnneau;
+                  const progressionAnneau = barreOnglet.maximal
+                    ? 0
+                    : circonference * (1 - Math.max(0, Math.min(100, barreOnglet.percent)) / 100);
+                  return (
+                    <>
+                      <div className="rpg-xp-screen__blason" aria-hidden="true">
+                        <svg className="rpg-xp-screen__blason-ailes" viewBox="0 0 132 104" fill="none">
+                          <path
+                            d="M28 74C13 64 7 47 12 28C15 18 22 10 31 6C24 17 22 30 25 43C18 35 16 25 19 16"
+                            stroke="rgba(232, 190, 108, 0.72)"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M104 74C119 64 125 47 120 28C117 18 110 10 101 6C108 17 110 30 107 43C114 35 116 25 113 16"
+                            stroke="rgba(232, 190, 108, 0.72)"
+                            strokeWidth="2.2"
+                            strokeLinecap="round"
+                          />
+                          <circle cx="66" cy="48" r={rAnneau} stroke="rgba(255, 232, 184, 0.16)" strokeWidth="4" />
+                          <circle
+                            cx="66"
+                            cy="48"
+                            r={rAnneau}
+                            stroke="url(#rpg-xp-ring-grad)"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeDasharray={circonference}
+                            strokeDashoffset={progressionAnneau}
+                            transform="rotate(-90 66 48)"
+                          />
+                          <defs>
+                            <linearGradient id="rpg-xp-ring-grad" x1="30" y1="12" x2="102" y2="84" gradientUnits="userSpaceOnUse">
+                              <stop offset="0%" stopColor="#8ed4ff" />
+                              <stop offset="55%" stopColor="#f5c66b" />
+                              <stop offset="100%" stopColor="#f09336" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <span className="rpg-xp-screen__blason-coeur">⏳</span>
+                        <span className="rpg-xp-screen__blason-niveau">{barreOnglet.niveau}</span>
+                      </div>
+
+                      <div className="rpg-xp-screen__corps">
+                        <div className="rpg-xp-screen__ligne-titre">
+                          <div className="rpg-xp-screen__titres">
+                            <span className="rpg-xp-screen__surtitre">Maîtrise du Sablier</span>
+                            <h2>{rang.nom}</h2>
+                          </div>
+                          {paquetsDePalierEnAttente > 0 && (
+                            <button
+                              type="button"
+                              className="rpg-xp-screen__souk-pill"
+                              onClick={() => { play('menu'); onChangeScreen('souk'); }}
+                            >
+                              Ouvrir {paquetsDePalierEnAttente} paquet{paquetsDePalierEnAttente > 1 ? 's' : ''}
+                            </button>
+                          )}
+                        </div>
+
+                        <div
+                          className="rpg-xp-screen__barre"
+                          role="progressbar"
+                          aria-label={`Progression vers le niveau ${barreOnglet.suivant ?? barreOnglet.niveau}`}
+                          aria-valuenow={barreOnglet.percent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                        >
+                          <span className="rpg-xp-screen__barre-remplie" style={{ width: `${barreOnglet.percent}%` }} />
+                        </div>
+
+                        <div className="rpg-xp-screen__compteur">
+                          <strong>
+                            {barreOnglet.maximal
+                              ? `${xpLisible(barreOnglet.xp)} XP cumulés`
+                              : `${xpLisible(barreOnglet.into)} / ${xpLisible(barreOnglet.need)} XP`}
+                          </strong>
+                          <span>
+                            {barreOnglet.maximal
+                              ? 'Niveau maximal atteint (60)'
+                              : `Niveau ${barreOnglet.suivant} dans ${xpLisible(barreOnglet.reste)} XP`}
+                          </span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </header>
+
+              <RpgPisteGains
+                profil={profil}
+                paquetsEnAttente={paquetsDePalierEnAttente}
+                onChoisirCadre={onChoisirCadre}
+                onChoisirTitre={onChoisirTitre}
+                onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }}
+                onOuvrirCarte={onOpenCardPreview}
+                onPlaySfx={play}
+              />
+            </div>
+          </main>
         ) : screen === 'souk' ? (
           <RpgSouk
             quetes={quetes}
@@ -5634,11 +5851,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     >
                       {/* Toute la fiche est un bouton étiré : le clic — souris ou
                           doigt — ouvre la carte en grand, illustration et effets,
-                          sans rien jouer. Pas d'aperçu au survol ici : la fiche
-                          montre déjà l'illustration, le nom, la famille, la
-                          couleur, le coût et les effets — un aperçu par-dessus
-                          ne ferait que répéter ce qu'on a sous les yeux. Le clic
-                          et l'appui long d'une seconde, eux, restent. */}
+                          sans rien jouer. La grille reste épurée (nom, type,
+                          couleur et ATQ/DÉF) ; les effets se lisent sur la fiche. */}
                       <button
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
@@ -5667,7 +5881,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           <h3>{carte.name}</h3>
                         </div>
                         <p className={`rpg-card-catalogue__type${classeLigneFamille(carte)}`}>{cardFaceTypeLine(carte)}</p>
-                        <PastillesCarte carte={carte} className="rpg-card-catalogue__pastilles" />
                         <div className="rpg-card-catalogue__meta">
                           <span className={estTerrain ? 'is-terrain' : cardColors(carte).length > 1 ? 'is-hybrid' : ''}>
                             {cardColorLine(carte)}
@@ -5675,7 +5888,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
                           {carteEstArme(carte) && <b>⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</b>}
                         </div>
-                        <p className="rpg-card-catalogue__rules"><RpgCardRules carte={carte} /></p>
                         <CarteIllustrationAlternative
                           carte={carte}
                           niveau={niveauOnglet}
@@ -6892,6 +7104,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // l'empile derrière son capteur, en perspective.
   const [apercuCataloguePrisonniere, setApercuCataloguePrisonniere] = useState(null);
   const [apercuCatalogueSurface, setApercuCatalogueSurface] = useState('CATALOGUE');
+  const [apercuCatalogueClicDroit, setApercuCatalogueClicDroit] = useState(null);
   // Même état Furie pour la fiche ouverte d'un clic droit sur la table.
   const [apercuCatalogueFurie, setApercuCatalogueFurie] = useState(null);
   // Même grisaille des effets dépensés pour cette fiche.
@@ -6913,6 +7126,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuAppuiFurie(null);
     setApercuAppuiEffetsEpuises([]);
     setApercuCatalogue(null);
+    setApercuCatalogueClicDroit(null);
     setApercuCatalogueFurie(null);
     setApercuCatalogueEffetsEpuises([]);
     setApercuCataloguePrisonniere(null);
@@ -8606,6 +8820,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     masquerApercuSurvol();
     setApercuAppui(null);
     setApercuCatalogue(null);
+    setApercuCatalogueClicDroit(null);
     setCimetiereOuvert({ cote, index: cartes.length - 1 });
   };
   const fermerCimetiere = () => setCimetiereOuvert(null);
@@ -8660,6 +8875,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuCatalogueFurie(null);
     setApercuCatalogueEffetsEpuises([]);
     setApercuCataloguePrisonniere(null);
+    setApercuCatalogueClicDroit(null);
     setApercuCatalogue(null);
   };
   /** Le jeu est une surface de lecture : cliquer ou cliquer droit une carte
@@ -8671,7 +8887,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * flèches, ni compteur, ni pas de page. Pour lire une autre carte, on ouvre
    * la sienne. `armes` dit ce que porte la créature ouverte (duel), `surface`
    * le mot du sur-titre : l'écran qui a ouvert la fiche. */
-  const ouvrirApercuCatalogue = (carte, { armes = [], furie = null, effetsEpuises = [], prisonniere = null, surface = 'CATALOGUE' } = {}) => {
+  const ouvrirApercuCatalogue = (carte, { armes = [], furie = null, effetsEpuises = [], prisonniere = null, surface = 'CATALOGUE', clicDroit = null } = {}) => {
     if (!carte) return;
     annulerAppuiLong();
     masquerApercuSurvol();
@@ -8682,6 +8898,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuCatalogueEffetsEpuises(effetsEpuises);
     setApercuCataloguePrisonniere(prisonniere);
     setApercuCatalogueSurface(surface);
+    setApercuCatalogueClicDroit(clicDroit);
     setApercuCatalogue(carte.id);
   };
   // Échap referme l'aperçu au doigt comme la fiche, à l'égal du volet et du
@@ -8735,6 +8952,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // Le capteur d'Abordage dit qui il détient : la fiche empilera les deux.
       prisonniere: hote.dataset.prisonniere ?? null,
       surface: dansCeremonieSouk ? 'LE SOUK' : (SURFACE_FICHE[ecran] ?? 'LE SABLIER'),
+      clicDroit: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
     });
   };
   // Le plateau se floute derrière la carte consultée, elle seule reste nette :
@@ -9047,6 +9265,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}
+            clicDroit={apercuCatalogueClicDroit}
             onFermer={fermerApercuCatalogue}
           />
         )}
@@ -9221,6 +9440,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             onAcheterIllustration={acheterIllustration}
             onBasculerIllustration={basculerIllustration}
             onPlaySfx={jouerSfx}
+            clicDroit={apercuCatalogueClicDroit}
             onFermer={fermerApercuCatalogue}
           />
         )}
@@ -14233,6 +14453,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           niveau={niveauDuJoueur}
           avecVitrine={false}
           onPlaySfx={jouerSfx}
+          clicDroit={apercuCatalogueClicDroit}
           onFermer={fermerApercuCatalogue}
         />
       )}
