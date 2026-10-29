@@ -1,10 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { cardById, RPG_CREATURE_CARDS, RPG_HERO_CARDS, RPG_TOUR_CARDS, RPG_MAGIE_CARDS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgLancerMagie, rpgLancerAttaque,
   rpgBlesserCreature, rpgFinDeTour, rpgReglerHasard, rpgResoudreContresortBoualem,
+  rpgResoudreArriveeCiblee, arriveeCiblePortee,
 } from '../src/games/rpgDuel.js';
+import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
 
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -85,16 +89,66 @@ test('Anqa balaie les ennemis et soigne les alliés lorsqu’elle revient', () =
   assert.equal(amie.pv, 2, 'la créature alliée blessée récupère 1 PV');
 });
 
-test('la Furie de la Völva soigne les autres créatures alliées de 1', () => {
+test('la Völva arrive en soignant 3 PV à une créature alliée ciblée', () => {
+  const carte = cardById('volva-soigneuse');
+  assert.deepEqual(carte.arrivee, {
+    type: 'soin-creatures', amount: 3, cible: 'creature-amie', choisirCible: true, cibleSoi: true,
+  });
+  assert.match(carte.text, /Quand la Völva arrive : une créature alliée ciblée — ou elle-même — récupère 3 PV\./);
+  assert.equal(arriveeCiblePortee(carte), 'allie', 'la table allume les alliés, pas les adversaires');
+
+  // Le soin ne panse QUE la créature désignée : sa voisine blessée garde sa plaie.
+  const d = duel();
+  const blessee = poser(d, 'joueur', 'cavalier-amazigh-du-desert');
+  const voisine = poser(d, 'joueur', 'momie-de-lin');
+  rpgBlesserCreature(d, 'joueur', blessee.id, 2);
+  rpgBlesserCreature(d, 'joueur', voisine.id, 2);
+  const pvBlessee = blessee.pv;
+  const pvVoisine = voisine.pv;
+  d.joueur.main.push('volva-soigneuse');
+  const pose = rpgJouerCreature(d, 'joueur', 'volva-soigneuse', null, { cibleDifferee: true });
+  assert.equal(pose.ok, true, 'la Völva entre en jeu');
+  assert.ok(d.arriveeEnAttente, 'sa cible d’arrivée attend d’être désignée');
+  assert.equal(rpgResoudreArriveeCiblee(d, 'joueur', blessee.id).ok, true);
+  assert.equal(blessee.pv, Math.min(blessee.pvMax, pvBlessee + 3), 'la cible récupère 3 PV');
+  assert.equal(voisine.pv, pvVoisine, 'la voisine n’est pas soignée');
+});
+
+test('la Völva seule sur la table se soigne elle-même, sans perdre son arrivée', () => {
+  const d = duel();
+  d.joueur.main.push('volva-soigneuse');
+  const pose = rpgJouerCreature(d, 'joueur', 'volva-soigneuse', null, { cibleDifferee: true });
+  assert.equal(pose.ok, true);
+  assert.equal(rpgResoudreArriveeCiblee(d, 'joueur', pose.entite.id).ok, true,
+    'elle-même est une cible légale');
+  assert.match(d.log.at(-1), /plus de blessure à refermer/, 'le clic n’est pas perdu en silence');
+});
+
+test('la Völva a sa peinture de Furie, livrée et révisée', () => {
+  const carte = cardById('volva-soigneuse');
+  assert.equal(cardArtFurie(carte), '/cards/volva-soigneuse-furie.jpg?v=neige-furie-volva-v1');
+  assert.equal(cardArt(carte), '/cards/volva-soigneuse.jpg?v=volva-soigneuse-souls-v1',
+    'la face calme garde sa peinture');
+  assert.ok(existsSync(fileURLToPath(
+    new URL('../public/cards/volva-soigneuse-furie.jpg', import.meta.url),
+  )), 'volva-soigneuse-furie.jpg est livré avec le jeu');
+});
+
+test('la Furie de la Völva ne soigne plus personne : elle garde son +2 ATQ', () => {
   const d = duel();
   const völva = poser(d, 'joueur', 'volva-soigneuse');
   const amie = poser(d, 'joueur', 'chien-du-guet');
   rpgBlesserCreature(d, 'joueur', amie.id, 1);
+  const pvAmie = amie.pv;
   rpgBlesserCreature(d, 'joueur', völva.id, 1);
-  assert.equal(völva.furieDeclenchee, true);
+  assert.equal(völva.furieDeclenchee, true, 'sa Furie s’allume toujours');
   assert.equal(völva.atk, 4, 'la Furie 2 ajoute +2 ATQ');
-  assert.equal(amie.pv, 2, 'l’alliée récupère 1 PV');
-  assert.equal(amie.def, 2, 'la défense courante suit les PV soignés');
+  assert.equal(amie.pv, pvAmie, 'la montée en furie ne soigne plus la rangée');
+  // Le champ `soinFurie` a disparu du catalogue : plus aucune carte ne s'en
+  // sert, et le moteur ne le lit plus.
+  for (const carte of RPG_CREATURE_CARDS) {
+    assert.equal(carte.soinFurie, undefined, `${carte.id} ne déclare plus de soin de Furie`);
+  }
 });
 
 test('Tour de Neige gèle son attaquant bloqueur et Tour des Flots le renvoie en main', () => {

@@ -256,6 +256,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'jarl-au-marteau-de-guerre': 'neige-souls-cendres-v1',
   'jarl-au-marteau-de-guerre-furie': 'neige-furie-souls-v1',
   'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
+  // La Völva : sa face de Furie la montre sanglante, les yeux d'or, le bâton
+  // en feu — la même ruine de fjord sous la tempête. Peinte après la passe
+  // commune, elle porte donc sa propre révision.
+  'volva-soigneuse-furie': 'neige-furie-volva-v1',
   // Les deux furies du Corbeau des neuf nuits : même scène que leur peinture
   // intacte, marquée par le combat. La face du Berserk suit le recadrage de sa
   // peinture intacte — même scène, même cri, mais le crâne entier dégagé sous

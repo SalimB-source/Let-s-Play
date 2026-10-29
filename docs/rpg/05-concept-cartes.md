@@ -214,7 +214,7 @@ désormais dans les évaluations de `rpgAI.js`, et chacune a son test.
 | **Débuff ciblé** | `-X/-Y`, la victime meurt si ses PV tombent à 0 (Lame de mer) | La carte est enfin jouée : l'IA choisit la victime qu'elle **détruit**, sinon la plus grosse menace rabotée. |
 | **Réanimation** | Ramène la dernière créature du cimetière | Évaluée au corps qu'elle ramène : jamais payée pour une magicienne ou un cimetière vide. |
 | **Auras** | Tarek, Amani, Kenshi, Bou Jeloud : la carte ne grandit que les créatures des deux cases ADJACENTES, jamais elle-même ; une case vide coupe le voisinage (`voisines` dans `rpgDuel.js`) | Valorisée au plus pour DEUX voisins, pas selon toute la table déjà posée. |
-| **Arrivées** | `soin-creatures` (Yamina), `heures` (Guetteur), `bouclier` (Guerrier, qui peut le garder ou le donner, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
+| **Arrivées** | `soin-creatures` (Yamina en zone, et la Völva qui en désigne une seule pour 3 PV, `cible: 'creature-amie'`), `heures` (Guetteur), `bouclier` (Guerrier, qui peut le garder ou le donner, Veilleuse, Tour de sable et Salem en `cible: 'soi'`), `bouclier-lumiere` (Dame aux ailes d'or), `recyclage`, `reanimation`, `defausse-adverse` | Chacune a maintenant son bonus ; auparavant la créature n'était jouée que pour son corps. |
 
 Ce qui reste volontairement hors du modèle : `prixPv` et les effets sans carte
 au catalogue (`sable`, `regarder-dessus`, `compteurs-arme`) ; et l'arrivée

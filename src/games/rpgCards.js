@@ -803,8 +803,13 @@ export const RPG_CREATURE_CARDS = [
     element: 'neige', cost: 3, atk: 2, def: 3,
     rarity: 'inhabituelle', typeLine: 'Créature — Guérisseuse viking',
     art: 'volva-soigneuse', furie: 2,
-    soinFurie: 1,
-    text: 'Furie 2 — Quand sa Furie s’active, soignez les autres créatures alliées de 1.',
+    // La Völva panse UNE blessure, la plus urgente : son arrivée désigne une
+    // créature alliée — la sienne comprise (`cibleSoi`), sans quoi l'arrivée se
+    // perdrait sur une table vide. Rien de plus : pas de soin de zone, ni à
+    // l'arrivée ni quand sa Furie s'allume. Sa Furie, elle, reste entière :
+    // +2 ATQ tant qu'elle saigne.
+    arrivee: { type: 'soin-creatures', amount: 3, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
+    text: 'Quand la Völva arrive : une créature alliée ciblée — ou elle-même — récupère 3 PV. Furie 2.',
     flavor: 'Elle chante pour les vivants avant de compter les morts.',
   },
   {

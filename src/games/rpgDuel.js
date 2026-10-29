@@ -2151,20 +2151,9 @@ function synchroniserFurieEntite(duel, entite) {
     duel.log.push(mots.length
       ? `${entite.name} entre en furie : +${furie}/+0, ${mots.join(' et ')}.`
       : `${entite.name} entre en furie : +${furie}/+0.`);
-    const soin = Number(duelCardById(entite.carteId)?.soinFurie) || 0;
-    if (soin > 0) {
-      const cote = ['joueur', 'sorcier'].find((camp) => duel?.[camp]?.creatures?.some((c) => c.id === entite.id));
-      if (cote) for (const allie of duel[cote].creatures) {
-        if (allie.id !== entite.id && allie.pv > 0) {
-          const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
-          const pvAvant = allie.pv;
-          allie.pv = Math.min(plafond, allie.pv + soin);
-          allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
-          if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
-          synchroniserFurieEntite(duel, allie);
-        }
-      }
-    }
+    // Pas de soin de Furie : la montée en furie ne rend des PV à personne
+    // (la Völva soigne à l'ARRIVÉE, et une seule créature). L'ancien champ
+    // `soinFurie` a disparu avec son seul porteur.
   } else if (duel && pv > 0 && !active && etaitActive) {
     duel.log.push(`${entite.name} retrouve sa DEF de base : la furie retombe.`);
   }
@@ -3569,7 +3558,17 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     case 'soin-creatures': {
       const montant = Math.max(0, Number(effet.amount) || 0);
       const soins = [];
-      for (const entite of duel[cote].creatures) {
+      // Un soin CIBLÉ (`cible: 'creature-amie'`, l'arrivée de la Völva) ne
+      // panse qu'une créature : celle que la table a désignée. Sans
+      // désignation — une réanimation, un retour de Tenacité —, c'est la
+      // créature qui porte l'effet qui se soigne, jamais toute la rangée.
+      const visee = effet.cible === 'creature-amie'
+        ? duel[cote].creatures.find((entite) => entite.id === (cibleId ?? sauf))
+        : null;
+      const beneficiaires = effet.cible === 'creature-amie'
+        ? (visee ? [visee] : [])
+        : duel[cote].creatures;
+      for (const entite of beneficiaires) {
         const pvAvant = Number(entite.pv) || 0;
         // Un état restauré ou construit par un scénario peut avoir perdu son
         // plafond : il se relit alors sur la défense actuelle ou imprimée,
@@ -3596,6 +3595,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (soins.length) {
         const source = sourceCarteId ? cardById(sourceCarteId)?.name : null;
         duel.log.push(`${source ?? 'Soin'} : ${soins.join(', ')}.`);
+      } else if (visee && effet.cible === 'creature-amie') {
+        // Une plaie déjà refermée n'est pas une erreur : la cible était
+        // légale, elle n'avait simplement plus rien à reprendre. Le journal le
+        // dit, pour que le clic ne paraisse pas perdu.
+        duel.log.push(`${visee.name} n’a plus de blessure à refermer.`);
       }
       // `etJoueur` (Yamina) : le même soin s'étend au sorcier du camp —
       // les créatures d'abord, puis leur maître.
@@ -4841,6 +4845,10 @@ export function arriveeCiblePortee(carte) {
   if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
   if (arrivee.type === 'donne') return 'allie';
   if (arrivee.type === 'bouclier' && arrivee.cible === 'creature-amie' && arrivee.choisirCible) return 'allie';
+  // Le soin d'arrivée de la Völva : elle désigne la créature alliée qu'elle
+  // panse (ou elle-même, `cibleSoi`). Même portée que le bouclier de la
+  // Veilleuse — c'est le même geste, sur une autre réserve.
+  if (arrivee.type === 'soin-creatures' && arrivee.cible === 'creature-amie' && arrivee.choisirCible) return 'allie';
   return null;
 }
 
@@ -5115,7 +5123,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
   if (['debuff', 'empeche-blocage', 'donne'].includes(carte.arrivee?.type)
-    || (carte.arrivee?.type === 'bouclier' && carte.arrivee.choisirCible)) {
+    || (carte.arrivee?.type === 'bouclier' && carte.arrivee.choisirCible)
+    || (carte.arrivee?.type === 'soin-creatures' && carte.arrivee.choisirCible)) {
     // Une arrivée qui marque une créature (le venin de la Vipère, la lune de
     // Bakunawa, le passage ouvert du Faiseur) exige sa cible comme le duel
     // d'un Jarl — la portée dit quel camp, la protection garde ses droits.
