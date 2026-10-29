@@ -134,8 +134,15 @@ affichage de la Liste (T4), visage de Salem (T6), mains de Yamina
 « He omits » (T10, coupe au silence ≈ 13,1 s), sceau du portail (T11).
 Micro-respiration (±0,4 %, 4 s) sur les gros plans de visages.
 MP4 3 min 27, ~76 Mo (CRF25/slow). Vérifié : contact sheet 8 inserts
-+ likeness Salem/Mahieddine vs refs, build vert. Ambiances sonores
-attendues (l'utilisateur les fournira).
++ likeness Salem/Mahieddine vs refs, build vert.
+
+**Son V4.1 (octobre 2026).** Téléchargement impossible depuis le
+sandbox : 5 nappes 100 % procédurales (`tools/synth-ambiances.py`,
+boucles parfaites par crossfade) — vent 60 s, scintillement 24 s,
+salon de thé 48 s, bourdon 48 s, cloche 7 partiels. Mode
+`--audio-only` (mix + mux sans re-rendre la vidéo). Niveaux
+inchangés (−23,1/−4,4 dB). Remplaçables par de vrais enregistrements
+(mêmes noms de fichiers).
 
 ---
 

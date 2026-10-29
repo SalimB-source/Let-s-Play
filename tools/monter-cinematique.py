@@ -12,10 +12,11 @@ T8d et T10 en 3 plans).
 
 Entrees : public/sablier-cinematic/4k/*.jpg, audio/en/T*.mp3,
           public/Desert Solitude with Percussion.mp3
-          audio/amb/*.mp3 (optionnel, voir AMB + README du dossier)
+          audio/amb/*.wav (optionnel, voir AMB + README du dossier)
 Sorties : public/sablier-cinematic/montage/cine-intro-en-1080p.mp4
           public/sablier-cinematic/montage/sous-titres-en.vtt
 Usage : python3 tools/monter-cinematique.py
+       --audio-only : ne refait que le mix + mux (vidéo réutilisée)
 """
 import os
 import subprocess
@@ -310,10 +311,10 @@ DUREE_PLAN_MIN = 1.0
 # Les fichiers absents sont ignorés (le film reste mixable sans eux).
 # bloc None/None = tout le film. Boucles : prévoir des fichiers bouclables.
 AMB = [
-    ("wind-desert-loop.mp3", None, None, 0.10),
-    ("sand-shimmer-loop.mp3", "T05", "T05", 0.12),
-    ("tea-room-tone.mp3", "T10", "T10", 0.10),
-    ("deep-drone-loop.mp3", "T11", "T12", 0.13),
+    ("wind-desert-loop.wav", None, None, 0.10),
+    ("sand-shimmer-loop.wav", "T05", "T05", 0.12),
+    ("tea-room-tone.wav", "T10", "T10", 0.10),
+    ("deep-drone-loop.wav", "T11", "T12", 0.13),
 ]
 FADE_AMB = 2.0
 
@@ -511,6 +512,9 @@ def fmt_vtt(sec):
 
 def main():
     os.makedirs(MONTAGE, exist_ok=True)
+    audio_only = "--audio-only" in sys.argv
+    if audio_only:
+        print("Mode : audio seul (vidéo réutilisée)")
     os.makedirs(AMB_DIR, exist_ok=True)
     tmp = tempfile.mkdtemp(prefix="cine-")
 
@@ -565,59 +569,60 @@ def main():
         ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre
     ]
 
-    # 2. Segments vidéo.
-    listes_concat = []
-    for i, (bloc, img, mouv, debut, duree, fi, fo) in enumerate(segments):
-        n = max(2, round(duree * FPS))
-        vf = [filtre_zoompan(mouv, n), f"fps={FPS}", "format=yuv420p"]
-        if fi:
-            vf.append(f"fade=t=in:st=0:d={fi}")
-        if fo:
-            vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}")
-        seg = os.path.join(tmp, f"seg{i:02d}.mp4")
-        if bloc == "T12":
-            print(f"  {bloc} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
-            rendre_t12(os.path.join(K4, img), tmp, seg, n, duree, fi, fo, timeline)
+    if not audio_only:
+        # 2. Segments vidéo.
+        listes_concat = []
+        for i, (bloc, img, mouv, debut, duree, fi, fo) in enumerate(segments):
+            n = max(2, round(duree * FPS))
+            vf = [filtre_zoompan(mouv, n), f"fps={FPS}", "format=yuv420p"]
+            if fi:
+                vf.append(f"fade=t=in:st=0:d={fi}")
+            if fo:
+                vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}")
+            seg = os.path.join(tmp, f"seg{i:02d}.mp4")
+            if bloc == "T12":
+                print(f"  {bloc} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
+                rendre_t12(os.path.join(K4, img), tmp, seg, n, duree, fi, fo, timeline)
+                listes_concat.append(f"file '{seg}'")
+                continue
+            run([FF, "-y", "-v", "error", "-i", os.path.join(K4, img),
+                 "-vf", ",".join(vf), "-frames:v", str(n),
+                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
+                 seg])
             listes_concat.append(f"file '{seg}'")
-            continue
-        run([FF, "-y", "-v", "error", "-i", os.path.join(K4, img),
-             "-vf", ",".join(vf), "-frames:v", str(n),
-             "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
-             seg])
-        listes_concat.append(f"file '{seg}'")
-        print(f"  {bloc} : {duree:.1f}s ({n} img, {mouv})")
-    liste = os.path.join(tmp, "concat.txt")
-    with open(liste, "w") as f:
-        f.write("\n".join(listes_concat))
+            print(f"  {bloc} : {duree:.1f}s ({n} img, {mouv})")
+        liste = os.path.join(tmp, "concat.txt")
+        with open(liste, "w") as f:
+            f.write("\n".join(listes_concat))
 
-    video = os.path.join(tmp, "video.mp4")
-    run([FF, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", liste,
-         "-c", "copy", video])
+        video = os.path.join(tmp, "video.mp4")
+        run([FF, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", liste,
+             "-c", "copy", video])
 
-    # 3. Post-production : étalonnage + voile de sable + couche lumière
-    # pré-rendue + vignette + grain.
-    sable = generer_sable(os.path.join(tmp, "sable.mp4"))
-    flare_gold = generer_flare(os.path.join(tmp, "flare-gold.png"))
-    flare_portal = generer_flare(os.path.join(tmp, "flare-portal.png"),
-                                 teinte=(170, 215, 255), cy=0.45)
-    assets = {"gold": flare_gold, "portal": flare_portal}
-    lumiere = generer_lumiere(os.path.join(tmp, "lumiere.mp4"), duree_tot, pulses, assets)
-    cmd = [FF, "-y", "-v", "error", "-i", video, "-stream_loop", "-1", "-i", sable,
-           "-i", lumiere]
-    fc = [f"[0:v]fps={FPS},eq=saturation=1.06,"
-          f"colortemperature=temperature=5200:mix=0.12[v0]",
-          f"[1:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p,"
-          f"fade=t=in:st=0:d=3,fade=t=out:st={duree_tot - 3:.2f}:d=3[s]",
-          "[v0][s]blend=all_mode=screen:all_opacity=0.50[v1]",
-          f"[2:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p[l]",
-          "[v1][l]blend=all_mode=screen:all_opacity=1.0[v2]",
-          "[v2]vignette=angle=PI/4.6,noise=alls=5:allf=t,format=yuv420p[vout]"]
-    video_post = os.path.join(tmp, "video-post.mp4")
-    run(cmd + ["-filter_complex", ";".join(fc), "-map", "[vout]",
-               "-t", f"{duree_tot:.2f}",
-               "-c:v", "libx264", "-preset", "fast", "-crf", "21",
-               video_post])
-    print(f"Post : {os.path.getsize(video_post) / 1e6:.1f} Mo")
+        # 3. Post-production : étalonnage + voile de sable + couche lumière
+        # pré-rendue + vignette + grain.
+        sable = generer_sable(os.path.join(tmp, "sable.mp4"))
+        flare_gold = generer_flare(os.path.join(tmp, "flare-gold.png"))
+        flare_portal = generer_flare(os.path.join(tmp, "flare-portal.png"),
+                                     teinte=(170, 215, 255), cy=0.45)
+        assets = {"gold": flare_gold, "portal": flare_portal}
+        lumiere = generer_lumiere(os.path.join(tmp, "lumiere.mp4"), duree_tot, pulses, assets)
+        cmd = [FF, "-y", "-v", "error", "-i", video, "-stream_loop", "-1", "-i", sable,
+               "-i", lumiere]
+        fc = [f"[0:v]fps={FPS},eq=saturation=1.06,"
+              f"colortemperature=temperature=5200:mix=0.12[v0]",
+              f"[1:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p,"
+              f"fade=t=in:st=0:d=3,fade=t=out:st={duree_tot - 3:.2f}:d=3[s]",
+              "[v0][s]blend=all_mode=screen:all_opacity=0.50[v1]",
+              f"[2:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p[l]",
+              "[v1][l]blend=all_mode=screen:all_opacity=1.0[v2]",
+              "[v2]vignette=angle=PI/4.6,noise=alls=5:allf=t,format=yuv420p[vout]"]
+        video_post = os.path.join(tmp, "video-post.mp4")
+        run(cmd + ["-filter_complex", ";".join(fc), "-map", "[vout]",
+                   "-t", f"{duree_tot:.2f}",
+                   "-c:v", "libx264", "-preset", "fast", "-crf", "21",
+                   video_post])
+        print(f"Post : {os.path.getsize(video_post) / 1e6:.1f} Mo")
 
     # 4. Cloche (réelle si fournie, sinon synthétique : partiels inharmoniques).
     bell_src = None
@@ -708,8 +713,16 @@ def main():
 
     # 7. Mux final.
     final = os.path.join(MONTAGE, "cine-intro-en-1080p.mp4")
-    run([FF, "-y", "-v", "error", "-i", video_post, "-i", mix,
-         "-c", "copy", "-movflags", "+faststart", final])
+    if audio_only:
+        # La vidéo existe déjà : on ne remplace que la piste audio.
+        tmp_final = os.path.join(tmp, "final.mp4")
+        run([FF, "-y", "-v", "error", "-i", final, "-i", mix,
+             "-map", "0:v", "-map", "1:a", "-c", "copy",
+             "-movflags", "+faststart", tmp_final])
+        os.replace(tmp_final, final)
+    else:
+        run([FF, "-y", "-v", "error", "-i", video_post, "-i", mix,
+             "-c", "copy", "-movflags", "+faststart", final])
     print(f"MP4 : {final} ({os.path.getsize(final) / 1e6:.1f} Mo)")
 
     # 8. Sous-titres EN recalés (répartition au prorata des caractères).
