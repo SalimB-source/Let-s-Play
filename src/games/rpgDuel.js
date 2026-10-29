@@ -213,9 +213,9 @@ export function rpgConsommerPrisesEnCale(duel) {
 // prime toujours sur le set pirate. Les deux journaux coexistent : c'est la
 // page qui tait l'accueil générique quand la carte a sa propre voix — ainsi
 // une Barbe-Rousse parle au lieu d'écouter « Ahoy ! ». Ni les jetons, ni les
-// réanimations, ni les détenues rendues en jeu par l'ouverture d'une cale ne
-// passent par ces journaux : le moteur précise lui-même que ces retours ne
-// sont pas des arrivées. La page consomme les journaux à chaque rendu.
+// réanimations ordinaires, ni les détenues rendues par l'ouverture d'une cale
+// ne passent par ces journaux. La renaissance de Tenacité y passe pour rejouer
+// la voix de la carte. La page consomme les journaux à chaque rendu.
 const arriveesPirateAudioParDuel = new WeakMap();
 const arriveesNavireAudioParDuel = new WeakMap();
 const arriveesDwarfAudioParDuel = new WeakMap();
@@ -256,9 +256,9 @@ export function rpgConsommerArriveesDwarf(duel) {
   return journal;
 }
 
-function journaliserArriveeCreature(duel, cote, entite) {
+function journaliserArriveeCreature(duel, cote, entite, origine = null) {
   const carte = duelCardById(entite.carteId);
-  const evenement = { entityId: entite.id, carteId: entite.carteId, cote };
+  const evenement = { entityId: entite.id, carteId: entite.carteId, cote, ...(origine ? { origine } : {}) };
   // Le journal général reçoit toute entrée en jeu : la page y lit les voix
   // propres aux cartes (celles qui supplantent l'accueil générique).
   const toutes = arriveesCreatureAudioParDuel.get(duel) ?? [];
@@ -2325,8 +2325,8 @@ function tenterEsquive(duel, entite, sourceType) {
  *
  * Elle passe par `rpgBlesserCreature` avec le type « capacite » : les
  * capacités ne s'esquivent pas, une riposte ne peut donc jamais être renvoyée
- * en boucle par une Esquive adverse. Une créature déjà tombée ne riposte pas ;
- * une Esquive réussie, elle, n'empêche rien — c'est tout l'intérêt de la carte.
+ * en boucle par une Esquive adverse. Même un coup fatal déclenche la riposte ;
+ * une Esquive réussie ne l'empêche pas non plus.
  *
  * @param {object} duel partie en cours
  * @param {object} defenseur entité qui porte Contre-attaque
@@ -2334,7 +2334,7 @@ function tenterEsquive(duel, entite, sourceType) {
  * @returns {boolean} vrai si une riposte est partie
  */
 function riposteDeContreAttaque(duel, defenseur, source) {
-  if (!defenseur?.contreAttaque || !(defenseur.pv > 0)) return false;
+  if (!defenseur?.contreAttaque) return false;
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
@@ -2357,10 +2357,10 @@ function riposteDeContreAttaque(duel, defenseur, source) {
  * l'a lancé. Les effets de zone passent par `ripostesDeZone`, qui réveille
  * chaque Contre-attaque atteinte par la vague.
  */
-function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
+function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType, dernierEtat = null) {
   if (!cibleId || effet?.cible !== 'creature') return false;
   if (sourceType !== 'capacite' && sourceType !== 'magie') return false;
-  const defenseur = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+  const defenseur = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId) ?? dernierEtat;
   if (!defenseur?.contreAttaque) return false;
   return riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
     ? { type: 'sorcier', cote }
@@ -2371,24 +2371,23 @@ function riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType) {
  * Les Contre-attaques d'une VAGUE DE ZONE. Une zone ne désigne personne, mais
  * chaque créature adverse que la vague atteint réellement — ni épargnée par
  * une parade, ni écartée par une protection, ni du camp du lanceur — riposte
- * si elle porte Contre-attaque et tient encore debout : un sort se paie sur
+ * si elle porte Contre-attaque, même si la vague la tue : un sort se paie sur
  * le visage du sorcier lanceur, une capacité sur la créature source.
  *
- * Une créature tuée par la vague ne riposte pas (elle n'est plus dans le
- * camp, et `riposteDeContreAttaque` exige des PV > 0) ; une Esquive réussie
- * n'empêche rien, comme pour un effet ciblé ; une créature dont la parade a
+ * Les victimes gardent leur attaque au moment du coup pour riposter ; une
+ * Esquive réussie n'empêche rien ; une créature dont la parade a
  * encaissé la vague n'est pas dans la liste et ne riposte donc pas.
  *
  * @param {Array<{camp: string, entiteId: string}>} touchees entités que la
  *   vague a réellement atteintes, tous camps confondus.
  */
 function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
-  for (const { camp, entiteId } of touchees) {
+  for (const { camp, entiteId, dernierEtat } of touchees) {
     // Seul le camp adverse du lanceur riposte : une zone qui balaie aussi
     // les alliés (le Grand Hiver, le vent de la Valkyrie) ne fait pas
     // frapper ses propres créatures.
     if (camp !== autre(coteLanceur)) continue;
-    const defenseur = duel[camp].creatures.find((entite) => entite.id === entiteId);
+    const defenseur = duel[camp].creatures.find((entite) => entite.id === entiteId) ?? dernierEtat;
     if (!defenseur?.contreAttaque) continue;
     riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
       ? { type: 'sorcier', cote: coteLanceur }
@@ -2408,6 +2407,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
   // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
   const esquivesContre = [];
   for (const [indexCoup, coup] of coups.entries()) {
+    if (coup.rapide) coup.contreAttaqueAtteinte = false;
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
@@ -2421,6 +2421,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       if (!(entite.bouclier > 0)) entite.bouclierEpuise = true;
       continue;
     }
+    if (coup.rapide && Number(coup.amount) > 0) coup.contreAttaqueAtteinte = true;
     if (tenterEsquive(duel, entite, coup.sourceType)) {
       // Une attaque esquivée reste une attaque portée : Contre-attaque se
       // déclenche. Les attaques ciblées sont déjà comptées par `rpgLancerAttaque`
@@ -2727,10 +2728,11 @@ function resoudreEchos(duel) {
         // L'écho est la seconde vague d'un sort : une parade neuve l'encaisse
         // comme la vague initiale et tombe à sa place.
         if (paradeZoneBloque(duel, cible, echo.sourceType, cote, echo.coteSource)) continue;
+        const dernierEtat = { ...cible };
         const blessure = rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
         // La protection écarte totalement l'écho ; l'Esquive, elle, n'éteint
         // pas la Contre-attaque que la vague peut réveiller.
-        if (!blessure.protegee) touchees.push({ camp: cote, entiteId: cible.id });
+        if (!blessure.protegee && !blessure.bouclierLumiere) touchees.push({ camp: cote, entiteId: cible.id, dernierEtat });
       }
       ripostesDeZone(duel, echo.coteSource, null, echo.sourceType, touchees);
     }
@@ -3253,6 +3255,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             continue;
           }
           victimes.push({ camp, entite });
+          touchees.push({ camp, entiteId: entite.id, dernierEtat: { ...entite } });
         }
       }
       for (const { camp, entite } of victimes) {
@@ -3275,8 +3278,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const declenchements = [];
       const victimes = [];
       const epargnees = [];
-      // Survivantes atteintes par la vague (Esquive ou coût trop élevé) :
-      // elles restent en jeu et peuvent riposter si elles portent Contre-attaque.
+      // Toutes les créatures atteintes, y compris celles qui sont détruites,
+      // peuvent riposter si elles portent Contre-attaque.
       const touchees = [];
       for (const camp of camps) {
         for (const entite of duel[camp].creatures) {
@@ -3297,6 +3300,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
           if ((duelCardById(entite.carteId)?.cost ?? 0) <= effet.coutMax) {
             victimes.push({ camp, entite });
+            touchees.push({ camp, entiteId: entite.id, dernierEtat: { ...entite } });
           } else {
             epargnees.push({ camp, entite });
             touchees.push({ camp, entiteId: entite.id });
@@ -3456,8 +3460,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // camp du lanceur, `toutes-autres` la table entière hors la source (la
       // vague du Léviathan). `pioche` fait piocher le lanceur après le renvoi.
       if (effet.cible === 'toutes-autres') {
-        // Vague du Léviathan : les renvoyées quittent la table et, comme les
-        // détruites, ne ripostent pas (elles ne sont plus dans le camp). Seule
+        // Vague du Léviathan : les renvoyées quittent la table et ne ripostent pas (elles ne sont plus dans le camp). Seule
         // une créature qui reste en jeu tout en ayant été atteinte — une Esquive
         // réussie, donc uniquement face à une source de magie — peut réveiller
         // sa Contre-attaque. Les protégées (`renvoyerEnMain` refuse) et les
@@ -3883,14 +3886,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote))
-          .map((entite) => ({ camp, entiteId: entite.id })));
+          .map((entite) => ({ camp, entiteId: entite.id, dernierEtat: { ...entite } })));
         const coups = atteintes.map(({ camp, entiteId }) => ({
           cote: camp, entiteId, amount: effet.amount ?? 0, sourceElement, sourceType,
         }));
         appliquerDegatsDeCombatSimultanes(duel, coups);
-        // Les Contre-attaques des survivants frappent le lanceur : un sort
+        // Les Contre-attaques des créatures atteintes frappent le lanceur : un sort
         // va au visage du sorcier, une capacité à sa créature source.
-        ripostesDeZone(duel, cote, sauf, sourceType, atteintes);
+        ripostesDeZone(duel, cote, sauf, sourceType, atteintes.filter(({ dernierEtat }) =>
+          !(sourceType === 'magie' && dernierEtat.bouclierLumiere)));
         return;
       }
       if (effet.cible === 'sorcier') {
@@ -3954,11 +3958,20 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // dégât, ni gel associé, et la parade tombe. Les autres cibles sont
         // frappées normalement.
         if (paradeZoneBloque(duel, cible, sourceType, campCible, cote)) continue;
+        const dernierEtat = { ...cible };
         const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
-        if (blessure.protegee) continue;
-        if (estUneZone) toucheesParLaVague.push({ camp: campCible, entiteId: cible.id });
+        if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
+        if (estUneZone) toucheesParLaVague.push({ camp: campCible, entiteId: cible.id, dernierEtat });
+        // Les cibles supplémentaires d'un effet ciblé (Oni, Feux de kitsune)
+        // ripostent aussi. La première est déjà traitée par `appliquer`.
+        else if (cible.id !== cibleId && campCible === adv && ['magie', 'capacite'].includes(sourceType)) {
+          const defenseur = duel[campCible].creatures.find((entite) => entite.id === cible.id) ?? dernierEtat;
+          riposteDeContreAttaque(duel, defenseur, sourceType === 'magie'
+            ? { type: 'sorcier', cote }
+            : { type: 'creature', cote, entiteId: sauf });
+        }
         // Un sort esquivé est annulé en entier sur cette créature : ni dégât,
         // ni gel associé. Les autres cibles font leur propre jet — mais
         // l'Esquive n'éteint pas la Contre-attaque, déjà enregistrée.
@@ -4033,9 +4046,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType));
       const aGeler = [];
       // Les atteintes de la vague de gel (esquive comprise) : chacune peut
-      // réveiller une Contre-attaque si sa porteuse survit.
+      // réveiller une Contre-attaque même si sa porteuse est détruite.
       const touchees = [];
       for (const cible of cibles) {
+        const dernierEtat = { ...cible };
         if (zoneGel && tenterEsquive(duel, cible, sourceType)) {
           touchees.push(cible);
           continue;
@@ -4043,8 +4057,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (Number.isFinite(effet.degats) && effet.degats > 0) {
           const blessure = rpgBlesserCreature(duel, adv, cible.id, effet.degats,
             sourceElement, null, sourceType, sourceCarteId);
-          if (blessure.esquive) {
-            touchees.push(cible);
+          if (blessure.protegee || blessure.bouclierLumiere) continue;
+          if (blessure.esquive || !duel[adv].creatures.some((entite) => entite.id === cible.id)) {
+            touchees.push(dernierEtat);
             continue;
           }
         }
@@ -4056,11 +4071,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         }
       }
       for (const cible of aGeler) gelerEntite(duel, cible);
-      // Le gel de zone atteint des survivantes : leurs Contre-attaques
-      // ripostent sur le lanceur. Le gel ciblé passe par `riposterSurEffet`.
+      // Le gel de zone réveille les Contre-attaques des créatures atteintes,
+      // y compris celles qui sont tombées sous les dégâts. Le gel ciblé passe par `riposterSurEffet`.
       if (zoneGel) {
         ripostesDeZone(duel, cote, sauf, sourceType,
-          touchees.map((entite) => ({ camp: adv, entiteId: entite.id })));
+          touchees.map((entite) => ({ camp: adv, entiteId: entite.id, dernierEtat: entite })));
       }
       return;
     }
@@ -4395,13 +4410,20 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
  * coup moins vif.
  */
 function appliquer(duel, cote, effet, cibleId, sauf = null, sourceElement = null, sourceType = null, sourceCarteId = null, cibleCamp = null) {
+  const cibleAvant = duel[autre(cote)]?.creatures.find((entite) => entite.id === cibleId);
+  const dernierEtat = cibleAvant ? { ...cibleAvant } : null;
+  const cibleProtegee = cibleAvant && (rpgEstProtegee(cibleAvant, sourceElement)
+    || rpgEstProtegeeDesSorts(cibleAvant, sourceElement, sourceType)
+    || (sourceType === 'magie' && effet?.type === 'degats' && cibleAvant.bouclierLumiere));
+  const destructionsAvant = rpgNombreDestructions(duel);
   // Un effet confié à l'attente de Boualem n'a rien frappé : pas de riposte
   // tant que son contrôleur n'a pas désigné la nouvelle cible.
   if (appliquerEffet(duel, cote, effet, cibleId, sauf, sourceElement, sourceType, sourceCarteId, cibleCamp) === 'differe') return;
   // Une créature du camp du lanceur, frappée par ricochet, ne riposte pas
   // contre son propre camp.
-  if (cibleCamp && cibleCamp !== autre(cote)) return;
-  riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType);
+  if ((cibleCamp && cibleCamp !== autre(cote)) || cibleProtegee) return;
+  const detruite = rpgDestructionsDepuis(duel, destructionsAvant).some((evenement) => evenement.entityId === cibleId);
+  riposterSurEffet(duel, cote, effet, cibleId, sauf, sourceType, detruite ? dernierEtat : null);
 }
 
 /** Une arme attachée quitte le jeu avec son porteur, sans revenir en main. */
@@ -6748,11 +6770,17 @@ export function rpgLancerAttaque(
       sourceId,
     });
   };
+  const etatsCiblesRapides = new Map(frappesRapides.map((frappe) => {
+    const cible = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId);
+    return [frappe.cibleId, cible ? { ...cible } : null];
+  }));
+  const destructionsAvantFrappes = rpgNombreDestructions(duel);
   // La déclaration passe à l'histoire : la phase d'attaque de ce camp est jouée,
   // aucun second combat ne s'ouvrira avant le tour suivant (`rpgFinDeTour`).
   duel.attaqueJouee = cote;
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  const ciblesRapidesDetruites = new Set(rpgDestructionsDepuis(duel, destructionsAvantFrappes).map((evenement) => evenement.entityId));
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       resoudreCapaciteBlocage(duel, adv, bloqueurId, attaquant.id);
@@ -6943,12 +6971,16 @@ export function rpgLancerAttaque(
   }
   // Contre-attaque : la cible d’une attaque ciblée rend le coup, qu'elle ait
   // encaissé la frappe ou qu'elle l'ait esquivée — seule une frappe RATÉE ne
-  // lui laisse rien à rendre. La cible tombée sous le coup, elle, ne riposte
-  // plus (`riposteDeContreAttaque` lit ses PV). La riposte est résolue après
+  // lui laisse rien à rendre. Même une cible détruite rend le coup avec son
+  // attaque au moment de la frappe. La riposte est résolue après
   // le journal de la frappe rapide, pour que le récit se lise dans l'ordre.
   for (const frappe of frappesRapides) {
     if (frappe.annule || frappe.rate) continue;
-    const defenseur = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId);
+    const coup = degatsAvantCombat.find((candidate) => candidate.rapide
+      && candidate.sourceId === frappe.attaquantId && candidate.entiteId === frappe.cibleId);
+    if (!coup?.contreAttaqueAtteinte) continue;
+    const defenseur = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId)
+      ?? (ciblesRapidesDetruites.has(frappe.cibleId) ? etatsCiblesRapides.get(frappe.cibleId) : null);
     if (!defenseur) continue;
     riposteDeContreAttaque(duel, defenseur, {
       type: 'creature', cote, entiteId: frappe.attaquantId,
@@ -7210,6 +7242,7 @@ function resoudreRetoursProgrammes(duel) {
       }
       camp.creatures.push(entite);
       placerDansEmplacement(duel, cote, entite);
+      if (retour.tenacite) journaliserArriveeCreature(duel, cote, entite, 'tenacite');
       // Tenacité, Khopesh, Anqa : revenir en jeu rejoue l'arrivée de la carte.
       appliquerArriveeDeRetour(duel, cote, carte, entite);
       if (carte.retourDeclenche) {

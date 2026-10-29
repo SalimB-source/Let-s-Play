@@ -327,7 +327,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     contreAttaque: true,
     arrivee: { type: 'jetons', jeton: 'corsaire', nombre: 1 },
     typeLine: 'Créature légendaire — Amiral des deux mers',
-    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez un jeton Corsaire 2/1.',
+    text: 'Abordage 5 — quand La Barbe-Rousse arrive en jeu, la créature adverse ciblée de coût 5 ou moins est prise en sa cale : elle ne déclenche rien. Quand La Barbe-Rousse arrive : créez un jeton Corsaire 2/1. Contre-attaque — Elle riposte aux attaques ciblées, aux capacités qui la ciblent et aux sorts qui l’atteignent, même si le coup la détruit.',
     flavor: 'Alger lui doit ses remparts ; les deux mers lui doivent le reste.',
   }),
   // La Barbe Noire est une carte 100 % Ténèbres : née dans le set Piraterie

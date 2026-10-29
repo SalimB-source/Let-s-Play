@@ -9,6 +9,8 @@ import NotFound from './NotFound';
 // Les actus du jour générées par le robot (src/news/autoIndex.js, vide au
 // départ) cohabitent avec les articles manuels ci-dessous : même gabarit.
 import { autoStories } from '../news/autoIndex';
+import { dailyStories as cultureTechStories20261029 } from '../news/daily/2026-10-29-cinema-tech';
+import { dailyStories as gamingStories20261029 } from '../news/daily/2026-10-29-gaming';
 import { dailyStories } from '../news/daily/2026-10-18';
 import { dailyStories as dailyStories20261011 } from '../news/daily/2026-10-11';
 import { dailyStories as dailyStories20261014 } from '../news/daily/2026-10-14';
@@ -34,6 +36,8 @@ const stories = {
   // communes aux articles, aux cartes des hubs, à la une de l'accueil, à la
   // recherche et au SEO. Chaque édition vit dans son fichier
   // (src/news/daily/<date>.js) ; l'import nu désigne l'édition du jour.
+  ...cultureTechStories20261029,
+  ...gamingStories20261029,
   ...dailyStories,
   ...dailyStories20261017,
   ...dailyStories20261016,

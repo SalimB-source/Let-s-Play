@@ -24,6 +24,7 @@ import {
   rpgACarteUneVoix,
   rpgArrivalVoiceFile,
   rpgArrivalVoiceUrl,
+  rpgRetoursTenaciteEntreEtats,
 } from '../src/games/rpgArrivalVoices.js';
 import { cardById } from '../src/games/rpgCards.js';
 import {
@@ -32,6 +33,8 @@ import {
   rpgConsommerArriveesNavire,
   rpgConsommerArriveesPirate,
   rpgJouerCreature,
+  rpgBlesserCreature,
+  rpgFinDeTour,
   rpgNouveauDuel,
 } from '../src/games/rpgDuel.js';
 import { RpgAudioPlayer } from '../src/games/rpgAudio.js';
@@ -209,6 +212,49 @@ test('le moteur journalise toute entrée en jeu, voix ou non', () => {
   assert.equal(sansVoix.length, 1);
   assert.equal(sansVoix[0].cote, 'sorcier');
   assert.equal(rpgACarteUneVoix(sansVoix[0].carteId), false);
+});
+
+test('Tenacité rejoue la voix existante une fois au vrai retour, pour les deux camps', () => {
+  for (const cote of ['joueur', 'sorcier']) {
+    const duel = duelDeTest();
+    duel.tour = cote;
+    donner(duel, cote, 'maitre-du-marteau');
+    const maitre = rpgJouerCreature(duel, cote, 'maitre-du-marteau', 'sorcier').entite;
+    assert.ok(maitre);
+    assert.ok(rpgArrivalVoiceFile(maitre.carteId));
+    rpgConsommerArriveesCreature(duel);
+    rpgBlesserCreature(duel, cote, maitre.id, 20, 'braise');
+    assert.deepEqual(rpgConsommerArriveesCreature(duel), [], 'la mort ne joue pas la voix de retour');
+    rpgFinDeTour(duel);
+    assert.deepEqual(rpgConsommerArriveesCreature(duel), [], 'aucune voix avant le retour effectif');
+    rpgFinDeTour(duel);
+    const revenu = duel[cote].creatures.find((entite) => entite.carteId === maitre.carteId);
+    assert.ok(revenu);
+    assert.deepEqual(rpgConsommerArriveesCreature(duel), [{
+      entityId: revenu.id, carteId: maitre.carteId, cote, origine: 'tenacite',
+    }]);
+    assert.deepEqual(rpgConsommerArriveesCreature(duel), [], 'la voix ne se rejoue pas au rendu suivant');
+    rpgBlesserCreature(duel, cote, revenu.id, 20, 'braise');
+    rpgFinDeTour(duel);
+    rpgFinDeTour(duel);
+    assert.deepEqual(rpgConsommerArriveesCreature(duel), [], 'pas de seconde renaissance');
+  }
+});
+
+test('les instantanés PvP détectent uniquement les retours de Tenacité effectifs', () => {
+  const avant = {
+    joueur: { creatures: [], retoursProgrammes: [{ carteId: 'maitre-du-marteau', tenacite: true }] },
+    sorcier: { creatures: [], retoursProgrammes: [{ carteId: 'la-barbe-rousse', tenacite: true }] },
+  };
+  const apres = {
+    joueur: { creatures: [{ id: 'nouveau', carteId: 'maitre-du-marteau', tenaciteDisponible: false }], retoursProgrammes: [] },
+    sorcier: { creatures: [], retoursProgrammes: avant.sorcier.retoursProgrammes },
+  };
+  assert.deepEqual(rpgRetoursTenaciteEntreEtats(avant, apres), [
+    { entityId: 'nouveau', carteId: 'maitre-du-marteau', cote: 'joueur', origine: 'tenacite' },
+  ]);
+  assert.deepEqual(rpgRetoursTenaciteEntreEtats(apres, apres), [], 'une mise à jour identique ne rejoue rien');
+  assert.deepEqual(rpgRetoursTenaciteEntreEtats(avant, avant), [], 'pas de voix si le retour attend');
 });
 
 test('La Barbe-Rousse et le Berserk du crépuscule entrent en jeu avec leur propre voix', () => {

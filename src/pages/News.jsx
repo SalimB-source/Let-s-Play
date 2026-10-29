@@ -1,14 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-10-29-gaming';
+import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-10-29-cinema-tech';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
 
-// Sélection du 18.10.2026 : une actu par univers, partagée avec les flux,
-// les articles et la recherche, avec des miniatures locales dédiées.
-const todayStories = dailyNewsListing;
+// Une actualité par univers, partagée avec les flux, la recherche et les articles.
+const todayStories = [
+  dailyNewsListing[0],
+  cultureTechNews20261029.find((story) => story.to.startsWith('/news/cinema/')),
+  cultureTechNews20261029.find((story) => story.to.startsWith('/news/tech/')),
+].filter(Boolean);
 
 // Page intermédiaire : elle ouvre sur les actus du jour, puis laisse choisir
 // son univers — les trois grandes cartes mènent aux hubs GAMING, CINÉMA /

@@ -607,7 +607,7 @@ export const EFFET_DEFINITIONS = {
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
   esquive: () => '25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
-  contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Une créature tuée par la vague ne riposte pas ; une Esquive réussie ne l’empêche pas de riposter.',
+  contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,

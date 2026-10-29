@@ -43,6 +43,8 @@ import {
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
 import { dailyStories, dailyNewsListing } from '../src/news/daily/2026-10-14.js';
+import { dailyStories as cultureTechStories20261029, dailyNewsListing as cultureTechListing20261029 } from '../src/news/daily/2026-10-29-cinema-tech.js';
+import { dailyStories as gamingStories20261029, dailyNewsListing as gamingListing20261029 } from '../src/news/daily/2026-10-29-gaming.js';
 import {
   dailyStories as dailyStories20261011,
   dailyNewsListing as dailyNewsListing20261011,
@@ -192,6 +194,10 @@ const OFFICIAL_CHANNELS = new Set([
   'Total War',
   'Call of Duty',
   'PlayStation',
+  'Warner Bros. Pictures International', // chaîne internationale officielle du distributeur
+  'Google DeepMind', // chaîne officielle de Google DeepMind
+  'PlayStation Access', // chaîne officielle PlayStation UK, présentation des jeux mensuels
+  'Pokémon UNITE', // chaîne officielle du jeu
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -222,6 +228,8 @@ check('libellé de nature (TEASER)', trailerKindLabel('teaser'), 'TEASER');
 check('libellé de nature (EXTRAIT)', trailerKindLabel('extrait'), 'EXTRAIT');
 check('nature de vidéo (COULISSES)', trailerKindLabel('coulisses'), 'COULISSES');
 check('nature de vidéo (REPLAY)', trailerKindLabel('replay'), 'REPLAY');
+check('nature de vidéo (PRÉSENTATION)', trailerKindLabel('presentation'), 'PRÉSENTATION');
+check('présentation au féminin', trailerBadgeLabel('presentation'), 'PRÉSENTATION OFFICIELLE');
 check('coulisses au féminin pluriel', trailerBadgeLabel('coulisses'), 'COULISSES OFFICIELLES');
 check('replay au masculin', trailerBadgeLabel('replay'), 'REPLAY OFFICIEL');
 check('nature inconnue : repli sur bande-annonce', trailerKindLabel('making-of'), 'BANDE-ANNONCE');
@@ -246,12 +254,12 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 // CurrentNews.jsx ; les cartes du hub donnent les routes réellement publiées
 // (dont la série animée Diablo, servie par le gabarit Blizzard).
 const allDailyStoryKeys = [
-  ...Object.keys(dailyStories20261018), ...Object.keys(dailyStories20261017),
+  ...Object.keys(cultureTechStories20261029), ...Object.keys(gamingStories20261029), ...Object.keys(dailyStories20261018), ...Object.keys(dailyStories20261017),
   ...Object.keys(dailyStories20261016), ...Object.keys(dailyStories20261015),
   ...Object.keys(dailyStories), ...Object.keys(dailyStories20261011),
 ];
 const allDailyListings = [
-  ...dailyNewsListing20261018, ...dailyNewsListing20261017,
+  ...cultureTechListing20261029, ...gamingListing20261029, ...dailyNewsListing20261018, ...dailyNewsListing20261017,
   ...dailyNewsListing20261016, ...dailyNewsListing20261015,
   ...dailyNewsListing, ...dailyNewsListing20261011,
 ];
@@ -341,9 +349,9 @@ for (const key of rendered) {
   const first = videos[0];
   check(`${key} : un seul lecteur à la fois`, page.players.length, 1);
   check(`${key} : l’embed vient de youTubeEmbedUrl (${first.id})`, page.players[0], youTubeEmbedUrl(first.id));
-  check(`${key} : le lecteur est titré pour les lecteurs d’écran`, page.titles[0].startsWith(first.title), true);
+  check(`${key} : le lecteur est titré pour les lecteurs d’écran`, page.titles[0].startsWith(first.title.replace(/'/g, '’')), true);
   check(`${key} : la nature de la vidéo est annoncée`, page.badge, trailerBadgeLabel(first.kind));
-  check(`${key} : le titre affiché est celui de la vidéo officielle`, page.title, first.title);
+  check(`${key} : le titre affiché est celui de la vidéo officielle`, page.title, first.title.replace(/'/g, '’'));
   check(`${key} : la chaîne officielle est citée`, page.channel, first.channel);
   check(`${key} : un lien vers la vidéo YouTube`, page.watchLinks.join(', '), trailerWatchUrl(first.id));
   check(`${key} : le crédit des vidéos est affiché`, page.credit, entry.credit);

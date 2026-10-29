@@ -11,7 +11,8 @@ import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 // une pastille « BANDE-ANNONCE » sur sa vignette (src/articleTrailers.js).
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
+import { dailyNewsListing as cultureTechNews20261029, editionDate } from '../news/daily/2026-10-29-cinema-tech';
+import { dailyNewsListing } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 import { dailyNewsListing as dailyNewsListing20261015 } from '../news/daily/2026-10-15';
@@ -95,6 +96,7 @@ export default function CinemaNews() {
   // du week-end des 03-04.10.2026 — Verity vs Digger, Dexter Resurrection S2
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
+    ...cultureTechNews20261029.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261017.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261016.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),

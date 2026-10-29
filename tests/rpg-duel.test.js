@@ -497,7 +497,7 @@ test('chaque créature adverse atteinte par une zone renvoie sa propre riposte',
   assert.equal(duel.joueur.pv, pvJoueur - 4, 'deux Contre-attaques à 2 : 4 dégâts au sorcier lanceur');
 });
 
-test('une créature tuée par la vague ne riposte pas', () => {
+test('une créature tuée par la vague riposte quand même', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -509,7 +509,151 @@ test('une créature tuée par la vague ne riposte pas', () => {
 
   assert.equal(rpgLancerMagie(duel, 'joueur', 'vent-rouge').ok, true);
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === eirik.id), false, 'Eirik est détruit');
-  assert.equal(duel.joueur.pv, pvJoueur, 'aucune riposte ne part d’une créature morte');
+  assert.equal(duel.joueur.pv, pvJoueur - 2, 'Eirik riposte même après le coup fatal');
+});
+
+test('Éclair du marteau tue Eirik mais sa Contre-attaque frappe le lanceur', () => {
+  for (const [lanceur, defenseur] of [['joueur', 'sorcier'], ['sorcier', 'joueur']]) {
+    const duel = duelDeBase();
+    donnerMana(duel, lanceur, 20);
+    donnerMana(duel, defenseur, 20);
+    donner(duel, defenseur, 'eirik-du-premier-serment');
+    const eirik = rpgJouerCreature(duel, defenseur, 'eirik-du-premier-serment').entite;
+    duel.tour = lanceur;
+    donner(duel, lanceur, 'eclair-du-marteau');
+    const pv = duel[lanceur].pv;
+    assert.equal(rpgLancerMagie(duel, lanceur, 'eclair-du-marteau', eirik.id).ok, true);
+    assert.equal(duel[defenseur].creatures.includes(eirik), false);
+    assert.equal(duel[lanceur].pv, pv - 2, 'la riposte frappe le sorcier lanceur');
+    assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 1);
+  }
+});
+
+test('une capacité ciblée fatale reçoit la Contre-attaque sur sa source', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  eirik.pv = 1;
+  donner(duel, 'joueur', 'tour-de-braise');
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', eirik.id).entite;
+  assert.equal(duel.sorcier.creatures.includes(eirik), false);
+  assert.equal(tour.pv, 2, 'la Tour subit les 2 dégâts d’Eirik');
+});
+
+test('les deux cibles de l’Oni contre-attaquent même si elles sont détruites', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const premier = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  const second = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'oni-de-la-fournaise');
+  const oni = rpgJouerCreature(duel, 'joueur', 'oni-de-la-fournaise', premier.id).entite;
+  assert.equal(duel.sorcier.creatures.includes(premier), false);
+  assert.equal(duel.sorcier.creatures.includes(second), false);
+  assert.equal(oni.pv, 1, 'les deux ripostes de 2 frappent l’Oni');
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 2);
+});
+
+test('une Attaque ciblée fatale reçoit la Contre-attaque', () => {
+  const duel = duelDeBase({ rng: () => 0.5 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
+  const attaque = rpgLancerAttaque(duel, 'joueur', [bouchra.id], {}, null, null, { [bouchra.id]: eirik.id });
+  assert.equal(attaque.ok, true);
+  assert.equal(duel.sorcier.creatures.includes(eirik), false);
+  assert.equal(duel.joueur.creatures.includes(bouchra), false, 'Bouchra est détruite par la riposte');
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 1);
+});
+
+test('la destruction totale déclenche la Contre-attaque de chaque victime adverse', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'la-derniere-pesee');
+  const pv = duel.joueur.pv;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'la-derniere-pesee').ok, true);
+  assert.equal(duel.sorcier.creatures.includes(eirik), false);
+  assert.equal(duel.joueur.pv, pv - 2);
+});
+
+test('une capacité de destruction de zone fatale déclenche la riposte sur sa source', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'tour-des-tenebres');
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-des-tenebres').entite;
+  assert.equal(duel.sorcier.creatures.includes(eirik), false);
+  assert.equal(tour.pv, 3, 'la Tour encaisse la riposte de 2');
+});
+
+test('un souffle de gel fatal déclenche la Contre-attaque', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  eirik.pv = 1;
+  donner(duel, 'joueur', 'geant-des-banquises');
+  const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
+  assert.equal(duel.sorcier.creatures.includes(eirik), false);
+  assert.equal(geant.pv, 3, 'le Géant encaisse la riposte de 2');
+});
+
+test('une Attaque ciblée ratée ne déclenche pas la Contre-attaque', () => {
+  const duel = duelDeBase({ rng: () => 0.1 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [bouchra.id], {}, null, null, { [bouchra.id]: eirik.id }).ok, true);
+  assert.equal(bouchra.pv, 1);
+  assert.equal(eirik.pv, 2);
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 0);
+});
+
+test('un bouclier de lumière absorbe la frappe ciblée sans déclencher de riposte', () => {
+  const duel = duelDeBase({ rng: () => 0.5 });
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  eirik.bouclierLumiere = true;
+  donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
+  const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [bouchra.id], {}, null, null, { [bouchra.id]: eirik.id }).ok, true);
+  assert.equal(eirik.pv, 2);
+  assert.equal(bouchra.pv, 1);
+  assert.equal(eirik.bouclierLumiere, false);
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 0);
+});
+
+test('un bouclier de lumière absorbe un Éclair du marteau sans contre-attaque', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  eirik.bouclierLumiere = true;
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  const pv = duel.joueur.pv;
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', eirik.id).ok, true);
+  assert.equal(eirik.pv, 2);
+  assert.equal(eirik.bouclierLumiere, false);
+  assert.equal(duel.joueur.pv, pv);
 });
 
 test('une parade qui encaisse la vague n’entraîne aucune riposte ; sans parade, Salem riposte', () => {

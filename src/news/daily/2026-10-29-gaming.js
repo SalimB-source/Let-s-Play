@@ -1,0 +1,101 @@
+import { youTubeThumbUrl } from '../../lib/videoThumbnails.js';
+
+// Première partie de l'édition du 29 octobre : actualités gaming des 27–29 octobre.
+// Les dates indiquent la publication de nos articles, pas celle des annonces sources.
+export const editionDate = '29.10.2026';
+export const editionIsoDate = '2026-10-29';
+
+export const dailyStories = {
+  'phantom-blade-zero-sortie-ps5-pc': {
+    date: editionDate, category: 'S-GAME · ACTION', readTime: '3 MIN DE LECTURE',
+    image: youTubeThumbUrl('cr5y9l0Wje8'), thumbnail: youTubeThumbUrl('cr5y9l0Wje8'), fallbackImage: youTubeThumbUrl('cr5y9l0Wje8', 'hq'),
+    imageAlt: 'Miniature de la bande-annonce officielle de lancement de Phantom Blade Zero publiée par PlayStation', imageCredit: 'VISUEL OFFICIEL · PLAYSTATION / S-GAME',
+    cover: 'PHANTOM BLADE ZERO', title: 'PHANTOM BLADE ZERO', accent: 'EST LÀ.',
+    dek: 'Le jeu d’action de S-GAME sort le 29 octobre sur PS5 et PC. Les premiers tests saluent ses combats, tout en signalant des réserves sur le récit et la technique.',
+    lead: 'Après un report de plusieurs semaines, Phantom Blade Zero arrive le 29 octobre 2026 sur PlayStation 5 et PC. Le jeu de S-GAME associe arts martiaux et univers inspiré du wuxia dans une aventure centrée sur les affrontements.',
+    intro: 'L’accueil critique disponible avant la sortie est globalement favorable. Au 26 octobre, Notebookcheck relevait une moyenne de 88 sur 100 sur Metacritic pour les versions PC et PS5 ; cette moyenne est susceptible d’évoluer avec l’ajout de nouveaux tests.',
+    h2: 'DES COMBATS QUI SÉDUISENT',
+    p1: 'Les critiques citées par Notebookcheck mettent en avant la fluidité des combats, le choix des armes et les affrontements contre les boss. La direction artistique, qui mêle arts martiaux et éléments plus fantastiques, contribue elle aussi à l’identité du jeu.',
+    p2: 'Les réserves ne sont pas absentes : certains testeurs jugent le récit moins convaincant ou les personnages insuffisamment développés. Des ralentissements et des à-coups ont également été rapportés, avec des résultats variables selon les configurations et les modes graphiques.',
+    quote: 'Un lancement prometteur, mais les performances méritent d’être vérifiées sur sa propre plateforme avant de se décider.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'SUR PS5 ET PC',
+    p3: 'Phantom Blade Zero est disponible sur PS5 et PC, notamment via Steam et l’Epic Games Store. Les dates affichées par certaines boutiques peuvent varier selon le fuseau horaire ; la sortie mondiale est fixée au 29 octobre.',
+    p4: 'Ces premières impressions proviennent de tests publiés avant le lancement et ne constituent pas un test de la rédaction. Les correctifs post-sortie pourront modifier l’expérience technique.',
+    take: 'À RETENIR', takeText: 'Phantom Blade Zero sort le 29 octobre sur PS5 et PC. Les premiers tests apprécient ses combats et ses boss, mais évoquent aussi des limites narratives et techniques.',
+    sourceName: 'NOTEBOOKCHECK · GAME INFORMER', source: 'D’après Notebookcheck, le 26.10.2026, et le calendrier de Game Informer, consultés le 29.10.2026.',
+    sourceUrl: 'https://www.notebookcheck.net/Phantom-Blade-Zero-emerges-as-potential-Game-of-the-Year-contender-despite-technical-shortcomings.1433848.0.html', sourceDetail: 'Lire le bilan des premiers tests',
+    credit: 'Miniature de la bande-annonce officielle de lancement publiée par PlayStation le 23.10.2026 : Phantom Blade Zero – Launch Trailer. S-GAME / PlayStation.', sentiment: 'positive', keywords: 'gaming phantom blade zero s-game action wuxia ps5 pc steam sortie 29 octobre 2026 tests',
+  },
+  'no-mans-sky-forsaken-mise-a-jour': {
+    date: editionDate, category: 'HELLO GAMES · MISE À JOUR', readTime: '3 MIN DE LECTURE',
+    image: youTubeThumbUrl('CRxQ9HK6H1o'), thumbnail: youTubeThumbUrl('CRxQ9HK6H1o'), fallbackImage: youTubeThumbUrl('CRxQ9HK6H1o', 'hq'),
+    imageAlt: 'Miniature de la bande-annonce officielle de No Man’s Sky: Forsaken publiée par PlayStation', imageCredit: 'VISUEL OFFICIEL · PLAYSTATION / HELLO GAMES',
+    cover: 'NO MAN’S SKY · FORSAKEN', title: 'NO MAN’S SKY', accent: 'FORSAKEN.',
+    dek: 'La mise à jour gratuite Forsaken, publiée le 28 octobre, ajoute des marchands mystérieux, des modules de corvette et une navigation plus directe entre les étoiles.',
+    lead: 'Hello Games poursuit le voyage de No Man’s Sky avec Forsaken, une mise à jour gratuite déployée le 28 octobre sur PC et consoles. Cette fois, l’exploration spatiale prend une tournure plus inquiétante.',
+    intro: 'Les voyageurs peuvent récupérer des objets dans des lieux dangereux, puis les échanger auprès de nouveaux marchands. Ces derniers proposent notamment des éléments destinés à personnaliser les corvettes avec une esthétique biomécanique.',
+    h2: 'DES CORVETTES PLUS INQUIÉTANTES',
+    p1: 'Les nouveaux modules permettent de modifier l’apparence de son vaisseau ou de construire une corvette à l’allure organique. Des options supplémentaires de cockpit et des objets cosmétiques accompagnent cette orientation plus sombre.',
+    p2: 'Forsaken ajoute aussi des missions de livraison : les joueurs peuvent transporter des colis à travers la galaxie. L’ensemble complète les activités déjà présentes plutôt que de remplacer l’exploration habituelle.',
+    quote: 'L’ajout le plus utile ne sera pas forcément le plus spectaculaire : naviguer plus facilement change chaque voyage.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'CAP DIRECT SUR LES ÉTOILES',
+    p3: 'La navigation évolue : il est désormais possible de viser une étoile visible depuis le cockpit pour rejoindre directement un autre système, sans passer par la carte galactique. Un menu radial facilite aussi la sélection des armes et un mode d’interface minimale réduit les éléments affichés.',
+    p4: 'Le lancement accompagne aussi l’arrivée du jeu sur iPhone et iPad. Comme toujours, les possibilités exactes et les performances dépendent de la plateforme utilisée.',
+    take: 'À RETENIR', takeText: 'Forsaken est une mise à jour gratuite de No Man’s Sky : marchands, modules de corvette, livraisons spatiales, voyage vers les étoiles visibles et interface simplifiée.',
+    sourceName: 'INSTANT GAMING · MMOS.COM', source: 'D’après Instant Gaming et MMOs.com, le 28.10.2026, consultés le 29.10.2026.',
+    sourceUrl: 'https://news.instant-gaming.com/en/articles/22730-no-man-s-sky-welcomes-the-free-forsaken-update', sourceDetail: 'Lire la présentation de la mise à jour',
+    credit: 'Miniature de la bande-annonce officielle No Man’s Sky: Forsaken publiée par PlayStation le 28.10.2026. Hello Games / PlayStation.', sentiment: 'positive', keywords: 'gaming no mans sky forsaken hello games 28 octobre 2026 mise à jour gratuite corvette iOS',
+  },
+  'playstation-plus-jeux-novembre-2026': {
+    date: editionDate, category: 'PLAYSTATION · ABONNEMENT', readTime: '3 MIN DE LECTURE',
+    image: 'https://blog.playstation.com/tachyon/2026/10/ee14b16f5f65f3dd7cdf074a83bbfa255de288ea-scaled.jpg?resize=1088%2C612&crop_strategy=smart', thumbnail: 'https://blog.playstation.com/tachyon/2026/10/ee14b16f5f65f3dd7cdf074a83bbfa255de288ea-scaled.jpg?resize=1088%2C612&crop_strategy=smart', fallbackImage: 'news/gaming-psplus-29.svg',
+    imageAlt: 'Visuel officiel PlayStation Plus présentant les jeux mensuels de novembre', imageCredit: 'VISUEL OFFICIEL · PLAYSTATION BLOG',
+    cover: 'PLAYSTATION PLUS', title: 'PS PLUS :', accent: 'JEUX DE NOVEMBRE.',
+    dek: 'Dead Island 2, Tomb Raider IV–VI Remastered et Monster Train 2 rejoignent les jeux mensuels PlayStation Plus du 3 au 30 novembre.',
+    lead: 'Sony a dévoilé le 28 octobre les jeux mensuels PlayStation Plus de novembre. Au programme : des zombies à Los Angeles, trois aventures de Lara Croft remastérisées et un roguelite de cartes.',
+    intro: 'Les abonnés pourront ajouter les trois titres à leur bibliothèque du mardi 3 au lundi 30 novembre 2026. Il s’agit de la sélection mensuelle accessible aux membres PlayStation Plus, et non d’une annonce pour le catalogue Extra ou Premium.',
+    h2: 'ZOMBIES ET AVENTURES CLASSIQUES',
+    p1: 'Dead Island 2, proposé sur PS4 et PS5, entraîne les joueurs dans une version de Los Angeles envahie par les morts-vivants. Le jeu d’action à la première personne peut également se pratiquer en coopération en ligne.',
+    p2: 'Tomb Raider IV–VI Remastered, sur les deux consoles également, réunit The Last Revelation, Chronicles et The Angel of Darkness. La compilation permet de passer des graphismes d’origine à leur version remastérisée.',
+    quote: 'Action, patrimoine et stratégie : la sélection couvre trois envies très différentes, plutôt que de miser sur un seul genre.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'MONSTER TRAIN 2 SUR PS5',
+    p3: 'Le troisième titre, Monster Train 2, est proposé sur PS5. Ce jeu solo mêle construction de paquet et combats à plusieurs niveaux, avec des clans à associer pour défendre son train face aux Titans.',
+    p4: 'Sony précise par ailleurs que les jeux mensuels d’octobre — F1 25, Hunt: Showdown 1896 et Earth Defense Force: World Brothers 2 — peuvent être ajoutés jusqu’au 2 novembre. L’accès aux jeux mensuels ajoutés dépend d’un abonnement actif.',
+    take: 'À RETENIR', takeText: 'Du 3 au 30 novembre : Dead Island 2 et Tomb Raider IV–VI Remastered sur PS4 et PS5, et Monster Train 2 sur PS5, pour les membres PlayStation Plus.',
+    sourceName: 'PLAYSTATION BLOG', source: 'D’après l’annonce du PlayStation Blog du 28.10.2026, consultée le 29.10.2026.',
+    sourceUrl: 'https://blog.playstation.com/2026/10/28/playstation-plus-monthly-games-for-november-dead-island-2-tomb-raider-iv-vi-remastered-monster-train-2/', sourceDetail: 'Lire l’annonce PlayStation',
+    credit: 'Visuel officiel de la sélection PlayStation Plus de novembre, publié sur le PlayStation Blog le 28.10.2026. Sony Interactive Entertainment.', sentiment: 'positive', keywords: 'gaming playstation plus novembre 2026 dead island 2 tomb raider monster train 2 ps4 ps5',
+  },
+  'pokemon-unite-fermeture-mars-2027': {
+    date: editionDate, category: 'POKÉMON · JEU EN LIGNE', readTime: '3 MIN DE LECTURE',
+    image: 'https://unite.pokemon.com/images/home/team-up/trailer-thumbnail.jpg', thumbnail: 'https://unite.pokemon.com/images/home/team-up/trailer-thumbnail.jpg', fallbackImage: 'news/gaming-unite-29.svg',
+    imageAlt: 'Miniature officielle de la bande-annonce de Pokémon Unite sur le site du jeu', imageCredit: 'VISUEL OFFICIEL · THE POKÉMON COMPANY',
+    cover: 'POKÉMON UNITE', title: 'POKÉMON UNITE', accent: 'PRÉPARE SES ADIEUX.',
+    dek: 'Annoncée le 27 octobre, la fermeture du jeu en ligne est prévue pour le 23 mars 2027 à 00 h UTC, sur Switch et mobile.',
+    lead: 'Pokémon Unite s’apprête à fermer ses portes. The Pokémon Company a annoncé le 27 octobre la fin du service pour le 23 mars 2027 à 00 h UTC, après plus de cinq années d’existence.',
+    intro: 'Le jeu d’affrontement en équipe restera accessible jusque-là sur Nintendo Switch, iOS et Android. Une fois les serveurs arrêtés, les parties en ligne ne seront plus possibles sur aucune de ces plateformes.',
+    h2: 'LES ACHATS SONT DÉJÀ SUSPENDUS',
+    p1: 'La vente des gemmes Aeos a été suspendue le 27 octobre, tout comme les nouvelles adhésions au Unite Club et les renouvellements automatiques. Les gemmes déjà détenues peuvent encore être utilisées avant la fermeture, selon les informations relayées par Moneycontrol.',
+    p2: 'The Pokémon Company n’a pas communiqué de raison à cette décision, rapporte Polygon. Le tournoi Pokémon Unite Aeos Crown 2027 à Tokyo doit néanmoins se tenir comme prévu avant l’arrêt du service.',
+    quote: 'La fin d’un jeu en ligne rappelle que les objets et les heures investies dépendent aussi de la durée de vie de ses serveurs.', quoteBy: 'L’ANALYSE LET’S PLAY',
+    h2b: 'UNE BIBLIOTHÈQUE POUR LES SOUVENIRS',
+    p3: 'Une mise à jour et un événement spécial sont prévus le 12 novembre. Une fonction de bibliothèque doit permettre de consulter certains contenus et statistiques après la fermeture, à condition de télécharger les données nécessaires avant la fin du service.',
+    p4: 'Cette bibliothèque ne remplace pas le jeu en ligne. Les joueurs concernés ont donc intérêt à consulter les consignes officielles dans le jeu avant l’échéance, notamment pour la conservation des données sur leur appareil.',
+    take: 'À RETENIR', takeText: 'Pokémon Unite ferme le 23 mars 2027 à 00 h UTC. Les ventes de gemmes sont suspendues ; une mise à jour avec une bibliothèque est annoncée pour le 12 novembre 2026.',
+    sourceName: 'POLYGON · MONEYCONTROL', source: 'D’après Polygon et Moneycontrol, le 27.10.2026, consultés le 29.10.2026.',
+    sourceUrl: 'https://www.polygon.com/pokemon-unite-end-service-announcement/', sourceDetail: 'Lire l’article de Polygon',
+    credit: 'Miniature officielle de la bande-annonce Pokémon Unite publiée sur le site du jeu. The Pokémon Company / TiMi Studio Group.', sentiment: 'negative', keywords: 'gaming pokemon unite fermeture service 23 mars 2027 switch mobile aeos gemmes bibliothèque',
+  },
+};
+
+export const dailyNewsListing = Object.entries(dailyStories).map(([key, story]) => ({
+  to: `/news/${key}`, image: story.thumbnail, poster: story.thumbnail, fallbackImage: story.fallbackImage,
+  alt: story.imageAlt, imageCredit: story.imageCredit, badge: story.category,
+  kicker: `${story.date} · ${story.sourceName}`, title: `${story.title} ${story.accent}`,
+  excerpt: story.dek, read: 'LIRE L’ARTICLE', sentiment: story.sentiment, keywords: story.keywords,
+}));
+
+export const dailySeoEntries = Object.fromEntries(Object.entries(dailyStories).map(([key, story]) => [
+  `/news/${key}`, { title: `${story.title} ${story.accent} — Let’s Play`, description: story.dek,
+    image: story.thumbnail, type: 'article', published: editionIsoDate, section: 'Actualités gaming' },
+]));

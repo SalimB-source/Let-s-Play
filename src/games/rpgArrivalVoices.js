@@ -211,3 +211,28 @@ export function rpgArriveesSansVoix(entrees) {
   return (Array.isArray(entrees) ? entrees : [])
     .filter((entree) => entree && !rpgACarteUneVoix(entree.carteId));
 }
+
+/** Repère les renaissances de Tenacité dans deux instantanés PvP : les
+ * journaux audio WeakMap du moteur ne traversent pas le serveur. */
+export function rpgRetoursTenaciteEntreEtats(avant, apres) {
+  const retours = [];
+  for (const cote of ['joueur', 'sorcier']) {
+    const ancienCamp = avant?.[cote];
+    const nouveauCamp = apres?.[cote];
+    if (!ancienCamp || !nouveauCamp) continue;
+    const idsAvant = new Set((ancienCamp.creatures ?? []).map((entite) => entite.id));
+    const disponibles = new Map();
+    for (const retour of ancienCamp.retoursProgrammes ?? []) {
+      if (retour.tenacite) disponibles.set(retour.carteId, (disponibles.get(retour.carteId) ?? 0) + 1);
+    }
+    for (const retour of nouveauCamp.retoursProgrammes ?? []) {
+      if (retour.tenacite) disponibles.set(retour.carteId, Math.max(0, (disponibles.get(retour.carteId) ?? 0) - 1));
+    }
+    for (const entite of nouveauCamp.creatures ?? []) {
+      if (idsAvant.has(entite.id) || entite.tenaciteDisponible || !(disponibles.get(entite.carteId) > 0)) continue;
+      disponibles.set(entite.carteId, disponibles.get(entite.carteId) - 1);
+      retours.push({ entityId: entite.id, carteId: entite.carteId, cote, origine: 'tenacite' });
+    }
+  }
+  return retours;
+}

@@ -148,7 +148,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['tojiro-le-pourfendeur', 'eirik-du-premier-serment', 'salem'],
     title: 'Contre-attaque : le coup se paie',
-    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui l’atteint — que ce sort la désigne ou qu’il fasse partie d’une vague de zone — fait frapper le sorcier qui l’a lancé. Chaque créature à Contre-attaque touchée par une zone renvoie donc sa propre riposte, à condition de survivre à la vague ; une capacité de zone, elle, se paie sur la créature qui la porte. Salem la porte aussi : son bouclier encaisse le premier sort adverse sans riposter, mais le deuxième rend 4 dégâts au lanceur. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
+    text: 'Contre-attaque rend chaque coup porté CONTRE la créature qui la porte : une créature adverse qui la frappe avec Attaque ciblée, ou qui la cible avec une capacité, encaisse ses dégâts d’attaque en retour ; un sort qui l’atteint — que ce sort la désigne ou qu’il fasse partie d’une vague de zone — fait frapper le sorcier qui l’a lancé. Chaque créature à Contre-attaque touchée par une zone renvoie donc sa propre riposte, même si la vague la détruit ; une capacité de zone, elle, se paie sur la créature qui la porte. Salem la porte aussi : son bouclier encaisse le premier sort adverse sans riposter, mais le deuxième rend 3 dégâts au lanceur. Une Esquive réussie n’empêche jamais la riposte : Tojiro esquive, puis contre-attaque.',
   },
   {
     id: 'envol',

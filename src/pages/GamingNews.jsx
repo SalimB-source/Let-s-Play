@@ -11,7 +11,8 @@ import { getArticleViews, normalizeArticleId, formatViews } from '../lib/article
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import NewsFeaturedStory from '../components/NewsFeaturedStory';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-18';
+import { dailyNewsListing as gamingNews20261029, editionDate } from '../news/daily/2026-10-29-gaming';
+import { dailyNewsListing } from '../news/daily/2026-10-18';
 import { dailyNewsListing as dailyNewsListing20261011 } from '../news/daily/2026-10-11';
 import { dailyNewsListing as dailyNewsListing20261014 } from '../news/daily/2026-10-14';
 import { dailyNewsListing as dailyNewsListing20261015 } from '../news/daily/2026-10-15';
@@ -70,6 +71,7 @@ const FEATURED_COPY = {
 // 28-29.09.2026, celles du robot et les articles manuels de la rédaction dans l'ordre.
 export const latestGamingStories = [
   // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
+  ...gamingNews20261029,
   ...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261017.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261016.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),

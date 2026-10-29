@@ -16,6 +16,8 @@ import CinemaNews from '../src/pages/CinemaNews';
 import TechNews from '../src/pages/TechNews';
 import CurrentNews from '../src/pages/CurrentNews';
 import ArticleTrailer from '../src/components/ArticleTrailer';
+import { dailyStories as cultureTechStories20261029 } from '../src/news/daily/2026-10-29-cinema-tech';
+import { dailyStories as gamingStories20261029 } from '../src/news/daily/2026-10-29-gaming';
 import { dailyStories } from '../src/news/daily/2026-10-18';
 import { dailyStories as dailyStories20261011 } from '../src/news/daily/2026-10-11';
 import { dailyStories as dailyStories20261014 } from '../src/news/daily/2026-10-14';
@@ -30,6 +32,7 @@ export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
 // ancien — l'ordre de l'archive et des hubs en dépend.
 export const editionKeys = {
+  '2026-10-29': [...Object.keys(gamingStories20261029), ...Object.keys(cultureTechStories20261029)],
   '2026-10-18': Object.keys(dailyStories),
   '2026-10-17': Object.keys(dailyStories20261017),
   '2026-10-16': Object.keys(dailyStories20261016),
