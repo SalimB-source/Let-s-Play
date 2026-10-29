@@ -607,20 +607,31 @@ for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l
 }
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*(?!0\b)\d/s,
   'au doigt, les terrains n’ont aucun filet fixe : ni la couleur de l’élément (le petit gabarit hors disposition tactile), ni un cran de 1 ou 2 px');
-// Les faces en jeu — main, cartes posées et terrains — n'ont plus de cadre du
-// tout au doigt (voir « Sans cadre, au doigt », en fin de `rpg-mobile.css`) :
-// bord à zéro et aucune couche d'anneau, l'illustration gagne le cadre. Les
-// piles perdent leur ombre décalée, colorée du cadre de la carte.
+// Au doigt, AUCUNE face ne porte plus de cadre (voir « Sans cadre, au doigt »,
+// en fin de `rpg-mobile.css`) : bord à zéro sur toute la coque tactile, et la
+// même condition pour le menu, qui n'a pas la classe tactile. Le clavier, lui,
+// garde son filet de 3 px. Les piles perdent leur ombre décalée, colorée du
+// cadre de la carte.
 const sansCadre = mobileCss.slice(mobileCss.indexOf('/* ── Sans cadre, au doigt'));
 assert.ok(sansCadre.length > 1000, 'la feuille tactile porte le bloc « Sans cadre, au doigt »');
-assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0;\s*background-image: none;\s*\}/,
-  'la main, la table et les terrains du doigt partagent la même règle : ni bord, ni anneau');
+assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0 !important;/,
+  'la main, la table et les terrains du doigt partagent la même règle : plus de bord');
+assert.match(sansCadre, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\] \{\s*border-width: 0 !important;/,
+  'au doigt, toutes les faces de la coque tactile — aperçu, mulligan, piles, annonces, catalogue — perdent leur cadre');
+assert.match(sansCadre, /@media \(pointer: coarse\), \(max-width: 1100px\) \{[\s\S]*?\.rpg-battle \.rpg-atelier__carte-art\[class\*="rpg-card--frame-"\]\[class\],\s*\n\s*\.rpg-battle \.rpg-card-catalogue__art\[class\*="rpg-card--frame-"\]\[class\] \{\s*\n\s*border-width: 0 !important;/,
+  'le menu (atelier, catalogue), qui n’a pas la classe tactile, perd son cadre à la même condition : doigt, stylet ou fenêtre étroite');
+assert.match(battleCss, /--rpg-card-filet:\s*3px;/,
+  'le clavier garde son filet de 3 px : le retrait ne vaut que pour l’écran tactile');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-card-stack,\s*\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-stacked \{\s*box-shadow: none;\s*\}/,
   'au doigt, une pile — cartes homonymes ou terrains — n’a plus d’ombre de pile : le compteur ×N la dit');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-partially-tapped \{\s*box-shadow: 0 0 0 1px rgba\(255, 217, 168, \.45\);\s*\}/,
   'l’engagement partiel d’une pile de terrains garde sa bague : c’est un état, pas une épaisseur');
-assert.doesNotMatch(sansCadre, /rpg-hover-card-preview|rpg-mulligan__card|rpg-card-pile__card|rpg-card-catalogue|rpg-card-guide|rpg-atelier/,
-  'les faces de lecture ou de repérage — aperçu, mulligan, piles, catalogue, guide, atelier — gardent leur cadre');
+assert.doesNotMatch(sansCadre, /border-width:\s*var\(--rpg-card-filet/,
+  'la feuille tactile ne redessine plus aucun filet : elle les retire tous');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-element-badge \{ width: 16px; border-width: 1\.5px;/,
+  'le retrait ne touche que le cadre : la pastille d’élément garde son bord');
+assert.doesNotMatch(sansCadre, /outline:/,
+  'le retrait ne pose aucun liseré à la place du cadre : les états (sélection, cible, attaquant) gardent leurs outlines');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
@@ -965,7 +976,7 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-el
   'les deux couleurs d’une hybride en main suivent le filet réduit');
 assert.match(battleCss, /\.rpg-mulligan__card \{ --rpg-card-marker-size: clamp\(16px, 15cqw, 30px\); \}/,
   'le mulligan utilise une seule taille responsive pour les deux repères');
-assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0;[^}]*background-image: none;/s,
+assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0 !important;/s,
   'mobile et APK retirent aussi les cadres des faces de lecture, sans retirer les pastilles');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
   'les indicateurs d’attaque et de défense sont agrandis sur les cartes');
@@ -1260,9 +1271,11 @@ assert.match(battleCss, /\.rpg-overlay--win\s*\{[^}]*inset:\s*auto;[^}]*left:\s*
 assert.match(battleCss, /\.rpg-overlay\s*\{[^}]*inset:\s*0;[^}]*background:\s*rgba\(4, 4, 10, \.86\);/s,
   'la défaite et la double chute gardent leur voile plein écran d’origine');
 
-// Le plateau est peint, pas voilé : les capsules tiennent la lisibilité.
+// Le plateau est peint, pas voilé : les capsules tiennent la lisibilité. La
+// seule ombre revenue est la **vignette** des deux bords (voir plus bas) — un
+// calque borné, jamais le voile d'autrefois ni ses variables.
 assert.doesNotMatch(battleCss, /--rpg-plateau-voile/,
-  'aucun voile noir n’habille plus les plateaux : la peinture reste entière');
+  'aucun voile noir plein cadre n’habille plus les plateaux : la peinture reste entière');
 assert.doesNotMatch(battleCss, /card-table--plateau-(?!cour-de-l-empereur)[a-z-]+::before/,
   'les plateaux ne gardent plus les vignettes qui composaient avec le voile');
 assert.match(battleCss, /\.card-table--plateau-cour-de-l-empereur::before\s*\{[^}]*background-image:\s*inherit;[^}]*transform:\s*scale\(1\.16\);/s,
@@ -1286,6 +1299,36 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.rpg-wizard-plate\s
   'au doigt, les plaques des deux sorciers portent leur capsule, elles aussi');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table::before/,
   'le doigt ne reçoit pas de voile non plus : seul le chrome tient la lisibilité');
+
+// ── La vignette des deux bords : deux dégradés noirs, haut et bas du plateau ─
+// Elle remplace le voile par une ombre bornée : en haut le cadre se referme sous
+// la navigation, en bas sous la main — jamais au milieu du champ de bataille.
+const vignetteCss = battleCss.match(/\.rpg-plateau-vignette\s*\{([^}]*)\}/s)?.[1] ?? '';
+assert.ok(vignetteCss, 'le plateau porte une vignette, en haut et en bas du cadre');
+assert.match(vignetteCss, /position:\s*absolute;[^}]*inset:\s*0;/s,
+  'la vignette couvre toute la table, sans déplacer un seul élément');
+assert.match(vignetteCss, /pointer-events:\s*none;/,
+  'la vignette ne prend jamais le pointeur : c’est un fond, pas une cible');
+assert.match(vignetteCss, /z-index:\s*0;/,
+  'la vignette passe derrière les cartes et la main (z-index 42), pas devant');
+assert.match(vignetteCss, /linear-gradient\(to bottom,/,
+  'la première bande tombe depuis le haut du plateau');
+assert.match(vignetteCss, /linear-gradient\(to top,/,
+  'la seconde remonte depuis le bas, sous la main');
+// Deux bandes qui se fondent : le milieu de la table garde sa peinture nette.
+assert.match(vignetteCss, /rgba\(6, 5, 9, 0\) 17%/,
+  'la bande du haut s’éteint à 17 % de la hauteur');
+assert.match(vignetteCss, /rgba\(6, 5, 9, 0\) 23%/,
+  'la bande du bas s’éteint à 23 % : elle couvre la main, jamais les champs');
+assert.doesNotMatch(vignetteCss, /0 0 0 100px|inset 0 0/,
+  'la vignette n’est pas un aplat : uniquement deux dégradés');
+assert.match(battlePage, /<span className="rpg-plateau-vignette" aria-hidden="true" \/>/,
+  'la table monte la vignette');
+// Elle est montée juste après le jumeau de la peinture : donc avant les cartes,
+// les rangées et la main dans l’ordre du document — la main la recouvre.
+assert.ok(battlePage.indexOf('rpg-plateau-vignette') > battlePage.indexOf('className="rpg-plateau-fond"')
+  && battlePage.indexOf('rpg-plateau-vignette') < battlePage.indexOf('className={`rpg-hand-dock'),
+  'la vignette est peinte avant la main : c’est la main qui passe dessus');
 
 // ── L'aperçu au doigt : appui long réactif (320 ms) sur une carte ───────────
 const longPressSource = readFileSync(new URL('../src/games/rpgLongPress.js', import.meta.url), 'utf8');

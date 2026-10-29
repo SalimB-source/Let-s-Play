@@ -1759,12 +1759,21 @@ quatre feuilles qui peignent des faces la reprennent :
 | `rpg-battle.css` | main, table, terrains, aperçu au survol, paquet, mulligan, destruction, sort joué, catalogue |
 | `rpg-card-guide.css` | l'exemple du guide |
 | `rpg-deck-atelier.css` | la vignette de l'atelier de deck et celle de l'assistant de deck |
-| `rpg-mobile.css` | les mêmes faces au doigt — le retrait du cadre sur mobile/APK n'a plus lieu d'être |
+| `rpg-mobile.css` | **aucune** : au doigt et dans l'APK, les faces n'ont plus de cadre du tout (voir « Au doigt, plus aucun cadre ») |
 
 Le filet ne mange pas l'illustration : chaque face est en `border-box`, elle
 garde sa largeur, son 4:5 et sa mesure, et le plein art reste plein cadre
 jusqu'au filet. Le liseré noir de 2 px (`outline`) qui détache les cartes du
 bois ne bouge pas.
+
+**Au doigt, plus aucun cadre.** La feuille tactile retire le filet sur toutes les
+faces qu'elle contient — `.rpg-battle.rpg-battle--touch
+[class*="rpg-card--frame-"][class]` et `border-width: 0 !important` —, et la
+même condition (`(pointer: coarse), (max-width: 1100px)`) l'enlève aussi à
+l'atelier et au catalogue, qui vivent dans la coque du menu. La couleur de
+l'élément reste lisible : pastille, coût et ligne de type la portent, et la
+pastille garde son propre bord. Le duel à la souris, lui, garde son filet de
+3 px.
 
 **Sens de la diagonale des hybrides.** Une carte à deux couleurs est coupée par
 la diagonale qui monte du **coin bas-gauche au coin haut-droit** : la première

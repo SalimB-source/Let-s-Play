@@ -2689,17 +2689,21 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Table de duel façon TCG : mains opposées, deux champs, piles et vies ──
-   Le plateau est une **peinture**, et rien ne la recouvre : ni voile, ni
-   vignette. Les bandes noires dégradées d'autrefois (haut et bas du cadre)
-   noircissaient un tiers de chaque tableau — l'Erg du Sahara et les Ruines de
-   Tipaza y perdaient leurs dunes et leur mosaïque, et la table ressemblait à
-   une fenêtre sale. La lisibilité ne vient plus d'un filtre posé sur l'image,
-   mais de **chaque élément d'interface**, qui porte désormais son propre fond
-   (voir « Le chrome de la table », plus bas) : les plaques des sorciers, la
-   capsule du tour, la barre de navigation du duel, les compteurs des piles et
-   le journal ont tous de quoi tenir l'encre crème sur n'importe quel fond.
-   Les cartes, elles, se détachent par leur ombre : `box-shadow`, jamais un
-   aplat sur le décor. */
+   Le plateau est une **peinture**. Un temps, il n'y avait rien dessus : ni
+   voile, ni vignette — les bandes noires dégradées d'alors noircissaient un
+   tiers de chaque tableau, l'Erg du Sahara et les Ruines de Tipaza y perdaient
+   leurs dunes et leur mosaïque, et la table ressemblait à une fenêtre sale.
+
+   La vignette est revenue, mais **slim et aux deux bords seulement** (voir « La
+   vignette du plateau », plus bas) : quelques dizaines de pixels d'ombre en
+   haut et en bas du cadre, là où se posent la navigation et la main, et rien
+   sur les deux tiers du milieu — les dunes, la mosaïque et les cartes gardent
+   leur peinture. La lisibilité des textes, elle, ne dépend toujours pas de ce
+   fond : chaque élément d'interface porte son propre chrome (voir « Le chrome
+   de la table », plus bas) — les plaques des sorciers, la capsule du tour, la
+   barre de navigation du duel, les compteurs des piles et le journal ont tous
+   de quoi tenir l'encre crème sur n'importe quel fond. Les cartes, elles, se
+   détachent par leur ombre : `box-shadow`, jamais un aplat sur le décor. */
 .card-table {
   isolation: isolate;
   background-position: center;
@@ -2834,6 +2838,43 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .card-table--decoupee,
   .rpg-plateau-lisere { transition: none; }
 }
+
+/* ── La vignette du plateau : deux bandes noires, en haut et en bas ──────────
+   Le cadre se referme sur ses bords : un dégradé noir au ras du haut, un autre
+   au ras du bas, et rien au milieu. Ce n'est pas le voile d'autrefois — celui
+   prenait un tiers de la hauteur et noircissait la peinture de part en part —
+   mais une **vignette** : deux bandes qui se fondent en une vingtaine de pour
+   cent de la hauteur, assez pour asseoir la barre de navigation et les cartes
+   de la main, trop courtes pour manger le champ de bataille.
+
+   Elle vit derrière tout ce que la table pose (`z-index: 0`, peinte avant les
+   cartes, les rangées et la main, qui sont des frères suivants) : la main ne
+   flotte donc pas sur un trou noir, elle **recouvre** le bord de la vignette,
+   et ses cartes gardent leur propre ombre par-dessus. `pointer-events: none` :
+   c'est un fond, jamais une cible. Les pourcentages suivent la hauteur de la
+   table — sur un téléphone en paysage comme sur un écran 1440 × 900, la bande
+   du bas couvre la rangée de la main sans jamais atteindre les champs. */
+.rpg-plateau-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom,
+      rgba(6, 5, 9, .82) 0,
+      rgba(6, 5, 9, .54) 5%,
+      rgba(6, 5, 9, .2) 10%,
+      rgba(6, 5, 9, 0) 17%),
+    linear-gradient(to top,
+      rgba(6, 5, 9, .9) 0,
+      rgba(6, 5, 9, .66) 6%,
+      rgba(6, 5, 9, .28) 13%,
+      rgba(6, 5, 9, 0) 23%);
+}
+/* Sous un aperçu, la peinture passe au flou : la vignette, elle, reste nette —
+   un dégradé flouté ne montre rien de plus, et le bord du cadre doit rester
+   fermé derrière la carte consultée. */
+.card-table[data-apercu-carte] .rpg-plateau-vignette { opacity: .72; }
 
 /* ── Le plateau derrière une carte consultée ─────────────────────────────────
    Une carte ouverte en grand — l'appui long d'une seconde, la fiche d'un clic
@@ -3494,113 +3535,118 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Le halo de la main — « cette carte part maintenant ». Une seule règle décide
    de TOUT : l'allumage, posé sur le même verdict que le clic et le
    glisser-déposer, mana compris (`rpgPeutPayer`) ; l'empreinte, la même pour
-   toute la main — anneau de 2 px, auréole rapprochée de 6 px, flou extérieur de
-   18 px étalé de 4 px, ombre portée de 16 px ; et la densité, pleine, celle
-   d'un voyant qu'on repère d'un coup d'œil dans un éventail.
+   toute la main — anneau de 2 px, liseré de 3 px, halo de 9 px étalé de 1 px,
+   ombre portée de 16 px ; et la densité, pleine, celle d'un voyant qu'on
+   repère d'un coup d'œil dans un éventail.
 
-   **Blanc pour toute la main, or pour les mythiques.** La lueur ne dit plus la
-   famille d'un sort (l'or de la Magie Rapide, l'améthyste de la Sorcellerie) :
-   elle ne dit qu'une chose — cette carte peut partir —, et le blanc le dit
-   sans mélange, du Désert au Fennec, de la Braise à l'Eau, de la créature au
-   sort. La rareté, elle, garde sa lueur : une **mythique** jouable s'allume
-   d'or (voir « Lueur d'or — carte mythique jouable » plus bas). Les deux
-   triplets `--rpg-play-halo` / `--rpg-play-halo-clair` restent la seule source
-   de teinte : blancs sur la règle commune — donc pour toute la main —, l'or
-   posé par la règle mythique.
+   **L'azur de l'arène, collé à la carte.** La lueur ne dit plus la famille
+   d'un sort : elle ne dit qu'une chose — cette carte peut partir —, et elle le
+   dit d'un seul tenant, du Désert au Fennec, de la Braise à l'Eau, de la
+   créature au sort. La teinte est le **cyan-azur des cartes jouables de MTG
+   Arena** (`0, 180, 255`, liseré `130, 238, 255`), et l'empreinte est
+   **concentrée** : le halo se serre contre les bords de la face au lieu de
+   rayonner à 18 px. C'est ce que fait l'arène — un liseré lumineux qui suit la
+   carte et s'éteint en une dizaine de pixels —, et c'est ce qui rend une carte
+   jouable reconnaissable d'un coup d'œil sans qu'elle éclaire ses voisines.
+
+   La rareté, elle, garde sa lueur : une **mythique** jouable s'allume d'or et
+   d'orange, plus chaude, tout aussi serrée (voir « Lueur d'or — carte mythique
+   jouable » plus bas). Les deux triplets `--rpg-play-halo` /
+   `--rpg-play-halo-clair` restent la seule source de teinte : l'azur sur la
+   règle commune — donc pour toute la main —, l'or posé par la règle mythique.
 
    Le contraste est celui d'un voyant : l'anneau porte le reflet clair de la
-   teinte (`--rpg-play-halo-clair`) plutôt que la teinte de base, une auréole
-   courte le double vers l'intérieur du flou, le halo extérieur est presque
-   opaque et l'ombre portée s'assombrit pour que la lueur paraisse plus claire
-   encore. Le survol reprend les mêmes rayons, densité pleine. Rien de tout cela
-   ne pousse la carte : le halo se peint sur son ombre, derrière la face. */
+   teinte (`--rpg-play-halo-clair`) plutôt que la teinte de base, un liseré
+   court le double vers l'intérieur, le halo extérieur est presque opaque et
+   l'ombre portée s'assombrit pour que la lueur paraisse plus claire encore. Le
+   survol reprend les mêmes rayons à peine élargis, densité pleine. Rien de tout
+   cela ne pousse la carte : le halo se peint sur son ombre, derrière la face. */
 .rpg-hand__card.is-playable {
-  /* Le blanc est la teinte de TOUTE la main jouable : il se pose ici, une fois,
+  /* L'azur est la teinte de TOUTE la main jouable : il se pose ici, une fois,
      et la seule règle qui le remplace est celle des mythiques (l'or, plus bas).
      Les deux triplets sont en `r`, `g`, `b` séparés — la seule forme que
      `rgba(var(--…), α)` sache lire. */
-  --rpg-play-halo: 255, 255, 255;
-  --rpg-play-halo-clair: 255, 255, 255;
+  --rpg-play-halo: 0, 180, 255;
+  --rpg-play-halo-clair: 130, 238, 255;
   box-shadow:
-    0 0 0 2px rgba(var(--rpg-play-halo-clair), .98),
-    0 0 6px 1px rgba(var(--rpg-play-halo-clair), .82),
-    0 0 18px 4px rgba(var(--rpg-play-halo), .92),
+    0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 3px rgba(var(--rpg-play-halo-clair), .95),
+    0 0 9px 1px rgba(var(--rpg-play-halo), .9),
     0 6px 16px rgba(0, 0, 0, .62);
 }
 .rpg-hand__card.is-playable:hover:not(:disabled) {
   box-shadow:
     0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-    0 0 7px 1px rgba(var(--rpg-play-halo-clair), .92),
-    0 0 24px 6px rgba(var(--rpg-play-halo), 1),
+    0 0 4px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 15px 2px rgba(var(--rpg-play-halo), 1),
     0 12px 22px rgba(0, 0, 0, .68);
 }
 /* ── Lueur d'or — carte MYTHIQUE jouable ────────────────────────────────────
-   La main s'allume en blanc ; la rareté, elle, a sa lueur. Une mythique
-   jouable prend donc l'or — la seule couleur du halo qui ne soit pas le blanc
-   commun —, plus lumineuse que les autres : cœur blanc doré, puis or clair,
-   puis or profond qui irradie. Le cadre, lui, ne bouge pas : le halo se peint
-   derrière la face, la couleur de l'élément reste celle du filet.
+   La main s'allume en azur ; la rareté, elle, a sa lueur. Une mythique jouable
+   prend donc l'or — la seule couleur du halo qui ne soit pas l'azur commun —,
+   plus chaude et plus lumineuse : liseré doré, puis or clair, puis orange
+   profond. La lueur reste **concentrée** comme celle de la main, un cran plus
+   large : c'est une respiration, pas un projecteur. Le cadre, lui, ne bouge
+   pas : le halo se peint derrière la face, la couleur de l'élément reste celle
+   du filet.
 
    Ce sont les mêmes variables que la règle commune, reposées ici une fois : la
-   teinte du halo n'est écrite qu'à deux endroits dans la feuille — le blanc de
-   la règle commune, l'or ici.
+   teinte du halo n'est écrite qu'à deux endroits dans la feuille — l'azur de la
+   règle commune, l'or ici.
    ------------------------------------------------------------------------- */
 .rpg-hand__card.is-mythique-jouable.is-playable {
-  --rpg-play-halo: 255, 196, 8;
-  --rpg-play-halo-clair: 255, 243, 186;
+  --rpg-play-halo: 255, 152, 14;
+  --rpg-play-halo-clair: 255, 214, 120;
   overflow: visible;
   box-shadow:
     0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-    0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
-    0 0 11px 2px rgba(var(--rpg-play-halo), .92),
-    0 0 18px 4px rgba(var(--rpg-play-halo), .86),
+    0 0 4px rgba(var(--rpg-play-halo-clair), .98),
+    0 0 12px 2px rgba(var(--rpg-play-halo), .94),
     0 6px 16px rgba(0, 0, 0, .60);
-  filter: brightness(1.1) saturate(1.12);
+  filter: brightness(1.08) saturate(1.14);
   animation: rpg-mythique-halo-pulse 0.9s ease-in-out infinite alternate;
 }
 .rpg-hand__card.is-mythique-jouable.is-playable:hover:not(:disabled) {
   box-shadow:
     0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-    0 0 6px 1.5px rgba(var(--rpg-play-halo-clair), 1),
-    0 0 13px 3px rgba(var(--rpg-play-halo), .96),
-    0 0 22px 6px rgba(var(--rpg-play-halo), .92),
+    0 0 5px rgba(var(--rpg-play-halo-clair), 1),
+    0 0 17px 3px rgba(var(--rpg-play-halo), .98),
     0 8px 20px rgba(0, 0, 0, .62);
-  filter: brightness(1.16) saturate(1.16);
+  filter: brightness(1.14) saturate(1.18);
 }
 .rpg-hand__card.is-mythique-jouable.is-playable .rpg-hand__img {
   border-radius: inherit;
 }
-/* L'or respire : halo condensé qui ondule, collé à la carte */
+/* L'or respire : halo concentré qui ondule, collé à la carte. L'écart entre les
+   deux images est court (12 px → 17 px) : c'est une respiration, pas une
+   dilatation — la lueur ne quitte jamais les bords de la face. */
 @keyframes rpg-mythique-halo-pulse {
   0% {
     box-shadow:
       0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-      0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
-      0 0 11px 2px rgba(var(--rpg-play-halo), .92),
-      0 0 18px 4px rgba(var(--rpg-play-halo), .86),
+      0 0 4px rgba(var(--rpg-play-halo-clair), .98),
+      0 0 12px 2px rgba(var(--rpg-play-halo), .94),
       0 6px 16px rgba(0, 0, 0, .60);
-    filter: brightness(1.1) saturate(1.12);
+    filter: brightness(1.08) saturate(1.14);
   }
   100% {
     box-shadow:
       0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-      0 0 6px 1.2px rgba(var(--rpg-play-halo-clair), .99),
-      0 0 13px 3px rgba(var(--rpg-play-halo), .96),
-      0 0 22px 5px rgba(var(--rpg-play-halo), .92),
-      0 8px 20px rgba(0, 0, 0, .60);
-    filter: brightness(1.18) saturate(1.16);
+      0 0 5px rgba(var(--rpg-play-halo-clair), 1),
+      0 0 17px 3px rgba(var(--rpg-play-halo), .98),
+      0 8px 18px rgba(0, 0, 0, .60);
+    filter: brightness(1.14) saturate(1.18);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .rpg-hand__card.is-mythique-jouable.is-playable {
     animation: none !important;
-    filter: brightness(1.1) saturate(1.12);
+    filter: brightness(1.08) saturate(1.14);
     box-shadow:
       0 0 0 2px rgba(var(--rpg-play-halo-clair), 1),
-      0 0 5px 1px rgba(var(--rpg-play-halo-clair), .98),
-      0 0 11px 2px rgba(var(--rpg-play-halo), .92),
-      0 0 18px 4px rgba(var(--rpg-play-halo), .86),
-      0 8px 22px rgba(0, 0, 0, .62);
+      0 0 4px rgba(var(--rpg-play-halo-clair), .98),
+      0 0 12px 2px rgba(var(--rpg-play-halo), .94),
+      0 8px 20px rgba(0, 0, 0, .62);
   }
 }
 /* ── Le sceau d'or du Lien ──────────────────────────────────────────────────
@@ -3611,7 +3657,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    prend donc ni l'un ni l'autre : il se peint à l'INTÉRIEUR de la face, un
    filet d'or en `outline` plutôt qu'en `box-shadow`, pour composer avec le
    halo de jouabilité au lieu de le remplacer — une carte liée et jouable
-   garde son halo blanc (ou son or de mythique) ET son filet doré.
+   garde son halo d'azur (ou son or de mythique) ET son filet doré.
    Le filet respire lentement ; il reste allumé même quand la carte ne se joue
    pas (une arme liée déjà posée sur la table), parce qu'il dit le renfort, pas
    la disponibilité.
@@ -10115,7 +10161,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    - la TEINTE du sceau — jaune pour la Magie Rapide, violet pour la
      Sorcellerie, quel que soit l'élément de la carte ; le socle et le jeton
      reprennent la couleur de la même famille (le halo de jouabilité, lui, ne
-     parle plus de famille : il est blanc, l'or restant aux mythiques) ;
+     parle plus de famille : il est en azur, l'or restant aux mythiques) ;
    - le SIGLE et le MOT — l'éclair ou l'étincelle, « Magie Rapide » ou
      « Sorcellerie » — qui disent la règle à qui découvre le duel.
 
@@ -10287,16 +10333,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-ligne--rapide { color: #ffdf7f; }
 .rpg-sort-ligne--sorcellerie { color: #ddccff; }
 
-/* ── La teinte de la lueur de jouabilité : blanc, et l'or pour les mythiques ──
+/* ── La teinte de la lueur de jouabilité : l'azur, et l'or pour les mythiques ─
    Le halo d'une carte en main (`.rpg-hand__card.is-playable`, plus haut dans
    la feuille) répond à une seule question : « puis-je la jouer, là, tout de
    suite ? » — le mana est là, c'est mon tour, ou la fenêtre de réponse est
    ouverte. Sa couleur ne dépend plus du TYPE ni de la FAMILLE de la carte :
-   toute la main s'allume en **blanc**, créature, héros, terrain, arme, Magie
-   Rapide, Sorcellerie. Seule la rareté change la teinte — une mythique prend
-   l'**or** (bloc « Lueur d'or », plus haut) —, et c'est la seule exception.
+   toute la main s'allume en **azur**, le cyan des cartes jouables de MTG
+   Arena, créature, héros, terrain, arme, Magie Rapide, Sorcellerie. Seule la
+   rareté change la teinte — une mythique prend l'**or** (bloc « Lueur d'or »,
+   plus haut) —, et c'est la seule exception.
 
-   Il n'y a donc plus rien à déclarer ici : le blanc est posé une fois sur la
+   Il n'y a donc plus rien à déclarer ici : l'azur est posé une fois sur la
    règle commune (`--rpg-play-halo`, `--rpg-play-halo-clair`), et la seule
    autre teinte de la feuille est l'or mythique. Le halo reste un
    ÉTAT, jamais une couleur de cadre : le filet de la carte garde la teinte de

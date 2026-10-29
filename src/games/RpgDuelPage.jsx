@@ -12914,6 +12914,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             décor que le temps de l'aperçu, flou (voir `rpg-battle.css`).
             `aria-hidden` : il ne montre rien que la table ne montre déjà. */}
         <span className="rpg-plateau-fond" aria-hidden="true" />
+        {/* La vignette du plateau : deux dégradés noirs, en haut et en bas du
+            cadre. Elle passe **derrière** tout ce que la table pose — la main
+            comprise, qui la recouvre de ses cartes — et ne prend jamais le
+            pointeur : c'est un fond, pas un voile. Voir « La vignette du
+            plateau » dans `rpg-battle.css`. */}
+        <span className="rpg-plateau-vignette" aria-hidden="true" />
         {/* Les peintures restent plein cadre : la découpe franche du terrain
             adverse suit la frontière du territoire, marquée par un trait doré.
             Aucun déplacement des cartes, des zones de dépôt ou des commandes. */}
@@ -14021,7 +14027,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // statistiques, et les terrains gardent leur ligne.
               const familleSort = magieFamille(carte);
               const peutRepondre = reponseActive && carte.instant;
-              // Une seule règle pour le halo de jouabilité — blanc pour toute
+              // Une seule règle pour le halo de jouabilité — l'azur pour toute
               // la main, l'or pour une mythique (voir « La teinte de la lueur
               // de jouabilité », dans `rpg-battle.css`) —, le
               // glisser-déposer et le clic : deux copies de la règle
@@ -14029,7 +14035,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               // enferme le joueur.
               const baseJouable = !defausseOuverte && peutJouerCarte(carte);
               const jouable = defausseOuverte || baseJouable;
-              // La lueur de jouabilité est blanche pour toute la main ; la
+              // La lueur de jouabilité est en azur pour toute la main ; la
               // rareté seule la teinte — une mythique jouable s'allume d'or,
               // créature, sort ou terrain (voir « Lueur d'or »,
               // `rpg-battle.css`).

@@ -1382,29 +1382,38 @@
   .rpg-battle--touch .rpg-turn-rail .rpg-btn:disabled { pointer-events: none; }
 }
 
-/* ── Sans cadre, au doigt : la main, les cartes posées et les terrains ───────
-   L'anneau orné des cartes (voir les gabarits en tête de `rpg-battle.css`)
-   était calé sur la **largeur** de la carte : `clamp(4px, 1.76vw, 8px)` valait
-   son plafond de 8 px dès 455 px de fenêtre, donc sur tout téléphone en
-   paysage — 16 px sur une carte en main de 62 px, un quart de la face. La
-   feuille tactile le retirait donc entièrement, et les cartes perdaient leur
-   seule marque d'élément.
+/* ── Sans cadre, au doigt : plus aucun anneau sur une face ───────────────────
+   Sur téléphone et dans l'APK, **aucune carte ne porte de cadre** : ni la main,
+   ni les cartes posées, ni les terrains, ni l'aperçu, ni le mulligan, ni le
+   catalogue ou les annonces. La face est son illustration, jusqu'au bord. Le
+   clavier, lui, garde le filet de 3 px de la couleur de l'élément
+   (`--rpg-card-filet`, `rpg-battle.css`) : la retouche ne vaut que pour l'écran
+   tactile.
 
-   Le filet de 3 px (`--rpg-card-filet`, `rpg-battle.css`) rend ce retrait
-   inutile : il tient dans une vignette de 40 px comme dans une carte de 168 px,
-   et il est le même partout — main, table, terrains, catalogue, aperçus,
-   mulligan, guide et atelier. Seul le motif se tait : dans 3 px, une résille
-   n'est plus qu'un bruit de pixels. La couleur, elle, reste.
+   Pourquoi le retrait plutôt qu'un filet amaigri : sur une carte en main de
+   62 px (844 × 390, cinq cartes), 3 px de bordure pèsent déjà un vingtième de
+   la face, et la couleur de l'élément est de toute façon annoncée par la
+   pastille, le coût et la ligne de type. Sur un écran qu'on tient à bout de
+   bras, la peinture compte plus que l'anneau.
+
+   `!important` : la règle du filet, en fin de `rpg-battle.css`, est elle-même
+   `!important` et vise les mêmes classes `rpg-card--frame-*`. Celle-ci la
+   dépasse par la spécificité — deux classes et deux attributs, contre une
+   classe et un attribut —, et c'est la seule façon propre de gagner sans
+   toucher au duel à la souris.
 
    Rien d'autre ne bouge, et surtout pas la géométrie : tout est en
    `border-box`, chaque face garde sa largeur, son 4:5 et sa mesure
    (`--duel-card` pour la main, `--rpg-field-card` pour la table, les 40/48 px
-   du rail pour les terrains). Le liseré noir des cartes reste
-   (`outline: 2px solid #000`), c'est lui qui les détache du bois. */
+   du rail pour les terrains) — c'est l'illustration qui gagne l'anneau, pas la
+   face qui grandit. Les pastilles d'élément, les coûts, les compteurs de pile
+   et les états (`is-selected`, `is-ciblable`, `is-declared-attacker`, halos de
+   jouabilité) gardent leurs propres bords et leurs ombres : la règle ne touche
+   qu'à `border-width`. */
 .rpg-battle--touch .rpg-hand .rpg-hand__card,
 .rpg-battle--touch .card-row .rpg-card,
 .rpg-battle--touch .rpg-terrain {
-  border-width: var(--rpg-card-filet, 3px);
+  border-width: 0 !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
 }
@@ -1440,14 +1449,31 @@
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge { width: 16px; border-width: 1.5px; font-size: 10px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge__pip { border-width: 1.5px; }
 
-/* Toutes les faces, y compris catalogue, mulligan, aperçus et atelier : le
-   même filet de 3 px qu'au clavier, à la couleur de l'élément. Les pastilles et
-   les états interactifs restent. La spécificité couvre aussi les variantes
-   ornées et les cartes annoncées. */
+/* Toutes les faces, y compris aperçus, mulligan, paquets, annonces et
+   catalogue : aucun cadre non plus au doigt. La spécificité couvre les
+   variantes ornées et les cartes annoncées, et l'`!important` l'emporte sur
+   celui du filet (`rpg-battle.css`). Les pastilles, les coûts et les états
+   interactifs restent : la règle ne touche qu'à `border-width`. */
 .rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
-  border-width: var(--rpg-card-filet, 3px);
+  border-width: 0 !important;
   --rpg-frame-motif: none;
   --rpg-frame-motif-size: 0 0;
+}
+
+/* Le menu garde sa propre coque (`.rpg-battle--menu`, sans la classe tactile du
+   duel) : l'atelier de deck et le catalogue y gardent donc leur filet au doigt
+   sans cette condition, la même que celle qui pose `rpg-battle--touch` dans
+   `RpgDuelPage` — doigt, stylet, ou fenêtre étroite. */
+@media (pointer: coarse), (max-width: 1100px) {
+  /* `.rpg-battle` devant, et `[class]` derrière : la même spécificité que la
+     règle du filet de `rpg-deck-atelier.css` ne suffirait pas — cette feuille
+     est chargée par `RpgDeckCreation.jsx`, dont l'ordre d'import ne nous
+     appartient pas. Deux classes et deux attributs l'emportent quel que soit
+     l'ordre. */
+  .rpg-battle .rpg-atelier__carte-art[class*="rpg-card--frame-"][class],
+  .rpg-battle .rpg-card-catalogue__art[class*="rpg-card--frame-"][class] {
+    border-width: 0 !important;
+  }
 }
 
 /* Les repères suivent la largeur réelle de chaque créature, pas le viewport.

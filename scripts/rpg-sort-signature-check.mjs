@@ -112,20 +112,21 @@ assert.match(atelierCss, /\.rpg-atelier__carte-art\s*\{[^}]*--rpg-card-marker-si
 assert.match(pageSource, /<SortSceau carte=\{carte\} className="rpg-card-catalogue__sort" \/>/,
   'la vignette du catalogue monte le sceau');
 
-// ── La lueur de jouabilité : blanc pour toute la main, or pour les mythiques ─
+// ── La lueur de jouabilité : l'azur pour toute la main, l'or pour les mythiques
 // Le halo de la main garde une seule règle d'allumage — `is-playable`, posé sur
 // le même verdict que le clic et le glisser-déposer, mana compris —, et sa
-// teinte ne dépend plus ni du type ni de la famille de la carte : le blanc est
+// teinte ne dépend plus ni du type ni de la famille de la carte : l'azur est
 // déclaré par la règle commune, donc c'est la lueur de toute la main (créature,
-// héros, terrain, arme, Magie Rapide, Sorcellerie). La SEULE autre teinte de la
+// héros, terrain, arme, Magie Rapide, Sorcellerie). C'est le cyan des cartes
+// jouables de MTG Arena, serré contre la face. La SEULE autre teinte de la
 // feuille est l'or d'une carte mythique jouable.
 const haloMain = battleCss.match(/\.rpg-hand__card\.is-playable\s*\{([^}]*)\}/s)?.[1] ?? '';
 const haloSurvol = battleCss.match(/\.rpg-hand__card\.is-playable:hover:not\(:disabled\)\s*\{([^}]*)\}/s)?.[1] ?? '';
 assert.ok(haloMain && haloSurvol, 'la main allume ses cartes jouables, au repos comme au survol');
-assert.match(haloMain, /rgba\(var\(--rpg-play-halo-clair\), \.98\)/,
+assert.match(haloMain, /rgba\(var\(--rpg-play-halo-clair\), 1\)/,
   'l’anneau du halo lit la teinte commune : la lueur ne dit plus la famille, seulement « cette carte part »');
-assert.match(haloMain, /rgba\(var\(--rpg-play-halo\), \.92\)/,
-  'le flou extérieur suit la même variable, presque opaque : un halo, une teinte');
+assert.match(haloMain, /rgba\(var\(--rpg-play-halo\), \.9\)/,
+  'le halo extérieur suit la même variable, presque opaque : un halo, une teinte');
 assert.match(haloSurvol, /rgba\(var\(--rpg-play-halo-clair\), 1\)/,
   'le survol éclaircit l’anneau, densité pleine');
 assert.doesNotMatch(haloMain + haloSurvol, /border-color:/,
@@ -137,15 +138,18 @@ assert.doesNotMatch(battleCss, /\.rpg-hand__card--famille-(rapide|sorcellerie)\s
   'aucune famille de sorts ne déclare plus sa teinte de halo : la main s’allume d’une seule couleur');
 assert.doesNotMatch(battleCss, /--rpg-play-halo[^;]*\b179, 154, 224/,
   'l’améthyste de la Sorcellerie a quitté la lueur de jouabilité');
-assert.doesNotMatch(battleCss, /--rpg-play-halo-clair[^;]*\b176, 197, 255/,
-  'l’azur n’est plus la lueur de repli : le blanc l’a remplacé');
+assert.doesNotMatch(battleCss, /--rpg-play-halo[^;]*\b255, 255, 255/,
+  'le blanc n’est plus la lueur de la main : l’azur de l’arène l’a remplacé');
 
 const triplet = (nom, bloc) => bloc.match(new RegExp(`--${nom}:\\s*(\\d+), (\\d+), (\\d+);`))?.slice(1).map(Number) ?? null;
-const blanc = triplet('rpg-play-halo', haloMain);
-const blancClair = triplet('rpg-play-halo-clair', haloMain);
-assert.deepEqual(blanc, [255, 255, 255],
-  'la lueur de la main est le blanc pur — ni azur, ni ambre, ni améthyste');
-assert.deepEqual(blancClair, [255, 255, 255], 'et son reflet de survol aussi');
+const azur = triplet('rpg-play-halo', haloMain);
+const azurClair = triplet('rpg-play-halo-clair', haloMain);
+assert.deepEqual(azur, [0, 180, 255],
+  `la lueur de la main est l’azur des cartes jouables de MTG Arena (reçu : ${azur?.join(', ')})`);
+assert.deepEqual(azurClair, [130, 238, 255], 'et son reflet de survol un cyan plus clair');
+// C’est bien un CYAN : le bleu domine, le vert le suit de près, le rouge s’efface.
+assert.ok(azur[2] > 200 && azur[1] > 150 && azur[0] < 60,
+  'l’azur de la lueur est un cyan franc — ni un bleu marine, ni du blanc');
 
 // L'or mythique : la seule seconde teinte, et elle n'appartient qu'aux mythiques.
 const haloMythique = battleCss.match(/\.rpg-hand__card\.is-mythique-jouable\.is-playable\s*\{([^}]*)\}/s)?.[1] ?? '';
@@ -153,9 +157,9 @@ assert.ok(haloMythique, 'une carte mythique jouable porte sa propre règle de lu
 const orMythique = triplet('rpg-play-halo', haloMythique);
 const orMythiqueClair = triplet('rpg-play-halo-clair', haloMythique);
 assert.ok(orMythique && orMythiqueClair, 'la lueur mythique déclare ses deux triplets');
-assert.ok(orMythique[0] > 200 && orMythique[1] > 150 && orMythique[2] < 80,
-  `la lueur mythique est jaune (reçu : ${orMythique.join(', ')})`);
-assert.notDeepEqual(orMythique, blanc, 'une mythique ne s’allume pas du blanc de la main');
+assert.ok(orMythique[0] > 200 && orMythique[1] > 120 && orMythique[2] < 80,
+  `la lueur mythique est jaune-orange (reçu : ${orMythique.join(', ')})`);
+assert.notDeepEqual(orMythique, azur, 'une mythique ne s’allume pas de l’azur de la main');
 const clarte = ([rouge, vert, bleu]) => 0.299 * rouge + 0.587 * vert + 0.114 * bleu;
 assert.ok(clarte(orMythiqueClair) > clarte(orMythique),
   'le reflet de survol de la lueur mythique est plus clair que son or');
@@ -186,21 +190,21 @@ const cascadeHalo = new JSDOM(
 const elementHalo = (test) => cascadeHalo.window.document.querySelector(`[data-test="${test}"]`);
 const teinteRecue = (test) => cascadeHalo.window.getComputedStyle(elementHalo(test))
   .getPropertyValue('--rpg-play-halo').replaceAll(' ', '');
-// Toute la main — le sort, l'arme, la créature, le terrain : blanc.
+// Toute la main — le sort, l'arme, la créature, le terrain : azur.
 for (const face of ['rapide', 'sorcellerie', 'creature', 'terrain', 'arme']) {
-  assert.equal(teinteRecue(face), '255,255,255',
-    `${face} : la lueur de jouabilité est blanche`);
+  assert.equal(teinteRecue(face), azur.join(','),
+    `${face} : la lueur de jouabilité est l’azur commun`);
   assert.equal(cascadeHalo.window.getComputedStyle(elementHalo(face))
-    .getPropertyValue('--rpg-play-halo-clair').replaceAll(' ', ''), '255,255,255',
-  `${face} : le reflet au survol reste blanc`);
+    .getPropertyValue('--rpg-play-halo-clair').replaceAll(' ', ''), azurClair.join(','),
+  `${face} : le reflet au survol reste le cyan clair`);
 }
 // La rareté, et elle seule, passe à l'or — quel que soit le type.
 for (const face of ['mythique-magie', 'mythique-creature']) {
   assert.equal(teinteRecue(face), orMythique.join(','),
     `${face} : une mythique jouable s’allume d’or`);
 }
-assert.equal(teinteRecue('mythique-non-jouable'), '255,255,255',
-  'une mythique INJOUABLE ne porte pas la classe : elle garde le blanc en repli, sans lueur');
+assert.equal(teinteRecue('mythique-non-jouable'), azur.join(','),
+  'une mythique INJOUABLE ne porte pas la classe : elle garde l’azur de la règle commune, sans lueur d’or');
 cascadeHalo.window.close();
 
 // ── Un seul halo, le même contraste pour toute la main ──────────────────────
@@ -218,30 +222,44 @@ assert.equal((battleCss.match(/\.rpg-hand__card\.is-playable:hover:not\(:disable
 // Les couches de teinte : anneau (`flou` 0), auréole rapprochée, flou extérieur.
 // La teinte est portée par les deux triplets de la règle commune, sans repli
 // écrit dans `var()`.
+// Trois formes de couche : l'anneau (`0 0 0 2px`, un aplat collé au bord), le
+// liseré et le halo (`0 0 Npx`, éventuellement étalé de `Mpx`).
 const couchesHalo = (bloc) => [...bloc.matchAll(
-  /0 0 (\d+)px(?: (\d+)px)? rgba\(var\(--rpg-play-halo(?:-clair)?(?:, [\d, ]+)?\), (\d*\.?\d+)\)/g,
-)].map(([, flou, etalement, densite]) => ({
-  flou: +flou,
-  etalement: +(etalement ?? 0),
+  /0 0 (?:0 (\d+)px|(\d+)px(?: (\d+)px)?) rgba\(var\(--rpg-play-halo(?:-clair)?(?:, [\d, ]+)?\), (\d*\.?\d+)\)/g,
+)].map(([, anneau, flou, etalement, densite]) => ({
+  flou: anneau ? 0 : +flou,
+  etalement: anneau ? +anneau : +(etalement ?? 0),
   densite: +densite,
 }));
 const envergure = (couches) => Math.max(...couches.map(({ flou, etalement }) => flou + etalement));
 const couchesMain = couchesHalo(haloMain);
 const couchesSurvol = couchesHalo(haloSurvol);
 assert.equal(couchesMain.length, 3,
-  'le halo d’une carte jouable pose trois couches : l’anneau, l’auréole rapprochée et le flou extérieur');
-assert.equal(envergure(couchesMain), 22,
-  `le halo porte loin de 22 px (18 px de flou, 4 px d’étalement), comme avant la hausse de contraste (reçu : ${envergure(couchesMain)} px)`);
-assert.equal(envergure(couchesSurvol), 30,
-  `au survol, les rayons restent ceux d’origine : 24 px de flou et 6 px d’étalement (reçu : ${envergure(couchesSurvol)} px)`);
+  'le halo d’une carte jouable pose trois couches : l’anneau, le liseré rapproché et le halo extérieur');
+// Concentré, comme dans MTG Arena : la lueur meurt à une dizaine de pixels de la
+// face. L’ancien halo s’étalait sur 22 px au repos et 30 px au survol.
+assert.equal(envergure(couchesMain), 10,
+  `le halo se serre contre la carte : 9 px de flou, 1 px d’étalement (reçu : ${envergure(couchesMain)} px)`);
+assert.equal(envergure(couchesSurvol), 17,
+  `au survol, il s’élargit à peine : 15 px de flou et 2 px d’étalement (reçu : ${envergure(couchesSurvol)} px)`);
+assert.ok(envergure(couchesMain) <= 12 && envergure(couchesSurvol) <= 20,
+  'concentré : jamais les 22 px d’avant, ni les 30 px du survol d’avant');
+
+// La mythique, elle aussi, reste concentrée : l’or respire, il ne s’étale pas.
+const couchesMythique = couchesHalo(haloMythique);
+assert.ok(couchesMythique.length >= 3, 'la lueur mythique pose ses couches comme la commune');
+assert.ok(envergure(couchesMythique) <= 20,
+  `la lueur mythique reste concentrée (reçu : ${envergure(couchesMythique)} px, plafond 20)`);
+assert.ok(envergure(couchesMythique) > envergure(couchesMain),
+  'la mythique respire un cran plus large que la main, sans jamais rayonner');
 assert.ok(Math.min(...couchesMain.map(({ densite }) => densite)) >= 0.8,
   `chaque couche du halo est presque opaque : c’est le contraste qui rend le voyant lisible (reçu : ${couchesMain.map(({ densite }) => densite).join(', ')})`);
 assert.ok(Math.min(...couchesSurvol.map(({ densite }) => densite)) >= 0.9,
   `au survol, la lueur est pleine (reçu : ${couchesSurvol.map(({ densite }) => densite).join(', ')})`);
-assert.match(haloMain, /0 0 6px 1px rgba\(var\(--rpg-play-halo-clair\), \.82\)/,
-  'une auréole rapprochée sature le bord de la carte, dans le reflet clair de la main');
-assert.match(haloMain, /0 0 18px 4px rgba\(var\(--rpg-play-halo\), \.92\)/,
-  'le flou extérieur garde ses 18 px et gagne en densité');
+assert.match(haloMain, /0 0 3px rgba\(var\(--rpg-play-halo-clair\), \.95\)/,
+  'un liseré de 3 px sature le bord de la carte, dans le reflet clair de la main');
+assert.match(haloMain, /0 0 9px 1px rgba\(var\(--rpg-play-halo\), \.9\)/,
+  'le halo extérieur tient en 9 px : concentré, pas un projecteur');
 assert.match(haloMain, /0 6px 16px rgba\(0, 0, 0, \.62\)/,
   'l’ombre portée s’assombrit pour que la lueur paraisse plus claire');
 assert.doesNotMatch(haloMain + haloSurvol, /border-color:/,

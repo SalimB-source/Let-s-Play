@@ -5586,8 +5586,8 @@ là où il se passe.
 
 - **Ce qui est jouable s'allume.** Le halo de la main (`is-playable`,
   `data-jouable`) est la seule réponse à « puis-je jouer cette carte ? » —
-  **blanc** pour toute la main, **or** pour une carte mythique (voir « la lueur
-  de jouabilité — blanc pour la main, or pour les mythiques »). Une carte
+  **azur** pour toute la main, **or** pour une carte mythique (voir « la lueur
+  de jouabilité — l'azur de l'arène, l'or pour les mythiques »). Une carte
   refusée reste éteinte, en main, avec son bruitage d'erreur — plus personne
   n'écrit « mana insuffisant » ni « vous avez déjà posé votre terrain ce
   tour ».
@@ -6395,7 +6395,7 @@ l'application. Le premier : **le voile noir du plateau**. Le second : **le
 sablier des cartes en main**, qui tombait à côté sur téléphone — on croyait
 jouer une carte, c'en était une autre.
 
-### 1. Le plateau est une peinture, rien ne la recouvre
+### 1. Le plateau est une peinture, plus de voile dessus
 
 Chaque table portait un **dégradé noir en haut et en bas** (`--rpg-plateau-voile`)
 et, à la souris, une vignette centrale par famille de terrain. L'intention était
@@ -6426,7 +6426,13 @@ même partout : *deux tiers d'ombre, un tiers de peinture* — soit un fond sous
 
 Les cartes, elles, se détachent par leur **ombre** (`box-shadow`), jamais par un
 aplat sur le décor : c'est la règle du duel tactile — aucun panneau opaque sur le
-champ de bataille — qui reste entière. Le doigt reçoit exactement le même
+champ de bataille — qui reste entière.
+
+**Une exception, revenue plus tard et volontairement bornée : la vignette des
+deux bords** (voir « Le Sablier : la vignette du plateau », plus bas). Ce n'est
+pas le voile : deux dégradés noirs de quelques dizaines de pixels, en haut et en
+bas du cadre, qui s'éteignent avant le premier champ — la peinture du milieu, les
+dunes, la mosaïque et les cartes n'y perdent rien. Le doigt reçoit exactement le même
 traitement que la souris ; il ajoute simplement ses propres capsules à
 l'échelle du téléphone (barre de navigation et plaques des sorciers, resserrées
 dans la première rangée de la grille tactile).
@@ -6507,6 +6513,55 @@ déplacement des commandes).
 L'APK n'a pas besoin d'être reconstruite : le duel vit dans la page servie par le
 site, donc les deux correctifs — le voile et la main — arrivent dans l'application
 dès que le site est déployé, au prochain lancement du jeu.
+
+
+## Le Sablier : la vignette du plateau, en haut et en bas
+
+« Ajoute une vignette noire en haut et en bas du plateau, en dessous de la
+main. »
+
+Le cadre se referme sur ses bords. Deux **dégradés noirs** entrent par le haut et
+par le bas de la table et se fondent avant d'atteindre le champ de bataille : la
+navigation et les plaques du sorcier se posent sur une ombre, la rangée de la
+main sort d'une pénombre, et le milieu de la table — les dunes de l'Erg, la
+mosaïque de Tipaza, les cartes posées — garde sa peinture intacte.
+
+**Ce n'est pas le voile d'autrefois.** Celui-là prenait un tiers de la hauteur,
+noircissait la peinture de part en part et faisait ressembler chaque table à une
+fenêtre sale ; il a été retiré (voir « le voile noir retiré », plus haut). La
+vignette est une **bande** : `17 %` de la hauteur en haut, `23 %` en bas, avec
+quatre paliers de transparence qui s'éteignent à zéro — `rgba(6, 5, 9, .82)` au
+ras du bord haut, `.9` au ras du bord bas, rien au-delà. Sur un 1440 × 900, cela
+fait 153 px et 207 px : la main (198 px) tient dans la bande du bas, et la
+première rangée de cartes du PC commence à `21 %` — au-dessus de la bande haute,
+jamais dedans.
+
+| | Valeur | Ce que ça donne |
+| --- | --- | --- |
+| Bande du haut | `0 → 17 %`, `.82 → 0` | le cadre se referme sous la navigation et les plaques du sorcier |
+| Bande du bas | `0 → 23 %`, `.9 → 0` | la main se détache du décor, ses cartes gardent leur ombre |
+| Milieu de la table | `17 % → 77 %` | peinture nette : ni voile, ni filtre |
+| Pointeur | `pointer-events: none` | c'est un fond, jamais une cible |
+| Sous un aperçu | `opacity: .72` | la peinture passe au flou, le bord du cadre reste fermé |
+
+**Elle passe derrière la main.** Le calque (`.rpg-plateau-vignette`) est monté
+juste après le jumeau de la peinture (`.rpg-plateau-fond`), donc **avant** les
+rangées, les cartes et le dock de la main dans l'ordre du document : à
+`z-index: 0` contre `42` pour la main, ce sont les cartes qui recouvrent la
+vignette, et non l'inverse. Un fond noir sous la main ne mange donc aucune carte :
+il donne du relief à celles qui débordent de la bande.
+
+Les pourcentages suivent la hauteur de la table : la même proportion sur un
+1440 × 900, sur un 844 × 390 au doigt et sur l'APK en paysage — nulle part la
+bande du bas ne rejoint la rangée des cartes posées (`49 %` au PC).
+
+`scripts/rpg-battle-ui-check.mjs` tient le contrat : le calque est monté dans la
+page (`<span class="rpg-plateau-vignette" aria-hidden="true" />`), il est en
+`position: absolute; inset: 0`, `pointer-events: none`, `z-index: 0`, il porte
+**deux** `linear-gradient` (`to bottom`, `to top`) qui s'éteignent à `17 %` et
+`23 %`, aucun aplat ni `inset` d'ombre, et il est placé **avant** la main dans le
+document. Les assertions du voile, elles, restent : pas de `--rpg-plateau-voile`,
+pas de `.card-table::before`, pas de vignette par plateau.
 
 
 ## Le Sablier : les six decks de départ recréés
@@ -6900,100 +6955,117 @@ ce volet, huit assertions statiques restent rouges, pré-existantes (Coup
 rapide, Envol, Cavalier, 3 × Furie, maître-du-marteau ×2). Les contrôles
 Playwright demandent un navigateur, absent de cet environnement.
 
-## Le Sablier : les faces en jeu sans cadre, au doigt
+## Le Sablier : plus aucun cadre de carte au doigt
 
-**Mise à jour :** le retrait des cadres s'applique désormais à **toutes les
-faces** sur mobile et dans l'APK, y compris le catalogue, le mulligan,
-les aperçus/appuis longs, les annonces, le guide et l'atelier. La règle finale
-`.rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class]` retire la
-bordure et la matière du cadre, sans masquer les pastilles ni désactiver les
-animations du combat. Les cadres de la version ordinateur sont conservés.
-Le détail ci-dessous décrit le retrait initial, limité aux faces en jeu.
+« Enlève le cadre des cartes sur mobile seulement. »
 
-Sur téléphone et dans l'APK, l'anneau de couleur ne se voit plus sur les trois
-familles de faces qu'on **joue** : les cartes de la main, celles posées sur la
-table, et les terrains du rail de mana. Partout ailleurs il reste : aperçu
-rapide et appui long, annonce de sort, mulligan, catalogue, dessus de paquet et
-de cimetière, vignette de magie jouée, guide et atelier — des faces de lecture
-ou de repérage. Les piles perdent aussi leur ombre décalée, celle qui reprenait
-la couleur du cadre.
+Sur téléphone et dans l'APK, **aucune carte ne porte d'anneau** : ni la main, ni
+les cartes posées, ni les terrains du rail de mana, ni l'aperçu, ni le mulligan,
+ni les paquets et le cimetière, ni les annonces, ni le catalogue ou l'atelier de
+deck. La face est son illustration, jusqu'au bord. **Le clavier ne bouge pas** :
+il garde le filet de 3 px de la couleur de l'élément (voir « la signature des
+familles de sorts » et `RPG-CARD-ART.md`).
 
-**Pourquoi.** L'épaisseur du cadre suit la **largeur** de la face
-(`clamp(4px, 1.76vw, 8px)`) : son plafond de 8 px est atteint dès 455 px de
-fenêtre, donc sur tout téléphone en paysage. Aux 62 px d'une carte en main sur
-un 844 × 390 (cinq cartes), cela fait 16 px — un quart de la carte — et 41 %
-d'une carte à 39 px quand la main s'allonge à huit ; le petit gabarit des
-terrains (`clamp(6.4px, 0.544vw, 6.8px)`) met 6,8 px sur une vignette de 40 px,
-un quart de la face là encore. La main et la table étant en full art
-(l'illustration posée `inset: 0`) et le terrain n'étant que son image
-(`.rpg-terrain img`, 100 %), c'est l'illustration que l'anneau mangeait, pour
-une couleur d'élément que la pastille de la carte annonce déjà.
+**Pourquoi le retrait plutôt qu'un filet amaigri.** Sur une carte en main de
+62 px (844 × 390, cinq cartes), 3 px de bordure pèsent déjà un vingtième de la
+face — et la couleur de l'élément est de toute façon annoncée par la pastille,
+par le coût et par la ligne de type. Sur un écran qu'on tient à bout de bras, la
+peinture compte plus que l'anneau. C'est l'arbitrage inverse de celui du grand
+écran, où le filet nomme l'élément d'un coup d'œil dans un éventail large.
 
-**Comment.** Deux déclarations, sur les trois familles, en fin de
-`rpg-mobile.css` : `border-width: 0` et `background-image: none` — la seconde
-emporte d'un coup la matière, la résille gravée, la diagonale des hybrides et
-le reflet des mythiques, qui sont quatre couches du même fond. Aucune
-animation n'est éteinte : le reflet des mythiques ne fait aller et venir
-qu'une `background-position`, sur un fond qui n'existe plus, et un
-`animation: none` aurait emporté la pulsation des cibles
-(`.rpg-card.is-ciblable`) comme les animations du combat. Le liseré noir des
-cartes (`outline: 2px solid #000`) reste : c'est lui qui les détache du bois ;
-le terrain n'en a jamais eu — sa vignette se détache par sa propre ombre
-portée.
+| | Clavier | Doigt / APK |
+| --- | --- | --- |
+| Main, table, terrains | filet de 3 px | **aucun cadre** |
+| Aperçu, mulligan, paquets, annonces | filet de 3 px | **aucun cadre** |
+| Catalogue, atelier de deck | filet de 3 px | **aucun cadre** (coque du menu) |
+| Pastille d'élément, coût, compteurs ×N | leurs propres bords | inchangés |
+| États (sélection, cible, attaquant), halos | inchangés | inchangés |
 
-**Les piles n'ont plus d'ombre non plus.** Elles se signalaient par deux
-ombres décalées — un cran sombre, puis la couleur du cadre posé sur le bloc de
-la pile : le cadre, en double. L'ombre colorée part avec l'anneau, sur les
-cartes homonymes (main et champs de bataille) comme sur les terrains ; le
+**Comment.** Deux règles, en fin de `rpg-mobile.css` :
+
+```css
+.rpg-battle--touch .rpg-hand .rpg-hand__card,
+.rpg-battle--touch .card-row .rpg-card,
+.rpg-battle--touch .rpg-terrain { border-width: 0 !important; }
+
+.rpg-battle.rpg-battle--touch [class*="rpg-card--frame-"][class] {
+  border-width: 0 !important;
+}
+```
+
+Le `!important` n'est pas une facilité : la règle du filet, en fin de
+`rpg-battle.css`, est elle-même `!important` et vise les mêmes classes. La
+seconde règle la dépasse par la **spécificité** — deux classes et deux
+attributs contre une classe et un attribut —, sans que le duel à la souris ait à
+changer d'un pixel.
+
+Le menu (`atelier`, `catalogue`) garde sa propre coque, sans la classe tactile
+du duel : il passe donc par la **même condition** que celle qui pose
+`rpg-battle--touch` dans `RpgDuelPage` — doigt, stylet, ou fenêtre de
+1100 px au plus :
+
+```css
+@media (pointer: coarse), (max-width: 1100px) {
+  .rpg-battle .rpg-atelier__carte-art[class*="rpg-card--frame-"][class],
+  .rpg-battle .rpg-card-catalogue__art[class*="rpg-card--frame-"][class] {
+    border-width: 0 !important;
+  }
+}
+```
+
+La spécificité est montée d'un cran à dessein : le filet de l'atelier est posé
+par `rpg-deck-atelier.css`, chargée par `RpgDeckCreation.jsx` — un ordre
+d'import qui ne nous appartient pas. Deux classes et deux attributs l'emportent
+quel que soit cet ordre.
+
+**Rien d'autre ne change.** La règle ne touche qu'à `border-width` : les
+pastilles d'élément, les disques de coût, les compteurs `×N`, les ombres, les
+halos de jouabilité et les `outline` d'état (sélection dorée, cible, attaquant
+déclaré) restent exactement où ils étaient. Aucune géométrie ne bouge non plus :
+tout est en `border-box`, donc chaque face garde sa largeur, son 4:5 et sa
+mesure (`--duel-card` pour la main, `--rpg-field-card` pour la table, les
+40/48 px du rail pour les terrains) — c'est l'illustration qui gagne l'anneau,
+pas la face qui grandit. Le budget de la grille tactile et le contrat de
+`check:rpg-mobile` (aucun recouvrement dans la main, cibles tactiles) sont donc
+inchangés.
+
+**Les piles n'ont pas d'ombre non plus.** Elles se signalaient par deux ombres
+décalées — un cran sombre, puis la couleur du cadre : le cadre, en double. Le
 compteur `×N` et la pastille `↻N` d'engagement restent seuls à dire la pile, et
 le compteur se touche pour déplier. Une exception : l'engagement **partiel**
 d'une pile de terrains garde sa bague discrète (`0 0 0 1px rgba(255, 217, 168,
-.45)`) — elle dit un état, pas une épaisseur de pile.
-
-**Aucune géométrie ne bouge.** Tout est en `border-box` : chaque face garde sa
-largeur, son 4:5 et sa mesure (`--duel-card` pour la main, `--rpg-field-card`
-pour la table, les 40/48 px du rail pour les terrains) — c'est l'illustration
-qui gagne l'anneau, pas la face qui grandit. Le budget de la grille tactile
-(colonnes, lignes, `--rpg-field-card`, piles de cartes homonymes) et le contrat
-de `check:rpg-mobile` (aucun recouvrement dans la main, cibles tactiles,
-largeurs mesurées) sont donc inchangés.
+.45)`) — elle dit un état, pas une épaisseur.
 
 ### Où vit le code
 
-- `src/games/rpg-mobile.css` — les deux blocs écrits en fin de feuille,
-  « Sans cadre, au doigt » (la main `.rpg-battle--touch .rpg-hand
-  .rpg-hand__card`, la table `.rpg-battle--touch .card-row .rpg-card` — elle
-  couvre les cartes dépliées d'une pile, qui sont des enfants de `.card-row` —
-  et les terrains `.rpg-battle--touch .rpg-terrain`) puis « Les piles, au
-  doigt » (`.rpg-card-stack` et `.rpg-terrain.rpg-terrain-stack.is-stacked`
-  passent à `box-shadow: none`) ;
-- `src/games/rpg-battle.css` — les gabarits `--rpg-card-border*`, l'anneau orné
-  et l'ombre décalée des piles de terrains, **inchangés** : ce sont la mesure du
-  duel à la souris (où l'ombre reste), de l'aperçu, du mulligan, du catalogue et
-  des faces de lecture.
+- `src/games/rpg-mobile.css` — le bloc « Sans cadre, au doigt » (la main
+  `.rpg-battle--touch .rpg-hand .rpg-hand__card`, la table
+  `.rpg-battle--touch .card-row .rpg-card` — elle couvre les cartes dépliées
+  d'une pile, enfants de `.card-row` —, les terrains
+  `.rpg-battle--touch .rpg-terrain`, puis toutes les faces de la coque tactile
+  par `[class*="rpg-card--frame-"]`), la condition du menu (atelier, catalogue)
+  juste après, et « Les piles, au doigt » (`.rpg-card-stack` et
+  `.rpg-terrain.rpg-terrain-stack.is-stacked` passent à `box-shadow: none`) ;
+- `src/games/rpg-battle.css` — les gabarits `--rpg-card-border*`, le filet
+  `--rpg-card-filet`, l'anneau orné et l'ombre décalée des piles de terrains,
+  **inchangés** : ce sont la mesure du duel à la souris.
 
 ### Vérifications
 
 ```bash
-npm run check:rpg          # 411/411 — les règles du duel, inchangées
-npm run build              # le bundle se construit ; les règles partent après l'anneau
-npm run check:rpg-ui       # voir la réserve ci-dessus
+npm run check:rpg-cadre-filet   # le filet, et son retrait au doigt
+npm run check:rpg               # le moteur et le catalogue
+npm run build                   # le bundle se construit
 ```
 
-Le contrat de `scripts/rpg-battle-ui-check.mjs` suit la retouche : l'interdit de
-filet fixe sur les terrains au doigt accepte désormais le zéro (il refuse
-toujours 1 ou 2 px), et cinq assertions neuves tiennent le bloc ajouté — la
-règle partagée par la main, la table et les terrains ; l'ombre de pile éteinte
-sur les deux familles ; la bague conservée pour l'engagement partiel ; et
-l'interdit symétrique, l'aperçu, le mulligan, les piles de paquet et de
-cimetière, le catalogue, le guide et l'atelier ne devant pas entrer dans ce
-bloc. En neutralisant les assertions **périmées** déjà connues (`canTarget`
-écrit `['ennemi', 'tous']` là où le check attend `modeCible === 'ennemi'`,
-`rpgResonanceEnJeu(duel, element = 'neige')` là où il attend `(duel)`), le
-script va jusqu'au bout : il ne reste que sept échecs, tous hors interface
-(aura de Neige, trois cartes attendant « valkyrie » sur leur face). Le contrôle
-Playwright `check:rpg-mobile` demande un navigateur, absent de cet
-environnement.
+`tests/rpg-cadre-filet.test.js` lit les deux feuilles, puis monte la cascade
+réelle dans jsdom, deux fois : la coque `rpg-battle--touch` rend
+`border-top-width: 0px` sur la main, la table et le terrain, et la pastille
+d'élément garde son bord ; la coque `rpg-battle` rend `3px` sur les trois. Les
+assertions de source tiennent le reste : le filet de 3 px reste la mesure du
+clavier, la feuille tactile ne redessine plus **aucun** filet
+(`border-width: var(--rpg-card-filet…)` n'y apparaît plus), et le bloc du retrait
+ne pose aucun `outline` — les états gardent les leurs.
 
 
 ## Le Sablier : couleur et coût de même diamètre, catalogue compris
@@ -7336,14 +7408,14 @@ armes qui fait le repère : un socle au bas de la face veut dire *sort*, et sa
 | **Socle** | la voûte, liseré d'or sur toute la courbe | la même voûte, liseré d'améthyste |
 | **Forme du jeton** | losange — l'éclair au centre | médaillon rond |
 | **Teinte** | or (`#ffd619`) — le socle et le jeton | améthyste (`#b39ae0`), la couleur du contre |
-| **Lueur en main** | blanc, comme toute la main | blanc, comme toute la main |
+| **Lueur en main** | azur, comme toute la main | azur, comme toute la main |
 | **Sigle** | l'éclair — ça part sans attendre | l'étincelle — ça se prépare |
 | **Mot** | `MAGIE RAPIDE` | `SORCELLERIE` |
 
 La dernière ligne ne se lit pas sur la face mais **dans la main** : c'est la
-lueur de jouabilité, celle qui s'allume quand la carte est payable — blanche
+lueur de jouabilité, celle qui s'allume quand la carte est payable — en azur
 pour toutes les cartes, l'or étant réservé aux mythiques (voir « la lueur de
-jouabilité — blanc pour la main, or pour les mythiques », plus bas). La famille,
+jouabilité — l'azur de l'arène, l'or pour les mythiques », plus bas). La famille,
 elle, se lit sur la carte elle-même, où qu'elle soit : socle, jeton, mot et
 ligne de type teintée.
 
@@ -7481,42 +7553,55 @@ surfaces le portent. Les planches de contrôle — `sablier-motifs-cadres.png` e
 sa loupe `sablier-motifs-cadres-zoom.png` — se refont par capture Chromium (voir
 la recette des captures du Sablier).
 
-## Le Sablier : la lueur de jouabilité — blanc pour la main, or pour les mythiques
+## Le Sablier : la lueur de jouabilité — l'azur de l'arène, l'or pour les mythiques
 
 La main répond à une seule question — « puis-je jouer cette carte, là, tout de
 suite ? » — et elle y répond d'une seule manière : le halo de `is-playable`,
 allumé sur le verdict de `peutJouerCarte()`, mana compris.
 
-**Ce halo est blanc pour toute la main.** Un temps, sa teinte disait autre chose
-que la jouabilité : l'or pour la Magie Rapide, l'améthyste pour la Sorcellerie,
-l'azur pour le reste. Trois voyants pour trois informations, alors que la
-question est unique — et le socle du sort, son jeton et sa ligne de type disent
-déjà la famille, sans allumer la carte. La lueur ne parle donc plus que de
-l'instant : **elle est blanche**, du Désert au Fennec, de la Braise à l'Eau, de
-la créature au sort.
+**Ce halo est en azur, et il se serre contre la carte.** La teinte ne dit plus
+rien de la famille d'un sort — un temps, l'or disait Magie Rapide, l'améthyste
+Sorcellerie, l'azur le reste, trois voyants pour une seule question. Elle ne dit
+plus qu'une chose : *cette carte peut partir*. Le blanc a fait ce travail un
+moment ; il est remplacé par **le cyan des cartes jouables de MTG Arena**
+(`0, 180, 255`, reflet `130, 238, 255`), et l'empreinte a été resserrée dans le
+même esprit : le halo se colle aux bords de la face au lieu de rayonner.
 
-**La rareté, elle, a sa lueur.** Une carte **mythique** jouable prend l'**or** —
-la seule autre teinte de la feuille —, plus lumineuse que le blanc commun :
-cœur blanc doré, or clair, or profond qui irradie, et une respiration lente
-(`rpg-mythique-halo-pulse`) qui la fait vivre dans l'éventail. Le cadre ne bouge
-pas d'un pixel : le halo se peint derrière la face, le filet garde la couleur de
-l'élément, même sous l'or.
+| | Avant | Maintenant |
+| --- | --- | --- |
+| Anneau | 2 px, teinte claire | 2 px, teinte claire, densité pleine |
+| Liseré | 6 px de flou, 1 px d'étalement | **3 px**, sans étalement |
+| Halo extérieur | 18 px de flou, 4 px d'étalement | **9 px de flou, 1 px d'étalement** |
+| Envergure | 22 px au repos, 30 px au survol | **10 px au repos, 17 px au survol** |
+
+C'est la lecture de l'arène de MTG Arena : un liseré lumineux qui suit le corps
+de la carte et s'éteint en une dizaine de pixels. Une carte jouable se repère
+d'un coup d'œil dans l'éventail, sans éclairer ses voisines ni déborder de la
+rangée.
+
+**La rareté, elle, a sa lueur.** Une carte **mythique** jouable prend l'**or et
+l'orange** — la seule autre teinte de la feuille —, plus chaude, tout aussi
+concentrée : liseré doré `255, 214, 120`, or `255, 152, 14`, halo de 12 px qui
+respire jusqu'à 17 px (`rpg-mythique-halo-pulse`, 0,9 s). C'est une respiration,
+pas une dilatation : la lueur ne quitte jamais les bords de la face. Le cadre ne
+bouge pas d'un pixel — le halo se peint derrière la face, le filet garde la
+couleur de l'élément, même sous l'or.
 
 | Carte allumée en main | Lueur de jouabilité |
 | --- | --- |
-| Créature, héros, terrain, arme, Magie Rapide, Sorcellerie | blanc — `255, 255, 255` (repos et survol) |
-| **Mythique** (quel que soit son type) | or — `255, 196, 8`, reflet de survol `255, 243, 186` |
+| Créature, héros, terrain, arme, Magie Rapide, Sorcellerie | azur — `0, 180, 255`, reflet `130, 238, 255` |
+| **Mythique** (quel que soit son type) | or/orange — `255, 152, 14`, reflet `255, 214, 120` |
 | Carte non jouable | aucune lueur (`is-unplayable`) |
 
 **Un seul halo, une seule empreinte.** La règle commune de `is-playable`
-décide de tout : l'allumage, l'empreinte (anneau de 2 px, auréole rapprochée de
-6 px, flou extérieur de 18 px étalé de 4 px, ombre portée de 16 px) et la
-densité — pleine, celle d'un voyant qu'on repère d'un coup d'œil dans un
-éventail : anneau `.98`, auréole `.82`, flou `.92`, ombre `.62` pour que la
-lueur paraisse plus claire encore. Au survol, les mêmes rayons, densité pleine.
-La teinte tient dans deux triplets, déclarés **une seule fois** par la règle
-commune (blancs) et **une seule fois** par la règle mythique (l'or) : `r`, `g`,
-`b` séparés, la seule forme que `rgba(var(--…), α)` sache lire.
+décide de tout : l'allumage, l'empreinte et la densité — pleine, celle d'un
+voyant qu'on repère d'un coup d'œil dans un éventail (anneau `1`, liseré `.95`,
+halo `.9`, ombre `.62` pour que la lueur paraisse plus claire encore). Au
+survol, les mêmes rayons à peine élargis, densité pleine. La teinte tient dans
+deux triplets, déclarés **une seule fois** par la règle commune (l'azur) et
+**une seule fois** par la règle mythique (l'or) : `r`, `g`, `b` séparés, la
+seule forme que `rgba(var(--…), α)` sache lire. Aucun repli écrit dans le
+`var()` : la feuille ne porte que ces deux couleurs de halo.
 
 Rien n'a bougé du côté du jeu : c'est toujours `RpgDuelPage` qui décide si une
 carte est jouable — `peutJouerCarte()` : le tour, la fenêtre de réponse, le
@@ -7528,15 +7613,15 @@ reste éteinte, mythique comprise.
 
 - `src/games/rpg-battle.css` — **la règle commune**, au bloc de la main
   (`.rpg-hand__card.is-playable`, et son survol) : elle allume, donne
-  l'empreinte, la densité, et **déclare le blanc** (`--rpg-play-halo`,
+  l'empreinte concentrée et **déclare l'azur** (`--rpg-play-halo`,
   `--rpg-play-halo-clair`). C'est la teinte de toute la main ;
 - `src/games/rpg-battle.css`, encore — le bloc « Lueur d'or — carte MYTHIQUE
-  jouable », juste après : mêmes variables, passées à l'or, et une empreinte un
-  cran plus large (jusqu'à 18 px de flou étalé de 4 px) avec l'animation. La
-  feuille ne porte **que ces deux teintes** ; les déclarations de famille
-  (`--famille-rapide`, `--famille-sorcellerie`) et l'azur de repli ont disparu
-  du halo — les classes de famille restent sur la face, elles servent au socle,
-  au jeton et à la ligne de type ;
+  jouable », juste après : mêmes variables, passées à l'or et à l'orange, et une
+  respiration `rpg-mythique-halo-pulse`. La feuille ne porte **que ces deux
+  teintes** ; les déclarations de famille (`--famille-rapide`,
+  `--famille-sorcellerie`) et l'azur d'autrefois ont disparu du halo — les
+  classes de famille restent sur la face, elles servent au socle, au jeton et à
+  la ligne de type ;
 - `src/games/RpgDuelPage.jsx` — `mythiqueJouable = baseJouable && estMythique` :
   la classe `is-mythique-jouable` (et son `data-mythique-jouable`) se pose sur
   **toute** carte mythique jouable, plus seulement sur les créatures. Une
@@ -7548,33 +7633,34 @@ reste éteinte, mythique comprise.
 
 ```bash
 npm run check:rpg-sort-signature   # la lueur et la signature des familles
-npm run check:rpg                  # 1160/1160 — le moteur et le catalogue
+npm run check:rpg                  # le moteur et le catalogue
 npm run build                      # le bundle se construit
 ```
 
 `scripts/rpg-sort-signature-check.mjs` tient le contrat : la règle commune
-déclare bien le blanc pur pour les deux triplets, ses cinq couches lisent
-`var(--rpg-play-halo)` / `var(--rpg-play-halo-clair)` sans teinte écrite en dur,
-elle ne touche **jamais** `border-color`, aucune famille de sort ne déclare plus
-de teinte de halo (ni ambre, ni améthyste, ni azur), et le bloc mythique est le
-seul autre endroit où une couleur de halo s'écrit — **or** (`r > 200`,
-`g > 150`, `b < 80`), reflet de survol plus clair, animation
-`rpg-mythique-halo-pulse`, ancien orange « Kyûbi » (`251, 113, 22`) disparu,
-et pas de `border-color` non plus. Puis la cascade réelle, montée par jsdom sur
-la feuille entière : Magie Rapide, Sorcellerie, créature, terrain et arme jouables
-reçoivent tous `255,255,255` — et une mythique jouable, sort ou créature, reçoit
-l'or. Le volet du contraste exige 22 px d'envergure au repos et 30 px au survol,
-avec des densités toutes supérieures à `.8` (`.9` au survol) : une lueur qui
-gagnerait 12 px de flou échoue.
+déclare bien l'azur (`0, 180, 255` et son reflet cyan `130, 238, 255`), ses
+couches lisent `var(--rpg-play-halo)` / `var(--rpg-play-halo-clair)` sans teinte
+écrite en dur, elle ne touche **jamais** `border-color`, aucune famille de sort
+ne déclare plus de teinte de halo, le blanc ne subsiste nulle part dans la
+lueur, et le bloc mythique est le seul autre endroit où une couleur de halo
+s'écrit — **or/orange** (`r > 200`, `g > 120`, `b < 80`), reflet plus clair,
+animation `rpg-mythique-halo-pulse`, ancien orange « Kyûbi » (`251, 113, 22`)
+disparu, et pas de `border-color` non plus. **L'empreinte est mesurée** :
+l'envergure vaut 10 px au repos et 17 px au survol — jamais les 22 px ni les
+30 px d'avant —, la lueur mythique reste sous 20 px, et toutes les densités
+tiennent au-dessus de `.8` (`.9` au survol). Puis la cascade réelle, montée par
+jsdom sur la feuille entière : Magie Rapide, Sorcellerie, créature, terrain et
+arme jouables reçoivent tous `0,180,255` — et une mythique jouable, sort ou
+créature, reçoit l'or.
 
 **Contrôle visuel à faire (Chromium réel, 1440 × 900 et 844 × 390 au doigt).**
-Le blanc doit se lire sur la table sombre **sans éblouir** : bord franc, flou
-dense, mais aucune carte voisine recouverte dans l'éventail, et rien de masqué —
-ni le coût, ni la pastille d'élément, ni le socle. L'or doit rester réservé aux
-mythiques : une main ordinaire n'en montre pas un seul pixel, et une mythique
-éteinte (mana manquant) ne s'allume pas. Le blanc, lui, ne doit pas se confondre
-avec la lueur d'une carte ciblée sur la table (`is-ciblable`) ni avec le liseré
-de sélection.
+L'azur doit se lire sur la table sombre comme sur les peintures claires (Erg du
+Sahara, Ruines de Tipaza) **sans éclairer la carte voisine** : la lueur meurt à
+10 px, elle ne doit ni recouvrir le coût, ni la pastille d'élément, ni le socle,
+ni dépasser dans le rang de cartes. L'or doit rester réservé aux mythiques : une
+main ordinaire n'en montre pas un seul pixel, et une mythique éteinte (mana
+manquant) ne s'allume pas. L'azur, enfin, ne doit pas se confondre avec le bleu
+de l'Eau ni avec la lueur d'une carte ciblée sur la table (`is-ciblable`).
 
 ## Le Sablier : la créature se pose avant de désigner sa cible
 
