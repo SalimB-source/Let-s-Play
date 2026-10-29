@@ -292,6 +292,46 @@ if (npmInstall.status !== 0) {
   console.error('[desktop] installation des dépendances runtime dans desktop/pack impossible.');
   process.exit(npmInstall.status ?? 1);
 }
+
+// ---------------------------------------------------------------------------
+// Garde-fou : `node_modules` n'est embarqué que module par module
+// ---------------------------------------------------------------------------
+// `electron-builder.yml` exclut `node_modules/**` puis rouvre chaque module
+// explicitement. C'est ce qui empêche electron-builder de remonter l'arbre et
+// d'embarquer le `node_modules` du dépôt entier (672 Mo d'asar dépliés, un
+// installeur de 497 Mo — vu en CI). En échange, un module oublié ne se
+// verrait qu'au lancement, chez le joueur : on refuse de produire l'exécutable.
+const ymlBuilder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+if (!ymlBuilder.includes("'!node_modules/**'")) {
+  console.error('[desktop] electron-builder.yml n’exclut plus node_modules en bloc.');
+  console.error('          Rétablissez « - \'!node_modules/**\' » avant la liste des modules.');
+  process.exit(1);
+}
+const modulesAutorises = new Set(
+  [...ymlBuilder.matchAll(/^\s+- 'node_modules\/((?:@[^/']+\/)?[^'/]+)\/\*\*'$/gm)]
+    .map(([, nom]) => nom),
+);
+const dossierModules = join(SCENE, 'node_modules');
+const modulesInstalles = readdirSync(dossierModules, { withFileTypes: true })
+  .filter((entree) => entree.isDirectory() && entree.name !== '.bin')
+  .flatMap((entree) => (entree.name.startsWith('@')
+    ? readdirSync(join(dossierModules, entree.name)).map((nom) => `${entree.name}/${nom}`)
+    : [entree.name]));
+const modulesOublies = modulesInstalles.filter((nom) => !modulesAutorises.has(nom));
+if (modulesOublies.length) {
+  console.error(`[desktop] dépendance(s) absente(s) de electron-builder.yml : ${modulesOublies.join(', ')}`);
+  for (const nom of modulesOublies) {
+    console.error(`          ajoutez : - 'node_modules/${nom}/**' dans la section « files »`);
+  }
+  process.exit(1);
+}
+const octetsModules = total(dossierModules, lister(dossierModules));
+if (octetsModules > 32 * 1024 * 1024) {
+  console.error(`[desktop] dépendances runtime trop lourdes : ${tailleLisible(octetsModules)} `
+    + `pour ${modulesInstalles.length} modules — le pack ne doit contenir que la coque.`);
+  process.exit(1);
+}
+console.log(`[desktop] dépendances runtime : ${modulesInstalles.length} modules, ${tailleLisible(octetsModules)}`);
 console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers + electron-updater)`);
 
 // ---------------------------------------------------------------------------

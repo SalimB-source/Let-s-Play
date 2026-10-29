@@ -48,8 +48,34 @@ directories:
 # runner) : la version exacte est lue dans pack/package.json par le bundle.
 
 # pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
+#
+# **`node_modules` est exclu en bloc, puis rouvert module par module.** Sans
+# cela, electron-builder collecte les dépendances de production en remontant
+# l'arborescence (`appDir`, `projectDir`, racine du workspace) : selon le
+# résultat de `npm list`, il a déjà embarqué le `node_modules` du dépôt entier —
+# 672 Mo de `app.asar.unpacked` et un installeur de 497 Mo pour un jeu qui n'en
+# a pas besoin. La liste ci-dessous est celle de `electron-updater` et de ses
+# dépendances ; `scripts/desktop-bundle.mjs` **vérifie** qu'elle couvre tout
+# `desktop/pack/node_modules` et échoue sinon, plutôt que de livrer un exécutable
+# qui planterait au lancement sur un module manquant.
 files:
   - '**/*'
+  - '!node_modules/**'
+  - 'node_modules/electron-updater/**'
+  - 'node_modules/builder-util-runtime/**'
+  - 'node_modules/argparse/**'
+  - 'node_modules/debug/**'
+  - 'node_modules/fs-extra/**'
+  - 'node_modules/graceful-fs/**'
+  - 'node_modules/js-yaml/**'
+  - 'node_modules/jsonfile/**'
+  - 'node_modules/lazy-val/**'
+  - 'node_modules/lodash.escaperegexp/**'
+  - 'node_modules/lodash.isequal/**'
+  - 'node_modules/ms/**'
+  - 'node_modules/sax/**'
+  - 'node_modules/tiny-typed-emitter/**'
+  - 'node_modules/universalify/**'
   - '!app-icons{,/**/*}'
   - '!electron-builder.yml'
 

@@ -331,7 +331,27 @@ assert.match(bundleCoque, /if \(coqueSeule\) \{[\s\S]*?\} else \{\s*var paquetWe
 const racinePackage = JSON.parse(readFileSync(join(RACINE, 'package.json'), 'utf8'));
 assert.equal(racinePackage.scripts['desktop:coque'], 'node scripts/desktop-bundle.mjs --coque',
   'npm run desktop:coque doit exister (installeur sans paquet web)');
+assert.match(bundleCoque, /modulesOublies = modulesInstalles\.filter/,
+  'le garde-fou des modules embarqués a disparu');
+assert.match(bundleCoque, /total\(dossierModules, lister\(dossierModules\)\)/,
+  'le poids des modules runtime n’est plus contrôlé');
+const builderFiles = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+assert.ok(builderFiles.includes("'!node_modules/**'"),
+  'electron-builder.yml doit exclure node_modules en bloc : sinon il embarque celui du dépôt');
+const modulesListes = [...builderFiles.matchAll(/^\s+- 'node_modules\/((?:@[^/']+\/)?[^'/]+)\/\*\*'$/gm)]
+  .map(([, nom]) => nom);
+assert.ok(modulesListes.length >= 10, 'la liste des modules embarqués a disparu');
+assert.ok(modulesListes.some((nom) => nom.startsWith('electron-updater')),
+  'electron-updater doit être embarqué (sinon aucune mise à jour)');
 ok('desktop-bundle : mode --coque sans build Vite, marqueur LISEZ-MOI, script npm dédié');
+
+// Le piège qui a coûté 400 Mo : electron-builder remonte l'arbre pour collecter
+// les dépendances de production. Sans l'exclusion en bloc de `node_modules`, il
+// embarque celui du dépôt — un installeur de 497 Mo pour un jeu qui n'en a pas
+// besoin. La liste est vérifiée module par module par le script de build.
+assert.equal(modulesListes.length, modulesListes.filter((nom, i) => modulesListes.indexOf(nom) === i).length,
+  'la liste des modules embarqués contient un doublon');
+ok(`modules embarqués : exclusion en bloc + ${modulesListes.length} modules autorisés explicitement`);
 
 const workflow = readFileSync(join(RACINE, '.github', 'workflows', 'desktop-windows.yml'), 'utf8');
 assert.match(workflow, /branches:\s*\n\s*- main\s*\n\s*paths:/,
