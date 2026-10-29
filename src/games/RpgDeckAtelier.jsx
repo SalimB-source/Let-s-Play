@@ -1,61 +1,42 @@
-import { carteJouableSansTerrain } from './rpgCards.js';
 /**
- * L'atelier de deck — l'éditeur **manuel** minimaliste, façon Hearthstone.
+ * L'atelier de création et d'édition de deck — `src/games/RpgDeckAtelier.jsx`
+ * ----------------------------------------------------------------------------
+ * Inspiré de l'atelier de deck de MTG Arena : un espace plein écran scindé en
+ * deux colonnes lisibles et pratiques, sans double défilement.
  *
- * Deux colonnes, rien de plus :
- *
- *   - **à gauche, la collection** : une grille de cartes illustrées avec une
- *     barre d'outils réduite à sa plus simple expression — recherche, cinq
- *     pips de couleur et « Possédées » ; les filtres fins (coût, type,
- *     rareté, tri, hybrides) restent disponibles derrière un seul bouton
- *     « Filtres », repliés par défaut. Un clic ajoute une carte, un clic
- *     droit (ou le petit « − ») la retire ;
- *   - **à droite, le deck** : son nom, le grand compteur `N / 30`, la
- *     jauge, la courbe de mana, une ligne de chiffres ténue et la liste des
- *     cartes par famille. Le verdict de validation dit en direct si le
- *     deck tient le format et la collection.
- *
- * La création assistée ne vit plus ici : elle se choisit en amont, sur le
- * seuil `RpgDeckModeChoice`, et son deck généré arrive dans cet atelier
- * pré-rempli (`cardIdsInitiaux` / `boxArtInitial`), chaque carte restant
- * retouchable à la main.
- *
- * Les règles de construction restent celles du duel (`rpgValiderDeck`) ;
- * la collection (`rpgCollection.js`) borne ce que la grille laisse ajouter.
- * Un deck s'enregistre **même inachevé** : il rejoint l'étagère comme
- * brouillon, non sélectionnable. La suppression, l'abandon et le vidage
- * demandent une confirmation en deux temps, jamais de `window.confirm`.
- *
- * Ce composant est purement présentationnel : la persistance et la
- * synchronisation vivent dans `useDecksSablier.js`, appelé par la page.
+ *  - À gauche (~73 %), la collection filtrable sur une seule barre d'outils
+ *    (recherche instantanée, médaillons d'éléments circulaires, « Possédées »,
+ *    « Filtres ») et une grille de vraies cartes lisibles (titre, coût,
+ *    illustration cadrée, type/rareté, résumé d'effet en clair, attaque/défense)
+ *    surmontées de losanges d'exemplaires (`◆` dans le deck, `◇` en stock).
+ *  - À droite (~27 %), la colonne du deck : boîtier miniature + titre éditable
+ *    + compteur `N / 30 cartes` + mini-courbe de mana intégrée en tête, pile
+ *    verticale de barres horizontales triées par coût (`1x` · Nom · Coût) au
+ *    centre, et bouton principal doré/orangé « Enregistrer » ancré en bas.
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import './rpg-deck-atelier.css';
+import { resumeCarte } from './rpgCardResume.js';
 import {
   CARD_RARITIES,
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
-  bonusArme,
-  carteEstArme,
   cardById,
+  cardColorCost,
   cardColors,
   cardCopyLimit,
   cardCost,
   cardFrameClass,
   cardFrameColor,
-  cardHybridGradient,
   cardMotifClass,
   cardTypeLine,
-  libelleModificationStats,
-  terrainManaColors,
+  carteJouableSansTerrain,
 } from './rpgCards.js';
-// Le sceau des familles de sorts : l'atelier feuillette la collection entière,
-// c'est donc là aussi qu'un sort doit se repérer d'un coup d'œil.
-import { SortSceau } from './rpgSortSignature.jsx';
-import { carteReveleePar, plafondVisible, possedeCarte } from './rpgCollection.js';
-import { prixCarteDirecte } from './rpgSoukDirect.js';
+import { carteReveleePar, plafondVisible } from './rpgCollection.js';
+import { suggestionsNomsDeck } from './rpgDeckAuto.js';
 import {
+  RPG_COURBE_PALIERS,
+  RPG_DECK_NOM_MAX,
   RPG_DECK_TAILLE,
   compteExemplaires,
   courbeDeMana,
@@ -64,98 +45,173 @@ import {
   repartitionCouleurs,
   rpgValiderDeckMaison,
 } from './rpgDeckBuilder.js';
-import { suggestionsNomsDeck } from './rpgDeckAuto.js';
+import { ElementEmblem } from './rpgEmblemes.jsx';
 
-const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
+const GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', neutre: '◇' };
 const COULEUR_LABELS = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
-const COUTS = [1, 2, 3, 4, 5, 6, 7];
-const TYPES = [
-  { id: 'creature', label: 'Créatures', court: 'Créat.' },
-  { id: 'hero', label: 'Héros', court: 'Héros' },
-  { id: 'magie', label: 'Magies', court: 'Magies' },
-  { id: 'arme', label: 'Armes', court: 'Armes' },
+const RARETE_ORDRE = { commune: 0, inhabituelle: 1, rare: 2, mythique: 3 };
+
+/** Les trois familles d'un deck de duel pour l'affichage groupé optionnel. */
+const GROUPES = [
+  { id: 'creature', titre: 'Créatures', accepte: (carte) => carte.kind === 'creature' || carte.kind === 'hero' },
+  { id: 'magie', titre: 'Magies', accepte: (carte) => carte.kind === 'instant' || carte.kind === 'sorcery' },
+  { id: 'arme', titre: 'Armes', accepte: (carte) => carte.kind === 'weapon' },
 ];
-const RARETES = Object.entries(CARD_RARITIES).map(([id, info]) => ({
-  id, label: info.label, court: info.label.charAt(0), color: info.color,
-}));
-const ORDRE_RARETE = Object.keys(CARD_RARITIES);
+
+const TYPES_FILTRE = [
+  { id: 'tous', label: 'Tous' },
+  { id: 'creature', label: 'Créat.', test: (c) => c.kind === 'creature' },
+  { id: 'hero', label: 'Héros', test: (c) => c.kind === 'hero' },
+  { id: 'magie', label: 'Magies', test: (c) => c.kind === 'instant' || c.kind === 'sorcery' },
+  { id: 'arme', label: 'Armes', test: (c) => c.kind === 'weapon' },
+];
+
+const RARETES_FILTRE = [
+  { id: 'toutes', label: 'Toutes' },
+  { id: 'commune', label: 'Communes' },
+  { id: 'inhabituelle', label: 'Inhabituelles' },
+  { id: 'rare', label: 'Rares' },
+  { id: 'mythique', label: 'Mythiques' },
+];
+
 const TRIS = [
-  { id: 'cout', label: 'Coût' },
-  { id: 'nom', label: 'Nom' },
-  { id: 'couleur', label: 'Couleur' },
+  { id: 'cout', label: 'Coût ↑' },
+  { id: 'cout-desc', label: 'Coût ↓' },
+  { id: 'nom', label: 'Nom A→Z' },
   { id: 'rarete', label: 'Rareté' },
 ];
-const GROUPES = [
-  { id: 'creature', label: 'Créatures', kinds: ['creature', 'hero'] },
-  { id: 'magie', label: 'Magies', kinds: ['magie'] },
-  { id: 'arme', label: 'Armes', kinds: ['arme'] },
-];
 
-const typeLabel = (carte) => (carte.kind === 'terrain' ? 'Terrain'
-  : carteEstArme(carte) ? 'Arme'
-    : carte.kind === 'magie' ? 'Magie'
-      : carte.kind === 'hero' ? 'Héros' : 'Créature');
+function pipsDeCout(carte) {
+  const detail = cardColorCost(carte);
+  if (!detail || typeof detail !== 'object') return [];
+  const liste = [];
+  for (const element of RPG_ELEMENTS) {
+    const n = Number(detail[element]) || 0;
+    for (let i = 0; i < n; i += 1) liste.push(element);
+  }
+  return liste;
+}
 
-/** Le groupe de la liste du deck : une arme (même magie à effet « arme ») va dans Armes. */
-const groupeDeCarte = (carte) => (carteEstArme(carte) ? 'arme' : carte.kind === 'hero' ? 'creature' : carte.kind);
-
-/** Un bonus signé pour l'affichage : « +2 », « -2 ». */
-const signeBonus = (valeur = 0) => (valeur >= 0 ? `+${valeur}` : `${valeur}`);
-
-/** Coût lisible : « 3 mana, dont 1 Braise ». */
-const coutLabel = (carte) => {
-  const exigences = Object.entries(carte?.colorCost ?? {})
-    .map(([couleur, quantite]) => `${quantite} ${COULEUR_LABELS[couleur] ?? couleur}`)
-    .join(' et ');
-  return `${cardCost(carte)} mana${exigences ? `, dont ${exigences}` : ''}`;
-};
-
-const rangCouleur = (carte) => {
-  const couleurs = cardColors(carte);
-  return couleurs.length > 1 ? RPG_ELEMENTS.length : RPG_ELEMENTS.indexOf(couleurs[0]);
-};
-
-/** Un ensemble bascule : ajoute ou retire une valeur. */
-const basculer = (ensemble, valeur) => {
-  const suivant = new Set(ensemble);
-  if (suivant.has(valeur)) suivant.delete(valeur);
-  else suivant.add(valeur);
-  return suivant;
-};
-
-const FILTRES_VIERGES = {
-  couleurs: new Set(),
-  hybride: false,
-  couts: new Set(),
-  types: new Set(),
-  raretes: new Set(),
-  possedees: false,
-  recherche: '',
-  tri: 'cout',
-};
-
-/** Un pip de couleur, le même dessin partout dans l'atelier. */
-function Pip({ couleur, taille = '' }) {
+/** Pips élémentaires compacts : un symbole teinté par exigence colorée du coût. */
+function Pip({ element }) {
   return (
-    <i className={`rpg-atelier__pip rpg-atelier__pip--${couleur}${taille ? ` rpg-atelier__pip--${taille}` : ''}`} aria-hidden="true">
-      {GLYPHS[couleur] ?? '◇'}
+    <i
+      className={`rpg-atelier__pip rpg-atelier__pip--${element}`}
+      title={COULEUR_LABELS[element] ?? element}
+      aria-hidden="true"
+    >
+      {GLYPHS[element] ?? GLYPHS.neutre}
     </i>
   );
 }
 
-/** Le médaillon de coût d'une carte : chiffre et pips de ses couleurs. */
+/**
+ * Médaillon de coût (valeur totale + pips élémentaires), posé en haut à droite
+ * des cartes de la collection et à l'extrémité droite des barres du deck.
+ */
 function Cout({ carte }) {
-  if (!carte || carte.kind === 'terrain') return null;
+  const pips = pipsDeCout(carte);
   const couleurs = cardColors(carte);
-  const degrade = cardHybridGradient(carte);
+  const modificateur = couleurs.length > 1
+    ? 'hybride'
+    : (couleurs[0] ?? 'neutre');
   return (
     <span
-      className={`rpg-atelier__cout${degrade ? ' rpg-atelier__cout--hybride' : ''}`}
-      style={degrade ? { '--rpg-hybrid-cost-bg': degrade } : undefined}
-      aria-label={`Coût : ${coutLabel(carte)}`}
+      className={`rpg-atelier__cout rpg-atelier__cout--${modificateur}`}
+      aria-label={`Coût ${cardCost(carte)}`}
     >
       <b>{cardCost(carte)}</b>
-      {couleurs.map((couleur) => <Pip key={couleur} couleur={couleur} taille="mini" />)}
+      {pips.map((pip, index) => <Pip key={`${carte.id}-pip-${index}`} element={pip} />)}
+    </span>
+  );
+}
+
+/** Sceau discret sur l'illustration des sorts pour les distinguer au premier coup d'œil. */
+function SortSceau({ carte }) {
+  if (carte.kind !== 'instant' && carte.kind !== 'sorcery') return null;
+  const rapide = carte.kind === 'instant';
+  return (
+    <span
+      className={`rpg-atelier__sceau rpg-atelier__sceau--${rapide ? 'instant' : 'sorcery'}`}
+      title={rapide ? 'Magie rapide — jouable à tout moment' : 'Sorcellerie — jouable à votre phase principale'}
+      aria-hidden="true"
+    >
+      {rapide ? (
+        <svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h6L9.5 22 19 10.5h-6L13.5 2z" /></svg>
+      ) : (
+        <svg viewBox="0 0 24 24"><path d="M12 2.5 14.6 9l6.9.6-5.2 4.5 1.6 6.8L12 17.3 6.1 20.9l1.6-6.8-5.2-4.5L9.4 9 12 2.5z" /></svg>
+      )}
+    </span>
+  );
+}
+
+function trierCatalogue(liste, tri) {
+  return [...liste].sort((a, b) => {
+    if (tri === 'nom') return a.name.localeCompare(b.name, 'fr');
+    if (tri === 'rarete') {
+      const ecart = (RARETE_ORDRE[b.rarity] ?? 0) - (RARETE_ORDRE[a.rarity] ?? 0);
+      if (ecart !== 0) return ecart;
+    }
+    if (tri === 'cout-desc') {
+      const ecart = cardCost(b) - cardCost(a);
+      if (ecart !== 0) return ecart;
+      return a.name.localeCompare(b.name, 'fr');
+    }
+    const ecartCout = cardCost(a) - cardCost(b);
+    if (ecartCout !== 0) return ecartCout;
+    return a.name.localeCompare(b.name, 'fr');
+  });
+}
+
+function memeRecette(a, b) {
+  if (a.length !== b.length) return false;
+  const triA = [...a].sort();
+  const triB = [...b].sort();
+  return triA.every((id, i) => id === triB[i]);
+}
+
+/** Ligne de type courte et lisible pour le bandeau intermédiaire d'une carte. */
+function typeCourtCarte(carte) {
+  const couleurs = cardColors(carte).map((c) => COULEUR_LABELS[c]).filter(Boolean).join('/');
+  const suffixe = couleurs ? ` · ${couleurs}` : '';
+  if (carte.kind === 'hero') return `Héros${suffixe}`;
+  if (carte.kind === 'creature') return `Créature${suffixe}`;
+  if (carte.kind === 'instant') return `Magie rapide${suffixe}`;
+  if (carte.kind === 'sorcery') return `Sorcellerie${suffixe}`;
+  if (carte.kind === 'weapon') return `Arme${suffixe}`;
+  return cardTypeLine(carte);
+}
+
+/** Texte d'effet lisible directement sur la carte dans la grille. */
+function texteLisibleCarte(carte) {
+  const court = resumeCarte(carte, 116);
+  if (court) return court;
+  if (carte.kind === 'weapon') {
+    const parties = [];
+    if (carte.atkBonus) parties.push(`+${carte.atkBonus} ATQ`);
+    if (carte.defBonus) parties.push(`+${carte.defBonus} DÉF`);
+    return parties.length ? `Équipement : confère ${parties.join(' et ')}.` : 'Équipement de combat.';
+  }
+  return 'Combattant sans capacité spéciale.';
+}
+
+/** Losanges d'exemplaires façon MTG Arena au-dessus de chaque carte. */
+function LosangesExemplaires({ quotaMax, limitePossedee, dansLeDeck }) {
+  const total = Math.max(1, Math.min(4, quotaMax || 1));
+  return (
+    <span
+      className="rpg-atelier__losanges"
+      aria-hidden="true"
+      title={`${dansLeDeck} dans le deck · ${limitePossedee} en stock (max ${total})`}
+    >
+      {Array.from({ length: total }, (_, index) => {
+        const etat = index < dansLeDeck
+          ? 'is-pris'
+          : index < limitePossedee
+            ? 'is-dispo'
+            : 'is-manquant';
+        return <i key={index} className={`rpg-atelier__losange ${etat}`} />;
+      })}
     </span>
   );
 }
@@ -163,268 +219,417 @@ function Cout({ carte }) {
 export function RpgDeckAtelier({
   deckInitial = null,
   nomInitial = 'Deck maison',
-  cardIdsInitiaux = [],
+  nomParDefaut = null,
+  cardIdsInitiaux = null,
   boxArtInitial = '',
   collection = [],
-  /**
-   * Le stock d'exemplaires payés à l'étal (`exemplaires` du portefeuille). Il
-   * borne les copies alignables : deux copies d'une carte achetée une fois ne
-   * passent pas (doc 13, D10). `null` = lecture d'avant l'étal, une copie.
-   */
   exemplaires = null,
-  artUrl = (id) => id,
+  artUrl,
   onEnregistrer,
   onAnnuler,
   onSupprimer = null,
   onHoverCard = null,
   onLeaveHoverCard = null,
+  onInspecterCarte = null,
+  onQuitterCarte = null,
   surSfx = () => {},
 }) {
-  const edition = Boolean(deckInitial?.maison);
-  const [nom, setNom] = useState(deckInitial?.nom ?? nomInitial);
-  // En édition, les cartes viennent du deck existant ; en création/copie, de la liste fournie.
-  const [cardIds, setCardIds] = useState(() => [...(deckInitial?.cardIds ?? cardIdsInitiaux)]);
-  const [boxArt, setBoxArt] = useState(deckInitial?.boxArt ?? boxArtInitial);
-  const [message, setMessage] = useState('');
-  const [confirmerAbandon, setConfirmerAbandon] = useState(false);
-  const [confirmerSuppression, setConfirmerSuppression] = useState(false);
-  const [confirmerVidage, setConfirmerVidage] = useState(false);
-  // Le nommage s'ouvre à l'enregistrement, propositions en main.
-  const [nommage, setNommage] = useState(false);
-  const [nomTouche, setNomTouche] = useState(false);
-  const [filtres, setFiltres] = useState(FILTRES_VIERGES);
-  // Les filtres fins restent repliés tant que le joueur ne les demande pas :
-  // la barre par défaut ne garde que recherche, couleurs et « Possédées ».
-  const [filtresAvances, setFiltresAvances] = useState(false);
-  const titreRef = useRef(null);
+  const libelleDefaut = nomParDefaut ?? nomInitial ?? 'Deck maison';
+  const inspecter = onHoverCard ?? onInspecterCarte;
+  const quitterInspection = onLeaveHoverCard ?? onQuitterCarte;
 
-  useEffect(() => {
-    titreRef.current?.focus?.();
+  const idsDepart = useMemo(
+    () => (deckInitial?.cardIds ? [...deckInitial.cardIds] : (cardIdsInitiaux ? [...cardIdsInitiaux] : [])),
+    [deckInitial, cardIdsInitiaux],
+  );
+  const nomDepart = deckInitial?.nom ?? libelleDefaut;
+  const boxArtDepart = deckInitial?.boxArt ?? boxArtInitial ?? '';
+
+  const [nom, setNom] = useState(nomDepart);
+  const [nomTouche, setNomTouche] = useState(() => Boolean(deckInitial?.nom));
+  const [cardIds, setCardIds] = useState(idsDepart);
+  const [boxArt, setBoxArt] = useState(boxArtDepart);
+
+  // Filtres de la bibliothèque.
+  const [couleursActives, setCouleursActives] = useState(() => new Set());
+  const [typeFiltre, setTypeFiltre] = useState('tous');
+  const [coutsActifs, setCoutsActifs] = useState(() => new Set());
+  const [rareteFiltre, setRareteFiltre] = useState('toutes');
+  const [seulementPossedees, setSeulementPossedees] = useState(false);
+  const [recherche, setRecherche] = useState('');
+  const [tri, setTri] = useState('cout');
+  const [filtresAvances, setFiltresAvances] = useState(false);
+
+  // Mode d'affichage de la colonne du deck : pile MTGA par coût (défaut) ou par famille.
+  const [modeListeDeck, setModeListeDeck] = useState('cout');
+
+  // Retours visuels & confirmations en deux temps.
+  const [statut, setStatut] = useState('');
+  const [confirmerSuppression, setConfirmerSuppression] = useState(false);
+  const [confirmerVider, setConfirmerVider] = useState(false);
+  const [confirmerAbandon, setConfirmerAbandon] = useState(false);
+
+  // Nommage à l'enregistrement.
+  const [nommageOuvert, setNommageOuvert] = useState(false);
+  const [nomPropose, setNomPropose] = useState('');
+  const champNommageRef = useRef(null);
+
+  const appuiLongRef = useRef({ timer: null, consomme: false });
+
+  useEffect(() => () => {
+    clearTimeout(appuiLongRef.current.timer);
   }, []);
 
+  useEffect(() => {
+    if (nommageOuvert) champNommageRef.current?.focus();
+  }, [nommageOuvert]);
+
+  const collectionSet = useMemo(() => new Set(collection), [collection]);
   const compte = useMemo(() => compteExemplaires(cardIds), [cardIds]);
-  const stats = useMemo(() => cardIds.reduce((acc, id) => {
-    const carte = cardById(id);
-    if (!carte) return acc;
-    if (carte.kind === 'terrain') acc.terrains += 1;
-    else if (carteEstArme(carte)) acc.armes += 1;
-    else if (carte.kind === 'magie') acc.magies += 1;
-    else acc.creatures += 1;
-    return acc;
-  }, { terrains: 0, creatures: 0, magies: 0, armes: 0 }), [cardIds]);
   const validation = useMemo(() => rpgValiderDeckMaison(cardIds, collection, exemplaires), [cardIds, collection, exemplaires]);
   const courbe = useMemo(() => courbeDeMana(cardIds), [cardIds]);
   const couleursDeck = useMemo(() => repartitionCouleurs(cardIds), [cardIds]);
-  const cartesEmbleme = useMemo(
-    () => [...new Set(cardIds)].filter((id) => cardById(id)?.kind !== 'terrain'),
-    [cardIds],
-  );
-  const possedees = (carteId) => possedeCarte(collection, carteId);
 
-  // La grille : le catalogue entier, verrouillées comprises — on voit ce qui manque.
+  const sale = useMemo(() => {
+    const nomCompare = (nom.trim() || libelleDefaut);
+    const nomOrigine = (nomDepart.trim() || libelleDefaut);
+    return nomCompare !== nomOrigine || boxArt !== boxArtDepart || !memeRecette(cardIds, idsDepart);
+  }, [nom, libelleDefaut, nomDepart, boxArt, boxArtDepart, cardIds, idsDepart]);
+
+  const basculerDansSet = (setter, valeur) => {
+    surSfx('menu');
+    setter((actuel) => {
+      const suivant = new Set(actuel);
+      if (suivant.has(valeur)) suivant.delete(valeur);
+      else suivant.add(valeur);
+      return suivant;
+    });
+  };
+
+  const reinitialiserFiltres = () => {
+    surSfx('annuler');
+    setCouleursActives(new Set());
+    setTypeFiltre('tous');
+    setCoutsActifs(new Set());
+    setRareteFiltre('toutes');
+    setSeulementPossedees(false);
+    setRecherche('');
+    setTri('cout');
+  };
+
+  const nombreFiltresAvances = coutsActifs.size
+    + (typeFiltre !== 'tous' ? 1 : 0)
+    + (rareteFiltre !== 'toutes' ? 1 : 0)
+    + (tri !== 'cout' ? 1 : 0);
+
+  const filtresActifs = couleursActives.size > 0
+    || nombreFiltresAvances > 0
+    || seulementPossedees
+    || recherche.trim() !== '';
+
+  const cartesCatalogue = useMemo(
+    () => RPG_DUEL_CARDS.filter(carteJouableSansTerrain),
+    [],
+  );
+
+  const cartesPossedeesTotal = useMemo(
+    () => cartesCatalogue.filter((c) => collectionSet.has(c.id)).length,
+    [cartesCatalogue, collectionSet],
+  );
+
   const cartesFiltrees = useMemo(() => {
-    const recherche = filtres.recherche.trim().toLowerCase();
-    const retenues = RPG_DUEL_CARDS.filter((carte) => {
-      if (!carteJouableSansTerrain(carte)) return false;
-      const couleurs = cardColors(carte);
-      if (filtres.couleurs.size && !couleurs.some((couleur) => filtres.couleurs.has(couleur))) return false;
-      if (filtres.hybride && couleurs.length < 2) return false;
-      if (filtres.couts.size) {
-        if (carte.kind === 'terrain') return false;
-        const palier = Math.min(Math.max(cardCost(carte), 1), 7);
-        if (!filtres.couts.has(palier)) return false;
+    const requete = recherche.trim().toLowerCase();
+    const specType = TYPES_FILTRE.find((entree) => entree.id === typeFiltre);
+    const retenues = cartesCatalogue.filter((carte) => {
+      if (seulementPossedees && !collectionSet.has(carte.id)) return false;
+      if (couleursActives.size > 0) {
+        const couleurs = cardColors(carte);
+        if (!couleurs.some((couleur) => couleursActives.has(couleur))) return false;
       }
-      if (filtres.types.size && !filtres.types.has(carte.kind)) return false;
-      if (filtres.raretes.size && !filtres.raretes.has(carte.rarity)) return false;
-      if (filtres.possedees && !possedeCarte(collection, carte.id)) return false;
-      if (recherche) {
-        const corpus = `${carte.name} ${cardTypeLine(carte)} ${carte.text ?? ''}`.toLowerCase();
-        if (!corpus.includes(recherche)) return false;
+      if (specType?.test && !specType.test(carte)) return false;
+      if (coutsActifs.size > 0) {
+        const cout = cardCost(carte);
+        const palier = cout >= 7 ? 7 : cout;
+        if (!coutsActifs.has(palier)) return false;
+      }
+      if (rareteFiltre !== 'toutes' && carte.rarity !== rareteFiltre) return false;
+      if (requete) {
+        const texte = `${carte.name} ${cardTypeLine(carte)} ${carte.text ?? ''}`.toLowerCase();
+        if (!texte.includes(requete)) return false;
       }
       return true;
     });
-    const parNom = (a, b) => a.name.localeCompare(b.name, 'fr');
-    const comparateurs = {
-      // Les terrains ferment la marche : ce sont les sorts que l'on cherche.
-      cout: (a, b) => (a.kind === 'terrain') - (b.kind === 'terrain') || cardCost(a) - cardCost(b) || parNom(a, b),
-      nom: parNom,
-      couleur: (a, b) => rangCouleur(a) - rangCouleur(b) || cardCost(a) - cardCost(b) || parNom(a, b),
-      rarete: (a, b) => ORDRE_RARETE.indexOf(b.rarity) - ORDRE_RARETE.indexOf(a.rarity) || cardCost(a) - cardCost(b) || parNom(a, b),
+    return trierCatalogue(retenues, tri);
+  }, [cartesCatalogue, collectionSet, seulementPossedees, couleursActives, typeFiltre, coutsActifs, rareteFiltre, recherche, tri]);
+
+  const entreesDeckParCout = useMemo(() => {
+    const entrees = [];
+    for (const [id, nombre] of compte) {
+      const carte = cardById(id);
+      if (carte) entrees.push({ carte, nombre });
+    }
+    return entrees.sort((a, b) => cardCost(a.carte) - cardCost(b.carte) || a.carte.name.localeCompare(b.carte.name, 'fr'));
+  }, [compte]);
+
+  const deckParGroupe = useMemo(() => GROUPES.map((groupe) => {
+    const entrees = entreesDeckParCout.filter(({ carte }) => groupe.accepte(carte));
+    const total = entrees.reduce((somme, entree) => somme + entree.nombre, 0);
+    return { ...groupe, entrees, total };
+  }), [entreesDeckParCout]);
+
+  const statsTypes = useMemo(() => {
+    const map = Object.fromEntries(deckParGroupe.map((g) => [g.id, g.total]));
+    return {
+      creatures: map.creature ?? 0,
+      magies: map.magie ?? 0,
+      armes: map.arme ?? 0,
+      coutMoyen: courbe.moyenne ? courbe.moyenne.toFixed(1) : '0.0',
     };
-    return retenues.sort(comparateurs[filtres.tri] ?? comparateurs.cout);
-  }, [filtres, collection]);
+  }, [deckParGroupe, courbe.moyenne]);
 
-  const filtresActifs = filtres.couleurs.size > 0 || filtres.hybride || filtres.couts.size > 0
-    || filtres.types.size > 0 || filtres.raretes.size > 0 || filtres.possedees || filtres.recherche.trim() !== '';
-  const filtresFinsActifs = filtres.hybride || filtres.couts.size > 0 || filtres.types.size > 0
-    || filtres.raretes.size > 0;
+  const cartesEmbleme = useMemo(() => {
+    const vues = new Set();
+    const liste = [];
+    for (const id of cardIds) {
+      if (vues.has(id)) continue;
+      const carte = cardById(id);
+      if (carte && carte.kind !== 'terrain') {
+        vues.add(id);
+        liste.push(carte);
+      }
+    }
+    return liste;
+  }, [cardIds]);
 
-  const majFiltre = (cle, valeur) => {
-    surSfx('menu');
-    setFiltres((actuels) => ({ ...actuels, [cle]: valeur }));
-  };
+  const emblemeEffectif = useMemo(() => {
+    if (boxArt && cardById(boxArt)) return boxArt;
+    if (cartesEmbleme[0]?.id) return cartesEmbleme[0].id;
+    return cartesCatalogue[0]?.id ?? '';
+  }, [boxArt, cartesEmbleme, cartesCatalogue]);
+
+  const couleurDominanteDeck = couleursDeck[0]?.couleur ?? 'sable';
 
   const ajouter = (carte) => {
     const avis = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
     if (!avis.ok) {
       surSfx('erreur');
-      setMessage(avis.raison);
+      setStatut(avis.raison);
       return;
     }
-    surSfx('select');
-    setMessage('');
-    setConfirmerVidage(false);
-    setCardIds((actuels) => [...actuels, carte.id]);
+    surSfx('pioche');
+    setConfirmerVider(false);
+    setConfirmerAbandon(false);
+    setStatut('');
+    setCardIds((ids) => [...ids, carte.id]);
   };
 
-  const retirer = (carteId) => {
-    if (!(compte.get(carteId) > 0)) return;
-    surSfx('annuler');
-    setMessage('');
-    setConfirmerVidage(false);
-    setCardIds((actuels) => {
-      const position = actuels.lastIndexOf(carteId);
-      if (position < 0) return actuels;
-      return [...actuels.slice(0, position), ...actuels.slice(position + 1)];
-    });
+  const retirerUne = (cardId) => {
+    const index = cardIds.lastIndexOf(cardId);
+    if (index < 0) return;
+    surSfx('menu');
+    setConfirmerAbandon(false);
+    setStatut('');
+    setCardIds((ids) => [...ids.slice(0, index), ...ids.slice(index + 1)]);
   };
 
-  const vider = () => {
-    if (!confirmerVidage) {
+  const viderDeck = () => {
+    if (!cardIds.length) return;
+    if (!confirmerVider) {
       surSfx('menu');
-      setConfirmerVidage(true);
-      setMessage('Toutes les cartes du deck seront retirées : cliquez encore pour confirmer.');
+      setConfirmerVider(true);
       return;
     }
     surSfx('annuler');
-    setConfirmerVidage(false);
     setCardIds([]);
     setBoxArt('');
-    setMessage('Deck vidé.');
+    setConfirmerVider(false);
+    setStatut('Le deck a été vidé.');
   };
 
-  /** Trois propositions de nom, autour de la carte emblème du deck en cours. */
   const suggestions = useMemo(
-    () => suggestionsNomsDeck(cardIds, { cartes: RPG_DUEL_CARDS }),
-    [cardIds],
+    () => suggestionsNomsDeck(cardIds, boxArt || null),
+    [cardIds, boxArt],
   );
 
-  /**
-   * L'enregistrement propose d'abord de nommer le deck : la proposition du
-   * jeu préremplit le champ tant que le joueur n'a pas écrit le sien, et trois
-   * suggestions restent cliquables à côté.
-   */
-  const ouvrirNommage = () => {
-    if (cardIds.length === 0) {
-      surSfx('erreur');
-      setMessage('Ajoutez au moins une carte : un casier vide ne s’enregistre pas.');
-      return;
-    }
-    if (!nomTouche) setNom(suggestions[0] ?? nom);
-    setNommage(true);
-    setMessage('');
+  const demanderEnregistrement = () => {
     surSfx('menu');
+    const prerempli = nomTouche && nom.trim()
+      ? nom.trim()
+      : (deckInitial?.nom?.trim() || suggestions[0] || libelleDefaut);
+    setNomPropose(prerempli);
+    setNommageOuvert(true);
   };
 
-  const enregistrer = () => {
-    if (!nom.trim()) {
+  const confirmerEnregistrement = () => {
+    const retenu = nomPropose.trim() || suggestions[0] || libelleDefaut;
+    const resultat = onEnregistrer({
+      id: deckInitial?.id ?? nouvelIdDeckMaison(),
+      creeLe: deckInitial?.creeLe,
+      nom: retenu,
+      cardIds,
+      boxArt: boxArt && cardIds.includes(boxArt) ? boxArt : null,
+    });
+    if (resultat?.ok === false) {
       surSfx('erreur');
-      setMessage('Donnez un nom à votre deck.');
+      setStatut(resultat.raison || 'Enregistrement impossible.');
       return;
     }
-    if (cardIds.length === 0) {
-      surSfx('erreur');
-      setMessage('Ajoutez au moins une carte : un casier vide ne s’enregistre pas.');
-      return;
-    }
-    const enregistrement = {
-      ...(edition ? deckInitial : {}),
-      id: edition ? deckInitial.id : nouvelIdDeckMaison(),
-      nom: nom.trim(),
-      cardIds: [...cardIds],
-      boxArt: boxArt || null,
-    };
-    const resultat = onEnregistrer(enregistrement);
-    if (resultat && !resultat.ok) {
-      surSfx('erreur');
-      setMessage(resultat.raison ?? 'Enregistrement impossible.');
-    }
-    // Succès : la page referme l'atelier et confirme sur l'étagère.
+    surSfx('apparition');
+    setNommageOuvert(false);
   };
 
-  const abandonner = () => {
-    const sale = nom !== (deckInitial?.nom ?? nomInitial)
-      || boxArt !== (deckInitial?.boxArt ?? boxArtInitial)
-      || JSON.stringify(cardIds) !== JSON.stringify([...(deckInitial?.cardIds ?? cardIdsInitiaux)]);
+  const demanderFermeture = () => {
     if (sale && !confirmerAbandon) {
+      surSfx('menu');
       setConfirmerAbandon(true);
-      setMessage('Des modifications ne sont pas enregistrées : cliquez encore pour les abandonner.');
+      setStatut('Modifications non enregistrées : recliquez sur « Fermer » pour quitter.');
       return;
     }
+    surSfx('annuler');
     onAnnuler();
   };
 
   const supprimer = () => {
+    if (!deckInitial?.id || !onSupprimer) return;
     if (!confirmerSuppression) {
+      surSfx('menu');
       setConfirmerSuppression(true);
-      setMessage('Le deck sera retiré de l’étagère : cliquez encore pour confirmer.');
       return;
     }
-    onSupprimer?.(deckInitial.id);
+    surSfx('defaite');
+    onSupprimer(deckInitial.id);
   };
 
-  const survoler = (carte) => (event) => onHoverCard?.(carte, event);
-  const quitter = () => onLeaveHoverCard?.();
+  const debutToucher = (carte, event) => {
+    if (event.pointerType === 'mouse' || !inspecter) return;
+    const cible = event.currentTarget;
+    clearTimeout(appuiLongRef.current.timer);
+    appuiLongRef.current.consomme = false;
+    appuiLongRef.current.timer = setTimeout(() => {
+      appuiLongRef.current.consomme = true;
+      inspecter(carte, { currentTarget: cible });
+    }, 380);
+  };
 
-  const nombrePossedees = RPG_DUEL_CARDS.filter((carte) => possedees(carte.id)).length;
-  const deckPlein = cardIds.length === RPG_DECK_TAILLE;
-  const deckDeborde = cardIds.length > RPG_DECK_TAILLE;
+  const finToucher = () => {
+    clearTimeout(appuiLongRef.current.timer);
+  };
+
+  const cliquerCarteGrille = (carte) => {
+    if (appuiLongRef.current.consomme) {
+      appuiLongRef.current.consomme = false;
+      return;
+    }
+    ajouter(carte);
+  };
+
+  const maxCourbe = Math.max(1, courbe.max);
+  const resumeCourbe = courbe.paliers.map((palier) => `${palier.label} mana : ${palier.nombre}`).join(', ');
+
+  /** Une barre horizontale de carte dans la colonne de droite (style MTG Arena). */
+  const rendreLigneDeck = ({ carte, nombre }) => {
+    const ajoutLigne = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
+    return (
+      <li
+        key={carte.id}
+        className="rpg-atelier__ligne"
+        data-card-id={carte.id}
+        style={{ '--frame': cardFrameColor(carte) }}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          retirerUne(carte.id);
+        }}
+        onMouseEnter={inspecter ? (event) => inspecter(carte, event) : undefined}
+        onMouseLeave={quitterInspection ?? undefined}
+      >
+        {artUrl && (
+          <img
+            className="rpg-atelier__ligne-art"
+            src={artUrl(carte.id)}
+            alt=""
+            loading="lazy"
+          />
+        )}
+        <span className="rpg-atelier__ligne-qte" aria-hidden="true">{nombre}x</span>
+        <span className="rpg-atelier__ligne-nom">
+          <strong>{carte.name}</strong>
+        </span>
+        <span className="rpg-atelier__ligne-compte">
+          <button
+            type="button"
+            onClick={() => retirerUne(carte.id)}
+            aria-label={`Retirer un exemplaire de ${carte.name}`}
+            title="Retirer un exemplaire"
+          >
+            −
+          </button>
+          <b className="sr-only">×{nombre}</b>
+          <button
+            type="button"
+            disabled={!ajoutLigne.ok}
+            title={ajoutLigne.ok ? 'Ajouter un exemplaire' : ajoutLigne.raison}
+            onClick={() => ajouter(carte)}
+            aria-label={`Ajouter un exemplaire de ${carte.name}`}
+          >
+            +
+          </button>
+        </span>
+        <Cout carte={carte} />
+      </li>
+    );
+  };
 
   return (
-    <section className="rpg-atelier" aria-label="Atelier de deck">
-      <header className="rpg-atelier__header">
-        <div>
-          <span className="rpg-mode-menu__eyebrow">{edition ? 'ATELIER · MODIFIER UN DECK' : 'ATELIER · NOUVEAU DECK'}</span>
-          <h2 ref={titreRef} tabIndex={-1}>{edition ? deckInitial.nom : 'Un deck à votre main'}</h2>
-          <p className="rpg-atelier__aide">
-            Clic sur une carte : <b>+1</b> au deck · clic droit : <b>−1</b> · survol : aperçu grand format.
-          </p>
-          {/* Au doigt, le survol n'existe pas : l'atelier annonce le geste
-              d'aperçu de la maison (`rpgLongPress.js`), comme la barre du duel. */}
-          <p className="rpg-atelier__astuce">Appui long d’une seconde sur une carte : son aperçu, sans rien ajouter ni retirer.</p>
-        </div>
-        <button type="button" className="rpg-menu-link" onClick={() => { surSfx('annuler'); abandonner(); }}>
-          ✕ Fermer l'atelier
-        </button>
-      </header>
-
+    <section className="rpg-atelier" aria-label="Atelier de création de deck">
       <div className="rpg-atelier__panneaux">
-        {/* ── La collection en grille ─────────────────────────────────────── */}
-        <section className="rpg-atelier__biblio" aria-label="Collection de cartes">
-          <div className="rpg-atelier__toolbar rpg-atelier__toolbar--simple" role="group" aria-label="Filtres de la collection">
+        {/* ═══ COLONNE GAUCHE : BARRE DE FILTRES MTGA + COLLECTION LISIBLE ═══ */}
+        <div className="rpg-atelier__biblio" aria-label="Bibliothèque des cartes">
+          <div className="rpg-atelier__toolbar rpg-atelier__toolbar--simple" role="region" aria-label="Filtres de la collection">
+            <button
+              type="button"
+              className={`rpg-menu-link rpg-atelier__fermer${confirmerAbandon ? ' is-armed' : ''}`}
+              onClick={demanderFermeture}
+              title="Retourner à l’étagère des decks"
+            >
+              {confirmerAbandon ? '✕ Fermer sans sauver ?' : '← Fermer'}
+            </button>
+
             <label className="rpg-atelier__search">
+              <svg className="rpg-atelier__search-icone" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="M15.5 15.5 21 21" />
+              </svg>
               <span className="sr-only">Rechercher une carte</span>
               <input
                 type="search"
-                aria-label="Rechercher une carte"
-                placeholder="Rechercher une carte…"
-                value={filtres.recherche}
-                onChange={(event) => setFiltres((actuels) => ({ ...actuels, recherche: event.target.value }))}
+                value={recherche}
+                onChange={(event) => setRecherche(event.target.value)}
+                placeholder="Rechercher nom, type, effet…"
               />
+              {recherche && (
+                <button
+                  type="button"
+                  className="rpg-atelier__search-clear"
+                  onClick={() => setRecherche('')}
+                  aria-label="Effacer la recherche"
+                >
+                  ✕
+                </button>
+              )}
             </label>
 
-            <div className="rpg-atelier__toggles rpg-atelier__toggles--couleurs" role="group" aria-label="Couleurs">
+            <div className="rpg-atelier__toggles rpg-atelier__toggles--couleurs" role="group" aria-label="Filtrer par couleur">
               {RPG_ELEMENTS.map((couleur) => (
                 <button
                   key={couleur}
                   type="button"
-                  className={`rpg-atelier__toggle rpg-atelier__toggle--pip${filtres.couleurs.has(couleur) ? ' is-on' : ''}`}
-                  aria-pressed={filtres.couleurs.has(couleur)}
+                  className={`rpg-atelier__toggle rpg-atelier__toggle--pip rpg-atelier__toggle--${couleur}${couleursActives.has(couleur) ? ' is-on' : ''}`}
+                  aria-pressed={couleursActives.has(couleur)}
                   aria-label={`Couleur ${COULEUR_LABELS[couleur]}`}
                   title={COULEUR_LABELS[couleur]}
-                  onClick={() => majFiltre('couleurs', basculer(filtres.couleurs, couleur))}
+                  onClick={() => basculerDansSet(setCouleursActives, couleur)}
                 >
-                  <Pip couleur={couleur} />
+                  <ElementEmblem element={couleur} />
                 </button>
               ))}
             </div>
@@ -432,450 +637,486 @@ export function RpgDeckAtelier({
             <div className="rpg-atelier__toggles rpg-atelier__toggles--fin">
               <button
                 type="button"
-                className={`rpg-atelier__toggle${filtres.possedees ? ' is-on' : ''}`}
-                aria-pressed={filtres.possedees}
-                title="Masquer les cartes verrouillées"
-                onClick={() => majFiltre('possedees', !filtres.possedees)}
+                className={`rpg-atelier__toggle${seulementPossedees ? ' is-on' : ''}`}
+                aria-pressed={seulementPossedees}
+                onClick={() => { surSfx('menu'); setSeulementPossedees((v) => !v); }}
               >
                 Possédées
               </button>
               <button
                 type="button"
-                className={`rpg-atelier__toggle rpg-atelier__toggle--filtres${filtresAvances || filtresFinsActifs ? ' is-on' : ''}`}
+                className={`rpg-atelier__toggle rpg-atelier__toggle--filtres${(filtresAvances || nombreFiltresAvances > 0) ? ' is-on' : ''}`}
                 aria-expanded={filtresAvances}
                 aria-controls="rpg-atelier-filtres-avances"
-                onClick={() => { surSfx('menu'); setFiltresAvances((ouvert) => !ouvert); }}
+                onClick={() => { surSfx('menu'); setFiltresAvances((v) => !v); }}
               >
-                ⚙ Filtres
+                {nombreFiltresAvances > 0 ? `Filtres (${nombreFiltresAvances})` : 'Filtres'}
               </button>
+            </div>
+
+            <div className="rpg-atelier__meta-biblio" aria-live="polite">
+              <span><b>{cartesFiltrees.length}</b> / {cartesCatalogue.length} cartes</span>
+              <span className="rpg-atelier__meta-sep" aria-hidden="true">·</span>
+              <span className="rpg-atelier__legende-losanges" aria-hidden="true">
+                <i className="rpg-atelier__losange is-pris" /> deck
+                <i className="rpg-atelier__losange is-dispo" /> stock ({cartesPossedeesTotal})
+              </span>
             </div>
           </div>
 
           {filtresAvances && (
-            <div className="rpg-atelier__filtres-avances" id="rpg-atelier-filtres-avances" role="group" aria-label="Filtres avancés">
-              <div className="rpg-atelier__toggles" role="group" aria-label="Coût en mana">
+            <div id="rpg-atelier-filtres-avances" className="rpg-atelier__filtres-avances" role="region" aria-label="Filtres avancés">
+              <div className="rpg-atelier__toggles" role="group" aria-label="Filtrer par coût de mana">
                 <span className="rpg-atelier__filtres-label">Coût</span>
-                {COUTS.map((cout) => (
-                  <button
-                    key={cout}
-                    type="button"
-                    className={`rpg-atelier__toggle rpg-atelier__toggle--cout${filtres.couts.has(cout) ? ' is-on' : ''}`}
-                    aria-pressed={filtres.couts.has(cout)}
-                    aria-label={`Coût ${cout === 7 ? '7 ou plus' : cout}`}
-                    onClick={() => majFiltre('couts', basculer(filtres.couts, cout))}
-                  >
-                    {cout === 7 ? '7+' : cout}
-                  </button>
-                ))}
+                {RPG_COURBE_PALIERS.map((cout) => {
+                  const libelle = cout === 7 ? '7+' : String(cout);
+                  return (
+                    <button
+                      key={cout}
+                      type="button"
+                      className={`rpg-atelier__toggle rpg-atelier__toggle--cout${coutsActifs.has(cout) ? ' is-on' : ''}`}
+                      aria-pressed={coutsActifs.has(cout)}
+                      aria-label={`Coût ${libelle}`}
+                      onClick={() => basculerDansSet(setCoutsActifs, cout)}
+                    >
+                      {libelle}
+                    </button>
+                  );
+                })}
               </div>
-
-              <div className="rpg-atelier__toggles" role="group" aria-label="Types">
+              <div className="rpg-atelier__toggles" role="group" aria-label="Filtrer par type">
                 <span className="rpg-atelier__filtres-label">Type</span>
-                {TYPES.map((type) => (
+                {TYPES_FILTRE.map((entree) => (
                   <button
-                    key={type.id}
+                    key={entree.id}
                     type="button"
-                    className={`rpg-atelier__toggle${filtres.types.has(type.id) ? ' is-on' : ''}`}
-                    aria-pressed={filtres.types.has(type.id)}
-                    aria-label={type.label}
-                    title={type.label}
-                    onClick={() => majFiltre('types', basculer(filtres.types, type.id))}
+                    className={`rpg-atelier__toggle${typeFiltre === entree.id ? ' is-on' : ''}`}
+                    aria-pressed={typeFiltre === entree.id}
+                    onClick={() => { surSfx('menu'); setTypeFiltre(entree.id); }}
                   >
-                    {type.court}
+                    {entree.label}
                   </button>
                 ))}
               </div>
-
-              <div className="rpg-atelier__toggles" role="group" aria-label="Raretés">
+              <div className="rpg-atelier__toggles" role="group" aria-label="Filtrer par rareté">
                 <span className="rpg-atelier__filtres-label">Rareté</span>
-                {RARETES.map((rarete) => (
+                {RARETES_FILTRE.map((entree) => (
                   <button
-                    key={rarete.id}
+                    key={entree.id}
                     type="button"
-                    className={`rpg-atelier__toggle rpg-atelier__toggle--rarete${filtres.raretes.has(rarete.id) ? ' is-on' : ''}`}
-                    style={{ '--rarete': rarete.color }}
-                    aria-pressed={filtres.raretes.has(rarete.id)}
-                    aria-label={`Rareté ${rarete.label}`}
-                    title={rarete.label}
-                    onClick={() => majFiltre('raretes', basculer(filtres.raretes, rarete.id))}
+                    className={`rpg-atelier__toggle${rareteFiltre === entree.id ? ' is-on' : ''}`}
+                    aria-pressed={rareteFiltre === entree.id}
+                    onClick={() => { surSfx('menu'); setRareteFiltre(entree.id); }}
                   >
-                    <i aria-hidden="true" />{rarete.court}
+                    {entree.label}
                   </button>
                 ))}
               </div>
-
-              <div className="rpg-atelier__toggles" role="group" aria-label="Autres filtres">
-                <button
-                  type="button"
-                  className={`rpg-atelier__toggle${filtres.hybride ? ' is-on' : ''}`}
-                  aria-pressed={filtres.hybride}
-                  title="Cartes de plusieurs couleurs"
-                  onClick={() => majFiltre('hybride', !filtres.hybride)}
-                >
-                  Hybrides
-                </button>
-                <label className="rpg-atelier__tri">
-                  <span>Tri</span>
-                  <select aria-label="Trier la collection" value={filtres.tri} onChange={(event) => majFiltre('tri', event.target.value)}>
-                    {TRIS.map((tri) => <option key={tri.id} value={tri.id}>{tri.label}</option>)}
-                  </select>
-                </label>
-                {filtresActifs && (
+              <div className="rpg-atelier__toggles" role="group" aria-label="Trier la collection">
+                <span className="rpg-atelier__filtres-label">Tri</span>
+                {TRIS.map((entree) => (
                   <button
+                    key={entree.id}
                     type="button"
-                    className="rpg-atelier__toggle rpg-atelier__toggle--reset"
-                    onClick={() => { surSfx('annuler'); setFiltres(FILTRES_VIERGES); }}
+                    className={`rpg-atelier__toggle${tri === entree.id ? ' is-on' : ''}`}
+                    aria-pressed={tri === entree.id}
+                    onClick={() => { surSfx('menu'); setTri(entree.id); }}
                   >
-                    ↺ Réinitialiser
+                    {entree.label}
                   </button>
-                )}
+                ))}
               </div>
+              {filtresActifs && (
+                <button type="button" className="rpg-atelier__toggle rpg-atelier__toggle--reset" onClick={reinitialiserFiltres}>
+                  Tout effacer
+                </button>
+              )}
             </div>
           )}
 
-          <p className="rpg-atelier__count" aria-live="polite">
-            <b>{cartesFiltrees.length}</b> carte{cartesFiltrees.length > 1 ? 's' : ''}
-            {' · '}{nombrePossedees} possédée{nombrePossedees > 1 ? 's' : ''}
+          <p className="rpg-atelier__astuce">
+            Touchez une carte pour l’ajouter · maintenez le doigt posé pour la lire en grand.
           </p>
 
-          {cartesFiltrees.length === 0 ? (
-            <p className="rpg-atelier__vide">Aucune carte ne correspond à ces filtres.</p>
-          ) : (
-            <ul className="rpg-atelier__cartes" aria-label="Cartes de la collection">
-              {cartesFiltrees.map((carte) => {
-                const acquise = possedees(carte.id);
-                const dansLeDeck = compte.get(carte.id) ?? 0;
-                const deblocage = acquise ? null : carteReveleePar(carte.id);
-                const estTerrain = carte.kind === 'terrain';
-                const estCreature = ['creature', 'hero'].includes(carte.kind);
-                const rarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
-                const limite = plafondVisible(collection, carte.id, exemplaires);
-                const avis = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
-                // Le plafond ici, ce n'est plus le quota de rareté mais le stock
-                // payé : un « + » grisé sans issue ressemblerait à un bug. La
-                // ligne qui suit nomme le chemin de la copie manquante.
-                const prixCopieManquante = acquise && !estTerrain && limite < cardCopyLimit(carte)
-                  ? prixCarteDirecte(carte.id) : null;
-                // Le clic droit a son sens dans l'atelier — retirer un
-                // exemplaire —, il ne remonte donc pas jusqu'à la page : sans
-                // ça, la fiche de la carte s'ouvrirait en plus (RpgDuelPage).
-                return (
-                  <li
-                    key={carte.id}
-                    className={[
-                      'rpg-atelier__carte',
-                      acquise ? '' : 'is-locked',
-                      !avis.ok ? 'is-full' : '',
-                      dansLeDeck > 0 ? 'is-in-deck' : '',
-                      prixCopieManquante != null ? 'is-stock-limit' : '',
-                    ].filter(Boolean).join(' ')}
-                    data-card-id={carte.id}
-                    data-color={carte.element}
-                    data-type={carte.kind}
-                    style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte), '--rarete': CARD_RARITIES[carte.rarity]?.color ?? '#f1f3f5' }}
-                    onMouseEnter={survoler(carte)}
-                    onMouseLeave={quitter}
-                    onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); retirer(carte.id); }}
-                  >
-                    <button
-                      type="button"
-                      className="rpg-atelier__carte-ajout"
-                      aria-label={`Ajouter ${carte.name} au deck${acquise ? '' : ' (verrouillée)'}${dansLeDeck ? ` — ${dansLeDeck} sur ${estTerrain ? '∞' : limite} dans le deck` : ''}`}
-                      disabled={!avis.ok}
-                      onClick={() => ajouter(carte)}
-                      onFocus={survoler(carte)}
-                      onBlur={quitter}
-                    >
-                      <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
-                        <img src={artUrl(carte.id)} alt="" loading="lazy" />
-                        {!estTerrain && <Cout carte={carte} />}
-                        {estTerrain && (
-                          <span className="rpg-atelier__carte-mana" aria-hidden="true">
-                            {terrainManaColors(carte).map((couleur) => <Pip key={couleur} couleur={couleur} />)}
-                          </span>
-                        )}
-                        {estCreature && (
-                          <span className="rpg-atelier__carte-pt" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                            {carte.atk}<i>/</i>{carte.def}
-                          </span>
-                        )}
-                        {carteEstArme(carte) && (
-                          <span className="rpg-atelier__carte-pt" aria-label={`Porteur : ${signeBonus(bonusArme(carte)?.atk)} attaque, ${signeBonus(bonusArme(carte)?.def)} défense`}>
-                            {signeBonus(bonusArme(carte)?.atk)}<i>/</i>{signeBonus(bonusArme(carte)?.def)}
-                          </span>
-                        )}
-                        <SortSceau carte={carte} className="rpg-atelier__carte-sort" />
-                        {!acquise && <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>}
-                      </span>
-                      <span className="rpg-atelier__carte-nom">
-                        <strong>{carte.name}</strong>
-                        <small><i className="rpg-atelier__rarete" aria-hidden="true" />{typeLabel(carte)} · {rarete}</small>
-                        {!acquise && deblocage && (
-                          <small className="rpg-atelier__carte-verrou">
-                            Le Souk la vendra après « {deblocage.etage} »{deblocage.tour ? ` — ${deblocage.tour}` : ''}
-                          </small>
-                        )}
-                        {prixCopieManquante != null && (
-                          <small className="rpg-atelier__carte-stock">
-                            {dansLeDeck >= limite
-                              ? `Stock épuisé · la copie suivante se vend ${prixCopieManquante} ◈ au Souk`
-                              : `${limite} exemplaire${limite > 1 ? 's' : ''} en stock · le quota du deck est ${cardCopyLimit(carte)}`}
-                          </small>
-                        )}
-                      </span>
-                    </button>
-                    {dansLeDeck > 0 && (
-                      <>
-                        <b className="rpg-atelier__carte-count" aria-label={`${dansLeDeck} exemplaires dans le deck`}>
-                          ×{dansLeDeck}{!estTerrain && <small>/{limite}</small>}
-                        </b>
-                        <button
-                          type="button"
-                          className="rpg-atelier__carte-retrait"
-                          aria-label={`Retirer un exemplaire de ${carte.name}`}
-                          onClick={() => retirer(carte.id)}
-                        >
-                          −
-                        </button>
-                      </>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+          <ul className="rpg-atelier__cartes" aria-label="Cartes du catalogue">
+            {cartesFiltrees.map((carte) => {
+              const possedee = collectionSet.has(carte.id);
+              const dansLeDeck = compte.get(carte.id) ?? 0;
+              const quotaMax = cardCopyLimit(carte);
+              const limite = plafondVisible(collection, carte.id, exemplaires);
+              const avis = peutAjouterCarte(carte.id, cardIds, collection, exemplaires);
+              const origineInfo = !possedee ? carteReveleePar(carte.id) : null;
+              const origine = origineInfo
+                ? (typeof origineInfo === 'string' ? origineInfo : (origineInfo.etage || origineInfo.tour || 'Histoire'))
+                : null;
+              const auPlafond = possedee && limite > 0 && dansLeDeck >= limite;
+              const couleurRarete = CARD_RARITIES[carte.rarity]?.color ?? '#9d9d9d';
+              const libelleRarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
 
-        {/* ── Le panneau du deck ──────────────────────────────────────────── */}
-        <aside className="rpg-atelier__deck" aria-label="Deck en cours">
-          <header className="rpg-atelier__state" aria-label="État du deck en cours">
-            <label className="rpg-atelier__champ rpg-atelier__champ--nom">
-              <span className="sr-only">Nom du deck</span>
-              <input
-                type="text"
-                maxLength={60}
-                value={nom}
-                aria-label="Nom du deck"
-                placeholder="Nom du deck"
-                onChange={(event) => { setNom(event.target.value); setNomTouche(true); setConfirmerAbandon(false); }}
-              />
-            </label>
-            <div className="rpg-atelier__compteur">
-              <span className={`rpg-atelier__total${deckPlein ? ' is-full' : ''}${deckDeborde ? ' is-over' : ''}`} aria-live="polite">
-                <b>{cardIds.length}</b> / {RPG_DECK_TAILLE} cartes
-              </span>
-              <span className="rpg-atelier__jauge" aria-hidden="true">
-                <i style={{ width: `${Math.min(100, (cardIds.length / RPG_DECK_TAILLE) * 100)}%` }} />
-              </span>
-            </div>
-            <p className={`rpg-atelier__verdict ${validation.ok ? 'is-valid' : 'is-invalid'}`} role="status">
-              {validation.ok ? '✓ Deck prêt à jouer' : validation.raisons.join(' · ')}
-            </p>
-            <p className="rpg-atelier__mini-stats" aria-label="Chiffres du deck">
-              <span><b>{stats.creatures}</b> créatures</span>
-              <span><b>{stats.magies}</b> magies</span>
-              <span><b>{stats.armes}</b> armes</span>
-              <span>coût moy. <b>{courbe.nonTerrains ? courbe.moyenne.toLocaleString('fr-FR') : '—'}</b></span>
-              {couleursDeck.length > 0 && (
-                <span className="rpg-atelier__mini-couleurs">
-                  {couleursDeck.map((entree) => <Pip key={entree.couleur} couleur={entree.couleur} taille="mini" />)}
-                </span>
-              )}
-            </p>
-          </header>
+              const classes = [
+                'rpg-atelier__carte',
+                !possedee && 'is-locked',
+                dansLeDeck > 0 && 'is-picked',
+                auPlafond && 'is-full',
+              ].filter(Boolean).join(' ');
 
-          <figure className="rpg-atelier__courbe" aria-label="Courbe de mana">
-            <figcaption>Courbe de mana</figcaption>
-            <div className="rpg-atelier__barres" aria-hidden="true">
-              {courbe.paliers.map((palier) => (
-                <span key={palier.cout} className="rpg-atelier__barre" data-cout={palier.cout}>
-                  <b>{palier.nombre || ''}</b>
-                  <i style={{ height: `${courbe.max ? (palier.nombre / courbe.max) * 100 : 0}%` }} />
-                  <small>{palier.label}</small>
-                </span>
-              ))}
-            </div>
-            <p className="sr-only">
-              {courbe.paliers.map((palier) => `coût ${palier.label} : ${palier.nombre}`).join(', ')}
-            </p>
-          </figure>
-
-          <div className="rpg-atelier__liste">
-            {GROUPES.map((groupe) => {
-              const references = [...compte.entries()]
-                .map(([id, nombre]) => ({ carte: cardById(id), nombre }))
-                .filter((entree) => entree.carte && groupe.kinds.includes(groupeDeCarte(entree.carte)))
-                .sort((a, b) => cardCost(a.carte) - cardCost(b.carte) || a.carte.name.localeCompare(b.carte.name, 'fr'));
-              const total = references.reduce((somme, entree) => somme + entree.nombre, 0);
               return (
-                <div key={groupe.id} className="rpg-atelier__groupe" data-groupe={groupe.id}>
-                  <h4>{groupe.label} <b>{total}</b></h4>
-                  {references.length === 0 ? (
-                    <p className="rpg-atelier__vide">Aucune carte de ce type pour l'instant.</p>
-                  ) : references.map(({ carte, nombre }) => (
-                    // Même geste que la grille : retirer, sans ouvrir la fiche.
-                    <div
-                      key={carte.id}
-                      className="rpg-atelier__ligne"
-                      data-card-id={carte.id}
-                      style={{ '--frame': cardFrameColor(carte) }}
-                      onMouseEnter={survoler(carte)}
-                      onMouseLeave={quitter}
-                      onContextMenu={(event) => { event.preventDefault(); event.stopPropagation(); retirer(carte.id); }}
-                    >
-                      <img src={artUrl(carte.id)} alt="" loading="lazy" />
-                      {carte.kind === 'terrain'
-                        ? <span className="rpg-atelier__cout rpg-atelier__cout--terrain">{terrainManaColors(carte).map((couleur) => <Pip key={couleur} couleur={couleur} taille="mini" />)}</span>
-                        : <Cout carte={carte} />}
-                      <span className="rpg-atelier__ligne-nom">
-                        <strong>{carte.name}</strong>
-                        <small>{typeLabel(carte)}{['creature', 'hero'].includes(carte.kind) ? ` · ${carte.atk}/${carte.def}` : carteEstArme(carte) ? ` · ${signeBonus(bonusArme(carte)?.atk)}/${signeBonus(bonusArme(carte)?.def)}` : libelleModificationStats(carte) ? ` · ${libelleModificationStats(carte)}` : ''}</small>
-                      </span>
-                      <span className="rpg-atelier__ligne-compte">
-                        <button
-                          type="button"
-                          aria-label={`Retirer un exemplaire de ${carte.name}`}
-                          onClick={() => retirer(carte.id)}
-                          onFocus={survoler(carte)}
-                          onBlur={quitter}
-                        >−</button>
-                        <b aria-live="polite">×{nombre}</b>
-                        <button
-                          type="button"
-                          aria-label={`Ajouter un exemplaire de ${carte.name}`}
-                          disabled={!peutAjouterCarte(carte.id, cardIds, collection, exemplaires).ok}
-                          onClick={() => ajouter(carte)}
-                          onFocus={survoler(carte)}
-                          onBlur={quitter}
-                        >+</button>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-            {cardIds.length === 0 && (
-              <p className="rpg-atelier__vide rpg-atelier__vide--deck">
-                Le deck est vide : cliquez les cartes de la collection pour les ajouter.
-              </p>
-            )}
-          </div>
+                <li
+                  key={carte.id}
+                  className={classes}
+                  data-card-id={carte.id}
+                  style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte), '--rarete': couleurRarete }}
+                  onContextMenu={(event) => {
+                    if (dansLeDeck <= 0) return;
+                    event.preventDefault();
+                    retirerUne(carte.id);
+                  }}
+                  onMouseEnter={inspecter ? (event) => inspecter(carte, event) : undefined}
+                  onMouseLeave={quitterInspection ?? undefined}
+                  onPointerDown={(event) => debutToucher(carte, event)}
+                  onPointerUp={finToucher}
+                  onPointerCancel={finToucher}
+                  onPointerLeave={finToucher}
+                >
+                  <LosangesExemplaires
+                    quotaMax={quotaMax}
+                    limitePossedee={possedee ? limite : 0}
+                    dansLeDeck={dansLeDeck}
+                  />
 
-          <details className="rpg-atelier__options">
-            <summary>Options du boîtier</summary>
-            <label className="rpg-atelier__champ">
-              <span>Carte emblématique</span>
-              <select
-                aria-label="Carte emblématique du boîtier"
-                value={boxArt}
-                onChange={(event) => { surSfx('menu'); setBoxArt(event.target.value); }}
-              >
-                <option value="">Automatique (première carte du deck)</option>
-                {cartesEmbleme.map((id) => (
-                  <option key={id} value={id}>{cardById(id)?.name ?? id}</option>
-                ))}
-              </select>
-            </label>
-          </details>
-
-          <div className="rpg-atelier__outils">
-            <button
-              type="button"
-              className={`rpg-atelier__outil rpg-atelier__outil--danger${confirmerVidage ? ' is-armed' : ''}`}
-              disabled={cardIds.length === 0}
-              onClick={vider}
-            >
-              {confirmerVidage ? 'Vider ? (confirmer)' : '⌫ Vider le deck'}
-            </button>
-          </div>
-        </aside>
-      </div>
-
-      <footer className="rpg-atelier__actions">
-        {nommage ? (
-          <div className="rpg-atelier__nommage" role="group" aria-label="Nommer le deck">
-            <h3>Nommez votre deck</h3>
-            <p className="rpg-atelier__nommage-aide">
-              Le jeu vous propose un nom — gardez l’un d’eux, ou écrivez le vôtre. Il paraîtra sur l’étagère.
-            </p>
-            <ul className="rpg-atelier__nommage-suggestions">
-              {suggestions.map((proposition) => (
-                <li key={proposition}>
                   <button
                     type="button"
-                    className={nom === proposition ? 'is-on' : ''}
-                    aria-pressed={nom === proposition}
-                    onClick={() => { surSfx('menu'); setNom(proposition); setNomTouche(true); setConfirmerAbandon(false); }}
+                    className="rpg-atelier__carte-ajout"
+                    disabled={!avis.ok}
+                    title={avis.ok
+                      ? `Ajouter ${carte.name} (${dansLeDeck}/${limite}) · clic droit pour retirer`
+                      : `${carte.name} — ${origine ? `Verrouillée · ${origine}` : avis.raison}`}
+                    aria-label={possedee
+                      ? `${carte.name}, coût ${cardCost(carte)}, ${dansLeDeck} sur ${limite} dans le deck`
+                      : `${carte.name}, verrouillée (${origine ?? 'hors collection'})`}
+                    onClick={() => cliquerCarteGrille(carte)}
                   >
-                    {proposition}
+                    <span className="rpg-atelier__carte-entete">
+                      <span className="rpg-atelier__carte-nom">
+                        <strong>{carte.name}</strong>
+                      </span>
+                      <Cout carte={carte} />
+                    </span>
+
+                    <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
+                      {artUrl && <img src={artUrl(carte.id)} alt="" loading="lazy" />}
+                      <SortSceau carte={carte} />
+                      {!possedee && (
+                        <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>
+                      )}
+                      {dansLeDeck > 0 && (
+                        <span className="rpg-atelier__carte-count" aria-hidden="true">
+                          ×{dansLeDeck}
+                          <small>/{limite}</small>
+                        </span>
+                      )}
+                    </span>
+
+                    <span className="rpg-atelier__carte-meta">
+                      <span className="rpg-atelier__carte-famille">{typeCourtCarte(carte)}</span>
+                      <span className="rpg-atelier__rarete" title={libelleRarete} aria-hidden="true" />
+                    </span>
+
+                    <span className="rpg-atelier__carte-corps">
+                      <span className="rpg-atelier__carte-regle">{texteLisibleCarte(carte)}</span>
+                      <span className="rpg-atelier__carte-pied">
+                        {!possedee && origine ? (
+                          <span className="rpg-atelier__carte-origine">{origine}</span>
+                        ) : <span />}
+                        {(carte.kind === 'creature' || carte.kind === 'hero') && (
+                          <span className="rpg-atelier__carte-pt" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
+                            {carte.atk}/{carte.def}
+                          </span>
+                        )}
+                        {carte.kind === 'weapon' && (
+                          <span className="rpg-atelier__carte-pt">
+                            +{carte.atkBonus}/+{carte.defBonus}
+                          </span>
+                        )}
+                      </span>
+                    </span>
                   </button>
+
+                  {dansLeDeck > 0 && (
+                    <button
+                      type="button"
+                      className="rpg-atelier__carte-retrait"
+                      aria-label={`Retirer un exemplaire de ${carte.name}`}
+                      title="Retirer un exemplaire (ou clic droit)"
+                      onClick={(event) => { event.stopPropagation(); retirerUne(carte.id); }}
+                    >
+                      −
+                    </button>
+                  )}
                 </li>
-              ))}
-            </ul>
-            <label className="rpg-atelier__champ rpg-atelier__champ--nom">
-              <span className="sr-only">Nom du deck</span>
-              <input
-                type="text"
-                maxLength={60}
-                value={nom}
-                aria-label="Nom du deck"
-                placeholder="Nom du deck"
-                autoFocus
-                onChange={(event) => { setNom(event.target.value); setNomTouche(true); setConfirmerAbandon(false); }}
-              />
-            </label>
-            <div className="rpg-atelier__nommage-actions">
+              );
+            })}
+            {cartesFiltrees.length === 0 && (
+              <li className="rpg-atelier__vide">
+                <span>Aucune carte ne correspond à ces filtres.</span>
+                {filtresActifs && (
+                  <button type="button" className="rpg-atelier__toggle rpg-atelier__toggle--reset" onClick={reinitialiserFiltres}>
+                    Réinitialiser les filtres
+                  </button>
+                )}
+              </li>
+            )}
+          </ul>
+        </div>
+
+        {/* ═══ COLONNE DROITE : BOÎTIER + PILE DE CARTES MTGA + CTA BAS ═══ */}
+        <aside className="rpg-atelier__deck" aria-label="Composition du deck">
+          <div className="rpg-atelier__state">
+            <div className="rpg-atelier__boite-entete">
+              <div
+                className={`rpg-atelier__couverture rpg-atelier__couverture--${couleurDominanteDeck}`}
+                aria-hidden="true"
+              >
+                {artUrl && emblemeEffectif && (
+                  <img src={artUrl(emblemeEffectif)} alt="" />
+                )}
+                <span className="rpg-atelier__couverture-embleme">
+                  <ElementEmblem element={couleurDominanteDeck} />
+                </span>
+              </div>
+
+              <div className="rpg-atelier__identite">
+                <label className="rpg-atelier__champ rpg-atelier__champ--nom">
+                  <span className="sr-only">Nom du deck</span>
+                  <input
+                    type="text"
+                    value={nom}
+                    maxLength={RPG_DECK_NOM_MAX}
+                    placeholder={libelleDefaut}
+                    aria-label="Nom du deck"
+                    onChange={(event) => {
+                      setNom(event.target.value);
+                      setNomTouche(true);
+                    }}
+                  />
+                </label>
+
+                <div className="rpg-atelier__compteur">
+                  <div className={`rpg-atelier__total${cardIds.length === RPG_DECK_TAILLE ? ' is-full' : cardIds.length > RPG_DECK_TAILLE ? ' is-over' : ''}`}>
+                    <span><b>{cardIds.length}</b> / {RPG_DECK_TAILLE} cartes</span>
+                    {couleursDeck.length > 0 && (
+                      <span className="rpg-atelier__mini-couleurs" aria-label={`Couleurs : ${couleursDeck.map((c) => COULEUR_LABELS[c.couleur]).join(', ')}`}>
+                        {couleursDeck.map(({ couleur }) => <Pip key={couleur} element={couleur} />)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="rpg-atelier__jauge" aria-hidden="true">
+                    <i style={{ width: `${Math.min(100, Math.round((cardIds.length / RPG_DECK_TAILLE) * 100))}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <figure className="rpg-atelier__courbe" aria-label={`Courbe de mana — ${resumeCourbe}`} title={`Courbe de mana : ${resumeCourbe}`}>
+                <figcaption className="sr-only">Courbe de mana</figcaption>
+                <div className="rpg-atelier__barres" aria-hidden="true">
+                  {courbe.paliers.map(({ cout, label, nombre }) => {
+                    const hauteur = nombre ? Math.max(16, Math.round((nombre / maxCourbe) * 100)) : 0;
+                    return (
+                      <div key={cout} className="rpg-atelier__barre" data-cout={cout}>
+                        <b>{nombre}</b>
+                        <span><i style={{ height: `${hauteur}%` }} /></span>
+                        <small>{label}</small>
+                      </div>
+                    );
+                  })}
+                </div>
+              </figure>
+            </div>
+
+            <div className="rpg-atelier__resume-deck">
+              <p className="rpg-atelier__mini-stats">
+                <span title="Créatures et héros">⚔ <b>{statsTypes.creatures}</b> créat.</span>
+                <span aria-hidden="true">·</span>
+                <span title="Magies rapides et sorcelleries">✦ <b>{statsTypes.magies}</b> magies</span>
+                <span aria-hidden="true">·</span>
+                <span title="Armes">🗡 <b>{statsTypes.armes}</b> armes</span>
+                <span aria-hidden="true">·</span>
+                <span title="Coût moyen de mana">Ø <b>{statsTypes.coutMoyen}</b></span>
+              </p>
+
+              <p className={`rpg-atelier__verdict ${validation.ok ? 'is-valid' : 'is-invalid'}`} role="status">
+                {validation.ok
+                  ? '✓ Deck complet, prêt à jouer'
+                  : validation.raisons[0]}
+              </p>
+            </div>
+
+            <details className="rpg-atelier__options">
+              <summary>Couverture du boîtier</summary>
+              <label className="rpg-atelier__champ">
+                <span className="sr-only">Carte emblème</span>
+                <select
+                  aria-label="Carte emblématique du boîtier"
+                  value={boxArt}
+                  onChange={(event) => setBoxArt(event.target.value)}
+                  disabled={cartesEmbleme.length === 0}
+                >
+                  <option value="">Automatique (première carte)</option>
+                  {cartesEmbleme.map((carte) => (
+                    <option key={carte.id} value={carte.id}>{carte.name}</option>
+                  ))}
+                </select>
+              </label>
+            </details>
+          </div>
+
+          <div className="rpg-atelier__deck-barre">
+            <div className="rpg-atelier__vue-switch" role="group" aria-label="Organisation de la liste du deck">
               <button
                 type="button"
-                className="rpg-menu-button rpg-menu-button--primary"
-                disabled={!nom.trim() || cardIds.length === 0}
-                onClick={() => { surSfx('apparition'); enregistrer(); }}
+                className={`rpg-atelier__vue-btn${modeListeDeck === 'cout' ? ' is-on' : ''}`}
+                aria-pressed={modeListeDeck === 'cout'}
+                onClick={() => { surSfx('menu'); setModeListeDeck('cout'); }}
               >
-                ⌸ Enregistrer le deck
+                Par coût
               </button>
               <button
                 type="button"
-                className="rpg-menu-button"
-                onClick={() => { surSfx('annuler'); setNommage(false); }}
+                className={`rpg-atelier__vue-btn${modeListeDeck === 'type' ? ' is-on' : ''}`}
+                aria-pressed={modeListeDeck === 'type'}
+                onClick={() => { surSfx('menu'); setModeListeDeck('type'); }}
               >
-                ← Retour
+                Par type
+              </button>
+            </div>
+
+            <div className="rpg-atelier__outils">
+              <button
+                type="button"
+                className={`rpg-atelier__outil rpg-atelier__outil--danger${confirmerVider ? ' is-armed' : ''}`}
+                disabled={cardIds.length === 0}
+                onClick={viderDeck}
+              >
+                {confirmerVider ? 'Vider — confirmer ?' : 'Vider'}
               </button>
             </div>
           </div>
-        ) : (
-          <>
-            <button
-              type="button"
-              className="rpg-menu-button rpg-menu-button--primary"
-              disabled={!nom.trim() || cardIds.length === 0}
-              onClick={() => { surSfx('apparition'); ouvrirNommage(); }}
-            >
-              ⌸ Enregistrer le deck
-            </button>
-            <button
-              type="button"
-              className="rpg-menu-button"
-              onClick={() => { surSfx('annuler'); abandonner(); }}
-            >
-              {confirmerAbandon ? 'Abandonner les modifications ?' : 'Annuler'}
-            </button>
-            {edition && onSupprimer && (
-              <button
-                type="button"
-                className="rpg-menu-button rpg-atelier__danger"
-                onClick={() => { surSfx('erreur'); supprimer(); }}
-              >
-                {confirmerSuppression ? 'Confirmer la suppression' : 'Supprimer ce deck'}
-              </button>
+
+          {statut && (
+            <p className="rpg-atelier__statut" role="status" aria-live="polite">{statut}</p>
+          )}
+
+          <div className="rpg-atelier__liste">
+            {cardIds.length === 0 ? (
+              <div className="rpg-atelier__vide rpg-atelier__vide--deck">
+                <strong>Votre deck est vide</strong>
+                <span>Cliquez sur une carte à gauche pour l’ajouter, ou faites un clic droit pour en retirer un exemplaire.</span>
+              </div>
+            ) : modeListeDeck === 'cout' ? (
+              <ul className="rpg-atelier__pile" aria-label="Cartes du deck triées par coût">
+                {entreesDeckParCout.map(rendreLigneDeck)}
+              </ul>
+            ) : (
+              deckParGroupe.filter((g) => g.entrees.length > 0).map((groupe) => (
+                <section key={groupe.id} className="rpg-atelier__groupe" data-groupe={groupe.id}>
+                  <h4>
+                    <span>{groupe.titre}</span>
+                    <b>{groupe.total}</b>
+                  </h4>
+                  <ul>
+                    {groupe.entrees.map(rendreLigneDeck)}
+                  </ul>
+                </section>
+              ))
             )}
-          </>
-        )}
-        <p className="rpg-atelier__statut" role="status" aria-live="polite">
-          {message || (validation.ok
-            ? 'Ce deck peut être sélectionné et joué en duel libre dès l’enregistrement.'
-            : 'Brouillon enregistré tel quel : il restera « incomplet » tant qu’il ne tient pas les règles.')}
-        </p>
-      </footer>
+          </div>
+
+          <footer className="rpg-atelier__actions">
+            {nommageOuvert ? (
+              <div className="rpg-atelier__nommage" role="region" aria-label="Nommer le deck">
+                <h3>Comment s’appelle ce deck ?</h3>
+                <p className="rpg-atelier__nommage-aide">
+                  Choisissez une proposition inspirée de vos cartes, ou écrivez votre propre titre.
+                </p>
+                <label className="rpg-atelier__champ rpg-atelier__champ--nom">
+                  <span className="sr-only">Nom du deck</span>
+                  <input
+                    ref={champNommageRef}
+                    type="text"
+                    value={nomPropose}
+                    maxLength={RPG_DECK_NOM_MAX}
+                    placeholder={suggestions[0] ?? libelleDefaut}
+                    onChange={(event) => setNomPropose(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        confirmerEnregistrement();
+                      }
+                    }}
+                  />
+                </label>
+                {suggestions.length > 0 && (
+                  <ul className="rpg-atelier__nommage-suggestions" aria-label="Suggestions de noms">
+                    {suggestions.map((idee) => (
+                      <li key={idee}>
+                        <button
+                          type="button"
+                          className={nomPropose === idee ? 'is-on' : ''}
+                          onClick={() => { surSfx('menu'); setNomPropose(idee); }}
+                        >
+                          {idee}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="rpg-atelier__nommage-actions">
+                  <button
+                    type="button"
+                    className="rpg-menu-button rpg-menu-button--primary rpg-atelier__btn-done"
+                    onClick={confirmerEnregistrement}
+                  >
+                    Enregistrer
+                  </button>
+                  <button
+                    type="button"
+                    className="rpg-menu-button"
+                    onClick={() => { surSfx('annuler'); setNommageOuvert(false); }}
+                  >
+                    Retour
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className={`rpg-menu-button rpg-menu-button--primary rpg-atelier__btn-done${validation.ok ? ' is-ready' : ''}`}
+                  onClick={demanderEnregistrement}
+                >
+                  {validation.ok
+                    ? 'Enregistrer'
+                    : 'Enregistrer le brouillon'}
+                </button>
+                <div className="rpg-atelier__actions-secondaires">
+                  <button type="button" className="rpg-menu-button rpg-atelier__btn-secondaire" onClick={demanderFermeture}>
+                    {confirmerAbandon ? 'Quitter sans sauver ?' : 'Annuler'}
+                  </button>
+                  {deckInitial?.id && onSupprimer && (
+                    <button
+                      type="button"
+                      className="rpg-menu-button rpg-atelier__btn-secondaire rpg-atelier__danger"
+                      onClick={supprimer}
+                    >
+                      {confirmerSuppression ? 'Confirmer suppression' : 'Supprimer'}
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </footer>
+        </aside>
+      </div>
     </section>
   );
 }

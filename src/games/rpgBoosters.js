@@ -91,7 +91,7 @@ export const RAYONS = Object.freeze([
     titre: 'Le paquet du Souk',
     couleur: [...RPG_ELEMENTS],
     prix: 140,
-    vitrine: 'ifrit-des-ergs',
+    vitrine: 'salem',
     texte: 'Toutes les couleurs de Bab El, mêlées dans un seul paquet — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
   },
 ]);

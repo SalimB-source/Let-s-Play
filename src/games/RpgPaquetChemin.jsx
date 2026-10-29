@@ -28,7 +28,7 @@ function RuneSablier() {
 }
 
 export default function RpgPaquetChemin({ dos, className = '' }) {
-  const rayon = RAYONS[0] ?? { nom: 'Souk', vitrine: 'ifrit-des-ergs' };
+  const rayon = RAYONS[0] ?? { nom: 'Souk', vitrine: 'salem' };
   return (
     <span className={`rpg-piste__paquet-reel${className ? ` ${className}` : ''}`} data-piste-vrai-paquet="" aria-hidden="true">
       <span className="rpg-piste__carte" style={{ backgroundImage: `url("${dos}")` }} />

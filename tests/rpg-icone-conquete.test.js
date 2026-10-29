@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 
 const lire = (chemin) => readFileSync(new URL(chemin, import.meta.url), 'utf8');
 
-/** La Conquête n'a plus d'onglet : son dessin vit sur la carte de la page Jouer. */
-test('la carte Conquête porte la grande icône partagée, pas l’ancien emoji', () => {
+/** La Conquête n'a plus d'onglet : sa bannière de l'accueil utilise la carte Tour des Ténèbres. */
+test('la bannière Conquête utilise sa miniature de carte, sans l’ancien emoji, et le dessin partagé demeure disponible', () => {
   const page = lire('../src/games/RpgDuelPage.jsx');
   const icones = lire('../src/games/RpgModeIcon.jsx');
   const ancienEmoji = String.fromCodePoint(0x1F5FC); // U+1F5FC, sans glyphe dans la source
@@ -14,10 +14,10 @@ test('la carte Conquête porte la grande icône partagée, pas l’ancien emoji'
     'la barre n’importe plus l’icône d’onglet');
   assert.doesNotMatch(page, /<button[^>]*aria-label="Conquête"[\s\S]{0,600}?<\/button>/,
     'plus d’onglet Conquête dans la barre');
-  assert.match(page, /<RpgModeIcon nom="conquete" className="rpg-mode-carte__icone" \/>/,
-    'la carte utilise la grande icône partagée');
+  assert.match(page, /rpg-menu-button--conquete[\s\S]{0,300}?cardArt\('tour-des-tenebres'\)/,
+    'la bannière Conquête utilise sa miniature tirée des cartes du jeu');
   assert.match(icones, /\bconquete:\s*\(/, 'le dessin de la Conquête est disponible');
-  assert.match(page, /rpg-menu-button--conquete[\s\S]{0,300}?>Conquête</,
+  assert.match(page, /rpg-menu-button--conquete[\s\S]{0,480}?>Conquête</,
     'le libellé de la carte reste lisible');
 });
 

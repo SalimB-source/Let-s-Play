@@ -211,6 +211,10 @@ export async function checkRpgSoukEcran(assert) {
 
     // ── Le paquet en volume : cinq faces, deux sertissages, son étiquette ───
     const paquet = noeud('[data-souk-ouvrir="souk"]');
+    const vitrinePaquet = noeud('[data-souk-paquet-interactif="salem"]');
+    assert.ok(vitrinePaquet, 'le booster est enveloppé dans sa vitrine interactive 3D à l’effigie de Salem');
+    assert.match(paquet.querySelector('.rpg-souk__paquet-carte')?.getAttribute('src') ?? '', /salem\.jpg/,
+      'le booster du Souk porte l’illustration de Salem');
     assert.equal(paquet.dataset.soukPaquet, RPG_ELEMENTS.join(','),
       'le paquet porte toutes les couleurs du jeu : il n’y en a plus qu’un');
     assert.ok(!paquet.classList.contains('is-ferme'), 'le comptoir est ouvert');
@@ -614,10 +618,10 @@ export async function checkRpgSoukEcran(assert) {
     const auLendemain = noeud(`[data-souk-direct-carte="${rareId}"]`);
     assert.equal(auLendemain?.dataset.soukDirectEtat, 'disponible',
       'un exemplaire sur deux : la carte est disponible, pas « déjà obtenue »');
-    assert.match(auLendemain?.querySelector('[data-souk-direct-acheter]')?.textContent ?? '', /Acheter le 2ᵉ/,
-      'le bouton nomme la copie qu’il vend');
-    assert.match(auLendemain?.textContent ?? '', /Il vous manque le 2ᵉ exemplaire · 1\/2/,
-      'et la ligne de stock le redit sous le nom');
+    assert.match(auLendemain?.querySelector('[data-souk-direct-acheter]')?.textContent ?? '', /Acheter\s*·\s*150/,
+      'le bouton propose directement l’achat au prix de la carte');
+    assert.equal(auLendemain?.querySelector('[data-card-copies]')?.textContent, '1/2',
+      'la pastille sur l’illustration suffit à lire le stock');
     await act(async () => noeud(`[data-souk-direct-acheter="${rareId}"]`).click());
     assert.equal(bourse.bourse.credits, 400, 'la seconde copie se paie au même prix, 150 crédits');
     assert.deepEqual(bourse.bourse.exemplaires, { [rareId]: 2 }, 'le portefeuille compte deux copies');
@@ -626,11 +630,11 @@ export async function checkRpgSoukEcran(assert) {
     const complete = noeud(`[data-souk-direct-carte="${rareId}"]`);
     assert.equal(complete?.dataset.soukDirectEtat, 'complet', 'au quota du deck, la carte devient « complète »');
     assert.equal(complete?.querySelector('[data-card-copies]')?.dataset.cardCopies, '2');
-    assert.match(complete?.textContent ?? '', /Quota du deck atteint · 2\/2/,
-      'et la raison du refus est écrite noir sur blanc');
+    assert.equal(complete?.querySelector('[data-souk-direct-acheter]')?.textContent?.trim(), 'Complet',
+      'le bouton indique simplement « Complet »');
     assert.ok(noeud(`[data-souk-direct-acheter="${rareId}"]`).disabled, 'plus rien à payer sur cette carte');
-    assert.ok(Number(donnee('[data-souk-direct-complet]', 'soukDirectComplet')) >= 1,
-      'l’étal résume en une ligne les cartes du jour déjà au quota');
+    assert.equal(noeud('[data-souk-direct-complet]'), null,
+      'aucun bandeau redondant n’alourdit l’étal');
 
     await act(async () => rootDirect.unmount());
     rootDirect = null;

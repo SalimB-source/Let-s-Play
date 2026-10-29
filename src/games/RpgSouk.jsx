@@ -30,7 +30,7 @@ import {
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
-import { cardById, cardTypeLine } from './rpgCards.js';
+import { cardById } from './rpgCards.js';
 import { SOUK_DIRECT_REGLES, vueCarteDeEtal } from './rpgSoukDirect.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
@@ -181,122 +181,327 @@ function CarteQuete({ id, etatQuetes, onReclamer, onPlaySfx, onCelebrate }) {
  * et se désactive avec son motif quand l'achat est refusé.
  */
 /**
- * Le paquet suit le pointeur : un petit tilt 3D qui glisse sous la souris,
- * comme un objet qu'on retournerait dans la main. `prefers-reduced-motion`
- * le coupe net — le paquet garde alors sa pose fixe, celle du survol CSS.
+ * Le paquet interactif en 3D : il suit le pointeur (inclinaison, parallaxe de
+ * l'illustration et reflet holographique) et peut être saisi au clic-glissé ou
+ * au doigt pour tourner librement à 360° et dévoiler ses tranches et son dos,
+ * même lorsque le solde est insuffisant (`disabled` sur le bouton d'achat).
+ * `prefers-reduced-motion` coupe net tout mouvement dynamique.
  */
 function useBoosterSuitLaSouris() {
-  const boutonRef = useRef(null);
+  const vitrineRef = useRef(null);
+  const sceneRef = useRef(null);
   const frameRef = useRef(0);
+  const resetTimerRef = useRef(0);
+  const tourRef = useRef(0);
+  const glisseRecenteRef = useRef(false);
+  const gesteRef = useRef(null);
   const reduitMouvement = useRef(
     typeof window !== 'undefined' && typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   );
-  const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 30, actif: false });
+  const [tilt, setTilt] = useState({
+    rx: 0,
+    ry: 0,
+    gx: 50,
+    gy: 30,
+    ax: 0,
+    ay: 0,
+    foil: 0,
+    actif: false,
+    saisi: false,
+    pirouette: false,
+  });
+
+  useEffect(() => () => {
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+  }, []);
+
+  const lirePointDansSachet = (clientX, clientY) => {
+    const cible = sceneRef.current ?? vitrineRef.current;
+    if (!cible) return { x: 0.5, y: 0.5, ok: false };
+    const rect = cible.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { x: 0.5, y: 0.5, ok: false };
+    return {
+      x: Math.max(0, Math.min(1, (clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (clientY - rect.top) / rect.height)),
+      ok: true,
+    };
+  };
+
+  const appuyer = (event) => {
+    if (reduitMouvement.current) return;
+    if (event.button != null && event.button !== 0) return;
+    if (event.target?.closest?.('.rpg-souk__paquet-prix')) return;
+    gesteRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastT: performance.now(),
+      vx: 0,
+      baseYaw: tourRef.current,
+      enGlisse: false,
+    };
+  };
 
   const suivre = (event) => {
     if (reduitMouvement.current) return;
-    const noeud = boutonRef.current;
-    if (!noeud) return;
-    const rect = noeud.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const x = (event.clientX - rect.left) / rect.width;
-    const y = (event.clientY - rect.top) / rect.height;
-    const clampe = Math.max(0, Math.min(1, x));
-    const clampeY = Math.max(0, Math.min(1, y));
+    const geste = gesteRef.current;
+    if (geste && (event.pointerId == null || geste.pointerId === event.pointerId)) {
+      const dx = event.clientX - geste.startX;
+      const dy = event.clientY - geste.startY;
+      if (!geste.enGlisse && (dx * dx + dy * dy) > 36) {
+        geste.enGlisse = true;
+        try { vitrineRef.current?.setPointerCapture?.(event.pointerId); } catch { /* optionnel */ }
+      }
+      if (geste.enGlisse) {
+        const maintenant = performance.now();
+        const dt = Math.max(8, maintenant - geste.lastT);
+        geste.vx = (event.clientX - geste.lastX) / dt;
+        geste.lastX = event.clientX;
+        geste.lastT = maintenant;
+        const ry = geste.baseYaw + dx * 1.15;
+        const rx = Math.max(-30, Math.min(30, -dy * 0.42));
+        const angleNorm = (((ry % 360) + 360) % 360) / 360;
+        const pt = lirePointDansSachet(event.clientX, event.clientY);
+        if (frameRef.current) cancelAnimationFrame(frameRef.current);
+        frameRef.current = requestAnimationFrame(() => {
+          setTilt({
+            rx,
+            ry,
+            gx: Math.round((0.15 + Math.abs(Math.sin(angleNorm * Math.PI * 2)) * 0.7) * 100),
+            gy: Math.round(pt.y * 100),
+            ax: Math.sin((ry * Math.PI) / 180) * -6,
+            ay: (rx / 30) * 5,
+            foil: Math.round(ry * 0.65),
+            actif: true,
+            saisi: true,
+            pirouette: false,
+          });
+        });
+        return;
+      }
+    }
+
+    const pt = lirePointDansSachet(event.clientX, event.clientY);
+    if (!pt.ok) return;
+    const base = tourRef.current;
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(() => {
-      setTilt({
-        rx: (0.5 - clampeY) * 24,
-        ry: (clampe - 0.5) * 34,
-        gx: clampe * 100,
-        gy: clampeY * 100,
+      setTilt((etat) => ({
+        rx: (0.5 - pt.y) * 26,
+        ry: base + (pt.x - 0.5) * 38,
+        gx: pt.x * 100,
+        gy: pt.y * 100,
+        ax: (0.5 - pt.x) * 7,
+        ay: (0.5 - pt.y) * 6,
+        foil: Math.round((pt.x - 0.5) * 48),
         actif: true,
-      });
+        saisi: false,
+        pirouette: etat.pirouette,
+      }));
+    });
+  };
+
+  const terminerGeste = (event) => {
+    const geste = gesteRef.current;
+    gesteRef.current = null;
+    if (!geste || !geste.enGlisse) return;
+    try {
+      if (event?.pointerId != null) vitrineRef.current?.releasePointerCapture?.(event.pointerId);
+    } catch { /* optionnel */ }
+    const dx = (event?.clientX ?? geste.lastX) - geste.startX;
+    const angleCourant = geste.baseYaw + dx * 1.15;
+    const elan = Math.abs(geste.vx) > 0.55 ? Math.sign(geste.vx) * 180 : 0;
+    const cibleTour = Math.round((angleCourant + elan) / 360) * 360;
+    tourRef.current = cibleTour;
+    glisseRecenteRef.current = true;
+    if (resetTimerRef.current) clearTimeout(resetTimerRef.current);
+    resetTimerRef.current = setTimeout(() => { glisseRecenteRef.current = false; }, 140);
+    if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    setTilt({
+      rx: 0,
+      ry: cibleTour + 14,
+      gx: 52,
+      gy: 28,
+      ax: 0,
+      ay: 0,
+      foil: 0,
+      actif: false,
+      saisi: false,
+      pirouette: true,
     });
   };
 
   const relacher = () => {
+    if (gesteRef.current?.enGlisse) return;
+    gesteRef.current = null;
     if (frameRef.current) cancelAnimationFrame(frameRef.current);
-    setTilt((etat) => ({ ...etat, rx: 0, ry: 0, actif: false }));
+    const base = tourRef.current;
+    setTilt({
+      rx: 0,
+      ry: base + 24,
+      gx: 50,
+      gy: 30,
+      ax: 0,
+      ay: 0,
+      foil: 0,
+      actif: false,
+      saisi: false,
+      pirouette: base !== 0,
+    });
   };
 
-  return { boutonRef, tilt, suivre, relacher };
+  const faireTourner = () => {
+    if (reduitMouvement.current || glisseRecenteRef.current) return;
+    const suivant = tourRef.current + 360;
+    tourRef.current = suivant;
+    setTilt({
+      rx: -5,
+      ry: suivant + 24,
+      gx: 54,
+      gy: 26,
+      ax: 0,
+      ay: 0,
+      foil: 24,
+      actif: false,
+      saisi: false,
+      pirouette: true,
+    });
+  };
+
+  return {
+    vitrineRef,
+    sceneRef,
+    glisseRecenteRef,
+    tilt,
+    appuyer,
+    suivre,
+    terminerGeste,
+    relacher,
+    faireTourner,
+  };
 }
 
-function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt }) {
+function PaquetDuRayon({ rayon, index, ferme, prix, refus, onOuvrir, cardArt, onPlaySfx }) {
   const cible = rayon.couleur ? `le paquet ${rayon.nom}` : `le paquet du ${rayon.nom}`;
   const nom = `Ouvrir ${cible} · ${prix} crédits`;
-  // La vitrine montre une mythique du vivier : c'est l'appât du paquet, pas un
-  // droit de tirage. Le paquet mélangé montre celle du Djinn du Souk.
-  const mythiqueId = rayon.vitrine ?? null;
-  const { boutonRef, tilt, suivre, relacher } = useBoosterSuitLaSouris();
+  // La vitrine imprime l'illustration de Salem sur le booster du Souk.
+  const mythiqueId = rayon.vitrine ?? 'salem';
+  const carteVitrine = mythiqueId ? cardById(mythiqueId) : null;
+  const illustrationVitrine = mythiqueId && cardArt
+    ? (cardArt(carteVitrine ?? mythiqueId) || cardArt(mythiqueId))
+    : null;
+  const {
+    vitrineRef, sceneRef, glisseRecenteRef, tilt,
+    appuyer, suivre, terminerGeste, relacher, faireTourner,
+  } = useBoosterSuitLaSouris();
+  const desactive = Boolean(refus);
   return (
-    <button
-      type="button"
-      ref={boutonRef}
-      className={`rpg-souk__paquet${ferme ? ' is-ferme' : ''}${tilt.actif ? ' is-pointe' : ''}`}
-      data-souk-ouvrir={rayon.id}
-      data-souk-paquet={rayon.couleur ?? 'souk'}
-      disabled={Boolean(refus)}
-      title={refus ?? nom}
-      aria-label={nom}
-      onClick={() => { onOuvrir?.(rayon.id); }}
+    <div
+      ref={vitrineRef}
+      className={`rpg-souk__paquet-vitrine${desactive ? ' is-sans-solde' : ''}${tilt.saisi ? ' is-saisi' : ''}`}
+      data-souk-paquet-interactif={mythiqueId ?? 'souk'}
+      title={desactive ? refus : 'Faites glisser pour inspecter le booster en 3D, cliquez pour l’ouvrir'}
+      onPointerDown={appuyer}
+      onPointerMove={suivre}
+      onPointerUp={terminerGeste}
+      onPointerCancel={terminerGeste}
+      onPointerLeave={relacher}
       onMouseMove={suivre}
       onMouseLeave={relacher}
-      onBlur={relacher}
+      onClick={() => {
+        if (desactive && !ferme && !glisseRecenteRef.current) {
+          onPlaySfx?.('hover');
+          faireTourner();
+        }
+      }}
     >
-      <span className="rpg-souk__paquet-ombre" aria-hidden="true" />
-      <span
-        className="rpg-souk__paquet-scene"
-        style={{
-          '--i': index,
-          '--tilt-x': `${tilt.rx}deg`,
-          '--tilt-y': `${tilt.ry}deg`,
-          '--glare-x': `${tilt.gx}%`,
-          '--glare-y': `${tilt.gy}%`,
+      <button
+        type="button"
+        className={`rpg-souk__paquet${ferme ? ' is-ferme' : ''}${tilt.actif ? ' is-pointe' : ''}${tilt.saisi ? ' is-saisi' : ''}${tilt.pirouette ? ' is-pirouette' : ''}`}
+        data-souk-ouvrir={rayon.id}
+        data-souk-paquet={rayon.couleur ?? 'souk'}
+        disabled={desactive}
+        title={refus ?? nom}
+        aria-label={nom}
+        onClick={(event) => {
+          if (glisseRecenteRef.current) {
+            event.preventDefault();
+            return;
+          }
+          onOuvrir?.(rayon.id);
         }}
-        aria-hidden="true"
+        onBlur={relacher}
       >
-        <span className="rpg-souk__paquet-sway">
-          <span className="rpg-souk__paquet-corps">
-            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dos" />
-            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--tranche" />
-            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessus" />
-            <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessous" />
-            <span className={`rpg-souk__paquet-face rpg-souk__paquet-face--avant${mythiqueId ? ' has-carte' : ''}`}>
-              {mythiqueId && cardArt && (
-                <img className="rpg-souk__paquet-carte" src={cardArt(mythiqueId)} alt={`Illustration de la carte mythique ${cardById(mythiqueId)?.name ?? 'du Souk'}`} loading="lazy" />
-              )}
-              <span className="rpg-souk__paquet-sertissage" />
-              {mythiqueId && <span className="rpg-souk__paquet-voile" aria-hidden="true" />}
-              <span className="rpg-souk__paquet-rune">⌛</span>
-              <span className="rpg-souk__paquet-nom">{rayon.nom}</span>
-              <span className="rpg-souk__paquet-meta">
-                {TAUX.cartes} cartes
-                <em>{TAUX.rareGarantie} rare{TAUX.rareGarantie > 1 ? 's' : ''} garantie{TAUX.rareGarantie > 1 ? 's' : ''}</em>
+        <span className="rpg-souk__paquet-ombre" aria-hidden="true" />
+        <span
+          ref={sceneRef}
+          className="rpg-souk__paquet-scene"
+          style={{
+            '--i': index,
+            '--tilt-x': `${tilt.rx}deg`,
+            '--tilt-y': `${tilt.ry}deg`,
+            '--glare-x': `${tilt.gx}%`,
+            '--glare-y': `${tilt.gy}%`,
+            '--art-x': `${tilt.ax}px`,
+            '--art-y': `${tilt.ay}px`,
+            '--foil-angle': `${tilt.foil}deg`,
+          }}
+          aria-hidden="true"
+        >
+          <span className="rpg-souk__paquet-sway">
+            <span className="rpg-souk__paquet-corps">
+              <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dos">
+                <span className="rpg-souk__paquet-dos-sceau">
+                  <b>⌛</b>
+                  <small>Bab El</small>
+                </span>
               </span>
-              <span className="rpg-souk__paquet-sertissage" />
-              {mythiqueId && <span className="rpg-souk__paquet-mythique-tag" aria-hidden="true">Mythique</span>}
+              <span className="rpg-souk__paquet-face rpg-souk__paquet-face--tranche" />
+              <span className="rpg-souk__paquet-chant" />
+              <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessus" />
+              <span className="rpg-souk__paquet-face rpg-souk__paquet-face--dessous" />
+              <span className={`rpg-souk__paquet-face rpg-souk__paquet-face--avant${mythiqueId ? ' has-carte' : ''}`}>
+                {illustrationVitrine && (
+                  <img
+                    className="rpg-souk__paquet-carte"
+                    src={illustrationVitrine}
+                    alt={`Illustration de ${carteVitrine?.name ?? 'Salem'}`}
+                    draggable={false}
+                    loading="lazy"
+                  />
+                )}
+                <span className="rpg-souk__paquet-sertissage rpg-souk__paquet-sertissage--haut" />
+                {mythiqueId && <span className="rpg-souk__paquet-voile" aria-hidden="true" />}
+                <span className="rpg-souk__paquet-rune">⌛</span>
+                <span className="rpg-souk__paquet-nom">{rayon.nom}</span>
+                <span className="rpg-souk__paquet-meta">
+                  {TAUX.cartes} cartes
+                  <em>{TAUX.rareGarantie} rare{TAUX.rareGarantie > 1 ? 's' : ''} garantie{TAUX.rareGarantie > 1 ? 's' : ''}</em>
+                </span>
+                <span className="rpg-souk__paquet-sertissage rpg-souk__paquet-sertissage--bas" />
+              </span>
             </span>
           </span>
         </span>
-      </span>
-      {/* L'étiquette de prix est la seule chose que le paquet dit à voix
-          haute : « Acheter · 140 ». Elle grossit, se dore et respire dès que
-          l'achat est possible — c'est l'appel du comptoir, pas une ligne de
-          plus sous le paquet. Le texte reste exactement le même (le smoke le
-          lit mot pour mot) : les effets sont des pseudo-éléments. */}
-      <span className="rpg-souk__paquet-prix" data-souk-prix={prix}>
-        <span className="rpg-souk__prix-geste">Acheter</span>
-        {' '}
-        <span className="rpg-souk__prix-sep" aria-hidden="true">·</span>
-        {' '}
-        <span className="rpg-souk__prix-valeur">
-          {creditsLisible(prix)} <RpgCreditIcon />
+        {/* L'étiquette de prix est la seule chose que le paquet dit à voix
+            haute : « Acheter · 140 ». Elle grossit, se dore et respire dès que
+            l'achat est possible — c'est l'appel du comptoir, pas une ligne de
+            plus sous le paquet. Le texte reste exactement le même (le smoke le
+            lit mot pour mot) : les effets sont des pseudo-éléments. */}
+        <span className="rpg-souk__paquet-prix" data-souk-prix={prix}>
+          <span className="rpg-souk__prix-geste">Acheter</span>
+          {' '}
+          <span className="rpg-souk__prix-sep" aria-hidden="true">·</span>
+          {' '}
+          <span className="rpg-souk__prix-valeur">
+            {creditsLisible(prix)} <RpgCreditIcon />
+          </span>
         </span>
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
 
@@ -323,7 +528,7 @@ function CarteDeLEtal({
   const vue = vueCarteDeEtal({ id, collection, exemplaires, acheteAujourdhui, credits });
   if (!vue) return null;
   const {
-    rarete, prix, etat, manquante, acquis, limite, reste, manque,
+    rarete, prix, etat, manquante, acquis, limite, manque,
   } = vue;
   const unique = limite <= 1;
   const copie = `${copieLisible(acquis)} exemplaire${acquis > 1 ? 's' : ''}`;
@@ -331,20 +536,13 @@ function CarteDeLEtal({
     ? `${carte.name} · ${copie} en collection — la copie suivante sera en vente quand la carte reparaîtra à l’étal`
     : etat === 'complet'
       ? unique
-        ? `${carte.name} est une carte unique dans un deck : un exemplaire suffit et ${carte.name} en compte un`
-        : `${carte.name} est au complet : ${acquis} exemplaires sur ${limite}, le quota du deck`
+        ? `${carte.name} est une carte unique dans un deck : un exemplaire suffit`
+        : `${carte.name} est au complet (${acquis}/${limite})`
       : etat === 'sans-solde'
         ? `Il manque ${creditsLisible(manque)} crédits`
         : manquante
-          ? `Acheter le ${copieLisible(acquis + 1)} exemplaire de ${carte.name} pour ${creditsLisible(prix)} crédits`
-          : `Acheter le ${copieLisible(acquis + 1)} exemplaire de ${carte.name} pour ${creditsLisible(prix)} crédits — votre collection le compterait ${acquis + 1} sur ${limite}`;
-  const note = etat === 'achetee'
-    ? `Achetée aujourd'hui · ${acquis}/${limite}`
-    : etat === 'complet'
-      ? unique ? 'Unique au deck · déjà en collection' : `Quota du deck atteint · ${acquis}/${limite}`
-      : manquante
-        ? 'Carte absente de votre collection'
-        : `Il vous manque le ${copieLisible(acquis + 1)} exemplaire · ${acquis}/${limite}`;
+          ? `Acheter ${carte.name} pour ${creditsLisible(prix)} crédits`
+          : `Acheter le ${copieLisible(acquis + 1)} exemplaire de ${carte.name} pour ${creditsLisible(prix)} crédits (${acquis + 1}/${limite})`;
   return (
     <li
       className={`rpg-souk__direct-carte is-${rarete.key} is-${etat}`}
@@ -366,10 +564,6 @@ function CarteDeLEtal({
       </div>
       <div className="rpg-souk__direct-corps">
         <h4>{carte.name}</h4>
-        <p>{cardTypeLine(carte)}</p>
-        <p className="rpg-souk__direct-stock" data-souk-direct-stock={etat} data-souk-direct-reste={reste}>
-          {note}
-        </p>
       </div>
       <button
         type="button"
@@ -380,18 +574,13 @@ function CarteDeLEtal({
         aria-label={titre}
         onClick={() => onAcheter?.(carte.id)}
       >
-        {etat === 'achetee' ? 'Achetée aujourd’hui' : etat === 'complet' ? (unique ? 'Déjà en collection' : `Complet · ${acquis}/${limite}`) : (
+        {etat === 'achetee' ? 'Achetée' : etat === 'complet' ? 'Complet' : (
           <>
-            {manquante ? 'Acheter' : `Acheter le ${copieLisible(acquis + 1)}`} · {creditsLisible(prix)} <RpgCreditIcon />
-            <span className="sr-only">
-              {`crédits, ${manquante ? 'le premier exemplaire qui vous manque' : `le ${copieLisible(acquis + 1)} exemplaire sur ${limite}`}`}
-            </span>
+            Acheter · {creditsLisible(prix)} <RpgCreditIcon />
+            <span className="sr-only"> crédits</span>
           </>
         )}
       </button>
-      {etat === 'sans-solde' && (
-        <p className="rpg-souk__direct-refus">Il manque {creditsLisible(manque)} <RpgCreditIcon /></p>
-      )}
     </li>
   );
 }
@@ -473,9 +662,6 @@ export default function RpgSouk({
   // Le lecteur unique (`exemplairesDuPortefeuille`) re-normalise le compteur :
   // une sauvegarde retouchée qui prétendrait « 3/2 » ne remplira pas la pastille.
   const exemplairesDirect = exemplairesDuPortefeuille(portefeuille);
-  const cartesCompletes = offresDirect.filter((id) => vueCarteDeEtal({
-    id, collection: collectionDirect, exemplaires: exemplairesDirect, credits,
-  })?.complet).length;
   const rafraichissementUtilise = etal.rafraichissements >= SOUK_DIRECT_REGLES.rafraichissementsParJour;
   const sync = statutSync === 'synchronise'
     ? '☁ Synchronisé avec votre compte'
@@ -498,38 +684,29 @@ export default function RpgSouk({
   const acheterDansEtal = (cardId) => {
     const resultat = onAcheterCarteDirecte?.(cardId);
     if (resultat?.ok) {
-      const { acquis = 1, limite = 1, complet = false } = resultat;
-      const stock = limite > 1 ? `${acquis}/${limite} exemplaires` : `${acquis} exemplaire`;
-      setEtalMessage({
-        ok: true,
-        texte: resultat.carte.name
-          ? `${resultat.carte.name} rejoint votre collection — ${stock}${complet ? ', la carte est au quota du deck.' : '.'}`
-          : `Un exemplaire de plus — ${stock}.`,
-      });
+      setEtalMessage(null);
       onPlaySfx?.(resultat.carte?.rarity === 'mythique' ? 'victoire' : 'card_draw');
       return;
     }
     const messages = {
-      'deja-achetee': 'Cette carte a déjà été achetée dans cet étal aujourd’hui. Revenez quand elle y reparaîtra pour la copie suivante.',
-      'quota-atteint': 'Votre collection a déjà tous les exemplaires que le deck autorise pour cette carte.',
-      // Raison d'une sauvegarde antérieure à la règle du stock : le message
-      // reste traduit pour ne jamais afficher un code en clair.
-      'deja-possedee': 'Cette carte est déjà dans votre collection.',
-      'solde-insuffisant': 'Votre bourse ne contient pas assez de crédits.',
-      'hors-etal': 'Cette carte ne fait plus partie de la sélection du jour.',
+      'deja-achetee': 'Déjà achetée aujourd’hui.',
+      'quota-atteint': 'Quota du deck atteint pour cette carte.',
+      'deja-possedee': 'Déjà dans votre collection.',
+      'solde-insuffisant': 'Crédits insuffisants.',
+      'hors-etal': 'Carte hors de la sélection du jour.',
     };
-    setEtalMessage({ ok: false, texte: messages[resultat?.raison] ?? 'L’achat n’est pas disponible pour le moment.' });
+    setEtalMessage({ ok: false, texte: messages[resultat?.raison] ?? 'Achat indisponible.' });
     onPlaySfx?.('erreur');
   };
 
   const rafraichirEtal = () => {
     const resultat = onRafraichirEtal?.();
     if (resultat?.ok) {
-      setEtalMessage({ ok: true, texte: 'Le marchand propose cinq nouvelles cartes. À demain pour le prochain rafraîchissement.' });
+      setEtalMessage(null);
       onPlaySfx?.('page_turn');
       return;
     }
-    setEtalMessage({ ok: false, texte: 'Le rafraîchissement du jour a déjà été utilisé.' });
+    setEtalMessage({ ok: false, texte: 'Rafraîchissement déjà utilisé aujourd’hui.' });
     onPlaySfx?.('erreur');
   };
 
@@ -612,6 +789,7 @@ export default function RpgSouk({
                   refus={refus}
                   cardArt={cardArt}
                   onOuvrir={onOuvrirBooster}
+                  onPlaySfx={onPlaySfx}
                 />
                 <footer>
                   {refus && (
@@ -649,12 +827,7 @@ export default function RpgSouk({
         data-souk-direct-rafraichissements={etal.rafraichissements ?? 0}
       >
         <div className="rpg-souk__section-tete">
-          <div>
-            <h3 id="souk-direct-titre">Les cartes à l’unité</h3>
-            <p>
-              {SOUK_DIRECT_REGLES.cartesParJour} cartes chaque jour · Inhabituelle {SOUK_DIRECT_REGLES.prix.inhabituelle} <RpgCreditIcon /> · Rare {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> · Mythique {SOUK_DIRECT_REGLES.prix.mythique} <RpgCreditIcon />
-            </p>
-          </div>
+          <h3 id="souk-direct-titre">Les cartes à l’unité</h3>
           <button
             type="button"
             className="rpg-menu-button rpg-souk__direct-rafraichir"
@@ -663,19 +836,9 @@ export default function RpgSouk({
             title={rafraichissementUtilise ? 'Sélection déjà rafraîchie : revenez demain' : 'Remplacer les cinq cartes — une seule fois aujourd’hui'}
             onClick={rafraichirEtal}
           >
-            {rafraichissementUtilise ? 'Rafraîchissement utilisé' : 'Rafraîchir la sélection'}
+            {rafraichissementUtilise ? 'Rafraîchi' : '↻ Rafraîchir'}
           </button>
         </div>
-        <p className="rpg-souk__direct-resume">
-          Choisissez exactement ce qu’il vous manque. Chaque achat ajoute <strong>un exemplaire</strong>, et le deck ne joue que ce que vous avez payé : {SOUK_DIRECT_REGLES.prix.inhabituelle} <RpgCreditIcon /> la seconde copie d’une inhabituelle, {SOUK_DIRECT_REGLES.prix.rare} <RpgCreditIcon /> celle d’une rare, une mythique reste unique.
-        </p>
-        {cartesCompletes > 0 && (
-          <p className="rpg-souk__direct-complet" data-souk-direct-complet={cartesCompletes} role="status">
-            {cartesCompletes === offresDirect.length
-              ? 'Aucune copie à vendre aujourd’hui : les cinq cartes sont au quota. Le rafraîchir en amène cinq autres.'
-              : `${cartesCompletes} carte${cartesCompletes > 1 ? 's' : ''} du jour${cartesCompletes > 1 ? ' sont' : ' est'} déjà au quota du deck — rien de plus à payer sur ${cartesCompletes > 1 ? 'lesquelles' : 'laquelle'}.`}
-          </p>
-        )}
         {offresDirect.length ? (
           <ul className="rpg-souk__direct-cartes" data-souk-direct-cartes={offresDirect.length}>
             {offresDirect.map((id) => (
@@ -692,17 +855,13 @@ export default function RpgSouk({
             ))}
           </ul>
         ) : (
-          <p className="rpg-souk__vide" data-souk-direct-vide>Le marchand prépare les cinq cartes du jour.</p>
+          <p className="rpg-souk__vide" data-souk-direct-vide>Sélection du jour indisponible.</p>
         )}
         {etalMessage && (
           <p className={`rpg-souk__direct-message${etalMessage.ok ? ' is-ok' : ' is-erreur'}`} role="status" data-souk-direct-message>
             {etalMessage.texte}
           </p>
         )}
-        <footer className="rpg-souk__direct-pied">
-          <span>{rafraichissementUtilise ? 'Nouvelle sélection et rafraîchissement disponibles demain.' : 'Un rafraîchissement gratuit reste disponible aujourd’hui.'}</span>
-          <span>Clic droit ou appui long sur une carte pour l’agrandir.</span>
-        </footer>
       </section>
 
       <section className="rpg-souk__section" aria-labelledby="souk-quetes-titre">
