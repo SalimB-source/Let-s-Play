@@ -185,6 +185,7 @@
     "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs",
     "desktop:icon": "node desktop/make-icon.mjs",
     "desktop:web": "node scripts/desktop-bundle.mjs",
+    "desktop:coque": "node scripts/desktop-bundle.mjs --coque",
     "desktop:serve": "node desktop/local-server.js",
     "desktop:setup": "npm --prefix desktop install",
     "desktop:run": "npm --prefix desktop run start",

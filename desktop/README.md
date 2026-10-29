@@ -21,17 +21,18 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
   installer** (choix par défaut) ; s'il attend, il s'installe à la fermeture du
   jeu. La version portable reste à mettre à jour en téléchargeant son nouvel
   `.exe`.
-- **Le paquet embarqué n'est jamais une impasse** : au lancement, la coque
-  compare l'identité de son paquet (`version.json`, écrit par `vite.config.js`)
-  à celle du site en ligne. Si le site est plus récent — l'installeur n'est
-  republié que quand `desktop/**` ou le site change, et pas à chaque correctif —
-  elle propose de **jouer en version en ligne** pour la session. Rien à faire
-  hors connexion : la comparaison échoue en silence et le jeu démarre comme
-  avant. Le menu indique ensuite le mode courant (*paquet local* / *site en
-  ligne*).
-- Poids réel mesuré en CI : **~215 Mo par installeur** (dont ~117 Mo de jeu :
-  cartes, plateaux, musiques ; le reste est le runtime Electron compressé).
-  L'archive `app.asar` ne contient que la coque (~100 Ko) : l'empaquetage se
+- **Le site fait foi.** L'installeur ne contient pas le jeu : la fenêtre ouvre
+  `let-s-play-nu.vercel.app`, donc **chaque correctif est là au lancement
+  suivant**, et l'exécutable pèse **~80 Mo** au lieu de 967 (le runtime Electron,
+  rien d'autre). C'est ce qui permet à l'installeur de ne plus se reconstruire
+  quand une carte change, et à la coque de se mettre à jour sans se disputer la
+  version avec le site.
+- **Hors connexion, deux filets.** La page d'attente propose « Réessayer » (et
+  réessaie seule toutes les 15 s) ; si le **pack hors ligne** (option, ~100 Mo,
+  voir plus bas) est installé, elle propose aussi « Jouer la version hors
+  ligne », et le menu `Jeu → Jouer la version hors ligne` fait la bascule à tout
+  moment.
+- L'archive `app.asar` ne contient que la coque (~100 Ko) : l'empaquetage se
   fait depuis un projet isolé `desktop/pack/` assemblé par
   `scripts/desktop-bundle.mjs`, sans aucun `node_modules` — sans cela
   electron-builder gonfle l'asar de centaines de Mo (729 Mo vus en CI).
@@ -68,10 +69,10 @@ L'écran s'efface de lui-même quand il n'a rien à proposer : dans la coque PC
         ▲
         │ requêtes HTTP
 ┌───────┴──────────────────────────────┐        ┌──────────────────────────────────────────┐
-│ serveur local (desktop/local-server.js)│        │ Internet (seulement si une connexion existe)│
-│ sert desktop/dist-web, le paquet élagué│  relais │ site en ligne pour les fichiers non       │
-│ (jeu, cartes, plateaux, musiques)      │◄───────│ embarqués · Supabase pour le compte, les  │
-│ écoute UNIQUEMENT sur 127.0.0.1        │        │ duels à distance, le souk, la synchro     │
+│ serveur local (desktop/local-server.js)│        │ le site en ligne (mode par défaut)        │
+│ ne sert QUE le pack hors ligne, s'il   │  relais │ fichiers absents du pack · Supabase pour  │
+│ est installé (resources/app)           │◄───────│ le compte, les duels à distance, le souk  │
+│ écoute UNIQUEMENT sur 127.0.0.1        │        │                                           │
 └───────────────────────────────────────┘        └──────────────────────────────────────────┘
 ```
 
@@ -85,13 +86,14 @@ Trois décisions portent tout l'édifice :
    fonctionnent. Le port est **fixe (4173)** pour que l'origine — donc vos decks
    enregistrés — survive aux relances ; s'il est pris, un port libre est choisi
    et la session repart de zéro (jamais de mélange entre deux installations).
-2. **Le paquet web est élagué.** `public/` pèse 208 Mo ; le Sablier n'en a
-   besoin que d'environ 115 Mo (cartes, plateaux, musiques de plateau, décor du
-   mode histoire, sons de combat, icônes de succès). La liste vit dans
-   `desktop/bundle-assets.json`. Tout le reste (actus, captures, vidéos) n'est
-   pas embarqué : le serveur local le **relaie depuis le site en ligne** quand
-   une connexion existe, et son absence ne se voit jamais hors ligne — aucune de
-   ces images n'apparaît dans le duel.
+2. **Le pack hors ligne est élagué — et optionnel.** `public/` pèse 208 Mo ; le
+   Sablier n'en a besoin que d'environ 100 Mo (cartes, plateaux, musiques de
+   plateau, décor du mode histoire, sons de combat, icônes de succès). La liste
+   vit dans `desktop/bundle-assets.json`. Tout le reste (actus, captures, vidéos)
+   n'est pas embarqué : le serveur local le **relaie depuis le site en ligne**
+   quand une connexion existe, et son absence ne se voit jamais hors ligne —
+   aucune de ces images n'apparaît dans le duel. Ce pack n'est **pas** dans
+   l'installeur : il se télécharge à part (voir « Pack hors ligne »).
 3. **Le GPU est forcé, pas espéré.** Voir la section suivante.
 
 ## La carte graphique
@@ -139,19 +141,24 @@ Depuis la racine du dépôt (Node 22) :
 
 ```bash
 npm ci                     # dépendances du site (vite, react, three…)
-npm run desktop:web        # 1) build Vite mode desktop + élagage → desktop/dist-web
+npm run desktop:coque      # 1) projet d'empaquetage, SANS le site → installeur « en ligne »
 npm run desktop:setup      # 2) Electron + electron-builder dans desktop/node_modules
 npm run desktop:run        # 3) lancer l'app sans l'installer (développement)
 npm run desktop:dist       # 4) produire setup.exe + portable.exe dans desktop/release
 ```
 
+Pour construire en plus le **pack hors ligne** (le site élagué), remplacez
+l'étape 1 par `npm run desktop:web` : il produit `desktop/dist-web`, que
+l'empaquetage embarque alors dans `resources/app`.
+
 `desktop:dist` doit tourner **sur Windows** pour produire un `.exe`
 (electron-builder ne sait pas construire un installeur Windows depuis Linux).
 La CI du dépôt le fait pour vous (voir plus bas).
 
-Sans installer : `npm run desktop:serve` sert le paquet élagué sur
+Sans installer : `npm run desktop:serve` sert `desktop/dist-web` sur
 `http://127.0.0.1:4173` et ouvre le jeu dans n'importe quel navigateur — utile
-pour vérifier un build avant de construire l'installeur.
+pour vérifier un pack hors ligne avant de le publier. En développement, la
+coque démarre sur le site ; `LETSPLAY_PAQUET=desktop/dist-web` force le pack.
 
 Régénérer l'icône (sablier d'or, sans dépendance externe) : `npm run desktop:icon`.
 
@@ -212,28 +219,56 @@ SQL Editor) garantit la RLS **et** le `grant` du rôle `authenticated` sur
 synchronisation du Souk et du menu (`synchronise` / `attente` / `horsligne`)
 dit ce que le jeu a réussi à faire.
 
+## Pack hors ligne (option)
+
+L'installeur publié ne contient pas le jeu. Qui veut jouer sans Internet
+installe le **pack hors ligne** — le site construit et élagué (~100 Mo) :
+
+1. télécharger `sablier-pack-hors-ligne.zip` sur la page de la Release
+   ([releases/tag/desktop](https://github.com/SalimB-source/Let-s-Play/releases/tag/desktop)) ;
+2. menu **Aide → Pack hors ligne… → Choisir un fichier .zip…** : la coque
+   décompresse l'archive (PowerShell `Expand-Archive`) et la pose dans
+   `resources/app`, exactement là où `dossierPaquetWeb()` la cherche. Le même
+   menu permet de la retirer.
+
+Une fois installé, le jeu démarre **toujours** sur le site — donc avec les
+correctifs du jour — et le pack sert de secours : bascule automatique proposée
+par la page d'attente quand le réseau manque, ou manuelle par
+`Jeu → Jouer la version hors ligne`. Une mise à jour de la coque n'y touche
+jamais : elle ne remplace que `app.asar`.
+
+Le pack n'est jamais construit par un simple build de `main` : il faut lancer le
+workflow à la main en cochant `pack_hors_ligne`. Il est alors publié sous un nom
+**fixe** (`sablier-pack-hors-ligne.zip`), à côté de l'installeur.
+
 ## Ce que la CI produit
 
 `.github/workflows/desktop-windows.yml` :
 
-1. `verifs` (ubuntu) : `npm run check:desktop` — 25 vérifications sans Electron
+1. `verifs` (ubuntu) : `npm run check:desktop` — 29 vérifications sans Electron
    (commutateurs GPU, serveur local, anti-évasion, isolation de la fenêtre,
-   empaquetage, relance de mise à jour) ;
-2. `installeur` (windows-latest) : version dérivée, paquet élagué,
+   empaquetage, mode de démarrage, relance de mise à jour) ;
+2. `installeur` (windows-latest) : version dérivée, **coque seule**,
    `electron-builder`, artefacts de run, puis — sur `main` seulement — GitHub
    Release sur le tag `desktop` (lien de téléchargement permanent, remplacé à
    chaque build). La Release contient `latest.yml` et les `.blockmap` nécessaires
-   à `electron-updater`.
+   à `electron-updater` ;
+3. `pack-hors-ligne` (windows-latest, **sur demande**) : construit le site
+   élagué et le publie en `.zip` sur la même Release.
 
 ### Quand un build part, et sous quel numéro
 
-Le paquet web est **dans** l'exécutable : un correctif du jeu ne rejoint un PC
-installé que si l'installeur est reconstruit. Le workflow part donc sur `main`
-dès qu'un fichier embarqué change — `desktop/**`, `src/**`, `public/**`,
-`index.html`, `vite.config.js`, `package.json`/`package-lock.json` — en plus du
-lancement manuel. Une pull request ne construit que si elle touche la coque
-(`desktop/**`, `vite.config.js`, `index.html`, le workflow) : un correctif du jeu
-sera embarqué au merge, pas avant.
+Le site n'est plus dans l'exécutable : un correctif du jeu arrive donc sans
+reconstruire quoi que ce soit. Le workflow ne part plus que sur la **coque** —
+`desktop/**`, `scripts/desktop-*.mjs`, `package.json`/`package-lock.json`, le
+workflow lui-même — ou sur lancement manuel. Une PR ne construit que si elle
+touche la coque.
+
+Corollaire à connaître : **une modification de `src/` ou `public/` ne change pas
+la version de la coque.** C'est voulu (le site est chargé en ligne), mais cela
+veut dire que le numéro de version ne sert plus qu'à livrer des changements de
+*coque*. Le pack hors ligne, lui, se republie à la demande
+(`workflow_dispatch` → cocher `pack_hors_ligne`).
 
 La **version** est calculée avant l'empaquetage : majeure et mineure viennent de
 `desktop/package.json` (1.0), et le correctif est

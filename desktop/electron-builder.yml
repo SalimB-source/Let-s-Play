@@ -5,10 +5,16 @@
 #   - le-sablier-de-bab-el-<version>-setup.exe    (installeur NSIS, x64)
 #   - le-sablier-de-bab-el-<version>-portable.exe (un seul fichier, sans install)
 #
-# Le paquet web (desktop/dist-web) n'est PAS mis dans l'archive app.asar :
-# `extraResources` le copie à côté, dans resources/app, où le serveur HTTP local
-# le lit comme de simples fichiers. Lire 100 Mo dans une archive à chaque
-# requête serait plus lent et plus fragile.
+# Le **pack hors ligne** (desktop/dist-web) n'est PAS mis dans l'archive
+# app.asar : `extraResources` le copie à côté, dans resources/app, où le serveur
+# HTTP local le lit comme de simples fichiers — lire 100 Mo dans une archive à
+# chaque requête serait plus lent et plus fragile.
+#
+# L'installeur publié part **sans** ce dossier : `npm run desktop:coque` y laisse
+# seulement un `LISEZ-MOI.txt`, pour qu'`extraResources` ait une source (il refuse
+# un chemin absent) et que la coque ne trouve pas d'`index.html` — elle démarre
+# donc sur le site en ligne. `npm run desktop:web` le remplit pour le pack
+# hors ligne, publié à part sur la même Release.
 
 appId: dz.letsplay.sablier
 productName: Le Sablier de Bab El

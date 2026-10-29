@@ -300,20 +300,67 @@ assert.equal(collisionsActives, 0, 'collision de casse visée par un import sans
 ok('aucun import sans extension ne vise deux fichiers de même casse');
 
 // ---------------------------------------------------------------------------
-// 6) La mise à jour part toute seule
+// 6) La coque ouvre le site, pas une copie du site
 // ---------------------------------------------------------------------------
-// Le paquet web est DANS l'exécutable : un correctif du jeu ne joint les PC
-// installés que si l'installeur est reconstruit et si sa version augmente. Un
-// déclencheur qui oublie `src/**`, ou une version figée, et les joueurs restent
-// sur la version du jour de l'installation — sans que rien ne le signale.
-console.log('6. La mise à jour part toute seule');
+// L'installeur a longtemps embarqué le site entier (226 Mo de `dist-web`, dont
+// 103 Mo de peintures) : chaque correctif du jeu imposait donc une Release de
+// 967 Mo, et les PC installés jouaient la version du jour de l'installation.
+// La coque charge maintenant le site en ligne ; le pack hors ligne est une
+// option publiée à part. Ce basculement tient à quatre choses, vérifiées ici :
+// le mode de démarrage, le script d'empaquetage, les déclencheurs du workflow
+// et la version dérivée qui fait voir les mises à jour de coque.
+console.log('6. La coque ouvre le site, pas une copie du site');
+
+assert.match(principal, /mode = veutDemarrerLocal\(\) && urlLocale \? 'local' : 'online'/,
+  'le démarrage par défaut doit être le site en ligne ; le pack ne doit pas s’imposer');
+assert.match(principal, /function veutDemarrerLocal\(\)[\s\S]*?process\.argv\.includes\('--local'\)/,
+  'le pack hors ligne doit rester joignable à la demande (--local)');
+assert.match(principal, /function basculerEnLocal\(\)/, 'la bascule vers le pack hors ligne a disparu');
+assert.match(principal, /'desktop:aller-au-jeu-local'/, 'la page « hors ligne » ne peut plus basculer sur le pack');
+assert.match(principal, /locale: urlLocale \? '1' : '0'/, 'la page d’attente ne sait plus si un pack est installé');
+assert.match(principal, /Expand-Archive/, 'l’installation du pack .zip a disparu');
+assert.match(principal, /dossierDestinationPack\(\)[\s\S]*?resourcesPath/,
+  'le pack doit atterrir dans resources/app, là où dossierPaquetWeb() le cherche');
+ok('mode par défaut = site ; pack hors ligne optionnel, bascule et installation .zip présentes');
+
+const bundleCoque = readFileSync(join(RACINE, 'scripts', 'desktop-bundle.mjs'), 'utf8');
+assert.match(bundleCoque, /process\.argv\.includes\('--coque'\)/, 'le mode « coque seule » a disparu');
+assert.match(bundleCoque, /LISEZ-MOI\.txt/, 'la coque seule doit poser un dossier marqueur pour extraResources');
+assert.match(bundleCoque, /if \(coqueSeule\) \{[\s\S]*?\} else \{\s*var paquetWeb = construirePaquetWeb\(\);/,
+  'le build Vite ne doit pas tourner quand on n’embarque pas le site');
+const racinePackage = JSON.parse(readFileSync(join(RACINE, 'package.json'), 'utf8'));
+assert.equal(racinePackage.scripts['desktop:coque'], 'node scripts/desktop-bundle.mjs --coque',
+  'npm run desktop:coque doit exister (installeur sans paquet web)');
+ok('desktop-bundle : mode --coque sans build Vite, marqueur LISEZ-MOI, script npm dédié');
+
 const workflow = readFileSync(join(RACINE, '.github', 'workflows', 'desktop-windows.yml'), 'utf8');
 assert.match(workflow, /branches:\s*\n\s*- main\s*\n\s*paths:/,
   'le workflow doit partir sur `main` (une PR ne doit pas publier de Release)');
 for (const chemin of ["'src/**'", "'public/**'", "'index.html'", "'vite.config.js'"]) {
-  assert.ok(workflow.includes(chemin), `les changements du site doivent reconstruire l'installeur : ${chemin} absent des chemins`);
+  assert.ok(!workflow.includes(chemin),
+    `un changement du site ne doit plus reconstruire l'installeur : ${chemin} traîne dans les chemins`);
 }
-ok('déclencheurs : la coque et le paquet web (src, public, index.html, vite.config.js) sur `main`');
+for (const chemin of ["'desktop/**'", "'scripts/desktop-bundle.mjs'"]) {
+  assert.ok(workflow.includes(chemin), `les changements de la coque doivent reconstruire : ${chemin}`);
+}
+ok('déclencheurs : la coque seulement — ni src/, ni public/, ni index.html');
+
+assert.match(workflow, /npm run desktop:coque/, 'l’installeur doit sortir sans le paquet web');
+assert.doesNotMatch(workflow, /npm run desktop:web[\s\S]*?npm run desktop:dist/,
+  'le job de l’installeur ne doit plus construire le site');
+assert.match(workflow, /-s desktop\/dist-web\/index\.html/,
+  'rien ne vérifie que l’installeur « en ligne » ne contient pas le site');
+ok('le job de l’installeur ne construit pas le site, et échoue s’il s’y retrouve');
+
+assert.match(workflow, /workflow_dispatch:\s*\n\s*inputs:\s*\n\s*pack_hors_ligne:/,
+  'le pack hors ligne doit être une option de lancement manuel');
+assert.match(workflow, /inputs\.pack_hors_ligne == true/,
+  'le pack hors ligne ne doit pas se construire à chaque build');
+assert.match(workflow, /gh release upload desktop desktop\/sablier-pack-hors-ligne\.zip --clobber/,
+  'le pack doit être publié sur la Release, sous un nom fixe');
+assert.match(workflow, /Compress-Archive -Path "\$dest\/app"/,
+  'l’archive doit contenir un dossier `app/` à sa racine (celui que la coque décompresse)');
+ok('pack hors ligne : construit sur demande, zippé en app/, publié à côté de l’installeur');
 
 assert.match(workflow, /- name: Version dérivée du build/,
   'la version publiée doit être dérivée du dépôt, sinon une reconstruction ne se voit pas');
@@ -326,10 +373,10 @@ assert.match(workflow, /pkg\.version = process\.argv\[1\]/,
 assert.match(workflow, /fetch-depth:\s*0/,
   'le compte des commits exige un clone complet');
 assert.ok(
-  workflow.lastIndexOf('- name: Version dérivée du build') < workflow.indexOf('- name: Paquet web élagué'),
-  'la version doit être posée avant la fabrication du pack (elle part dans pack/package.json)',
+  workflow.lastIndexOf('- name: Version dérivée du build') < workflow.indexOf('- name: Coque seule'),
+  'la version doit être posée avant la fabrication du projet empaqueté',
 );
-assert.match(bundle, /version:\s*paquetCoque\.version/,
+assert.match(bundleCoque, /version:\s*paquetCoque\.version/,
   'le projet empaqueté reprend la version de la coque');
 assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/,
   'la Release ne se publie que depuis `main`');

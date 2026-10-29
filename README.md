@@ -8395,27 +8395,31 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   la carte graphique…** affiche le renderer réellement utilisé, l'état de
   `webgl`/`webgl2`/`compositing` et une sonde WebGL — de quoi prouver, ou
   infirmer, que le GPU travaille.
-- **Un serveur local sert le jeu** (`desktop/local-server.js`, écoute seulement
-  sur `127.0.0.1`, port 4173) : routage `BrowserRouter` intact, `localStorage`
-  des decks sur une origine stable, contexte sûr pour l'audio et les appels.
-  Le paquet embarqué est **élagué** (`desktop/bundle-assets.json`) : cartes,
-  plateaux, musiques, décor du mode histoire et sons partent dans
-  l'installeur ; actus, captures et vidéos restent en ligne, relayées par le
-  serveur quand une connexion existe.
-- **Hors ligne**, le duel contre l'IA, l'atelier de decks, la collection et le
-  mode histoire fonctionnent ; compte, duels à distance et souk attendent le
-  retour de la connexion (Supabase).
-- Commandes : `npm run desktop:web` (paquet élagué), `npm run desktop:setup`,
+- **La fenêtre ouvre le site en ligne.** L'installeur ne contient plus de copie
+  du jeu : **~80 Mo** au lieu de 967, et chaque correctif est là au lancement
+  suivant — sans reconstruire d'exécutable quand une carte change.
+- **Un serveur local sert le pack hors ligne, quand il est installé**
+  (`desktop/local-server.js`, écoute seulement sur `127.0.0.1`, port 4173) :
+  routage `BrowserRouter` intact, `localStorage` des decks sur une origine
+  stable, contexte sûr pour l'audio et les appels. Ce **pack hors ligne** est
+  une option publiée à part (~100 Mo, élaguée par `desktop/bundle-assets.json`) :
+  cartes, plateaux, musiques, décor du mode histoire et sons ; actus, captures
+  et vidéos restent en ligne, relayées par le serveur.
+- **Hors connexion**, sans le pack, il n'y a rien à jouer : la page d'attente
+  réessaie seule toutes les 15 s. Avec le pack, le duel contre l'IA, l'atelier de
+  decks, la collection et le mode histoire fonctionnent ; compte, duels à
+  distance et souk attendent le retour de la connexion (Supabase).
+- Commandes : `npm run desktop:coque` (projet d'empaquetage sans le site),
+  `npm run desktop:web` (pack hors ligne élagué), `npm run desktop:setup`,
   `npm run desktop:run` (lancer sans installer), `npm run desktop:dist`
-  (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le paquet
-  dans un navigateur), `npm run check:desktop` (25 vérifications sans Electron).
+  (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le pack
+  dans un navigateur), `npm run check:desktop` (29 vérifications sans Electron).
 - CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
   build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
   committé). La Release publie aussi des copies au nom fixe
   (`le-sablier-de-bab-el-setup.exe`) : ce sont elles que le site fait télécharger.
-  Le build part à **chaque changement du site** (le paquet web est dans l'exe) et
-  sa **version est dérivée du dépôt** — voir « la mise à jour se propose au
-  lancement ».
+  Le build ne part plus que sur la **coque**, et sa **version est dérivée du
+  dépôt** — voir « la mise à jour se propose au lancement ».
 - **Écran d'entrée du jeu** : sur `/jeu/sablier-de-bab-el`, le site propose
   d'abord « Télécharger pour Windows » ou « Jouer dans le navigateur »
   (`src/games/RpgEntryChoice.jsx`). Le duel reste paresseux tant que le choix
@@ -8468,18 +8472,18 @@ renseignement que le client compare, et il n'a rien de secret.
   « Redémarrer et installer » par défaut et signale que l'installation se fera
   de toute façon à la fermeture. Un échec silencieux (démarrage hors ligne) est
   réessayé une fois au bout d'une minute ;
-- **le paquet embarqué** est comparé au site en ligne : si le site est plus
-  récent — cas normal, l'installeur n'est republié que sur `desktop/**`, le
-  paquet web ou `vite.config.js` — la coque propose de **jouer en version en
-  ligne** pour la session. Le paquet local reste installé et jouable hors
-  connexion ; le menu indique le mode courant.
+- **le pack hors ligne** (option) est comparé au site en ligne : si le site est
+  plus récent, la coque propose de **jouer en version en ligne** pour la
+  session. Le pack reste installé et jouable hors connexion ; le menu indique le
+  mode courant.
 
-**L'installeur se reconstruit tout seul.** Le paquet web est dans l'exécutable :
-un correctif du jeu ne rejoint un PC installé que si l'installeur est refait.
-`.github/workflows/desktop-windows.yml` part donc sur `main` dès qu'un fichier
-embarqué change — `desktop/**`, `src/**`, `public/**`, `index.html`,
-`vite.config.js`, `package.json`/`package-lock.json` — en plus du lancement
-manuel (une PR ne construit que si elle touche la coque). La **version** est
+**Plus rien à reconstruire pour un correctif.** L'installeur n'embarque plus le
+site : la fenêtre le charge en ligne, donc un correctif du jeu est là au
+lancement suivant. `.github/workflows/desktop-windows.yml` ne part donc plus que
+sur la **coque** — `desktop/**`, `scripts/desktop-*.mjs`,
+`package.json`/`package-lock.json` — ou sur lancement manuel (une PR ne construit
+que si elle touche la coque). Le **pack hors ligne** se republie à la demande
+(`workflow_dispatch` → `pack_hors_ligne`). La **version** de la coque est
 calculée avant l'empaquetage :
 
 ```
