@@ -6254,6 +6254,17 @@ plus le menu dans une fenêtre pour découvrir le duel en plein écran ensuite.
 | Retour au menu depuis le duel | le plein écran **reste ouvert** : la coque est le même nœud d'un écran à l'autre, et la session de paysage ne le possède plus |
 | Quitter la page | le verrou de défilement est rendu et le plein écran refermé |
 
+**Au doigt, il n'y a pas d'option fenêtré.** Sur téléphone (`viewport.mobile` :
+`LetsPlayAndroid`, pointeur grossier ou écran de 1100 px au plus), le plein
+écran est **obligatoire** : la couche fixe est posée au montage, et **aucun
+bouton** — ni celui du menu, ni celui de la barre du duel — ne propose de
+revenir à une fenêtre. Les deux boutons disparaissent du rendu
+(`onToggleFullscreen` vaut `null`), la touche **F** ne fait rien au doigt, et le
+plein écran natif part au **premier geste** puis est **rattrapé** : si le joueur
+le referme (Échap, geste « retour », barre du système), le prochain geste sur la
+coque le redemande. La seule sortie est de quitter la page. À la souris, rien ne
+change : les deux boutons restent là et F ouvre et ferme.
+
 - **Plein écran de base, épinglé.** La couche fixe est posée au montage de la
   page et le choix est « épinglé » : il traverse les écrans (menu, duel, decks,
   catalogue, fin d'étage) jusqu'à ce que le joueur le quitte.
@@ -6282,7 +6293,9 @@ plus le menu dans une fenêtre pour découvrir le duel en plein écran ensuite.
 - `src/games/RpgDuelPage.jsx` — la coque `.rpg-battle` comme cible (`shellRef`),
   le plein écran de base au montage, la demande au premier geste (Échap exclu),
   la touche F, la demande dans le geste de lancement
-  (`demanderPleinEcranEtPaysage`) et les deux boutons ;
+  (`demanderPleinEcranEtPaysage`), les deux boutons — conditionnels quand
+  `pleinEcranVerrouille` (`viewport.mobile`) est vrai — et le verrou au doigt
+  (`onNativeExit` → redemande au geste suivant) ;
 - `src/games/rpgLandscape.js` — l'attente du plein écran de la page avant le
   verrou d'orientation (`attendrePleinEcran`) ;
 - `src/games/rpg-battle.css` — `body.game-immersive-lock`,
@@ -6297,7 +6310,7 @@ plus le menu dans une fenêtre pour découvrir le duel en plein écran ensuite.
 ### Vérifications
 
 ```bash
-npm run check:rpg-fullscreen   # la page dans jsdom : plein écran de base, natif au premier geste et au lancement, menu ↔ duel, F, sortie du navigateur, repli sans API
+npm run check:rpg-fullscreen   # la page dans jsdom : plein écran de base, natif au premier geste et au lancement, menu ↔ duel, F, sortie du navigateur, repli sans API, verrou au doigt sans aucune sortie
 npm run check:rpg              # cycle de vie de l'orientation et du plein écran (tests/rpg-landscape.test.js)
 ```
 

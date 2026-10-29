@@ -4848,16 +4848,21 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               <p>Les portes de la ville attendent leur prochain gardien.</p>
             </div>
           </div>
-          <button
-            type="button"
-            className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
-            onClick={() => { play('menu'); onToggleFullscreen?.(); }}
-            aria-pressed={Boolean(fullscreen)}
-            title={fullscreen ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
-            aria-label={fullscreen ? 'Quitter le plein écran' : 'Jouer en plein écran'}
-          >
-            <FullscreenIcon exit={Boolean(fullscreen)} className="rpg-fullscreen-icon" />
-          </button>
+          {/* Au doigt, le plein écran est obligatoire : aucun bouton, donc
+              aucune sortie. `onToggleFullscreen` vaut `null` dans ce cas (voir
+              `pleinEcranVerrouille`, dans la page). */}
+          {onToggleFullscreen && (
+            <button
+              type="button"
+              className={`rpg-mode-menu__fullscreen${fullscreen ? ' is-on' : ''}`}
+              onClick={() => { play('menu'); onToggleFullscreen(); }}
+              aria-pressed={Boolean(fullscreen)}
+              title={fullscreen ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+              aria-label={fullscreen ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+            >
+              <FullscreenIcon exit={Boolean(fullscreen)} className="rpg-fullscreen-icon" />
+            </button>
+          )}
           {/* Le jeu couvre tout l'écran, barre du site comprise : sans cette
               sortie, on ne quittait le Sablier qu'avec le bouton « retour » du
               navigateur. Un lien simple (pas de routeur) : la page se monte
@@ -6369,11 +6374,25 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // élément — React garde le nœud d'un écran à l'autre —, donc le plein écran
   // survit au lancement d'une partie comme au retour au menu.
   const shellRef = useRef(null);
+  // Au doigt, le plein écran est **obligatoire** (voir l'effet plus bas) : ces
+  // deux refs permettent au rappel de sortie du navigateur de le rattraper sans
+  // dépendre d'un rendu — `viewport` est lu après le hook.
+  const mobileRef = useRef(false);
+  const rentrerPleinEcranRef = useRef(null);
   const {
     active: pleinEcran,
     enter: entrerPleinEcran,
     toggle: basculerPleinEcran,
-  } = useGameFullscreen(shellRef);
+  } = useGameFullscreen(shellRef, {
+    // Le navigateur vient de refermer le plein écran (geste « retour » d'Android,
+    // Échap sur un clavier externe, sortie imposée par le système). Au doigt, la
+    // partie ne retombe pas dans une fenêtre : la couche immersive est reposée
+    // aussitôt, et le plein écran natif repart au geste suivant. Sur ordinateur,
+    // la sortie est respectée (comportement d'origine).
+    onNativeExit: () => {
+      if (mobileRef.current) rentrerPleinEcranRef.current?.();
+    },
+  });
   // `survol` : le volet du mulligan y lit si la souris sait survoler.
   const [viewport, setViewport] = useState({ mobile: false, portrait: false, survol: true });
   useEffect(() => {
@@ -6393,6 +6412,36 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   useEffect(() => {
     if (ecran !== 'partie') landscapeRef.current?.leave();
   }, [ecran]);
+
+  // ── Au doigt, le plein écran est obligatoire ────────────────────────────
+  // Sur téléphone, tablette et dans l'APK — la même condition que la coque
+  // tactile (`rpg-battle--touch`) —, le Sablier occupe tout l'écran du premier
+  // au dernier écran, et rien ne permet d'en sortir : les boutons « plein
+  // écran » disparaissent, la touche F ne fait plus rien, et une sortie imposée
+  // par le navigateur est rattrapée. Sur ordinateur, le plein écran reste un
+  // choix (bouton du menu et de la barre du duel, touche F).
+  const pleinEcranVerrouille = viewport.mobile;
+  useEffect(() => {
+    mobileRef.current = pleinEcranVerrouille;
+    rentrerPleinEcranRef.current = () => entrerPleinEcran({ pinned: true, native: false });
+    if (!pleinEcranVerrouille) return undefined;
+    // 1. La couche immersive, tout de suite : aucun geste n'est exigé pour elle,
+    //    donc le jeu couvre l'écran dès l'ouverture, avant même que le
+    //    navigateur n'accorde le plein écran natif (et s'il refuse — iPhone,
+    //    WebView sans `onShowCustomView` —, elle suffit à jouer).
+    entrerPleinEcran({ pinned: true, native: false });
+    // 2. Le plein écran natif, que le navigateur n'accorde que **dans un geste** :
+    //    il part au premier appui, puis à nouveau chaque fois qu'il a été
+    //    refermé (le hook ne redemande rien tant qu'il est ouvert ; un refus est
+    //    sans effet, la couche immersive reste).
+    const demanderNatif = () => { entrerPleinEcran({ pinned: true }); };
+    window.addEventListener('pointerdown', demanderNatif, true);
+    window.addEventListener('keydown', demanderNatif, true);
+    return () => {
+      window.removeEventListener('pointerdown', demanderNatif, true);
+      window.removeEventListener('keydown', demanderNatif, true);
+    };
+  }, [pleinEcranVerrouille, entrerPleinEcran]);
 
   // ── Synchronisation temps réel d'un duel PvP (toujours avant tout return conditionnel) ──
   useEffect(() => {
@@ -6556,6 +6605,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // recherche du navigateur), ni Alt+F, ni une touche maintenue, ni un « f »
   // tapé dans un champ de saisie.
   useEffect(() => {
+    // Au doigt, il n'y a pas de sortie : le plein écran y est obligatoire, la
+    // touche F ne fait donc rien (un clavier Bluetooth ne rend pas la fenêtre).
+    if (pleinEcranVerrouille) return undefined;
     const surTouche = (event) => {
       if (!isFullscreenShortcut(event)) return;
       if (vientDunChampDeSaisie(event.target)) return;
@@ -6564,7 +6616,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     };
     window.addEventListener('keydown', surTouche);
     return () => window.removeEventListener('keydown', surTouche);
-  }, [basculerPleinEcran]);
+  }, [basculerPleinEcran, pleinEcranVerrouille]);
 
   // Un résultat est traité UNE fois par session. Le récit et la victoire sont
   // sauvegardés atomiquement avant d'afficher l'après-duel ; la collection garde
@@ -9348,7 +9400,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           onOpenCardPreview={ouvrirApercuCatalogue}
           onPlaySfx={jouerSfx}
           fullscreen={pleinEcran}
-          onToggleFullscreen={basculerPleinEcran}
+          onToggleFullscreen={pleinEcranVerrouille ? null : basculerPleinEcran}
           decor3dActif={decor3dActif}
           onToggleDecor3d={basculerDecor3d}
           animReduite={animReduite}
@@ -13125,16 +13177,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               onActivate={() => { setNavMenuOuvert(false); setNavParametresOuvert(false); }}
               onOuvrir={() => setMessagerieVoletOuvert(true)}
             />
-            <button
-              type="button"
-              className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
-              onClick={basculerPleinEcran}
-              aria-pressed={pleinEcran}
-              title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
-              aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
-            >
-              <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
-            </button>
+            {/* Comme au menu : au doigt, le plein écran est obligatoire, donc
+                pas de bouton pour en sortir. */}
+            {!pleinEcranVerrouille && (
+              <button
+                type="button"
+                className={`rpg-duel-nav__fullscreen${pleinEcran ? ' is-on' : ''}`}
+                onClick={basculerPleinEcran}
+                aria-pressed={pleinEcran}
+                title={pleinEcran ? 'Quitter le plein écran (F)' : 'Plein écran (F)'}
+                aria-label={pleinEcran ? 'Quitter le plein écran' : 'Jouer en plein écran'}
+              >
+                <FullscreenIcon exit={pleinEcran} className="rpg-fullscreen-icon" />
+              </button>
+            )}
           </div>
           {/* Au doigt, la barre de navigation se replie dans ce bouton hamburger ;
               à la souris, le menu reste déroulé en ligne (voir `rpg-mobile.css`). */}

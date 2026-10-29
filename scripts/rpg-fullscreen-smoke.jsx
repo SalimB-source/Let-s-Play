@@ -16,26 +16,49 @@
  *   3. Un toucher ordinaire ne demande rien, et lancer une partie à la souris
  *      (jsdom n'a pas de pointeur grossier) reste dans la page : rien n'est
  *      forcé sur ordinateur.
- *   4. **Au doigt** (pointeur grossier : téléphone, tablette, application) :
- *      lancer une partie demande le plein écran natif dans le geste — c'est la
- *      seule condition sous laquelle le navigateur accepte ensuite
- *      `screen.orientation.lock('landscape')`, qui couche la partie dans le
- *      paysage. Le nœud de la coque survit au changement d'écran : le même nœud
- *      reste en plein écran pendant le duel, bouton de la barre allumé.
- *   5. Démontage : le verrou de défilement est rendu et le plein écran refermé.
+ *   4. **Au doigt** (pointeur grossier : téléphone, tablette, application), le
+ *      plein écran est **obligatoire** : la couche immersive est posée dès le
+ *      montage (aucune demande native, le navigateur l'exigerait dans un geste),
+ *      le premier appui demande le plein écran natif, et **aucun bouton ne
+ *      permet d'en sortir** — ni au menu, ni dans la barre du duel.
+ *   5. Une sortie imposée par le navigateur (geste « retour » d'Android, Échap)
+ *      est rattrapée : la couche immersive revient aussitôt, le natif repart au
+ *      geste suivant. La partie ne retombe jamais dans une fenêtre.
+ *   6. Démontage : le verrou de défilement est rendu et le plein écran refermé.
  */
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
+import { installerDeckMaisonDeTest } from './rpg-duel-start.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const squash = (value) => String(value ?? '').replace(/[\s\u202f\u00a0]+/g, ' ').trim();
 
+// 26 cartes Sable/Eau conformes à `rpgValiderDeck` : sans deck maison,
+// l'étagère du menu est vide (`RPG_DECKS`) et aucune partie ne peut se lancer.
+const REMPLISSAGE = [
+  'tercio-de-cuivre',
+  'pilote-de-la-carreira',
+  'le-renegat',
+  'negociant-des-ranscons',
+  'galion-de-la-flotte',
+  'le-routier',
+  'le-grand-debarquement',
+  'haut-fond',
+  'vipere-de-verre',
+  'lettre-de-marque',
+  'grappin-d-abordage',
+  'baton-des-citernes',
+  'cotre-de-course',
+].flatMap((id) => [id, id]);
+const DECK_JOUEUR = [...REMPLISSAGE, 'kenshi-de-la-forge', 'kenshi-de-la-forge', 'mousse-des-galiotes', 'mousse-des-galiotes'];
+
 async function mountPage() {
+  installerDeckMaisonDeTest(DECK_JOUEUR, 'maison-plein-ecran');
   const node = document.createElement('div');
   document.body.append(node);
   const root = createRoot(node);
-  await act(async () => root.render(<RpgDuelPage rng={() => 0.999} />));
+  await act(async () => root.render(<RpgDuelPage joueurDeck={DECK_JOUEUR} sorcierDeck={DECK_JOUEUR} rng={() => 0.999} />));
   await act(async () => { await sleep(20); });
   return { node, unmount: async () => { await act(async () => root.unmount()); node.remove(); } };
 }
@@ -121,13 +144,26 @@ const duelMenuButtonOf = (node) => [...node.querySelectorAll('.rpg-duel-nav butt
   .find((button) => squash(button.textContent) === 'Menu');
 // Le bouton principal de l'écran Jouer ouvre le mode Histoire : une partie
 // rapide se démarre depuis l'onglet Deck (« Jouer avec ce deck »).
+/** Attend qu'un sélecteur apparaisse dans la page (les volets s'ouvrent en deux temps). */
+async function attendre(node, selecteur) {
+  for (let essai = 0; essai < 40; essai += 1) {
+    const trouve = node.querySelector(selecteur);
+    if (trouve) return trouve;
+    await settle(10);
+  }
+  return null;
+}
+
 const lancerDuel = async (node) => {
   await click(menuTabOf(node, 'Deck'));
   await settle();
-  await click(node.querySelector('.rpg-deck-choice__button'));
+  const boitier = await attendre(node, '.rpg-deck-choice__button');
+  if (boitier) await click(boitier);
   await settle();
-  await click(node.querySelector('.rpg-deck-detail__play'));
+  const lancer = await attendre(node, '.rpg-deck-detail__play');
+  if (lancer) await click(lancer);
   await settle();
+  return Boolean(lancer);
 };
 
 /** Plein écran de la coque : natif, couche fixe, verrou de défilement, bouton allumé. */
@@ -137,6 +173,9 @@ const stateOf = (node, api) => ({
   locked: document.body.classList.contains('game-immersive-lock'),
   pressed: toggleOf(node)?.getAttribute('aria-pressed') ?? null,
 });
+/** Même état, mais sans bouton : au doigt, il n'en existe aucun. */
+const LAYER_LOCKED = { native: false, layer: true, locked: true, pressed: null };
+const LAYER_LOCKED_NATIVE = { native: true, layer: true, locked: true, pressed: null };
 
 const counts = (api) => ({ requests: api.requests, exits: api.exits });
 const since = (api, before) => ({ requests: api.requests - before.requests, exits: api.exits - before.exits });
@@ -168,21 +207,74 @@ export async function checkRpgFullscreen(assert) {
     await unmount();
     assert.equal(api.element, null, 'quitter la page ferme un éventuel plein écran');
 
-    // Au doigt (téléphone, tablette, application), lancer une partie demande le
-    // plein écran natif dans le geste : c'est la seule condition sous laquelle
-    // le navigateur accepte `screen.orientation.lock('landscape')` — la partie
-    // se couche dans le paysage.
+    // Au doigt (téléphone, tablette, application), le plein écran est
+    // OBLIGATOIRE : la couche immersive est posée dès le montage, le natif part
+    // au premier geste, et aucun bouton ne permet d'en sortir.
     const restaurerPointeur = installCoarsePointer();
     try {
+      const avantTelephone = counts(api);
       const telephone = await mountPage();
-      const avant = counts(api);
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED,
+        'au doigt, le jeu occupe tout l’écran dès le montage — sans geste, et sans plein écran natif');
+      assert.deepEqual(since(api, avantTelephone), { requests: 0, exits: 0 },
+        'aucune demande native au montage : le navigateur l’exigerait dans un geste');
+      assert.equal(menuToggleOf(telephone.node), null,
+        'le menu n’offre aucun bouton de plein écran au doigt : il n’y a pas de sortie');
+      assert.equal(telephone.node.querySelectorAll('.rpg-duel-nav__fullscreen').length, 0,
+        'la barre du duel non plus');
+
+      // Le premier appui demande le plein écran natif, dans le geste.
+      const avantGeste = counts(api);
+      await touch(shellOf(telephone.node));
+      await settle();
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED_NATIVE,
+        'au premier appui, le plein écran natif part dans le geste');
+      assert.deepEqual(since(api, avantGeste), { requests: 1, exits: 0 },
+        'une seule demande native : la couche immersive, elle, était déjà là');
+
+      // Un second appui ne redemande rien : le plein écran est déjà ouvert.
+      const avantSecond = counts(api);
+      await touch(shellOf(telephone.node));
+      await settle();
+      assert.deepEqual(since(api, avantSecond), { requests: 0, exits: 0 },
+        'tant que le plein écran natif tient, aucun appui ne le redemande');
+
+      // Le navigateur referme (geste « retour ») : la partie ne retombe pas dans
+      // une fenêtre, la couche immersive revient aussitôt.
+      await api.browserExit();
+      await settle();
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED,
+        'une sortie imposée par le navigateur est rattrapée : le jeu reste plein écran');
+      const avantRetour = counts(api);
+      await touch(shellOf(telephone.node));
+      await settle();
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED_NATIVE,
+        'au geste suivant, le plein écran natif repart');
+      assert.equal(since(api, avantRetour).requests, 1, 'une nouvelle demande, dans ce geste-là');
+
+      // Lancer une partie ne change rien : on y est déjà.
+      const avantPartie = counts(api);
       await lancerDuel(telephone.node);
       await settle();
-      assert.deepEqual(stateOf(telephone.node, api), OPEN, 'au doigt, le lancement du duel demande le plein écran natif sur la coque');
-      assert.deepEqual(since(api, avant), { requests: 1, exits: 0 }, 'une seule demande, dans le geste du lancement');
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED_NATIVE,
+        'au doigt, la partie se joue en plein écran, comme le menu');
+      assert.deepEqual(since(api, avantPartie), { requests: 0, exits: 0 },
+        'le lancement ne redemande rien : le plein écran est déjà tenu');
       assert.equal(shellOf(telephone.node).dataset.scene, 'duel', 'la partie est bien lancée');
+      assert.equal(telephone.node.querySelector('.rpg-duel-nav__fullscreen'), null,
+        'pendant le duel, la barre ne propose toujours aucune sortie');
+
+      // La touche F ne referme rien au doigt.
+      const touche = await press('f');
+      await settle();
+      assert.equal(touche.defaultPrevented, false, 'au doigt, F n’est plus la bascule du plein écran');
+      assert.deepEqual(stateOf(telephone.node, api), LAYER_LOCKED_NATIVE,
+        'et le plein écran reste ouvert');
+
       await telephone.unmount();
       assert.equal(api.element, null, 'quitter la page ferme le plein écran du duel');
+      assert.equal(document.body.classList.contains('game-immersive-lock'), false,
+        'et rend le défilement de la page');
     } finally {
       restaurerPointeur();
     }
