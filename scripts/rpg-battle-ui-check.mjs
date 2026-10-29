@@ -607,20 +607,31 @@ for (const [nom, css] of [['le duel', battleCss], ['le tactile', mobileCss], ['l
 }
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.rpg-terrain(?:\.rpg-terrain-stack)?\s*\{[^}]*border-width:\s*(?!0\b)\d/s,
   'au doigt, les terrains n’ont aucun filet fixe : ni la couleur de l’élément (le petit gabarit hors disposition tactile), ni un cran de 1 ou 2 px');
-// Les faces en jeu — main, cartes posées et terrains — n'ont plus de cadre du
-// tout au doigt (voir « Sans cadre, au doigt », en fin de `rpg-mobile.css`) :
-// bord à zéro et aucune couche d'anneau, l'illustration gagne le cadre. Les
-// piles perdent leur ombre décalée, colorée du cadre de la carte.
+// Au doigt, AUCUNE face ne porte plus de cadre (voir « Sans cadre, au doigt »,
+// en fin de `rpg-mobile.css`) : bord à zéro sur toute la coque tactile, et la
+// même condition pour le menu, qui n'a pas la classe tactile. Le clavier, lui,
+// garde son filet de 3 px. Les piles perdent leur ombre décalée, colorée du
+// cadre de la carte.
 const sansCadre = mobileCss.slice(mobileCss.indexOf('/* ── Sans cadre, au doigt'));
 assert.ok(sansCadre.length > 1000, 'la feuille tactile porte le bloc « Sans cadre, au doigt »');
-assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0;\s*background-image: none;\s*\}/,
-  'la main, la table et les terrains du doigt partagent la même règle : ni bord, ni anneau');
+assert.match(sansCadre, /\.rpg-battle--touch \.rpg-hand \.rpg-hand__card,\s*\.rpg-battle--touch \.card-row \.rpg-card,\s*\.rpg-battle--touch \.rpg-terrain \{\s*border-width: 0 !important;/,
+  'la main, la table et les terrains du doigt partagent la même règle : plus de bord');
+assert.match(sansCadre, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\] \{\s*border-width: 0 !important;/,
+  'au doigt, toutes les faces de la coque tactile — aperçu, mulligan, piles, annonces, catalogue — perdent leur cadre');
+assert.match(sansCadre, /@media \(pointer: coarse\), \(max-width: 1100px\) \{[\s\S]*?\.rpg-battle \.rpg-atelier__carte-art\[class\*="rpg-card--frame-"\]\[class\],\s*\n\s*\.rpg-battle \.rpg-card-catalogue__art\[class\*="rpg-card--frame-"\]\[class\] \{\s*\n\s*border-width: 0 !important;/,
+  'le menu (atelier, catalogue), qui n’a pas la classe tactile, perd son cadre à la même condition : doigt, stylet ou fenêtre étroite');
+assert.match(battleCss, /--rpg-card-filet:\s*3px;/,
+  'le clavier garde son filet de 3 px : le retrait ne vaut que pour l’écran tactile');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-card-stack,\s*\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-stacked \{\s*box-shadow: none;\s*\}/,
   'au doigt, une pile — cartes homonymes ou terrains — n’a plus d’ombre de pile : le compteur ×N la dit');
 assert.match(sansCadre, /\.rpg-battle--touch \.rpg-terrain\.rpg-terrain-stack\.is-partially-tapped \{\s*box-shadow: 0 0 0 1px rgba\(255, 217, 168, \.45\);\s*\}/,
   'l’engagement partiel d’une pile de terrains garde sa bague : c’est un état, pas une épaisseur');
-assert.doesNotMatch(sansCadre, /rpg-hover-card-preview|rpg-mulligan__card|rpg-card-pile__card|rpg-card-catalogue|rpg-card-guide|rpg-atelier/,
-  'les faces de lecture ou de repérage — aperçu, mulligan, piles, catalogue, guide, atelier — gardent leur cadre');
+assert.doesNotMatch(sansCadre, /border-width:\s*var\(--rpg-card-filet/,
+  'la feuille tactile ne redessine plus aucun filet : elle les retire tous');
+assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-element-badge \{ width: 16px; border-width: 1\.5px;/,
+  'le retrait ne touche que le cadre : la pastille d’élément garde son bord');
+assert.doesNotMatch(sansCadre, /outline:/,
+  'le retrait ne pose aucun liseré à la place du cadre : les états (sélection, cible, attaquant) gardent leurs outlines');
 assert.match(frameCss, /\.rpg-card\[class\*="rpg-card--frame-"\],\s*\.rpg-hand__card\[class\*="rpg-card--frame-"\],\s*\.rpg-card-destruction-fx\s*\{\s*border:\s*var\(--rpg-card-border, 4px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
   'main, table et animations partagent le gabarit normal, pour toute combinaison de couleurs');
 assert.match(frameCss, /\.rpg-hover-card-preview__face\s*\{\s*border:\s*var\(--rpg-card-border-large, 6px\) solid var\(--rpg-frame-color, #f1f3f5\);\s*\}/,
@@ -965,7 +976,7 @@ assert.match(mobileCss, /\.rpg-battle--touch \.rpg-hand__card--img \.rpg-card-el
   'les deux couleurs d’une hybride en main suivent le filet réduit');
 assert.match(battleCss, /\.rpg-mulligan__card \{ --rpg-card-marker-size: clamp\(16px, 15cqw, 30px\); \}/,
   'le mulligan utilise une seule taille responsive pour les deux repères');
-assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0;[^}]*background-image: none;/s,
+assert.match(mobileCss, /\.rpg-battle\.rpg-battle--touch \[class\*="rpg-card--frame-"\]\[class\]\s*\{[^}]*border-width: 0 !important;/s,
   'mobile et APK retirent aussi les cadres des faces de lecture, sans retirer les pastilles');
 assert.match(cardMetricsCss, /\.rpg-card--img \.rpg-card__stat--atk,[\s\S]*?\.rpg-card--img \.rpg-card__pt,[\s\S]*?\.rpg-hand__stat\s*\{[^}]*min-width:\s*38px;[^}]*font-size:\s*13px;/s,
   'les indicateurs d’attaque et de défense sont agrandis sur les cartes');
