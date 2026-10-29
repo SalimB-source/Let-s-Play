@@ -151,12 +151,22 @@ test('index.html affiche une amorce, puis un secours lisible', () => {
   assert.doesNotMatch(code, /\b(const|let)\s+[A-Za-z_$]/, 'pas de const/let dans le secours');
   assert.doesNotMatch(code, /\bclass\s+[A-Za-z_$]/, 'pas de classe dans le secours');
   assert.match(script, /LetsPlayAndroid/, 'le secours doit demander sa version à l’APK quand il y tourne');
+  // Un fichier manquant ne doit pas recouvrir l'écran : pendant un
+  // déploiement, l'ancien HTML pointe une seconde sur des assets pas encore
+  // publiés, et une feuille de style en 404 laisse un site utilisable.
+  assert.match(code, /texteRessource/, 'les erreurs de ressource doivent être notées à part');
+  assert.match(code, /if \(balise !== 'SCRIPT' && balise !== 'LINK'\) return;/,
+    'seules la feuille de style et les scripts sont suivis');
+  const blocRessource = code.slice(code.indexOf('texteRessource'), code.indexOf('var texte = evenement'));
+  assert.doesNotMatch(blocRessource, /montrerSecours/, 'une ressource manquante ne montre pas le panneau');
 });
 
 test('l’amorce s’efface dès que React a rendu', () => {
   assert.match(mainJsx, /function retirerAmorce\(\)/);
   assert.match(mainJsx, /racine\.childElementCount > 0/, 'on ne retire l’amorce que sur un vrai rendu');
   assert.match(mainJsx, /requestAnimationFrame\(retirerAmorce\)/);
+  assert.match(mainJsx, /secours\.style\.display = 'none'/,
+    'si le panneau s’était affiché, un site qui démarre doit le refermer');
 });
 
 test('l’APK numérote ses versions et expose son moteur', () => {

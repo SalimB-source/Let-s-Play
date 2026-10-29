@@ -346,6 +346,12 @@ function retirerAmorce() {
   if (!amorce) return;
   if (racine && racine.childElementCount > 0) {
     amorce.remove();
+    // Si le panneau de secours s'était affiché (erreur signalée pendant le
+    // chargement, fichier pas encore publié), le site qui démarre le referme :
+    // une page qui marche ne doit jamais rester couverte par un message
+    // d'échec.
+    const secours = document.getElementById('secours');
+    if (secours) secours.style.display = 'none';
     return;
   }
   // Douze secondes au plus : au-delà, c'est le panneau de secours qui parle.
