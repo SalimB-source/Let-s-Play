@@ -18,6 +18,16 @@
   background: #000;
 }
 
+/* Sous-titres : sans fond, plus petits, lisibles par l'ombre portée.
+   La remontée vient du `line:-4` de chaque cue du VTT. */
+.rpg-cine__video::cue {
+  background-color: transparent;
+  color: #f3ead2;
+  font-size: 20px;
+  line-height: 1.35;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 14px rgba(0, 0, 0, 0.85);
+}
+
 /* Discret rappel « toucher pour lancer » si l'autoplay est refusé. */
 .rpg-cine__toucher {
   position: absolute;

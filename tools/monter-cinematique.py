@@ -299,7 +299,7 @@ def main():
         for (a, b), p in zip(cues, poids):
             d = duree * p / total_p
             fin = pos + d - 0.08
-            lignes.append(f"{fmt_vtt(pos)} --> {fmt_vtt(fin)}")
+            lignes.append(f"{fmt_vtt(pos)} --> {fmt_vtt(fin)} line:-4")
             lignes.append(a + (f"\n{b}" if b else ""))
             lignes.append("")
             pos += d
