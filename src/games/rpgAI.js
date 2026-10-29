@@ -518,6 +518,11 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
     // moteur retombe sur elle-même après son arrivée.
     return meilleureCibleAmie(duel, cote, carte);
   }
+  if (carte?.arrivee?.type === 'soin-creatures' && carte.arrivee.cible === 'creature-amie' && carte.arrivee.choisirCible) {
+    // Le soin d'arrivée de la Völva : la créature la plus ENTAMÉE, pas la plus
+    // chère — rendre 2 PV à une créature intacte ne rend rien.
+    return meilleureCibleSoinIA(duel, cote, carte);
+  }
   if (carte?.effet?.cible === 'creature-amie') {
     return meilleureCibleAmie(duel, cote, carte);
   }
@@ -626,6 +631,26 @@ function meilleureCibleAmie(duel, cote, carte) {
     .filter((entite) => carte.effet?.type !== 'arme' || entite.pv + (carte.effet.def ?? 0) > 0)
     .map((entite) => ({ entite, score: valeurEntite(entite) }))
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
+}
+
+/**
+ * La créature alliée qu'un soin doit désigner : celle à qui il manque le plus
+ * de points de vie. À égalité, la plus précieuse (`valeurEntite`) — mieux vaut
+ * refermer la plaie d'une créature qui tient la ligne. Sans blessure à
+ * refermer, la cible la plus précieuse reste un choix honnête : le soin se
+ * perd, mais l'arrivée reste résolue.
+ */
+function meilleureCibleSoinIA(duel, cote, carte) {
+  const couleurs = cardColors(carte);
+  return duel[cote].creatures
+    .filter((entite) => !estProtegee(entite, couleurs))
+    .map((entite) => {
+      const plafond = Number.isFinite(Number(entite.pvMax))
+        ? Number(entite.pvMax)
+        : Math.max(Number(entite.pv) || 0, Number(entite.def) || 0);
+      return { entite, manque: Math.max(0, plafond - (Number(entite.pv) || 0)), valeur: valeurEntite(entite) };
+    })
+    .sort((a, b) => (b.manque - a.manque) || (b.valeur - a.valeur))[0]?.entite.id ?? null;
 }
 
 /**
