@@ -78,7 +78,7 @@ jobs:
       # change à chaque build, sinon Android refuse la mise à jour par-dessus
       # l'APK déjà installée (« Application non installée »).
       #   versionCode = max(plancher du fichier, nombre de commits)
-      #   versionName = 1.<versionCode>
+      #   versionName = 1.0.<versionCode>
       - name: Version dérivée du build
         run: |
           set -euo pipefail
@@ -86,8 +86,8 @@ jobs:
           COMMITS=$(git rev-list --count HEAD)
           CODE=$(( PLANCHER > COMMITS ? PLANCHER : COMMITS ))
           echo "ANDROID_VERSION_CODE=$CODE" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.$CODE" >> "$GITHUB_ENV"
-          echo "→ versionCode $CODE, versionName 1.$CODE (plancher $PLANCHER, $COMMITS commits)"
+          echo "ANDROID_VERSION_NAME=1.0.$CODE" >> "$GITHUB_ENV"
+          echo "→ versionCode $CODE, versionName 1.0.$CODE (plancher $PLANCHER, $COMMITS commits)"
 
       - name: Construire l'APK signée
         run: |

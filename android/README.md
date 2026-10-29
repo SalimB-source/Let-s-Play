@@ -11,7 +11,7 @@ accéder à la messagerie, il faut se connecter dans l'application.
 - Nom affiché : **Let's Play**
 - Identifiant : `dz.letsplay.officiel`
 - Version : dérivée par la CI (`versionCode` = max(plancher du fichier, nombre
-  de commits), `versionName` = `1.<versionCode>`) — voir `app/build.gradle`
+  de commits), `versionName` = `1.0.<versionCode>`) — voir `app/build.gradle`
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`
   dans `app/src/main/java/dz/letsplay/officiel/MainActivity.java`)
 - Android minimum : 6.0 (API 23) · cible : API 35
@@ -139,7 +139,7 @@ Rien à faire à la main : la CI calcule le numéro avant de compiler
 (`.github/workflows/android-apk.yml`, étape « Version dérivée du build »).
 
 - `versionCode` = max(plancher écrit dans `app/build.gradle`, nombre de commits) ;
-- `versionName` = `1.<versionCode>`.
+- `versionName` = `1.0.<versionCode>`.
 
 Pourquoi : un `versionCode` figé empêchait Android d'installer une APK
 reconstruite par-dessus l'ancienne (« Application non installée »), et le
