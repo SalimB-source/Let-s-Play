@@ -135,14 +135,21 @@
         }
 
         window.addEventListener('error', function (evenement) {
-          // Ressource qui n'a pas pu être chargée : seules la feuille de style
-          // et un script empêchent le site de démarrer. Une image ou une vidéo
-          // manquante ne justifie pas un panneau plein écran.
+          // Ressource qui n'a pas pu être chargée : on la NOTE, sans afficher
+          // le panneau. Un fichier manquant ne prouve pas que le site est
+          // arrêté — une feuille de style en 404 donne un site laid mais
+          // utilisable, et pendant un déploiement l'ancien HTML pointe une
+          // seconde sur des fichiers que la nouvelle version n'a pas encore
+          // publiés. Seul l'arrêt réel (délai dépassé, erreur de script)
+          // justifie de recouvrir l'écran.
           if (evenement && evenement.target && evenement.target.tagName) {
             var balise = evenement.target.tagName;
             if (balise !== 'SCRIPT' && balise !== 'LINK') return;
-            noter('Ressource introuvable : '
-              + (evenement.target.src || evenement.target.href || balise));
+            var texteRessource = 'Ressource introuvable : '
+              + (evenement.target.src || evenement.target.href || balise);
+            if (erreurs.length < 4 && erreurs.indexOf(texteRessource) === -1) {
+              erreurs.push(texteRessource);
+            }
             return;
           }
           var texte = evenement && evenement.message ? evenement.message : 'Erreur inconnue';
