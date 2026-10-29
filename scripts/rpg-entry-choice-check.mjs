@@ -32,7 +32,7 @@ console.log('1. La route passe par l’écran d’entrée');
 const routeur = lire('src/main.jsx');
 assert.match(
   routeur,
-  /<Route path="\/jeu\/sablier-de-bab-el" element=\{<GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense><\/GameLoadBoundary>\} \/>/,
+  /<Route path="\/jeu\/sablier-de-bab-el" element=\{<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,140}?><RpgEntryChoice variantesPlateaux \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>\} \/>/,
   'la route du Sablier ne monte plus RpgEntryChoice sous GameLoadBoundary',
 );
 assert.match(routeur, /const RpgEntryChoice = lazy\(\(\) => import\('\.\/games\/RpgEntryChoice'\)\);/,
@@ -68,7 +68,14 @@ ok('asset au nom fixe publié par la CI, bouton et lien Release cohérents');
 console.log('4. L’écran s’efface quand il n’a rien à proposer');
 assert.match(entree, /win\.letsPlayDesktop/, 'la coque PC doit sauter l’écran');
 assert.match(entree, /win\.LetsPlayAndroid/, 'l’APK Android doit sauter l’écran');
-assert.doesNotMatch(entree, /pointer: coarse/,
+// L'écran d'entrée reste affiché sur téléphone. Le doigt n'y sert plus qu'à
+// l'invite de rotation (`portraitAuDoigt`), pas à sauter l'écran.
+const ecranInutile = entree.slice(
+  entree.indexOf('export function ecranInutile'),
+  entree.indexOf('function portraitAuDoigt'),
+);
+assert.ok(ecranInutile.length > 0, 'ecranInutile introuvable dans RpgEntryChoice');
+assert.doesNotMatch(ecranInutile, /pointer: coarse/,
   'le téléphone ne doit plus sauter l’écran : les deux portes s’affichent partout hors coque/APK');
 assert.match(entree, /ENTREE_CHOIX_CLE = 'letsplay_sablier_entree_v1'/, 'clé du choix retenu absente');
 assert.match(entree, /localStorage\.setItem\(ENTREE_CHOIX_CLE, 'jeu'\)/, 'le choix retenu n’est pas écrit');
@@ -76,7 +83,7 @@ ok('coque PC, APK et choix retenu entrent directement ; téléphone inclus, en u
 
 console.log('5. Aucun écran noir quand un fichier du jeu manque');
 assert.match(routeur,
-  /<Route path="\/jeu\/sablier-de-bab-el\/defi" element=\{<GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,160}?><RpgPvpSalon \/><\/Suspense><\/GameLoadBoundary>\} \/>/,
+  /<Route path="\/jeu\/sablier-de-bab-el\/defi" element=\{<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense[\s\S]{0,160}?><RpgPvpSalon \/><\/Suspense><\/GameLoadBoundary><\/PaysageSablier>\} \/>/,
   'le salon du duel en ligne doit être protégé par le même filet');
 assert.match(routeur, /import GameLoadBoundary from '\.\/games\/GameLoadBoundary\.jsx';/,
   'GameLoadBoundary doit être importé par le routeur');
@@ -141,4 +148,24 @@ assert.equal(styleDe('.rpg-entry-choice__option--web .rpg-entry-choice__logo').c
 ok('keyart via public/, carte PC blanche + logo bleu, carte Android verte + logo blanc, repli une colonne');
 
 console.log('');
+console.log('7. Le Sablier s’ouvre en paysage, écran d’entrée compris');
+const paysage = lire('src/games/PaysageSablier.jsx');
+assert.match(paysage, /createRpgLandscapeSession/, 'la route ne tient pas de session de paysage');
+assert.match(paysage, /enter\(\{ fullscreen: false \}\)/, 'la route ne réclame pas le paysage à l’ouverture');
+assert.match(paysage, /return \(\) => paysage\.leave\(\)/, 'la route ne rend pas l’écran en sortant');
+assert.match(routeur, /import PaysageSablier from '\.\/games\/PaysageSablier';/,
+  'PaysageSablier doit être importé par le routeur');
+const invite = lire('src/games/InvitePaysage.jsx');
+assert.match(entree, /import InvitePaysage, \{ usePortraitAuDoigt \} from '\.\/InvitePaysage\.jsx';/,
+  'l’écran d’entrée n’utilise pas l’invite partagée');
+assert.match(entree, /variante="bandeau"/, 'l’écran d’entrée n’invite pas à tourner l’appareil');
+assert.match(invite, /rpg-rotate-prompt--bandeau/, 'la variante bandeau a disparu de l’invite');
+assert.match(invite, /requestNativeFullscreen\(document\.documentElement\)/,
+  'le bouton de l’invite doit demander le plein écran dans le geste');
+assert.match(lire('src/games/rpg-entry-choice.css'), /\.rpg-rotate-prompt--bandeau \{/,
+  'l’invite de l’écran d’entrée n’a pas de style');
+assert.match(lire('src/games/rpgLandscape.js'), /setPaysageSablier/,
+  'le pont Android doit s’appeler setPaysageSablier');
+ok('route enveloppée, invite de rotation sur l’écran d’entrée, pont Android renommé');
+
 console.log(`check:rpg-entry-choice — ${reussites} vérifications, aucune en échec.`);

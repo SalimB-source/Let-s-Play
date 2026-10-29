@@ -258,7 +258,17 @@ Le plein écran appartient à la **page**, pas au duel : `RpgDuelPage.jsx` branc
 
 Safari, certaines WebViews et les aperçus embarqués peuvent refuser les API de plein écran/rotation. La couche fixe couvre quand même tout le viewport, et l’utilisateur tourne physiquement son appareil. Le bouton « Activer le paysage » permet de réessayer : il repasse par le même chemin (plein écran natif dans le geste, puis verrou, puis rattrapage) ; « Retour au menu » reste accessible.
 
-Dans l’APK, `LetsPlayAndroid.setDuelLandscape` demande `SCREEN_ORIENTATION_SENSOR_LANDSCAPE`, uniquement sur l’URL de confiance du duel. L’orientation précédente est restaurée au retour au menu ou en quittant le jeu. Le manifeste gère déjà les changements d’orientation sans recréer l’activité. **Cette nouvelle méthode native nécessite de reconstruire et installer l’APK** ; une ancienne APK utilise le repli navigateur.
+### Le paysage appartient à la route, pas à la partie
+
+Le joueur l’a demandé en une phrase : *« je veux que le jeu se lance toujours en landscape, pas seulement pendant les parties »*. Le menu, l’atelier de decks, le souk et le mode histoire sont donc en paysage comme le plateau ; **les actus et le reste du site restent en portrait**.
+
+Trois pièces s’en chargent :
+
+- `PaysageSablier.jsx` enveloppe les routes `/jeu/sablier-de-bab-el[/defi[/:code]]` : il ouvre une session de paysage au montage et la referme en quittant la section ;
+- le duel ouvre **sa** session à l’intérieur de celle de la route. Le compteur de `rpgLandscape.js` fait que le système n’entend qu’un début (première session) et qu’une fin (dernière) : refermer le duel pour revenir au menu **ne rend plus l’écran à la rotation** ;
+- `InvitePaysage.jsx` — bande sur l’écran d’entrée (les liens de téléchargement restent atteignables), écran entier dans le menu, le duel gardant le sien avec « Retour au menu ». Un navigateur ne tourne jamais un écran sans plein écran ni geste : l’invite est le repli honnête.
+
+Dans l’APK, `LetsPlayAndroid.setPaysageSablier` demande `SCREEN_ORIENTATION_SENSOR_LANDSCAPE` sur **tout préfixe** `/jeu/sablier-de-bab-el` (tablette comprise, les deux sens de rotation, jamais le portrait), et désarme le tirer-pour-rafraîchir sur la section — il rechargerait la page en pleine partie. L’ancien nom `setDuelLandscape` reste branché au cas où une page plus ancienne serait en cache. L’orientation d’avant est restaurée en quittant la section ; le manifeste gère déjà les changements d’orientation sans recréer l’activité. **Cette méthode native nécessite de reconstruire et installer l’APK** ; une ancienne APK utilise le repli navigateur. Les tests `tests/rpg-paysage-sablier.test.js` couvrent le compteur, le pont et les routes.
 
 ## Vérifications
 

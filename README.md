@@ -9458,3 +9458,38 @@ complète des deux familles, niveau atteint pour les 84 fichiers — et le seul
 nœud, repli sans routage des médias, volume et mute, démontage) — et `node --test tests/rpg-audio.test.js
 tests/rpg-foudre-audio.test.js tests/rpg-fleche-audio.test.js
 tests/rpg-voix-arrivees.test.js`, qui figent le routage de chaque échantillon.
+
+## Le Sablier : le paysage dès l'entrée, plus seulement pendant la partie
+
+Le jeu se jouait en paysage **pendant** les parties et repassait en portrait dès
+le menu. Le verrou appartenait au duel ; il appartient maintenant à la
+**route**.
+
+- **`src/games/PaysageSablier.jsx`** enveloppe `/jeu/sablier-de-bab-el`,
+  `/jeu/sablier-de-bab-el/defi` et `…/defi/:code` : une session de paysage
+  ouverte au montage, refermée en quittant la section. Les actus et le reste du
+  site restent en portrait.
+- **`src/games/rpgLandscape.js`** tient un compteur de sessions. Route et duel
+  se superposent : le système n'est prévenu qu'à la **première** ouverture et à
+  la **dernière** fermeture, donc revenir du duel au menu ne rend plus l'écran à
+  la rotation. Un drapeau `verrouPris` retient qui a réellement verrouillé : si
+  la route a échoué hors plein écran et que le duel a réussi, la sortie du
+  Sablier déverrouille quand même.
+- **`src/games/InvitePaysage.jsx`** — un navigateur ne tourne pas un écran sans
+  plein écran ni geste, et `screen.orientation.lock` est refusé hors plein écran.
+  L'invite est donc le repli : une **bande** sur l'écran d'entrée (les liens de
+  téléchargement restent atteignables — c'est en portrait qu'on installe l'APK),
+  l'**écran entier** dans le menu, l'atelier, le souk et l'histoire, le duel
+  gardant le sien avec « Retour au menu ». Elle apparaît au doigt, debout
+  seulement : l'ordinateur n'en voit jamais la couleur.
+- **`android/.../MainActivity.java`** — le pont s'appelle `setPaysageSablier` et
+  reconnaît **tout préfixe** `/jeu/sablier-de-bab-el` (l'ancien nom reste
+  branché pour une page en cache) ; `SENSOR_LANDSCAPE` couvre la tablette comme
+  le téléphone, et le tirer-pour-rafraîchir reste désarmé sur la section.
+  **Cette partie native demande de reconstruire l'APK.**
+- **`tests/rpg-paysage-sablier.test.js`** — sur un faux `window`, en appelant
+  vraiment les sessions : un seul début et une seule fin pour route + duel, le
+  verrou rendu malgré une route qui avait échoué, l'ancien nom du pont, un pont
+  qui lève, les trois routes habillées (et les actus non), l'APK en préfixe, les
+  entrées comptées une fois. `scripts/rpg-entry-choice-check.mjs` gagne la même
+  vérification côté écran d'entrée.
