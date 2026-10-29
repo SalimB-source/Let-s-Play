@@ -8396,7 +8396,7 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   `webgl`/`webgl2`/`compositing` et une sonde WebGL — de quoi prouver, ou
   infirmer, que le GPU travaille.
 - **La fenêtre ouvre le site en ligne.** L'installeur ne contient plus de copie
-  du jeu : **~80 Mo** au lieu de 967, et chaque correctif est là au lancement
+  du jeu : **~105 Mo** au lieu de 235, et chaque correctif est là au lancement
   suivant — sans reconstruire d'exécutable quand une carte change.
 - **Un serveur local sert le pack hors ligne, quand il est installé**
   (`desktop/local-server.js`, écoute seulement sur `127.0.0.1`, port 4173) :

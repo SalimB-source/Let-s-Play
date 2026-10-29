@@ -30,7 +30,7 @@
  * Usage :
  *   npm run desktop:web                 # pack hors ligne (site complet)
  *   npm run desktop:web -- --keep-all   # idem sans élaguer (test, comparaison)
- *   npm run desktop:coque               # installeur sans paquet web (~80 Mo)
+ *   npm run desktop:coque               # installeur sans paquet web (~105 Mo)
  *
  * Sortie : `desktop/dist-web/` — c'est le dossier que `electron-builder` copie
  * dans les ressources de l'installeur (`desktop/electron-builder.yml`). En mode

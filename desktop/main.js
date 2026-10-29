@@ -13,7 +13,7 @@
  *   - `online` (**le défaut**) — la fenêtre charge le site en ligne, comme le
  *     fait l'APK Android avec `let-s-play-nu.vercel.app`. Chaque correctif du
  *     site est donc visible au lancement suivant, et l'installeur Windows ne
- *     contient plus de copie du site : ~80 Mo au lieu de 967.
+ *     contient plus de copie du site : ~105 Mo au lieu de 235.
  *   - `local` — le **pack hors ligne** (option, ~100 Mo) a été installé dans
  *     `resources/app` : le jeu se joue sans Internet. La coque ne le choisit
  *     pas d'elle-même ; c'est le filet quand le réseau manque (`--local`, menu
@@ -505,7 +505,7 @@ function lancerVerificationMaj(manuelle) {
 // Pack hors ligne (option)
 // ---------------------------------------------------------------------------
 /**
- * L'installeur publié ne contient plus de copie du site : ~80 Mo au lieu de
+ * L'installeur publié ne contient plus de copie du site : ~105 Mo au lieu de
  * 967, et surtout, il n'a plus à être reconstruit à chaque correctif. Qui veut
  * jouer sans Internet installe le **pack hors ligne**, publié à part sur la
  * même Release (~100 Mo, le site élagué de ce que la coque n'ouvre jamais).
@@ -531,7 +531,7 @@ async function ouvrirPackHorsLigne() {
         + 'ou automatiquement depuis la page « pas de connexion »).'
       : 'Il pèse environ 100 Mo et se télécharge depuis la page de la Release. Une fois le .zip '
         + 'récupéré, « Choisir un fichier .zip… » l’installe ici. Sans lui, le jeu a besoin d’une '
-        + 'connexion pour démarrer — c’est le prix d’un installeur de 80 Mo qui se corrige tout seul.',
+        + 'connexion pour démarrer — c’est le prix d’un installeur de 105 Mo qui se corrige tout seul.',
     buttons: boutons,
     defaultId: 0,
     cancelId: boutons.length - 1,

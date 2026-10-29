@@ -23,7 +23,7 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
   `.exe`.
 - **Le site fait foi.** L'installeur ne contient pas le jeu : la fenêtre ouvre
   `let-s-play-nu.vercel.app`, donc **chaque correctif est là au lancement
-  suivant**, et l'exécutable pèse **~80 Mo** au lieu de 967 (le runtime Electron,
+  suivant**, et l'exécutable pèse **~105 Mo** au lieu de 235 (le runtime Electron,
   rien d'autre). C'est ce qui permet à l'installeur de ne plus se reconstruire
   quand une carte change, et à la coque de se mettre à jour sans se disputer la
   version avec le site.
@@ -291,7 +291,7 @@ L'update automatique concerne l'installateur Windows NSIS ; le portable se met �
 jour par remplacement manuel (et par la bascule « jouer en version en ligne »
 proposée au lancement).
 
-L'exécutable **n'est pas committé** sur la branche (≈ 180 Mo par build) : le
+L'exécutable **n'est pas committé** sur la branche (≈ 105 Mo par build) : le
 téléchargement passe par la Release, contrairement à l'APK Android qui, lui, est
 assez petit pour vivre dans `android/dist/`.
 
