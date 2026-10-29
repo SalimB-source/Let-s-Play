@@ -27,12 +27,36 @@
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, session } from 'electron';
 import { execFile } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
-import pkgUpdater from 'electron-updater';
-const { autoUpdater } = pkgUpdater;
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer, DIAGNOSTIC_INTRO } from './gpu.js';
 import { startLocalServer, DEFAULT_PORT, DEFAULT_REMOTE_ORIGIN } from './local-server.js';
+
+/**
+ * La mise à jour automatique, chargée **sans pouvoir emporter le jeu**.
+ *
+ * `electron-updater` est une dépendance d'exécution, embarquée module par
+ * module dans l'asar (voir `desktop/electron-builder.yml`). Jusqu'à la
+ * 1.0.2993, elle était importée en dur ici : un seul module manquant dans
+ * l'archive — `semver` — et le processus principal mourait avant la première
+ * fenêtre, sur « Cannot find module ». Le joueur n'avait plus de jeu du tout.
+ *
+ * Un chargeur tolérant ne coûte rien et change la conséquence : sans updater,
+ * le jeu s'ouvre, la mise à jour automatique est simplement absente, et le menu
+ * « Aide → Rechercher une mise à jour » explique quoi faire.
+ */
+const requireDepuisIci = createRequire(import.meta.url);
+let autoUpdater = null;
+let erreurUpdater = '';
+try {
+  autoUpdater = requireDepuisIci('electron-updater').autoUpdater || null;
+  if (!autoUpdater) throw new Error('autoUpdater absent du module');
+} catch (erreur) {
+  erreurUpdater = erreur?.message || String(erreur);
+  console.error(`[desktop:update] electron-updater indisponible : ${erreurUpdater}`);
+}
+
 
 /** Identifiant Windows : regroupe les fenêtres dans la barre des tâches et
  * signe les notifications. Même famille que `dz.letsplay.officiel` (Android). */
@@ -328,6 +352,8 @@ function configurerMiseAJour() {
   // Le build de développement, le portable (sans installation) et les autres
   // plateformes ne doivent pas télécharger l'installateur NSIS.
   if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR) return;
+  // Sans updater, on ne câble rien : le jeu reste jouable.
+  if (!autoUpdater) return;
 
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
@@ -491,6 +517,18 @@ function basculerEnLigne() {
 
 function lancerVerificationMaj(manuelle) {
   if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR || verificationMajEnCours) return;
+  if (!autoUpdater) {
+    if (manuelle) {
+      afficherDialogue({
+        type: 'info',
+        title: 'Mises à jour',
+        message: 'La mise à jour automatique est indisponible dans cette installation.',
+        detail: `Le module de mise à jour n’a pas pu être chargé${erreurUpdater ? ` (${erreurUpdater})` : ''}.\n\nLe jeu fonctionne : téléchargez la dernière version depuis la page de la Release si besoin.`,
+        buttons: ['OK'],
+      });
+    }
+    return;
+  }
   verificationMajManuelle = manuelle;
   verificationMajEnCours = true;
   try {

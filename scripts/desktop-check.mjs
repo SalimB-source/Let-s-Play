@@ -200,6 +200,18 @@ assert.match(principal, /autoUpdater\.checkForUpdates\(\)/);
 assert.match(principal, /autoUpdater\.quitAndInstall\(\)/);
 assert.match(principal, /update-downloaded/);
 ok('electron-updater : fournisseur GitHub configuré, vérification et installation intégrées');
+
+// L'incident de la 1.0.2993 : `main.js` importait `electron-updater` en dur.
+// Un module manquant dans l'asar (`semver`) tuait le processus principal avant
+// la première fenêtre — plus de jeu du tout. Le chargement doit rester
+// tolérant, définitivement.
+assert.doesNotMatch(principal, /^\s*import\s+\w+\s+from\s+'electron-updater'/m,
+  'main.js ne doit plus importer electron-updater en dur : un module manquant tuerait le jeu');
+assert.match(principal, /createRequire\(import\.meta\.url\)/,
+  'main.js doit charger electron-updater par createRequire, dans un try');
+assert.match(principal, /erreurUpdater/,
+  'le message d’erreur de chargement doit être conservé pour le menu « Aide »');
+ok('electron-updater chargé en tolérance : sans lui, le jeu s’ouvre quand même');
 ok('electron-builder : paquet web hors asar (resources/app), icône présente');
 
 const regles = JSON.parse(readFileSync(join(RACINE, 'desktop', 'bundle-assets.json'), 'utf8'));
@@ -331,7 +343,7 @@ assert.match(bundleCoque, /if \(coqueSeule\) \{[\s\S]*?\} else \{\s*var paquetWe
 const racinePackage = JSON.parse(readFileSync(join(RACINE, 'package.json'), 'utf8'));
 assert.equal(racinePackage.scripts['desktop:coque'], 'node scripts/desktop-bundle.mjs --coque',
   'npm run desktop:coque doit exister (installeur sans paquet web)');
-assert.match(bundleCoque, /modulesOublies = modulesInstalles\.filter/,
+assert.match(bundleCoque, /modulesOublies = modulesPlats\.map/,
   'le garde-fou des modules embarqués a disparu');
 assert.match(bundleCoque, /total\(dossierModules, lister\(dossierModules\)\)/,
   'le poids des modules runtime n’est plus contrôlé');
@@ -352,6 +364,40 @@ ok('desktop-bundle : mode --coque sans build Vite, marqueur LISEZ-MOI, script np
 assert.equal(modulesListes.length, modulesListes.filter((nom, i) => modulesListes.indexOf(nom) === i).length,
   'la liste des modules embarqués contient un doublon');
 ok(`modules embarqués : exclusion en bloc + ${modulesListes.length} modules autorisés explicitement`);
+
+// La liste doit couvrir **toute** la fermeture de production de
+// electron-updater, lue dans le verrou de desktop/ : aucun réseau, aucun
+// node_modules, et donc la même réponse en local et en CI. C'est exactement la
+// vérification qui aurait vu `semver` manquer avant de publier un installeur
+// incapable de démarrer.
+const verrouCoffre = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package-lock.json'), 'utf8'));
+const paquetsVerrou = verrouCoffre.packages || {};
+const entreeVerrou = (nom) => paquetsVerrou[`node_modules/${nom}`]
+  || Object.entries(paquetsVerrou).find(([cle]) => cle.endsWith(`/node_modules/${nom}`))?.[1];
+const fermetureUpdater = new Set();
+const parcourirDependances = (nom) => {
+  if (fermetureUpdater.has(nom)) return;
+  const entree = entreeVerrou(nom);
+  if (!entree) return;
+  fermetureUpdater.add(nom);
+  for (const dependance of Object.keys(entree.dependencies || {})) parcourirDependances(dependance);
+};
+parcourirDependances('electron-updater');
+const nonEmbarques = [...fermetureUpdater].filter((nom) => !modulesListes.includes(nom));
+assert.equal(nonEmbarques.length, 0,
+  `electron-builder.yml oublie ${nonEmbarques.join(', ')} : l’exécutable planterait au lancement. `
+  + 'Ajoutez chaque module (et ses dépendances) dans « files ».');
+ok(`fermeture de electron-updater : ${fermetureUpdater.size} modules, tous embarqués (aucun oubli possible)`);
+
+// Et l'arbre doit être **plat** : un module imbriqué sous son parent
+// (`electron-updater/node_modules/semver`) n'est pas recopié par
+// electron-builder, alors qu'il est bien installé — donc invisible pour un
+// garde-fou qui ne lit que le premier niveau.
+assert.match(bundle, /'dedupe'/,
+  'le paquet isolé doit être aplati (npm dedupe) avant l’empaquetage');
+assert.match(bundle, /modulesImbriques/,
+  'le build doit refuser un module imbriqué : il ne part pas dans l’asar');
+ok('résolution des modules : arbre aplati, modules imbriqués refusés');
 
 const workflow = readFileSync(join(RACINE, '.github', 'workflows', 'desktop-windows.yml'), 'utf8');
 assert.match(workflow, /branches:\s*\n\s*- main\s*\n\s*paths:/,
