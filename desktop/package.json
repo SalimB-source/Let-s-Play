@@ -3,7 +3,7 @@
   "productName": "Le Sablier de Bab El",
   "version": "1.0.8",
   "private": true,
-  "description": "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play : paquet web embarqué, rendu 3D WebGL accéléré par la carte graphique, installeur Windows signé par le dépôt.",
+  "description": "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play : coque qui ouvre le site en ligne, rendu 3D WebGL accéléré par la carte graphique, installeur Windows signé par le dépôt.",
   "main": "main.js",
   "type": "module",
   "author": {

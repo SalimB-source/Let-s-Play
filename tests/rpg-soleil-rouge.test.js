@@ -8,6 +8,7 @@ import { RPG_DECKS_ARCHETYPES, cardById, cardColors, cardReceivesResonance, card
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
+import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR } from '../src/games/rpgCardArt.js';
 import { rpgNouveauDuel, rpgJouerArme, rpgJouerCreature, rpgBlesserCreature, rpgLancerMagie, rpgFinDeTour, rpgAttaquerCreature, rpgAttaquerSorcier, rpgResonanceEnJeu, rpgBonusResonance, rpgAppliquerBannieresAttaque, rpgLancerAttaque, rpgActionsEtat } from '../src/games/rpgDuel.js';
 
 function duelTest(rng = () => 0.5) {
@@ -43,7 +44,7 @@ function sort(duel, id, cible) {
 // Les trois cartes de soutien ajoutées (hatamoto, kenshi, daimyō) forment désormais la charpente du starter.
 const SAMOURAIS_AJOUTES = ['hatamoto-des-cendres', 'kenshi-de-la-forge', 'daimyo-du-soleil-rouge'];
 
-test('Soleil rouge : dix-neuf cartes uniques, illustrées en 1024 × 1280 et collectionnables', () => {
+test('Soleil rouge : dix-neuf cartes uniques, illustrées en 768 × 960 et collectionnables', () => {
   assert.equal(RPG_SOLEIL_ROUGE_CARDS.length, 19, 'le terrain Braise du Soleil rouge est retiré; Braise et sable complète le set');
   const empreintes = new Set();
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
@@ -62,7 +63,7 @@ test('Soleil rouge : dix-neuf cartes uniques, illustrées en 1024 × 1280 et col
       }
       i += 2 + jpg.readUInt16BE(i + 2);
     }
-    assert.deepEqual(dimensions, [1024, 1280], carte.id);
+    assert.deepEqual(dimensions, [CARD_ART_LARGEUR, CARD_ART_HAUTEUR], carte.id);
   }
   assert.equal(empreintes.size, 19, 'une illustration dédiée par carte');
 });
@@ -627,7 +628,7 @@ test('le Daimyō du Soleil rouge est un 3/4 à 5 qui lève deux Samouraïs 1/1 e
     }
     i += 2 + jpg.readUInt16BE(i + 2);
   }
-  assert.deepEqual(dimensions, [1024, 1280]);
+  assert.deepEqual(dimensions, [CARD_ART_LARGEUR, CARD_ART_HAUTEUR]);
 });
 
 test('le Daimyō paie 5 mana et pose ses deux jetons, sans pioche ni lancer en plus', () => {

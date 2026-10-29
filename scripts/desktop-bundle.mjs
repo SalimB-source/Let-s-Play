@@ -17,12 +17,25 @@
  *      Supabase — la fenêtre « À propos » et le diagnostic peuvent le lire, et
  *      la CI l'affiche dans ses logs.
  *
+ * Deux livraisons sortent de ce script, jamais les deux à la fois :
+ *
+ *   - **le pack hors ligne** (`npm run desktop:web`) : le site construit et
+ *     élagué. Publié à part sur la Release, il rend le jeu jouable sans
+ *     Internet — c'est l'option, pas la règle ;
+ *   - **la coque seule** (`npm run desktop:coque`) : l'installeur publié à
+ *     chaque version. Il ne contient **aucun** fichier du site : la fenêtre
+ *     charge le site en ligne, donc un correctif du jeu arrive au lancement
+ *     suivant, sans reconstruire 230 Mo d'installeur.
+ *
  * Usage :
- *   npm run desktop:web                 # paquet complet
- *   npm run desktop:web -- --keep-all   # ne rien élaguer (test, comparaison)
+ *   npm run desktop:web                 # pack hors ligne (site complet)
+ *   npm run desktop:web -- --keep-all   # idem sans élaguer (test, comparaison)
+ *   npm run desktop:coque               # installeur sans paquet web (~105 Mo)
  *
  * Sortie : `desktop/dist-web/` — c'est le dossier que `electron-builder` copie
- * dans les ressources de l'installeur (`desktop/electron-builder.yml`).
+ * dans les ressources de l'installeur (`desktop/electron-builder.yml`). En mode
+ * coque, il ne contient qu'un `LISEZ-MOI.txt` : présent pour satisfaire
+ * `extraResources`, invisible pour le jeu, qui n'y voit pas d'`index.html`.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -38,6 +51,7 @@ const PAQUET = join(RACINE, 'desktop', 'dist-web');
 const REGLES = join(RACINE, 'desktop', 'bundle-assets.json');
 
 const garderTout = process.argv.includes('--keep-all');
+const coqueSeule = process.argv.includes('--coque');
 
 /** Traduit un motif simple (`*`, `?`) en expression rationnelle ancrée. */
 function motifVersRegExp(motif) {
@@ -90,90 +104,119 @@ function total(dossier, fichiers) {
 }
 
 // ---------------------------------------------------------------------------
-// 1) Build Vite
+// 1) Le paquet web, ou son absence
 // ---------------------------------------------------------------------------
-console.log('[desktop] build Vite (mode desktop)…');
-const vite = spawnSync(
-  process.execPath,
-  [join(RACINE, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'],
-  { cwd: RACINE, stdio: 'inherit', env: { ...process.env, DESKTOP: '1' } },
-);
-if (vite.status !== 0) {
-  console.error('[desktop] le build Vite a échoué — le paquet n’est pas produit.');
-  process.exit(vite.status ?? 1);
+if (coqueSeule) {
+  // `extraResources` pointe sur `../dist-web` : electron-builder refuse une
+  // source absente. Un dossier marqueur suffit — `dossierPaquetWeb()` ne
+  // reconnaît un pack qu'à la présence d'un `index.html`, la coque restera donc
+  // en mode en ligne, et le menu « Pack hors ligne… » proposera de l'installer.
+  supprimer(PAQUET);
+  mkdirSync(PAQUET, { recursive: true });
+  writeFileSync(join(PAQUET, 'LISEZ-MOI.txt'), [
+    'Cet installeur ne contient pas le jeu : la coque ouvre le site en ligne,',
+    'qui reçoit les correctifs sans réinstallation.',
+    '',
+    'Pour jouer sans Internet, installez le « pack hors ligne » depuis la page',
+    'de la Release (github.com/SalimB-source/Let-s-Play/releases/tag/desktop),',
+    'puis menu Aide → Pack hors ligne… → Choisir un fichier .zip.',
+    '',
+  ].join('\n'));
+  console.log('[desktop] coque seule : aucun fichier du site dans l’installeur.');
+} else {
+  var paquetWeb = construirePaquetWeb();
 }
 
-if (!existsSync(join(PAQUET, 'index.html'))) {
-  console.error(`[desktop] ${join(PAQUET, 'index.html')} introuvable après build.`);
-  process.exit(1);
-}
-
-// ---------------------------------------------------------------------------
-// 2) Élagage
-// ---------------------------------------------------------------------------
-const regles = JSON.parse(readFileSync(REGLES, 'utf8'));
-const avant = lister(PAQUET);
-const avantOctets = total(PAQUET, avant);
-
-let supprimes = 0;
-let supprimeOctets = 0;
-if (!garderTout) {
-  for (const relatif of avant) {
-    if (estEmbarque(relatif, regles)) continue;
-    const chemin = join(PAQUET, relatif);
-    supprimeOctets += statSync(chemin).size;
-    supprimer(chemin);
-    supprimes += 1;
+/** Construit, élague et date le paquet web — l'option « hors ligne ». */
+function construirePaquetWeb() {
+  // ---------------------------------------------------------------------------
+  // 1) Build Vite
+  // ---------------------------------------------------------------------------
+  console.log('[desktop] build Vite (mode desktop)…');
+  const vite = spawnSync(
+    process.execPath,
+    [join(RACINE, 'node_modules', 'vite', 'bin', 'vite.js'), 'build'],
+    { cwd: RACINE, stdio: 'inherit', env: { ...process.env, DESKTOP: '1' } },
+  );
+  if (vite.status !== 0) {
+    console.error('[desktop] le build Vite a échoué — le paquet n’est pas produit.');
+    process.exit(vite.status ?? 1);
   }
-  // Vide les dossiers devenus vides (news-auto/, videos/…).
-  const viderDossiers = (dossier) => {
-    for (const entree of readdirSync(dossier, { withFileTypes: true })) {
-      if (!entree.isDirectory()) continue;
-      const chemin = join(dossier, entree.name);
-      viderDossiers(chemin);
-      if (readdirSync(chemin).length === 0) supprimer(chemin);
+
+  if (!existsSync(join(PAQUET, 'index.html'))) {
+    console.error(`[desktop] ${join(PAQUET, 'index.html')} introuvable après build.`);
+    process.exit(1);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2) Élagage
+  // ---------------------------------------------------------------------------
+  const regles = JSON.parse(readFileSync(REGLES, 'utf8'));
+  const avant = lister(PAQUET);
+  const avantOctets = total(PAQUET, avant);
+
+  let supprimes = 0;
+  let supprimeOctets = 0;
+  if (!garderTout) {
+    for (const relatif of avant) {
+      if (estEmbarque(relatif, regles)) continue;
+      const chemin = join(PAQUET, relatif);
+      supprimeOctets += statSync(chemin).size;
+      supprimer(chemin);
+      supprimes += 1;
     }
-  };
-  viderDossiers(PAQUET);
+    // Vide les dossiers devenus vides (news-auto/, videos/…).
+    const viderDossiers = (dossier) => {
+      for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+        if (!entree.isDirectory()) continue;
+        const chemin = join(dossier, entree.name);
+        viderDossiers(chemin);
+        if (readdirSync(chemin).length === 0) supprimer(chemin);
+      }
+    };
+    viderDossiers(PAQUET);
+  }
+
+  const apres = lister(PAQUET);
+  const apresOctets = total(PAQUET, apres);
+
+  // Contrôle : le paquet doit contenir le jeu, ses plateaux et ses sons.
+  const attendus = [
+    'index.html',
+    'cards/amani-des-ksour.jpg',
+    'plateau-erg-du-sahara.jpg',
+    'sablier-story/mode-histoire.jpg',
+    'audio/arabian-travel.mp3',
+    'Desert Solitude with Percussion.mp3',
+  ];
+  const manquants = attendus.filter((f) => !apres.includes(f));
+  if (manquants.length) {
+    console.error(`[desktop] paquet incomplet, il manque : ${manquants.join(', ')}`);
+    console.error('          Vérifiez desktop/bundle-assets.json.');
+    process.exit(1);
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3) Manifeste
+  // ---------------------------------------------------------------------------
+  const aSupabase = Boolean(
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+    || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY
+    || process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  );
+
+  mkdirSync(PAQUET, { recursive: true });
+  writeFileSync(join(PAQUET, 'desktop-manifest.json'), `${JSON.stringify({
+    nom: 'Le Sablier de Bab El — paquet PC',
+    genere: new Date().toISOString(),
+    elagage: garderTout ? 'aucun' : 'desktop/bundle-assets.json',
+    fichiers: apres.length,
+    octets: apresOctets,
+    supabase: aSupabase ? 'configure' : 'absent (jeu jouable hors ligne, compte et duels en ligne indisponibles)',
+  }, null, 2)}\n`);
+
+  return { avant, avantOctets, supprimes, supprimeOctets, apres, apresOctets, aSupabase };
 }
-
-const apres = lister(PAQUET);
-const apresOctets = total(PAQUET, apres);
-
-// Contrôle : le paquet doit contenir le jeu, ses plateaux et ses sons.
-const attendus = [
-  'index.html',
-  'cards/amani-des-ksour.jpg',
-  'plateau-erg-du-sahara.jpg',
-  'sablier-story/mode-histoire.jpg',
-  'audio/arabian-travel.mp3',
-  'Desert Solitude with Percussion.mp3',
-];
-const manquants = attendus.filter((f) => !apres.includes(f));
-if (manquants.length) {
-  console.error(`[desktop] paquet incomplet, il manque : ${manquants.join(', ')}`);
-  console.error('          Vérifiez desktop/bundle-assets.json.');
-  process.exit(1);
-}
-
-// ---------------------------------------------------------------------------
-// 3) Manifeste
-// ---------------------------------------------------------------------------
-const aSupabase = Boolean(
-  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-  || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY
-  || process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-);
-
-mkdirSync(PAQUET, { recursive: true });
-writeFileSync(join(PAQUET, 'desktop-manifest.json'), `${JSON.stringify({
-  nom: 'Le Sablier de Bab El — paquet PC',
-  genere: new Date().toISOString(),
-  elagage: garderTout ? 'aucun' : 'desktop/bundle-assets.json',
-  fichiers: apres.length,
-  octets: apresOctets,
-  supabase: aSupabase ? 'configure' : 'absent (jeu jouable hors ligne, compte et duels en ligne indisponibles)',
-}, null, 2)}\n`);
 
 // ---------------------------------------------------------------------------
 // 4) Scène de packaging : une application minimale et propre
@@ -249,33 +292,77 @@ if (npmInstall.status !== 0) {
   console.error('[desktop] installation des dépendances runtime dans desktop/pack impossible.');
   process.exit(npmInstall.status ?? 1);
 }
+
+// ---------------------------------------------------------------------------
+// Garde-fou : `node_modules` n'est embarqué que module par module
+// ---------------------------------------------------------------------------
+// `electron-builder.yml` exclut `node_modules/**` puis rouvre chaque module
+// explicitement. C'est ce qui empêche electron-builder de remonter l'arbre et
+// d'embarquer le `node_modules` du dépôt entier (672 Mo d'asar dépliés, un
+// installeur de 497 Mo — vu en CI). En échange, un module oublié ne se
+// verrait qu'au lancement, chez le joueur : on refuse de produire l'exécutable.
+const ymlBuilder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+if (!ymlBuilder.includes("'!node_modules/**'")) {
+  console.error('[desktop] electron-builder.yml n’exclut plus node_modules en bloc.');
+  console.error('          Rétablissez « - \'!node_modules/**\' » avant la liste des modules.');
+  process.exit(1);
+}
+const modulesAutorises = new Set(
+  [...ymlBuilder.matchAll(/^\s+- 'node_modules\/((?:@[^/']+\/)?[^'/]+)\/\*\*'$/gm)]
+    .map(([, nom]) => nom),
+);
+const dossierModules = join(SCENE, 'node_modules');
+const modulesInstalles = readdirSync(dossierModules, { withFileTypes: true })
+  .filter((entree) => entree.isDirectory() && entree.name !== '.bin')
+  .flatMap((entree) => (entree.name.startsWith('@')
+    ? readdirSync(join(dossierModules, entree.name)).map((nom) => `${entree.name}/${nom}`)
+    : [entree.name]));
+const modulesOublies = modulesInstalles.filter((nom) => !modulesAutorises.has(nom));
+if (modulesOublies.length) {
+  console.error(`[desktop] dépendance(s) absente(s) de electron-builder.yml : ${modulesOublies.join(', ')}`);
+  for (const nom of modulesOublies) {
+    console.error(`          ajoutez : - 'node_modules/${nom}/**' dans la section « files »`);
+  }
+  process.exit(1);
+}
+const octetsModules = total(dossierModules, lister(dossierModules));
+if (octetsModules > 32 * 1024 * 1024) {
+  console.error(`[desktop] dépendances runtime trop lourdes : ${tailleLisible(octetsModules)} `
+    + `pour ${modulesInstalles.length} modules — le pack ne doit contenir que la coque.`);
+  process.exit(1);
+}
+console.log(`[desktop] dépendances runtime : ${modulesInstalles.length} modules, ${tailleLisible(octetsModules)}`);
 console.log(`[desktop] projet d'empaquetage isolé : ${SCENE} (${FICHIERS_SCENE.length + 3} fichiers + electron-updater)`);
 
 // ---------------------------------------------------------------------------
 // Compte rendu
 // ---------------------------------------------------------------------------
-const parDossier = new Map();
-for (const relatif of apres) {
-  const cle = relatif.includes('/') ? relatif.split('/')[0] : '(racine)';
-  parDossier.set(cle, (parDossier.get(cle) || 0) + 1);
-}
-
-console.log('');
-console.log('[desktop] paquet web prêt :');
-console.log(`  avant élagage : ${avant.length} fichiers — ${tailleLisible(avantOctets)}`);
-if (!garderTout) {
-  console.log(`  élagués       : ${supprimes} fichiers — ${tailleLisible(supprimeOctets)}`);
-}
-console.log(`  embarqués     : ${apres.length} fichiers — ${tailleLisible(apresOctets)}`);
-for (const [dossier, nombre] of [...parDossier.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) {
-  console.log(`    ${dossier.padEnd(16)} ${nombre} fichiers`);
-}
-console.log('');
-if (!aSupabase) {
-  console.warn('[desktop] attention : aucune clé Supabase dans l’environnement.');
-  console.warn('          Le paquet se construit quand même : hors ligne, le duel, l’atelier');
-  console.warn('          de decks et le souk fonctionnent ; la connexion du compte et les');
-  console.warn('          duels à distance demanderont un paquet reconstruit avec les clés');
-  console.warn('          (VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY, voir .env.example).');
+if (coqueSeule) {
+  console.log('[desktop] installeur « en ligne » prêt : le jeu sera chargé depuis le site,');
+  console.log('          et `desktop/pack` ne porte que les sept fichiers d’exécution.');
+} else {
+  const parDossier = new Map();
+  for (const relatif of paquetWeb.apres) {
+    const cle = relatif.includes('/') ? relatif.split('/')[0] : '(racine)';
+    parDossier.set(cle, (parDossier.get(cle) || 0) + 1);
+  }
+  console.log('');
+  console.log('[desktop] paquet hors ligne prêt :');
+  console.log(`  avant élagage : ${paquetWeb.avant.length} fichiers — ${tailleLisible(paquetWeb.avantOctets)}`);
+  if (!garderTout) {
+    console.log(`  élagués       : ${paquetWeb.supprimes} fichiers — ${tailleLisible(paquetWeb.supprimeOctets)}`);
+  }
+  console.log(`  embarqués     : ${paquetWeb.apres.length} fichiers — ${tailleLisible(paquetWeb.apresOctets)}`);
+  for (const [dossier, nombre] of [...parDossier.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) {
+    console.log(`    ${dossier.padEnd(16)} ${nombre} fichiers`);
+  }
+  console.log('');
+  if (!paquetWeb.aSupabase) {
+    console.warn('[desktop] attention : aucune clé Supabase dans l’environnement.');
+    console.warn('          Le paquet se construit quand même : hors ligne, le duel, l’atelier');
+    console.warn('          de decks et le souk fonctionnent ; la connexion du compte et les');
+    console.warn('          duels à distance demanderont un paquet reconstruit avec les clés');
+    console.warn('          (VITE_SUPABASE_URL + VITE_SUPABASE_PUBLISHABLE_KEY, voir .env.example).');
+  }
 }
 console.log('[desktop] suite : npm run desktop:setup puis npm run desktop:dist');

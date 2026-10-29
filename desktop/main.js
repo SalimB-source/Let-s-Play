@@ -8,15 +8,16 @@
  *   2. **démarrer le serveur local** qui sert le paquet web (`desktop/local-server.js`) ;
  *   3. **ouvrir la fenêtre** sur la route du jeu.
  *
- * Deux modes, choisis automatiquement :
+ * Deux modes :
  *
- *   - `local`  — le paquet web est embarqué (dossier `app/` à côté des
- *                ressources) : le jeu démarre et se joue **sans Internet**.
- *                Seuls le compte, les duels en ligne et le souk demandent une
- *                connexion (Supabase), exactement comme sur le site.
- *   - `online` — pas de paquet embarqué : la fenêtre charge le site en ligne,
- *                comme le fait l'APK Android avec `let-s-play-nu.vercel.app`.
- *                Chaque mise à jour du site est alors visible sans réinstaller.
+ *   - `online` (**le défaut**) — la fenêtre charge le site en ligne, comme le
+ *     fait l'APK Android avec `let-s-play-nu.vercel.app`. Chaque correctif du
+ *     site est donc visible au lancement suivant, et l'installeur Windows ne
+ *     contient plus de copie du site : ~105 Mo au lieu de 235.
+ *   - `local` — le **pack hors ligne** (option, ~100 Mo) a été installé dans
+ *     `resources/app` : le jeu se joue sans Internet. La coque ne le choisit
+ *     pas d'elle-même ; c'est le filet quand le réseau manque (`--local`, menu
+ *     « Jouer la version hors ligne », ou `LETSPLAY_DESKTOP_MODE=local`).
  *
  * Dérogations (variables d'environnement, pour le diagnostic) :
  *   `LETSPLAY_DESKTOP_MODE=local|online` · `LETSPLAY_REMOTE_ORIGIN=https://…`
@@ -24,8 +25,9 @@
  */
 
 import { app, BrowserWindow, Menu, dialog, ipcMain, shell, session } from 'electron';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { execFile } from 'node:child_process';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import pkgUpdater from 'electron-updater';
 const { autoUpdater } = pkgUpdater;
 
@@ -43,6 +45,10 @@ const ROUTE_JEU = '/jeu/sablier-de-bab-el';
 const TITRE = 'Le Sablier de Bab El';
 
 const MODE_FORCE = process.env.LETSPLAY_DESKTOP_MODE || '';
+
+/** La page de la Release `desktop` : l'installeur, le portable, et le pack
+ * hors ligne. Un seul lien à donner aux joueurs, il ne change jamais. */
+const RELEASE_DESKTOP = 'https://github.com/SalimB-source/Let-s-Play/releases/tag/desktop';
 const REMOTE_ORIGIN = (process.env.LETSPLAY_REMOTE_ORIGIN || DEFAULT_REMOTE_ORIGIN).replace(/\/+$/, '');
 
 /** En développement, `app.getAppPath()` est `desktop/` ; une fois installé, le
@@ -85,9 +91,17 @@ let fenetrePrincipale = null;
 let serveurLocal = null;
 let mode = 'online';
 let urlJeu = `${REMOTE_ORIGIN}${ROUTE_JEU}`;
+/** Le duel servi par le pack hors ligne, quand il est installé. */
+let urlLocale = '';
 let verificationMajManuelle = false;
 let verificationMajEnCours = false;
 let telechargementMajEnCours = false;
+/** Une relance de la vérification après un échec silencieux (démarrage hors ligne). */
+let relanceMajFaite = false;
+/** Le paquet web embarqué, quand il existe (mode local). */
+let dossierPaquet = null;
+/** Une seule proposition par session : « jouer en ligne » ne se redemande pas. */
+let sitePlusRecentPropose = false;
 
 async function demarrer() {
   if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
@@ -95,8 +109,11 @@ async function demarrer() {
   await app.whenReady();
   autoriserMediasEtPleinEcran();
 
-  // 2) Le paquet local, s'il est embarqué.
+  // 2) Le pack hors ligne, s'il est installé (`resources/app`).
+  //    On le sert, mais il ne décide plus du mode : le jeu s'ouvre sur le site,
+  //    qui porte les correctifs du jour. Le pack est le filet hors connexion.
   const paquet = MODE_FORCE === 'online' ? null : dossierPaquetWeb();
+  dossierPaquet = paquet;
   if (paquet) {
     try {
       serveurLocal = await startLocalServer({
@@ -106,24 +123,38 @@ async function demarrer() {
         log: (message) => console.log(message),
         getStatus: () => ({ version: app.getVersion(), electron: process.versions.electron }),
       });
-      mode = 'local';
-      urlJeu = serveurLocal.url(ROUTE_JEU);
-      console.log(`[desktop] paquet local servi sur ${serveurLocal.origin}`);
+      urlLocale = serveurLocal.url(ROUTE_JEU);
+      console.log(`[desktop] pack hors ligne servi sur ${serveurLocal.origin}`);
     } catch (erreur) {
-      console.error(`[desktop] serveur local impossible, repli en ligne : ${erreur?.message || erreur}`);
+      console.error(`[desktop] serveur local impossible, jeu en ligne seulement : ${erreur?.message || erreur}`);
     }
   }
-  if (mode === 'online') {
-    console.log(`[desktop] mode en ligne : ${urlJeu}`);
-  }
+  mode = veutDemarrerLocal() && urlLocale ? 'local' : 'online';
+  urlJeu = mode === 'local' ? urlLocale : `${REMOTE_ORIGIN}${ROUTE_JEU}`;
+  console.log(`[desktop] mode ${mode} : ${urlJeu}`);
 
   creerFenetre();
   construireMenu();
   configurerMiseAJour();
+  configurerVerificationSite();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) creerFenetre();
   });
+}
+
+/**
+ * Le pack hors ligne doit-il être le mode de démarrage ?
+ *
+ * Non, sauf demande explicite : c'est le site qui fait foi, parce qu'il reçoit
+ * les correctifs sans réinstallation. Trois façons de forcer le pack — le
+ * raccourci `--local` (dépannage), la variable d'environnement, et le menu
+ * « Jouer la version hors ligne », qui bascule pour la session.
+ */
+function veutDemarrerLocal() {
+  if (MODE_FORCE === 'online') return false;
+  if (MODE_FORCE === 'local') return true;
+  return process.argv.includes('--local');
 }
 
 /**
@@ -222,7 +253,9 @@ function chargerJeu() {
 function afficherHorsLigne() {
   if (!fenetrePrincipale) return;
   fenetrePrincipale.loadFile(join(import.meta.dirname, 'offline.html'), {
-    query: { cible: urlJeu, mode },
+    // `locale=1` : le pack hors ligne est installé, la page propose d'y jouer
+    // au lieu de laisser le joueur devant un mur.
+    query: { cible: urlJeu, mode, locale: urlLocale ? '1' : '0' },
   });
 }
 
@@ -273,6 +306,13 @@ function signalerErreurMaj(erreur) {
   verificationMajManuelle = false;
   telechargementMajEnCours = false;
   console.error('[desktop:update] échec :', erreur);
+  // Démarrage hors ligne, réseau qui n'a pas encore repris : une relance, une
+  // seule et sans rien dire, une minute plus tard. Une erreur *visible* (le
+  // joueur a cliqué « Rechercher une mise à jour ») reste un dialogue.
+  if (!erreurVisible && !relanceMajFaite) {
+    relanceMajFaite = true;
+    planifierVerificationMaj(60000);
+  }
   if (erreurVisible) {
     afficherDialogue({
       type: 'error',
@@ -340,9 +380,9 @@ function configurerMiseAJour() {
     const { response } = await afficherDialogue({
       type: 'info',
       title: 'Mise à jour prête',
-      message: `La version ${info.version} a été téléchargée.`,
-      detail: 'Installez-la maintenant, ou continuez à jouer : elle s’installera à la fermeture de l’application.',
-      buttons: ['Redémarrer et installer', 'Plus tard'],
+      message: `La version ${info.version} est téléchargée.`,
+      detail: 'Redémarrer maintenant l’installe tout de suite — sinon elle s’installe à la fermeture du jeu, sans rien redemander.',
+      buttons: ['Redémarrer et installer', 'Plus tard (à la fermeture)'],
       defaultId: 0,
       cancelId: 1,
     });
@@ -351,9 +391,102 @@ function configurerMiseAJour() {
 
   autoUpdater.on('error', signalerErreurMaj);
 
-  // Une vérification au démarrage, différée pour laisser la fenêtre s'ouvrir.
-  const temporisateur = setTimeout(() => lancerVerificationMaj(false), 8000);
+  // Au lancement, tôt : le joueur est encore au menu, c'est le meilleur moment
+  // pour installer. Puis toutes les six heures, pour une session qui dure.
+  planifierVerificationMaj(2000);
+  const battement = setInterval(() => lancerVerificationMaj(false), 6 * 60 * 60 * 1000);
+  battement.unref?.();
+}
+
+/** Programme une vérification silencieuse (jamais deux en même temps). */
+function planifierVerificationMaj(delaiMs) {
+  const temporisateur = setTimeout(() => lancerVerificationMaj(false), delaiMs);
   temporisateur.unref?.();
+}
+
+/** Le site en ligne est-il plus récent que le paquet embarqué ?
+ *
+ * L'installateur Windows embarque une copie du site : sans nouvelle Release,
+ * un PC peut jouer une version vieille de plusieurs semaines, alors que la
+ * version en ligne contient les correctifs du jour. `version.json` (écrit par
+ * `vite.config.js`, gravé dans le bundle) donne l'identité du build : si les
+ * deux diffèrent, on propose de jouer en ligne — le paquet local reste là,
+ * jouable hors connexion, et l'installateur, lui, continue de se mettre à jour
+ * par `autoUpdater`. Rien à faire hors ligne : on ne dit rien.
+ */
+function configurerVerificationSite() {
+  const temporisateur = setTimeout(verifierSitePlusRecent, 3000);
+  temporisateur.unref?.();
+}
+
+function lireBuildLocal() {
+  if (!dossierPaquet) return '';
+  try {
+    const donnees = JSON.parse(readFileSync(join(dossierPaquet, 'version.json'), 'utf8'));
+    return typeof donnees?.buildId === 'string' ? donnees.buildId.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+async function verifierSitePlusRecent() {
+  if (sitePlusRecentPropose || mode !== 'local' || !dossierPaquet) return;
+  if (typeof fetch !== 'function') return;
+  const buildLocal = lireBuildLocal();
+  // Un build local (`local-…`) n'est pas comparable à un déploiement.
+  if (!buildLocal || buildLocal.startsWith('local-')) return;
+
+  let distant = null;
+  try {
+    const controleur = new AbortController();
+    const minuterie = setTimeout(() => controleur.abort(), 6000);
+    const reponse = await fetch(`${REMOTE_ORIGIN}/version.json?v=${Date.now()}`, {
+      cache: 'no-store',
+      signal: controleur.signal,
+    });
+    clearTimeout(minuterie);
+    if (reponse.ok) distant = await reponse.json();
+  } catch {
+    return; // hors ligne : le paquet local est justement là pour ça
+  }
+
+  const buildDistant = typeof distant?.buildId === 'string' ? distant.buildId.trim() : '';
+  if (!buildDistant || buildDistant === buildLocal || buildDistant.startsWith('local-')) return;
+
+  sitePlusRecentPropose = true;
+  console.log(`[desktop:site] paquet ${buildLocal} / en ligne ${buildDistant}`);
+  const { response } = await afficherDialogue({
+    type: 'info',
+    title: 'Une version plus récente est en ligne',
+    message: 'L’application installée embarque une copie du site plus ancienne que celle en ligne.',
+    detail: 'Jouer en version en ligne donne accès aux correctifs du jour. L’application reste installée et jouable hors connexion, et l’installateur, quand il est republié, s’installe à la fermeture du jeu.',
+    buttons: ['Jouer en version en ligne', 'Rester dans l’application'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response === 0) basculerEnLigne();
+}
+
+/**
+ * Passer au pack hors ligne pour la session. Utilisé par la page d'attente
+ * (bouton « Jouer hors ligne ») et par le menu. Sans pack, on ne peut que
+ * réessayer : la page d'attente le dit.
+ */
+function basculerEnLocal() {
+  if (!urlLocale) return afficherHorsLigne();
+  mode = 'local';
+  urlJeu = urlLocale;
+  construireMenu();
+  console.log(`[desktop] bascule hors ligne : ${urlJeu}`);
+  fenetrePrincipale?.loadURL(urlJeu).catch(() => afficherHorsLigne());
+}
+
+function basculerEnLigne() {
+  mode = 'online';
+  urlJeu = `${REMOTE_ORIGIN}${ROUTE_JEU}`;
+  construireMenu();
+  console.log(`[desktop] bascule en ligne : ${urlJeu}`);
+  fenetrePrincipale?.loadURL(urlJeu).catch(() => afficherHorsLigne());
 }
 
 function lancerVerificationMaj(manuelle) {
@@ -366,6 +499,164 @@ function lancerVerificationMaj(manuelle) {
   } catch (erreur) {
     signalerErreurMaj(erreur);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Pack hors ligne (option)
+// ---------------------------------------------------------------------------
+/**
+ * L'installeur publié ne contient plus de copie du site : ~105 Mo au lieu de
+ * 967, et surtout, il n'a plus à être reconstruit à chaque correctif. Qui veut
+ * jouer sans Internet installe le **pack hors ligne**, publié à part sur la
+ * même Release (~100 Mo, le site élagué de ce que la coque n'ouvre jamais).
+ *
+ * Il se dépose dans `resources/app` — exactement où `dossierPaquetWeb()` le
+ * cherche — et n'est jamais écrasé par une mise à jour de la coque, qui ne
+ * touche qu'à `app.asar`.
+ */
+async function ouvrirPackHorsLigne() {
+  const installe = Boolean(dossierPaquet);
+  const boutons = installe
+    ? ['Retirer le pack', 'Fermer']
+    : ['Télécharger le pack', 'Choisir un fichier .zip…', 'Fermer'];
+  const { response } = await afficherDialogue({
+    type: 'info',
+    title: 'Pack hors ligne',
+    message: installe
+      ? 'Le pack hors ligne est installé : le jeu démarre sans Internet.'
+      : 'Le pack hors ligne rend le jeu jouable sans connexion.',
+    detail: installe
+      ? 'Le jeu démarre quand même sur le site en ligne, qui reçoit les correctifs du jour ; '
+        + 'le pack sert de secours dès que le réseau manque (menu Jeu → Jouer la version hors ligne, '
+        + 'ou automatiquement depuis la page « pas de connexion »).'
+      : 'Il pèse environ 100 Mo et se télécharge depuis la page de la Release. Une fois le .zip '
+        + 'récupéré, « Choisir un fichier .zip… » l’installe ici. Sans lui, le jeu a besoin d’une '
+        + 'connexion pour démarrer — c’est le prix d’un installeur de 105 Mo qui se corrige tout seul.',
+    buttons: boutons,
+    defaultId: 0,
+    cancelId: boutons.length - 1,
+  });
+  if (installe) {
+    if (response === 0) await retirerPackHorsLigne();
+    return;
+  }
+  if (response === 0) shell.openExternal(RELEASE_DESKTOP);
+  else if (response === 1) await choisirEtInstallerPack();
+}
+
+async function choisirEtInstallerPack() {
+  const { canceled, filePaths } = await dialog.showOpenDialog(fenetrePrincipale, {
+    title: 'Choisir le pack hors ligne (.zip)',
+    properties: ['openFile'],
+    filters: [{ name: 'Archive du pack', extensions: ['zip'] }],
+  });
+  if (canceled || !filePaths?.[0]) return;
+  try {
+    await installerPackZip(filePaths[0]);
+    const { response } = await afficherDialogue({
+      type: 'info',
+      title: 'Pack hors ligne installé',
+      message: 'Le jeu est désormais jouable sans connexion.',
+      detail: 'L’application doit redémarrer pour le prendre en compte.',
+      buttons: ['Redémarrer maintenant', 'Plus tard'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (response === 0) { app.relaunch(); app.exit(0); }
+  } catch (erreur) {
+    afficherDialogue({
+      type: 'error',
+      title: 'Installation impossible',
+      message: 'Le pack hors ligne n’a pas pu être installé.',
+      detail: `${erreur?.message || erreur}\n\nÀ la main : décompressez l’archive et copiez son `
+        + `dossier « app » dans :\n${dossierDestinationPack()}`,
+      buttons: ['OK'],
+    });
+  }
+}
+
+/** Le dossier où vit le pack, une fois installé. */
+function dossierDestinationPack() {
+  return join(process.resourcesPath || dirname(app.getAppPath()), 'app');
+}
+
+/** Guillemets PowerShell : une apostrophe se double, rien d'autre ne s'échappe. */
+function psQuote(texte) {
+  return `'${String(texte).replace(/'/g, "''")}'`;
+}
+
+function executerCommande(commande, arguments_) {
+  return new Promise((resoudre, rejeter) => {
+    execFile(commande, arguments_, { windowsHide: true }, (erreur, sortie, erreurSortie) => {
+      if (erreur) rejeter(new Error(String(erreurSortie || erreur.message).trim()));
+      else resoudre(String(sortie));
+    });
+  });
+}
+
+/**
+ * Décompresse le pack puis le pose dans `resources/app`.
+ *
+ * L'extraction passe par PowerShell (`Expand-Archive`, présent depuis Windows
+ * 10) plutôt que par une dépendance de plus dans la coque : le pack est
+ * l'option, pas la règle, et `node:zlib` ne lit pas les archives ZIP. Le
+ * dossier temporaire est nettoyé dans tous les cas, et une archive sans
+ * `index.html` est refusée avant d'avoir touché à l'installation.
+ */
+async function installerPackZip(archive) {
+  if (process.platform !== 'win32') {
+    throw new Error('l’installation automatique du pack passe par PowerShell (Windows).');
+  }
+  if (!app.isPackaged) {
+    throw new Error('en développement, servez `desktop/dist-web` avec LETSPLAY_PAQUET.');
+  }
+  const tampon = join(app.getPath('temp'), `sablier-pack-${Date.now()}`);
+  try {
+    mkdirSync(tampon, { recursive: true });
+    await executerCommande('powershell.exe', [
+      '-NoProfile', '-NonInteractive', '-Command',
+      `Expand-Archive -LiteralPath ${psQuote(archive)} -DestinationPath ${psQuote(tampon)} -Force`,
+    ]);
+    const racine = existsSync(join(tampon, 'app', 'index.html'))
+      ? join(tampon, 'app')
+      : tampon;
+    if (!existsSync(join(racine, 'index.html'))) {
+      throw new Error('l’archive ne contient pas index.html — est-ce bien le pack hors ligne ?');
+    }
+    const destination = dossierDestinationPack();
+    rmSync(destination, { recursive: true, force: true, maxRetries: 6, retryDelay: 250 });
+    mkdirSync(dirname(destination), { recursive: true });
+    cpSync(racine, destination, { recursive: true });
+    console.log(`[desktop] pack hors ligne installé dans ${destination}`);
+  } finally {
+    rmSync(tampon, { recursive: true, force: true, maxRetries: 6, retryDelay: 250 });
+  }
+}
+
+async function retirerPackHorsLigne() {
+  try {
+    rmSync(dossierDestinationPack(), { recursive: true, force: true, maxRetries: 6, retryDelay: 250 });
+  } catch (erreur) {
+    afficherDialogue({
+      type: 'error',
+      title: 'Retrait impossible',
+      message: 'Le pack hors ligne n’a pas pu être retiré.',
+      detail: `${erreur?.message || erreur}\n\nSupprimez à la main le dossier :\n${dossierDestinationPack()}`,
+      buttons: ['OK'],
+    });
+    return;
+  }
+  afficherDialogue({
+    type: 'info',
+    title: 'Pack hors ligne retiré',
+    message: 'Le jeu se jouera désormais en ligne uniquement.',
+    detail: 'L’application doit redémarrer pour le prendre en compte.',
+    buttons: ['Redémarrer maintenant', 'Plus tard'],
+    defaultId: 0,
+    cancelId: 1,
+  }).then(({ response }) => {
+    if (response === 0) { app.relaunch(); app.exit(0); }
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -393,6 +684,12 @@ function construireMenu() {
           label: 'Revenir à l’écran du duel',
           click: () => { fenetrePrincipale?.loadURL(urlJeu); },
         },
+        // La bascule n'apparaît que si elle mène quelque part : sans pack
+        // hors ligne, il n'y a rien à rejoindre.
+        ...(urlLocale ? [{
+          label: mode === 'local' ? 'Revenir au site en ligne' : 'Jouer la version hors ligne',
+          click: () => (mode === 'local' ? basculerEnLigne() : basculerEnLocal()),
+        }] : []),
         { type: 'separator' },
         { role: estMac ? 'close' : 'quit', label: estMac ? 'Fermer la fenêtre' : 'Quitter' },
       ],
@@ -416,8 +713,12 @@ function construireMenu() {
         // Ligne d'information (grisée) : d'où vient le jeu affiché.
         {
           label: mode === 'local'
-            ? 'Mode : paquet local — jouable hors ligne'
-            : 'Mode : site en ligne',
+            ? 'Mode : pack hors ligne — sans Internet'
+            : 'Mode : site en ligne — correctifs du jour',
+          enabled: false,
+        },
+        {
+          label: `Pack hors ligne : ${dossierPaquet ? 'installé' : 'absent'}`,
           enabled: false,
         },
       ],
@@ -441,6 +742,7 @@ function construireMenu() {
             lancerVerificationMaj(true);
           },
         },
+        { label: 'Pack hors ligne…', click: () => { ouvrirPackHorsLigne(); } },
         { label: 'Le site Let’s Play (navigateur)', click: () => shell.openExternal(REMOTE_ORIGIN) },
         { label: 'Dépôt du projet', click: () => shell.openExternal('https://github.com/SalimB-source/Let-s-Play') },
         { type: 'separator' },
@@ -546,6 +848,12 @@ ipcMain.handle('desktop:ouvrir-diagnostic', () => {
 /** Recharger le jeu lui-même (et non la page d'attente « hors ligne »). */
 ipcMain.handle('desktop:aller-au-jeu', () => {
   if (fenetrePrincipale) chargerJeu();
+  return true;
+});
+
+/** Depuis la page d'attente : basculer sur le pack hors ligne. */
+ipcMain.handle('desktop:aller-au-jeu-local', () => {
+  basculerEnLocal();
   return true;
 });
 

@@ -95,7 +95,7 @@ import {
 } from '../src/games/rpgCards.js';
 import { rpgExils, rpgLancerMagie, rpgRenvoisEnMain, rpgDefausserCarte, rpgPeutEngagerPourMana } from '../src/games/rpgDuel.js';
 import { choisirMulliganIA } from '../src/games/rpgAI.js';
-import { cardArtFurie } from '../src/games/rpgCardArt.js';
+import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArtFurie } from '../src/games/rpgCardArt.js';
 
 /** Main de départ générique, mélangée de façon fixe. */
 const duelDeBase = (opts = {}) => rpgNouveauDuel({
@@ -1069,7 +1069,8 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     ['hache-de-la-banquise', 'neige-hache-fil-en-bas-v2'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
-    assert.deepEqual(dimensionsJpeg(chemin), [1024, 1280], `${art}.jpg est en 1024×1280`);
+    assert.deepEqual(dimensionsJpeg(chemin), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
+      `${art}.jpg est au format livré, 768 × 960`);
     assert.match(page, new RegExp(`'${art}': '${revision}'`), `${art}.jpg est daté contre les caches`);
   }
   const empreinte = (art) => createHash('sha256')
@@ -1101,7 +1102,7 @@ test('la Valkyrie au corbeau porte Furie 2 et révèle sa peinture alternative',
     'son état de Furie utilise la peinture de la passe — la valkyrie, son corbeau et le sang');
   assert.deepEqual(dimensionsJpeg(fileURLToPath(
     new URL('../public/cards/valkyrie-au-corbeau-furie.jpg', import.meta.url),
-  )), [1024, 1280], 'la peinture alternative est livrée au format exact 4:5');
+  )), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR], 'la peinture alternative est livrée au format livré 4:5');
 });
 
 test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Résonance', () => {

@@ -26,33 +26,38 @@ import { existsSync, readFileSync } from 'node:fs';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 import { RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
+import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR, cardArt } from '../src/games/rpgCardArt.js';
 
 const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
 const artSource = readFileSync(new URL('../src/games/rpgCardArt.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
 const glossaire = readFileSync(new URL('../src/games/effetIcons.js', import.meta.url), 'utf8');
 
-const REVISION_PHOTOREALISTE = 'furie-photorealiste-v1';
-const REVISION_BERSERK_BASE = 'berserk-meme-visage-sans-sang-v1';
-const REVISION_LOUP_FURIE = 'loup-furie-huile-v1';
-const REVISION_VALKYRIE_FURIE = 'valkyrie-vol-plongeon-enragee-v4';
-// Le Corbeau des neuf nuits : deux cartes du set hybride portent la Furie et
-// ont leur propre double ensanglanté, daté séparément.
-// Le Berserk du crépuscule a été recadré en octobre 2026 (sa tête tombait sous
-// le bandeau de nom) : sa face de Furie suit sa face intacte sous la révision
-// du recadrage.
-const REVISIONS_CORBEAU_FURIE = {
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-cadrage-v2',
-  'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
-};
-// La Tour Oubliée est hors catalogue : son Ifrit d'encre porte Furie 1 et
-// contrôle donc sa face déclenchée à part, sous sa propre révision.
-const REVISION_TOUR_FURIE = 'tour-furie-encre-v1';
+// Les révisions ne sont pas recopiées ici : elles vivent dans
+// `CARD_ART_CACHE_VERSIONS`, une entrée par face repeinte, et le garde-fou les
+// relit à la source. Une table locale aurait dérivé — la passe Souls du Neige
+// (octobre 2026) a redaté les quatre faces photoréalistes, le recadrage du
+// Berserk du crépuscule a suivi sa face intacte, et le Jarl ne porte donc plus
+// `furie-photorealiste-v1`.
+const revisionsSource = new Map(
+  [...artSource.matchAll(/^  '([a-z0-9-]+)': '([a-z0-9-]+)',$/gm)]
+    .map(([, illustration, revision]) => [illustration, revision]),
+);
+
+/** La révision d'une peinture, exigée présente : chaque double est daté. */
+function revisionDe(illustration) {
+  const revision = revisionsSource.get(illustration);
+  assert.ok(revision,
+    `${illustration} porte sa révision dans CARD_ART_CACHE_VERSIONS`);
+  return revision;
+}
+// Les quatre humains photoréalistes du catalogue. Le Guerrier au bouclier rond
+// les a quittés quand la Völva a pris sa place dans les cartes à Furie.
 const CARTES_PHOTOREALISTES = [
-  'guerrier-au-bouclier-rond',
   'berserk-des-trois-hivers',
   'jarl-au-marteau-de-guerre',
   'maitre-du-marteau',
+  'volva-soigneuse',
 ];
 
 /** Largeur et hauteur d'un JPEG, lues dans son en-tête SOF. */
@@ -82,6 +87,8 @@ else process.env.NODE_ENV = previousEnv;
 const { rendreApercusFurie } = await import('../node_modules/.cache/rpg-furie-preview/rpg-furie-preview-smoke.js');
 const { window } = new JSDOM(`<!doctype html><html><body>${rendreApercusFurie()}</body></html>`);
 const document = window.document;
+/** Le chemin servi, sans le préfixe de base : il dépend du déploiement. */
+const cheminServi = (src) => (src ?? '').split('/cards/')[1] ?? '';
 const cas = (nom) => document.querySelector(`[data-cas="${nom}"]`);
 const aUnCadre = (element) => [...(element?.classList ?? [])].some((classe) => classe.startsWith('rpg-card--frame-'));
 const statsDe = (racine) => [
@@ -95,7 +102,7 @@ try {
   assert.ok(faceNormale, 'la fiche du Jarl intact montre sa face');
   assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', /cards\/jarl-au-marteau-de-guerre\.jpg/,
     'avant la blessure, la preview garde la peinture normale');
-  assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+  assert.match(faceNormale.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${revisionDe('jarl-au-marteau-de-guerre')}`),
     'sous sa révision photoréaliste, pour écarter l’ancien visuel du cache');
   assert.ok(aUnCadre(faceNormale), 'et son cadre d’élément');
   assert.deepEqual(statsDe(normal), ['3', '5'], 'les statistiques imprimées restent celles de la carte neuve');
@@ -110,7 +117,7 @@ try {
   assert.ok(faceFurie, 'la fiche du Jarl en Furie montre sa face');
   assert.match(faceFurie.querySelector('img').getAttribute('src') ?? '', /cards\/jarl-au-marteau-de-guerre-furie\.jpg/,
     'la preview affiche la peinture furie, celle de la table');
-  assert.match(faceFurie.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+  assert.match(faceFurie.querySelector('img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${revisionDe('jarl-au-marteau-de-guerre-furie')}`),
     'et cette peinture est elle aussi datée contre les caches');
   assert.ok(faceFurie.classList.contains('is-furie'), 'la face se nomme en Furie');
   assert.equal(faceFurie.getAttribute('data-furie-declenchee'), 'true', 'et expose son état');
@@ -147,7 +154,7 @@ try {
   assert.ok(carteTableNormale, 'le Jarl intact se rend aussi sur la table');
   assert.equal(carteTableNormale.classList.contains('is-furie'), false,
     'sans la classe Furie tant que la blessure n’a pas enflammé la créature');
-  assert.match(carteTableNormale.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+  assert.match(carteTableNormale.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre\\.jpg\\?v=${revisionDe('jarl-au-marteau-de-guerre')}`),
     'la table montre le nouveau visuel intact, sous sa révision');
   assert.equal(carteTableNormale.querySelector('.rpg-furie-vignette'), null,
     'et ses bords restent libres de toute vignette rouge');
@@ -155,7 +162,7 @@ try {
   const carteTableFurie = cas('furie-table').querySelector('.rpg-card');
   assert.ok(carteTableFurie, 'le Jarl déclenché se rend sur la table');
   assert.ok(carteTableFurie.classList.contains('is-furie'), 'la carte posée se nomme en Furie');
-  assert.match(carteTableFurie.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${REVISION_PHOTOREALISTE}`),
+  assert.match(carteTableFurie.querySelector('.rpg-card__img').getAttribute('src') ?? '', new RegExp(`jarl-au-marteau-de-guerre-furie\\.jpg\\?v=${revisionDe('jarl-au-marteau-de-guerre-furie')}`),
     'avec son double ensanglanté, daté comme dans la preview');
   assert.ok(carteTableFurie.querySelector('.rpg-furie-vignette'),
     'la vignette rouge pulse donc aussi sur la créature posée');
@@ -164,8 +171,10 @@ try {
   assert.ok(loupTableNormal, 'le Loup intact se rend sur la table');
   assert.equal(loupTableNormal.classList.contains('is-furie'), false,
     'à sa DEF de base, il garde sa face ordinaire');
-  assert.match(loupTableNormal.querySelector('.rpg-card__img').getAttribute('src') ?? '', /cards\/loup-des-neiges\.jpg\?v=peintures-definitives-v3/,
-    'avec l’huile intacte de la meute, datée par le set Neige');
+  assert.equal(
+    cheminServi(loupTableNormal.querySelector('.rpg-card__img').getAttribute('src')),
+    cheminServi(cardArt('loup-des-neiges')),
+    'avec l’huile intacte de la meute, celle que résout `cardArt` — sa date de cache comprise');
 
   const loupTableFurie = cas('loup-furie-table').querySelector('.rpg-card');
   assert.ok(loupTableFurie, 'le Loup blessé se rend sur la table');
@@ -173,7 +182,7 @@ try {
   assert.equal(loupTableFurie.getAttribute('data-furie-atk'), '3', 'le Loup passe de 2 à 3 d’attaque');
   assert.equal(loupTableFurie.getAttribute('data-furie-def'), '1', 'sans gagner le moindre point de défense');
   assert.ok((loupTableFurie.querySelector('.rpg-card__img').getAttribute('src') ?? '')
-    .includes(`loup-des-neiges-furie.jpg?v=${REVISION_LOUP_FURIE}`),
+    .includes(`loup-des-neiges-furie.jpg?v=${revisionDe('loup-des-neiges-furie')}`),
     'avec le chef de meute ensanglanté, sous sa révision dédiée');
   assert.ok(loupTableFurie.querySelector('.rpg-furie-vignette'),
     'la vignette rouge serre aussi la meute en Furie');
@@ -191,10 +200,10 @@ for (const carte of cartesFurie) {
     `${carte.id} a sa peinture furie (${artId}-furie.jpg)`);
 }
 
-// Les huit visuels photoréalistes validés sont livrés au format exact de la
-// face, et leurs URL sont datées : une peinture remplacée sous le même nom
-// de fichier ne doit jamais revenir d'un cache sous son ancien visage.
-for (const carteId of CARTES_PHOTOREALISTES) {
+// Chaque carte à Furie livre ses deux faces au format exact de la face, et
+// leurs URL sont datées : une peinture remplacée sous le même nom de fichier ne
+// doit jamais revenir d'un cache sous son ancien visage.
+for (const carteId of CARTES_PHOTOREALISTES.concat(['loup-des-neiges', 'valkyrie-au-corbeau'])) {
   const carte = cartesFurie.find((candidate) => candidate.id === carteId);
   assert.ok(carte, `${carteId} fait partie des cartes à Furie du catalogue`);
   const artId = carte.art ?? carte.id;
@@ -202,53 +211,37 @@ for (const carteId of CARTES_PHOTOREALISTES) {
   for (const illustration of [artId, `${artId}-furie`]) {
     const url = new URL(`../public/cards/${illustration}.jpg`, import.meta.url);
     assert.ok(existsSync(url), `${illustration}.jpg est livré avec le jeu`);
-    assert.deepEqual(dimensionsJpeg(url), [1024, 1280],
-      `${illustration}.jpg est au format exact 4:5 de la face`);
-    const revision = illustration === 'berserk-des-trois-hivers'
-      ? REVISION_BERSERK_BASE
-      : REVISION_PHOTOREALISTE;
-    assert.match(artSource, new RegExp(`'${illustration}': '${revision}'`),
-      `${illustration}.jpg est daté dans l’URL sous ${revision}`);
+    assert.deepEqual(dimensionsJpeg(url), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
+      `${illustration}.jpg est au format livré, 4:5 de la face`);
   }
+  // La face de Furie est peinte pour la carte : elle porte toujours sa date,
+  // sinon une repeinte reviendrait sous son ancien visage depuis un cache. La
+  // face intacte, elle, n'en a que si elle a été repeinte.
+  assert.ok(revisionDe(`${artId}-furie`), `${artId}-furie.jpg est daté contre les caches`);
 }
 
-// Le Loup ne rejoint pas la dérogation photoréaliste, mais son double
-// ensanglanté est livré au même format exact et daté séparément.
-const loupFurie = new URL('../public/cards/loup-des-neiges-furie.jpg', import.meta.url);
-assert.deepEqual(dimensionsJpeg(loupFurie), [1024, 1280],
-  'loup-des-neiges-furie.jpg est au format exact 4:5 de la face');
-assert.match(artSource, new RegExp(`'loup-des-neiges-furie': '${REVISION_LOUP_FURIE}'`),
-  `loup-des-neiges-furie.jpg est daté dans l’URL sous ${REVISION_LOUP_FURIE}`);
-
-// La Valkyrie repart de sa scène intacte : enragée et ensanglantée, épée levée,
-// elle vole dans le ciel et plonge vers sa cible avec son corbeau noir.
-const valkyrieFurie = new URL('../public/cards/valkyrie-au-corbeau-furie.jpg', import.meta.url);
-assert.deepEqual(dimensionsJpeg(valkyrieFurie), [1024, 1280],
-  'valkyrie-au-corbeau-furie.jpg est au format exact 4:5 de la face');
-assert.match(artSource, new RegExp(`'valkyrie-au-corbeau-furie': '${REVISION_VALKYRIE_FURIE}'`),
-  `valkyrie-au-corbeau-furie.jpg est daté sous ${REVISION_VALKYRIE_FURIE}`);
-
-// Le Corbeau des neuf nuits donne lui aussi ses deux faces de Furie : chacune
-// reprend la composition de sa peinture intacte, ensanglantée et enragée, au
-// format exact de la face et sous sa propre révision.
-for (const [illustration, revision] of Object.entries(REVISIONS_CORBEAU_FURIE)) {
+// Le Corbeau des neuf nuits : deux cartes du set hybride portent la Furie et
+// ont leur propre double ensanglanté, daté séparément. Le Berserk du crépuscule
+// a été recadré en octobre 2026 (sa tête tombait sous le bandeau de nom) : sa
+// face de Furie suit sa face intacte sous la révision du recadrage.
+for (const illustration of ['berserk-du-crepuscule-furie', 'valkyrie-des-neuf-nuits-furie']) {
   const url = new URL(`../public/cards/${illustration}.jpg`, import.meta.url);
   assert.ok(existsSync(url), `${illustration}.jpg est livré avec le jeu`);
-  assert.deepEqual(dimensionsJpeg(url), [1024, 1280],
-    `${illustration}.jpg est au format exact 4:5 de la face`);
-  assert.match(artSource, new RegExp(`'${illustration}': '${revision}'`),
-    `${illustration}.jpg est daté sous ${revision}`);
+  assert.deepEqual(dimensionsJpeg(url), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
+    `${illustration}.jpg est au format livré, 4:5 de la face`);
+  assert.ok(revisionDe(illustration), `${illustration}.jpg est daté contre les caches`);
 }
 
 // L'Ifrit d'encre n'est pas dans `RPG_DUEL_CARDS` (set de la Tour oubliée,
 // absent du catalogue), mais il porte Furie 1 : son double se vérifie ici
-// comme les huit porteurs du catalogue — même ratio, même révision dédiée.
+// comme les huit porteurs du catalogue — même format, même date d'URL.
 const ifritFurie = new URL('../public/cards/ifrit-d-encre-furie.jpg', import.meta.url);
 assert.ok(existsSync(ifritFurie), 'ifrit-d-encre-furie.jpg est livré avec le jeu');
-assert.deepEqual(dimensionsJpeg(ifritFurie), [1024, 1280],
-  'ifrit-d-encre-furie.jpg est au format exact 4:5 de la face');
-assert.match(artSource, new RegExp(`'ifrit-d-encre-furie': '${REVISION_TOUR_FURIE}'`),
-  `ifrit-d-encre-furie.jpg est daté sous ${REVISION_TOUR_FURIE}`);
+assert.deepEqual(dimensionsJpeg(ifritFurie), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],
+  'ifrit-d-encre-furie.jpg est au format livré, 4:5 de la face');
+assert.ok(revisionDe('ifrit-d-encre-furie'), 'ifrit-d-encre-furie.jpg est daté contre les caches');
+assert.match(artSource, /'ifrit-d-encre-furie': '/,
+  'et sa date vit dans CARD_ART_CACHE_VERSIONS, pas dans le néant');
 
 // ── 3. La table étiquette, les gestes transmettent, la feuille dénude ──────
 assert.match(glossaire, /Tant que sa défense actuelle est inférieure à sa DEF de base/,
@@ -296,4 +289,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule, la Valkyrie des neuf nuits et l’Ifrit d’encre de la Tour oubliée ont leur double de bataille en 1024×1280, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
+console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule, la Valkyrie des neuf nuits et l’Ifrit d’encre de la Tour oubliée ont leur double de bataille en 768×960, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');

@@ -5,10 +5,16 @@
 #   - le-sablier-de-bab-el-<version>-setup.exe    (installeur NSIS, x64)
 #   - le-sablier-de-bab-el-<version>-portable.exe (un seul fichier, sans install)
 #
-# Le paquet web (desktop/dist-web) n'est PAS mis dans l'archive app.asar :
-# `extraResources` le copie à côté, dans resources/app, où le serveur HTTP local
-# le lit comme de simples fichiers. Lire 100 Mo dans une archive à chaque
-# requête serait plus lent et plus fragile.
+# Le **pack hors ligne** (desktop/dist-web) n'est PAS mis dans l'archive
+# app.asar : `extraResources` le copie à côté, dans resources/app, où le serveur
+# HTTP local le lit comme de simples fichiers — lire 100 Mo dans une archive à
+# chaque requête serait plus lent et plus fragile.
+#
+# L'installeur publié part **sans** ce dossier : `npm run desktop:coque` y laisse
+# seulement un `LISEZ-MOI.txt`, pour qu'`extraResources` ait une source (il refuse
+# un chemin absent) et que la coque ne trouve pas d'`index.html` — elle démarre
+# donc sur le site en ligne. `npm run desktop:web` le remplit pour le pack
+# hors ligne, publié à part sur la même Release.
 
 appId: dz.letsplay.sablier
 productName: Le Sablier de Bab El
@@ -42,8 +48,34 @@ directories:
 # runner) : la version exacte est lue dans pack/package.json par le bundle.
 
 # pack/ ne contient que l'exécutable ; on exclut les outils de build eux-mêmes.
+#
+# **`node_modules` est exclu en bloc, puis rouvert module par module.** Sans
+# cela, electron-builder collecte les dépendances de production en remontant
+# l'arborescence (`appDir`, `projectDir`, racine du workspace) : selon le
+# résultat de `npm list`, il a déjà embarqué le `node_modules` du dépôt entier —
+# 672 Mo de `app.asar.unpacked` et un installeur de 497 Mo pour un jeu qui n'en
+# a pas besoin. La liste ci-dessous est celle de `electron-updater` et de ses
+# dépendances ; `scripts/desktop-bundle.mjs` **vérifie** qu'elle couvre tout
+# `desktop/pack/node_modules` et échoue sinon, plutôt que de livrer un exécutable
+# qui planterait au lancement sur un module manquant.
 files:
   - '**/*'
+  - '!node_modules/**'
+  - 'node_modules/electron-updater/**'
+  - 'node_modules/builder-util-runtime/**'
+  - 'node_modules/argparse/**'
+  - 'node_modules/debug/**'
+  - 'node_modules/fs-extra/**'
+  - 'node_modules/graceful-fs/**'
+  - 'node_modules/js-yaml/**'
+  - 'node_modules/jsonfile/**'
+  - 'node_modules/lazy-val/**'
+  - 'node_modules/lodash.escaperegexp/**'
+  - 'node_modules/lodash.isequal/**'
+  - 'node_modules/ms/**'
+  - 'node_modules/sax/**'
+  - 'node_modules/tiny-typed-emitter/**'
+  - 'node_modules/universalify/**'
   - '!app-icons{,/**/*}'
   - '!electron-builder.yml'
 

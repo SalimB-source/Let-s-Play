@@ -6,9 +6,9 @@
     <title>Le Sablier de Bab El — hors ligne</title>
     <!--
       Page d'attente affichée quand la fenêtre ne peut pas charger le jeu.
-      En mode « paquet local » cela ne devrait jamais arriver (le jeu est servi
-      par la coque elle-même) : on la voit en mode « site en ligne », sans
-      connexion ou si le site est momentanément injoignable.
+      L'application démarre sur le site en ligne : on la voit sans connexion, ou
+      si le site est momentanément injoignable. Quand le pack hors ligne est
+      installé, elle propose d'y basculer plutôt que de laisser un mur.
     -->
     <style>
       :root { color-scheme: dark; --fond:#05060f; --or:#e8b75c; --sourdine:#9aa0c3; --bord:#232842; }
@@ -40,9 +40,12 @@
         sans connexion, la table ne peut pas être dressée.</p>
       <p>Vérifiez votre connexion puis réessayez. La partie en cours n’est pas perdue :
         vos decks et votre progression sont enregistrés sur cet ordinateur.</p>
-      <p class="compteur">Cible : <code id="cible">—</code></p>
+      <p id="alternative">Sans connexion, installez le pack hors ligne depuis le menu
+        Aide → Pack hors ligne.</p>
+      <p class="compteur">Cible : <code id="cible">—</code><span id="compte"></span></p>
       <div class="barre">
         <button id="reessayer">Réessayer</button>
+        <button id="local" hidden>Jouer la version hors ligne</button>
         <button class="secondaire" id="diagnostic">État de la carte graphique</button>
       </div>
     </main>
@@ -53,15 +56,24 @@
       if (cible) document.getElementById('cible').textContent = cible;
       if (params.get('mode') === 'local') {
         document.getElementById('explication').textContent =
-          'Le paquet local n’a pas pu être servi. Relancez l’application ; si l’écran revient, '
+          'Le pack hors ligne n’a pas pu être servi. Relancez l’application ; si l’écran revient, '
           + 'ouvrez le rapport graphique ci-dessous et transmettez-le.';
       }
+      // Le pack hors ligne est installé : c'est la sortie de secours évidente.
+      if (params.get('locale') === '1') {
+        const boutonLocal = document.getElementById('local');
+        boutonLocal.hidden = false;
+        document.getElementById('alternative').textContent =
+          'Ce PC a le pack hors ligne : le jeu peut démarrer sans Internet.';
+        boutonLocal.addEventListener('click', () => pont?.allerAuJeuLocal?.());
+      }
 
-      const compteur = document.querySelector('.compteur');
+      // `Cible : …` reste affiché, le décompte se glisse derrière : le texte
+      // d'origine est capturé avant que l'intervalle ne le réécrive.
+      // Le décompte vit dans son propre `<span>` : écrire dans le paragraphe
+      // effacerait la cible affichée à côté.
+      const compte = document.getElementById('compte');
       const bouton = document.getElementById('reessayer');
-      const auto = document.createElement('span');
-      auto.textContent = ' · nouvelle tentative automatique toutes les 15 s';
-      compteur.appendChild(auto);
 
       async function reessayer() {
         bouton.disabled = true;
@@ -75,9 +87,10 @@
 
       // Nouvelle tentative seule toutes les 15 s : une connexion qui revient
       // (Wi-Fi de la box, partage mobile) rouvre le duel sans clic.
+      let secondes = 0;
       setInterval(() => {
-        secondes += 15;
-        compteur.textContent = `Cible : ${cible || '—'} · nouvelle tentative dans ${Math.max(0, 15 - (secondes % 15))} s`;
+        secondes += 1;
+        compte.textContent = ` · nouvelle tentative dans ${15 - (secondes % 15)} s`;
       }, 1000);
       setInterval(reessayer, 15000);
     </script>

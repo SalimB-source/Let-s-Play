@@ -42,6 +42,7 @@ import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
 import { applyLaneCountForDevice } from './games/mirageLanes';
 import GameLoadBoundary from './games/GameLoadBoundary.jsx';
+import MiseAJourDisponible from './components/MiseAJourDisponible';
 
 /**
  * Pages à la demande — le shell (barre, thème, contexte de compte) se charge
@@ -281,6 +282,10 @@ function App() {
             <AchievementPopup />
             <SocialDock />
             <CallOverlays />
+            {/* La relance de mise à jour : à la racine, hors de `Layout`, pour
+                qu'elle parle aussi sur la table de duel et par-dessus les
+                surcouches. */}
+            <MiseAJourDisponible />
           </AchievementProvider>
           </CallsProvider>
           </MessagesProvider>

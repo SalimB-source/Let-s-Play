@@ -14,6 +14,27 @@ import { alternativeDeCarte, illustrationAlternativeUrl } from './rpgCardArtAlte
 const CARD_ART_BASE_URL = import.meta.env?.BASE_URL ?? '/';
 
 /**
+ * La géométrie **livrée** des peintures : 768 × 960, le 4:5 exact du cadre
+ * affiché.
+ *
+ * Les faces ont longtemps été livrées en 1024 × 1280 (et en cinq autres
+ * formats voisins : 928 × 1152, 1122 × 1402, 1264 × 1568, 1023 × 1280,
+ * 848 × 1264). Or aucune ne s'affiche plus large que ~270 px sur la table, et
+ * 232 px dans le catalogue : on transportait jusqu'à quatre fois les pixels
+ * utiles, 103 Mo de JPEG dans `public/cards/`. Ramenées à 768 × 960, qualité
+ * 72, progressives, elles pèsent 39 Mo — et ne se distinguent pas de la
+ * version d'origine à la taille d'affichage.
+ *
+ * Ces deux nombres sont la **référence** : `scripts/aleger-art-cartes.sh`
+ * produit exactement ce format, les tests le vérifient sur les fichiers
+ * livrés. Une peinture neuve se livre en 1024 × 1280 puis passe par
+ * `npm run art:aleger` ; le script ne retouche jamais un fichier déjà à
+ * 768 px de large, il est donc sûr de le relancer.
+ */
+export const CARD_ART_LARGEUR = 768;
+export const CARD_ART_HAUTEUR = 960;
+
+/**
  * Le set Neige a été peint en plusieurs passes, et sa **passe Souls** (octobre
  * 2026) repeint vingt de ses vingt-neuf cartes en huile sombre. Chaque carte
  * repeinte porte donc sa révision `neige-souls-cendres-v1` dans

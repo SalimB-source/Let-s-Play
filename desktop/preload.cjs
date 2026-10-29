@@ -33,6 +33,8 @@ contextBridge.exposeInMainWorld('letsPlayDesktop', {
   recharger: () => ipcRenderer.invoke('desktop:recharger'),
   /** Revenir au duel (utilisé par la page « hors ligne »). */
   allerAuJeu: () => ipcRenderer.invoke('desktop:aller-au-jeu'),
+  /** Basculer sur le pack hors ligne depuis la page « hors ligne ». */
+  allerAuJeuLocal: () => ipcRenderer.invoke('desktop:aller-au-jeu-local'),
   /** Ouvrir la fenêtre de diagnostic graphique. */
   ouvrirDiagnostic: () => ipcRenderer.invoke('desktop:ouvrir-diagnostic'),
   /** Ouvrir le rapport `chrome://gpu` de Chromium. */

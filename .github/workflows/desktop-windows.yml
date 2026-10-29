@@ -1,35 +1,64 @@
 # Construit l'installeur Windows du Sablier de Bab El (coque PC, desktop/).
 #
-# Deux jobs :
-#   - `verifs`     : les 20 vérifications de la coque (GPU, serveur local,
-#                    isolation) sur Linux — rapides, et bloquantes ;
-#   - `installeur` : sur windows-latest, paquet web élagué + electron-builder →
-#                    `le-sablier-de-bab-el-<version>-setup.exe` et `-portable.exe`.
+# Trois jobs :
+#   - `verifs`          : les vérifications de la coque (GPU, serveur local,
+#                         isolation) sur Linux — rapides, et bloquantes ;
+#   - `installeur`      : sur windows-latest, **coque seule** + electron-builder
+#                         → `le-sablier-de-bab-el-<version>-setup.exe` (~80 Mo) ;
+#   - `pack-hors-ligne` : sur demande seulement, construit le site élagué et le
+#                         publie en `.zip` à part (~100 Mo), pour qui veut jouer
+#                         sans Internet.
+#
+# **L'installeur ne contient plus le site.** La fenêtre charge le site en ligne
+# (`let-s-play-nu.vercel.app`), donc un correctif du jeu arrive au lancement
+# suivant — sans reconstruire 230 Mo d'exécutable, et sans que les 394 peintures
+# de cartes repassent dans un runner Windows. D'où les déclencheurs ci-dessous :
+# seuls les changements de la **coque** reconstruisent l'installeur.
+#
+# Le numéro de version reste dérivé du dépôt (étape « Version dérivée du
+# build ») : chaque build publié porte un numéro plus grand que le précédent,
+# donc `electron-updater` le voit et le propose au lancement.
 #
 # Publication, comme pour l'APK (android-apk.yml) :
-#   - artefacts de run (rétention 90 jours) ;
+#   - artefacts de run (rétention 30 jours) ;
 #   - GitHub Release sur le tag « desktop », remplacée à chaque build de main :
 #     lien de téléchargement permanent et métadonnées latest.yml/.blockmap pour
 #     electron-updater.
 #
-# Contrairement à l'APK, l'exécutable N'EST PAS committé sur la branche :
-# ~180 Mo par build saturerait le dépôt. Le téléchargement passe par la Release.
+# Contrairement à l'APK, l'exécutable N'EST PAS committé sur la branche : le
+# téléchargement passe par la Release.
 #
 # Lancement manuel : onglet Actions → « Installeur PC (Windows) » → Run workflow.
+# Cochez `pack_hors_ligne` pour republier aussi le pack hors ligne.
 
 name: Installeur PC (Windows)
 
 on:
   workflow_dispatch:
+    inputs:
+      pack_hors_ligne:
+        description: 'Construire aussi le pack hors ligne (.zip, ~100 Mo)'
+        type: boolean
+        default: false
   push:
     branches:
       - main
-      - 'arena/**'
+    paths:
+      # La coque, et elle seule : le site est chargé en ligne, un correctif de
+      # `src/`, `public/` ou `index.html` n'a donc rien à reconstruire ici.
+      - 'desktop/**'
+      - 'scripts/desktop-bundle.mjs'
+      - 'scripts/desktop-check.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/desktop-windows.yml'
+  pull_request:
     paths:
       - 'desktop/**'
       - 'scripts/desktop-bundle.mjs'
       - 'scripts/desktop-check.mjs'
-      - 'vite.config.js'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/desktop-windows.yml'
 
 permissions:
@@ -39,7 +68,11 @@ permissions:
 
 concurrency:
   group: desktop-windows
-  cancel-in-progress: true
+  # Une PR peut annuler son propre build ; un build de `main` ne doit jamais
+  # être coupé en pleine publication (l'étape Release supprime le tag `desktop`
+  # avant de le recréer : une annulation au mauvais moment laisserait le lien de
+  # téléchargement cassé). Les builds de `main` font donc la queue.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verifs:
@@ -75,6 +108,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # L'étape « Version dérivée du build » compte les commits du dépôt :
+          # un clone superficiel renverrait 1 et casserait la numérotation.
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -82,29 +119,50 @@ jobs:
           node-version: 22
           cache: npm
 
+      # La version est celle du fichier (majeure.mineure) et son correctif suit
+      # le dépôt : le plus grand entre le nombre de commits, le numéro de run
+      # et le correctif déjà écrit. Strictement croissante, donc vue par
+      # `electron-updater` — et une montée manuelle en 1.1.0 garde la priorité.
+      - name: Version dérivée du build
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE=$(node -p "require('./desktop/package.json').version")
+          MAJEUR=${BASE%%.*}
+          RESTE=${BASE#*.}
+          MINEUR=${RESTE%%.*}
+          CORRECTIF=${RESTE#*.}
+          COMMITS=$(git rev-list --count HEAD)
+          RUN=${GITHUB_RUN_NUMBER:-0}
+          VERSION=$(node -e '
+            const [majeur, mineur, base, commits, run] = process.argv.slice(1).map(Number);
+            console.log(`${majeur}.${mineur}.${Math.max(base, commits, run)}`);
+          ' "$MAJEUR" "$MINEUR" "$CORRECTIF" "$COMMITS" "$RUN")
+          node -e '
+            const fs = require("node:fs");
+            const p = "desktop/package.json";
+            const pkg = JSON.parse(fs.readFileSync(p, "utf8"));
+            pkg.version = process.argv[1];
+            fs.writeFileSync(p, `${JSON.stringify(pkg, null, 2)}\n`);
+          ' "$VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "::notice title=Version du build::v$VERSION (fichier : v$BASE · commits : $COMMITS · run : $RUN)"
+
       - name: Dépendances du site
         run: npm ci
 
       - name: Dépendances de la coque (Electron, electron-builder)
         run: npm --prefix desktop install
 
-      - name: Paquet web élagué
+      - name: Coque seule (sans paquet web)
         shell: bash
         run: |
           set -o pipefail
-          # Sans clés Supabase, la coque reste jouable mais la progression ne
-          # quitte pas le PC (pas de compte, donc pas de sauvegarde serveur).
-          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
-            echo "::warning title=Progression PC non synchronisée::VITE_SUPABASE_URL et/ou VITE_SUPABASE_PUBLISHABLE_KEY absentes de ce build : l'écran de connexion PC restera indisponible et la progression des joueurs restera sur leur ordinateur (aucune ligne dans player_progress / rpg_sablier_progress). Ajoutez les variables du dépôt (Settings → Secrets and variables → Actions → Variables), puis relancez le build."
-          else
-            echo "Supabase configuré pour ce build PC : la progression suit le compte."
-          fi
-          if [ -z "$VITE_TURNSTILE_SITE_KEY" ]; then
-            echo "::warning title=Protection anti-bot absente du build PC::VITE_TURNSTILE_SITE_KEY non définie (Settings → Secrets and variables → Actions → Variables) : l'écran de connexion restera bloqué sur captchaNotConfigured."
-          else
-            echo "Protection anti-bot Turnstile intégrée au build PC."
-          fi
-          npm run desktop:web 2>&1 | tee bundle.log
+          # Aucun build Vite ici : l'installeur ne contient pas le site. Le
+          # script assemble `desktop/pack` et pose un `LISEZ-MOI.txt` là où
+          # `extraResources` attend un dossier — la coque, elle, n'y verra pas
+          # d'`index.html` et démarrera donc sur le site en ligne.
+          npm run desktop:coque 2>&1 | tee bundle.log
 
       # Les logs de run ne sont pas toujours consultables : en cas d'échec, les
       # lignes utiles sont recopiées en annotations de check-run (lisibles via
@@ -121,7 +179,14 @@ jobs:
 
       - name: Taille du paquet
         shell: bash
-        run: du -sh desktop/dist-web || true
+        run: |
+          # Coque seule : quelques octets. Un `index.html` ici voudrait dire que
+          # le site a été embarqué par erreur.
+          du -sh desktop/dist-web || true
+          if [ -s desktop/dist-web/index.html ]; then
+            echo "::error title=Paquet web embarqué::desktop/dist-web contient un index.html — l’installeur « en ligne » doit sortir sans le site."
+            exit 1
+          fi
 
       - name: Installeur + version portable
         shell: bash
@@ -162,11 +227,14 @@ jobs:
       # Les annotations de step sont plafonnées à 10 : le rapport complet des
       # tailles part en commentaire de la pull request, lisible via l'API.
       - name: Rapport de tailles en PR
-        if: github.event_name == 'push'
+        # Utile sur la PR qui touche la coque ; un build de `main` n'a pas de PR
+        # (le rapport part alors dans le log du run).
+        if: github.event_name == 'pull_request'
         # Un échec de commentaire ne doit jamais priver le run de ses artefacts.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_NUM: ${{ github.event.pull_request.number }}
         shell: bash
         run: |
           {
@@ -192,9 +260,12 @@ jobs:
             ls -la desktop/stage 2>/dev/null || echo 'stage ABSENT'
             echo '```'
           } > report.md
-          # Checkout en HEAD détaché : `gh pr view` ne sait pas retrouver la
-          # branche ; on cherche la PR par sa tête via l'API.
-          NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
+          # Le numéro vient de l'événement `pull_request` ; à défaut, on cherche
+          # la PR par sa tête (un checkout détaché ne permet pas `gh pr view`).
+          NUM=${PR_NUM:-}
+          if [ -z "$NUM" ]; then
+            NUM=$(gh api "repos/$GITHUB_REPOSITORY/pulls?head=$GITHUB_REPOSITORY:$GITHUB_REF_NAME&state=open" -q '.[0].number' 2>/dev/null || true)
+          fi
           if [ -n "$NUM" ]; then
             gh pr comment "$NUM" --body-file report.md
           else
@@ -241,6 +312,11 @@ jobs:
             echo "**Carte graphique** : le rendu 3D passe par la carte du PC (WebGL → ANGLE/D3D11)."
             echo "Menu « Carte graphique → État de la carte graphique… » pour vérifier quel GPU travaille."
             echo ""
+            echo "**Hors connexion (option)** : cet installeur ouvre le site en ligne, il ne l'embarque pas."
+            echo "Pour jouer sans Internet, télécharge le **pack hors ligne** ci-dessous, puis installe-le"
+            echo "depuis le menu « Aide → Pack hors ligne… → Choisir un fichier .zip… ». Le jeu démarre"
+            echo "toujours sur le site (correctifs du jour) et bascule sur le pack quand le réseau manque."
+            echo ""
             echo "**Mises à jour** : l'installeur Windows vérifie cette Release au démarrage."
             echo "Le portable reste à mettre à jour en téléchargeant son nouvel exécutable."
             echo ""
@@ -251,3 +327,83 @@ jobs:
           git push origin :refs/tags/desktop 2>/dev/null || true
           gh release create desktop $FICHIERS --title "Le Sablier de Bab El pour PC — v${VERSION}" --notes-file notes.md
           echo "Release publiée : $FICHIERS"
+
+  # ---------------------------------------------------------------------------
+  # Pack hors ligne — sur demande seulement
+  # ---------------------------------------------------------------------------
+  # Ce que l'installeur ne contient plus : le site élagué, pour jouer sans
+  # Internet. Il est publié à part, sous un nom FIXE, à côté de l'installeur :
+  # le joueur le télécharge une fois et l'installe par le menu
+  # « Aide → Pack hors ligne… ». Il n'est pas reconstruit à chaque main — c'est
+  # précisément ce que la coque en ligne rend inutile — mais quand on le
+  # reconstruit, il part avec la Release du moment.
+  pack-hors-ligne:
+    needs: installeur
+    if: github.event_name == 'workflow_dispatch' && inputs.pack_hors_ligne == true
+    runs-on: windows-latest
+    env:
+      VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
+      VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Dépendances du site
+        run: npm ci
+
+      - name: Paquet web élagué
+        shell: bash
+        run: |
+          set -o pipefail
+          # Sans clés Supabase le pack se construit quand même : le jeu hors
+          # ligne fonctionne, seul le compte (donc la progression serveur) manque.
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::warning title=Pack hors ligne sans Supabase::VITE_SUPABASE_URL et/ou VITE_SUPABASE_PUBLISHABLE_KEY absentes : le jeu hors ligne fonctionne, mais la connexion au compte restera indisponible dans ce pack."
+          fi
+          npm run desktop:web 2>&1 | tee bundle.log
+
+      - name: Diagnostic paquet (échec)
+        if: failure()
+        shell: bash
+        run: |
+          echo "::error::LOG64 $(base64 -w0 bundle.log | head -c 20000)"
+          exit 1
+
+      # Le .zip contient un dossier `app/` à sa racine : c'est le nom que la
+      # coque attend dans `resources/app`, et celui que `main.js` décompresse.
+      - name: Archive du pack
+        shell: pwsh
+        run: |
+          $dest = 'desktop/pack-hors-ligne'
+          Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $dest | Out-Null
+          Copy-Item 'desktop/dist-web' "$dest/app" -Recurse
+          Remove-Item 'desktop/sablier-pack-hors-ligne.zip' -Force -ErrorAction SilentlyContinue
+          Compress-Archive -Path "$dest/app" -DestinationPath 'desktop/sablier-pack-hors-ligne.zip' -Force
+          $octets = (Get-Item 'desktop/sablier-pack-hors-ligne.zip').Length
+          Write-Output "pack hors ligne : $([math]::Round($octets / 1MB)) Mo"
+
+      - name: Artefact de run
+        uses: actions/upload-artifact@v4
+        with:
+          name: sablier-pack-hors-ligne
+          path: desktop/sablier-pack-hors-ligne.zip
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Publier le pack sur la Release
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `--clobber` : le nom du fichier ne change pas, le contenu oui.
+          gh release upload desktop desktop/sablier-pack-hors-ligne.zip --clobber
+          echo "Pack hors ligne publié sur la Release « desktop »."

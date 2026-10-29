@@ -31,6 +31,45 @@ const supabaseAnonKey = pickEnv(
 // jamais écraser le dist/ du déploiement web. Lancé par DESKTOP=1.
 const desktopBuild = process.env.DESKTOP === '1';
 
+/** Identité du build : un jeton court qui change à chaque déploiement.
+ *
+ * C'est la seule chose que le jeu compare au lancement pour savoir qu'une
+ * version plus récente est en ligne (voir `src/updates/maj-site.js`). Côté
+ * Vercel et GitHub Actions, le commit est déjà dans l'environnement ; en local
+ * on prend l'horloge, ce qui suffit à distinguer deux builds.
+ */
+const jetonBuild = pickEnv('VERCEL_GIT_COMMIT_SHA', 'GITHUB_SHA', 'DESKTOP_BUILD_ID');
+const buildId = jetonBuild ? jetonBuild.slice(0, 12) : `local-${Date.now()}`;
+
+/** Écrit `version.json` dans la sortie (et le sert en dev/preview).
+ *
+ * Le fichier est volontairement minuscule et sans cache : un client qui le
+ * relit obtient toujours l'identité du déploiement en cours, pas celle du
+ * build qu'il a chargé. Sans ce fichier, un onglet resté ouvert — ou une
+ * WebView Android — ne saurait jamais qu'une nouvelle version existe.
+ */
+function sablierVersionJsonPlugin(jeton) {
+  const contenu = () => `${JSON.stringify({ buildId: jeton, builtAt: new Date().toISOString() }, null, 2)}\n`;
+  const servir = (req, res, next) => {
+    const chemin = (req.url || '').split('?')[0];
+    if (chemin !== '/version.json' && chemin !== '/Let-s-Play/version.json') {
+      next();
+      return;
+    }
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-store, max-age=0');
+    res.end(contenu());
+  };
+  return {
+    name: 'sablier-version-json',
+    configureServer(server) { server.middlewares.use(servir); },
+    configurePreviewServer(server) { server.middlewares.use(servir); },
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: contenu() });
+    },
+  };
+}
+
 function sablierArbitreVitePlugin() {
   const middleware = async (req, res, next) => {
     const url = (req.url || '').split('?')[0];
@@ -59,7 +98,7 @@ function sablierArbitreVitePlugin() {
 }
 
 export default defineConfig({
-  plugins: [react(), sablierArbitreVitePlugin()],
+  plugins: [react(), sablierArbitreVitePlugin(), sablierVersionJsonPlugin(buildId)],
   base: desktopBuild || process.env.VERCEL ? '/' : '/Let-s-Play/',
   server: {
     allowedHosts: true,
@@ -70,6 +109,8 @@ export default defineConfig({
   define: {
     __SUPABASE_URL__: JSON.stringify(supabaseUrl),
     __SUPABASE_ANON_KEY__: JSON.stringify(supabaseAnonKey),
+    // Comparé à `version.json` au lancement pour proposer la mise à jour.
+    __BUILD_ID__: JSON.stringify(buildId),
   },
   ...(desktopBuild
     ? { build: { outDir: 'desktop/dist-web', emptyOutDir: true } }

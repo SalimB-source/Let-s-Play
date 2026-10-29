@@ -8395,24 +8395,31 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   la carte graphique…** affiche le renderer réellement utilisé, l'état de
   `webgl`/`webgl2`/`compositing` et une sonde WebGL — de quoi prouver, ou
   infirmer, que le GPU travaille.
-- **Un serveur local sert le jeu** (`desktop/local-server.js`, écoute seulement
-  sur `127.0.0.1`, port 4173) : routage `BrowserRouter` intact, `localStorage`
-  des decks sur une origine stable, contexte sûr pour l'audio et les appels.
-  Le paquet embarqué est **élagué** (`desktop/bundle-assets.json`) : cartes,
-  plateaux, musiques, décor du mode histoire et sons partent dans
-  l'installeur ; actus, captures et vidéos restent en ligne, relayées par le
-  serveur quand une connexion existe.
-- **Hors ligne**, le duel contre l'IA, l'atelier de decks, la collection et le
-  mode histoire fonctionnent ; compte, duels à distance et souk attendent le
-  retour de la connexion (Supabase).
-- Commandes : `npm run desktop:web` (paquet élagué), `npm run desktop:setup`,
+- **La fenêtre ouvre le site en ligne.** L'installeur ne contient plus de copie
+  du jeu : **~105 Mo** au lieu de 235, et chaque correctif est là au lancement
+  suivant — sans reconstruire d'exécutable quand une carte change.
+- **Un serveur local sert le pack hors ligne, quand il est installé**
+  (`desktop/local-server.js`, écoute seulement sur `127.0.0.1`, port 4173) :
+  routage `BrowserRouter` intact, `localStorage` des decks sur une origine
+  stable, contexte sûr pour l'audio et les appels. Ce **pack hors ligne** est
+  une option publiée à part (~100 Mo, élaguée par `desktop/bundle-assets.json`) :
+  cartes, plateaux, musiques, décor du mode histoire et sons ; actus, captures
+  et vidéos restent en ligne, relayées par le serveur.
+- **Hors connexion**, sans le pack, il n'y a rien à jouer : la page d'attente
+  réessaie seule toutes les 15 s. Avec le pack, le duel contre l'IA, l'atelier de
+  decks, la collection et le mode histoire fonctionnent ; compte, duels à
+  distance et souk attendent le retour de la connexion (Supabase).
+- Commandes : `npm run desktop:coque` (projet d'empaquetage sans le site),
+  `npm run desktop:web` (pack hors ligne élagué), `npm run desktop:setup`,
   `npm run desktop:run` (lancer sans installer), `npm run desktop:dist`
-  (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le paquet
-  dans un navigateur), `npm run check:desktop` (22 vérifications sans Electron).
+  (produire les `.exe`, sur Windows), `npm run desktop:serve` (tester le pack
+  dans un navigateur), `npm run check:desktop` (29 vérifications sans Electron).
 - CI : `.github/workflows/desktop-windows.yml` — vérifications sur Ubuntu, puis
   build Windows et GitHub Release sur le tag `desktop` (l'exécutable n'est pas
   committé). La Release publie aussi des copies au nom fixe
   (`le-sablier-de-bab-el-setup.exe`) : ce sont elles que le site fait télécharger.
+  Le build ne part plus que sur la **coque**, et sa **version est dérivée du
+  dépôt** — voir « la mise à jour se propose au lancement ».
 - **Écran d'entrée du jeu** : sur `/jeu/sablier-de-bab-el`, le site propose
   d'abord « Télécharger pour Windows » ou « Jouer dans le navigateur »
   (`src/games/RpgEntryChoice.jsx`). Le duel reste paresseux tant que le choix
@@ -8420,6 +8427,79 @@ Android (`android/`) : une coque **Electron** (`desktop/`) ouvre
   choix « navigateur » est retenu sur l'appareil. Sur téléphone il reste et
   passe en une seule colonne.
   `npm run check:rpg-entry-choice`.
+
+## Le Sablier : la mise à jour se propose au lancement
+
+« Fais en sorte que le jeu pousse à faire la mise à jour au lancement. »
+
+Un jeu qui vit dans un onglet — ou dans la WebView de l'APK — ne sait jamais
+qu'une nouvelle version est en ligne : `index.html` est relu, les fichiers
+`assets/` portent leur empreinte dans leur nom, mais rien ne se recharge tout
+seul. Et l'installeur PC, lui, embarque une **copie** du site : sans nouvelle
+Release, il peut jouer une version vieille de plusieurs semaines.
+
+**L'identité d'un build.** `vite.config.js` calcule un jeton — le commit
+(`VERCEL_GIT_COMMIT_SHA`, `GITHUB_SHA`), ou l'horloge en local —, le grave dans
+le bundle (`__BUILD_ID__`) et écrit `version.json` à la racine de la sortie
+(`{ buildId, builtAt }`, servi avec `Cache-Control: no-store`). C'est le seul
+renseignement que le client compare, et il n'a rien de secret.
+
+**Côté navigateur, APK et webview.** `src/components/MiseAJourDisponible.jsx`
+(module testable : `src/updates/maj-site.js`) monte à la racine du site, hors de
+`Layout` :
+
+- **2,5 s après le lancement**, il relit `version.json` sans cache et compare
+  au build chargé ; s'ils diffèrent, un panneau s'ouvre — « Une nouvelle version
+  est en ligne » — avec **Recharger maintenant** (choix par défaut) et
+  **Plus tard** ;
+- le rechargement passe par une URL neuve (`?maj=<buildId>`) : c'est la seule
+  façon de faire relire `index.html` à une WebView qui l'a en cache. Les
+  fichiers JS/CSS, eux, n'ont pas ce problème — leur nom change à chaque build ;
+- **Plus tard** (ou **Échap**) range le panneau et laisse une pastille discrète
+  en bas de l'écran, qui le rouvre : la relance ne se perd pas ;
+- la veille se répète **toutes les quinze minutes** et à chaque retour sur
+  l'onglet (au plus une fois par minute) : une appli laissée ouverte toute la
+  nuit se met à jour le matin ;
+- hors ligne, ou si `version.json` répond n'importe quoi, **rien ne s'affiche** :
+  une vérification ratée est une vérification sans réponse ;
+- en développement, la veille est coupée : l'identité change à chaque
+  démarrage du serveur, se comparer à soi-même ferait clignoter le panneau.
+
+**Côté PC installé.** Deux relances, dans `desktop/main.js` :
+
+- **l'installeur** est cherché 2 s après l'ouverture (au lieu de 8 s), puis
+  toutes les six heures ; le dialogue de fin de téléchargement propose
+  « Redémarrer et installer » par défaut et signale que l'installation se fera
+  de toute façon à la fermeture. Un échec silencieux (démarrage hors ligne) est
+  réessayé une fois au bout d'une minute ;
+- **le pack hors ligne** (option) est comparé au site en ligne : si le site est
+  plus récent, la coque propose de **jouer en version en ligne** pour la
+  session. Le pack reste installé et jouable hors connexion ; le menu indique le
+  mode courant.
+
+**Plus rien à reconstruire pour un correctif.** L'installeur n'embarque plus le
+site : la fenêtre le charge en ligne, donc un correctif du jeu est là au
+lancement suivant. `.github/workflows/desktop-windows.yml` ne part donc plus que
+sur la **coque** — `desktop/**`, `scripts/desktop-*.mjs`,
+`package.json`/`package-lock.json` — ou sur lancement manuel (une PR ne construit
+que si elle touche la coque). Le **pack hors ligne** se republie à la demande
+(`workflow_dispatch` → `pack_hors_ligne`). La **version** de la coque est
+calculée avant l'empaquetage :
+
+```
+1.0.max(correctif du fichier, nombre de commits, numéro de run)
+```
+
+Chaque build publié porte donc un numéro strictement plus grand que le
+précédent : `electron-updater` le voit et le propose au lancement, sans bump
+manuel. La Release du tag `desktop` est supprimée puis recréée à chaque build,
+donc le stockage ne s'accumule pas. La bascule « jouer en ligne » reste utile
+pour la fenêtre de quelques minutes entre le merge et la publication du nouvel
+installeur.
+
+Vérification : `npm run check:maj-version` (protocole, veille, cascade de
+rechargement, panneau monté pour de vrai, coque PC) et `npm run check:desktop`
+(dont les déclencheurs et la numérotation du workflow).
 
 ## Le Sablier : la table au doigt reprend la composition du PC
 
