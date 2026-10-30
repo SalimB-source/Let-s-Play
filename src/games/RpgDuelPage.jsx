@@ -2958,6 +2958,7 @@ export function TableCard({
         actionFx?.type === 'glow' ? 'fx-glow' : '',
         actionFx?.type === 'block' ? 'fx-block' : '',
         actionFx?.type === 'unblock' ? 'fx-unblock' : '',
+        actionFx?.type === 'dodge' ? 'fx-dodge' : '',
         // L'éclat du soin vit dans ses propres calques (`EclatSoin`) : la carte
         // elle-même n'est pas animée, ses cinématiques `fx-*` restent libres.
         soin ? `is-healing is-healing--${varianteSoin(soin)}` : '',
@@ -7312,6 +7313,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return () => window.clearTimeout(timer);
   }, [monteeNiveau?.token, monteeNiveau?.ouverture, fermerMonteeNiveau]);
   const [animationsEntites, setAnimationsEntites] = useState({});
+  const [slashesContreAttaque, setSlashesContreAttaque] = useState([]);
+  const sequenceSlashContreAttaqueRef = useRef(0);
   const [missVisibles, setMissVisibles] = useState({});
   const sequenceMissRef = useRef(0);
   // Les « ×4 » enflammés de Kagutsuchi : `{ [entityId]: { fois, token } }` le
@@ -9899,6 +9902,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }, duree);
   };
 
+  const declencherLamesContreAttaque = (rect) => {
+    if (!rect?.width || !rect?.height) return;
+    const token = ++sequenceSlashContreAttaqueRef.current;
+    const effet = {
+      id: token,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      height: rect.height,
+    };
+    setSlashesContreAttaque((current) => [...current, effet]);
+    programmerNettoyageVisuel(() => {
+      setSlashesContreAttaque((current) => current.filter((autre) => autre.id !== token));
+    }, 720);
+  };
+
   const declencherMissEntites = (ids = [], duree = 1400) => {
     const cibles = [...new Set((ids ?? []).filter(Boolean))];
     if (!cibles.length) return;
@@ -10137,7 +10156,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         camp: 'sorcier',
       })),
     ];
-    return cartesEnJeu.map((entite) => {
+    const instantane = cartesEnJeu.map((entite) => {
       // Pile d'homonymes repliée : l'exemplaire masqué n'a pas d'élément, il
       // emprunte la place de sa pile visible pour que l'effet de destruction
       // parte du bon endroit au lieu du coin de la table.
@@ -10178,6 +10197,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         angle,
       };
     });
+    const avatarRects = Object.fromEntries(['joueur', 'sorcier'].map((cote) => {
+      const classe = cote === 'joueur' ? 'joueur' : 'ennemi';
+      const avatar = table?.querySelector(`.rpg-wizard-plate--${classe} .rpg-wizard-plate__avatar`);
+      if (!avatar) return [cote, null];
+      const rect = avatar.getBoundingClientRect();
+      return [cote, {
+        left: rect.left - tableRect.left,
+        top: rect.top - tableRect.top,
+        width: rect.width,
+        height: rect.height,
+      }];
+    }));
+    instantane.combatAnimationIds = new Set((duel.combatAnimations ?? []).map((animation) => animation.id));
+    instantane.avatarRects = avatarRects;
+    return instantane;
   };
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
@@ -10243,6 +10277,23 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         .map((evenement) => [evenement.victim.id, evenement.killers[0]?.id]),
     ]);
     const mouvementReduit = animationsReduites();
+    const animationsCombatNouvelles = (duel.combatAnimations ?? [])
+      .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
+    if (!mouvementReduit) {
+      for (const animation of animationsCombatNouvelles) {
+        if (animation.type === 'esquive') {
+          animerEntites([animation.cible?.entiteId], 'dodge', 720);
+          continue;
+        }
+        if (animation.type === 'contre-attaque') {
+          const cible = animation.cible;
+          const rect = cible?.type === 'creature'
+            ? avant.find((entite) => entite.entityId === cible.entiteId)
+            : avant.avatarRects?.[cible?.cote];
+          declencherLamesContreAttaque(rect);
+        }
+      }
+    }
     const disparues = mouvementReduit ? [] : cartesDisparues;
     // La roue de feu : seules les blessures **parues depuis la dernière action
     // animée** comptent. Une brûlure ancienne reste dans le journal, mais elle
@@ -13557,6 +13608,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             );
           }) : null}
         </div>
+
+        {slashesContreAttaque.map((effet) => (
+          <span
+            key={effet.id}
+            className="rpg-counterattack-slashes"
+            aria-hidden="true"
+            style={{
+              left: `${effet.left}px`,
+              top: `${effet.top}px`,
+              width: `${effet.width}px`,
+              height: `${effet.height}px`,
+              '--rpg-slash-epaisseur': `${Math.max(3, Math.min(effet.width, effet.height) * 0.045)}px`,
+            }}
+          >
+            <i className="rpg-counterattack-slashes__slash rpg-counterattack-slashes__slash--a" />
+            <i className="rpg-counterattack-slashes__slash rpg-counterattack-slashes__slash--b" />
+          </span>
+        ))}
 
         {cartesEnDestruction.map((effet) => (
           <FantomeCarteDetruite

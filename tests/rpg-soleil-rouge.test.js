@@ -977,6 +977,9 @@ test('Contre-attaque : une attaque ciblée portée contre Tojiro lui est rendue 
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === djinn.id), false,
     'Tojiro rend 5 dégâts à l’Attaque ciblée et la tue');
   assert.ok(duel.log.some((ligne) => /Contre-attaque : Tojiro, le pourfendeur rend son coup/.test(ligne)));
+  assert.deepEqual(duel.combatAnimations?.at(-1)?.cible,
+    { type: 'creature', cote: 'joueur', entiteId: djinn.id },
+    'les entailles visuelles sont destinées à la carte de l’attaquant');
 
   // Esquive réussie : la frappe ne porte pas, la riposte part quand même. Le
   // premier jet (0,5) laisse l’Attaque ciblée toucher, le second (0,1) réussit
@@ -1000,6 +1003,8 @@ test('Contre-attaque : un sort qui cible Tojiro frappe son lanceur, même esquiv
   assert.equal(rpgLancerMagie(duel, 'joueur', 'frappe-iaijutsu', tojiro.id).ok, true);
   assert.equal(tojiro.pv, 3, 'le sort inflige ses 2 dégâts');
   assert.equal(duel.joueur.pv, 20, 'la riposte frappe le sorcier qui a lancé le sort');
+  assert.deepEqual(duel.combatAnimations?.at(-1)?.cible, { type: 'sorcier', cote: 'joueur' },
+    'le signal visuel vise bien l’avatar du sorcier lanceur');
 
   const duelEsquive = duelTest(() => 0.05);
   const tojiroEsquive = jouer(duelEsquive, 'sorcier', 'tojiro-le-pourfendeur');

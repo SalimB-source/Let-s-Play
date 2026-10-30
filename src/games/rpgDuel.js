@@ -2299,6 +2299,13 @@ function bonusTraquePirates(attaquant, cible) {
   return bonus > 0 && estProieDuChasseur(cible) ? bonus : 0;
 }
 
+/** Enregistre un signal visuel séparé du journal narratif du combat. */
+function journaliserAnimationCombat(duel, animation) {
+  const seq = (Number(duel.combatAnimationSeq) || 0) + 1;
+  duel.combatAnimationSeq = seq;
+  duel.combatAnimations = [...(duel.combatAnimations ?? []).slice(-31), { id: seq, ...animation }];
+}
+
 /**
  * L'Esquive se tente **une fois par attaque ou par sort** : 30 % de chance que
  * son effet sur la créature ne porte pas du tout. Les Magies rapides et les
@@ -2312,6 +2319,11 @@ function tenterEsquive(duel, entite, sourceType) {
   const reussie = rng() < chance;
   if (reussie) {
     duel.log.push(`${entite.name} esquive ${sourceType === 'magie' ? 'le sort' : 'l’attaque'}.`);
+    const cote = duel.joueur.creatures.some((candidate) => candidate.id === entite.id) ? 'joueur' : 'sorcier';
+    journaliserAnimationCombat(duel, {
+      type: 'esquive',
+      cible: { type: 'creature', cote, entiteId: entite.id },
+    });
   }
   return reussie;
 }
@@ -2338,14 +2350,25 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
+  const coteDefenseur = duel.joueur.creatures.some((candidate) => candidate.id === defenseur.id) ? 'joueur' : 'sorcier';
   if (source?.type === 'sorcier') {
     if (!duel[source.cote]) return false;
+    journaliserAnimationCombat(duel, {
+      type: 'contre-attaque',
+      depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
+      cible: { type: 'sorcier', cote: source.cote },
+    });
     duel.log.push(`Contre-attaque : ${defenseur.name} renvoie le sort au sorcier ${source.cote === 'joueur' ? 'joueur' : 'ennemi'} — ${force} dégât${force > 1 ? 's' : ''}.`);
     rpgInfligerSorcier(duel, source.cote, force);
     return true;
   }
   const attaquant = duel[source?.cote]?.creatures.find((entite) => entite.id === source?.entiteId);
   if (!attaquant) return false;
+  journaliserAnimationCombat(duel, {
+    type: 'contre-attaque',
+    depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
+    cible: { type: 'creature', cote: source.cote, entiteId: attaquant.id },
+  });
   duel.log.push(`Contre-attaque : ${defenseur.name} rend son coup à ${attaquant.name} — ${force} dégât${force > 1 ? 's' : ''}.`);
   rpgBlesserCreature(duel, source.cote, attaquant.id, force, cardColors(carte), null, 'capacite', defenseur.carteId);
   return true;

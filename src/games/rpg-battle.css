@@ -1008,6 +1008,15 @@
   object-fit: cover;
 }
 
+/* Le heaume du Jarl garde de l'air au-dessus, sans fond flouté rapporté. */
+.rpg-card--img[data-card-id="jarl-au-marteau-de-guerre"] {
+  background-color: #424c50;
+}
+.rpg-card--img[data-card-id="jarl-au-marteau-de-guerre"] > .rpg-card__img {
+  transform: translateY(1.2%) scale(.96);
+  transform-origin: center;
+}
+
 /* Sites persistants : chaque compteur retiré remonte une nouvelle peinture.
    La clé React de l'image change avec l'étape, donc cette révélation se rejoue
    exactement une fois à chaque avancée de Bimini ou de la fouille du trésor. */
@@ -1207,12 +1216,62 @@
   pointer-events: none;
 }
 
-/* Cinématiques de cartes : bond vers la cible, impact, lueur de soin. */
+/* Cinématiques de cartes : bond vers la cible, esquive, impact, lueur de soin. */
 .rpg-card--equipe.fx-lunge { animation: card-lunge-team .55s ease; }
 .rpg-card--ennemi.fx-lunge { animation: card-lunge-foe .55s ease; }
+.rpg-card--equipe.fx-dodge { animation: card-dodge-team .72s cubic-bezier(.2, .8, .25, 1) both; }
+.rpg-card--ennemi.fx-dodge { animation: card-dodge-foe .72s cubic-bezier(.2, .8, .25, 1) both; }
 
 @keyframes card-lunge-team { 40% { translate: 0 -52px; } }
 @keyframes card-lunge-foe { 40% { translate: 0 52px; } }
+@keyframes card-dodge-team {
+  0%, 100% { translate: 0 0; scale: 1; }
+  20% { translate: 0 2px; scale: .99; }
+  48%, 66% { translate: 0 28px; scale: .94; }
+  86% { translate: 0 -3px; scale: 1.015; }
+}
+@keyframes card-dodge-foe {
+  0%, 100% { translate: 0 0; scale: 1; }
+  20% { translate: 0 -2px; scale: .99; }
+  48%, 66% { translate: 0 -28px; scale: .94; }
+  86% { translate: 0 3px; scale: 1.015; }
+}
+
+/* Deux entailles dorées frappent exactement l'emplacement visé par une
+   Contre-attaque — y compris si la carte a déjà quitté la table. */
+.rpg-counterattack-slashes {
+  position: absolute;
+  z-index: 86;
+  display: block;
+  pointer-events: none;
+  overflow: visible;
+}
+.rpg-counterattack-slashes__slash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140%;
+  height: var(--rpg-slash-epaisseur, 5px);
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, #f5b91f 16%, #fff9cf 47%, #ffe256 62%, #e9a915 84%, transparent);
+  box-shadow: 0 0 5px rgba(255, 219, 74, .95), 0 0 13px rgba(255, 181, 16, .8);
+  transform: translate(-50%, -50%) rotate(var(--rpg-slash-angle)) scaleX(.05);
+}
+.rpg-counterattack-slashes__slash--a {
+  --rpg-slash-angle: 38deg;
+  animation: rpg-counterattack-cut .62s cubic-bezier(.18, .72, .25, 1) both;
+}
+.rpg-counterattack-slashes__slash--b {
+  --rpg-slash-angle: -38deg;
+  animation: rpg-counterattack-cut .62s cubic-bezier(.18, .72, .25, 1) .09s both;
+}
+@keyframes rpg-counterattack-cut {
+  0% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rpg-slash-angle)) scaleX(.04); }
+  22% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rpg-slash-angle)) scaleX(.42); }
+  48% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rpg-slash-angle)) scaleX(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(var(--rpg-slash-angle)) scaleX(1.04); }
+}
 
 /* `.rpg-card.` en tête : ces deux cinématiques doivent remplacer l'animation
    de lévitation d'une créature avec Envol, comme l'arrivée et le bond — une
@@ -3897,8 +3956,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: 4px solid #ff534c;
   box-shadow: 0 0 0 5px rgba(38, 8, 6, .9), 0 0 26px rgba(255, 64, 56, .8), 0 12px 28px rgba(0, 0, 0, .72);
 }
-.rpg-card.is-spell-target:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock),
-.rpg-card.is-coup-rapide-cible:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock) {
+.rpg-card.is-spell-target:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge),
+.rpg-card.is-coup-rapide-cible:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge) {
   animation: rpg-cible-visee 1.1s ease-in-out infinite alternate;
 }
 .rpg-wizard-plate.is-spell-target {
@@ -5975,6 +6034,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card.fx-glow,
   .rpg-card.fx-block,
   .rpg-card.fx-unblock,
+  .rpg-card.fx-dodge,
+  .rpg-counterattack-slashes,
+  .rpg-counterattack-slashes *,
   .rpg-terrain,
   .rpg-card-destruction-fx,
   .rpg-card-destruction-fx::before,
@@ -10432,7 +10494,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    table. Ce bloc vit après les halos de ciblage (`is-ciblable`, plus haut, et
    `is-spell-target`) : sa spécificité l'emporte, et la lévitation ne reprend
    pas dès que la créature devient une cible. */
-.rpg-card.is-frozen.is-envol:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock) {
+.rpg-card.is-frozen.is-envol:not(.fx-enter, .fx-lunge, .fx-hit, .fx-foudre, .fx-glow, .fx-block, .fx-unblock, .fx-dodge) {
   animation: none;
 }
 .rpg-card.is-frozen .rpg-card__envol-souffle {
