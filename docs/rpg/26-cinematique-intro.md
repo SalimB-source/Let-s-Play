@@ -196,6 +196,14 @@ s'afficher dans le désordre — trancher les attributions douteuses par
 corrélation, jamais à l'œil ; (2) `silences()` rend vide sans erreur si
 le chemin VO est faux (VO = `public/sablier-cinematic/audio/en`).
 
+**Montage V9 livré (octobre 2026).** 46 plans, 44 tableaux, 3 min 20,
+50,8 Mo : T03 6e plan (famille heureuse sur « And everyone keeps
+living »), T04 régénéré (clercs au bureau, sablier géant en fond).
+Lecteur : joue à chaque entrée (hors PvP), verrou paysage + plein écran
+natif le temps de la vidéo, bouton Passer centré à droite. Vérifié :
+gate 4803/4803, corrélation > 0,78 sur les 2 nouveaux plans,
+−19,65 LUFS, VTT 43 cues.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)

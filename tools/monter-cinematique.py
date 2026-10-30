@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V8).
+"""Montage de la cinematique d'intro EN du Sablier (V9).
 
-Assemble : 43 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 44 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
 V7 : synchro personnages (T07 ancré sur les respirations réelles de la VO,
@@ -18,6 +18,9 @@ Règle 2-3 angles/lieu : T06 2e angle (corde/lanterne), T10 2e angle
 (service à thé), sceau T11 régénéré cohérent avec le portail.
 T08b : Salem + réfugiés désespérés derrière lui (« right behind me »).
 T07d/T07i : Tarek rit avec Salem et Yamina (carrure, crate scellée).
+
+V9 : T03 6e plan (famille heureuse sur « keeps living »), T04 régénéré
+(clercs au bureau, sablier géant en fond).
 T07g : Fériel forge un bouclier en métal (enclume, étincelles).
 
 Correctifs V6 : pas de filtre fps redondant après l'étalonnage
@@ -346,16 +349,17 @@ PAUSES_T07 = [
     ("cine-t07i-tarek-fardeau-4k.jpg", "push", 19.71, False),        # …carries the Chamber's crates —
     ("cine-t07j-tarek-espiegle-4k.jpg", "push_resp", 22.10, True),   # …and its secrets. (sourire espiègle)
 ]
-# T03 V8 : 5 plans tac-ô-tac ancrés sur les silences RÉELS de T03.mp3
+# T03 V9 : 6 plans tac-ô-tac ancrés sur les silences RÉELS de T03.mp3
 # (pauses détectées : 2.26-2.81 / 3.65-4.16 / 5.02-5.61 / 7.48-8.03 / 8.92-9.35).
-# Ensevelissement x3 (first / second / third), puis vie quotidienne au 4e
-# (fourth / keeps living — la 2e moitié tient la pause 8.92-9.35 sans couper).
+# Ensevelissement x3 (first / second / third), puis vie quotidienne au 4e :
+# terrasse (fourth), marché (Everyone knows), famille (keeps living).
 PAUSES_T03 = [
     ("cine-t03b-rue-4k.jpg", "panR", 0.0, False),               # The first tier is already lost.
     ("cine-t03c-rue-ensevelie-4k.jpg", "push", 2.53, True),     # Then the second.
     ("cine-t03d-toits-ensevelis-4k.jpg", "zout", 3.90, True),   # Then the third.
     ("cine-t03-reprise-4k.jpg", "panD", 5.32, True),            # Today, we live on the fourth.
-    ("cine-t03e-marche-vie-4k.jpg", "push_resp", 7.76, True),   # Everyone knows. / keeps living.
+    ("cine-t03e-marche-vie-4k.jpg", "push_resp", 7.76, True),   # Everyone knows.
+    ("cine-t03f-famille-4k.jpg", "push", 9.14, True),             # And everyone keeps living.
 ]
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
 # Scribe puis confrontation, registre puis rue vide.
