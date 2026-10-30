@@ -14463,3 +14463,409 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek__duo { align-items: stretch; }
   .rpg-vitrine { width: clamp(140px, 22vw, 190px); }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MENU DU SABLIER — TÉLÉPHONE EN PAYSAGE : BARRE DE NAVIGATION À DROITE,
+   ACCUEIL VERROUILLÉ SUR UN SEUL ÉCRAN (AUCUN DÉFILEMENT)
+   ──────────────────────────────────────────────────────────────────────────
+   Le jeu verrouille le paysage sur téléphone ; or dans cette orientation,
+   aucune des deux coques existantes ne convenait :
+     - la colonne de bureau (216–260 px, collée à gauche) mangeait un tiers de
+       l'écran et laissait l'accueil déborder en hauteur ;
+     - la rangée du portrait (touches 3D en haut) se déclenchait sur les petits
+       téléphones (≤ 700 px / device-width ≤ 600) et empilait tout, d'où un
+       long défilement vertical.
+   Ici, la barre de navigation devient une COLONNE ÉTROITE COLLÉE À DROITE
+   (pouce droit), compactée pour que ses neuf entrées tiennent dans ~340 px de
+   haut, et la page d'accueil « Jouer » se compresse pour tenir dans la
+   hauteur du téléphone : vitrine à gauche, modes empilés au centre, rampe des
+   quêtes réduite en bas. Les autres écrans (catalogue, souk…) gardent leur
+   défilement, mais uniquement dans la zone de contenu — la barre reste en vue.
+   Ce bloc vit en FIN de feuille : il doit l'emporter sur la coque de bureau
+   comme sur celle du portrait quand leurs requêtes se recouvrent. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
+  /* La largeur de la colonne vit sur `.rpg-mode-menu` : le bouton flottant de
+     reprise est un enfant direct du menu, pas du `__content`, et doit pouvoir
+     la lire pour s'écarter de la barre. */
+  .rpg-mode-menu { --rpg-sidebar-w: clamp(148px, 21vw, 192px); }
+
+  .rpg-mode-menu__content {
+    --rpg-sidebar-w: clamp(148px, 21vw, 192px);
+    width: 100%;
+    min-height: 100%;
+    padding: 0;
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr) var(--rpg-sidebar-w);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+  }
+  /* La coque du portrait (qui se déclenche aussi sur les petits téléphones en
+     paysage, via `max-device-width`) pose ses rangées avec une spécificité
+     supérieure : on la neutralise explicitement pour l'accueil. */
+  .rpg-mode-menu--jouer .rpg-mode-menu__content {
+    padding: 0;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  /* ── L'ACCUEIL S'ANCRE SUR LA COUCHE DU JEU, PAS SUR `100dvh` ────────────
+     Le verrou « un seul écran » de l'accueil mesure `100dvh` (plus haut dans
+     la feuille). Or en paysage, cette hauteur « dynamique » peut dépasser la
+     zone réellement peinte (barre d'outils du navigateur, barres système qui
+     vont et viennent) : le bouton « Jouer » de la colonne et les jalons des
+     quêtes (Cachet, Souk) étaient alors peints SOUS le bord de l'écran, sans
+     aucun défilement pour les atteindre. Le menu est une couche absolue
+     calée sur `.rpg-battle` (fixe, `inset: 0`) — c'est elle qui dit la
+     hauteur vraiment visible : tout se mesure en pourcentages de cette
+     couche. Si malgré tout la place vient à manquer, la colonne d'onglets
+     garde son propre défilement interne (`overflow-y: auto`) : « Jouer »
+     reste toujours atteignable. */
+  .rpg-mode-menu.rpg-mode-menu--jouer {
+    height: auto;
+    max-height: none;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__content {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__header {
+    height: 100%;
+    max-height: 100%;
+  }
+  .rpg-mode-menu__content > :not(.rpg-mode-menu__header):not(.rpg-mode-menu__footer) {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+  .rpg-mode-menu__footer {
+    grid-column: 1;
+    grid-row: 2;
+    margin-top: 10px;
+    padding: 8px 14px 14px;
+  }
+  /* Sur l'accueil « Jouer », chaque pixel de hauteur compte : le pied de page
+     décoratif part, la grille n'a plus qu'une rangée. */
+  .rpg-mode-menu--jouer .rpg-mode-menu__footer { display: none; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 0; }
+  .rpg-mode-menu--jouer.rpg-mode-menu--reprise .rpg-mode-menu__content { padding-bottom: 0; }
+  .rpg-mode-menu--reprise .rpg-mode-menu__footer { padding-bottom: 86px; }
+  .rpg-menu-button--resume.rpg-menu-button--floating {
+    left: 0;
+    right: var(--rpg-sidebar-w, 0px);
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    max-width: calc(100% - var(--rpg-sidebar-w, 0px) - 24px);
+  }
+
+  /* ── La barre latérale, à DROITE ─────────────────────────────────────── */
+  .rpg-mode-menu__header {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    align-self: start;
+    width: 100%;
+    margin: 0;
+    padding: calc(6px + env(safe-area-inset-top, 0px)) calc(4px + env(safe-area-inset-right, 0px)) 0 4px;
+    box-sizing: border-box;
+    /* `svh` plutôt que `dvh` : la hauteur « dynamique » peut dépasser la zone
+       réellement peinte quand la barre d'outils du navigateur va et vient en
+       paysage — le bas de la colonne (« Jouer ») passait alors sous le bord de
+       l'écran, hors d'atteinte. La petite hauteur (`svh`) est garantie
+       visible ; sur l'accueil, la colonne suit carrément la couche du jeu
+       (règle `--jouer` plus bas). */
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+    max-height: 100svh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand fullscreen quitter"
+      "modes modes modes";
+    align-items: center;
+    justify-content: stretch;
+    column-gap: 4px;
+    row-gap: 6px;
+    border-bottom: 0;
+    border-right: 0;
+    border-left: 1px solid rgba(240, 214, 158, .22);
+    background:
+      radial-gradient(ellipse at 50% 100%, rgba(226, 118, 32, .16), transparent 56%),
+      linear-gradient(180deg, rgba(20, 18, 22, .97) 0%, rgba(12, 11, 15, .96) 58%, rgba(16, 12, 11, .98) 100%);
+    box-shadow: -10px 0 32px rgba(0, 0, 0, .52), inset 1px 0 0 rgba(255, 232, 182, .05);
+    backdrop-filter: blur(16px);
+  }
+  .rpg-mode-menu__brand {
+    grid-area: brand;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding-left: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .rpg-mode-menu__accueil { width: 28px; height: 28px; margin-bottom: 0; }
+  .rpg-mode-menu__accueil .rpg-mode-icone { width: 17px; height: 17px; }
+  .rpg-mode-menu__brand h1 { font-size: 12.5px; line-height: 1.05; }
+  .rpg-mode-menu__fullscreen,
+  .rpg-mode-menu__quitter {
+    order: 0;
+    min-width: 28px;
+    min-height: 28px;
+    margin: 0;
+    padding: 5px;
+  }
+  .rpg-mode-menu__fullscreen { grid-area: fullscreen; }
+  .rpg-mode-menu__quitter { grid-area: quitter; margin-left: 0; }
+
+  /* La colonne des onglets : neuf entrées compactes, libellés affichés,
+     défilement interne seulement si l'écran est vraiment trop bas. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch {
+    grid-area: modes;
+    order: 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    align-self: stretch;
+    width: 100%;
+    height: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    /* 10 px sous « Jouer » : à 8 px, le bas du bouton affleurait le bord de
+       l'écran sur les téléphones sans zone sûre déclarée. */
+    padding: 6px 3px calc(10px + env(safe-area-inset-bottom, 0px)) 4px;
+    gap: 2px;
+    border: 0;
+    border-top: 1px solid rgba(240, 220, 178, .12);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre),
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__progression,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__messagerie {
+    position: relative;
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    min-height: 31px;
+    margin: 0;
+    padding: 2px 6px 2px 5px;
+    display: flex;
+    /* La Messagerie passait en colonne sous 760 px (icône au-dessus du texte) :
+       dans cette barre, toutes les entrées restent des lignes. */
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 7px;
+    border-radius: 9px;
+    font-size: 11.5px;
+    line-height: 1.15;
+    text-align: left;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+    margin: 0;
+    border-radius: 8px;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 252, 236, .38),
+      inset 0 -3px 6px rgba(0, 0, 0, .4),
+      0 2px 0 var(--icone-3d-tranche),
+      0 4px 8px rgba(0, 0, 0, .5);
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-icone { width: 15px; height: 15px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-menu__souk-piece { font-size: 14px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d .rpg-mode-menu__messagerie-mark { width: 14px; height: 14px; flex-basis: 14px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d span.rpg-mode-menu__profil-embleme { font-size: 13px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__icone-3d img.rpg-mode-menu__profil-embleme { flex-basis: 20px; width: 20px; height: 20px; }
+
+  /* Les libellés reviennent (le portrait les cachait) ; les jauges fines
+     restent masquées — trop petites pour être lisibles à cette taille. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre) span.rpg-mode-menu__onglet-libelle,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil span.rpg-mode-menu__onglet-libelle,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre .rpg-mode-menu__apprendre-texte,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-solde,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-niveau {
+    display: inline;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__progression-xp,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-xp,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre .rpg-mode-menu__apprendre-arrow {
+    display: none;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__souk span.rpg-mode-menu__bourse-solde {
+    margin-left: auto;
+    font-size: 10px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil .rpg-mode-menu__profil-niveau {
+    margin-left: auto;
+    font-size: 9.5px;
+  }
+
+  /* Pastilles : de retour dans la ligne, calées à droite. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__profil-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__progression-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__messagerie-pastille {
+    position: static;
+    top: auto;
+    right: auto;
+    margin: 0 0 0 auto;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button span.rpg-mode-menu__bourse-solde + .rpg-mode-menu__bourse-pastille,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button .rpg-mode-menu__profil-niveau + .rpg-mode-menu__profil-pastille {
+    margin-left: 4px;
+  }
+
+  /* L'onglet actif : un trait vertical sur le bord gauche de la colonne. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button:not(.rpg-mode-menu__jouer):not(.rpg-mode-menu__apprendre).is-active::after,
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre.is-active::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    right: auto;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    height: auto;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, #ffb34a, #f05c1d);
+  }
+
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__apprendre {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 26px;
+    margin-top: auto;
+    margin-bottom: 2px;
+    padding: 3px 6px;
+    justify-content: flex-start;
+    gap: 6px;
+    font-size: 10px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch .rpg-mode-menu__apprendre-icone { width: 14px; height: 14px; }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire {
+    margin-top: 8px;
+    box-shadow: none;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__onglet--groupe-secondaire::before {
+    display: block;
+    top: -5px;
+  }
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__profil { padding-bottom: 2px; }
+
+  /* « Jouer » reste le grand bouton doré, ancré en bas de la colonne. */
+  .rpg-mode-menu__header .rpg-mode-menu__switch button.rpg-mode-menu__jouer {
+    flex: 0 0 auto;
+    width: 100%;
+    min-height: 38px;
+    margin: 6px 0 0;
+    padding: 8px 10px;
+    justify-content: center;
+    gap: 0;
+    font-size: 12px;
+    letter-spacing: .12em;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 251, 232, .62),
+      0 3px 0 #6e2606,
+      0 5px 12px rgba(232, 118, 28, .38);
+  }
+
+  /* ── L'accueil « Jouer » : tout tient sans défiler ───────────────────── */
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    margin: 0;
+    /* 12 px en bas : les libellés « CACHET » / « SOUK → » des jalons
+       affleuraient le bord de l'écran à 8 px. */
+    padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+    grid-template-columns: minmax(0, 1.25fr) minmax(190px, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: stretch;
+    align-content: stretch;
+    gap: 8px 10px;
+    overflow: hidden;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero {
+    grid-column: 1;
+    grid-row: 1;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy { padding: 10px 12px 8px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy h2 { font-size: clamp(14px, 3.6vh, 19px); margin: 2px 0 0; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy > p { display: none; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow { font-size: 8px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
+    grid-column: 2;
+    grid-row: 1;
+    height: 100%;
+    min-height: 0;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions { gap: 6px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions > .rpg-mode-carte { min-height: 40px; }
+  .rpg-mode-menu--jouer .rpg-mode-carte .rpg-menu-button__text { padding: 5px 10px 4px; }
+  .rpg-mode-menu--jouer .rpg-mode-carte .rpg-menu-button__text strong { font-size: 12.5px; }
+
+  /* La rampe des quêtes, réduite : médaillons resserrés, jalons sur la même
+     rangée, fractions d'avancement retirées (l'anneau doré les montre déjà). */
+  .rpg-mode-menu--jouer .rpg-quests-jour {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    gap: 3px;
+    padding: 0 2px 0;
+  }
+  /* Le rail reste empilé (quêtes puis jalons) : côte à côte, la zone de jeu
+     amputée de la barre de droite laisserait ~45 px par capsule de quête. */
+  .rpg-mode-menu--jouer .rpg-quests-jour__rail {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+    gap: 4px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons { justify-content: flex-end; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jauge { display: none; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon { width: 38px; height: 38px; padding: 2.5px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon-coeur strong { font-size: 11px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon-coeur .rpg-credit { font-size: 10px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__capsule {
+    min-height: 32px;
+    margin-left: -13px;
+    padding: 3px 8px 3px 18px;
+  }
+  .rpg-mode-menu--jouer .rpg-quests-jour__quete-texte { font-size: 10px; line-height: 1.22; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__pris { font-size: 8.5px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__reclamer { min-height: 30px; padding: 4px 9px; font-size: 10px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__vide { padding: 8px 12px; font-size: 11px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons { align-items: center; gap: 8px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__compte,
+  .rpg-mode-menu--jouer .rpg-quests-jour__serie { font-size: 9px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon--cachet { width: 38px; height: 38px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jeton-btn { width: 40px; height: 40px; min-height: 40px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jeton-sous { font-size: 7px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__semaine { min-height: 32px; padding: 4px 8px; font-size: 10px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__souk { min-height: 36px; gap: 6px; padding: 3px 10px 3px 5px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__souk-sceau { width: 26px; height: 26px; font-size: 12px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__solde-mini strong { font-size: 11px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__souk-lien { font-size: 7.5px; }
+}
