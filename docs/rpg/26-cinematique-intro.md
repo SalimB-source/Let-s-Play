@@ -178,6 +178,24 @@ gate de comptage après concat ; (2) les graphes vidéo multi-entrées
 (`blend`) figent ce build ffmpeg vers 70 % du film (3 essais, entrées
 saines) — fusion screen en numpy + vignette/grain en graphe simple.
 
+**Montage V8 livré (octobre 2026).** 45 plans, 43 tableaux, 3 min 20,
+50,7 Mo : T03 remonté (5 plans tac-ô-tac ancrés sur les 5 respirations
+réelles — ensevelissement ×3 sur « first/second/third », vie
+quotidienne au 4e ×2 sur « fourth/keeps living »), ZÉRO light flare
+(8 pulses/flashs supprimés), règle 2-3 angles par lieu (T06 : gros plan
+corde/lanterne ; T10 : service à thé), likeness (sceau T11 régénéré
+cohérent avec le portail, Tarek riant avec Salem et Yamina ×2, Fériel
+forgeant un bouclier en métal, Salem + réfugiés désespérés sur « right
+behind me »). Correctif historique : les fichiers `t03b-rue` et
+`t03-reprise` avaient leur contenu échangé depuis la V5 (le 1er étage
+jouait sur une terrasse peuplée, le 4e sur l'ensevelissement) — échangés
+par `git mv`, noms désormais conformes au contenu. Vérifié : gate
+4803/4803, corrélation planche↔frame > 0,7 partout, −19,65 LUFS, VTT
+43 cues. Notes méthode : (1) les lectures d'images groupées peuvent
+s'afficher dans le désordre — trancher les attributions douteuses par
+corrélation, jamais à l'œil ; (2) `silences()` rend vide sans erreur si
+le chemin VO est faux (VO = `public/sablier-cinematic/audio/en`).
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)

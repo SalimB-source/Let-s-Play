@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V7).
+"""Montage de la cinematique d'intro EN du Sablier (V8).
 
-Assemble : 38 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 43 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
 V7 : synchro personnages (T07 ancré sur les respirations réelles de la VO,
@@ -10,6 +10,15 @@ autres découpes recalées sur les silences détectés), Tarek espiègle
 internes), eases smoothstep + suréchantillonnage 4K->1080p Lanczos,
 étalonnage par acte, transitions-essuyage sable (T2/T8/T10), flashs
 glas + duel, hiérarchie booms/stingers, dynamique creusée (T10/T12).
+
+V8 : T03 remonté (5 plans tac-ô-tac ancrés sur les silences VO :
+ensevelissement x3 + vie quotidienne au 4e x2), ZÉRO light flare
+(les 8 pulses/flashs/halos de lumière sont supprimés).
+Règle 2-3 angles/lieu : T06 2e angle (corde/lanterne), T10 2e angle
+(service à thé), sceau T11 régénéré cohérent avec le portail.
+T08b : Salem + réfugiés désespérés derrière lui (« right behind me »).
+T07d/T07i : Tarek rit avec Salem et Yamina (carrure, crate scellée).
+T07g : Fériel forge un bouclier en métal (enclume, étincelles).
 
 Correctifs V6 : pas de filtre fps redondant après l'étalonnage
 (il avalait 1 image/segment), sable pré-bouclé fini en post-production
@@ -275,12 +284,7 @@ SPLITS_TEXTE = {
          "It does not count the hours. It counts the cycles we have left. "),
         ("cine-t02b-cloche-4k.jpg", "push", "And when it tolls…"),
     ],
-    "T03": [
-        ("cine-t03b-rue-4k.jpg", "panR",
-         "The first tier is already lost. Then the second. Then the third. "),
-        ("cine-t03-reprise-4k.jpg", "panD",
-         "Today, we live on the fourth. Everyone knows. And everyone keeps living."),
-    ],
+    # T03 : table de pauses ancrées (PAUSES_T03), comme T07 — hors splits texte
     "T04": [
         ("cine-t04-liste-4k.jpg", "panL",
          "What holds the city together is no king, no god. "
@@ -301,7 +305,8 @@ SPLITS_TEXTE = {
     ],
     "T06": [
         ("cine-t06-sondeur-4k.jpg", "panD",
-         "Salem goes down into the condemned tiers before the taking, to make sure no one is left. "
+         "Salem goes down into the condemned tiers before the taking, to make sure no one is left. "),
+        ("cine-t06c-corde-4k.jpg", "push",
          "Hooked pole, rope, notebook. "),
         ("cine-t06b-salem-4k.jpg", "push_resp",
          "He always brings someone back. And it is never enough."),
@@ -341,6 +346,17 @@ PAUSES_T07 = [
     ("cine-t07i-tarek-fardeau-4k.jpg", "push", 19.71, False),        # …carries the Chamber's crates —
     ("cine-t07j-tarek-espiegle-4k.jpg", "push_resp", 22.10, True),   # …and its secrets. (sourire espiègle)
 ]
+# T03 V8 : 5 plans tac-ô-tac ancrés sur les silences RÉELS de T03.mp3
+# (pauses détectées : 2.26-2.81 / 3.65-4.16 / 5.02-5.61 / 7.48-8.03 / 8.92-9.35).
+# Ensevelissement x3 (first / second / third), puis vie quotidienne au 4e
+# (fourth / keeps living — la 2e moitié tient la pause 8.92-9.35 sans couper).
+PAUSES_T03 = [
+    ("cine-t03b-rue-4k.jpg", "panR", 0.0, False),               # The first tier is already lost.
+    ("cine-t03c-rue-ensevelie-4k.jpg", "push", 2.53, True),     # Then the second.
+    ("cine-t03d-toits-ensevelis-4k.jpg", "zout", 3.90, True),   # Then the third.
+    ("cine-t03-reprise-4k.jpg", "panD", 5.32, True),            # Today, we live on the fourth.
+    ("cine-t03e-marche-vie-4k.jpg", "push_resp", 7.76, True),   # Everyone knows. / keeps living.
+]
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
 # Scribe puis confrontation, registre puis rue vide.
 PLANS_T8 = [
@@ -360,10 +376,12 @@ TEXTE_T08D = [
     ("cine-t08e-rue-vide-4k.jpg", "zout",
      "Twelve living souls… who exist nowhere."),
 ]
-# T10 : le thé, puis le visage de Mahieddine sur « He never lies »,
-# puis son regard sur « He omits ».
+# T10 : la salle de thé, puis le service à thé en gros plan sur
+# « …tea-seller, / who hears everything… », puis le visage de Mahieddine
+# sur « He never lies », puis son regard sur « He omits ».
 PLANS_T10 = [
     ("cine-t10-the-4k.jpg", "settle"),
+    ("cine-t10d-tasses-4k.jpg", "push"),
     ("cine-t10b-mahieddine-4k.jpg", "push_resp"),
     ("cine-t10c-regard-4k.jpg", "zin_resp"),
 ]
@@ -462,11 +480,12 @@ def _soussplit_texte(plans, idx, parties, vo_path=None, deb_vo=0.0):
 
 def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     """Découpe un bloc en plans : [(image, mouvement, debut_abs, fin_abs)]."""
-    if bloc == "T07":
+    if bloc in ("T07", "T03"):
         vo, deb_vo, _ = debuts_vo[0]
         vo_path = os.path.join(VO, vo)
+        table = PAUSES_T07 if bloc == "T07" else PAUSES_T03
         bornes = [debut_bloc]
-        for img_p, mouv_p, deb_rel, snap in PAUSES_T07[1:]:
+        for img_p, mouv_p, deb_rel, snap in table[1:]:
             t = caler_silence(vo_path, deb_rel, 0.9) if snap else deb_rel
             bornes.append(deb_vo + t)
         bornes.append(fin_bloc)
@@ -474,7 +493,7 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
             if bornes[k] - bornes[k - 1] < DUREE_PLAN_MIN:
                 bornes[k] = bornes[k - 1] + DUREE_PLAN_MIN
         return [(img_p, mouv_p, deb, fin) for (img_p, mouv_p, _, _), deb, fin
-                in zip(PAUSES_T07, bornes[:-1], bornes[1:])]
+                in zip(table, bornes[:-1], bornes[1:])]
     if bloc in SPLITS_TEXTE:
         parties = SPLITS_TEXTE[bloc]
         vo, span_deb, span_d = debuts_vo[0]
@@ -514,8 +533,17 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     if bloc == "T10":
         vo, deb, d = debuts_vo[0]
         visage, regard = position_coupes_t10()
-        (img1, mouv1), (img2, mouv2), (img3, mouv3) = PLANS_T10
-        return [(img1, mouv1, debut_bloc, deb + visage),
+        vo_path = os.path.join(VO, vo)
+        # 2e angle du lieu : gros plan sur les tasses, coupé sur la
+        # 1re respiration (« …tea-seller, / who hears everything… »).
+        detail = caler_silence(vo_path, visage / 2.0, 1.5)
+        if detail - 0.0 < DUREE_PLAN_MIN:
+            detail = visage / 2.0
+        if visage - detail < DUREE_PLAN_MIN:
+            detail = visage - DUREE_PLAN_MIN
+        (img1, mouv1), (img1b, mouv1b), (img2, mouv2), (img3, mouv3) = PLANS_T10
+        return [(img1, mouv1, debut_bloc, deb + detail),
+                (img1b, mouv1b, deb + detail, deb + visage),
                 (img2, mouv2, deb + visage, deb + regard),
                 (img3, mouv3, deb + regard, fin_bloc)]
     return [(img, mouv, debut_bloc, fin_bloc)]
@@ -797,16 +825,9 @@ def main():
     carton_abs = deb_t12bloc + 2.0 + d_vo12 - 0.4
     halo_hold = max(0.0, duree_tot - carton_abs - 1.5 - 2.0)
     glas = fin_t02 - 0.15
-    pulses = [
-        ("flash", glas, 0.08, 0.05, 0.30, 0.90),  # flash du glas
-        ("gold", glas, 0.6, 1.2, 2.0, 0.55),  # halo du glas
-        ("gold", deb_t03p2, 0.4, 0.6, 1.2, 0.45),  # la reprise frappe l'étage
-        ("gold", deb_t08p4, 0.3, 0.5, 1.0, 0.40),  # confrontation
-        ("flash", deb_t09p3, 0.08, 0.05, 0.30, 0.90),  # flash « So we will fight »
-        ("gold", deb_t09p3, 0.4, 0.8, 1.5, 0.50),
-        ("portal", deb_t11 + (fin_t11 - deb_t11) * 0.4, 1.0, 2.0, 2.5, 0.60),
-        ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre
-    ]
+    # V8 : ZÉRO light flare — les 8 pulses/flashs/halos sont supprimés
+    # à la demande (cobraahil). La couche lumière reste noire (no-op).
+    pulses = []
     # Cuts durs : (debut, duree_nouveau_plan, frontiere_d_acte).
     cuts = [(deb, dur, fi > 0.0)
             for (_, _, _, _, deb, dur, fi, _, _, _) in segments if deb > 0.01]
