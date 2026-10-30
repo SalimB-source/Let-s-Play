@@ -363,6 +363,8 @@ test('Bouchra esquive l’attaque qui devait la tuer — pas de bouclier, mais r
   assert.ok(duel.joueur.creatures.includes(bouchra), 'elle survit sans une égratignure');
   assert.ok(duel.log.some((ligne) => /Bouchra.*esquive l’attaque/.test(ligne)),
     'le journal nomme l’esquive de Bouchra');
+  assert.ok(duel.combatAnimations?.some((animation) => animation.type === 'esquive'
+    && animation.cible?.entiteId === bouchra.id), 'l’interface reçoit aussi le signal visuel de son esquive');
 });
 
 test('Le roi Kusayla : un héros Sable mythique 5/3 pour 5, Esquive, Contre-attaque et le guépard qui arrive avec lui', () => {
