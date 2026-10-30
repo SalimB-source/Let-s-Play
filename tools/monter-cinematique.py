@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V5).
+"""Montage de la cinematique d'intro EN du Sablier (V7).
 
-Assemble : 37 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 38 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
-V5 : cohérence tour (étages-balcons, pas de villages), sable qui monte
-montré (T1b, colonne T5), T01 sans répétition, 41 plans au total :
-T7 = 10 facettes des compagnons, T8 = confrontation Salem/Scribe,
-pulses reprise + confrontation.
+V7 : synchro personnages (T07 ancré sur les respirations réelles de la VO,
+autres découpes recalées sur les silences détectés), Tarek espiègle
+(« and its secrets »), rythme apaisé (40 plans, pas de recadrages
+internes), eases smoothstep + suréchantillonnage 4K->1080p Lanczos,
+étalonnage par acte, transitions-essuyage sable (T2/T8/T10), flashs
+glas + duel, hiérarchie booms/stingers, dynamique creusée (T10/T12).
+
+Correctifs V6 : pas de filtre fps redondant après l'étalonnage
+(il avalait 1 image/segment), sable pré-bouclé fini en post-production
+(pas de -stream_loop infini), contrôle du compte d'images après concat.
 
 Entrees : public/sablier-cinematic/4k/*.jpg, audio/en/T*.mp3,
           public/Desert Solitude with Percussion.mp3
@@ -18,6 +24,7 @@ Usage : python3 tools/monter-cinematique.py
        --audio-only : ne refait que le mix + mux (vidéo réutilisée)
 """
 import os
+import re
 import subprocess
 import sys
 
@@ -53,6 +60,15 @@ def run(cmd, **kw):
         print(r.stderr[-3000:], file=sys.stderr)
         raise SystemExit(1)
     return r
+
+
+def compter_images(chemin):
+    """Compte les images d'un flux vidéo par décodage (cf. gate concat)."""
+    r = subprocess.run([FF, "-hide_banner", "-v", "warning", "-stats",
+                        "-i", chemin, "-map", "0:v", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    m = re.findall(r"frame=\s*(\d+)", r.stderr.replace("\r", "\n"))
+    return int(m[-1]) if m else 0
 
 
 # (bloc, image, mouvement, tête, queue, fade_in, fade_out, [(vo, gap_avant)])
@@ -120,8 +136,6 @@ CUES = {
 }
 
 # Langage caméra : nom -> (z0, z1, x0, x1, y0, y1[, respiration]).
-# z = facteur de zoom ; x/y = position relative (0..1) de la fenêtre de crop.
-# respiration = amplitude d'une oscillation (période 4 s) qui donne vie aux visages.
 MOVES = {
     "zin": (1.00, 1.08, .5, .5, .5, .5),
     "zin_slow": (1.00, 1.045, .5, .5, .5, .5),
@@ -143,18 +157,42 @@ MOVES = {
     "static": (1.00, 1.015, .5, .5, .5, .5),
 }
 
+# Étalonnage par acte (appliqué au niveau des segments, remplace
+# l'étalonnage global de la post-production).
+GRADE = {
+    "T01": "colortemperature=temperature=7500:mix=0.15,eq=saturation=0.92",
+    "T02": "colortemperature=temperature=6500:mix=0.15,eq=saturation=1.00",
+    "T03": "colortemperature=temperature=5200:mix=0.12,eq=saturation=0.90",
+    "T04": "colortemperature=temperature=4800:mix=0.14,eq=saturation=0.88",
+    "T05": "colortemperature=temperature=8000:mix=0.18,eq=saturation=1.02",
+    "T06": "colortemperature=temperature=5500:mix=0.12,eq=saturation=0.95",
+    "T07": "colortemperature=temperature=6200:mix=0.12,eq=saturation=1.04",
+    "T08": "colortemperature=temperature=5000:mix=0.14,eq=saturation=0.92",
+    "T09": "colortemperature=temperature=7000:mix=0.15,eq=saturation=1.05",
+    "T10": "colortemperature=temperature=5800:mix=0.10,eq=saturation=0.95",
+    "T11": "colortemperature=temperature=4500:mix=0.16,eq=saturation=0.90",
+    "T12": "colortemperature=temperature=6500:mix=0.12,eq=saturation=1.00",
+}
+
+# Transitions-essuyage sable : fondus teintés sable aux frontières d'actes.
+SABLE_COULEUR = "0xC7A35C"
+WIPE_ENTR = {"T03", "T09", "T11"}
+WIPE_SORT = {"T02", "T08", "T10"}
+
 
 def filtre_zoompan(mouvement, n):
+    """Travelling eased (smoothstep) : démarrage et arrivée en douceur."""
     params = MOVES[mouvement]
     z0, z1, x0, x1, y0, y1 = params[:6]
     resp = params[6] if len(params) > 6 else 0.0
-    z = f"{z0}+({z1}-{z0})*on/{n}"
+    e = f"((on/{n})*(on/{n})*(3-2*(on/{n})))"
+    z = f"{z0}+({z1}-{z0})*{e}"
     if resp:
         z += f"+{resp}*sin(2*PI*on/{4 * FPS})"
     return (f"zoompan=z='{z}':"
-            f"x='(iw-iw/zoom)*({x0}+({x1}-{x0})*on/{n})':"
-            f"y='(ih-ih/zoom)*({y0}+({y1}-{y0})*on/{n})':"
-            f"d={n}:s={W}x{H}:fps={FPS}")
+            f"x='(iw-iw/zoom)*({x0}+({x1}-{x0})*{e})':"
+            f"y='(ih-ih/zoom)*({y0}+({y1}-{y0})*{e})':"
+            f"d={n}:s=3840x2160:fps={FPS}")
 
 
 def composer_titre_4k(src, dst):
@@ -185,12 +223,14 @@ def rendre_t12(src, tmp, seg, n, duree, fi, fo, timeline):
     na = round((2.0 + d_vo - 0.4) * FPS) + f  # fin de A (recouvrement compris)
     off = na - f  # première frame absolue de B
     nb = n - off
-    seg_a = os.path.join(tmp, "seg11a.mp4")
-    seg_b = os.path.join(tmp, "seg11b.mp4")
-    base_a = (f"zoompan=z='1+0.015*on/{n}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':"
-              f"d={na}:s={W}x{H}:fps={FPS},fps={FPS},format=yuv420p")
-    base_b = (f"zoompan=z='1+0.015*(on+{off})/{n}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':"
-              f"d={nb}:s={W}x{H}:fps={FPS},fps={FPS},format=yuv420p")
+    seg_a = os.path.join(tmp, "segTa.mp4")
+    seg_b = os.path.join(tmp, "segTb.mp4")
+    zp_a = (f"zoompan=z='1+0.015*on/{n}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':"
+            f"d={na}:s=3840x2160:fps={FPS}")
+    zp_b = (f"zoompan=z='1+0.015*(on+{off})/{n}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':"
+            f"d={nb}:s=3840x2160:fps={FPS}")
+    base_a = f"{zp_a},scale={W}x{H}:flags=lanczos,{GRADE['T12']},format=yuv420p"
+    base_b = f"{zp_b},scale={W}x{H}:flags=lanczos,{GRADE['T12']},format=yuv420p"
     if fi:
         base_a += f",fade=t=in:st=0:d={fi}"
     run([FF, "-y", "-v", "error", "-i", src, "-vf", base_a,
@@ -206,10 +246,22 @@ def rendre_t12(src, tmp, seg, n, duree, fi, fo, timeline):
     run([FF, "-y", "-v", "error", "-i", seg_a, "-i", seg_b,
          "-filter_complex", vf, "-frames:v", str(n),
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "17", seg])
+    # Sécurité : complète à n images si l'xfade en perd une (fondu de
+    # sortie vers le noir : images clonées invisibles).
+    compte = compter_images(seg)
+    if compte < n:
+        print(f"  T12 : {compte}/{n} images, complétion par clonage")
+        seg_pad = seg + ".pad.mp4"
+        run([FF, "-y", "-v", "error", "-i", seg, "-vf",
+             f"tpad=stop_mode=clone:stop={n - compte}",
+             "-frames:v", str(n), "-c:v", "libx264", "-preset", "veryfast",
+             "-crf", "17", seg_pad])
+        os.replace(seg_pad, seg)
 
 
 # Découpage multi-plans : quand la narration nomme un personnage ou un objet,
 # on le montre. Blocs découpés au prorata du texte dit : [(image, mouv, texte)].
+# Les frontières sont ensuite recalées sur les silences réels de la VO.
 SPLITS_TEXTE = {
     "T01": [
         ("cine-t01-bab-el-4k.jpg", "panR",
@@ -254,21 +306,6 @@ SPLITS_TEXTE = {
         ("cine-t06b-salem-4k.jpg", "push_resp",
          "He always brings someone back. And it is never enough."),
     ],
-    "T07": [
-        ("cine-t07-cinq-4k.jpg", "panR", "At his side: "),
-        ("cine-t07f-yamina-profil-4k.jpg", "push_R", "Yamina, the clockmaker, "),
-        ("cine-t07a-yamina-4k.jpg", "push_L", "who signed a List at nineteen — "),
-        ("cine-t07e-mains-4k.jpg", "zin_slow",
-         "and has been trying to repair the irreparable ever since. "),
-        ("cine-t07b-feriel-4k.jpg", "push_R", "Fériel, the glassblower, "),
-        ("cine-t07g-feriel-fournaise-4k.jpg", "push", "who turns sand into shields. "),
-        ("cine-t07c-boualem-4k.jpg", "push_L", "Boualem, the well-digger, "),
-        ("cine-t07h-boualem-puits-4k.jpg", "push",
-         "who found something beneath the city… and does not speak of it. "),
-        ("cine-t07d-tarek-4k.jpg", "push_R", "And Tarek, the porter, "),
-        ("cine-t07i-tarek-fardeau-4k.jpg", "push",
-         "who carries the Chamber's crates — and its secrets."),
-    ],
     "T09": [
         ("cine-t09-duel-4k.jpg", "drift_DR",
          "One recourse remains. An old right, one even the Chamber honours: trial by duel. "),
@@ -286,6 +323,24 @@ SPLITS_TEXTE = {
          "But the Astrolabe will toll again. And this time…"),
     ],
 }
+# T07 : découpage ancré sur les respirations RÉELLES de T07.mp3
+# (pauses détectées : 1.27 / 3.24 / 5.35 / 8.52 / 12.70 / 16.75 / 18.28 / 22.10).
+# (image, mouv, debut_relatif_vo, recalage_sur_silence).
+# Les coupes « métier » (visage -> artisanat) restent au prorata car la
+# narration les enchaîne sans pause ; chaque NOM tombe sur le bon visage.
+PAUSES_T07 = [
+    ("cine-t07-cinq-4k.jpg", "panR", 0.0, False),                    # At his side:
+    ("cine-t07f-yamina-profil-4k.jpg", "push_R", 1.27, True),        # Yamina, the clockmaker,
+    ("cine-t07a-yamina-4k.jpg", "push_L", 3.24, True),               # who signed a List at nineteen —
+    ("cine-t07e-mains-4k.jpg", "zin_slow", 5.35, True),              # repair the irreparable…
+    ("cine-t07b-feriel-4k.jpg", "push_R", 8.52, True),               # Fériel, the glassblower,
+    ("cine-t07g-feriel-fournaise-4k.jpg", "push", 10.46, False),     # …turns sand into shields.
+    ("cine-t07c-boualem-4k.jpg", "push_L", 12.70, True),             # Boualem, the well-digger,
+    ("cine-t07h-boualem-puits-4k.jpg", "push", 14.32, False),        # found something… (tient la pause « … »)
+    ("cine-t07d-tarek-4k.jpg", "push_R", 18.28, True),               # And Tarek, the porter,
+    ("cine-t07i-tarek-fardeau-4k.jpg", "push", 19.71, False),        # …carries the Chamber's crates —
+    ("cine-t07j-tarek-espiegle-4k.jpg", "push_resp", 22.10, True),   # …and its secrets. (sourire espiègle)
+]
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
 # Scribe puis confrontation, registre puis rue vide.
 PLANS_T8 = [
@@ -315,8 +370,6 @@ PLANS_T10 = [
 DUREE_PLAN_MIN = 1.0
 
 # Nappes d'ambiance optionnelles : (fichier, bloc_debut, bloc_fin, niveau).
-# Les fichiers absents sont ignorés (le film reste mixable sans eux).
-# bloc None/None = tout le film. Boucles : prévoir des fichiers bouclables.
 AMB = [
     ("wind-desert-loop.wav", None, None, 0.10),
     ("sand-shimmer-loop.wav", "T05", "T05", 0.12),
@@ -326,13 +379,17 @@ AMB = [
 FADE_AMB = 2.0
 
 
-def silences_t10():
-    """Silences détectés dans T10.mp3 : [(debut, fin|None)]. Le [pause]
-    ElevenLabs avant « He omits » contient un souffle qui le coupe en
-    deux silences (débuts ~10,8 s et ~12,3 s)."""
-    audio = os.path.join(VO, "T10.mp3")
-    r = subprocess.run([FF, "-v", "info", "-i", audio, "-af",
-                        "silencedetect=noise=-32dB:d=0.5", "-f", "null", "-"],
+_SILENCES_CACHE = {}
+
+
+def silences(chemin, seuil=-35, duree_min=0.25):
+    """Silences détectés dans un MP3 : (débuts, fins). Mise en cache."""
+    cle = (chemin, seuil, duree_min)
+    if cle in _SILENCES_CACHE:
+        return _SILENCES_CACHE[cle]
+    r = subprocess.run([FF, "-v", "info", "-i", chemin, "-af",
+                        f"silencedetect=noise={seuil}dB:d={duree_min}",
+                        "-f", "null", "-"],
                        capture_output=True, text=True)
     debuts, fins = [], []
     for ligne in r.stderr.splitlines():
@@ -346,7 +403,29 @@ def silences_t10():
                 fins.append(float(ligne.split("silence_end:")[1].split()[0]))
             except ValueError:
                 pass
+    _SILENCES_CACHE[cle] = (debuts, fins)
     return debuts, fins
+
+
+def caler_silence(vo_path, t_rel, fenetre):
+    """Recale t_rel (relatif VO) sur le milieu du silence détecté le plus
+    proche dans ±fenetre. Retourne t_rel inchangé si aucun silence proche."""
+    debuts, fins = silences(vo_path)
+    meilleur, ecart = t_rel, fenetre + 1e-9
+    for s, e in zip(debuts, fins):
+        if e <= s:
+            continue
+        mid = (s + e) / 2
+        if abs(mid - t_rel) < ecart:
+            meilleur, ecart = mid, abs(mid - t_rel)
+    return meilleur
+
+
+def silences_t10():
+    """Silences détectés dans T10.mp3 : [(debut, fin|None)]. Le [pause]
+    ElevenLabs avant « He omits » contient un souffle qui le coupe en
+    deux silences (débuts ~10,8 s et ~12,3 s)."""
+    return silences(os.path.join(VO, "T10.mp3"), seuil=-32, duree_min=0.5)
 
 
 def position_coupes_t10():
@@ -365,11 +444,14 @@ def position_coupes_t10():
     return visage, regard
 
 
-def _soussplit_texte(plans, idx, parties):
-    """Découpe plans[idx] en deux au prorata du texte dit."""
+def _soussplit_texte(plans, idx, parties, vo_path=None, deb_vo=0.0):
+    """Découpe plans[idx] en deux au prorata du texte dit, puis recale
+    la coupe sur le silence réel le plus proche (±1,0 s)."""
     _, _, deb0, fin0 = plans[idx]
     (img1, mouv1, txt1), (img2, mouv2, txt2) = parties
     coupe = deb0 + (fin0 - deb0) * len(txt1) / (len(txt1) + len(txt2))
+    if vo_path:
+        coupe = deb_vo + caler_silence(vo_path, coupe - deb_vo, 1.0)
     if coupe - deb0 < DUREE_PLAN_MIN:
         coupe = deb0 + DUREE_PLAN_MIN
     if fin0 - coupe < DUREE_PLAN_MIN:
@@ -380,16 +462,33 @@ def _soussplit_texte(plans, idx, parties):
 
 def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
     """Découpe un bloc en plans : [(image, mouvement, debut_abs, fin_abs)]."""
+    if bloc == "T07":
+        vo, deb_vo, _ = debuts_vo[0]
+        vo_path = os.path.join(VO, vo)
+        bornes = [debut_bloc]
+        for img_p, mouv_p, deb_rel, snap in PAUSES_T07[1:]:
+            t = caler_silence(vo_path, deb_rel, 0.9) if snap else deb_rel
+            bornes.append(deb_vo + t)
+        bornes.append(fin_bloc)
+        for k in range(1, len(bornes) - 1):
+            if bornes[k] - bornes[k - 1] < DUREE_PLAN_MIN:
+                bornes[k] = bornes[k - 1] + DUREE_PLAN_MIN
+        return [(img_p, mouv_p, deb, fin) for (img_p, mouv_p, _, _), deb, fin
+                in zip(PAUSES_T07, bornes[:-1], bornes[1:])]
     if bloc in SPLITS_TEXTE:
         parties = SPLITS_TEXTE[bloc]
-        span_deb = debuts_vo[0][1]
-        span_fin = span_deb + debuts_vo[0][2]
+        vo, span_deb, span_d = debuts_vo[0]
+        span_fin = span_deb + span_d
+        vo_path = os.path.join(VO, vo)
         poids = [len(texte) for _, _, texte in parties]
         total = sum(poids)
         bornes = [span_deb]
         for p in poids[:-1]:
             bornes.append(bornes[-1] + (span_fin - span_deb) * p / total)
         bornes.append(span_fin)
+        for k in range(1, len(bornes) - 1):
+            t_rel = caler_silence(vo_path, bornes[k] - span_deb, 1.2)
+            bornes[k] = span_deb + t_rel
         for k in range(1, len(bornes) - 1):
             if bornes[k] - bornes[k - 1] < DUREE_PLAN_MIN:
                 bornes[k] = bornes[k - 1] + DUREE_PLAN_MIN
@@ -405,8 +504,12 @@ def plans_du_bloc(bloc, img, mouv, debut_bloc, fin_bloc, debuts_vo):
         for k, ((img_p, mouv_p), (vo, deb, d)) in enumerate(zip(PLANS_T8, debuts_vo)):
             fin = debuts_vo[k + 1][1] if k + 1 < len(debuts_vo) else fin_bloc
             plans.append((img_p, mouv_p, debut_bloc if k == 0 else deb, fin))
-        plans = _soussplit_texte(plans, 2, TEXTE_T08C)  # Scribe puis confrontation
-        plans = _soussplit_texte(plans, 4, TEXTE_T08D)  # registre puis rue vide
+        vo_c, deb_c, _ = debuts_vo[2]
+        plans = _soussplit_texte(plans, 2, TEXTE_T08C,  # Scribe puis confrontation
+                                 os.path.join(VO, vo_c), deb_c)
+        vo_d, deb_d, _ = debuts_vo[3]
+        plans = _soussplit_texte(plans, 4, TEXTE_T08D,  # registre puis rue vide
+                                 os.path.join(VO, vo_d), deb_d)
         return plans
     if bloc == "T10":
         vo, deb, d = debuts_vo[0]
@@ -538,6 +641,95 @@ def generer_stinger(chemin, duree=0.6):
     return chemin
 
 
+def generer_boom(chemin, duree=1.0):
+    """Boom grave pour les frontières d'actes : descente 70->28 Hz (mono)."""
+    import wave
+    sr = 44100
+    n = int(duree * sr)
+    t = np.arange(n) / sr
+    f = 70 * (28 / 70) ** (t / duree)
+    phase = 2 * np.pi * np.cumsum(f) / sr
+    x = np.sin(phase) * np.exp(-t * 5)
+    rng = np.random.default_rng(7)
+    x = x + rng.standard_normal(n) * np.exp(-t * 25) * 0.15
+    x = (x / np.abs(x).max() * 0.8).astype(np.float32)
+    with wave.open(chemin, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+    return chemin
+
+
+def fusion_post(video, sable_full, lumiere, sortie, duree_tot):
+    """Fusion post-production en numpy : screen sable (fondu 3 s in/out,
+    opacite 0.5) + screen lumiere (1.0), puis vignette + grain via un
+    graphe simple (1 entree).
+
+    Contourne le deadlock framesync de ffmpeg 7.0.2 (imageio-ffmpeg 0.7.0) :
+    les graphes video multi-entrees (blend) se figent vers 70 % du film
+    alors que les entrees sont saines (timestamps + decodage OK) et que
+    les transcodages 1 entree passent. Constate sur V6 et V7 (3 essais).
+    """
+    taille = W * H * 3
+
+    def decodeur(chemin):
+        return subprocess.Popen([FF, "-v", "error", "-i", chemin,
+                                 "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                                stdout=subprocess.PIPE)
+
+    p0, p1, p2 = decodeur(video), decodeur(sable_full), decodeur(lumiere)
+    enc = subprocess.Popen([FF, "-y", "-v", "error", "-f", "rawvideo",
+                            "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
+                            "-r", str(FPS), "-i", "-",
+                            "-vf", "vignette=angle=PI/4.6,noise=alls=5:allf=t,"
+                                   "format=yuv420p",
+                            "-c:v", "libx264", "-preset", "fast", "-crf", "21",
+                            "-pix_fmt", "yuv420p", sortie],
+                           stdin=subprocess.PIPE)
+    dernier_sable, dernier_lum = None, None
+    k = 0
+    while True:
+        brut0 = p0.stdout.read(taille)
+        if len(brut0) < taille:
+            break
+        brut1 = p1.stdout.read(taille)
+        if len(brut1) == taille:
+            dernier_sable = np.frombuffer(brut1, dtype=np.uint8).reshape(H, W, 3)
+        brut2 = p2.stdout.read(taille)
+        if len(brut2) == taille:
+            dernier_lum = np.frombuffer(brut2, dtype=np.uint8).reshape(H, W, 3)
+        a = np.frombuffer(brut0, dtype=np.uint8).reshape(H, W, 3).astype(np.float32) / 255.0
+        t = k / FPS
+        env = min(t / 3.0, 1.0, max(0.0, (duree_tot - t) / 3.0))
+        if dernier_sable is None:
+            s = np.zeros_like(a)
+        else:
+            s = dernier_sable.astype(np.float32) / 255.0 * env
+        v1 = 0.5 * a + 0.5 * (1.0 - (1.0 - a) * (1.0 - s))
+        if dernier_lum is None:
+            l = np.zeros_like(a)
+        else:
+            l = dernier_lum.astype(np.float32) / 255.0
+        v2 = 1.0 - (1.0 - v1) * (1.0 - l)
+        enc.stdin.write(np.clip(v2 * 255.0, 0, 255).astype(np.uint8).tobytes())
+        k += 1
+        if k % 600 == 0:
+            print(f"  fusion : {k} images", flush=True)
+    print(f"  fusion : {k} images au total", flush=True)
+    enc.stdin.close()
+    for p in (p0, p1, p2):
+        try:
+            p.stdout.close()
+        except Exception:
+            pass
+        p.terminate()
+        p.wait()
+    if enc.wait() != 0:
+        raise SystemExit("ENCODAGE POST ECHOUE")
+    return sortie
+
+
 def fmt_vtt(sec):
     h, r = divmod(sec, 3600)
     m, s = divmod(r, 60)
@@ -553,10 +745,8 @@ def main():
     tmp = tempfile.mkdtemp(prefix="cine-")
 
     # 1. Timeline : positions absolues de chaque prise VO, puis découpage en plans.
-    # Les fondus restent aux frontières des blocs ; les plans d'un même bloc
-    # s'enchaînent en cut sec, calés sur la narration.
     timeline = []  # (fichier_vo, debut_abs, duree)
-    segments = []  # (nom, image, mouvement, debut_abs, duree, fi, fo)
+    segments = []  # (nom, bloc, image, mouv, debut, duree, fi, fo, ci, co)
     spans = {}  # bloc -> (debut_abs, fin_abs)
     frontieres = []  # fins de blocs internes (whooshes)
     t = 0.0
@@ -576,9 +766,17 @@ def main():
         plans = plans_du_bloc(bloc, img, mouv, t, fin_bloc, debuts_vo)
         for k, (img_p, mouv_p, deb_p, fin_p) in enumerate(plans):
             nom = bloc if len(plans) == 1 else f"{bloc}p{k + 1}"
-            segments.append((nom, img_p, mouv_p, deb_p, fin_p - deb_p,
-                             fi if k == 0 else 0.0,
-                             fo if k == len(plans) - 1 else 0.0))
+            premier, dernier = (k == 0), (k == len(plans) - 1)
+            fi_p = fi if premier else 0.0
+            fo_p = fo if dernier else 0.0
+            ci = SABLE_COULEUR if (premier and bloc in WIPE_ENTR) else "black"
+            co = SABLE_COULEUR if (dernier and bloc in WIPE_SORT) else "black"
+            if ci != "black":
+                fi_p = max(fi_p, 0.5)
+            if co != "black":
+                fo_p = max(fo_p, 0.5)
+            segments.append((nom, bloc, img_p, mouv_p, deb_p, fin_p - deb_p,
+                             fi_p, fo_p, ci, co))
         t = fin_bloc
     duree_tot = t
     print(f"Timeline : {len(timeline)} prises, {len(segments)} plans, duree totale {duree_tot:.1f}s")
@@ -590,38 +788,45 @@ def main():
     print("Cloches à :", [f"{c:.2f}s" for c in cloches])
 
     # Pulses de lumière : (asset, T, montee, plateau, descente, opacite).
-    deb_t03p2 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T03p2")
-    deb_t08p4 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T08p4")
-    deb_t09p3 = next(d for nm, _, _, d, _, _, _ in segments if nm == "T09p3")
+    deb_t03p2 = next(d for nm, _, _, _, d, _, _, _, _, _ in segments if nm == "T03p2")
+    deb_t08p4 = next(d for nm, _, _, _, d, _, _, _, _, _ in segments if nm == "T08p4")
+    deb_t09p3 = next(d for nm, _, _, _, d, _, _, _, _, _ in segments if nm == "T09p3")
     deb_t11, fin_t11 = spans["T11"]
     deb_t12bloc, _ = spans["T12"]
     d_vo12 = next(d for v, p, d in timeline if v == "T12.mp3")
     carton_abs = deb_t12bloc + 2.0 + d_vo12 - 0.4
     halo_hold = max(0.0, duree_tot - carton_abs - 1.5 - 2.0)
+    glas = fin_t02 - 0.15
     pulses = [
-        ("gold", fin_t02 - 0.15, 0.6, 1.2, 2.0, 0.55),  # le glas de l'Astrolabe
+        ("flash", glas, 0.08, 0.05, 0.30, 0.90),  # flash du glas
+        ("gold", glas, 0.6, 1.2, 2.0, 0.55),  # halo du glas
         ("gold", deb_t03p2, 0.4, 0.6, 1.2, 0.45),  # la reprise frappe l'étage
         ("gold", deb_t08p4, 0.3, 0.5, 1.0, 0.40),  # confrontation
-        ("gold", deb_t09p3, 0.4, 0.8, 1.5, 0.50),  # « So we will fight »
+        ("flash", deb_t09p3, 0.08, 0.05, 0.30, 0.90),  # flash « So we will fight »
+        ("gold", deb_t09p3, 0.4, 0.8, 1.5, 0.50),
         ("portal", deb_t11 + (fin_t11 - deb_t11) * 0.4, 1.0, 2.0, 2.5, 0.60),
         ("gold", carton_abs, 1.5, halo_hold, 2.0, 0.45),  # halo du carton titre
     ]
-    cuts = [(deb, dur) for (_, _, _, deb, dur, _, _) in segments if deb > 0.01]
-    print(f"Cuts durs : {len(cuts)}")
+    # Cuts durs : (debut, duree_nouveau_plan, frontiere_d_acte).
+    cuts = [(deb, dur, fi > 0.0)
+            for (_, _, _, _, deb, dur, fi, _, _, _) in segments if deb > 0.01]
+    print(f"Cuts durs : {len(cuts)} (dont {sum(1 for _, _, b in cuts if b)} actes)")
 
     if not audio_only:
-        # 2. Segments vidéo.
+        # 2. Segments vidéo (zoompan 4K eased + Lanczos + étalonnage par acte).
+        # PAS de filtre fps redondant : il avalait 1 image/segment (cf. V6).
         listes_concat = []
-        for i, (bloc, img, mouv, debut, duree, fi, fo) in enumerate(segments):
+        for i, (nom, bloc, img, mouv, debut, duree, fi, fo, ci, co) in enumerate(segments):
             n = max(2, round(duree * FPS))
-            vf = [filtre_zoompan(mouv, n), f"fps={FPS}", "format=yuv420p"]
+            vf = [filtre_zoompan(mouv, n), f"scale={W}x{H}:flags=lanczos",
+                  GRADE[bloc], "format=yuv420p"]
             if fi:
-                vf.append(f"fade=t=in:st=0:d={fi}")
+                vf.append(f"fade=t=in:st=0:d={fi}:color={ci}")
             if fo:
-                vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}")
+                vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}:color={co}")
             seg = os.path.join(tmp, f"seg{i:02d}.mp4")
-            if bloc == "T12":
-                print(f"  {bloc} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
+            if nom == "T12":
+                print(f"  {nom} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
                 rendre_t12(os.path.join(K4, img), tmp, seg, n, duree, fi, fo, timeline)
                 listes_concat.append(f"file '{seg}'")
                 continue
@@ -630,7 +835,7 @@ def main():
                  "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
                  seg])
             listes_concat.append(f"file '{seg}'")
-            print(f"  {bloc} : {duree:.1f}s ({n} img, {mouv})")
+            print(f"  {nom} : {duree:.1f}s ({n} img, {mouv})")
         liste = os.path.join(tmp, "concat.txt")
         with open(liste, "w") as f:
             f.write("\n".join(listes_concat))
@@ -639,30 +844,41 @@ def main():
         run([FF, "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", liste,
              "-c", "copy", video])
 
-        # 3. Post-production : étalonnage + voile de sable + couche lumière
-        # pré-rendue + vignette + grain.
+        # Gate : le concat doit contenir exactement toutes les images.
+        attendu = sum(max(2, round(dur * FPS))
+                      for (_, _, _, _, _, dur, _, _, _, _) in segments)
+        obtenu = compter_images(video)
+        print(f"Concat : {obtenu} images (attendu {attendu})")
+        if obtenu != attendu:
+            raise SystemExit(f"CONCAT INCOMPLET : {obtenu} != {attendu}")
+
+        # 3. Post-production : voile de sable (pré-bouclé FINI : pas de
+        # -stream_loop infini, cause du blocage V6) + couche lumière +
+        # vignette + grain. Étalonnage déjà fait par acte aux segments.
         sable = generer_sable(os.path.join(tmp, "sable.mp4"))
+        sable_full = os.path.join(tmp, "sable-full.mp4")
+        run([FF, "-y", "-v", "error", "-stream_loop", "40", "-i", sable,
+             "-c", "copy", "-t", f"{duree_tot:.2f}", sable_full])
         flare_gold = generer_flare(os.path.join(tmp, "flare-gold.png"))
         flare_portal = generer_flare(os.path.join(tmp, "flare-portal.png"),
                                      teinte=(170, 215, 255), cy=0.45)
-        assets = {"gold": flare_gold, "portal": flare_portal}
+        flare_flash = generer_flare(os.path.join(tmp, "flare-flash.png"), force=1.5)
+        assets = {"gold": flare_gold, "portal": flare_portal, "flash": flare_flash}
         lumiere = generer_lumiere(os.path.join(tmp, "lumiere.mp4"), duree_tot, pulses, assets)
-        cmd = [FF, "-y", "-v", "error", "-i", video, "-stream_loop", "-1", "-i", sable,
-               "-i", lumiere]
-        fc = [f"[0:v]fps={FPS},eq=saturation=1.06,"
-              f"colortemperature=temperature=5200:mix=0.12[v0]",
-              f"[1:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p,"
-              f"fade=t=in:st=0:d=3,fade=t=out:st={duree_tot - 3:.2f}:d=3[s]",
-              "[v0][s]blend=all_mode=screen:all_opacity=0.50[v1]",
-              f"[2:v]fps={FPS},trim=0:{duree_tot:.2f},setpts=PTS-STARTPTS,format=yuv420p[l]",
-              "[v1][l]blend=all_mode=screen:all_opacity=1.0[v2]",
-              "[v2]vignette=angle=PI/4.6,noise=alls=5:allf=t,format=yuv420p[vout]"]
+        # Fusion numpy (voir fusion_post) : les graphes blend multi-entrées
+        # se figent avec ce build ffmpeg, les transcodages 1 entrée passent.
         video_post = os.path.join(tmp, "video-post.mp4")
-        run(cmd + ["-filter_complex", ";".join(fc), "-map", "[vout]",
-                   "-t", f"{duree_tot:.2f}",
-                   "-c:v", "libx264", "-preset", "fast", "-crf", "21",
-                   video_post])
+        fusion_post(video, sable_full, lumiere, video_post, duree_tot)
         print(f"Post : {os.path.getsize(video_post) / 1e6:.1f} Mo")
+
+        # 3b. Encodage de distribution : le suréchantillonnage 4K + le grain
+        # donnent un master volumineux (~245 Mo) ; CRF27/slow ~65 Mo,
+        # qualité équivalente au CRF21 du master 1080p direct (V5.1).
+        video_dist = os.path.join(tmp, "video-dist.mp4")
+        run([FF, "-y", "-v", "error", "-i", video_post,
+             "-c:v", "libx264", "-preset", "slow", "-crf", "27",
+             "-pix_fmt", "yuv420p", video_dist])
+        print(f"Dist : {os.path.getsize(video_dist) / 1e6:.1f} Mo")
 
     # 4. Cloche (réelle si fournie, sinon synthétique : partiels inharmoniques).
     bell_src = None
@@ -690,27 +906,34 @@ def main():
          "highpass=f=150,lowpass=f=900,volume='0.9*sin(PI*t/1.4)':eval=frame,"
          "aresample=44100,aformat=channel_layouts=stereo", whoosh])
 
-    # 5b. Stinger d'impact (un par cut dur).
+    # 5b. Stinger d'impact + boom d'acte.
     stinger = generer_stinger(os.path.join(tmp, "stinger.wav"))
+    boom = generer_boom(os.path.join(tmp, "boom.wav"))
 
-    # 6. Mix audio : VO + nappe (duckée) + cloches + whooshes + stingers + ambiances.
+    # 6. Mix audio : VO + nappe (duckée) + cloches + whooshes + impacts + ambiances.
     cmd = [FF, "-y", "-v", "error"]
     for vo, _, _ in timeline:
         cmd += ["-i", os.path.join(VO, vo)]
     n_vo = len(timeline)
-    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE, "-i", whoosh, "-i", stinger]
-    i_bell, i_m1, i_m2, i_wh = n_vo, n_vo + 1, n_vo + 2, n_vo + 3
-    i_st = n_vo + 4
+    cmd += ["-i", bell, "-i", MUSIQUE, "-i", MUSIQUE, "-i", whoosh,
+            "-i", stinger, "-i", boom]
+    i_bell, i_m1, i_m2, i_wh, i_st, i_bm = (n_vo, n_vo + 1, n_vo + 2,
+                                            n_vo + 3, n_vo + 4, n_vo + 5)
     idx_entrees = []
     for fichier, bdeb, bfin, niveau in AMB:
         chemin = os.path.join(AMB_DIR, fichier)
         if os.path.exists(chemin):
-            idx_entrees.append((n_vo + 5 + len(idx_entrees), fichier, bdeb, bfin, niveau))
+            idx_entrees.append((n_vo + 6 + len(idx_entrees), fichier, bdeb, bfin, niveau))
             cmd += ["-stream_loop", "-1", "-i", chemin]
     if idx_entrees:
         print("Ambiances :", [f for _, f, _, _, _ in idx_entrees])
     else:
         print("Ambiances : aucune (voir audio/amb/README.md)")
+    d10, f10 = spans["T10"]
+    d12, f12 = spans["T12"]
+    # Dynamique creusée : les lits respirent (intimité du thé, retenue du titre).
+    dyn = (f"if(between(t,{d10:.2f},{f10:.2f}),0.45,"
+           f"if(between(t,{d12:.2f},{f12:.2f}),0.8,1))")
     fc = []
     for k, (vo, debut, _) in enumerate(timeline):
         ms = int(debut * 1000)
@@ -726,24 +949,35 @@ def main():
     fc.append(f"[{i_m1}][{i_m2}]acrossfade=d=6:curve1=tri:curve2=tri[bed0]")
     fc.append(f"[bed0]atrim=0:{duree_tot:.2f},afade=t=in:st=0:d=2,volume=0.15[bed]")
     fc.append("[bed][vo_key]sidechaincompress=threshold=0.03:ratio=3:"
-              "attack=250:release=1000[duck]")
+              "attack=250:release=1000[duck0]")
+    fc.append(f"[duck0]volume='{dyn}':eval=frame[duck]")
     n_wh = len(frontieres)
     fc.append(f"[{i_wh}]asplit={n_wh}" + "".join(f"[w{j}]" for j in range(n_wh)))
     for j, front in enumerate(frontieres):
         ms = int(max(0.0, front - 0.7) * 1000)
         fc.append(f"[w{j}]adelay={ms}|{ms}[ww{j}]")
     fc.append("".join(f"[ww{j}]" for j in range(n_wh)) +
-              f"amix={n_wh}:normalize=0,volume=0.30[whooshes]")
-    n_st = len(cuts)
+              f"amix={n_wh}:normalize=0,volume=0.22[whooshes]")
+    cuts_actes = [(deb, dur) for deb, dur, b in cuts if b]
+    cuts_simples = [(deb, dur) for deb, dur, b in cuts if not b]
+    n_bm = len(cuts_actes)
+    fc.append(f"[{i_bm}]asplit={n_bm}" + "".join(f"[m{j}]" for j in range(n_bm)))
+    for j, (deb, dur) in enumerate(cuts_actes):
+        ms = int(deb * 1000)
+        fc.append(f"[m{j}]aresample=44100,aformat=channel_layouts=stereo,"
+                  f"adelay={ms}|{ms},volume=0.7[mm{j}]")
+    fc.append("".join(f"[mm{j}]" for j in range(n_bm)) +
+              f"amix={n_bm}:normalize=0[booms]")
+    n_st = len(cuts_simples)
     fc.append(f"[{i_st}]asplit={n_st}" + "".join(f"[s{j}]" for j in range(n_st)))
-    for j, (deb, dur) in enumerate(cuts):
+    for j, (deb, dur) in enumerate(cuts_simples):
         ms = int(deb * 1000)
         g = 0.5 if dur >= 3.0 else 0.28
         fc.append(f"[s{j}]aresample=44100,aformat=channel_layouts=stereo,"
                   f"adelay={ms}|{ms},volume={g}[ss{j}]")
     fc.append("".join(f"[ss{j}]" for j in range(n_st)) +
               f"amix={n_st}:normalize=0[stingers]")
-    bus = ["[vo_mix]", "[duck]", "[cloches]", "[whooshes]", "[stingers]"]
+    bus = ["[vo_mix]", "[duck]", "[cloches]", "[whooshes]", "[stingers]", "[booms]"]
     if idx_entrees:
         for m, (idx, fichier, bdeb, bfin, niveau) in enumerate(idx_entrees):
             deb = spans[bdeb][0] if bdeb else 0.0
@@ -755,7 +989,8 @@ def main():
                       f"adelay={int(deb * 1000)}|{int(deb * 1000)},"
                       f"volume={niveau}[amb{m}]")
         fc.append("".join(f"[amb{m}]" for m in range(len(idx_entrees))) +
-                  f"amix={len(idx_entrees)}:normalize=0[amb]")
+                  f"amix={len(idx_entrees)}:normalize=0[amb0]")
+        fc.append(f"[amb0]volume='{dyn}':eval=frame[amb]")
         bus.append("[amb]")
     fc.append("".join(bus) + f"amix={len(bus)}:normalize=0,"
               f"afade=t=out:st={duree_tot - 3:.2f}:d=3,"
@@ -775,7 +1010,7 @@ def main():
              "-movflags", "+faststart", tmp_final])
         os.replace(tmp_final, final)
     else:
-        run([FF, "-y", "-v", "error", "-i", video_post, "-i", mix,
+        run([FF, "-y", "-v", "error", "-i", video_dist, "-i", mix,
              "-c", "copy", "-movflags", "+faststart", final])
     print(f"MP4 : {final} ({os.path.getsize(final) / 1e6:.1f} Mo)")
 

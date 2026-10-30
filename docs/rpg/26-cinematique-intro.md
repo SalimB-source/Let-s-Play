@@ -162,6 +162,22 @@ frame près (dump + diff numpy), build vert. Note méthode : le `-ss`
 avant `-i` de ce build ffmpeg cherche vers l'AVANT (keyframes) —
 toujours vérifier les timings par dump numéroté ou `-ss` après `-i`.
 
+**Montage V7 livré (octobre 2026).** 40 plans, 38 tableaux, 3 min 20,
+~50 Mo (CRF27/slow) : synchro personnages (T07 ancré sur les 8
+respirations réelles de la VO — chaque nom tombe sur le bon visage —,
+autres découpes recalées sur les silences détectés), nouveau tableau
+Tarek espiègle sur « and its secrets », rythme apaisé (pas de
+recadrages internes), travellings eased + suréchantillonnage 4K→1080p,
+étalonnage par acte, essuyages sable (T2/T8/T10), flashs glas + duel,
+booms d'actes, dynamique creusée (T10/T12). Vérifié : contact synchro
+(4/4 noms + Salem + regard Mahieddine), espiègle, 3 dips, 2 flashs,
+carton, −19,6 LUFS, build vert. Notes méthode : (1) un filtre `fps`
+redondant après l'étalonnage avalait 1 image/segment (V6 : 46 images
+perdues, dérive progressive) — le zoompan sort déjà du CFR exact +
+gate de comptage après concat ; (2) les graphes vidéo multi-entrées
+(`blend`) figent ce build ffmpeg vers 70 % du film (3 essais, entrées
+saines) — fusion screen en numpy + vignette/grain en graphe simple.
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)
