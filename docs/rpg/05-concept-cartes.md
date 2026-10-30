@@ -231,8 +231,10 @@ valkyries n'émettent plus de Résonance viking.
   Compagnie) — une créature légendaire de type Guerrier viking. Une créature qui
   le frappe avec Attaque ciblée ou le cible avec une capacité encaisse ses
   dégâts d'attaque ; un sort qui l'atteint — ciblé ou de zone — fait riposter
-  sur le sorcier adverse, même si le coup le détruit. Sa rareté le limite à un
-  exemplaire par deck ; il est révélé au premier étage du Fjord.
+  sur le sorcier adverse, même si le coup le détruit. Une frappe **ratée** ne
+  lui laisse rien à rendre. Chaque riposte affiche sa fiche « EFFET ACTIVÉ »
+  une seconde à l'écran, comme le Harakiri. Sa rareté le limite à un exemplaire
+  par deck ; il est révélé au premier étage du Fjord.
 - **Compagnie** (`compagnie: { tribu, atk, def }`, moteur : `appliquerCompagnies`
   dans `rpgDuel.js`) — « +1/+1 pour chaque **autre** créature de sa tribu dans
   son camp ». Eirik ne se compte pas lui-même : seul sur la table il reste le

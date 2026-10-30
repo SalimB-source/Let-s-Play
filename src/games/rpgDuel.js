@@ -691,7 +691,11 @@ export function rpgGagnerVie(duel, cote, montant) {
   return gagne;
 }
 function presenterEffet(duel, cote, carteId) {
-  if (duelCardById(carteId)?.kind === 'creature') {
+  // `duelCardById` rend l'entrée de duel, qui n'a pas de champ `kind` : le test
+  // portait donc toujours à faux et **aucune** carte n'a jamais montré son
+  // « EFFET ACTIVÉ » depuis que la table existe. C'est le catalogue complet
+  // (`cardById`) qui porte le type imprimé.
+  if (cardById(carteId)?.kind === 'creature') {
     presenter(duel, { type: 'effet', cote, carteId });
   }
 }
@@ -1392,8 +1396,11 @@ function appliquerCompagnies(duel) {
     for (const entite of duel[cote].creatures) {
       const compagnie = duelCardById(entite?.carteId)?.compagnie;
       if (!compagnie) continue;
-      const vivante = Number(entite.pv) > 0;
-      const compte = vivante ? compagnieEnJeu(duel, cote, entite, compagnie.tribu) : 0;
+      // Une créature morte n'est plus là : on ne rabote pas ses statistiques.
+      // Elle riposte (Contre-attaque) avec l'attaque qu'elle avait au moment
+      // du coup, et elle sera enterrée juste après.
+      if (!(Number(entite.pv) > 0)) continue;
+      const compte = compagnieEnJeu(duel, cote, entite, compagnie.tribu);
       const vouluAtk = compte * Math.max(0, Number(compagnie.atk) || 0);
       const vouluDef = compte * Math.max(0, Number(compagnie.def) || 0);
       const dejaAtk = Math.max(0, Number(entite.compagnieBonusAtk) || 0);
@@ -1407,7 +1414,6 @@ function appliquerCompagnies(duel) {
       entite.def = Math.max(1, (Number(entite.def) || 0) + gainDef);
       entite.pvMax = Math.max(1, (Number(entite.pvMax ?? entite.def) || 0) + gainDef);
       entite.pv = Math.max(1, (Number(entite.pv) || 0) + gainDef);
-      if (!vivante) continue;
       const total = `${entite.atk}/${entite.def}`;
       duel.log.push(gainAtk + gainDef > 0
         ? `Compagnie : ${entite.name} grandit avec ses ${compte} frère${compte > 1 ? 's' : ''} d’armes (${total}).`
@@ -2409,9 +2415,19 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
-  const coteDefenseur = duel.joueur.creatures.some((candidate) => candidate.id === defenseur.id) ? 'joueur' : 'sorcier';
+  // Le panneau « EFFET ACTIVÉ » de la table, comme pour le Harakiri : sans lui,
+  // la riposte ne laissait qu'une ligne de journal et un point de vie ôté à
+  // l'attaquant — à 1 dégât, personne ne s'en apercevait. Une cible détruite
+  // par la frappe n'est plus dans son camp : on la reconnaît alors comme le
+  // camp d'en face de son attaquant.
+  const coteDefenseur = duel.joueur.creatures.some((candidate) => candidate.id === defenseur.id)
+    ? 'joueur'
+    : duel.sorcier.creatures.some((candidate) => candidate.id === defenseur.id)
+      ? 'sorcier'
+      : (source?.cote === 'joueur' ? 'sorcier' : 'joueur');
   if (source?.type === 'sorcier') {
     if (!duel[source.cote]) return false;
+    presenterEffet(duel, coteDefenseur, defenseur.carteId);
     journaliserAnimationCombat(duel, {
       type: 'contre-attaque',
       depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
@@ -2423,6 +2439,7 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   }
   const attaquant = duel[source?.cote]?.creatures.find((entite) => entite.id === source?.entiteId);
   if (!attaquant) return false;
+  presenterEffet(duel, coteDefenseur, defenseur.carteId);
   journaliserAnimationCombat(duel, {
     type: 'contre-attaque',
     depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },

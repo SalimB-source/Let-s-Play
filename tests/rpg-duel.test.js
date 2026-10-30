@@ -43,6 +43,7 @@ import {
   rpgPiocher,
   rpgPeutPayer,
   rpgPoserTerrain,
+  rpgConsommerPresentations,
   rpgSorcierPv,
   rpgTourSorcierIA,
   rpgVainqueur,
@@ -302,6 +303,39 @@ test('la Compagnie d’Eirik : +1/+1 par autre créature viking de son camp', ()
   rpgBlesserCreature(duel, 'joueur', berserk.id, 99);
   assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [2, 2, 2], 'un seul frère restant : retour à 2/2');
   assert.equal(duel.joueur.creatures.some((entite) => entite.id === eirik.id), true, 'Eirik est toujours en jeu');
+});
+
+test('la riposte montre l’effet à la table, comme le Harakiri', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  donner(duel, 'joueur', 'eclair-du-marteau');
+  rpgConsommerPresentations(duel); // vide la file des poses
+  rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', eirik.id);
+  const effets = rpgConsommerPresentations(duel).filter((evenement) => evenement.type === 'effet');
+  assert.ok(effets.some((evenement) => evenement.carteId === 'eirik-du-premier-serment'),
+    'le panneau « EFFET ACTIVÉ » nomme Eirik quand il riposte');
+  assert.ok(effets.every((evenement) => ['joueur', 'sorcier'].includes(evenement.cote)));
+});
+
+test('une créature qui meurt riposte avec l’attaque qu’elle avait au moment du coup', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  for (const id of ['eirik-du-premier-serment', 'berserk-des-trois-hivers', 'berserk-des-trois-hivers']) {
+    donner(duel, 'sorcier', id);
+  }
+  const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  rpgJouerCreature(duel, 'sorcier', 'berserk-des-trois-hivers');
+  rpgJouerCreature(duel, 'sorcier', 'berserk-des-trois-hivers');
+  assert.equal(eirik.atk, 3, 'trois vikings, deux frères : 3/3');
+  donner(duel, 'joueur', 'tour-des-tenebres'); // arrivée : capacité ciblée, 3 dégâts
+  duel.tour = 'joueur';
+  const tour = rpgJouerCreature(duel, 'joueur', 'tour-des-tenebres', eirik.id).entite;
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === eirik.id), false, 'Eirik meurt du coup');
+  assert.equal(tour.pv, 2, 'et riposte à 3 : la Compagnie comptait encore au moment du coup');
 });
 
 test('un viking adverse ne nourrit pas la Compagnie d’Eirik', () => {
