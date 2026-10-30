@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V10).
+"""Montage de la cinematique d'intro EN du Sablier (V11).
 
 Assemble : 56 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
@@ -25,6 +25,13 @@ V9 : T03 6e plan (famille heureuse sur « keeps living »), T04 régénéré
 V10 : 6 plans héros en 3 moments (A/B/C en fondus dans le plan :
 T01p2, T02p1, T03p1, T05p1, T09p3, T11p2 — B édité depuis A, C depuis B).
 T07g : Fériel forge un bouclier en métal (enclume, étincelles).
+
+V11 : généralisation à tous les plans (38 paires B/C votées
++ 6 héros : chaque plan disposant d'une paire est joué en
+3 moments A/B/C en fondus dans le plan ; T09p1 réutilise la
+paire du héros T09p3). T11p3 : porte éclatée, conséquence du
+sceau fissuré. Famille/marché T03 régénérés sombres (style
+Dark Souls/Elden Ring).
 
 Correctifs V6 : pas de filtre fps redondant après l'étalonnage
 (il avalait 1 image/segment), sable pré-bouclé fini en post-production
@@ -330,7 +337,7 @@ SPLITS_TEXTE = {
          "And behind it all, the sealed portal. "),
         ("cine-t11b-sceau-4k.jpg", "zin_slow",
          "No one knows who built it. No one knows what it holds back. "),
-        ("cine-t11-portail-4k.jpg", "zin_fort",
+        ("cine-t11c-porte-ouverte-4k.jpg", "zin_fort",
          "But the Astrolabe will toll again. And this time…"),
     ],
 }
@@ -364,17 +371,10 @@ PAUSES_T03 = [
     ("cine-t03e-marche-vie-4k.jpg", "push_resp", 7.76, True),   # Everyone knows.
     ("cine-t03f-famille-4k.jpg", "push", 9.14, True),             # And everyone keeps living.
 ]
-# V10 : plans héros en 3 moments (A/B/C enchaînés en fondus DANS le plan,
-# sans travelling — le mouvement vient de la progression). B édité depuis A,
-# C édité depuis B (chaîne validée par votes).
-HERO3 = {
-    "T01p2": ("cine-t01b-montee-mB-4k.jpg", "cine-t01b-montee-mC-4k.jpg"),
-    "T02p1": ("cine-t02-astrolabe-mB-4k.jpg", "cine-t02-astrolabe-mC-4k.jpg"),
-    "T03p1": ("cine-t03b-rue-mB-4k.jpg", "cine-t03b-rue-mC-4k.jpg"),
-    "T05p1": ("cine-t05-creux-mB-4k.jpg", "cine-t05-creux-mC-4k.jpg"),
-    "T09p3": ("cine-t09-duel-mB-4k.jpg", "cine-t09-duel-mC-4k.jpg"),
-    "T11p2": ("cine-t11b-sceau-mB-4k.jpg", "cine-t11b-sceau-mC-4k.jpg"),
-}
+# V11 : détection automatique des plans en 3 moments. Si cine-XXX-mB-4k.jpg
+# et cine-XXX-mC-4k.jpg existent à côté de cine-XXX-4k.jpg, le plan est joué
+# en A/B/C enchaînés en fondus DANS le plan (sans travelling — le mouvement
+# vient de la progression). T09p1 réutilise la paire du héros T09p3 (même A).
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
 # Scribe puis confrontation, registre puis rue vide.
 PLANS_T8 = [
@@ -864,11 +864,13 @@ def main():
             if fo:
                 vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}:color={co}")
             seg = os.path.join(tmp, f"seg{i:02d}.mp4")
-            if nom in HERO3:
-                # Plan héros : A/B/C en fondus dans le plan (statiques).
+            imgB = img.replace("-4k.jpg", "-mB-4k.jpg")
+            imgC = img.replace("-4k.jpg", "-mC-4k.jpg")
+            if (imgB != img and os.path.exists(os.path.join(K4, imgB))
+                    and os.path.exists(os.path.join(K4, imgC))):
+                # Plan en 3 moments : A/B/C en fondus dans le plan (statiques).
                 # Tout en IMAGES entières : les durées fractionnaires en
                 # secondes faisaient perdre 1 image (T02p1 : 179/180).
-                imgB, imgC = HERO3[nom]
                 nov = max(1, round(min(0.4, duree * 0.12) * FPS))
                 nA = round(n / 3 + 2 * nov / 3)
                 nB = round(n / 3 + 2 * nov / 3)
