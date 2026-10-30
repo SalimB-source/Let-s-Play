@@ -7116,12 +7116,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
-  // ── La fiche d'une carte reste muette ──
-  // Ouvrir une créature en grand — le clic du catalogue, le clic droit ou
-  // l'appui long ailleurs dans le jeu — ne fait plus entendre sa voix
-  // d'arrivée : la voix est réservée à l'entrée en jeu. Seul l'effleurement
-  // `hover` répond, pour que le clic donne un retour sonore.
-  const jouerSonFiche = () => {
+  // ── La fiche parle au catalogue, reste muette en jeu ──
+  // Le clic du catalogue fait entendre la voix d'arrivée de la créature, celle
+  // qu'elle a en entrant en jeu (une seule voix à la fois : `playCardVoice`
+  // coupe la précédente, donc feuilleter le catalogue ne superpose pas les
+  // répliques). Partout ailleurs dans le jeu — clic droit, appui long — la
+  // fiche reste muette : la voix est réservée à l'entrée en jeu.
+  // L'effleurement `hover` répond dans tous les cas, pour que l'ouverture ne
+  // laisse pas croire que le geste n'a pas été pris.
+  const jouerSonFiche = (carte, avecVoix = false) => {
+    if (avecVoix && jouerVoixArrivee(carte?.id ?? carte)) return true;
     jouerSfx('hover');
     return false;
   };
@@ -8957,7 +8961,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     annulerAppuiLong();
     masquerApercuSurvol();
     unlockSfx();
-    jouerSonFiche(carte);
+    jouerSonFiche(carte, surface === 'CATALOGUE');
     setApercuCatalogueArmes(armes);
     setApercuCatalogueFurie(furie);
     setApercuCatalogueEffetsEpuises(effetsEpuises);

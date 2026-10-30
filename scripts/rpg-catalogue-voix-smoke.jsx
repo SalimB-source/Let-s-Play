@@ -24,10 +24,9 @@ const DECK = [
 ].flatMap((id) => [id, id]);
 
 /**
- * Le catalogue tel que le joueur le feuillette : ouvrir une fiche ne fait
- * jamais parler la créature — même celles qui ont une voix d'arrivée restent
- * muettes, la voix est réservée à l'entrée en jeu. Toutes les cartes gardent
- * le seul effleurement `hover` en retour sonore.
+ * Le catalogue tel que le joueur le feuillette : ouvrir la fiche d'une créature
+ * qui a une voix la fait parler, les cartes muettes gardent l'effleurement.
+ * (En jeu — clic droit, appui long — la fiche reste muette.)
  */
 export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
   const sonsJoues = [];
@@ -87,15 +86,15 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     assert.ok(!mousse.textContent.includes('Aucune capacité'),
       'Mousse des galiotes n’affiche plus « Aucune capacité. »');
 
-    // ── 1 · Une créature qui a une voix reste muette ───────────────────────
+    // ── 1 · Une créature qui a une voix parle ──────────────────────────────
     sonsJoues.length = 0;
     let marque = fichiersLus.length;
     await cliquer(carteCatalogue('susanoo'), 'Susanoo s’ouvre depuis le catalogue');
     await attendre(() => ficheOuverte('susanoo'), 'la fiche de Susanoo est ouverte');
-    assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
-      'la fiche garde l’effleurement en retour sonore');
-    assert.deepEqual(voixLancees(marque), [],
-      `la fiche ne joue aucune voix (fichiers : ${fichiersLus.slice(marque).join(', ') || 'aucun'})`);
+    assert.ok(fichiersLus.slice(marque).some((src) => src.includes('Susanoo.mp3')),
+      `la fiche joue la voix de la créature (fichiers : ${fichiersLus.slice(marque).join(', ') || 'aucun'})`);
+    assert.ok(!sonsJoues.some((son) => son.nom === 'hover'),
+      'la voix remplace l’effleurement de survol');
     await fermerFiche('susanoo');
 
     // ── 2 · Une créature sans voix garde l'effleurement ────────────────────
@@ -119,37 +118,35 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     assert.deepEqual(voixLancees(marque), [], 'une magie ne joue aucune voix');
     await fermerFiche('haut-fond');
 
-    // ── 4 · La Vipère de verre reste muette elle aussi ────────────────────
+    // ── 4 · La Vipère de verre parle « Serpent de verre » ─────────────────
     sonsJoues.length = 0;
     marque = fichiersLus.length;
     await cliquer(carteCatalogue('vipere-de-verre'), 'la Vipère de verre s’ouvre');
     await attendre(() => ficheOuverte('vipere-de-verre'), 'la fiche de la Vipère est ouverte');
-    assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
-      'la fiche garde l’effleurement en retour sonore');
-    assert.deepEqual(voixLancees(marque), [],
-      'aucune voix n’est lancée, même pour une créature qui en a une');
+    assert.ok(fichiersLus.slice(marque).some((src) => src.includes('Serpent')),
+      'le fichier au nom de la carte est bien celui qui sonne');
     await fermerFiche('vipere-de-verre');
 
-    // ── 5 · Le second lot reste muet jusqu'à la fiche ─────────────────────
+    // ── 5 · Le second lot de voix arrive aussi jusqu'à la fiche ───────────
     sonsJoues.length = 0;
     marque = fichiersLus.length;
     await cliquer(carteCatalogue('ibis-des-comptes'), 'l’Ibis des comptes s’ouvre');
     await attendre(() => ficheOuverte('ibis-des-comptes'), 'la fiche de l’Ibis est ouverte');
-    assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
-      'la fiche garde l’effleurement en retour sonore');
-    assert.deepEqual(voixLancees(marque), [],
-      'la voix du second lot n’est pas lue par la fiche');
+    // L'adresse est encodée (`Ibis%20des%20comptes.mp3`) : on la décode avant
+    // de la comparer au nom du fichier.
+    assert.ok(fichiersLus.slice(marque).some((src) => decodeURIComponent(src).includes('Ibis des comptes.mp3')),
+      'la voix du second lot est lue par la fiche');
+    assert.ok(!sonsJoues.some((son) => son.nom === 'hover'), 'et elle remplace l’effleurement');
     await fermerFiche('ibis-des-comptes');
 
-    // ── 6 · Le troisième lot reste muet aussi (« Volva » → la Völva) ──────
+    // ── 6 · Le troisième lot parle aussi (« Volva » → la Völva) ───────────
     sonsJoues.length = 0;
     marque = fichiersLus.length;
     await cliquer(carteCatalogue('volva-soigneuse'), 'la Völva soigneuse s’ouvre');
     await attendre(() => ficheOuverte('volva-soigneuse'), 'la fiche de la Völva est ouverte');
-    assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
-      'la fiche garde l’effleurement en retour sonore');
-    assert.deepEqual(voixLancees(marque), [],
-      'la voix du troisième lot n’est pas lue par la fiche');
+    assert.ok(fichiersLus.slice(marque).some((src) => decodeURIComponent(src).includes('Volva.mp3')),
+      'l’écart de nom du troisième lot (« Volva » pour la Völva) tient jusqu’à la page');
+    assert.ok(!sonsJoues.some((son) => son.nom === 'hover'), 'et la voix remplace l’effleurement');
     await fermerFiche('volva-soigneuse');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
