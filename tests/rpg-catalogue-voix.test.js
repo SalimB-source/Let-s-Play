@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
-test('RpgDuelPage fait parler la créature dont le catalogue ouvre la fiche', async () => {
+test('RpgDuelPage ne joue pas les voix quand un aperçu de carte s’ouvre', async () => {
   const previousEnv = process.env.NODE_ENV;
   await build({
     logLevel: 'error',
