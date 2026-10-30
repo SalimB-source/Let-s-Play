@@ -1,5 +1,5 @@
 // ⚙️ FICHIER GÉNÉRÉ par scripts/news-bot/fetch-news.mjs — ne pas éditer à la main.
-// Dernière génération : 2026-10-30T10:59:40.329Z — 33 article(s).
+// Dernière génération : 2026-10-30T20:23:30.856Z — 33 article(s).
 // Ce module alimente la page Actus et les routes /news/<slug> du site.
 export const autoStories = {
   "assassin-s-creed-le-patron-jean-guesdon-fait-le-point-sur-l": {
