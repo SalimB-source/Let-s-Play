@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import './rpg-intro-cinematic.css';
+import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
   lirePreferencesSonoresRpg,
   reprendreThemePrincipal,
@@ -8,7 +9,10 @@ import {
 /**
  * Cinématique d'intro du Sablier — plein écran, un seul bouton : « Passer ».
  * ---------------------------------------------------------------------------
- * La vidéo joue d'elle-même (dans la foulée du clic d'ouverture) ; si le
+ * Elle joue à chaque entrée dans le jeu (jamais en PvP), en paysage comme
+ * la partie : une session `rpgLandscape` verrouille l'orientation (et le
+ * plein écran natif) le temps de la vidéo, puis rend la main au duel.
+ * La vidéo part d'elle-même (dans la foulée du clic d'ouverture) ; si le
  * navigateur refuse l'autoplay, un toucher n'importe où la lance. Échap
  * passe aussi. Fin comme skip marquent la cinématique « vue ».
  *
@@ -40,11 +44,35 @@ export default function RpgIntroCinematic({ onFinish }) {
   const videoRef = useRef(null);
   const skipRef = useRef(null);
   const [aDemarre, setADemarre] = useState(false);
+  const [portrait, setPortrait] = useState(false);
 
   const terminer = useCallback(() => {
     marquerCinematiqueVue();
     onFinish();
   }, [onFinish]);
+
+  // Paysage comme le jeu : verrou d'orientation + plein écran natif le temps
+  // de la vidéo, rendus à la fermeture (le duel les redemande à « Jouer »).
+  useEffect(() => {
+    const session = createRpgLandscapeSession();
+    void session.enter({ fullscreen: true });
+    return () => session.leave();
+  }, []);
+
+  // Là où le verrou est refusé (iPhone…), on invite à tourner l'appareil.
+  useEffect(() => {
+    const update = () => {
+      const tactile = window.matchMedia?.('(pointer: coarse)').matches ?? false;
+      setPortrait(tactile && window.innerHeight > window.innerWidth);
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
 
   // Le menu se tait pendant la vidéo, puis reprend (son actif uniquement).
   useEffect(() => {
@@ -113,6 +141,10 @@ export default function RpgIntroCinematic({ onFinish }) {
 
       {!aDemarre && (
         <span className="rpg-cine__toucher" aria-hidden="true">▶</span>
+      )}
+
+      {portrait && (
+        <p className="rpg-cine__rotation">Tournez l'appareil pour le paysage 🔄</p>
       )}
 
       <button

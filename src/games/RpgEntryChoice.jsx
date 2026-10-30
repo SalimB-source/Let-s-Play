@@ -206,7 +206,7 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
       try { window.localStorage.setItem(ENTREE_CHOIX_CLE, 'jeu'); } catch { /* navigation privée */ }
     }
     // On entre directement : la cinématique d'intro joue dans le jeu,
-    // en surimpression à la première entrée (jamais avant).
+    // en surimpression à chaque entrée (jamais avant).
     entrerDansLeJeu();
   };
 

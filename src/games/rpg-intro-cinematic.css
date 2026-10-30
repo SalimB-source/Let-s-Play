@@ -51,7 +51,8 @@
 .rpg-cine__passer {
   position: absolute;
   right: max(1rem, env(safe-area-inset-right, 0px));
-  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  top: 50%;
+  transform: translateY(-50%);
   padding: 0.7rem 1.2rem;
   border: 1px solid rgba(216, 198, 144, 0.6);
   border-radius: 10px;
@@ -70,6 +71,23 @@
 .rpg-cine__passer:focus-visible {
   outline: 2px solid #d8c690;
   outline-offset: 2px;
+}
+
+/* Invite de rotation quand le paysage ne se verrouille pas (iPhone…). */
+.rpg-cine__rotation {
+  position: absolute;
+  top: max(1rem, env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(8, 7, 13, 0.75);
+  border: 1px solid rgba(216, 198, 144, 0.6);
+  color: #f3ead2;
+  font-size: 0.9rem;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
