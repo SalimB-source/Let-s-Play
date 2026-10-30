@@ -247,21 +247,23 @@ test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont de
   assert.equal(creatureById('djinn-du-souk'), null, 'le Djinn du souk n’existe plus');
 });
 
-test('Eirik du Premier Serment est une créature viking mythique : 2/2 pour 1 mana et Contre-attaque', () => {
+test('Eirik du Premier Serment est une créature viking mythique : 1/1 pour 1 mana, Compagnie et Contre-attaque', () => {
   const carte = cardById('eirik-du-premier-serment');
   assert.deepEqual(
     {
       kind: carte.kind, element: carte.element, cost: carte.cost,
       atk: carte.atk, def: carte.def, rarity: carte.rarity,
-      contreAttaque: carte.contreAttaque,
+      contreAttaque: carte.contreAttaque, compagnie: carte.compagnie,
     },
     {
       kind: 'creature', element: 'neige', cost: 1,
-      atk: 2, def: 2, rarity: 'mythique', contreAttaque: true,
+      atk: 1, def: 1, rarity: 'mythique', contreAttaque: true,
+      compagnie: { tribu: 'viking', atk: 1, def: 1 },
     },
   );
   assert.match(carte.text, /^Contre-attaque — /);
   assert.match(carte.text, /la riposte frappe le sorcier adverse/);
+  assert.match(carte.text, /\+1\/\+1 pour chaque autre créature viking/);
   assert.equal(carte.typeLine, 'Créature légendaire — Guerrier viking');
   assert.equal(cardHasPrintedType(carte, 'viking'), true);
   assert.equal(cardCopyLimit(carte), 1, 'sa rareté mythique le limite à un exemplaire');
@@ -274,9 +276,59 @@ test('Eirik du Premier Serment est une créature viking mythique : 2/2 pour 1 ma
   assert.equal(resultat.entite.contreAttaque, true, 'l’entité posée porte bien la riposte');
   assert.deepEqual(
     [resultat.entite.atk, resultat.entite.def, resultat.entite.pv, duel.joueur.mana.neige],
-    [2, 2, 2, 0],
-    'un mana Neige suffit pour poser le corps 2/2 annoncé',
+    [1, 1, 1, 0],
+    'seul sur la table, un mana Neige donne le 1/1 imprimé : Eirik ne se compte pas lui-même',
   );
+});
+
+test('la Compagnie d’Eirik : +1/+1 par autre créature viking de son camp', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  for (const id of ['eirik-du-premier-serment', 'berserk-des-trois-hivers', 'berserk-des-trois-hivers']) {
+    donner(duel, 'joueur', id);
+  }
+  const eirik = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [1, 1, 1], 'seul sur la table, il reste le 1/1 imprimé');
+
+  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv, eirik.pvMax], [2, 2, 2, 2],
+    'un frère d’armes : 2/2, PV compris');
+  rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers');
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [3, 3, 3], 'deux frères : 3/3');
+  assert.ok(duel.log.some((ligne) => ligne.startsWith('Compagnie : Eirik du Premier Serment grandit')),
+    'le journal raconte la montée en compagnie');
+
+  // Perdre un frère d'armes fait redescendre Eirik — sans jamais le tuer.
+  rpgBlesserCreature(duel, 'joueur', berserk.id, 99);
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [2, 2, 2], 'un seul frère restant : retour à 2/2');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === eirik.id), true, 'Eirik est toujours en jeu');
+});
+
+test('un viking adverse ne nourrit pas la Compagnie d’Eirik', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'sorcier', 'berserk-des-trois-hivers');
+  const eirik = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
+  rpgJouerCreature(duel, 'sorcier', 'berserk-des-trois-hivers');
+  assert.deepEqual([eirik.atk, eirik.def], [1, 1],
+    'un Viking du sorcier ne compte pas : la Compagnie ne franchit pas la ligne du camp');
+});
+
+test('la Compagnie retombe sans tuer : Eirik blessé garde 1 PV quand son dernier frère tombe', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 30);
+  donner(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'joueur', 'berserk-des-trois-hivers');
+  const eirik = rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment').entite;
+  const berserk = rpgJouerCreature(duel, 'joueur', 'berserk-des-trois-hivers').entite;
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [2, 2, 2], 'avec un frère : 2/2');
+
+  eirik.pv = 1; // blessé sous son plafond
+  rpgBlesserCreature(duel, 'joueur', berserk.id, 99);
+  assert.deepEqual([eirik.atk, eirik.def, eirik.pv], [1, 1, 1],
+    'la Compagnie retombe, mais ne descend jamais sous 1 PV : perdre un frère ne tue pas');
 });
 
 test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible', () => {
@@ -284,7 +336,11 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
   donner(duel, 'sorcier', 'eirik-du-premier-serment');
+  // Un frère d'armes viking : Eirik est un 2/2, il survit au dégât de la Tour
+  // et riposte à 2 (seul, il serait un 1/1 qui meurt en rendant 1).
+  donner(duel, 'sorcier', 'berserk-des-trois-hivers');
   const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  rpgJouerCreature(duel, 'sorcier', 'berserk-des-trois-hivers');
   donner(duel, 'joueur', 'tour-de-braise');
   const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', eirik.id).entite;
 
@@ -467,8 +523,10 @@ test('une Contre-attaque survivante renvoie un sort de zone sur le sorcier lance
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 2/2, Contre-attaque
+  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 1/1, Contre-attaque
+  donner(duel, 'sorcier', 'berserk-des-trois-hivers');  // un frère d'armes : 2/2
   const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
+  rpgJouerCreature(duel, 'sorcier', 'berserk-des-trois-hivers');
   duel.tour = 'joueur';
   donner(duel, 'joueur', 'brisure-de-verre'); // 1 dégât à chaque créature ennemie
   const pvJoueur = duel.joueur.pv;
@@ -503,7 +561,7 @@ test('une créature tuée par la vague riposte quand même', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 2/2
+  donner(duel, 'sorcier', 'eirik-du-premier-serment'); // 1/1 seul : la vague le tue
   const eirik = rpgJouerCreature(duel, 'sorcier', 'eirik-du-premier-serment').entite;
   duel.tour = 'joueur';
   const pvJoueur = duel.joueur.pv;
@@ -511,7 +569,7 @@ test('une créature tuée par la vague riposte quand même', () => {
 
   assert.equal(rpgLancerMagie(duel, 'joueur', 'vent-rouge').ok, true);
   assert.equal(duel.sorcier.creatures.some((entite) => entite.id === eirik.id), false, 'Eirik est détruit');
-  assert.equal(duel.joueur.pv, pvJoueur - 2, 'Eirik riposte même après le coup fatal');
+  assert.equal(duel.joueur.pv, pvJoueur - 1, 'Eirik riposte même après le coup fatal, à son attaque de 1');
 });
 
 test('Éclair du marteau tue Eirik mais sa Contre-attaque frappe le lanceur', () => {
@@ -526,7 +584,7 @@ test('Éclair du marteau tue Eirik mais sa Contre-attaque frappe le lanceur', ()
     const pv = duel[lanceur].pv;
     assert.equal(rpgLancerMagie(duel, lanceur, 'eclair-du-marteau', eirik.id).ok, true);
     assert.equal(duel[defenseur].creatures.includes(eirik), false);
-    assert.equal(duel[lanceur].pv, pv - 2, 'la riposte frappe le sorcier lanceur');
+    assert.equal(duel[lanceur].pv, pv - 1, 'la riposte frappe le sorcier lanceur, à l’attaque de 1');
     assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 1);
   }
 });
@@ -541,7 +599,7 @@ test('une capacité ciblée fatale reçoit la Contre-attaque sur sa source', () 
   donner(duel, 'joueur', 'tour-de-braise');
   const tour = rpgJouerCreature(duel, 'joueur', 'tour-de-braise', eirik.id).entite;
   assert.equal(duel.sorcier.creatures.includes(eirik), false);
-  assert.equal(tour.pv, 2, 'la Tour subit les 2 dégâts d’Eirik');
+  assert.equal(tour.pv, 3, 'la Tour subit le dégât d’Eirik (1, seul sur la table)');
 });
 
 test('les deux cibles de l’Oni contre-attaquent même si elles sont détruites', () => {
@@ -556,7 +614,9 @@ test('les deux cibles de l’Oni contre-attaquent même si elles sont détruites
   const oni = rpgJouerCreature(duel, 'joueur', 'oni-de-la-fournaise', premier.id).entite;
   assert.equal(duel.sorcier.creatures.includes(premier), false);
   assert.equal(duel.sorcier.creatures.includes(second), false);
-  assert.equal(oni.pv, 1, 'les deux ripostes de 2 frappent l’Oni');
+  // Les deux Eirik se nourrissent l'un l'autre (2/2 chacun) : le premier
+  // riposte à 2 avant de tomber, le second, redevenu 1/1, à 1.
+  assert.equal(oni.pv, 2, 'les ripostes d’Eirik frappent l’Oni : 2 puis 1');
   assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 2);
 });
 
@@ -585,7 +645,7 @@ test('la destruction totale déclenche la Contre-attaque de chaque victime adver
   const pv = duel.joueur.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'la-derniere-pesee').ok, true);
   assert.equal(duel.sorcier.creatures.includes(eirik), false);
-  assert.equal(duel.joueur.pv, pv - 2);
+  assert.equal(duel.joueur.pv, pv - 1, 'la riposte d’Eirik part à son attaque de 1');
 });
 
 test('une capacité de destruction de zone fatale déclenche la riposte sur sa source', () => {
@@ -597,7 +657,7 @@ test('une capacité de destruction de zone fatale déclenche la riposte sur sa s
   donner(duel, 'joueur', 'tour-des-tenebres');
   const tour = rpgJouerCreature(duel, 'joueur', 'tour-des-tenebres').entite;
   assert.equal(duel.sorcier.creatures.includes(eirik), false);
-  assert.equal(tour.pv, 3, 'la Tour encaisse la riposte de 2');
+  assert.equal(tour.pv, 4, 'la Tour encaisse la riposte de 1');
 });
 
 test('un souffle de gel fatal déclenche la Contre-attaque', () => {
@@ -610,7 +670,7 @@ test('un souffle de gel fatal déclenche la Contre-attaque', () => {
   donner(duel, 'joueur', 'geant-des-banquises');
   const geant = rpgJouerCreature(duel, 'joueur', 'geant-des-banquises').entite;
   assert.equal(duel.sorcier.creatures.includes(eirik), false);
-  assert.equal(geant.pv, 3, 'le Géant encaisse la riposte de 2');
+  assert.equal(geant.pv, 4, 'le Géant encaisse la riposte de 1');
 });
 
 test('une Attaque ciblée ratée ne déclenche pas la Contre-attaque', () => {
@@ -623,7 +683,7 @@ test('une Attaque ciblée ratée ne déclenche pas la Contre-attaque', () => {
   const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [bouchra.id], {}, null, null, { [bouchra.id]: eirik.id }).ok, true);
   assert.equal(bouchra.pv, 1);
-  assert.equal(eirik.pv, 2);
+  assert.equal(eirik.pv, 1, 'l’attaque ratée ne touche pas le 1/1');
   assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 0);
 });
 
@@ -637,7 +697,7 @@ test('un bouclier de lumière absorbe la frappe ciblée sans déclencher de ripo
   donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   const bouchra = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes').entite;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [bouchra.id], {}, null, null, { [bouchra.id]: eirik.id }).ok, true);
-  assert.equal(eirik.pv, 2);
+  assert.equal(eirik.pv, 1);
   assert.equal(bouchra.pv, 1);
   assert.equal(eirik.bouclierLumiere, false);
   assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 0);
@@ -653,7 +713,7 @@ test('un bouclier de lumière absorbe un Éclair du marteau sans contre-attaque'
   donner(duel, 'joueur', 'eclair-du-marteau');
   const pv = duel.joueur.pv;
   assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', eirik.id).ok, true);
-  assert.equal(eirik.pv, 2);
+  assert.equal(eirik.pv, 1);
   assert.equal(eirik.bouclierLumiere, false);
   assert.equal(duel.joueur.pv, pv);
 });
@@ -692,8 +752,9 @@ test('une capacité de zone adverse fait riposter sur la créature source, pas s
   donner(duel, 'joueur', 'valkyrie-des-glaces'); // arrivée : 1 dégât de zone, deux camps
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
 
-  assert.equal(eirik.pv, 1, 'le vent froid blesse Eirik');
-  assert.equal(valkyrie.pv, 3, 'la Valkyrie encaisse la riposte d’Eirik (5 → 3), son propre vent l’épargnant');
+  assert.equal(duel.sorcier.creatures.includes(eirik), false,
+    'le vent froid tue le 1/1 — mais la riposte part quand même');
+  assert.equal(valkyrie.pv, 4, 'la Valkyrie encaisse la riposte d’Eirik (5 → 4), son propre vent l’épargnant');
   assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25], 'aucun sorcier ne prend la riposte d’une capacité');
   assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
     'le journal nomme la riposte sur la créature source');
@@ -713,10 +774,15 @@ test('une zone qui balaie les deux camps ne fait pas riposter les créatures du 
   donner(duel, 'joueur', 'grand-hiver'); // 1 dégât à toutes les créatures, les deux camps
 
   rpgLancerMagie(duel, 'joueur', 'grand-hiver');
-  assert.equal(adverse.pv, 1);
-  assert.equal(allie.pv, 1, 'l’Eirik du lanceur encaisse aussi la vague');
-  assert.equal(duel.joueur.pv, pvJoueur - 2, 'seul l’Eirik adverse riposte, sur le joueur lanceur');
+  // Chacun est seul dans son camp : la Compagnie ne franchit pas la ligne, les
+  // deux restent des 1/1 et la vague les emporte.
+  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === adverse.id), false,
+    'l’Eirik adverse tombe à 1 dégât');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === allie.id), false,
+    'l’Eirik du lanceur encaisse aussi la vague');
+  assert.equal(duel.joueur.pv, pvJoueur - 1, 'seul l’Eirik adverse riposte, sur le joueur lanceur');
   assert.equal(duel.sorcier.pv, pvSorcier, 'un camp ne riposte jamais contre son propre sorcier');
+  assert.equal(duel.log.filter((ligne) => ligne.startsWith('Contre-attaque : Eirik')).length, 1);
 });
 
 test('l’Embuscade marquée en zone réveille la Contre-attaque, avec la force amputée par le malus', () => {
@@ -780,12 +846,12 @@ test('l’écho d’un sort de zone réveille aussi la Contre-attaque, une fois 
   donner(duel, 'joueur', 'nuage-de-cendres'); // 2 immédiats, puis 1 en écho
 
   assert.equal(rpgLancerMagie(duel, 'joueur', 'nuage-de-cendres').ok, true);
-  assert.equal(duel.joueur.pv, pvJoueur - 2, 'la première vague fait déjà riposter Eirik');
+  assert.equal(duel.joueur.pv, pvJoueur - 1, 'la première vague fait déjà riposter Eirik');
   rpgFinDeTour(duel); // tour du sorcier : l’écho attend son lanceur
   rpgFinDeTour(duel); // retour du joueur : l’écho retombe
   assert.equal(duel.sorcier.degatsEchos.length, 0);
   assert.equal(eirik.pv, 7, 'Eirik encaisse 2 puis 1 (10 → 7)');
-  assert.equal(duel.joueur.pv, pvJoueur - 4, 'la seconde vague déclenche une seconde riposte de 2');
+  assert.equal(duel.joueur.pv, pvJoueur - 2, 'la seconde vague déclenche une seconde riposte de 1');
 });
 
 test('les cinq Tours de défense appartiennent au catalogue et peuvent être jouées', () => {

@@ -114,6 +114,9 @@ export const EFFET_ICONE = {
   'bouclier-lumiere': 'i-bouclier',
   aura: 'i-aura',
   resonance: 'i-resonance',
+  // La Compagnie grandit avec sa tribu, comme la Résonance la renforce : même
+  // symbole, un effet de présence qui se lit sur le type imprimé.
+  compagnie: 'i-resonance',
   honneur: 'i-honneur',
   tribut: 'i-tribut',
   defausse: 'i-defausse',
@@ -299,6 +302,11 @@ export function pastillesPourCarte(carte) {
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
   if (carte.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
+  if (carte.compagnie) {
+    // La Compagnie se nomme par la tribu qu'elle compte : « Compagnie viking ».
+    const tribus = { samourai: 'samouraï', viking: 'viking' };
+    ajouter('compagnie', `Compagnie ${tribus[carte.compagnie.tribu] ?? carte.compagnie.tribu}`);
+  }
   if (carte.resonance) {
     // La Résonance se nomme par le TYPE imprimé de la carte : aujourd’hui,
     // « Résonance samouraï ».
@@ -610,6 +618,7 @@ export const EFFET_DEFINITIONS = {
   contreAttaque: 'Quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Elle riposte même si le coup la détruit ou si elle l’esquive.',
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
+  compagnie: (n) => `Tant qu’elle est en jeu, elle gagne +${n ?? 1}/+${n ?? 1} pour chaque AUTRE créature de sa tribu dans son camp. Elle ne se compte pas elle-même, et une créature de la même tribu dans le camp adverse ne compte pas non plus : perdre un frère d’armes fait redescendre le bonus, jamais sous 1 PV.`,
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
   bouclier: () => 'Bloque le premier sort adverse qui atteint cette créature, même un sort de zone : la vague épargne alors cette seule créature, puis le bouclier tombe. Les dégâts des attaques et des capacités ne sont pas absorbés.',
@@ -654,6 +663,7 @@ const LIBELLES_IMPRIMES = [
   ['contreAttaque', 'Contre-attaque'],
   ['tenacite', 'T[ée]nacité'],
   ['resonance', 'Résonance(?: samouraï|viking)?'],
+  ['compagnie', 'Compagnie(?: viking| samouraï)?'],
   ['honneur', 'Harakiri(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],

@@ -759,13 +759,20 @@ export const RPG_CREATURE_CARDS = [
     name: 'Eirik du Premier Serment',
     element: 'neige',
     cost: 1,
-    atk: 2,
-    def: 2,
+    atk: 1,
+    def: 1,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Guerrier viking',
     art: 'eirik-du-premier-serment',
     contreAttaque: true,
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    // Compagnie viking — un effet de présence, du même genre que les auras :
+    // +1/+1 par créature viking de SON camp en jeu, lui exclu. Seul sur la
+    // table, Eirik reste donc le 1/1 imprimé ; chaque frère d'armes le fait
+    // grandir (le moteur le tient dans `appliquerCompagnies`, rpgDuel.js).
+    // Le type se lit sur la ligne de type imprimée, comme la Résonance — un
+    // Viking adverse ne le nourrit pas.
+    compagnie: { tribu: 'viking', atk: 1, def: 1 },
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
   },
   {

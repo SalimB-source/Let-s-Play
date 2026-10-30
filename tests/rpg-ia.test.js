@@ -967,14 +967,15 @@ test('une zone qui réveille des Contre-attaques coûte son prix à l’IA', () 
   // riposte doit suffire à sortir le sort du classement.
   const niveauRecit = (duel) => { duel.sorcier.ia = { niveau: 'recit' }; };
 
-  // Le Grand Hiver ne griffe qu’à 1 : l’Eirik survivant renvoie 2 dégâts au
+  // Le Grand Hiver ne griffe qu’à 1 : le survivant renvoie ses dégâts au
   // sorcier, la vague vaut moins que rien. Face à une 2/2 sans Contre-attaque,
-  // le même sort reste rentable.
+  // le même sort reste rentable. Le porteur de la Contre-attaque est ici le roi
+  // Kusayla (5/3) : à 1 dégât il survit et riposte à 5.
   let duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
-  donner(duel, 'joueur', 'eirik-du-premier-serment');
-  rpgJouerCreature(duel, 'joueur', 'eirik-du-premier-serment');
+  donner(duel, 'joueur', 'kusayla-roi-des-imazighen');
+  rpgJouerCreature(duel, 'joueur', 'kusayla-roi-des-imazighen');
   donner(duel, 'sorcier', 'grand-hiver');
   niveauRecit(duel);
   assert.equal(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 }), null,

@@ -1361,6 +1361,62 @@ function appliquerAurasBuffAutres(duel) {
 }
 
 /**
+ * Compagnie (Eirik du Premier Serment) : « +1/+1 pour chaque autre créature
+ * viking de son camp en jeu ». C'est un effet de **présence**, du même genre
+ * que l'Aura ou la Malédiction : il monte quand un frère d'armes arrive et
+ * retombe quand il tombe, sans jamais toucher les autres créatures.
+ *
+ * Trois règles, arrêtées avec le joueur :
+ *   - **Eirik ne se compte pas** : seul sur la table, il reste le 1/1 imprimé ;
+ *   - **son camp seulement** : un Viking adverse ne le nourrit jamais, comme
+ *     l'aura Sable de Tarek ne renforce que son propre camp ;
+ *   - **le type imprimé**, jamais le nom ni la couleur (même lecture que la
+ *     Résonance : `cardHasPrintedType`).
+ *
+ * Comme les autres effets de présence, chaque entité ne retient que l'écart
+ * qu'elle a déjà reçu (`compagnieBonusAtk` / `compagnieBonusDef`) : un renfort
+ * temporaire, une arme ou la Furie gardent leurs propres comptes, et une
+ * arrivée ne fait jamais dériver les statistiques déjà cumulées. Perdre la
+ * Compagnie ne tue pas — la défense et les PV restent au plancher de 1.
+ */
+function compagnieEnJeu(duel, cote, entite, tribu) {
+  const camp = duel[cote];
+  if (!camp || !entite) return 0;
+  return camp.creatures.filter((autre) => autre !== entite && autre.id !== entite.id
+    && Number(autre.pv) > 0
+    && cardHasPrintedType(duelCardById(autre.carteId), tribu)).length;
+}
+
+function appliquerCompagnies(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const compagnie = duelCardById(entite?.carteId)?.compagnie;
+      if (!compagnie) continue;
+      const vivante = Number(entite.pv) > 0;
+      const compte = vivante ? compagnieEnJeu(duel, cote, entite, compagnie.tribu) : 0;
+      const vouluAtk = compte * Math.max(0, Number(compagnie.atk) || 0);
+      const vouluDef = compte * Math.max(0, Number(compagnie.def) || 0);
+      const dejaAtk = Math.max(0, Number(entite.compagnieBonusAtk) || 0);
+      const dejaDef = Math.max(0, Number(entite.compagnieBonusDef) || 0);
+      if (vouluAtk === dejaAtk && vouluDef === dejaDef) continue;
+      const gainAtk = vouluAtk - dejaAtk;
+      const gainDef = vouluDef - dejaDef;
+      entite.compagnieBonusAtk = vouluAtk;
+      entite.compagnieBonusDef = vouluDef;
+      entite.atk = Math.max(0, (Number(entite.atk) || 0) + gainAtk);
+      entite.def = Math.max(1, (Number(entite.def) || 0) + gainDef);
+      entite.pvMax = Math.max(1, (Number(entite.pvMax ?? entite.def) || 0) + gainDef);
+      entite.pv = Math.max(1, (Number(entite.pv) || 0) + gainDef);
+      if (!vivante) continue;
+      const total = `${entite.atk}/${entite.def}`;
+      duel.log.push(gainAtk + gainDef > 0
+        ? `Compagnie : ${entite.name} grandit avec ses ${compte} frère${compte > 1 ? 's' : ''} d’armes (${total}).`
+        : `Compagnie : ${entite.name} perd ses frères d’armes (${total}).`);
+    }
+  }
+}
+
+/**
  * Malédiction (La Barbe Noire, set Lettres de Marque) : tant que la source est
  * en jeu, **toutes les créatures du camp adverse** perdent l'attaque imprimée
  * (`malediction.atk`, ici 2). Contrairement à l'Aura, il n'y a **aucune
@@ -1507,6 +1563,9 @@ function rafraichirAuras(duel) {
   // Le Lien d'une arme : il se lève et retombe avec son ancre, sur le même
   // rafraîchissement que les auras — une arrivée comme une mort le déplace.
   appliquerLiensArmes(duel);
+  // La Compagnie se lit sur le champ de bataille (qui est là), pas sur les
+  // statistiques : elle passe donc après les auras et avant la Résonance.
+  appliquerCompagnies(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
