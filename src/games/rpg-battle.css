@@ -3019,9 +3019,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 1;
   display: grid;
   justify-items: center;
-  gap: 10px;
-  min-width: min(680px, 100%);
-  max-width: min(760px, 100%);
+  gap: 12px;
+  width: min(680px, 100%);
   max-height: 100%;
   overflow-y: auto;
   padding: 12px;
@@ -3030,35 +3029,71 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: min(680px, 100%);
+  width: min(616px, 100%);
   color: #ffe9b1;
   font: 800 12px/1.2 var(--display);
   letter-spacing: .16em;
   text-shadow: 0 2px 5px #000;
 }
 .rpg-graveyard-carousel__heading strong { color: #fff7d7; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
-.rpg-graveyard-carousel__card { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; }
-.rpg-graveyard-carousel__card .rpg-hover-card-preview { flex: 0 1 680px; }
-.rpg-graveyard-carousel__arrow {
-  position: absolute;
-  z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 1px solid rgba(255, 230, 166, .7);
-  border-radius: 50%;
-  background: rgba(10, 7, 9, .86);
-  color: #ffe7a8;
-  font: 400 38px/1 serif;
-  cursor: pointer;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, .55);
+.rpg-graveyard-carousel__cards {
+  display: flex;
+  gap: 8px;
+  width: min(616px, 100%);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 2px 10px;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-color: rgba(255, 231, 168, .58) rgba(10, 7, 9, .62);
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
-.rpg-graveyard-carousel__arrow:hover,
-.rpg-graveyard-carousel__arrow:focus-visible { background: #3a211c; color: #fff7d7; outline: 2px solid rgba(255, 238, 180, .9); outline-offset: 2px; }
-.rpg-graveyard-carousel__arrow--prev { left: 4px; }
-.rpg-graveyard-carousel__arrow--next { right: 4px; }
-.rpg-graveyard-carousel__hint { margin: 0; color: rgba(255, 234, 190, .72); font: 600 10px/1.3 var(--display); letter-spacing: .12em; text-transform: uppercase; }
+.rpg-graveyard-carousel__cards:focus-visible {
+  outline: 2px solid rgba(255, 231, 168, .85);
+  outline-offset: 3px;
+}
+.rpg-graveyard-carousel__item {
+  display: grid;
+  flex: 0 0 70px;
+  gap: 5px;
+  width: 70px;
+  scroll-snap-align: start;
+  text-align: center;
+}
+.rpg-graveyard-carousel__name {
+  display: -webkit-box;
+  overflow: hidden;
+  min-height: 2.3em;
+  color: #fff2d2;
+  font: 700 9px/1.15 var(--display);
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard {
+  position: relative;
+  inset: auto;
+  display: block;
+  width: 70px;
+  max-height: none;
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+  animation: none;
+}
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__empile { width: 100%; }
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face {
+  --rpg-card-marker-size: 16px;
+  border-width: 2px;
+  border-radius: 5px;
+}
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__details { display: none; }
 /* Le dos gravé sert de fond ; le dégradé reste dessous, le temps que l'image
    arrive et pour les contextes qui ne définissent pas la variable. */
 .rpg-card-pile__card--back {

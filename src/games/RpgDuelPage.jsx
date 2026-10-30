@@ -1235,18 +1235,21 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
   );
 }
 
-function CimetiereCarousel({ cartes, campLabel, index, onChange, onClose }) {
+function CimetiereCarousel({ cartes, campLabel, onClose }) {
   const cartesDisponibles = cartes.map(cardById).filter(Boolean);
-  const indexSûr = Math.min(Math.max(index, 0), Math.max(cartesDisponibles.length - 1, 0));
-  const carte = cartesDisponibles[indexSûr];
   const boutonFermerRef = useRef(null);
 
   useEffect(() => {
     boutonFermerRef.current?.focus({ preventScroll: true });
   }, []);
 
-  if (!carte) return null;
-  const allerÀ = (delta) => onChange((indexSûr + delta + cartesDisponibles.length) % cartesDisponibles.length);
+  if (!cartesDisponibles.length) return null;
+  const faireDefilerHorizontalement = (event) => {
+    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+      event.preventDefault();
+      event.currentTarget.scrollLeft += event.deltaY;
+    }
+  };
 
   return (
     <div className="rpg-card-peek rpg-card-peek--catalogue rpg-graveyard-carousel" role="dialog" aria-modal="true" aria-label={`Cimetière de ${campLabel}`} onClick={onClose}>
@@ -1254,14 +1257,22 @@ function CimetiereCarousel({ cartes, campLabel, index, onChange, onClose }) {
       <div className="rpg-graveyard-carousel__content" onClick={(event) => event.stopPropagation()}>
         <div className="rpg-graveyard-carousel__heading">
           <span>{campLabel} · CIMETIÈRE</span>
-          <strong>{indexSûr + 1} / {cartesDisponibles.length}</strong>
+          <strong>{cartesDisponibles.length} cartes</strong>
         </div>
-        <div className="rpg-graveyard-carousel__card">
-          <button type="button" className="rpg-graveyard-carousel__arrow rpg-graveyard-carousel__arrow--prev" onClick={() => allerÀ(-1)} aria-label="Carte précédente">‹</button>
-          <HoverCardPreview carte={carte} variante="catalogue" />
-          <button type="button" className="rpg-graveyard-carousel__arrow rpg-graveyard-carousel__arrow--next" onClick={() => allerÀ(1)} aria-label="Carte suivante">›</button>
+        <div
+          className="rpg-graveyard-carousel__cards"
+          role="list"
+          tabIndex={0}
+          aria-label={`Cartes du cimetière de ${campLabel}`}
+          onWheel={faireDefilerHorizontalement}
+        >
+          {cartesDisponibles.map((carte, index) => (
+            <div className="rpg-graveyard-carousel__item" role="listitem" key={`${carte.id}-${index}`}>
+              <HoverCardPreview carte={carte} variante="graveyard" />
+              <span className="rpg-graveyard-carousel__name">{carte.name}</span>
+            </div>
+          ))}
         </div>
-        <p className="rpg-graveyard-carousel__hint">Faites défiler les cartes du cimetière</p>
         <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onClose}>Fermer le cimetière</button>
       </div>
     </div>
@@ -3406,7 +3417,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // d'un toucher — incliner une fiche qu'on referme n'aurait pas de sens.
   useEffect(() => {
     const face = faceRef.current;
-    if (!face) return undefined;
+    if (!face || variante === 'graveyard') return undefined;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return undefined;
     if (!avecLumiere && !window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
     const MAX = avecLumiere ? 11 : 9;
@@ -3522,7 +3533,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       if (avecLumiere) window.removeEventListener('mousemove', suivre);
       figer();
     };
-  }, [carteId, avecLumiere]);
+  }, [carteId, avecLumiere, variante]);
 
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
@@ -3693,7 +3704,8 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       className={`rpg-hover-card-preview${variante ? ` rpg-hover-card-preview--${variante}` : ''} rpg-hover-card-preview--${carte.element} rpg-hover-card-preview--type-${cardFrameType(carte)} ${estEnFurie ? 'rpg-hover-card-preview--furie' : cardFrameClass(carte)}${estTerrain ? ' rpg-hover-card-preview--terrain' : ''}${interactif ? ' is-interactif' : ''}${estApercuRapide ? ' rpg-hover-card-preview--texte-seul' : ''}`}
       onPointerEnter={onPointerEnter ?? undefined}
       onPointerLeave={onPointerLeave ?? undefined}
-      role={variante === 'annonce' ? 'group' : 'tooltip'}
+      role={variante === 'annonce' ? 'group' : variante === 'graveyard' ? 'img' : 'tooltip'}
+      aria-hidden={variante === 'graveyard' ? 'true' : undefined}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
       data-effets-inactifs={effetsInactifsActifs.length ? effetsInactifsActifs.join(' ') : undefined}
       aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
@@ -8883,7 +8895,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setApercuAppui(null);
     setApercuCatalogue(null);
     setApercuCatalogueClicDroit(null);
-    setCimetiereOuvert({ cote, index: cartes.length - 1 });
+    setCimetiereOuvert({ cote });
   };
   const fermerCimetiere = () => setCimetiereOuvert(null);
   const fermerApercuAppui = () => {
@@ -14504,8 +14516,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         <CimetiereCarousel
           cartes={duel[cimetiereOuvert.cote].cimetiere}
           campLabel={cimetiereOuvert.cote === 'joueur' ? 'VOTRE' : 'SORCIER'}
-          index={cimetiereOuvert.index}
-          onChange={(index) => setCimetiereOuvert((courant) => courant ? { ...courant, index } : courant)}
           onClose={fermerCimetiere}
         />
       )}
