@@ -204,6 +204,15 @@ natif le temps de la vidéo, bouton Passer centré à droite. Vérifié :
 gate 4803/4803, corrélation > 0,78 sur les 2 nouveaux plans,
 −19,65 LUFS, VTT 43 cues.
 
+**Montage V10 livré (octobre 2026).** 46 plans, 56 tableaux, 3 min 20,
+52,7 Mo : 6 plans héros en 3 moments (A/B/C en fondus dans le plan —
+T01p2, T02p1, T03p1, T05p1, T09p3, T11p2 ; B édité depuis A, C depuis B,
+chaîne validée par votes). Vérifié : gate 4803/4803, 10/10 tiers
+corrélés au bon moment, −19,65 LUFS, VTT 43 cues. Note méthode : les
+segments héros se calculent en IMAGES entières (nA/nB/nC/nov + reste sur
+nC) — les durées fractionnaires en secondes perdaient 1 image (T02p1 :
+179/180, gate levée avant post-prod).
+
 ---
 
 ## 2. Texte de la voix off (version FR de travail)

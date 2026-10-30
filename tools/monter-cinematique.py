@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Montage de la cinematique d'intro EN du Sablier (V9).
+"""Montage de la cinematique d'intro EN du Sablier (V10).
 
-Assemble : 44 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 56 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
 V7 : synchro personnages (T07 ancré sur les respirations réelles de la VO,
@@ -21,6 +21,9 @@ T07d/T07i : Tarek rit avec Salem et Yamina (carrure, crate scellée).
 
 V9 : T03 6e plan (famille heureuse sur « keeps living »), T04 régénéré
 (clercs au bureau, sablier géant en fond).
+
+V10 : 6 plans héros en 3 moments (A/B/C en fondus dans le plan :
+T01p2, T02p1, T03p1, T05p1, T09p3, T11p2 — B édité depuis A, C depuis B).
 T07g : Fériel forge un bouclier en métal (enclume, étincelles).
 
 Correctifs V6 : pas de filtre fps redondant après l'étalonnage
@@ -361,6 +364,17 @@ PAUSES_T03 = [
     ("cine-t03e-marche-vie-4k.jpg", "push_resp", 7.76, True),   # Everyone knows.
     ("cine-t03f-famille-4k.jpg", "push", 9.14, True),             # And everyone keeps living.
 ]
+# V10 : plans héros en 3 moments (A/B/C enchaînés en fondus DANS le plan,
+# sans travelling — le mouvement vient de la progression). B édité depuis A,
+# C édité depuis B (chaîne validée par votes).
+HERO3 = {
+    "T01p2": ("cine-t01b-montee-mB-4k.jpg", "cine-t01b-montee-mC-4k.jpg"),
+    "T02p1": ("cine-t02-astrolabe-mB-4k.jpg", "cine-t02-astrolabe-mC-4k.jpg"),
+    "T03p1": ("cine-t03b-rue-mB-4k.jpg", "cine-t03b-rue-mC-4k.jpg"),
+    "T05p1": ("cine-t05-creux-mB-4k.jpg", "cine-t05-creux-mC-4k.jpg"),
+    "T09p3": ("cine-t09-duel-mB-4k.jpg", "cine-t09-duel-mC-4k.jpg"),
+    "T11p2": ("cine-t11b-sceau-mB-4k.jpg", "cine-t11b-sceau-mC-4k.jpg"),
+}
 # T08 : un plan par prise (greffe, champ Salem, contrechamp Scribe, registre),
 # Scribe puis confrontation, registre puis rue vide.
 PLANS_T8 = [
@@ -850,6 +864,39 @@ def main():
             if fo:
                 vf.append(f"fade=t=out:st={duree - fo:.3f}:d={fo}:color={co}")
             seg = os.path.join(tmp, f"seg{i:02d}.mp4")
+            if nom in HERO3:
+                # Plan héros : A/B/C en fondus dans le plan (statiques).
+                # Tout en IMAGES entières : les durées fractionnaires en
+                # secondes faisaient perdre 1 image (T02p1 : 179/180).
+                imgB, imgC = HERO3[nom]
+                nov = max(1, round(min(0.4, duree * 0.12) * FPS))
+                nA = round(n / 3 + 2 * nov / 3)
+                nB = round(n / 3 + 2 * nov / 3)
+                nC = n + 2 * nov - nA - nB
+                o1, o2 = (nA - nov) / FPS, (nA + nB - 2 * nov) / FPS
+                fc = (f"[0]scale={W}x{H}:flags=lanczos,format=yuv420p[A];"
+                      f"[1]scale={W}x{H}:flags=lanczos,format=yuv420p[B];"
+                      f"[2]scale={W}x{H}:flags=lanczos,format=yuv420p[C];"
+                      f"[A][B]xfade=transition=fade:duration={nov / FPS:.4f}:offset={o1:.4f}[AB];"
+                      f"[AB][C]xfade=transition=fade:duration={nov / FPS:.4f}:offset={o2:.4f}[X];"
+                      f"[X]{GRADE[bloc]},format=yuv420p")
+                if fi:
+                    fc += f",fade=t=in:st=0:d={fi}:color={ci}"
+                if fo:
+                    fc += f",fade=t=out:st={duree - fo:.3f}:d={fo}:color={co}"
+                run([FF, "-y", "-v", "error",
+                     "-framerate", str(FPS), "-loop", "1", "-t", f"{nA / FPS:.4f}",
+                     "-i", os.path.join(K4, img),
+                     "-framerate", str(FPS), "-loop", "1", "-t", f"{nB / FPS:.4f}",
+                     "-i", os.path.join(K4, imgB),
+                     "-framerate", str(FPS), "-loop", "1", "-t", f"{nC / FPS:.4f}",
+                     "-i", os.path.join(K4, imgC),
+                     "-filter_complex", fc, "-frames:v", str(n),
+                     "-c:v", "libx264", "-preset", "veryfast", "-crf", "17",
+                     seg])
+                listes_concat.append(f"file '{seg}'")
+                print(f"  {nom} : {duree:.1f}s ({n} img, 3 moments)")
+                continue
             if nom == "T12":
                 print(f"  {nom} : {duree:.1f}s ({n} img, carton à {2.0 + d_vo12 - 0.4:.1f}s)")
                 rendre_t12(os.path.join(K4, img), tmp, seg, n, duree, fi, fo, timeline)
