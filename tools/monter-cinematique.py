@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Montage de la cinematique d'intro EN du Sablier (V11).
 
-Assemble : 56 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
+Assemble : 133 tableaux 4K + 15 prises VO + nappe musicale + 3 cloches
 + carton titre -> MP4 1080p + sous-titres EN recales.
 
 V7 : synchro personnages (T07 ancré sur les respirations réelles de la VO,
