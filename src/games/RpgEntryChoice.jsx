@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
+import RpgIntroCinematic, { cinematiqueVue } from './RpgIntroCinematic.jsx';
 import GameLoadBoundary from './GameLoadBoundary.jsx';
 import { importerAvecReprise } from './chargementJeu.js';
 import InvitePaysage, { usePortraitAuDoigt } from './InvitePaysage.jsx';
@@ -97,6 +98,9 @@ function LogoNavigateur() {
 
 export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const [montreEcran, setMontreEcran] = useState(() => !ecranInutile());
+  // Cinématique d'intro : null (fermée), 'jeu' (vue avant d'entrer),
+  // 'entree' (lancée depuis l'écran d'entrée, on y revient après).
+  const [cine, setCine] = useState(null);
   const [retenir, setRetenir] = useState(false);
   const [meta, setMeta] = useState(null);
   const [androidMeta, setAndroidMeta] = useState(null);
@@ -186,10 +190,7 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
     );
   }
 
-  const jouerAuNavigateur = () => {
-    if (retenir) {
-      try { window.localStorage.setItem(ENTREE_CHOIX_CLE, 'jeu'); } catch { /* navigation privée */ }
-    }
+  const entrerDansLeJeu = () => {
     const theme = themeRef.current;
     if (theme) {
       themeRef.current = null;
@@ -199,6 +200,31 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
     }
     setMontreEcran(false);
   };
+
+  const finirCinematique = () => {
+    if (cine === 'jeu') {
+      setCine(null);
+      entrerDansLeJeu();
+    } else {
+      setCine(null);
+    }
+  };
+
+  const jouerAuNavigateur = () => {
+    if (retenir) {
+      try { window.localStorage.setItem(ENTREE_CHOIX_CLE, 'jeu'); } catch { /* navigation privée */ }
+    }
+    // Première entrée : la cinématique d'intro joue avant le duel.
+    if (!cinematiqueVue()) {
+      setCine('jeu');
+      return;
+    }
+    entrerDansLeJeu();
+  };
+
+  if (cine) {
+    return <RpgIntroCinematic onFinish={finirCinematique} />;
+  }
 
   return (
     <div className="rpg-entry-choice">
@@ -263,6 +289,12 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
             <span className="rpg-entry-choice__option-meta">Duel, mode histoire, souk et tours</span>
           </button>
         </div>
+
+        <p className="rpg-entry-choice__cine">
+          <button type="button" className="rpg-entry-choice__cine-lien" onClick={() => setCine('entree')}>
+            ▶ Regarder la cinématique d’intro — Que ton nom soit écrit (3 min 27)
+          </button>
+        </p>
 
         <label className="rpg-entry-choice__retenir">
           <input

@@ -74,6 +74,7 @@ import { useRpgStory } from './useRpgStory.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
+import RpgIntroCinematic from './RpgIntroCinematic.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
@@ -4616,6 +4617,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [tourLibreOuverteId, setTourLibreOuverteId] = useState(null);
   const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
   const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
+  const [cineHistoire, setCineHistoire] = useState(false);
   const storyRef = useRef(null);
   const libreRef = useRef(null);
   const derniereTourLibreRef = useRef(null);
@@ -5309,6 +5311,13 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
             />
             <div className="rpg-story__footer">
+              <button
+                type="button"
+                className="rpg-story__reset"
+                onClick={() => { play('menu'); setCineHistoire(true); }}
+              >
+                ▶ Revoir la cinématique d’intro
+              </button>
               {!confirmerResetHistoire && (
                 <button
                   type="button"
@@ -5325,6 +5334,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
               </div>}
             </div>
+            {cineHistoire && <RpgIntroCinematic onFinish={() => setCineHistoire(false)} />}
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
