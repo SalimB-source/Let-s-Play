@@ -4880,18 +4880,23 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           {/* Le jeu couvre tout l'écran, barre du site comprise : sans cette
               sortie, on ne quittait le Sablier qu'avec le bouton « retour » du
               navigateur. Un lien simple (pas de routeur) : la page se monte
-              aussi hors `<BrowserRouter>` dans les vérifications jsdom. */}
-          <a
-            className="rpg-mode-menu__quitter"
-            href={`${import.meta.env.BASE_URL}jeu`}
-            onClick={() => play('menu')}
-            title="Quitter le Sablier — retour aux jeux"
-            aria-label="Quitter le Sablier — retour aux jeux"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </a>
+              aussi hors `<BrowserRouter>` dans les vérifications jsdom.
+              Dans la coque PC (`desktopMode`), la croix disparaît : elle menait
+              à la liste des jeux du site, alors que la version installée EST le
+              jeu — on y sort par la fenêtre, pas par une page web. */}
+          {!desktopMode && (
+            <a
+              className="rpg-mode-menu__quitter"
+              href={`${import.meta.env.BASE_URL}jeu`}
+              onClick={() => play('menu')}
+              title="Quitter le Sablier — retour aux jeux"
+              aria-label="Quitter le Sablier — retour aux jeux"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
+            </a>
+          )}
           <nav className="rpg-mode-menu__switch" aria-label="Modes de jeu">
             {/* En haut de la barre verticale : Deck, Souk, Catalogue et l'onglet
                 dédié à la Progression d'XP. En bas (`margin-top: auto` sur Profil) :

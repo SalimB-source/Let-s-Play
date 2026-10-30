@@ -27,6 +27,11 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
   rien d'autre). C'est ce qui permet à l'installeur de ne plus se reconstruire
   quand une carte change, et à la coque de se mettre à jour sans se disputer la
   version avec le site.
+- **Pas de croix « retour aux jeux ».** Dans un navigateur, la barre du Sablier
+  porte une croix qui ramène à la liste des jeux du site. Dans la coque PC elle
+  n'a plus de sens — elle sortait du jeu vers une page web — donc elle est
+  masquée (`desktopMode`, `RpgDuelPage.jsx`). On quitte par la fenêtre ; le
+  bouton plein écran, lui, reste.
 - **Hors connexion, deux filets.** La page d'attente propose « Réessayer » (et
   réessaie seule toutes les 15 s) ; si le **pack hors ligne** (option, ~100 Mo,
   voir plus bas) est installé, elle propose aussi « Jouer la version hors
