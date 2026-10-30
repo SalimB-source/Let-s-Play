@@ -105,8 +105,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Overkill', 'Furie 2'],
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');
-  assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque'],
-    'Eirik affiche sa Contre-attaque dans les pastilles');
+  assert.deepEqual(pastillesDe('eirik-du-premier-serment'), ['Contre-attaque', 'Compagnie viking'],
+    'Eirik affiche sa Contre-attaque et la Compagnie qui le fait grandir');
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
     'le Maître ne porte que Furie 3 et Tenacité : Overkill et Envol sont prêtés par la Furie');
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);

@@ -354,6 +354,10 @@ export function valeurCarte(carte) {
   if (carte.furieGains?.overkill) valeur += 0.8;
   if (carte.furieGains?.envol) valeur += 1.1;
   if (carte.resonance) valeur += 2 + 2 * carte.resonance;
+  // Compagnie : un renfort qui monte avec la tribu présente — deux frères
+  // d'armes valent déjà +2/+2, mais la table peut les reprendre : même prix
+  // qu'une Aura, un cran au-dessus parce qu'il grandit avec le deck.
+  if (carte.compagnie) valeur += 2;
   if (carte.honneur) valeur += carte.honneur;
   if (carte.combat) valeur += 2;
   // Une Aura ne touche plus que les deux créatures adjacentes : elle vaut

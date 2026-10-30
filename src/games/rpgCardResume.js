@@ -42,7 +42,13 @@ const RACCOURCIS = [
   [/Attaque ciblée\s*[-—:]\s*Sélectionné[e]? pour attaquer,[^.]*\./gu, 'Attaque ciblée : peut attaquer n’importe quelle créature adverse.'],
   // Le nom du porteur n'est pas figé : Eirik, Tojiro, Kusayla — la capacité est
   // la même, la phrase qui la définit aussi.
-  [/Contre-attaque\s*[-—:]\s*Quand une créature adverse (?:le|la) frappe avec Attaque ciblée ou (?:le|la) cible avec une capacité, [^.;]+ lui inflige ses dégâts d[’']attaque ; quand c[’']est un sort qui (?:le|la) cible, la riposte frappe le sorcier adverse\.?/gu, 'Contre-attaque : riposte aux coups et aux sorts.'],
+  // Deux formulations coexistent dans le catalogue : « quand c’est un sort qui
+  // le cible » (Tojiro, Kusayla) et « quand c’est un sort — ciblé ou de zone —
+  // qui l’atteint » (Eirik). Le motif accepte les deux, sinon la règle entière
+  // restait imprimée dans un aperçu qui n’a pas la place.
+  [/Contre-attaque\s*[-—:]\s*Quand une créature adverse (?:le|la) frappe avec Attaque ciblée ou (?:le|la) cible avec une capacité, [^.;]+ lui inflige ses dégâts d[’']attaque ; quand c[’']est un sort[^.;]*? qui (?:l[’']atteint|(?:le|la) cible), la riposte frappe le sorcier adverse\.?/gu, 'Contre-attaque : riposte aux coups et aux sorts.'],
+  // La Compagnie d'Eirik, en une ligne : le détail chiffré reste sur la fiche.
+  [/Compagnie\s*[-—:]\s*Tant qu[’']il est en jeu, [^.]* gagne \+1\/\+1 pour chaque autre créature viking de son camp\./gu, 'Compagnie : +1/+1 par autre Viking de son camp.'],
 ];
 
 function texteBrut(carte) {

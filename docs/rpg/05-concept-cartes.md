@@ -227,12 +227,25 @@ La Furie appartient au set **Neige** et à lui seul ; elle se lit sur la carte
 (`furie`) et le moteur l'applique sans table d'effets supplémentaires. Les
 valkyries n'émettent plus de Résonance viking.
 
-- **Eirik du Premier Serment** (1 mana, 2/2, mythique, Contre-attaque) — une
-  créature légendaire de type Guerrier viking. Une créature qui le frappe avec
-  Attaque ciblée ou le cible avec une capacité encaisse ses 2 dégâts d’attaque ;
-  un sort qui l'atteint — ciblé ou de zone, s'il survit à la vague — fait
-  riposter sur le sorcier adverse. Sa rareté le
-  limite à un exemplaire par deck ; il est révélé au premier étage du Fjord.
+- **Eirik du Premier Serment** (1 mana, 1/1, mythique, Contre-attaque et
+  Compagnie) — une créature légendaire de type Guerrier viking. Une créature qui
+  le frappe avec Attaque ciblée ou le cible avec une capacité encaisse ses
+  dégâts d'attaque ; un sort qui l'atteint — ciblé ou de zone — fait riposter
+  sur le sorcier adverse, même si le coup le détruit. Une frappe **ratée** ne
+  lui laisse rien à rendre. Chaque riposte affiche sa fiche « EFFET ACTIVÉ »
+  une seconde à l'écran, comme le Harakiri. Sa rareté le limite à un exemplaire
+  par deck ; il est révélé au premier étage du Fjord.
+- **Compagnie** (`compagnie: { tribu, atk, def }`, moteur : `appliquerCompagnies`
+  dans `rpgDuel.js`) — « +1/+1 pour chaque **autre** créature de sa tribu dans
+  son camp ». Eirik ne se compte pas lui-même : seul sur la table il reste le
+  1/1 imprimé, et chaque frère d'armes viking le fait grandir (2/2 avec un
+  Berserk, 3/3 avec deux). Le type se lit sur la ligne de type imprimée, comme
+  la Résonance : un Viking du camp adverse ne compte jamais. C'est un effet de
+  **présence**, pas un renfort acquis — une créature qui tombe fait redescendre
+  le bonus, sans jamais tuer (défense et PV restent au plancher de 1). Le
+  moteur ne retient que l'écart déjà appliqué (`compagnieBonusAtk` /
+  `compagnieBonusDef`), donc une arme, la Furie ou un renfort temporaire ne
+  dérivent pas. La pastille « Compagnie viking » et le journal suivent l'effet.
 - **Furie X** (Loup des neiges 1 ; Valkyrie au corbeau, Guerrier au bouclier
   rond et Berserk des trois hivers 2 ; Jarl au marteau de guerre et Maître du
   marteau 3) — un état
@@ -335,7 +348,7 @@ terre, rien de plus.
 **Bouchra, guerrière des crêtes** (`bouchra-guerriere-des-cretes`) ajoute au
 Sable une combattante de tempo : une **mythique** à **2 manas, 3/1**, ligne de
 type « Créature légendaire — Guerrière amazighe », **un seul exemplaire** par
-deck. C'est, avec Eirik du Premier Serment (Neige, 1 mana 2/2), la mythique la
+deck. C'est, avec Eirik du Premier Serment (Neige, 1 mana 1/1, Compagnie), la mythique la
 moins chère du catalogue : sa puissance calculée est **44,45**, dans la bande
 mythique (41,8 à 44,4), et son corps de 3/1 pour deux manas est le plus
 agressif du Sable.

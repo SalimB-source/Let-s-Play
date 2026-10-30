@@ -312,3 +312,22 @@ test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3
     dom.window.close();
   }
 });
+
+test('la croix « retour aux jeux » disparaît dans la coque PC', () => {
+  // Dans la version installée, la barre du site n'existe pas : la croix menait
+  // à la liste des jeux de Let's Play, hors du jeu. Elle ne reste donc que
+  // pour le navigateur, et le plein écran reste, lui, dans les deux cas.
+  assert.match(
+    page,
+    /\{!desktopMode && \(\s*<a\s+className="rpg-mode-menu__quitter"/,
+    'la croix est conditionnée à `desktopMode`',
+  );
+  assert.match(
+    page,
+    /desktopMode = false, desktopAccount = null, onSignOut \}\)/,
+    'la coque PC est déjà connue de la barre des onglets (`desktopMode`)',
+  );
+  const debutPleinEcran = page.indexOf('className={`rpg-mode-menu__fullscreen');
+  const boutonPleinEcran = page.slice(debutPleinEcran, page.indexOf('</button>', debutPleinEcran));
+  assert.doesNotMatch(boutonPleinEcran, /desktopMode/, 'le bouton plein écran reste offert dans la coque PC');
+});

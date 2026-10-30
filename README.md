@@ -9493,3 +9493,40 @@ le menu. Le verrou appartenait au duel ; il appartient maintenant à la
   qui lève, les trois routes habillées (et les actus non), l'APK en préfixe, les
   entrées comptées une fois. `scripts/rpg-entry-choice-check.mjs` gagne la même
   vérification côté écran d'entrée.
+
+## Eirik du Premier Serment : 1/1, et une Compagnie qui grandit
+
+La mythique viking passe de **2/2** à **1/1** et gagne un mot-clé : la
+**Compagnie**. Elle gagne **+1/+1 pour chaque autre créature viking de son
+camp** en jeu. Contre-attaque ne bouge pas.
+
+Trois règles, arrêtées avec le joueur :
+
+- **Eirik ne se compte pas** — seul sur la table, il reste le 1/1 imprimé ;
+  chaque frère d'armes le fait grandir (2/2 avec un Berserk, 3/3 avec deux) ;
+- **son camp seulement** — un Viking adverse ne le nourrit jamais, comme l'aura
+  Sable de Tarek ne renforce que son propre camp ;
+- **le type imprimé** (`cardHasPrintedType`, la ligne de type), jamais le nom ni
+  la couleur — même lecture que la Résonance.
+
+Côté moteur, `appliquerCompagnies` (`rpgDuel.js`) tourne avec les autres effets
+de présence dans `rafraichirAuras` : une arrivée, une mort, un renvoi ou un
+exil déplacent le bonus **sans** ajouter de chemin de mise à jour. Comme l'Aura,
+la Malédiction ou la cale comble, chaque entité ne retient que l'écart déjà
+appliqué (`compagnieBonusAtk` / `compagnieBonusDef`) : la Furie, une arme ou un
+renfort temporaire gardent leurs propres comptes, et une arrivée ne fait jamais
+dériver les statistiques déjà cumulées. Perdre la Compagnie ne tue pas — défense
+et PV restent au plancher de 1.
+
+La carte se lit comme les autres : pastille **Compagnie viking** (même symbole
+que la Résonance, celle d'un effet qui se lit sur la tribu), définition repliée
+dans `effetIcons.js`, et le mot-clé en tête de section dans le texte, suivi du
+tiret et de sa règle. `puissanceCarte` la valorise comme une Aura qui grandit :
+Eirik reste dans la bande mythique (44,2, contre 44,45 pour Bouchra).
+
+Les tests suivent dans `tests/rpg-duel.test.js` (identité 1/1, montée à 2/2 puis
+3/3, viking adverse ignoré, retour sans tuer) ; les épreuves de Contre-attaque
+qui prenaient Eirik pour un 2/2 sont réécrites : celles qui ont besoin d'un
+survivant lui donnent un **Berserk des trois hivers** (c'est justement la
+Compagnie qui le met à 2/2), celles qui testent la mort attendent désormais une
+riposte de 1.

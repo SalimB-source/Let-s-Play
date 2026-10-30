@@ -691,7 +691,11 @@ export function rpgGagnerVie(duel, cote, montant) {
   return gagne;
 }
 function presenterEffet(duel, cote, carteId) {
-  if (duelCardById(carteId)?.kind === 'creature') {
+  // `duelCardById` rend l'entrée de duel, qui n'a pas de champ `kind` : le test
+  // portait donc toujours à faux et **aucune** carte n'a jamais montré son
+  // « EFFET ACTIVÉ » depuis que la table existe. C'est le catalogue complet
+  // (`cardById`) qui porte le type imprimé.
+  if (cardById(carteId)?.kind === 'creature') {
     presenter(duel, { type: 'effet', cote, carteId });
   }
 }
@@ -1361,6 +1365,64 @@ function appliquerAurasBuffAutres(duel) {
 }
 
 /**
+ * Compagnie (Eirik du Premier Serment) : « +1/+1 pour chaque autre créature
+ * viking de son camp en jeu ». C'est un effet de **présence**, du même genre
+ * que l'Aura ou la Malédiction : il monte quand un frère d'armes arrive et
+ * retombe quand il tombe, sans jamais toucher les autres créatures.
+ *
+ * Trois règles, arrêtées avec le joueur :
+ *   - **Eirik ne se compte pas** : seul sur la table, il reste le 1/1 imprimé ;
+ *   - **son camp seulement** : un Viking adverse ne le nourrit jamais, comme
+ *     l'aura Sable de Tarek ne renforce que son propre camp ;
+ *   - **le type imprimé**, jamais le nom ni la couleur (même lecture que la
+ *     Résonance : `cardHasPrintedType`).
+ *
+ * Comme les autres effets de présence, chaque entité ne retient que l'écart
+ * qu'elle a déjà reçu (`compagnieBonusAtk` / `compagnieBonusDef`) : un renfort
+ * temporaire, une arme ou la Furie gardent leurs propres comptes, et une
+ * arrivée ne fait jamais dériver les statistiques déjà cumulées. Perdre la
+ * Compagnie ne tue pas — la défense et les PV restent au plancher de 1.
+ */
+function compagnieEnJeu(duel, cote, entite, tribu) {
+  const camp = duel[cote];
+  if (!camp || !entite) return 0;
+  return camp.creatures.filter((autre) => autre !== entite && autre.id !== entite.id
+    && Number(autre.pv) > 0
+    && cardHasPrintedType(duelCardById(autre.carteId), tribu)).length;
+}
+
+function appliquerCompagnies(duel) {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const entite of duel[cote].creatures) {
+      const compagnie = duelCardById(entite?.carteId)?.compagnie;
+      if (!compagnie) continue;
+      // Une créature morte n'est plus là : on ne rabote pas ses statistiques.
+      // Elle riposte (Contre-attaque) avec l'attaque qu'elle avait au moment
+      // du coup, et elle sera enterrée juste après.
+      if (!(Number(entite.pv) > 0)) continue;
+      const compte = compagnieEnJeu(duel, cote, entite, compagnie.tribu);
+      const vouluAtk = compte * Math.max(0, Number(compagnie.atk) || 0);
+      const vouluDef = compte * Math.max(0, Number(compagnie.def) || 0);
+      const dejaAtk = Math.max(0, Number(entite.compagnieBonusAtk) || 0);
+      const dejaDef = Math.max(0, Number(entite.compagnieBonusDef) || 0);
+      if (vouluAtk === dejaAtk && vouluDef === dejaDef) continue;
+      const gainAtk = vouluAtk - dejaAtk;
+      const gainDef = vouluDef - dejaDef;
+      entite.compagnieBonusAtk = vouluAtk;
+      entite.compagnieBonusDef = vouluDef;
+      entite.atk = Math.max(0, (Number(entite.atk) || 0) + gainAtk);
+      entite.def = Math.max(1, (Number(entite.def) || 0) + gainDef);
+      entite.pvMax = Math.max(1, (Number(entite.pvMax ?? entite.def) || 0) + gainDef);
+      entite.pv = Math.max(1, (Number(entite.pv) || 0) + gainDef);
+      const total = `${entite.atk}/${entite.def}`;
+      duel.log.push(gainAtk + gainDef > 0
+        ? `Compagnie : ${entite.name} grandit avec ses ${compte} frère${compte > 1 ? 's' : ''} d’armes (${total}).`
+        : `Compagnie : ${entite.name} perd ses frères d’armes (${total}).`);
+    }
+  }
+}
+
+/**
  * Malédiction (La Barbe Noire, set Lettres de Marque) : tant que la source est
  * en jeu, **toutes les créatures du camp adverse** perdent l'attaque imprimée
  * (`malediction.atk`, ici 2). Contrairement à l'Aura, il n'y a **aucune
@@ -1507,6 +1569,9 @@ function rafraichirAuras(duel) {
   // Le Lien d'une arme : il se lève et retombe avec son ancre, sur le même
   // rafraîchissement que les auras — une arrivée comme une mort le déplace.
   appliquerLiensArmes(duel);
+  // La Compagnie se lit sur le champ de bataille (qui est là), pas sur les
+  // statistiques : elle passe donc après les auras et avant la Résonance.
+  appliquerCompagnies(duel);
   majResonance(duel);
   // La Furie suit l'écart entre la défense actuelle et la DEF de base
   // imprimée : une aura qui déplace les PV peut donc aussi l'allumer ou
@@ -2350,9 +2415,19 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   const force = Math.max(0, Number(defenseur.atk) || 0);
   if (!force) return false;
   const carte = duelCardById(defenseur.carteId);
-  const coteDefenseur = duel.joueur.creatures.some((candidate) => candidate.id === defenseur.id) ? 'joueur' : 'sorcier';
+  // Le panneau « EFFET ACTIVÉ » de la table, comme pour le Harakiri : sans lui,
+  // la riposte ne laissait qu'une ligne de journal et un point de vie ôté à
+  // l'attaquant — à 1 dégât, personne ne s'en apercevait. Une cible détruite
+  // par la frappe n'est plus dans son camp : on la reconnaît alors comme le
+  // camp d'en face de son attaquant.
+  const coteDefenseur = duel.joueur.creatures.some((candidate) => candidate.id === defenseur.id)
+    ? 'joueur'
+    : duel.sorcier.creatures.some((candidate) => candidate.id === defenseur.id)
+      ? 'sorcier'
+      : (source?.cote === 'joueur' ? 'sorcier' : 'joueur');
   if (source?.type === 'sorcier') {
     if (!duel[source.cote]) return false;
+    presenterEffet(duel, coteDefenseur, defenseur.carteId);
     journaliserAnimationCombat(duel, {
       type: 'contre-attaque',
       depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
@@ -2364,6 +2439,7 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   }
   const attaquant = duel[source?.cote]?.creatures.find((entite) => entite.id === source?.entiteId);
   if (!attaquant) return false;
+  presenterEffet(duel, coteDefenseur, defenseur.carteId);
   journaliserAnimationCombat(duel, {
     type: 'contre-attaque',
     depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
