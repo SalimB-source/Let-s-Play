@@ -73,7 +73,7 @@ import { useRpgStory } from './useRpgStory.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
-import RpgIntroCinematic from './RpgIntroCinematic.jsx';
+import RpgIntroCinematic, { cinematiqueVue } from './RpgIntroCinematic.jsx';
 import { personnageEtage, portraitHistoire } from './rpgStoryCast.js';
 import { sauverCollectionDistante, collectionJoueur, possedeCarte, nombreExemplaires } from './rpgCollection.js';
 import { rpgDelaiReflexionIA } from './rpgAI.js';
@@ -6348,6 +6348,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const pvpHorlogeExpireeRef = useRef(null);
   const [confirmerAbandonPvp, setConfirmerAbandonPvp] = useState(false);
   const [ecran, setEcran] = useState(() => (pvp ? 'partie' : 'jouer'));
+  // Cinématique d'intro : elle joue DANS le jeu, en surimpression plein
+  // écran dès la première entrée (jamais en PvP : un duel en direct
+  // n'attend pas). Fin comme skip la marquent « vue ».
+  const [cineEntree, setCineEntree] = useState(() => !modePvp && !cinematiqueVue());
   const duelRef = useRef(null);
   // D'où vient-on quand le seuil de Bab El s'ouvre ? « Plus tard » rend cet
   // écran-là : le joueur repart d'où il a lancé le mode Histoire (Jouer, le
@@ -9350,6 +9354,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return (
       <div ref={shellRef} className={`rpg-battle rpg-battle--menu${pleinEcran ? ' is-immersive' : ''}`} data-scene="menu" onPointerDown={demarrerAppuiLongCarte} onContextMenu={surMenuContextuel}>
         <EffetsSprite />
+        {cineEntree && <RpgIntroCinematic onFinish={() => setCineEntree(false)} />}
         <GameModeMenu
           bloqueAccueil={!modePvp && (!accueilPret || bienvenueActive)}
           screen={ecran}
@@ -12926,6 +12931,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       onContextMenu={surMenuContextuel}
     >
       <EffetsSprite />
+      {cineEntree && <RpgIntroCinematic onFinish={() => setCineEntree(false)} />}
       <SfxReactifsDuel
         vainqueur={vainqueur}
         phaseDuelActive={phaseDuelActive}

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
-import RpgIntroCinematic, { cinematiqueVue } from './RpgIntroCinematic.jsx';
+import RpgIntroCinematic from './RpgIntroCinematic.jsx';
 import GameLoadBoundary from './GameLoadBoundary.jsx';
 import { importerAvecReprise } from './chargementJeu.js';
 import {
@@ -97,8 +97,9 @@ function LogoNavigateur() {
 
 export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   const [montreEcran, setMontreEcran] = useState(() => !ecranInutile());
-  // Cinématique d'intro : null (fermée), 'jeu' (vue avant d'entrer),
-  // 'entree' (lancée depuis l'écran d'entrée, on y revient après).
+  // Bande-annonce volontaire depuis l'écran d'entrée (null = fermée).
+  // La cinématique d'intro, elle, joue DANS le jeu après « Jouer dans
+  // le navigateur » (voir `cineEntree` dans RpgDuelPage).
   const [cine, setCine] = useState(null);
   const [retenir, setRetenir] = useState(false);
   const [meta, setMeta] = useState(null);
@@ -197,23 +198,15 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
   };
 
   const finirCinematique = () => {
-    if (cine === 'jeu') {
-      setCine(null);
-      entrerDansLeJeu();
-    } else {
-      setCine(null);
-    }
+    setCine(null);
   };
 
   const jouerAuNavigateur = () => {
     if (retenir) {
       try { window.localStorage.setItem(ENTREE_CHOIX_CLE, 'jeu'); } catch { /* navigation privée */ }
     }
-    // Première entrée : la cinématique d'intro joue avant le duel.
-    if (!cinematiqueVue()) {
-      setCine('jeu');
-      return;
-    }
+    // On entre directement : la cinématique d'intro joue dans le jeu,
+    // en surimpression à la première entrée (jamais avant).
     entrerDansLeJeu();
   };
 
@@ -281,7 +274,7 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
 
         <p className="rpg-entry-choice__cine">
           <button type="button" className="rpg-entry-choice__cine-lien" onClick={() => setCine('entree')}>
-            ▶ Regarder la cinématique d’intro — Que ton nom soit écrit (3 min 27)
+            ▶ Regarder la cinématique d’intro — Que ton nom soit écrit (3 min 20)
           </button>
         </p>
 
