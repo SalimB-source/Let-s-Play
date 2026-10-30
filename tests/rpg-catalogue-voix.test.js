@@ -1,7 +1,7 @@
 /**
- * Le catalogue monté en jsdom : ouvrir la fiche d'une créature fait entendre sa
- * voix (le même MP3 que son arrivée en jeu), les cartes muettes gardent
- * l'effleurement.
+ * Le catalogue monté en jsdom : ouvrir une fiche ne fait entendre aucune voix
+ * (la voix est réservée à l'entrée en jeu), toutes les cartes gardent le seul
+ * effleurement `hover`.
  */
 
 import test from 'node:test';
@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 
-test('RpgDuelPage fait parler la créature dont le catalogue ouvre la fiche', async () => {
+test('RpgDuelPage garde la fiche du catalogue muette (effleurement seul)', async () => {
   const previousEnv = process.env.NODE_ENV;
   await build({
     logLevel: 'error',

@@ -7116,19 +7116,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
-  // ── La fiche d'une carte parle ──
+  // ── La fiche d'une carte reste muette ──
   // Ouvrir une créature en grand — le clic du catalogue, le clic droit ou
-  // l'appui long ailleurs dans le jeu — fait entendre sa voix d'arrivée, celle
-  // qu'elle a en entrant en jeu. C'est la même lecture (une seule voix à la
-  // fois : `playCardVoice` coupe la précédente), donc feuilleter le catalogue
-  // ne superpose pas les répliques.
-  //
-  // Les cartes muettes gardent l'effleurement `hover` : les terrains, les
-  // magies, les armes, et les créatures du lot sans échantillon
-  // (`rpgACarteUneVoix` faux) n'ont rien à dire — un silence à l'ouverture
-  // laisserait croire que le clic n'a pas été pris.
-  const jouerSonFiche = (carte) => {
-    if (jouerVoixArrivee(carte?.id ?? carte)) return true;
+  // l'appui long ailleurs dans le jeu — ne fait plus entendre sa voix
+  // d'arrivée : la voix est réservée à l'entrée en jeu. Seul l'effleurement
+  // `hover` répond, pour que le clic donne un retour sonore.
+  const jouerSonFiche = () => {
     jouerSfx('hover');
     return false;
   };
