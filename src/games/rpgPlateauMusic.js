@@ -55,10 +55,11 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // Les deux MP3 vivent à la racine de `public/`, comme les autres pistes dont
   // le nom contient des espaces.
   'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
-  // Les deux morceaux de la Cour du Fléau se succèdent pendant le duel.
+  // Les trois morceaux de la Cour du Fléau se succèdent pendant le duel.
   'cour-du-fleau': Object.freeze([
     `${RPG_PUBLIC_BASE}Cathedral_of_Ash.mp3`,
     `${RPG_PUBLIC_BASE}Nocturne_of_the_Last_Hand.mp3`,
+    `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
   ]),
   'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
   // Le Palais du Pharaon : la même Égypte que la Nécropole des dalles, la
@@ -322,7 +323,7 @@ export class RpgPlateauMusic {
     this.paused = false;
   }
 
-  /** À la Cour du Fléau, une piste terminée laisse place à l'autre. */
+  /** À la Cour du Fléau, une piste terminée laisse place à la suivante. */
   pisteTerminee() {
     if (this.plateauId !== 'cour-du-fleau' || !this.wanted || this.paused || !this.running) return;
     const pistes = RPG_PLATEAU_MUSIC_FILES['cour-du-fleau'];

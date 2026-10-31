@@ -73,7 +73,11 @@ export class RpgConqueteMusic {
       lecteur.setPlateau(plateauId, { reroll: true });
       // Deux terrains peuvent partager exactement le même morceau : pas de
       // redémarrage, ni deux copies déphasées de la même piste.
-      entree = [...this.lecteurs.values()].find((e) => e.lecteur.musicFile === lecteur.musicFile);
+      // La playlist de la Cour change de piste : ne pas la fusionner avec
+      // le cimetière, qui partage seulement son ancien morceau.
+      entree = [...this.lecteurs.values()].find((e) =>
+        plateauId !== 'cour-du-fleau' && e.lecteur.plateauId !== 'cour-du-fleau' &&
+        e.lecteur.musicFile === lecteur.musicFile);
       if (!entree) entree = { lecteur, gain: this.lecteurs.size ? 0 : 1 };
       this.lecteurs.set(plateauId, entree);
     }
