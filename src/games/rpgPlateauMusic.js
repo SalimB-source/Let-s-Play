@@ -55,7 +55,12 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // Les deux MP3 vivent à la racine de `public/`, comme les autres pistes dont
   // le nom contient des espaces.
   'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
-  'cour-du-fleau': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
+  // Les trois morceaux de la Cour du Fléau se succèdent pendant le duel.
+  'cour-du-fleau': Object.freeze([
+    `${RPG_PUBLIC_BASE}Cathedral_of_Ash.mp3`,
+    `${RPG_PUBLIC_BASE}Nocturne_of_the_Last_Hand.mp3`,
+    `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
+  ]),
   'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
   // Le Palais du Pharaon : la même Égypte que la Nécropole des dalles, la
   // salle du trône des Juges. Aucune piste dédiée n'avait été livrée : le
@@ -299,7 +304,7 @@ export class RpgPlateauMusic {
   /**
    * Sélectionne une piste à l'arrivée sur un plateau. `reroll` est utilisé
    * au lancement d'une nouvelle partie : les appels d'effet et de reprise
-   * gardent ensuite la même piste pendant tout le duel.
+   * gardent la piste en cours. La Cour du Fléau alterne à chaque fin de piste.
    */
   setPlateau(plateauId, { reroll = false } = {}) {
     const next = RPG_PLATEAUX_MUSICAUX.has(plateauId) ? plateauId : null;
@@ -318,18 +323,29 @@ export class RpgPlateauMusic {
     this.paused = false;
   }
 
+  /** À la Cour du Fléau, une piste terminée laisse place à la suivante. */
+  pisteTerminee() {
+    if (this.plateauId !== 'cour-du-fleau' || !this.wanted || this.paused || !this.running) return;
+    const pistes = RPG_PLATEAU_MUSIC_FILES['cour-du-fleau'];
+    const index = pistes.indexOf(this.musicFile);
+    this.musicFile = pistes[(index + 1) % pistes.length];
+    this.running = false;
+    void this.start();
+  }
+
   async start() {
     if (!this.plateauId || !this.musicFile || typeof window === 'undefined' || typeof window.Audio !== 'function') return;
     this.wanted = true;
     this.paused = false;
     if (!this.audio) {
       this.audio = new window.Audio(this.musicFile);
-      this.audio.loop = true;
+      this.audio.onended = () => this.pisteTerminee();
       this.audio.preload = 'auto';
       this.audio.volume = this.effectiveVolume();
     } else if (!sourceCorrespond(this.audio, this.musicFile)) {
       this.audio.src = this.musicFile;
     }
+    this.audio.loop = this.plateauId !== 'cour-du-fleau';
     this.audio.volume = this.effectiveVolume();
     this.audio.muted = this.muted || this.volume <= 0;
     if (this.running && this.audio.paused === false) return;
@@ -390,6 +406,7 @@ export class RpgPlateauMusic {
   destroy() {
     this.stop();
     if (this.audio) {
+      this.audio.onended = null;
       this.audio.removeAttribute?.('src');
       this.audio.load?.();
     }
