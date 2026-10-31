@@ -12,6 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
+  rpgActivationsFurieDepuisJournal,
   rpgSfx,
   rpgSonsFurie,
   rpgSonArriveePirate,
@@ -48,11 +49,20 @@ test('les Valkyries et la Völva jouent la voix féminine de Furie', () => {
   assert.ok(existsSync(new URL('../src/games/assets/furie-viking-femelle.mp3', import.meta.url)));
   assert.deepEqual(rpgSonsFurie([{ carteId: 'valkyrie-au-corbeau' }]), ['furie_viking_femelle']);
   assert.deepEqual(rpgSonsFurie([{ carteId: 'volva-soigneuse' }]), ['furie_viking_femelle']);
+  assert.deepEqual(rpgSonsFurie([{ name: 'Valkyrie au corbeau' }]), ['furie_viking_femelle']);
+  assert.deepEqual(rpgSonsFurie([{ name: 'Völva soigneuse' }]), ['furie_viking_femelle']);
   assert.deepEqual(rpgSonsFurie([{ carteId: 'berserk-des-trois-hivers' }]), ['furie_viking']);
   assert.deepEqual(rpgSonsFurie([
     { carteId: 'valkyrie-des-neuf-nuits' },
     { carteId: 'berserk-des-trois-hivers' },
   ]), ['furie_viking_femelle', 'furie_viking']);
+  const journal = rpgActivationsFurieDepuisJournal([
+    'Berserk entre en furie : +2/+0.',
+    'Soigneuse réussit son jet : aucun événement.',
+    'Valkyrie au corbeau entre en furie : +2/+0, Envol.',
+  ]);
+  assert.deepEqual(journal, [{ name: 'Berserk' }, { name: 'Valkyrie au corbeau' }]);
+  assert.deepEqual(rpgSonsFurie(journal), ['furie_viking_femelle', 'furie_viking']);
 });
 
 test('l’abordage joue le cliquetis de chaînes fourni, livré avec le jeu', () => {
@@ -249,6 +259,19 @@ class FakeAudioContext {
   async close() { this.closed = true; }
 }
 
+class FakeAudioElement {
+  constructor(src) {
+    this.src = src;
+    this.volume = 1;
+    this.currentTime = 0;
+    this.playCount = 0;
+  }
+  play() { this.playCount += 1; return Promise.resolve(); }
+  pause() {}
+  removeAttribute() {}
+  load() {}
+}
+
 const originalWindow = globalThis.window;
 test.after(() => { globalThis.window = originalWindow; });
 
@@ -295,6 +318,26 @@ test('lecteur sans navigateur ou sans WebAudio : il reste muet sans planter', ()
   player.play('flame_gust');
   player.destroy();
   assert.ok(true);
+});
+
+test('le lecteur respecte le délai des SFX et annule les lectures différées au démontage', async () => {
+  const originalWindowLocal = globalThis.window;
+  globalThis.window = { AudioContext: FakeAudioContext, Audio: FakeAudioElement };
+  const player = new RpgAudioPlayer();
+  player.unlock();
+  const audio = player.echantillonsParNom.get('furie_viking')?.audio;
+  assert.ok(audio, 'le cri est chargé dans le lecteur');
+
+  player.play('furie_viking', 0.04);
+  assert.equal(audio.playCount, 0, 'le cri ne part pas avant son délai');
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  assert.equal(audio.playCount, 1, 'le cri part après le délai demandé');
+
+  player.play('furie_viking', 0.08);
+  player.destroy();
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal(audio.playCount, 1, 'le démontage annule une lecture encore en attente');
+  globalThis.window = originalWindowLocal;
 });
 
 test('setVolume ajuste le gain de chaque fichier, dose du survol comprise', () => {

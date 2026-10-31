@@ -90,6 +90,7 @@ import {
   RPG_NAVIRE_ARRIVEE_SFX,
   RPG_PIRATE_ARRIVEE_SFX,
   RpgAudioPlayer,
+  rpgActivationsFurieDepuisJournal,
   rpgSonArriveePirate,
   rpgSonsFurie,
 } from './rpgAudio.js';
@@ -7238,7 +7239,27 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const animationsVisuellesTimersRef = useRef([]);
   const sequenceAnimationRef = useRef(0);
   const [, setVersion] = useState(0);
-  const force = () => setVersion((v) => v + 1);
+  const journalFurieTraiteRef = useRef({ duel: null, lignes: [] });
+  const force = () => {
+    const duelCourant = duelRef.current;
+    const lignes = Array.isArray(duelCourant?.log) ? duelCourant.log : [];
+    const suivi = journalFurieTraiteRef.current;
+    let nouvellesLignes = [];
+    if (duelCourant && suivi.duel) {
+      let prefixeCommun = 0;
+      while (
+        prefixeCommun < suivi.lignes.length
+        && prefixeCommun < lignes.length
+        && suivi.lignes[prefixeCommun] === lignes[prefixeCommun]
+      ) prefixeCommun += 1;
+      nouvellesLignes = lignes.slice(prefixeCommun);
+    }
+    journalFurieTraiteRef.current = { duel: duelCourant, lignes: [...lignes] };
+    const activationsFurie = rpgActivationsFurieDepuisJournal(nouvellesLignes);
+    rpgSonsFurie(activationsFurie)
+      .forEach((nom, index) => jouerSfx(nom, 0.55 + index * 0.55));
+    setVersion((v) => v + 1);
+  };
 
   // Une destruction ciblée qui n'a plus de cible légale — le champ adverse
   // s'est vidé ou s'est entièrement protégé entre la mort et le clic — se
@@ -12261,7 +12282,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
-    rpgSonsFurie(res.resume.furies).forEach((nom, index) => jouerSfx(nom, 0.2 + index * 0.45));
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     // La ligne de charge se trace avant le bond : qui frappe qui, lisible
     // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
@@ -12362,7 +12382,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
-    rpgSonsFurie(res.resume.furies).forEach((nom, index) => jouerSfx(nom, 0.2 + index * 0.45));
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
     }

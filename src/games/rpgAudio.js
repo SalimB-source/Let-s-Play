@@ -246,19 +246,37 @@ const RPG_VIKINGS_FEMININES_FURIE = new Set([
   'valkyrie-des-glaces',
   'valkyrie-des-neuf-nuits',
 ]);
+const RPG_NOMS_VIKINGS_FEMININES_FURIE = new Set([
+  'Völva soigneuse',
+  'Valkyrie au corbeau',
+  'Valkyrie des glaces',
+  'Valkyrie des neuf nuits',
+]);
 
 /** Les groupes de cris distincts à jouer pour les créatures qui viennent
  *  réellement d’entrer en Furie durant une même résolution de combat. */
 export function rpgSonsFurie(activations = []) {
   const furies = Array.isArray(activations) ? activations : [];
+  const estFurieVikingFeminine = ({ carteId, name }) => (
+    RPG_VIKINGS_FEMININES_FURIE.has(carteId) || RPG_NOMS_VIKINGS_FEMININES_FURIE.has(name)
+  );
   const sons = [];
-  if (furies.some(({ carteId }) => RPG_VIKINGS_FEMININES_FURIE.has(carteId))) {
+  if (furies.some(estFurieVikingFeminine)) {
     sons.push('furie_viking_femelle');
   }
-  if (furies.some(({ carteId }) => !RPG_VIKINGS_FEMININES_FURIE.has(carteId))) {
+  if (furies.some((activation) => !estFurieVikingFeminine(activation))) {
     sons.push('furie_viking');
   }
   return sons;
+}
+
+/** Retrouve les entrées en Furie depuis les nouvelles lignes du journal du duel. */
+export function rpgActivationsFurieDepuisJournal(lignes = []) {
+  if (!Array.isArray(lignes)) return [];
+  return lignes
+    .map((ligne) => /^(.+?) entre en furie\b/.exec(String(ligne))?.[1])
+    .filter(Boolean)
+    .map((name) => ({ name }));
 }
 
 /** Lecteur WebAudio : muet tant que `unlock()` n'a pas suivi un geste joueur. */
@@ -283,6 +301,7 @@ export class RpgAudioPlayer {
     this.cardVoiceCourante = null;
     // Départs différés des voix d'un même relevé d'arrivées.
     this.cardVoiceTimers = new Set();
+    this.sampleTimers = new Set();
 
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     const parUrl = new Map();
@@ -556,15 +575,27 @@ export class RpgAudioPlayer {
     const entree = this.echantillonsParNom.get(name);
     if (!entree) return;                     // pas de fichier : pas de son
     if (!entree.audio) return;
-    // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
-    // que l'échantillon rejoint le bus, s'il ne l'a pas déjà fait.
-    this.routerEchantillon(entree);
-    this.appliquerGain(entree);
-    try {
-      entree.audio.currentTime = 0;
-      const playback = entree.audio.play();
-      playback?.catch?.(() => {});
-    } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
+    const delai = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
+    let timer = null;
+    const lancer = () => {
+      if (timer !== null) this.sampleTimers.delete(timer);
+      if (!this.ctx || this.muted || this.volume <= 0 || !entree.audio) return;
+      // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
+      // que l'échantillon rejoint son bus, juste avant sa lecture.
+      this.routerEchantillon(entree);
+      this.appliquerGain(entree);
+      try {
+        entree.audio.currentTime = 0;
+        const playback = entree.audio.play();
+        playback?.catch?.(() => {});
+      } catch { /* le navigateur peut refuser la lecture sans geste utilisateur */ }
+    };
+    if (delai > 0) {
+      timer = setTimeout(lancer, delai * 1000);
+      this.sampleTimers.add(timer);
+      return;
+    }
+    lancer();
   }
 
   destroy() {
@@ -587,6 +618,10 @@ export class RpgAudioPlayer {
     if (this.cardVoiceTimers) {
       for (const timer of this.cardVoiceTimers) clearTimeout(timer);
       this.cardVoiceTimers.clear();
+    }
+    if (this.sampleTimers) {
+      for (const timer of this.sampleTimers) clearTimeout(timer);
+      this.sampleTimers.clear();
     }
     if (this.voixEntrees) {
       for (const entree of this.voixEntrees.values()) {
