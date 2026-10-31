@@ -14,6 +14,7 @@ import {
 import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
+  viceCityCanalBarrierCrossed,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -88,8 +89,13 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche bas fait reculer depuis l’arrêt');
   assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 1, throttle: false, brake: true, dt: 0.2 }), 0,
     'le freinage avant s’arrête à zéro sans inverser la vitesse dans la même frame');
-  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 }), 1.625,
-    'la flèche bas freine quand la voiture avance');
+  const freinLent = viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 });
+  const freinRapide = viceCityFreeDriveSpeedStep({ ...params, speed: 30, throttle: false, brake: true, dt: 0.25 });
+  const freinVoiturePuissante = viceCityFreeDriveSpeedStep({ ...params, speed: 20, maxSpeed: 50, throttle: false, brake: true, dt: 0.1 });
+  const freinVoitureLente = viceCityFreeDriveSpeedStep({ ...params, speed: 20, maxSpeed: 25, throttle: false, brake: true, dt: 0.1 });
+  assert.ok(freinLent < 5 && freinLent > 0, 'le freinage ralentit sans inverser le mouvement');
+  assert.ok(30 - freinRapide > 5 - freinLent, 'le freinage gagne en force avec la vitesse');
+  assert.ok(freinVoiturePuissante < freinVoitureLente, 'une voiture à vitesse maximale supérieure freine plus fort');
   let reverseSpeed = 0;
   for (let frame = 0; frame < 180; frame += 1) {
     reverseSpeed = viceCityFreeDriveSpeedStep({ ...params, speed: reverseSpeed, throttle: false, brake: true, dt: 1 / 60 });
@@ -99,6 +105,17 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche haut freine d’abord la marche arrière');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: true, brake: false }) > 0,
     'la flèche haut repart en marche avant');
+});
+
+test('conduite libre : les barrières du canal bloquent les franchissements hors du pont', () => {
+  assert.equal(viceCityCanalBarrierCrossed(25, 40, 15, 40), true,
+    'un déplacement court ne traverse pas la berge');
+  assert.equal(viceCityCanalBarrierCrossed(25, 0, 15, 0), false,
+    'le passage du pont reste ouvert');
+  assert.equal(viceCityCanalBarrierCrossed(35, -40, -35, -40), true,
+    'une grande étape ne peut pas sauter les deux berges');
+  assert.equal(viceCityCanalBarrierCrossed(25, 30, 15, 0), true,
+    'un déplacement en diagonale est bloqué au point où il coupe la berge');
 });
 
 test('conduite libre : braquage moins brutal et adhérence latérale modérée', () => {

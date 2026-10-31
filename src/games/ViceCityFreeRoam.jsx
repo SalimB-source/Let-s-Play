@@ -18,6 +18,7 @@ import {
 import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
+  viceCityCanalBarrierCrossed,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -410,6 +411,31 @@ function makeCity(scene) {
   canalWater.position.set(0, -0.075, 0);
   canalWater.receiveShadow = true;
   scene.add(canalWater);
+  const canalBoatSpecs = [
+    { x: -9, z: -265, direction: 1, speed: 4.8, phase: 0.2, hullColor: 0xd46c36, cabinColor: 0xe9e2cf },
+    { x: 0, z: 45, direction: -1, speed: 5.6, phase: 2.1, hullColor: 0x2d7890, cabinColor: 0xd9d4c5 },
+    { x: 9, z: 295, direction: 1, speed: 4.2, phase: 4.3, hullColor: 0xe2e0d4, cabinColor: 0xc36b36 },
+  ];
+  const canalBoats = canalBoatSpecs.map((spec, index) => ({
+    ...spec,
+    boat: makeDockedBoat(scene, addBox, {
+      x: spec.x, z: spec.z, yaw: spec.direction > 0 ? 0 : Math.PI,
+      length: 9.2, width: 2.45, style: 'fishing',
+      hullColor: spec.hullColor, cabinColor: spec.cabinColor,
+    }),
+  }));
+  canalBoats.forEach(({ boat }, index) => { boat.name = `vice-city-river-boat-${index + 1}`; });
+  const updateCanalBoats = (dt, elapsed) => {
+    const travelLimit = CITY_LIMIT + 48;
+    for (const { boat, x, direction, speed, phase } of canalBoats) {
+      let z = boat.position.z + direction * speed * dt;
+      if (z > travelLimit) z = -travelLimit;
+      else if (z < -travelLimit) z = travelLimit;
+      boat.position.set(x, -0.02 + Math.sin(elapsed * 1.7 + phase) * 0.025, z);
+      boat.rotation.y = direction > 0 ? 0 : Math.PI;
+      boat.rotation.z = Math.sin(elapsed * 1.2 + phase) * 0.012;
+    }
+  };
   const canalWallMat = new THREE.MeshStandardMaterial({ color: 0x757b78, roughness: 0.9, side: THREE.DoubleSide });
   const canalWallLength = CITY_LIMIT * 2 + 100;
   for (const side of [-1, 1]) {
@@ -1639,12 +1665,13 @@ function makeCity(scene) {
     const z = iz * BLOCK;
     const isBridgeApproachIntersection = iz === 0 && Math.abs(x) <= BRIDGE_HALF_LENGTH + 8;
     const isRoundaboutIntersection = ix === 2 && iz === 2;
+    const isRiverEdgeIntersection = ix === 0 && iz !== 0;
     const approaches = [
       { axis: 'x', x: x - 8.5, z: z + 8.5, yaw: -Math.PI / 2 },
       { axis: 'x', x: x + 8.5, z: z - 8.5, yaw: Math.PI / 2 },
       { axis: 'z', x: x - 8.5, z: z - 8.5, yaw: Math.PI },
       { axis: 'z', x: x + 8.5, z: z + 8.5, yaw: 0 },
-    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection
+    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection && !isRiverEdgeIntersection
       && (ix !== 0 || approach.axis === 'x'));
     for (const originalApproach of approaches) {
       const approach = ix === 0
@@ -1663,7 +1690,7 @@ function makeCity(scene) {
       { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - mastSideOffset },
       { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - mastSideOffset, supportZ: z - 18 },
       { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
-    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection
+    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection && !isRiverEdgeIntersection
       && (ix !== 0 || (iz === 0 && approach.axis === 'x')));
     for (const approach of overheadApproaches) {
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
@@ -1797,6 +1824,9 @@ function makeCity(scene) {
     return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
   };
   const isCanalBlocked = (x, z) => Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
+  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => viceCityCanalBarrierCrossed(
+    fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
+  );
   const surfacePitch = (x, z, yaw) => {
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);
@@ -1934,7 +1964,8 @@ function makeCity(scene) {
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
-    roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, roundaboutIsland, breakFencesAt,
+    roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
+    canalBoats, updateCanalBoats, roundaboutIsland, breakFencesAt,
   };
 }
 
@@ -2106,8 +2137,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const intersectionZIndex = traffic.axis === 'z' ? nextIndex : Math.round(traffic.crossAxis / BLOCK);
         const bridgeApproach = intersectionZIndex === 0
           && Math.abs(intersectionXIndex * BLOCK) <= BRIDGE_HALF_LENGTH + 8;
+        const riverEdgeIntersection = intersectionXIndex === 0 && intersectionZIndex !== 0;
         const roundaboutApproach = intersectionXIndex === 2 && intersectionZIndex === 2;
-        let signalState = bridgeApproach || roundaboutApproach
+        let signalState = bridgeApproach || riverEdgeIntersection || roundaboutApproach
           ? 'green'
           : viceCityTrafficSignalState(traffic.axis, intersectionXIndex, intersectionZIndex, state.time);
         const approachKey = `${traffic.axis}:${intersectionXIndex}:${intersectionZIndex}`;
@@ -2298,6 +2330,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       frame = requestAnimationFrame(animate);
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
       updateTraffic(dt);
+      city.updateCanalBoats(dt, state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const throttle = pressed('ArrowUp') || pressed('KeyW');
       const brake = pressed('ArrowDown') || pressed('KeyS');
@@ -2333,14 +2366,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const pushedCars = pushedParkedCars + pushedTrafficCars;
       // Conduite libre partout dans la ville : les trottoirs et les espaces
       // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
-      if (!isPositionBlocked(nextX, nextZ)) {
+      const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
+        city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
+      if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
         state.x = nextX;
         state.z = nextZ;
       } else {
         const deltaX = nextX - state.x;
         const deltaZ = nextZ - state.z;
-        const canSlideX = Math.abs(deltaX) > 1e-6 && !isPositionBlocked(nextX, state.z);
-        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isPositionBlocked(state.x, nextZ);
+        const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
+        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
         if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
         else if (canSlideZ) state.z = nextZ;
         state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;

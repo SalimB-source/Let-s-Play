@@ -6,6 +6,23 @@ const FREE_ROAM_MAX_LATERAL_GRIP = 1.55 * 9.81;
 const FREE_ROAM_STEER_BUILD_RATE = 3.6;
 const FREE_ROAM_STEER_RELEASE_RATE = 10;
 
+/** Prevent a long movement step from tunnelling through either canal wall. */
+export function viceCityCanalBarrierCrossed(fromX, fromZ, toX, toZ, canalHalfWidth = 20, bridgeHalfWidth = 7.8) {
+  const deltaX = toX - fromX;
+  if (Math.abs(deltaX) < 1e-8) return false;
+  // The rendered wall is 0.7 m thick; stop cars at its centreline.
+  const wallOffset = 0.35;
+  for (const side of [-1, 1]) {
+    const wallX = side * (canalHalfWidth + wallOffset);
+    const crossed = (fromX < wallX && toX >= wallX) || (fromX > wallX && toX <= wallX);
+    if (!crossed) continue;
+    const progress = (wallX - fromX) / deltaX;
+    const crossingZ = fromZ + (toZ - fromZ) * progress;
+    if (Math.abs(crossingZ) > bridgeHalfWidth) return true;
+  }
+  return false;
+}
+
 /** Tighter parked-car obstacle extents so the player can pass close by. */
 export function viceCityFreeDriveParkedCarHitbox(width = 1.94, length = 4) {
   const carWidth = Number(width) || 1.94;
@@ -56,8 +73,14 @@ export function viceCityFreeDriveSpeedStep({
   const reverseAcceleration = Math.max(2.5, acceleration * 0.65);
 
   if (brake) {
-    if (nextSpeed > 0) nextSpeed = Math.max(0, nextSpeed - BRAKE_DECELERATION * dt);
-    else nextSpeed = Math.max(-reverseMaxSpeed, nextSpeed - reverseAcceleration * dt);
+    if (nextSpeed > 0) {
+      // Plus la voiture roule vite, plus le frein mord ; les modèles rapides
+      // reçoivent aussi un léger bonus de freinage lié à leur vitesse maximale.
+      const brakeDeceleration = BRAKE_DECELERATION
+        + Math.abs(nextSpeed) * 0.12
+        + Math.max(0, maxSpeed - 25) * 0.035;
+      nextSpeed = Math.max(0, nextSpeed - brakeDeceleration * dt);
+    } else nextSpeed = Math.max(-reverseMaxSpeed, nextSpeed - reverseAcceleration * dt);
   } else if (throttle) {
     if (nextSpeed < 0) nextSpeed = Math.min(0, nextSpeed + BRAKE_DECELERATION * dt);
     else {

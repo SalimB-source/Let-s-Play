@@ -32,6 +32,17 @@ test('les voitures ralentissent et restent derrière la ligne au rouge', () => {
   assert.ok(approaching.speed < 12);
 });
 
+test('le freinage des voitures rapides est plus efficace', () => {
+  const sameSpeedSlowCar = stepViceCityTrafficVehicle(
+    { progress: 0, direction: 1, speed: 15, maxSpeed: 20 }, 0.1, 20, 'red',
+  );
+  const sameSpeedFastCar = stepViceCityTrafficVehicle(
+    { progress: 0, direction: 1, speed: 15, maxSpeed: 40 }, 0.1, 20, 'red',
+  );
+  assert.ok(sameSpeedFastCar.speed < sameSpeedSlowCar.speed,
+    'à vitesse égale, la voiture plus puissante ralentit davantage');
+});
+
 test('les voitures repartent lorsque le feu passe au vert', () => {
   const moving = stepViceCityTrafficVehicle({ progress: 82, direction: 1, speed: 0, maxSpeed: 12 }, 0.5, 18, 'green');
   assert.ok(moving.progress > 82);

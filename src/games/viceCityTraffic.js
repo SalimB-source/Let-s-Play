@@ -26,7 +26,9 @@ export function viceCityTrafficSignalState(axis, intersectionXIndex, intersectio
 export function stepViceCityTrafficVehicle(vehicle, dt, distanceToSignal, signalState, stopLine = VICE_CITY_TRAFFIC_STOP_LINE) {
   const canProceed = signalState === 'green';
   const distanceBeforeStop = Math.max(0, distanceToSignal - stopLine);
-  const brakingDeceleration = 7.5;
+  const brakingDeceleration = 7.5
+    + Math.abs(vehicle.speed) * 0.1
+    + Math.max(0, vehicle.maxSpeed - 20) * 0.06;
   const targetSpeed = canProceed
     ? vehicle.maxSpeed
     : Math.min(vehicle.maxSpeed, Math.sqrt(2 * brakingDeceleration * distanceBeforeStop));
