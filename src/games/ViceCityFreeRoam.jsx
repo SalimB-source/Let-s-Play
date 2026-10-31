@@ -16,6 +16,9 @@ import './vice-city-free-roam.css';
 
 const BLOCK = 100;
 const ROAD_HALF = 7;
+const CANAL_HALF_WIDTH = 13;
+const BRIDGE_HALF_LENGTH = 38;
+const BRIDGE_HALF_WIDTH = ROAD_HALF + 0.8;
 const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_LIMIT = 3 * BLOCK + 54;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -239,7 +242,17 @@ function makeCity(scene) {
     return mesh;
   };
   // Quelques rues prennent du relief : pentes douces, sommet arrondi et retour au niveau des carrefours.
-  const roadElevation = viceCityRoadElevation;
+  const roadElevation = (x, z) => {
+    const bridgeAcross = Math.abs(z);
+    let elevation = viceCityRoadElevation(x, z);
+    if (bridgeAcross <= ROAD_HALF + 6 && Math.abs(x) < BRIDGE_HALF_LENGTH) {
+      const progress = (x + BRIDGE_HALF_LENGTH) / (BRIDGE_HALF_LENGTH * 2);
+      const arch = 1.35 * Math.sin(progress * Math.PI) ** 2;
+      const shoulder = bridgeAcross <= ROAD_HALF ? 1 : 1 - ((bridgeAcross - ROAD_HALF) / 6) ** 2;
+      elevation = Math.max(elevation, arch * shoulder);
+    }
+    return elevation;
+  };
   const makeRoadStrip = (axis, fixed, width, material, heightOffset = 0) => {
     const length = CITY_LIMIT * 2 + 120;
     const geometry = axis === 'x'
@@ -264,7 +277,10 @@ function makeCity(scene) {
   groundGeometry.rotateX(-Math.PI / 2);
   const groundPositions = groundGeometry.attributes.position;
   for (let index = 0; index < groundPositions.count; index += 1) {
-    groundPositions.setY(index, roadElevation(groundPositions.getX(index), groundPositions.getZ(index)));
+    const x = groundPositions.getX(index);
+    const z = groundPositions.getZ(index);
+    const underBridge = Math.abs(x) < BRIDGE_HALF_LENGTH && Math.abs(z) < ROAD_HALF + 6;
+    groundPositions.setY(index, underBridge ? viceCityRoadElevation(x, z) : roadElevation(x, z));
   }
   groundPositions.needsUpdate = true;
   groundGeometry.computeVertexNormals();
@@ -277,17 +293,17 @@ function makeCity(scene) {
   // sidewalks, lane markings and raised crossings, repeated across a broad map.
   for (let index = -3; index <= 3; index += 1) {
     const axis = index * BLOCK;
-    makeRoadStrip('x', axis, ROAD_HALF * 2, roadMat);
+    if (axis !== 0) makeRoadStrip('x', axis, ROAD_HALF * 2, roadMat);
     makeRoadStrip('z', axis, ROAD_HALF * 2, roadMat, 0.006);
     for (const side of [-1, 1]) {
       // Ligne de séparation entre les voies de circulation et le stationnement.
-      makeRoadStrip('x', axis + side * 3.6, 0.14, lineMat, 0.035);
+      if (axis !== 0) makeRoadStrip('x', axis + side * 3.6, 0.14, lineMat, 0.035);
       makeRoadStrip('z', axis + side * 3.6, 0.14, lineMat, 0.038);
     }
     // Broken centerline on each road, interrupted around each junction.
     for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 13) {
       if (Math.abs((p + 50) % BLOCK - 50) < 15) continue;
-      verticalDashPositions.push([axis, p]);
+      if (axis !== 0) verticalDashPositions.push([axis, p]);
       horizontalDashPositions.push([p, axis]);
     }
     // Zébras aux quatre approches de chaque carrefour, orientées dans les deux axes.
@@ -295,13 +311,14 @@ function makeCity(scene) {
       const crossAxis = crossing * BLOCK;
       for (const side of [-1, 1]) {
         for (let stripe = -6.4; stripe <= 6.4; stripe += 1.6) {
-          verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
+          if (axis !== 0) verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
           horizontalCrosswalkPositions.push([crossAxis + side * 14, axis + stripe]);
         }
       }
     }
     // Places de stationnement compactes, reprises d'asphalte et plaques d'égout.
-    for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 6) {
+    if (axis !== 0) {
+      for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 6) {
       if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 21) continue;
       for (const side of [-1, 1]) {
         verticalParkingBayPositions.push([axis + side * 5.3, p]);
@@ -315,15 +332,84 @@ function makeCity(scene) {
       verticalRoadPatchPositions.push([axis + patchOffset, p]);
       horizontalRoadPatchPositions.push([p, axis + patchOffset]);
     }
-    for (let p = -250; p <= 250; p += BLOCK) {
-      for (const side of [-1, 1]) {
-        verticalManholePositions.push([axis + side * 1.7, p]);
-        horizontalManholePositions.push([p, axis + side * 1.7]);
+      for (let p = -250; p <= 250; p += BLOCK) {
+        for (const side of [-1, 1]) {
+          verticalManholePositions.push([axis + side * 1.7, p]);
+          horizontalManholePositions.push([p, axis + side * 1.7]);
+        }
       }
     }
   }
 
-  // Trottoirs surélevés, interrompus à chaque carrefour pour ne jamais recouvrir la chaussée.
+  const canalWaterMat = new THREE.MeshStandardMaterial({ color: 0x287d9b, roughness: 0.3, metalness: 0.12 });
+  const canalWater = new THREE.Mesh(new THREE.PlaneGeometry(CANAL_HALF_WIDTH * 2, CITY_LIMIT * 2 + 120), canalWaterMat);
+  canalWater.rotation.x = -Math.PI / 2;
+  canalWater.position.set(0, -0.075, 0);
+  canalWater.receiveShadow = true;
+  scene.add(canalWater);
+  const canalWallMat = new THREE.MeshStandardMaterial({ color: 0x757b78, roughness: 0.9 });
+  for (const side of [-1, 1]) {
+    addBox(scene, canalWallMat, side * (CANAL_HALF_WIDTH + 0.35), -1.5, 0, 0.7, 1.65, CITY_LIMIT * 2 + 100);
+  }
+  const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xb72f37, roughness: 0.42, metalness: 0.58 });
+  const bridgePoints = (side, offset) => {
+    const points = [];
+    for (let step = 0; step <= 24; step += 1) {
+      const progress = step / 24;
+      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const y = roadElevation(x, 0) + offset;
+      points.push(new THREE.Vector3(x, y, side));
+    }
+    return points;
+  };
+  const addBridgeBeam = (start, end, radius = 0.13) => {
+    const delta = new THREE.Vector3().subVectors(end, start);
+    const beam = new THREE.Mesh(bridgeRodGeometry, bridgeRedMat);
+    beam.position.copy(start).add(end).multiplyScalar(0.5);
+    beam.scale.set(radius, delta.length(), radius);
+    beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize());
+    beam.castShadow = true;
+    scene.add(beam);
+  };
+  const bridgeRodGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
+  const bridgeSpan = BRIDGE_HALF_LENGTH * 2;
+  for (const side of [-1, 1]) {
+    const sideZ = side * (ROAD_HALF + 0.7);
+    const archPoints = bridgePoints(sideZ, 2.4).map((point, index, points) => {
+      const progress = index / (points.length - 1);
+      point.y += 2.65 * Math.sin(progress * Math.PI);
+      return point;
+    });
+    const arch = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(archPoints), 64, 0.24, 8, false), bridgeRedMat);
+    arch.castShadow = true;
+    scene.add(arch);
+    const lowerPoints = bridgePoints(sideZ, 0.28);
+    const lowerChord = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lowerPoints), 48, 0.19, 7, false), bridgeRedMat);
+    lowerChord.castShadow = true;
+    scene.add(lowerChord);
+    for (let segment = 0; segment < 12; segment += 1) {
+      const x0 = -BRIDGE_HALF_LENGTH + bridgeSpan * segment / 12;
+      const x1 = -BRIDGE_HALF_LENGTH + bridgeSpan * (segment + 1) / 12;
+      const t0 = segment / 12;
+      const t1 = (segment + 1) / 12;
+      const deck0 = roadElevation(x0, 0) + 0.34;
+      const deck1 = roadElevation(x1, 0) + 0.34;
+      const arch0 = deck0 + 2.06 + 2.65 * Math.sin(t0 * Math.PI);
+      const arch1 = deck1 + 2.06 + 2.65 * Math.sin(t1 * Math.PI);
+      addBridgeBeam(new THREE.Vector3(x0, deck0, sideZ), new THREE.Vector3(x0, arch0, sideZ), 0.12);
+      addBridgeBeam(new THREE.Vector3(x0, deck0, sideZ), new THREE.Vector3(x1, arch1, sideZ), 0.095);
+      addBridgeBeam(new THREE.Vector3(x1, deck1, sideZ), new THREE.Vector3(x1, arch1, sideZ), 0.12);
+      addBridgeBeam(
+        new THREE.Vector3(x0, roadElevation(x0, 0) + 0.3, side * (ROAD_HALF - 0.3)),
+        new THREE.Vector3(x1, roadElevation(x1, 0) + 0.3, side * (ROAD_HALF - 0.3)),
+        0.09,
+      );
+    }
+    for (const x of [-12, 12]) {
+      const pierHeight = roadElevation(x, 0) + 1.9;
+      addBox(scene, bridgeRedMat, x, -1.45, side * 7.55, 1.1, pierHeight, 1.05, true);
+    }
+  }
   const sidewalkHeight = 0.12;
   const sidewalkSegmentLength = BLOCK - 2 * (ROAD_HALF + 3.2);
   const verticalSidewalkGeometry = new THREE.PlaneGeometry(3.2, sidewalkSegmentLength, 1, 48);
@@ -362,13 +448,15 @@ function makeCity(scene) {
       const segmentCenter = segmentStart + BLOCK / 2;
       for (const side of [-1, 1]) {
         const sidewalkOffset = side * (ROAD_HALF + 1.6);
-        const sidewalkV = new THREE.Mesh(verticalSidewalkGeometry, sidewalkMat);
-        sidewalkV.rotation.x = -Math.PI / 2;
-        sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
-        fitSidewalkToElevation(sidewalkV);
-        sidewalkV.receiveShadow = true;
-        scene.add(sidewalkV);
-        sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
+        if (axis !== 0) {
+          const sidewalkV = new THREE.Mesh(verticalSidewalkGeometry, sidewalkMat);
+          sidewalkV.rotation.x = -Math.PI / 2;
+          sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
+          fitSidewalkToElevation(sidewalkV);
+          sidewalkV.receiveShadow = true;
+          scene.add(sidewalkV);
+          sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
+        }
         const sidewalkH = new THREE.Mesh(horizontalSidewalkGeometry, sidewalkMat);
         sidewalkH.rotation.x = -Math.PI / 2;
         sidewalkH.position.set(segmentCenter, sidewalkHeight, axis + sidewalkOffset);
@@ -376,7 +464,7 @@ function makeCity(scene) {
         sidewalkH.receiveShadow = true;
         scene.add(sidewalkH);
         sidewalkRegions.push({ x: segmentCenter, z: axis + sidewalkOffset, halfWidth: sidewalkSegmentLength / 2, halfDepth: 1.6 });
-        addSlopedCurb(axis + side * (ROAD_HALF - 0.1), segmentCenter, 0.2, sidewalkSegmentLength);
+        if (axis !== 0) addSlopedCurb(axis + side * (ROAD_HALF - 0.1), segmentCenter, 0.2, sidewalkSegmentLength);
         addSlopedCurb(segmentCenter, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, 0.2);
 
         for (let row = 0; row < 2; row += 1) {
@@ -384,7 +472,7 @@ function makeCity(scene) {
           let tileIndex = 0;
           for (let along = segmentStart + ROAD_HALF + 3.95; along < segmentStart + BLOCK - ROAD_HALF - 3.95; along += 1.5) {
             const tileColor = Math.abs((Math.floor(along / 1.5) + (axisIndex + 3) * 11 + (side + 1) * 7 + row * 3 + tileIndex) % sidewalkTileColors.length);
-            verticalSidewalkTilePositions.push([axis + sidewalkOffset + crossOffset, along, tileColor]);
+            if (axis !== 0) verticalSidewalkTilePositions.push([axis + sidewalkOffset + crossOffset, along, tileColor]);
             horizontalSidewalkTilePositions.push([along, axis + sidewalkOffset + crossOffset, tileColor]);
             tileIndex += 1;
           }
@@ -709,6 +797,78 @@ function makeCity(scene) {
       }
     }
   };
+  const ghettoWallMats = [0xbca47e, 0xc6a18c, 0x9cae9a, 0xd1c39e, 0xaeb7b4].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
+  const ghettoRoofMats = [0x75483e, 0x8a5746, 0x545d5c, 0x9b704c].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 }));
+  const ghettoTrimMat = new THREE.MeshStandardMaterial({ color: 0xe2d8c6, roughness: 0.84 });
+  const ghettoWindowMat = new THREE.MeshStandardMaterial({ color: 0x426879, roughness: 0.28, metalness: 0.08 });
+  const ghettoDoorMats = [0x59483b, 0x604344, 0x485247].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86 }));
+  const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ) => {
+    const width = 13 + random() * 3.5;
+    const depth = 12 + random() * 3.5;
+    const wallHeight = 4.25 + random() * 0.55;
+    const roofRise = 1.45 + random() * 0.55;
+    const x = centerX + slotX + (random() - 0.5) * 2;
+    const z = centerZ + slotZ + (random() - 0.5) * 2;
+    const frontSign = slotZ < 0 ? -1 : 1;
+    const facade = ghettoWallMats[Math.floor(random() * ghettoWallMats.length)];
+    const roof = ghettoRoofMats[Math.floor(random() * ghettoRoofMats.length)];
+    const door = ghettoDoorMats[Math.floor(random() * ghettoDoorMats.length)];
+    const hasGarage = random() > 0.48;
+    addBox(parent, facade, x, -0.02, z, width, wallHeight, depth, true);
+    buildingFootprints.push({ x, z, halfWidth: width / 2, halfDepth: depth / 2 });
+
+    const eavesY = wallHeight - 0.02;
+    const roofAngle = Math.atan2(roofRise, width / 2);
+    const roofSlope = Math.hypot(width / 2, roofRise);
+    for (const side of [-1, 1]) {
+      const roofPanel = new THREE.Mesh(new THREE.BoxGeometry(roofSlope, 0.16, depth + 0.42), roof);
+      roofPanel.position.set(x + side * width / 4, eavesY + roofRise / 2, z);
+      roofPanel.rotation.z = side < 0 ? roofAngle : -roofAngle;
+      roofPanel.castShadow = true;
+      roofPanel.receiveShadow = true;
+      parent.add(roofPanel);
+    }
+    const gableGeometry = new THREE.BufferGeometry();
+    gableGeometry.setAttribute('position', new THREE.Float32BufferAttribute([
+      -width / 2, eavesY, -depth / 2, width / 2, eavesY, -depth / 2, 0, eavesY + roofRise, -depth / 2,
+      -width / 2, eavesY, depth / 2, 0, eavesY + roofRise, depth / 2, width / 2, eavesY, depth / 2,
+    ], 3));
+    gableGeometry.computeVertexNormals();
+    const gables = new THREE.Mesh(gableGeometry, new THREE.MeshStandardMaterial({ color: facade.color, side: THREE.DoubleSide, roughness: 0.9 }));
+    gables.position.set(x, 0, z);
+    gables.castShadow = true;
+    parent.add(gables);
+    addBox(parent, roof, x, eavesY + roofRise - 0.12, z, 0.28, 0.2, depth + 0.55);
+    addBox(parent, ghettoTrimMat, x, 3.72, z, width + 0.1, 0.11, depth + 0.1);
+
+    const frontZ = z + frontSign * (depth / 2 + 0.05);
+    const doorX = x + width * 0.31;
+    addBox(parent, ghettoTrimMat, doorX, 0.02, frontZ, 1.62, 2.95, 0.2);
+    addBox(parent, door, doorX, 0.07, frontZ + frontSign * 0.13, 1.3, 2.66, 0.1);
+    addBox(parent, ghettoWindowMat, doorX, 1.48, frontZ + frontSign * 0.2, 0.82, 0.95, 0.035);
+    const windowsX = hasGarage ? [x + width * 0.02] : [x - width * 0.28, x + width * 0.02];
+    for (const windowX of windowsX) {
+      addBox(parent, ghettoTrimMat, windowX, 1.55, frontZ, 2.2, 1.38, 0.16);
+      addBox(parent, ghettoWindowMat, windowX, 1.68, frontZ + frontSign * 0.11, 1.86, 1.08, 0.04);
+      for (const shutterSide of [-1, 1]) {
+        addBox(parent, door, windowX + shutterSide * 1.2, 1.56, frontZ + frontSign * 0.13, 0.16, 1.44, 0.12);
+      }
+    }
+    const porchZ = frontZ + frontSign * 1.1;
+    addBox(parent, courtyardPathMat, doorX, 0.02, porchZ + frontSign * 1.25, 2.2, 0.16, 2.8);
+    addBox(parent, roof, doorX, 3.25, porchZ, 3.8, 0.16, 2.2);
+    for (const postSide of [-1, 1]) {
+      addBox(parent, ghettoTrimMat, doorX + postSide * 1.65, 0.1, porchZ, 0.16, 3.08, 0.16);
+    }
+    if (hasGarage) {
+      addBox(parent, door, x - width * 0.25, 0.06, frontZ + frontSign * 0.16, 3.1, 2.55, 0.08);
+      for (let rib = 0; rib < 5; rib += 1) {
+        addBox(parent, ghettoTrimMat, x - width * 0.25, 0.3 + rib * 0.42, frontZ + frontSign * 0.22, 2.85, 0.045, 0.035);
+      }
+    }
+    if (random() > 0.28) addFencePerimeter(x, z + frontSign * 1.1, width / 2 + 2.4, depth / 2 + 2.6, frontSign);
+    addGroundPlane(parent, courtyardPathMat, doorX, z + frontSign * (depth / 2 + 5.4), 2.3, 7.0, -0.032);
+  };
   const addCourtyardAmenity = (parent, x, z, type) => {
     if (type === 'garden') {
       if (random() > 0.45) addFencePerimeter(x, z, 9.5, 9.5);
@@ -784,10 +944,16 @@ function makeCity(scene) {
     const amenityRoll = random();
     const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
-    // Quelques blocs resserrent les façades autour d'une ruelle ; d'autres gardent une maisonnette.
-    const alleyBlock = Math.abs(bx * 7 + bz * 3) % 5 === 0;
-    const cottageBlock = !alleyBlock && Math.abs(bx * 3 + bz * 7) % 4 === 0;
-    const count = alleyBlock ? 2 : 2 + Math.floor(random() * 3);
+    const ghettoBlock = bx >= 0;
+    if (ghettoBlock) {
+      for (const [slotX, slotZ] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) {
+        addGhettoHouse(lot, cx, cz, slotX, slotZ);
+      }
+    }
+    // The western half keeps its denser art-deco blocks; the eastern half is low-rise residential.
+    const alleyBlock = !ghettoBlock && Math.abs(bx * 7 + bz * 3) % 5 === 0;
+    const cottageBlock = !ghettoBlock && !alleyBlock && Math.abs(bx * 3 + bz * 7) % 4 === 0;
+    const count = ghettoBlock ? 0 : alleyBlock ? 2 : 2 + Math.floor(random() * 3);
     const buildingSlots = alleyBlock
       ? [[-16, -27], [16, -27], [-27, 27], [27, 27]]
       : [[-27, -27], [27, -27], [-27, 27], [27, 27]];
@@ -958,6 +1124,8 @@ function makeCity(scene) {
         : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: 0 };
       const modelIndex = Math.abs(bx * 5 + bz * 3 + parkedCarSpecs.length) % CITY_RUSH_TRAFFIC_TYPES.length;
       const parkedType = CITY_RUSH_TRAFFIC_TYPES[modelIndex];
+      if (Math.abs(spot.x) < CANAL_HALF_WIDTH + 4 && Math.abs(spot.z) > BRIDGE_HALF_WIDTH) continue;
+      if (Math.abs(spot.x) < BRIDGE_HALF_LENGTH + 4 && Math.abs(spot.z) < ROAD_HALF + 1) continue;
       parkedCarSpecs.push({ ...spot, type: parkedType.id, width: parkedType.width, length: parkedType.length });
     }
     // Palms and Deco lamp posts on block corners, kept outside the carriageway.
@@ -1064,8 +1232,11 @@ function makeCity(scene) {
       { axis: 'x', x: x + 8.5, z: z - 8.5, yaw: Math.PI / 2 },
       { axis: 'z', x: x - 8.5, z: z - 8.5, yaw: Math.PI },
       { axis: 'z', x: x + 8.5, z: z + 8.5, yaw: 0 },
-    ];
-    for (const approach of approaches) {
+    ].filter((approach) => ix !== 0 || approach.axis === 'x');
+    for (const originalApproach of approaches) {
+      const approach = ix === 0
+        ? { ...originalApproach, x: Math.sign(originalApproach.x) * (CANAL_HALF_WIDTH + 1.7) }
+        : originalApproach;
       const lightIndex = trafficSignalSpecs.length;
       const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
       trafficSignalSpecs.push(spec);
@@ -1079,7 +1250,7 @@ function makeCity(scene) {
       { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - mastSideOffset },
       { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - mastSideOffset, supportZ: z - 18 },
       { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
-    ];
+    ].filter((approach) => ix !== 0 || approach.axis === 'x');
     for (const approach of overheadApproaches) {
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
       const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
@@ -1211,6 +1382,7 @@ function makeCity(scene) {
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
     return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
   };
+  const isCanalBlocked = (x, z) => Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
   const surfacePitch = (x, z, yaw) => {
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);
@@ -1289,6 +1461,8 @@ function makeCity(scene) {
     updateFallenFences(dt);
     const drag = Math.exp(-2.25 * dt);
     const isBlocked = (body, x, z) => {
+      if (Math.abs(x) < CANAL_HALF_WIDTH + body.radius * 0.7
+        && Math.abs(z) > BRIDGE_HALF_WIDTH + body.radius * 0.7) return true;
       if (buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + Math.max(0.55, body.radius * 0.42)
         && Math.abs(z - building.z) < building.halfDepth + Math.max(0.55, body.radius * 0.42))) return true;
@@ -1346,7 +1520,7 @@ function makeCity(scene) {
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
-    roadElevation, surfaceHeight, surfacePitch, breakFencesAt,
+    roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, breakFencesAt,
   };
 }
 
@@ -1398,7 +1572,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const trafficCars = Array.from({ length: 8 }, (_, index) => {
       const directionSpec = trafficDirections[Math.floor(index / 2)];
       const withinDirection = index % 2;
-      const routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
+      let routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
+      if (directionSpec.axis === 'z' && routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
       const crossAxis = directionSpec.axis === 'x'
         ? routeIndex * BLOCK + directionSpec.direction * 2.35
         : routeIndex * BLOCK - directionSpec.direction * 2.35;
@@ -1531,6 +1706,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
     };
     const isPositionBlocked = (x, z) => {
+      if (city.isCanalBlocked(x, z)) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
         && Math.abs(z - building.z) < building.halfDepth + BUILDING_COLLISION_MARGIN)) return true;
