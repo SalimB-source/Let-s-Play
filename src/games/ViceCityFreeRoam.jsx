@@ -16,6 +16,7 @@ import './vice-city-free-roam.css';
 
 const BLOCK = 100;
 const ROAD_HALF = 7;
+const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_LIMIT = 3 * BLOCK + 54;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -1110,8 +1111,8 @@ function makeCity(scene) {
     const drag = Math.exp(-2.25 * dt);
     const isBlocked = (body, x, z) => {
       if (buildingFootprints.some((building) =>
-        Math.abs(x - building.x) < building.halfWidth + body.radius * 0.72
-        && Math.abs(z - building.z) < building.halfDepth + body.radius * 0.72)) return true;
+        Math.abs(x - building.x) < building.halfWidth + Math.max(0.55, body.radius * 0.42)
+        && Math.abs(z - building.z) < building.halfDepth + Math.max(0.55, body.radius * 0.42))) return true;
       return parkedCarBodies.some((other) => other !== body
         && Math.hypot(x - other.spec.x, z - other.spec.z) < body.radius + other.radius * 0.72);
     };
@@ -1351,8 +1352,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const isPositionBlocked = (x, z) => {
       if (city.buildingFootprints.some((building) =>
-        Math.abs(x - building.x) < building.halfWidth + 2.1
-        && Math.abs(z - building.z) < building.halfDepth + 2.1)) return true;
+        Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
+        && Math.abs(z - building.z) < building.halfDepth + BUILDING_COLLISION_MARGIN)) return true;
       if (trafficCars.some(({ car }) => overlapsVehicleHitbox(
         x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length,
       ))) return true;
