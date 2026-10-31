@@ -10702,7 +10702,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `duel.magieGratuite` est ouverte.
     const lancementGratuit = carte.kind === 'magie' && carte.effet?.type !== 'contresort'
       && duel.magieGratuite?.cote === 'joueur';
-    return (reponseApresBlocage ? carte.instant : monTour || reactionAttaque || (reponseActive && carte.instant))
+    return (reponseApresBlocage ? (carte.instant || reactionAttaque) : monTour || reactionAttaque || (reponseActive && carte.instant))
       && (lancementGratuit || rpgPeutPayer(duel.joueur, carte));
   };
   /* L'or de la ligne de Lien dans l'aperçu : le renfort doit être RÉEL

@@ -4285,7 +4285,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) return;
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
       const bonusDefense = effet.def ?? 0;
+      const attaqueAvantDebuff = entite.atk;
       entite.atk = Math.max(plancher, entite.atk + (effet.atk ?? 0));
+      const variationAttaque = entite.atk - attaqueAvantDebuff;
       entite.pvMax = Math.max(plancher, (entite.pvMax ?? entite.def) + bonusDefense);
       entite.def = Math.max(plancher, entite.def + bonusDefense);
       entite.pv = Math.max(plancher, entite.pv + bonusDefense);
@@ -4301,7 +4303,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           entite.venin = { atk: effet.atk ?? 0, def: bonusDefense, toursRestants: duree };
         } else {
           const carnet = (duel[adv].bonusTemporaires ??= []);
-          carnet.push({ entiteId: entite.id, atk: effet.atk ?? 0, def: bonusDefense, tour: duel.tour });
+          carnet.push({ entiteId: entite.id, atk: variationAttaque, def: bonusDefense, tour: duel.tour });
         }
       }
       if (effet.empecheAttaque) {
@@ -5229,6 +5231,11 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     }
   }
 
+  if (carte.arrivee?.type === 'retour-main' && carte.arrivee.adverseSeulement) {
+    const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+    if (cibleId && !cible) return { ok: false, raison: 'cible' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) return { ok: false, raison: 'cible' };
+  }
   if (carte.arrivee?.type === 'retour-main' && cibleId) {
     const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId)
       ?? duel[cote].creatures.find((entite) => entite.id === cibleId);

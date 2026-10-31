@@ -482,13 +482,15 @@ function executerIntention(duel, cote, intention) {
         return { ok: false, raison: 'phase-blocage' };
       }
       if (carte.kind === 'creature' || carte.kind === 'hero') {
-        return rpgJouerCreature(duel, cote, intention.carteId, intention.cibleId ?? null, {
+        const res = rpgJouerCreature(duel, cote, intention.carteId, intention.cibleId ?? null, {
           cibleDifferee: Boolean(intention.cibleDifferee),
           sacrificeId: intention.sacrificeId ?? null,
           // La case choisie sur la table du joueur : le moteur la revalide
           // (libre, dans le champ) — une case occupée refuse l'intention.
           emplacement: Number.isInteger(intention.emplacement) ? intention.emplacement : null,
         });
+        if (res?.ok && !duel.arriveeEnAttente) nettoyerCombatDeclareSiVide(duel);
+        return res;
       }
       if (carte.kind === 'arme') return rpgJouerArme(duel, cote, intention.carteId, intention.cibleId ?? null);
       if (carte.kind === 'magie') {
