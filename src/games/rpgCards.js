@@ -997,8 +997,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
     cost: 8, atk: 7, def: 7, rarity: 'mythique',
     typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true,
-    arrivee: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 3 dégâts à chaque créature adverse.',
+    volDeVie: true, overkill: true, resonance: 1, resonanceTribu: 'vampire',
+    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
   },
   {

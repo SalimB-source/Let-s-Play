@@ -6950,6 +6950,20 @@ export function rpgLancerAttaque(
     }
     const carteAttaquant = duelCardById(attaquant.carteId);
     const couleursAttaquant = cardColors(carteAttaquant);
+    // L'excédent d'Overkill est infligé au sorcier plutôt qu'une seconde fois
+    // aux bloqueurs. Sans cette répartition, Vol de vie soigne sur les mêmes
+    // points deux fois. Ne retire que l'excès effectivement percé.
+    let excesARepartir = attaquant.overkill
+      ? Math.max(0, (forcesAttaquant.get(attaquant.id) ?? forceCombat(attaquant))
+        - bloqueurs.reduce((total, bloqueur) => total + Math.max(0, bloqueur.pv), 0))
+      : 0;
+    const blessuresAuxBloqueurs = {};
+    for (const bloqueur of bloqueurs) {
+      const assigne = repartitionFinale[attaquant.id][bloqueur.id] ?? 0;
+      const retire = Math.min(excesARepartir, Math.max(0, assigne - Math.max(0, bloqueur.pv)));
+      blessuresAuxBloqueurs[bloqueur.id] = assigne - retire;
+      excesARepartir -= retire;
+    }
     for (const bloqueur of bloqueurs) {
       const carteBloqueur = duelCardById(bloqueur.carteId);
       const couleursBloqueur = cardColors(carteBloqueur);
@@ -6964,7 +6978,7 @@ export function rpgLancerAttaque(
         degatsCombat,
         adv,
         bloqueur.id,
-        repartitionFinale[attaquant.id][bloqueur.id] ?? 0,
+        blessuresAuxBloqueurs[bloqueur.id],
         couleursAttaquant,
         'attaque',
         cote,

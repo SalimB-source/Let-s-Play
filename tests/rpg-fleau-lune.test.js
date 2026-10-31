@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColors, cardHasPrintedType, cardCopyLimit, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgJouerCreature, rpgNouveauDuel, rpgPeutPayer, rpgPeutRepondre } from '../src/games/rpgDuel.js';
+import { rpgJouerCreature, rpgNouveauDuel, rpgPeutPayer, rpgPeutRepondre, rpgLancerAttaque, rpgBlesserCreature, rpgActionsEtat } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { carteReveleePar } from '../src/games/rpgCollection.js';
 const id = 'fleau-de-la-lune-noire';
@@ -27,16 +27,36 @@ test('Le coût exige huit manas dont au moins une Braise et une Ténèbres', () 
   d.joueur.mana.tenebres = 0; d.joueur.mana.sable += 1;
   assert.equal(rpgPeutPayer(d.joueur, c), false);
 });
-test('Son arrivée inflige trois dégâts à chaque créature adverse, sans toucher les alliées ni le sorcier', () => {
-  const d = duel(); const amie = poser(d, 'joueur', 'dune-marchante');
-  const faible = poser(d, 'sorcier', 'chien-du-guet'); const robuste = poser(d, 'sorcier', 'dune-marchante');
-  const pv = d.sorcier.pv; const fleau = poser(d, 'joueur', id);
-  assert.equal(amie.pv, 4); assert.equal(fleau.pv, 7); assert.equal(robuste.pv, 1);
-  assert.ok(!d.sorcier.creatures.includes(faible)); assert.equal(d.sorcier.pv, pv);
+test('Résonance vampire renforce les deux camps et le Fléau, sans dégâts à son arrivée', () => {
+  const d = duel(); const amie = poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
+  const ennemi = poser(d, 'sorcier', 'sentinelle-des-sables'); const chien = poser(d, 'sorcier', 'chien-du-guet');
+  const fleau = poser(d, 'joueur', id);
+  assert.ok(fleau.volDeVie && fleau.overkill);
+  assert.deepEqual([fleau.atk, fleau.pv, amie.atk, amie.pv, ennemi.atk, ennemi.pv, chien.atk, chien.pv], [8, 8, 3, 3, 4, 3, 2, 2]);
+  rpgBlesserCreature(d, 'joueur', fleau.id, 20); rpgActionsEtat(d);
+  assert.deepEqual([amie.atk, amie.pv, ennemi.atk, ennemi.pv, chien.atk, chien.pv], [2, 2, 3, 2, 2, 2]);
+});
+test('Overkill et Vol de vie soignent une seule fois par dégât infligé', () => {
+  const d = duel(); const fleau = poser(d, 'joueur', id); const chien = poser(d, 'sorcier', 'chien-du-guet');
+  d.joueur.pv = 10; fleau.ready = true; const pvAdverse = d.sorcier.pv;
+  assert.ok(rpgLancerAttaque(d, 'joueur', [fleau.id], { [fleau.id]: [chien.id] }).ok);
+  assert.equal(d.sorcier.pv, pvAdverse - 6);
+  assert.equal(d.joueur.pv, 18, '2 dégâts au bloqueur et 6 au sorcier');
 });
 test('Il peut répondre pendant le tour adverse en solo et en PvP', () => {
   const d = duel(); d.tour = 'sorcier'; d.fenetreReponse = true; d.joueur.main.push(id);
   assert.ok(rpgPeutRepondre(d, 'joueur')); assert.ok(rpgJouerCreature(d, 'joueur', id).ok);
   const p = duel(); p.pvp = true; p.mulliganFait = { joueur: true, sorcier: true }; p.tour = 'sorcier'; p.joueur.main.push(id);
   assert.ok(rpgPvpAppliquer(p, 'joueur', { type: 'jouer-carte', carteId: id }).ok);
+});
+test('Vol de vie fonctionne même si le Fléau meurt dans le combat', () => {
+  const d = duel(); const fleau = poser(d, 'joueur', id); const chien = poser(d, 'sorcier', 'chien-du-guet');
+  chien.atk = 9; d.joueur.pv = 10; fleau.ready = true;
+  assert.ok(rpgLancerAttaque(d, 'joueur', [fleau.id], { [fleau.id]: [chien.id] }).ok);
+  assert.equal(d.joueur.pv, 18); assert.ok(!d.joueur.creatures.includes(fleau));
+});
+test('La résonance atteint aussi les Vampires arrivant après le Fléau', () => {
+  const d = duel(); poser(d, 'joueur', id);
+  const vampire = poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
+  assert.deepEqual([vampire.atk, vampire.pv], [3, 3]);
 });
