@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { CITY_RUSH_CARS } from './cityRushRules.js';
+import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
+import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { viceCityFreeDriveSpeedStep, viceCityFreeDriveSteerStep, viceCityFreeDriveYawRate } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
@@ -607,9 +608,12 @@ function makeCity(scene) {
     const parkingSide = (bx + bz) % 4 < 2 ? -1 : 1;
     const parkingSegmentStart = horizontalParked ? bx * BLOCK : bz * BLOCK;
     for (const alongStreet of parkingStallCenters(parkingSegmentStart)) {
-      parkedCarSpecs.push(horizontalParked
-        ? { x: alongStreet, z: bz * BLOCK + parkingSide * 5.3, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
-        : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: 0, color: Math.floor(random() * 6) });
+      const spot = horizontalParked
+        ? { x: alongStreet, z: bz * BLOCK + parkingSide * 5.3, yaw: Math.PI / 2 }
+        : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: 0 };
+      const modelIndex = Math.abs(bx * 5 + bz * 3 + parkedCarSpecs.length) % CITY_RUSH_TRAFFIC_TYPES.length;
+      const parkedType = CITY_RUSH_TRAFFIC_TYPES[modelIndex];
+      parkedCarSpecs.push({ ...spot, type: parkedType.id, width: parkedType.width, length: parkedType.length });
     }
     // Palms and Deco lamp posts on block corners, kept outside the carriageway.
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
@@ -687,68 +691,18 @@ function makeCity(scene) {
     }
     fenceMeshes = { panels, posts, rails };
   }
-  // Parking urbain en InstancedMesh : voitures détaillées, mais peu d'appels de rendu.
-  const carPaint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.34, metalness: 0.36 });
-  const parkedGlass = new THREE.MeshStandardMaterial({ color: 0x233441, roughness: 0.18, metalness: 0.2 });
-  const rubber = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.88 });
-  const headlamp = new THREE.MeshBasicMaterial({ color: 0xffedc4, toneMapped: false });
-  const tailLamp = new THREE.MeshBasicMaterial({ color: 0xff4e57, toneMapped: false });
-  const carPaintColors = [0xd74f59, 0x2b8594, 0xe2c875, 0xd8dedc, 0x4d5c72, 0xd48659];
+  // Voitures stationnées : on réutilise les modèles dédiés du trafic du jeu
+  // (taxi, police, ambulance, camion-poubelle et sportive), gyrophares éteints.
+  for (const spec of parkedCarSpecs) {
+    const car = makeTrafficVehicle(spec.type);
+    car.position.set(spec.x, 0, spec.z);
+    car.rotation.y = spec.yaw;
+    car.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
+    scene.add(car);
+  }
   const carRoot = new THREE.Object3D();
   const carPart = new THREE.Object3D();
   const carMatrix = new THREE.Matrix4();
-  const addCarInstances = (specs, geometry, material, pose, colorize = false) => {
-    const mesh = new THREE.InstancedMesh(geometry, material, specs.length);
-    specs.forEach((spec, index) => {
-      carRoot.position.set(spec.x, 0, spec.z);
-      carRoot.rotation.set(0, spec.yaw, 0);
-      carRoot.updateMatrix();
-      carPart.position.set(...pose.position);
-      carPart.rotation.set(...pose.rotation);
-      carPart.scale.set(...(pose.scale || [1, 1, 1]));
-      carPart.updateMatrix();
-      carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix);
-      mesh.setMatrixAt(index, carMatrix);
-      if (colorize) mesh.setColorAt(index, new THREE.Color(carPaintColors[spec.color]));
-    });
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    return mesh;
-  };
-  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.9, 0.78, 4.2), carPaint, { position: [0, 0.78, 0], rotation: [0, 0, 0] }, true);
-  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.52, 0.74, 2.15), parkedGlass, { position: [0, 1.48, 0.05], rotation: [0, 0, 0] });
-  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.36, 0.12, 1.82), carPaint, { position: [0, 1.91, 0.05], rotation: [0, 0, 0] }, true);
-  const wheels = [];
-  parkedCarSpecs.forEach((spec) => {
-    for (const side of [-1, 1]) for (const end of [-1, 1]) {
-      wheels.push({ ...spec, x: spec.x, z: spec.z, local: [side * 0.98, 0.38, end * 1.27] });
-    }
-  });
-  const wheelMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.34, 0.34, 0.24, 10), rubber, wheels.length);
-  wheels.forEach((spec, index) => {
-    carRoot.position.set(spec.x, 0, spec.z); carRoot.rotation.set(0, spec.yaw, 0); carRoot.updateMatrix();
-    carPart.position.set(...spec.local); carPart.rotation.set(0, 0, Math.PI / 2); carPart.updateMatrix();
-    carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix); wheelMesh.setMatrixAt(index, carMatrix);
-  });
-  wheelMesh.instanceMatrix.needsUpdate = true; wheelMesh.castShadow = true; scene.add(wheelMesh);
-  const lights = (front) => parkedCarSpecs.flatMap((spec) => [-1, 1].map((side) => ({
-    ...spec,
-    local: [side * 0.58, 0.83, front ? -2.1 : 2.1],
-  })));
-  const addLampInstances = (geometry, material, lightSpecs) => {
-    const mesh = new THREE.InstancedMesh(geometry, material, lightSpecs.length);
-    lightSpecs.forEach((spec, index) => {
-      carRoot.position.set(spec.x, 0, spec.z); carRoot.rotation.set(0, spec.yaw, 0); carRoot.updateMatrix();
-      carPart.position.set(...spec.local); carPart.rotation.set(0, 0, 0); carPart.updateMatrix();
-      carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix); mesh.setMatrixAt(index, carMatrix);
-    });
-    mesh.instanceMatrix.needsUpdate = true; scene.add(mesh);
-  };
-  addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), headlamp, lights(true));
-  addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), tailLamp, lights(false));
 
   const signalPoleMat = new THREE.MeshStandardMaterial({ color: 0x343a3c, roughness: 0.58, metalness: 0.64 });
   const signalHousingMat = new THREE.MeshStandardMaterial({ color: 0x171c20, roughness: 0.78, metalness: 0.12 });
@@ -996,23 +950,24 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         ? routeIndex * BLOCK + directionSpec.direction * 2.35
         : routeIndex * BLOCK - directionSpec.direction * 2.35;
       const progress = withinDirection === 0 ? -220 : 175;
-      const profile = CITY_RUSH_CARS[(index * 3 + 1) % CITY_RUSH_CARS.length];
-      const car = makeRacerCar(profile, { daylight: true, number: index + 1 });
+      const trafficType = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
+      const car = makeTrafficVehicle(trafficType.id);
       const yaw = directionSpec.axis === 'x'
         ? directionSpec.direction > 0 ? -Math.PI / 2 : Math.PI / 2
         : directionSpec.direction > 0 ? Math.PI : 0;
-      car.position.set(directionSpec.axis === 'x' ? progress : crossAxis, 0.02, directionSpec.axis === 'z' ? progress : crossAxis);
+      car.position.set(directionSpec.axis === 'x' ? progress : crossAxis, 0, directionSpec.axis === 'z' ? progress : crossAxis);
       car.rotation.y = yaw;
-      car.userData.trafficYaw = yaw;
       scene.add(car);
       return {
         car,
+        type: trafficType.id,
+        phase: index * 0.9,
         axis: directionSpec.axis,
         direction: directionSpec.direction,
         crossAxis,
         progress,
         speed: 0,
-        maxSpeed: 8.8 + (index % 3) * 1.15,
+        maxSpeed: trafficType.speed,
       };
     });
     const keys = new Set();
@@ -1062,11 +1017,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           0.02,
           traffic.axis === 'z' ? traffic.progress : traffic.crossAxis,
         );
-        animateRacerCar(traffic.car, {
-          speed: traffic.speed, maxSpeed: traffic.maxSpeed, steer: 0,
-          braking: signalState !== 'green' && traffic.speed > 0.1,
-          idle: traffic.speed === 0,
-        }, dt, state.time);
+        traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+        traffic.car.userData.beacons?.forEach((beacon, beaconIndex) => {
+          const flashing = Math.floor(state.time * 8 + traffic.phase + beaconIndex) % 2 === 0;
+          beacon.material.opacity = flashing ? 1 : 0.18;
+        });
       }
     };
     const onDown = (event) => {
@@ -1100,7 +1055,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const sine = Math.sin(car.rotation.y);
         const localX = dx * cosine - dz * sine;
         const localZ = dx * sine + dz * cosine;
-        return Math.abs(localX) < 2.1 && Math.abs(localZ) < 4.35;
+        const halfWidth = Math.max(2.1, (car.userData.width || 1.94) / 2 + 1.05);
+        const halfLength = Math.max(4.35, (car.userData.length || 4.0) / 2 + 2.2);
+        return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
       });
       if (hitsMovingCar) return true;
       return city.parkedCarSpecs.some((car) => {
@@ -1110,7 +1067,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const sine = Math.sin(car.yaw);
         const localX = dx * cosine - dz * sine;
         const localZ = dx * sine + dz * cosine;
-        return Math.abs(localX) < 2.0 && Math.abs(localZ) < 4.2;
+        const halfWidth = Math.max(2.0, (car.width || 1.94) / 2 + 1.05);
+        const halfLength = Math.max(4.2, (car.length || 4.0) / 2 + 2.1);
+        return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
       });
     };
     let frame = 0; let last = performance.now(); let hudAt = 0;
