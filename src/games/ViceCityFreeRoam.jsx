@@ -769,7 +769,7 @@ function makeCity(scene) {
     scene.add(grassBlades);
   }
 
-  // Grillages galvanisés en sections indépendantes pour qu'ils disparaissent au choc.
+  // Grillages galvanisés en sections indépendantes qui peuvent tomber au choc.
   let fenceMeshes = null;
   if (fenceSegments.length) {
     const sectionLength = 2.6;
@@ -987,6 +987,7 @@ function makeCity(scene) {
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
     return roadX || roadZ ? 0 : -0.12;
   };
+  const fallenFenceSections = [];
   const hideFenceInstance = (mesh, index) => {
     marker.position.set(0, -1000, 0);
     marker.rotation.set(0, 0, 0);
@@ -994,6 +995,33 @@ function makeCity(scene) {
     marker.updateMatrix();
     mesh.setMatrixAt(index, marker.matrix);
     mesh.instanceMatrix.needsUpdate = true;
+  };
+  const toppleFenceSection = (segment, fallDirection) => {
+    const group = new THREE.Group();
+    group.position.set(segment.x, 0, segment.z);
+    group.rotation.y = segment.yaw;
+    const addPart = (geometry, material, x, y, z) => {
+      const part = new THREE.Mesh(geometry, material);
+      part.position.set(x, y, z);
+      part.castShadow = true;
+      part.receiveShadow = true;
+      group.add(part);
+    };
+    const sectionLength = segment.length;
+    addPart(fenceMeshes.panels.geometry, chainMaterial, 0, 0.535, 0);
+    addPart(fenceMeshes.posts.geometry, fenceMetalMat, -sectionLength / 2, 0.65, 0);
+    addPart(fenceMeshes.posts.geometry, fenceMetalMat, sectionLength / 2, 0.65, 0);
+    addPart(fenceMeshes.rails.geometry, fenceMetalMat, 0, 0.02, 0);
+    addPart(fenceMeshes.rails.geometry, fenceMetalMat, 0, 1.16, 0);
+    scene.add(group);
+    fallenFenceSections.push({ group, fallDirection, progress: 0 });
+  };
+  const updateFallenFences = (dt) => {
+    for (const fallen of fallenFenceSections) {
+      fallen.progress = Math.min(1, fallen.progress + dt * 2.4);
+      const eased = fallen.progress * fallen.progress * (3 - 2 * fallen.progress);
+      fallen.group.rotation.x = fallen.fallDirection * eased * Math.PI / 2;
+    }
   };
   const parkedCarOverlaps = (body, x, z) => {
     const dx = x - body.spec.x;
@@ -1028,6 +1056,7 @@ function makeCity(scene) {
     return hitCount;
   };
   const updateParkedCars = (dt) => {
+    updateFallenFences(dt);
     const drag = Math.exp(-2.25 * dt);
     const isBlocked = (body, x, z) => {
       if (buildingFootprints.some((building) =>
@@ -1076,6 +1105,8 @@ function makeCity(scene) {
       hideFenceInstance(fenceMeshes.panels, segment.instances.panel);
       segment.instances.posts.forEach((index) => hideFenceInstance(fenceMeshes.posts, index));
       segment.instances.rails.forEach((index) => hideFenceInstance(fenceMeshes.rails, index));
+      // La section cassée tombe à l'opposé du côté touché au lieu de disparaître.
+      toppleFenceSection(segment, across >= 0 ? -1 : 1);
       broken += 1;
     }
     return broken;
