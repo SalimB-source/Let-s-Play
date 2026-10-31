@@ -236,7 +236,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 100,
+  assert.equal(RPG_CREATURE_CARDS.length, 101,
     'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -4760,7 +4760,7 @@ test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 32, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
+  assert.equal(cartesNeige.length, 33, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4836,7 +4836,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 32, 'les peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 33, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {

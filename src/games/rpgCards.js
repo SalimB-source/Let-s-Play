@@ -993,6 +993,14 @@ export const RPG_CREATURE_CARDS = [
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
   ...RPG_CORBEAU_CREATURES,
   {
+    id: 'garde-du-trone-givre', set: 'soldats-de-la-lune', name: 'Garde du trône givré',
+    element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
+    cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
+    typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, provocation: true, furie: 1,
+    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
+    flavor: 'Il ne cède pas le passage, même quand la glace se teinte de rouge.',
+  },
+  {
     id: 'general-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Général du croissant noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain et Vampire',
