@@ -88,6 +88,7 @@ test('la Malédiction ignore les cases vides : tout le camp adverse est touché'
   // entre elles — l'Aura ne les verrait pas, la Malédiction si.
   const gauche = poser(duel, 'sorcier', 'faucon-du-zenith', 0);
   const droite = poser(duel, 'sorcier', 'anqa-des-braises', 4);
+  gauche.bouclier = 0; // isoler la Malédiction sans la parade native du Faucon
   const atkGauche = gauche.atk;
   const atkDroite = droite.atk;
   assert.equal(rpgEmplacementsChamp(duel.sorcier)[2], null, 'le milieu est bien vide');
@@ -107,6 +108,7 @@ test('la Malédiction ignore les cases vides : tout le camp adverse est touché'
 test('une arrivée après la source est maudite ; la mort de la source lève tout', () => {
   const duel = duelCases();
   const ancien = poser(duel, 'sorcier', 'faucon-du-zenith', 0);
+  ancien.bouclier = 0;
   const noire = poser(duel, 'joueur', 'la-barbe-noire', 0);
   assert.equal(ancien.atk, 1, '3/3 → 1/3');
   const nouveau = poser(duel, 'sorcier', 'ifrit-des-ergs', 4);
@@ -126,6 +128,7 @@ test('une arrivée après la source est maudite ; la mort de la source lève tou
 test('deux sources cumulent ; en retirer une ne rend que son malus', () => {
   const duel = duelCases();
   const adverse = poser(duel, 'sorcier', 'faucon-du-zenith', 0);
+  adverse.bouclier = 0;
   const premiere = poser(duel, 'joueur', 'la-barbe-noire', 0);
   assert.equal(adverse.atk, 1, 'une source : -2');
   const seconde = poser(duel, 'joueur', 'la-barbe-noire', 4);

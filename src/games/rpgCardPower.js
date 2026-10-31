@@ -337,10 +337,9 @@ export function valeurCarte(carte) {
   // le jeu agressif, qui décourage l’Attaque ciblée et les sorts ciblés.
   if (carte.contreAttaque) valeur += 2;
   if (carte.protection) valeur += 1.5;
-  // La protection contre les sorts (le Faucon du zénith, le Serpent du monde)
-  // ne bloque que les magies et capacités ciblées, pas le combat : un cran
-  // sous la protection de couleur.
+  // Protection permanente historique, ou parade imprimée à usage unique.
   if (carte.protectionSorts) valeur += 1.2;
+  if (carte.bouclierInitial) valeur += 1.1;
   // Une productrice de mana (Tiziri) : un terrain sur pattes, qui coûte une
   // créature et s'engage — le prix d'un demi-terrain plus la flexibilité.
   if (carte.manaEngagement) valeur += 1.5 * (Number(carte.manaEngagement.amount) || 1);

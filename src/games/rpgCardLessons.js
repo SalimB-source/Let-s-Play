@@ -71,7 +71,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['parade-du-verre', 'salem'],
     title: 'Un bouclier bloque un sort',
-    text: 'La Parade de verre donne à une créature alliée un bouclier : le premier sort adverse qui l’atteint est bloqué — la carte est payée, mais aucun de ses effets ne se résout sur elle — puis le bouclier tombe. Un sort de zone se résout quand même, mais il n’épargne que la créature protégée : toutes les autres encaissent la vague, et la parade tombe. Salem arrive avec le même bouclier, en plus de sa Rapidité et de sa Contre-attaque : le sort bloqué ne déclenche même pas sa riposte, mais le sort adverse suivant se paie au visage du lanceur — y compris une vague de zone, qui réveille chaque Contre-attaque qu’elle atteint vraiment. Un sort allié passe normalement. Le bouclier n’absorbe aucun dégât d’attaque ou de capacité : ceux-ci frappent les PV. Le bouclier de lumière de la Dame aux ailes d’or, lui, reste ce qu’il était : il la protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie la touche. Sur la table, une égide animée cerne la créature protégée ; quand le bouclier tombe, l’écu claque et se fissure.',
+    text: 'La Parade de verre donne à une créature alliée un bouclier : le premier sort adverse qui l’atteint est bloqué — la carte est payée, mais aucun de ses effets ne se résout sur elle — puis le bouclier tombe. Un sort de zone se résout quand même, mais il n’épargne que la créature protégée : toutes les autres encaissent la vague, et la parade tombe. Salem arrive avec le même bouclier, en plus de sa Rapidité et de sa Contre-attaque : le sort bloqué ne déclenche même pas sa riposte, mais le sort adverse suivant se paie au visage du lanceur — y compris une vague de zone, qui réveille chaque Contre-attaque qu’elle atteint vraiment. Un sort allié passe normalement. Il bloque aussi le premier effet de créature adverse, ciblé ou de zone ; les attaques et les effets alliés passent. Le bouclier de lumière de la Dame aux ailes d’or, lui, reste ce qu’il était : il la protège des dégâts ennemis jusqu’à ce qu’une attaque ou une magie la touche. Sur la table, une égide animée cerne la créature protégée ; quand le bouclier tombe, l’écu claque et se fissure.',
   },
   {
     id: 'degats-et-gel',
@@ -211,7 +211,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['ronin-du-soleil-rouge', 'samourai-du-torii', 'oni-de-la-fournaise'],
     title: 'Harakiri : une dernière frappe à la mort',
-    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. La protection s’applique normalement ; la parade anti-sort, elle, ne bloque pas cette capacité : le dégât passe. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
+    text: 'Quand une créature avec Harakiri meurt, elle inflige 1 dégât à une seule créature adverse vivante choisie au hasard, ou au sorcier adverse s’il n’y a aucune créature adverse. La protection s’applique normalement ; un bouclier bloque aussi cette capacité adverse et tombe. Un renvoi en main ou un contresort ne déclenche pas Harakiri.',
   },
   {
     id: 'auras-et-resonance',
@@ -253,7 +253,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['serpent-du-monde', 'mur-de-boucliers'],
     title: 'Overkill perce, la protection anti-magie blinde',
-    text: 'Le Serpent du monde cumule deux défenses d’exception. Protégé contre les magies et les sorcelleries, aucun sort ne peut le cibler ni le blesser — seules les attaques, les capacités et les armes l’atteignent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +2/+0, jusqu’à la fin du tour.',
+    text: 'Le Serpent du monde cumule deux défenses d’exception. Son bouclier bloque une fois un sort ou un effet de créature adverse, puis disparaît ; les attaques et les effets alliés passent. Et quand il attaque, son Overkill perce : si les bloqueurs tombent sous ses dégâts, l’excédent passe au sorcier défenseur au lieu de se perdre. Le Mur de boucliers prête le même Overkill à toutes vos créatures, avec +2/+0, jusqu’à la fin du tour.',
   },
   {
     id: 'magie-gratuite',

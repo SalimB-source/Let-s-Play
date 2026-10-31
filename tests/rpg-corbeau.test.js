@@ -178,7 +178,7 @@ test('le Berserk du crépuscule et la Valkyrie des neuf nuits changent de peintu
     // resserrées ensemble, avec le crâne dégagé sous le bandeau —
     // et portent donc chacune leur révision, le temps que les caches se
     // retournent.
-    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-cadrage-v3', 'corbeau-crepuscule-cadrage-v3'],
+    ['berserk-du-crepuscule', 'corbeau-furie-crepuscule-charge-v4', 'corbeau-crepuscule-zoom-v4'],
     ['valkyrie-des-neuf-nuits', 'corbeau-furie-souls-v1', 'corbeau-neuf-nuits-v1'],
   ];
   for (const [carteId, revision, revisionIntacte] of portraits) {

@@ -340,6 +340,10 @@ peinture intacte, une **face de Furie** au même ratio et dans la même
 composition, ensanglantée et enragée : `berserk-du-crepuscule-furie.jpg` et
 `valkyrie-des-neuf-nuits-furie.jpg` (voir la dérogation Furie plus bas).
 
+### Nouvelle Furie du Berserk
+
+La face de Furie montre désormais le Berserk chargeant vers la caméra, sans bouclier et la hache levée. Sa révision est `corbeau-furie-crepuscule-charge-v4` ; la face calme conserve son cadrage distinct.
+
 ### Le Berserk du crépuscule rapproché
 
 Les deux peintures du Berserk ont été recadrées plus serré : la face calme

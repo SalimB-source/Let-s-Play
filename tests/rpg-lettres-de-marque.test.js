@@ -715,7 +715,8 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   pret(valkyrie);
   rpgAttaquerCreature(protegee, 'joueur', valkyrie.id, brulotProtege.id);
   assert.equal(protegee.sorcier.cimetiere.includes('le-brulot'), true);
-  assert.equal(valkyrie.pv, 2, 'la frappe du Brûlot et son explosion atteignent la Valkyrie : ce ne sont pas des sorts');
+  assert.equal(valkyrie.pv, 4, 'la frappe passe mais son bouclier bloque l’explosion');
+  assert.equal(valkyrie.bouclier, 0);
 
   // Morte par magie : le tueur est inconnu, rien ne se déclenche.
   const magie = duelVide();
@@ -1148,7 +1149,7 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
   assert.equal(cible.pvMax, 7);
   assert.equal(cible.pv, 7, 'la créature est entièrement soignée après le +3/+3');
   assert.equal(cible.def, 7);
-  assert.equal(cible.protectionSorts, true);
+  assert.equal(cible.bouclier, 1);
   assert.equal(cible.tenaciteDisponible, true);
   assert.equal(duel.siteEnAttente, null);
   assert.ok(duel.joueur.creatures.includes(source), 'le Site reste posé après sa résolution');

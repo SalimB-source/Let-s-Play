@@ -110,7 +110,7 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('maitre-du-marteau'), ['Envol (furie)', 'Overkill (furie)', 'Furie 3', 'Tenacité'],
     'le Maître ne porte que Furie 3 et Tenacité : Overkill et Envol sont prêtés par la Furie');
   assert.deepEqual(pastillesDe('loup-des-neiges'), ['Furie 1']);
-  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Protection contre les magies et les sorcelleries'],
+  assert.deepEqual(pastillesDe('valkyrie-des-glaces'), ['Envol', 'Bouclier'],
     'Envol et protection contre tous les sorts, sans Résonance');
   assert.deepEqual(pastillesDe('valkyrie-au-corbeau'), ['Envol', 'Furie 2'],
     'la Valkyrie au corbeau porte Envol et Furie 2, sans Résonance');
@@ -381,7 +381,7 @@ test('la Protection élémentaire colore un bouclier par élément, le Sable gar
 
   assert.deepEqual(couleursProtectionCarte(cardById('valkyrie-des-glaces')), [],
     'Valkyrie protège désormais contre tous les sorts, pas seulement la Braise');
-  assert.equal(cardById('valkyrie-des-glaces').protectionSorts, true, 'protection générique contre les sorts');
+  assert.equal(cardById('valkyrie-des-glaces').bouclierInitial, true, 'protection générique contre les sorts');
   assert.deepEqual(couleursProtectionCarte(cardById('jitte-d-amayas')), ['tenebres'],
     'une protection donnée par une arme suit la même palette');
   assert.deepEqual(couleursProtectionCarte(cardById('serpent-du-monde')), [],

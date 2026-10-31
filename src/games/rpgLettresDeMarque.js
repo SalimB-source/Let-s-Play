@@ -285,7 +285,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
       },
     },
     typeLine: 'Site légendaire — Grotte · Trésor',
-    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3, Protection contre les sorts et Tenacité.',
+    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique.',
     flavor: 'Trois seuils sous la pierre, puis une eau que même le temps n’a jamais troublée.',
   }),
   carte({

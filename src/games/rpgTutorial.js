@@ -969,7 +969,7 @@ export const RPG_TUTORIELS = Object.freeze([
         target: '[data-tutorial-target="player-field"]',
         eyebrow: 'RÈGLE · BOUCLIER',
         title: 'Une parade contre un sort',
-        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est payé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque ou une capacité passent normalement, tout comme un sort allié. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
+        text: 'Le bouclier ne donne aucun point de défense : il bloque le premier sort adverse qui atteint la créature qui le porte — le Guerrier ici —, puis le bouclier tombe. Un sort qui la cible est payé, mais aucun de ses effets ne s’applique. Un sort de zone, lui, se résout quand même : il frappe les autres créatures, mais il épargne celle-ci et fait tomber sa parade. Une attaque passe normalement ; un sort ou effet de créature allié passe aussi. Une capacité de créature adverse consomme le bouclier. L’égide glacée sur la carte montre la parade tant qu’elle tient.',
         nextLabel: 'Appeler la Valkyrie',
         side: 'top',
       },

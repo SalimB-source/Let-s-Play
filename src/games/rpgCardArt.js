@@ -198,15 +198,13 @@ const CARD_ART_CACHE_VERSIONS = {
   'veilleuse-au-corbeau-noir': 'corbeau-neuf-nuits-v1',
   // Cadrage resserré sur le Berserk, sans masquer sa tête sous le nom.
   // La nouvelle révision renouvelle aussi les images en cache.
-  'berserk-du-crepuscule': 'corbeau-crepuscule-cadrage-v3',
+  'berserk-du-crepuscule': 'corbeau-crepuscule-zoom-v4',
   'valkyrie-des-neuf-nuits': 'corbeau-neuf-nuits-v1',
   'neige-noire': 'corbeau-neuf-nuits-v1',
   'maitre-des-corbeaux': 'corbeau-neuf-nuits-v1',
-  // Les deux faces de Furie du Corbeau des neuf nuits : même composition que
-  // la peinture intacte, seulement marquée par le combat. Redéclarées plus bas
-  // dans la passe des Furies (`corbeau-furie-souls-v1`), à l'exception du
-  // Berserk dont le recadrage impose sa propre révision.
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-cadrage-v3',
+  // Faces de Furie : le Berserk charge désormais sans bouclier, hache levée.
+  // Ces versions sont également référencées dans la passe des Furies ci-dessous.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-charge-v4',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-neuf-nuits-v1',
   // Le Serpent du monde garde la facture nihonga, mais sa composition est
   // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
@@ -291,11 +289,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // commune, elle porte donc sa propre révision.
   'volva-soigneuse-furie': 'neige-furie-volva-v1',
   'garde-du-trone-givre-furie': 'garde-trone-furie-v1',
-  // Les deux furies du Corbeau des neuf nuits : même scène que leur peinture
-  // intacte, marquée par le combat. La face du Berserk suit le recadrage de sa
-  // peinture intacte — même scène, même cri, mais le crâne entier dégagé sous
-  // le bandeau de nom — et prend donc sa propre révision.
-  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-cadrage-v3',
+  // Le Berserk en Furie charge de face sans bouclier, hache levée.
+  // La Valkyrie garde sa propre peinture de Furie.
+  'berserk-du-crepuscule-furie': 'corbeau-furie-crepuscule-charge-v4',
   'valkyrie-des-neuf-nuits-furie': 'corbeau-furie-souls-v1',
   // La Tour Oubliée rejoint la passe : l'Ifrit d'encre porte Furie 1. Sa face
   // déclenchée reprend son archive en feu, fissures ouvertes et encre lâchée.

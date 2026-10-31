@@ -217,12 +217,10 @@ export const RPG_TENEBRES_CREATURES = [
     envol: true,
     coupRapide: true,
     tribut: 3,
-    // La déesse du midi plane au-dessus de la tombe : aucun sort ne peut
-    // l'atteindre (Protection contre les sorts), là où la nuit ne la saisissait
-    // qu'en Ténèbres. Son tribut passe à 3.
-    protectionSorts: true,
+    // La déesse entre avec une parade à usage unique. Son tribut vaut 3.
+    bouclierInitial: true,
     typeLine: 'Créature légendaire — Déesse solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({

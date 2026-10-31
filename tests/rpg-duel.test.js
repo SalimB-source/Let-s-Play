@@ -788,7 +788,8 @@ test('une capacité de zone adverse fait riposter sur la créature source, pas s
 
   assert.equal(duel.sorcier.creatures.includes(eirik), false,
     'le vent froid tue le 1/1 — mais la riposte part quand même');
-  assert.equal(valkyrie.pv, 4, 'la Valkyrie encaisse la riposte d’Eirik (5 → 4), son propre vent l’épargnant');
+  assert.equal(valkyrie.pv, 5, 'le bouclier arrête la riposte d’Eirik');
+  assert.equal(valkyrie.bouclier, 0);
   assert.deepEqual([duel.joueur.pv, duel.sorcier.pv], [25, 25], 'aucun sorcier ne prend la riposte d’une capacité');
   assert.ok(duel.log.some((ligne) => ligne.includes('Contre-attaque : Eirik du Premier Serment rend son coup')),
     'le journal nomme la riposte sur la créature source');
@@ -1109,14 +1110,14 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
   assert.equal(valkyrie.resonance, undefined, 'plus de Résonance viking');
   assert.equal(valkyrie.resonanceTribu, undefined);
   assert.equal(valkyrie.protection, undefined, 'la protection ne couvre plus les créatures de Braise');
-  assert.equal(valkyrie.protectionSorts, true);
+  assert.equal(valkyrie.bouclierInitial, true);
   assert.equal(valkyrie.protectionSortsContre, undefined);
   assert.deepEqual(valkyrie.arrivee, {
     type: 'degats', amount: 1, cible: 'toutes-creatures',
     inclutAllies: true, exclutSoi: true, gelChance: 0.25,
   }, 'sa vague balaie les deux camps, mais ne la touche plus elle-même');
   assert.equal(arriveeCiblePortee(valkyrie), null, 'sa vague collective ne demande aucune cible');
-  assert.match(valkyrie.text, /Protection contre les sorts/);
+  assert.match(valkyrie.text, /Bouclier/);
   assert.match(valkyrie.text, /toutes les autres créatures, elle non comprise/);
   assert.match(valkyrie.text, /25 % de chances de geler/);
   assert.doesNotMatch(valkyrie.text, /Résonance|soignez chacune/);
@@ -3034,8 +3035,8 @@ test('Sahir : une parade ne prévient plus les dégâts du partage', () => {
   const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map(b => b.id) });
   assert.equal(res.ok, true);
   assert.deepEqual(res.resume.repartitions[sahir.id], Object.fromEntries(bloqueurs.map(b => [b.id, 1])));
-  assert.equal(bloqueurs[0].bouclier, 1, 'la parade ne tombe pas sous une capacité');
-  assert.equal(bloqueurs[0].pv, pvEsquive - 3, 'capacité et blessures normales passent toutes');
+  assert.equal(bloqueurs[0].bouclier, 0, 'la capacité fait tomber la parade');
+  assert.equal(bloqueurs[0].pv, pvEsquive - 1, 'seule la blessure normale passe');
   assert.equal(bloqueurs[1].pv, 3);
 });
 
@@ -3574,25 +3575,18 @@ test('la Veilleuse diffère sa désignation sur la table, puis la résout sur un
   assert.equal(poseSolo.entite.bouclier, 1);
 });
 
-test('la Valkyrie des glaces protège contre tous les sorts', () => {
+test('la Valkyrie des glaces entre avec une parade à usage unique', () => {
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'joueur', 20); donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'valkyrie-des-glaces');
   const valkyrie = rpgJouerCreature(duel, 'joueur', 'valkyrie-des-glaces').entite;
-  assert.equal(valkyrie.pv, 5, 'sa vague l’épargne désormais : elle entre à ses 5 PV imprimés');
-  assert.equal(rpgEstProtegee(valkyrie, ['braise']), false, 'les attaques et capacités de Braise passent');
-  const capacite = rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, ['braise'], null, 'capacite');
-  assert.equal(capacite.recus, 1, 'une capacité de Braise n’est pas un sort');
-  assert.equal(valkyrie.pv, 4);
-  donner(duel, 'joueur', 'trait-de-braise');
-  const sort = rpgLancerMagie(duel, 'joueur', 'trait-de-braise', valkyrie.id);
-  assert.equal(sort.raison, 'protection');
-  assert.equal(valkyrie.pv, 4, 'le sort de Braise ne la blesse pas');
-  assert.ok(duel.joueur.main.includes('trait-de-braise'));
-  const autreElement = rpgBlesserCreature(duel, 'joueur', valkyrie.id, 1, ['eau'], null, 'magie');
-  assert.equal(autreElement.recus, 0, 'une magie d’Eau est aussi protégée');
-  assert.equal(valkyrie.pv, 4);
-  assert.equal(valkyrie.protectionSorts, true);
+  assert.equal(valkyrie.pv, 5); assert.equal(valkyrie.bouclier, 1);
+  duel.tour = 'sorcier'; donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', valkyrie.id).ok, true);
+  assert.equal(valkyrie.pv, 5); assert.equal(valkyrie.bouclier, 0);
+  donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', valkyrie.id).ok, true);
+  assert.ok(valkyrie.pv < 5);
 });
 
 test('Ifrit al-Ahmar gagne Attaque ciblée et perd sa vague de 3 dégâts à toutes les créatures', () => {
@@ -3816,7 +3810,7 @@ test('Salem arrive avec Bouclier, Rapidité et Contre-attaque — plus de boucli
   assert.equal(carte.contreAttaque, true, 'et gagne la Contre-attaque');
   assert.equal(carte.arrivee.type, 'bouclier', 'son ancien bouclier de lumière devient une parade anti-sort');
   assert.equal(carte.arrivee.cible, 'soi', 'la parade protège Salem lui-même, sans désignation');
-  assert.match(carte.text, /prochain sort adverse/, 'le texte annonce le sort bloqué');
+  assert.match(carte.text, /prochain sort ou effet de créature adverse/g, 'le texte annonce le sort bloqué');
   assert.doesNotMatch(carte.text, /bouclier de lumière|ne peut pas subir de dégâts/,
     'plus aucune invulnérabilité n’est imprimée');
 
@@ -3895,27 +3889,17 @@ test('le Kraken ne peut désigner qu’un Navire, et sans Navire il ne coule rie
     'le Chien reste intact : le Kraken n’a rien eu à couler');
 });
 
-test('le Serpent du monde est intouchable par les sorts, mais pas par le reste', () => {
+test('le Serpent du monde bloque un premier sort, pas les suivants', () => {
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 20);
-  donnerMana(duel, 'sorcier', 20);
+  donnerMana(duel, 'joueur', 20); donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'serpent-du-monde');
   const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
-
-  // Cibler le Serpent avec une magie est illégal, des deux camps.
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'trait-de-braise');
-  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', serpent.id).raison, 'protection',
-    'le Trait de braise ne peut pas le viser');
-
-  // Une magie de zone l'épargne aussi : les dégâts de sort glissent sur lui.
+  duel.tour = 'sorcier'; donner(duel, 'sorcier', 'trait-de-braise');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', serpent.id).ok, true);
+  assert.equal(serpent.pv, 6); assert.equal(serpent.bouclier, 0);
   donner(duel, 'sorcier', 'tempete-de-sable');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'tempete-de-sable').ok, true);
-  assert.equal(serpent.pv, 6, 'la Tempête de sable ne l’écorche pas');
-
-  // Les blessures hors sort (capacités, armes, combat) passent normalement.
-  assert.equal(rpgBlesserCreature(duel, 'joueur', serpent.id, 2, ['braise'], null, 'capacite').recus, 2);
-  assert.equal(serpent.pv, 4, 'une capacité le blesse comme n’importe qui');
+  assert.ok(serpent.pv < 6, 'le deuxième sort atteint le Serpent');
 });
 
 test('Overkill : l’excédent au-delà des bloqueurs perce jusqu’au sorcier', () => {
@@ -4928,8 +4912,7 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   );
   assert.equal(rpgResonanceEnJeu(duel, 'viking'), 0);
   assert.equal(rpgEstProtegee(glace.entite, ['braise']), false, 'les créatures de Braise ne sont plus bloquées');
-  assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['braise']), true, 'les sorts de Braise sont bloqués');
-  assert.equal(rpgEstProtegeeDesSorts(glace.entite, ['eau']), true, 'désormais tous les sorts sont bloqués');
+  assert.equal(glace.entite.bouclier, 1, 'la Valkyrie entre avec une parade');
   assert.equal(duel.joueur.creatures.includes(loup), false,
     'la vague emporte le Loup allié à 1 PV');
   assert.equal(duel.joueur.cimetiere.includes('loup-des-neiges'), true,
@@ -5092,11 +5075,12 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   const serpent = rpgJouerCreature(duel, 'joueur', 'serpent-du-monde').entite;
   assert.deepEqual([serpent.atk, serpent.def], [6, 6],
     'le Serpent entre à sa force imprimée 6/6');
-  assert.equal(serpent.protectionSorts, true, 'protégé contre les magies et les sorcelleries');
+  assert.equal(serpent.bouclier, 1, 'une parade à usage unique');
   assert.equal(serpent.overkill, true, 'il porte Overkill');
   donner(duel, 'joueur', 'eclair-du-marteau');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', serpent.id).raison, 'protection',
-    'aucun sort ne peut le viser — pas même les vôtres');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'eclair-du-marteau', serpent.id).raison, 'cible',
+    'ce sort ne vise que les ennemis');
+  assert.equal(serpent.bouclier, 1);
 });
 
 test('les decks de départ respectent les limites mythiques et le deck hybride reste valide', () => {

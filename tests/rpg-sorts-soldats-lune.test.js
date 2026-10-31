@@ -105,7 +105,7 @@ test('Le sabre confère le Vol de vie pour son attaque puis le perd à sa destru
   assert.ok(rpgJouerArme(d, 'joueur', ids[2], chien.id).ok);
   assert.equal(chien.volDeVie, true); chien.ready = true;
   assert.ok(rpgLancerAttaque(d, 'joueur', [chien.id], {}).ok);
-  assert.equal(d.joueur.pv, 14);
+  assert.equal(d.joueur.pv, 12);
   assert.equal(chien.arme, null); assert.equal(chien.volDeVie, false);
 });
 test('Le départ du sabre ne retire pas le Vol de vie imprimé de la Danseuse', () => {
@@ -120,5 +120,5 @@ test('Le sabre rend aussi les dégâts infligés en défendant, même si le port
   const attaquant = poser(d, 'sorcier', 'dune-marchante'); attaquant.atk = 3; attaquant.ready = true;
   d.joueur.pv = 10; d.joueur.main.push(ids[2]); assert.ok(rpgJouerArme(d, 'joueur', ids[2], chien.id).ok);
   assert.ok(rpgLancerAttaque(d, 'sorcier', [attaquant.id], { [attaquant.id]: [chien.id] }).ok);
-  assert.equal(d.joueur.pv, 14); assert.ok(!d.joueur.creatures.includes(chien));
+  assert.equal(d.joueur.pv, 12); assert.ok(!d.joueur.creatures.includes(chien));
 });

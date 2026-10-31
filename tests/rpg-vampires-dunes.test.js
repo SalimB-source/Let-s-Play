@@ -38,18 +38,29 @@ test('L’Archonte renforce les Vampires alliés, lui compris, jusqu’à la fin
   rpgFinDeTour(d);
   assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [2, 4, 2, 3]);
 });
-test('La Danseuse rend les dégâts qu’elle inflige en points de vie', () => {
+test('La Danseuse rend la moitié des dégâts qu’elle inflige en points de vie', () => {
   const d = duel(); d.joueur.main.push(ids[1]); d.joueur.pv = 10;
   const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
   assert.ok(danseuse.volDeVie);
   assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
-  assert.equal(d.joueur.pv, 12);
+  assert.equal(d.joueur.pv, 11);
 });
-test('Le Veilleur est 4/3 et possède Contre-attaque', () => {
+test('Le Veilleur est 3/3 avec Contre-attaque et Embuscade', () => {
   const carte = cardById(ids[2]);
-  assert.deepEqual([carte.cost, carte.atk, carte.def], [4, 4, 3]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def], [4, 3, 3]);
   const d = duel(); d.joueur.main.push(ids[2]);
   const veilleur = rpgJouerCreature(d, 'joueur', ids[2]).entite;
   assert.equal(veilleur.contreAttaque, true);
-  assert.deepEqual([veilleur.atk, veilleur.pv], [4, 3]);
+  assert.equal(carte.reactionTourAdverse, true);
+  assert.deepEqual([veilleur.atk, veilleur.pv], [3, 3]);
+});
+
+test('Le Vol de vie arrondit chaque blessure à l’entier supérieur', () => {
+  for (const [degats, soin] of [[0, 0], [1, 1], [2, 1], [3, 2], [5, 3]]) {
+    const d = duel(); d.joueur.main.push(ids[1]); d.joueur.pv = 10;
+    const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
+    danseuse.atk = degats;
+    assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
+    assert.equal(d.joueur.pv, 10 + soin, `${degats} dégât(s) rendent ${soin} PV`);
+  }
 });

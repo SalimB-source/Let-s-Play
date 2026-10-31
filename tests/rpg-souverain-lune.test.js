@@ -22,7 +22,7 @@ test('Le duel d’arrivée est simultané : les 6 dégâts soignent même si le 
   const res = rpgJouerCreature(d, 'joueur', id, null, { cibleDifferee: true });
   assert.ok(res.ok && res.arriveeEnAttente);
   assert.ok(rpgResoudreArriveeCiblee(d, 'joueur', cible.id).ok);
-  assert.equal(d.joueur.pv, 11);
+  assert.equal(d.joueur.pv, 8);
   assert.ok(!d.joueur.creatures.some(e => e.carteId === id));
   assert.ok(!d.sorcier.creatures.some(e => e.id === cible.id));
 });
@@ -30,14 +30,14 @@ test('Vol de vie pendant une attaque au sorcier, y compris les dégâts au-delà
   const d = duel(); d.joueur.main.push(id); const heros = rpgJouerCreature(d, 'joueur', id).entite;
   heros.ready = true; d.joueur.pv = 24;
   assert.ok(rpgLancerAttaque(d, 'joueur', [heros.id], {}).ok);
-  assert.equal(d.joueur.pv, 30);
+  assert.equal(d.joueur.pv, 27);
 });
 test('Vol de vie en bloquant un attaquant', () => {
   const d = duel(); d.joueur.main.push(id); const heros = rpgJouerCreature(d, 'joueur', id).entite;
   const attaquant = poser(d, 'sorcier', 'chien-du-guet'); attaquant.ready = true; attaquant.envol = true;
   d.joueur.pv = 10;
   assert.ok(rpgLancerAttaque(d, 'sorcier', [attaquant.id], { [attaquant.id]: [heros.id] }).ok);
-  assert.equal(d.joueur.pv, 16);
+  assert.equal(d.joueur.pv, 13);
 });
 test('La fin de tour adverse ouvre une réponse pour le héros', () => {
   const d = duel(); d.tour = 'sorcier'; d.joueur.main.push(id); rpgOuvrirFinDeTour(d);
@@ -50,7 +50,7 @@ test('En PvP le héros répond à l’attaque et désigne son duel', () => {
   assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [cible.id] }).ok);
   assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: id, cibleDifferee: true }).ok);
   const res = rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: cible.id });
-  assert.ok(res.ok, res.raison); assert.equal(d.joueur.pv, 16); assert.equal(d.phase, 'principale2');
+  assert.ok(res.ok, res.raison); assert.equal(d.joueur.pv, 13); assert.equal(d.phase, 'principale2');
 });
 test('En PvP il peut aussi être joué pendant la phase principale adverse', () => {
   const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier'; d.phase = 'principale';
@@ -72,5 +72,5 @@ test('Un héros adverse qui arrive pendant mon tour peut aussi voler de la vie',
   const d = duel(); const cible = poser(d, 'joueur', 'dune-marchante');
   d.sorcier.pv = 10; d.sorcier.main.push(id); d.fenetreReponse = true;
   assert.ok(rpgJouerCreature(d, 'sorcier', id, cible.id).ok);
-  assert.equal(d.sorcier.pv, 16);
+  assert.equal(d.sorcier.pv, 13);
 });
