@@ -273,6 +273,111 @@ function makeCity(scene) {
   const palmTrunk = new THREE.MeshStandardMaterial({ color: 0x755b40, roughness: 0.9 });
   const palmLeaf = new THREE.MeshStandardMaterial({ color: 0x236c59, roughness: 0.86 });
   const neon = [0xff668a, 0x45d7dc, 0xf2c968];
+  const courtyardPathMat = new THREE.MeshStandardMaterial({ color: 0xaaa49b, roughness: 0.9 });
+  const courtyardGrassMat = new THREE.MeshStandardMaterial({ color: 0x577756, roughness: 1 });
+  const planterMat = new THREE.MeshStandardMaterial({ color: 0xb28f6c, roughness: 0.92 });
+  const playMat = new THREE.MeshStandardMaterial({ color: 0x446e78, roughness: 0.94 });
+  const playAccentMat = new THREE.MeshStandardMaterial({ color: 0xd79552, roughness: 0.8 });
+  const playBlueMat = new THREE.MeshStandardMaterial({ color: 0x4587a0, roughness: 0.68, metalness: 0.12 });
+  const benchWoodMat = new THREE.MeshStandardMaterial({ color: 0x815d42, roughness: 0.88 });
+  const fountainWaterMat = new THREE.MeshStandardMaterial({ color: 0x4b9a9a, roughness: 0.24, metalness: 0.24 });
+  const addGroundPlane = (parent, material, x, z, width, depth, y = -0.05) => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.set(x, y, z);
+    mesh.receiveShadow = true;
+    parent.add(mesh);
+    return mesh;
+  };
+  const addCourtyardTree = (parent, x, z, height = 4.2) => {
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, height * 0.55, 7), palmTrunk);
+    trunk.position.set(x, height * 0.275, z);
+    trunk.castShadow = true;
+    parent.add(trunk);
+    const crown = new THREE.Mesh(new THREE.ConeGeometry(height * 0.34, height * 0.62, 7), palmLeaf);
+    crown.position.set(x, height * 0.69, z);
+    crown.castShadow = true;
+    parent.add(crown);
+  };
+  const addCourtyardBench = (parent, x, z, rotation = 0) => {
+    const bench = new THREE.Group();
+    bench.position.set(x, 0, z);
+    bench.rotation.y = rotation;
+    parent.add(bench);
+    addBox(bench, benchWoodMat, 0, 0.42, 0, 1.8, 0.14, 0.52);
+    addBox(bench, benchWoodMat, 0, 0.58, -0.2, 1.8, 0.62, 0.12);
+    for (const side of [-1, 1]) addBox(bench, shopFrameMat, side * 0.68, 0.08, 0, 0.12, 0.42, 0.4);
+  };
+  const addFountain = (parent, x, z, scale = 1) => {
+    const basin = new THREE.Mesh(new THREE.CylinderGeometry(1.55 * scale, 1.9 * scale, 0.46, 12), sidewalkMat);
+    basin.position.set(x, 0.18, z);
+    basin.castShadow = true;
+    parent.add(basin);
+    const water = new THREE.Mesh(new THREE.CylinderGeometry(1.27 * scale, 1.27 * scale, 0.055, 16), fountainWaterMat);
+    water.position.set(x, 0.43, z);
+    parent.add(water);
+    const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.09 * scale, 0.16 * scale, 0.7 * scale, 8), brassMat);
+    jet.position.set(x, 0.78, z);
+    parent.add(jet);
+  };
+  const addCourtyardAmenity = (parent, x, z, type) => {
+    if (type === 'garden') {
+      addGroundPlane(parent, courtyardGrassMat, x, z, 18, 18, -0.048);
+      addGroundPlane(parent, courtyardPathMat, x, z, 2.1, 18, -0.042);
+      addGroundPlane(parent, courtyardPathMat, x, z, 18, 2.1, -0.041);
+      for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        addBox(parent, planterMat, x + sideX * 6.3, -0.035, z + sideZ * 6.3, 3.0, 0.32, 3.0);
+        addCourtyardTree(parent, x + sideX * 6.3, z + sideZ * 6.3, 4.2);
+      }
+      addFountain(parent, x, z, 0.72);
+      addCourtyardBench(parent, x - 4.5, z, Math.PI / 2);
+      addCourtyardBench(parent, x + 4.5, z, -Math.PI / 2);
+      return;
+    }
+    if (type === 'playground') {
+      addGroundPlane(parent, playMat, x, z, 18, 16, -0.047);
+      addGroundPlane(parent, playAccentMat, x - 5.2, z - 4.2, 3.6, 3.2, -0.038);
+      addGroundPlane(parent, playBlueMat, x + 5.2, z + 4.2, 3.6, 3.2, -0.037);
+      const towerX = x - 3.1;
+      const towerZ = z - 1.6;
+      for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        addBox(parent, playBlueMat, towerX + sideX * 1.1, 0.05, towerZ + sideZ * 1.1, 0.16, 1.8, 0.16);
+      }
+      addBox(parent, playAccentMat, towerX, 1.72, towerZ, 2.55, 0.22, 2.55);
+      addBox(parent, playBlueMat, towerX, 2.72, towerZ, 2.95, 0.16, 2.95);
+      const slide = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.12, 3.2), playAccentMat);
+      slide.position.set(towerX + 1.95, 1.0, towerZ + 1.45);
+      slide.rotation.x = -0.34;
+      slide.castShadow = true;
+      parent.add(slide);
+      for (let rung = 0; rung < 5; rung += 1) addBox(parent, shopFrameMat, towerX + 1.65, 0.32 + rung * 0.27, towerZ - 1.28, 0.95, 0.08, 0.08);
+      const swingX = x + 4.2;
+      const swingZ = z - 0.3;
+      for (const side of [-1, 1]) {
+        addBox(parent, playAccentMat, swingX + side * 2.0, 0.08, swingZ, 0.14, 2.75, 0.14);
+        addBox(parent, playAccentMat, swingX + side * 1.25, 0.08, swingZ, 0.14, 2.75, 0.14);
+      }
+      addBox(parent, playBlueMat, swingX, 2.72, swingZ, 4.25, 0.16, 0.18);
+      for (const seatX of [swingX - 0.85, swingX + 0.85]) {
+        addBox(parent, shopFrameMat, seatX, 1.05, swingZ, 0.055, 1.55, 0.055);
+        addBox(parent, shopFrameMat, seatX, 1.05, swingZ + 0.45, 0.055, 1.55, 0.055);
+        addBox(parent, playAccentMat, seatX, 0.96, swingZ + 0.22, 0.72, 0.13, 0.58);
+      }
+      addCourtyardBench(parent, x, z + 6.1);
+      return;
+    }
+    addGroundPlane(parent, courtyardPathMat, x, z, 17, 17, -0.046);
+    addGroundPlane(parent, sidewalkMat, x, z, 7.4, 7.4, -0.038);
+    addFountain(parent, x, z, 0.9);
+    for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+      const planterX = x + sideX * 6.0;
+      const planterZ = z + sideZ * 6.0;
+      addBox(parent, planterMat, planterX, -0.025, planterZ, 2.8, 0.34, 2.8);
+      addCourtyardTree(parent, planterX, planterZ, 3.8);
+    }
+    addCourtyardBench(parent, x - 5.2, z, Math.PI / 2);
+    addCourtyardBench(parent, x + 5.2, z, -Math.PI / 2);
+  };
   for (let bx = -3; bx < 3; bx += 1) for (let bz = -3; bz < 3; bz += 1) {
     const cx = (bx + 0.5) * BLOCK;
     const cz = (bz + 0.5) * BLOCK;
@@ -285,6 +390,9 @@ function makeCity(scene) {
     hardstand.receiveShadow = true;
     lot.add(hardstand);
     lotRegions.push({ x: cx, z: cz, halfWidth: 38, halfDepth: 38 });
+    const amenityRoll = random();
+    const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
+    addCourtyardAmenity(lot, cx, cz, amenityType);
     // Parcelles plus serrées : plusieurs commerces et immeubles bordent chaque bloc.
     const count = 2 + Math.floor(random() * 3);
     const buildingSlots = [[-27, -27], [27, -27], [-27, 27], [27, 27]];
