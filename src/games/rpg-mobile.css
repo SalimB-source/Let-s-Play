@@ -1605,6 +1605,4 @@
 .rpg-graveyard-carousel__heading { padding: 0 6px; font-size: 10px; }
 @media (max-width: 560px) {
   .rpg-graveyard-carousel__content { gap: 7px; }
-  .rpg-graveyard-carousel__item { flex-basis: 62px; width: 62px; }
-  .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard { width: 62px; }
 }
