@@ -19,6 +19,7 @@ import { estLigneDeLien } from './rpgLienTexte.js';
 /** Les symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-embuscade" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-5a3 3 0 0 1 6 0v5"/><path d="M2 5l2 2M22 5l-2 2M12 1v2"/></symbol>
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
   <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
   <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
@@ -30,6 +31,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
   <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
+  <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
   <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
   <symbol id="i-protection" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
   <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
@@ -88,6 +90,7 @@ export function couleurProtection(contre) {
  * les ids interlinéaires servent aussi aux libellés de texte de carte.
  */
 export const EFFET_ICONE = {
+  reactionTourAdverse: 'i-embuscade',
   butin: 'i-butin',
   abordage: 'i-abordage',
   malediction: 'i-malediction',
@@ -106,6 +109,7 @@ export const EFFET_ICONE = {
   provocation: 'i-provocation',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
+  volDeVie: 'i-vol-de-vie',
   protection: 'i-protection',
   protectionSorts: 'i-protection',
   protectionSortsContre: 'i-protection',
@@ -171,7 +175,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'envol', 'infiltration', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement',
@@ -201,6 +205,7 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
 
 /** Le libellé français de chaque clé d’icône. */
 export const EFFET_LIBELLES = {
+  reactionTourAdverse: 'Embuscade',
   butin: 'Butin',
   abordage: 'Abordage',
   malediction: 'Malédiction',
@@ -220,6 +225,7 @@ export const EFFET_LIBELLES = {
   provocation: 'Provocation',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
+  volDeVie: 'Vol de vie',
   protection: 'Protection',
   protectionSorts: 'Protection anti-magie',
   protectionSortsContre: 'Protection contre les sorts',
@@ -274,11 +280,13 @@ export function pastillesPourCarte(carte) {
     pastilles.push({ cle, icone: EFFET_ICONE[cle] ?? 'i-degats', label, valeur, ...details });
   };
 
+  if (carte.reactionTourAdverse) ajouter('reactionTourAdverse', 'Embuscade');
   if (carte.envol) ajouter('envol', 'Envol');
   // L'Envol que la Furie prête (le Maître du marteau) ne s'imprime pas : la
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
+  if (carte.volDeVie || carte.donne?.volDeVie) ajouter('volDeVie', 'Vol de vie');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
@@ -458,6 +466,7 @@ export function effetsEpuisesPourEntite(carte, entite) {
 
 /** Les motifs qui font reconnaître une ligne de règle, dans le texte français. */
 const MOTIFS_LIGNE = [
+  ['reactionTourAdverse', /\bembuscade\b/iu],
   ['traque', /\btraque\b/iu],
   ['butin', /\bbutin\b/iu],
   ['abordage', /\babordage\b/iu],
@@ -476,6 +485,7 @@ const MOTIFS_LIGNE = [
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
+  ['volDeVie', /\bvol de vie\b/iu],
   ['resonance', /\brésonance/iu],
   ['honneur', /\bharakiri\b|\bhonneur\b/iu],
   ['tribut', /\btribut\b/iu],
@@ -605,8 +615,10 @@ export function iconePourLigne(carte, ligne = '') {
 
 /** La définition de chaque effet, au féminin de « la créature » (ou de la carte). */
 export const EFFET_DEFINITIONS = {
+  reactionTourAdverse: 'Vous pouvez jouer cette carte pendant le tour adverse, en respectant les fenêtres de réponse.',
   envol: 'Ne peut être bloquée que par une créature avec Envol.',
   infiltration: 'Ne peut pas être bloquée.',
+  volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne autant de points de vie.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
@@ -650,6 +662,7 @@ export const EFFET_DEFINITIONS = {
 
 /** Les libellés tels qu’ils s’impriment en tête de phrase sur les fiches. */
 const LIBELLES_IMPRIMES = [
+  ['reactionTourAdverse', 'Embuscade'],
   ['coupRapide', 'Attaque ciblée'],
   ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
@@ -657,6 +670,7 @@ const LIBELLES_IMPRIMES = [
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],
   ['infiltration', 'Infiltration'],
+  ['volDeVie', 'Vol de vie'],
   ['rapidite', 'Rapidité'],
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive'],

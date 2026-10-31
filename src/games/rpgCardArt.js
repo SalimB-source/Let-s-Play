@@ -61,6 +61,7 @@ const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
   'general-du-croissant-noir': 'general-cavalier-v3',
+  'gardienne-du-croissant': 'gardien-croissant-lumiere-v1',
   'fleau-de-la-lune-noire': 'fleau-souls-v2',
   'danseuse-des-ombres-de-dune': 'lune-danseuse-v7',
   'souverain-de-la-lune-noire': 'lune-heros-v4',
@@ -289,6 +290,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // en feu — la même ruine de fjord sous la tempête. Peinte après la passe
   // commune, elle porte donc sa propre révision.
   'volva-soigneuse-furie': 'neige-furie-volva-v1',
+  'garde-du-trone-givre-furie': 'garde-trone-furie-v1',
   // Les deux furies du Corbeau des neuf nuits : même scène que leur peinture
   // intacte, marquée par le combat. La face du Berserk suit le recadrage de sa
   // peinture intacte — même scène, même cri, mais le crâne entier dégagé sous

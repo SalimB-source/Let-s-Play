@@ -1059,6 +1059,7 @@ function effetsAccordesParArme(arme) {
   const donne = arme.donne ?? (arme.effet?.type === 'arme' ? arme.effet : {});
   const effets = [];
   if (donne.infiltration) effets.push('Infiltration (ne peut pas être bloquée)');
+  if (donne.volDeVie) effets.push('Vol de vie (son contrôleur gagne autant de points de vie que les dégâts infligés)');
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
   if (donne.bouclier) effets.push('Bouclier');
@@ -3052,18 +3053,14 @@ export function TableCard({
         <span className="rpg-card__frost-glow" />
       </span>}
       <CardElementBadge carte={carte} />
-      {/* Les losanges de compteurs sont sous la couleur d'une carte mono,
-          sous le coût d'une hybride (ses deux pastilles occupent la gauche).
-          Ceux de la Jitte restent sur l'arme dans le moteur ; sa créature
-          porteuse les montre ici, sans texte ni bonus d'arme.
-          La cale, elle, ne suit pas ce partage : le prisonnier se lit SOUS les
-          couleurs, sur une hybride aussi (voir le losange ⛓ juste après). */}
-      {(entite.heures?.restants > 0 || (armeCarte && (entite.arme?.durabilite > 0 || entite.arme?.compteurs > 0)) || (entite.enCale && !hybride)) && (
+      {/* Les compteurs de durabilité et de cale se lisent sous les couleurs.
+          Les Heures et le sable restent sous le coût pour les hybrides. */}
+      {(entite.heures?.restants > 0 || (armeCarte && (entite.arme?.compteurs > 0 || (!hybride && entite.arme?.durabilite > 0))) || (entite.enCale && !hybride)) && (
         <span className={`rpg-card__compteurs${hybride ? ' rpg-card__compteurs--hybride' : ''}`} aria-hidden="true">
           {entite.heures?.restants > 0 && (
             <CompteurCarte type="heures" valeur={entite.heures.restants} />
           )}
-          {armeCarte && entite.arme?.durabilite > 0 && (
+          {!hybride && armeCarte && entite.arme?.durabilite > 0 && (
             <CompteurCarte
               type="durabilite"
               valeur={entite.arme.durabilite}
@@ -3080,14 +3077,22 @@ export function TableCard({
           )}
         </span>
       )}
-      {/* La cale d'une créature hybride : son bloc de couleur empile deux
-          pastilles à gauche, et le losange ⛓ se range dessous — le prisonnier
-          se lit avec les couleurs de son capteur, jamais avec son coût. */}
-      {entite.enCale && hybride && (
+      {/* Sur une hybride, un seul rang sous les deux couleurs accueille la
+          durabilité et la cale, côte à côte lorsqu'elles coexistent. */}
+      {hybride && (entite.enCale || (armeCarte && entite.arme?.durabilite > 0)) && (
         <span className="rpg-card__compteurs rpg-card__compteurs--cale" aria-hidden="true">
-          <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
-            <span>⛓</span>
-          </span>
+          {armeCarte && entite.arme?.durabilite > 0 && (
+            <CompteurCarte
+              type="durabilite"
+              valeur={entite.arme.durabilite}
+              titre={`${entite.arme.durabilite} compteur${entite.arme.durabilite > 1 ? 's' : ''} de durabilité`}
+            />
+          )}
+          {entite.enCale && (
+            <span className="rpg-card__compteur rpg-card__compteur--cale" data-compteur="cale" title={`Cale : ${entite.enCale.name}`}>
+              <span>⛓</span>
+            </span>
+          )}
         </span>
       )}
       <header className="rpg-card__title">
@@ -3102,7 +3107,7 @@ export function TableCard({
         <IconesCarte
           carte={carte}
           entite={entite}
-          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && (entite.arme?.durabilite > 0 || entite.arme?.compteurs > 0)))
+          className={`rpg-card-icones--colonne${hybride && (entite.heures?.restants > 0 || (armeCarte && entite.arme?.compteurs > 0))
             ? ' rpg-card-icones--sous-compteurs'
             : activation && cote === 'joueur' && onActiver ? ' rpg-card-icones--sous-activation' : ''}`}
         />
@@ -3561,7 +3566,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
      Fennec ou une Fériel n'impriment donc que leurs pastilles, un Faussoyeur
      écrit encore « Quand le Faussoyeur arrive : … ». Les sorts, armes, sites
      et terrains gardent leur texte : il dit ce que fait la carte. */
-  const lecture = effetsDetailles(carte);
+  const armesEquipees = estCreature ? armes.filter(Boolean) : [];
+  const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie);
+  const lecture = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
   const description = estCreature ? lecture.texte : effet;
   const descriptionLignes = cardEffectLines(description);
@@ -3587,7 +3594,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // La petite carte montre le nom et l'effet complet de chaque arme portée.
   // Ses bonus directs restent annoncés dans le libellé accessible de l'aperçu
   // (`effets d'équipement …`) : la fiche, elle, n'imprime plus que la carte.
-  const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const prisonniereCarte = prisonniere && prisonniere.id !== carte.id ? prisonniere : null;
   const details = (
@@ -3598,6 +3604,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>
       <PastillesCarte
         carte={carte}
+        pastilles={lecture.pastilles}
         className="rpg-hover-card-preview__pastilles"
         effetsEpuises={effetsEpuisesActifs}
         effetsInactifs={effetsInactifsActifs}

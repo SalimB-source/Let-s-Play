@@ -341,7 +341,7 @@
   background: linear-gradient(145deg, #426888, #1c344e);
 }
 .rpg-card__compteur--heures > span { color: #e8f6ff; }
-/* La cale du corsaire d'une créature HYBRIDE : son losange quitte le rang des
+/* Durabilité et cale d'une créature HYBRIDE : leurs losanges quittent le rang des
    autres compteurs (qui se rangent sous le coût, à droite) et se place sous le
    bloc de couleur, à gauche. Ce bloc empile deux pastilles — deux fois le
    repère, plus leur écart — : c'est cette hauteur qui décale le losange. */

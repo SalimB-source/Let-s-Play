@@ -25,3 +25,10 @@ test('Furie 1 accorde +1 attaque pendant que le Garde est blessé', () => {
   d.joueur.main.push('yamina'); assert.ok(rpgJouerCreature(d, 'joueur', 'yamina').ok);
   assert.equal(garde.atk, 2); assert.equal(garde.furieDeclenchee, false);
 });
+
+test('Le Garde possède son illustration de Furie', async () => {
+  const { cardArtFurie } = await import('../src/games/rpgCardArt.js');
+  const { existsSync } = await import('node:fs');
+  assert.equal(cardArtFurie('garde-du-trone-givre'), '/cards/garde-du-trone-givre-furie.jpg?v=garde-trone-furie-v1');
+  assert.ok(existsSync(new URL('../public/cards/garde-du-trone-givre-furie.jpg', import.meta.url)));
+});
