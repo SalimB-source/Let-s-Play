@@ -25,6 +25,8 @@ function parkingStallCenters(segmentStart) {
 function makeCity(scene) {
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
+  const sidewalkTileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 });
+  const sidewalkTileColors = [0x9d9890, 0xa9a39a, 0xb1aaa0, 0x969188, 0xa49e95];
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1d8a0 });
   const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xe9e5da });
   const parkingMarkMat = new THREE.MeshBasicMaterial({ color: 0xc9c5b5 });
@@ -50,6 +52,8 @@ function makeCity(scene) {
   const horizontalRoadPatchPositions = [];
   const verticalManholePositions = [];
   const horizontalManholePositions = [];
+  const verticalSidewalkTilePositions = [];
+  const horizontalSidewalkTilePositions = [];
   const parkedCarSpecs = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -135,6 +139,23 @@ function makeCity(scene) {
         horizontalManholePositions.push([p, axis + side * 1.7]);
       }
     }
+    // Dalles régulières sur les deux bandes de trottoir, avec quelques tons pierre.
+    for (const side of [-1, 1]) for (let row = 0; row < 2; row += 1) {
+      const crossOffset = row === 0 ? -0.8 : 0.8;
+      for (let along = -3 * BLOCK; along < 3 * BLOCK; along += 1.5) {
+        const tileColor = Math.abs((Math.floor((along + 3 * BLOCK) / 1.5) + (index + 3) * 11 + (side + 1) * 7 + row * 3) % sidewalkTileColors.length);
+        verticalSidewalkTilePositions.push([
+          axis + side * (ROAD_HALF + 1.6) + crossOffset,
+          along,
+          tileColor,
+        ]);
+        horizontalSidewalkTilePositions.push([
+          along,
+          axis + side * (ROAD_HALF + 1.6) + crossOffset,
+          tileColor,
+        ]);
+      }
+    }
   }
 
   const marker = new THREE.Object3D();
@@ -171,6 +192,22 @@ function makeCity(scene) {
   addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, horizontalManholePositions, 0.029);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, verticalManholePositions, 0.034);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, horizontalManholePositions, 0.035);
+  const addSidewalkTiles = (positions, geometry, y) => {
+    const tiles = new THREE.InstancedMesh(geometry, sidewalkTileMat, positions.length);
+    positions.forEach(([x, z, colorIndex], index) => {
+      marker.position.set(x, y, z);
+      marker.rotation.set(-Math.PI / 2, 0, 0);
+      marker.scale.set(1, 1, 1);
+      marker.updateMatrix();
+      tiles.setMatrixAt(index, marker.matrix);
+      tiles.setColorAt(index, new THREE.Color(sidewalkTileColors[colorIndex]));
+    });
+    tiles.instanceMatrix.needsUpdate = true;
+    if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
+    scene.add(tiles);
+  };
+  addSidewalkTiles(verticalSidewalkTilePositions, new THREE.PlaneGeometry(1.48, 1.4), 0.031);
+  addSidewalkTiles(horizontalSidewalkTilePositions, new THREE.PlaneGeometry(1.4, 1.48), 0.034);
 
   // Art-deco downtown and residential blocks, with varied setbacks, rooftops,
   // lit windows, shop awnings, palms, and corner street furniture.
