@@ -17,7 +17,9 @@ import './vice-city-free-roam.css';
 const BLOCK = 100;
 const ROAD_HALF = 7;
 const CANAL_HALF_WIDTH = 13;
-const BRIDGE_HALF_LENGTH = 38;
+// Long approach ramps crest at 5.8 m, leaving clearance for boats beneath the central arch.
+const BRIDGE_HALF_LENGTH = 112;
+const BRIDGE_ARCH_HALF_LENGTH = 22;
 const BRIDGE_HALF_WIDTH = ROAD_HALF + 0.8;
 const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_LIMIT = 3 * BLOCK + 54;
@@ -247,7 +249,7 @@ function makeCity(scene) {
     let elevation = viceCityRoadElevation(x, z);
     if (bridgeAcross <= ROAD_HALF + 6 && Math.abs(x) < BRIDGE_HALF_LENGTH) {
       const progress = (x + BRIDGE_HALF_LENGTH) / (BRIDGE_HALF_LENGTH * 2);
-      const arch = 1.35 * Math.sin(progress * Math.PI) ** 2;
+      const arch = 5.8 * Math.sin(progress * Math.PI) ** 2;
       const shoulder = bridgeAcross <= ROAD_HALF ? 1 : 1 - ((bridgeAcross - ROAD_HALF) / 6) ** 2;
       elevation = Math.max(elevation, arch * shoulder);
     }
@@ -279,8 +281,8 @@ function makeCity(scene) {
   for (let index = 0; index < groundPositions.count; index += 1) {
     const x = groundPositions.getX(index);
     const z = groundPositions.getZ(index);
-    const underBridge = Math.abs(x) < BRIDGE_HALF_LENGTH && Math.abs(z) < ROAD_HALF + 6;
-    groundPositions.setY(index, underBridge ? viceCityRoadElevation(x, z) : roadElevation(x, z));
+    const underBridgeOverCanal = Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) < ROAD_HALF + 6;
+    groundPositions.setY(index, underBridgeOverCanal ? viceCityRoadElevation(x, z) : roadElevation(x, z));
   }
   groundPositions.needsUpdate = true;
   groundGeometry.computeVertexNormals();
@@ -356,16 +358,39 @@ function makeCity(scene) {
   canalWater.position.set(0, -0.075, 0);
   canalWater.receiveShadow = true;
   scene.add(canalWater);
-  const canalWallMat = new THREE.MeshStandardMaterial({ color: 0x757b78, roughness: 0.9 });
+  const canalWallMat = new THREE.MeshStandardMaterial({ color: 0x757b78, roughness: 0.9, side: THREE.DoubleSide });
+  const canalWallLength = CITY_LIMIT * 2 + 100;
   for (const side of [-1, 1]) {
-    addBox(scene, canalWallMat, side * (CANAL_HALF_WIDTH + 0.35), -1.5, 0, 0.7, 1.65, CITY_LIMIT * 2 + 100);
+    const wallVertices = [];
+    const addWallQuad = (a, b, c, d) => wallVertices.push(...a, ...b, ...c, ...a, ...c, ...d);
+    const segments = Math.ceil(canalWallLength / 4);
+    const segmentLength = canalWallLength / segments;
+    const innerX = side * CANAL_HALF_WIDTH;
+    const outerX = side * (CANAL_HALF_WIDTH + 0.7);
+    for (let segment = 0; segment < segments; segment += 1) {
+      const z0 = -canalWallLength / 2 + segment * segmentLength;
+      const z1 = z0 + segmentLength;
+      const top0 = Math.max(0.15, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z0));
+      const top1 = Math.max(0.15, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z1));
+      const bottom = -1.5;
+      addWallQuad([innerX, bottom, z0], [innerX, bottom, z1], [innerX, top1, z1], [innerX, top0, z0]);
+      addWallQuad([outerX, bottom, z1], [outerX, bottom, z0], [outerX, top0, z0], [outerX, top1, z1]);
+      addWallQuad([innerX, top0, z0], [outerX, top0, z0], [outerX, top1, z1], [innerX, top1, z1]);
+    }
+    const wallGeometry = new THREE.BufferGeometry();
+    wallGeometry.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
+    wallGeometry.computeVertexNormals();
+    const canalWall = new THREE.Mesh(wallGeometry, canalWallMat);
+    canalWall.castShadow = true;
+    canalWall.receiveShadow = true;
+    scene.add(canalWall);
   }
   const bridgeRedMat = new THREE.MeshStandardMaterial({ color: 0xb72f37, roughness: 0.42, metalness: 0.58 });
   const bridgePoints = (side, offset) => {
     const points = [];
     for (let step = 0; step <= 24; step += 1) {
       const progress = step / 24;
-      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const x = -BRIDGE_ARCH_HALF_LENGTH + progress * BRIDGE_ARCH_HALF_LENGTH * 2;
       const y = roadElevation(x, 0) + offset;
       points.push(new THREE.Vector3(x, y, side));
     }
@@ -381,9 +406,38 @@ function makeCity(scene) {
     scene.add(beam);
   };
   const bridgeRodGeometry = new THREE.CylinderGeometry(1, 1, 1, 8);
-  const bridgeSpan = BRIDGE_HALF_LENGTH * 2;
+  const bridgeSpan = BRIDGE_ARCH_HALF_LENGTH * 2;
   for (const side of [-1, 1]) {
     const sideZ = side * (ROAD_HALF + 0.7);
+    const rampRailZ = side * (ROAD_HALF + 2.3);
+    const rampRailPoints = [];
+    for (let step = 0; step <= 72; step += 1) {
+      const progress = step / 72;
+      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const railBase = roadElevation(x, rampRailZ);
+      rampRailPoints.push(new THREE.Vector3(x, railBase + 0.95 * Math.sin(progress * Math.PI), rampRailZ));
+    }
+    const rampRail = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rampRailPoints), 144, 0.12, 7, false), bridgeRedMat,
+    );
+    rampRail.castShadow = true;
+    scene.add(rampRail);
+    const lowerRailPoints = rampRailPoints.map((point, index) => {
+      const progress = index / (rampRailPoints.length - 1);
+      return new THREE.Vector3(point.x, roadElevation(point.x, rampRailZ) + 0.32 * Math.sin(progress * Math.PI), rampRailZ);
+    });
+    const lowerRampRail = new THREE.Mesh(
+      new THREE.TubeGeometry(new THREE.CatmullRomCurve3(lowerRailPoints), 144, 0.085, 6, false), bridgeRedMat,
+    );
+    lowerRampRail.castShadow = true;
+    scene.add(lowerRampRail);
+    for (let postIndex = 1; postIndex < 16; postIndex += 1) {
+      const progress = postIndex / 16;
+      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const railBase = roadElevation(x, rampRailZ);
+      const railTop = railBase + 0.95 * Math.sin(progress * Math.PI);
+      addBridgeBeam(new THREE.Vector3(x, railBase + 0.08, rampRailZ), new THREE.Vector3(x, railTop, rampRailZ), 0.09);
+    }
     const archPoints = bridgePoints(sideZ, 2.4).map((point, index, points) => {
       const progress = index / (points.length - 1);
       point.y += 2.65 * Math.sin(progress * Math.PI);
@@ -397,8 +451,8 @@ function makeCity(scene) {
     lowerChord.castShadow = true;
     scene.add(lowerChord);
     for (let segment = 0; segment < 12; segment += 1) {
-      const x0 = -BRIDGE_HALF_LENGTH + bridgeSpan * segment / 12;
-      const x1 = -BRIDGE_HALF_LENGTH + bridgeSpan * (segment + 1) / 12;
+      const x0 = -BRIDGE_ARCH_HALF_LENGTH + bridgeSpan * segment / 12;
+      const x1 = -BRIDGE_ARCH_HALF_LENGTH + bridgeSpan * (segment + 1) / 12;
       const t0 = segment / 12;
       const t1 = (segment + 1) / 12;
       const deck0 = roadElevation(x0, 0) + 0.34;
@@ -1572,7 +1626,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const reverseMaxSpeed = Math.min(7, maxSpeed * 0.25);
     const acceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
-    vehicle.position.set(-48, 0, 0);
+    vehicle.position.set(-138, 0, 0);
     scene.add(vehicle);
     const trafficDirections = [
       { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
@@ -1620,7 +1674,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       };
     });
     const keys = new Set();
-    const state = { x: -48, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
+    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
