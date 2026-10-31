@@ -1238,7 +1238,7 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
   );
 }
 
-function CimetiereCarousel({ cartes, campLabel, onClose }) {
+export function CimetiereCarousel({ cartes, campLabel, onClose }) {
   const cartesDisponibles = cartes.map(cardById).filter(Boolean);
   const boutonFermerRef = useRef(null);
 
@@ -1270,9 +1270,8 @@ function CimetiereCarousel({ cartes, campLabel, onClose }) {
           onWheel={faireDefilerHorizontalement}
         >
           {cartesDisponibles.map((carte, index) => (
-            <div className="rpg-graveyard-carousel__item" role="listitem" key={`${carte.id}-${index}`}>
+            <div className="rpg-graveyard-carousel__item" role="listitem" data-card-id={carte.id} aria-label={carte.name} key={`${carte.id}-${index}`}>
               <HoverCardPreview carte={carte} variante="graveyard" />
-              <span className="rpg-graveyard-carousel__name">{carte.name}</span>
             </div>
           ))}
         </div>
@@ -9022,9 +9021,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (!apercuAppui && !apercuCatalogue && !cimetiereOuvert) return undefined;
     const surClavier = (event) => {
       if (event.key !== 'Escape') return;
-      if (cimetiereOuvert) fermerCimetiere();
-      else if (apercuCatalogue) fermerApercuCatalogue();
-      else fermerApercuAppui();
+      if (apercuCatalogue) fermerApercuCatalogue();
+      else if (apercuAppui) fermerApercuAppui();
+      else if (cimetiereOuvert) fermerCimetiere();
     };
     window.addEventListener('keydown', surClavier);
     return () => window.removeEventListener('keydown', surClavier);
