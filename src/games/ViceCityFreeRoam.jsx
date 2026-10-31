@@ -20,7 +20,12 @@ const CANAL_HALF_WIDTH = 20;
 // Long approach ramps crest at 5.8 m, leaving clearance for boats beneath the central arch.
 const BRIDGE_HALF_LENGTH = 112;
 const BRIDGE_ARCH_HALF_LENGTH = 22;
+const BRIDGE_RAIL_HALF_LENGTH = 38;
 const BRIDGE_HALF_WIDTH = ROAD_HALF + 0.8;
+const ROUNDABOUT_X = 200;
+const ROUNDABOUT_Z = 200;
+const ROUNDABOUT_OUTER_RADIUS = 25;
+const ROUNDABOUT_ISLAND_RADIUS = 9.8;
 const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_LIMIT = 3 * BLOCK + 54;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -384,8 +389,8 @@ function makeCity(scene) {
     for (let segment = 0; segment < segments; segment += 1) {
       const z0 = -canalWallLength / 2 + segment * segmentLength;
       const z1 = z0 + segmentLength;
-      const top0 = Math.max(0.15, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z0));
-      const top1 = Math.max(0.15, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z1));
+      const top0 = Math.max(1.25, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z0));
+      const top1 = Math.max(1.25, roadElevation(side * (CANAL_HALF_WIDTH + 0.35), z1));
       const bottom = -1.5;
       addWallQuad([innerX, bottom, z0], [innerX, bottom, z1], [innerX, top1, z1], [innerX, top0, z0]);
       addWallQuad([outerX, bottom, z1], [outerX, bottom, z0], [outerX, top0, z0], [outerX, top1, z1]);
@@ -427,7 +432,7 @@ function makeCity(scene) {
     const rampRailPoints = [];
     for (let step = 0; step <= 72; step += 1) {
       const progress = step / 72;
-      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const x = -BRIDGE_RAIL_HALF_LENGTH + progress * BRIDGE_RAIL_HALF_LENGTH * 2;
       const railBase = roadElevation(x, rampRailZ);
       rampRailPoints.push(new THREE.Vector3(x, railBase + 0.95 * Math.sin(progress * Math.PI), rampRailZ));
     }
@@ -447,7 +452,7 @@ function makeCity(scene) {
     scene.add(lowerRampRail);
     for (let postIndex = 1; postIndex < 16; postIndex += 1) {
       const progress = postIndex / 16;
-      const x = -BRIDGE_HALF_LENGTH + progress * BRIDGE_HALF_LENGTH * 2;
+      const x = -BRIDGE_RAIL_HALF_LENGTH + progress * BRIDGE_RAIL_HALF_LENGTH * 2;
       const railBase = roadElevation(x, rampRailZ);
       const railTop = railBase + 0.95 * Math.sin(progress * Math.PI);
       addBridgeBeam(new THREE.Vector3(x, railBase + 0.08, rampRailZ), new THREE.Vector3(x, railTop, rampRailZ), 0.09);
@@ -892,6 +897,24 @@ function makeCity(scene) {
   const ghettoTrimMat = new THREE.MeshStandardMaterial({ color: 0xe2d8c6, roughness: 0.84 });
   const ghettoWindowMat = new THREE.MeshStandardMaterial({ color: 0x426879, roughness: 0.28, metalness: 0.08 });
   const ghettoDoorMats = [0x59483b, 0x604344, 0x485247].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86 }));
+  const poolDeckMat = new THREE.MeshStandardMaterial({ color: 0xc8c0ae, roughness: 0.9 });
+  const poolCopingMat = new THREE.MeshStandardMaterial({ color: 0xe5dfce, roughness: 0.76 });
+  const poolTileMat = new THREE.MeshStandardMaterial({ color: 0x4d8f9b, roughness: 0.34, metalness: 0.08 });
+  const poolWaterMat = new THREE.MeshStandardMaterial({ color: 0x38b9ca, roughness: 0.16, metalness: 0.22 });
+  const addResidencePool = (parent, x, z) => {
+    addGroundPlane(parent, poolDeckMat, x, z, 6.8, 8.0, -0.035);
+    addBox(parent, poolTileMat, x, -0.18, z, 5.35, 0.3, 6.55);
+    for (const side of [-1, 1]) {
+      addBox(parent, poolCopingMat, x + side * 2.82, 0.08, z, 0.32, 0.22, 7.15);
+      addBox(parent, poolCopingMat, x, 0.08, z + side * 3.42, 5.3, 0.22, 0.32);
+    }
+    const water = new THREE.Mesh(new THREE.PlaneGeometry(4.95, 6.15), poolWaterMat);
+    water.rotation.x = -Math.PI / 2;
+    water.position.set(x, 0.13, z);
+    water.receiveShadow = true;
+    parent.add(water);
+    buildingFootprints.push({ x, z, halfWidth: 2.7, halfDepth: 3.3 });
+  };
   const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ) => {
     const width = 13 + random() * 3.5;
     const depth = 12 + random() * 3.5;
@@ -904,6 +927,10 @@ function makeCity(scene) {
     const roof = ghettoRoofMats[Math.floor(random() * ghettoRoofMats.length)];
     const door = ghettoDoorMats[Math.floor(random() * ghettoDoorMats.length)];
     const hasGarage = random() > 0.48;
+    const hasPool = random() < 0.26;
+    const poolOffset = Math.sign(slotX || 1) * (width / 2 + 3.8);
+    const requestedPoolX = x + poolOffset;
+    const poolX = Math.abs(requestedPoolX) < CANAL_HALF_WIDTH + 3.5 ? x - poolOffset : requestedPoolX;
     addBox(parent, facade, x, -0.02, z, width, wallHeight, depth, true);
     buildingFootprints.push({ x, z, halfWidth: width / 2, halfDepth: depth / 2 });
 
@@ -956,7 +983,17 @@ function makeCity(scene) {
         addBox(parent, ghettoTrimMat, x - width * 0.25, 0.3 + rib * 0.42, frontZ + frontSign * 0.22, 2.85, 0.045, 0.035);
       }
     }
-    if (random() > 0.28) addFencePerimeter(x, z + frontSign * 1.1, width / 2 + 2.4, depth / 2 + 2.6, frontSign);
+    const yardCenterZ = z + frontSign * 1.1;
+    if (random() > 0.28) {
+      if (hasPool) {
+        const minX = Math.min(x - width / 2 - 1, poolX - 3.4);
+        const maxX = Math.max(x + width / 2 + 1, poolX + 3.4);
+        addFencePerimeter((minX + maxX) / 2, yardCenterZ, (maxX - minX) / 2, Math.max(depth / 2 + 2.6, 4.5), frontSign);
+      } else {
+        addFencePerimeter(x, yardCenterZ, width / 2 + 2.4, depth / 2 + 2.6, frontSign);
+      }
+    }
+    if (hasPool) addResidencePool(parent, poolX, z);
     addGroundPlane(parent, courtyardPathMat, doorX, z + frontSign * (depth / 2 + 5.4), 2.3, 7.0, -0.032);
   };
   const addCourtyardAmenity = (parent, x, z, type) => {
@@ -1204,6 +1241,8 @@ function makeCity(scene) {
     for (let tuft = 0; tuft < 24; tuft += 1) {
       const tuftX = cx + (random() - 0.5) * 72;
       const tuftZ = cz + (random() - 0.5) * 72;
+      if (Math.abs(tuftX) < CANAL_HALF_WIDTH && Math.abs(tuftZ) > BRIDGE_HALF_WIDTH) continue;
+      if (Math.hypot(tuftX - ROUNDABOUT_X, tuftZ - ROUNDABOUT_Z) < ROUNDABOUT_OUTER_RADIUS + 3) continue;
       if (Math.abs(tuftX - cx) < 11.5 && Math.abs(tuftZ - cz) < 11.5) continue;
       if (buildingFootprints.some((building) => Math.abs(tuftX - building.x) < building.halfWidth + 0.25
         && Math.abs(tuftZ - building.z) < building.halfDepth + 0.25)) continue;
@@ -1224,17 +1263,97 @@ function makeCity(scene) {
       if (Math.abs(spot.x) < BRIDGE_HALF_LENGTH + 4 && Math.abs(spot.z) < ROAD_HALF + 1) continue;
       parkedCarSpecs.push({ ...spot, type: parkedType.id, width: parkedType.width, length: parkedType.length });
     }
-    // Palms and Deco lamp posts on block corners, kept outside the carriageway.
+    // Palms and Deco lamp posts on block corners, kept out of the river and roundabout.
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const px = cx + sx * 37;
       const pz = cz + sz * 37;
-      addPalmTree(lot, px, pz, 8.2);
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 6, 6), new THREE.MeshStandardMaterial({ color: 0x34383b, metalness: 0.7, roughness: 0.4 }));
-      pole.position.set(px + sx * 5, 3, pz + sz * 5); lot.add(pole);
-      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd49a, toneMapped: false }));
-      lamp.position.set(px + sx * 5, 6.1, pz + sz * 5); lot.add(lamp);
+      const lampX = px + sx * 5;
+      const lampZ = pz + sz * 5;
+      const palmInWater = Math.abs(px) < CANAL_HALF_WIDTH && Math.abs(pz) > BRIDGE_HALF_WIDTH;
+      const lampInWater = Math.abs(lampX) < CANAL_HALF_WIDTH && Math.abs(lampZ) > BRIDGE_HALF_WIDTH;
+      const nearRoundabout = Math.hypot(px - ROUNDABOUT_X, pz - ROUNDABOUT_Z) < ROUNDABOUT_OUTER_RADIUS + 4;
+      const lampNearRoundabout = Math.hypot(lampX - ROUNDABOUT_X, lampZ - ROUNDABOUT_Z) < ROUNDABOUT_OUTER_RADIUS + 4;
+      if (!palmInWater && !nearRoundabout) addPalmTree(lot, px, pz, 8.2);
+      if (!lampInWater && !lampNearRoundabout) {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 6, 6), new THREE.MeshStandardMaterial({ color: 0x34383b, metalness: 0.7, roughness: 0.4 }));
+        pole.position.set(lampX, 3, lampZ); lot.add(pole);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd49a, toneMapped: false }));
+        lamp.position.set(lampX, 6.1, lampZ); lot.add(lamp);
+      }
     }
   }
+
+  const roundaboutRoad = new THREE.Mesh(
+    new THREE.CylinderGeometry(ROUNDABOUT_OUTER_RADIUS, ROUNDABOUT_OUTER_RADIUS, 0.16, 96),
+    new THREE.MeshStandardMaterial({ color: 0x343432, roughness: 0.94 }),
+  );
+  roundaboutRoad.position.set(ROUNDABOUT_X, 0.03, ROUNDABOUT_Z);
+  roundaboutRoad.receiveShadow = true;
+  scene.add(roundaboutRoad);
+  const outerRoundaboutLine = new THREE.Mesh(new THREE.RingGeometry(23.1, 23.35, 96), lineMat);
+  outerRoundaboutLine.rotation.x = -Math.PI / 2;
+  outerRoundaboutLine.position.set(ROUNDABOUT_X, 0.116, ROUNDABOUT_Z);
+  scene.add(outerRoundaboutLine);
+  const innerRoundaboutLine = new THREE.Mesh(new THREE.RingGeometry(10.8, 11.05, 96), lineMat);
+  innerRoundaboutLine.rotation.x = -Math.PI / 2;
+  innerRoundaboutLine.position.set(ROUNDABOUT_X, 0.116, ROUNDABOUT_Z);
+  scene.add(innerRoundaboutLine);
+  const islandCurbMat = new THREE.MeshStandardMaterial({ color: 0xd0c7b3, roughness: 0.86 });
+  const islandCurb = new THREE.Mesh(new THREE.CylinderGeometry(10.55, 10.75, 0.42, 96), islandCurbMat);
+  islandCurb.position.set(ROUNDABOUT_X, 0.31, ROUNDABOUT_Z);
+  islandCurb.castShadow = true;
+  islandCurb.receiveShadow = true;
+  scene.add(islandCurb);
+  const islandLawn = new THREE.Mesh(
+    new THREE.CylinderGeometry(9.92, 9.92, 0.24, 96),
+    new THREE.MeshStandardMaterial({ color: 0x55764b, roughness: 0.98 }),
+  );
+  islandLawn.position.set(ROUNDABOUT_X, 0.42, ROUNDABOUT_Z);
+  islandLawn.receiveShadow = true;
+  scene.add(islandLawn);
+
+  const statueStoneMat = new THREE.MeshStandardMaterial({ color: 0xc7b99d, roughness: 0.82 });
+  const statueBronzeMat = new THREE.MeshStandardMaterial({ color: 0x9a6338, roughness: 0.36, metalness: 0.66 });
+  const statueFlameMat = new THREE.MeshBasicMaterial({ color: 0xffbd4d, toneMapped: false });
+  const statueBase = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.45, 0.62, 12), statueStoneMat);
+  statueBase.position.set(ROUNDABOUT_X, 0.76, ROUNDABOUT_Z);
+  statueBase.castShadow = true;
+  scene.add(statueBase);
+  const statuePedestal = new THREE.Mesh(new THREE.CylinderGeometry(2.65, 3.35, 4.45, 12), statueStoneMat);
+  statuePedestal.position.set(ROUNDABOUT_X, 3.295, ROUNDABOUT_Z);
+  statuePedestal.castShadow = true;
+  statuePedestal.receiveShadow = true;
+  scene.add(statuePedestal);
+  const statueCap = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.48, 12), statueStoneMat);
+  statueCap.position.set(ROUNDABOUT_X, 5.76, ROUNDABOUT_Z);
+  statueCap.castShadow = true;
+  scene.add(statueCap);
+  addBox(scene, statueStoneMat, ROUNDABOUT_X, 2.0, ROUNDABOUT_Z - 3.02, 1.8, 1.0, 0.12, true);
+  const addStatueLimb = (start, end, radius) => {
+    const direction = new THREE.Vector3().subVectors(end, start);
+    const limb = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.82, radius, direction.length(), 10), statueBronzeMat);
+    limb.position.copy(start).add(end).multiplyScalar(0.5);
+    limb.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    limb.castShadow = true;
+    scene.add(limb);
+  };
+  const statueY = 6.0;
+  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X - 0.58, statueY, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X - 0.62, 8.75, ROUNDABOUT_Z), 0.42);
+  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 0.58, statueY, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 0.62, 8.75, ROUNDABOUT_Z), 0.42);
+  addBox(scene, statueBronzeMat, ROUNDABOUT_X, 8.45, ROUNDABOUT_Z, 1.95, 3.6, 1.35, true);
+  const statueHead = new THREE.Mesh(new THREE.SphereGeometry(0.86, 16, 12), statueBronzeMat);
+  statueHead.position.set(ROUNDABOUT_X, 12.53, ROUNDABOUT_Z);
+  statueHead.castShadow = true;
+  scene.add(statueHead);
+  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X - 0.82, 11.0, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X - 2.7, 9.35, ROUNDABOUT_Z), 0.38);
+  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 0.82, 11.0, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 2.05, 12.25, ROUNDABOUT_Z), 0.4);
+  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 2.05, 12.25, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 2.45, 14.15, ROUNDABOUT_Z), 0.24);
+  const statueTorch = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 10), statueFlameMat);
+  statueTorch.position.set(ROUNDABOUT_X + 2.45, 14.62, ROUNDABOUT_Z);
+  statueTorch.scale.set(0.72, 1.4, 0.72);
+  scene.add(statueTorch);
+  const roundaboutIsland = { x: ROUNDABOUT_X, z: ROUNDABOUT_Z, radius: ROUNDABOUT_ISLAND_RADIUS };
+
   // Herbe stylisée instanciée : beaucoup de petites touffes pour casser l'aspect plat des pelouses.
   if (grassTuftPositions.length) {
     const grassBlades = new THREE.InstancedMesh(new THREE.ConeGeometry(0.075, 0.4, 4), grassBladeMat, grassTuftPositions.length * 3);
@@ -1323,12 +1442,15 @@ function makeCity(scene) {
     const intersection = { ix, iz, signals: [], lastX: null, lastZ: null };
     const x = ix * BLOCK;
     const z = iz * BLOCK;
+    const isBridgeApproachIntersection = iz === 0 && Math.abs(x) <= BRIDGE_HALF_LENGTH + 8;
+    const isRoundaboutIntersection = ix === 2 && iz === 2;
     const approaches = [
       { axis: 'x', x: x - 8.5, z: z + 8.5, yaw: -Math.PI / 2 },
       { axis: 'x', x: x + 8.5, z: z - 8.5, yaw: Math.PI / 2 },
       { axis: 'z', x: x - 8.5, z: z - 8.5, yaw: Math.PI },
       { axis: 'z', x: x + 8.5, z: z + 8.5, yaw: 0 },
-    ].filter((approach) => ix !== 0 || approach.axis === 'x');
+    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection
+      && (ix !== 0 || approach.axis === 'x'));
     for (const originalApproach of approaches) {
       const approach = ix === 0
         ? { ...originalApproach, x: Math.sign(originalApproach.x) * (CANAL_HALF_WIDTH + 1.7) }
@@ -1346,7 +1468,8 @@ function makeCity(scene) {
       { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - mastSideOffset },
       { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - mastSideOffset, supportZ: z - 18 },
       { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
-    ].filter((approach) => ix !== 0 || (iz === 0 && approach.axis === 'x'));
+    ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection
+      && (ix !== 0 || (iz === 0 && approach.axis === 'x')));
     for (const approach of overheadApproaches) {
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
       const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
@@ -1616,7 +1739,7 @@ function makeCity(scene) {
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
-    roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, breakFencesAt,
+    roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, roundaboutIsland, breakFencesAt,
   };
 }
 
@@ -1670,7 +1793,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const withinDirection = index % 2;
       let routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
       if (directionSpec.axis === 'x') routeIndex = 0;
-      else if (routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
+      else if (Math.abs(routeIndex) === 2 || routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
       const crossAxis = directionSpec.axis === 'x'
         ? routeIndex * BLOCK + directionSpec.direction * 2.35
         : routeIndex * BLOCK - directionSpec.direction * 2.35;
@@ -1721,7 +1844,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         let distanceToControl = distanceToSignal;
         const intersectionXIndex = traffic.axis === 'x' ? nextIndex : Math.round(traffic.crossAxis / BLOCK);
         const intersectionZIndex = traffic.axis === 'z' ? nextIndex : Math.round(traffic.crossAxis / BLOCK);
-        let signalState = viceCityTrafficSignalState(traffic.axis, intersectionXIndex, intersectionZIndex, state.time);
+        const bridgeApproach = intersectionZIndex === 0
+          && Math.abs(intersectionXIndex * BLOCK) <= BRIDGE_HALF_LENGTH + 8;
+        const roundaboutApproach = intersectionXIndex === 2 && intersectionZIndex === 2;
+        let signalState = bridgeApproach || roundaboutApproach
+          ? 'green'
+          : viceCityTrafficSignalState(traffic.axis, intersectionXIndex, intersectionZIndex, state.time);
         const approachKey = `${traffic.axis}:${intersectionXIndex}:${intersectionZIndex}`;
         if (traffic.approachKey !== approachKey) {
           traffic.approachKey = approachKey;
@@ -1804,6 +1932,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const isPositionBlocked = (x, z) => {
       if (city.isCanalBlocked(x, z)) return true;
+      if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.radius) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
         && Math.abs(z - building.z) < building.halfDepth + BUILDING_COLLISION_MARGIN)) return true;
