@@ -997,8 +997,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 5, atk: 4, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Quand l’Archonte arrive : il inflige 2 dégâts à une créature adverse ciblée.',
+    arrivee: { type: 'buff', atk: 2, def: 0, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
+    text: 'Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
     flavor: 'Il mesure les siècles au nombre des royaumes engloutis.',
   },
   {
@@ -1006,8 +1006,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
-    rapidite: true, infiltration: true,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée.',
+    rapidite: true, infiltration: true, volDeVie: true,
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez autant de points de vie.',
     flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
   },
   {

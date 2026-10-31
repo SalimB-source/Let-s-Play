@@ -3814,7 +3814,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => {
-          if (entite.id === sauf || rpgEstProtegee(entite, sourceElement) || horsSort(entite)) return false;
+          if ((!effet.inclutSource && entite.id === sauf) || rpgEstProtegee(entite, sourceElement) || horsSort(entite)) return false;
+          if (effet.typeSeulement && !cardHasPrintedType(entite.carteId, effet.typeSeulement)) return false;
           // Le Grand Débarquement ne renforce que les cales pleines : une
           // créature sans prise à bord ne débarque personne.
           if (effet.caleOccupeeSeulement && !entite.enCale) return false;

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColorCost, cardColors, cardHasPrintedType, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant } from '../src/games/rpgDuel.js';
+import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgLancerAttaque, rpgFinDeTour } from '../src/games/rpgDuel.js';
 
 const ids = ['archonte-du-sablier-noir', 'danseuse-des-ombres-de-dune', 'veilleur-du-dernier-crepuscule'];
 function duel() {
@@ -28,11 +28,22 @@ test('La Danseuse attaque immédiatement et ne peut pas être bloquée', () => {
   assert.ok(rpgPeutAttaquer(danseuse));
   assert.equal(rpgPeutBloquerAttaquant(chien, danseuse), false);
 });
-test('L’Archonte inflige deux dégâts à son arrivée', () => {
-  const d = duel(); d.joueur.main.push(ids[0]); d.sorcier.main.push('dune-marchante');
-  const cible = rpgJouerCreature(d, 'sorcier', 'dune-marchante').entite;
-  assert.ok(rpgJouerCreature(d, 'joueur', ids[0], cible.id).ok);
-  assert.equal(cible.pv, 2);
+test('L’Archonte renforce les Vampires alliés, lui compris, jusqu’à la fin du tour', () => {
+  const d = duel(); d.joueur.main.push(ids[0], ids[1], 'chien-du-guet'); d.sorcier.main.push('sentinelle-des-sables');
+  const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
+  const chien = rpgJouerCreature(d, 'joueur', 'chien-du-guet').entite;
+  const ennemi = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables').entite;
+  const archonte = rpgJouerCreature(d, 'joueur', ids[0]).entite;
+  assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [4, 6, 2, 3]);
+  rpgFinDeTour(d);
+  assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [2, 4, 2, 3]);
+});
+test('La Danseuse rend les dégâts qu’elle inflige en points de vie', () => {
+  const d = duel(); d.joueur.main.push(ids[1]); d.joueur.pv = 10;
+  const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
+  assert.ok(danseuse.volDeVie);
+  assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
+  assert.equal(d.joueur.pv, 12);
 });
 test('Le Veilleur possède Contre-attaque', () => {
   const d = duel(); d.joueur.main.push(ids[2]);
