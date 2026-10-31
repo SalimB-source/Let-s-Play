@@ -99,3 +99,26 @@ test('La lance additionne son critique à celui du porteur sans réduire son mul
   assert.ok(rpgJouerArme(d, 'joueur', ids[2], porteur.id).ok);
   assert.deepEqual(porteur.coupCritique, { chance: 0.25, fois: 4 });
 });
+test('Le sabre confère le Vol de vie pour son attaque puis le perd à sa destruction', () => {
+  const d = duel(); const chien = poser(d, 'joueur', 'chien-du-guet');
+  d.joueur.pv = 10; d.joueur.main.push(ids[2]);
+  assert.ok(rpgJouerArme(d, 'joueur', ids[2], chien.id).ok);
+  assert.equal(chien.volDeVie, true); chien.ready = true;
+  assert.ok(rpgLancerAttaque(d, 'joueur', [chien.id], {}).ok);
+  assert.equal(d.joueur.pv, 14);
+  assert.equal(chien.arme, null); assert.equal(chien.volDeVie, false);
+});
+test('Le départ du sabre ne retire pas le Vol de vie imprimé de la Danseuse', () => {
+  const d = duel(); const danseuse = poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
+  d.joueur.main.push(ids[2], ids[3]);
+  assert.ok(rpgJouerArme(d, 'joueur', ids[2], danseuse.id).ok);
+  assert.ok(rpgJouerArme(d, 'joueur', ids[3], danseuse.id).ok);
+  assert.equal(danseuse.volDeVie, true);
+});
+test('Le sabre rend aussi les dégâts infligés en défendant, même si le porteur meurt', () => {
+  const d = duel(); const chien = poser(d, 'joueur', 'chien-du-guet');
+  const attaquant = poser(d, 'sorcier', 'dune-marchante'); attaquant.atk = 3; attaquant.ready = true;
+  d.joueur.pv = 10; d.joueur.main.push(ids[2]); assert.ok(rpgJouerArme(d, 'joueur', ids[2], chien.id).ok);
+  assert.ok(rpgLancerAttaque(d, 'sorcier', [attaquant.id], { [attaquant.id]: [chien.id] }).ok);
+  assert.equal(d.joueur.pv, 14); assert.ok(!d.joueur.creatures.includes(chien));
+});

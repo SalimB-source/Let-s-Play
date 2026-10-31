@@ -1040,7 +1040,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'veilleuse-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
-    cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'gel', cible: 'creature' },
     text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
@@ -2432,8 +2432,8 @@ export const RPG_ARME_CARDS = [
     id: 'sabre-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Sabre du croissant noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
-    bonus: { atk: 2, def: 0 }, donne: { infiltration: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration : il ne peut pas être bloqué. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
+    bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
+    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie : il ne peut pas être bloqué et vous gagnez autant de points de vie que les dégâts qu’il inflige. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {

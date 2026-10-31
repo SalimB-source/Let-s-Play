@@ -59,3 +59,9 @@ test('En PvP, le Traqueur réagit à une attaque et résout sa cible différée'
   assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: cible.id }).ok);
   assert.ok(d.sorcier.main.includes('dune-marchante'));
 });
+test('La Veilleuse est à la fois Viking et Vampire', async () => {
+  const { cardHasPrintedType } = await import('../src/games/rpgCards.js');
+  const veilleuse = cardById(ids[5]);
+  assert.ok(cardHasPrintedType(veilleuse, 'Viking'));
+  assert.ok(cardHasPrintedType(veilleuse, 'Vampire'));
+});

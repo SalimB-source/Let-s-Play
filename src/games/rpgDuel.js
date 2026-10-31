@@ -1996,6 +1996,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.esquive) recalculerEsquive(entite);
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
+  if (carteArme.donne?.volDeVie) entite.volDeVie = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.coupCritique) recalculerCoupCritique(entite);
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
@@ -2065,6 +2066,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
+  if (carteArme.donne?.volDeVie) entite.volDeVie = Boolean(duelCardById(entite.carteId)?.volDeVie);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
   if (carteArme.coutPorteur) {
