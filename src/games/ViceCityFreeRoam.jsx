@@ -1005,7 +1005,7 @@ function makeCity(scene) {
     const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(body.spec.width, body.spec.length);
     return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
   };
-  const applyParkedCarImpact = (x, z, heading, speed, steer) => {
+  const applyParkedCarImpact = (x, z, heading, speed, steer, dt = 1 / 60) => {
     let hitCount = 0;
     const direction = Math.sign(speed) || 1;
     for (const body of parkedCarBodies) {
@@ -1288,7 +1288,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const nextX = state.x + forward.x * state.speed * dt;
       const nextZ = state.z + forward.z * state.speed * dt;
       if (city.breakFencesAt(nextX, nextZ) > 0) state.speed *= 0.88;
-      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer);
+      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
       // Conduite libre partout dans la ville : les trottoirs et les espaces
       // ouverts restent franchissables, seuls les bâtiments et véhicules garés bloquent.
       if (!isPositionBlocked(nextX, nextZ)) {

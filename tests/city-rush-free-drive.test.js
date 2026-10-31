@@ -135,6 +135,7 @@ test('impact : pousse une voiture et continue à la déplacer si le joueur insis
   const truckImpact = viceCityFreeDriveParkedCarImpulse(8, 1.9, 1 / 60, true);
   assert.ok(initialImpact > continuedPush && continuedPush > 0);
   assert.ok(truckImpact < initialImpact, 'un véhicule lourd est plus difficile à pousser');
+  assert.ok(Number.isFinite(viceCityFreeDriveParkedCarImpulse(3, 1, undefined, false)));
   assert.equal(viceCityFreeDriveParkedCarImpulse(0, 1, 1 / 60, true), 0);
 });
 

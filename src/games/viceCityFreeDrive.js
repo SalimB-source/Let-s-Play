@@ -17,7 +17,7 @@ export function viceCityFreeDriveParkedCarHitbox(width = 1.94, length = 4) {
 }
 
 /** One impact impulse plus steady pushing while the player keeps contact. */
-export function viceCityFreeDriveParkedCarImpulse(speed, mass, dt, firstContact) {
+export function viceCityFreeDriveParkedCarImpulse(speed, mass, dt = 1 / 60, firstContact = false) {
   const impactSpeed = Math.abs(Number(speed) || 0);
   if (impactSpeed <= 0.25) return 0;
   const safeMass = Math.max(0.2, Number(mass) || 1);
