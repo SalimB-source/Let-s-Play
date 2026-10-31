@@ -57,6 +57,9 @@ function makeCity(scene) {
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
+  const buildingFootprints = [];
+  const sidewalkRegions = [];
+  const lotRegions = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
     mesh.position.set(x, y + h / 2, z);
@@ -153,11 +156,13 @@ function makeCity(scene) {
         sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
         sidewalkV.receiveShadow = true;
         scene.add(sidewalkV);
+        sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
         const sidewalkH = new THREE.Mesh(horizontalSidewalkGeometry, sidewalkMat);
         sidewalkH.rotation.x = -Math.PI / 2;
         sidewalkH.position.set(segmentCenter, sidewalkHeight, axis + sidewalkOffset);
         sidewalkH.receiveShadow = true;
         scene.add(sidewalkH);
+        sidewalkRegions.push({ x: segmentCenter, z: axis + sidewalkOffset, halfWidth: sidewalkSegmentLength / 2, halfDepth: 1.6 });
         addBox(scene, curbMat, axis + side * (ROAD_HALF - 0.1), 0, segmentCenter, 0.2, sidewalkHeight, sidewalkSegmentLength);
         addBox(scene, curbMat, segmentCenter, 0, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, sidewalkHeight, 0.2);
 
@@ -187,6 +192,7 @@ function makeCity(scene) {
         corner.position.set(centerX, sidewalkHeight, centerZ);
         corner.receiveShadow = true;
         scene.add(corner);
+        sidewalkRegions.push({ x: centerX, z: centerZ, halfWidth: 1.6, halfDepth: 1.6 });
         for (let rowX = 0; rowX < 2; rowX += 1) for (let rowZ = 0; rowZ < 2; rowZ += 1) {
           const tileColor = Math.abs((xAxisIndex * 13 + zAxisIndex * 7 + (sideX + 1) * 3 + (sideZ + 1) * 5 + rowX * 2 + rowZ) % sidewalkTileColors.length);
           cornerSidewalkTilePositions.push([
@@ -278,6 +284,7 @@ function makeCity(scene) {
     hardstand.position.set(cx, -0.065, cz);
     hardstand.receiveShadow = true;
     lot.add(hardstand);
+    lotRegions.push({ x: cx, z: cz, halfWidth: 38, halfDepth: 38 });
     // Parcelles plus serrées : plusieurs commerces et immeubles bordent chaque bloc.
     const count = 2 + Math.floor(random() * 3);
     const buildingSlots = [[-27, -27], [27, -27], [-27, 27], [27, 27]];
@@ -300,6 +307,7 @@ function makeCity(scene) {
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
       building.userData.cityBuilding = true;
+      buildingFootprints.push({ x, z, halfWidth: width / 2, halfDepth: depth / 2 });
       // Roof parapet and stepped art-deco crown.
       const capMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.78), roughness: 0.88 });
       addBox(lot, capMat, x, height + 0.1, z, width + 0.7, 0.7, depth + 0.7);
@@ -489,7 +497,15 @@ function makeCity(scene) {
   addWindowInstances(litSideWindowPositions, windowMat, Math.PI / 2);
   addWindowInstances(blueSideWindowPositions, blueWindow, Math.PI / 2);
   addWindowInstances(darkSideWindowPositions, darkWindow, Math.PI / 2);
-  return { ground, roadMat, sidewalkMat };
+  const insideRegion = (region, x, z) => Math.abs(x - region.x) <= region.halfWidth && Math.abs(z - region.z) <= region.halfDepth;
+  const surfaceHeight = (x, z) => {
+    if (sidewalkRegions.some((region) => insideRegion(region, x, z))) return sidewalkHeight;
+    if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
+    const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
+    const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
+    return roadX || roadZ ? 0 : -0.12;
+  };
+  return { ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, surfaceHeight };
 }
 
 export default function ViceCityFreeRoam({ carId, onExit }) {
@@ -523,7 +539,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.left = -170; sun.shadow.camera.right = 170; sun.shadow.camera.top = 170; sun.shadow.camera.bottom = -170;
     scene.add(sun);
-    makeCity(scene);
+    const city = makeCity(scene);
 
     const profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
     const maxSpeed = 35 * profile.powerMultiplier;
@@ -553,6 +569,21 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
+    const isPositionBlocked = (x, z) => {
+      const hitsBuilding = city.buildingFootprints.some((building) =>
+        Math.abs(x - building.x) < building.halfWidth + 2.1
+        && Math.abs(z - building.z) < building.halfDepth + 2.1);
+      if (hitsBuilding) return true;
+      return city.parkedCarSpecs.some((car) => {
+        const dx = x - car.x;
+        const dz = z - car.z;
+        const cosine = Math.cos(car.yaw);
+        const sine = Math.sin(car.yaw);
+        const localX = dx * cosine - dz * sine;
+        const localZ = dx * sine + dz * cosine;
+        return Math.abs(localX) < 2.0 && Math.abs(localZ) < 4.2;
+      });
+    };
     let frame = 0; let last = performance.now(); let hudAt = 0;
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
@@ -585,18 +616,24 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
       const nextX = state.x + forward.x * state.speed * dt;
       const nextZ = state.z + forward.z * state.speed * dt;
-      // Buildings occupy the blocks between streets. Keep the car on a road
-      // corridor, but let it cross freely at every perpendicular junction.
-      const roadX = Math.abs(nextX - Math.round(nextX / BLOCK) * BLOCK) <= ROAD_HALF - 1.5;
-      const roadZ = Math.abs(nextZ - Math.round(nextZ / BLOCK) * BLOCK) <= ROAD_HALF - 1.5;
-      const junctionX = Math.abs(nextX - Math.round(nextX / BLOCK) * BLOCK) < ROAD_HALF + 2;
-      const junctionZ = Math.abs(nextZ - Math.round(nextZ / BLOCK) * BLOCK) < ROAD_HALF + 2;
-      if (roadX || roadZ || (junctionX && junctionZ)) { state.x = nextX; state.z = nextZ; }
-      else { state.speed *= 0.25; }
+      // Conduite libre partout dans la ville : les trottoirs et les espaces
+      // ouverts restent franchissables, seuls les bâtiments et véhicules garés bloquent.
+      if (!isPositionBlocked(nextX, nextZ)) {
+        state.x = nextX;
+        state.z = nextZ;
+      } else {
+        const deltaX = nextX - state.x;
+        const deltaZ = nextZ - state.z;
+        const canSlideX = Math.abs(deltaX) > 1e-6 && !isPositionBlocked(nextX, state.z);
+        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isPositionBlocked(state.x, nextZ);
+        if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
+        else if (canSlideZ) state.z = nextZ;
+        state.speed *= canSlideX || canSlideZ ? 0.72 : 0.18;
+      }
       if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
         state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
       }
-      vehicle.position.set(state.x, 0, state.z);
+      vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
       vehicle.rotation.y = -state.heading;
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.56, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
