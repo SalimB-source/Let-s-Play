@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { CITY_RUSH_CARS } from './cityRushRules.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { viceCityFreeDriveSpeedStep } from './viceCityFreeDrive.js';
+import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
@@ -57,6 +58,8 @@ function makeCity(scene) {
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
+  const trafficIntersections = [];
+  const trafficSignalSpecs = [];
   const fenceSegments = [];
   const grassTuftPositions = [];
   const buildingFootprints = [];
@@ -746,6 +749,85 @@ function makeCity(scene) {
   addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), headlamp, lights(true));
   addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), tailLamp, lights(false));
 
+  const signalPoleMat = new THREE.MeshStandardMaterial({ color: 0x343a3c, roughness: 0.58, metalness: 0.64 });
+  const signalHousingMat = new THREE.MeshStandardMaterial({ color: 0x171c20, roughness: 0.78, metalness: 0.12 });
+  const signalLensMat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, toneMapped: false });
+  for (let ix = -3; ix <= 3; ix += 1) for (let iz = -3; iz <= 3; iz += 1) {
+    const intersection = { ix, iz, signals: [], lastX: null, lastZ: null };
+    const x = ix * BLOCK;
+    const z = iz * BLOCK;
+    const approaches = [
+      { axis: 'x', x: x - 8.5, z: z + 8.5, yaw: -Math.PI / 2 },
+      { axis: 'x', x: x + 8.5, z: z - 8.5, yaw: Math.PI / 2 },
+      { axis: 'z', x: x - 8.5, z: z - 8.5, yaw: Math.PI },
+      { axis: 'z', x: x + 8.5, z: z + 8.5, yaw: 0 },
+    ];
+    for (const approach of approaches) {
+      const lightIndex = trafficSignalSpecs.length;
+      const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
+      trafficSignalSpecs.push(spec);
+      intersection.signals.push(spec);
+    }
+    trafficIntersections.push(intersection);
+  }
+  const trafficSignalPoles = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.095, 0.13, 4.55, 8), signalPoleMat, trafficSignalSpecs.length,
+  );
+  const trafficSignalHousings = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.56, 1.5, 0.42), signalHousingMat, trafficSignalSpecs.length,
+  );
+  const trafficSignalLenses = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.145, 10, 8), signalLensMat, trafficSignalSpecs.length * 3,
+  );
+  const setTrafficLightInstance = (mesh, index, spec, localPosition = [0, 0, 0]) => {
+    carRoot.position.set(spec.x, 0, spec.z);
+    carRoot.rotation.set(0, spec.yaw, 0);
+    carRoot.updateMatrix();
+    carPart.position.set(...localPosition);
+    carPart.rotation.set(0, 0, 0);
+    carPart.scale.set(1, 1, 1);
+    carPart.updateMatrix();
+    carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix);
+    mesh.setMatrixAt(index, carMatrix);
+  };
+  trafficSignalSpecs.forEach((spec, index) => {
+    setTrafficLightInstance(trafficSignalPoles, index, spec, [0, 2.275, 0]);
+    setTrafficLightInstance(trafficSignalHousings, index, spec, [0, 4.05, 0]);
+    for (const [colorIndex, y] of [[0, 4.48], [1, 4.05], [2, 3.62]]) {
+      setTrafficLightInstance(trafficSignalLenses, index * 3 + colorIndex, spec, [0, y, 0.245]);
+    }
+  });
+  for (const mesh of [trafficSignalPoles, trafficSignalHousings, trafficSignalLenses]) {
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.castShadow = mesh !== trafficSignalLenses;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  }
+  const setSignalLens = (index, state, lamp) => {
+    const active = state === lamp;
+    const colors = { red: active ? 0xff332b : 0x4b2524, yellow: active ? 0xffc238 : 0x4a3a20, green: active ? 0x42ef75 : 0x1c402b };
+    trafficSignalLenses.setColorAt(index, new THREE.Color(colors[lamp]));
+  };
+  const updateTrafficSignals = (elapsed) => {
+    let changed = false;
+    for (const intersection of trafficIntersections) {
+      const stateX = viceCityTrafficSignalState('x', intersection.ix, intersection.iz, elapsed);
+      const stateZ = viceCityTrafficSignalState('z', intersection.ix, intersection.iz, elapsed);
+      if (stateX === intersection.lastX && stateZ === intersection.lastZ) continue;
+      intersection.lastX = stateX;
+      intersection.lastZ = stateZ;
+      for (const signal of intersection.signals) {
+        const state = signal.axis === 'x' ? stateX : stateZ;
+        setSignalLens(signal.lensIndices.red, state, 'red');
+        setSignalLens(signal.lensIndices.yellow, state, 'yellow');
+        setSignalLens(signal.lensIndices.green, state, 'green');
+      }
+      changed = true;
+    }
+    if (changed && trafficSignalLenses.instanceColor) trafficSignalLenses.instanceColor.needsUpdate = true;
+  };
+  updateTrafficSignals(0);
+
   const addWindowInstances = (positions, material, rotationY = 0) => {
     const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 1.45, 0.1), material, positions.length);
     positions.forEach(([x, y, z], index) => { marker.position.set(x, y, z); marker.rotation.set(0, rotationY, 0); marker.scale.set(1, 1, 1); marker.updateMatrix(); windows.setMatrixAt(index, marker.matrix); });
@@ -794,7 +876,10 @@ function makeCity(scene) {
     }
     return broken;
   };
-  return { ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, fenceSegments, surfaceHeight, breakFencesAt };
+  return {
+    ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, fenceSegments,
+    trafficIntersections, updateTrafficSignals, surfaceHeight, breakFencesAt,
+  };
 }
 
 export default function ViceCityFreeRoam({ carId, onExit }) {
@@ -837,8 +922,91 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     vehicle.position.set(0, 0, 0);
     scene.add(vehicle);
+    const trafficDirections = [
+      { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
+      { axis: 'z', direction: 1 }, { axis: 'z', direction: -1 },
+    ];
+    const trafficCars = Array.from({ length: 8 }, (_, index) => {
+      const directionSpec = trafficDirections[Math.floor(index / 2)];
+      const withinDirection = index % 2;
+      const routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
+      const crossAxis = directionSpec.axis === 'x'
+        ? routeIndex * BLOCK + directionSpec.direction * 2.35
+        : routeIndex * BLOCK - directionSpec.direction * 2.35;
+      const progress = withinDirection === 0 ? -220 : 175;
+      const profile = CITY_RUSH_CARS[(index * 3 + 1) % CITY_RUSH_CARS.length];
+      const car = makeRacerCar(profile, { daylight: true, number: index + 1 });
+      const yaw = directionSpec.axis === 'x'
+        ? directionSpec.direction > 0 ? -Math.PI / 2 : Math.PI / 2
+        : directionSpec.direction > 0 ? Math.PI : 0;
+      car.position.set(directionSpec.axis === 'x' ? progress : crossAxis, 0.02, directionSpec.axis === 'z' ? progress : crossAxis);
+      car.rotation.y = yaw;
+      car.userData.trafficYaw = yaw;
+      scene.add(car);
+      return {
+        car,
+        axis: directionSpec.axis,
+        direction: directionSpec.direction,
+        crossAxis,
+        progress,
+        speed: 0,
+        maxSpeed: 8.8 + (index % 3) * 1.15,
+      };
+    });
     const keys = new Set();
     const state = { x: 0, z: 0, heading: 0, speed: 0, steer: 0, time: 0 };
+    const updateTraffic = (dt) => {
+      city.updateTrafficSignals(state.time);
+      for (const traffic of trafficCars) {
+        const nextIndex = traffic.direction > 0
+          ? Math.floor((traffic.progress + 0.001) / BLOCK) + 1
+          : Math.ceil((traffic.progress - 0.001) / BLOCK) - 1;
+        const nextIntersection = nextIndex * BLOCK;
+        const distanceToSignal = traffic.direction * (nextIntersection - traffic.progress);
+        let distanceToControl = distanceToSignal;
+        const intersectionXIndex = traffic.axis === 'x' ? nextIndex : Math.round(traffic.crossAxis / BLOCK);
+        const intersectionZIndex = traffic.axis === 'z' ? nextIndex : Math.round(traffic.crossAxis / BLOCK);
+        let signalState = viceCityTrafficSignalState(traffic.axis, intersectionXIndex, intersectionZIndex, state.time);
+        const approachKey = `${traffic.axis}:${intersectionXIndex}:${intersectionZIndex}`;
+        if (traffic.approachKey !== approachKey) {
+          traffic.approachKey = approachKey;
+          traffic.committedIntersection = false;
+        }
+        if (traffic.committedIntersection || (signalState === 'green' && distanceToSignal <= 18)) {
+          traffic.committedIntersection = true;
+          signalState = 'green';
+        }
+        let stopLine = 18;
+        const playerAlong = traffic.axis === 'x' ? state.x : state.z;
+        const playerAcross = traffic.axis === 'x' ? state.z : state.x;
+        const playerDistance = traffic.direction * (playerAlong - traffic.progress);
+        if (Math.abs(playerAcross - traffic.crossAxis) < 2.3 && playerDistance > 0 && playerDistance < distanceToControl) {
+          distanceToControl = playerDistance;
+          signalState = 'red';
+          stopLine = 5.2;
+        }
+        const moved = stepViceCityTrafficVehicle(traffic, dt, distanceToControl, signalState, stopLine);
+        traffic.progress = moved.progress;
+        traffic.speed = moved.speed;
+        if (traffic.direction > 0 && traffic.progress > CITY_LIMIT + 20) {
+          traffic.progress = -CITY_LIMIT - 20;
+          traffic.speed = 0;
+        } else if (traffic.direction < 0 && traffic.progress < -CITY_LIMIT - 20) {
+          traffic.progress = CITY_LIMIT + 20;
+          traffic.speed = 0;
+        }
+        traffic.car.position.set(
+          traffic.axis === 'x' ? traffic.progress : traffic.crossAxis,
+          0.02,
+          traffic.axis === 'z' ? traffic.progress : traffic.crossAxis,
+        );
+        animateRacerCar(traffic.car, {
+          speed: traffic.speed, maxSpeed: traffic.maxSpeed, steer: 0,
+          braking: signalState !== 'green' && traffic.speed > 0.1,
+          idle: traffic.speed === 0,
+        }, dt, state.time);
+      }
+    };
     const onDown = (event) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ'].includes(event.code)) {
         event.preventDefault(); keys.add(event.code);
@@ -863,6 +1031,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         Math.abs(x - building.x) < building.halfWidth + 2.1
         && Math.abs(z - building.z) < building.halfDepth + 2.1);
       if (hitsBuilding) return true;
+      const hitsMovingCar = trafficCars.some(({ car }) => {
+        const dx = x - car.position.x;
+        const dz = z - car.position.z;
+        const cosine = Math.cos(car.rotation.y);
+        const sine = Math.sin(car.rotation.y);
+        const localX = dx * cosine - dz * sine;
+        const localZ = dx * sine + dz * cosine;
+        return Math.abs(localX) < 2.1 && Math.abs(localZ) < 4.35;
+      });
+      if (hitsMovingCar) return true;
       return city.parkedCarSpecs.some((car) => {
         const dx = x - car.x;
         const dz = z - car.z;
@@ -877,6 +1055,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
+      updateTraffic(dt);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const throttle = pressed('ArrowUp') || pressed('KeyW');
       const brake = pressed('ArrowDown') || pressed('KeyS');
