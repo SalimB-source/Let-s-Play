@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
   rpgSfx,
+  rpgSonsFurie,
   rpgSonArriveePirate,
   RPG_PIRATE_ARRIVEES_SFX,
   RPG_PIRATE_ARRIVEE_SFX,
@@ -26,7 +27,7 @@ import {
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
-    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'furie_viking', 'hover',
+    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'furie_viking', 'furie_viking_femelle', 'hover',
     'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
     'foudre_marteau',
   ].sort(), 'le son du duel = les échantillons de la table, survol compris');
@@ -40,6 +41,18 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
 test('la Furie utilise le cri viking fourni par le joueur', () => {
   assert.deepEqual(rpgSfx('furie_viking'), [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }]);
   assert.ok(existsSync(new URL('../src/games/assets/furie-viking.mp3', import.meta.url)));
+});
+
+test('les Valkyries et la Völva jouent la voix féminine de Furie', () => {
+  assert.deepEqual(rpgSfx('furie_viking_femelle'), [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/furie-viking-femelle.mp3', import.meta.url)));
+  assert.deepEqual(rpgSonsFurie([{ carteId: 'valkyrie-au-corbeau' }]), ['furie_viking_femelle']);
+  assert.deepEqual(rpgSonsFurie([{ carteId: 'volva-soigneuse' }]), ['furie_viking_femelle']);
+  assert.deepEqual(rpgSonsFurie([{ carteId: 'berserk-des-trois-hivers' }]), ['furie_viking']);
+  assert.deepEqual(rpgSonsFurie([
+    { carteId: 'valkyrie-des-neuf-nuits' },
+    { carteId: 'berserk-des-trois-hivers' },
+  ]), ['furie_viking_femelle', 'furie_viking']);
 });
 
 test('l’abordage joue le cliquetis de chaînes fourni, livré avec le jeu', () => {
