@@ -3823,3 +3823,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     font-size: 13px;
   }
 }
+
+/* Touch pedals stay held only while the player presses them. */
+.city-rush-drive-touch { display: none; position: absolute; right: 12px; bottom: 12px; z-index: 35; gap: 8px; pointer-events: none; }
+.city-rush-drive-touch button { pointer-events: auto; width: 58px; height: 58px; display: grid; place-content: center; gap: 1px; border: 1px solid rgba(255,255,255,.48); border-radius: 50%; background: rgba(12,18,27,.72); color: #fff; font: 900 22px/1 system-ui; box-shadow: 0 4px 16px #0006; backdrop-filter: blur(8px); touch-action: none; }
+.city-rush-drive-touch button small { font: 800 7px/1 system-ui; letter-spacing: .08em; }
+.city-rush-drive-touch button:active { background: rgba(255,95,139,.88); transform: scale(.96); }
+@media (pointer: coarse) { .city-rush-viewport.is-live .city-rush-drive-touch { display: flex; } }

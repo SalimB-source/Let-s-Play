@@ -233,6 +233,8 @@ const fresh = (world, label) => {
   world.setDrivingMode('free');
   world.setPhase('playing');
   world.start();
+  // Le monde n'accélère plus tout seul : le harnais tient la pédale comme un joueur.
+  keyDown('ArrowUp');
   stepFrame();
   parkAll(world);
   const cruise = Math.min(18, world.topSpeed * 0.7);
