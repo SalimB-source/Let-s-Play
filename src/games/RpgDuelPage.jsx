@@ -7256,8 +7256,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     journalFurieTraiteRef.current = { duel: duelCourant, lignes: [...lignes] };
     const activationsFurie = rpgActivationsFurieDepuisJournal(nouvellesLignes);
-    rpgSonsFurie(activationsFurie)
-      .forEach((nom, index) => jouerSfx(nom, 0.55 + index * 0.55));
+    rpgSonsFurie(activationsFurie).forEach((nom) => jouerSfx(nom));
     setVersion((v) => v + 1);
   };
 
