@@ -340,13 +340,13 @@ function makeCity(scene) {
     jet.position.set(x, 0.78, z);
     parent.add(jet);
   };
-  const addFencePerimeter = (x, z, halfWidth, halfDepth) => {
+  const addFencePerimeter = (x, z, halfWidth, halfDepth, gateSide = -1) => {
     const sectionLength = 2.6;
     const horizontalCount = Math.floor((halfWidth * 2) / sectionLength);
     const gateIndex = Math.floor(horizontalCount / 2);
     for (const sideZ of [-1, 1]) {
       for (let index = 0; index < horizontalCount; index += 1) {
-        if (sideZ < 0 && index === gateIndex) continue;
+        if (sideZ === gateSide && index === gateIndex) continue;
         const alongX = -halfWidth + sectionLength * (index + 0.5);
         fenceSegments.push({ x: x + alongX, z: z + sideZ * halfDepth, yaw: 0, length: sectionLength, active: true });
       }
@@ -434,42 +434,64 @@ function makeCity(scene) {
     const amenityRoll = random();
     const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
-    // Parcelles plus serrées : plusieurs commerces et immeubles bordent chaque bloc.
-    const count = 2 + Math.floor(random() * 3);
-    const buildingSlots = [[-27, -27], [27, -27], [-27, 27], [27, 27]];
+    // Quelques blocs resserrent les façades autour d'une ruelle ; d'autres gardent une maisonnette.
+    const alleyBlock = Math.abs(bx * 7 + bz * 3) % 5 === 0;
+    const cottageBlock = !alleyBlock && Math.abs(bx * 3 + bz * 7) % 4 === 0;
+    const count = alleyBlock ? 2 : 2 + Math.floor(random() * 3);
+    const buildingSlots = alleyBlock
+      ? [[-16, -27], [16, -27], [-27, 27], [27, 27]]
+      : [[-27, -27], [27, -27], [-27, 27], [27, 27]];
+    const alleyBuildings = [];
     for (let i = 0; i < count; i += 1) {
-      const width = 20 + random() * 6;
-      const depth = 20 + random() * 6;
-      const height = 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
       const [slotX, slotZ] = buildingSlots[i];
+      const isAlleyBuilding = alleyBlock && i < 2;
+      const isCottage = cottageBlock && i === count - 1;
+      const width = isCottage ? 12 + random() * 4 : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
+      const depth = isCottage ? 14 + random() * 4 : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
+      const height = isCottage ? 6.2 + random() * 1.6 : 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
       const x = cx + slotX + (random() - 0.5) * 3;
       const z = cz + slotZ + (random() - 0.5) * 3;
       const frontSign = slotZ < 0 ? -1 : 1;
       const frontZ = z + frontSign * (depth / 2 + 0.1);
       const frontageRoll = random();
-      const hasShop = frontageRoll < 0.42;
-      const hasGarage = frontageRoll >= 0.42 && frontageRoll < 0.61;
+      const hasShop = !isCottage && frontageRoll < 0.42;
+      const hasGarage = !isCottage && frontageRoll >= 0.42 && frontageRoll < 0.61;
       const garageWidth = Math.min(6.4, width * 0.38);
       const garageCenterX = x - width * 0.18;
-      const entryX = hasGarage ? x + width * 0.34 : x + width * 0.28;
+      const entryX = isCottage ? x : hasGarage ? x + width * 0.34 : x + width * 0.28;
       const color = palette[Math.floor(random() * palette.length)];
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
       building.userData.cityBuilding = true;
       buildingFootprints.push({ x, z, halfWidth: width / 2, halfDepth: depth / 2 });
+      if (isAlleyBuilding) alleyBuildings.push({ x, z, width, depth });
       // Roof parapet and stepped art-deco crown.
       const capMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).multiplyScalar(0.78), roughness: 0.88 });
-      addBox(lot, capMat, x, height + 0.1, z, width + 0.7, 0.7, depth + 0.7);
-      if (height > 28) {
+      if (isCottage) {
+        addBox(lot, capMat, x, height + 0.1, z, width + 0.6, 0.25, depth + 0.6);
+        const roofColors = [0x9e5544, 0x705b4b, 0x536c6a, 0xb6764d];
+        const cottageRoof = new THREE.Mesh(
+          new THREE.ConeGeometry(1, 2.5, 4),
+          new THREE.MeshStandardMaterial({ color: roofColors[Math.floor(random() * roofColors.length)], roughness: 0.86 }),
+        );
+        cottageRoof.position.set(x, height + 1.35, z);
+        cottageRoof.rotation.y = Math.PI / 4;
+        cottageRoof.scale.set(width * 0.72, 1, depth * 0.72);
+        cottageRoof.castShadow = true;
+        lot.add(cottageRoof);
+      } else {
+        addBox(lot, capMat, x, height + 0.1, z, width + 0.7, 0.7, depth + 0.7);
+      }
+      if (!isCottage && height > 28) {
         addBox(lot, facade, x, height + 0.8, z, width * 0.54, 4.5, depth * 0.72, true);
       }
       // Tall window bands, a shopfront at street level, and selected lit windows.
-      const floors = Math.max(2, Math.floor(height / 4.2));
+      const floors = isCottage ? 2 : Math.max(2, Math.floor(height / 4.2));
       // Pilastres verticaux et balcons étagés : une silhouette Art déco moins cubique.
       for (const side of [-1, 1]) {
         addBox(lot, capMat, x + side * width * 0.45, 0.1, z + frontSign * (depth / 2 + 0.13), 0.34, height, 0.24);
       }
-      const balconyLevels = Math.min(3, Math.floor((height - 8) / 12));
+      const balconyLevels = isCottage ? 0 : Math.min(3, Math.floor((height - 8) / 12));
       for (let level = 0; level < balconyLevels; level += 1) {
         const balconyY = 4.3 + level * 8.2;
         addBox(lot, capMat, x, balconyY, z + frontSign * (depth / 2 + 0.34), width * 0.44, 0.16, 0.76);
@@ -541,8 +563,30 @@ function makeCity(scene) {
         addBox(lot, signMat, entryX, 3.2, entryZ + frontSign * 0.19, 0.62, 0.28, 0.1);
         addBox(lot, capMat, entryX, 0.1, frontZ + frontSign * 0.48, 1.7, 0.16, 0.52);
       }
+      if (isCottage) {
+        const streetAxis = frontSign < 0 ? bz * BLOCK : (bz + 1) * BLOCK;
+        const grassSidewalkEdge = streetAxis - frontSign * (ROAD_HALF + 3.2);
+        const houseFront = z + frontSign * depth / 2;
+        const yardDepth = Math.abs(houseFront - grassSidewalkEdge);
+        if (yardDepth > 3) {
+          const yardCenter = (houseFront + grassSidewalkEdge) / 2;
+          addFencePerimeter(x, yardCenter, width / 2 + 1.2, Math.max(1.2, (yardDepth - 0.8) / 2), frontSign);
+          addGroundPlane(lot, courtyardPathMat, entryX, yardCenter, 1.45, yardDepth, -0.043);
+        }
+      }
       // Back alley HVAC and rooftop water tank detail.
       if (random() > 0.45) addBox(lot, capMat, x + width * 0.25, height + 0.8, z, 2.8, 1.6, 2.8);
+    }
+    if (alleyBuildings.length === 2) {
+      const [leftBuilding, rightBuilding] = [...alleyBuildings].sort((a, b) => a.x - b.x);
+      const alleyStart = leftBuilding.x + leftBuilding.width / 2;
+      const alleyEnd = rightBuilding.x - rightBuilding.width / 2;
+      const alleyWidth = alleyEnd - alleyStart;
+      if (alleyWidth > 2.5) {
+        const alleyCenterZ = (leftBuilding.z + rightBuilding.z) / 2;
+        const alleyDepth = Math.max(leftBuilding.depth, rightBuilding.depth) + 4;
+        addGroundPlane(lot, courtyardPathMat, (alleyStart + alleyEnd) / 2, alleyCenterZ, alleyWidth, alleyDepth, -0.044);
+      }
     }
     // Touffes de graminées discrètes : elles texturent les bandes vertes libres sans couvrir les façades.
     for (let tuft = 0; tuft < 24; tuft += 1) {
