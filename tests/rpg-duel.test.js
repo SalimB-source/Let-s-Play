@@ -236,7 +236,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 98,
+  assert.equal(RPG_CREATURE_CARDS.length, 99,
     'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');

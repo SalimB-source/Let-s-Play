@@ -993,6 +993,15 @@ export const RPG_CREATURE_CARDS = [
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
   ...RPG_CORBEAU_CREATURES,
   {
+    id: 'fleau-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Fléau de la lune noire',
+    element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
+    cost: 8, atk: 7, def: 7, rarity: 'mythique',
+    typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true,
+    arrivee: { type: 'degats', amount: 3, cible: 'toutes-creatures' },
+    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 3 dégâts à chaque créature adverse.',
+    flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
+  },
+  {
     id: 'eclipse-silencieuse', set: 'soldats-de-la-lune', name: 'Éclipse silencieuse',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
