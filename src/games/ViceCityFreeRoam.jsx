@@ -60,6 +60,7 @@ function makeCity(scene) {
   const parkedCarSpecs = [];
   const trafficIntersections = [];
   const trafficSignalSpecs = [];
+  const overheadTrafficSignalSpecs = [];
   const fenceSegments = [];
   const grassTuftPositions = [];
   const buildingFootprints = [];
@@ -772,6 +773,18 @@ function makeCity(scene) {
       trafficSignalSpecs.push(spec);
       intersection.signals.push(spec);
     }
+    const overheadApproaches = [
+      { axis: 'x', x: x - 18, z: z + 2.35, yaw: -Math.PI / 2, supportX: x - 18, supportZ: z + 9.5 },
+      { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - 9.5 },
+      { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - 9.5, supportZ: z - 18 },
+      { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + 9.5, supportZ: z + 18 },
+    ];
+    for (const approach of overheadApproaches) {
+      const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
+      const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
+      overheadTrafficSignalSpecs.push(spec);
+      intersection.signals.push(spec);
+    }
     trafficIntersections.push(intersection);
   }
   const trafficSignalPoles = new THREE.InstancedMesh(
@@ -780,11 +793,21 @@ function makeCity(scene) {
   const trafficSignalHousings = new THREE.InstancedMesh(
     new THREE.BoxGeometry(0.56, 1.5, 0.42), signalHousingMat, trafficSignalSpecs.length,
   );
+  const overheadSignalPoles = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.11, 0.15, 6.6, 8), signalPoleMat, overheadTrafficSignalSpecs.length,
+  );
+  const overheadSignalArms = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(1, 0.16, 0.16), signalPoleMat, overheadTrafficSignalSpecs.length,
+  );
+  const overheadSignalHousings = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.68, 1.5, 0.48), signalHousingMat, overheadTrafficSignalSpecs.length,
+  );
+  const totalSignalHeads = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
   const trafficSignalLenses = new THREE.InstancedMesh(
-    new THREE.SphereGeometry(0.16, 12, 10), signalLensMat, trafficSignalSpecs.length * 3,
+    new THREE.SphereGeometry(0.16, 12, 10), signalLensMat, totalSignalHeads * 3,
   );
   const trafficSignalGlows = new THREE.InstancedMesh(
-    new THREE.SphereGeometry(0.29, 12, 10), signalGlowMat, trafficSignalSpecs.length * 3,
+    new THREE.SphereGeometry(0.29, 12, 10), signalGlowMat, totalSignalHeads * 3,
   );
   const setTrafficLightInstance = (mesh, index, spec, localPosition = [0, 0, 0]) => {
     carRoot.position.set(spec.x, 0, spec.z);
@@ -806,9 +829,31 @@ function makeCity(scene) {
       setTrafficLightInstance(trafficSignalGlows, lensIndex, spec, [0, y, 0.17]);
     }
   });
-  for (const mesh of [trafficSignalPoles, trafficSignalHousings, trafficSignalLenses, trafficSignalGlows]) {
+  overheadTrafficSignalSpecs.forEach((spec, index) => {
+    marker.position.set(spec.supportX, 3.3, spec.supportZ);
+    marker.rotation.set(0, 0, 0);
+    marker.scale.set(1, 1, 1);
+    marker.updateMatrix();
+    overheadSignalPoles.setMatrixAt(index, marker.matrix);
+    const armDx = spec.x - spec.supportX;
+    const armDz = spec.z - spec.supportZ;
+    const armLength = Math.hypot(armDx, armDz) + 0.4;
+    marker.position.set((spec.x + spec.supportX) / 2, 6.48, (spec.z + spec.supportZ) / 2);
+    marker.rotation.set(0, Math.atan2(-armDz, armDx), 0);
+    marker.scale.set(armLength, 1, 1);
+    marker.updateMatrix();
+    overheadSignalArms.setMatrixAt(index, marker.matrix);
+    setTrafficLightInstance(overheadSignalHousings, index, spec, [0, 5.78, 0]);
+    for (const [colorIndex, y] of [[0, 6.2], [1, 5.78], [2, 5.36]]) {
+      const lensIndex = spec.lensIndices.red + colorIndex;
+      setTrafficLightInstance(trafficSignalLenses, lensIndex, spec, [0, y, 0.275]);
+      setTrafficLightInstance(trafficSignalGlows, lensIndex, spec, [0, y, 0.19]);
+    }
+  });
+  for (const mesh of [trafficSignalPoles, trafficSignalHousings, overheadSignalPoles, overheadSignalArms, overheadSignalHousings, trafficSignalLenses, trafficSignalGlows]) {
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = mesh === trafficSignalPoles || mesh === trafficSignalHousings;
+    mesh.castShadow = mesh === trafficSignalPoles || mesh === trafficSignalHousings
+      || mesh === overheadSignalPoles || mesh === overheadSignalArms || mesh === overheadSignalHousings;
     mesh.receiveShadow = mesh !== trafficSignalGlows;
     scene.add(mesh);
   }
