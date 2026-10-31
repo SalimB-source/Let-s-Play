@@ -4989,6 +4989,11 @@ test('les cartes du Serment se résolvent : valkyries ailées, berserk, drakkar,
   assert.equal(berserk.attaquee, false, 'le refus ne consomme pas son attaque');
   const attaque = rpgLancerAttaque(duel, 'joueur', [berserk.id], { [berserk.id]: [fennec.id] });
   assert.equal(attaque.ok, true, 'avec un bloqueur légal, l’attaque se résout');
+  assert.deepEqual(attaque.resume.furies, [{
+    entiteId: berserk.id,
+    carteId: 'berserk-des-trois-hivers',
+    cote: 'joueur',
+  }], 'la nouvelle activation de Furie est signalée pour le son du jeu');
   assert.equal(duel.sorcier.creatures.includes(fennec), false,
     'le Fennec 3/1 tombe sous les 2 points de combat du Berserk');
   assert.deepEqual(
@@ -5693,4 +5698,3 @@ test('Attaque ciblée ratée : affiche un texte « MISS » façon RPG au-dessus 
   assert.match(battleCss, /\.rpg-card\.is-miss\s*\{[^}]*overflow:\s*visible/s);
   assert.match(battleCss, /\.rpg-card__miss\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*6px\)[^}]*animation:\s*rpg-card-miss-pop/s);
 });
-

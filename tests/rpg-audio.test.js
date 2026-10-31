@@ -26,7 +26,7 @@ import {
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
-    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'hover',
+    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'furie_viking', 'hover',
     'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
     'foudre_marteau',
   ].sort(), 'le son du duel = les échantillons de la table, survol compris');
@@ -35,6 +35,11 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
     assert.ok(Array.isArray(sequence) && sequence.length > 0, `séquence manquante : ${name}`);
   }
   assert.equal(rpgSfx('silence-total'), null);
+});
+
+test('la Furie utilise le cri viking fourni par le joueur', () => {
+  assert.deepEqual(rpgSfx('furie_viking'), [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/furie-viking.mp3', import.meta.url)));
 });
 
 test('l’abordage joue le cliquetis de chaînes fourni, livré avec le jeu', () => {

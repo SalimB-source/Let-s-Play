@@ -12254,6 +12254,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
+    if (res.resume.furies?.length) jouerSfx('furie_viking', 0.2);
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     // La ligne de charge se trace avant le bond : qui frappe qui, lisible
     // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
@@ -12353,6 +12354,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
+    if (res.resume.furies?.length) jouerSfx('furie_viking', 0.2);
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
     }

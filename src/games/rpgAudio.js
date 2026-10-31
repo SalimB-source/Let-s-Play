@@ -75,6 +75,7 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['destruction_hit', new URL('./assets/destruction-hit.mp3', import.meta.url), 'destructionHitAudio'],
   ['page_turn', new URL('./assets/page-turn.mp3', import.meta.url), 'pageTurnAudio'],
   ['victoire', new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url), 'victoryCryAudio'],
+  ['furie_viking', new URL('./assets/furie-viking.mp3', import.meta.url), 'furieVikingAudio'],
   ['defaite', new URL('./assets/game-lost.mp3', import.meta.url), 'gameLostAudio'],
   // Le même coup sec sert la blessure des deux camps.
   ['degats', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
@@ -193,6 +194,8 @@ const RPG_SFX_TABLE = {
   page_turn: [{ kind: 'sample', at: 0, dur: 1.097, g: 1 }],
   // Cri de guerre viking (viking-warrior-battle-cry-with-horn.mp3, 2,56 s).
   victoire: [{ kind: 'sample', at: 0, dur: 2.56, g: 1 }],
+  // Cri de Furie viking fourni par le joueur (furie-viking.mp3, 1,512 s).
+  furie_viking: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
   defaite: [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }],
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
