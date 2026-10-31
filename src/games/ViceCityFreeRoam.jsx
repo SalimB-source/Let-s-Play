@@ -1,8 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
+import { CityRushAudio } from './cityRushAudio.js';
 import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
@@ -28,7 +29,16 @@ const ROUNDABOUT_OUTER_RADIUS = 25;
 const ROUNDABOUT_ISLAND_RADIUS = 9.8;
 const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_LIMIT = 3 * BLOCK + 54;
+const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+function readFreeRoamSoundPreference() {
+  try { return window.localStorage.getItem(FREE_ROAM_SOUND_KEY) !== 'off'; } catch { return true; }
+}
+
+function writeFreeRoamSoundPreference(enabled) {
+  try { window.localStorage.setItem(FREE_ROAM_SOUND_KEY, enabled ? 'on' : 'off'); } catch { /* stockage désactivé */ }
+}
 
 function parkingStallCenters(segmentStart) {
   const midpoint = segmentStart + BLOCK / 2;
@@ -1908,13 +1918,54 @@ function makeCity(scene) {
 export default function ViceCityFreeRoam({ carId, onExit }) {
   const mountRef = useRef(null);
   const hudRef = useRef(null);
+  const audioRef = useRef(null);
+  const audioStartingRef = useRef(null);
   const onExitRef = useRef(onExit);
   const touchKeysRef = useRef(new Set());
+  const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
+  const soundOnRef = useRef(soundOn);
+  const toggleSoundRef = useRef(null);
   onExitRef.current = onExit;
+  soundOnRef.current = soundOn;
+  const activateAudio = () => {
+    if (!soundOnRef.current) return;
+    const audio = audioRef.current;
+    if (!audio || audio.running || audioStartingRef.current) return;
+    try {
+      audioStartingRef.current = audio.start()
+        .catch(() => {})
+        .then(() => { if (!soundOnRef.current) audio.stop(); })
+        .finally(() => { audioStartingRef.current = null; });
+    } catch { audioStartingRef.current = null; }
+  };
+  const toggleSound = () => {
+    const next = !soundOnRef.current;
+    soundOnRef.current = next;
+    setSoundOn(next);
+    writeFreeRoamSoundPreference(next);
+    if (next) activateAudio();
+    else audioRef.current?.stop();
+  };
+  toggleSoundRef.current = toggleSound;
   const setTouchKey = (code, pressed) => {
     if (pressed) touchKeysRef.current.add(code);
     else touchKeysRef.current.delete(code);
   };
+  useEffect(() => {
+    const audio = new CityRushAudio();
+    audioRef.current = audio;
+    const onVisibilityChange = () => {
+      if (document.hidden) audio.pause();
+      else if (soundOnRef.current && audio.running) audio.resume();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      audio.destroy();
+      audioRef.current = null;
+      audioStartingRef.current = null;
+    };
+  }, []);
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
@@ -2064,8 +2115,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
     };
     const onDown = (event) => {
+      if (event.code === 'KeyM') {
+        event.preventDefault();
+        toggleSoundRef.current?.();
+        return;
+      }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ'].includes(event.code)) {
-        event.preventDefault(); keys.add(event.code);
+        event.preventDefault();
+        activateAudio();
+        keys.add(event.code);
       }
       if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
     };
@@ -2148,6 +2206,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         acceleration,
         reverseMaxSpeed,
       });
+      if (soundOnRef.current) {
+        audioRef.current?.engine({
+          speed: Math.abs(state.speed) / maxSpeed,
+          throttle: throttle || brake ? 1 : 0,
+          idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
+          engineProfile: profile.archetype,
+        });
+      }
       // Le braquage monte progressivement tant qu’on maintient la touche ;
       // un appui bref reste doux et le volant se recentre vite au relâchement.
       state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
@@ -2211,21 +2277,25 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
 
   return (
     <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
-      <div className="vice-free-roam-world" ref={mountRef} />
+      <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
       <header className="vice-free-roam-header">
         <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>OCEAN DISTRICT · 1986</small></div>
         <div className="vice-free-roam-location"><i /> CONDUITE LIBRE <span>—</span> AUCUNE COURSE</div>
+        <button type="button" className={`vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
+          aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
+          <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
+        </button>
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD également disponibles · Échap pour quitter</small></div>
+      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD · M : son ON/OFF · Échap : menu</small></div>
       <div className="vice-free-roam-touch" aria-label="Commandes tactiles de conduite">
         {[
           ['ArrowLeft', '←', 'Tourner à gauche'], ['ArrowUp', '↑', 'Accélérer'],
           ['ArrowDown', '↓', 'Freiner et reculer à l’arrêt'], ['ArrowRight', '→', 'Tourner à droite'],
         ].map(([code, label, title]) => (
           <button key={code} type="button" aria-label={title} title={title}
-            onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
+            onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}
             onLostPointerCapture={() => setTouchKey(code, false)}>{label}</button>
         ))}
