@@ -1923,10 +1923,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const onExitRef = useRef(onExit);
   const touchKeysRef = useRef(new Set());
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
+  const [cockpitView, setCockpitView] = useState(false);
   const soundOnRef = useRef(soundOn);
+  const cockpitViewRef = useRef(cockpitView);
   const toggleSoundRef = useRef(null);
+  const toggleCameraRef = useRef(null);
   onExitRef.current = onExit;
   soundOnRef.current = soundOn;
+  cockpitViewRef.current = cockpitView;
   const activateAudio = () => {
     if (!soundOnRef.current) return;
     const audio = audioRef.current;
@@ -1947,6 +1951,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     else audioRef.current?.stop();
   };
   toggleSoundRef.current = toggleSound;
+  const toggleCamera = () => {
+    const next = !cockpitViewRef.current;
+    cockpitViewRef.current = next;
+    setCockpitView(next);
+  };
+  toggleCameraRef.current = toggleCamera;
   const setTouchKey = (code, pressed) => {
     if (pressed) touchKeysRef.current.add(code);
     else touchKeysRef.current.delete(code);
@@ -1997,20 +2007,55 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     vehicle.position.set(-138, 0, 0);
     scene.add(vehicle);
+    const cockpitGlassMaterials = new Set();
+    vehicle.traverse((object) => {
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      materials.filter((material) => material?.name?.includes('opaque-tinted-glass'))
+        .forEach((material) => cockpitGlassMaterials.add(material));
+    });
+    const cockpitInterior = new THREE.Group();
+    cockpitInterior.visible = false;
+    vehicle.add(cockpitInterior);
+    const cockpitDashMat = new THREE.MeshStandardMaterial({ color: 0x252a2d, roughness: 0.7 });
+    const cockpitTrimMat = new THREE.MeshStandardMaterial({ color: 0x7a6140, roughness: 0.42, metalness: 0.55 });
+    const cockpitScreenMat = new THREE.MeshBasicMaterial({ color: 0x6be2d6 });
+    const cockpitDash = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.47), cockpitDashMat);
+    cockpitDash.position.set(0, 0.92, -0.73);
+    cockpitInterior.add(cockpitDash);
+    const instrumentPanel = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.2, 0.045), cockpitDashMat);
+    instrumentPanel.position.set(0, 1.08, -0.49);
+    cockpitInterior.add(instrumentPanel);
+    const instrumentGlow = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.055, 0.018), cockpitScreenMat);
+    instrumentGlow.position.set(0, 1.09, -0.455);
+    cockpitInterior.add(instrumentGlow);
+    const steeringWheel = new THREE.Group();
+    steeringWheel.position.set(0, 1.1, -0.17);
+    const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 8, 24), cockpitDashMat);
+    steeringWheel.add(wheelRim);
+    const wheelHub = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.06, 12), cockpitTrimMat);
+    wheelHub.rotation.x = Math.PI / 2;
+    steeringWheel.add(wheelHub);
+    for (const spokeAngle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) {
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.23, 0.035), cockpitTrimMat);
+      spoke.position.set(Math.sin(spokeAngle) * 0.11, Math.cos(spokeAngle) * 0.11, 0);
+      spoke.rotation.z = -spokeAngle;
+      steeringWheel.add(spoke);
+    }
+    cockpitInterior.add(steeringWheel);
     const trafficDirections = [
       { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
       { axis: 'z', direction: 1 }, { axis: 'z', direction: -1 },
     ];
-    const trafficCars = Array.from({ length: 8 }, (_, index) => {
-      const directionSpec = trafficDirections[Math.floor(index / 2)];
-      const withinDirection = index % 2;
-      let routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
-      if (directionSpec.axis === 'x') routeIndex = 0;
-      else if (Math.abs(routeIndex) === 2 || routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
+    const trafficCars = Array.from({ length: 16 }, (_, index) => {
+      const directionSpec = trafficDirections[Math.floor(index / 4)];
+      const withinDirection = index % 4;
+      const laneIndex = directionSpec.axis === 'z' ? (withinDirection < 2 ? -1 : 1) : 0;
       const crossAxis = directionSpec.axis === 'x'
-        ? routeIndex * BLOCK + directionSpec.direction * 2.35
-        : routeIndex * BLOCK - directionSpec.direction * 2.35;
-      const progress = withinDirection === 0 ? -220 : 175;
+        ? -directionSpec.direction * 2.35
+        : laneIndex * BLOCK + directionSpec.direction * 2.35;
+      const progress = directionSpec.axis === 'x'
+        ? [-220, -72, 78, 224][withinDirection] * directionSpec.direction
+        : (withinDirection % 2 === 0 ? -185 : 185) * directionSpec.direction;
       const trafficType = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
       const car = makeTrafficVehicle(trafficType.id);
       const yaw = directionSpec.axis === 'x'
@@ -2120,6 +2165,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         toggleSoundRef.current?.();
         return;
       }
+      if (event.code === 'KeyC') {
+        event.preventDefault();
+        toggleCameraRef.current?.();
+        return;
+      }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
@@ -2140,6 +2190,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
+    const cockpitPosition = new THREE.Vector3();
+    let lastCockpitCameraMode = null;
     const overlapsVehicleHitbox = (x, z, carX, carZ, yaw, width, length) => {
       const dx = x - carX;
       const dz = z - carZ;
@@ -2247,14 +2299,38 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       vehicle.rotation.y = -state.heading;
       vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
-      cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
-      cameraPosition.y += 3.2;
-      camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
-      cameraTarget.set(
-        state.x + forward.x * 5.5,
-        city.surfaceHeight(state.x + forward.x * 5.5, state.z + forward.z * 5.5) + 1.05,
-        state.z + forward.z * 5.5,
-      );
+      const isCockpitView = cockpitViewRef.current;
+      cockpitInterior.visible = isCockpitView;
+      steeringWheel.rotation.z = -state.steer * 0.85;
+      if (lastCockpitCameraMode !== isCockpitView) {
+        camera.fov = isCockpitView ? 74 : 66;
+        camera.updateProjectionMatrix();
+        cockpitGlassMaterials.forEach((material) => {
+          material.transparent = isCockpitView;
+          material.opacity = isCockpitView ? 0.12 : 1;
+          material.depthWrite = !isCockpitView;
+          material.needsUpdate = true;
+        });
+        lastCockpitCameraMode = isCockpitView;
+      }
+      if (isCockpitView) {
+        cockpitPosition.set(0, 1.34, 0.18);
+        vehicle.localToWorld(cockpitPosition);
+        cameraPosition.copy(cockpitPosition);
+        const lookX = state.x + forward.x * 24;
+        const lookZ = state.z + forward.z * 24;
+        cameraTarget.set(lookX, city.surfaceHeight(lookX, lookZ) + 1.18, lookZ);
+        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 13));
+      } else {
+        cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
+        cameraPosition.y += 3.2;
+        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
+        cameraTarget.set(
+          state.x + forward.x * 5.5,
+          city.surfaceHeight(state.x + forward.x * 5.5, state.z + forward.z * 5.5) + 1.05,
+          state.z + forward.z * 5.5,
+        );
+      }
       camera.lookAt(cameraTarget);
       if (now - hudAt > 80 && hudRef.current) {
         hudAt = now;
@@ -2285,10 +2361,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
           <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
         </button>
+        <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
+          aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
+          title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
+          ◉ COCKPIT
+        </button>
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD · M : son ON/OFF · Échap : menu</small></div>
+      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD · C : cockpit · M : son · Échap : menu</small></div>
       <div className="vice-free-roam-touch" aria-label="Commandes tactiles de conduite">
         {[
           ['ArrowLeft', '←', 'Tourner à gauche'], ['ArrowUp', '↑', 'Accélérer'],
