@@ -5,7 +5,7 @@ import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
-const ROAD_HALF = 12;
+const ROAD_HALF = 8;
 const CITY_LIMIT = 3 * BLOCK + 54;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -65,16 +65,15 @@ function makeCity(scene) {
       sidewalkH.rotation.x = -Math.PI / 2;
       sidewalkH.position.set(0, 0.028, axis + side * (ROAD_HALF + 1.6));
       scene.add(sidewalkH);
-      for (const dash of [-1, 1]) {
-        const stripeV = new THREE.Mesh(new THREE.PlaneGeometry(0.16, CITY_LIMIT * 2), lineMat);
-        stripeV.rotation.x = -Math.PI / 2;
-        stripeV.position.set(axis + side * 5.4, 0.035, 0);
-        scene.add(stripeV);
-        const stripeH = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2, 0.16), lineMat);
-        stripeH.rotation.x = -Math.PI / 2;
-        stripeH.position.set(0, 0.038, axis + side * 5.4);
-        scene.add(stripeH);
-      }
+      // Ligne de séparation entre les voies de circulation et le stationnement.
+      const stripeV = new THREE.Mesh(new THREE.PlaneGeometry(0.14, CITY_LIMIT * 2), lineMat);
+      stripeV.rotation.x = -Math.PI / 2;
+      stripeV.position.set(axis + side * 3.2, 0.035, 0);
+      scene.add(stripeV);
+      const stripeH = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2, 0.14), lineMat);
+      stripeH.rotation.x = -Math.PI / 2;
+      stripeH.position.set(0, 0.038, axis + side * 3.2);
+      scene.add(stripeH);
     }
     // Broken centerline on each road, interrupted around each junction.
     for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 13) {
@@ -86,7 +85,7 @@ function makeCity(scene) {
     for (let crossing = -3; crossing <= 3; crossing += 1) {
       const crossAxis = crossing * BLOCK;
       for (const side of [-1, 1]) {
-        for (let stripe = -8; stripe <= 8; stripe += 2) {
+        for (let stripe = -6.4; stripe <= 6.4; stripe += 1.6) {
           verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
           horizontalCrosswalkPositions.push([crossAxis + side * 14, axis + stripe]);
         }
@@ -128,21 +127,21 @@ function makeCity(scene) {
     const lot = new THREE.Group();
     scene.add(lot);
     const paving = new THREE.MeshStandardMaterial({ color: lotPavingPalette[Math.floor(random() * lotPavingPalette.length)], roughness: 0.92 });
-    const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), paving);
+    const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(76, 76), paving);
     hardstand.rotation.x = -Math.PI / 2;
     hardstand.position.set(cx, -0.065, cz);
     hardstand.receiveShadow = true;
     lot.add(hardstand);
     // Parcelles plus serrées : plusieurs commerces et immeubles bordent chaque bloc.
     const count = 2 + Math.floor(random() * 3);
-    const buildingSlots = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
+    const buildingSlots = [[-27, -27], [27, -27], [-27, 27], [27, 27]];
     for (let i = 0; i < count; i += 1) {
-      const width = 17 + random() * 9;
-      const depth = 18 + random() * 9;
+      const width = 20 + random() * 6;
+      const depth = 20 + random() * 6;
       const height = 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
       const [slotX, slotZ] = buildingSlots[i];
-      const x = cx + slotX + (random() - 0.5) * 5;
-      const z = cz + slotZ + (random() - 0.5) * 5;
+      const x = cx + slotX + (random() - 0.5) * 3;
+      const z = cz + slotZ + (random() - 0.5) * 3;
       const color = palette[Math.floor(random() * palette.length)];
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
@@ -198,8 +197,8 @@ function makeCity(scene) {
     const horizontalParked = (bx - bz) % 3 === 0;
     const parkingSide = (bx + bz) % 4 < 2 ? -1 : 1;
     parkedCarSpecs.push(horizontalParked
-      ? { x: cx + (random() - 0.5) * 20, z: bz * BLOCK + parkingSide * 9.7, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
-      : { x: bx * BLOCK + parkingSide * 9.7, z: cz + (random() - 0.5) * 20, yaw: 0, color: Math.floor(random() * 6) });
+      ? { x: cx + (random() - 0.5) * 20, z: bz * BLOCK + parkingSide * 6.0, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
+      : { x: bx * BLOCK + parkingSide * 6.0, z: cz + (random() - 0.5) * 20, yaw: 0, color: Math.floor(random() * 6) });
     // Palms and Deco lamp posts on block corners, kept outside the carriageway.
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const px = cx + sx * 37;
