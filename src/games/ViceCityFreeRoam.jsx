@@ -35,7 +35,7 @@ function makeCity(scene) {
   const manholeRimMat = new THREE.MeshStandardMaterial({ color: 0x161a1f, roughness: 0.92 });
   const manholeMat = new THREE.MeshStandardMaterial({ color: 0x62666a, roughness: 0.76, metalness: 0.18 });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
-  const lotPavingPalette = [0x77736d, 0x807970, 0x6b7073, 0x898175, 0x6e7470];
+  const lotGrassPalette = [0x4f6947, 0x59724a, 0x60784d, 0x526d4b, 0x657a50];
   const palette = [0xe5b99f, 0xc9b9aa, 0x9bb6b6, 0xd5d0c3, 0xb2a0a2, 0xd4a979, 0x839e9e, 0xf0d1ae];
   const litWindowPositions = [];
   const blueWindowPositions = [];
@@ -57,6 +57,8 @@ function makeCity(scene) {
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
+  const fenceSegments = [];
+  const grassTuftPositions = [];
   const buildingFootprints = [];
   const sidewalkRegions = [];
   const lotRegions = [];
@@ -281,6 +283,24 @@ function makeCity(scene) {
   const playBlueMat = new THREE.MeshStandardMaterial({ color: 0x4587a0, roughness: 0.68, metalness: 0.12 });
   const benchWoodMat = new THREE.MeshStandardMaterial({ color: 0x815d42, roughness: 0.88 });
   const fountainWaterMat = new THREE.MeshStandardMaterial({ color: 0x4b9a9a, roughness: 0.24, metalness: 0.24 });
+  const fenceMetalMat = new THREE.MeshStandardMaterial({ color: 0x8b9693, roughness: 0.58, metalness: 0.58 });
+  const chainSize = 64;
+  const chainPixels = new Uint8Array(chainSize * chainSize * 4);
+  for (let y = 0; y < chainSize; y += 1) for (let x = 0; x < chainSize; x += 1) {
+    const diagonalA = Math.abs(((x + y) % 16) - 8);
+    const diagonalB = Math.abs(((x - y + chainSize) % 16) - 8);
+    if (diagonalA <= 1 || diagonalB <= 1) {
+      const pixel = (y * chainSize + x) * 4;
+      chainPixels[pixel] = 178; chainPixels[pixel + 1] = 188; chainPixels[pixel + 2] = 183; chainPixels[pixel + 3] = 210;
+    }
+  }
+  const chainTexture = new THREE.DataTexture(chainPixels, chainSize, chainSize, THREE.RGBAFormat);
+  chainTexture.colorSpace = THREE.SRGBColorSpace;
+  chainTexture.wrapS = THREE.RepeatWrapping;
+  chainTexture.wrapT = THREE.RepeatWrapping;
+  chainTexture.needsUpdate = true;
+  const chainMaterial = new THREE.MeshBasicMaterial({ map: chainTexture, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+  const grassBladeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 });
   const addGroundPlane = (parent, material, x, z, width, depth, y = -0.05) => {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
     mesh.rotation.x = -Math.PI / 2;
@@ -320,8 +340,28 @@ function makeCity(scene) {
     jet.position.set(x, 0.78, z);
     parent.add(jet);
   };
+  const addFencePerimeter = (x, z, halfWidth, halfDepth) => {
+    const sectionLength = 2.6;
+    const horizontalCount = Math.floor((halfWidth * 2) / sectionLength);
+    const gateIndex = Math.floor(horizontalCount / 2);
+    for (const sideZ of [-1, 1]) {
+      for (let index = 0; index < horizontalCount; index += 1) {
+        if (sideZ < 0 && index === gateIndex) continue;
+        const alongX = -halfWidth + sectionLength * (index + 0.5);
+        fenceSegments.push({ x: x + alongX, z: z + sideZ * halfDepth, yaw: 0, length: sectionLength, active: true });
+      }
+    }
+    const verticalCount = Math.floor((halfDepth * 2) / sectionLength);
+    for (const sideX of [-1, 1]) {
+      for (let index = 0; index < verticalCount; index += 1) {
+        const alongZ = -halfDepth + sectionLength * (index + 0.5);
+        fenceSegments.push({ x: x + sideX * halfWidth, z: z + alongZ, yaw: Math.PI / 2, length: sectionLength, active: true });
+      }
+    }
+  };
   const addCourtyardAmenity = (parent, x, z, type) => {
     if (type === 'garden') {
+      if (random() > 0.45) addFencePerimeter(x, z, 9.5, 9.5);
       addGroundPlane(parent, courtyardGrassMat, x, z, 18, 18, -0.048);
       addGroundPlane(parent, courtyardPathMat, x, z, 2.1, 18, -0.042);
       addGroundPlane(parent, courtyardPathMat, x, z, 18, 2.1, -0.041);
@@ -335,6 +375,7 @@ function makeCity(scene) {
       return;
     }
     if (type === 'playground') {
+      addFencePerimeter(x, z, 9.5, 8.5);
       addGroundPlane(parent, playMat, x, z, 18, 16, -0.047);
       addGroundPlane(parent, playAccentMat, x - 5.2, z - 4.2, 3.6, 3.2, -0.038);
       addGroundPlane(parent, playBlueMat, x + 5.2, z + 4.2, 3.6, 3.2, -0.037);
@@ -383,7 +424,7 @@ function makeCity(scene) {
     const cz = (bz + 0.5) * BLOCK;
     const lot = new THREE.Group();
     scene.add(lot);
-    const paving = new THREE.MeshStandardMaterial({ color: lotPavingPalette[Math.floor(random() * lotPavingPalette.length)], roughness: 0.92 });
+    const paving = new THREE.MeshStandardMaterial({ color: lotGrassPalette[Math.floor(random() * lotGrassPalette.length)], roughness: 0.92 });
     const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(76, 76), paving);
     hardstand.rotation.x = -Math.PI / 2;
     hardstand.position.set(cx, -0.065, cz);
@@ -503,6 +544,15 @@ function makeCity(scene) {
       // Back alley HVAC and rooftop water tank detail.
       if (random() > 0.45) addBox(lot, capMat, x + width * 0.25, height + 0.8, z, 2.8, 1.6, 2.8);
     }
+    // Touffes de graminées discrètes : elles texturent les bandes vertes libres sans couvrir les façades.
+    for (let tuft = 0; tuft < 24; tuft += 1) {
+      const tuftX = cx + (random() - 0.5) * 72;
+      const tuftZ = cz + (random() - 0.5) * 72;
+      if (Math.abs(tuftX - cx) < 11.5 && Math.abs(tuftZ - cz) < 11.5) continue;
+      if (buildingFootprints.some((building) => Math.abs(tuftX - building.x) < building.halfWidth + 0.25
+        && Math.abs(tuftZ - building.z) < building.halfDepth + 0.25)) continue;
+      grassTuftPositions.push([tuftX, tuftZ, 0.72 + random() * 0.55]);
+    }
     // Voitures garées en bord de rue : le quadrillage paraît habité et donne
     // une échelle plus crédible aux immeubles et aux chaussées.
     const horizontalParked = (bx - bz) % 3 === 0;
@@ -529,6 +579,65 @@ function makeCity(scene) {
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd49a, toneMapped: false }));
       lamp.position.set(px + sx * 5, 6.1, pz + sz * 5); lot.add(lamp);
     }
+  }
+  // Herbe stylisée instanciée : beaucoup de petites touffes pour casser l'aspect plat des pelouses.
+  if (grassTuftPositions.length) {
+    const grassBlades = new THREE.InstancedMesh(new THREE.ConeGeometry(0.075, 0.4, 4), grassBladeMat, grassTuftPositions.length * 3);
+    const bladeColors = [0x799750, 0xa1b75f, 0x658b48];
+    grassTuftPositions.forEach(([x, z, scale], tuftIndex) => {
+      for (let blade = 0; blade < 3; blade += 1) {
+        const offsets = [[0, 0], [0.07, 0.025], [-0.045, 0.065]];
+        marker.position.set(x + offsets[blade][0] * scale, 0.135, z + offsets[blade][1] * scale);
+        marker.rotation.set(blade === 1 ? 0.12 : 0, blade * 1.9, blade === 2 ? -0.1 : 0);
+        marker.scale.set(scale, scale, scale);
+        marker.updateMatrix();
+        const instance = tuftIndex * 3 + blade;
+        grassBlades.setMatrixAt(instance, marker.matrix);
+        grassBlades.setColorAt(instance, new THREE.Color(bladeColors[blade]));
+      }
+    });
+    grassBlades.instanceMatrix.needsUpdate = true;
+    if (grassBlades.instanceColor) grassBlades.instanceColor.needsUpdate = true;
+    grassBlades.castShadow = true;
+    scene.add(grassBlades);
+  }
+
+  // Grillages galvanisés en sections indépendantes pour qu'ils disparaissent au choc.
+  let fenceMeshes = null;
+  if (fenceSegments.length) {
+    const sectionLength = 2.6;
+    const panels = new THREE.InstancedMesh(new THREE.PlaneGeometry(sectionLength - 0.08, 1.2), chainMaterial, fenceSegments.length);
+    const posts = new THREE.InstancedMesh(new THREE.BoxGeometry(0.09, 1.3, 0.09), fenceMetalMat, fenceSegments.length * 2);
+    const rails = new THREE.InstancedMesh(new THREE.BoxGeometry(sectionLength, 0.07, 0.08), fenceMetalMat, fenceSegments.length * 2);
+    fenceSegments.forEach((segment, index) => {
+      marker.rotation.set(0, segment.yaw, 0);
+      marker.scale.set(1, 1, 1);
+      marker.position.set(segment.x, 0.535, segment.z);
+      marker.updateMatrix();
+      panels.setMatrixAt(index, marker.matrix);
+      const alongX = Math.cos(segment.yaw) * sectionLength / 2;
+      const alongZ = -Math.sin(segment.yaw) * sectionLength / 2;
+      for (const end of [-1, 1]) {
+        const postIndex = index * 2 + (end > 0 ? 1 : 0);
+        marker.position.set(segment.x + alongX * end, 0.585, segment.z + alongZ * end);
+        marker.updateMatrix();
+        posts.setMatrixAt(postIndex, marker.matrix);
+      }
+      for (const [rail, y] of [[0, 0.02], [1, 1.16]]) {
+        const railIndex = index * 2 + rail;
+        marker.position.set(segment.x, y, segment.z);
+        marker.updateMatrix();
+        rails.setMatrixAt(railIndex, marker.matrix);
+      }
+      segment.instances = { panel: index, posts: [index * 2, index * 2 + 1], rails: [index * 2, index * 2 + 1] };
+    });
+    for (const mesh of [panels, posts, rails]) {
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+    }
+    fenceMeshes = { panels, posts, rails };
   }
   // Parking urbain en InstancedMesh : voitures détaillées, mais peu d'appels de rendu.
   const carPaint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.34, metalness: 0.36 });
@@ -613,7 +722,35 @@ function makeCity(scene) {
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
     return roadX || roadZ ? 0 : -0.12;
   };
-  return { ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, surfaceHeight };
+  const hideFenceInstance = (mesh, index) => {
+    marker.position.set(0, -1000, 0);
+    marker.rotation.set(0, 0, 0);
+    marker.scale.set(1, 1, 1);
+    marker.updateMatrix();
+    mesh.setMatrixAt(index, marker.matrix);
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  const breakFencesAt = (x, z) => {
+    if (!fenceMeshes) return 0;
+    let broken = 0;
+    for (const segment of fenceSegments) {
+      if (!segment.active) continue;
+      const dx = x - segment.x;
+      const dz = z - segment.z;
+      const cosine = Math.cos(segment.yaw);
+      const sine = Math.sin(segment.yaw);
+      const along = dx * cosine - dz * sine;
+      const across = dx * sine + dz * cosine;
+      if (Math.abs(along) > segment.length / 2 + 2.1 || Math.abs(across) > 1.5) continue;
+      segment.active = false;
+      hideFenceInstance(fenceMeshes.panels, segment.instances.panel);
+      segment.instances.posts.forEach((index) => hideFenceInstance(fenceMeshes.posts, index));
+      segment.instances.rails.forEach((index) => hideFenceInstance(fenceMeshes.rails, index));
+      broken += 1;
+    }
+    return broken;
+  };
+  return { ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, fenceSegments, surfaceHeight, breakFencesAt };
 }
 
 export default function ViceCityFreeRoam({ carId, onExit }) {
@@ -724,6 +861,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
       const nextX = state.x + forward.x * state.speed * dt;
       const nextZ = state.z + forward.z * state.speed * dt;
+      if (city.breakFencesAt(nextX, nextZ) > 0) state.speed *= 0.88;
       // Conduite libre partout dans la ville : les trottoirs et les espaces
       // ouverts restent franchissables, seuls les bâtiments et véhicules garés bloquent.
       if (!isPositionBlocked(nextX, nextZ)) {
