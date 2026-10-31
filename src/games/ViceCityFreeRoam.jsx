@@ -751,7 +751,11 @@ function makeCity(scene) {
 
   const signalPoleMat = new THREE.MeshStandardMaterial({ color: 0x343a3c, roughness: 0.58, metalness: 0.64 });
   const signalHousingMat = new THREE.MeshStandardMaterial({ color: 0x171c20, roughness: 0.78, metalness: 0.12 });
-  const signalLensMat = new THREE.MeshBasicMaterial({ color: 0xffffff, vertexColors: true, toneMapped: false });
+  const signalLensMat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+  const signalGlowMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff, transparent: true, opacity: 0.32, blending: THREE.AdditiveBlending,
+    depthWrite: false, toneMapped: false,
+  });
   for (let ix = -3; ix <= 3; ix += 1) for (let iz = -3; iz <= 3; iz += 1) {
     const intersection = { ix, iz, signals: [], lastX: null, lastZ: null };
     const x = ix * BLOCK;
@@ -777,7 +781,10 @@ function makeCity(scene) {
     new THREE.BoxGeometry(0.56, 1.5, 0.42), signalHousingMat, trafficSignalSpecs.length,
   );
   const trafficSignalLenses = new THREE.InstancedMesh(
-    new THREE.SphereGeometry(0.145, 10, 8), signalLensMat, trafficSignalSpecs.length * 3,
+    new THREE.SphereGeometry(0.16, 12, 10), signalLensMat, trafficSignalSpecs.length * 3,
+  );
+  const trafficSignalGlows = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.29, 12, 10), signalGlowMat, trafficSignalSpecs.length * 3,
   );
   const setTrafficLightInstance = (mesh, index, spec, localPosition = [0, 0, 0]) => {
     carRoot.position.set(spec.x, 0, spec.z);
@@ -794,19 +801,23 @@ function makeCity(scene) {
     setTrafficLightInstance(trafficSignalPoles, index, spec, [0, 2.275, 0]);
     setTrafficLightInstance(trafficSignalHousings, index, spec, [0, 4.05, 0]);
     for (const [colorIndex, y] of [[0, 4.48], [1, 4.05], [2, 3.62]]) {
-      setTrafficLightInstance(trafficSignalLenses, index * 3 + colorIndex, spec, [0, y, 0.245]);
+      const lensIndex = index * 3 + colorIndex;
+      setTrafficLightInstance(trafficSignalLenses, lensIndex, spec, [0, y, 0.245]);
+      setTrafficLightInstance(trafficSignalGlows, lensIndex, spec, [0, y, 0.17]);
     }
   });
-  for (const mesh of [trafficSignalPoles, trafficSignalHousings, trafficSignalLenses]) {
+  for (const mesh of [trafficSignalPoles, trafficSignalHousings, trafficSignalLenses, trafficSignalGlows]) {
     mesh.instanceMatrix.needsUpdate = true;
-    mesh.castShadow = mesh !== trafficSignalLenses;
-    mesh.receiveShadow = true;
+    mesh.castShadow = mesh === trafficSignalPoles || mesh === trafficSignalHousings;
+    mesh.receiveShadow = mesh !== trafficSignalGlows;
     scene.add(mesh);
   }
   const setSignalLens = (index, state, lamp) => {
     const active = state === lamp;
     const colors = { red: active ? 0xff332b : 0x4b2524, yellow: active ? 0xffc238 : 0x4a3a20, green: active ? 0x42ef75 : 0x1c402b };
+    const haloColors = { red: active ? 0xff2419 : 0x120504, yellow: active ? 0xffb51f : 0x100b02, green: active ? 0x10ff68 : 0x021008 };
     trafficSignalLenses.setColorAt(index, new THREE.Color(colors[lamp]));
+    trafficSignalGlows.setColorAt(index, new THREE.Color(haloColors[lamp]));
   };
   const updateTrafficSignals = (elapsed) => {
     let changed = false;
@@ -824,7 +835,10 @@ function makeCity(scene) {
       }
       changed = true;
     }
-    if (changed && trafficSignalLenses.instanceColor) trafficSignalLenses.instanceColor.needsUpdate = true;
+    if (changed) {
+      if (trafficSignalLenses.instanceColor) trafficSignalLenses.instanceColor.needsUpdate = true;
+      if (trafficSignalGlows.instanceColor) trafficSignalGlows.instanceColor.needsUpdate = true;
+    }
   };
   updateTrafficSignals(0);
 
