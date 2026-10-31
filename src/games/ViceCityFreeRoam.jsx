@@ -11,6 +11,7 @@ import {
   viceCityFreeDriveYawRate,
 } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
+import { viceCityRoadElevation } from './viceCityRoads.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
@@ -190,8 +191,37 @@ function makeCity(scene) {
     parent.add(mesh);
     return mesh;
   };
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2 + 100, CITY_LIMIT * 2 + 100), grassMat);
-  ground.rotation.x = -Math.PI / 2;
+  // Quelques rues prennent du relief : pentes douces, sommet arrondi et retour au niveau des carrefours.
+  const roadElevation = viceCityRoadElevation;
+  const makeRoadStrip = (axis, fixed, width, material, heightOffset = 0) => {
+    const length = CITY_LIMIT * 2 + 120;
+    const geometry = axis === 'x'
+      ? new THREE.PlaneGeometry(width, length, 1, 180)
+      : new THREE.PlaneGeometry(length, width, 180, 1);
+    geometry.rotateX(-Math.PI / 2);
+    const positions = geometry.attributes.position;
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = axis === 'x' ? fixed + positions.getX(index) : positions.getX(index);
+      const z = axis === 'x' ? positions.getZ(index) : fixed + positions.getZ(index);
+      positions.setY(index, roadElevation(x, z) + heightOffset);
+    }
+    positions.needsUpdate = true;
+    geometry.computeVertexNormals();
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(axis === 'x' ? fixed : 0, 0, axis === 'z' ? fixed : 0);
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+    return mesh;
+  };
+  const groundGeometry = new THREE.PlaneGeometry(CITY_LIMIT * 2 + 100, CITY_LIMIT * 2 + 100, 240, 240);
+  groundGeometry.rotateX(-Math.PI / 2);
+  const groundPositions = groundGeometry.attributes.position;
+  for (let index = 0; index < groundPositions.count; index += 1) {
+    groundPositions.setY(index, roadElevation(groundPositions.getX(index), groundPositions.getZ(index)));
+  }
+  groundPositions.needsUpdate = true;
+  groundGeometry.computeVertexNormals();
+  const ground = new THREE.Mesh(groundGeometry, grassMat);
   ground.position.y = -0.12;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -200,26 +230,12 @@ function makeCity(scene) {
   // sidewalks, lane markings and raised crossings, repeated across a broad map.
   for (let index = -3; index <= 3; index += 1) {
     const axis = index * BLOCK;
-    const roadX = new THREE.Mesh(new THREE.PlaneGeometry(ROAD_HALF * 2, CITY_LIMIT * 2 + 120), roadMat);
-    roadX.rotation.x = -Math.PI / 2;
-    roadX.position.set(axis, 0, 0);
-    roadX.receiveShadow = true;
-    scene.add(roadX);
-    const roadZ = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2 + 120, ROAD_HALF * 2), roadMat);
-    roadZ.rotation.x = -Math.PI / 2;
-    roadZ.position.set(0, 0.006, axis);
-    roadZ.receiveShadow = true;
-    scene.add(roadZ);
+    makeRoadStrip('x', axis, ROAD_HALF * 2, roadMat);
+    makeRoadStrip('z', axis, ROAD_HALF * 2, roadMat, 0.006);
     for (const side of [-1, 1]) {
       // Ligne de séparation entre les voies de circulation et le stationnement.
-      const stripeV = new THREE.Mesh(new THREE.PlaneGeometry(0.14, CITY_LIMIT * 2), lineMat);
-      stripeV.rotation.x = -Math.PI / 2;
-      stripeV.position.set(axis + side * 3.6, 0.035, 0);
-      scene.add(stripeV);
-      const stripeH = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2, 0.14), lineMat);
-      stripeH.rotation.x = -Math.PI / 2;
-      stripeH.position.set(0, 0.038, axis + side * 3.6);
-      scene.add(stripeH);
+      makeRoadStrip('x', axis + side * 3.6, 0.14, lineMat, 0.035);
+      makeRoadStrip('z', axis + side * 3.6, 0.14, lineMat, 0.038);
     }
     // Broken centerline on each road, interrupted around each junction.
     for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 13) {
@@ -263,9 +279,35 @@ function makeCity(scene) {
   // Trottoirs surélevés, interrompus à chaque carrefour pour ne jamais recouvrir la chaussée.
   const sidewalkHeight = 0.12;
   const sidewalkSegmentLength = BLOCK - 2 * (ROAD_HALF + 3.2);
-  const verticalSidewalkGeometry = new THREE.PlaneGeometry(3.2, sidewalkSegmentLength);
-  const horizontalSidewalkGeometry = new THREE.PlaneGeometry(sidewalkSegmentLength, 3.2);
+  const verticalSidewalkGeometry = new THREE.PlaneGeometry(3.2, sidewalkSegmentLength, 1, 48);
+  const horizontalSidewalkGeometry = new THREE.PlaneGeometry(sidewalkSegmentLength, 3.2, 48, 1);
   const cornerSidewalkGeometry = new THREE.PlaneGeometry(3.2, 3.2);
+  const fitSidewalkToElevation = (mesh) => {
+    mesh.geometry = mesh.geometry.clone();
+    const positions = mesh.geometry.attributes.position;
+    for (let index = 0; index < positions.count; index += 1) {
+      const x = mesh.position.x + positions.getX(index);
+      const z = mesh.position.z - positions.getY(index);
+      positions.setZ(index, roadElevation(x, z));
+    }
+    positions.needsUpdate = true;
+    mesh.geometry.computeVertexNormals();
+  };
+  const addSlopedCurb = (x, z, width, depth) => {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, sidewalkHeight, depth, width > depth ? 48 : 1, 1, depth >= width ? 48 : 1),
+      curbMat,
+    );
+    mesh.position.set(x, sidewalkHeight / 2, z);
+    const positions = mesh.geometry.attributes.position;
+    for (let index = 0; index < positions.count; index += 1) {
+      positions.setY(index, positions.getY(index) + roadElevation(x + positions.getX(index), z + positions.getZ(index)));
+    }
+    positions.needsUpdate = true;
+    mesh.geometry.computeVertexNormals();
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+  };
   for (let axisIndex = -3; axisIndex <= 3; axisIndex += 1) {
     const axis = axisIndex * BLOCK;
     for (let block = -3; block < 3; block += 1) {
@@ -276,17 +318,19 @@ function makeCity(scene) {
         const sidewalkV = new THREE.Mesh(verticalSidewalkGeometry, sidewalkMat);
         sidewalkV.rotation.x = -Math.PI / 2;
         sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
+        fitSidewalkToElevation(sidewalkV);
         sidewalkV.receiveShadow = true;
         scene.add(sidewalkV);
         sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
         const sidewalkH = new THREE.Mesh(horizontalSidewalkGeometry, sidewalkMat);
         sidewalkH.rotation.x = -Math.PI / 2;
         sidewalkH.position.set(segmentCenter, sidewalkHeight, axis + sidewalkOffset);
+        fitSidewalkToElevation(sidewalkH);
         sidewalkH.receiveShadow = true;
         scene.add(sidewalkH);
         sidewalkRegions.push({ x: segmentCenter, z: axis + sidewalkOffset, halfWidth: sidewalkSegmentLength / 2, halfDepth: 1.6 });
-        addBox(scene, curbMat, axis + side * (ROAD_HALF - 0.1), 0, segmentCenter, 0.2, sidewalkHeight, sidewalkSegmentLength);
-        addBox(scene, curbMat, segmentCenter, 0, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, sidewalkHeight, 0.2);
+        addSlopedCurb(axis + side * (ROAD_HALF - 0.1), segmentCenter, 0.2, sidewalkSegmentLength);
+        addSlopedCurb(segmentCenter, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, 0.2);
 
         for (let row = 0; row < 2; row += 1) {
           const crossOffset = row === 0 ? -0.8 : 0.8;
@@ -329,21 +373,21 @@ function makeCity(scene) {
 
   const marker = new THREE.Object3D();
   const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, verticalDashPositions.length);
-  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
+  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
   scene.add(verticalDashes);
   const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, horizontalDashPositions.length);
-  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
+  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
   scene.add(horizontalDashes);
   const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
-  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.055, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
+  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.055, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
   scene.add(verticalCrosswalk);
   const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
-  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.057, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
+  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.057, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
   scene.add(horizontalCrosswalk);
   const addFlatRoadInstances = (geometry, material, positions, y) => {
     const mesh = new THREE.InstancedMesh(geometry, material, positions.length);
     positions.forEach(([x, z], index) => {
-      marker.position.set(x, y, z);
+      marker.position.set(x, y + roadElevation(x, z), z);
       marker.rotation.set(-Math.PI / 2, 0, 0);
       marker.scale.set(1, 1, 1);
       marker.updateMatrix();
@@ -364,7 +408,7 @@ function makeCity(scene) {
   const addSidewalkTiles = (positions, geometry, y) => {
     const tiles = new THREE.InstancedMesh(geometry, sidewalkTileMat, positions.length);
     positions.forEach(([x, z, colorIndex], index) => {
-      marker.position.set(x, y, z);
+      marker.position.set(x, y + roadElevation(x, z), z);
       marker.rotation.set(-Math.PI / 2, 0, 0);
       marker.scale.set(1, 1, 1);
       marker.updateMatrix();
@@ -810,7 +854,7 @@ function makeCity(scene) {
   // (taxi, police, ambulance, camion-poubelle et sportive), gyrophares éteints.
   for (const spec of parkedCarSpecs) {
     const car = makeTrafficVehicle(spec.type);
-    car.position.set(spec.x, 0, spec.z);
+    car.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
     car.rotation.y = spec.yaw;
     car.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
     scene.add(car);
@@ -979,13 +1023,19 @@ function makeCity(scene) {
   addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, portSurfaceRegions);
   const insideRegion = (region, x, z) => Math.abs(x - region.x) <= region.halfWidth && Math.abs(z - region.z) <= region.halfDepth;
   const surfaceHeight = (x, z) => {
-    if (sidewalkRegions.some((region) => insideRegion(region, x, z))) return sidewalkHeight;
+    if (sidewalkRegions.some((region) => insideRegion(region, x, z))) return sidewalkHeight + roadElevation(x, z);
     const portSurface = portSurfaceRegions.find((region) => insideRegion(region, x, z));
     if (portSurface) return portSurface.height;
     if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
     const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
-    return roadX || roadZ ? 0 : -0.12;
+    return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
+  };
+  const surfacePitch = (x, z, yaw) => {
+    const forwardX = Math.sin(yaw);
+    const forwardZ = -Math.cos(yaw);
+    const ahead = roadElevation(x + forwardX * 2, z + forwardZ * 2);
+    return Math.atan2(ahead - roadElevation(x, z), 2);
   };
   const fallenFenceSections = [];
   const hideFenceInstance = (mesh, index) => {
@@ -1085,8 +1135,9 @@ function makeCity(scene) {
       if (Math.abs(body.velocityX) < 0.04) body.velocityX = 0;
       if (Math.abs(body.velocityZ) < 0.04) body.velocityZ = 0;
       if (Math.abs(body.angularVelocity) < 0.015) body.angularVelocity = 0;
-      mesh.position.set(spec.x, 0, spec.z);
+      mesh.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
       mesh.rotation.y = spec.yaw;
+      mesh.rotation.x = surfacePitch(spec.x, spec.z, spec.yaw);
     }
   };
   const breakFencesAt = (x, z) => {
@@ -1114,7 +1165,7 @@ function makeCity(scene) {
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
-    surfaceHeight, breakFencesAt,
+    roadElevation, surfaceHeight, surfacePitch, breakFencesAt,
   };
 }
 
@@ -1175,8 +1226,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const yaw = directionSpec.axis === 'x'
         ? directionSpec.direction > 0 ? -Math.PI / 2 : Math.PI / 2
         : directionSpec.direction > 0 ? Math.PI : 0;
-      car.position.set(directionSpec.axis === 'x' ? progress : crossAxis, 0, directionSpec.axis === 'z' ? progress : crossAxis);
+      const trafficX = directionSpec.axis === 'x' ? progress : crossAxis;
+      const trafficZ = directionSpec.axis === 'z' ? progress : crossAxis;
+      car.position.set(trafficX, city.roadElevation(trafficX, trafficZ) + 0.02, trafficZ);
       car.rotation.y = yaw;
+      car.rotation.x = city.surfacePitch(trafficX, trafficZ, yaw);
       scene.add(car);
       return {
         car,
@@ -1233,11 +1287,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           traffic.progress = CITY_LIMIT + 20;
           traffic.speed = 0;
         }
-        traffic.car.position.set(
-          traffic.axis === 'x' ? traffic.progress : traffic.crossAxis,
-          0.02,
-          traffic.axis === 'z' ? traffic.progress : traffic.crossAxis,
-        );
+        const trafficX = traffic.axis === 'x' ? traffic.progress : traffic.crossAxis;
+        const trafficZ = traffic.axis === 'z' ? traffic.progress : traffic.crossAxis;
+        traffic.car.position.set(trafficX, city.roadElevation(trafficX, trafficZ) + 0.02, trafficZ);
+        traffic.car.rotation.x = city.surfacePitch(trafficX, trafficZ, traffic.car.rotation.y);
         traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
         traffic.car.userData.beacons?.forEach((beacon, beaconIndex) => {
           const flashing = Math.floor(state.time * 8 + traffic.phase + beaconIndex) % 2 === 0;
@@ -1339,11 +1392,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
       vehicle.rotation.y = -state.heading;
+      vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
       cameraPosition.y += 3.2;
       camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
-      cameraTarget.set(state.x + forward.x * 5.5, 1.05, state.z + forward.z * 5.5);
+      cameraTarget.set(
+        state.x + forward.x * 5.5,
+        city.surfaceHeight(state.x + forward.x * 5.5, state.z + forward.z * 5.5) + 1.05,
+        state.z + forward.z * 5.5,
+      );
       camera.lookAt(cameraTarget);
       if (now - hudAt > 80 && hudRef.current) {
         hudAt = now;
