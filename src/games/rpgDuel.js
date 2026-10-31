@@ -2506,7 +2506,7 @@ function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
  *  Rend les Esquives réussies contre des ATTAQUES (hors Attaque ciblée, traitée
  *  par l'appelant) : l'appelant y lit les Contre-attaques à déclencher une
  *  fois l'échange terminé. */
-function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
+function appliquerDegatsDeCombatSimultanes(duel, coups) {
   const blessures = new Map();
   // Les Esquives réussies contre une attaque : l'appelant en tire les
   // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
@@ -2612,9 +2612,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
   // s'énerve pas. Le journal reprend aussi les frappes qui n'ont pas
   // été létales : le flux ne se limite donc pas aux créatures détruites.
   for (const { entite, recus, cote, sources } of furieuses) {
-    const etaitEnFurie = Boolean(entite.furieDeclenchee);
     appliquerFurie(duel, entite, recus);
-    if (!etaitEnFurie && entite.furieDeclenchee) onFurie?.(entite, cote);
     if (recus > 0 && sources?.length) {
       duel.combatFeed = duel.combatFeed ?? [];
       duel.combatFeed.push({
@@ -6867,7 +6865,6 @@ export function rpgLancerAttaque(
 
   const resume = {
     frappeSorcier: 0,
-    furies: [],
     paires: [],
     coupsRapides: frappesRapides,
     blocages: affectations,
@@ -7093,13 +7090,7 @@ export function rpgLancerAttaque(
       );
     }
   }
-  const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux, {
-    onFurie: (entite, coteBlessure) => resume.furies.push({
-      entiteId: entite.id,
-      carteId: entite.carteId,
-      cote: coteBlessure,
-    }),
-  });
+  const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux);
   // Les capacités de retour en main des Tours des Flots sont retardées jusqu’à
   // ce que les blessures normales aient été assignées et résolues.
   for (const attaquant of attaquants) {

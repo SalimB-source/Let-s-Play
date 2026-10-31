@@ -91,7 +91,6 @@ import {
   RPG_PIRATE_ARRIVEE_SFX,
   RpgAudioPlayer,
   rpgSonArriveePirate,
-  rpgSonsFurie,
 } from './rpgAudio.js';
 import { rpgEstCartePirate } from './rpgLettresDeMarque.js';
 import { RPG_DWARF_DIALOGUE_SFX, rpgDwarfSoundFor } from './rpgDwarfAudio.js';
@@ -12255,7 +12254,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
-    rpgSonsFurie(res.resume.furies).forEach((nom, index) => jouerSfx(nom, 0.2 + index * 0.45));
     if (frappeDirecte) jouerSfx(sonFrappeDirecte ?? 'degats', 0.18);
     // La ligne de charge se trace avant le bond : qui frappe qui, lisible
     // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
@@ -12355,7 +12353,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (res.resume.critiques?.length) declencherCritiques(res.resume.critiques);
     jouerSfx('combat');
     for (const son of sonsCombat) jouerSfx(son.nom, son.delai);
-    rpgSonsFurie(res.resume.furies).forEach((nom, index) => jouerSfx(nom, 0.2 + index * 0.45));
     if (res.resume.frappeSorcier > 0) {
       jouerSfx(sonFrappeDirecte ?? 'player_attack_hit', 0.18);
     }
