@@ -27,6 +27,7 @@ function makeCity(scene) {
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
   const sidewalkTileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 });
   const sidewalkTileColors = [0x9d9890, 0xa9a39a, 0xb1aaa0, 0x969188, 0xa49e95];
+  const curbMat = new THREE.MeshStandardMaterial({ color: 0x8e8b84, roughness: 0.92 });
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1d8a0 });
   const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xe9e5da });
   const parkingMarkMat = new THREE.MeshBasicMaterial({ color: 0xc9c5b5 });
@@ -54,6 +55,7 @@ function makeCity(scene) {
   const horizontalManholePositions = [];
   const verticalSidewalkTilePositions = [];
   const horizontalSidewalkTilePositions = [];
+  const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -84,14 +86,6 @@ function makeCity(scene) {
     roadZ.receiveShadow = true;
     scene.add(roadZ);
     for (const side of [-1, 1]) {
-      const sidewalkV = new THREE.Mesh(new THREE.PlaneGeometry(3.2, CITY_LIMIT * 2 + 120), sidewalkMat);
-      sidewalkV.rotation.x = -Math.PI / 2;
-      sidewalkV.position.set(axis + side * (ROAD_HALF + 1.6), 0.025, 0);
-      scene.add(sidewalkV);
-      const sidewalkH = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2 + 120, 3.2), sidewalkMat);
-      sidewalkH.rotation.x = -Math.PI / 2;
-      sidewalkH.position.set(0, 0.028, axis + side * (ROAD_HALF + 1.6));
-      scene.add(sidewalkH);
       // Ligne de séparation entre les voies de circulation et le stationnement.
       const stripeV = new THREE.Mesh(new THREE.PlaneGeometry(0.14, CITY_LIMIT * 2), lineMat);
       stripeV.rotation.x = -Math.PI / 2;
@@ -139,21 +133,68 @@ function makeCity(scene) {
         horizontalManholePositions.push([p, axis + side * 1.7]);
       }
     }
-    // Dalles régulières sur les deux bandes de trottoir, avec quelques tons pierre.
-    for (const side of [-1, 1]) for (let row = 0; row < 2; row += 1) {
-      const crossOffset = row === 0 ? -0.8 : 0.8;
-      for (let along = -3 * BLOCK; along < 3 * BLOCK; along += 1.5) {
-        const tileColor = Math.abs((Math.floor((along + 3 * BLOCK) / 1.5) + (index + 3) * 11 + (side + 1) * 7 + row * 3) % sidewalkTileColors.length);
-        verticalSidewalkTilePositions.push([
-          axis + side * (ROAD_HALF + 1.6) + crossOffset,
-          along,
-          tileColor,
-        ]);
-        horizontalSidewalkTilePositions.push([
-          along,
-          axis + side * (ROAD_HALF + 1.6) + crossOffset,
-          tileColor,
-        ]);
+  }
+
+  // Trottoirs surélevés, interrompus à chaque carrefour pour ne jamais recouvrir la chaussée.
+  const sidewalkHeight = 0.12;
+  const sidewalkSegmentLength = BLOCK - 2 * (ROAD_HALF + 3.2);
+  const verticalSidewalkGeometry = new THREE.PlaneGeometry(3.2, sidewalkSegmentLength);
+  const horizontalSidewalkGeometry = new THREE.PlaneGeometry(sidewalkSegmentLength, 3.2);
+  const cornerSidewalkGeometry = new THREE.PlaneGeometry(3.2, 3.2);
+  for (let axisIndex = -3; axisIndex <= 3; axisIndex += 1) {
+    const axis = axisIndex * BLOCK;
+    for (let block = -3; block < 3; block += 1) {
+      const segmentStart = block * BLOCK;
+      const segmentCenter = segmentStart + BLOCK / 2;
+      for (const side of [-1, 1]) {
+        const sidewalkOffset = side * (ROAD_HALF + 1.6);
+        const sidewalkV = new THREE.Mesh(verticalSidewalkGeometry, sidewalkMat);
+        sidewalkV.rotation.x = -Math.PI / 2;
+        sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
+        sidewalkV.receiveShadow = true;
+        scene.add(sidewalkV);
+        const sidewalkH = new THREE.Mesh(horizontalSidewalkGeometry, sidewalkMat);
+        sidewalkH.rotation.x = -Math.PI / 2;
+        sidewalkH.position.set(segmentCenter, sidewalkHeight, axis + sidewalkOffset);
+        sidewalkH.receiveShadow = true;
+        scene.add(sidewalkH);
+        addBox(scene, curbMat, axis + side * (ROAD_HALF - 0.1), 0, segmentCenter, 0.2, sidewalkHeight, sidewalkSegmentLength);
+        addBox(scene, curbMat, segmentCenter, 0, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, sidewalkHeight, 0.2);
+
+        for (let row = 0; row < 2; row += 1) {
+          const crossOffset = row === 0 ? -0.8 : 0.8;
+          let tileIndex = 0;
+          for (let along = segmentStart + ROAD_HALF + 3.95; along < segmentStart + BLOCK - ROAD_HALF - 3.95; along += 1.5) {
+            const tileColor = Math.abs((Math.floor(along / 1.5) + (axisIndex + 3) * 11 + (side + 1) * 7 + row * 3 + tileIndex) % sidewalkTileColors.length);
+            verticalSidewalkTilePositions.push([axis + sidewalkOffset + crossOffset, along, tileColor]);
+            horizontalSidewalkTilePositions.push([along, axis + sidewalkOffset + crossOffset, tileColor]);
+            tileIndex += 1;
+          }
+        }
+      }
+    }
+  }
+  // Pavés d'angle : ils relient les segments, sans prolonger les trottoirs sur les routes.
+  for (let xAxisIndex = -3; xAxisIndex <= 3; xAxisIndex += 1) {
+    for (let zAxisIndex = -3; zAxisIndex <= 3; zAxisIndex += 1) {
+      const xAxis = xAxisIndex * BLOCK;
+      const zAxis = zAxisIndex * BLOCK;
+      for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        const centerX = xAxis + sideX * (ROAD_HALF + 1.6);
+        const centerZ = zAxis + sideZ * (ROAD_HALF + 1.6);
+        const corner = new THREE.Mesh(cornerSidewalkGeometry, sidewalkMat);
+        corner.rotation.x = -Math.PI / 2;
+        corner.position.set(centerX, sidewalkHeight, centerZ);
+        corner.receiveShadow = true;
+        scene.add(corner);
+        for (let rowX = 0; rowX < 2; rowX += 1) for (let rowZ = 0; rowZ < 2; rowZ += 1) {
+          const tileColor = Math.abs((xAxisIndex * 13 + zAxisIndex * 7 + (sideX + 1) * 3 + (sideZ + 1) * 5 + rowX * 2 + rowZ) % sidewalkTileColors.length);
+          cornerSidewalkTilePositions.push([
+            centerX + (rowX === 0 ? -0.8 : 0.8),
+            centerZ + (rowZ === 0 ? -0.8 : 0.8),
+            tileColor,
+          ]);
+        }
       }
     }
   }
@@ -206,8 +247,9 @@ function makeCity(scene) {
     if (tiles.instanceColor) tiles.instanceColor.needsUpdate = true;
     scene.add(tiles);
   };
-  addSidewalkTiles(verticalSidewalkTilePositions, new THREE.PlaneGeometry(1.48, 1.4), 0.031);
-  addSidewalkTiles(horizontalSidewalkTilePositions, new THREE.PlaneGeometry(1.4, 1.48), 0.034);
+  addSidewalkTiles(verticalSidewalkTilePositions, new THREE.PlaneGeometry(1.48, 1.4), 0.124);
+  addSidewalkTiles(horizontalSidewalkTilePositions, new THREE.PlaneGeometry(1.4, 1.48), 0.124);
+  addSidewalkTiles(cornerSidewalkTilePositions, new THREE.PlaneGeometry(1.4, 1.4), 0.124);
 
   // Art-deco downtown and residential blocks, with varied setbacks, rooftops,
   // lit windows, shop awnings, palms, and corner street furniture.
