@@ -320,7 +320,7 @@ test('lecteur sans navigateur ou sans WebAudio : il reste muet sans planter', ()
   assert.ok(true);
 });
 
-test('le lecteur respecte le délai des SFX et annule les lectures différées au démontage', async () => {
+test('le lecteur joue sans délai immédiatement et annule les lectures différées au démontage', async () => {
   const originalWindowLocal = globalThis.window;
   globalThis.window = { AudioContext: FakeAudioContext, Audio: FakeAudioElement };
   const player = new RpgAudioPlayer();
@@ -328,15 +328,17 @@ test('le lecteur respecte le délai des SFX et annule les lectures différées a
   const audio = player.echantillonsParNom.get('furie_viking')?.audio;
   assert.ok(audio, 'le cri est chargé dans le lecteur');
 
+  player.play('furie_viking');
+  assert.equal(audio.playCount, 1, 'sans délai, le cri démarre immédiatement');
   player.play('furie_viking', 0.04);
-  assert.equal(audio.playCount, 0, 'le cri ne part pas avant son délai');
+  assert.equal(audio.playCount, 1, 'le départ différé attend toujours son délai');
   await new Promise((resolve) => setTimeout(resolve, 60));
-  assert.equal(audio.playCount, 1, 'le cri part après le délai demandé');
+  assert.equal(audio.playCount, 2, 'le départ différé part ensuite');
 
   player.play('furie_viking', 0.08);
   player.destroy();
   await new Promise((resolve) => setTimeout(resolve, 100));
-  assert.equal(audio.playCount, 1, 'le démontage annule une lecture encore en attente');
+  assert.equal(audio.playCount, 2, 'le démontage annule une lecture encore en attente');
   globalThis.window = originalWindowLocal;
 });
 
