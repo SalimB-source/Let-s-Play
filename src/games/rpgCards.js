@@ -993,6 +993,14 @@ export const RPG_CREATURE_CARDS = [
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
   ...RPG_CORBEAU_CREATURES,
   {
+    id: 'general-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Général du croissant noir',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 4, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain et Vampire',
+    reactionTourAdverse: true, volDeVie: true, resonance: 1, resonanceTribu: 'vampire',
+    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    flavor: 'Il commande à voix basse ; les ombres transmettent ses ordres.',
+  },
+  {
     id: 'fleau-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Fléau de la lune noire',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
     cost: 8, atk: 7, def: 7, rarity: 'mythique',

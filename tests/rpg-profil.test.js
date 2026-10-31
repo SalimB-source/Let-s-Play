@@ -408,7 +408,7 @@ test('un paquet offert est un vrai paquet, sans caisse', () => {
 
   // La même ouverture, achetée cette fois : le solde descend, le journal ne
   // marque rien d’offert. Les deux chemins tirent pareil.
-  const paye = ouvrirBooster({ portefeuille: { ...portefeuilleVide(), credits: 500 }, rayonId: 'souk', rng: rngSeme('palier') });
+  const paye = ouvrirBooster({ portefeuille: { ...portefeuilleVide(), credits: 500 }, rayonId: 'souk', progression: null, collection: [], rng: rngSeme('palier') });
   assert.equal(paye.ok, true);
   assert.equal(paye.prix, 140);
   assert.equal(paye.portefeuille.credits, 500 - 140 + paye.tirage.remboursement);
