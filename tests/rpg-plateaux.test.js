@@ -399,16 +399,16 @@ test('toutes les correspondances de decks pointent vers un plateau livré', () =
   for (const [couleur, plateauId] of Object.entries(RPG_PLATEAUX_PAR_COULEUR)) {
     assert.ok(plateauParId(plateauId), `${couleur} → ${plateauId} : plateau inconnu`);
   }
-  // Aucun plateau ne devient inaccessible : chacun est le terrain d’au moins un
-  // deck, le repli, ou le double merveilleux d’un terrain.
+  // Certains plateaux sont réservés au choix du profil, les autres restent
+  // accessibles automatiquement par un deck, une couleur ou une variante.
   const atteignables = new Set([
     ...Object.values(RPG_PLATEAUX_PAR_DECK),
     ...Object.values(RPG_PLATEAUX_PAR_COULEUR),
     ...Object.values(RPG_PLATEAUX_VARIANTES_FANTAISISTES),
     RPG_PLATEAU_DE_REPLI,
   ]);
-  for (const { id } of RPG_PLATEAUX) {
-    assert.ok(atteignables.has(id), `le plateau ${id} n’est plus atteignable par aucun deck`);
+  for (const { id, choixSeulement } of RPG_PLATEAUX) {
+    assert.ok(choixSeulement || atteignables.has(id), `le plateau ${id} n’est plus atteignable par aucun deck`);
   }
 });
 
@@ -871,4 +871,13 @@ test('chaque table du jeu a son morceau de musique, et le fichier est livré', (
         `${id} : la piste ${nom} est livrée dans public/`);
     }
   }
+});
+
+test('La Cour du Fléau est un plateau sélectionnable avec fond 4K, vignette et décor 3D', () => {
+  const plateau = plateauParId('cour-du-fleau');
+  assert.ok(plateau); assert.equal(plateau.nom, 'La Cour du Fléau');
+  assert.deepEqual(tailleJpeg(new URL(`../public/${plateau.fichier}`, import.meta.url)), { width: 3840, height: 2560 });
+  assert.ok(existsSync(new URL(`../public/${vignettePlateauRelative(plateau)}`, import.meta.url)));
+  const duel = resoudrePlateauxDuDuel({ plateauChoisi: plateau.id });
+  assert.equal(duel.joueur.plateau.id, plateau.id);
 });

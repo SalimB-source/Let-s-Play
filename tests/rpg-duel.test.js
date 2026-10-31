@@ -236,7 +236,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 88,
+  assert.equal(RPG_CREATURE_CARDS.length, 101,
     'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -1309,7 +1309,7 @@ test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', ()
 
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
   const debutFinaliser = page.indexOf('const finaliserPoseCreature =');
-  const finaliser = page.slice(debutFinaliser, debutFinaliser + 1800);
+  const finaliser = page.slice(debutFinaliser, debutFinaliser + 2200);
   assert.match(
     finaliser,
     /if \(arriveeConsulteDeck\(carte\) && !res\.arriveeEnAttente\) invaliderAnnulation\(\);\s+else conserverAnnulation\(etatAvantAction\);/,
@@ -2335,7 +2335,7 @@ test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche 
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
-    assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
+    if (!carte.coupRapideImmanquable) assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }
 
@@ -4336,7 +4336,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 47, 'Brise-lame rejoint les magies du catalogue');
+  assert.equal(RPG_MAGIE_CARDS.length, 49, 'Brise-lame rejoint les magies du catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -4760,7 +4760,7 @@ test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 30, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
+  assert.equal(cartesNeige.length, 33, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4836,7 +4836,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 30, 'les peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 33, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {

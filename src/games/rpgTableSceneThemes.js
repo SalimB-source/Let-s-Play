@@ -84,6 +84,13 @@ const light = (options) => Object.freeze({
 });
 
 export const RPG_TABLE_SCENE_THEMES = Object.freeze({
+  'cour-du-fleau': theme({
+    ambient: '#e2d6d4', ambientIntensity: 0.57, key: '#e8c7b2', keyIntensity: 0.46,
+    relief: 1.15, roughness: 0.92,
+    lights: [light({ color: '#a73936', intensity: 1.1, distance: 5, x: 0.65, y: 0.6, z: 1, pulse: 0.12, pulseHz: 0.08 })],
+    particles: motes({ count: 32, color: '#a66b57', size: 0.025, opacity: 0.25, vx: 0.03, vy: 0.02 }),
+    overlay: null,
+  }),
   // La salle haute de la Chambre : bois sombre, astrolabe, quatre bougies.
   'table-des-heures': theme({
     key: '#ffd9a6', keyIntensity: 0.4, ambientIntensity: 0.6, relief: 1.15, roughness: 0.62,

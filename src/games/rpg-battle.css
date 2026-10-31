@@ -2757,6 +2757,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Les plateaux du duel (voir `rpgPlateaux.js`) : la classe ne règle plus que la
    **couleur de repli**, celle qu'on voit le temps que la peinture arrive (ou si
    elle manque). Chaque fond garde sa lumière d'origine. */
+.card-table--plateau-cour-du-fleau { background-color: #211b1a; }
 .card-table--plateau-table-des-heures {
   background-color: #1c1006;
 }
@@ -2848,6 +2849,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0);
 }
 .rpg-plateau-moitie--joueur { background-position: center; }
+.rpg-plateau-moitie--plateau-cour-du-fleau { background-color: #211b1a; }
 .rpg-plateau-moitie--plateau-table-des-heures { background-color: #1c1006; }
 .rpg-plateau-moitie--plateau-erg-du-sahara { background-color: #a8804f; }
 .rpg-plateau-moitie--plateau-caravane-de-gourara { background-color: #a8764f; }

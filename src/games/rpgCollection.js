@@ -132,10 +132,10 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // avec leurs mythiques tenebres — elles sont du même set.
   'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
   'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin'],
-  'necropole-3': ['khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
+  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
-  'necropole-4': ['la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
+  'necropole-4': ['fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
   // Tour du Corbeau — le set hybride Neige + Ténèbres (doc 22). La neige
   // d'abord (le corbeau de givre), la nuit ensuite (la veilleuse), les deux
   // au sommet : la Valkyrie des neuf nuits et le Maître des corbeaux.

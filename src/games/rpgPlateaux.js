@@ -202,6 +202,14 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-cimetiere-des-noms-effaces.jpg',
     resume: 'Un cimetière de nuit, vu de dessus à 90° : une grande aire circulaire de terre battue et de dalles brisées, entièrement nue au centre pour poser les cartes, qu’entoure un muret de pierres sèches. Autour du muret seulement : les tombes blanchies à coupole, les stèles nues penchées, deux cyprès noirs dont l’ombre s’allonge, la grille de fer rouillée, les palmes sèches, quelques lambeaux de parchemin vierge et une lampe à huile restée allumée. La lune éclaire le sol en biais ; une brume violette rampe le long du mur. Les pierres sont parfaitement lisses et sans inscription. Le milieu du cimetière reste vide : c’est là que les cartes se posent.',
   },
+  {
+    id: 'cour-du-fleau',
+    choixSeulement: true,
+    nom: 'La Cour du Fléau',
+    lieu: 'La cité de la lune noire, dans la forteresse du Fléau',
+    fichier: 'plateau-cour-du-fleau.jpg',
+    resume: 'Une cour de basalte noir vue du dessus, dallage dégagé au centre pour les cartes, bordée de colonnes brisées, de bannières rouge sombre et des marches du trône.',
+  },
   // Les doubles merveilleux : atteints par le second tirage
   // (`RPG_PLATEAUX_VARIANTES_FANTAISISTES`), jamais par un deck directement.
   {

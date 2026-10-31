@@ -55,6 +55,7 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // Les deux MP3 vivent à la racine de `public/`, comme les autres pistes dont
   // le nom contient des espaces.
   'cimetiere-des-noms-effaces': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
+  'cour-du-fleau': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental).mp3`,
   'fosse-de-l-oubliee': `${RPG_PUBLIC_BASE}Le Sceau de Sang (Instrumental) (1).mp3`,
   // Le Palais du Pharaon : la même Égypte que la Nécropole des dalles, la
   // salle du trône des Juges. Aucune piste dédiée n'avait été livrée : le

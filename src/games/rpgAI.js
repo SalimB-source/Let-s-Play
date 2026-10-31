@@ -1429,6 +1429,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       return { score: 3 + (camp.main.length <= 3 ? 3 : 0) - cout * 0.2, cibleId: null };
     }
     if (effet.type === 'retour-main') {
+      if (effet.cible === 'toutes-autres') {
+        const eligible = (entite) => !entite.site && (!effet.exclutType || !cardHasPrintedType(entite.carteId, effet.exclutType));
+        const valeur = duel[adv].creatures.filter(eligible).reduce((s, e) => s + menace(e), 0)
+          - duel[cote].creatures.filter(eligible).reduce((s, e) => s + menace(e), 0);
+        return { score: Math.max(0, valeur * 0.6 - cout * 0.3), cibleId: null };
+      }
       // Renvoi en main : rien n'est tué, mais la menace adverse repart en main
       // (son mana est perdu, son arrivée devra être repayée) et le Courant de
       // retour ajoute une carte. Sans cible légale, le sort reste en main.
