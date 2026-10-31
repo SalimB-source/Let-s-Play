@@ -14,6 +14,10 @@ function makeCity(scene) {
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1d8a0 });
   const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xe9e5da });
+  const parkingMarkMat = new THREE.MeshBasicMaterial({ color: 0xc9c5b5 });
+  const roadPatchMat = new THREE.MeshStandardMaterial({ color: 0x34383d, roughness: 1 });
+  const manholeRimMat = new THREE.MeshStandardMaterial({ color: 0x161a1f, roughness: 0.92 });
+  const manholeMat = new THREE.MeshStandardMaterial({ color: 0x62666a, roughness: 0.76, metalness: 0.18 });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
   const lotPavingPalette = [0x77736d, 0x807970, 0x6b7073, 0x898175, 0x6e7470];
   const palette = [0xe5b99f, 0xc9b9aa, 0x9bb6b6, 0xd5d0c3, 0xb2a0a2, 0xd4a979, 0x839e9e, 0xf0d1ae];
@@ -27,6 +31,12 @@ function makeCity(scene) {
   const horizontalDashPositions = [];
   const verticalCrosswalkPositions = [];
   const horizontalCrosswalkPositions = [];
+  const verticalParkingBayPositions = [];
+  const horizontalParkingBayPositions = [];
+  const verticalRoadPatchPositions = [];
+  const horizontalRoadPatchPositions = [];
+  const verticalManholePositions = [];
+  const horizontalManholePositions = [];
   const parkedCarSpecs = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
@@ -91,25 +101,63 @@ function makeCity(scene) {
         }
       }
     }
+    // Places de stationnement, reprises d'asphalte et plaques d'égout dans chaque tronçon.
+    for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 8) {
+      if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 21) continue;
+      for (const side of [-1, 1]) {
+        verticalParkingBayPositions.push([axis + side * 5.6, p]);
+        horizontalParkingBayPositions.push([p, axis + side * 5.6]);
+      }
+    }
+    for (let p = -275; p <= 275; p += 50) {
+      if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 20) continue;
+      const patchSide = (Math.round((p + 275) / 50) + index) % 2 ? 1 : -1;
+      const patchOffset = patchSide * (4.7 + (index % 3) * 0.35);
+      verticalRoadPatchPositions.push([axis + patchOffset, p]);
+      horizontalRoadPatchPositions.push([p, axis + patchOffset]);
+    }
+    for (let p = -250; p <= 250; p += BLOCK) {
+      for (const side of [-1, 1]) {
+        verticalManholePositions.push([axis + side * 1.7, p]);
+        horizontalManholePositions.push([p, axis + side * 1.7]);
+      }
+    }
   }
 
   const marker = new THREE.Object3D();
   const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, verticalDashPositions.length);
-  verticalDashes.rotation.x = -Math.PI / 2;
-  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
+  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
   scene.add(verticalDashes);
   const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, horizontalDashPositions.length);
-  horizontalDashes.rotation.x = -Math.PI / 2;
-  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
+  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
   scene.add(horizontalDashes);
   const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
-  verticalCrosswalk.rotation.x = -Math.PI / 2;
-  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.055, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
+  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.055, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
   scene.add(verticalCrosswalk);
   const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
-  horizontalCrosswalk.rotation.x = -Math.PI / 2;
-  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.057, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
+  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.057, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
   scene.add(horizontalCrosswalk);
+  const addFlatRoadInstances = (geometry, material, positions, y) => {
+    const mesh = new THREE.InstancedMesh(geometry, material, positions.length);
+    positions.forEach(([x, z], index) => {
+      marker.position.set(x, y, z);
+      marker.rotation.set(-Math.PI / 2, 0, 0);
+      marker.scale.set(1, 1, 1);
+      marker.updateMatrix();
+      mesh.setMatrixAt(index, marker.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    scene.add(mesh);
+    return mesh;
+  };
+  addFlatRoadInstances(new THREE.PlaneGeometry(4.8, 0.13), parkingMarkMat, verticalParkingBayPositions, 0.043);
+  addFlatRoadInstances(new THREE.PlaneGeometry(0.13, 4.8), parkingMarkMat, horizontalParkingBayPositions, 0.044);
+  addFlatRoadInstances(new THREE.PlaneGeometry(1.25, 3.2), roadPatchMat, verticalRoadPatchPositions, 0.025);
+  addFlatRoadInstances(new THREE.PlaneGeometry(3.2, 1.25), roadPatchMat, horizontalRoadPatchPositions, 0.026);
+  addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, verticalManholePositions, 0.028);
+  addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, horizontalManholePositions, 0.029);
+  addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, verticalManholePositions, 0.034);
+  addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, horizontalManholePositions, 0.035);
 
   // Art-deco downtown and residential blocks, with varied setbacks, rooftops,
   // lit windows, shop awnings, palms, and corner street furniture.
@@ -377,15 +425,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (state.speed < 0.12 && !throttle) state.speed = 0;
       // Le volant répond plus directement ; il garde une petite inertie plutôt
       // qu'une interpolation molle au début du braquage.
-      state.steer += (steerInput - state.steer) * Math.min(1, dt * 10);
-      // Modèle bicyclette arcade-réaliste : 35° de braquage à basse vitesse,
-      // avec une réserve d'adhérence de 1,55 g. Le rayon s'élargit toujours
-      // avec la vitesse, mais les changements de direction en ville répondent
-      // nettement mieux qu'avant.
-      const wheelAngle = state.steer * 0.61;
+      state.steer += (steerInput - state.steer) * Math.min(1, dt * 16);
+      // Braquage plus direct et réserve d'adhérence accrue pour des virages
+      // urbains plus francs, tout en gardant un rayon qui s'élargit avec la vitesse.
+      const wheelAngle = state.steer * 0.65;
       const wheelbase = 2.75;
       const requestedYawRate = (state.speed / wheelbase) * Math.tan(wheelAngle);
-      const gripYawLimit = state.speed > 0.1 ? (1.55 * 9.81) / state.speed : 0;
+      const gripYawLimit = state.speed > 0.1 ? (2.0 * 9.81) / state.speed : 0;
       const yawRate = clamp(requestedYawRate, -gripYawLimit, gripYawLimit);
       state.heading += yawRate * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
