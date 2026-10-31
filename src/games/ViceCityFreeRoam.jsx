@@ -1313,46 +1313,136 @@ function makeCity(scene) {
   scene.add(islandLawn);
 
   const statueStoneMat = new THREE.MeshStandardMaterial({ color: 0xc7b99d, roughness: 0.82 });
-  const statueBronzeMat = new THREE.MeshStandardMaterial({ color: 0x9a6338, roughness: 0.36, metalness: 0.66 });
-  const statueFlameMat = new THREE.MeshBasicMaterial({ color: 0xffbd4d, toneMapped: false });
-  const statueBase = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.45, 0.62, 12), statueStoneMat);
+  const statueBronzeMat = new THREE.MeshStandardMaterial({ color: 0x9a6338, roughness: 0.29, metalness: 0.72 });
+  const statueDarkBronzeMat = new THREE.MeshStandardMaterial({ color: 0x50392b, roughness: 0.4, metalness: 0.62 });
+  const statueGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4a34e, roughness: 0.25, metalness: 0.78 });
+  const statueSaddleMat = new THREE.MeshStandardMaterial({ color: 0x762f28, roughness: 0.56, metalness: 0.22 });
+  const statueBase = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.45, 0.62, 32), statueStoneMat);
   statueBase.position.set(ROUNDABOUT_X, 0.76, ROUNDABOUT_Z);
   statueBase.castShadow = true;
+  statueBase.receiveShadow = true;
   scene.add(statueBase);
-  const statuePedestal = new THREE.Mesh(new THREE.CylinderGeometry(2.65, 3.35, 4.45, 12), statueStoneMat);
+  const statuePedestal = new THREE.Mesh(new THREE.CylinderGeometry(2.65, 3.35, 4.45, 32), statueStoneMat);
   statuePedestal.position.set(ROUNDABOUT_X, 3.295, ROUNDABOUT_Z);
   statuePedestal.castShadow = true;
   statuePedestal.receiveShadow = true;
   scene.add(statuePedestal);
-  const statueCap = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.48, 12), statueStoneMat);
+  const statueCap = new THREE.Mesh(new THREE.CylinderGeometry(3.5, 3.5, 0.48, 32), statueStoneMat);
   statueCap.position.set(ROUNDABOUT_X, 5.76, ROUNDABOUT_Z);
   statueCap.castShadow = true;
+  statueCap.receiveShadow = true;
   scene.add(statueCap);
-  addBox(scene, statueStoneMat, ROUNDABOUT_X, 2.0, ROUNDABOUT_Z - 3.02, 1.8, 1.0, 0.12, true);
-  const addStatueLimb = (start, end, radius) => {
+  addBox(scene, statueGoldMat, ROUNDABOUT_X, 2.05, ROUNDABOUT_Z - 3.04, 2.15, 1.16, 0.16, true);
+  addBox(scene, statueDarkBronzeMat, ROUNDABOUT_X, 2.19, ROUNDABOUT_Z - 3.14, 1.65, 0.56, 0.04, true);
+
+  const addStatueLimb = (start, end, radius, material = statueBronzeMat, topScale = 0.82) => {
     const direction = new THREE.Vector3().subVectors(end, start);
-    const limb = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.82, radius, direction.length(), 10), statueBronzeMat);
+    const limb = new THREE.Mesh(new THREE.CylinderGeometry(radius * topScale, radius, direction.length(), 16), material);
     limb.position.copy(start).add(end).multiplyScalar(0.5);
-    limb.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+    limb.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
     limb.castShadow = true;
+    limb.receiveShadow = true;
     scene.add(limb);
+    return limb;
   };
-  const statueY = 6.0;
-  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X - 0.58, statueY, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X - 0.62, 8.75, ROUNDABOUT_Z), 0.42);
-  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 0.58, statueY, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 0.62, 8.75, ROUNDABOUT_Z), 0.42);
-  addBox(scene, statueBronzeMat, ROUNDABOUT_X, 8.45, ROUNDABOUT_Z, 1.95, 3.6, 1.35, true);
-  const statueHead = new THREE.Mesh(new THREE.SphereGeometry(0.86, 16, 12), statueBronzeMat);
-  statueHead.position.set(ROUNDABOUT_X, 12.53, ROUNDABOUT_Z);
-  statueHead.castShadow = true;
-  scene.add(statueHead);
-  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X - 0.82, 11.0, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X - 2.7, 9.35, ROUNDABOUT_Z), 0.38);
-  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 0.82, 11.0, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 2.05, 12.25, ROUNDABOUT_Z), 0.4);
-  addStatueLimb(new THREE.Vector3(ROUNDABOUT_X + 2.05, 12.25, ROUNDABOUT_Z), new THREE.Vector3(ROUNDABOUT_X + 2.45, 14.15, ROUNDABOUT_Z), 0.24);
-  const statueTorch = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 10), statueFlameMat);
-  statueTorch.position.set(ROUNDABOUT_X + 2.45, 14.62, ROUNDABOUT_Z);
-  statueTorch.scale.set(0.72, 1.4, 0.72);
-  scene.add(statueTorch);
-  const roundaboutIsland = { x: ROUNDABOUT_X, z: ROUNDABOUT_Z, radius: ROUNDABOUT_ISLAND_RADIUS };
+  const addStatueForm = (position, scale, material, rotationZ = 0, segments = 24) => {
+    const form = new THREE.Mesh(new THREE.SphereGeometry(1, segments, Math.max(12, Math.floor(segments * 0.7))), material);
+    form.position.set(ROUNDABOUT_X + position[0], position[1], ROUNDABOUT_Z + position[2]);
+    form.scale.set(scale[0], scale[1], scale[2]);
+    form.rotation.z = rotationZ;
+    form.castShadow = true;
+    form.receiveShadow = true;
+    scene.add(form);
+    return form;
+  };
+  const statuePoint = (x, y, z) => new THREE.Vector3(ROUNDABOUT_X + x, y, ROUNDABOUT_Z + z);
+
+  // Bronze equestrian monument: rearing warhorse, articulated tack, armored rider and raised sword.
+  addStatueForm([-0.25, 7.62, 0], [1.95, 0.88, 0.73], statueBronzeMat, 0.18);
+  addStatueForm([-1.2, 7.48, 0], [0.9, 0.9, 0.76], statueBronzeMat, -0.08);
+  addStatueForm([0.88, 8.02, 0], [0.94, 1.08, 0.79], statueBronzeMat, 0.19);
+  addStatueForm([1.62, 8.91, 0], [0.58, 1.0, 0.62], statueBronzeMat, -0.45);
+  addStatueForm([2.12, 9.78, 0], [0.47, 0.69, 0.46], statueBronzeMat, -0.18);
+  addStatueForm([2.47, 9.47, 0], [0.43, 0.31, 0.39], statueBronzeMat, -0.12);
+  // Muzzle, nostrils, eyes and ears make the horse readable from street level.
+  for (const side of [-1, 1]) {
+    addStatueForm([2.63, 9.52, side * 0.23], [0.075, 0.09, 0.055], statueDarkBronzeMat);
+    addStatueForm([2.2, 9.96, side * 0.405], [0.09, 0.105, 0.07], statueGoldMat);
+    addStatueLimb(statuePoint(1.98, 10.24, side * 0.22), statuePoint(2.02, 10.63, side * 0.25), 0.13, statueBronzeMat, 0.48);
+    // Hind legs brace the rearing horse on the plinth; forelegs curl upward in motion.
+    addStatueLimb(statuePoint(-1.45, 7.35, side * 0.48), statuePoint(-1.65, 6.76, side * 0.53), 0.28, statueBronzeMat, 0.76);
+    addStatueForm([-1.65, 6.72, side * 0.53], [0.3, 0.29, 0.28], statueBronzeMat);
+    addStatueLimb(statuePoint(-1.65, 6.68, side * 0.53), statuePoint(-1.45, 6.13, side * 0.56), 0.19, statueBronzeMat, 0.82);
+    addStatueForm([-1.43, 6.11, side * 0.56], [0.29, 0.15, 0.22], statueDarkBronzeMat, 0.04);
+  }
+  addStatueLimb(statuePoint(1.15, 8.52, -0.52), statuePoint(1.66, 8.95, -0.55), 0.25, statueBronzeMat, 0.85);
+  addStatueForm([1.67, 8.95, -0.55], [0.25, 0.25, 0.24], statueBronzeMat);
+  addStatueLimb(statuePoint(1.67, 8.95, -0.55), statuePoint(1.95, 8.26, -0.55), 0.18, statueBronzeMat, 0.78);
+  addStatueForm([1.97, 8.21, -0.55], [0.3, 0.16, 0.24], statueDarkBronzeMat, 0.18);
+  addStatueLimb(statuePoint(1.24, 8.59, 0.52), statuePoint(1.91, 9.01, 0.55), 0.24, statueBronzeMat, 0.83);
+  addStatueForm([1.91, 9.01, 0.55], [0.24, 0.24, 0.23], statueBronzeMat);
+  addStatueLimb(statuePoint(1.91, 9.01, 0.55), statuePoint(2.34, 8.45, 0.55), 0.17, statueBronzeMat, 0.78);
+  addStatueForm([2.34, 8.42, 0.55], [0.28, 0.15, 0.23], statueDarkBronzeMat, -0.18);
+  // Swept mane, tail, saddle and breastplate detailing.
+  for (let strand = 0; strand < 5; strand += 1) {
+    const x = 0.95 + strand * 0.22;
+    const y = 8.72 + strand * 0.22;
+    addStatueLimb(statuePoint(x, y, -0.12), statuePoint(x - 0.34, y - 0.2, -0.12), 0.16, statueDarkBronzeMat, 0.55);
+  }
+  addStatueLimb(statuePoint(-1.85, 7.92, 0), statuePoint(-2.62, 8.42, 0), 0.2, statueDarkBronzeMat, 0.68);
+  addStatueLimb(statuePoint(-2.62, 8.42, 0), statuePoint(-2.97, 8.91, 0), 0.14, statueDarkBronzeMat, 0.48);
+  addStatueForm([-0.22, 8.42, 0], [0.9, 0.22, 0.82], statueSaddleMat, 0.12);
+  addStatueForm([0.92, 7.93, -0.02], [0.45, 0.64, 0.78], statueGoldMat, 0.18);
+  addStatueLimb(statuePoint(0.75, 8.92, -0.7), statuePoint(2.2, 9.94, -0.29), 0.055, statueGoldMat, 0.9);
+  addStatueLimb(statuePoint(0.72, 8.92, 0.7), statuePoint(2.2, 9.94, 0.29), 0.055, statueGoldMat, 0.9);
+
+  // Seated warrior, layered cuirass, greaves, helmet, shield and raised sword.
+  addStatueForm([0.0, 9.38, 0], [0.53, 0.78, 0.5], statueDarkBronzeMat, -0.08);
+  addStatueForm([0.0, 9.48, 0], [0.47, 0.66, 0.52], statueBronzeMat, -0.08);
+  addStatueForm([0.0, 9.0, 0], [0.54, 0.14, 0.54], statueGoldMat);
+  for (const side of [-1, 1]) {
+    addStatueLimb(statuePoint(-0.12, 9.0, side * 0.42), statuePoint(0.74, 8.55, side * 0.64), 0.31, statueBronzeMat, 0.85);
+    addStatueForm([0.76, 8.54, side * 0.64], [0.25, 0.28, 0.25], statueBronzeMat);
+    addStatueLimb(statuePoint(0.76, 8.54, side * 0.64), statuePoint(0.92, 7.72, side * 0.65), 0.21, statueDarkBronzeMat, 0.76);
+    addStatueForm([0.98, 7.69, side * 0.65], [0.3, 0.16, 0.23], statueGoldMat, 0.08);
+  }
+  addStatueForm([0.0, 10.28, 0], [0.34, 0.42, 0.33], statueBronzeMat);
+  addStatueForm([0.03, 10.76, 0], [0.39, 0.43, 0.37], statueDarkBronzeMat, 0.03);
+  addStatueForm([0.04, 10.91, 0], [0.43, 0.32, 0.4], statueGoldMat, 0.03);
+  addStatueLimb(statuePoint(-0.3, 10.02, -0.34), statuePoint(-0.58, 9.66, -0.63), 0.13, statueBronzeMat, 0.76);
+  addStatueForm([-0.58, 9.66, -0.63], [0.19, 0.19, 0.18], statueBronzeMat);
+  addStatueLimb(statuePoint(-0.58, 9.66, -0.63), statuePoint(-0.73, 9.85, -0.86), 0.1, statueBronzeMat, 0.74);
+  addStatueForm([-0.73, 9.85, -0.86], [0.15, 0.16, 0.13], statueGoldMat);
+  addStatueLimb(statuePoint(0.3, 10.83, 0.18), statuePoint(0.62, 11.37, 0.15), 0.13, statueBronzeMat, 0.78);
+  addStatueLimb(statuePoint(0.62, 11.37, 0.15), statuePoint(0.91, 11.2, 0.12), 0.1, statueBronzeMat, 0.74);
+  addStatueForm([0.94, 11.2, 0.12], [0.16, 0.17, 0.16], statueGoldMat);
+  // Raised blade and crossguard.
+  const swordBlade = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.6, 0.095), statueGoldMat);
+  swordBlade.position.set(ROUNDABOUT_X + 1.03, 12.56, ROUNDABOUT_Z + 0.12);
+  swordBlade.rotation.z = -0.18;
+  swordBlade.castShadow = true;
+  scene.add(swordBlade);
+  addStatueLimb(statuePoint(0.88, 11.28, 0.12), statuePoint(1.0, 11.55, 0.12), 0.09, statueDarkBronzeMat, 1.0);
+  const swordGuard = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.12, 0.16), statueGoldMat);
+  swordGuard.position.set(ROUNDABOUT_X + 0.95, 11.44, ROUNDABOUT_Z + 0.12);
+  swordGuard.rotation.z = -0.18;
+  swordGuard.castShadow = true;
+  scene.add(swordGuard);
+  // Round shield with a raised boss on the warrior's left side.
+  const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.18, 12), statueGoldMat);
+  shield.position.set(ROUNDABOUT_X - 0.62, 9.76, ROUNDABOUT_Z - 0.77);
+  shield.rotation.x = Math.PI / 2;
+  shield.castShadow = true;
+  scene.add(shield);
+  addStatueForm([-0.62, 9.76, -0.9], [0.19, 0.19, 0.12], statueDarkBronzeMat);
+  addStatueLimb(statuePoint(-0.62, 9.38, -0.81), statuePoint(-0.62, 10.14, -0.81), 0.055, statueDarkBronzeMat, 1.0);
+
+  const roundaboutIsland = {
+    x: ROUNDABOUT_X,
+    z: ROUNDABOUT_Z,
+    radius: ROUNDABOUT_ISLAND_RADIUS,
+    collisionRadius: ROUNDABOUT_ISLAND_RADIUS + 1.8,
+  };
 
   // Herbe stylisée instanciée : beaucoup de petites touffes pour casser l'aspect plat des pelouses.
   if (grassTuftPositions.length) {
@@ -1932,7 +2022,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const isPositionBlocked = (x, z) => {
       if (city.isCanalBlocked(x, z)) return true;
-      if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.radius) return true;
+      if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.collisionRadius) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
         && Math.abs(z - building.z) < building.halfDepth + BUILDING_COLLISION_MARGIN)) return true;
