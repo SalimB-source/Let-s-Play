@@ -1317,6 +1317,7 @@ function makeCity(scene) {
   const statueDarkBronzeMat = new THREE.MeshStandardMaterial({ color: 0x50392b, roughness: 0.4, metalness: 0.62 });
   const statueGoldMat = new THREE.MeshStandardMaterial({ color: 0xd4a34e, roughness: 0.25, metalness: 0.78 });
   const statueSaddleMat = new THREE.MeshStandardMaterial({ color: 0x762f28, roughness: 0.56, metalness: 0.22 });
+  const statueClothMat = new THREE.MeshStandardMaterial({ color: 0x632b24, roughness: 0.72, metalness: 0.12, side: THREE.DoubleSide });
   const statueBase = new THREE.Mesh(new THREE.CylinderGeometry(4.1, 4.45, 0.62, 32), statueStoneMat);
   statueBase.position.set(ROUNDABOUT_X, 0.76, ROUNDABOUT_Z);
   statueBase.castShadow = true;
@@ -1428,6 +1429,11 @@ function makeCity(scene) {
   swordGuard.rotation.z = -0.18;
   swordGuard.castShadow = true;
   scene.add(swordGuard);
+  const swordFuller = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.85, 0.018), statueDarkBronzeMat);
+  swordFuller.position.set(ROUNDABOUT_X + 1.03, 12.62, ROUNDABOUT_Z + 0.174);
+  swordFuller.rotation.z = -0.18;
+  scene.add(swordFuller);
+  addStatueForm([1.0, 11.23, 0.12], [0.13, 0.13, 0.13], statueGoldMat);
   // Round shield with a raised boss on the warrior's left side.
   const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.18, 12), statueGoldMat);
   shield.position.set(ROUNDABOUT_X - 0.62, 9.76, ROUNDABOUT_Z - 0.77);
@@ -1436,6 +1442,72 @@ function makeCity(scene) {
   scene.add(shield);
   addStatueForm([-0.62, 9.76, -0.9], [0.19, 0.19, 0.12], statueDarkBronzeMat);
   addStatueLimb(statuePoint(-0.62, 9.38, -0.81), statuePoint(-0.62, 10.14, -0.81), 0.055, statueDarkBronzeMat, 1.0);
+
+  // Fine relief work: horse bridle and reins, saddle straps, armor plates and monument trim.
+  for (const side of [-1, 1]) {
+    addStatueLimb(statuePoint(1.9, 10.1, side * 0.34), statuePoint(2.47, 9.48, side * 0.32), 0.055, statueGoldMat, 0.92);
+    addStatueLimb(statuePoint(2.31, 9.82, side * 0.4), statuePoint(2.53, 9.78, side * 0.32), 0.045, statueGoldMat, 1.0);
+    addStatueLimb(statuePoint(2.38, 9.63, -0.34), statuePoint(2.38, 9.63, 0.34), 0.06, statueGoldMat, 1.0);
+    addStatueLimb(statuePoint(1.98, 10.27, side * 0.22), statuePoint(2.06, 10.27, side * 0.22), 0.045, statueDarkBronzeMat, 1.0);
+    addStatueLimb(statuePoint(-0.68, 8.62, side * 0.69), statuePoint(-0.62, 8.05, side * 0.77), 0.075, statueGoldMat, 0.9);
+    addStatueForm([-0.62, 8.04, side * 0.77], [0.12, 0.15, 0.1], statueGoldMat);
+    // Stirrups and their hanging leathers.
+    addStatueLimb(statuePoint(0.48, 8.72, side * 0.71), statuePoint(0.48, 8.02, side * 0.79), 0.055, statueGoldMat, 1.0);
+    addStatueLimb(statuePoint(0.21, 7.98, side * 0.79), statuePoint(0.72, 7.98, side * 0.79), 0.055, statueGoldMat, 1.0);
+    addStatueLimb(statuePoint(0.21, 7.98, side * 0.79), statuePoint(0.21, 8.2, side * 0.79), 0.05, statueGoldMat, 1.0);
+    addStatueLimb(statuePoint(0.72, 7.98, side * 0.79), statuePoint(0.72, 8.2, side * 0.79), 0.05, statueGoldMat, 1.0);
+  }
+  // Breast collar, belly girth and a line of raised mane locks.
+  addStatueLimb(statuePoint(0.64, 8.54, -0.69), statuePoint(1.27, 7.74, -0.69), 0.085, statueGoldMat, 0.9);
+  addStatueLimb(statuePoint(0.64, 8.54, 0.69), statuePoint(1.27, 7.74, 0.69), 0.085, statueGoldMat, 0.9);
+  addStatueLimb(statuePoint(-0.76, 7.02, -0.63), statuePoint(-0.76, 7.02, 0.63), 0.075, statueGoldMat, 1.0);
+  for (let lock = 0; lock < 4; lock += 1) {
+    const x = 0.7 + lock * 0.24;
+    addStatueLimb(statuePoint(x, 9.02 + lock * 0.18, 0.22), statuePoint(x - 0.25, 8.68 + lock * 0.18, 0.22), 0.12, statueDarkBronzeMat, 0.48);
+  }
+  // Layered chest armor, shoulder guards, forearm bracers, belt and a trailing cloak.
+  addStatueForm([0.01, 9.67, -0.48], [0.35, 0.43, 0.12], statueGoldMat, -0.08);
+  addStatueForm([0.01, 9.67, -0.59], [0.24, 0.3, 0.045], statueBronzeMat, -0.08);
+  for (const side of [-1, 1]) {
+    addStatueForm([side * 0.38, 10.03, side * 0.34], [0.3, 0.24, 0.28], statueGoldMat, side * -0.14);
+    addStatueForm([side * 0.38, 10.03, side * 0.42], [0.22, 0.16, 0.2], statueBronzeMat, side * -0.14);
+    addStatueForm([side * 0.37, 9.45, -0.53], [0.16, 0.13, 0.055], statueGoldMat);
+  }
+  addStatueLimb(statuePoint(-0.28, 9.27, -0.45), statuePoint(0.28, 9.27, -0.45), 0.065, statueGoldMat, 1.0);
+  addStatueForm([0, 9.27, -0.53], [0.12, 0.15, 0.06], statueGoldMat);
+  for (const side of [-1, 1]) {
+    for (const y of [9.5, 9.72, 9.92]) {
+      addStatueForm([side * 0.2, y, -0.61], [0.035, 0.035, 0.025], statueGoldMat, 0, 12);
+    }
+    addStatueForm([side * 0.28, 8.91, -0.45], [0.19, 0.18, 0.13], statueGoldMat, side * 0.18);
+    addStatueForm([side * 0.28, 8.91, 0.45], [0.19, 0.18, 0.13], statueGoldMat, side * 0.18);
+  }
+  addStatueLimb(statuePoint(0.55, 10.02, 0.48), statuePoint(0.67, 9.61, 0.58), 0.17, statueGoldMat, 0.84);
+  addStatueLimb(statuePoint(0.75, 11.24, 0.12), statuePoint(1.02, 11.17, 0.12), 0.13, statueGoldMat, 1.0);
+  addStatueForm([-0.55, 9.5, 0.5], [0.75, 0.95, 0.14], statueClothMat, -0.25);
+  addStatueForm([-1.05, 8.94, 0.5], [0.57, 0.44, 0.12], statueClothMat, -0.43);
+  // Helmet brow, cheek guards and crest; the narrow dark opening reads as a visor.
+  addStatueLimb(statuePoint(-0.31, 10.83, -0.28), statuePoint(0.38, 10.83, -0.28), 0.055, statueGoldMat, 1.0);
+  addStatueLimb(statuePoint(-0.25, 10.7, -0.31), statuePoint(0.29, 10.7, -0.31), 0.035, statueDarkBronzeMat, 1.0);
+  addStatueLimb(statuePoint(-0.3, 10.68, -0.22), statuePoint(-0.22, 10.36, -0.24), 0.12, statueGoldMat, 0.72);
+  addStatueLimb(statuePoint(0.3, 10.68, -0.22), statuePoint(0.22, 10.36, -0.24), 0.12, statueGoldMat, 0.72);
+  addStatueLimb(statuePoint(-0.08, 11.15, 0), statuePoint(-0.47, 11.58, 0.04), 0.17, statueClothMat, 0.48);
+  addStatueLimb(statuePoint(-0.47, 11.58, 0.04), statuePoint(-0.96, 11.68, 0.08), 0.1, statueGoldMat, 0.25);
+  // Shield boss and raised heraldic cross on the face toward the street.
+  addStatueForm([-0.62, 9.76, -1.01], [0.15, 0.15, 0.09], statueGoldMat);
+  addStatueLimb(statuePoint(-0.62, 9.48, -0.99), statuePoint(-0.62, 10.04, -0.99), 0.045, statueDarkBronzeMat, 1.0);
+  addStatueLimb(statuePoint(-0.88, 9.76, -0.99), statuePoint(-0.36, 9.76, -0.99), 0.045, statueDarkBronzeMat, 1.0);
+  // Gold courses and carved plaques break up the tall stone pedestal.
+  for (const [y, radius] of [[1.25, 3.17], [1.55, 3.1], [4.95, 2.75], [5.4, 2.7]]) {
+    const trim = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius + 0.04, 0.09, 32), statueGoldMat);
+    trim.position.set(ROUNDABOUT_X, y, ROUNDABOUT_Z);
+    trim.castShadow = true;
+    scene.add(trim);
+  }
+  for (const side of [-1, 1]) {
+    addBox(scene, statueGoldMat, ROUNDABOUT_X + side * 0.8, 3.3, ROUNDABOUT_Z - 2.78, 0.085, 1.3, 0.08, true);
+    addBox(scene, statueGoldMat, ROUNDABOUT_X, 3.91, ROUNDABOUT_Z - 2.83, 1.15, 0.07, 0.08, true);
+  }
 
   const roundaboutIsland = {
     x: ROUNDABOUT_X,
