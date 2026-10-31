@@ -3,7 +3,12 @@ import * as THREE from 'three';
 import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
-import { viceCityFreeDriveSpeedStep, viceCityFreeDriveSteerStep, viceCityFreeDriveYawRate } from './viceCityFreeDrive.js';
+import {
+  viceCityFreeDriveParkedCarHitbox,
+  viceCityFreeDriveSpeedStep,
+  viceCityFreeDriveSteerStep,
+  viceCityFreeDriveYawRate,
+} from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import './vice-city-free-roam.css';
 
@@ -1067,8 +1072,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const sine = Math.sin(car.yaw);
         const localX = dx * cosine - dz * sine;
         const localZ = dx * sine + dz * cosine;
-        const halfWidth = Math.max(2.0, (car.width || 1.94) / 2 + 1.05);
-        const halfLength = Math.max(4.2, (car.length || 4.0) / 2 + 2.1);
+        const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(car.width, car.length);
         return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
       });
     };

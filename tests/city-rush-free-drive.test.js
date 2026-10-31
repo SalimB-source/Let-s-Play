@@ -11,7 +11,12 @@ import {
   cityRushLaneConfig,
   cityRushMiniGarageWidth,
 } from '../src/games/cityRushRules.js';
-import { viceCityFreeDriveSpeedStep, viceCityFreeDriveSteerStep, viceCityFreeDriveYawRate } from '../src/games/viceCityFreeDrive.js';
+import {
+  viceCityFreeDriveParkedCarHitbox,
+  viceCityFreeDriveSpeedStep,
+  viceCityFreeDriveSteerStep,
+  viceCityFreeDriveYawRate,
+} from '../src/games/viceCityFreeDrive.js';
 import {
   CITY_RUSH_DEFAULT_DRIVING_MODE,
   CITY_RUSH_DRIVING_FREE,
@@ -112,6 +117,15 @@ test('braquage progressif : appui bref doux, maintien plus fort, recentrage au r
   const released = viceCityFreeDriveSteerStep(quickTap, 0, 0.1);
   assert.ok(released < quickTap, 'la direction se détend au relâchement');
   assert.ok(near(viceCityFreeDriveSteerStep(0, -1, DT), -viceCityFreeDriveSteerStep(0, 1, DT)));
+});
+
+test('hitbox des voitures stationnées resserrée pour frôler sans collision lointaine', () => {
+  const sedan = viceCityFreeDriveParkedCarHitbox(1.94, 4);
+  assert.ok(sedan.halfWidth < 2.0, `demi-largeur : ${sedan.halfWidth}`);
+  assert.ok(sedan.halfLength < 4.0, `demi-longueur : ${sedan.halfLength}`);
+  const truck = viceCityFreeDriveParkedCarHitbox(2.3, 4.6);
+  assert.ok(truck.halfWidth > sedan.halfWidth);
+  assert.ok(truck.halfLength > sedan.halfLength);
 });
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {

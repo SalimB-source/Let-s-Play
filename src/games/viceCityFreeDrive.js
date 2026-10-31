@@ -6,6 +6,16 @@ const FREE_ROAM_MAX_LATERAL_GRIP = 1.55 * 9.81;
 const FREE_ROAM_STEER_BUILD_RATE = 3.6;
 const FREE_ROAM_STEER_RELEASE_RATE = 10;
 
+/** Tighter parked-car obstacle extents so the player can pass close by. */
+export function viceCityFreeDriveParkedCarHitbox(width = 1.94, length = 4) {
+  const carWidth = Number(width) || 1.94;
+  const carLength = Number(length) || 4;
+  return {
+    halfWidth: Math.max(1.55, carWidth / 2 + 0.65),
+    halfLength: Math.max(3.4, carLength / 2 + 1.45),
+  };
+}
+
 /** Steering builds while a key is held, but eases back promptly on release. */
 export function viceCityFreeDriveSteerStep(steer, input, dt) {
   const rate = input === 0 ? FREE_ROAM_STEER_RELEASE_RATE : FREE_ROAM_STEER_BUILD_RATE;
