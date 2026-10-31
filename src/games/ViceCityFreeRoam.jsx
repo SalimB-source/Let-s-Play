@@ -1954,6 +1954,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   onExitRef.current = onExit;
   soundOnRef.current = soundOn;
   cockpitViewRef.current = cockpitView;
+  const driveCar = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
   const activateAudio = () => {
     if (!soundOnRef.current) return;
     const audio = audioRef.current;
@@ -2415,7 +2416,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
       <header className="vice-free-roam-header">
-        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>OCEAN DISTRICT · 1986</small></div>
+        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>{driveCar.name} · OCEAN DISTRICT · 1986</small></div>
         <div className="vice-free-roam-location"><i /> CONDUITE LIBRE <span>—</span> AUCUNE COURSE</div>
         <button type="button" className={`vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
           aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
