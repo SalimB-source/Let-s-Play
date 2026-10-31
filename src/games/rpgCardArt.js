@@ -60,7 +60,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
-  'danseuse-des-ombres-de-dune': 'lune-danseuse-v2',
+  'danseuse-des-ombres-de-dune': 'lune-danseuse-v3',
   'souverain-de-la-lune-noire': 'lune-heros-v2',
   'voile-de-la-lune-noire': 'lune-magie-v4',
   'ressac-de-la-lune-noire': 'lune-magie-v4',
