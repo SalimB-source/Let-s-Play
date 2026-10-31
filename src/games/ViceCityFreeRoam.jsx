@@ -5,6 +5,17 @@ import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
 import {
+  CITY_RUSH_COCKPIT_BODY_FOLLOW,
+  CITY_RUSH_COCKPIT_FOV,
+  CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX,
+  CITY_RUSH_COCKPIT_PITCH,
+  CITY_RUSH_COCKPIT_SPEED_FOV,
+  CITY_RUSH_CAMERA_COCKPIT,
+  CITY_RUSH_CAMERA_PREF_KEY,
+  makeCityRushCockpit,
+  normalizeCityRushCameraMode,
+} from './cityRushCockpit.js';
+import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
   viceCityFreeDriveSpeedStep,
@@ -38,6 +49,18 @@ function readFreeRoamSoundPreference() {
 
 function writeFreeRoamSoundPreference(enabled) {
   try { window.localStorage.setItem(FREE_ROAM_SOUND_KEY, enabled ? 'on' : 'off'); } catch { /* stockage désactivé */ }
+}
+
+function readFreeRoamCameraPreference() {
+  try {
+    return normalizeCityRushCameraMode(window.localStorage.getItem(CITY_RUSH_CAMERA_PREF_KEY)) === CITY_RUSH_CAMERA_COCKPIT;
+  } catch { return false; }
+}
+
+function writeFreeRoamCameraPreference(enabled) {
+  try {
+    window.localStorage.setItem(CITY_RUSH_CAMERA_PREF_KEY, normalizeCityRushCameraMode(enabled ? CITY_RUSH_CAMERA_COCKPIT : 'chase'));
+  } catch { /* stockage désactivé */ }
 }
 
 function parkingStallCenters(segmentStart) {
@@ -1923,7 +1946,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const onExitRef = useRef(onExit);
   const touchKeysRef = useRef(new Set());
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
-  const [cockpitView, setCockpitView] = useState(false);
+  const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
   const soundOnRef = useRef(soundOn);
   const cockpitViewRef = useRef(cockpitView);
   const toggleSoundRef = useRef(null);
@@ -1955,6 +1978,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const next = !cockpitViewRef.current;
     cockpitViewRef.current = next;
     setCockpitView(next);
+    writeFreeRoamCameraPreference(next);
   };
   toggleCameraRef.current = toggleCamera;
   const setTouchKey = (code, pressed) => {
@@ -2007,41 +2031,18 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     vehicle.position.set(-138, 0, 0);
     scene.add(vehicle);
-    const cockpitGlassMaterials = new Set();
-    vehicle.traverse((object) => {
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      materials.filter((material) => material?.name?.includes('opaque-tinted-glass'))
-        .forEach((material) => cockpitGlassMaterials.add(material));
-    });
-    const cockpitInterior = new THREE.Group();
-    cockpitInterior.visible = false;
-    vehicle.add(cockpitInterior);
-    const cockpitDashMat = new THREE.MeshStandardMaterial({ color: 0x252a2d, roughness: 0.7 });
-    const cockpitTrimMat = new THREE.MeshStandardMaterial({ color: 0x7a6140, roughness: 0.42, metalness: 0.55 });
-    const cockpitScreenMat = new THREE.MeshBasicMaterial({ color: 0x6be2d6 });
-    const cockpitDash = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.47), cockpitDashMat);
-    cockpitDash.position.set(0, 0.92, -0.73);
-    cockpitInterior.add(cockpitDash);
-    const instrumentPanel = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.2, 0.045), cockpitDashMat);
-    instrumentPanel.position.set(0, 1.08, -0.49);
-    cockpitInterior.add(instrumentPanel);
-    const instrumentGlow = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.055, 0.018), cockpitScreenMat);
-    instrumentGlow.position.set(0, 1.09, -0.455);
-    cockpitInterior.add(instrumentGlow);
-    const steeringWheel = new THREE.Group();
-    steeringWheel.position.set(0, 1.1, -0.17);
-    const wheelRim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 8, 24), cockpitDashMat);
-    steeringWheel.add(wheelRim);
-    const wheelHub = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.06, 12), cockpitTrimMat);
-    wheelHub.rotation.x = Math.PI / 2;
-    steeringWheel.add(wheelHub);
-    for (const spokeAngle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) {
-      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.23, 0.035), cockpitTrimMat);
-      spoke.position.set(Math.sin(spokeAngle) * 0.11, Math.cos(spokeAngle) * 0.11, 0);
-      spoke.rotation.z = -spokeAngle;
-      steeringWheel.add(spoke);
-    }
-    cockpitInterior.add(steeringWheel);
+    let playerCockpit = null;
+    const ensurePlayerCockpit = () => {
+      if (!playerCockpit) {
+        playerCockpit = makeCityRushCockpit(vehicle, {
+          rightHandDrive: false,
+          accent: profile.accent,
+          daylight: true,
+          label: profile.name,
+        });
+      }
+      return playerCockpit;
+    };
     const trafficDirections = [
       { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
       { axis: 'z', direction: 1 }, { axis: 'z', direction: -1 },
@@ -2191,7 +2192,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const cameraTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
     const cockpitPosition = new THREE.Vector3();
-    let lastCockpitCameraMode = null;
+    const cockpitIdentityQuat = new THREE.Quaternion();
+    const cockpitFollowQuat = new THREE.Quaternion();
+    const cockpitHeadQuat = new THREE.Quaternion();
+    const cockpitTargetQuat = new THREE.Quaternion();
+    const cockpitHeadEuler = new THREE.Euler();
+    let cockpitActive = false;
+    let cockpitCameraSnap = true;
     const overlapsVehicleHitbox = (x, z, carX, carZ, yaw, width, length) => {
       const dx = x - carX;
       const dz = z - carZ;
@@ -2239,6 +2246,51 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         traffic.touchingPlayer = overlaps;
       }
       return hitCount;
+    };
+    const cockpitMirrorTurn = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
+    let cockpitMirrorTarget = null;
+    let cockpitMirrorCamera = null;
+    let cockpitMirrorFrame = 0;
+    let cockpitMirrorBroken = false;
+    const renderCockpitMirror = () => {
+      if (!cockpitActive || !playerCockpit || cockpitMirrorBroken || typeof renderer.setRenderTarget !== 'function') return;
+      cockpitMirrorFrame += 1;
+      if (cockpitMirrorTarget && cockpitMirrorFrame % 2 === 1) return;
+      const previousTarget = renderer.getRenderTarget?.() || null;
+      const shadowAutoUpdate = renderer.shadowMap.autoUpdate;
+      try {
+        if (!cockpitMirrorTarget) {
+          cockpitMirrorTarget = new THREE.WebGLRenderTarget(320, 80, {
+            type: renderer.capabilities?.isWebGL2 && renderer.extensions?.has?.('EXT_color_buffer_float')
+              ? THREE.HalfFloatType
+              : THREE.UnsignedByteType,
+          });
+          cockpitMirrorCamera = new THREE.PerspectiveCamera(15, 4, 0.3, 180);
+          cockpitMirrorTarget.texture.repeat.set(-1, 1);
+          cockpitMirrorTarget.texture.offset.set(1, 0);
+          const glass = playerCockpit.mirror.material;
+          glass.map = cockpitMirrorTarget.texture;
+          glass.color.setHex(0xffffff);
+          glass.needsUpdate = true;
+        }
+        cockpitMirrorCamera.position.copy(cockpitPosition);
+        cockpitMirrorCamera.position.y += 0.05;
+        cockpitMirrorCamera.quaternion.copy(vehicle.quaternion).multiply(cockpitMirrorTurn);
+        cockpitMirrorCamera.updateMatrixWorld();
+        renderer.shadowMap.autoUpdate = false;
+        vehicle.visible = false;
+        renderer.setRenderTarget(cockpitMirrorTarget);
+        renderer.render(scene, cockpitMirrorCamera);
+      } catch {
+        cockpitMirrorBroken = true;
+        const glass = playerCockpit.mirror.material;
+        glass.map = playerCockpit.mirror.fallback;
+        glass.needsUpdate = true;
+      } finally {
+        vehicle.visible = true;
+        renderer.setRenderTarget(previousTarget);
+        renderer.shadowMap.autoUpdate = shadowAutoUpdate;
+      }
     };
     let frame = 0; let last = performance.now(); let hudAt = 0;
     const animate = (now) => {
@@ -2300,27 +2352,33 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       const isCockpitView = cockpitViewRef.current;
-      cockpitInterior.visible = isCockpitView;
-      steeringWheel.rotation.z = -state.steer * 0.85;
-      if (lastCockpitCameraMode !== isCockpitView) {
-        camera.fov = isCockpitView ? 74 : 66;
+      if (cockpitActive !== isCockpitView) {
+        cockpitActive = isCockpitView;
+        const cockpit = cockpitActive ? ensurePlayerCockpit() : playerCockpit;
+        cockpit?.setActive(cockpitActive);
+        cockpitCameraSnap = true;
+        camera.fov = cockpitActive ? CITY_RUSH_COCKPIT_FOV : 66;
         camera.updateProjectionMatrix();
-        cockpitGlassMaterials.forEach((material) => {
-          material.transparent = isCockpitView;
-          material.opacity = isCockpitView ? 0.12 : 1;
-          material.depthWrite = !isCockpitView;
-          material.needsUpdate = true;
-        });
-        lastCockpitCameraMode = isCockpitView;
       }
-      if (isCockpitView) {
-        cockpitPosition.set(0, 1.34, 0.18);
-        vehicle.localToWorld(cockpitPosition);
-        cameraPosition.copy(cockpitPosition);
-        const lookX = state.x + forward.x * 24;
-        const lookZ = state.z + forward.z * 24;
-        cameraTarget.set(lookX, city.surfaceHeight(lookX, lookZ) + 1.18, lookZ);
-        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 13));
+      const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
+      if (isCockpitView && activeCockpit) {
+        activeCockpit.update({ speed: Math.abs(state.speed), topSpeed: maxSpeed, steer: state.steer * 0.4 }, dt, state.time);
+        vehicle.updateMatrixWorld(true);
+        activeCockpit.eye.getWorldPosition(cockpitPosition);
+        camera.position.copy(cockpitPosition);
+        cockpitFollowQuat.copy(cockpitIdentityQuat)
+          .slerp(vehicle.userData.body.quaternion, CITY_RUSH_COCKPIT_BODY_FOLLOW);
+        const speedRatio = clamp(Math.abs(state.speed) / maxSpeed, 0, 1);
+        const headBob = Math.sin(state.time * 39) * speedRatio * 0.0012;
+        const lookYaw = clamp(state.steer * 0.16, -CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX, CITY_RUSH_COCKPIT_LOOK_AHEAD_MAX);
+        cockpitHeadEuler.set(CITY_RUSH_COCKPIT_PITCH + headBob, lookYaw, 0, 'YXZ');
+        cockpitHeadQuat.setFromEuler(cockpitHeadEuler);
+        cockpitTargetQuat.copy(vehicle.quaternion).multiply(cockpitFollowQuat).multiply(cockpitHeadQuat);
+        if (cockpitCameraSnap) camera.quaternion.copy(cockpitTargetQuat);
+        else camera.quaternion.slerp(cockpitTargetQuat, 1 - Math.exp(-dt * 14));
+        cockpitCameraSnap = false;
+        camera.fov = CITY_RUSH_COCKPIT_FOV + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
+        camera.updateProjectionMatrix();
       } else {
         cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
         cameraPosition.y += 3.2;
@@ -2330,18 +2388,20 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           city.surfaceHeight(state.x + forward.x * 5.5, state.z + forward.z * 5.5) + 1.05,
           state.z + forward.z * 5.5,
         );
+        camera.lookAt(cameraTarget);
       }
-      camera.lookAt(cameraTarget);
       if (now - hudAt > 80 && hudRef.current) {
         hudAt = now;
         hudRef.current.innerHTML = `<b>${Math.round(Math.abs(state.speed) * 3.6)}</b><small>KM/H</small>`;
       }
       renderer.render(scene, camera);
+      renderCockpitMirror();
     };
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
       window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); window.removeEventListener('blur', blur);
+      cockpitMirrorTarget?.dispose();
       scene.traverse((object) => {
         object.geometry?.dispose?.();
         const materials = Array.isArray(object.material) ? object.material : [object.material];
