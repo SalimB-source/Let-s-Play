@@ -11,7 +11,7 @@ import {
   cityRushLaneConfig,
   cityRushMiniGarageWidth,
 } from '../src/games/cityRushRules.js';
-import { viceCityFreeDriveSpeedStep } from '../src/games/viceCityFreeDrive.js';
+import { viceCityFreeDriveSpeedStep, viceCityFreeDriveYawRate } from '../src/games/viceCityFreeDrive.js';
 import {
   CITY_RUSH_DEFAULT_DRIVING_MODE,
   CITY_RUSH_DRIVING_FREE,
@@ -74,6 +74,8 @@ function stepFrames({ x = 0, velocity = 0, seconds, input = 0, target = null, bo
 
 test('conduite libre : flèche bas freine puis engage la marche arrière à l’arrêt', () => {
   const params = { dt: 1 / 60, maxSpeed: 35, acceleration: 5, reverseMaxSpeed: 7 };
+  const coastAtTwenty = viceCityFreeDriveSpeedStep({ ...params, speed: 20, throttle: false, brake: false, dt: 0.25 });
+  assert.ok(coastAtTwenty <= 19.6, `le lever de pied ralentit nettement : ${coastAtTwenty}`);
   assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: false }), 0,
     'aucune accélération automatique au point mort');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: true }) < 0,
@@ -91,6 +93,13 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche haut freine d’abord la marche arrière');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: true, brake: false }) > 0,
     'la flèche haut repart en marche avant');
+});
+
+test('conduite libre : braquage moins brutal et adhérence latérale modérée', () => {
+  assert.equal(viceCityFreeDriveYawRate(0, 1), 0);
+  assert.ok(viceCityFreeDriveYawRate(5, 1) < 0.8, 'petit rayon de braquage adouci à basse vitesse');
+  assert.ok(viceCityFreeDriveYawRate(30, 1) < 0.52, 'l’adhérence limite le lacet à vitesse élevée');
+  assert.ok(near(viceCityFreeDriveYawRate(30, -1), -viceCityFreeDriveYawRate(30, 1)));
 });
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {

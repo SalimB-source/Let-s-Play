@@ -1,5 +1,16 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const BRAKE_DECELERATION = 13.5;
+const FREE_ROAM_WHEEL_ANGLE = 0.44;
+const FREE_ROAM_WHEELBASE = 3.25;
+const FREE_ROAM_MAX_LATERAL_GRIP = 1.55 * 9.81;
+
+/** Gentler low-speed steering, with a more forgiving lateral-grip ceiling. */
+export function viceCityFreeDriveYawRate(speed, steer) {
+  if (Math.abs(speed) <= 0.1) return 0;
+  const requestedYawRate = (speed / FREE_ROAM_WHEELBASE) * Math.tan(steer * FREE_ROAM_WHEEL_ANGLE);
+  const gripYawLimit = FREE_ROAM_MAX_LATERAL_GRIP / Math.abs(speed);
+  return Math.max(-gripYawLimit, Math.min(gripYawLimit, requestedYawRate));
+}
 
 /**
  * Update the signed free-roam speed: down brakes forward motion, then drives
@@ -27,7 +38,8 @@ export function viceCityFreeDriveSpeedStep({
       nextSpeed += acceleration * Math.max(0.12, 1 - speedRatio * speedRatio) * dt;
     }
   } else {
-    const drag = (0.42 + nextSpeed * nextSpeed * 0.0011) * dt;
+    // Engine braking is deliberately noticeable when the accelerator is released.
+    const drag = (0.9 + nextSpeed * nextSpeed * 0.0024) * dt;
     nextSpeed = nextSpeed > 0
       ? Math.max(0, nextSpeed - drag)
       : Math.min(0, nextSpeed + drag);

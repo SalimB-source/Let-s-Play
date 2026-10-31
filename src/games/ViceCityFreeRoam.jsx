@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS } from './cityRushRules.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
-import { viceCityFreeDriveSpeedStep } from './viceCityFreeDrive.js';
+import { viceCityFreeDriveSpeedStep, viceCityFreeDriveYawRate } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import './vice-city-free-roam.css';
 
@@ -1069,17 +1069,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         acceleration,
         reverseMaxSpeed,
       });
-      // Le volant répond plus directement ; il garde une petite inertie plutôt
-      // qu'une interpolation molle au début du braquage.
-      state.steer += (steerInput - state.steer) * Math.min(1, dt * 16);
-      // Braquage plus direct et réserve d'adhérence accrue pour des virages
-      // urbains plus francs, tout en gardant un rayon qui s'élargit avec la vitesse.
-      const wheelAngle = state.steer * 0.63;
-      const wheelbase = 2.75;
-      const requestedYawRate = (state.speed / wheelbase) * Math.tan(wheelAngle);
-      const gripYawLimit = Math.abs(state.speed) > 0.1 ? (1.9 * 9.81) / Math.abs(state.speed) : 0;
-      const yawRate = clamp(requestedYawRate, -gripYawLimit, gripYawLimit);
-      state.heading += yawRate * dt;
+      // Une montée de braquage plus progressive et un angle de roue réduit
+      // rendent les changements de cap moins secs, surtout à basse vitesse.
+      state.steer += (steerInput - state.steer) * Math.min(1, dt * 10);
+      state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
       forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
       const nextX = state.x + forward.x * state.speed * dt;
@@ -1104,7 +1097,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
       vehicle.rotation.y = -state.heading;
-      animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.56, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
+      animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
       cameraPosition.y += 3.2;
       camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
