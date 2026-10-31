@@ -80,7 +80,7 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche bas fait reculer depuis l’arrêt');
   assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 1, throttle: false, brake: true, dt: 0.2 }), 0,
     'le freinage avant s’arrête à zéro sans inverser la vitesse dans la même frame');
-  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 }), 2.75,
+  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 }), 1.625,
     'la flèche bas freine quand la voiture avance');
   let reverseSpeed = 0;
   for (let frame = 0; frame < 180; frame += 1) {

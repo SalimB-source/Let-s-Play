@@ -1,4 +1,5 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const BRAKE_DECELERATION = 13.5;
 
 /**
  * Update the signed free-roam speed: down brakes forward motion, then drives
@@ -17,10 +18,10 @@ export function viceCityFreeDriveSpeedStep({
   const reverseAcceleration = Math.max(2.5, acceleration * 0.65);
 
   if (brake) {
-    if (nextSpeed > 0) nextSpeed = Math.max(0, nextSpeed - 9 * dt);
+    if (nextSpeed > 0) nextSpeed = Math.max(0, nextSpeed - BRAKE_DECELERATION * dt);
     else nextSpeed = Math.max(-reverseMaxSpeed, nextSpeed - reverseAcceleration * dt);
   } else if (throttle) {
-    if (nextSpeed < 0) nextSpeed = Math.min(0, nextSpeed + 9 * dt);
+    if (nextSpeed < 0) nextSpeed = Math.min(0, nextSpeed + BRAKE_DECELERATION * dt);
     else {
       const speedRatio = nextSpeed / maxSpeed;
       nextSpeed += acceleration * Math.max(0.12, 1 - speedRatio * speedRatio) * dt;
