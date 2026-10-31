@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ViceCityWorld from './ViceCityWorld';
 import ViceCityGarageStage, { CAMERA_SHIFT_MODE } from './ViceCityGarageStage';
 import ViceCityRushMainMenu from './ViceCityRushMainMenu';
+import ViceCityFreeRoam from './ViceCityFreeRoam';
 import CityRushDriverAvatar from './CityRushDriverAvatar';
 import CityRushComic from './CityRushComic';
 import CityRushRaceList from './CityRushRaceList';
@@ -624,6 +625,7 @@ export default function ViceCityRushPage() {
   // menu chapeaute la page. Version légère — la photo du modèle sert de décor
   // statique, aucune scène 3D n'est montée tant que le menu est ouvert.
   const [titleMenuOpen, setTitleMenuOpen] = useState(true);
+  const [freeRoamOpen, setFreeRoamOpen] = useState(false);
   const titleMenuOpenRef = useRef(true);
   useEffect(() => { titleMenuOpenRef.current = titleMenuOpen; }, [titleMenuOpen]);
   const audioRef = useRef(null);
@@ -1997,6 +1999,13 @@ export default function ViceCityRushPage() {
     >
       <h1 className="sr-only">Vice City Rush — Course arcade 3D</h1>
 
+      {freeRoamOpen && (
+        <ViceCityFreeRoam
+          carId={selectedCar.id}
+          onExit={() => { setFreeRoamOpen(false); setTitleMenuOpen(true); }}
+        />
+      )}
+
       {titleMenuOpen && (
         <ViceCityRushMainMenu
           // L'écran-titre ne résume pas la sauvegarde : il vend la campagne. Le
@@ -2017,6 +2026,7 @@ export default function ViceCityRushPage() {
           onToggleDriving={toggleDriving}
           onToggleFullscreen={toggleImmersive}
           onStartTutorial={handleTitleTutorial}
+          onStartFreeDrive={() => { audioRef.current?.stop(); setTitleMenuOpen(false); setFreeRoamOpen(true); }}
           onPick={handleTitlePick}
         />
       )}
@@ -2122,6 +2132,18 @@ export default function ViceCityRushPage() {
             style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
           >
             <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (missionMode ? Boolean(currentMission?.policeFromStart) : storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} cameraMode={cameraMode} drivingMode={drivingMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} audioRef={audioRef} />
+            <div className="city-rush-drive-touch" aria-label="Accélération et freinage tactiles">
+              {[
+                ['accelerate', '↑', 'ACCÉLÉRER'], ['brake', '↓', 'FREINER'],
+              ].map(([action, icon, label]) => (
+                <button key={action} type="button" aria-label={label}
+                  onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId); actionsRef.current?.(`${action}-down`); }}
+                  onPointerUp={() => actionsRef.current?.(`${action}-up`)}
+                  onPointerCancel={() => actionsRef.current?.(`${action}-up`)}
+                  onLostPointerCapture={() => actionsRef.current?.(`${action}-up`)}>{icon}<small>{label}</small>
+                </button>
+              ))}
+            </div>
             <div className="city-rush-vignette" aria-hidden="true" />
             {bazookaImpactPulse > 0 && (
               <div
@@ -3056,8 +3078,8 @@ export default function ViceCityRushPage() {
                     doigt (la feuille de style montre l'un ou l'autre selon le
                     pointeur). */}
                 <div className="city-rush-intro-foot">
-                  <span className="is-key-hint">{freeDrive ? '← → / Q D · VOLANT LIBRE (MAINTENIR)' : '← → / Q D · VOIES (MAINTENIR)'}</span>
-                  <span className="is-touch-hint">{freeDrive ? 'DOIGT SUR LA ROUTE · LA VOITURE LE SUIT' : 'GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE'}</span>
+                  <span className="is-key-hint">↑ ACCÉLÉRER · ↓ FREINER · {freeDrive ? '← → / Q D · VOLANT LIBRE (MAINTENIR)' : '← → / Q D · VOIES (MAINTENIR)'}</span>
+                  <span className="is-touch-hint">PÉDALES TACTILES · {freeDrive ? 'DOIGT SUR LA ROUTE · LA VOITURE LE SUIT' : 'GLISSE ← → SUR LA ROUTE · CHANGE DE VOIE'}</span>
                   <span className="is-key-hint">SOURIS SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-touch-hint">GLISSE SUR LE GARAGE · REGARDE AUTOUR DE LA VOITURE</span>
                   <span className="is-key-hint">{tournamentMode ? 'BONUS VERT : TURBO · SANS ARME' : `Z · TIR (AK-47 ROUGE · POMPE BLEU · BAZOOKA JAUNE) · ${CITY_RUSH_SHOTGUN_FIRE_COOLDOWN} S PAR CARTOUCHE`}</span>
@@ -3458,8 +3480,8 @@ export default function ViceCityRushPage() {
 
           <div className="city-rush-shell-footer">
             <span><i className="city-rush-footer-dot" /> {activeModeName} <b>·</b> {city.name} <b>·</b> {sprintMode ? `${CITY_RUSH_SPRINT_CHECKPOINTS} CHECKPOINTS` : `${currentLaps} TOUR${currentLaps > 1 ? 'S' : ''}`} · {currentDistance} M</span>
-            <span className="city-rush-desktop-hint">{freeDrive ? '← → / Q D : VOLANT LIBRE' : '← → / Q D : VOIES (MAINTENIR)'} {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : TIR (AK-47 · POMPE · BAZOOKA) </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN <b>·</b> C : VUE COCKPIT</span>
-            <span className="city-rush-mobile-hint">{freeDrive ? 'GLISSE LE DOIGT · LA VOITURE SUIT' : 'GLISSE GAUCHE / DROITE'}{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : ' · OBJETS EN BAS · BOUTON DE TIR'}</span>
+            <span className="city-rush-desktop-hint">↑ ACCÉLÉRER · ↓ FREINER <b>·</b> {freeDrive ? '← → / Q D : VOLANT LIBRE' : '← → / Q D : VOIES (MAINTENIR)'} {sprintMode || !storyWeaponsOn ? '' : <><b>·</b> Z : TIR (AK-47 · POMPE · BAZOOKA) </>}<b>·</b> P : PAUSE <b>·</b> M : SON <b>·</b> F : PLEIN ÉCRAN <b>·</b> C : VUE COCKPIT</span>
+            <span className="city-rush-mobile-hint">PÉDALES TACTILES · {freeDrive ? 'GLISSE LE DOIGT · LA VOITURE SUIT' : 'GLISSE GAUCHE / DROITE'}{sprintMode ? ' · SOLO CONTRE LA MONTRE' : !storyWeaponsOn ? ' · COURSE PURE, SANS ARME' : ' · OBJETS EN BAS · BOUTON DE TIR'}</span>
           </div>
         </section>
 

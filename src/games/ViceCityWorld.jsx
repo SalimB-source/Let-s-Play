@@ -3050,6 +3050,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // direction qui pilote le volant (la dernière touche pressée gagne) et
   // `steerHoldCooldown` le temps restant avant le prochain écart.
   const steerKeysHeld = new Map();
+  const driveKeysHeld = new Set();
   let steerHoldDirection = null;
   let steerHoldCooldown = 0;
   let finished = false;
@@ -3104,6 +3105,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   };
   const releaseSteerKeys = () => {
     steerKeysHeld.clear();
+    driveKeysHeld.clear();
     steerHoldDirection = null;
     steerHoldCooldown = 0;
   };
@@ -8964,7 +8966,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       releasePistolKey();
       return true;
     }
+    if (name === 'accelerate-up' || name === 'brake-up') {
+      driveKeysHeld.delete(name === 'accelerate-up' ? 'touch-accelerate' : 'touch-brake');
+      return true;
+    }
     if (!active || finished) return false;
+    if (name === 'accelerate-down') { driveKeysHeld.add('touch-accelerate'); return true; }
+    if (name === 'brake-down') { driveKeysHeld.add('touch-brake'); return true; }
     if (name === 'left' || name === 'right') {
       // Immobilisée après l'épave : la voiture part en toupie et le volant ne
       // répond plus jusqu'à la fin de l'animation.
@@ -9933,10 +9941,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       // restent, eux : `driftFor` suit la vitesse, et une voiture arrivée au
       // plancher du virage dérape toujours autant.
       const cornerScale = cornerPaceAt(distance);
-      const targetPlayerSpeed = playerStunLeft > 0 ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
-      // L'accélération comme le freinage suivent le rythme du parcours : la
-      // pointe est plus basse, la montée en régime garde sa durée.
-      const requestedPlayerSpeed = approachCityRushSpeed(playerCurrentSpeed, targetPlayerSpeed, cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft), dt, coursePace);
+      const throttleHeld = driveKeysHeld.has('arrowup') || driveKeysHeld.has('w') || driveKeysHeld.has('touch-accelerate');
+      const brakeHeld = driveKeysHeld.has('arrowdown') || driveKeysHeld.has('s') || driveKeysHeld.has('touch-brake');
+      // Plus d'accélération automatique : ↑ (ou W) est nécessaire pour avancer.
+      // ↓ (ou S) coupe la consigne et applique un freinage franc, sans marche arrière.
+      const targetPlayerSpeed = playerStunLeft > 0 || brakeHeld || !throttleHeld ? 0 : playerTopSpeed * speedScale * spikeScale * boostScale * cleanLineScale * oncomingScale * breakdownScale * cornerScale;
+      const requestedPlayerSpeed = approachCityRushSpeed(
+        playerCurrentSpeed,
+        targetPlayerSpeed,
+        brakeHeld ? 34 : cityRushTrafficRecoveryRate(playerProfile.accelerationRate, playerTrafficRecoverLeft),
+        dt,
+        coursePace,
+      );
       const priorPlayerX = playerX;
       // Conduite par voies : la voiture rejoint le centre de sa voie. Conduite
       // libre : le volant tourne le nez de la voiture et la voie du pilote
@@ -11042,11 +11058,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     const target = event.target?.tagName;
     if (target === 'INPUT' || target === 'TEXTAREA' || target === 'SELECT') return;
     const key = event.key.toLowerCase();
-    if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) event.preventDefault();
+    if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'q', 'd', 'z', 'x', 'w', 's'].includes(key)) event.preventDefault();
+    if (['arrowup', 'arrowdown', 'w', 's'].includes(key)) driveKeysHeld.add(key);
     if (!active || finished || event.repeat) return;
     // Le pilote prend le volant : la démonstration guidée lui laisse la main
     // quelques instants avant de reprendre la leçon.
-    if (['arrowleft', 'arrowright', 'q', 'd', 'z', 'x'].includes(key)) noteTutorialManualInput();
+    if (['arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'q', 'd', 'w', 's', 'z', 'x'].includes(key)) noteTutorialManualInput();
     const steerDirection = STEER_KEY_DIRECTIONS[key];
     if (steerDirection) {
       // Conduite par voies : la première pression répond tout de suite ; les
@@ -11065,6 +11082,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   }
   function onKeyUp(event) {
     const key = event.key.toLowerCase();
+    driveKeysHeld.delete(key);
     // La relâche s'écoute même hors course : un maintien enregistré puis mis en
     // pause ne doit pas repartir tout seul au retour en piste.
     if (STEER_KEY_DIRECTIONS[key]) { liftSteerKey(key); return; }

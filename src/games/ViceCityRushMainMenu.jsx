@@ -111,6 +111,7 @@ export default function ViceCityRushMainMenu({
   onToggleDriving,
   onToggleFullscreen,
   onStartTutorial,
+  onStartFreeDrive,
   onPick,
 }) {
   const navigate = useNavigate();
@@ -242,6 +243,9 @@ export default function ViceCityRushMainMenu({
         </button>
         <button type="button" className="vcr-key-chip" onClick={onToggleSound}>
           <kbd>M</kbd> SON {soundOn ? 'ON' : 'OFF'}
+        </button>
+        <button type="button" className="vcr-key-chip vcr-free-drive-launch" onClick={onStartFreeDrive}>
+          <kbd>↗</kbd> CONDUITE LIBRE · VILLE
         </button>
       </footer>
 
