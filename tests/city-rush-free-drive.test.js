@@ -11,6 +11,7 @@ import {
   cityRushLaneConfig,
   cityRushMiniGarageWidth,
 } from '../src/games/cityRushRules.js';
+import { viceCityFreeDriveSpeedStep } from '../src/games/viceCityFreeDrive.js';
 import {
   CITY_RUSH_DEFAULT_DRIVING_MODE,
   CITY_RUSH_DRIVING_FREE,
@@ -70,6 +71,27 @@ function stepFrames({ x = 0, velocity = 0, seconds, input = 0, target = null, bo
   }
   return state;
 }
+
+test('conduite libre : flèche bas freine puis engage la marche arrière à l’arrêt', () => {
+  const params = { dt: 1 / 60, maxSpeed: 35, acceleration: 5, reverseMaxSpeed: 7 };
+  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: false }), 0,
+    'aucune accélération automatique au point mort');
+  assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: true }) < 0,
+    'la flèche bas fait reculer depuis l’arrêt');
+  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 1, throttle: false, brake: true, dt: 0.2 }), 0,
+    'le freinage avant s’arrête à zéro sans inverser la vitesse dans la même frame');
+  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 }), 2.75,
+    'la flèche bas freine quand la voiture avance');
+  let reverseSpeed = 0;
+  for (let frame = 0; frame < 180; frame += 1) {
+    reverseSpeed = viceCityFreeDriveSpeedStep({ ...params, speed: reverseSpeed, throttle: false, brake: true, dt: 1 / 60 });
+  }
+  assert.equal(reverseSpeed, -params.reverseMaxSpeed, 'la marche arrière reste plafonnée');
+  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: -2, throttle: true, brake: false, dt: 0.5 }), 0,
+    'la flèche haut freine d’abord la marche arrière');
+  assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: true, brake: false }) > 0,
+    'la flèche haut repart en marche avant');
+});
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {
   assert.equal(CITY_RUSH_DEFAULT_DRIVING_MODE, CITY_RUSH_DRIVING_FREE);

@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS } from './cityRushRules.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
+import { viceCityFreeDriveSpeedStep } from './viceCityFreeDrive.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
@@ -377,6 +378,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
 
     const profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
     const maxSpeed = 35 * profile.powerMultiplier;
+    const reverseMaxSpeed = Math.min(7, maxSpeed * 0.25);
     const acceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     vehicle.position.set(0, 0, 0);
@@ -410,19 +412,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const throttle = pressed('ArrowUp') || pressed('KeyW');
       const brake = pressed('ArrowDown') || pressed('KeyS');
       const steerInput = (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0) - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0);
-      if (brake) {
-        // Freinage appuyé mais borné à environ 0,9 g ; la voiture ne recule pas.
-        state.speed = Math.max(0, state.speed - 9 * dt);
-      } else if (throttle) {
-        // L'accélération diminue naturellement à l'approche de la vitesse de pointe.
-        const speedRatio = state.speed / maxSpeed;
-        state.speed += acceleration * Math.max(0.12, 1 - speedRatio * speedRatio) * dt;
-      } else if (state.speed > 0) {
-        // Résistance au roulement et traînée aérodynamique à la décélération.
-        state.speed = Math.max(0, state.speed - (0.42 + state.speed * state.speed * 0.0011) * dt);
-      }
-      state.speed = clamp(state.speed, 0, maxSpeed);
-      if (state.speed < 0.12 && !throttle) state.speed = 0;
+      state.speed = viceCityFreeDriveSpeedStep({
+        speed: state.speed,
+        throttle,
+        brake,
+        dt,
+        maxSpeed,
+        acceleration,
+        reverseMaxSpeed,
+      });
       // Le volant répond plus directement ; il garde une petite inertie plutôt
       // qu'une interpolation molle au début du braquage.
       state.steer += (steerInput - state.steer) * Math.min(1, dt * 16);
@@ -431,7 +429,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const wheelAngle = state.steer * 0.65;
       const wheelbase = 2.75;
       const requestedYawRate = (state.speed / wheelbase) * Math.tan(wheelAngle);
-      const gripYawLimit = state.speed > 0.1 ? (2.0 * 9.81) / state.speed : 0;
+      const gripYawLimit = Math.abs(state.speed) > 0.1 ? (2.0 * 9.81) / Math.abs(state.speed) : 0;
       const yawRate = clamp(requestedYawRate, -gripYawLimit, gripYawLimit);
       state.heading += yawRate * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
@@ -451,7 +449,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       vehicle.position.set(state.x, 0, state.z);
       vehicle.rotation.y = -state.heading;
-      animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.56, braking: brake, idle: !throttle && state.speed === 0 }, dt, state.time);
+      animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.56, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
       cameraPosition.y += 3.2;
       camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
@@ -485,11 +483,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREINER</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD également disponibles · Échap pour quitter</small></div>
+      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD également disponibles · Échap pour quitter</small></div>
       <div className="vice-free-roam-touch" aria-label="Commandes tactiles de conduite">
         {[
           ['ArrowLeft', '←', 'Tourner à gauche'], ['ArrowUp', '↑', 'Accélérer'],
-          ['ArrowDown', '↓', 'Freiner'], ['ArrowRight', '→', 'Tourner à droite'],
+          ['ArrowDown', '↓', 'Freiner et reculer à l’arrêt'], ['ArrowRight', '→', 'Tourner à droite'],
         ].map(([code, label, title]) => (
           <button key={code} type="button" aria-label={title} title={title}
             onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
