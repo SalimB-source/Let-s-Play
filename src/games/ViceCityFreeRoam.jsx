@@ -342,8 +342,17 @@ function makeCity(scene) {
   }
 
   const canalWaterMat = new THREE.MeshStandardMaterial({ color: 0x287d9b, roughness: 0.3, metalness: 0.12 });
-  const canalWater = new THREE.Mesh(new THREE.PlaneGeometry(CANAL_HALF_WIDTH * 2, CITY_LIMIT * 2 + 120), canalWaterMat);
-  canalWater.rotation.x = -Math.PI / 2;
+  const canalWaterGeometry = new THREE.PlaneGeometry(CANAL_HALF_WIDTH * 2, CITY_LIMIT * 2 + 120, 24, 240);
+  canalWaterGeometry.rotateX(-Math.PI / 2);
+  const canalWaterPositions = canalWaterGeometry.attributes.position;
+  for (let index = 0; index < canalWaterPositions.count; index += 1) {
+    const x = canalWaterPositions.getX(index);
+    const z = canalWaterPositions.getZ(index);
+    canalWaterPositions.setY(index, Math.sin(x * 0.62 + z * 0.13) * 0.018 + Math.cos(z * 0.24 - x * 0.37) * 0.012);
+  }
+  canalWaterPositions.needsUpdate = true;
+  canalWaterGeometry.computeVertexNormals();
+  const canalWater = new THREE.Mesh(canalWaterGeometry, canalWaterMat);
   canalWater.position.set(0, -0.075, 0);
   canalWater.receiveShadow = true;
   scene.add(canalWater);
@@ -1563,7 +1572,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const reverseMaxSpeed = Math.min(7, maxSpeed * 0.25);
     const acceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
-    vehicle.position.set(0, 0, 0);
+    vehicle.position.set(-48, 0, 0);
     scene.add(vehicle);
     const trafficDirections = [
       { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
@@ -1611,7 +1620,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       };
     });
     const keys = new Set();
-    const state = { x: 0, z: 0, heading: 0, speed: 0, steer: 0, time: 0 };
+    const state = { x: -48, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
