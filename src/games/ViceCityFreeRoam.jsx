@@ -437,8 +437,27 @@ function makeCity(scene) {
   const garageDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a565c, roughness: 0.64, metalness: 0.28 });
   const brassMat = new THREE.MeshStandardMaterial({ color: 0xc6a15a, roughness: 0.42, metalness: 0.62 });
   const darkWindow = new THREE.MeshBasicMaterial({ color: 0x253746, toneMapped: false });
-  const palmTrunk = new THREE.MeshStandardMaterial({ color: 0x755b40, roughness: 0.9 });
-  const palmLeaf = new THREE.MeshStandardMaterial({ color: 0x236c59, roughness: 0.86 });
+  const palmBarkSize = 64;
+  const palmBarkPixels = new Uint8Array(palmBarkSize * palmBarkSize * 4);
+  for (let y = 0; y < palmBarkSize; y += 1) for (let x = 0; x < palmBarkSize; x += 1) {
+    const index = (y * palmBarkSize + x) * 4;
+    const grain = ((x * 37 + y * 19 + x * y * 3) % 29) - 14;
+    const ring = y % 8 === 0 || y % 8 === 1 ? -30 : 0;
+    palmBarkPixels[index] = Math.max(0, 126 + grain + ring);
+    palmBarkPixels[index + 1] = Math.max(0, 91 + grain + ring);
+    palmBarkPixels[index + 2] = Math.max(0, 57 + grain + ring);
+    palmBarkPixels[index + 3] = 255;
+  }
+  const palmBarkTexture = new THREE.DataTexture(palmBarkPixels, palmBarkSize, palmBarkSize, THREE.RGBAFormat);
+  palmBarkTexture.colorSpace = THREE.SRGBColorSpace;
+  palmBarkTexture.wrapS = THREE.RepeatWrapping;
+  palmBarkTexture.wrapT = THREE.RepeatWrapping;
+  palmBarkTexture.repeat.set(1, 2);
+  palmBarkTexture.needsUpdate = true;
+  const palmTrunk = new THREE.MeshStandardMaterial({ map: palmBarkTexture, color: 0xffffff, roughness: 0.94 });
+  const palmFrondMat = new THREE.MeshStandardMaterial({ vertexColors: true, side: THREE.DoubleSide, roughness: 0.92 });
+  const canopyMats = [0x397348, 0x477d4a, 0x527f47].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.96 }));
+  const broadleafGeometry = new THREE.IcosahedronGeometry(1, 1);
   const neon = [0xff668a, 0x45d7dc, 0xf2c968];
   const courtyardPathMat = new THREE.MeshStandardMaterial({ color: 0xaaa49b, roughness: 0.9 });
   const courtyardGrassMat = new THREE.MeshStandardMaterial({ color: 0x577756, roughness: 1 });
@@ -474,15 +493,135 @@ function makeCity(scene) {
     parent.add(mesh);
     return mesh;
   };
+  const makeCurvedTrunkGeometry = (height, baseRadius, leanX, leanZ) => {
+    const rings = 12;
+    const sides = 9;
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let ring = 0; ring <= rings; ring += 1) {
+      const t = ring / rings;
+      const radius = baseRadius * (1 - 0.28 * t);
+      const centerX = leanX * t * t + Math.sin(t * Math.PI * 2) * 0.025 * t;
+      const centerZ = leanZ * t * t + Math.cos(t * Math.PI * 2) * 0.025 * t;
+      for (let side = 0; side < sides; side += 1) {
+        const angle = side / sides * Math.PI * 2;
+        positions.push(centerX + Math.cos(angle) * radius, height * t, centerZ + Math.sin(angle) * radius);
+        uvs.push(side / sides, t * 2);
+        if (ring < rings) {
+          const current = ring * sides + side;
+          const next = ring * sides + (side + 1) % sides;
+          const upper = current + sides;
+          const upperNext = next + sides;
+          indices.push(current, upper, next, next, upper, upperNext);
+        }
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const makePalmFrondsGeometry = (height) => {
+    const positions = [];
+    const colors = [];
+    const addTriangle = (a, b, c, color) => {
+      for (const point of [a, b, c]) {
+        positions.push(point[0], point[1], point[2]);
+        colors.push(color.r, color.g, color.b);
+      }
+    };
+    const colorPalette = [0x1f6448, 0x28754f, 0x328254, 0x438c58].map((color) => new THREE.Color(color));
+    const crownY = height * 0.97;
+    for (let frond = 0; frond < 9; frond += 1) {
+      const angle = frond / 9 * Math.PI * 2 + random() * 0.16;
+      const dirX = Math.sin(angle);
+      const dirZ = Math.cos(angle);
+      const sideX = dirZ;
+      const sideZ = -dirX;
+      const length = height * (0.39 + random() * 0.07);
+      const droop = height * (0.19 + random() * 0.06);
+      const lift = height * (0.035 + random() * 0.025);
+      const center = (t) => [
+        dirX * length * t,
+        crownY + lift * Math.sin(Math.PI * t) - droop * t * t,
+        dirZ * length * t,
+      ];
+      const color = colorPalette[Math.floor(random() * colorPalette.length)];
+      const ribWidth = (t) => 0.052 * (1 - 0.58 * t);
+      for (let segment = 0; segment < 24; segment += 1) {
+        const t0 = segment / 24;
+        const t1 = (segment + 1) / 24;
+        const p0 = center(t0);
+        const p1 = center(t1);
+        const w0 = ribWidth(t0);
+        const w1 = ribWidth(t1);
+        const left0 = [p0[0] + sideX * w0, p0[1], p0[2] + sideZ * w0];
+        const right0 = [p0[0] - sideX * w0, p0[1], p0[2] - sideZ * w0];
+        const left1 = [p1[0] + sideX * w1, p1[1], p1[2] + sideZ * w1];
+        const right1 = [p1[0] - sideX * w1, p1[1], p1[2] - sideZ * w1];
+        addTriangle(left0, right0, left1, color);
+        addTriangle(right0, right1, left1, color);
+      }
+      for (let leaflet = 0; leaflet < 16; leaflet += 1) {
+        const t = 0.1 + leaflet * 0.047;
+        const leafletLength = length * (0.14 + (1 - t) * 0.23);
+        const root = center(t);
+        const rootNext = center(Math.min(1, t + 0.035));
+        for (const side of [-1, 1]) {
+          const tipT = Math.min(1, t + 0.13);
+          const tipCenter = center(tipT);
+          const tip = [
+            tipCenter[0] + sideX * side * leafletLength,
+            tipCenter[1] - leafletLength * 0.18,
+            tipCenter[2] + sideZ * side * leafletLength,
+          ];
+          addTriangle(root, rootNext, tip, color);
+        }
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+  const addPalmTree = (parent, x, z, height = 8.2) => {
+    const leanX = (random() - 0.5) * 0.45;
+    const leanZ = (random() - 0.5) * 0.45;
+    const trunk = new THREE.Mesh(makeCurvedTrunkGeometry(height, 0.31, leanX, leanZ), palmTrunk);
+    trunk.position.set(x, 0, z);
+    trunk.castShadow = true;
+    trunk.receiveShadow = true;
+    parent.add(trunk);
+    const fronds = new THREE.Mesh(makePalmFrondsGeometry(height), palmFrondMat);
+    fronds.position.set(x + leanX, 0, z + leanZ);
+    fronds.castShadow = true;
+    fronds.receiveShadow = true;
+    parent.add(fronds);
+  };
   const addCourtyardTree = (parent, x, z, height = 4.2) => {
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, height * 0.55, 7), palmTrunk);
-    trunk.position.set(x, height * 0.275, z);
+    const trunkHeight = height * 0.72;
+    const trunk = new THREE.Mesh(
+      makeCurvedTrunkGeometry(trunkHeight, 0.2, (random() - 0.5) * 0.22, (random() - 0.5) * 0.22),
+      palmTrunk,
+    );
+    trunk.position.set(x, 0, z);
     trunk.castShadow = true;
     parent.add(trunk);
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(height * 0.34, height * 0.62, 7), palmLeaf);
-    crown.position.set(x, height * 0.69, z);
-    crown.castShadow = true;
-    parent.add(crown);
+    const crownY = height * 0.73;
+    for (let clump = 0; clump < 7; clump += 1) {
+      const angle = clump / 7 * Math.PI * 2 + random() * 0.35;
+      const radius = clump === 0 ? 0 : 0.5 + random() * 0.3;
+      const foliage = new THREE.Mesh(broadleafGeometry, canopyMats[clump % canopyMats.length]);
+      foliage.position.set(x + Math.cos(angle) * radius, crownY + (random() - 0.5) * 0.55, z + Math.sin(angle) * radius);
+      foliage.scale.set(0.88 + random() * 0.35, 0.72 + random() * 0.3, 0.88 + random() * 0.35);
+      foliage.castShadow = true;
+      foliage.receiveShadow = true;
+      parent.add(foliage);
+    }
   };
   const addCourtyardBench = (parent, x, z, rotation = 0) => {
     const bench = new THREE.Group();
@@ -779,13 +918,7 @@ function makeCity(scene) {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const px = cx + sx * 37;
       const pz = cz + sz * 37;
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.48, 8, 8), palmTrunk);
-      trunk.position.set(px, 4, pz); trunk.castShadow = true; lot.add(trunk);
-      for (let leaf = 0; leaf < 4; leaf += 1) {
-        const frond = new THREE.Mesh(new THREE.ConeGeometry(0.42, 5.2, 5), palmLeaf);
-        frond.position.set(px + Math.cos(leaf * Math.PI / 2) * 1.8, 7.4, pz + Math.sin(leaf * Math.PI / 2) * 1.8);
-        frond.rotation.z = -0.6; frond.rotation.y = leaf * Math.PI / 2; lot.add(frond);
-      }
+      addPalmTree(lot, px, pz, 8.2);
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 6, 6), new THREE.MeshStandardMaterial({ color: 0x34383b, metalness: 0.7, roughness: 0.4 }));
       pole.position.set(px + sx * 5, 3, pz + sz * 5); lot.add(pole);
       const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.26, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd49a, toneMapped: false }));
