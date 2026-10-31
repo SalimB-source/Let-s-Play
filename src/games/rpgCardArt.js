@@ -60,6 +60,11 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'souverain-de-la-lune-noire': 'lune-heros-v2',
+  'voile-de-la-lune-noire': 'lune-magie-v4',
+  'ressac-de-la-lune-noire': 'lune-magie-v4',
+  'sabre-du-croissant-noir': 'lune-armurerie-v2',
+  'lance-de-la-lune-givree': 'lune-armurerie-v3',
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
   // photoréaliste, repeint sous son ancien nom de fichier.

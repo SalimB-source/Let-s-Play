@@ -419,6 +419,15 @@ export const CARD_KIND_LABELS = {
  * MEURENT. Set jouable : créatures, héros, terrains et sorts composent les decks.
  */
 export const RPG_CREATURE_CARDS = [
+  {
+    id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain et Vampire', reactionAttaque: true,
+    arrivee: { type: 'degats', amount: 3, cible: 'creature', attaquanteSeulement: true },
+    text: 'Vous pouvez jouer cette créature pendant la phase d’attaque adverse. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
+    flavor: 'Le désert attend que ses ennemis avancent.',
+  },
   ...RPG_SOLEIL_ROUGE_CREATURES,
   ...RPG_TENEBRES_CREATURES,
   ...RPG_LETTRES_DE_MARQUE_CREATURES,
@@ -983,6 +992,33 @@ export const RPG_CREATURE_CARDS = [
   },
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
   ...RPG_CORBEAU_CREATURES,
+  {
+    id: 'archonte-du-sablier-noir', name: 'Archonte du sablier noir',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 5, atk: 4, def: 4, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain et Vampire',
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    text: 'Quand l’Archonte arrive : il inflige 2 dégâts à une créature adverse ciblée.',
+    flavor: 'Il mesure les siècles au nombre des royaumes engloutis.',
+  },
+  {
+    id: 'danseuse-des-ombres-de-dune', name: 'Danseuse des ombres de dune',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain et Vampire',
+    rapidite: true, infiltration: true,
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée.',
+    flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
+  },
+  {
+    id: 'veilleur-du-dernier-crepuscule', name: 'Veilleur du dernier crépuscule',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 4, atk: 2, def: 4, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain et Vampire',
+    contreAttaque: true,
+    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
+    flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
+  },
 ];
 
 /**
@@ -1174,6 +1210,16 @@ export function creatureById(id) {
  * Ils ne sont pas dans la main de départ — ils vivent dans le paquet.
  */
 export const RPG_HERO_CARDS = [
+  {
+    id: 'souverain-de-la-lune-noire', name: 'Souverain de la lune noire',
+    set: 'soldats-de-la-lune', element: 'sable', colors: ['sable', 'tenebres'],
+    colorCost: { sable: 1, tenebres: 1 }, cost: 6, atk: 6, def: 6,
+    rarity: 'inhabituelle', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
+    reactionTourAdverse: true, volDeVie: true, envol: true,
+    arrivee: { type: 'combat', cible: 'creature' },
+    text: 'Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez autant de points de vie. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
+    flavor: 'Sous la lune noire, même le temps attend son duel.',
+  },
   {
     id: 'salem',
     name: 'SALEM',
@@ -2026,6 +2072,25 @@ export const RPG_MAGIE_CARDS = [
     text: 'Sorcellerie — Renvoyez une créature adverse ciblée dans la main de son propriétaire, puis piochez une carte. Avec Léviathan en jeu : 2 cartes piochées au lieu d’une.',
     flavor: 'Ce que la vague emporte, le courant vous le raconte à l’oreille.',
   },
+  {
+    id: 'voile-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Voile de la lune noire',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    kind: 'magie', typeLine: 'Magie Rapide — Sable et Ténèbres',
+    cost: 2, rarity: 'inhabituelle', instant: true,
+    cibles: ['creature-amie'], effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
+    text: 'Magie Rapide — Une créature alliée ciblée reçoit un bouclier : le prochain sort adverse qui l’atteint, même de zone, est bloqué.',
+    flavor: 'La nuit protège ceux qui veillent sous son croissant.',
+  },
+  {
+    id: 'ressac-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Ressac de la lune noire',
+    element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
+    kind: 'magie', typeLine: 'Sorcellerie — Eau et Ténèbres',
+    cost: 5, rarity: 'inhabituelle', cibles: ['toutes-autres'],
+    effet: { type: 'retour-main', cible: 'toutes-autres', exclutType: 'Vampire' },
+    text: 'Sorcellerie — Renvoyez toutes les créatures, sauf les Vampires, dans la main de leur propriétaire.',
+    flavor: 'À la marée noire, même les conquérants font retraite.',
+  },
+
 ];
 
 /**
@@ -2309,6 +2374,23 @@ export const RPG_ARME_CARDS = [
     text: 'Arme — Le porteur gagne +1/+2. Quand le porteur se bat avec une créature adverse : 25 % de chances de la renvoyer dans la main de son propriétaire avant d\'assigner les dégâts de combat.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
+  {
+    id: 'sabre-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Sabre du croissant noir',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
+    bonus: { atk: 2, def: 0 }, donne: { infiltration: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration : il ne peut pas être bloqué. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
+    flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
+  },
+  {
+    id: 'lance-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Lance de la lune givrée',
+    element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
+    kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
+    bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse avec 100 % de chances de réussir ; son attaque s’arrête là. Sans cible, il attaque normalement le sorcier. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse.',
+    flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
+  },
+
 ];
 
 export function armeById(id) {

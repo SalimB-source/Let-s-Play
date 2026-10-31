@@ -1702,6 +1702,7 @@ function creerEntiteCreature(carte) {
     coupCritique: carte.coupCritique ? { ...carte.coupCritique } : null,
     provocation: Boolean(carte.provocation),
     envol: Boolean(carte.envol),
+    volDeVie: Boolean(carte.volDeVie),
     infiltration: Boolean(carte.infiltration),
     // Furie : l'état visible et la seule part d'attaque qu'il a ajoutée. Le
     // bonus est compté à part pour pouvoir le retirer sans toucher aux
@@ -1826,8 +1827,7 @@ function recalculerCoupCritique(entite) {
     const arme = magieById(id);
     if (arme?.effet?.type === 'arme' && arme.effet.coupCritique) ajouter(arme.effet.coupCritique, 2);
   }
-  // Aucune arme du prototype ne porte de critique aujourd'hui ; la règle reste
-  // la même si l'une d'elles en reçoit un (`donne.coupCritique`).
+  // Les armes du prototype contribuent elles aussi au cumul des critiques.
   const prototype = armeCarteDe(entite);
   if (prototype?.donne?.coupCritique) ajouter(prototype.donne.coupCritique, 2);
   if (!chance) {
@@ -1955,6 +1955,7 @@ export function rpgCoutEntite(entite) {
 }
 
 function compteursDurabiliteArme(carteArme) {
+  if (Number.isInteger(carteArme?.durabilite) && carteArme.durabilite > 0) return carteArme.durabilite;
   return carteArme?.donne?.coupRapide || carteArme?.effet?.coupRapide || carteArme?.coupRapide ? 1 : 2;
 }
 
@@ -1963,7 +1964,7 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
   const porteur = duel[cote]?.creatures.find((entite) => entite.id === entiteId);
   if (!porteur?.arme) return;
   const carteArme = armeById(porteur.arme.carteId);
-  if (!carteArme) return;
+  if (!carteArme || (carteArme.durabiliteAttaqueSeulement && action !== 'attaque')) return;
   const avant = Math.max(0, Math.floor(Number(porteur.arme.durabilite)
     || compteursDurabiliteArme(carteArme)));
   const restant = Math.max(0, avant - 1);
@@ -1996,6 +1997,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
+  if (carteArme.donne?.coupCritique) recalculerCoupCritique(entite);
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
   // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
   // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
@@ -2434,7 +2436,8 @@ function riposteDeContreAttaque(duel, defenseur, source) {
       cible: { type: 'sorcier', cote: source.cote },
     });
     duel.log.push(`Contre-attaque : ${defenseur.name} renvoie le sort au sorcier ${source.cote === 'joueur' ? 'joueur' : 'ennemi'} — ${force} dégât${force > 1 ? 's' : ''}.`);
-    rpgInfligerSorcier(duel, source.cote, force);
+    const blessure = rpgInfligerSorcier(duel, source.cote, force);
+    if (defenseur.volDeVie) rpgGagnerVie(duel, coteDefenseur, blessure.recus);
     return true;
   }
   const attaquant = duel[source?.cote]?.creatures.find((entite) => entite.id === source?.entiteId);
@@ -2446,7 +2449,8 @@ function riposteDeContreAttaque(duel, defenseur, source) {
     cible: { type: 'creature', cote: source.cote, entiteId: attaquant.id },
   });
   duel.log.push(`Contre-attaque : ${defenseur.name} rend son coup à ${attaquant.name} — ${force} dégât${force > 1 ? 's' : ''}.`);
-  rpgBlesserCreature(duel, source.cote, attaquant.id, force, cardColors(carte), null, 'capacite', defenseur.carteId);
+  const blessure = rpgBlesserCreature(duel, source.cote, attaquant.id, force, cardColors(carte), null, 'capacite', defenseur.carteId);
+  if (defenseur.volDeVie) rpgGagnerVie(duel, coteDefenseur, blessure.recus);
   return true;
 }
 
@@ -2566,6 +2570,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups) {
       if (coup.sourceType === 'attaque') {
         blessure.attaqueSources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
       }
+    }
+    if (source?.volDeVie) {
+      const soin = rpgGagnerVie(duel, coup.sourceCote, degats);
+      if (soin) duel.log.push(`Vol de vie : ${source.name} rend ${soin} PV à son camp.`);
     }
     blessures.set(cle, blessure);
   }
@@ -3567,7 +3575,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         const touchees = [];
         for (const campCible of [cote, adv]) {
           for (const entite of [...duel[campCible].creatures]) {
-            if (entite.id === sauf
+            if (entite.id === sauf || estSite(entite)
+              || (effet.exclutType && cardHasPrintedType(entite.carteId, effet.exclutType))
               || paradeZoneBloque(duel, entite, sourceType, campCible, cote)) continue;
             if (tenterEsquive(duel, entite, sourceType)) {
               touchees.push({ camp: campCible, entiteId: entite.id });
@@ -5036,7 +5045,7 @@ function journaliserArriveeAuSorcier(duel, carte, cibleId) {
   duel.log.push(`${carte.name} : ${amount} dégâts au sorcier adverse.`);
 }
 
-export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
+export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquants = null) {
   const portee = arriveeCiblePortee(carte);
   if (!portee) return false;
   // Le sorcier adverse est toujours une cible légale quand l'arrivée le
@@ -5054,6 +5063,7 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null) {
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
       && !rpgEstProtegee(entite, cardColors(carte))
       && cibleRespecteCoutMax(carte, entite)
+      && (!carte.arrivee?.attaquanteSeulement || (attaquants ?? (duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : [])).includes(entite.id))
       && cibleRespecteTypeImprime(carte, entite)));
 }
 
@@ -5098,7 +5108,7 @@ function cibleRespecteTypeImprime(carte, entite) {
  * effets), la première case libre reste la règle ; hors essai, le choix est
  * ignoré : le champ classique n'a pas de cases.
  */
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -5107,6 +5117,9 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const carte = duelCardById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || duel.pvp)) return { ok: false, raison: 'timing' };
+  const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
+  if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   // Le champ d'essai n'a que cinq places, dessinées sur le plateau : la
   // sixième créature exige qu'une autre soit sacrifiée. La validation tôt
   // (avant paiement et contre) laisse au joueur le temps de choisir sa
@@ -5158,7 +5171,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
       // Sans désignation, la pose n'est refusée que s'il reste une cible
       // légale — créature, ou sorcier quand la carte le permet.
-      if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) {
+      if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte, null, attaquantsArrivee)) {
         return { ok: false, raison: 'cible' };
       }
     }
@@ -5302,12 +5315,13 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     // Quand la Lettre de marque arme aussi les
     // arrivées, l'attente porte à la fois la cible d'arrivée et le seuil
     // d'Abordage : les deux seront résolus l'un après l'autre.
-    if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte, entite.id)) {
+    if (cibleDifferee && !cibleId && arriveeACibleLegale(duel, cote, carte, entite.id, attaquantsArrivee)) {
       const seuilAbordagePose = seuilAbordage(carte, camp, prochainAbordageOffert, prochainAbordageSeuilPlein);
       duel.arriveeEnAttente = {
         cote,
         entiteId: entite.id,
         carteId,
+        ...(carte.arrivee?.attaquanteSeulement ? { attaquants: attaquantsArrivee } : {}),
         ...(Number.isFinite(seuilAbordagePose) ? { abordage: seuilAbordagePose } : {}),
       };
       rafraichirAuras(duel);
@@ -5323,7 +5337,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     let cibleArrivee = null;
     if (carte.arrivee.cible === 'creature-amie') cibleArrivee = cibleId ?? entite.id;
     else if (carte.arrivee.cible && carte.arrivee.cible !== 'soi') cibleArrivee = cibleId;
-    appliquer(duel, cote, effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
+    appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
       entite.id, cardColors(carte), 'capacite', carte.id);
     journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
   }
@@ -5452,6 +5466,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     .flatMap((camp) => duel[camp].creatures)
     .find((candidate) => candidate.id === cibleId);
   if (!cible) return { ok: false, raison: 'cible' };
+  if (carte?.arrivee?.attaquanteSeulement && !(attente.attaquants ?? []).includes(cible.id)) return { ok: false, raison: 'cible' };
   // « une AUTRE créature » : celle qui porte l'arrivée ne se désigne jamais
   // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
   // ne peut pas se retourner contre la créature qu'il vient de poser. Sauf
@@ -5473,7 +5488,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
     : null;
   duel.arriveeEnAttente = arriveeSuivante;
-  appliquer(duel, cote, effetArriveePourCible(carte, cible.id), cible.id,
+  appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible.id), cible.id,
     entite.id, cardColors(carte), 'capacite', carte.id);
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -5942,6 +5957,11 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
  *  tactique : un kill sur la meilleure valeur, la menace principale, ou le
  *  sorcier quand c'est le meilleur coup (surtout quand il est létal). */
 export function rpgCibleAuto(duel, cote, carte) {
+  if (carte?.arrivee?.attaquanteSeulement) {
+    const combat = duel.combatDeclare;
+    if (combat?.cote !== autre(cote)) return null;
+    return duel[autre(cote)].creatures.find((c) => combat.attaquants.includes(c.id) && !rpgEstProtegee(c, cardColors(carte)))?.id ?? null;
+  }
   return choisirCibleAutoIA(duel, cote, carte);
 }
 
@@ -6064,6 +6084,7 @@ export function rpgSortACibleValide(duel, cote, carte) {
   }
   if (['debuff', 'empeche-blocage', 'blocage-force'].includes(carte.effet?.type)) return aCibleEnnemie;
   if (carte.effet?.type === 'retour-main') {
+    if (carte.effet.cible === 'toutes-autres') return true;
     return carte.effet.cible === 'creature-amie' ? aCibleAlliee : aCibleEnnemie;
   }
   if (['bouclier', 'arme'].includes(carte.effet?.type) && carte.effet?.cible === 'creature-amie') return aCibleAlliee;
@@ -6165,7 +6186,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // Magie rapide : le camp qui n'a pas la main peut la jouer pendant une
   // fenêtre de réponse (blocage, fin de tour), joueur comme sorcier.
   const fenetreEphémère = cote !== duel.tour
-    && duel.fenetreReponse
+    && (duel.fenetreReponse || (duel.pvp && duel.phase === 'blocage' && duel.combatDeclare?.cote === autre(cote)))
     && carte.instant;
   if (duel.tour !== cote && !fenetreEphémère) return { ok: false, raison: 'timing' };
   // Le lancement gratuit du Kraken : le coût de mana saute, le Prix en PV
@@ -6219,7 +6240,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
-  if (carte.effet.type === 'retour-main') {
+  if (carte.effet.type === 'retour-main' && carte.effet.cible !== 'toutes-autres') {
     // Le renvoi exige une créature sur la table : `creature` vise le camp
     // adverse, `creature-amie` le camp du lanceur. Sans cible légale, le sort
     // ne se lance pas et le mana n'est pas payé.
@@ -6696,7 +6717,8 @@ export function rpgLancerAttaque(
     const cibleRapideId = ciblesRapides[attaquant.id];
     if (!cibleRapideId) continue;
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleRapideId);
-    const rate = Boolean(cible) && !estGelee(attaquant) && rngCombat() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    const immanquable = Boolean(armeCarteDe(attaquant)?.coupRapideImmanquable);
+    const rate = Boolean(cible) && !estGelee(attaquant) && !immanquable && rngCombat() < RPG_COUP_RAPIDE_ECHEC_CHANCE;
     // La Traque du Chasseur : sa frappe rapide contre une proie de la course
     // porte le +N/+0 — un attaquant gelé, lui, ne frappe de toute façon pas.
     const traque = cible && !estGelee(attaquant) ? bonusTraquePirates(attaquant, cible) : 0;
@@ -6992,7 +7014,9 @@ export function rpgLancerAttaque(
     // Le Grand Voile blanc avale aussi les coups portés au sorcier.
     if (duel.brouillardCombat) continue;
     resume.frappeSorcier += coup.amount;
-    rpgInfligerSorcier(duel, adv, coup.amount);
+    const blessureSorcier = rpgInfligerSorcier(duel, adv, coup.amount);
+    const sourceVol = duel[cote].creatures.find((entite) => entite.id === coup.attaquantId);
+    if (sourceVol?.volDeVie) rpgGagnerVie(duel, cote, blessureSorcier.recus);
     if (coup.overkill) {
       duel.log.push(`Overkill : ${coup.overkill} perce les bloqueurs — ${coup.amount} dégâts au sorcier.`);
     }
@@ -7184,7 +7208,8 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
     duel.log.push(`${attaquant.name} frappe dans le grand voile blanc : le sorcier ne prend rien.`);
   } else {
     frappeSorcier = attaquant.atk;
-    rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
+    const blessureSorcier = rpgInfligerSorcier(duel, autre(cote), attaquant.atk);
+    if (attaquant.volDeVie) rpgGagnerVie(duel, cote, blessureSorcier.recus);
     duel.log.push(`${attaquant.name} frappe le sorcier ${autre(cote) === 'joueur' ? 'joueur' : 'ennemi'} (${attaquant.atk}).`);
   }
   // L'arme du Sable emporte ses déclencheurs : « attaque » et « blesse le
@@ -7393,7 +7418,8 @@ export function rpgOuvrirFinDeTour(duel) {
  *  sort sans cible valide non plus.) */
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
-    const carte = magieById(id);
+    const carte = magieById(id) ?? duelCardById(id);
+    if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte);
     return Boolean(carte?.instant
       && rpgContreJouable(duel, cote, carte)
       && rpgSortACibleValide(duel, cote, carte)

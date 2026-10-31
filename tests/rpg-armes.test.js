@@ -83,7 +83,7 @@ const LOT_EQUIPEMENTS_SABLE = [
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
   'sphere-de-rotation',
 ];
-const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id));
+const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id) && carte.set !== 'soldats-de-la-lune');
 
 test('le prototype compte sept armes, une par élément (la Neige et le Sable en portent deux), avec leur peinture', () => {
   assert.equal(ARMES_PROTOTYPE.length, 7);

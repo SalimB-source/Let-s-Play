@@ -174,6 +174,7 @@ export function rpgPvpCoteActif(duel) {
   // Le contresort de Boualem donne la main à celui qui joue Boualem le temps
   // de désigner sa nouvelle cible.
   if (duel.boualemEnAttente?.cote) return duel.boualemEnAttente.cote;
+  if (duel.arriveeEnAttente?.cote) return duel.arriveeEnAttente.cote;
   if (duel.defausseEnAttente?.cote && duel.defausseEnAttente.restant > 0) return duel.defausseEnAttente.cote;
   if (duel.phase === 'blocage') return rpgPvpAutreCote(duel.tour);
   if (duel.fenetreReponse) return rpgPvpAutreCote(duel.tour);
@@ -205,8 +206,15 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
     if (intention.type !== 'mulligan') return { ok: false, raison: 'mulligan' };
     return { ok: true, raison: null };
   }
+  if (duel.arriveeEnAttente && !['resoudre-arrivee', 'renoncer-arrivee'].includes(intention.type)) {
+    return { ok: false, raison: 'arrivee-en-attente' };
+  }
   const actif = rpgPvpCoteActif(duel);
-  if (actif !== cote) return { ok: false, raison: 'pas-votre-tour' };
+  const reaction = intention.type === 'jouer-carte' && duel.tour !== cote
+    && cardById(intention.carteId)?.reactionTourAdverse && duel[cote].main.includes(intention.carteId)
+    && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
+    && !duel.defausseEnAttente?.restant && !duel.boualemEnAttente && !duel.siteEnAttente;
+  if (actif !== cote && !reaction) return { ok: false, raison: 'pas-votre-tour' };
   return { ok: true, raison: null };
 }
 
@@ -405,18 +413,8 @@ function declarerCombatPvp(duel, cote, attaquantIds, ciblesAttaque) {
       return { ok: false, raison: 'protection' };
     }
   }
-  const frappeSurCreature = (attaquant) => Boolean(ciblesRapides[attaquant?.id]
-    && duel[adv].creatures.some((entite) => entite.id === ciblesRapides[attaquant.id]));
-  const bloqueursDisponibles = duel[adv].creatures.filter(creaturePeutBloquer);
-  const aBloqueurLegal = bloqueursDisponibles.some((bloqueur) => attaquants.some((attaquant) => (
-    rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeSurCreature(attaquant))
-    && !rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))
-  )));
-  // Aucun bloqueur légal sur le plateau adverse : le combat se résout tout de
-  // suite, sans attente inutile ni indice sur la main secrète du défenseur.
-  if (!aBloqueurLegal) {
-    return rpgLancerAttaque(duel, cote, ids, {}, null, [], ciblesRapides);
-  }
+  // Toujours ouvrir la fenêtre : sa présence ne doit jamais révéler la main
+  // du défenseur, et une créature de réaction peut intervenir sans bloqueur.
   const bannieresAppliquees = rpgAppliquerBannieresAttaque(duel, cote, ids);
   duel.phase = 'blocage';
   duel.combatDeclare = {
@@ -480,10 +478,10 @@ function executerIntention(duel, cote, intention) {
       if (!carte) return { ok: false, raison: 'carte-inconnue' };
       if (!duel[cote].main.includes(intention.carteId)) return { ok: false, raison: 'pas-en-main' };
       // Pendant le blocage, seules les magies rapides sont jouables.
-      if (duel.phase === 'blocage' && !(carte.kind === 'magie' && carte.vitesse === 'rapide')) {
+      if (duel.phase === 'blocage' && !((carte.kind === 'magie' && (carte.instant || carte.vitesse === 'rapide')) || ((carte.reactionAttaque || carte.reactionTourAdverse) && duel.combatDeclare?.cote !== cote))) {
         return { ok: false, raison: 'phase-blocage' };
       }
-      if (carte.kind === 'creature') {
+      if (carte.kind === 'creature' || carte.kind === 'hero') {
         return rpgJouerCreature(duel, cote, intention.carteId, intention.cibleId ?? null, {
           cibleDifferee: Boolean(intention.cibleDifferee),
           sacrificeId: intention.sacrificeId ?? null,
@@ -506,8 +504,11 @@ function executerIntention(duel, cote, intention) {
       }
       return { ok: false, raison: 'carte-injouable' };
     }
-    case 'resoudre-arrivee':
-      return rpgResoudreArriveeCiblee(duel, cote, intention.cibleId ?? null);
+    case 'resoudre-arrivee': {
+      const res = rpgResoudreArriveeCiblee(duel, cote, intention.cibleId ?? null);
+      if (res?.ok) nettoyerCombatDeclareSiVide(duel);
+      return res;
+    }
     case 'renoncer-arrivee':
       if (!duel.arriveeEnAttente || duel.arriveeEnAttente.cote !== cote) {
         return { ok: false, raison: 'aucune-arrivee' };
