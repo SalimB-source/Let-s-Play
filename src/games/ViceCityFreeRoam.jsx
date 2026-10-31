@@ -95,6 +95,52 @@ function makeDockedBoat(scene, addBox, spec) {
   return boat;
 }
 
+function addViceCityClouds(scene) {
+  const cloudGeometry = new THREE.SphereGeometry(1, 12, 8);
+  const cloudMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 });
+  const puffLayout = [
+    [0, 0, 0, 1.38, 0.66, 0.82],
+    [-0.94, 0.08, 0.05, 0.92, 0.58, 0.78],
+    [0.92, 0.03, -0.04, 0.98, 0.62, 0.82],
+    [-0.42, 0.28, 0.45, 0.82, 0.72, 0.78],
+    [0.48, 0.24, -0.38, 0.9, 0.7, 0.82],
+    [1.58, -0.08, 0.26, 0.68, 0.5, 0.66],
+  ];
+  const clouds = new THREE.InstancedMesh(cloudGeometry, cloudMaterial, 40 * puffLayout.length);
+  const marker = new THREE.Object3D();
+  const tint = new THREE.Color();
+  let instance = 0;
+  for (let cloud = 0; cloud < 40; cloud += 1) {
+    const column = cloud % 8;
+    const row = Math.floor(cloud / 8);
+    const size = 9 + (cloud % 4) * 2;
+    const centerX = (column - 3.5) * 112 + Math.sin(cloud * 2.31) * 24;
+    const centerZ = (row - 2) * 148 + Math.cos(cloud * 1.73) * 25;
+    const centerY = 47 + (cloud % 5) * 6;
+    for (const [offsetX, offsetY, offsetZ, scaleX, scaleY, scaleZ] of puffLayout) {
+      marker.position.set(
+        centerX + offsetX * size,
+        centerY + offsetY * size,
+        centerZ + offsetZ * size,
+      );
+      marker.scale.set(size * scaleX, size * scaleY, size * scaleZ);
+      marker.updateMatrix();
+      clouds.setMatrixAt(instance, marker.matrix);
+      const shade = 0.93 + ((cloud + instance) % 4) * 0.018;
+      tint.setRGB(shade, shade * 0.99, shade * 0.97);
+      clouds.setColorAt(instance, tint);
+      instance += 1;
+    }
+  }
+  clouds.instanceMatrix.needsUpdate = true;
+  if (clouds.instanceColor) clouds.instanceColor.needsUpdate = true;
+  clouds.castShadow = false;
+  clouds.receiveShadow = false;
+  clouds.frustumCulled = false;
+  scene.add(clouds);
+  return clouds;
+}
+
 function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, portSurfaceRegions) {
   const waterMat = new THREE.MeshStandardMaterial({ color: 0x286477, roughness: 0.25, metalness: 0.22 });
   const quayMat = new THREE.MeshStandardMaterial({ color: 0x827e73, roughness: 0.92 });
@@ -1318,8 +1364,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const mount = mountRef.current;
     if (!mount) return undefined;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0b28f);
-    scene.fog = new THREE.Fog(0xf0b28f, 135, 560);
+    scene.background = new THREE.Color(0x73c5f0);
+    scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
+    addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
