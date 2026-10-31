@@ -1140,7 +1140,7 @@ function makeCity(scene) {
       mesh.rotation.x = surfacePitch(spec.x, spec.z, spec.yaw);
     }
   };
-  const breakFencesAt = (x, z) => {
+  const breakFencesAt = (x, z, forwardX = 0, forwardZ = -1) => {
     if (!fenceMeshes) return 0;
     let broken = 0;
     for (const segment of fenceSegments) {
@@ -1156,8 +1156,9 @@ function makeCity(scene) {
       hideFenceInstance(fenceMeshes.panels, segment.instances.panel);
       segment.instances.posts.forEach((index) => hideFenceInstance(fenceMeshes.posts, index));
       segment.instances.rails.forEach((index) => hideFenceInstance(fenceMeshes.rails, index));
-      // La section cassée tombe à l'opposé du côté touché au lieu de disparaître.
-      toppleFenceSection(segment, across >= 0 ? -1 : 1);
+      // Le grillage tombe dans le sens d'avancée du véhicule et reste couché au sol.
+      const forwardAcross = forwardX * sine + forwardZ * cosine;
+      toppleFenceSection(segment, Math.sign(forwardAcross) || Math.sign(across) || 1);
       broken += 1;
     }
     return broken;
@@ -1242,6 +1243,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         progress,
         speed: 0,
         maxSpeed: trafficType.speed,
+        yaw,
+        offsetX: 0,
+        offsetZ: 0,
+        velocityX: 0,
+        velocityZ: 0,
+        yawOffset: 0,
+        angularVelocity: 0,
+        touchingPlayer: false,
+        mass: trafficType.id === 'garbage-truck' ? 1.9 : trafficType.id === 'ambulance' ? 1.35 : trafficType.id === 'police' ? 1.15 : 1,
       };
     });
     const keys = new Set();
@@ -1287,11 +1297,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           traffic.progress = CITY_LIMIT + 20;
           traffic.speed = 0;
         }
-        const trafficX = traffic.axis === 'x' ? traffic.progress : traffic.crossAxis;
-        const trafficZ = traffic.axis === 'z' ? traffic.progress : traffic.crossAxis;
+        const pushDrag = Math.exp(-2.25 * dt);
+        traffic.offsetX += traffic.velocityX * dt;
+        traffic.offsetZ += traffic.velocityZ * dt;
+        traffic.velocityX *= pushDrag;
+        traffic.velocityZ *= pushDrag;
+        traffic.offsetX *= Math.exp(-0.18 * dt);
+        traffic.offsetZ *= Math.exp(-0.18 * dt);
+        traffic.yawOffset += traffic.angularVelocity * dt;
+        traffic.angularVelocity *= pushDrag;
+        traffic.yawOffset *= Math.exp(-0.28 * dt);
+        const trafficX = (traffic.axis === 'x' ? traffic.progress : traffic.crossAxis) + traffic.offsetX;
+        const trafficZ = (traffic.axis === 'z' ? traffic.progress : traffic.crossAxis) + traffic.offsetZ;
         traffic.car.position.set(trafficX, city.roadElevation(trafficX, trafficZ) + 0.02, trafficZ);
+        traffic.car.rotation.y = traffic.yaw + traffic.yawOffset;
         traffic.car.rotation.x = city.surfacePitch(trafficX, trafficZ, traffic.car.rotation.y);
-        traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+        const visualSpeed = traffic.speed + Math.hypot(traffic.velocityX, traffic.velocityZ);
+        traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += visualSpeed * dt * 0.95; });
         traffic.car.userData.beacons?.forEach((beacon, beaconIndex) => {
           const flashing = Math.floor(state.time * 8 + traffic.phase + beaconIndex) % 2 === 0;
           beacon.material.opacity = flashing ? 1 : 0.18;
@@ -1317,33 +1339,51 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
+    const overlapsVehicleHitbox = (x, z, carX, carZ, yaw, width, length) => {
+      const dx = x - carX;
+      const dz = z - carZ;
+      const cosine = Math.cos(yaw);
+      const sine = Math.sin(yaw);
+      const localX = dx * cosine - dz * sine;
+      const localZ = dx * sine + dz * cosine;
+      const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
+      return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
+    };
     const isPositionBlocked = (x, z) => {
-      const hitsBuilding = city.buildingFootprints.some((building) =>
+      if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + 2.1
-        && Math.abs(z - building.z) < building.halfDepth + 2.1);
-      if (hitsBuilding) return true;
-      const hitsMovingCar = trafficCars.some(({ car }) => {
-        const dx = x - car.position.x;
-        const dz = z - car.position.z;
-        const cosine = Math.cos(car.rotation.y);
-        const sine = Math.sin(car.rotation.y);
-        const localX = dx * cosine - dz * sine;
-        const localZ = dx * sine + dz * cosine;
-        const halfWidth = Math.max(2.1, (car.userData.width || 1.94) / 2 + 1.05);
-        const halfLength = Math.max(4.35, (car.userData.length || 4.0) / 2 + 2.2);
-        return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
-      });
-      if (hitsMovingCar) return true;
-      return city.parkedCarSpecs.some((car) => {
-        const dx = x - car.x;
-        const dz = z - car.z;
-        const cosine = Math.cos(car.yaw);
-        const sine = Math.sin(car.yaw);
-        const localX = dx * cosine - dz * sine;
-        const localZ = dx * sine + dz * cosine;
-        const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(car.width, car.length);
-        return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
-      });
+        && Math.abs(z - building.z) < building.halfDepth + 2.1)) return true;
+      if (trafficCars.some(({ car }) => overlapsVehicleHitbox(
+        x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length,
+      ))) return true;
+      return city.parkedCarSpecs.some((car) => overlapsVehicleHitbox(
+        x, z, car.x, car.z, car.yaw, car.width, car.length,
+      ));
+    };
+    const applyTrafficCarImpact = (x, z, heading, speed, steer, dt) => {
+      let hitCount = 0;
+      const direction = Math.sign(speed) || 1;
+      for (const traffic of trafficCars) {
+        const { car } = traffic;
+        const overlaps = overlapsVehicleHitbox(
+          x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length,
+        );
+        const firstContact = overlaps && !traffic.touchingPlayer;
+        const impulse = overlaps ? viceCityFreeDriveParkedCarImpulse(speed, traffic.mass, dt, firstContact) : 0;
+        if (impulse > 0) {
+          const directionX = heading.x * direction;
+          const directionZ = heading.z * direction;
+          traffic.velocityX += directionX * impulse;
+          traffic.velocityZ += directionZ * impulse;
+          if (firstContact) {
+            const sideOffset = (x - car.position.x) * directionZ - (z - car.position.z) * directionX;
+            traffic.angularVelocity += clamp(sideOffset * impulse * 0.08 + steer * 0.18, -1.6, 1.6);
+          }
+          hitCount += 1;
+        }
+        traffic.touchingPlayer = overlaps;
+      }
+      return hitCount;
     };
     let frame = 0; let last = performance.now(); let hudAt = 0;
     const animate = (now) => {
@@ -1371,10 +1411,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
       const nextX = state.x + forward.x * state.speed * dt;
       const nextZ = state.z + forward.z * state.speed * dt;
-      if (city.breakFencesAt(nextX, nextZ) > 0) state.speed *= 0.88;
+      if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
       const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+      const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+      const pushedCars = pushedParkedCars + pushedTrafficCars;
       // Conduite libre partout dans la ville : les trottoirs et les espaces
-      // ouverts restent franchissables, seuls les bâtiments et véhicules garés bloquent.
+      // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
       if (!isPositionBlocked(nextX, nextZ)) {
         state.x = nextX;
         state.z = nextZ;
@@ -1385,7 +1427,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isPositionBlocked(state.x, nextZ);
         if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
         else if (canSlideZ) state.z = nextZ;
-        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedParkedCars > 0 ? 0.62 : 0.18;
+        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
       }
       if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
         state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
