@@ -184,7 +184,7 @@ export const MOTS_CLES_PASTILLES = [
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
 export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
   return MOTS_CLES_PASTILLES
-    .filter((cle) => Boolean(carte?.[cle]))
+    .filter((cle) => Boolean(carte?.[cle]) || (cle === 'bouclier' && carte?.bouclierInitial))
     .flatMap((cle) => {
       if (cle !== 'protection' && cle !== 'protectionSortsContre') return [`<span class="${classe}">${effetIcon(cle, { size })}</span>`];
       const contres = couleursProtectionCarte(carte);
@@ -370,6 +370,7 @@ export function pastillesPourCarte(carte) {
   // Une arme peut accorder un bouclier à son porteur (la Hache de la
   // banquise) : la pastille se lit sur la fiche de l'arme comme sur celle
   // d'une créature qui arrive avec un bouclier.
+  if (carte.bouclierInitial) ajouter('bouclier', 'Bouclier');
   if (carte.donne?.bouclier) ajouter('bouclier', 'Bouclier', Number(carte.donne.bouclier) || null, { valeurMasquee: true });
   if (carte.porteurMeurt?.type === 'reanimation-porteur') ajouter('reanimation', 'Réanimation');
 
@@ -452,7 +453,7 @@ export function effetsEpuisesPourEntite(carte, entite) {
   if (carte.tenacite && entite.tenaciteDisponible === false) epuises.push('tenacite');
   const bouclierImprime = [carte.arrivee?.type, carte.effet?.type]
     .some((type) => type === 'bouclier' || type === 'bouclier-lumiere')
-    || Boolean(carte.donne?.bouclier);
+    || Boolean(carte.donne?.bouclier) || Boolean(carte.bouclierInitial);
   const bouclierActif = Number(entite.bouclier) > 0 || Boolean(entite.bouclierLumiere);
   // Les entités du moteur portent `bouclierEpuise` ; les fixtures anciennes
   // qui ne le portent pas retombent sur la simple absence de bouclier d'une
@@ -618,7 +619,7 @@ export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Vous pouvez jouer cette carte pendant le tour adverse, en respectant les fenêtres de réponse.',
   envol: 'Ne peut être bloquée que par une créature avec Envol.',
   infiltration: 'Ne peut pas être bloquée.',
-  volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne autant de points de vie.',
+  volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
@@ -633,7 +634,7 @@ export const EFFET_DEFINITIONS = {
   compagnie: (n) => `Tant qu’elle est en jeu, elle gagne +${n ?? 1}/+${n ?? 1} pour chaque AUTRE créature de sa tribu dans son camp. Elle ne se compte pas elle-même, et une créature de la même tribu dans le camp adverse ne compte pas non plus : perdre un frère d’armes fait redescendre le bonus, jamais sous 1 PV.`,
   protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
-  bouclier: () => 'Bloque le premier sort adverse qui atteint cette créature, même un sort de zone : la vague épargne alors cette seule créature, puis le bouclier tombe. Les dégâts des attaques et des capacités ne sont pas absorbés.',
+  bouclier: () => 'Bloque le premier sort ou effet de créature adverse qui atteint cette créature, même en zone : elle seule est épargnée, puis le bouclier tombe. Les attaques et les effets alliés passent normalement.',
   aura: () => 'Tant qu’elle est en jeu, seules les créatures adjacentes de son camp reçoivent son renfort : celles des deux cases qui entourent la sienne. Une case vide coupe le voisinage, et la source ne se renforce jamais elle-même. Si elle quitte la table, le bonus disparaît.',
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,

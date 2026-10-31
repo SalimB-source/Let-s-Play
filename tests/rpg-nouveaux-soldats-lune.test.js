@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColors, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { cardArt } from '../src/games/rpgCardArt.js';
 const ids = ['eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune', 'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree'];
@@ -31,9 +31,12 @@ test('Éclipse réduit l’attaque jusqu’à la fin du tour sans en augmenter u
 });
 test('Le Gardien au croissant protège une créature alliée choisie', () => {
   assert.equal(cardById(ids[1]).name, 'Gardien au croissant');
+  assert.deepEqual([cardById(ids[1]).atk, cardById(ids[1]).def], [4, 2]);
   assert.equal(cardArt(cardById(ids[1])), '/cards/gardienne-du-croissant.jpg?v=gardien-croissant-lumiere-v1');
   const d = duel(); const allie = poser(d, 'joueur', 'chien-du-guet');
   poser(d, 'joueur', ids[1], allie.id); assert.equal(allie.bouclier, 1);
+  assert.deepEqual([allie.atk, allie.def, allie.pv, allie.pvMax], [2, 4, 4, 4]);
+  rpgFinDeTour(d); assert.equal(allie.def, 4, 'le bonus reste après le tour');
 });
 test('Traqueur ne renvoie qu’une créature adverse', () => {
   const d = duel(); const cible = poser(d, 'sorcier', 'chien-du-guet'); const allie = poser(d, 'joueur', 'dune-marchante');
@@ -68,4 +71,14 @@ test('La Veilleuse est à la fois Viking et Vampire', async () => {
   assert.equal(veilleuse.cost, 3, 'la Veilleuse coûte trois manas');
   assert.ok(cardHasPrintedType(veilleuse, 'Viking'));
   assert.ok(cardHasPrintedType(veilleuse, 'Vampire'));
+});
+
+test('L’arrivée différée du Gardien confère le bouclier et +0/+2 à la même cible', () => {
+  const d = duel(); const allie = poser(d, 'joueur', 'chien-du-guet');
+  d.joueur.main.push(ids[1]);
+  const pose = rpgJouerCreature(d, 'joueur', ids[1], null, { cibleDifferee: true });
+  assert.ok(pose.ok && pose.arriveeEnAttente);
+  assert.equal(rpgResoudreArriveeCiblee(d, 'joueur', allie.id).ok, true);
+  assert.equal(allie.bouclier, 1);
+  assert.deepEqual([allie.atk, allie.def, allie.pv, allie.pvMax], [2, 4, 4, 4]);
 });

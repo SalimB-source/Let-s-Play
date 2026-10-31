@@ -261,7 +261,7 @@ test('sans créature adverse, Harakiri frappe le sorcier adverse', () => {
   }
 });
 
-test('les dégâts du Harakiri respectent la protection, pas la parade ni Esquive', () => {
+test('les dégâts du Harakiri respectent la protection et la parade, pas Esquive', () => {
   const duel = duelTest();
   const mort = jouer(duel, 'joueur', 'samourai-du-torii');
   // Tiziri ne porte plus de protection de Braise (son engagement pour mana l’a
@@ -276,8 +276,8 @@ test('les dégâts du Harakiri respectent la protection, pas la parade ni Esquiv
   const cibleBouclier = jouer(avecBouclier, 'sorcier', 'seigneur-des-machoires');
   cibleBouclier.bouclier = 1;
   rpgBlesserCreature(avecBouclier, 'joueur', mortBouclier.id, 20, 'eau');
-  assert.equal(cibleBouclier.bouclier, 1, 'la parade ne tombe pas sous une capacité');
-  assert.equal(cibleBouclier.def, 5, 'le dégât du Harakiri passe : la parade n’absorbe rien');
+  assert.equal(cibleBouclier.bouclier, 0, 'la parade tombe sous la capacité');
+  assert.equal(cibleBouclier.def, 6, 'le dégât du Harakiri est bloqué');
   const autre = duelTest();
   const mort2 = jouer(autre, 'joueur', 'samourai-du-torii');
   const cible = jouer(autre, 'sorcier', 'seigneur-des-machoires');

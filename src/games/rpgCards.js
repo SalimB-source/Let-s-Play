@@ -546,7 +546,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Gardienne',
     art: 'veilleuse-des-citernes',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Quand la Veilleuse arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Elle garde les réserves, et la dernière porte.',
   },
   {
@@ -795,7 +795,7 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Guerrier viking',
     art: 'guerrier-au-bouclier-rond',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
-    text: 'Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Quand il arrive : une créature alliée ciblée — ou lui-même — reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Il ne recule pas : il glisse — et le coup reçu le durcit.',
   },
   {
@@ -897,12 +897,12 @@ export const RPG_CREATURE_CARDS = [
     typeLine: 'Créature — Valkyrie viking',
     art: 'valkyrie-des-glaces',
     envol: true,
-    protectionSorts: true,
+    bouclierInitial: true,
     // `inclutAllies` : le vent froid balaie la table entière, le camp de la
     // Valkyrie compris — mais `exclutSoi` l'épargne elle-même : son propre
     // souffle ne la blesse ni ne la gèle, contrairement à l'Ifrit al-Ahmar.
     arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut la cibler ni la blesser. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 25 % de chances de geler chacune d’elles.',
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 25 % de chances de geler chacune d’elles.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -985,9 +985,9 @@ export const RPG_CREATURE_CARDS = [
     def: 6,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Serpent du monde',
-    protectionSorts: true,
+    bouclierInitial: true,
     arrivee: { type: 'pioche-defausse', pioche: 3, defausse: 1 },
-    text: 'Protection contre les sorts — Aucun sort (Magie Rapide ou Sorcellerie) ne peut le cibler ni le blesser. Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
+    text: 'Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand Jörmungandr arrive : piochez 3 cartes et défaussez une carte.',
     flavor: 'Il tient le monde dans sa queue. Il lâche prise pour frapper.',
   },
   // Le Corbeau des neuf nuits : la Neige retournée en Ténèbres (doc 22).
@@ -1005,7 +1005,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, volDeVie: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Il commande à voix basse ; les ombres transmettent ses ordres.',
   },
   {
@@ -1014,7 +1014,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 8, atk: 7, def: 7, rarity: 'mythique',
     typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true,
     volDeVie: true, overkill: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
   },
   {
@@ -1029,10 +1029,10 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'gardienne-du-croissant', set: 'soldats-de-la-lune', name: 'Gardien au croissant',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 4, atk: 2, def: 4, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    cost: 4, atk: 4, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature alliée ciblée reçoit un bouclier qui bloque le prochain sort adverse qui l’atteint.',
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, bonusDef: 2 },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },
   {
@@ -1086,16 +1086,16 @@ export const RPG_CREATURE_CARDS = [
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
     rapidite: true, infiltration: true, volDeVie: true,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez autant de points de vie.',
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
     flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
   },
   {
     id: 'veilleur-du-dernier-crepuscule', name: 'Veilleur du dernier crépuscule',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 4, atk: 4, def: 3, rarity: 'inhabituelle',
+    cost: 4, atk: 3, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
-    contreAttaque: true,
-    text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
+    contreAttaque: true, reactionTourAdverse: true, interceptionAttaque: true,
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée, choisissez une Attaque ciblée adverse en cours : elle vise le Veilleur à la place. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
 ];
@@ -1224,7 +1224,7 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué.',
+    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },
   {
@@ -1296,7 +1296,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'mythique', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
     reactionTourAdverse: true, volDeVie: true, envol: true,
     arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez autant de points de vie. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
+    text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
     flavor: 'Sous la lune noire, même le temps attend son duel.',
   },
   {
@@ -1318,7 +1318,7 @@ export const RPG_HERO_CARDS = [
     rapidite: true,
     contreAttaque: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (25 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (25 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1517,12 +1517,12 @@ export const RPG_HERO_CARDS = [
     kind: 'hero',
     typeLine: 'Créature légendaire — Serpent',
     art: 'serpent-du-monde',
-    protectionSorts: true,
+    bouclierInitial: true,
     overkill: true,
     // La mue du monde : chaque camp vide sa main au cimetière, puis pioche
     // trois cartes neuves (moteur : case 'mue-mondiale').
     arrivee: { type: 'mue-mondiale', pioche: 3 },
-    text: 'Quand le Serpent du monde arrive : chaque joueur défausse toute sa main, puis pioche 3 cartes. Protection — Le Serpent est protégé contre les magies rapides et les sorcelleries : aucun sort ne peut le cibler ni le blesser. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
+    text: 'Quand le Serpent du monde arrive : chaque joueur défausse toute sa main, puis pioche 3 cartes. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse.',
     flavor: 'Il mord sa propre queue dans la glace, et le monde tient debout.',
   },
   // Le Père des corbeaux retourné : la figure hybride de la Tour du Corbeau.
@@ -1798,7 +1798,7 @@ export const RPG_MAGIE_CARDS = [
     rarity: 'rare',
     cibles: ['creature-amie'],
     effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Magie Rapide — Une créature alliée reçoit un bouclier : le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Magie Rapide — Une créature alliée reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Une seconde de verre suffit à dévier le coup.',
   },
   {
@@ -2157,7 +2157,7 @@ export const RPG_MAGIE_CARDS = [
     kind: 'magie', typeLine: 'Magie Rapide — Sable et Ténèbres',
     cost: 2, rarity: 'inhabituelle', instant: true,
     cibles: ['creature-amie'], effet: { type: 'bouclier', amount: 1, cible: 'creature-amie' },
-    text: 'Magie Rapide — Une créature alliée ciblée reçoit un bouclier : le prochain sort adverse qui l’atteint, même de zone, est bloqué.',
+    text: 'Magie Rapide — Une créature alliée ciblée reçoit un bouclier : le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'La nuit protège ceux qui veillent sous son croissant.',
   },
   {
@@ -2279,7 +2279,7 @@ export const RPG_ARME_CARDS = [
     // elle si le porteur en change.
     blessurePorteur: 1,
     donne: { bouclier: 1 },
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
@@ -2458,7 +2458,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
-    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie : il ne peut pas être bloqué et vous gagnez autant de points de vie que les dégâts qu’il inflige. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
+    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie : il ne peut pas être bloqué et vous gagnez la moitié des dégâts qu’il inflige en points de vie, arrondie à l’entier supérieur. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {

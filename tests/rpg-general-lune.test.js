@@ -30,7 +30,7 @@ test('Résonance renforce tous les Vampires, Général compris, et se cumule ave
 });
 test('Le Général gagne de la vie en attaquant', () => {
   const d = duel(); const general = poser(d, 'joueur', id); general.ready = true; d.joueur.pv = 10;
-  assert.ok(rpgLancerAttaque(d, 'joueur', [general.id], {}).ok); assert.equal(d.joueur.pv, 14);
+  assert.ok(rpgLancerAttaque(d, 'joueur', [general.id], {}).ok); assert.equal(d.joueur.pv, 12);
 });
 test('Le Général peut être joué pendant le tour adverse en PvP', () => {
   const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier'; d.joueur.main.push(id);

@@ -36,12 +36,12 @@ test('Résonance vampire renforce les deux camps et le Fléau, sans dégâts à 
   rpgBlesserCreature(d, 'joueur', fleau.id, 20); rpgActionsEtat(d);
   assert.deepEqual([amie.atk, amie.pv, ennemi.atk, ennemi.pv, chien.atk, chien.pv], [2, 2, 3, 2, 2, 2]);
 });
-test('Overkill et Vol de vie soignent une seule fois par dégât infligé', () => {
+test('Overkill et Vol de vie soignent la moitié des dégâts infligés', () => {
   const d = duel(); const fleau = poser(d, 'joueur', id); const chien = poser(d, 'sorcier', 'chien-du-guet');
   d.joueur.pv = 10; fleau.ready = true; const pvAdverse = d.sorcier.pv;
   assert.ok(rpgLancerAttaque(d, 'joueur', [fleau.id], { [fleau.id]: [chien.id] }).ok);
   assert.equal(d.sorcier.pv, pvAdverse - 6);
-  assert.equal(d.joueur.pv, 18, '2 dégâts au bloqueur et 6 au sorcier');
+  assert.equal(d.joueur.pv, 14, '2 dégâts au bloqueur et 6 au sorcier rendent 4 PV');
 });
 test('Il peut répondre pendant le tour adverse en solo et en PvP', () => {
   const d = duel(); d.tour = 'sorcier'; d.fenetreReponse = true; d.joueur.main.push(id);
@@ -53,7 +53,7 @@ test('Vol de vie fonctionne même si le Fléau meurt dans le combat', () => {
   const d = duel(); const fleau = poser(d, 'joueur', id); const chien = poser(d, 'sorcier', 'chien-du-guet');
   chien.atk = 9; d.joueur.pv = 10; fleau.ready = true;
   assert.ok(rpgLancerAttaque(d, 'joueur', [fleau.id], { [fleau.id]: [chien.id] }).ok);
-  assert.equal(d.joueur.pv, 18); assert.ok(!d.joueur.creatures.includes(fleau));
+  assert.equal(d.joueur.pv, 14); assert.ok(!d.joueur.creatures.includes(fleau));
 });
 test('La résonance atteint aussi les Vampires arrivant après le Fléau', () => {
   const d = duel(); poser(d, 'joueur', id);

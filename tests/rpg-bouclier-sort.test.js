@@ -23,8 +23,10 @@ import {
   rpgBouclierEstActif,
   rpgFinDeTour,
   rpgResoudreArriveeCiblee,
+  rpgResoudreDestructionCiblee,
+  rpgAttaquerCreature,
 } from '../src/games/rpgDuel.js';
-import { cardById } from '../src/games/rpgCards.js';
+import { cardById, duelCardById } from '../src/games/rpgCards.js';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 
 const duelVide = () => rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -58,7 +60,7 @@ test('les sources de bouclier n’annoncent plus qu’une parade', () => {
     const effet = carte.arrivee?.type === 'bouclier' ? carte.arrivee : carte.effet;
     assert.equal(effet.type, 'bouclier', `${id} pose un bouclier`);
     assert.equal(effet.amount, 1, `${id} ne cumule plus de points : une seule parade`);
-    assert.match(carte.text, /prochain sort adverse/, `${id} annonce le sort bloqué`);
+    assert.match(carte.text, /prochain sort ou effet de créature adverse/g, `${id} annonce le sort bloqué`);
     assert.doesNotMatch(carte.text, /prévient les|prochains dégâts/, `${id} ne parle plus d’absorption`);
   }
 });
@@ -287,14 +289,12 @@ test('un sort de zone du camp de la créature ne réveille pas sa parade', () =>
   assert.equal(aMoi.pv, 3, 'le dégât atteint quand même la créature de son propre camp');
 });
 
-test('une capacité de zone traverse la parade sans la faire tomber', () => {
+test('une capacité de zone adverse épargne sa porteuse et consomme la parade', () => {
   const { duel, protegee } = scene();
-  // La Valkyrie des glaces : à son arrivée, 1 dégât de zone sur les deux
-  // camps. C'est une capacité, pas un sort : la parade ne doit pas bouger.
   poser(duel, 'joueur', 'valkyrie-des-glaces');
-  assert.equal(protegee.pv, 3, 'la capacité blesse bien la créature');
-  assert.equal(protegee.bouclier, 1, 'la parade ne regarde que les sorts');
-  assert.equal(protegee.bouclierEpuise, false);
+  assert.equal(protegee.pv, 4);
+  assert.equal(protegee.bouclier, 0);
+  assert.equal(protegee.bouclierEpuise, true);
 });
 
 test('une parade neuve encaisse l’écho différé d’un sort de zone', () => {
@@ -375,7 +375,7 @@ test('Salem imprime Bouclier, Rapidité et Contre-attaque, sans bouclier de lumi
   assert.equal(carte.arrivee.type, 'bouclier', 'son arrivée pose la parade anti-sort');
   assert.equal(carte.arrivee.amount, 1, 'une seule parade');
   assert.equal(carte.arrivee.cible, 'soi', 'elle protège Salem, pas un allié désigné');
-  assert.match(carte.text, /prochain sort adverse/);
+  assert.match(carte.text, /prochain sort ou effet de créature adverse/g);
   assert.doesNotMatch(carte.text, /bouclier de lumière/);
 });
 
@@ -435,4 +435,152 @@ test('la parade de Salem n’absorbe pas les dégâts de capacité', () => {
   assert.equal(coup.absorbes, 0, 'rien n’est absorbé');
   assert.equal(salem.pv, 3, 'Salem tombe à 3 PV');
   assert.equal(salem.bouclier, 1, 'la parade attend toujours un sort adverse');
+});
+
+test('les cinq anciennes protections permanentes sont des boucliers imprimés', async () => {
+  const { pastillesPourCarte, effetsEpuisesPourEntite } = await import('../src/games/effetIcons.js');
+  for (const id of ['valkyrie-des-glaces', 'jormungandr', 'serpent-du-monde', 'faucon-du-zenith', 'l-oublie']) {
+    const carte = cardById(id);
+    assert.ok(carte, id);
+    assert.equal(carte.bouclierInitial, true, id);
+    assert.notEqual(carte.protectionSorts, true, id);
+    assert.ok(pastillesPourCarte(carte).some(p => p.cle === 'bouclier'), id);
+    assert.ok(effetsEpuisesPourEntite(carte, { bouclier: 0, bouclierEpuise: true }).includes('bouclier'));
+    const duel = duelVide(); const entite = poser(duel, 'joueur', id);
+    assert.equal(entite.bouclier, 1, id);
+  }
+});
+
+test('le bouclier arrête une arrivée ciblée de renvoi, puis le prochain effet passe', () => {
+  const { duel, protegee } = scene();
+  poser(duel, 'joueur', 'sonneur-fele', protegee.id);
+  assert.ok(duel.sorcier.creatures.includes(protegee));
+  assert.equal(protegee.bouclier, 0);
+  poser(duel, 'joueur', 'sonneur-fele', protegee.id);
+  assert.ok(!duel.sorcier.creatures.includes(protegee));
+  assert.ok(duel.sorcier.main.includes('dune-marchante'));
+});
+
+test('un effet ciblé de malus ou d’exil est arrêté intégralement', () => {
+  for (const id of ['vipere-de-verre', 'pere-des-corbeaux']) {
+    const duel = duelVide();
+    const cible = poser(duel, 'sorcier', 'chien-du-guet');
+    cible.bouclier = 1;
+    const avant = [cible.atk, cible.pv, cible.empecheAttaqueToursRestants];
+    poser(duel, 'joueur', id, cible.id);
+    assert.ok(duel.sorcier.creatures.includes(cible), id);
+    assert.deepEqual([cible.atk, cible.pv, cible.empecheAttaqueToursRestants], avant, id);
+    assert.equal(cible.bouclier, 0, id);
+  }
+});
+
+test('une vague alliée passe, sans consommer le bouclier', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'joueur', 'dune-marchante'); cible.bouclier = 1;
+  poser(duel, 'joueur', 'valkyrie-des-glaces');
+  assert.equal(cible.pv, 3);
+  assert.equal(cible.bouclier, 1);
+});
+
+test('une malédiction adverse consomme la parade sans se réappliquer à chaque recalcul', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'faucon-du-zenith');
+  assert.equal(cible.bouclier, 1);
+  const avant = cible.atk;
+  poser(duel, 'joueur', 'la-barbe-noire');
+  assert.equal(cible.bouclier, 0); assert.equal(cible.atk, avant);
+  poser(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(cible.atk, avant, 'la source bloquée ne recommence pas');
+  poser(duel, 'joueur', 'la-barbe-noire');
+  assert.equal(cible.atk, avant - 2, 'une seconde source est un nouvel effet');
+});
+
+test('une arrivée à deux cibles épargne seulement celle dont la parade tombe', () => {
+  const duel = duelVide();
+  const protegee = poser(duel, 'sorcier', 'dune-marchante'); protegee.bouclier = 1;
+  const autre = poser(duel, 'sorcier', 'dune-marchante');
+  poser(duel, 'joueur', 'oni-de-la-fournaise', protegee.id);
+  assert.equal(protegee.pv, 4); assert.equal(protegee.bouclier, 0);
+  assert.equal(autre.pv, 1);
+});
+
+test('une capacité de mort ciblée est bloquée après le choix différé', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'dune-marchante'); cible.bouclier = 1;
+  const ghul = poser(duel, 'joueur', 'ghul-des-cendres');
+  rpgBlesserCreature(duel, 'joueur', ghul.id, 5);
+  assert.ok(duel.destructionsEnAttente?.length);
+  assert.equal(rpgResoudreDestructionCiblee(duel, 'joueur', cible.id).ok, true);
+  assert.equal(cible.pv, 4); assert.equal(cible.bouclier, 0);
+});
+
+test('une capacité bloquée ne provoque pas la Contre-attaque de sa cible', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'salem');
+  assert.equal(cible.bouclier, 1);
+  const sonneur = poser(duel, 'joueur', 'sonneur-fele', cible.id);
+  assert.ok(duel.sorcier.creatures.includes(cible));
+  assert.equal(cible.bouclier, 0);
+  assert.equal(sonneur.pv, sonneur.pvMax, 'la riposte ne part pas');
+});
+
+test('les attaques ordinaires restent sans effet sur la parade', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'dune-marchante'); cible.bouclier = 1;
+  const attaquant = poser(duel, 'joueur', 'chien-du-guet'); attaquant.ready = true;
+  assert.equal(rpgAttaquerCreature(duel, 'joueur', attaquant.id, cible.id).ok, true);
+  assert.equal(cible.pv, 2); assert.equal(cible.bouclier, 1);
+});
+
+test('la Résonance adverse est un effet continu bloqué une fois, mais pas la Résonance alliée', () => {
+  const duel = duelVide();
+  duel.tour = 'sorcier';
+  const cible = poser(duel, 'sorcier', 'veilleur-du-dernier-crepuscule'); cible.bouclier = 1;
+  const attaque = cible.atk;
+  duel.tour = 'joueur';
+  poser(duel, 'joueur', 'general-du-croissant-noir');
+  assert.equal(cible.bouclier, 0); assert.equal(cible.atk, attaque);
+  poser(duel, 'sorcier', 'chien-du-guet');
+  assert.equal(cible.atk, attaque, 'les recalculs ne réappliquent pas la source bloquée');
+  cible.bouclier = 1; duel.tour = 'sorcier';
+  poser(duel, 'sorcier', 'general-du-croissant-noir');
+  assert.equal(cible.atk, attaque + 1); assert.equal(cible.bouclier, 1);
+});
+
+test('une capacité activée distingue les cibles adverses et alliées', async () => {
+  const { rpgActiverCapacite } = await import('../src/games/rpgDuel.js');
+  const carte = duelCardById('chien-du-guet');
+  const ancienne = carte.activation;
+  carte.activation = { cout: 0, couleur: 'neige', effet: { type: 'degats', amount: 1, cible: 'creature' } };
+  try {
+    const duel = duelVide();
+    const source = poser(duel, 'joueur', 'chien-du-guet');
+    const allie = poser(duel, 'joueur', 'dune-marchante'); allie.bouclier = 1;
+    const ennemi = poser(duel, 'sorcier', 'dune-marchante'); ennemi.bouclier = 1;
+    duel.tour = 'joueur';
+    assert.equal(rpgActiverCapacite(duel, 'joueur', source.id, allie.id).ok, true);
+    assert.equal(allie.pv, 3); assert.equal(allie.bouclier, 1);
+    assert.equal(rpgActiverCapacite(duel, 'joueur', source.id, ennemi.id).ok, true);
+    assert.equal(ennemi.pv, 4); assert.equal(ennemi.bouclier, 0);
+  } finally {
+    if (ancienne === undefined) delete carte.activation; else carte.activation = ancienne;
+  }
+});
+
+test('une destruction de zone n’use que les boucliers réellement atteints', () => {
+  const duel = duelVide();
+  const petit = poser(duel, 'sorcier', 'chien-du-guet'); petit.bouclier = 1;
+  const cher = poser(duel, 'sorcier', 'dune-marchante'); cher.bouclier = 1;
+  poser(duel, 'joueur', 'l-oublie');
+  assert.ok(duel.sorcier.creatures.includes(petit));
+  assert.equal(petit.bouclier, 0);
+  assert.equal(cher.bouclier, 1, 'le coût supérieur au seuil n’est pas visé');
+});
+
+test('une protection de couleur empêche l’effet avant que le bouclier soit consommé', () => {
+  const duel = duelVide();
+  const cible = poser(duel, 'sorcier', 'dune-marchante');
+  cible.bouclier = 1; cible.protection = { contre: 'neige', toursRestants: 2 };
+  poser(duel, 'joueur', 'valkyrie-des-glaces');
+  assert.equal(cible.pv, 4); assert.equal(cible.bouclier, 1);
 });
