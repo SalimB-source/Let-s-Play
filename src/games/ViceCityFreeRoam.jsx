@@ -520,10 +520,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       state.steer += (steerInput - state.steer) * Math.min(1, dt * 16);
       // Braquage plus direct et réserve d'adhérence accrue pour des virages
       // urbains plus francs, tout en gardant un rayon qui s'élargit avec la vitesse.
-      const wheelAngle = state.steer * 0.65;
+      const wheelAngle = state.steer * 0.63;
       const wheelbase = 2.75;
       const requestedYawRate = (state.speed / wheelbase) * Math.tan(wheelAngle);
-      const gripYawLimit = Math.abs(state.speed) > 0.1 ? (2.0 * 9.81) / Math.abs(state.speed) : 0;
+      const gripYawLimit = Math.abs(state.speed) > 0.1 ? (1.9 * 9.81) / Math.abs(state.speed) : 0;
       const yawRate = clamp(requestedYawRate, -gripYawLimit, gripYawLimit);
       state.heading += yawRate * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
