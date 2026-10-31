@@ -773,11 +773,14 @@ function makeCity(scene) {
       trafficSignalSpecs.push(spec);
       intersection.signals.push(spec);
     }
+    // Les portiques prennent appui sur des poteaux plantés dans le trottoir,
+    // côté bordure, jamais sur une façade ou un mur de bâtiment.
+    const mastSideOffset = ROAD_HALF + 1.2;
     const overheadApproaches = [
-      { axis: 'x', x: x - 18, z: z + 2.35, yaw: -Math.PI / 2, supportX: x - 18, supportZ: z + 9.5 },
-      { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - 9.5 },
-      { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - 9.5, supportZ: z - 18 },
-      { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + 9.5, supportZ: z + 18 },
+      { axis: 'x', x: x - 18, z: z + 2.35, yaw: -Math.PI / 2, supportX: x - 18, supportZ: z + mastSideOffset },
+      { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - mastSideOffset },
+      { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - mastSideOffset, supportZ: z - 18 },
+      { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
     ];
     for (const approach of overheadApproaches) {
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
