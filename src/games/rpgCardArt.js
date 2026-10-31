@@ -63,7 +63,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'souverain-de-la-lune-noire': 'lune-heros-v2',
   'voile-de-la-lune-noire': 'lune-magie-v4',
   'ressac-de-la-lune-noire': 'lune-magie-v4',
-  'sabre-du-croissant-noir': 'lune-armurerie-v3',
+  'sabre-du-croissant-noir': 'lune-armurerie-v4',
   'lance-de-la-lune-givree': 'lune-armurerie-v3',
   // Lettres de Marque : les Sites changent de peinture à chaque Heure.
   // Devenue « La légende du Hollandais volant » : vaisseau fantôme
