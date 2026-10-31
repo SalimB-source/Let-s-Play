@@ -118,6 +118,20 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
  * dBFS]`.
  */
 export const RPG_NIVEAUX_VOIX = Object.freeze({
+  'Sentinel of the Sands.mp3': [-21.86, -6.64],
+  'Archon of the Black Hourglass.mp3': [-21.37, -6.69],
+  'Dancer of the Dune Shadows.mp3': [-24.56, -8.20],
+  'Watcher of the Last Twilight.mp3': [-19.52, -2.96],
+  'Sovereign of the Black Moon.mp3': [-19.22, -3.60],
+  'Silent Eclipse.mp3': [-24.30, -5.71],
+  'Guardian of the Crescent.mp3': [-19.73, -2.70],
+  'Tracker of Moonless Nights.mp3': [-21.64, -4.95],
+  'Bloodthirster of the Dunes.mp3': [-16.05, -1.02],
+  'Standard-Bearer of the Eclipse.mp3': [-16.59, -1.44],
+  'Watcher of the Frozen Moon.mp3': [-26.93, -9.18],
+  'Scourge of the Black Moon.mp3': [-21.45, -1.72],
+  'General of the Black Crescent.mp3': [-16.69, -2.20],
+  'Guard of the Frozen Throne.mp3': [-18.85, -0.97],
   'Amani.mp3': [-26.26, -7.48],
   'Amayas.mp3': [-25.91, -6.41],
   'Ashigaru.mp3': [-22.34, -5.72],

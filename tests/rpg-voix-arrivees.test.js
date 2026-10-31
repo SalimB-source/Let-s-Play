@@ -63,6 +63,9 @@ const fichiersVoix = readdirSync(PUBLIC)
   .filter((nom) => /\.(mp3|wav)$/i.test(nom))
   .map((nom) => ({ nom, taille: readFileSync(new URL(nom, PUBLIC)).byteLength }))
   .filter(({ nom, taille }) => taille < 1_000_000
+    // T01–T12 (et les quatre parties T08) sont des pistes audio existantes,
+    // pas des répliques d'arrivée de cartes.
+    && !/^T(?:0[1-9]|1[0-2])[a-d]?\.mp3$/i.test(nom)
     && !DEJA_BRANCHES.has(nom) && !WAV_DEJA_BRANCHES.has(nom))
   .map(({ nom }) => nom);
 
@@ -85,12 +88,37 @@ function donner(duel, cote, carteId) {
 }
 
 test('chaque voix appartient à une créature ou à un héros du jeu', () => {
-  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 60, 'les trois lots comptent 60 cartes');
+  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 74, 'les quatre lots comptent 74 cartes');
   for (const carteId of RPG_ARRIVAL_VOICE_CARD_IDS) {
     const carte = cardById(carteId);
     assert.ok(carte, `${carteId} est une carte du jeu`);
     assert.ok(['creature', 'hero'].includes(carte.kind),
       `${carteId} (${carte.name}) est une créature ou un héros — jamais une magie, un terrain ni un jeton`);
+  }
+});
+
+test('Les quatorze Soldats de la Lune utilisent leurs voix anglaises', () => {
+  const voix = {
+    'sentinelle-des-sables': 'Sentinel of the Sands.mp3',
+    'archonte-du-sablier-noir': 'Archon of the Black Hourglass.mp3',
+    'danseuse-des-ombres-de-dune': 'Dancer of the Dune Shadows.mp3',
+    'veilleur-du-dernier-crepuscule': 'Watcher of the Last Twilight.mp3',
+    'souverain-de-la-lune-noire': 'Sovereign of the Black Moon.mp3',
+    'eclipse-silencieuse': 'Silent Eclipse.mp3',
+    'gardienne-du-croissant': 'Guardian of the Crescent.mp3',
+    'traqueur-des-nuits-sans-lune': 'Tracker of Moonless Nights.mp3',
+    'sanguinaire-des-dunes': 'Bloodthirster of the Dunes.mp3',
+    'porte-etendard-de-leclipse': 'Standard-Bearer of the Eclipse.mp3',
+    'veilleuse-de-la-lune-givree': 'Watcher of the Frozen Moon.mp3',
+    'fleau-de-la-lune-noire': 'Scourge of the Black Moon.mp3',
+    'general-du-croissant-noir': 'General of the Black Crescent.mp3',
+    'garde-du-trone-givre': 'Guard of the Frozen Throne.mp3',
+  };
+  for (const [id, fichier] of Object.entries(voix)) {
+    assert.ok(cardById(id), `${id} existe`);
+    assert.equal(rpgArrivalVoiceFile(id), fichier);
+    assert.ok(rpgArrivalVoiceUrl(id).endsWith(encodeURIComponent(fichier)));
+    assert.ok(Number.isFinite(gainVoixArrivee(fichier)) && gainVoixArrivee(fichier) > 0);
   }
 });
 
@@ -168,9 +196,9 @@ test('chaque voix est un fichier court livré dans public/, une seule fois', () 
 });
 
 test('aucune voix du lot ne reste orpheline — et aucune musique ne s’y invite', () => {
-  // À la racine de public/, tout MP3 de moins d'1 Mo est une voix de carte ;
-  // les pistes de plateau pèsent toutes plus de 3 Mo.
-  assert.equal(fichiersVoix.length, 60, 'le dépôt livre exactement 60 voix de créature');
+  // Les pistes T01–T12 et les bruitages connus sont exclus du comptage ;
+  // toutes les autres petites voix sont associées à une carte.
+  assert.equal(fichiersVoix.length, 74, 'le dépôt livre exactement 74 voix de créature');
   const attribues = new Set(Object.values(RPG_ARRIVAL_VOICE_FILES));
   for (const nom of fichiersVoix) {
     assert.ok(attribues.has(nom), `${nom} est attribué à une carte`);
@@ -212,6 +240,16 @@ test('le moteur journalise toute entrée en jeu, voix ou non', () => {
   assert.equal(sansVoix.length, 1);
   assert.equal(sansVoix[0].cote, 'sorcier');
   assert.equal(rpgACarteUneVoix(sansVoix[0].carteId), false);
+});
+
+test('Une voix de la Lune est journalisée à l’arrivée, même en réponse adverse', () => {
+  const duel = duelDeTest(); duel.tour = 'sorcier'; duel.fenetreReponse = true;
+  donner(duel, 'joueur', 'general-du-croissant-noir');
+  const pose = rpgJouerCreature(duel, 'joueur', 'general-du-croissant-noir');
+  assert.ok(pose.ok);
+  const [arrivee] = rpgConsommerArriveesCreature(duel);
+  assert.equal(arrivee.carteId, 'general-du-croissant-noir');
+  assert.equal(rpgArrivalVoiceFile(arrivee.carteId), 'General of the Black Crescent.mp3');
 });
 
 test('Tenacité rejoue la voix existante une fois au vrai retour, pour les deux camps', () => {

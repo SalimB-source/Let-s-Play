@@ -2,10 +2,11 @@
  * Voix d'arrivée des créatures — un échantillon par carte, livré à la racine
  * de `public/`.
  *
- * Trois lots de fichiers ont été déposés : le lot « Game voices » (37 MP3
+ * Quatre lots de fichiers ont été déposés : le lot « Game voices » (37 MP3
  * courts, 0,65 s à 3,06 s), puis 14 voix (1,07 s à 3,08 s, plus un WAV — le
  * Tengu), puis 9 voix de héros et de créatures (1,88 s à 3,97 s). Tous vivent à
- * la racine de `public/`, sauf le Tengu, ramené en PCM 16 bits mono. Chacun porte le
+ * la racine de `public/`, sauf le Tengu, ramené en PCM 16 bits mono. Le quatrième
+ * lot comprend les 14 voix en anglais des Soldats de la Lune. Chacun porte le
  * nom de sa carte, qui n'est presque jamais l'identifiant de la carte, ni même
  * son nom imprimé : le rapprochement est fait ici, ligne par ligne, et chaque
  * écart est consigné.
@@ -41,11 +42,27 @@
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
 
 /**
- * Les 60 voix livrées, carte par carte. L'ordre suit la collection — Braise,
+ * Les 74 voix livrées, carte par carte. L'ordre suit la collection — Braise,
  * Ténèbres, Sable, Eau, Neige, les héros — puis les lots suivants, rangés à
  * part, dans l'ordre où ils sont arrivés.
  */
 export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
+  // ── Les Soldats de la Lune · voix originales en anglais ─────────────────
+  'sentinelle-des-sables': 'Sentinel of the Sands.mp3',
+  'archonte-du-sablier-noir': 'Archon of the Black Hourglass.mp3',
+  'danseuse-des-ombres-de-dune': 'Dancer of the Dune Shadows.mp3',
+  'veilleur-du-dernier-crepuscule': 'Watcher of the Last Twilight.mp3',
+  'souverain-de-la-lune-noire': 'Sovereign of the Black Moon.mp3',
+  'eclipse-silencieuse': 'Silent Eclipse.mp3',
+  'gardienne-du-croissant': 'Guardian of the Crescent.mp3',
+  'traqueur-des-nuits-sans-lune': 'Tracker of Moonless Nights.mp3',
+  'sanguinaire-des-dunes': 'Bloodthirster of the Dunes.mp3',
+  'porte-etendard-de-leclipse': 'Standard-Bearer of the Eclipse.mp3',
+  'veilleuse-de-la-lune-givree': 'Watcher of the Frozen Moon.mp3',
+  'fleau-de-la-lune-noire': 'Scourge of the Black Moon.mp3',
+  'general-du-croissant-noir': 'General of the Black Crescent.mp3',
+  'garde-du-trone-givre': 'Guard of the Frozen Throne.mp3',
+
   // ── Cour du Soleil rouge · Braise ───────────────────────────────────────
   susanoo: 'Susanoo.mp3',
   'cavalier-des-deux-sabres': 'Cavalier des deux sabres.mp3',

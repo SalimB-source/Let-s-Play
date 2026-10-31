@@ -49,11 +49,11 @@ test('la table des bruitages couvre exactement le registre du lecteur', () => {
   }
 });
 
-test('les 60 voix d’arrivée sont toutes mesurées', () => {
+test('les 74 voix d’arrivée sont toutes mesurées', () => {
   const fichiers = [...new Set(Object.values(RPG_ARRIVAL_VOICE_FILES))].sort();
   assert.deepEqual(Object.keys(RPG_NIVEAUX_VOIX).sort(), fichiers,
     'aucune voix ne joue à son niveau d’origine, aucune mesure orpheline');
-  assert.equal(fichiers.length, 60);
+  assert.equal(fichiers.length, 74);
 });
 
 test('chaque son tient le niveau commun de -20 LUFS', () => {
