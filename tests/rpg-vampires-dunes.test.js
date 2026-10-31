@@ -45,7 +45,11 @@ test('La Danseuse rend les dégâts qu’elle inflige en points de vie', () => {
   assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
   assert.equal(d.joueur.pv, 12);
 });
-test('Le Veilleur possède Contre-attaque', () => {
+test('Le Veilleur est 4/3 et possède Contre-attaque', () => {
+  const carte = cardById(ids[2]);
+  assert.deepEqual([carte.cost, carte.atk, carte.def], [4, 4, 3]);
   const d = duel(); d.joueur.main.push(ids[2]);
-  assert.equal(rpgJouerCreature(d, 'joueur', ids[2]).entite.contreAttaque, true);
+  const veilleur = rpgJouerCreature(d, 'joueur', ids[2]).entite;
+  assert.equal(veilleur.contreAttaque, true);
+  assert.deepEqual([veilleur.atk, veilleur.pv], [4, 3]);
 });

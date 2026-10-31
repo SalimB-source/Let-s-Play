@@ -997,7 +997,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, provocation: true, furie: 1,
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
     flavor: 'Il ne cède pas le passage, même quand la glace se teinte de rouge.',
   },
   {
@@ -1005,7 +1005,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true, volDeVie: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Il commande à voix basse ; les ombres transmettent ses ordres.',
   },
   {
@@ -1014,7 +1014,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 8, atk: 7, def: 7, rarity: 'mythique',
     typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true,
     volDeVie: true, overkill: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez autant de points de vie que les dégâts qu’elle inflige. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
   },
   {
@@ -1023,16 +1023,16 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'debuff', cible: 'creature', atk: -2, def: 0, tours: 1 },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
     flavor: 'La lumière s’éteint avant que la lame ne frappe.',
   },
   {
-    id: 'gardienne-du-croissant', set: 'soldats-de-la-lune', name: 'Gardienne du croissant',
+    id: 'gardienne-du-croissant', set: 'soldats-de-la-lune', name: 'Gardien au croissant',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 4, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature alliée ciblée reçoit un bouclier qui bloque le prochain sort adverse qui l’atteint.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature alliée ciblée reçoit un bouclier qui bloque le prochain sort adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },
   {
@@ -1041,7 +1041,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'retour-main', cible: 'creature', adverseSeulement: true },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : renvoyez une créature adverse ciblée dans la main de son propriétaire.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : renvoyez une créature adverse ciblée dans la main de son propriétaire.',
     flavor: 'Nul ne voit le pas qui l’éloigne.',
   },
   {
@@ -1050,7 +1050,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 2 dégâts à une créature adverse ciblée.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 2 dégâts à une créature adverse ciblée.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
@@ -1059,16 +1059,16 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'buff', atk: 0, def: 2, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
     flavor: 'Sous son étendard, les ombres tiennent bon.',
   },
   {
     id: 'veilleuse-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
-    cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
+    cost: 3, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
     reactionTourAdverse: true,
     arrivee: { type: 'gel', cible: 'creature' },
-    text: 'Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
     flavor: 'Sa veille fige le dernier souffle de la nuit.',
   },
   {
@@ -1092,7 +1092,7 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'veilleur-du-dernier-crepuscule', name: 'Veilleur du dernier crépuscule',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 4, atk: 2, def: 4, rarity: 'inhabituelle',
+    cost: 4, atk: 4, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
     contreAttaque: true,
     text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
@@ -1296,7 +1296,7 @@ export const RPG_HERO_CARDS = [
     rarity: 'inhabituelle', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
     reactionTourAdverse: true, volDeVie: true, envol: true,
     arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez autant de points de vie. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
+    text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez autant de points de vie. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
     flavor: 'Sous la lune noire, même le temps attend son duel.',
   },
   {

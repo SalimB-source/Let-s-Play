@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { cardById, cardColors, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
+import { cardArt } from '../src/games/rpgCardArt.js';
 const ids = ['eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune', 'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree'];
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
@@ -28,7 +29,9 @@ test('Éclipse réduit l’attaque jusqu’à la fin du tour sans en augmenter u
   poser(d, 'joueur', ids[0], cible.id); assert.equal(cible.atk, 0);
   rpgFinDeTour(d); assert.equal(cible.atk, 1);
 });
-test('Gardienne donne un bouclier à une créature alliée choisie', () => {
+test('Le Gardien au croissant protège une créature alliée choisie', () => {
+  assert.equal(cardById(ids[1]).name, 'Gardien au croissant');
+  assert.equal(cardArt(cardById(ids[1])), '/cards/gardienne-du-croissant.jpg?v=gardien-croissant-lumiere-v1');
   const d = duel(); const allie = poser(d, 'joueur', 'chien-du-guet');
   poser(d, 'joueur', ids[1], allie.id); assert.equal(allie.bouclier, 1);
 });
@@ -62,6 +65,7 @@ test('En PvP, le Traqueur réagit à une attaque et résout sa cible différée'
 test('La Veilleuse est à la fois Viking et Vampire', async () => {
   const { cardHasPrintedType } = await import('../src/games/rpgCards.js');
   const veilleuse = cardById(ids[5]);
+  assert.equal(veilleuse.cost, 3, 'la Veilleuse coûte trois manas');
   assert.ok(cardHasPrintedType(veilleuse, 'Viking'));
   assert.ok(cardHasPrintedType(veilleuse, 'Vampire'));
 });

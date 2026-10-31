@@ -102,6 +102,7 @@
     "preview:rpg-malediction-sonar": "node scripts/rpg-malediction-sonar-check.mjs --preview",
     "check:rpg-envol": "node scripts/rpg-envol-check.mjs",
     "check:rpg-cale": "node scripts/rpg-cale-check.mjs",
+    "check:rpg-durabilite": "node scripts/rpg-durabilite-check.mjs",
     "check:rpg-sort-joue": "node scripts/rpg-sort-joue-check.mjs",
     "check:rpg-tourbillon-eau": "node scripts/rpg-tourbillon-eau-check.mjs",
     "check:rpg-exil": "node scripts/rpg-exil-check.mjs",
