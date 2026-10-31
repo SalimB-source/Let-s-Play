@@ -13,13 +13,21 @@ function makeCity(scene) {
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
   const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1d8a0 });
+  const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xe9e5da });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
+  const lotPavingPalette = [0x77736d, 0x807970, 0x6b7073, 0x898175, 0x6e7470];
   const palette = [0xe5b99f, 0xc9b9aa, 0x9bb6b6, 0xd5d0c3, 0xb2a0a2, 0xd4a979, 0x839e9e, 0xf0d1ae];
   const litWindowPositions = [];
   const blueWindowPositions = [];
   const darkWindowPositions = [];
+  const litSideWindowPositions = [];
+  const blueSideWindowPositions = [];
+  const darkSideWindowPositions = [];
   const verticalDashPositions = [];
   const horizontalDashPositions = [];
+  const verticalCrosswalkPositions = [];
+  const horizontalCrosswalkPositions = [];
+  const parkedCarSpecs = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
     mesh.position.set(x, y + h / 2, z);
@@ -74,6 +82,16 @@ function makeCity(scene) {
       verticalDashPositions.push([axis, p]);
       horizontalDashPositions.push([p, axis]);
     }
+    // Zébras aux quatre approches de chaque carrefour, orientées dans les deux axes.
+    for (let crossing = -3; crossing <= 3; crossing += 1) {
+      const crossAxis = crossing * BLOCK;
+      for (const side of [-1, 1]) {
+        for (let stripe = -8; stripe <= 8; stripe += 2) {
+          verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
+          horizontalCrosswalkPositions.push([crossAxis + side * 14, axis + stripe]);
+        }
+      }
+    }
   }
 
   const marker = new THREE.Object3D();
@@ -85,6 +103,14 @@ function makeCity(scene) {
   horizontalDashes.rotation.x = -Math.PI / 2;
   horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, 0.04, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
   scene.add(horizontalDashes);
+  const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
+  verticalCrosswalk.rotation.x = -Math.PI / 2;
+  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.055, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
+  scene.add(verticalCrosswalk);
+  const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
+  horizontalCrosswalk.rotation.x = -Math.PI / 2;
+  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, 0.057, z); marker.rotation.set(0, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
+  scene.add(horizontalCrosswalk);
 
   // Art-deco downtown and residential blocks, with varied setbacks, rooftops,
   // lit windows, shop awnings, palms, and corner street furniture.
@@ -101,14 +127,22 @@ function makeCity(scene) {
     const cz = (bz + 0.5) * BLOCK;
     const lot = new THREE.Group();
     scene.add(lot);
-    // Two or three separate properties make a block read as an actual city lot.
-    const count = random() > 0.45 ? 2 : 1;
+    const paving = new THREE.MeshStandardMaterial({ color: lotPavingPalette[Math.floor(random() * lotPavingPalette.length)], roughness: 0.92 });
+    const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(70, 70), paving);
+    hardstand.rotation.x = -Math.PI / 2;
+    hardstand.position.set(cx, -0.065, cz);
+    hardstand.receiveShadow = true;
+    lot.add(hardstand);
+    // Parcelles plus serrées : plusieurs commerces et immeubles bordent chaque bloc.
+    const count = 2 + Math.floor(random() * 3);
+    const buildingSlots = [[-18, -18], [18, -18], [-18, 18], [18, 18]];
     for (let i = 0; i < count; i += 1) {
-      const width = 20 + random() * 17;
-      const depth = 20 + random() * 17;
-      const height = 12 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 34 : 19);
-      const x = cx + (i - (count - 1) / 2) * 20 + (random() - 0.5) * 7;
-      const z = cz + (random() - 0.5) * 22;
+      const width = 17 + random() * 9;
+      const depth = 18 + random() * 9;
+      const height = 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
+      const [slotX, slotZ] = buildingSlots[i];
+      const x = cx + slotX + (random() - 0.5) * 5;
+      const z = cz + slotZ + (random() - 0.5) * 5;
       const color = palette[Math.floor(random() * palette.length)];
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
@@ -121,23 +155,51 @@ function makeCity(scene) {
       }
       // Tall window bands, a shopfront at street level, and selected lit windows.
       const floors = Math.max(2, Math.floor(height / 4.2));
+      // Pilastres verticaux et balcons étagés : une silhouette Art déco moins cubique.
+      for (const side of [-1, 1]) {
+        addBox(lot, capMat, x + side * width * 0.45, 0.1, z + depth / 2 + 0.13, 0.34, height, 0.24);
+      }
+      const balconyLevels = Math.min(3, Math.floor((height - 8) / 12));
+      for (let level = 0; level < balconyLevels; level += 1) {
+        const balconyY = 4.3 + level * 8.2;
+        addBox(lot, capMat, x, balconyY, z + depth / 2 + 0.34, width * 0.44, 0.16, 0.76);
+        addBox(lot, capMat, x, balconyY + 0.62, z + depth / 2 + 0.68, width * 0.44, 0.08, 0.08);
+      }
       for (let floor = 0; floor < floors; floor += 1) {
         const y = 1.8 + floor * (height / floors);
         const countWindows = Math.max(3, Math.floor(width / 3.3));
         for (let wi = 0; wi < countWindows; wi += 1) {
           const wx = x - width * 0.39 + wi * (width * 0.78 / Math.max(1, countWindows - 1));
           const lit = random() > 0.44;
-          const position = [wx, y, z + depth / 2 + 0.065];
-          if (floor === 0) blueWindowPositions.push(position);
-          else (lit ? litWindowPositions : darkWindowPositions).push(position);
+          const front = [wx, y, z + depth / 2 + 0.065];
+          const sideZ = z - depth * 0.39 + wi * (depth * 0.78 / Math.max(1, countWindows - 1));
+          const sides = [
+            [x + width / 2 + 0.065, y, sideZ],
+            [x - width / 2 - 0.065, y, sideZ],
+          ];
+          if (floor === 0) {
+            blueWindowPositions.push(front);
+            blueSideWindowPositions.push(...sides);
+          } else {
+            (lit ? litWindowPositions : darkWindowPositions).push(front);
+            (lit ? litSideWindowPositions : darkSideWindowPositions).push(...sides);
+          }
         }
       }
       const signMat = new THREE.MeshBasicMaterial({ color: neon[Math.floor(random() * neon.length)], toneMapped: false });
-      const awning = addBox(lot, signMat, x, 3.2, z + depth / 2 + 0.38, width * 0.72, 0.24, 0.55);
-      awning.material = signMat;
+      addBox(lot, signMat, x, 3.2, z + depth / 2 + 0.38, width * 0.72, 0.24, 0.55);
+      // Panneau perpendiculaire de boutique, visible en remontant la rue.
+      addBox(lot, signMat, x + width / 2 + 0.24, 3.4, z + depth * 0.15, 0.34, 2.8, 1.2);
       // Back alley HVAC and rooftop water tank detail.
       if (random() > 0.45) addBox(lot, capMat, x + width * 0.25, height + 0.8, z, 2.8, 1.6, 2.8);
     }
+    // Voitures garées en bord de rue : le quadrillage paraît habité et donne
+    // une échelle plus crédible aux immeubles et aux chaussées.
+    const horizontalParked = (bx - bz) % 3 === 0;
+    const parkingSide = (bx + bz) % 4 < 2 ? -1 : 1;
+    parkedCarSpecs.push(horizontalParked
+      ? { x: cx + (random() - 0.5) * 20, z: bz * BLOCK + parkingSide * 9.7, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
+      : { x: bx * BLOCK + parkingSide * 9.7, z: cz + (random() - 0.5) * 20, yaw: 0, color: Math.floor(random() * 6) });
     // Palms and Deco lamp posts on block corners, kept outside the carriageway.
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const px = cx + sx * 37;
@@ -155,15 +217,81 @@ function makeCity(scene) {
       lamp.position.set(px + sx * 5, 6.1, pz + sz * 5); lot.add(lamp);
     }
   }
-  const addWindowInstances = (positions, material) => {
+  // Parking urbain en InstancedMesh : voitures détaillées, mais peu d'appels de rendu.
+  const carPaint = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.34, metalness: 0.36 });
+  const parkedGlass = new THREE.MeshStandardMaterial({ color: 0x233441, roughness: 0.18, metalness: 0.2 });
+  const rubber = new THREE.MeshStandardMaterial({ color: 0x15181c, roughness: 0.88 });
+  const headlamp = new THREE.MeshBasicMaterial({ color: 0xffedc4, toneMapped: false });
+  const tailLamp = new THREE.MeshBasicMaterial({ color: 0xff4e57, toneMapped: false });
+  const carPaintColors = [0xd74f59, 0x2b8594, 0xe2c875, 0xd8dedc, 0x4d5c72, 0xd48659];
+  const carRoot = new THREE.Object3D();
+  const carPart = new THREE.Object3D();
+  const carMatrix = new THREE.Matrix4();
+  const addCarInstances = (specs, geometry, material, pose, colorize = false) => {
+    const mesh = new THREE.InstancedMesh(geometry, material, specs.length);
+    specs.forEach((spec, index) => {
+      carRoot.position.set(spec.x, 0, spec.z);
+      carRoot.rotation.set(0, spec.yaw, 0);
+      carRoot.updateMatrix();
+      carPart.position.set(...pose.position);
+      carPart.rotation.set(...pose.rotation);
+      carPart.scale.set(...(pose.scale || [1, 1, 1]));
+      carPart.updateMatrix();
+      carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix);
+      mesh.setMatrixAt(index, carMatrix);
+      if (colorize) mesh.setColorAt(index, new THREE.Color(carPaintColors[spec.color]));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    scene.add(mesh);
+    return mesh;
+  };
+  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.9, 0.78, 4.2), carPaint, { position: [0, 0.78, 0], rotation: [0, 0, 0] }, true);
+  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.52, 0.74, 2.15), parkedGlass, { position: [0, 1.48, 0.05], rotation: [0, 0, 0] });
+  addCarInstances(parkedCarSpecs, new THREE.BoxGeometry(1.36, 0.12, 1.82), carPaint, { position: [0, 1.91, 0.05], rotation: [0, 0, 0] }, true);
+  const wheels = [];
+  parkedCarSpecs.forEach((spec) => {
+    for (const side of [-1, 1]) for (const end of [-1, 1]) {
+      wheels.push({ ...spec, x: spec.x, z: spec.z, local: [side * 0.98, 0.38, end * 1.27] });
+    }
+  });
+  const wheelMesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.34, 0.34, 0.24, 10), rubber, wheels.length);
+  wheels.forEach((spec, index) => {
+    carRoot.position.set(spec.x, 0, spec.z); carRoot.rotation.set(0, spec.yaw, 0); carRoot.updateMatrix();
+    carPart.position.set(...spec.local); carPart.rotation.set(0, 0, Math.PI / 2); carPart.updateMatrix();
+    carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix); wheelMesh.setMatrixAt(index, carMatrix);
+  });
+  wheelMesh.instanceMatrix.needsUpdate = true; wheelMesh.castShadow = true; scene.add(wheelMesh);
+  const lights = (front) => parkedCarSpecs.flatMap((spec) => [-1, 1].map((side) => ({
+    ...spec,
+    local: [side * 0.58, 0.83, front ? -2.1 : 2.1],
+  })));
+  const addLampInstances = (geometry, material, lightSpecs) => {
+    const mesh = new THREE.InstancedMesh(geometry, material, lightSpecs.length);
+    lightSpecs.forEach((spec, index) => {
+      carRoot.position.set(spec.x, 0, spec.z); carRoot.rotation.set(0, spec.yaw, 0); carRoot.updateMatrix();
+      carPart.position.set(...spec.local); carPart.rotation.set(0, 0, 0); carPart.updateMatrix();
+      carMatrix.multiplyMatrices(carRoot.matrix, carPart.matrix); mesh.setMatrixAt(index, carMatrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true; scene.add(mesh);
+  };
+  addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), headlamp, lights(true));
+  addLampInstances(new THREE.BoxGeometry(0.42, 0.17, 0.08), tailLamp, lights(false));
+
+  const addWindowInstances = (positions, material, rotationY = 0) => {
     const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 1.45, 0.1), material, positions.length);
-    positions.forEach(([x, y, z], index) => { marker.position.set(x, y, z); marker.rotation.set(0, 0, 0); marker.scale.set(1, 1, 1); marker.updateMatrix(); windows.setMatrixAt(index, marker.matrix); });
+    positions.forEach(([x, y, z], index) => { marker.position.set(x, y, z); marker.rotation.set(0, rotationY, 0); marker.scale.set(1, 1, 1); marker.updateMatrix(); windows.setMatrixAt(index, marker.matrix); });
     windows.instanceMatrix.needsUpdate = true;
     scene.add(windows);
   };
   addWindowInstances(litWindowPositions, windowMat);
   addWindowInstances(blueWindowPositions, blueWindow);
   addWindowInstances(darkWindowPositions, darkWindow);
+  addWindowInstances(litSideWindowPositions, windowMat, Math.PI / 2);
+  addWindowInstances(blueSideWindowPositions, blueWindow, Math.PI / 2);
+  addWindowInstances(darkSideWindowPositions, darkWindow, Math.PI / 2);
   return { ground, roadMat, sidewalkMat };
 }
 
@@ -181,9 +309,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const mount = mountRef.current;
     if (!mount) return undefined;
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x9a9fae);
-    scene.fog = new THREE.Fog(0x9a9fae, 100, 510);
-    const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 900);
+    scene.background = new THREE.Color(0xf0b28f);
+    scene.fog = new THREE.Fog(0xf0b28f, 135, 560);
+    const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     renderer.shadowMap.enabled = true;
@@ -248,14 +376,17 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       state.speed = clamp(state.speed, 0, maxSpeed);
       if (state.speed < 0.12 && !throttle) state.speed = 0;
-      state.steer += (steerInput - state.steer) * Math.min(1, dt * 5.5);
-      // Modèle bicyclette : environ 32° de braquage max à basse vitesse,
-      // puis l'adhérence limite le lacet à 0,82 g. À haute vitesse, le rayon
-      // de virage s'élargit au lieu de faire pivoter la voiture sur place.
-      const wheelAngle = state.steer * 0.56;
+      // Le volant répond plus directement ; il garde une petite inertie plutôt
+      // qu'une interpolation molle au début du braquage.
+      state.steer += (steerInput - state.steer) * Math.min(1, dt * 10);
+      // Modèle bicyclette arcade-réaliste : 35° de braquage à basse vitesse,
+      // avec une réserve d'adhérence de 1,55 g. Le rayon s'élargit toujours
+      // avec la vitesse, mais les changements de direction en ville répondent
+      // nettement mieux qu'avant.
+      const wheelAngle = state.steer * 0.61;
       const wheelbase = 2.75;
       const requestedYawRate = (state.speed / wheelbase) * Math.tan(wheelAngle);
-      const gripYawLimit = state.speed > 0.1 ? (0.82 * 9.81) / state.speed : 0;
+      const gripYawLimit = state.speed > 0.1 ? (1.55 * 9.81) / state.speed : 0;
       const yawRate = clamp(requestedYawRate, -gripYawLimit, gripYawLimit);
       state.heading += yawRate * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
@@ -276,10 +407,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       vehicle.position.set(state.x, 0, state.z);
       vehicle.rotation.y = -state.heading;
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.56, braking: brake, idle: !throttle && state.speed === 0 }, dt, state.time);
-      cameraPosition.copy(vehicle.position).addScaledVector(forward, -10.5);
-      cameraPosition.y += 5.5;
-      camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 3.4));
-      cameraTarget.set(state.x + forward.x * 8, 1.2, state.z + forward.z * 8);
+      cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
+      cameraPosition.y += 3.2;
+      camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
+      cameraTarget.set(state.x + forward.x * 5.5, 1.05, state.z + forward.z * 5.5);
       camera.lookAt(cameraTarget);
       if (now - hudAt > 80 && hudRef.current) {
         hudAt = now;
