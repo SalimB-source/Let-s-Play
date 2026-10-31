@@ -30,6 +30,113 @@ function parkingStallCenters(segmentStart) {
   return [left[0], right[0]].filter(Number.isFinite);
 }
 
+function makeDockedBoat(scene, addBox, spec) {
+  const { x, z, yaw, length, width, hullColor, cabinColor, style } = spec;
+  const boat = new THREE.Group();
+  boat.name = `vice-city-port-${style}`;
+  const hullShape = new THREE.Shape();
+  hullShape.moveTo(-width * 0.36, -length * 0.46);
+  hullShape.lineTo(width * 0.36, -length * 0.46);
+  hullShape.lineTo(width * 0.49, length * 0.14);
+  hullShape.lineTo(width * 0.30, length * 0.40);
+  hullShape.lineTo(0, length * 0.5);
+  hullShape.lineTo(-width * 0.30, length * 0.40);
+  hullShape.lineTo(-width * 0.49, length * 0.14);
+  hullShape.closePath();
+  const hullGeometry = new THREE.ExtrudeGeometry(hullShape, {
+    depth: 0.72, bevelEnabled: true, bevelSegments: 1, steps: 1, bevelSize: 0.06, bevelThickness: 0.06,
+  });
+  hullGeometry.rotateX(-Math.PI / 2);
+  hullGeometry.computeVertexNormals();
+  const hull = new THREE.Mesh(hullGeometry, new THREE.MeshStandardMaterial({ color: hullColor, roughness: 0.38, metalness: 0.12 }));
+  hull.position.y = 0.02;
+  hull.castShadow = true;
+  hull.receiveShadow = true;
+  boat.add(hull);
+
+  const deckMat = new THREE.MeshStandardMaterial({ color: 0xd9d5ca, roughness: 0.82 });
+  const cabinMat = new THREE.MeshStandardMaterial({ color: cabinColor, roughness: 0.62 });
+  const glassMat = new THREE.MeshStandardMaterial({ color: 0x193c4d, roughness: 0.18, metalness: 0.18 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xf2e9d4, roughness: 0.7 });
+  const rubberMat = new THREE.MeshStandardMaterial({ color: 0x1c262a, roughness: 0.9 });
+  const orangeMat = new THREE.MeshStandardMaterial({ color: 0xe27735, roughness: 0.7 });
+  addBox(boat, deckMat, 0, 0.72, 0, width * 0.78, 0.1, length * 0.7);
+  const cabinLength = style === 'yacht' ? length * 0.28 : length * 0.25;
+  const cabinWidth = style === 'yacht' ? width * 0.64 : width * 0.58;
+  addBox(boat, cabinMat, 0, 0.82, -length * 0.04, cabinWidth, style === 'fishing' ? 0.95 : 1.18, cabinLength);
+  addBox(boat, glassMat, 0, 1.28, -length * 0.15, cabinWidth * 0.82, 0.42, 0.08);
+  for (const side of [-1, 1]) {
+    addBox(boat, glassMat, side * (cabinWidth / 2 + 0.025), 1.24, -length * 0.04, 0.06, 0.36, cabinLength * 0.62);
+    addBox(boat, trimMat, side * width * 0.45, 0.7, length * 0.02, 0.09, 0.1, length * 0.58);
+    const fender = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 6), rubberMat);
+    fender.position.set(side * (width * 0.52), 0.52, -length * 0.2);
+    fender.scale.set(0.7, 1, 1.5);
+    boat.add(fender);
+  }
+  addBox(boat, trimMat, 0, 1.45, -length * 0.04, cabinWidth * 1.06, 0.14, cabinLength * 1.08);
+  if (style === 'yacht' || style === 'tug') {
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.065, 1.7, 7), trimMat);
+    mast.position.set(0, 2.25, length * 0.18);
+    boat.add(mast);
+    addBox(boat, orangeMat, 0, 2.75, length * 0.18, 0.62, 0.38, 0.06);
+  } else {
+    addBox(boat, orangeMat, 0, 1.62, length * 0.27, 0.55, 0.42, 0.06);
+  }
+  for (const side of [-1, 1]) for (const end of [-1, 1]) {
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.68, 6), trimMat);
+    post.position.set(side * width * 0.43, 1.05, end * length * 0.3);
+    boat.add(post);
+  }
+  boat.position.set(x, -0.02, z);
+  boat.rotation.y = yaw;
+  scene.add(boat);
+  return boat;
+}
+
+function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, portSurfaceRegions) {
+  const waterMat = new THREE.MeshStandardMaterial({ color: 0x286477, roughness: 0.25, metalness: 0.22 });
+  const quayMat = new THREE.MeshStandardMaterial({ color: 0x827e73, roughness: 0.92 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x77746c, roughness: 0.95 });
+  const pierMat = new THREE.MeshStandardMaterial({ color: 0x6c5947, roughness: 0.9 });
+  const bollardMat = new THREE.MeshStandardMaterial({ color: 0x292c2c, roughness: 0.6, metalness: 0.45 });
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(104, 590), waterMat);
+  water.rotation.x = -Math.PI / 2;
+  water.position.set(-383, -0.075, 0);
+  water.receiveShadow = true;
+  scene.add(water);
+  addGroundPlane(scene, quayMat, -321, 0, 18, 570, -0.025);
+  portSurfaceRegions.push({ x: -321, z: 0, halfWidth: 9, halfDepth: 285, height: -0.025 });
+  addBox(scene, wallMat, -330.2, -0.12, 0, 0.9, 1.15, 570, true);
+  buildingFootprints.push({ x: -330.2, z: 0, halfWidth: 0.55, halfDepth: 285 });
+  addGroundPlane(scene, quayMat, -306, 0, 12, 8, 0.015);
+  portSurfaceRegions.push({ x: -306, z: 0, halfWidth: 6, halfDepth: 4, height: 0.015 });
+
+  const pierPositions = [-220, -110, 0, 110, 220];
+  const pierLength = 27;
+  const pierWidth = 4.2;
+  for (const pierZ of pierPositions) {
+    addGroundPlane(scene, pierMat, -343.5, pierZ, pierLength, pierWidth, 0.08);
+    portSurfaceRegions.push({ x: -343.5, z: pierZ, halfWidth: pierLength / 2, halfDepth: pierWidth / 2, height: 0.08 });
+    for (const endX of [-356.5, -330.5]) for (const sideZ of [-1, 1]) {
+      const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.5, 8), bollardMat);
+      bollard.position.set(endX, 0.32, pierZ + sideZ * (pierWidth / 2 - 0.22));
+      bollard.castShadow = true;
+      scene.add(bollard);
+    }
+  }
+  const boats = [
+    { style: 'fishing', length: 13, width: 3.2, hullColor: 0x365e69, cabinColor: 0xe8dfc9, z: -215 },
+    { style: 'speedboat', length: 15, width: 3.6, hullColor: 0xb74d3b, cabinColor: 0xf0eee4, z: -105 },
+    { style: 'yacht', length: 21, width: 4.8, hullColor: 0x223b4c, cabinColor: 0xf1eee3, z: 5 },
+    { style: 'tug', length: 17, width: 4.2, hullColor: 0x38474a, cabinColor: 0xd5cbb7, z: 115 },
+    { style: 'fishing', length: 12, width: 3.0, hullColor: 0x53704e, cabinColor: 0xe5dcc8, z: 220 },
+  ].map((boatSpec) => ({ ...boatSpec, x: -343.5, yaw: -Math.PI / 2 }));
+  for (const boatSpec of boats) {
+    makeDockedBoat(scene, addBox, boatSpec);
+    buildingFootprints.push({ x: boatSpec.x, z: boatSpec.z, halfWidth: boatSpec.length / 2, halfDepth: boatSpec.width / 2 });
+  }
+}
+
 function makeCity(scene) {
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
@@ -74,6 +181,7 @@ function makeCity(scene) {
   const buildingFootprints = [];
   const sidewalkRegions = [];
   const lotRegions = [];
+  const portSurfaceRegions = [];
   const addBox = (parent, material, x, y, z, w, h, d, castShadow = false) => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
     mesh.position.set(x, y + h / 2, z);
@@ -868,9 +976,12 @@ function makeCity(scene) {
   addWindowInstances(litSideWindowPositions, windowMat, Math.PI / 2);
   addWindowInstances(blueSideWindowPositions, blueWindow, Math.PI / 2);
   addWindowInstances(darkSideWindowPositions, darkWindow, Math.PI / 2);
+  addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, portSurfaceRegions);
   const insideRegion = (region, x, z) => Math.abs(x - region.x) <= region.halfWidth && Math.abs(z - region.z) <= region.halfDepth;
   const surfaceHeight = (x, z) => {
     if (sidewalkRegions.some((region) => insideRegion(region, x, z))) return sidewalkHeight;
+    const portSurface = portSurfaceRegions.find((region) => insideRegion(region, x, z));
+    if (portSurface) return portSurface.height;
     if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
     const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
