@@ -61,7 +61,7 @@ const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
   'danseuse-des-ombres-de-dune': 'lune-danseuse-v7',
-  'souverain-de-la-lune-noire': 'lune-heros-v3',
+  'souverain-de-la-lune-noire': 'lune-heros-v4',
   'voile-de-la-lune-noire': 'lune-magie-v4',
   'ressac-de-la-lune-noire': 'lune-magie-v4',
   'sabre-du-croissant-noir': 'lune-armurerie-v4',
