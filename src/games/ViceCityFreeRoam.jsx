@@ -16,7 +16,7 @@ import './vice-city-free-roam.css';
 
 const BLOCK = 100;
 const ROAD_HALF = 7;
-const CANAL_HALF_WIDTH = 13;
+const CANAL_HALF_WIDTH = 20;
 // Long approach ramps crest at 5.8 m, leaving clearance for boats beneath the central arch.
 const BRIDGE_HALF_LENGTH = 112;
 const BRIDGE_ARCH_HALF_LENGTH = 22;
@@ -257,23 +257,33 @@ function makeCity(scene) {
   };
   const makeRoadStrip = (axis, fixed, width, material, heightOffset = 0) => {
     const length = CITY_LIMIT * 2 + 120;
-    const geometry = axis === 'x'
-      ? new THREE.PlaneGeometry(width, length, 1, 180)
-      : new THREE.PlaneGeometry(length, width, 180, 1);
-    geometry.rotateX(-Math.PI / 2);
-    const positions = geometry.attributes.position;
-    for (let index = 0; index < positions.count; index += 1) {
-      const x = axis === 'x' ? fixed + positions.getX(index) : positions.getX(index);
-      const z = axis === 'x' ? positions.getZ(index) : fixed + positions.getZ(index);
-      positions.setY(index, roadElevation(x, z) + heightOffset);
+    const crossesCanal = axis === 'z' && Math.abs(fixed) > ROAD_HALF + 6;
+    const ranges = crossesCanal
+      ? [[-length / 2, -CANAL_HALF_WIDTH], [CANAL_HALF_WIDTH, length / 2]]
+      : [[-length / 2, length / 2]];
+    const meshes = [];
+    for (const [start, end] of ranges) {
+      const segmentLength = end - start;
+      const segmentCenter = (start + end) / 2;
+      const geometry = axis === 'x'
+        ? new THREE.PlaneGeometry(width, segmentLength, 1, 180)
+        : new THREE.PlaneGeometry(segmentLength, width, 180, 1);
+      geometry.rotateX(-Math.PI / 2);
+      const positions = geometry.attributes.position;
+      for (let index = 0; index < positions.count; index += 1) {
+        const x = axis === 'x' ? fixed + positions.getX(index) : segmentCenter + positions.getX(index);
+        const z = axis === 'x' ? segmentCenter + positions.getZ(index) : fixed + positions.getZ(index);
+        positions.setY(index, roadElevation(x, z) + heightOffset);
+      }
+      positions.needsUpdate = true;
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(axis === 'x' ? fixed : segmentCenter, 0, axis === 'z' ? fixed : segmentCenter);
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      meshes.push(mesh);
     }
-    positions.needsUpdate = true;
-    geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(axis === 'x' ? fixed : 0, 0, axis === 'z' ? fixed : 0);
-    mesh.receiveShadow = true;
-    scene.add(mesh);
-    return mesh;
+    return meshes.length === 1 ? meshes[0] : meshes;
   };
   const groundGeometry = new THREE.PlaneGeometry(CITY_LIMIT * 2 + 100, CITY_LIMIT * 2 + 100, 240, 240);
   groundGeometry.rotateX(-Math.PI / 2);
@@ -306,15 +316,19 @@ function makeCity(scene) {
     for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 13) {
       if (Math.abs((p + 50) % BLOCK - 50) < 15) continue;
       if (axis !== 0) verticalDashPositions.push([axis, p]);
-      horizontalDashPositions.push([p, axis]);
+      if (axis === 0 || Math.abs(p) >= CANAL_HALF_WIDTH + 4) horizontalDashPositions.push([p, axis]);
     }
     // Zébras aux quatre approches de chaque carrefour, orientées dans les deux axes.
     for (let crossing = -3; crossing <= 3; crossing += 1) {
       const crossAxis = crossing * BLOCK;
       for (const side of [-1, 1]) {
+        const horizontalOffset = axis === 0 && crossAxis === 0 ? CANAL_HALF_WIDTH + 2 : 14;
         for (let stripe = -6.4; stripe <= 6.4; stripe += 1.6) {
           if (axis !== 0) verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
-          horizontalCrosswalkPositions.push([crossAxis + side * 14, axis + stripe]);
+          const horizontalX = crossAxis + side * horizontalOffset;
+          if (axis === 0 || Math.abs(horizontalX) > CANAL_HALF_WIDTH + 2) {
+            horizontalCrosswalkPositions.push([horizontalX, axis + stripe]);
+          }
         }
       }
     }
@@ -324,7 +338,7 @@ function makeCity(scene) {
       if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 21) continue;
       for (const side of [-1, 1]) {
         verticalParkingBayPositions.push([axis + side * 5.3, p]);
-        horizontalParkingBayPositions.push([p, axis + side * 5.3]);
+        if (Math.abs(p) >= CANAL_HALF_WIDTH + 4) horizontalParkingBayPositions.push([p, axis + side * 5.3]);
       }
     }
     for (let p = -275; p <= 275; p += 50) {
@@ -509,6 +523,12 @@ function makeCity(scene) {
     for (let block = -3; block < 3; block += 1) {
       const segmentStart = block * BLOCK;
       const segmentCenter = segmentStart + BLOCK / 2;
+      const sidewalkStart = segmentCenter - sidewalkSegmentLength / 2;
+      const sidewalkEnd = segmentCenter + sidewalkSegmentLength / 2;
+      const horizontalSidewalkRanges = axis === 0
+        ? [[sidewalkStart, sidewalkEnd]]
+        : [[sidewalkStart, Math.min(sidewalkEnd, -CANAL_HALF_WIDTH)], [Math.max(sidewalkStart, CANAL_HALF_WIDTH), sidewalkEnd]]
+          .filter(([start, end]) => end - start > 0.5);
       for (const side of [-1, 1]) {
         const sidewalkOffset = side * (ROAD_HALF + 1.6);
         if (axis !== 0) {
@@ -520,15 +540,19 @@ function makeCity(scene) {
           scene.add(sidewalkV);
           sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
         }
-        const sidewalkH = new THREE.Mesh(horizontalSidewalkGeometry, sidewalkMat);
-        sidewalkH.rotation.x = -Math.PI / 2;
-        sidewalkH.position.set(segmentCenter, sidewalkHeight, axis + sidewalkOffset);
-        fitSidewalkToElevation(sidewalkH);
-        sidewalkH.receiveShadow = true;
-        scene.add(sidewalkH);
-        sidewalkRegions.push({ x: segmentCenter, z: axis + sidewalkOffset, halfWidth: sidewalkSegmentLength / 2, halfDepth: 1.6 });
+        for (const [rangeStart, rangeEnd] of horizontalSidewalkRanges) {
+          const rangeLength = rangeEnd - rangeStart;
+          const rangeCenter = (rangeStart + rangeEnd) / 2;
+          const sidewalkH = new THREE.Mesh(new THREE.PlaneGeometry(rangeLength, 3.2, 48, 1), sidewalkMat);
+          sidewalkH.rotation.x = -Math.PI / 2;
+          sidewalkH.position.set(rangeCenter, sidewalkHeight, axis + sidewalkOffset);
+          fitSidewalkToElevation(sidewalkH);
+          sidewalkH.receiveShadow = true;
+          scene.add(sidewalkH);
+          sidewalkRegions.push({ x: rangeCenter, z: axis + sidewalkOffset, halfWidth: rangeLength / 2, halfDepth: 1.6 });
+          addSlopedCurb(rangeCenter, axis + side * (ROAD_HALF - 0.1), rangeLength, 0.2);
+        }
         if (axis !== 0) addSlopedCurb(axis + side * (ROAD_HALF - 0.1), segmentCenter, 0.2, sidewalkSegmentLength);
-        addSlopedCurb(segmentCenter, axis + side * (ROAD_HALF - 0.1), sidewalkSegmentLength, 0.2);
 
         for (let row = 0; row < 2; row += 1) {
           const crossOffset = row === 0 ? -0.8 : 0.8;
@@ -536,7 +560,9 @@ function makeCity(scene) {
           for (let along = segmentStart + ROAD_HALF + 3.95; along < segmentStart + BLOCK - ROAD_HALF - 3.95; along += 1.5) {
             const tileColor = Math.abs((Math.floor(along / 1.5) + (axisIndex + 3) * 11 + (side + 1) * 7 + row * 3 + tileIndex) % sidewalkTileColors.length);
             if (axis !== 0) verticalSidewalkTilePositions.push([axis + sidewalkOffset + crossOffset, along, tileColor]);
-            horizontalSidewalkTilePositions.push([along, axis + sidewalkOffset + crossOffset, tileColor]);
+            if (axis === 0 || Math.abs(along) >= CANAL_HALF_WIDTH + 1.2) {
+              horizontalSidewalkTilePositions.push([along, axis + sidewalkOffset + crossOffset, tileColor]);
+            }
             tileIndex += 1;
           }
         }
@@ -549,6 +575,7 @@ function makeCity(scene) {
       const xAxis = xAxisIndex * BLOCK;
       const zAxis = zAxisIndex * BLOCK;
       for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        if (xAxis === 0 && zAxis !== 0) continue;
         const centerX = xAxis + sideX * (ROAD_HALF + 1.6);
         const centerZ = zAxis + sideZ * (ROAD_HALF + 1.6);
         const corner = new THREE.Mesh(cornerSidewalkGeometry, sidewalkMat);
@@ -997,20 +1024,25 @@ function makeCity(scene) {
     const cz = (bz + 0.5) * BLOCK;
     const lot = new THREE.Group();
     scene.add(lot);
+    const lotLeft = bx === 0 ? CANAL_HALF_WIDTH : cx - 38;
+    const lotRight = bx === -1 ? -CANAL_HALF_WIDTH : cx + 38;
+    const lotWidth = lotRight - lotLeft;
+    const lotCenterX = (lotLeft + lotRight) / 2;
     const paving = new THREE.MeshStandardMaterial({ color: lotGrassPalette[Math.floor(random() * lotGrassPalette.length)], roughness: 0.92 });
-    const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(76, 76), paving);
+    const hardstand = new THREE.Mesh(new THREE.PlaneGeometry(lotWidth, 76), paving);
     hardstand.rotation.x = -Math.PI / 2;
-    hardstand.position.set(cx, -0.065, cz);
+    hardstand.position.set(lotCenterX, -0.065, cz);
     hardstand.receiveShadow = true;
     lot.add(hardstand);
-    lotRegions.push({ x: cx, z: cz, halfWidth: 38, halfDepth: 38 });
+    lotRegions.push({ x: lotCenterX, z: cz, halfWidth: lotWidth / 2, halfDepth: 38 });
     const amenityRoll = random();
     const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
     const ghettoBlock = bx >= 0;
     if (ghettoBlock) {
       for (const [slotX, slotZ] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) {
-        addGhettoHouse(lot, cx, cz, slotX, slotZ);
+        const canalSideSlotX = bx === 0 && slotX < 0 ? -14 : slotX;
+        addGhettoHouse(lot, cx, cz, canalSideSlotX, slotZ);
       }
     }
     // The western half keeps its denser art-deco blocks; the eastern half is low-rise residential.
@@ -1028,7 +1060,8 @@ function makeCity(scene) {
       const width = isCottage ? 12 + random() * 4 : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
       const depth = isCottage ? 14 + random() * 4 : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
       const height = isCottage ? 6.2 + random() * 1.6 : 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
-      const x = cx + slotX + (random() - 0.5) * 3;
+      const canalSafeSlotX = bx === -1 && slotX > 20 ? slotX - 12 : slotX;
+      const x = cx + canalSafeSlotX + (random() - 0.5) * 3;
       const z = cz + slotZ + (random() - 0.5) * 3;
       const frontSign = slotZ < 0 ? -1 : 1;
       const frontZ = z + frontSign * (depth / 2 + 0.1);
@@ -1313,7 +1346,7 @@ function makeCity(scene) {
       { axis: 'x', x: x + 18, z: z - 2.35, yaw: Math.PI / 2, supportX: x + 18, supportZ: z - mastSideOffset },
       { axis: 'z', x: x - 2.35, z: z - 18, yaw: Math.PI, supportX: x - mastSideOffset, supportZ: z - 18 },
       { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
-    ].filter((approach) => ix !== 0 || approach.axis === 'x');
+    ].filter((approach) => ix !== 0 || (iz === 0 && approach.axis === 'x'));
     for (const approach of overheadApproaches) {
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
       const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
@@ -1345,7 +1378,7 @@ function makeCity(scene) {
     new THREE.SphereGeometry(0.29, 12, 10), signalGlowMat, totalSignalHeads * 3,
   );
   const setTrafficLightInstance = (mesh, index, spec, localPosition = [0, 0, 0]) => {
-    carRoot.position.set(spec.x, 0, spec.z);
+    carRoot.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
     carRoot.rotation.set(0, spec.yaw, 0);
     carRoot.updateMatrix();
     carPart.position.set(...localPosition);
@@ -1365,7 +1398,7 @@ function makeCity(scene) {
     }
   });
   overheadTrafficSignalSpecs.forEach((spec, index) => {
-    marker.position.set(spec.supportX, 3.3, spec.supportZ);
+    marker.position.set(spec.supportX, roadElevation(spec.supportX, spec.supportZ) + 3.3, spec.supportZ);
     marker.rotation.set(0, 0, 0);
     marker.scale.set(1, 1, 1);
     marker.updateMatrix();
@@ -1373,7 +1406,7 @@ function makeCity(scene) {
     const armDx = spec.x - spec.supportX;
     const armDz = spec.z - spec.supportZ;
     const armLength = Math.hypot(armDx, armDz) + 0.4;
-    marker.position.set((spec.x + spec.supportX) / 2, 6.48, (spec.z + spec.supportZ) / 2);
+    marker.position.set((spec.x + spec.supportX) / 2, roadElevation(spec.x, spec.z) + 6.48, (spec.z + spec.supportZ) / 2);
     marker.rotation.set(0, Math.atan2(-armDz, armDx), 0);
     marker.scale.set(armLength, 1, 1);
     marker.updateMatrix();
@@ -1636,7 +1669,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const directionSpec = trafficDirections[Math.floor(index / 2)];
       const withinDirection = index % 2;
       let routeIndex = ((Math.floor(index / 2) * 2 + withinDirection * 3 + 1) % 7) - 3;
-      if (directionSpec.axis === 'z' && routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
+      if (directionSpec.axis === 'x') routeIndex = 0;
+      else if (routeIndex === 0) routeIndex = withinDirection === 0 ? -1 : 1;
       const crossAxis = directionSpec.axis === 'x'
         ? routeIndex * BLOCK + directionSpec.direction * 2.35
         : routeIndex * BLOCK - directionSpec.direction * 2.35;
