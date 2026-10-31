@@ -76,6 +76,7 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['page_turn', new URL('./assets/page-turn.mp3', import.meta.url), 'pageTurnAudio'],
   ['victoire', new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url), 'victoryCryAudio'],
   ['furie_viking', new URL('./assets/furie-viking.mp3', import.meta.url), 'furieVikingAudio'],
+  ['furie_viking_femelle', new URL('./assets/furie-viking-femelle.mp3', import.meta.url), 'furieVikingFemelleAudio'],
   ['defaite', new URL('./assets/game-lost.mp3', import.meta.url), 'gameLostAudio'],
   // Le même coup sec sert la blessure des deux camps.
   ['degats', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
@@ -196,6 +197,8 @@ const RPG_SFX_TABLE = {
   victoire: [{ kind: 'sample', at: 0, dur: 2.56, g: 1 }],
   // Cri de Furie viking fourni par le joueur (furie-viking.mp3, 1,512 s).
   furie_viking: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
+  // Cri féminin de Furie viking fourni par le joueur (1,512 s).
+  furie_viking_femelle: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
   defaite: [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }],
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
@@ -235,6 +238,27 @@ export const RPG_SFX_NAMES = Object.freeze(Object.keys(RPG_SFX_TABLE));
 export function rpgSfx(name) {
   const sequence = RPG_SFX_TABLE[name];
   return sequence ? sequence.map((event) => ({ ...event })) : null;
+}
+
+const RPG_VIKINGS_FEMININES_FURIE = new Set([
+  'volva-soigneuse',
+  'valkyrie-au-corbeau',
+  'valkyrie-des-glaces',
+  'valkyrie-des-neuf-nuits',
+]);
+
+/** Les groupes de cris distincts à jouer pour les créatures qui viennent
+ *  réellement d’entrer en Furie durant une même résolution de combat. */
+export function rpgSonsFurie(activations = []) {
+  const furies = Array.isArray(activations) ? activations : [];
+  const sons = [];
+  if (furies.some(({ carteId }) => RPG_VIKINGS_FEMININES_FURIE.has(carteId))) {
+    sons.push('furie_viking_femelle');
+  }
+  if (furies.some(({ carteId }) => !RPG_VIKINGS_FEMININES_FURIE.has(carteId))) {
+    sons.push('furie_viking');
+  }
+  return sons;
 }
 
 /** Lecteur WebAudio : muet tant que `unlock()` n'a pas suivi un geste joueur. */
