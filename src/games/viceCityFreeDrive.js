@@ -16,6 +16,15 @@ export function viceCityFreeDriveParkedCarHitbox(width = 1.94, length = 4) {
   };
 }
 
+/** One impact impulse plus steady pushing while the player keeps contact. */
+export function viceCityFreeDriveParkedCarImpulse(speed, mass, dt, firstContact) {
+  const impactSpeed = Math.abs(Number(speed) || 0);
+  if (impactSpeed <= 0.25) return 0;
+  const safeMass = Math.max(0.2, Number(mass) || 1);
+  if (firstContact) return Math.min(7, Math.max(1, impactSpeed * 0.62) / safeMass);
+  return impactSpeed * Math.max(0, dt) * 1.35 / safeMass;
+}
+
 /** Steering builds while a key is held, but eases back promptly on release. */
 export function viceCityFreeDriveSteerStep(steer, input, dt) {
   const rate = input === 0 ? FREE_ROAM_STEER_RELEASE_RATE : FREE_ROAM_STEER_BUILD_RATE;

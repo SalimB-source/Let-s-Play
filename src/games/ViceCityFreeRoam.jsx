@@ -5,6 +5,7 @@ import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import {
   viceCityFreeDriveParkedCarHitbox,
+  viceCityFreeDriveParkedCarImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -64,6 +65,7 @@ function makeCity(scene) {
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
+  const parkedCarBodies = [];
   const trafficIntersections = [];
   const trafficSignalSpecs = [];
   const overheadTrafficSignalSpecs = [];
@@ -704,6 +706,11 @@ function makeCity(scene) {
     car.rotation.y = spec.yaw;
     car.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
     scene.add(car);
+    parkedCarBodies.push({
+      spec, mesh: car, velocityX: 0, velocityZ: 0, angularVelocity: 0, touchingPlayer: false,
+      radius: Math.hypot(spec.width / 2, spec.length / 2),
+      mass: spec.type === 'garbage-truck' ? 1.9 : spec.type === 'ambulance' ? 1.35 : spec.type === 'police' ? 1.15 : 1,
+    });
   }
   const carRoot = new THREE.Object3D();
   const carPart = new THREE.Object3D();
@@ -877,6 +884,71 @@ function makeCity(scene) {
     mesh.setMatrixAt(index, marker.matrix);
     mesh.instanceMatrix.needsUpdate = true;
   };
+  const parkedCarOverlaps = (body, x, z) => {
+    const dx = x - body.spec.x;
+    const dz = z - body.spec.z;
+    const cosine = Math.cos(body.spec.yaw);
+    const sine = Math.sin(body.spec.yaw);
+    const localX = dx * cosine - dz * sine;
+    const localZ = dx * sine + dz * cosine;
+    const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(body.spec.width, body.spec.length);
+    return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
+  };
+  const applyParkedCarImpact = (x, z, heading, speed, steer) => {
+    let hitCount = 0;
+    const direction = Math.sign(speed) || 1;
+    for (const body of parkedCarBodies) {
+      const overlaps = parkedCarOverlaps(body, x, z);
+      const firstContact = overlaps && !body.touchingPlayer;
+      const impulse = overlaps ? viceCityFreeDriveParkedCarImpulse(speed, body.mass, dt, firstContact) : 0;
+      if (impulse > 0) {
+        const directionX = heading.x * direction;
+        const directionZ = heading.z * direction;
+        body.velocityX += directionX * impulse;
+        body.velocityZ += directionZ * impulse;
+        if (firstContact) {
+          const sideOffset = (x - body.spec.x) * directionZ - (z - body.spec.z) * directionX;
+          body.angularVelocity += clamp(sideOffset * impulse * 0.08 + steer * 0.18, -1.6, 1.6);
+        }
+        hitCount += 1;
+      }
+      body.touchingPlayer = overlaps;
+    }
+    return hitCount;
+  };
+  const updateParkedCars = (dt) => {
+    const drag = Math.exp(-2.25 * dt);
+    const isBlocked = (body, x, z) => {
+      if (buildingFootprints.some((building) =>
+        Math.abs(x - building.x) < building.halfWidth + body.radius * 0.72
+        && Math.abs(z - building.z) < building.halfDepth + body.radius * 0.72)) return true;
+      return parkedCarBodies.some((other) => other !== body
+        && Math.hypot(x - other.spec.x, z - other.spec.z) < body.radius + other.radius * 0.72);
+    };
+    for (const body of parkedCarBodies) {
+      const { spec, mesh } = body;
+      const nextX = spec.x + body.velocityX * dt;
+      const nextZ = spec.z + body.velocityZ * dt;
+      if (!isBlocked(body, nextX, nextZ)) {
+        spec.x = nextX;
+        spec.z = nextZ;
+      } else {
+        if (!isBlocked(body, nextX, spec.z)) spec.x = nextX;
+        else body.velocityX = 0;
+        if (!isBlocked(body, spec.x, nextZ)) spec.z = nextZ;
+        else body.velocityZ = 0;
+      }
+      spec.yaw += body.angularVelocity * dt;
+      body.velocityX *= drag;
+      body.velocityZ *= drag;
+      body.angularVelocity *= drag;
+      if (Math.abs(body.velocityX) < 0.04) body.velocityX = 0;
+      if (Math.abs(body.velocityZ) < 0.04) body.velocityZ = 0;
+      if (Math.abs(body.angularVelocity) < 0.015) body.angularVelocity = 0;
+      mesh.position.set(spec.x, 0, spec.z);
+      mesh.rotation.y = spec.yaw;
+    }
+  };
   const breakFencesAt = (x, z) => {
     if (!fenceMeshes) return 0;
     let broken = 0;
@@ -898,8 +970,9 @@ function makeCity(scene) {
     return broken;
   };
   return {
-    ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, fenceSegments,
-    trafficIntersections, updateTrafficSignals, surfaceHeight, breakFencesAt,
+    ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
+    trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
+    surfaceHeight, breakFencesAt,
   };
 }
 
@@ -978,6 +1051,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const keys = new Set();
     const state = { x: 0, z: 0, heading: 0, speed: 0, steer: 0, time: 0 };
     const updateTraffic = (dt) => {
+      city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
       for (const traffic of trafficCars) {
         const nextIndex = traffic.direction > 0
@@ -1103,6 +1177,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const nextX = state.x + forward.x * state.speed * dt;
       const nextZ = state.z + forward.z * state.speed * dt;
       if (city.breakFencesAt(nextX, nextZ) > 0) state.speed *= 0.88;
+      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer);
       // Conduite libre partout dans la ville : les trottoirs et les espaces
       // ouverts restent franchissables, seuls les bâtiments et véhicules garés bloquent.
       if (!isPositionBlocked(nextX, nextZ)) {
@@ -1115,7 +1190,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isPositionBlocked(state.x, nextZ);
         if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
         else if (canSlideZ) state.z = nextZ;
-        state.speed *= canSlideX || canSlideZ ? 0.72 : 0.18;
+        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedParkedCars > 0 ? 0.62 : 0.18;
       }
       if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
         state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;

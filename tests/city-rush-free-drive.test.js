@@ -13,6 +13,7 @@ import {
 } from '../src/games/cityRushRules.js';
 import {
   viceCityFreeDriveParkedCarHitbox,
+  viceCityFreeDriveParkedCarImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -126,6 +127,15 @@ test('hitbox des voitures stationnées resserrée pour frôler sans collision lo
   const truck = viceCityFreeDriveParkedCarHitbox(2.3, 4.6);
   assert.ok(truck.halfWidth > sedan.halfWidth);
   assert.ok(truck.halfLength > sedan.halfLength);
+});
+
+test('impact : pousse une voiture et continue à la déplacer si le joueur insiste', () => {
+  const initialImpact = viceCityFreeDriveParkedCarImpulse(8, 1, 1 / 60, true);
+  const continuedPush = viceCityFreeDriveParkedCarImpulse(3, 1, 1 / 60, false);
+  const truckImpact = viceCityFreeDriveParkedCarImpulse(8, 1.9, 1 / 60, true);
+  assert.ok(initialImpact > continuedPush && continuedPush > 0);
+  assert.ok(truckImpact < initialImpact, 'un véhicule lourd est plus difficile à pousser');
+  assert.equal(viceCityFreeDriveParkedCarImpulse(0, 1, 1 / 60, true), 0);
 });
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {
