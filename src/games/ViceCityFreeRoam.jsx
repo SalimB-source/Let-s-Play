@@ -257,6 +257,12 @@ function makeCity(scene) {
   const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const windowMat = new THREE.MeshBasicMaterial({ color: 0xffcf84, toneMapped: false });
   const blueWindow = new THREE.MeshBasicMaterial({ color: 0x87d9e2, toneMapped: false });
+  const shopGlassMat = new THREE.MeshStandardMaterial({ color: 0x376f78, roughness: 0.24, metalness: 0.18 });
+  const entryGlassMat = new THREE.MeshStandardMaterial({ color: 0x6ca5a8, roughness: 0.28, metalness: 0.12 });
+  const shopFrameMat = new THREE.MeshStandardMaterial({ color: 0x29363a, roughness: 0.46, metalness: 0.38 });
+  const entryDoorMat = new THREE.MeshStandardMaterial({ color: 0x594338, roughness: 0.72 });
+  const garageDoorMat = new THREE.MeshStandardMaterial({ color: 0x4a565c, roughness: 0.64, metalness: 0.28 });
+  const brassMat = new THREE.MeshStandardMaterial({ color: 0xc6a15a, roughness: 0.42, metalness: 0.62 });
   const darkWindow = new THREE.MeshBasicMaterial({ color: 0x253746, toneMapped: false });
   const palmTrunk = new THREE.MeshStandardMaterial({ color: 0x755b40, roughness: 0.9 });
   const palmLeaf = new THREE.MeshStandardMaterial({ color: 0x236c59, roughness: 0.86 });
@@ -282,6 +288,14 @@ function makeCity(scene) {
       const [slotX, slotZ] = buildingSlots[i];
       const x = cx + slotX + (random() - 0.5) * 3;
       const z = cz + slotZ + (random() - 0.5) * 3;
+      const frontSign = slotZ < 0 ? -1 : 1;
+      const frontZ = z + frontSign * (depth / 2 + 0.1);
+      const frontageRoll = random();
+      const hasShop = frontageRoll < 0.42;
+      const hasGarage = frontageRoll >= 0.42 && frontageRoll < 0.61;
+      const garageWidth = Math.min(6.4, width * 0.38);
+      const garageCenterX = x - width * 0.18;
+      const entryX = hasGarage ? x + width * 0.34 : x + width * 0.28;
       const color = palette[Math.floor(random() * palette.length)];
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
@@ -296,13 +310,13 @@ function makeCity(scene) {
       const floors = Math.max(2, Math.floor(height / 4.2));
       // Pilastres verticaux et balcons étagés : une silhouette Art déco moins cubique.
       for (const side of [-1, 1]) {
-        addBox(lot, capMat, x + side * width * 0.45, 0.1, z + depth / 2 + 0.13, 0.34, height, 0.24);
+        addBox(lot, capMat, x + side * width * 0.45, 0.1, z + frontSign * (depth / 2 + 0.13), 0.34, height, 0.24);
       }
       const balconyLevels = Math.min(3, Math.floor((height - 8) / 12));
       for (let level = 0; level < balconyLevels; level += 1) {
         const balconyY = 4.3 + level * 8.2;
-        addBox(lot, capMat, x, balconyY, z + depth / 2 + 0.34, width * 0.44, 0.16, 0.76);
-        addBox(lot, capMat, x, balconyY + 0.62, z + depth / 2 + 0.68, width * 0.44, 0.08, 0.08);
+        addBox(lot, capMat, x, balconyY, z + frontSign * (depth / 2 + 0.34), width * 0.44, 0.16, 0.76);
+        addBox(lot, capMat, x, balconyY + 0.62, z + frontSign * (depth / 2 + 0.68), width * 0.44, 0.08, 0.08);
       }
       for (let floor = 0; floor < floors; floor += 1) {
         const y = 1.8 + floor * (height / floors);
@@ -310,14 +324,15 @@ function makeCity(scene) {
         for (let wi = 0; wi < countWindows; wi += 1) {
           const wx = x - width * 0.39 + wi * (width * 0.78 / Math.max(1, countWindows - 1));
           const lit = random() > 0.44;
-          const front = [wx, y, z + depth / 2 + 0.065];
+          const front = [wx, y, z + frontSign * (depth / 2 + 0.065)];
           const sideZ = z - depth * 0.39 + wi * (depth * 0.78 / Math.max(1, countWindows - 1));
           const sides = [
             [x + width / 2 + 0.065, y, sideZ],
             [x - width / 2 - 0.065, y, sideZ],
           ];
           if (floor === 0) {
-            blueWindowPositions.push(front);
+            const clearsGarage = !hasGarage || Math.abs(wx - garageCenterX) > garageWidth / 2 + 0.45;
+            if (!hasShop && clearsGarage && Math.abs(wx - entryX) > 1.0) blueWindowPositions.push(front);
             blueSideWindowPositions.push(...sides);
           } else {
             (lit ? litWindowPositions : darkWindowPositions).push(front);
@@ -326,9 +341,49 @@ function makeCity(scene) {
         }
       }
       const signMat = new THREE.MeshBasicMaterial({ color: neon[Math.floor(random() * neon.length)], toneMapped: false });
-      addBox(lot, signMat, x, 3.2, z + depth / 2 + 0.38, width * 0.72, 0.24, 0.55);
-      // Panneau perpendiculaire de boutique, visible en remontant la rue.
-      addBox(lot, signMat, x + width / 2 + 0.24, 3.4, z + depth * 0.15, 0.34, 2.8, 1.2);
+      if (hasShop) {
+        const shopWidth = Math.min(13, width * 0.64);
+        const doorWidth = 1.25;
+        const gap = 0.18;
+        const paneWidth = (shopWidth - doorWidth - gap * 2) / 2;
+        const leftEdge = x - shopWidth / 2;
+        const leftPaneX = leftEdge + paneWidth / 2;
+        const doorX = leftEdge + paneWidth + gap + doorWidth / 2;
+        const rightPaneX = doorX + doorWidth / 2 + gap + paneWidth / 2;
+        const shopFrameZ = frontZ + frontSign * 0.06;
+        const shopGlassZ = frontZ + frontSign * 0.2;
+        addBox(lot, shopFrameMat, x, 0.12, shopFrameZ, shopWidth, 2.9, 0.22);
+        addBox(lot, shopGlassMat, leftPaneX, 0.42, shopGlassZ, paneWidth - 0.1, 2.15, 0.05);
+        addBox(lot, shopGlassMat, rightPaneX, 0.42, shopGlassZ, paneWidth - 0.1, 2.15, 0.05);
+        addBox(lot, entryDoorMat, doorX, 0.14, shopGlassZ, doorWidth, 2.68, 0.1);
+        addBox(lot, entryGlassMat, doorX, 1.35, shopGlassZ + frontSign * 0.06, 0.82, 1.2, 0.04);
+        addBox(lot, brassMat, doorX + doorWidth * 0.31, 1.25, shopGlassZ + frontSign * 0.1, 0.055, 0.2, 0.06);
+        addBox(lot, shopFrameMat, x, 3.08, frontZ + frontSign * 0.24, shopWidth + 0.36, 0.44, 0.42);
+        addBox(lot, signMat, x, 3.13, frontZ + frontSign * 0.47, shopWidth, 0.28, 0.08);
+        // Panneau perpendiculaire de boutique, visible depuis la rue croisée.
+        addBox(lot, signMat, x + width / 2 + 0.24, 3.4, z + depth * 0.15, 0.34, 2.8, 1.2);
+      } else {
+        if (hasGarage) {
+          const garageZ = frontZ + frontSign * 0.08;
+          addBox(lot, shopFrameMat, garageCenterX, 0.12, garageZ, garageWidth + 0.34, 3.12, 0.24);
+          addBox(lot, garageDoorMat, garageCenterX, 0.2, garageZ + frontSign * 0.15, garageWidth, 2.82, 0.08);
+          for (let ribY = 0.48; ribY < 2.85; ribY += 0.34) {
+            addBox(lot, shopFrameMat, garageCenterX, ribY, garageZ + frontSign * 0.21, garageWidth - 0.16, 0.035, 0.035);
+          }
+          addBox(lot, capMat, garageCenterX - garageWidth / 2 - 0.12, 0.12, garageZ + frontSign * 0.03, 0.14, 3.02, 0.22);
+          addBox(lot, capMat, garageCenterX + garageWidth / 2 + 0.12, 0.12, garageZ + frontSign * 0.03, 0.14, 3.02, 0.22);
+          addBox(lot, signMat, garageCenterX, 3.38, garageZ + frontSign * 0.2, 2.8, 0.28, 0.14);
+        }
+        // Entrée d'immeuble ou porte piétonne attenante au garage.
+        const entryZ = frontZ + frontSign * 0.08;
+        addBox(lot, shopFrameMat, entryX, 0.12, entryZ, 1.55, 2.98, 0.22);
+        addBox(lot, entryDoorMat, entryX, 0.16, entryZ + frontSign * 0.14, 1.12, 2.62, 0.1);
+        addBox(lot, entryGlassMat, entryX, 1.48, entryZ + frontSign * 0.2, 0.72, 0.92, 0.04);
+        addBox(lot, brassMat, entryX + 0.34, 1.24, entryZ + frontSign * 0.25, 0.055, 0.2, 0.05);
+        addBox(lot, capMat, entryX, 2.94, entryZ + frontSign * 0.34, 1.95, 0.18, 0.64);
+        addBox(lot, signMat, entryX, 3.2, entryZ + frontSign * 0.19, 0.62, 0.28, 0.1);
+        addBox(lot, capMat, entryX, 0.1, frontZ + frontSign * 0.48, 1.7, 0.16, 0.52);
+      }
       // Back alley HVAC and rooftop water tank detail.
       if (random() > 0.45) addBox(lot, capMat, x + width * 0.25, height + 0.8, z, 2.8, 1.6, 2.8);
     }
