@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS } from './cityRushRules.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
-import { viceCityFreeDriveSpeedStep, viceCityFreeDriveYawRate } from './viceCityFreeDrive.js';
+import { viceCityFreeDriveSpeedStep, viceCityFreeDriveSteerStep, viceCityFreeDriveYawRate } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import './vice-city-free-roam.css';
 
@@ -1131,9 +1131,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         acceleration,
         reverseMaxSpeed,
       });
-      // Une montée de braquage plus progressive et un angle de roue réduit
-      // rendent les changements de cap moins secs, surtout à basse vitesse.
-      state.steer += (steerInput - state.steer) * Math.min(1, dt * 10);
+      // Le braquage monte progressivement tant qu’on maintient la touche ;
+      // un appui bref reste doux et le volant se recentre vite au relâchement.
+      state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
       state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
       // Les modèles du garage pointent le capot vers leur axe local -Z.
       forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));

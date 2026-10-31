@@ -3,6 +3,14 @@ const BRAKE_DECELERATION = 13.5;
 const FREE_ROAM_WHEEL_ANGLE = 0.44;
 const FREE_ROAM_WHEELBASE = 3.25;
 const FREE_ROAM_MAX_LATERAL_GRIP = 1.55 * 9.81;
+const FREE_ROAM_STEER_BUILD_RATE = 3.6;
+const FREE_ROAM_STEER_RELEASE_RATE = 10;
+
+/** Steering builds while a key is held, but eases back promptly on release. */
+export function viceCityFreeDriveSteerStep(steer, input, dt) {
+  const rate = input === 0 ? FREE_ROAM_STEER_RELEASE_RATE : FREE_ROAM_STEER_BUILD_RATE;
+  return steer + (input - steer) * Math.min(1, Math.max(0, dt) * rate);
+}
 
 /** Gentler low-speed steering, with a more forgiving lateral-grip ceiling. */
 export function viceCityFreeDriveYawRate(speed, steer) {

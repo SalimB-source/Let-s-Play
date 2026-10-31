@@ -11,7 +11,7 @@ import {
   cityRushLaneConfig,
   cityRushMiniGarageWidth,
 } from '../src/games/cityRushRules.js';
-import { viceCityFreeDriveSpeedStep, viceCityFreeDriveYawRate } from '../src/games/viceCityFreeDrive.js';
+import { viceCityFreeDriveSpeedStep, viceCityFreeDriveSteerStep, viceCityFreeDriveYawRate } from '../src/games/viceCityFreeDrive.js';
 import {
   CITY_RUSH_DEFAULT_DRIVING_MODE,
   CITY_RUSH_DRIVING_FREE,
@@ -100,6 +100,18 @@ test('conduite libre : braquage moins brutal et adhérence latérale modérée',
   assert.ok(viceCityFreeDriveYawRate(5, 1) < 0.8, 'petit rayon de braquage adouci à basse vitesse');
   assert.ok(viceCityFreeDriveYawRate(30, 1) < 0.52, 'l’adhérence limite le lacet à vitesse élevée');
   assert.ok(near(viceCityFreeDriveYawRate(30, -1), -viceCityFreeDriveYawRate(30, 1)));
+});
+
+test('braquage progressif : appui bref doux, maintien plus fort, recentrage au relâchement', () => {
+  let quickTap = 0;
+  let held = 0;
+  for (let frame = 0; frame < 6; frame += 1) quickTap = viceCityFreeDriveSteerStep(quickTap, 1, DT);
+  for (let frame = 0; frame < 30; frame += 1) held = viceCityFreeDriveSteerStep(held, 1, DT);
+  assert.ok(quickTap < 0.35, `appui bref : ${quickTap.toFixed(2)}`);
+  assert.ok(held > 0.8 && held > quickTap * 2, `maintien : ${held.toFixed(2)}`);
+  const released = viceCityFreeDriveSteerStep(quickTap, 0, 0.1);
+  assert.ok(released < quickTap, 'la direction se détend au relâchement');
+  assert.ok(near(viceCityFreeDriveSteerStep(0, -1, DT), -viceCityFreeDriveSteerStep(0, 1, DT)));
 });
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {
