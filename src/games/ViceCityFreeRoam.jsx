@@ -6,9 +6,21 @@ import { viceCityFreeDriveSpeedStep } from './viceCityFreeDrive.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
-const ROAD_HALF = 8;
+const ROAD_HALF = 7;
 const CITY_LIMIT = 3 * BLOCK + 54;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+function parkingStallCenters(segmentStart) {
+  const midpoint = segmentStart + BLOCK / 2;
+  const centers = [];
+  for (let position = -3 * BLOCK + 3; position < 3 * BLOCK; position += 6) {
+    if (position > segmentStart + 22 && position < segmentStart + BLOCK - 22) centers.push(position);
+  }
+  const left = centers.filter((position) => position < midpoint).sort((a, b) => b - a);
+  const right = centers.filter((position) => position > midpoint).sort((a, b) => a - b);
+  if (left.length > 1 && right.length > 1 && right[0] - left[0] < 10) return [left[1], right[1]];
+  return [left[0], right[0]].filter(Number.isFinite);
+}
 
 function makeCity(scene) {
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
@@ -79,11 +91,11 @@ function makeCity(scene) {
       // Ligne de séparation entre les voies de circulation et le stationnement.
       const stripeV = new THREE.Mesh(new THREE.PlaneGeometry(0.14, CITY_LIMIT * 2), lineMat);
       stripeV.rotation.x = -Math.PI / 2;
-      stripeV.position.set(axis + side * 3.2, 0.035, 0);
+      stripeV.position.set(axis + side * 3.6, 0.035, 0);
       scene.add(stripeV);
       const stripeH = new THREE.Mesh(new THREE.PlaneGeometry(CITY_LIMIT * 2, 0.14), lineMat);
       stripeH.rotation.x = -Math.PI / 2;
-      stripeH.position.set(0, 0.038, axis + side * 3.2);
+      stripeH.position.set(0, 0.038, axis + side * 3.6);
       scene.add(stripeH);
     }
     // Broken centerline on each road, interrupted around each junction.
@@ -102,12 +114,12 @@ function makeCity(scene) {
         }
       }
     }
-    // Places de stationnement, reprises d'asphalte et plaques d'égout dans chaque tronçon.
-    for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 8) {
+    // Places de stationnement compactes, reprises d'asphalte et plaques d'égout.
+    for (let p = -3 * BLOCK; p <= 3 * BLOCK; p += 6) {
       if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 21) continue;
       for (const side of [-1, 1]) {
-        verticalParkingBayPositions.push([axis + side * 5.6, p]);
-        horizontalParkingBayPositions.push([p, axis + side * 5.6]);
+        verticalParkingBayPositions.push([axis + side * 5.3, p]);
+        horizontalParkingBayPositions.push([p, axis + side * 5.3]);
       }
     }
     for (let p = -275; p <= 275; p += 50) {
@@ -151,8 +163,8 @@ function makeCity(scene) {
     scene.add(mesh);
     return mesh;
   };
-  addFlatRoadInstances(new THREE.PlaneGeometry(4.8, 0.13), parkingMarkMat, verticalParkingBayPositions, 0.043);
-  addFlatRoadInstances(new THREE.PlaneGeometry(0.13, 4.8), parkingMarkMat, horizontalParkingBayPositions, 0.044);
+  addFlatRoadInstances(new THREE.PlaneGeometry(3.3, 0.12), parkingMarkMat, verticalParkingBayPositions, 0.043);
+  addFlatRoadInstances(new THREE.PlaneGeometry(0.12, 3.3), parkingMarkMat, horizontalParkingBayPositions, 0.044);
   addFlatRoadInstances(new THREE.PlaneGeometry(1.25, 3.2), roadPatchMat, verticalRoadPatchPositions, 0.025);
   addFlatRoadInstances(new THREE.PlaneGeometry(3.2, 1.25), roadPatchMat, horizontalRoadPatchPositions, 0.026);
   addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, verticalManholePositions, 0.028);
@@ -245,9 +257,12 @@ function makeCity(scene) {
     // une échelle plus crédible aux immeubles et aux chaussées.
     const horizontalParked = (bx - bz) % 3 === 0;
     const parkingSide = (bx + bz) % 4 < 2 ? -1 : 1;
-    parkedCarSpecs.push(horizontalParked
-      ? { x: cx + (random() - 0.5) * 20, z: bz * BLOCK + parkingSide * 6.0, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
-      : { x: bx * BLOCK + parkingSide * 6.0, z: cz + (random() - 0.5) * 20, yaw: 0, color: Math.floor(random() * 6) });
+    const parkingSegmentStart = horizontalParked ? bx * BLOCK : bz * BLOCK;
+    for (const alongStreet of parkingStallCenters(parkingSegmentStart)) {
+      parkedCarSpecs.push(horizontalParked
+        ? { x: alongStreet, z: bz * BLOCK + parkingSide * 5.3, yaw: Math.PI / 2, color: Math.floor(random() * 6) }
+        : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: 0, color: Math.floor(random() * 6) });
+    }
     // Palms and Deco lamp posts on block corners, kept outside the carriageway.
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
       const px = cx + sx * 37;
