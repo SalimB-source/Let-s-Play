@@ -1059,6 +1059,7 @@ function effetsAccordesParArme(arme) {
   const donne = arme.donne ?? (arme.effet?.type === 'arme' ? arme.effet : {});
   const effets = [];
   if (donne.infiltration) effets.push('Infiltration (ne peut pas être bloquée)');
+  if (donne.volDeVie) effets.push('Vol de vie (son contrôleur gagne autant de points de vie que les dégâts infligés)');
   if (donne.rapidite) effets.push('Rapidité');
   if (donne.envol) effets.push('Envol');
   if (donne.bouclier) effets.push('Bouclier');
@@ -3565,7 +3566,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
      Fennec ou une Fériel n'impriment donc que leurs pastilles, un Faussoyeur
      écrit encore « Quand le Faussoyeur arrive : … ». Les sorts, armes, sites
      et terrains gardent leur texte : il dit ce que fait la carte. */
-  const lecture = effetsDetailles(carte);
+  const armesEquipees = estCreature ? armes.filter(Boolean) : [];
+  const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie);
+  const lecture = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
   const description = estCreature ? lecture.texte : effet;
   const descriptionLignes = cardEffectLines(description);
@@ -3591,7 +3594,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // La petite carte montre le nom et l'effet complet de chaque arme portée.
   // Ses bonus directs restent annoncés dans le libellé accessible de l'aperçu
   // (`effets d'équipement …`) : la fiche, elle, n'imprime plus que la carte.
-  const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const effetsArmesEquipees = armesEquipees.map(effetsAccordesParArme).filter(Boolean);
   const prisonniereCarte = prisonniere && prisonniere.id !== carte.id ? prisonniere : null;
   const details = (
@@ -3602,6 +3604,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       <p className={`rpg-hover-card-preview__type${ligneFamille}`}>{cardFaceTypeLine(carte)}</p>
       <PastillesCarte
         carte={carte}
+        pastilles={lecture.pastilles}
         className="rpg-hover-card-preview__pastilles"
         effetsEpuises={effetsEpuisesActifs}
         effetsInactifs={effetsInactifsActifs}

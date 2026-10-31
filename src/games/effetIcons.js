@@ -31,6 +31,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
   <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
+  <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
   <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
   <symbol id="i-protection" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
   <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
@@ -108,6 +109,7 @@ export const EFFET_ICONE = {
   provocation: 'i-provocation',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
+  volDeVie: 'i-vol-de-vie',
   protection: 'i-protection',
   protectionSorts: 'i-protection',
   protectionSortsContre: 'i-protection',
@@ -173,7 +175,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'reactionTourAdverse', 'envol', 'infiltration', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement',
@@ -223,6 +225,7 @@ export const EFFET_LIBELLES = {
   provocation: 'Provocation',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
+  volDeVie: 'Vol de vie',
   protection: 'Protection',
   protectionSorts: 'Protection anti-magie',
   protectionSortsContre: 'Protection contre les sorts',
@@ -283,6 +286,7 @@ export function pastillesPourCarte(carte) {
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
+  if (carte.volDeVie || carte.donne?.volDeVie) ajouter('volDeVie', 'Vol de vie');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
@@ -481,6 +485,7 @@ const MOTIFS_LIGNE = [
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
+  ['volDeVie', /\bvol de vie\b/iu],
   ['resonance', /\brésonance/iu],
   ['honneur', /\bharakiri\b|\bhonneur\b/iu],
   ['tribut', /\btribut\b/iu],
@@ -613,6 +618,7 @@ export const EFFET_DEFINITIONS = {
   reactionTourAdverse: 'Vous pouvez jouer cette carte pendant le tour adverse, en respectant les fenêtres de réponse.',
   envol: 'Ne peut être bloquée que par une créature avec Envol.',
   infiltration: 'Ne peut pas être bloquée.',
+  volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne autant de points de vie.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
   coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
@@ -664,6 +670,7 @@ const LIBELLES_IMPRIMES = [
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],
   ['infiltration', 'Infiltration'],
+  ['volDeVie', 'Vol de vie'],
   ['rapidite', 'Rapidité'],
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive'],

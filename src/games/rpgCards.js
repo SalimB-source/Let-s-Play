@@ -1293,7 +1293,7 @@ export const RPG_HERO_CARDS = [
     id: 'souverain-de-la-lune-noire', name: 'Souverain de la lune noire',
     set: 'soldats-de-la-lune', element: 'sable', colors: ['sable', 'tenebres'],
     colorCost: { sable: 1, tenebres: 1 }, cost: 6, atk: 6, def: 6,
-    rarity: 'inhabituelle', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
+    rarity: 'mythique', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
     reactionTourAdverse: true, volDeVie: true, envol: true,
     arrivee: { type: 'combat', cible: 'creature' },
     text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez autant de points de vie. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',

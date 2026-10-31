@@ -64,7 +64,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 60, 'la dotation : les Tours de défense communes ou inhabituelles, la Hache de la banquise et Brise-lame, sans les terrains retirés');
+  assert.equal(COLLECTION_DEPART.length, 59, 'la dotation : les Tours de défense communes ou inhabituelles, la Hache de la banquise et Brise-lame, sans les terrains retirés');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
@@ -73,6 +73,8 @@ test('la dotation de départ tient la règle : communes et inhabituelles, jamais
   for (const tour of ['tour-de-braise', 'tour-des-flots', 'tour-de-sable']) {
     assert.equal(possedeCarte(COLLECTION_DEPART, tour), true, `${tour} est une carte de collection dès le départ`);
   }
+  assert.equal(possedeCarte(COLLECTION_DEPART, 'souverain-de-la-lune-noire'), false);
+  assert.ok(RPG_REVELATIONS_PAR_ETAGE['necropole-4'].includes('souverain-de-la-lune-noire'));
   assert.equal(possedeCarte(COLLECTION_DEPART, 'tour-de-neige'), false, 'la Tour de Neige se révèle au Fjord');
 });
 

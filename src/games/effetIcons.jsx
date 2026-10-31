@@ -313,6 +313,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
   };
   if (entite) {
     if (entite.infiltration) ajouter('infiltration', 'Infiltration');
+    if (entite.volDeVie) ajouter('volDeVie', 'Vol de vie');
     if (entite.envol && !carte?.envol) ajouter('envol', 'Envol');
     if (entite.coupRapide && !carte?.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
     if (entite.provocation) ajouter('provocation', 'Provocation');

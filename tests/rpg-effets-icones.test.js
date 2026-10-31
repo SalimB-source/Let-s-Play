@@ -29,12 +29,12 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label));
 
-test('le sprite porte les 38 symboles validés, un par effet', () => {
+test('le sprite porte les 39 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // 38 avec Embuscade et le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
   // Recherche de deck (`i-recherche`) et les deux maillons du Lien (`i-lien`) :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 38);
+  assert.equal(symboles.length, 39);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -470,4 +470,16 @@ test('Embuscade nomme la réaction pendant le tour adverse et fournit une pastil
   assert.ok(!pastillesPourCarte(cardById('chien-du-guet')).some((p) => p.cle === 'reactionTourAdverse'));
   assert.ok(!pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle ne réagit qu’à une attaque : sa règle est plus restrictive');
   assert.ok(!pastillesPourCarte(cardById('embuscade')).some((p) => p.cle === 'reactionTourAdverse'), 'le sort homonyme ne gagne pas cette capacité');
+});
+
+test('Vol de vie a son icône et sa pastille explicative sur les cartes et le Sabre', () => {
+  assert.equal(EFFET_ICONE.volDeVie, 'i-vol-de-vie');
+  for (const id of ['general-du-croissant-noir', 'fleau-de-la-lune-noire', 'danseuse-des-ombres-de-dune', 'souverain-de-la-lune-noire', 'sabre-du-croissant-noir']) {
+    const p = effetsDetailles(cardById(id)).pastilles.find((p) => p.cle === 'volDeVie');
+    assert.equal(p?.label, 'Vol de vie', id);
+    assert.match(p.description, /(?:points de vie|dégâts)/i, id);
+  }
+  assert.equal(iconePourLigne({}, 'Vol de vie — Vous gagnez autant de points de vie que les dégâts infligés.'), 'volDeVie');
+  const code = readFileSync(new URL('../src/games/effetIcons.jsx', import.meta.url), 'utf8');
+  assert.match(code, /if \(entite\.volDeVie\) ajouter\('volDeVie'/);
 });

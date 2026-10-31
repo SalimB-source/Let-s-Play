@@ -13,6 +13,7 @@ function poser(d, cote, carte) { d[cote].main.push(carte); const r = rpgJouerCre
 test('Le héros 6/6 coûte 6 et possède Envol et Vol de vie', () => {
   const c = cardById(id); assert.deepEqual([c.kind, c.cost, c.atk, c.def], ['hero', 6, 6, 6]);
   assert.deepEqual(cardColors(c), ['sable', 'tenebres']);
+  assert.equal(c.rarity, 'mythique');
   assert.ok(c.reactionTourAdverse && c.envol && c.volDeVie);
 });
 test('Le duel d’arrivée est simultané : les 6 dégâts soignent même si le héros meurt', () => {
