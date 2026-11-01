@@ -50,6 +50,13 @@ export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
   };
 }
 
+/** A lightweight projectile nudges the car without overpowering its mass. */
+export function viceCityFreeDriveShotImpulse(mass = 1, strength = 5.2) {
+  const safeMass = Math.max(0.35, Number(mass) || 1);
+  const safeStrength = clamp(Number(strength) || 0, 0, 20);
+  return safeStrength / safeMass;
+}
+
 /** One impact impulse plus steady pushing while the player keeps contact. */
 export function viceCityFreeDriveParkedCarImpulse(speed, mass, dt = 1 / 60, firstContact = false) {
   const impactSpeed = Math.abs(Number(speed) || 0);

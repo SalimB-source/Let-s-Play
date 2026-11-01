@@ -16,6 +16,7 @@ import {
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
+  viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -114,6 +115,13 @@ test('conduite libre mobile : le joystick dirige, accélère et freine avec une 
   assert.deepEqual(viceCityFreeDriveJoystickInput(1, 1), { steer: 1, throttle: false, brake: true });
   assert.equal(viceCityFreeDriveJoystickInput(0.1, -0.1).steer, 0,
     'les petites vibrations du doigt ne font pas braquer la voiture');
+});
+
+test('conduite libre mobile : les tirs poussent les véhicules sans éjecter les plus lourds', () => {
+  assert.equal(viceCityFreeDriveShotImpulse(1), 5.2);
+  assert.equal(viceCityFreeDriveShotImpulse(2), 2.6);
+  assert.equal(viceCityFreeDriveShotImpulse(1, 4.2), 4.2);
+  assert.equal(viceCityFreeDriveShotImpulse(0), 5.2, 'une masse absente utilise la masse standard');
 });
 
 test('conduite libre : les barrières du canal bloquent les franchissements hors du pont', () => {
