@@ -3441,7 +3441,7 @@ test('le carnet des renforts ne solde que le tour qui les a vus jouer', () => {
   assert.deepEqual(duel.joueur.bonusTemporaires, [], 'le carnet est soldé, et soldé une seule fois');
 });
 
-test('un renfort de magie rapide qui s’évapore peut laisser une créature à terre', () => {
+test('une créature blessée survit à la fin de son renfort si elle a encore des PV', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 10);
   donner(duel, 'joueur', 'chien-du-guet');
@@ -3452,8 +3452,9 @@ test('un renfort de magie rapide qui s’évapore peut laisser une créature à 
   assert.equal(chien.pv, 1, 'les 3 défenses du rempart ont encaissé trois des quatre dégâts');
 
   rpgFinDeTour(duel);
-  assert.equal(chien.pv, 0, 'le bonus retiré, la blessure devient mortelle');
-  assert.equal(duel.joueur.creatures.includes(chien), false, 'la créature quitte la table avec son rempart');
+  assert.equal(chien.pv, 1, 'les blessures déjà reçues ne sont pas appliquées une seconde fois');
+  assert.equal(chien.pvMax, 2);
+  assert.equal(duel.joueur.creatures.includes(chien), true, 'la créature reste en jeu');
 });
 
 test('capacité à l’arrivée : la Porteuse soigne son sorcier, et la vie passe au-dessus de 25', () => {
@@ -5535,8 +5536,10 @@ test('fin de tour : le Rempart de dunes tient encore pendant la réponse adverse
 
   assert.equal(chien.def, 2, 'il a pourtant encaissé les 3 dégâts');
   rpgFinDeTour(duel);
-  assert.equal(duel.joueur.creatures.includes(chien), false,
-    'le rempart disparaît seulement à la fermeture du tour — et emporte la créature entamée');
+  assert.equal(duel.joueur.creatures.includes(chien), true,
+    'le rempart disparaît seulement à la fermeture du tour sans tuer la créature');
+  assert.equal(chien.pv, 2);
+  assert.equal(chien.pvMax, 2);
 });
 
 test('fenêtre de fin de tour : le sorcier IA joue sa magie rapide, et jamais un contre', () => {
