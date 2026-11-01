@@ -227,7 +227,7 @@ export const EFFET_LIBELLES = {
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
   volDeVie: 'Vol de vie',
-  protection: 'Protection',
+  protection: 'Bouclier',
   protectionSorts: 'Protection anti-magie',
   protectionSortsContre: 'Protection contre les sorts',
   overkill: 'Overkill',
