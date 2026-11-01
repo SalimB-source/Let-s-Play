@@ -7262,11 +7262,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
   };
-  // ── Les aperçus de carte restent silencieux côté voix ──
-  // Une voix est réservée à l'arrivée réelle d'une créature en jeu : ouvrir
-  // une fiche (clic, clic droit ou appui long) ne doit pas la déclencher.
-  // L'effleurement confirme tout de même l'ouverture de l'aperçu.
-  const jouerSonFiche = () => jouerSfx('hover');
+  // Les fiches hors duel permettent d'écouter la voix de la carte. Sur la
+  // table, consulter une carte ne doit pas interrompre une arrivée en cours.
+  // Les cartes sans voix gardent l'effleurement de confirmation.
+  const jouerSonFiche = (carte) => {
+    if (ecran !== 'partie' && carte && jouerVoixArrivee(carte.id)) return;
+    jouerSfx('hover');
+  };
   const unlockSfx = () => {
     try { sfxRef.current?.unlock(); } catch { /* ignore */ }
     if (ecran === 'partie' && sonActif && !document.hidden) void musiquePlateauRef.current?.start();

@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RpgAudioPlayer } from '../src/games/rpgAudio.js';
+import { rpgArrivalVoiceUrl } from '../src/games/rpgArrivalVoices.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,8 +25,7 @@ const DECK = [
 ].flatMap((id) => [id, id]);
 
 /**
- * Le catalogue tel que le joueur le feuillette : les aperçus ne jouent jamais
- * les voix d'arrivée, mais gardent l'effleurement pour confirmer l'ouverture.
+ * Le catalogue joue les voix disponibles et respecte les réglages sonores.
  */
 export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
   const sonsJoues = [];
@@ -85,25 +85,61 @@ export async function checkRpgCatalogueVoix(assert, fichiersLus = []) {
     assert.ok(!mousse.textContent.includes('Aucune capacité'),
       'Mousse des galiotes n’affiche plus « Aucune capacité. »');
 
-    // Les voix de créatures sont réservées à leur arrivée réelle en jeu :
-    // même les cartes qui ont une piste gardent ici le simple effleurement.
+    // Une carte avec voix fait entendre son fichier ; les cartes sans voix
+    // gardent l'effleurement de confirmation.
     let marque = fichiersLus.length;
-    const verifierFicheSilencieuse = async (carteId, nom) => {
+    const verifierFiche = async (carteId, avecVoix) => {
       sonsJoues.length = 0;
       marque = fichiersLus.length;
-      await cliquer(carteCatalogue(carteId), `${nom} s’ouvre depuis le catalogue`);
-      await attendre(() => ficheOuverte(carteId), `la fiche de ${nom} est ouverte`);
-      assert.deepEqual(voixLancees(marque), [], `${nom} n’émet aucune voix dans son aperçu`);
-      assert.ok(sonsJoues.some((son) => son.nom === 'hover'),
-        `${nom} conserve l’effleurement de confirmation`);
+      await cliquer(carteCatalogue(carteId), `${carteId} s’ouvre depuis le catalogue`);
+      await attendre(() => ficheOuverte(carteId), `la fiche de ${carteId} est ouverte`);
+      const voix = voixLancees(marque);
+      if (avecVoix) {
+        assert.equal(voix.length, 1, `${carteId} joue une seule voix`);
+        assert.equal(new URL(voix[0]).pathname, new URL(rpgArrivalVoiceUrl(carteId), window.location.href).pathname);
+      } else {
+        assert.deepEqual(voix, [], `${carteId} ne joue aucune voix`);
+        assert.ok(sonsJoues.some((son) => son.nom === 'hover'), 'l’effleurement est conservé');
+      }
       await fermerFiche(carteId);
     };
-    await verifierFicheSilencieuse('susanoo', 'Susanoo, qui a une voix');
-    await verifierFicheSilencieuse('tercio-de-cuivre', 'le Tercio de cuivre');
-    await verifierFicheSilencieuse('haut-fond', 'Haut-fond');
-    await verifierFicheSilencieuse('vipere-de-verre', 'la Vipère de verre, qui a une voix');
-    await verifierFicheSilencieuse('ibis-des-comptes', 'l’Ibis des comptes, qui a une voix');
-    await verifierFicheSilencieuse('volva-soigneuse', 'la Völva soigneuse, qui a une voix');
+    await verifierFiche('susanoo', true);
+    await verifierFiche('tercio-de-cuivre', false);
+    await verifierFiche('haut-fond', false);
+    await verifierFiche('vipere-de-verre', true);
+    await verifierFiche('ibis-des-comptes', true);
+    await verifierFiche('volva-soigneuse', true);
+
+    // Le clic droit utilise la même fiche de catalogue.
+    marque = fichiersLus.length;
+    await act(async () => {
+      carteCatalogue('susanoo').dispatchEvent(new window.MouseEvent('contextmenu', { bubbles: true, cancelable: true }));
+    });
+    await attendre(() => ficheOuverte('susanoo'), 'la fiche s’ouvre au clic droit');
+    assert.equal(voixLancees(marque).length, 1, 'la fiche au clic droit joue aussi la voix');
+    await fermerFiche('susanoo');
+
+    // Couper les voix ne coupe pas les bruitages, et couper les bruitages ne
+    // coupe pas les voix : les préférences des paramètres restent respectées.
+    const onglet = (nom) => [...container.querySelectorAll('.rpg-mode-menu__switch button')]
+      .find((bouton) => bouton.getAttribute('aria-label') === nom);
+    await cliquer(onglet('Paramètres'));
+    await cliquer(container.querySelector('[aria-label="Couper les voix des personnages"]'));
+    await cliquer(onglet('Catalogue'));
+    await verifierFiche('susanoo', false);
+    await cliquer(onglet('Paramètres'));
+    await cliquer(container.querySelector('[aria-label="Activer les voix des personnages"]'));
+    await cliquer(container.querySelector('[aria-label="Couper les sons du jeu"]'));
+    await cliquer(onglet('Catalogue'));
+    await verifierFiche('susanoo', true);
+    await cliquer(onglet('Paramètres'));
+    await cliquer(container.querySelector('[aria-label="Couper tous les sons"]'));
+    await cliquer(onglet('Catalogue'));
+    marque = fichiersLus.length;
+    await cliquer(carteCatalogue('susanoo'));
+    await attendre(() => ficheOuverte('susanoo'), 'la fiche reste accessible son coupé');
+    assert.deepEqual(voixLancees(marque), [], 'la coupure générale réduit la voix au silence');
+    await fermerFiche('susanoo');
   } finally {
     RpgAudioPlayer.prototype.play = jouerOriginal;
     await act(async () => { root.unmount(); });
