@@ -19,6 +19,7 @@ import {
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
+  viceCityFreeDriveTurnInput,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
@@ -137,6 +138,12 @@ test('joystick à pied : déplacement analogique dans toutes les directions avec
   assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-12,
     'la diagonale ne dépasse pas la vitesse maximale');
   assert.ok(diagonal.x > 0 && diagonal.y > 0);
+});
+
+test('à pied : A/D font tourner le personnage à gauche et à droite', () => {
+  assert.equal(viceCityFreeDriveTurnInput(true, false), -1);
+  assert.equal(viceCityFreeDriveTurnInput(false, true), 1);
+  assert.equal(viceCityFreeDriveTurnInput(true, true), 0);
 });
 
 test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {

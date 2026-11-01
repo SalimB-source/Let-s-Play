@@ -23,6 +23,7 @@ import {
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
+  viceCityFreeDriveTurnInput,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
@@ -3520,15 +3521,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             }
           }
         } else {
-          const turnInput = clamp(
-            Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft')),
-            -1,
-            1,
-          );
+          const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
           walkState.heading += turnInput * 2.35 * dt;
           const footVector = viceCityFreeDriveFootVector(
             Number(throttle) - Number(brake) - onFootJoystick.y,
-            Number(pressed('KeyD')) - Number(pressed('KeyA')) + onFootJoystick.x,
+            Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
+              - Number(pressed('KeyQ')) + onFootJoystick.x,
           );
           const { forward: normalizedForward, strafe: normalizedStrafe, magnitude: movementMagnitude } = footVector;
           const forwardX = Math.sin(walkState.heading);
@@ -3781,8 +3779,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
           <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
-            <span><kbd>A</kbd><kbd>D</kbd> GLISSER GAUCHE / DROITE</span>
-            <span><kbd>←</kbd><kbd>→</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
+            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span>
+            <span><kbd>Q</kbd><kbd>←</kbd> GLISSER À GAUCHE · <kbd>→</kbd> À DROITE</span>
+            <span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
             <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
             <small>Joystick à fond / Maj : courir · souris : viser sans tourner · clic gauche : tirer</small></>
         ) : (

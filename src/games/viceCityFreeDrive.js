@@ -50,6 +50,11 @@ export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
   };
 }
 
+/** Horizontal keyboard input that rotates the pedestrian body. */
+export function viceCityFreeDriveTurnInput(left = false, right = false) {
+  return clamp(Number(right) - Number(left), -1, 1);
+}
+
 /** Keep the body on its own heading while rotating only the weapon pose toward the aim point. */
 export function viceCityFreeDriveAimPose(bodyHeading = 0, aimHeading = bodyHeading) {
   const body = Number(bodyHeading) || 0;
