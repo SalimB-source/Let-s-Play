@@ -334,24 +334,15 @@ test('attaques et capacités traversent la parade sans la faire tomber', () => {
   assert.equal(protegee.bouclierEpuise, false);
 });
 
-test('la parade posée par une arme bloque un sort et ne revient pas avec une autre arme', () => {
+test('la Hache ne donne plus de parade contre les sorts', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'sorcier', 'dune-marchante');
-  donner(duel, 'sorcier', 'hache-de-la-banquise');
-  manaPlein(duel, 'sorcier');
+  donner(duel, 'sorcier', 'hache-de-la-banquise'); manaPlein(duel, 'sorcier');
   assert.equal(rpgJouerArme(duel, 'sorcier', 'hache-de-la-banquise', porteur.id).ok, true);
-  assert.equal(porteur.bouclier, 1, 'la Hache pose la parade');
-  duel.tour = 'joueur';
-  donner(duel, 'joueur', 'poigne-de-givre');
-  manaPlein(duel, 'joueur');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', porteur.id).bouclierBloque, true);
-  assert.equal(porteur.arme.bouclier ?? 0, 0, 'la part de l’arme tombe avec la parade');
-
-  duel.tour = 'sorcier';
-  donner(duel, 'sorcier', 'takouba-des-pistes');
-  manaPlein(duel, 'sorcier');
-  assert.equal(rpgJouerArme(duel, 'sorcier', 'takouba-des-pistes', porteur.id).ok, true);
-  assert.equal(porteur.bouclier, 0, 'changer d’arme ne réarme pas la parade');
+  assert.equal(porteur.bouclier, 0);
+  duel.tour = 'joueur'; donner(duel, 'joueur', 'poigne-de-givre'); manaPlein(duel, 'joueur');
+  assert.notEqual(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', porteur.id).bouclierBloque, true);
+  assert.ok(porteur.gelToursRestants > 0);
 });
 
 test('un sort visant le sorcier n’est pas bloqué par la parade d’une créature', () => {

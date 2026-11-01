@@ -444,8 +444,7 @@ export const RPG_LETTRES_DE_MARQUE_ARMES = [
     bonus: { atk: 1, def: 1 },
     coutPorteur: 1,
     abordageDynamique: true,
-    priseEnCale: { type: 'soin', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/+1, et son coût augmente de 1 tant que le Grappin est attaché. Quand le Grappin s’attache, le porteur active Abordage X, où X vaut son coût augmenté moins un : choisissez une créature adverse de coût X ou moins, elle est prise en sa cale. Quand le porteur prend une créature en cale, vous gagnez 2 PV.',
+    text: 'Arme — Le porteur gagne +1/+1, et son coût augmente de 1 tant que le Grappin est attaché. Quand le Grappin s’attache, le porteur active Abordage X, où X vaut son coût augmenté moins un : choisissez une créature adverse de coût X ou moins, elle est prise en sa cale.',
     flavor: 'Trois dents de fer, et la mer devient un couloir.',
   }),
 ];

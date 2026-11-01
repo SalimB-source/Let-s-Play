@@ -772,7 +772,7 @@ test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon
   assert.equal(resolu.ok, true);
   assert.equal(fennec.enCale?.carteId, 'pilote-de-la-carreira', 'le porteur a pris la créature choisie, au seuil de son coût augmenté');
   assert.equal(duel.sorcier.creatures.includes(mousse), true, 'la Mousse épargnée tient la table');
-  assert.equal(duel.joueur.pv, pvAvant + 2, 'la prime du Grappin : 2 PV gagnés à la prise');
+  assert.equal(duel.joueur.pv, pvAvant, 'le Grappin ne soigne plus à la prise');
   // Remplacer l’arme rend le coût imprimé : le surcoût ne survit pas au crochet.
   donner(duel, 'joueur', 'baton-des-citernes');
   assert.equal(rpgJouerArme(duel, 'joueur', 'baton-des-citernes', fennec.id).ok, true);

@@ -1154,15 +1154,14 @@ export const RPG_JETON_CARDS = [
     pluriel: 'serpents des citernes',
     element: 'eau',
     cost: 0,
-    atk: 3,
+    atk: 1,
     def: 1,
-    rapidite: true,
     rarity: 'commune',
     kind: 'creature',
     jeton: true,
     typeLine: 'Créature-jeton — Serpent',
-    text: 'Un serpent des citernes appelé par le Bâton : 3/1, Rapidité, détruit à la fin du tour.',
-    flavor: 'Il ne garde les citernes qu’une marée à la fois.',
+    text: 'Un serpent des citernes appelé par le Bâton : 1/1.',
+    flavor: 'Il garde les citernes sans relâche.',
   },
 ];
 
@@ -2228,13 +2227,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Bâton',
     cost: 4,
     rarity: 'rare',
-    bonus: { atk: 1, def: 2 },
-    // À l'arrivée de l'arme, puis à la demande contre 3 manas (capacité
-    // activée, `rpgActiverArme` dans le moteur) : un serpent 3/1 rapide qui
-    // ne survit pas au tour (`ephemere`, soldé à `rpgFinDeTour`).
-    arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', nombre: 1, ephemere: true },
-    activation: { cout: 3, effet: { type: 'jetons', jeton: 'serpent-des-citernes', nombre: 1, ephemere: true } },
-    text: 'Arme — Le porteur gagne +1/+2. Quand cette arme arrive en jeu, créez un jeton Serpent 3/1 avec Rapidité, détruit à la fin du tour. 3 : créez un jeton Serpent 3/1 avec Rapidité, détruit à la fin du tour.',
+    bonus: { atk: 0, def: 3 },
+    arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', remplirChamp: true },
+    text: 'Arme — Le porteur gagne +0/+3. Quand cette arme arrive en jeu, créez un jeton Serpent 1/1 sur chaque emplacement allié vide.',
     flavor: 'Il soulève les serpents des citernes comme des rubans de soie — puis les lâche, furieux, entre l’ennemi et vous.',
   },
   {
@@ -2245,9 +2240,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Armure',
     cost: 4,
     rarity: 'mythique',
-    bonus: { atk: 3, def: 3 },
-    donne: { rapidite: true, immunite: 'braise' },
-    text: 'Arme — Le porteur gagne +3/+3 et Rapidité. Il est immunisé contre la Braise.',
+    bonus: { atk: 0, def: 4 },
+    donne: { contreAttaque: true },
+    text: 'Arme — Le porteur gagne +0/+4 et Contre-attaque.',
     flavor: 'Forgée dans le cratère même : aucune flamme ne mord deux fois cet acier-là.',
   },
   {
@@ -2260,7 +2255,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher).',
+    porteurAvantDegats: { type: 'gel', chance: 0.15 },
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avant les dégâts, 15 % de chances de geler chaque créature adverse que le porteur combat.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2272,14 +2268,8 @@ export const RPG_ARME_CARDS = [
     cost: 3,
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
-    // Le prix de l'acier de glace : `blessurePorteur` mord la créature AU
-    // MOMENT de l'attachement, avant que le bouclier de l'arme ne soit posé.
-    // Le bouclier (`donne.bouclier`) est une parade anti-sort, pas une armure :
-    // il ne peut donc pas encaisser la morsure. Il suit l'arme — il part avec
-    // elle si le porteur en change.
     blessurePorteur: 1,
-    donne: { bouclier: 1 },
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0 et un bouclier — le prochain sort ou effet de créature adverse qui l’atteint est bloqué, même un sort de zone.',
+    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
@@ -2329,10 +2319,8 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    // Le Lien du Roi : le trait prend un point de plus — la riposte du
-    // Contre-attaquant mord alors un cran plus fort.
-    lien: { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avec Le roi Kusayla en jeu : +3/+0 au lieu de +2/+0.',
+    porteurAvantDegats: { type: 'gel', chance: 0.25 },
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avant les dégâts, 25 % de chances de geler chaque créature adverse que le porteur combat.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2344,12 +2332,8 @@ export const RPG_ARME_CARDS = [
     cost: 1,
     rarity: 'inhabituelle',
     bonus: { atk: 1, def: -1 },
-    // Le Skullclamp du Sablier : le malus de défense n'est pas une punition,
-    // c'est le déclencheur. Posé sur un chien de sable 1/1, il le fait passer
-    // à 2/0 — `rpgActionsEtat` l'enterre, `porteurMeurt` part, deux cartes
-    // pour un mana et un jeton.
-    porteurMeurt: { type: 'pioche', amount: 2 },
-    text: 'Arme — Le porteur gagne +1/−1. Quand le porteur meurt, piochez deux cartes.',
+    porteurMeurt: { type: 'pioche', amount: 1 },
+    text: 'Arme — Le porteur gagne +1/−1. Quand le porteur meurt, piochez une carte.',
     flavor: 'Il tirait bien. Il tire encore, d’une certaine façon.',
   },
   {
@@ -2360,9 +2344,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Harnais',
     cost: 3,
     rarity: 'inhabituelle',
-    bonus: { atk: 2, def: 2 },
+    bonus: { atk: 1, def: 2 },
     porteurAttaque: { type: 'sable', amount: 1 },
-    text: 'Arme — Le porteur gagne +2/+2. Quand le porteur attaque : gagnez 1 mana de sable.',
+    text: 'Arme — Le porteur gagne +1/+2. Quand le porteur attaque : gagnez 1 mana de sable.',
     flavor: 'Le méhari connaît le puits d’avant la soif.',
   },
   {
@@ -2391,9 +2375,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Jitte',
     cost: 4,
     rarity: 'rare',
-    bonus: { atk: 2, def: 1 },
+    bonus: { atk: 2, def: 2 },
     donne: { protection: { contre: 'tenebres' } },
-    text: 'Arme — Le porteur gagne +2/+1 et une protection contre les Ténèbres : les attaques, blocages et effets des Ténèbres ne peuvent ni le cibler ni le blesser.',
+    text: 'Arme — Le porteur gagne +2/+2 et une protection contre les Ténèbres : les attaques, blocages et effets des Ténèbres ne peuvent ni le cibler ni le blesser.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {

@@ -95,7 +95,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le Pourfendeur repeint en peinture japonaise nihonga, même composition
   // mais en pigments minéraux (octobre 2025) : révision dédiée pour le cache.
   'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
-  'sabre-maudit': 'braise-souls-cendres-v5',
+  'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
   'ashigaru-des-braises': 'braise-souls-cendres-v4',
@@ -158,20 +158,20 @@ const CARD_ART_CACHE_VERSIONS = {
   'kusayla-roi-des-imazighen': 'kusayla-roi-imazigh-v3',
   'guepard': 'guepard-jeton-v1',
   'chien-du-guet': 'sable-souls-desore-v3',
-  // Le grappin est repassé de l'ancre au croc : quatre griffes sur le bastingage.
-  'grappin-d-abordage': 'grappin-griffes-bastingage-v4',
-  'takouba-des-pistes': 'sable-souls-desore-v3',
-  'sandales-de-tislit': 'sable-souls-desore-v3',
-  'cuirasse-de-sel': 'sable-souls-desore-v3',
-  // Le javelot est repassé de la dune au beffroi : il est chez lui, sous la cloche.
-  'javelot-du-beffroi': 'javelot-beffroi-cloche-v4',
-  'licou-du-chien-de-sable': 'sable-souls-desore-v3',
+  // Les équipements sont exposés dans une armurerie sombre.
+  'grappin-d-abordage': 'armurerie-sangles-v2',
+  'takouba-des-pistes': 'armurerie-sangles-v2',
+  'sandales-de-tislit': 'armurerie-sangles-v2',
+  'cuirasse-de-sel': 'armurerie-sangles-v3',
+  // Le javelot rejoint lui aussi l’armurerie.
+  'javelot-du-beffroi': 'armurerie-sangles-v3',
+  'licou-du-chien-de-sable': 'armurerie-sangles-v1',
   // Fin du set Sable : les trois dernières armes et les trois dernières magies.
-  'harnais-du-mehari': 'sable-souls-desore-v3',
-  'masque-du-guetteur': 'sable-souls-desore-v3',
-  'jitte-d-amayas': 'sable-souls-desore-v3',
-  'lame-des-ergs': 'sable-souls-desore-v3',
-  'takouba-de-tin-hinan': 'sable-souls-desore-v3',
+  'harnais-du-mehari': 'armurerie-sangles-v1',
+  'masque-du-guetteur': 'armurerie-sangles-v1',
+  'jitte-d-amayas': 'armurerie-sangles-v1',
+  'lame-des-ergs': 'armurerie-sangles-v1',
+  'takouba-de-tin-hinan': 'armurerie-sangles-v1',
   'lettre-de-marque': 'sable-souls-desore-v3',
   'le-grand-debarquement': 'sable-souls-desore-v3',
   'rapport-du-greffier': 'sable-souls-desore-v3',
@@ -210,12 +210,8 @@ const CARD_ART_CACHE_VERSIONS = {
   // repensée : un serpent unique et anatomiquement cohérent encercle le globe.
   // Sa révision dédiée l’emporte sur celle du set Neige.
   'serpent-du-monde': 'serpent-terre-nihonga-v1',
-  // L'Armure de cendres quitte le lot photoréaliste : son dessin d'origine
-  // est conservé trait pour trait et simplement repeint en nihonga.
-  'armure-de-cendres': 'braise-souls-cendres-v4',
-  // Le Bâton des citernes quitte le lot photoréaliste à son tour : le bâton
-  // seul derrière la glace d'une vitrine, les serpents dehors.
-  'baton-des-citernes': 'baton-nihonga-vitrine-dehors-v2',
+  'armure-de-cendres': 'armurerie-metal-fusion-separe-v7',
+  'baton-des-citernes': 'armurerie-sangles-v2',
   'djinn-de-foudre': 'sable-souls-desore-v3',
   'sonneur-fele': 'plein-art-cloche-v1',
   // La Dame aux ailes d'or s'envole dans la nef en ruine : révision dédiée.
@@ -247,7 +243,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'pere-des-corbeaux': 'neige-souls-cendres-v1',
   'poigne-de-givre': 'neige-loup-gele-souls-v2',
   'volva-soigneuse': 'volva-soigneuse-souls-v1',
-  'braise-et-sable': 'braise-et-sable-souls-v1',
+  'braise-et-sable': 'armurerie-sangles-v1',
   'verglas': 'neige-souls-cendres-v1',
   'embuscade': 'neige-souls-cendres-v1',
   'defi-du-jarl': 'neige-souls-cendres-v1',
@@ -307,7 +303,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // appliqué à la peinture — a ensuite été **retiré** : ces cartes sont
   // revenues à l'os et à la suie, sans virage. Les six cartes du Corbeau des
   // neuf nuits, elles, n'ont jamais reçu de teinte.
-  'khopesh-d-or': SANS_TEINTE,
+  'khopesh-d-or': 'armurerie-sangles-v2',
   'chacal-du-seuil': SANS_TEINTE,
   'ouvrier-du-natron': SANS_TEINTE,
   'gardienne-de-la-balance': SANS_TEINTE,
@@ -341,7 +337,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // virage est **retiré**, les peintures reviennent à l'ardoise froide.
   'yamina': SANS_TEINTE,
   'boualem': SANS_TEINTE,
-  'baton-des-citernes': SANS_TEINTE,
+  'baton-des-citernes': 'armurerie-sangles-v2',
   'porteuse-de-cruches': SANS_TEINTE,
   'pilote-de-la-carreira': SANS_TEINTE,
   'source-de-bimini': SANS_TEINTE,
@@ -377,11 +373,12 @@ const CARD_ART_CACHE_VERSIONS = {
   'courant-de-retour': SANS_TEINTE,
   // Les deux armes : la lance seule dans la glace, la hache plantée dans la
   // banquise — aucune main, aucun porteur, et plus d'aurore colorée.
-  'lance-de-givre': 'neige-souls-cendres-v1',
-  // La hache est plantée lame première, le fût debout : demande explicite.
-  'hache-de-la-banquise': 'neige-hache-fil-en-bas-v2',
+  'lance-de-givre': 'armurerie-sangles-v2',
+  'hache-de-la-banquise': 'armurerie-sangles-v2',
   // La Hache est seule, sa lame plantée dans la banquise : aucun porteur
   // ne vient concurrencer l’arme dans la nouvelle illustration.
+  'sphere-de-rotation': 'armurerie-sangles-v1',
+  'pilon-du-fossoyeur': 'armurerie-sangles-v1',
 };
 /**
  * La Tour Oubliée a d'abord été peinte en encrage BD, puis entièrement

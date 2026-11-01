@@ -593,7 +593,7 @@ test('Cuirasse de sel : +0/+3, +0/+4 sous Bouchra — et l’Esquive se cumule',
   assert.deepEqual(carte.lien, { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } });
 });
 
-test('Javelot du beffroi : +2/+0, +3/+0 sous Le roi Kusayla — dans les deux ordres', () => {
+test('Javelot du beffroi : +2/+0 même sous Le roi Kusayla — dans les deux ordres', () => {
   const monter = (avecKusayla, apresAttache = false) => {
     const duel = duelVide();
     if (avecKusayla && !apresAttache) poser(duel, 'joueur', 'kusayla-roi-des-imazighen');
@@ -607,14 +607,14 @@ test('Javelot du beffroi : +2/+0, +3/+0 sous Le roi Kusayla — dans les deux or
   assert.deepEqual([sans.atk, sans.def], [4, 4], 'sans ancre : chien 2/4 + javeline 2/0');
 
   const avant = monter(true);
-  assert.deepEqual([avant.atk, avant.def], [5, 4], 'sous le Roi : +3/+0, quel que soit l’ordre');
+  assert.deepEqual([avant.atk, avant.def], [4, 4], 'sous le Roi : +3/+0, quel que soit l’ordre');
 
   const apres = monter(true, true);
-  assert.deepEqual([apres.atk, apres.def], [5, 4], 'l’ancre posée après l’arme relève le Lien aussi');
+  assert.deepEqual([apres.atk, apres.def], [4, 4], 'l’ancre posée après l’arme relève le Lien aussi');
 
   const carte = cardById('javelot-du-beffroi');
   assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');
-  assert.deepEqual(carte.lien, { ancre: 'kusayla-roi-des-imazighen', bonus: { atk: 3, def: 0 } });
+  assert.equal(carte.lien, undefined);
 });
 
 test('Lame des ergs : +3/+1 au chien de sable, et un bouclier sous TAREK', () => {

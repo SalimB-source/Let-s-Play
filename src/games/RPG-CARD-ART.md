@@ -1861,3 +1861,20 @@ C'est la seule marque du catalogue qui ne nomme pas une peinture mais un
 
 Les recettes de virage restent dans ce document, marquées « retiré » : elles
 sont l'historique du set, pas une consigne.
+
+
+## Armurerie Soulslike — première série
+
+Dix équipements non vampires ont de nouvelles illustrations 4:5 dans une armurerie sombre, avec une légère lueur : Khopesh d’or, Grappin d’abordage, Takouba des pistes, Bâton des citernes, Armure de cendres, Lance de givre, Hache de la banquise, Sandales de Tislit, Cuirasse de sel et Javelot du beffroi. Révision de cache : `armurerie-sangles-v2`. Les armes vampires ne sont pas modifiées.
+
+## Armurerie Soulslike — seconde série
+
+Licou du chien de sable, Harnais du méhari, Masque du guetteur, Jitte d’Amayas, Lame des ergs, Takouba de Tin Hinan, Sphère de rotation, Sabre maudit, Braise et sable et Pilon du fossoyeur : illustrations 4:5 d’équipements exposés sur un mur avec attaches et légère lueur. Révision de cache : `armurerie-sangles-v1`. La première série a également été reprise pour les attaches ; l’Armure de cendres, la Cuirasse de sel et le Javelot du beffroi ont reçu une correction supplémentaire (révision `armurerie-sangles-v3`).
+
+L’Armure de cendres a ensuite été refaite en métal en fusion, avec des sangles au mur (révision `armurerie-metal-fusion-v4`).
+
+L’Armure de cendres présente désormais son casque, son torse, ses brassières et ses jambières séparément sur le mur (révision `armurerie-metal-fusion-separe-v5`).
+
+L’Armure de cendres est disposée séparément en ordre anatomique : casque en haut, torse au centre, bras sur les côtés et jambières en bas (révision `armurerie-metal-fusion-separe-v6`).
+
+L’armure séparée retrouve une silhouette ouvragée et des veines de métal incandescent (révision `armurerie-metal-fusion-separe-v7`).

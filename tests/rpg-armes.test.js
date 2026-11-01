@@ -108,7 +108,7 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   assert.deepEqual(armeById('takouba-des-pistes').bonus, { atk: 2, def: 0 });
   assert.equal(armeById('takouba-des-pistes').donne.infiltration, true);
   assert.equal(armeById('baton-des-citernes').arrivee.jeton, 'serpent-des-citernes');
-  assert.equal(armeById('baton-des-citernes').activation.cout, 3);
+  assert.equal(armeById('baton-des-citernes').activation, undefined);
   assert.deepEqual(armeById('lance-de-givre').bonus, { atk: 1, def: 0 });
   assert.equal(armeById('lance-de-givre').donne.coupRapide, true);
   assert.equal(armeById('lance-de-givre').donne.envol, undefined);
@@ -117,16 +117,16 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   assert.match(armeById('lance-de-givre').text, /\+1\/\+0 et Attaque ciblée/);
   assert.doesNotMatch(armeById('lance-de-givre').text, /bouclier/i);
   assert.equal(armeById('armure-de-cendres').rarity, 'mythique');
-  assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 3, def: 3 });
-  assert.equal(armeById('armure-de-cendres').donne.immunite, 'braise');
-  assert.equal(armeById('armure-de-cendres').donne.rapidite, true);
+  assert.deepEqual(armeById('armure-de-cendres').bonus, { atk: 0, def: 4 });
+  assert.equal(armeById('armure-de-cendres').donne.immunite, undefined);
+  assert.equal(armeById('armure-de-cendres').donne.contreAttaque, true);
   // La Hache de la banquise : le forfait d'attachement et le bouclier de l'arme.
   const hache = armeById('hache-de-la-banquise');
   assert.equal(hache.cost, 3);
   assert.equal(hache.element, 'neige');
   assert.deepEqual(hache.bonus, { atk: 2, def: 0 });
   assert.equal(hache.blessurePorteur, 1, 'l’arme mord son porteur en s’attachant');
-  assert.equal(hache.donne.bouclier, 1, 'et lui laisse un bouclier de 1');
+  assert.equal(hache.donne?.bouclier, undefined);
 });
 
 test('les decks du catalogue suivent leur quota d’armes et leur plafond de mythiques', () => {
@@ -223,69 +223,22 @@ test('sans porteur désigné, l’arme refuse de partir et rien n’est payé', 
 const serpents = (duel, cote) => duel[cote].creatures
   .filter((entite) => entite.carteId === 'serpent-des-citernes');
 
-test('à son arrivée, le Bâton appelle un serpent 3/1 avec Rapidité — et ne donne plus l’Esquive', () => {
-  const duel = duelVide();
-  const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
-  equiper(duel, 'joueur', 'baton-des-citernes', dune);
-  assert.equal(dune.atk, 3, 'le porteur gagne +1 d’attaque');
-  assert.equal(dune.pv, 6, 'le +2 de défense grandit les PV');
-  assert.equal(dune.esquive, false, 'le Bâton ne donne plus l’Esquive');
-  const appeles = serpents(duel, 'joueur');
-  assert.equal(appeles.length, 1, 'un serpent naît de l’arrivée du Bâton');
-  assert.equal(appeles[0].atk, 3);
-  assert.equal(appeles[0].pv, 1);
-  assert.equal(appeles[0].jeton, true, 'c’est une créature-jeton');
-  assert.equal(appeles[0].rapidite, true);
-  assert.equal(appeles[0].ready, true, 'Rapidité : il peut attaquer dès ce tour');
-  assert.equal(appeles[0].detruireFinDuTour, true, 'mais la fin du tour le reprendra');
-  rpgBlesserCreature(duel, 'joueur', dune.id, 3, 'eau', null, 'magie');
-  assert.equal(dune.pv, 3, 'sans Esquive, la Dune encaisse les 3 dégâts');
-});
-
-test('le serpent du Bâton frappe le tour même, puis la fin du tour le détruit', () => {
+test('le Bâton remplit les places libres de Serpents 1/1 permanents et ne s’active plus', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante');
+  poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'baton-des-citernes', dune);
-  const serpent = serpents(duel, 'joueur')[0];
-  const cible = poser(duel, 'sorcier', 'ghul-des-cendres'); // 2/1
-  const attaque = rpgAttaquerCreature(duel, 'joueur', serpent.id, cible.id);
-  assert.equal(attaque.ok, true, 'le serpent attaque dès son arrivée (Rapidité)');
-  assert.equal(duel.sorcier.creatures.some((entite) => entite.id === cible.id), false,
-    'ses 3 dégâts achèvent le Ghul');
+  assert.equal(dune.atk, 2);
+  assert.equal(dune.pv, 7);
+  assert.equal(serpents(duel, 'joueur').length, 3);
+  for (const serpent of serpents(duel, 'joueur')) {
+    assert.deepEqual([serpent.atk, serpent.pv, serpent.rapidite], [1, 1, false]);
+    assert.notEqual(serpent.detruireFinDuTour, true);
+  }
+  assert.equal(rpgActiverArme(duel, 'joueur', dune.id).ok, false);
   rpgFinDeTour(duel);
-  assert.equal(serpents(duel, 'joueur').length, 0, 'la fin du tour détruit le serpent');
-  assert.equal(duel.tour, 'sorcier', 'le tour a changé de main');
+  assert.equal(serpents(duel, 'joueur').length, 3);
 });
-
-test('activer le Bâton pour 3 manas appelle un autre serpent — jamais hors de son tour ni sans mana', () => {
-  const duel = duelVide();
-  const dune = poser(duel, 'joueur', 'dune-marchante');
-  equiper(duel, 'joueur', 'baton-des-citernes', dune); // serpent d'arrivée
-  assert.equal(serpents(duel, 'joueur').length, 1);
-  duel.joueur.mana = { braise: 0, eau: 3, sable: 0, neige: 0 };
-  const res = rpgActiverArme(duel, 'joueur', dune.id);
-  assert.equal(res.ok, true);
-  assert.equal(serpents(duel, 'joueur').length, 2, 'un second serpent répond à l’activation');
-  assert.equal(rpgPeutPayerMana(duel), false, 'les 3 manas sont partis');
-  const sansMana = rpgActiverArme(duel, 'joueur', dune.id);
-  assert.equal(sansMana.ok, false);
-  assert.equal(sansMana.raison, 'mana');
-  duel.tour = 'sorcier';
-  duel.joueur.mana = { braise: 0, eau: 9, sable: 0, neige: 0 };
-  const horsTour = rpgActiverArme(duel, 'joueur', dune.id);
-  assert.equal(horsTour.ok, false);
-  assert.equal(horsTour.raison, 'tour', 'une capacité activée se décide pendant son propre tour');
-
-  const duel2 = duelVide();
-  const chien = poser(duel2, 'joueur', 'chien-du-guet');
-  equiper(duel2, 'joueur', 'takouba-des-pistes', chien);
-  const sansActivation = rpgActiverArme(duel2, 'joueur', chien.id);
-  assert.equal(sansActivation.ok, false);
-  assert.equal(sansActivation.raison, 'aucune-activation', 'la Takouba n’a rien à activer');
-});
-
-/** Reste-t-il de quoi payer la moindre chose ? (mana du joueur épuisé ou non). */
-const rpgPeutPayerMana = (duel) => Object.values(duel.joueur.mana).some((n) => n > 0);
 
 test('la Lance de givre donne +1/+0 et Attaque ciblée au porteur, sans Envol ni bouclier', () => {
   const duel = duelVide();
@@ -421,57 +374,18 @@ test('renvoyé en main, le porteur repart sans son arme : elle tombe au cimetiè
 
 // ── L'Armure de cendres : +3/+3, Rapidité, immunité contre la Braise ───────
 
-test('l’Armure de cendres donne +3/+3, la Rapidité et l’immunité contre la Braise', () => {
-  const duel = duelVide();
-  const chien = poser(duel, 'joueur', 'chien-du-guet'); // 2/2, mal d'invocation
-  assert.equal(chien.ready, false, 'le Chien vient d’arriver : il ne peut pas attaquer');
-  equiper(duel, 'joueur', 'armure-de-cendres', chien);
-  assert.equal(chien.atk, 5, '2 + 3 d’attaque');
-  assert.equal(chien.pv, 5, '2 + 3 de défense');
-  assert.equal(chien.rapidite, true, 'l’Armure donne la Rapidité');
-  assert.equal(chien.ready, true, 'le porteur peut attaquer dès ce tour');
-  assert.equal(rpgEstProtegee(chien, 'braise'), true, 'immunisé contre la Braise');
-  assert.equal(rpgEstProtegee(chien, 'eau'), false, 'mais pas contre les autres éléments');
-  const dune = poser(duel, 'sorcier', 'dune-marchante'); // 2/5
-  const attaque = rpgAttaquerCreature(duel, 'joueur', chien.id, dune.id);
-  assert.equal(attaque.ok, true, 'la Rapidité le laisse attaquer aussitôt');
-  // Dégâts de Braise : aucun. Dégâts d'un autre élément : pleins.
-  chien.pv = chien.pvMax;
-  const braise = rpgBlesserCreature(duel, 'joueur', chien.id, 4, 'braise', null, 'magie');
-  assert.equal(braise.protegee, true, 'une magie de Braise ne l’atteint pas');
-  assert.equal(chien.pv, chien.pvMax, 'aucun dégât de Braise encaissé');
-  const eau = rpgBlesserCreature(duel, 'joueur', chien.id, 2, 'eau', null, 'magie');
-  assert.equal(eau.ok, true);
-  assert.equal(chien.pv, chien.pvMax - 2, 'une magie d’Eau, elle, le blesse');
-});
-
-test('une créature Braise ne peut pas bloquer le porteur de l’Armure de cendres', () => {
-  const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet');
-  equiper(duel, 'joueur', 'armure-de-cendres', porteur);
-  const ghul = poser(duel, 'sorcier', 'ghul-des-cendres');
-  duel.sorcier.pv = 4; // l’IA voudrait normalement sacrifier le Ghul pour éviter les 5 dégâts létaux
-
-  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [porteur.id]), {},
-    'l’IA ne propose pas le Ghul Braise comme bloqueur contre le porteur immunisé');
-  const attaque = rpgLancerAttaque(duel, 'joueur', [porteur.id], null);
-  assert.equal(attaque.ok, true, 'l’attaque automatique ne se retrouve pas bloquée illégalement');
-  assert.equal(attaque.resume.frappeSorcier, 5, 'les 5 dégâts passent au sorcier');
-  assert.equal(ghul.pv, 1, 'le Ghul reste intact puisque l’Armure l’empêche de bloquer');
-});
-
-test('remplacer l’Armure retire son immunité : la Braise mord de nouveau', () => {
+test('l’Armure donne +0/+4 et Contre-attaque, sans Rapidité ni immunité', () => {
   const duel = duelVide();
   const chien = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'armure-de-cendres', chien);
-  assert.equal(rpgEstProtegee(chien, 'braise'), true);
-  equiper(duel, 'joueur', 'takouba-des-pistes', chien); // l'Armure tombe au cimetière
-  assert.equal(chien.arme.carteId, 'takouba-des-pistes');
-  assert.equal(rpgEstProtegee(chien, 'braise'), false, 'sans l’Armure, plus d’immunité');
-  assert.ok(duel.joueur.cimetiere.includes('armure-de-cendres'));
+  assert.equal(chien.atk, 2);
+  assert.equal(chien.pv, 6);
+  assert.equal(chien.contreAttaque, true);
+  assert.equal(chien.rapidite, false);
+  assert.equal(rpgEstProtegee(chien, 'braise'), false);
+  equiper(duel, 'joueur', 'takouba-des-pistes', chien);
+  assert.equal(chien.contreAttaque, false);
 });
-
-// ── Les contres ─────────────────────────────────────────────────────────────
 
 test('un Contresort des abîmes contre l’arme annoncée : elle ne sera jamais portée', () => {
   const duel = duelVide();
@@ -527,22 +441,13 @@ test('l’IA équipe sa meilleure créature sans arme, jamais une créature déj
   assert.equal(choisirCarteIA(duelVideTable, 'sorcier', { rng: () => 0.5 }), null);
 });
 
-test('le sorcier active le Bâton après ses annonces : ses serpents attaquent le tour même', () => {
+test('le sorcier ne peut pas activer le Bâton', () => {
   const duel = duelVide();
   const dune = poser(duel, 'sorcier', 'dune-marchante');
-  equiper(duel, 'sorcier', 'baton-des-citernes', dune); // serpent d'arrivée
-  assert.equal(serpents(duel, 'sorcier').length, 1);
+  equiper(duel, 'sorcier', 'baton-des-citernes', dune);
+  assert.equal(serpents(duel, 'sorcier').length, 4);
   duel.tour = 'sorcier';
-  duel.sorcier.mana = { braise: 0, eau: 3, sable: 0, neige: 0 };
-  const actives = rpgSorcierActiverArmes(duel);
-  assert.equal(actives.length, 1, 'une activation pour les 3 manas restants');
-  assert.equal(serpents(duel, 'sorcier').length, 2, 'le second serpent a répondu');
-  assert.ok(serpents(duel, 'sorcier').every((serpent) => serpent.ready),
-    'les deux serpents sont prêts à attaquer ce tour-ci');
-  duel.sorcier.mana = { braise: 0, eau: 3, sable: 0, neige: 0 };
-  donner(duel, 'sorcier', 'contresort-des-abimes');
-  assert.equal(rpgSorcierActiverArmes(duel).length, 0,
-    'avec un contresort en main, le sorcier garde ses 4 manas de réponse');
+  assert.equal(rpgSorcierActiverArmes(duel).length, 0);
 });
 
 test('contré par le sorcier, le Bâton n’appelle aucun serpent', () => {
@@ -575,7 +480,7 @@ test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres car
 
 // ── La Hache de la banquise : le prix de l'attachement ─────────────────────
 
-test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 et d’une parade', () => {
+test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 sans parade', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
   equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
@@ -583,19 +488,19 @@ test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +
   assert.equal(dune.def, 3, 'la Hache ne change pas la défense : la morsure, elle, suit les PV');
   assert.equal(dune.pv, 3, 'elle a d’abord mordu son porteur : 4 − 1');
   assert.equal(dune.pvMax, 4, 'la morsure est une blessure, pas une amputation du maximum');
-  assert.equal(dune.bouclier, 1, 'et la parade de l’arme reste sur le porteur');
+  assert.equal(dune.bouclier, 0, 'la Hache ne donne pas de bouclier');
   assert.equal(dune.arme.carteId, 'hache-de-la-banquise');
   // La parade ne prévient pas les dégâts : seul un sort la fait tomber.
   rpgBlesserCreature(duel, 'joueur', dune.id, 2, 'braise', null, 'magie');
-  assert.equal(dune.bouclier, 1, 'la parade tient encore');
+  assert.equal(dune.bouclier, 0);
   assert.equal(dune.pv, 1, 'les 2 dégâts passent : 3 − 2');
 });
 
-test('le bouclier de la Hache part avec l’arme, pas la morsure', () => {
+test('remplacer la Hache ne soigne pas sa morsure', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante');
   equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
-  assert.equal(dune.bouclier, 1);
+  assert.equal(dune.bouclier, 0);
   equiper(duel, 'joueur', 'takouba-des-pistes', dune); // la Hache tombe au cimetière
   assert.equal(dune.bouclier, 0, 'sans la Hache, plus de bouclier');
   assert.equal(dune.atk, 4, '2 de la Dune + 2 de la Takouba, la Hache est repartie');

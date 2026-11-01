@@ -827,106 +827,15 @@ const equiperKhopesh = (duel, porteur) => {
   assert.equal(rpgJouerArme(duel, 'joueur', 'khopesh-d-or', porteur.id).ok, true);
 };
 
-test('Khopesh : bonus conservés, mort réelle puis retour à 1 DEF sans arme ni boucle', () => {
-  const duel = nouveau();
-  installerMana(duel);
-  const porteur = poserTenebres(duel, 'momie-de-lin');
+test('Khopesh : le porteur et son arme vont au cimetière sans résurrection', () => {
+  const duel = nouveau(); installerMana(duel);
+  const porteur = poserTenebres(duel, 'chacal-du-seuil');
   equiperKhopesh(duel, porteur);
-  assert.equal(porteur.atk, 4);
-  assert.equal(porteur.pv, 5);
-  assert.equal(porteur.tribut, 1);
+  assert.equal(porteur.tribut, 2);
   rpgBlesserCreature(duel, 'joueur', porteur.id, 10);
-  const revenue = duel.joueur.creatures.find((c) => c.carteId === 'momie-de-lin');
-  assert.ok(revenue);
-  assert.notEqual(revenue.id, porteur.id);
-  assert.equal(revenue.atk, 2);
-  assert.equal(revenue.pv, 1);
-  assert.equal(revenue.def, 1);
-  assert.equal(revenue.pvMax, 1);
-  assert.equal(revenue.ready, false);
-  assert.ok(!revenue.arme);
-  assert.equal(revenue.tribut, 0);
+  assert.ok(!duel.joueur.creatures.some((c) => c.carteId === porteur.carteId));
   assert.ok(duel.joueur.cimetiere.includes('khopesh-d-or'));
-  assert.ok(!duel.joueur.cimetiere.includes('momie-de-lin'));
-  assert.equal(duel.joueur.creatures.filter((c) => c.carteId === 'shabti').length, 1, 'effet de mort déclenché');
-  rpgBlesserCreature(duel, 'joueur', revenue.id, 1);
-  assert.ok(!duel.joueur.creatures.some((c) => c.carteId === 'momie-de-lin'));
-});
-
-test('Khopesh : les arrivées se rejouent, Rapidité est conservée sur une nouvelle présence', () => {
-  for (const id of ['maitre-des-hieroglyphes', 'chacal-du-seuil']) {
-    const duel = nouveau();
-    installerMana(duel);
-    const porteur = poserTenebres(duel, id);
-    equiperKhopesh(duel, porteur);
-    const main = duel.joueur.main.length;
-    rpgBlesserCreature(duel, 'joueur', porteur.id, 10);
-    const revenu = duel.joueur.creatures.find((c) => c.carteId === id);
-    assert.equal(revenu.pv, 1);
-    assert.equal(revenu.ready, id === 'chacal-du-seuil');
-    assert.equal(duel.joueur.main.length, main + (id === 'maitre-des-hieroglyphes' ? 2 : 0));
-  }
-});
-
-test('Khopesh : le porteur revient après combat ou destruction totale, jamais la mauvaise créature', () => {
-  for (const mode of ['combat', 'destruction-totale']) {
-    const duel = nouveau();
-    installerMana(duel);
-    const porteur = poserTenebres(duel, 'chacal-du-seuil');
-    equiperKhopesh(duel, porteur);
-    const ennemi = poserTenebres(duel, 'ureus-du-seuil');
-    duel.joueur.creatures = duel.joueur.creatures.filter((c) => c.id !== ennemi.id);
-    duel.sorcier.creatures.push(ennemi);
-    if (mode === 'combat') {
-      ennemi.atk = 3;
-      assert.equal(rpgAttaquerCreature(duel, 'joueur', porteur.id, ennemi.id).ok, true);
-    } else {
-      poserTenebres(duel, 'ibis-des-comptes');
-      assert.equal(lancerDernierePesee(duel).ok, true);
-    }
-    assert.equal(duel.joueur.creatures.length, 1);
-    const revenu = duel.joueur.creatures[0];
-    assert.equal(revenu.carteId, 'chacal-du-seuil');
-    assert.equal(revenu.pv, 1);
-    assert.equal(duel.sorcier.creatures.length, 0);
-    assert.ok(duel.joueur.cimetiere.includes('khopesh-d-or'));
-  }
-});
-
-test('Khopesh : un porteur tenace meurt, le Khopesh le relève et le retour de Tenacité se dissipe', () => {
-  const duel = nouveau();
-  installerMana(duel);
-  const porteur = poserTenebres(duel, 'chacal-du-seuil');
-  equiperKhopesh(duel, porteur);
-  porteur.tenaciteDisponible = true;
-  rpgBlesserCreature(duel, 'joueur', porteur.id, 10);
-  // Tenacité ne refuse plus la mort : le porteur tombe et sa renaissance est
-  // programmée ; mais le Khopesh relève aussitôt la carte, qui n'est donc plus
-  // au cimetière — le retour promis se dissipe au prochain tour.
-  assert.equal(duel.joueur.creatures.some((c) => c.id === porteur.id), false);
-  assert.equal(duel.joueur.creatures[0].carteId, 'chacal-du-seuil');
-  assert.notEqual(duel.joueur.creatures[0].id, porteur.id);
-  assert.equal(duel.joueur.creatures[0].pv, 1);
-  assert.deepEqual(duel.joueur.retoursProgrammes.map((retour) => retour.tenacite), [true]);
-  rpgFinDeTour(duel);
-  assert.deepEqual(duel.joueur.retoursProgrammes.map((retour) => retour.tenacite), [true],
-    'le retour attend le tour du joueur');
-  rpgFinDeTour(duel);
-  assert.deepEqual(duel.joueur.retoursProgrammes, [],
-    'la carte a déjà été relevée par le Khopesh : rien à reprendre au cimetière');
-  assert.equal(duel.joueur.creatures.filter((c) => c.carteId === 'chacal-du-seuil').length, 1,
-    'une seule présence, pas de doublon');
-});
-
-test('Khopesh : le sacrifice du porteur le réanime', () => {
-  const duel = nouveau();
-  installerMana(duel);
-  const porteur = poserTenebres(duel, 'chacal-du-seuil');
-  equiperKhopesh(duel, porteur);
-  assert.equal(rpgSacrifierCreature(duel, 'joueur', porteur.id).ok, true);
-  assert.equal(duel.joueur.creatures[0].carteId, 'chacal-du-seuil');
-  assert.notEqual(duel.joueur.creatures[0].id, porteur.id);
-  assert.equal(duel.joueur.creatures[0].pv, 1);
+  assert.ok(duel.joueur.cimetiere.includes(porteur.carteId));
 });
 
 test('Khopesh : exiler le porteur ne le réanime pas', () => {
