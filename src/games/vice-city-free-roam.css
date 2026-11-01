@@ -16,6 +16,7 @@
 .vice-free-roam-touch button[data-action="brake"]{grid-row:2;grid-column:1;border-radius:17px;background:linear-gradient(145deg,#293e49f0,#111a22f0)}
 .vice-free-roam-touch button[data-action="foot-shoot"]{grid-row:2;grid-column:1;border-radius:17px;border-color:#ff9baa;background:linear-gradient(145deg,#562d38f0,#21151cf0);box-shadow:0 5px 16px #0009,inset 0 0 0 3px #ff9baa22}
 .vice-free-roam-touch button[data-action="shoot"]{grid-row:2;grid-column:3;border-color:#ff9baa;background:linear-gradient(145deg,#562d38f0,#21151cf0);box-shadow:0 5px 16px #0009,inset 0 0 0 3px #ff9baa22}
+.vice-free-roam-touch button[data-action="turn-back"]{grid-row:2;grid-column:3;border-color:#74e1dfaa;background:linear-gradient(145deg,#21464cf0,#11272df0);box-shadow:0 5px 16px #0009,inset 0 0 0 2px #74e1df20}
 .vice-free-roam-touch button>span{font:900 29px/1 system-ui,sans-serif}
 .vice-free-roam-touch button>small{font:900 7px/1 system-ui,sans-serif;letter-spacing:.06em;color:#ffffffd9}
 .vice-free-roam-touch button:active{background:linear-gradient(145deg,#ff8fac,#c33f68);border-color:#ffd2df;transform:scale(.96)}

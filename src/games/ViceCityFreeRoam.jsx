@@ -30,6 +30,7 @@ import {
   viceCityFreeDriveAimVectorPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
+  viceCityFreeDriveTurnTowardHeading,
   viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveSpeedStep,
@@ -3181,6 +3182,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0,
       velocityX: 0, velocityZ: 0, turnRate: 0,
     };
+    let turnAroundTarget = null;
+    let backInputWasDown = false;
     const getChallengeRouteTarget = (challenge) => {
       if (!challenge || challenge.status !== 'active') return null;
       if (challenge.id === 'delivery') return challenge.target;
@@ -3799,6 +3802,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const cameraLookTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
     let pedestrianCameraTracking = false;
+    let pedestrianCameraHeading = 0;
     const cockpitPosition = new THREE.Vector3();
     const cockpitIdentityQuat = new THREE.Quaternion();
     const cockpitFollowQuat = new THREE.Quaternion();
@@ -3842,6 +3846,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       walkState.velocityZ = 0;
       walkState.turnRate = 0;
       walkState.speed = 0;
+      turnAroundTarget = null;
+      backInputWasDown = false;
     };
     const movePedestrianWithSlide = (dt) => {
       const deltaX = walkState.velocityX * dt;
@@ -4425,6 +4431,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         state.steer = 0;
         throttle = pressed('ArrowUp') || pressed('KeyW');
         brake = pressed('ArrowDown') || pressed('KeyS');
+        const backwardInput = brake || onFootJoystick.y > 0.16;
+        if (!pendingEntry && backwardInput && !backInputWasDown) {
+          turnAroundTarget = walkState.heading + Math.PI;
+        }
+        backInputWasDown = !pendingEntry && backwardInput;
         const mouseAimDirection = getMouseAimDirection();
         let normalizedStrafe = 0;
         if (pendingEntry) {
@@ -4466,11 +4477,22 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             } else movePedestrianWithSlide(dt);
           }
         } else {
-          const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
-          walkState.turnRate = viceCityFreeDriveTurnStep(walkState.turnRate, turnInput, dt);
-          walkState.heading += walkState.turnRate * dt;
+          if (turnAroundTarget != null) {
+            const turn = viceCityFreeDriveTurnTowardHeading(
+              walkState.heading, turnAroundTarget, walkState.turnRate, dt,
+            );
+            walkState.heading = turn.heading;
+            walkState.turnRate = turn.turnRate;
+            if (turn.complete) turnAroundTarget = null;
+          } else {
+            const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
+            walkState.turnRate = viceCityFreeDriveTurnStep(walkState.turnRate, turnInput, dt);
+            walkState.heading += walkState.turnRate * dt;
+          }
+          const rawForwardInput = Number(throttle) - Number(brake) - onFootJoystick.y;
+          const forwardInput = backwardInput ? Math.max(0, -rawForwardInput) : Math.max(0, rawForwardInput);
           const footVector = viceCityFreeDriveFootVector(
-            Number(throttle) - Number(brake) - onFootJoystick.y,
+            forwardInput,
             Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
               - Number(pressed('KeyQ')) + onFootJoystick.x,
           );
@@ -4702,16 +4724,24 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
       if (isOnFootRef.current) {
-        forward.set(Math.sin(walkState.heading), 0, -Math.cos(walkState.heading));
-        cameraPosition.copy(pedestrian.group.position).addScaledVector(forward, -4.8);
-        cameraPosition.y += 2.65;
-        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
         cameraTarget.copy(pedestrian.group.position);
         cameraTarget.y += 1.2;
         if (!pedestrianCameraTracking) {
           cameraLookTarget.copy(cameraTarget);
+          pedestrianCameraHeading = walkState.heading;
           pedestrianCameraTracking = true;
-        } else cameraLookTarget.lerp(cameraTarget, 1 - Math.exp(-dt * 8.5));
+        } else {
+          cameraLookTarget.lerp(cameraTarget, 1 - Math.exp(-dt * 8.5));
+          const cameraTurn = Math.atan2(
+            Math.sin(walkState.heading - pedestrianCameraHeading),
+            Math.cos(walkState.heading - pedestrianCameraHeading),
+          );
+          pedestrianCameraHeading += cameraTurn * (1 - Math.exp(-dt * 5.2));
+        }
+        forward.set(Math.sin(pedestrianCameraHeading), 0, -Math.cos(pedestrianCameraHeading));
+        cameraPosition.copy(pedestrian.group.position).addScaledVector(forward, -4.8);
+        cameraPosition.y += 2.65;
+        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
         camera.lookAt(cameraLookTarget);
       } else if (isCockpitView && activeCockpit) {
         pedestrianCameraTracking = false;
@@ -4860,12 +4890,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       <div className="vice-free-roam-controls">
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
-          <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
+          <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> SE RETOURNER & AVANCER</span>
             <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span>
             <span><kbd>Q</kbd><kbd>←</kbd> GLISSER À GAUCHE · <kbd>→</kbd> À DROITE</span>
             <span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
             <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
-            <small>Joystick à fond / Maj : courir · souris : viser sans tourner · clic gauche : tirer</small></>
+            <small>S / ↓ ou joystick vers le bas : demi-tour, puis caméra derrière · Maj : courir · souris : viser sans tourner</small></>
         ) : (
           <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
             <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
@@ -4882,11 +4912,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         </div>
         <small>{isOnFoot ? 'MOUVEMENT' : 'DIRIGER'}</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher, tirer et interagir' : 'Accélérer, freiner et tirer'}>
+      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher, tirer, se retourner et interagir' : 'Accélérer, freiner et tirer'}>
         {[
           ['ArrowUp', '×', isOnFoot ? 'Courir' : 'Accélérer', 'accelerate'],
           [isOnFoot ? 'KeyZ' : 'ArrowDown', '□', isOnFoot ? 'Tirer' : 'Freiner', isOnFoot ? 'foot-shoot' : 'brake'],
-          ['KeyZ', '○', isOnFoot ? 'Tir en voiture' : 'Tirer', 'shoot'],
+          [isOnFoot ? 'ArrowDown' : 'KeyZ', isOnFoot ? '↻' : '○', isOnFoot ? 'Se retourner' : 'Tirer', isOnFoot ? 'turn-back' : 'shoot'],
         ].map(([code, glyph, label, action]) => (
           <button key={action} type="button" data-action={action} aria-label={label} title={label}
             disabled={isOnFoot && action === 'shoot'}

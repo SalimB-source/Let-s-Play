@@ -22,6 +22,7 @@ import {
   viceCityFreeDriveAimVectorPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
+  viceCityFreeDriveTurnTowardHeading,
   viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
@@ -149,6 +150,19 @@ test('à pied : A/D font tourner le personnage à gauche et à droite', () => {
   assert.equal(viceCityFreeDriveTurnInput(true, true), 0);
 });
 
+test('à pied : reculer déclenche un demi-tour progressif avant de repartir face à la caméra', () => {
+  let turn = { heading: 0, turnRate: 0, complete: false };
+  turn = viceCityFreeDriveTurnTowardHeading(0, Math.PI, 0, 1 / 60);
+  assert.ok(turn.heading > 0 && turn.heading < Math.PI, 'le premier pas ne téléporte pas le personnage');
+  for (let frame = 1; frame < 150 && !turn.complete; frame += 1) {
+    turn = viceCityFreeDriveTurnTowardHeading(turn.heading, Math.PI, turn.turnRate, 1 / 60);
+  }
+  assert.equal(turn.complete, true);
+  assert.ok(Math.abs(turn.heading - Math.PI) < 1e-12);
+  const wrapped = viceCityFreeDriveTurnTowardHeading(3, -3, 0, 1 / 60);
+  assert.ok(wrapped.heading > 3, 'le demi-tour prend la route angulaire la plus courte');
+});
+
 test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {
   const pose = viceCityFreeDriveAimPose(Math.PI / 2, Math.PI / 4);
   assert.equal(pose.bodyHeading, Math.PI / 2);
@@ -179,6 +193,16 @@ test('visée 3D : le pitch incline les bras sans modifier le cap du personnage',
   const diagonal = viceCityFreeDriveAimVectorPose(0, 1, 1, -1);
   assert.ok(Math.abs(diagonal.pitch - Math.asin(1 / Math.sqrt(3))) < 1e-12);
   assert.ok(Math.abs(diagonal.armYaw + Math.PI / 4) < 1e-12);
+});
+
+test('le demi-tour arrière est branché au déplacement et orbite la caméra derrière le personnage', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /turnAroundTarget = walkState\.heading \+ Math\.PI/u);
+  assert.match(source, /viceCityFreeDriveTurnTowardHeading\(/u);
+  assert.match(source, /backwardInput \? Math\.max\(0, -rawForwardInput\)/u,
+    'l’entrée arrière devient une marche avant après le demi-tour');
+  assert.match(source, /pedestrianCameraHeading \+= cameraTurn \* \(1 - Math\.exp\(-dt \* 5\.2\)\)/u,
+    'la caméra suit un arc autour du joueur au lieu de traverser son corps');
 });
 
 test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanches, genoux, chevilles et bassin', () => {

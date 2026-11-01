@@ -131,6 +131,22 @@ export function viceCityFreeDriveTurnStep(turnRate, input, dt, maxRate = 2.35) {
   return safeRate + (targetRate - safeRate) * blend;
 }
 
+/** Ease a pedestrian toward a new facing without snapping through the camera. */
+export function viceCityFreeDriveTurnTowardHeading(heading = 0, targetHeading = 0, turnRate = 0, dt = 0, maxRate = 3.2) {
+  const current = Number(heading) || 0;
+  const target = Number(targetHeading) || 0;
+  const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
+  if (Math.abs(delta) < 0.012) return { heading: target, turnRate: 0, complete: true };
+  const input = clamp(delta * 1.45, -1, 1);
+  const nextRate = viceCityFreeDriveTurnStep(turnRate, input, dt, maxRate);
+  const step = nextRate * Math.max(0, Number(dt) || 0);
+  const remaining = Math.atan2(Math.sin(target - (current + step)), Math.cos(target - (current + step)));
+  if (Math.abs(remaining) < 0.018 || Math.sign(remaining) !== Math.sign(delta)) {
+    return { heading: target, turnRate: 0, complete: true };
+  }
+  return { heading: current + step, turnRate: nextRate, complete: false };
+}
+
 /** Dead-zoned, length-limited 2D stick vector for third-person on-foot movement. */
 export function viceCityFreeDriveJoystickVector(x = 0, y = 0) {
   const safeX = clamp(Number(x) || 0, -1, 1);
