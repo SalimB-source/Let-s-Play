@@ -166,6 +166,8 @@ function valeurEffet(effet = {}) {
       const effets = Array.isArray(effet.effetFinal) ? effet.effetFinal : [effet.effetFinal].filter(Boolean);
       return effets.reduce((total, sous) => total + valeurEffet(sous ?? {}), 0) * 0.7;
     }
+    case 'destruction-cible':
+      return 5;
     case 'destruction-totale':
       return 8; // Nettoyage symétrique : détruit aussi le champ allié.
     case 'destruction-coutmax': {

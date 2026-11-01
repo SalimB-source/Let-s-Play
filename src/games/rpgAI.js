@@ -483,6 +483,11 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2));
     return navires[0]?.id ?? null;
   }
+  if (carte?.effet?.type === 'destruction-cible') {
+    return ciblesLegales(duel, cote, carte, 'creature')
+      .filter((entite) => duelCardById(entite.carteId)?.kind !== 'site' && moteur.cibleRespecteCoutMax(carte, entite))
+      .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
+  }
   if (carte?.effet?.type === 'destruction-arme') {
     // Brise-lame : on désarme la plus grosse menace équipée que la protection
     // de couleur n'écarte pas. Sans arme adverse, aucune cible.
@@ -1447,6 +1452,12 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const controle = profil.style === 'controle' ? 1 : 0;
       const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
       return { score: score > 0 ? score : 0, cibleId };
+    }
+    if (effet.type === 'destruction-cible') {
+      const cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });
+      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (!cible) return null;
+      return { score: Math.max(0, 4 + valeurEntite(cible) - cout * 0.3), cibleId };
     }
     if (effet.type === 'destruction-arme') {
       const cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });

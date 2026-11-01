@@ -3289,9 +3289,10 @@ function controleurHumain(duel, cote) {
  * protégée contre la couleur de la source. C'est la liste EXACTE dans laquelle
  * le contrôleur de Boualem a le droit de choisir.
  */
-function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, sourceType = null) {
+function ciblesContresortBoualem(duel, defenseur, cibleId, sourceElement, sourceType = null, effet = null) {
   return ['joueur', 'sorcier'].flatMap((camp) => duel[camp].creatures
     .filter((entite) => entite.id !== cibleId && entite.pv > 0
+      && !(effet?.type === 'destruction-cible' && (estSite(entite) || !cibleRespecteCoutMax({ effet }, entite)))
       && !rpgEstProtegee(entite, sourceElement)
       && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType))
     .map((entite) => ({ entite, camp })));
@@ -3304,7 +3305,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
   const adv = autre(cote);
   // Un effet relancé par le contresort de Boualem peut tomber sur une créature
   // des DEUX camps (`cibleCamp`). Par défaut, la cible est adverse.
-  let campCible = cibleCamp ?? ((effet.type === 'exil' || effet.type === 'retour-main')
+  let campCible = cibleCamp ?? ((effet.type === 'exil' || effet.type === 'retour-main' || effet.type === 'destruction-cible')
     && duel[cote].creatures.some((entite) => entite.id === cibleId) ? cote : adv);
   const cibleDirecte = cibleId && duel[campCible]?.creatures.find((entite) => entite.id === cibleId);
   const effetCible = Boolean(cibleId && (effet.cible === 'creature' || ['debuff', 'empeche-blocage', 'blocage-force'].includes(effet.type)));
@@ -3323,7 +3324,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     const cibleBoualem = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (cibleBoualem?.carteId === 'boualem' && cibleBoualem.boualemContresortDisponible) {
       cibleBoualem.boualemContresortDisponible = false;
-      const legales = ciblesContresortBoualem(duel, adv, cibleId, sourceElement, sourceType);
+      const legales = ciblesContresortBoualem(duel, adv, cibleId, sourceElement, sourceType, effet);
       if (!legales.length) {
         duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
         return;
@@ -3370,7 +3371,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     // Certaines fiches de malus portent leur cible dans `cibles`, sans la
     // répéter dans l'effet ; leur cible reste toujours une créature adverse.
     || ['debuff', 'empeche-blocage'].includes(effet.type));
-  if (sourceType === 'magie' && effet.type !== 'degats' && viseUneCreatureAdverse) {
+  if (sourceType === 'magie' && effet.type !== 'degats' && viseUneCreatureAdverse
+    && (effet.type !== 'destruction-cible' || campCible !== cote)) {
     const cibleSort = duel[campCible].creatures.find((entite) => entite.id === cibleId);
     if (cibleSort && tenterEsquive(duel, cibleSort, sourceType)) {
       // La pioche éventuelle (Courant de retour) appartient au lanceur : elle
@@ -3380,6 +3382,17 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     }
   }
   switch (effet.type) {
+    case 'destruction-cible': {
+      const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
+      if (!victime || estSite(victime) || !cibleRespecteCoutMax({ effet }, victime)
+        || rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
+      const nom = victime.name;
+      enterrer(duel, campCible, victime, sourceElement);
+      duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le sort'} détruit ${nom}.`);
+      rafraichirAuras(duel);
+      rpgActionsEtat(duel);
+      return;
+    }
     case 'destruction-totale': {
       // Les morts sont retirés ensemble, avant leurs déclenchements : les
       // jetons et les réanimations produits ensuite échappent à cette vague.
@@ -5056,8 +5069,9 @@ export function cibleRespecteCoutMax(carte, entite) {
   const cout = rpgCoutEntite(entite);
   // Un Grappin porté alourdit sa cible face aux seuils de coût, comme
   // face aux seuils de prise.
-  if (Number.isFinite(carte?.arrivee?.coutMax) && cout > carte.arrivee.coutMax) return false;
-  if (Number.isFinite(carte?.arrivee?.coutMin) && cout < carte.arrivee.coutMin) return false;
+  const seuil = carte?.arrivee ?? carte?.effet;
+  if (Number.isFinite(seuil?.coutMax) && cout > seuil.coutMax) return false;
+  if (Number.isFinite(seuil?.coutMin) && cout < seuil.coutMin) return false;
   return true;
 }
 
@@ -5661,7 +5675,7 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
 export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
   const attente = duel.boualemEnAttente;
   if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
-  const legales = ciblesContresortBoualem(duel, cote, attente.cibleId, attente.sourceElement, attente.sourceType);
+  const legales = ciblesContresortBoualem(duel, cote, attente.cibleId, attente.sourceElement, attente.sourceType, attente.effet);
   if (!legales.length) {
     duel.boualemEnAttente = null;
     duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
@@ -5693,7 +5707,7 @@ export function rpgResoudreContresortBoualem(duel, cote, cibleId) {
 export function rpgDissiperContresortBoualem(duel) {
   const attente = duel.boualemEnAttente;
   if (!attente) return false;
-  const legales = ciblesContresortBoualem(duel, attente.cote, attente.cibleId, attente.sourceElement, attente.sourceType);
+  const legales = ciblesContresortBoualem(duel, attente.cote, attente.cibleId, attente.sourceElement, attente.sourceType, attente.effet);
   if (legales.length) return false;
   duel.boualemEnAttente = null;
   duel.log.push('Boualem contre l’effet qui le ciblait ; aucune nouvelle cible légale, l’effet est annulé.');
@@ -6109,7 +6123,8 @@ export function rpgContreJouable(duel, cote, carte) {
 function entiteCiblableParSort(entite, carte) {
   return Boolean(entite)
     && !rpgEstProtegee(entite, cardColors(carte))
-    && !rpgEstProtegeeDesSorts(entite, cardColors(carte));
+    && !rpgEstProtegeeDesSorts(entite, cardColors(carte))
+    && !estSite(entite) && cibleRespecteCoutMax(carte, entite);
 }
 
 /** Portées qui frappent une zone sans désigner une seule créature. Même si
@@ -6183,6 +6198,9 @@ export function rpgSortACibleValide(duel, cote, carte) {
   if (carte.effet?.type === 'degats' && carte.effet?.cible === 'creature') {
     // Certains sorts peuvent aussi frapper le sorcier adverse directement.
     return aCibleEnnemie || Boolean(carte.cibles?.includes('sorcier'));
+  }
+  if (carte.effet?.type === 'destruction-cible') {
+    return aCibleAlliee || aCibleEnnemie;
   }
   if (carte.effet?.type === 'destruction-arme') {
     return duel[adv].creatures.some((entite) => entiteCiblableParSort(entite, carte)
@@ -6361,6 +6379,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  }
+  if (carte.effet.type === 'destruction-cible') {
+    const cible = [...camp.creatures, ...duel[adv].creatures].find((entite) => entite.id === cibleId);
+    if (!cible || estSite(cible) || !cibleRespecteCoutMax(carte, cible)) return { ok: false, raison: 'cible' };
+    if (rpgEstProtegee(cible, cardColors(carte)) || rpgEstProtegeeDesSorts(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
   if (carte.effet.type === 'destruction-arme') {
     // Brise-lame : sans créature adverse équipée, le sort ne se lance pas et

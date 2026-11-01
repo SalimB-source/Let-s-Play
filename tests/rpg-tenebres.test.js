@@ -66,11 +66,11 @@ test('la cinquième couleur existe partout où l’élément se nomme', () => {
   assert.ok(cardById('la-devoreuse'));
 });
 
-test('les 21 fiches de base sont en Ténèbres, les 5 grandes figures couvrent les éléments, et les limites de copies tiennent', () => {
+test('les fiches de base sont en Ténèbres, les 5 grandes figures couvrent les éléments, et les limites de copies tiennent', () => {
   const fiches = [...RPG_TENEBRES_CREATURES, ...RPG_TENEBRES_MAGIES, ...RPG_TENEBRES_ARMES, ...RPG_TENEBRES_JETONS];
   assert.equal(RPG_TENEBRES_CREATURES.length, 17);
   assert.equal(RPG_TENEBRES_FIGURES.length, 5);
-  assert.equal(RPG_TENEBRES_MAGIES.length, 7);
+  assert.equal(RPG_TENEBRES_MAGIES.length, 9);
   assert.equal(RPG_TENEBRES_ARMES.length, 1);
   assert.equal(RPG_TENEBRES_JETONS.length, 1);
   assert.equal(RPG_TENEBRES_JETONS[0].id, 'shabti');
