@@ -626,6 +626,7 @@ export default function ViceCityRushPage() {
   // statique, aucune scène 3D n'est montée tant que le menu est ouvert.
   const [titleMenuOpen, setTitleMenuOpen] = useState(true);
   const [freeRoamOpen, setFreeRoamOpen] = useState(false);
+  const [freeRoamCarId, setFreeRoamCarId] = useState(CITY_RUSH_STARTER_CAR_ID);
   const titleMenuOpenRef = useRef(true);
   useEffect(() => { titleMenuOpenRef.current = titleMenuOpen; }, [titleMenuOpen]);
   const audioRef = useRef(null);
@@ -2001,7 +2002,7 @@ export default function ViceCityRushPage() {
 
       {freeRoamOpen && (
         <ViceCityFreeRoam
-          carId={selectedCar.id}
+          carId={freeRoamCarId}
           onExit={() => { setFreeRoamOpen(false); setTitleMenuOpen(true); }}
         />
       )}
@@ -2026,7 +2027,7 @@ export default function ViceCityRushPage() {
           onToggleDriving={toggleDriving}
           onToggleFullscreen={toggleImmersive}
           onStartTutorial={handleTitleTutorial}
-          onStartFreeDrive={() => { audioRef.current?.stop(); setTitleMenuOpen(false); setFreeRoamOpen(true); }}
+          onStartFreeDrive={() => { audioRef.current?.stop(); setFreeRoamCarId('pulse-rs'); setTitleMenuOpen(false); setFreeRoamOpen(true); }}
           onPick={handleTitlePick}
         />
       )}

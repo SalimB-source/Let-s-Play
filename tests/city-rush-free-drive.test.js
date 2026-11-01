@@ -11,7 +11,14 @@ import {
   cityRushLaneConfig,
   cityRushMiniGarageWidth,
 } from '../src/games/cityRushRules.js';
-import { viceCityFreeDriveSpeedStep } from '../src/games/viceCityFreeDrive.js';
+import {
+  viceCityFreeDriveParkedCarHitbox,
+  viceCityFreeDriveParkedCarImpulse,
+  viceCityCanalBarrierCrossed,
+  viceCityFreeDriveSpeedStep,
+  viceCityFreeDriveSteerStep,
+  viceCityFreeDriveYawRate,
+} from '../src/games/viceCityFreeDrive.js';
 import {
   CITY_RUSH_DEFAULT_DRIVING_MODE,
   CITY_RUSH_DRIVING_FREE,
@@ -74,14 +81,21 @@ function stepFrames({ x = 0, velocity = 0, seconds, input = 0, target = null, bo
 
 test('conduite libre : flèche bas freine puis engage la marche arrière à l’arrêt', () => {
   const params = { dt: 1 / 60, maxSpeed: 35, acceleration: 5, reverseMaxSpeed: 7 };
+  const coastAtTwenty = viceCityFreeDriveSpeedStep({ ...params, speed: 20, throttle: false, brake: false, dt: 0.25 });
+  assert.ok(coastAtTwenty <= 19.6, `le lever de pied ralentit nettement : ${coastAtTwenty}`);
   assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: false }), 0,
     'aucune accélération automatique au point mort');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: false, brake: true }) < 0,
     'la flèche bas fait reculer depuis l’arrêt');
   assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 1, throttle: false, brake: true, dt: 0.2 }), 0,
     'le freinage avant s’arrête à zéro sans inverser la vitesse dans la même frame');
-  assert.equal(viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 }), 1.625,
-    'la flèche bas freine quand la voiture avance');
+  const freinLent = viceCityFreeDriveSpeedStep({ ...params, speed: 5, throttle: false, brake: true, dt: 0.25 });
+  const freinRapide = viceCityFreeDriveSpeedStep({ ...params, speed: 30, throttle: false, brake: true, dt: 0.25 });
+  const freinVoiturePuissante = viceCityFreeDriveSpeedStep({ ...params, speed: 20, maxSpeed: 50, throttle: false, brake: true, dt: 0.1 });
+  const freinVoitureLente = viceCityFreeDriveSpeedStep({ ...params, speed: 20, maxSpeed: 25, throttle: false, brake: true, dt: 0.1 });
+  assert.ok(freinLent < 5 && freinLent > 0, 'le freinage ralentit sans inverser le mouvement');
+  assert.ok(30 - freinRapide > 5 - freinLent, 'le freinage gagne en force avec la vitesse');
+  assert.ok(freinVoiturePuissante < freinVoitureLente, 'une voiture à vitesse maximale supérieure freine plus fort');
   let reverseSpeed = 0;
   for (let frame = 0; frame < 180; frame += 1) {
     reverseSpeed = viceCityFreeDriveSpeedStep({ ...params, speed: reverseSpeed, throttle: false, brake: true, dt: 1 / 60 });
@@ -91,6 +105,55 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche haut freine d’abord la marche arrière');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: true, brake: false }) > 0,
     'la flèche haut repart en marche avant');
+});
+
+test('conduite libre : les barrières du canal bloquent les franchissements hors du pont', () => {
+  assert.equal(viceCityCanalBarrierCrossed(25, 40, 15, 40), true,
+    'un déplacement court ne traverse pas la berge');
+  assert.equal(viceCityCanalBarrierCrossed(25, 0, 15, 0), false,
+    'le passage du pont reste ouvert');
+  assert.equal(viceCityCanalBarrierCrossed(35, -40, -35, -40), true,
+    'une grande étape ne peut pas sauter les deux berges');
+  assert.equal(viceCityCanalBarrierCrossed(25, 30, 15, 0), true,
+    'un déplacement en diagonale est bloqué au point où il coupe la berge');
+});
+
+test('conduite libre : braquage moins brutal et adhérence latérale modérée', () => {
+  assert.equal(viceCityFreeDriveYawRate(0, 1), 0);
+  assert.ok(viceCityFreeDriveYawRate(5, 1) < 0.8, 'petit rayon de braquage adouci à basse vitesse');
+  assert.ok(viceCityFreeDriveYawRate(30, 1) < 0.52, 'l’adhérence limite le lacet à vitesse élevée');
+  assert.ok(near(viceCityFreeDriveYawRate(30, -1), -viceCityFreeDriveYawRate(30, 1)));
+});
+
+test('braquage progressif : appui bref doux, maintien plus fort, recentrage au relâchement', () => {
+  let quickTap = 0;
+  let held = 0;
+  for (let frame = 0; frame < 6; frame += 1) quickTap = viceCityFreeDriveSteerStep(quickTap, 1, DT);
+  for (let frame = 0; frame < 30; frame += 1) held = viceCityFreeDriveSteerStep(held, 1, DT);
+  assert.ok(quickTap < 0.35, `appui bref : ${quickTap.toFixed(2)}`);
+  assert.ok(held > 0.8 && held > quickTap * 2, `maintien : ${held.toFixed(2)}`);
+  const released = viceCityFreeDriveSteerStep(quickTap, 0, 0.1);
+  assert.ok(released < quickTap, 'la direction se détend au relâchement');
+  assert.ok(near(viceCityFreeDriveSteerStep(0, -1, DT), -viceCityFreeDriveSteerStep(0, 1, DT)));
+});
+
+test('hitbox des voitures stationnées resserrée pour frôler sans collision lointaine', () => {
+  const sedan = viceCityFreeDriveParkedCarHitbox(1.94, 4);
+  assert.ok(sedan.halfWidth < 2.0, `demi-largeur : ${sedan.halfWidth}`);
+  assert.ok(sedan.halfLength < 4.0, `demi-longueur : ${sedan.halfLength}`);
+  const truck = viceCityFreeDriveParkedCarHitbox(2.3, 4.6);
+  assert.ok(truck.halfWidth > sedan.halfWidth);
+  assert.ok(truck.halfLength > sedan.halfLength);
+});
+
+test('impact : pousse une voiture et continue à la déplacer si le joueur insiste', () => {
+  const initialImpact = viceCityFreeDriveParkedCarImpulse(8, 1, 1 / 60, true);
+  const continuedPush = viceCityFreeDriveParkedCarImpulse(3, 1, 1 / 60, false);
+  const truckImpact = viceCityFreeDriveParkedCarImpulse(8, 1.9, 1 / 60, true);
+  assert.ok(initialImpact > continuedPush && continuedPush > 0);
+  assert.ok(truckImpact < initialImpact, 'un véhicule lourd est plus difficile à pousser');
+  assert.ok(Number.isFinite(viceCityFreeDriveParkedCarImpulse(3, 1, undefined, false)));
+  assert.equal(viceCityFreeDriveParkedCarImpulse(0, 1, 1 / 60, true), 0);
 });
 
 test('mode de conduite : libre par défaut, voies au choix, préférence de l’appareil', () => {
