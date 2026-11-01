@@ -26,7 +26,7 @@ import { lancerDuelDepuisMenu, passerMulligan } from './rpg-duel-start.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function checkRpgDuelNav(assert) {
+export async function checkRpgDuelNav(assert, { sonSeulement = false } = {}) {
   const node = document.createElement('div');
   document.body.append(node);
   const root = createRoot(node);
@@ -40,6 +40,8 @@ export async function checkRpgDuelNav(assert) {
   };
   try {
     window.letsPlayDesktop = {};
+    window.localStorage.setItem('letsplay_sablier_sfx_volume_v1', '0.35');
+    window.localStorage.removeItem('letsplay_sablier_voice_volume_v1');
     await act(async () => root.render(
       <AuthContext.Provider value={{
         user: comptePc,
@@ -92,6 +94,19 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(node.querySelector('.rpg-card-catalogue'), 'le catalogue reste visible depuis son propre onglet');
     await click(settingsHorsPartie);
     ecranSettingsHorsPartie = node.querySelector('.rpg-settings');
+    const reglageVoix = ecranSettingsHorsPartie.querySelector('#rpg-settings-voice-volume');
+    const reglageSons = ecranSettingsHorsPartie.querySelector('#rpg-settings-sfx-volume');
+    assert.ok(reglageVoix && reglageSons, 'les voix et les bruitages ont chacun leur curseur');
+    assert.equal(reglageVoix.value, '35', 'le volume des voix reprend l’ancien réglage des sons');
+    assert.equal(window.localStorage.getItem('letsplay_sablier_voice_volume_v1'), '0.35');
+    const boutonVoix = ecranSettingsHorsPartie.querySelector('[aria-label="Couper les voix des personnages"]');
+    await click(boutonVoix);
+    assert.equal(reglageVoix.value, '0');
+    assert.equal(reglageSons.value, '35', 'couper les voix ne change pas les bruitages');
+    assert.equal(window.localStorage.getItem('letsplay_sablier_voice_volume_v1'), '0');
+    await click(boutonVoix);
+    assert.equal(reglageVoix.value, '35', 'réactiver les voix restaure leur volume précédent');
+    if (sonSeulement) return;
     const decorHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__decor3d');
     const sonHorsPartie = ecranSettingsHorsPartie.querySelector('.rpg-settings__mute-all');
     assert.ok(decorHorsPartie && sonHorsPartie, 'les réglages 3D et son sont disponibles hors partie');
@@ -168,6 +183,7 @@ export async function checkRpgDuelNav(assert) {
     // L'onglet Paramètres déplie l'option 3D et le contrôle du volume des sons et musiques.
     const ongletParametres = menu.querySelector('.rpg-duel-nav__settings-tab');
     const panneauParametres = menu.querySelector('.rpg-duel-nav__settings');
+    assert.ok(panneauParametres.querySelector('.rpg-duel-nav__slider--voice'), 'le duel dispose aussi du réglage des voix');
     assert.ok(ongletParametres && panneauParametres, 'le menu porte l’onglet et le panneau Paramètres');
     assert.equal(ongletParametres.getAttribute('aria-expanded'), 'false', 'l’onglet Paramètres est replié au départ');
     assert.equal(panneauParametres.classList.contains('is-open'), false, 'le panneau Paramètres attend l’ouverture');
@@ -209,6 +225,7 @@ export async function checkRpgDuelNav(assert) {
     assert.ok(ecranParametres, 'l’onglet Paramètres affiche son écran');
     assert.ok(ecranParametres.querySelector('.rpg-settings__decor3d'), 'l’écran Paramètres contient l’option 3D');
     assert.ok(ecranParametres.querySelector('.rpg-settings__slider--sfx'), 'l’écran Paramètres contient le volume des sons du jeu');
+    assert.ok(ecranParametres.querySelector('.rpg-settings__slider--voice'), 'l’écran Paramètres contient le volume des voix');
     assert.ok(ecranParametres.querySelector('.rpg-settings__slider--music'), 'l’écran Paramètres contient le volume des musiques');
   } finally {
     await act(async () => root.unmount());

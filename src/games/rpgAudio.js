@@ -285,6 +285,7 @@ export class RpgAudioPlayer {
     this.ctx = null;
     this.muted = false;
     this.volume = 1;
+    this.volumeVoix = 1;
     // Le bus des échantillons : un nœud de gain par fichier — c'est lui qui
     // applique le niveau mesuré — puis un limiteur avant la sortie.
     this.busEchantillons = null;
@@ -318,7 +319,8 @@ export class RpgAudioPlayer {
         // Le niveau mesuré du fichier, corrigé de sa dose de catalogue : le
         // survol est le seul à en avoir une (un effleurement, pas un événement).
         const dose = rpgSfx(nom)?.[0]?.g ?? 1;
-        entree = { nom, audio, gain: gainEchantillon(nom) * dose, noeud: null };
+        const canal = ['pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue'].includes(nom) ? 'voix' : 'sfx';
+        entree = { nom, audio, gain: gainEchantillon(nom) * dose, noeud: null, canal };
         if (audio) audio.volume = this.volumeElement(entree);
         parUrl.set(url.href, entree);
         this.echantillons.push(entree);
@@ -337,8 +339,9 @@ export class RpgAudioPlayer {
    * quai, mesurée à -23 LUFS, remonte de 3 dB pour rejoindre les autres.
    */
   gainEchantillon(entree) {
-    if (!entree || this.muted || this.volume <= 0) return 0;
-    return entree.gain * this.volume;
+    const volume = entree?.canal === 'voix' ? this.volumeVoix : this.volume;
+    if (!entree || this.muted || volume <= 0) return 0;
+    return entree.gain * volume;
   }
 
   /**
@@ -469,7 +472,7 @@ export class RpgAudioPlayer {
    * si le son est coupé, l'adresse vide ou le navigateur sans `Audio`.
    */
   playCardVoice(url, delay = 0) {
-    if (!url || this.muted || this.volume <= 0) return false;
+    if (!url || this.muted || this.volumeVoix <= 0) return false;
     const AudioCtor = typeof window !== 'undefined' ? window.Audio : null;
     if (typeof AudioCtor !== 'function') return false;
     const retard = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
@@ -498,7 +501,7 @@ export class RpgAudioPlayer {
     if (entree) return entree;
     const audio = new AudioCtor(url);
     audio.preload = 'auto';
-    entree = { nom: url, audio, gain: gainVoixArrivee(url), noeud: null };
+    entree = { nom: url, audio, gain: gainVoixArrivee(url), noeud: null, canal: 'voix' };
     audio.volume = this.volumeElement(entree);
     this.voixEntrees.set(url, entree);
     // `cardVoiceAudios` reste la carte des éléments, lue par les tests et
@@ -543,7 +546,7 @@ export class RpgAudioPlayer {
   }
 
   playCardVoiceNow(url, AudioCtor) {
-    if (this.muted || this.volume <= 0) return false;
+    if (this.muted || this.volumeVoix <= 0) return false;
     try {
       const entree = this.entreeVoix(url, AudioCtor);
       if (this.cardVoiceCourante && this.cardVoiceCourante !== entree) {
@@ -570,16 +573,21 @@ export class RpgAudioPlayer {
     this.syncOutputGain();
   }
 
+  setVolumeVoix(volume) {
+    this.volumeVoix = clampRpgVolume(volume);
+    this.syncOutputGain();
+  }
+
   play(name, delay = 0) {
-    if (!this.ctx || this.muted || this.volume <= 0) return;
+    if (!this.ctx || this.muted) return;
     const entree = this.echantillonsParNom.get(name);
-    if (!entree) return;                     // pas de fichier : pas de son
+    if (!entree || this.gainEchantillon(entree) <= 0) return;                     // pas de fichier : pas de son
     if (!entree.audio) return;
     const delai = Number.isFinite(Number(delay)) ? Math.max(0, Number(delay)) : 0;
     let timer = null;
     const lancer = () => {
       if (timer !== null) this.sampleTimers.delete(timer);
-      if (!this.ctx || this.muted || this.volume <= 0 || !entree.audio) return;
+      if (!this.ctx || this.muted || this.gainEchantillon(entree) <= 0 || !entree.audio) return;
       // Le contexte a pu s'ouvrir après la construction du lecteur : c'est ici
       // que l'échantillon rejoint son bus, juste avant sa lecture.
       this.routerEchantillon(entree);

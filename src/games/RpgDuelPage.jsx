@@ -4428,6 +4428,7 @@ const RPG_ANNONCE_TOUR_DUREE = 1500;
 // au prochain passage, le son revient par défaut.
 const RPG_SOUND_KEY = 'letsplay_sablier_sound_v1';
 const RPG_SFX_VOLUME_KEY = 'letsplay_sablier_sfx_volume_v1';
+const RPG_VOICE_VOLUME_KEY = 'letsplay_sablier_voice_volume_v1';
 const RPG_MUSIC_VOLUME_KEY = 'letsplay_sablier_music_volume_v1';
 function readRpgSoundPref() {
   try { return window.localStorage.getItem(RPG_SOUND_KEY) !== 'off'; } catch { return true; }
@@ -4675,7 +4676,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -6126,6 +6127,38 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
                   <div className="rpg-settings__volume-row">
                     <div className="rpg-settings__volume-head">
+                      <label htmlFor="rpg-settings-voice-volume" className="rpg-settings__volume-label">
+                        <strong>Voix des personnages</strong>
+                        <small>Répliques et voix d’arrivée des personnages</small>
+                      </label>
+                      <div className="rpg-settings__volume-actions">
+                        <button
+                          type="button"
+                          className={`rpg-settings__channel-mute${sonActif && volumeVoix > 0 ? ' is-on' : ''}`}
+                          aria-pressed={Boolean(sonActif && volumeVoix > 0)}
+                          aria-label={sonActif && volumeVoix > 0 ? 'Couper les voix des personnages' : 'Activer les voix des personnages'}
+                          onClick={() => onToggleVoiceMute?.()}
+                        >
+                          {sonActif && volumeVoix > 0 ? '🔊' : '🔇'}
+                        </button>
+                        <output htmlFor="rpg-settings-voice-volume" className="rpg-settings__volume-value">
+                          {sonActif ? Math.round(volumeVoix * 100) : 0} %
+                        </output>
+                      </div>
+                    </div>
+                    <input
+                      id="rpg-settings-voice-volume"
+                      type="range"
+                      className="rpg-settings__slider rpg-settings__slider--voice"
+                      min="0" max="100" step="1"
+                      value={sonActif ? Math.round(volumeVoix * 100) : 0}
+                      aria-label="Volume des voix des personnages"
+                      onChange={(event) => onChangeVolumeVoix?.(Number(event.target.value) / 100)}
+                    />
+                  </div>
+
+                  <div className="rpg-settings__volume-row">
+                    <div className="rpg-settings__volume-head">
                       <label htmlFor="rpg-settings-music-volume" className="rpg-settings__volume-label">
                         <strong>Musiques</strong>
                         <small>Thème principal, musiques des plateaux et ambiances des tours de l’Histoire</small>
@@ -6988,8 +7021,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const sfxRef = useRef(null);
   const [sonActif, setSonActif] = useState(readRpgSoundPref);
   const [volumeSfx, setVolumeSfx] = useState(() => readRpgVolumePref(RPG_SFX_VOLUME_KEY, 1));
+  const [volumeVoix, setVolumeVoix] = useState(() => readRpgVolumePref(RPG_VOICE_VOLUME_KEY, readRpgVolumePref(RPG_SFX_VOLUME_KEY, 1)));
   const [volumeMusique, setVolumeMusique] = useState(() => readRpgVolumePref(RPG_MUSIC_VOLUME_KEY, 1));
   const dernierVolumeSfxRef = useRef(volumeSfx > 0 ? volumeSfx : 1);
+  const dernierVolumeVoixRef = useRef(volumeVoix > 0 ? volumeVoix : 1);
   const dernierVolumeMusiqueRef = useRef(volumeMusique > 0 ? volumeMusique : 1);
   // Le décor 3D de la table (relief, lumière, particules) : mémorisé sur l'appareil.
   const [decor3dActif, setDecor3dActif] = useState(readRpgTable3dPref);
@@ -7014,6 +7049,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     sfxRef.current?.setVolume(volumeSfx);
   }, [volumeSfx]);
   useEffect(() => {
+    writeRpgVolumePref(RPG_VOICE_VOLUME_KEY, volumeVoix);
+    if (volumeVoix > 0) dernierVolumeVoixRef.current = volumeVoix;
+    sfxRef.current?.setVolumeVoix(volumeVoix);
+  }, [volumeVoix]);
+  useEffect(() => {
     writeRpgVolumePref(RPG_MUSIC_VOLUME_KEY, volumeMusique);
     if (volumeMusique > 0) dernierVolumeMusiqueRef.current = volumeMusique;
     musiqueThemeRef.current?.setVolume(volumeMusique);
@@ -7028,6 +7068,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     musiquePlateauRef.current.setMuted(!sonActif);
     sfxRef.current = new RpgAudioPlayer();
     sfxRef.current.setVolume(volumeSfx);
+    sfxRef.current.setVolumeVoix(volumeVoix);
     sfxRef.current.setMuted(!sonActif);
     return () => {
       musiqueThemeRef.current?.destroy();
@@ -7048,6 +7089,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setVolumeSfx(prochain);
     if (prochain > 0 && !sonActif) setSonActif(true);
   };
+  const changerVolumeVoix = (valeur) => {
+    const prochain = clampRpgVolume(valeur);
+    setVolumeVoix(prochain);
+    if (prochain > 0 && !sonActif) setSonActif(true);
+  };
   const changerVolumeMusique = (valeur) => {
     const prochain = clampRpgVolume(valeur);
     setVolumeMusique(prochain);
@@ -7060,6 +7106,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     setVolumeSfx((actuel) => (actuel > 0 ? 0 : (dernierVolumeSfxRef.current || 1)));
+  };
+  const basculerVolumeVoix = () => {
+    if (!sonActif) {
+      setSonActif(true);
+      if (volumeVoix <= 0) setVolumeVoix(dernierVolumeVoixRef.current || 1);
+      return;
+    }
+    setVolumeVoix((actuel) => (actuel > 0 ? 0 : (dernierVolumeVoixRef.current || 1)));
   };
   const basculerVolumeMusique = () => {
     if (!sonActif) {
@@ -9535,6 +9589,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           volumeSfx={volumeSfx}
           onChangeVolumeSfx={changerVolumeSfx}
           onToggleSfxMute={basculerVolumeSfx}
+          volumeVoix={volumeVoix}
+          onChangeVolumeVoix={changerVolumeVoix}
+          onToggleVoiceMute={basculerVolumeVoix}
           volumeMusique={volumeMusique}
           onChangeVolumeMusique={changerVolumeMusique}
           onToggleMusicMute={basculerVolumeMusique}
@@ -13313,6 +13370,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   value={sonActif ? Math.round(volumeSfx * 100) : 0}
                   aria-label="Volume des sons du jeu"
                   onChange={(event) => changerVolumeSfx(Number(event.target.value) / 100)}
+                />
+              </label>
+              <label className="rpg-duel-nav__volume">
+                <span className="rpg-duel-nav__volume-head">
+                  <span>Voix des personnages</span>
+                  <strong>{sonActif ? Math.round(volumeVoix * 100) : 0} %</strong>
+                </span>
+                <input
+                  type="range"
+                  className="rpg-duel-nav__slider rpg-duel-nav__slider--voice"
+                  min="0" max="100" step="1"
+                  value={sonActif ? Math.round(volumeVoix * 100) : 0}
+                  aria-label="Volume des voix des personnages"
+                  onChange={(event) => changerVolumeVoix(Number(event.target.value) / 100)}
                 />
               </label>
               <label className="rpg-duel-nav__volume">
