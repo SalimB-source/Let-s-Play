@@ -33,6 +33,23 @@ export function viceCityFreeDriveParkedCarHitbox(width = 1.94, length = 4) {
   };
 }
 
+/** Normalize a virtual stick, leaving a small dead zone around its centre. */
+export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
+  const applyDeadZone = (value) => {
+    const safe = clamp(Number(value) || 0, -1, 1);
+    const magnitude = Math.abs(safe);
+    if (magnitude <= 0.14) return 0;
+    return Math.sign(safe) * (magnitude - 0.14) / 0.86;
+  };
+  const steer = applyDeadZone(x);
+  const throttleAxis = applyDeadZone(y);
+  return {
+    steer,
+    throttle: throttleAxis < -0.25,
+    brake: throttleAxis > 0.25,
+  };
+}
+
 /** One impact impulse plus steady pushing while the player keeps contact. */
 export function viceCityFreeDriveParkedCarImpulse(speed, mass, dt = 1 / 60, firstContact = false) {
   const impactSpeed = Math.abs(Number(speed) || 0);
