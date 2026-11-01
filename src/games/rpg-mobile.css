@@ -608,12 +608,28 @@
    (`--rpg-card-border-small`, zéro) : pas d'anneau non plus au doigt, seule la
    vignette rétrécit. */
 .rpg-battle--touch .rpg-terrain { flex: 0 0 var(--rpg-terrain-w); width: var(--rpg-terrain-w); height: var(--rpg-terrain-h); border-radius: var(--rpg-card-radius-sm, 8px); }
-.rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
-/* Remonter la rangée entière rapproche les créatures de la ligne médiane ;
-   les cases du mode essai et les zones tactiles suivent leurs cartes. */
+/* Les deux rangées se rapprochent symétriquement de la ligne médiane ; les
+   cases et les zones tactiles se déplacent avec elles. */
+.rpg-battle--touch .card-table {
+  --rpg-field-center-offset: clamp(6px, var(--duel-card) * .14, 12px);
+}
+.rpg-battle--touch .card-table > .card-row--ennemi {
+  grid-area: enemy;
+  top: var(--rpg-field-center-offset);
+}
+/* La ligne reste à sa place initiale lorsque la rangée adverse descend. */
+.rpg-battle--touch .card-table > .card-row--ennemi::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--rpg-field-center-offset);
+  border-bottom: 1px solid #cead7055;
+  pointer-events: none;
+}
 .rpg-battle--touch .card-table > .card-row--equipe {
   grid-area: allies;
-  top: calc(-1 * clamp(6px, var(--duel-card) * .14, 12px));
+  top: calc(-1 * var(--rpg-field-center-offset));
 }
 /* Les champs de bataille ne sont plus des zones de défilement : aucun masque
    (recadrage) autour des cartes posées, ni barre ni glissement horizontal.
