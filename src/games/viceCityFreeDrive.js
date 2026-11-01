@@ -131,20 +131,18 @@ export function viceCityFreeDriveTurnStep(turnRate, input, dt, maxRate = 2.35) {
   return safeRate + (targetRate - safeRate) * blend;
 }
 
-/** Ease a pedestrian toward a new facing without snapping through the camera. */
-export function viceCityFreeDriveTurnTowardHeading(heading = 0, targetHeading = 0, turnRate = 0, dt = 0, maxRate = 3.2) {
-  const current = Number(heading) || 0;
+/** Fixed-duration, eased in-place 180-degree turn used by the on-foot reverse input. */
+export function viceCityFreeDriveTurnAround(startHeading = 0, targetHeading = Math.PI, elapsed = 0, duration = 1) {
+  const start = Number(startHeading) || 0;
   const target = Number(targetHeading) || 0;
-  const delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
-  if (Math.abs(delta) < 0.012) return { heading: target, turnRate: 0, complete: true };
-  const input = clamp(delta * 1.45, -1, 1);
-  const nextRate = viceCityFreeDriveTurnStep(turnRate, input, dt, maxRate);
-  const step = nextRate * Math.max(0, Number(dt) || 0);
-  const remaining = Math.atan2(Math.sin(target - (current + step)), Math.cos(target - (current + step)));
-  if (Math.abs(remaining) < 0.018 || Math.sign(remaining) !== Math.sign(delta)) {
-    return { heading: target, turnRate: 0, complete: true };
-  }
-  return { heading: current + step, turnRate: nextRate, complete: false };
+  const safeDuration = Math.max(0.001, Number(duration) || 1);
+  const progress = clamp((Number(elapsed) || 0) / safeDuration, 0, 1);
+  const eased = progress * progress * (3 - 2 * progress);
+  return {
+    heading: start + (target - start) * eased,
+    turnRate: (target - start) * 6 * progress * (1 - progress) / safeDuration,
+    complete: progress >= 1,
+  };
 }
 
 /** Dead-zoned, length-limited 2D stick vector for third-person on-foot movement. */

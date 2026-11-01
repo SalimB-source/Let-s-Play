@@ -30,7 +30,7 @@ import {
   viceCityFreeDriveAimVectorPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
-  viceCityFreeDriveTurnTowardHeading,
+  viceCityFreeDriveTurnAround,
   viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveSpeedStep,
@@ -3387,6 +3387,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       velocityX: 0, velocityZ: 0, turnRate: 0,
     };
     let turnAroundTarget = null;
+    let turnAroundStartHeading = 0;
+    let turnAroundElapsed = 0;
     let backInputWasDown = false;
     const getChallengeRouteTarget = (challenge) => {
       if (!challenge || challenge.status !== 'active') return null;
@@ -4051,6 +4053,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       walkState.turnRate = 0;
       walkState.speed = 0;
       turnAroundTarget = null;
+      turnAroundElapsed = 0;
       backInputWasDown = false;
     };
     const movePedestrianWithSlide = (dt) => {
@@ -4637,7 +4640,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         brake = pressed('ArrowDown') || pressed('KeyS');
         const backwardInput = brake || onFootJoystick.y > 0.16;
         if (!pendingEntry && backwardInput && !backInputWasDown) {
+          turnAroundStartHeading = walkState.heading;
           turnAroundTarget = walkState.heading + Math.PI;
+          turnAroundElapsed = 0;
+          walkState.velocityX = 0;
+          walkState.velocityZ = 0;
+          walkState.speed = 0;
         }
         backInputWasDown = !pendingEntry && backwardInput;
         const mouseAimDirection = getMouseAimDirection();
@@ -4681,12 +4689,17 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             } else movePedestrianWithSlide(dt);
           }
         } else {
-          if (turnAroundTarget != null) {
-            const turn = viceCityFreeDriveTurnTowardHeading(
-              walkState.heading, turnAroundTarget, walkState.turnRate, dt,
+          const turningAround = turnAroundTarget != null;
+          if (turningAround) {
+            turnAroundElapsed += dt;
+            const turn = viceCityFreeDriveTurnAround(
+              turnAroundStartHeading, turnAroundTarget, turnAroundElapsed, 1,
             );
             walkState.heading = turn.heading;
             walkState.turnRate = turn.turnRate;
+            walkState.velocityX = 0;
+            walkState.velocityZ = 0;
+            walkState.speed = 0;
             if (turn.complete) turnAroundTarget = null;
           } else {
             const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
@@ -4694,10 +4707,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             walkState.heading += walkState.turnRate * dt;
           }
           const rawForwardInput = Number(throttle) - Number(brake) - onFootJoystick.y;
-          const forwardInput = backwardInput ? Math.max(0, -rawForwardInput) : Math.max(0, rawForwardInput);
+          const turnInPlace = turningAround || backwardInput;
+          const forwardInput = turnInPlace ? 0 : Math.max(0, rawForwardInput);
           const footVector = viceCityFreeDriveFootVector(
             forwardInput,
-            Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
+            turnInPlace ? 0 : Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
               - Number(pressed('KeyQ')) + onFootJoystick.x,
           );
           const { forward: normalizedForward, strafe, magnitude: movementMagnitude } = footVector;
