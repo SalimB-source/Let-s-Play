@@ -181,6 +181,20 @@ test('visée 3D : le pitch incline les bras sans modifier le cap du personnage',
   assert.ok(Math.abs(diagonal.armYaw + Math.PI / 4) < 1e-12);
 });
 
+test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanches, genoux, chevilles et bassin', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const start = source.indexOf('function makeFreeRoamPedestrian()');
+  const end = source.indexOf('function isTouchPortraitViewport()', start);
+  assert.ok(start >= 0 && end > start);
+  const model = source.slice(start, end);
+  for (const joint of ['pedestrian-pelvis-joint', 'shoulder-joint-', 'elbow-joint-',
+    'hip-joint-', 'knee-joint-', 'ankle-joint-']) assert.ok(model.includes(joint), `${joint} doit être présent`);
+  assert.match(model, /elbow\.position\.y = -0\.37/u);
+  assert.match(model, /ankle\.position\.set\(0, -0\.36/u);
+  assert.match(source, /pedestrian\.pelvis\.rotation\.set\(/u,
+    'le bassin suit le déplacement au lieu de rester figé');
+});
+
 test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   const start = source.indexOf('const updateShots = (dt) =>');

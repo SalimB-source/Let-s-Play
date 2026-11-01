@@ -2608,6 +2608,10 @@ function makeCity(scene) {
 function makeFreeRoamPedestrian() {
   const character = new THREE.Group();
   character.name = 'vice-city-free-roam-pedestrian';
+  const pelvis = new THREE.Group();
+  pelvis.name = 'pedestrian-pelvis-joint';
+  pelvis.position.y = 0.78;
+  character.add(pelvis);
 
   const skin = new THREE.MeshStandardMaterial({ color: 0xb98266, roughness: 0.83 });
   const jacket = new THREE.MeshStandardMaterial({ color: 0x657078, roughness: 0.92 });
@@ -2686,10 +2690,12 @@ function makeFreeRoamPedestrian() {
     [1.37, 0.31, 0.145], [1.44, 0.265, 0.125], [1.49, 0.12, 0.09],
     [1.50, 0.035, 0.035],
   ]), jacket);
-  addPart(character, profileGeometry([
+  const pelvisGeometry = profileGeometry([
     [0.66, 0.16, 0.11], [0.72, 0.205, 0.13], [0.82, 0.235, 0.14],
     [0.91, 0.235, 0.135], [0.99, 0.205, 0.115], [1.02, 0.17, 0.095],
-  ]), trousers);
+  ]);
+  pelvisGeometry.translate(0, -pelvis.position.y, 0);
+  addPart(pelvis, pelvisGeometry, trousers);
 
   // A restrained open collar and shirt front sit naturally on the jacket chest.
   const shirtShape = new THREE.Shape();
@@ -2719,8 +2725,9 @@ function makeFreeRoamPedestrian() {
   for (const y of [1.25, 1.18, 1.11]) {
     addPart(character, new THREE.SphereGeometry(0.009, 8, 6), belt, 0, y, -0.16);
   }
-  addPart(character, new THREE.CylinderGeometry(0.226, 0.23, 0.065, 24), belt, 0, 1.005, 0);
-  addPart(character, new THREE.BoxGeometry(0.065, 0.045, 0.014), pistolSteel, 0, 1.005, -0.229);
+  addPart(pelvis, new THREE.CylinderGeometry(0.226, 0.23, 0.065, 24), belt, 0, 1.005 - pelvis.position.y, 0);
+  addPart(pelvis, new THREE.BoxGeometry(0.065, 0.045, 0.014), pistolSteel,
+    0, 1.005 - pelvis.position.y, -0.229);
 
   // Neck and tapered head use smooth profiles; the face has understated eyes, brows, ears and nose.
   addPart(character, new THREE.CylinderGeometry(0.073, 0.09, 0.17, 20), skin, 0, 1.535, 0);
@@ -2762,33 +2769,52 @@ function makeFreeRoamPedestrian() {
 
   const makeLimb = (side, isArm) => {
     const pivot = new THREE.Group();
-    pivot.position.set(isArm ? side * 0.315 : side * 0.12, isArm ? 1.405 : 0.81, 0);
-    character.add(pivot);
+    pivot.name = isArm ? `shoulder-joint-${side}` : `hip-joint-${side}`;
+    pivot.position.set(
+      isArm ? side * 0.315 : side * 0.12,
+      isArm ? 1.405 : 0.81 - pelvis.position.y,
+      0,
+    );
+    (isArm ? character : pelvis).add(pivot);
     if (isArm) {
+      addPart(pivot, new THREE.SphereGeometry(0.106, 16, 12), jacket, 0, -0.055, 0);
       addPart(pivot, new THREE.CapsuleGeometry(0.105, 0.2, 8, 16), jacket, 0, -0.18, 0);
-      addPart(pivot, new THREE.SphereGeometry(0.086, 16, 12), jacket, 0, -0.37, 0);
-      addPart(pivot, new THREE.CapsuleGeometry(0.078, 0.21, 8, 16), jacket, 0, -0.55, -0.004);
-      addPart(pivot, new THREE.CylinderGeometry(0.068, 0.071, 0.042, 14), jacket, 0, -0.68, -0.004);
-      const hand = addPart(pivot, new THREE.SphereGeometry(0.067, 14, 12), skin, 0, -0.742, -0.012);
+      const elbow = new THREE.Group();
+      elbow.name = `elbow-joint-${side}`;
+      elbow.position.y = -0.37;
+      pivot.add(elbow);
+      addPart(elbow, new THREE.SphereGeometry(0.081, 16, 12), jacket);
+      addPart(elbow, new THREE.CapsuleGeometry(0.078, 0.21, 8, 16), jacket, 0, -0.18, -0.004);
+      addPart(elbow, new THREE.CylinderGeometry(0.068, 0.071, 0.042, 14), jacket, 0, -0.31, -0.004);
+      const hand = addPart(elbow, new THREE.SphereGeometry(0.067, 14, 12), skin, 0, -0.372, -0.012);
       hand.scale.set(0.78, 1.2, 0.68);
-      const thumb = addPart(pivot, new THREE.CapsuleGeometry(0.018, 0.052, 4, 8), skin, side * 0.05, -0.72, -0.04);
+      const thumb = addPart(elbow, new THREE.CapsuleGeometry(0.018, 0.052, 4, 8), skin,
+        side * 0.05, -0.35, -0.04);
       thumb.rotation.z = side * 0.65;
+      pivot.userData.elbow = elbow;
     } else {
+      addPart(pivot, new THREE.SphereGeometry(0.125, 16, 12), trousers, 0, -0.02, 0);
       addPart(pivot, new THREE.CapsuleGeometry(0.125, 0.25, 8, 16), trousers, 0, -0.18, 0);
-      addPart(pivot, new THREE.SphereGeometry(0.094, 16, 12), trousers, 0, -0.39, 0);
       const knee = new THREE.Group();
+      knee.name = `knee-joint-${side}`;
       knee.position.y = -0.39;
       pivot.add(knee);
+      addPart(knee, new THREE.SphereGeometry(0.094, 16, 12), trousers);
       const shin = addPart(knee, new THREE.CapsuleGeometry(0.088, 0.24, 8, 16), trousers, 0, -0.19, 0.002);
       shin.castShadow = true;
+      const ankle = new THREE.Group();
+      ankle.name = `ankle-joint-${side}`;
+      ankle.position.set(0, -0.36, -0.015);
+      knee.add(ankle);
+      addPart(ankle, new THREE.SphereGeometry(0.071, 14, 10), trousers, 0, 0.012, 0.008);
       const foot = new THREE.Group();
-      foot.position.set(0, -0.36, -0.015);
-      knee.add(foot);
+      ankle.add(foot);
       const shoe = addPart(foot, new THREE.CapsuleGeometry(0.077, 0.17, 6, 12), shoes, 0, -0.035, -0.055);
       shoe.rotation.x = Math.PI / 2;
       shoe.scale.set(1, 0.92, 1);
       addPart(foot, new THREE.BoxGeometry(0.15, 0.018, 0.24), belt, 0, -0.06, -0.055);
       pivot.userData.knee = knee;
+      pivot.userData.ankle = ankle;
       pivot.userData.foot = foot;
     }
     return pivot;
@@ -2798,8 +2824,8 @@ function makeFreeRoamPedestrian() {
 
   // The firearm remains attached to the right hand and is aimed independently of the body.
   const pistol = new THREE.Group();
-  pistol.position.set(0, -0.69, -0.018);
-  arms[1].add(pistol);
+  pistol.position.set(0, -0.32, -0.018);
+  arms[1].userData.elbow.add(pistol);
   addPart(pistol, new THREE.BoxGeometry(0.084, 0.068, 0.205), pistolGrip, 0, 0.02, -0.025);
   addPart(pistol, new THREE.BoxGeometry(0.074, 0.043, 0.205), pistolSteel, 0, 0.064, -0.038);
   const barrel = addPart(pistol, new THREE.CylinderGeometry(0.013, 0.013, 0.085, 8), pistolSteel, 0, 0.045, -0.177);
@@ -2808,7 +2834,7 @@ function makeFreeRoamPedestrian() {
   const muzzleFlash = addPart(pistol, new THREE.SphereGeometry(0.028, 8, 6), muzzleMaterial, 0, 0.045, -0.22);
   muzzleFlash.visible = false;
 
-  return { group: character, arms, legs, pistol, muzzle: muzzleFlash, muzzleFlash, aimBlend: 0 };
+  return { group: character, pelvis, arms, legs, pistol, muzzle: muzzleFlash, muzzleFlash, aimBlend: 0 };
 }
 function isTouchPortraitViewport() {
   if (typeof window === 'undefined') return false;
@@ -4075,9 +4101,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (onFoot) {
         pedestrian.aimBlend = 1;
         const applyAimPose = () => {
+          pedestrian.arms[1].userData.elbow.rotation.x = -0.06;
+          pedestrian.arms[0].userData.elbow.rotation.x = 0.14;
           pedestrian.arms[1].rotation.set(1.02 + aimPose.pitch, aimPose.armYaw, -0.08);
           pedestrian.arms[0].rotation.set(0.72 + aimPose.pitch, aimPose.armYaw, 0.62);
-          pedestrian.pistol.rotation.x = -1.02;
+          pedestrian.pistol.rotation.x = -1.02 - pedestrian.arms[1].userData.elbow.rotation.x;
           pedestrian.group.updateMatrixWorld(true);
         };
         applyAimPose();
@@ -4480,6 +4508,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const aiming = pressed('KeyZ') || pressed('MouseLeft') || mouseAimRef.current.active;
         pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
         const aimBlend = pedestrian.aimBlend;
+        const leftElbow = pedestrian.arms[0].userData.elbow;
+        const rightElbow = pedestrian.arms[1].userData.elbow;
+        leftElbow.rotation.x = -0.08 + aimBlend * 0.22 - stride * 0.08;
+        rightElbow.rotation.x = -0.13 + aimBlend * 0.07 + stride * 0.08;
+        pedestrian.pelvis.rotation.set(
+          -stride * 0.025,
+          clamp(-walkState.turnRate * 0.035, -0.045, 0.045),
+          clamp(-normalizedStrafe * 0.045 + Math.sin(walkState.phase) * gaitWeight * 0.018, -0.06, 0.06),
+        );
         pedestrian.legs[0].rotation.x = stride;
         pedestrian.legs[1].rotation.x = -stride;
         pedestrian.legs[0].userData.knee.rotation.x = leftSwing * (0.42 + runBlend * 0.2);
@@ -4487,16 +4524,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         pedestrian.legs[0].userData.foot.rotation.x = -leftSwing * 0.18;
         pedestrian.legs[1].userData.foot.rotation.x = -rightSwing * 0.18;
         pedestrian.arms[0].rotation.set(
-          -stride * (0.42 - runBlend * 0.07) + aimBlend * (0.72 + aimPose.pitch),
+          -stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (0.72 + aimPose.pitch),
           aimPose.armYaw * aimBlend,
           aimBlend * 0.62,
         );
         pedestrian.arms[1].rotation.set(
-          stride * (0.42 - runBlend * 0.07) + aimBlend * (1.02 + aimPose.pitch),
+          stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (1.02 + aimPose.pitch),
           aimPose.armYaw * aimBlend,
           -aimBlend * 0.08,
         );
-        pedestrian.pistol.rotation.x = -aimBlend * 1.02;
+        pedestrian.pistol.rotation.x = -aimBlend * (1.02 + rightElbow.rotation.x);
         pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
         const bodyBob = Math.abs(Math.sin(walkState.phase)) * gaitWeight * (0.016 + runBlend * 0.022);
         pedestrian.group.position.set(
