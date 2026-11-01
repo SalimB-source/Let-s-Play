@@ -29,6 +29,7 @@ import {
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import {
   VICE_CITY_OUTER_HIGHWAY,
+  viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
   viceCityRoadElevation,
@@ -239,7 +240,8 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
 }
 
 function addViceCityOuterHighway(scene, roadElevation) {
-  const { edge, halfWidth, cityGridLimit } = VICE_CITY_OUTER_HIGHWAY;
+  const { edge, halfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
+  const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
   const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.92 });
   const markingMat = new THREE.MeshBasicMaterial({ color: 0xf2efe5, side: THREE.DoubleSide });
   const accessMarkMat = new THREE.MeshBasicMaterial({ color: 0xe8dfc5, side: THREE.DoubleSide });
@@ -268,7 +270,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
           const z = point.z + normalZ * offset;
           const vertex = (index * 2 + edgeIndex) * 3;
           positions[vertex] = x;
-          positions[vertex + 1] = roadElevation(x, z) + heightOffset;
+          positions[vertex + 1] = highwayElevation(x, z) + heightOffset;
           positions[vertex + 2] = z;
         }
         if (index < pointCount - 1) {
@@ -327,7 +329,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
           ];
           for (const corner of [0, 1, 2, 0, 2, 3]) {
             const [dashX, dashZ] = corners[corner];
-            allDashVertices.push(dashX, roadElevation(dashX, dashZ) + 0.071, dashZ);
+            allDashVertices.push(dashX, highwayElevation(dashX, dashZ) + 0.071, dashZ);
           }
         }
         nextDashAt += 22;
@@ -360,7 +362,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
         for (const outerSide of [-1, 1]) {
           const x = centerX - normalX * outerSide * 17;
           const z = centerZ - normalZ * outerSide * 17;
-          const y = roadElevation(x, z);
+          const y = highwayElevation(x, z);
           const pole = new THREE.Mesh(poleGeometry, poleMat);
           pole.position.set(x, y + 3.5, z);
           pole.castShadow = true;
@@ -372,6 +374,37 @@ function addViceCityOuterHighway(scene, roadElevation) {
         nextLampAt += 125;
       }
       distance += length;
+    }
+  }
+
+  const overpassRailMat = new THREE.MeshStandardMaterial({ color: 0x92999c, roughness: 0.48, metalness: 0.68 });
+  const overpassSupportMat = new THREE.MeshStandardMaterial({ color: 0x777e80, roughness: 0.86 });
+  for (const crossingZ of [-edge, edge]) {
+    for (const outerSide of [-1, 1]) {
+      const railZ = crossingZ + outerSide * (halfWidth - 0.55);
+      const railPoints = [];
+      for (let x = -bankOffset; x <= bankOffset; x += 15) {
+        railPoints.push(new THREE.Vector3(x, highwayElevation(x, railZ) + 0.9, railZ));
+      }
+      const railCurve = new THREE.CatmullRomCurve3(railPoints, false, 'centripetal');
+      const rail = new THREE.Mesh(new THREE.TubeGeometry(railCurve, 48, 0.13, 6, false), overpassRailMat);
+      rail.name = 'vice-city-highway-overpass-guardrail';
+      rail.castShadow = true;
+      scene.add(rail);
+    }
+    for (const supportX of [-55, 55]) {
+      for (const outerSide of [-1, 1]) {
+        const supportHeight = Math.max(1.2, highwayElevation(supportX, crossingZ) - 0.3);
+        const support = new THREE.Mesh(
+          new THREE.BoxGeometry(3.2, supportHeight, 2.4),
+          overpassSupportMat,
+        );
+        support.name = 'vice-city-highway-overpass-pier';
+        support.position.set(supportX, supportHeight / 2 - 0.06, crossingZ + outerSide * (halfWidth + 4.5));
+        support.castShadow = true;
+        support.receiveShadow = true;
+        scene.add(support);
+      }
     }
   }
 
@@ -394,7 +427,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
     for (let index = 0; index < vertices.count; index += 1) {
       const x = horizontal ? center + vertices.getX(index) : fixed + vertices.getX(index);
       const z = horizontal ? fixed + vertices.getZ(index) : center + vertices.getZ(index);
-      vertices.setY(index, roadElevation(x, z) + 0.04);
+      vertices.setY(index, highwayElevation(x, z) + 0.04);
     }
     vertices.needsUpdate = true;
     geometry.computeVertexNormals();
@@ -410,7 +443,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
       dash.rotation.x = -Math.PI / 2;
       const x = horizontal ? along : fixed;
       const z = horizontal ? fixed : along;
-      dash.position.set(x, roadElevation(x, z) + 0.075, z);
+      dash.position.set(x, highwayElevation(x, z) + 0.075, z);
       scene.add(dash);
     }
   };
@@ -2017,20 +2050,32 @@ function makeCity(scene) {
     const portSurface = portSurfaceRegions.find((region) => insideRegion(region, x, z));
     if (portSurface) return portSurface.height;
     if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
-    if (viceCityOuterHighwayContains(x, z)) return roadElevation(x, z) + 0.035;
+    if (viceCityOuterHighwayContains(x, z)) {
+      return roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z) + 0.035;
+    }
     const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
     return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
   };
-  const isCanalBlocked = (x, z) => Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
-  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => viceCityCanalBarrierCrossed(
-    fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
-  );
+  const isCanalBlocked = (x, z) => {
+    const onOuterOverpass = viceCityOuterHighwayBridgeHeight(x, z) > 0.5
+      && viceCityOuterHighwayContains(x, z);
+    return !onOuterOverpass && Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
+  };
+  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => {
+    const crossesCanal = Math.min(fromX, toX) <= CANAL_HALF_WIDTH
+      && Math.max(fromX, toX) >= -CANAL_HALF_WIDTH;
+    const crossesOuterOverpass = crossesCanal && [-VICE_CITY_OUTER_HIGHWAY.edge, VICE_CITY_OUTER_HIGHWAY.edge].some((crossingZ) =>
+      Math.max(Math.abs(fromZ - crossingZ), Math.abs(toZ - crossingZ)) <= VICE_CITY_OUTER_HIGHWAY.halfWidth + 1);
+    return !crossesOuterOverpass && viceCityCanalBarrierCrossed(
+      fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
+    );
+  };
   const surfacePitch = (x, z, yaw) => {
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);
-    const ahead = roadElevation(x + forwardX * 2, z + forwardZ * 2);
-    return Math.atan2(ahead - roadElevation(x, z), 2);
+    const ahead = surfaceHeight(x + forwardX * 2, z + forwardZ * 2);
+    return Math.atan2(ahead - surfaceHeight(x, z), 2);
   };
   const fallenFenceSections = [];
   const hideFenceInstance = (mesh, index) => {
