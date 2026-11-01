@@ -1127,6 +1127,7 @@ function targetMode(carte, lienActif = false) {
   // Brise-lame ne désigne qu'une créature adverse : la table filtrera celles
   // qui portent réellement une arme (voir `canTarget`).
   if (carte?.effet?.type === 'destruction-arme') return 'ennemi';
+  if (carte?.effet?.type === 'destruction-cible') return 'tous';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'toutes-autres' ? null : carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
   if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
@@ -9748,7 +9749,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     ? [...duel.joueur.creatures, ...duel.sorcier.creatures]
       .filter((entite) => entite.id !== attenteBoualem.cibleId && entite.pv > 0
         && !rpgEstProtegee(entite, attenteBoualem.sourceElement)
-        && !rpgEstProtegeeDesSorts(entite, attenteBoualem.sourceElement, attenteBoualem.sourceType))
+        && !rpgEstProtegeeDesSorts(entite, attenteBoualem.sourceElement, attenteBoualem.sourceType)
+        && !(attenteBoualem.effet?.type === 'destruction-cible' && (cardById(entite.carteId)?.kind === 'site' || !cibleRespecteCoutMax({ effet: attenteBoualem.effet }, entite))))
       .map((entite) => entite.id)
     : []);
   const attenteBoualemVisible = Boolean(attenteBoualem && idsCiblesBoualem.size > 0);
@@ -13508,7 +13510,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       && !(carteCiblee?.effet?.type === 'destruction-arme' && !armesPortees(entite).length)
                           && (duel.arriveeEnAttente?.interceptionAttaque || !rpgEstProtegee(entite, cardColors(carteCiblee)))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
-                          && cibleRespecteCoutMax(carteCiblee, entite))
+                          && cibleRespecteCoutMax(carteCiblee, entite)
+                          && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (attenteAbordage && cibleAbordageLegale(entite))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige'))
                         || (cibleAttaqueEnCours && ciblesCoupRapideLegales(
@@ -13608,7 +13611,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                             || Boolean(carteCiblee?.arrivee?.cibleSoi))
                           && !rpgEstProtegee(entite, cardColors(carteCiblee))
                           && !(carteCiblee?.kind === 'magie' && rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee)))
-                          && cibleRespecteCoutMax(carteCiblee, entite))
+                          && cibleRespecteCoutMax(carteCiblee, entite)
+                          && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
                       sacrificeTarget={Boolean(sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours

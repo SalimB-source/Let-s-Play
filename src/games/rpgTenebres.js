@@ -279,6 +279,24 @@ export const RPG_TENEBRES_FIGURES = RPG_TENEBRES_CREATURES.slice(12);
 
 export const RPG_TENEBRES_MAGIES = [
   carte({
+    id: 'effacement-des-faibles', name: 'Effacement des faibles',
+    kind: 'magie', cost: 3, rarity: 'inhabituelle',
+    typeLine: 'Sorcellerie — Ténèbres',
+    effet: { type: 'destruction-cible', cible: 'creature', coutMax: 3 },
+    cibles: ['creature', 'creature-amie'],
+    text: 'Détruisez une créature ciblée de coût 3 ou moins.',
+    flavor: 'Les ombres effacent les noms que la pierre ne protège plus.',
+  }),
+  carte({
+    id: 'le-jugement-des-colosses', name: 'Le Jugement des colosses',
+    kind: 'magie', cost: 5, rarity: 'rare',
+    typeLine: 'Sorcellerie — Ténèbres',
+    effet: { type: 'destruction-cible', cible: 'creature', coutMin: 4 },
+    cibles: ['creature', 'creature-amie'],
+    text: 'Détruisez une créature ciblée de coût 4 ou plus.',
+    flavor: 'Même les géants finissent par plier devant la nuit.',
+  }),
+  carte({
     id: 'la-derniere-pesee',
     name: 'La Dernière Pesée',
     kind: 'magie',

@@ -60,6 +60,8 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'effacement-des-faibles': 'sort-tenebres-v1',
+  'le-jugement-des-colosses': 'sort-tenebres-v1',
   'general-du-croissant-noir': 'general-cavalier-v3',
   'gardienne-du-croissant': 'gardien-croissant-lumiere-v1',
   'fleau-de-la-lune-noire': 'fleau-souls-v2',
