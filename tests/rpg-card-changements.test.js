@@ -151,29 +151,52 @@ test('la Furie de la Völva ne soigne plus personne : elle garde son +2 ATQ', ()
   }
 });
 
-test('Tour de Neige gèle son attaquant bloqueur et Tour des Flots le renvoie en main', () => {
-  for (const [tourId, expected] of [['tour-de-neige', 'gel'], ['tour-des-flots', 'main']]) {
-    const d = duel();
-    const attaquant = poser(d, 'joueur', 'chien-du-guet');
-    d.sorcier.main.push(tourId);
-    const towerResult = rpgJouerCreature(d, 'sorcier', tourId, attaquant.id);
-    assert.equal(towerResult.ok, true);
-    const tower = towerResult.entite;
-    attaquant.gelToursRestants = 0; // ne teste que le déclencheur de blocage, pas l’arrivée de la Tour
-    attaquant.ready = true;
-    tower.ready = true;
-    rpgReglerHasard(d, () => 0.99);
-    const result = rpgLancerAttaque(d, 'joueur', [attaquant.id], { [attaquant.id]: [tower.id] });
-    assert.equal(result.ok, true);
-    if (expected === 'gel') assert.ok(attaquant.gelToursRestants > 0);
-    else {
-      assert.equal(tower.pv, tower.pvMax - 2, 'la Tour encaisse d’abord les dégâts de combat de l’attaquant');
-      assert.ok(d.joueur.main.includes('chien-du-guet'), 'le renvoi se résout après les blessures');
-      assert.equal(d.joueur.creatures.includes(attaquant), false);
-    }
-  }
+test('Tour de Neige gèle à son arrivée, mais pas en bloquant', () => {
+  const d = duel();
+  const attaquant = poser(d, 'joueur', 'dame-des-neuf-mondes');
+  d.sorcier.main.push('tour-de-neige');
+  const resultat = rpgJouerCreature(d, 'sorcier', 'tour-de-neige', attaquant.id);
+  assert.equal(resultat.ok, true);
+  const tour = resultat.entite;
+  assert.ok(attaquant.gelToursRestants > 0, 'le gel d’arrivée reste actif');
+  assert.equal(cardById('tour-de-neige').combat, undefined, 'aucun effet de gel au blocage');
+  attaquant.gelToursRestants = 0;
+  attaquant.ready = true; tour.ready = true;
+  const avant = tour.pv;
+  const combat = rpgLancerAttaque(d, 'joueur', [attaquant.id], { [attaquant.id]: [tour.id] });
+  assert.equal(combat.ok, true);
+  assert.equal(attaquant.gelToursRestants, 0, 'bloquer ne gèle pas la Dame');
+  assert.equal(tour.pv, avant - attaquant.atk, 'la Dame inflige ses dégâts normalement');
 });
 
+test('la Dame ne gèle pas lorsqu’une Attaque ciblée contre la Tour de Neige rate', () => {
+  const d = duel();
+  const dame = poser(d, 'joueur', 'dame-des-neuf-mondes');
+  d.sorcier.main.push('tour-de-neige');
+  const tour = rpgJouerCreature(d, 'sorcier', 'tour-de-neige', dame.id).entite;
+  dame.gelToursRestants = 0; dame.ready = true;
+  const pvTour = tour.pv;
+  rpgReglerHasard(d, () => 0);
+  const res = rpgLancerAttaque(d, 'joueur', [dame.id], {}, null, null, { [dame.id]: tour.id });
+  assert.equal(res.ok, true);
+  assert.equal(res.resume.coupsRapides[0].rate, true);
+  assert.equal(dame.gelToursRestants, 0);
+  assert.equal(tour.pv, pvTour);
+});
+
+test('Tour des Flots renvoie son attaquant après les blessures', () => {
+  const d = duel();
+  const attaquant = poser(d, 'joueur', 'chien-du-guet');
+  d.sorcier.main.push('tour-des-flots');
+  const tour = rpgJouerCreature(d, 'sorcier', 'tour-des-flots').entite;
+  attaquant.ready = true; tour.ready = true;
+  rpgReglerHasard(d, () => 0.99);
+  const result = rpgLancerAttaque(d, 'joueur', [attaquant.id], { [attaquant.id]: [tour.id] });
+  assert.equal(result.ok, true);
+  assert.equal(tour.pv, tour.pvMax - 2);
+  assert.ok(d.joueur.main.includes('chien-du-guet'));
+  assert.equal(d.joueur.creatures.includes(attaquant), false);
+});
 
 test('Boualem contre l’effet ciblé, puis c’est son contrôleur qui désigne la nouvelle cible', () => {
   const d = duel();

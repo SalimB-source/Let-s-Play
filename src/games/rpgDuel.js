@@ -2714,9 +2714,8 @@ function degatsCreatureCombattue(carte, quand) {
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
-/** Effet de blocage des Tours de Neige et des Flots. Il se résout après les
- * capacités pré-combat : le gel laisse les blessures du combat se résoudre,
- * tandis que le renvoi des Flots attend la fin des blessures normales.
+/** Effet de blocage déclaré par une carte. Le renvoi de la Tour des Flots
+ * attend la fin des blessures normales ; la Tour de Neige ne gèle qu'à son arrivée.
  */
 function resoudreCapaciteBlocage(duel, coteBloqueur, bloqueurId, attaquantId, apresBlessures = false, bloqueurSnapshot = null) {
   const bloqueur = duel[coteBloqueur]?.creatures.find((e) => e.id === bloqueurId) ?? bloqueurSnapshot;
