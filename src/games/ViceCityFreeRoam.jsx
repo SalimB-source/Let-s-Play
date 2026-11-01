@@ -3032,7 +3032,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       scene.add(mesh);
       shots.push({ mesh, x, z, directionX, directionZ, height, age: 0, distance: 0 });
       if (soundOnRef.current) audioRef.current?.gunshot?.();
-    };รุ่ง
+    };
     const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
       const dx = x - carX;
       const dz = z - carZ;
@@ -3512,7 +3512,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           [isOnFoot ? 'KeyZ' : 'ArrowDown', '□', isOnFoot ? 'Tirer' : 'Freiner', isOnFoot ? 'foot-shoot' : 'brake'],
           ['KeyZ', '○', isOnFoot ? 'Tir en voiture' : 'Tirer', 'shoot'],
         ].map(([code, glyph, label, action]) => (
-          <button key={code} type="button" data-action={action} aria-label={label} title={label}
+          <button key={action} type="button" data-action={action} aria-label={label} title={label}
             disabled={isOnFoot && action === 'shoot'}
             onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}

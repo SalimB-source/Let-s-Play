@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   CITY_RUSH_CARS,
@@ -59,6 +60,12 @@ import {
 
 const DT = 1 / 60;
 const near = (actual, expected, epsilon = 1e-6) => Math.abs(actual - expected) <= epsilon;
+
+test('conduite libre : la déclaration du tir se ferme sans expression parasite', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /audioRef\.current\?\.gunshot\?\.\(\);\s*\};\s*const bulletOverlaps/u,
+    'aucun identifiant isolé ne doit interrompre le montage du jeu après fireShot');
+});
 const course = (id) => CITY_RUSH_COURSES.find((item) => item.id === id);
 const laneXsOf = (config) => Array.from({ length: config.laneCount }, (_, lane) => config.laneX(lane));
 const boundsFor = (id, halfWidth = 0.95) => {
