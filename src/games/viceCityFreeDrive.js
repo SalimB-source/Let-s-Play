@@ -50,6 +50,17 @@ export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
   };
 }
 
+/** Dead-zoned, length-limited 2D stick vector for third-person on-foot movement. */
+export function viceCityFreeDriveJoystickVector(x = 0, y = 0) {
+  const safeX = clamp(Number(x) || 0, -1, 1);
+  const safeY = clamp(Number(y) || 0, -1, 1);
+  const length = Math.hypot(safeX, safeY);
+  if (length <= 0.14) return { x: 0, y: 0, magnitude: 0 };
+  const magnitude = Math.min(1, (length - 0.14) / 0.86);
+  const scale = magnitude / length;
+  return { x: safeX * scale, y: safeY * scale, magnitude };
+}
+
 /** A lightweight projectile nudges the car without overpowering its mass. */
 export function viceCityFreeDriveShotImpulse(mass = 1, strength = 5.2) {
   const safeMass = Math.max(0.35, Number(mass) || 1);

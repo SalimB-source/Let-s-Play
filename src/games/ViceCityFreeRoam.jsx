@@ -21,6 +21,7 @@ import {
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
+  viceCityFreeDriveJoystickVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
@@ -2385,12 +2386,16 @@ function makeFreeRoamPedestrian() {
   const character = new THREE.Group();
   character.name = 'vice-city-free-roam-pedestrian';
   const skin = new THREE.MeshStandardMaterial({ color: 0xc98d6b, roughness: 0.88 });
-  const shirt = new THREE.MeshStandardMaterial({ color: 0x32a7a5, roughness: 0.82 });
-  const shirtTrim = new THREE.MeshStandardMaterial({ color: 0xef6683, roughness: 0.75 });
-  const trousers = new THREE.MeshStandardMaterial({ color: 0x263947, roughness: 0.92 });
-  const shoes = new THREE.MeshStandardMaterial({ color: 0xf2d6b3, roughness: 0.82 });
-  const hair = new THREE.MeshStandardMaterial({ color: 0x392a28, roughness: 0.94 });
-  const eye = new THREE.MeshBasicMaterial({ color: 0x17191d });
+  const jacket = new THREE.MeshStandardMaterial({ color: 0xf1e4cc, roughness: 0.82 });
+  const shirt = new THREE.MeshStandardMaterial({ color: 0x22a7a7, roughness: 0.78 });
+  const shirtTrim = new THREE.MeshStandardMaterial({ color: 0xef5f82, roughness: 0.72 });
+  const trousers = new THREE.MeshStandardMaterial({ color: 0x202f40, roughness: 0.9 });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0xf2e5d3, roughness: 0.78 });
+  const hair = new THREE.MeshStandardMaterial({ color: 0x302326, roughness: 0.94 });
+  const belt = new THREE.MeshStandardMaterial({ color: 0x171c25, roughness: 0.76, metalness: 0.18 });
+  const gold = new THREE.MeshStandardMaterial({ color: 0xe5b45e, roughness: 0.4, metalness: 0.62 });
+  const glasses = new THREE.MeshStandardMaterial({ color: 0x1a2531, roughness: 0.3, metalness: 0.22 });
+  const lens = new THREE.MeshBasicMaterial({ color: 0x55c6d1, toneMapped: false });
   const addPart = (parent, geometry, material, x, y, z) => {
     const part = new THREE.Mesh(geometry, material);
     part.position.set(x, y, z);
@@ -2399,26 +2404,40 @@ function makeFreeRoamPedestrian() {
     parent.add(part);
     return part;
   };
-  addPart(character, new THREE.CapsuleGeometry(0.31, 0.48, 4, 8), shirt, 0, 1.25, 0);
+  addPart(character, new THREE.CapsuleGeometry(0.31, 0.48, 4, 8), jacket, 0, 1.25, 0);
+  addPart(character, new THREE.BoxGeometry(0.3, 0.46, 0.045), shirt, 0, 1.23, -0.29);
+  for (const side of [-1, 1]) {
+    const lapel = addPart(character, new THREE.BoxGeometry(0.075, 0.42, 0.045), shirtTrim,
+      side * 0.145, 1.35, -0.302);
+    lapel.rotation.z = side * -0.24;
+  }
+  addPart(character, new THREE.BoxGeometry(0.025, 0.36, 0.018), gold, 0, 1.22, -0.321);
+  addPart(character, new THREE.CylinderGeometry(0.22, 0.225, 0.09, 8), belt, 0, 0.96, 0);
+  addPart(character, new THREE.BoxGeometry(0.105, 0.085, 0.035), gold, 0, 0.96, -0.232);
   addPart(character, new THREE.CylinderGeometry(0.215, 0.24, 0.38, 8), trousers, 0, 0.76, 0);
   addPart(character, new THREE.CylinderGeometry(0.085, 0.1, 0.18, 8), skin, 0, 1.69, 0);
   addPart(character, new THREE.SphereGeometry(0.225, 12, 10), skin, 0, 1.94, 0);
   addPart(character, new THREE.SphereGeometry(0.232, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), hair, 0, 2.015, 0.012);
+  addPart(character, new THREE.SphereGeometry(0.045, 8, 6), skin, 0, 1.91, -0.222);
+  addPart(character, new THREE.BoxGeometry(0.12, 0.018, 0.025), glasses, 0, 1.88, -0.216);
+  addPart(character, new THREE.BoxGeometry(0.38, 0.045, 0.04), glasses, 0, 1.985, -0.207);
   for (const side of [-1, 1]) {
-    addPart(character, new THREE.SphereGeometry(0.026, 7, 6), eye, side * 0.074, 1.965, -0.205);
-    addPart(character, new THREE.BoxGeometry(0.25, 0.055, 0.08), shirtTrim, side * 0.14, 1.39, -0.285);
+    addPart(character, new THREE.BoxGeometry(0.155, 0.095, 0.045), lens, side * 0.09, 1.96, -0.218);
+    addPart(character, new THREE.BoxGeometry(0.17, 0.035, 0.05), hair, side * 0.19, 1.99, -0.03);
   }
   const makeLimb = (side, isArm) => {
     const pivot = new THREE.Group();
     pivot.position.set(isArm ? side * 0.37 : side * 0.145, isArm ? 1.48 : 0.64, 0);
     character.add(pivot);
     if (isArm) {
-      addPart(pivot, new THREE.CylinderGeometry(0.095, 0.115, 0.62, 7), shirt, 0, -0.29, 0);
+      addPart(pivot, new THREE.CylinderGeometry(0.095, 0.115, 0.62, 7), jacket, 0, -0.29, 0);
+      addPart(pivot, new THREE.CylinderGeometry(0.108, 0.108, 0.075, 8), shirtTrim, 0, -0.55, 0);
       addPart(pivot, new THREE.SphereGeometry(0.105, 8, 6), skin, 0, -0.65, 0);
       addPart(pivot, new THREE.CylinderGeometry(0.078, 0.09, 0.2, 7), skin, 0, -0.51, 0);
     } else {
       addPart(pivot, new THREE.CylinderGeometry(0.125, 0.105, 0.66, 7), trousers, 0, -0.32, 0);
-      addPart(pivot, new THREE.BoxGeometry(0.2, 0.13, 0.34), shoes, 0, -0.56, -0.085);
+      addPart(pivot, new THREE.BoxGeometry(0.205, 0.13, 0.35), shoes, 0, -0.56, -0.085);
+      addPart(pivot, new THREE.BoxGeometry(0.205, 0.04, 0.35), shirtTrim, 0, -0.615, -0.085);
     }
     return pivot;
   };
@@ -2497,10 +2516,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     if (joystickPointerRef.current !== event.pointerId) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const travel = Math.max(1, Math.min(bounds.width, bounds.height) * 0.34);
-    const x = clamp((event.clientX - (bounds.left + bounds.width / 2)) / travel, -1, 1);
-    touchAxesRef.current = { x, y: 0 };
+    const rawX = (event.clientX - (bounds.left + bounds.width / 2)) / travel;
+    const rawY = (event.clientY - (bounds.top + bounds.height / 2)) / travel;
+    const magnitude = Math.hypot(rawX, rawY);
+    const scale = magnitude > 1 ? 1 / magnitude : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    touchAxesRef.current = { x, y };
     joystickKnobRef.current?.style.setProperty('--stick-x', `${x * travel}px`);
-    joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
+    joystickKnobRef.current?.style.setProperty('--stick-y', `${y * travel}px`);
   };
   const startJoystick = (event) => {
     event.preventDefault();
@@ -2943,6 +2967,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       city.updateCanalWater(state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
+      const onFootJoystick = viceCityFreeDriveJoystickVector(touchAxesRef.current.x, touchAxesRef.current.y);
       const interactionDown = pressed('KeyE');
       const interactionJustPressed = interactionDown && !interactionWasDown;
       interactionWasDown = interactionDown;
@@ -2996,36 +3021,43 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         state.steer = 0;
         throttle = pressed('ArrowUp') || pressed('KeyW');
         brake = pressed('ArrowDown') || pressed('KeyS');
-        steerInput = clamp(
+        const turnInput = clamp(
           (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
             - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
-            + joystickInput.steer,
+            + onFootJoystick.x,
           -1,
           1,
         );
-        walkState.heading += steerInput * 2.25 * dt;
-        const walkDirectionX = Math.sin(walkState.heading);
-        const walkDirectionZ = -Math.cos(walkState.heading);
-        const moveDirection = Number(throttle) - Number(brake);
-        const walkSpeed = moveDirection * 2.8;
-        const nextWalkX = walkState.x + walkDirectionX * walkSpeed * dt;
-        const nextWalkZ = walkState.z + walkDirectionZ * walkSpeed * dt;
+        walkState.heading += turnInput * 2.35 * dt;
+        const moveInput = clamp(Number(throttle) - Number(brake) - onFootJoystick.y, -1, 1);
+        const movementMagnitude = Math.abs(moveInput);
+        const forwardX = Math.sin(walkState.heading);
+        const forwardZ = -Math.cos(walkState.heading);
+        const shiftRun = pressed('ShiftLeft') || pressed('ShiftRight') || (throttle && !brake)
+          || (onFootJoystick.magnitude >= 0.62 && moveInput > 0);
+        const runBlend = shiftRun ? 1 : clamp((movementMagnitude - 0.55) / 0.45, 0, 1);
+        const walkSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
+        const signedWalkSpeed = Math.sign(moveInput) * walkSpeed;
+        const nextWalkX = walkState.x + forwardX * signedWalkSpeed * dt;
+        const nextWalkZ = walkState.z + forwardZ * signedWalkSpeed * dt;
         const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
           || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
-        if (!blocked) {
+        if (!blocked && movementMagnitude > 0.04) {
           walkState.x = nextWalkX;
           walkState.z = nextWalkZ;
           walkState.speed = walkSpeed;
         } else walkState.speed = 0;
-        walkState.phase += dt * (walkState.speed ? 9 : 2.2);
-        const stride = walkState.speed ? Math.sin(walkState.phase) * 0.42 : 0;
+        const running = walkState.speed > 3.45;
+        walkState.phase += dt * (running ? 13.5 : walkState.speed ? 8 : 2.2);
+        const stride = walkState.speed ? Math.sin(walkState.phase) * (running ? 0.62 : 0.34) : 0;
         pedestrian.legs[0].rotation.x = stride;
         pedestrian.legs[1].rotation.x = -stride;
-        pedestrian.arms[0].rotation.x = -stride * 0.8;
-        pedestrian.arms[1].rotation.x = stride * 0.8;
+        pedestrian.arms[0].rotation.x = -stride * (running ? 0.95 : 0.78);
+        pedestrian.arms[1].rotation.x = stride * (running ? 0.95 : 0.78);
+        const bodyBob = walkState.speed ? Math.abs(Math.sin(walkState.phase * 2)) * (running ? 0.045 : 0.022) : 0;
         pedestrian.group.position.set(
           walkState.x,
-          city.surfaceHeight(walkState.x, walkState.z) + (walkState.speed ? Math.abs(Math.sin(walkState.phase * 2)) * 0.025 : 0),
+          city.surfaceHeight(walkState.x, walkState.z) + bodyBob,
           walkState.z,
         );
         pedestrian.group.rotation.set(0, -walkState.heading, 0);
@@ -3159,7 +3191,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             : isOnFoot
               ? Math.hypot(walkState.x - state.x, walkState.z - state.z) <= 4.8
                 ? 'E · MONTER DANS VOTRE VOITURE'
-                : 'WASD / joystick · APPROCHEZ-VOUS DE VOTRE VOITURE'
+                : 'JOYSTICK / WASD · POUSSEZ À FOND POUR COURIR'
               : Math.abs(state.speed) <= 0.65
                 ? 'E · SORTIR DU VÉHICULE'
                 : 'FREINEZ POUR SORTIR · E';
@@ -3205,9 +3237,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       <div className="vice-free-roam-controls">
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
-          <><span><kbd>W</kbd><kbd>↑</kbd> MARCHER</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
+          <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
             <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>E</kbd> ENTRER / SORTIR</span>
-            <small>Échap : menu</small></>
+            <small>Joystick poussé à fond : courir · Échap : menu</small></>
         ) : (
           <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
             <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
@@ -3222,11 +3254,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <button ref={joystickKnobRef} type="button" tabIndex={-1} aria-hidden="true" className="vice-free-roam-joystick-knob"
             onPointerDown={(event) => event.preventDefault()} />
         </div>
-        <small>{isOnFoot ? 'TOURNER' : 'DIRIGER'}</small>
+        <small>{isOnFoot ? 'MOUVEMENT' : 'DIRIGER'}</small>
       </div>
       <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher et interagir' : 'Accélérer, freiner et tirer'}>
         {[
-          ['ArrowUp', '×', isOnFoot ? 'Marcher' : 'Accélérer', 'accelerate'],
+          ['ArrowUp', '×', isOnFoot ? 'Courir' : 'Accélérer', 'accelerate'],
           ['ArrowDown', '□', isOnFoot ? 'Reculer' : 'Freiner', 'brake'],
           ['KeyZ', '○', isOnFoot ? 'Tir en voiture' : 'Tirer', 'shoot'],
         ].map(([code, glyph, label, action]) => (
