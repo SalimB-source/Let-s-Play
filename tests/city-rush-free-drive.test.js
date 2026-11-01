@@ -146,6 +146,17 @@ test('visée souris : le corps garde son cap, seuls les bras suivent le point vi
   assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
+test('à pied : la pose de visée reste en portée pendant l’entrée/sortie avec E', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const animateStart = source.indexOf('const animate = (now) =>');
+  const footStart = source.indexOf('if (isOnFootRef.current) {', animateStart);
+  const footEnd = source.indexOf("\n      } else {\n        throttle = pressed('ArrowUp') || pressed('KeyW');", footStart);
+  assert.ok(animateStart >= 0 && footStart > animateStart && footEnd > footStart);
+  const footBranch = source.slice(footStart, footEnd);
+  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimPose') < footBranch.indexOf('if (pendingEntry)'));
+  assert.match(footBranch, /aimPose\.armYaw \* aimBlend/u);
+});
+
 test('à pied : les axes de glissade restent indépendants et la diagonale est plafonnée', () => {
   assert.deepEqual(viceCityFreeDriveFootVector(0, -1), { forward: 0, strafe: -1, magnitude: 1 });
   assert.deepEqual(viceCityFreeDriveFootVector(0, 1), { forward: 0, strafe: 1, magnitude: 1 });

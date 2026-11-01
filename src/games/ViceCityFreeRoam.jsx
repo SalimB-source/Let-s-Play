@@ -3489,6 +3489,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         state.steer = 0;
         throttle = pressed('ArrowUp') || pressed('KeyW');
         brake = pressed('ArrowDown') || pressed('KeyS');
+        const mouseAimHeading = getMouseAimHeading();
+        const aimPose = viceCityFreeDriveAimPose(walkState.heading, mouseAimHeading ?? walkState.heading);
         if (pendingEntry) {
           const dx = pendingEntry.approach.x - walkState.x;
           const dz = pendingEntry.approach.z - walkState.z;
@@ -3524,8 +3526,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             1,
           );
           walkState.heading += turnInput * 2.35 * dt;
-          const mouseAimHeading = getMouseAimHeading();
-          const aimPose = viceCityFreeDriveAimPose(walkState.heading, mouseAimHeading ?? walkState.heading);
           const footVector = viceCityFreeDriveFootVector(
             Number(throttle) - Number(brake) - onFootJoystick.y,
             Number(pressed('KeyD')) - Number(pressed('KeyA')) + onFootJoystick.x,
