@@ -2872,6 +2872,26 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const glassLocalForward = new THREE.Vector3(0, 0, 1);
     const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
     const challengeState = { current: null, rewardTotal: 0, lastUiAt: 0, lastStreetAt: 0 };
+    const missionMarker = new THREE.Group();
+    missionMarker.name = 'vice-city-active-mission-marker';
+    const missionMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xff6689, transparent: true, opacity: 0.88, depthWrite: false });
+    const missionBeamMaterial = new THREE.MeshBasicMaterial({ color: 0xff6689, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
+    const missionMarkerRing = new THREE.Mesh(new THREE.TorusGeometry(4.4, 0.2, 8, 40), missionMarkerMaterial);
+    missionMarkerRing.rotation.x = -Math.PI / 2;
+    missionMarkerRing.position.y = 0.16;
+    missionMarker.add(missionMarkerRing);
+    const missionMarkerInnerRing = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.08, 6, 32), missionMarkerMaterial);
+    missionMarkerInnerRing.rotation.x = -Math.PI / 2;
+    missionMarkerInnerRing.position.y = 0.2;
+    missionMarker.add(missionMarkerInnerRing);
+    const missionBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 1.3, 14, 12, 1, true), missionBeamMaterial);
+    missionBeam.position.y = 7.1;
+    missionMarker.add(missionBeam);
+    const missionBeacon = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.7, 8), missionMarkerMaterial);
+    missionBeacon.position.y = 14.7;
+    missionMarker.add(missionBeacon);
+    missionMarker.visible = false;
+    scene.add(missionMarker);
     const wearMarks = [];
     let skidAt = -10;
     let skidSoundAt = -10;
@@ -2883,6 +2903,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let previousStreet = '';
     let worldClock = 15;
     const walkState = { x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0 };
+    const getChallengeRouteTarget = (challenge) => {
+      if (!challenge || challenge.status !== 'active') return null;
+      if (challenge.id === 'delivery') return challenge.target;
+      return challenge.checkpoints?.[challenge.checkpointIndex] || null;
+    };
+    const updateMissionMarker = () => {
+      const challenge = challengeState.current;
+      const target = getChallengeRouteTarget(challenge);
+      missionMarker.visible = Boolean(target);
+      if (!target) return;
+      missionMarker.position.set(target.x, city.surfaceHeight(target.x, target.z), target.z);
+      missionMarkerRing.rotation.z = state.time * 0.72;
+      missionMarkerInnerRing.rotation.z = -state.time * 1.1;
+      missionBeacon.rotation.y = state.time * 0.85;
+      const pulse = 1 + Math.sin(state.time * 4.5) * 0.12;
+      missionBeacon.scale.setScalar(pulse);
+    };
     isOnFootRef.current = false;
     setIsOnFoot(false);
     let interactionWasDown = false;
@@ -2964,6 +3001,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const completeChallenge = (challenge, status) => {
       challenge.status = status;
+      if (challenge.id === 'escape') clearPolicePursuit();
       if (status === 'complete') {
         challengeState.rewardTotal += challenge.reward;
         setFreeRoamRewards(challengeState.rewardTotal);
@@ -3110,7 +3148,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       context.globalAlpha = 1;
 
       const activeChallenge = challengeState.current?.status === 'active' ? challengeState.current : null;
-      let routeTarget = gpsTarget;
+      let routeTarget = activeChallenge ? null : gpsTarget;
       if (activeChallenge?.id === 'delivery') routeTarget = activeChallenge.target;
       else if (activeChallenge?.checkpoints?.[activeChallenge.checkpointIndex]) routeTarget = activeChallenge.checkpoints[activeChallenge.checkpointIndex];
       if (routeTarget) {
@@ -3137,7 +3175,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const dx = traffic.car.position.x - playerX;
         const dz = traffic.car.position.z - playerZ;
         if (Math.hypot(dx, dz) > radius / scale) continue;
-        context.fillStyle = traffic.type === 'police' || traffic.type === 'ambulance' ? '#6fe4e6' : '#f6d98a';
+        context.fillStyle = traffic.pursuitActive ? '#ff5378'
+          : traffic.type === 'police' || traffic.type === 'ambulance' ? '#6fe4e6' : '#f6d98a';
         context.fillRect(traffic.car.position.x - 4, traffic.car.position.z - 4, 8, 8);
       }
       for (const body of city.parkedCarBodies) {
@@ -3172,10 +3211,110 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       context.lineWidth = 3;
       context.stroke();
     };
+    let pursuitSirenActive = false;
+    const updatePoliceSiren = () => {
+      const pursuers = trafficCars.filter((traffic) => traffic.pursuitActive);
+      if (!pursuers.length) {
+        if (pursuitSirenActive) audioRef.current?.policeSirenOff?.();
+        pursuitSirenActive = false;
+        return;
+      }
+      const playerX = isOnFootRef.current ? walkState.x : state.x;
+      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const nearest = pursuers.reduce((distance, traffic) => Math.min(distance,
+        Math.hypot(traffic.car.position.x - playerX, traffic.car.position.z - playerZ)), Infinity);
+      audioRef.current?.policeSiren?.({ level: clamp(1 - nearest / 150, 0.12, 1), mute: !soundOnRef.current });
+      pursuitSirenActive = true;
+    };
+    const clearPolicePursuit = () => {
+      for (const traffic of trafficCars) {
+        if (!traffic.pursuitActive) continue;
+        const car = traffic.car;
+        traffic.pursuitActive = false;
+        traffic.pursuitRoute = null;
+        traffic.pursuitRouteIndex = 0;
+        traffic.progress = traffic.axis === 'x' ? car.position.x : car.position.z;
+        traffic.crossAxis = traffic.axis === 'x' ? car.position.z : car.position.x;
+        traffic.speed = 0;
+        traffic.offsetX = 0; traffic.offsetZ = 0;
+        traffic.velocityX = 0; traffic.velocityZ = 0;
+        traffic.angularVelocity = 0; traffic.yawOffset = 0;
+        traffic.yaw = traffic.axis === 'x'
+          ? traffic.direction > 0 ? -Math.PI / 2 : Math.PI / 2
+          : traffic.direction > 0 ? Math.PI : 0;
+      }
+    };
+    const activatePolicePursuit = () => {
+      clearPolicePursuit();
+      const targetX = isOnFootRef.current ? walkState.x : state.x;
+      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      const closestPolice = trafficCars.filter((traffic) => traffic.type === 'police')
+        .sort((left, right) => Math.hypot(left.car.position.x - targetX, left.car.position.z - targetZ)
+          - Math.hypot(right.car.position.x - targetX, right.car.position.z - targetZ))
+        .slice(0, 2);
+      closestPolice.forEach((traffic, index) => {
+        traffic.pursuitActive = true;
+        traffic.pursuitRoute = null;
+        traffic.pursuitRouteIndex = 0;
+        traffic.pursuitRepathAt = state.time + index * 0.18;
+      });
+    };
+    const updatePursuitTraffic = (traffic, dt) => {
+      const car = traffic.car;
+      const targetX = isOnFootRef.current ? walkState.x : state.x;
+      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      if (!traffic.pursuitRoute || state.time >= traffic.pursuitRepathAt) {
+        traffic.pursuitRoute = viceCityGpsRoute({ x: car.position.x, z: car.position.z }, { x: targetX, z: targetZ });
+        traffic.pursuitRouteIndex = Math.min(1, Math.max(0, traffic.pursuitRoute.length - 1));
+        traffic.pursuitRepathAt = state.time + 0.85;
+      }
+      const route = traffic.pursuitRoute || [];
+      while (traffic.pursuitRouteIndex < route.length - 1
+        && Math.hypot(route[traffic.pursuitRouteIndex].x - car.position.x, route[traffic.pursuitRouteIndex].z - car.position.z) < 5) {
+        traffic.pursuitRouteIndex += 1;
+      }
+      const waypoint = route[traffic.pursuitRouteIndex] || { x: targetX, z: targetZ };
+      const dx = waypoint.x - car.position.x;
+      const dz = waypoint.z - car.position.z;
+      const distance = Math.hypot(dx, dz);
+      const travel = Math.min(16.5 * dt, Math.max(0, distance - (traffic.pursuitRouteIndex === route.length - 1 ? 5.2 : 0.8)));
+      if (distance > 1e-4 && travel > 0) {
+        const oldX = car.position.x;
+        const oldZ = car.position.z;
+        const stepX = dx / distance * travel;
+        const stepZ = dz / distance * travel;
+        const blocked = (x, z) => city.didCrossCanalWall(car.position.x, car.position.z, x, z)
+          || city.isCanalBlocked(x, z)
+          || city.buildingFootprints.some((building) => Math.abs(x - building.x) < building.halfWidth + 1.5
+            && Math.abs(z - building.z) < building.halfDepth + 1.5)
+          || city.parkedCarBodies.some((body) => !body.occupied && overlapsVehicleHitbox(
+            x, z, body.mesh.position.x, body.mesh.position.z, body.mesh.rotation.y, body.spec.width, body.spec.length));
+        let nextX = car.position.x + stepX;
+        let nextZ = car.position.z + stepZ;
+        if (blocked(nextX, nextZ)) {
+          const canX = !blocked(nextX, car.position.z);
+          const canZ = !blocked(car.position.x, nextZ);
+          if (canX) nextZ = car.position.z;
+          else if (canZ) nextX = car.position.x;
+          else { traffic.pursuitRepathAt = state.time; nextX = car.position.x; nextZ = car.position.z; }
+        }
+        car.position.set(nextX, city.roadElevation(nextX, nextZ) + 0.02, nextZ);
+        traffic.speed = Math.hypot(nextX - oldX, nextZ - oldZ) / Math.max(dt, 1e-4);
+      } else traffic.speed = 0;
+      const faceX = targetX - car.position.x;
+      const faceZ = targetZ - car.position.z;
+      if (Math.hypot(faceX, faceZ) > 0.2) car.rotation.y = Math.atan2(-faceX, -faceZ);
+      car.rotation.x = city.surfacePitch(car.position.x, car.position.z, car.rotation.y);
+      car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+      car.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(state.time * 10 + traffic.phase + beaconIndex) % 2 === 0 ? 1 : 0.08;
+      });
+    };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
       for (const traffic of trafficCars) {
+        if (traffic.pursuitActive) { updatePursuitTraffic(traffic, dt); continue; }
         const nextIndex = traffic.direction > 0
           ? Math.floor((traffic.progress + 0.001) / BLOCK) + 1
           : Math.ceil((traffic.progress - 0.001) / BLOCK) - 1;
@@ -3498,13 +3637,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return true;
     };
     challengeActionRef.current = (id) => {
-      if (id === 'cancel') { challengeState.current = null; setChallengeHud(null); return true; }
+      if (id === 'cancel') { clearPolicePursuit(); challengeState.current = null; setChallengeHud(null); missionMarker.visible = false; return true; }
+      clearPolicePursuit();
       const challenge = createViceCityChallenge(id, state.time);
       if (!challenge) return false;
       challenge.jumpsAtStart = state.jumps;
       challengeState.current = challenge;
+      if (id === 'escape') { activateAudio(); activatePolicePursuit(); }
       setChallengeHud({ ...challenge, status: 'active' });
-      interactionNotice = `${challenge.title.toUpperCase()} · C’EST PARTI !`;
+      interactionNotice = id === 'escape' ? 'ALERTE · DEUX PATROUILLES SONT À VOS TROUSSES !' : `${challenge.title.toUpperCase()} · C’EST PARTI !`;
       interactionNoticeUntil = state.time + 2.5;
       return true;
     };
@@ -3765,6 +3906,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
       updateEnvironment(dt);
       updateTraffic(dt);
+      updatePoliceSiren();
       city.updateCanalBoats(dt, state.time);
       city.updateCanalWater(state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
@@ -4057,6 +4199,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       updateShots(dt);
       updateChallenge(dt);
+      updateMissionMarker();
       while (wearMarks.length && state.time - wearMarks[0].userData.createdAt > 18) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
       if (vehicle === playerVehicle) {
         animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
@@ -4194,7 +4337,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             <strong>{progress.label}</strong>
             <span>{challengeHud.status === 'active' ? `${Math.ceil(challengeHud.remaining)} S RESTANTES` : challengeHud.status === 'complete' ? `+${challengeHud.reward} $` : 'TEMPS ÉCOULÉ'}</span>
           </div>
-          {challengeHud.targetLabel && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PROCHAINE CIBLE · {challengeHud.targetLabel} · {challengeHud.targetDistance} M · SUIVEZ LE TRAIT TURQUOISE SUR LA MINICARTE</div>}
+          {challengeHud.targetLabel && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PROCHAINE CIBLE · {challengeHud.targetLabel} · {challengeHud.targetDistance} M · REPÈRE ROSE EN VILLE, TRAIT TURQUOISE SUR LA MINICARTE</div>}
           {challengeHud.id === 'escape' && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PATROUILLE LA PLUS PROCHE · {challengeHud.policeDistance ?? '—'} M</div>}
           <div className="vice-free-roam-challenge-bar"><i style={{ width: `${progress.ratio * 100}%` }} /></div>
           {challengeHud.status === 'active' && <button type="button" aria-label="Abandonner la mission" title="Abandonner la mission" onClick={() => challengeActionRef.current?.('cancel')}>×</button>}

@@ -107,3 +107,23 @@ test('les instructions de mission et la progression expliquent une action concr�
   const delivery = createViceCityChallenge('delivery');
   assert.equal(viceCityChallengeProgress(delivery).label, 'LIVRAISON · REPÈRE ROSE');
 });
+
+
+test('la fuite déclenche deux vraies patrouilles poursuivantes et une sirène de proximité', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /const activatePolicePursuit = \(\) =>/);
+  assert.match(source, /\.slice\(0, 2\)/);
+  assert.match(source, /const updatePursuitTraffic = \(traffic, dt\) =>/);
+  assert.match(source, /viceCityGpsRoute\(\{ x: car\.position\.x, z: car\.position\.z \}/);
+  assert.match(source, /if \(traffic\.pursuitActive\) \{ updatePursuitTraffic\(traffic, dt\); continue; \}/);
+  assert.match(source, /policeSiren\?\.\(/);
+});
+
+test('les missions routées affichent un repère 3D animé à la prochaine cible', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /vice-city-active-mission-marker/);
+  assert.match(source, /new THREE\.TorusGeometry\(4\.4, 0\.2/);
+  assert.match(source, /missionMarker\.position\.set\(target\.x/);
+  assert.match(source, /updateMissionMarker\(\)/);
+  assert.match(source, /REPÈRE ROSE EN VILLE/);
+});
