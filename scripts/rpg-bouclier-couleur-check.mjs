@@ -3,7 +3,8 @@ import { build } from 'vite';
 import { JSDOM } from 'jsdom';
 await build({ logLevel: 'error', build: { ssr: 'scripts/rpg-bouclier-smoke.jsx', outDir: 'node_modules/.cache/rpg-bouclier-couleur', emptyOutDir: true } });
 const { rendreCartesBouclier } = await import('../node_modules/.cache/rpg-bouclier-couleur/rpg-bouclier-smoke.js');
-const dom = new JSDOM(rendreCartesBouclier().colore);
+const rendus = rendreCartesBouclier();
+const dom = new JSDOM(rendus.colore);
 const egide = dom.window.document.querySelector('.rpg-bouclier-egide--colore');
 assert.ok(egide, 'égide colorée visible');
 assert.match(egide.getAttribute('style'), /--bouclier-couleur-a:.*--bouclier-couleur-b:/);
@@ -13,5 +14,16 @@ assert.equal(gradient.querySelectorAll('stop').length, 2);
 assert.notEqual(gradient.children[0].getAttribute('stop-color'), gradient.children[1].getAttribute('stop-color'));
 assert.equal(gradient.getAttribute('x1'), '0%');
 assert.equal(gradient.getAttribute('y2'), '100%');
+for (const [nom, attendu] of [['pastilleLionne', 'Bouclier Eau et Neige'], ['pastilleIfrit', 'Bouclier Neige']]) {
+  const document = new JSDOM(rendus[nom]).window.document;
+  const pastille = document.querySelector('[data-pastille="protection"]');
+  assert.ok(pastille, `${nom} : pastille présente`);
+  assert.match(pastille.textContent, new RegExp(attendu));
+  assert.match(pastille.getAttribute('aria-label'), new RegExp(attendu));
+  assert.doesNotMatch(pastille.textContent, /Protection/i);
+}
+const icone = new JSDOM(rendus.iconePretee).window.document.querySelector('.rpg-card-icones');
+assert.match(icone.getAttribute('aria-label'), /Bouclier Ténèbres/);
+assert.ok(icone.querySelector('[data-effet="protection"]'), 'bouclier prêté conservé après sérialisation');
 dom.window.close();
 console.log('Bouclier bicolore : rendu diagonal vérifié.');

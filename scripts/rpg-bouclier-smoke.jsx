@@ -9,6 +9,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import RpgDuelPage, { HoverCardPreview, TableCard } from '../src/games/RpgDuelPage.jsx';
 import { cardById } from '../src/games/rpgCards.js';
+import { IconesCarte, PastillesCarte } from '../src/games/effetIcons.jsx';
 
 void RpgDuelPage;
 
@@ -63,6 +64,9 @@ const Dame = (entite = {}) => ({
 export function rendreCartesBouclier() {
   return {
     colore: rendreTable({ protection: { contre: ['eau', 'neige'], toursRestants: Infinity } }),
+    pastilleLionne: renderToStaticMarkup(<PastillesCarte carte={cardById('lionne-du-midi-ardent')} />),
+    pastilleIfrit: renderToStaticMarkup(<PastillesCarte carte={cardById('ifrit-al-ahmar')} />),
+    iconePretee: renderToStaticMarkup(<IconesCarte carte={cardById('chien-du-guet')} entite={{ protection: { contre: 'tenebres', toursRestants: null } }} />),
     // La créature sans bouclier : ni égide, ni impact.
     neutre: rendreTable({}),
     // Le bouclier d'arrivée du Guerrier : un point, encore debout.

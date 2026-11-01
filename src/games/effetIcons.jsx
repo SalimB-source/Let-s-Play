@@ -124,8 +124,8 @@ function styleProtectionPastille(pastille) {
 }
 
 /**
- * Le nom d'une pastille. Une Protection simple prend directement sa couleur ;
- * une Protection double colore chaque élément séparément (« Protection Eau »
+ * Le nom d'une pastille. Un bouclier simple prend directement sa couleur ;
+ * un bouclier double colore chaque élément séparément (« Bouclier Eau »
  * en bleu, « Neige » en bleu clair).
  */
 function LibellePastille({ pastille }) {
@@ -141,7 +141,7 @@ function LibellePastille({ pastille }) {
       {contres.map((contre, index) => {
         const couleur = couleurProtection(contre);
         const separateur = index === 0 ? '' : (index === contres.length - 1 ? ' et ' : ', ');
-        const libelle = `${index === 0 ? 'Protection ' : ''}${PROTECTION_LIBELLES[contre] ?? contre}`;
+        const libelle = `${index === 0 ? 'Bouclier ' : ''}${PROTECTION_LIBELLES[contre] ?? contre}`;
         return (
           <span key={contre}>
             {separateur}
@@ -330,12 +330,12 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
     else if (entite.bouclierEpuise === true && !estBouclierDeLumiere(carte)) {
       ajouter('bouclier', 'Bouclier');
     }
-    if (entite.protection?.toursRestants > 0 || entite.protection?.permanente) {
+    if (entite.protection) {
       const contres = [...new Set([entite.protection?.contre].flat(Infinity).filter(Boolean))];
       const labels = { braise: 'Braise', eau: 'Eau', sable: 'Sable', neige: 'Neige', tenebres: 'Ténèbres' };
       const label = contres.length
-        ? `Protection ${contres.map((contre) => labels[contre] ?? contre).join(' et ')}`
-        : 'Protection';
+        ? `Bouclier ${contres.map((contre) => labels[contre] ?? contre).join(' et ')}`
+        : 'Bouclier';
       ajouter('protection', label, null, { contres });
     }
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
