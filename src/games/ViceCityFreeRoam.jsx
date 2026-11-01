@@ -2404,6 +2404,7 @@ function makeFreeRoamPedestrian() {
   const brass = new THREE.MeshStandardMaterial({ color: 0xc89a54, roughness: 0.38, metalness: 0.62 });
   const glasses = new THREE.MeshStandardMaterial({ color: 0x151b21, roughness: 0.3, metalness: 0.24 });
   const lens = new THREE.MeshStandardMaterial({ color: 0x263d49, roughness: 0.18, metalness: 0.35 });
+  const mouth = new THREE.MeshStandardMaterial({ color: 0x784a44, roughness: 0.85 });
   const pistolSteel = new THREE.MeshStandardMaterial({ color: 0x343b40, roughness: 0.32, metalness: 0.82 });
   const pistolGrip = new THREE.MeshStandardMaterial({ color: 0x171a1c, roughness: 0.76, metalness: 0.12 });
   const muzzleMaterial = new THREE.MeshBasicMaterial({ color: 0xffc76c, toneMapped: false });
@@ -2422,8 +2423,8 @@ function makeFreeRoamPedestrian() {
   torso.scale.set(1, 1.05, 0.82);
   addPart(character, new THREE.BoxGeometry(0.31, 0.39, 0.038), shirt, 0, 1.23, -0.265);
   for (const side of [-1, 1]) {
-    const shoulder = addPart(character, new THREE.SphereGeometry(0.16, 12, 8), jacket, side * 0.285, 1.43, 0);
-    shoulder.scale.set(1.15, 0.82, 0.94);
+    const shoulder = addPart(character, new THREE.SphereGeometry(0.17, 16, 10), jacket, side * 0.29, 1.54, 0);
+    shoulder.scale.set(1.12, 0.9, 0.98);
     const lapel = addPart(character, new THREE.BoxGeometry(0.085, 0.37, 0.035), trim, side * 0.12, 1.36, -0.291);
     lapel.rotation.z = side * -0.2;
     const pocket = addPart(character, new THREE.BoxGeometry(0.095, 0.105, 0.018), jacket, side * 0.205, 1.16, -0.284);
@@ -2454,13 +2455,12 @@ function makeFreeRoamPedestrian() {
   }
   const nose = addPart(character, new THREE.ConeGeometry(0.042, 0.105, 8), skin, 0, 1.895, -0.236);
   nose.rotation.x = -Math.PI / 2;
-  addPart(character, new THREE.BoxGeometry(0.09, 0.012, 0.012), hair, 0, 1.82, -0.216);
-  addPart(character, new THREE.BoxGeometry(0.42, 0.035, 0.032), glasses, 0, 1.94, -0.203);
-  addPart(character, new THREE.BoxGeometry(0.32, 0.035, 0.038), hair, 0, 2.095, -0.03);
+  addPart(character, new THREE.BoxGeometry(0.055, 0.018, 0.024), glasses, 0, 1.94, -0.205);
+  addPart(character, new THREE.BoxGeometry(0.055, 0.012, 0.012), mouth, 0, 1.82, -0.216);
 
   const makeLimb = (side, isArm) => {
     const pivot = new THREE.Group();
-    pivot.position.set(isArm ? side * 0.36 : side * 0.145, isArm ? 1.47 : 0.64, 0);
+    pivot.position.set(isArm ? side * 0.35 : side * 0.145, isArm ? 1.54 : 0.64, 0);
     character.add(pivot);
     if (isArm) {
       const upperArm = addPart(pivot, new THREE.CylinderGeometry(0.105, 0.125, 0.36, 10), jacket, 0, -0.19, 0);
