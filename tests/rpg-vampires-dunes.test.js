@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColorCost, cardColors, cardHasPrintedType, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgLancerAttaque, rpgFinDeTour } from '../src/games/rpgDuel.js';
+import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgLancerAttaque, rpgFinDeTour, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 
 const ids = ['archonte-du-sablier-noir', 'danseuse-des-ombres-de-dune', 'veilleur-du-dernier-crepuscule'];
 function duel() {
@@ -63,4 +63,44 @@ test('Le Vol de vie arrondit chaque blessure à l’entier supérieur', () => {
     assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
     assert.equal(d.joueur.pv, 10 + soin, `${degats} dégât(s) rendent ${soin} PV`);
   }
+});
+
+
+test('un bonus temporaire de défense expiré ne retire pas deux fois les blessures', () => {
+  for (const [degats, pvAttendus] of [[0, 2], [1, 2], [2, 2], [3, 1]]) {
+    const d = duel();
+    d.joueur.main.push('danseuse-des-ombres-de-dune', 'porte-etendard-de-leclipse');
+    const danseuse = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
+    assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+    assert.deepEqual([danseuse.pv, danseuse.pvMax], [4, 4]);
+    if (degats) rpgBlesserCreature(d, 'joueur', danseuse.id, degats);
+    rpgFinDeTour(d);
+    assert.ok(d.joueur.creatures.includes(danseuse), `${degats} blessures : la Danseuse survit`);
+    assert.deepEqual([danseuse.pv, danseuse.def, danseuse.pvMax], [pvAttendus, pvAttendus, 2]);
+    assert.ok(!d.joueur.cimetiere.includes('danseuse-des-ombres-de-dune'));
+  }
+});
+
+test('une blessure mortelle pendant le bonus reste mortelle immédiatement', () => {
+  const d = duel();
+  d.joueur.main.push('danseuse-des-ombres-de-dune', 'porte-etendard-de-leclipse');
+  const danseuse = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
+  rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse');
+  rpgBlesserCreature(d, 'joueur', danseuse.id, 4);
+  assert.ok(!d.joueur.creatures.includes(danseuse));
+  rpgFinDeTour(d);
+  assert.ok(d.joueur.cimetiere.includes('danseuse-des-ombres-de-dune'));
+});
+
+test('plusieurs bonus temporaires expirent sans retirer deux fois les blessures', () => {
+  const d = duel();
+  d.joueur.main.push('danseuse-des-ombres-de-dune', 'porte-etendard-de-leclipse', 'porte-etendard-de-leclipse');
+  const danseuse = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
+  assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+  assert.ok(rpgJouerCreature(d, 'joueur', 'porte-etendard-de-leclipse').ok);
+  assert.deepEqual([danseuse.pv, danseuse.pvMax], [6, 6]);
+  rpgBlesserCreature(d, 'joueur', danseuse.id, 4);
+  rpgFinDeTour(d);
+  assert.ok(d.joueur.creatures.includes(danseuse));
+  assert.deepEqual([danseuse.pv, danseuse.def, danseuse.pvMax], [2, 2, 2]);
 });

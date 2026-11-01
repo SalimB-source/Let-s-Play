@@ -2857,8 +2857,9 @@ function resoudreEchos(duel) {
  *  termine** — `tourFerme` : le tour de celui qui a lancé le sort, pas celui du
  *  camp renforcé. Une magie rapide lancée en réponse meurt donc avec l’échange qui
  *  l’a vu partir, et une créature déjà sortie de table n’a rien à récupérer :
- *  son bonus est né et mort avec elle. Une créature réduite à 0 défense par le
- *  retrait du bonus tombe, comme à Magic quand le renfort s’évanouit. */
+ *  son bonus est né et mort avec elle. Quand un bonus de défense positif
+ *  expire, les PV actuels sont limités au nouveau maximum, sans retirer une
+ *  seconde fois les blessures déjà subies. */
 function annulerBonusTemporaires(duel, tourFerme) {
   for (const cote of ['joueur', 'sorcier']) {
     const camp = duel[cote];
@@ -2874,8 +2875,11 @@ function annulerBonusTemporaires(duel, tourFerme) {
       const entite = camp.creatures.find((candidate) => candidate.id === entry.entiteId);
       if (!entite) continue;
       entite.atk = Math.max(0, entite.atk - (entry.atk ?? 0));
-      entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - (entry.def ?? 0));
-      entite.pv = Math.max(0, entite.pv - (entry.def ?? 0));
+      const bonusDefense = entry.def ?? 0;
+      entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - bonusDefense);
+      entite.pv = bonusDefense > 0
+        ? Math.min(entite.pv, entite.pvMax)
+        : Math.max(0, entite.pv - bonusDefense);
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
       if (entry.tribut) entite.tribut = Math.max(0, (entite.tribut ?? 0) - entry.tribut);
