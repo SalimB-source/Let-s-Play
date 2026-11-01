@@ -61,6 +61,7 @@ const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_GRID_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityGridLimit;
 const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
+const FREE_ROAM_PROGRESS_KEY = 'letsplay_vice_city_free_roam_progress_v1';
 const MOUSE_AIM_SENSITIVITY = 0.62;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -70,6 +71,26 @@ function readFreeRoamSoundPreference() {
 
 function writeFreeRoamSoundPreference(enabled) {
   try { window.localStorage.setItem(FREE_ROAM_SOUND_KEY, enabled ? 'on' : 'off'); } catch { /* stockage désactivé */ }
+}
+
+function readFreeRoamProgress() {
+  const empty = { credits: 0, completedCount: 0, completedChallengeIds: [], bestTimes: {}, bestScores: {} };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(FREE_ROAM_PROGRESS_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return empty;
+    return {
+      credits: Math.max(0, Math.floor(Number(saved.credits) || 0)),
+      completedCount: Math.max(0, Math.floor(Number(saved.completedCount) || 0)),
+      completedChallengeIds: Array.isArray(saved.completedChallengeIds)
+        ? [...new Set(saved.completedChallengeIds.filter((id) => typeof id === 'string'))] : [],
+      bestTimes: saved.bestTimes && typeof saved.bestTimes === 'object' ? saved.bestTimes : {},
+      bestScores: saved.bestScores && typeof saved.bestScores === 'object' ? saved.bestScores : {},
+    };
+  } catch { return empty; }
+}
+
+function writeFreeRoamProgress(progress) {
+  try { window.localStorage.setItem(FREE_ROAM_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* stockage désactivé */ }
 }
 
 function readFreeRoamCameraPreference() {
@@ -2623,13 +2644,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const [featurePanel, setFeaturePanel] = useState(null);
   const [selectedFreeRoamCar, setSelectedFreeRoamCar] = useState(null);
   const [challengeHud, setChallengeHud] = useState(null);
-  const [freeRoamRewards, setFreeRoamRewards] = useState(0);
+  const [freeRoamProfile, setFreeRoamProfile] = useState(readFreeRoamProgress);
+  const freeRoamRewards = freeRoamProfile.credits;
+  const [streetEventOffer, setStreetEventOffer] = useState(null);
   const [streetLabel, setStreetLabel] = useState('OCEAN DISTRICT');
   const [worldCondition, setWorldCondition] = useState('APRÈS-MIDI · CIEL DÉGAGÉ');
   const [gpsDestination, setGpsDestination] = useState('downtown');
   const destinationActionRef = useRef(null);
   const challengeActionRef = useRef(null);
   const garageActionRef = useRef(null);
+  const streetEventActionRef = useRef(null);
   const soundOnRef = useRef(soundOn);
   const cockpitViewRef = useRef(cockpitView);
   const toggleSoundRef = useRef(null);
@@ -2740,7 +2764,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     setSelectedFreeRoamCar(null);
     setFeaturePanel(null);
     setChallengeHud(null);
-    setFreeRoamRewards(0);
+    setStreetEventOffer(null);
     const scene = new THREE.Scene();
     const skyColor = new THREE.Color();
     const fogColor = new THREE.Color();
@@ -2870,8 +2894,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const glassWorldNormalMatrix = new THREE.Matrix3();
     const glassCarQuaternion = new THREE.Quaternion();
     const glassLocalForward = new THREE.Vector3(0, 0, 1);
-    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
-    const challengeState = { current: null, rewardTotal: 0, lastUiAt: 0, lastStreetAt: 0 };
+    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, lateralSpeed: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
+    const challengeState = { current: null, rewardTotal: readFreeRoamProgress().credits, lastUiAt: 0, lastStreetAt: 0 };
+    const ambientEvent = { nextAt: 48, offerId: null, expiresAt: 0, lastUiAt: 0 };
     const missionMarker = new THREE.Group();
     missionMarker.name = 'vice-city-active-mission-marker';
     const missionMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xff6689, transparent: true, opacity: 0.88, depthWrite: false });
@@ -3003,8 +3028,25 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       challenge.status = status;
       if (challenge.id === 'escape') clearPolicePursuit();
       if (status === 'complete') {
-        challengeState.rewardTotal += challenge.reward;
-        setFreeRoamRewards(challengeState.rewardTotal);
+        const saved = readFreeRoamProgress();
+        const elapsed = Math.max(0, challenge.duration - challenge.remaining);
+        const bestTimes = { ...saved.bestTimes };
+        if (challenge.duration && (bestTimes[challenge.id] == null || elapsed < bestTimes[challenge.id])) {
+          bestTimes[challenge.id] = Number(elapsed.toFixed(2));
+        }
+        const bestScores = { ...saved.bestScores };
+        if (challenge.id === 'drift') bestScores.drift = Math.max(Number(bestScores.drift) || 0, Math.floor(challenge.score));
+        const updated = {
+          ...saved,
+          credits: saved.credits + challenge.reward,
+          completedCount: saved.completedCount + 1,
+          completedChallengeIds: [...new Set([...saved.completedChallengeIds, challenge.id])],
+          bestTimes,
+          bestScores,
+        };
+        writeFreeRoamProgress(updated);
+        setFreeRoamProfile(updated);
+        challengeState.rewardTotal = updated.credits;
         interactionNotice = `${challenge.title.toUpperCase()} · +${challenge.reward} $`;
         interactionNoticeUntil = state.time + 4;
       } else {
@@ -3058,6 +3100,32 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         challengeState.lastUiAt = state.time;
         setChallengeHud({ ...challenge, passedVehicles: undefined });
       }
+    };
+    const updateStreetEvent = () => {
+      if (ambientEvent.offerId) {
+        if (state.time >= ambientEvent.expiresAt) {
+          ambientEvent.offerId = null;
+          ambientEvent.expiresAt = 0;
+          ambientEvent.nextAt = state.time + 72 + Math.random() * 35;
+          setStreetEventOffer(null);
+        } else if (state.time - ambientEvent.lastUiAt >= 1) {
+          ambientEvent.lastUiAt = state.time;
+          const spec = VICE_CITY_CHALLENGES.find((challenge) => challenge.id === ambientEvent.offerId);
+          if (spec) setStreetEventOffer({ ...spec, secondsLeft: Math.ceil(ambientEvent.expiresAt - state.time) });
+        }
+        return;
+      }
+      if (state.time < ambientEvent.nextAt) return;
+      if (challengeState.current?.status === 'active') { ambientEvent.nextAt = state.time + 18; return; }
+      const options = ['delivery', 'speed', 'slalom', 'drift'];
+      const spec = VICE_CITY_CHALLENGES.find((challenge) => challenge.id === options[Math.floor(Math.random() * options.length)]);
+      if (!spec) return;
+      ambientEvent.offerId = spec.id;
+      ambientEvent.expiresAt = state.time + 28;
+      ambientEvent.lastUiAt = state.time;
+      setStreetEventOffer({ ...spec, secondsLeft: 28 });
+      interactionNotice = `ÉVÉNEMENT DE RUE · ${spec.title.toUpperCase()}`;
+      interactionNoticeUntil = state.time + 3;
     };
     const drawMinimap = () => {
       const canvas = minimapRef.current;
@@ -3547,6 +3615,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       state.heading = -vehicle.rotation.y;
       state.speed = 0;
       state.steer = 0;
+      state.lateralSpeed = 0;
       if (target.body) {
         const trafficProfile = CITY_RUSH_TRAFFIC_TYPES.find((type) => type.id === target.body.spec.type);
         const topSpeed = trafficProfile?.id === 'white-lambo' ? 31
@@ -3624,6 +3693,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       state.heading = spawnHeading;
       state.speed = 0;
       state.steer = 0;
+      state.lateralSpeed = 0;
       state.damage = 0;
       state.airHeight = 0;
       jumpVelocity = 0;
@@ -3636,7 +3706,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       interactionNoticeUntil = state.time + 3.2;
       return true;
     };
+    streetEventActionRef.current = () => {
+      ambientEvent.offerId = null;
+      ambientEvent.expiresAt = 0;
+      ambientEvent.nextAt = state.time + 75;
+      setStreetEventOffer(null);
+    };
     challengeActionRef.current = (id) => {
+      ambientEvent.offerId = null;
+      ambientEvent.expiresAt = 0;
+      setStreetEventOffer(null);
       if (id === 'cancel') { clearPolicePursuit(); challengeState.current = null; setChallengeHud(null); missionMarker.visible = false; return true; }
       clearPolicePursuit();
       const challenge = createViceCityChallenge(id, state.time);
@@ -3659,6 +3738,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         );
         const firstContact = overlaps && !traffic.touchingPlayer;
         const impulse = overlaps ? viceCityFreeDriveParkedCarImpulse(speed, traffic.mass, dt, firstContact) : 0;
+        if (firstContact && Math.abs(speed) > 3.5 && state.time - (traffic.lastHornAt ?? -10) > 3.5) {
+          traffic.lastHornAt = state.time;
+          if (soundOnRef.current) audioRef.current?.trafficHorn?.({
+            pan: clamp((car.position.x - state.x) / 55, -1, 1),
+            intensity: clamp(Math.abs(speed) / 22, 0.35, 1.1),
+          });
+        }
         if (impulse > 0) {
           const directionX = heading.x * direction;
           const directionZ = heading.z * direction;
@@ -4086,15 +4172,21 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           -1,
           1,
         );
+        const isWetRoad = weatherMode === 'rain';
+        const speedBeforeStep = state.speed;
         state.speed = viceCityFreeDriveSpeedStep({
           speed: state.speed,
           throttle,
           brake,
           dt,
           maxSpeed,
-          acceleration,
+          acceleration: acceleration * (isWetRoad ? 0.88 : 1),
           reverseMaxSpeed,
         });
+        if (isWetRoad && brake && speedBeforeStep > 0) {
+          const dryBrakingDelta = speedBeforeStep - state.speed;
+          state.speed = speedBeforeStep - dryBrakingDelta * 0.82;
+        }
         if (soundOnRef.current) {
           audioRef.current?.engine({
             speed: Math.abs(state.speed) / maxSpeed,
@@ -4106,11 +4198,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         // Le braquage monte progressivement tant qu’on maintient la touche ;
         // un appui bref reste doux et le volant se recentre vite au relâchement.
         state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
-        state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
+        state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * (isWetRoad ? 0.86 : 1) * dt;
+        state.lateralSpeed += state.speed * state.steer * (isWetRoad ? 0.16 : 0.045) * dt;
+        state.lateralSpeed *= Math.exp(-(isWetRoad ? 1.9 : 6.5) * dt);
         // Les modèles du garage pointent le capot vers leur axe local -Z.
         forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
-        const nextX = state.x + forward.x * state.speed * dt;
-        const nextZ = state.z + forward.z * state.speed * dt;
+        const sideX = Math.cos(state.heading);
+        const sideZ = Math.sin(state.heading);
+        const nextX = state.x + (forward.x * state.speed + sideX * state.lateralSpeed) * dt;
+        const nextZ = state.z + (forward.z * state.speed + sideZ * state.lateralSpeed) * dt;
         if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
         const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
         const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
@@ -4148,6 +4244,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
           else if (canSlideZ) state.z = nextZ;
           state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+          state.lateralSpeed *= canSlideX || canSlideZ ? 0.38 : 0.12;
         }
         if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
           state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
@@ -4199,6 +4296,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       updateShots(dt);
       updateChallenge(dt);
+      updateStreetEvent();
       updateMissionMarker();
       while (wearMarks.length && state.time - wearMarks[0].userData.createdAt > 18) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
       if (vehicle === playerVehicle) {
@@ -4343,6 +4441,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           {challengeHud.status === 'active' && <button type="button" aria-label="Abandonner la mission" title="Abandonner la mission" onClick={() => challengeActionRef.current?.('cancel')}>×</button>}
         </section>;
       })()}
+      {streetEventOffer && <aside className="vice-free-roam-street-event" role="region" aria-label="Événement spontané de Vice City">
+        <div><small>ÉVÉNEMENT DE RUE · EXPIRE DANS {streetEventOffer.secondsLeft} S</small><b>{streetEventOffer.title}</b><p>{streetEventOffer.detail}</p><strong>RÉCOMPENSE · {streetEventOffer.reward} $</strong></div>
+        <button type="button" onClick={() => { challengeActionRef.current?.(streetEventOffer.id); setFeaturePanel(null); }}>PARTICIPER</button>
+        <button type="button" aria-label="Ignorer l’événement" onClick={() => streetEventActionRef.current?.()}>×</button>
+      </aside>}
       {featurePanel && <aside className="vice-free-roam-feature-panel" aria-label={featurePanel === 'garage' ? 'Garage municipal temporaire' : 'Missions, activités et GPS'}>
         <header><div><small>VICE CITY · MODE LIBRE</small><b>{featurePanel === 'garage' ? 'GARAGE MUNICIPAL' : 'MISSIONS & ACTIVITÉS'}</b></div>
           <button type="button" aria-label="Fermer" onClick={() => setFeaturePanel(null)}>×</button></header>
@@ -4350,11 +4453,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <button className="vice-free-roam-repair" type="button" onClick={() => garageActionRef.current?.('repair')}>✚ RÉPARER · 0 $</button>
           <div className="vice-free-roam-car-list">{CITY_RUSH_CARS.map((car) => <button key={car.id} type="button" className={displayCar.id === car.id ? 'is-selected' : ''}
             onClick={() => garageActionRef.current?.('select', car.id)}><i style={{ background: car.accent }} /><span><b>{car.name}</b><small>{car.className}</small></span><em>TEMPORAIRE</em></button>)}</div>
-        </> : <><p>Activités facultatives · récompenses créditées à cette session.</p>
+        </> : <><p>Défis terminés : {freeRoamProfile.completedCount} · records et crédits sauvegardés à part du garage principal.</p>
           <div className="vice-free-roam-destination-list"><b>GPS · DESTINATION</b>{VICE_CITY_POINTS_OF_INTEREST.map((point) => <button key={point.id} type="button" className={gpsDestination === point.id ? 'is-selected' : ''}
             onClick={() => destinationActionRef.current?.(point.id)}><span>⌖ {point.name}</span><small>{point.id === 'garage' ? 'ÉCHANGE & RÉPARATION' : 'ITINÉRAIRE SUR LA MINICARTE'}</small></button>)}</div>
           <div className="vice-free-roam-challenge-list">{VICE_CITY_CHALLENGES.map((challenge) => <button key={challenge.id} type="button"
-            onClick={() => { challengeActionRef.current?.(challenge.id); setFeaturePanel(null); }}><small>{challenge.category} · RÉCOMPENSE {challenge.reward} $</small><b>{challenge.title}</b><span>{challenge.detail}</span></button>)}</div>
+            onClick={() => { challengeActionRef.current?.(challenge.id); setFeaturePanel(null); }}><small>{challenge.category} · RÉCOMPENSE {challenge.reward} $ {freeRoamProfile.completedChallengeIds.includes(challenge.id) ? '· ✓ RÉUSSIE' : ''}</small><b>{challenge.title}</b><span>{challenge.detail}</span>
+              {freeRoamProfile.bestTimes[challenge.id] != null && <em>RECORD · {Number(freeRoamProfile.bestTimes[challenge.id]).toFixed(1)} S</em>}
+              {challenge.id === 'drift' && freeRoamProfile.bestScores.drift > 0 && <em>MEILLEUR SCORE · {freeRoamProfile.bestScores.drift} PTS</em>}
+            </button>)}</div>
         </>}
       </aside>}
       <div className="vice-free-roam-context" ref={contextRef} role="status" aria-live="polite" />

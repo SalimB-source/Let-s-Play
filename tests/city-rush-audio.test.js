@@ -295,6 +295,9 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.shotgun({ pan: 0.2 });
     assert.ok(audio.context.events.length > afterShell, 'le fusil à pompe ajoute son coup de tonnerre et son réarmement');
     audio.skid({ pan: 0.3, delay: 0.3, intensity: 1 });
+    const beforeHorn = audio.context.events.length;
+    audio.trafficHorn({ pan: -0.2, intensity: 0.8 });
+    assert.ok(audio.context.events.length > beforeHorn, 'un automobiliste klaxonne après un choc');
     audio.explosion({});
     assert.ok(audio.context.events.length > afterShot, 'le dérapage et l’explosion ajoutent leurs nœuds');
     audio.stop();
@@ -302,6 +305,7 @@ test('tir, dérapage et explosion programment du son, et se taisent quand le son
     audio.gunshot();
     audio.shotgun();
     audio.skid();
+    audio.trafficHorn();
     audio.explosion();
     audio.missileLaunch();
     audio.pickup('boost');

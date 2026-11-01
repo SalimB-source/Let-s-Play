@@ -102,3 +102,14 @@
 @media(max-width:540px){.vice-free-roam-challenge{top:108px;grid-template-columns:minmax(0,1fr) 22px;padding:8px 9px}.vice-free-roam-challenge-title>b{font-size:11px}.vice-free-roam-challenge>p{font-size:9px}.vice-free-roam-challenge-meta{align-items:flex-start;flex-direction:column;gap:3px}.vice-free-roam-challenge-meta>strong,.vice-free-roam-challenge-target{font-size:7px}}
 @media(max-width:850px){.vice-free-roam-challenge{top:138px}}
 @media(max-width:540px){.vice-free-roam-challenge{top:144px}}
+
+.vice-free-roam-street-event{position:absolute;z-index:18;top:clamp(112px,15vh,166px);right:clamp(14px,3vw,42px);width:min(360px,calc(100vw - 28px));display:grid;grid-template-columns:minmax(0,1fr) auto 28px;align-items:center;gap:10px;padding:13px;border:1px solid #f3cd6caa;border-radius:7px;background:linear-gradient(145deg,#352b17f2,#171a19f2);box-shadow:0 12px 40px #0009;color:#fff4d0;backdrop-filter:blur(14px)}
+.vice-free-roam-street-event>div{display:grid;gap:5px;min-width:0}
+.vice-free-roam-street-event small{color:#f4d476;font-size:8px;font-weight:900;letter-spacing:.12em}
+.vice-free-roam-street-event b{font-size:12px;letter-spacing:.06em}
+.vice-free-roam-street-event p{margin:0;color:#e0d9c7;font-size:9px;line-height:1.35}
+.vice-free-roam-street-event strong{color:#a6f0cb;font-size:8px;letter-spacing:.08em}
+.vice-free-roam-street-event button{padding:9px 10px;border:1px solid #f4d47688;border-radius:4px;background:#4d3d18;color:#fff1bd;font:900 8px/1 system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
+.vice-free-roam-street-event button:last-child{grid-column:3;grid-row:1;width:28px;height:28px;padding:0;font-size:18px}
+@media(max-width:650px){.vice-free-roam-street-event{top:136px;right:10px;width:min(360px,calc(100vw - 20px));grid-template-columns:minmax(0,1fr) auto 24px;padding:9px;gap:6px}.vice-free-roam-street-event small{font-size:7px}.vice-free-roam-street-event b{font-size:10px}.vice-free-roam-street-event p{font-size:8px}.vice-free-roam-street-event button{padding:8px 6px;font-size:7px}.vice-free-roam-street-event button:last-child{width:24px;height:24px}}
+.vice-free-roam-challenge-list>button em{color:#f4d476;font-size:7px;font-style:normal;font-weight:900;letter-spacing:.08em}

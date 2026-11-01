@@ -127,3 +127,30 @@ test('les missions routées affichent un repère 3D animé à la prochaine cible
   assert.match(source, /updateMissionMarker\(\)/);
   assert.match(source, /REPÈRE ROSE EN VILLE/);
 });
+
+
+test('les gains, records et défis de rue sont persistés dans une clé libre distincte', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /FREE_ROAM_PROGRESS_KEY = 'letsplay_vice_city_free_roam_progress_v1'/);
+  assert.match(source, /completedChallengeIds/);
+  assert.match(source, /bestTimes/);
+  assert.match(source, /writeFreeRoamProgress\(updated\)/);
+  assert.match(source, /ambientEvent = \{ nextAt: 48/);
+  assert.match(source, /ÉVÉNEMENT DE RUE/);
+  const garageStart = source.indexOf('garageActionRef.current =');
+  const garageEnd = source.indexOf('challengeActionRef.current =', garageStart);
+  assert.doesNotMatch(source.slice(garageStart, garageEnd), /FREE_ROAM_PROGRESS_KEY|writeFreeRoamProgress/);
+});
+
+test('la pluie modifie l’accélération, le freinage et la dérive latérale', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /acceleration: acceleration \* \(isWetRoad \? 0\.88 : 1\)/);
+  assert.match(source, /dryBrakingDelta \* 0\.82/);
+  assert.match(source, /state\.lateralSpeed \+= state\.speed \* state\.steer \* \(isWetRoad \? 0\.16 : 0\.045\)/);
+});
+
+test('un premier contact avec une patrouille routière déclenche un klaxon avec délai anti-spam', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /traffic\.lastHornAt \?\? -10/);
+  assert.match(source, /audioRef\.current\?\.trafficHorn/);
+});

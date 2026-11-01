@@ -1156,6 +1156,16 @@ export class CityRushAudio {
   }
 
   // ── Bruitages ───────────────────────────────────────────────────────
+  /** Klaxon bref des automobilistes après un choc en conduite libre. */
+  trafficHorn({ pan = 0, intensity = 0.75 } = {}) {
+    if (!this.ready()) return;
+    const time = this.context.currentTime + 0.005;
+    const out = this.panned(pan);
+    const volume = 0.16 * clamp(Number(intensity) || 0.75, 0.35, 1.2);
+    this.tone(430, time, 0.22, 'square', volume, { filter: 1350, destination: out });
+    this.tone(345, time + 0.2, 0.2, 'square', volume * 0.78, { filter: 1050, destination: out });
+  }
+
   /** Coup de feu : claquement, corps, puis l'écho entre les façades. */
   gunshot({ pan = 0, delay = 0 } = {}) {
     if (!this.ready()) return;
