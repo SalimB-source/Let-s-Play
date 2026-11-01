@@ -15,6 +15,7 @@ import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
+  viceCityFreeDriveJoystickInput,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -105,6 +106,14 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
     'la flèche haut freine d’abord la marche arrière');
   assert.ok(viceCityFreeDriveSpeedStep({ ...params, speed: 0, throttle: true, brake: false }) > 0,
     'la flèche haut repart en marche avant');
+});
+
+test('conduite libre mobile : le joystick dirige, accélère et freine avec une zone morte', () => {
+  assert.deepEqual(viceCityFreeDriveJoystickInput(0, 0), { steer: 0, throttle: false, brake: false });
+  assert.deepEqual(viceCityFreeDriveJoystickInput(-1, -1), { steer: -1, throttle: true, brake: false });
+  assert.deepEqual(viceCityFreeDriveJoystickInput(1, 1), { steer: 1, throttle: false, brake: true });
+  assert.equal(viceCityFreeDriveJoystickInput(0.1, -0.1).steer, 0,
+    'les petites vibrations du doigt ne font pas braquer la voiture');
 });
 
 test('conduite libre : les barrières du canal bloquent les franchissements hors du pont', () => {
