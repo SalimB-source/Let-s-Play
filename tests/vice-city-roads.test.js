@@ -35,6 +35,22 @@ test('les accotements rejoignent progressivement le terrain et les autres routes
   assert.equal(viceCityRoadElevation(-200, -200), 0);
 });
 
+test('les bretelles autoroutières rejoignent sans interruption les rues de la ville', () => {
+  const { cityGridLimit, edge } = VICE_CITY_OUTER_HIGHWAY;
+  for (const fixedX of [-100, 100]) for (const side of [-1, 1]) {
+    for (let distance = cityGridLimit; distance <= edge; distance += 10) {
+      assert.ok(viceCityOuterHighwayContains(fixedX, side * distance),
+        `bretelle nord/sud continue à x=${fixedX}, z=${side * distance}`);
+    }
+  }
+  for (const fixedZ of [-300, 300]) for (const side of [-1, 1]) {
+    for (let distance = cityGridLimit; distance <= edge; distance += 10) {
+      assert.ok(viceCityOuterHighwayContains(side * distance, fixedZ),
+        `bretelle est/ouest continue à x=${side * distance}, z=${fixedZ}`);
+    }
+  }
+});
+
 test('l’autoroute forme une boucle continue et traverse le fleuve sur deux ponts en arche', () => {
   const { edge, bankOffset, halfWidth, bridgeDeckHeight } = VICE_CITY_OUTER_HIGHWAY;
   const [riveOuest, riveEst, pontNord, pontSud] = viceCityOuterHighwayPaths();
@@ -57,6 +73,14 @@ test('l’autoroute forme une boucle continue et traverse le fleuve sur deux pon
   assert.ok(viceCityOuterHighwayContains(0, edge), 'le pont sud rejoint les deux rives');
   assert.ok(viceCityOuterHighwayContains(100, -400), 'une bretelle relie la boucle aux rues de la ville');
   assert.ok(viceCityOuterHighwayContains(400, 300), 'une bretelle rejoint aussi les rues latérales');
+  for (const fixedX of [-100, 100]) for (const side of [-1, 1]) {
+    assert.ok(viceCityOuterHighwayContains(fixedX, side * VICE_CITY_OUTER_HIGHWAY.cityGridLimit),
+      'les bretelles nord/sud touchent le bord de la grille de rues');
+  }
+  for (const fixedZ of [-300, 300]) for (const side of [-1, 1]) {
+    assert.ok(viceCityOuterHighwayContains(side * VICE_CITY_OUTER_HIGHWAY.cityGridLimit, fixedZ),
+      'les bretelles est/ouest touchent le bord de la grille de rues');
+  }
   assert.equal(viceCityOuterHighwayContains(0, 0), false, 'le pont rouge reste le passage du centre-ville');
   assert.equal(viceCityOuterHighwayBridgeHeight(bankOffset, -edge), 0, 'les rampes rejoignent le terrain sans marche');
   assert.equal(viceCityOuterHighwayBridgeHeight(0, -edge), bridgeDeckHeight, 'le tablier culmine au-dessus de l’eau');

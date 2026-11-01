@@ -41,7 +41,7 @@ export const VICE_CITY_OUTER_HIGHWAY = Object.freeze({
   bridgeDeckHeight: 10,
   cityGridLimit: 300,
   cityLimit: 480,
-  accessHalfWidth: 5,
+  accessHalfWidth: 7,
 });
 
 /** Smooth arched deck heights for the two motorway overpasses across the river. */
@@ -122,7 +122,7 @@ export function viceCityOuterHighwayContains(x, z) {
     });
     return topOrBottom || farSide || onCorner;
   });
-  const accessStart = cityGridLimit + 50;
+  const accessStart = cityGridLimit;
   const onVerticalAccess = [-100, 100].some((fixedX) =>
     Math.abs(x - fixedX) <= accessHalfWidth && Math.abs(z) >= accessStart - 0.01
       && Math.abs(z) <= edge + halfWidth);

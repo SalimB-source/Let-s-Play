@@ -281,7 +281,7 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
 }
 
 function addViceCityOuterHighway(scene, roadElevation) {
-  const { edge, halfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
+  const { edge, halfWidth, accessHalfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
   const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.92 });
   const markingMat = new THREE.MeshBasicMaterial({ color: 0xf2efe5, side: THREE.DoubleSide });
@@ -488,14 +488,15 @@ function addViceCityOuterHighway(scene, roadElevation) {
       scene.add(dash);
     }
   };
-  const accessStart = cityGridLimit + 50;
+  // Carry each spur back to the city-grid boundary for a broad, visible road overlap.
+  const accessStart = cityGridLimit;
   for (const fixedX of [-100, 100]) {
-    addAccessStrip('vertical', fixedX, -edge, -accessStart, 10);
-    addAccessStrip('vertical', fixedX, accessStart, edge, 10);
+    addAccessStrip('vertical', fixedX, -edge, -accessStart, accessHalfWidth * 2);
+    addAccessStrip('vertical', fixedX, accessStart, edge, accessHalfWidth * 2);
   }
   for (const fixedZ of [-300, 300]) {
-    addAccessStrip('horizontal', fixedZ, -edge, -accessStart, 10);
-    addAccessStrip('horizontal', fixedZ, accessStart, edge, 10);
+    addAccessStrip('horizontal', fixedZ, -edge, -accessStart, accessHalfWidth * 2);
+    addAccessStrip('horizontal', fixedZ, accessStart, edge, accessHalfWidth * 2);
   }
 }
 
