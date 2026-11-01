@@ -2381,6 +2381,54 @@ function makeCity(scene) {
   };
 }
 
+function makeFreeRoamPedestrian() {
+  const character = new THREE.Group();
+  character.name = 'vice-city-free-roam-pedestrian';
+  const skin = new THREE.MeshStandardMaterial({ color: 0xc98d6b, roughness: 0.88 });
+  const shirt = new THREE.MeshStandardMaterial({ color: 0x32a7a5, roughness: 0.82 });
+  const shirtTrim = new THREE.MeshStandardMaterial({ color: 0xef6683, roughness: 0.75 });
+  const trousers = new THREE.MeshStandardMaterial({ color: 0x263947, roughness: 0.92 });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0xf2d6b3, roughness: 0.82 });
+  const hair = new THREE.MeshStandardMaterial({ color: 0x392a28, roughness: 0.94 });
+  const eye = new THREE.MeshBasicMaterial({ color: 0x17191d });
+  const addPart = (parent, geometry, material, x, y, z) => {
+    const part = new THREE.Mesh(geometry, material);
+    part.position.set(x, y, z);
+    part.castShadow = true;
+    part.receiveShadow = true;
+    parent.add(part);
+    return part;
+  };
+  addPart(character, new THREE.CapsuleGeometry(0.31, 0.48, 4, 8), shirt, 0, 1.25, 0);
+  addPart(character, new THREE.CylinderGeometry(0.215, 0.24, 0.38, 8), trousers, 0, 0.76, 0);
+  addPart(character, new THREE.CylinderGeometry(0.085, 0.1, 0.18, 8), skin, 0, 1.69, 0);
+  addPart(character, new THREE.SphereGeometry(0.225, 12, 10), skin, 0, 1.94, 0);
+  addPart(character, new THREE.SphereGeometry(0.232, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), hair, 0, 2.015, 0.012);
+  for (const side of [-1, 1]) {
+    addPart(character, new THREE.SphereGeometry(0.026, 7, 6), eye, side * 0.074, 1.965, -0.205);
+    addPart(character, new THREE.BoxGeometry(0.25, 0.055, 0.08), shirtTrim, side * 0.14, 1.39, -0.285);
+  }
+  const makeLimb = (side, isArm) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(isArm ? side * 0.37 : side * 0.145, isArm ? 1.48 : 0.64, 0);
+    character.add(pivot);
+    if (isArm) {
+      addPart(pivot, new THREE.CylinderGeometry(0.095, 0.115, 0.62, 7), shirt, 0, -0.29, 0);
+      addPart(pivot, new THREE.SphereGeometry(0.105, 8, 6), skin, 0, -0.65, 0);
+      addPart(pivot, new THREE.CylinderGeometry(0.078, 0.09, 0.2, 7), skin, 0, -0.51, 0);
+    } else {
+      addPart(pivot, new THREE.CylinderGeometry(0.125, 0.105, 0.66, 7), trousers, 0, -0.32, 0);
+      addPart(pivot, new THREE.BoxGeometry(0.2, 0.13, 0.34), shoes, 0, -0.56, -0.085);
+    }
+    return pivot;
+  };
+  return {
+    group: character,
+    arms: [makeLimb(-1, true), makeLimb(1, true)],
+    legs: [makeLimb(-1, false), makeLimb(1, false)],
+  };
+}
+
 function isTouchPortraitViewport() {
   if (typeof window === 'undefined') return false;
   const touch = Boolean(window.LetsPlayAndroid)
@@ -2391,6 +2439,8 @@ function isTouchPortraitViewport() {
 export default function ViceCityFreeRoam({ carId, onExit }) {
   const mountRef = useRef(null);
   const hudRef = useRef(null);
+  const contextRef = useRef(null);
+  const isOnFootRef = useRef(false);
   const audioRef = useRef(null);
   const audioStartingRef = useRef(null);
   const onExitRef = useRef(onExit);
@@ -2402,6 +2452,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const [portraitTouch, setPortraitTouch] = useState(isTouchPortraitViewport);
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
+  const [isOnFoot, setIsOnFoot] = useState(false);
   const soundOnRef = useRef(soundOn);
   const cockpitViewRef = useRef(cockpitView);
   const toggleSoundRef = useRef(null);
@@ -2431,6 +2482,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   };
   toggleSoundRef.current = toggleSound;
   const toggleCamera = () => {
+    if (isOnFootRef.current) return;
     const next = !cockpitViewRef.current;
     cockpitViewRef.current = next;
     setCockpitView(next);
@@ -2530,6 +2582,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     vehicle.position.set(-138, 0, 0);
     scene.add(vehicle);
+    const pedestrian = makeFreeRoamPedestrian();
+    pedestrian.group.visible = false;
+    scene.add(pedestrian.group);
     let playerCockpit = null;
     const ensurePlayerCockpit = () => {
       if (!playerCockpit) {
@@ -2594,6 +2649,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
     let shotCooldown = 0;
     const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
+    const walkState = { x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0 };
+    isOnFootRef.current = false;
+    setIsOnFoot(false);
+    let interactionWasDown = false;
+    let interactionNotice = '';
+    let interactionNoticeUntil = 0;
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
@@ -2675,7 +2736,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         toggleCameraRef.current?.();
         return;
       }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ'].includes(event.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ', 'KeyE'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
         keys.add(event.code);
@@ -2733,6 +2794,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         x, z, car.x, car.z, car.yaw, car.width, car.length,
       ));
     };
+    const isPedestrianPositionBlocked = (x, z) => isPositionBlocked(x, z)
+      || overlapsVehicleHitbox(x, z, state.x, state.z, vehicle.rotation.y, 3, 5.2);
     const applyTrafficCarImpact = (x, z, heading, speed, steer, dt) => {
       let hitCount = 0;
       const direction = Math.sign(speed) || 1;
@@ -2880,68 +2943,159 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       city.updateCanalWater(state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
-      const throttle = pressed('ArrowUp') || pressed('KeyW');
-      const brake = pressed('ArrowDown') || pressed('KeyS');
-      const steerInput = clamp(
-        (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
-          - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
-          + joystickInput.steer,
-        -1,
-        1,
-      );
-      state.speed = viceCityFreeDriveSpeedStep({
-        speed: state.speed,
-        throttle,
-        brake,
-        dt,
-        maxSpeed,
-        acceleration,
-        reverseMaxSpeed,
-      });
-      if (soundOnRef.current) {
-        audioRef.current?.engine({
-          speed: Math.abs(state.speed) / maxSpeed,
-          throttle: throttle || brake ? 1 : 0,
-          idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
-          engineProfile: profile.archetype,
-        });
+      const interactionDown = pressed('KeyE');
+      const interactionJustPressed = interactionDown && !interactionWasDown;
+      interactionWasDown = interactionDown;
+      if (interactionJustPressed) {
+        if (!isOnFootRef.current) {
+          if (Math.abs(state.speed) > 0.65) {
+            interactionNotice = 'Arrêtez la voiture avant de sortir';
+            interactionNoticeUntil = state.time + 2.4;
+          } else {
+            const carYaw = vehicle.rotation.y;
+            const rightX = Math.cos(carYaw);
+            const rightZ = -Math.sin(carYaw);
+            const safeExit = [-1, 1].map((side) => ({
+              x: state.x + rightX * side * 2.8,
+              z: state.z + rightZ * side * 2.8,
+            })).find(({ x, z }) => !isPedestrianPositionBlocked(x, z));
+            if (safeExit) {
+              walkState.x = safeExit.x;
+              walkState.z = safeExit.z;
+              walkState.heading = state.heading;
+              walkState.speed = 0;
+              pedestrian.group.visible = true;
+              isOnFootRef.current = true;
+              setIsOnFoot(true);
+              if (cockpitViewRef.current) {
+                cockpitViewRef.current = false;
+                setCockpitView(false);
+              }
+            } else {
+              interactionNotice = 'La sortie est bloquée des deux côtés';
+              interactionNoticeUntil = state.time + 2.4;
+            }
+          }
+        } else if (Math.hypot(walkState.x - state.x, walkState.z - state.z) <= 4.8) {
+          pedestrian.group.visible = false;
+          walkState.speed = 0;
+          state.speed = 0;
+          state.steer = 0;
+          isOnFootRef.current = false;
+          setIsOnFoot(false);
+        } else {
+          interactionNotice = 'Approchez-vous de votre voiture';
+          interactionNoticeUntil = state.time + 2.4;
+        }
       }
-      // Le braquage monte progressivement tant qu’on maintient la touche ;
-      // un appui bref reste doux et le volant se recentre vite au relâchement.
-      state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
-      state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
-      // Les modèles du garage pointent le capot vers leur axe local -Z.
-      forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
-      const nextX = state.x + forward.x * state.speed * dt;
-      const nextZ = state.z + forward.z * state.speed * dt;
-      if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
-      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-      const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-      const pushedCars = pushedParkedCars + pushedTrafficCars;
-      // Conduite libre partout dans la ville : les trottoirs et les espaces
-      // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
-      const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
-        city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
-      if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
-        state.x = nextX;
-        state.z = nextZ;
+      let throttle = false;
+      let brake = false;
+      let steerInput = 0;
+      if (isOnFootRef.current) {
+        state.speed = 0;
+        state.steer = 0;
+        throttle = pressed('ArrowUp') || pressed('KeyW');
+        brake = pressed('ArrowDown') || pressed('KeyS');
+        steerInput = clamp(
+          (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
+            - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
+            + joystickInput.steer,
+          -1,
+          1,
+        );
+        walkState.heading += steerInput * 2.25 * dt;
+        const walkDirectionX = Math.sin(walkState.heading);
+        const walkDirectionZ = -Math.cos(walkState.heading);
+        const moveDirection = Number(throttle) - Number(brake);
+        const walkSpeed = moveDirection * 2.8;
+        const nextWalkX = walkState.x + walkDirectionX * walkSpeed * dt;
+        const nextWalkZ = walkState.z + walkDirectionZ * walkSpeed * dt;
+        const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
+          || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
+        if (!blocked) {
+          walkState.x = nextWalkX;
+          walkState.z = nextWalkZ;
+          walkState.speed = walkSpeed;
+        } else walkState.speed = 0;
+        walkState.phase += dt * (walkState.speed ? 9 : 2.2);
+        const stride = walkState.speed ? Math.sin(walkState.phase) * 0.42 : 0;
+        pedestrian.legs[0].rotation.x = stride;
+        pedestrian.legs[1].rotation.x = -stride;
+        pedestrian.arms[0].rotation.x = -stride * 0.8;
+        pedestrian.arms[1].rotation.x = stride * 0.8;
+        pedestrian.group.position.set(
+          walkState.x,
+          city.surfaceHeight(walkState.x, walkState.z) + (walkState.speed ? Math.abs(Math.sin(walkState.phase * 2)) * 0.025 : 0),
+          walkState.z,
+        );
+        pedestrian.group.rotation.set(0, -walkState.heading, 0);
+        if (soundOnRef.current) {
+          audioRef.current?.engine({ speed: 0, throttle: 0, idle: true, engineProfile: profile.archetype });
+        }
       } else {
-        const deltaX = nextX - state.x;
-        const deltaZ = nextZ - state.z;
-        const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
-        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
-        if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
-        else if (canSlideZ) state.z = nextZ;
-        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+        throttle = pressed('ArrowUp') || pressed('KeyW');
+        brake = pressed('ArrowDown') || pressed('KeyS');
+        steerInput = clamp(
+          (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
+            - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
+            + joystickInput.steer,
+          -1,
+          1,
+        );
+        state.speed = viceCityFreeDriveSpeedStep({
+          speed: state.speed,
+          throttle,
+          brake,
+          dt,
+          maxSpeed,
+          acceleration,
+          reverseMaxSpeed,
+        });
+        if (soundOnRef.current) {
+          audioRef.current?.engine({
+            speed: Math.abs(state.speed) / maxSpeed,
+            throttle: throttle || brake ? 1 : 0,
+            idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
+            engineProfile: profile.archetype,
+          });
+        }
+        // Le braquage monte progressivement tant qu’on maintient la touche ;
+        // un appui bref reste doux et le volant se recentre vite au relâchement.
+        state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
+        state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
+        // Les modèles du garage pointent le capot vers leur axe local -Z.
+        forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
+        const nextX = state.x + forward.x * state.speed * dt;
+        const nextZ = state.z + forward.z * state.speed * dt;
+        if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
+        const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+        const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+        const pushedCars = pushedParkedCars + pushedTrafficCars;
+        // Conduite libre partout dans la ville : les trottoirs et les espaces
+        // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
+        const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
+          city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
+        if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
+          state.x = nextX;
+          state.z = nextZ;
+        } else {
+          const deltaX = nextX - state.x;
+          const deltaZ = nextZ - state.z;
+          const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
+          const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
+          if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
+          else if (canSlideZ) state.z = nextZ;
+          state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+        }
+        if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
+          state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
+        }
+        vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
+        vehicle.rotation.y = -state.heading;
+        vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       }
-      if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
-        state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
-      }
-      vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
-      vehicle.rotation.y = -state.heading;
-      vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       shotCooldown = Math.max(0, shotCooldown - dt);
-      if (pressed('KeyZ') && shotCooldown <= 0) {
+      if (!isOnFootRef.current && pressed('KeyZ') && shotCooldown <= 0) {
         fireShot();
         shotCooldown = 0.18;
       }
@@ -2957,7 +3111,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.updateProjectionMatrix();
       }
       const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
-      if (isCockpitView && activeCockpit) {
+      if (isOnFootRef.current) {
+        forward.set(Math.sin(walkState.heading), 0, -Math.cos(walkState.heading));
+        cameraPosition.copy(pedestrian.group.position).addScaledVector(forward, -4.8);
+        cameraPosition.y += 2.65;
+        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
+        cameraTarget.copy(pedestrian.group.position);
+        cameraTarget.y += 1.2;
+        camera.lookAt(cameraTarget);
+      } else if (isCockpitView && activeCockpit) {
         activeCockpit.update({ speed: Math.abs(state.speed), topSpeed: maxSpeed, steer: state.steer * 0.4 }, dt, state.time);
         vehicle.updateMatrixWorld(true);
         activeCockpit.eye.getWorldPosition(cockpitPosition);
@@ -2986,9 +3148,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         );
         camera.lookAt(cameraTarget);
       }
-      if (now - hudAt > 80 && hudRef.current) {
+      if (now - hudAt > 100) {
         hudAt = now;
-        hudRef.current.innerHTML = `<b>${Math.round(Math.abs(state.speed) * 3.6)}</b><small>KM/H</small>`;
+        const isOnFoot = isOnFootRef.current;
+        const displayedSpeed = isOnFoot ? Math.abs(walkState.speed) : Math.abs(state.speed);
+        if (hudRef.current) hudRef.current.innerHTML = `<b>${Math.round(displayedSpeed * 3.6)}</b><small>KM/H</small>`;
+        if (contextRef.current) {
+          const prompt = interactionNotice && state.time < interactionNoticeUntil
+            ? interactionNotice
+            : isOnFoot
+              ? Math.hypot(walkState.x - state.x, walkState.z - state.z) <= 4.8
+                ? 'E · MONTER DANS VOTRE VOITURE'
+                : 'WASD / joystick · APPROCHEZ-VOUS DE VOTRE VOITURE'
+              : Math.abs(state.speed) <= 0.65
+                ? 'E · SORTIR DU VÉHICULE'
+                : 'FREINEZ POUR SORTIR · E';
+          contextRef.current.textContent = prompt;
+        }
       }
       renderer.render(scene, camera);
       renderCockpitMirror();
@@ -3018,15 +3194,27 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
         </button>
         <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
-          aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
-          title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
+          disabled={isOnFoot} aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
+          title={isOnFoot ? 'Disponible en voiture' : cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
           ◉ COCKPIT
         </button>
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER</span><small>WASD · C : cockpit · M : son · Échap : menu</small></div>
-      <div className="vice-free-roam-joystick" aria-label="Joystick gauche pour diriger">
+      <div className="vice-free-roam-context" ref={contextRef} role="status" aria-live="polite" />
+      <div className="vice-free-roam-controls">
+        <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
+        {isOnFoot ? (
+          <><span><kbd>W</kbd><kbd>↑</kbd> MARCHER</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
+            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>E</kbd> ENTRER / SORTIR</span>
+            <small>Échap : menu</small></>
+        ) : (
+          <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
+            <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
+            <small>WASD · C : cockpit · M : son · Échap : menu</small></>
+        )}
+      </div>
+      <div className="vice-free-roam-joystick" aria-label={isOnFoot ? 'Joystick gauche pour tourner' : 'Joystick gauche pour diriger'}>
         <div className="vice-free-roam-joystick-base" role="application" aria-label="Joystick virtuel"
           onPointerDown={startJoystick} onPointerMove={updateJoystick} onPointerUp={endJoystick}
           onPointerCancel={endJoystick} onLostPointerCapture={endJoystick}>
@@ -3034,21 +3222,29 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <button ref={joystickKnobRef} type="button" tabIndex={-1} aria-hidden="true" className="vice-free-roam-joystick-knob"
             onPointerDown={(event) => event.preventDefault()} />
         </div>
-        <small>DIRIGER</small>
+        <small>{isOnFoot ? 'TOURNER' : 'DIRIGER'}</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label="Accélérer, freiner et tirer">
+      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher et interagir' : 'Accélérer, freiner et tirer'}>
         {[
-          ['ArrowUp', '×', 'Accélérer', 'accelerate'],
-          ['ArrowDown', '□', 'Freiner', 'brake'],
-          ['KeyZ', '○', 'Tirer', 'shoot'],
+          ['ArrowUp', '×', isOnFoot ? 'Marcher' : 'Accélérer', 'accelerate'],
+          ['ArrowDown', '□', isOnFoot ? 'Reculer' : 'Freiner', 'brake'],
+          ['KeyZ', '○', isOnFoot ? 'Tir en voiture' : 'Tirer', 'shoot'],
         ].map(([code, glyph, label, action]) => (
           <button key={code} type="button" data-action={action} aria-label={label} title={label}
+            disabled={isOnFoot && action === 'shoot'}
             onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}
             onLostPointerCapture={() => setTouchKey(code, false)}>
             <span aria-hidden="true">{glyph}</span><small>{label.toUpperCase()}</small>
           </button>
         ))}
+        <button type="button" data-action="interact" aria-label={isOnFoot ? 'Entrer dans la voiture' : 'Sortir du véhicule'}
+          title={isOnFoot ? 'Entrer dans la voiture' : 'Sortir du véhicule'}
+          onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey('KeyE', true); }}
+          onPointerUp={() => setTouchKey('KeyE', false)} onPointerCancel={() => setTouchKey('KeyE', false)}
+          onLostPointerCapture={() => setTouchKey('KeyE', false)}>
+          <span aria-hidden="true">E</span><small>{isOnFoot ? 'ENTRER' : 'SORTIR'}</small>
+        </button>
       </div>
       {portraitTouch && (
         <div className="vice-free-roam-rotate" role="dialog" aria-modal="true" aria-label="Jeu en mode paysage">
