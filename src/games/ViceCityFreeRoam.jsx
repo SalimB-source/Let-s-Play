@@ -2512,6 +2512,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const mountRef = useRef(null);
   const hudRef = useRef(null);
   const contextRef = useRef(null);
+  const crosshairRef = useRef(null);
+  const mouseAimRef = useRef({ x: 0, y: 0, active: false });
   const isOnFootRef = useRef(false);
   const audioRef = useRef(null);
   const audioStartingRef = useRef(null);
@@ -2637,6 +2639,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
     addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
+    const mouseRaycaster = new THREE.Raycaster();
+    const mouseNdc = new THREE.Vector2();
+    const mouseAimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const mouseAimPoint = new THREE.Vector3();
+    const mouseAimDirection = new THREE.Vector3();
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     renderer.shadowMap.enabled = true;
@@ -2742,6 +2749,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let interactionNotice = '';
     let interactionNoticeUntil = 0;
     let pendingEntry = null;
+    const getMouseAimHeading = () => {
+      if (!mouseAimRef.current.active) return null;
+      const bounds = renderer.domElement.getBoundingClientRect();
+      if (bounds.width < 1 || bounds.height < 1) return null;
+      mouseNdc.set(
+        ((mouseAimRef.current.x - bounds.left) / bounds.width) * 2 - 1,
+        -((mouseAimRef.current.y - bounds.top) / bounds.height) * 2 + 1,
+      );
+      mouseRaycaster.setFromCamera(mouseNdc, camera);
+      mouseAimPlane.constant = -city.surfaceHeight(walkState.x, walkState.z);
+      const target = mouseRaycaster.ray.intersectPlane(mouseAimPlane, mouseAimPoint);
+      if (target) mouseAimDirection.set(target.x - walkState.x, 0, target.z - walkState.z);
+      else mouseAimDirection.set(mouseRaycaster.ray.direction.x, 0, mouseRaycaster.ray.direction.z);
+      if (mouseAimDirection.lengthSq() < 1e-6) return null;
+      mouseAimDirection.normalize();
+      return Math.atan2(mouseAimDirection.x, -mouseAimDirection.z);
+    };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
@@ -2831,6 +2855,22 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
     };
     const onUp = (event) => keys.delete(event.code);
+    const onMouseMove = (event) => {
+      const bounds = renderer.domElement.getBoundingClientRect();
+      if (bounds.width < 1 || bounds.height < 1) return;
+      const x = clamp(event.clientX, bounds.left, bounds.right);
+      const y = clamp(event.clientY, bounds.top, bounds.bottom);
+      mouseAimRef.current = { x, y, active: true };
+      crosshairRef.current?.style.setProperty('--aim-x', `${x}px`);
+      crosshairRef.current?.style.setProperty('--aim-y', `${y}px`);
+    };
+    const onMouseDown = (event) => {
+      if (event.button !== 0 || !mount.contains(event.target)) return;
+      event.preventDefault();
+      activateAudio();
+      touchKeysRef.current.add('MouseLeft');
+    };
+    const onMouseUp = () => touchKeysRef.current.delete('MouseLeft');
     const blur = () => {
       keys.clear();
       touchKeysRef.current.clear();
@@ -2841,6 +2881,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('blur', blur);
     const resize = () => {
       const width = Math.max(1, mount.clientWidth); const height = Math.max(1, mount.clientHeight);
@@ -3259,7 +3302,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             -1,
             1,
           );
-          walkState.heading += turnInput * 2.35 * dt;
+          const mouseAimHeading = getMouseAimHeading();
+          if (mouseAimHeading === null) walkState.heading += turnInput * 2.35 * dt;
+          else walkState.heading = mouseAimHeading;
           const moveInput = clamp(Number(throttle) - Number(brake) - onFootJoystick.y, -1, 1);
           const movementMagnitude = Math.abs(moveInput);
           const forwardX = Math.sin(walkState.heading);
@@ -3282,7 +3327,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const running = walkState.speed > 3.45;
         walkState.phase += dt * (running ? 13.5 : walkState.speed ? 8 : 2.2);
         const stride = walkState.speed ? Math.sin(walkState.phase) * (running ? 0.62 : 0.34) : 0;
-        const aiming = pressed('KeyZ');
+        const aiming = pressed('KeyZ') || pressed('MouseLeft') || mouseAimRef.current.active;
         pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
         const aimBlend = pedestrian.aimBlend;
         pedestrian.legs[0].rotation.x = stride;
@@ -3369,7 +3414,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         }
       }
       shotCooldown = Math.max(0, shotCooldown - dt);
-      if (pressed('KeyZ') && shotCooldown <= 0) {
+      if ((pressed('KeyZ') || pressed('MouseLeft')) && shotCooldown <= 0) {
         fireShot();
         shotCooldown = 0.18;
       }
@@ -3453,7 +3498,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
-      window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); window.removeEventListener('blur', blur);
+      window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp);
+      window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
       scene.traverse((object) => {
         object.geometry?.dispose?.();
@@ -3467,6 +3514,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   return (
     <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
+      <div ref={crosshairRef} className={`vice-free-roam-crosshair${isOnFoot ? ' is-visible' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <path d="M16 2v8m0 12v8M2 16h8m12 0h8" />
+          <circle cx="16" cy="16" r="2.2" />
+        </svg>
+      </div>
       <header className="vice-free-roam-header">
         <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>{driveCar.name} · OCEAN DISTRICT · 1986</small></div>
         <div className="vice-free-roam-location"><i /> CONDUITE LIBRE <span>—</span> AUCUNE COURSE</div>
@@ -3487,9 +3540,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
           <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
-            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> TIRER</span>
+            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
             <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
-            <small>Joystick poussé à fond : courir · Échap : menu</small></>
+            <small>Souris : viser · clic gauche : tirer · Échap : menu</small></>
         ) : (
           <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
             <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
