@@ -2391,17 +2391,20 @@ function makeCity(scene) {
 function makeFreeRoamPedestrian() {
   const character = new THREE.Group();
   character.name = 'vice-city-free-roam-pedestrian';
-  const skin = new THREE.MeshStandardMaterial({ color: 0xc98d6b, roughness: 0.88 });
-  const jacket = new THREE.MeshStandardMaterial({ color: 0xf1e4cc, roughness: 0.82 });
-  const shirt = new THREE.MeshStandardMaterial({ color: 0x22a7a7, roughness: 0.78 });
-  const shirtTrim = new THREE.MeshStandardMaterial({ color: 0xef5f82, roughness: 0.72 });
-  const trousers = new THREE.MeshStandardMaterial({ color: 0x202f40, roughness: 0.9 });
-  const shoes = new THREE.MeshStandardMaterial({ color: 0xf2e5d3, roughness: 0.78 });
-  const hair = new THREE.MeshStandardMaterial({ color: 0x302326, roughness: 0.94 });
-  const belt = new THREE.MeshStandardMaterial({ color: 0x171c25, roughness: 0.76, metalness: 0.18 });
-  const gold = new THREE.MeshStandardMaterial({ color: 0xe5b45e, roughness: 0.4, metalness: 0.62 });
-  const glasses = new THREE.MeshStandardMaterial({ color: 0x1a2531, roughness: 0.3, metalness: 0.22 });
-  const lens = new THREE.MeshBasicMaterial({ color: 0x55c6d1, toneMapped: false });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xb97859, roughness: 0.72 });
+  const jacket = new THREE.MeshStandardMaterial({ color: 0xd9c7a8, roughness: 0.8 });
+  const shirt = new THREE.MeshStandardMaterial({ color: 0x167f86, roughness: 0.72 });
+  const trim = new THREE.MeshStandardMaterial({ color: 0xc84d68, roughness: 0.7 });
+  const trousers = new THREE.MeshStandardMaterial({ color: 0x26313b, roughness: 0.88 });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0x332927, roughness: 0.68 });
+  const hair = new THREE.MeshStandardMaterial({ color: 0x251c1c, roughness: 0.92 });
+  const belt = new THREE.MeshStandardMaterial({ color: 0x17191c, roughness: 0.58, metalness: 0.2 });
+  const brass = new THREE.MeshStandardMaterial({ color: 0xc89a54, roughness: 0.38, metalness: 0.62 });
+  const glasses = new THREE.MeshStandardMaterial({ color: 0x151b21, roughness: 0.3, metalness: 0.24 });
+  const lens = new THREE.MeshStandardMaterial({ color: 0x263d49, roughness: 0.18, metalness: 0.35 });
+  const pistolSteel = new THREE.MeshStandardMaterial({ color: 0x343b40, roughness: 0.32, metalness: 0.82 });
+  const pistolGrip = new THREE.MeshStandardMaterial({ color: 0x171a1c, roughness: 0.76, metalness: 0.12 });
+  const muzzleMaterial = new THREE.MeshBasicMaterial({ color: 0xffc76c, toneMapped: false });
   const addPart = (parent, geometry, material, x, y, z) => {
     const part = new THREE.Mesh(geometry, material);
     part.position.set(x, y, z);
@@ -2410,48 +2413,92 @@ function makeFreeRoamPedestrian() {
     parent.add(part);
     return part;
   };
-  addPart(character, new THREE.CapsuleGeometry(0.31, 0.48, 4, 8), jacket, 0, 1.25, 0);
-  addPart(character, new THREE.BoxGeometry(0.3, 0.46, 0.045), shirt, 0, 1.23, -0.29);
+
+  // Silhouette and layered clothing: a fitted Cuban-collar jacket over a shirt,
+  // with separate shoulders, lapels, buttons, seams, belt and trouser folds.
+  const torso = addPart(character, new THREE.CapsuleGeometry(0.31, 0.46, 6, 12), jacket, 0, 1.24, 0);
+  torso.scale.set(1, 1.05, 0.82);
+  addPart(character, new THREE.BoxGeometry(0.31, 0.39, 0.038), shirt, 0, 1.23, -0.265);
   for (const side of [-1, 1]) {
-    const lapel = addPart(character, new THREE.BoxGeometry(0.075, 0.42, 0.045), shirtTrim,
-      side * 0.145, 1.35, -0.302);
-    lapel.rotation.z = side * -0.24;
+    const shoulder = addPart(character, new THREE.SphereGeometry(0.16, 12, 8), jacket, side * 0.285, 1.43, 0);
+    shoulder.scale.set(1.15, 0.82, 0.94);
+    const lapel = addPart(character, new THREE.BoxGeometry(0.085, 0.37, 0.035), trim, side * 0.12, 1.36, -0.291);
+    lapel.rotation.z = side * -0.2;
+    const pocket = addPart(character, new THREE.BoxGeometry(0.095, 0.105, 0.018), jacket, side * 0.205, 1.16, -0.284);
+    pocket.rotation.z = side * -0.05;
+    addPart(character, new THREE.BoxGeometry(0.018, 0.12, 0.02), trim, side * 0.205, 1.17, -0.299);
   }
-  addPart(character, new THREE.BoxGeometry(0.025, 0.36, 0.018), gold, 0, 1.22, -0.321);
-  addPart(character, new THREE.CylinderGeometry(0.22, 0.225, 0.09, 8), belt, 0, 0.96, 0);
-  addPart(character, new THREE.BoxGeometry(0.105, 0.085, 0.035), gold, 0, 0.96, -0.232);
-  addPart(character, new THREE.CylinderGeometry(0.215, 0.24, 0.38, 8), trousers, 0, 0.76, 0);
-  addPart(character, new THREE.CylinderGeometry(0.085, 0.1, 0.18, 8), skin, 0, 1.69, 0);
-  addPart(character, new THREE.SphereGeometry(0.225, 12, 10), skin, 0, 1.94, 0);
-  addPart(character, new THREE.SphereGeometry(0.232, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), hair, 0, 2.015, 0.012);
-  addPart(character, new THREE.SphereGeometry(0.045, 8, 6), skin, 0, 1.91, -0.222);
-  addPart(character, new THREE.BoxGeometry(0.12, 0.018, 0.025), glasses, 0, 1.88, -0.216);
-  addPart(character, new THREE.BoxGeometry(0.38, 0.045, 0.04), glasses, 0, 1.985, -0.207);
+  for (const y of [1.27, 1.18, 1.09]) addPart(character, new THREE.SphereGeometry(0.018, 6, 5), brass, 0, y, -0.302);
+  addPart(character, new THREE.BoxGeometry(0.018, 0.25, 0.018), brass, 0, 1.17, -0.29);
+  addPart(character, new THREE.CylinderGeometry(0.225, 0.235, 0.085, 12), belt, 0, 0.94, 0);
+  addPart(character, new THREE.BoxGeometry(0.095, 0.075, 0.025), brass, 0, 0.94, -0.23);
+  const hips = addPart(character, new THREE.CylinderGeometry(0.22, 0.25, 0.36, 12), trousers, 0, 0.74, 0);
+  hips.scale.z = 0.86;
+
+  // Neck, sculpted head, ears, nose, brows and aviator lenses.
+  addPart(character, new THREE.CylinderGeometry(0.09, 0.105, 0.19, 12), skin, 0, 1.66, 0);
+  const head = addPart(character, new THREE.SphereGeometry(0.22, 20, 16), skin, 0, 1.91, -0.015);
+  head.scale.set(0.94, 1.15, 0.9);
+  const hairCap = addPart(character, new THREE.SphereGeometry(0.226, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.58), hair, 0, 1.99, 0.012);
+  hairCap.scale.set(1, 0.9, 1);
   for (const side of [-1, 1]) {
-    addPart(character, new THREE.BoxGeometry(0.155, 0.095, 0.045), lens, side * 0.09, 1.96, -0.218);
-    addPart(character, new THREE.BoxGeometry(0.17, 0.035, 0.05), hair, side * 0.19, 1.99, -0.03);
+    addPart(character, new THREE.SphereGeometry(0.047, 10, 8), skin, side * 0.207, 1.9, -0.012);
+    const lensPart = addPart(character, new THREE.SphereGeometry(0.078, 12, 8), lens, side * 0.09, 1.94, -0.205);
+    lensPart.scale.set(1.12, 0.62, 0.25);
+    addPart(character, new THREE.BoxGeometry(0.13, 0.022, 0.025), glasses, side * 0.09, 2.025, -0.201);
+    const brow = addPart(character, new THREE.BoxGeometry(0.115, 0.022, 0.025), hair, side * 0.09, 2.035, -0.186);
+    brow.rotation.z = side * -0.08;
+    addPart(character, new THREE.BoxGeometry(0.04, 0.022, 0.026), glasses, side * 0.17, 1.94, -0.208);
   }
+  const nose = addPart(character, new THREE.ConeGeometry(0.042, 0.105, 8), skin, 0, 1.895, -0.236);
+  nose.rotation.x = -Math.PI / 2;
+  addPart(character, new THREE.BoxGeometry(0.09, 0.012, 0.012), hair, 0, 1.82, -0.216);
+  addPart(character, new THREE.BoxGeometry(0.42, 0.035, 0.032), glasses, 0, 1.94, -0.203);
+  addPart(character, new THREE.BoxGeometry(0.32, 0.035, 0.038), hair, 0, 2.095, -0.03);
+
   const makeLimb = (side, isArm) => {
     const pivot = new THREE.Group();
-    pivot.position.set(isArm ? side * 0.37 : side * 0.145, isArm ? 1.48 : 0.64, 0);
+    pivot.position.set(isArm ? side * 0.36 : side * 0.145, isArm ? 1.47 : 0.64, 0);
     character.add(pivot);
     if (isArm) {
-      addPart(pivot, new THREE.CylinderGeometry(0.095, 0.115, 0.62, 7), jacket, 0, -0.29, 0);
-      addPart(pivot, new THREE.CylinderGeometry(0.108, 0.108, 0.075, 8), shirtTrim, 0, -0.55, 0);
-      addPart(pivot, new THREE.SphereGeometry(0.105, 8, 6), skin, 0, -0.65, 0);
-      addPart(pivot, new THREE.CylinderGeometry(0.078, 0.09, 0.2, 7), skin, 0, -0.51, 0);
+      const upperArm = addPart(pivot, new THREE.CylinderGeometry(0.105, 0.125, 0.36, 10), jacket, 0, -0.19, 0);
+      upperArm.rotation.z = side * -0.07;
+      addPart(pivot, new THREE.SphereGeometry(0.102, 10, 8), jacket, 0, -0.39, 0);
+      addPart(pivot, new THREE.CylinderGeometry(0.082, 0.095, 0.31, 10), jacket, 0, -0.54, -0.005);
+      addPart(pivot, new THREE.CylinderGeometry(0.086, 0.09, 0.065, 10), trim, 0, -0.67, -0.005);
+      addPart(pivot, new THREE.SphereGeometry(0.084, 10, 8), skin, 0, -0.75, -0.015);
     } else {
-      addPart(pivot, new THREE.CylinderGeometry(0.125, 0.105, 0.66, 7), trousers, 0, -0.32, 0);
-      addPart(pivot, new THREE.BoxGeometry(0.205, 0.13, 0.35), shoes, 0, -0.56, -0.085);
-      addPart(pivot, new THREE.BoxGeometry(0.205, 0.04, 0.35), shirtTrim, 0, -0.615, -0.085);
+      addPart(pivot, new THREE.CylinderGeometry(0.12, 0.105, 0.35, 10), trousers, 0, -0.18, 0);
+      addPart(pivot, new THREE.SphereGeometry(0.103, 10, 8), trousers, 0, -0.36, 0);
+      addPart(pivot, new THREE.CylinderGeometry(0.095, 0.082, 0.32, 10), trousers, 0, -0.53, 0);
+      addPart(pivot, new THREE.BoxGeometry(0.2, 0.12, 0.34), shoes, 0, -0.71, -0.09);
+      addPart(pivot, new THREE.BoxGeometry(0.202, 0.035, 0.345), trim, 0, -0.765, -0.09);
+      addPart(pivot, new THREE.BoxGeometry(0.06, 0.014, 0.19), brass, 0, -0.696, -0.115);
     }
     return pivot;
   };
-  return {
-    group: character,
-    arms: [makeLimb(-1, true), makeLimb(1, true)],
-    legs: [makeLimb(-1, false), makeLimb(1, false)],
-  };
+  const arms = [makeLimb(-1, true), makeLimb(1, true)];
+  const legs = [makeLimb(-1, false), makeLimb(1, false)];
+
+  // Compact period-style pistol fixed in the right hand, with steel slide,
+  // textured grip, trigger guard and a brief emissive muzzle flash.
+  const pistol = new THREE.Group();
+  pistol.position.set(0, -0.755, -0.02);
+  arms[1].add(pistol);
+  addPart(pistol, new THREE.BoxGeometry(0.105, 0.085, 0.27), pistolGrip, 0, 0.025, -0.035);
+  addPart(pistol, new THREE.BoxGeometry(0.092, 0.055, 0.245), pistolSteel, 0, 0.076, -0.045);
+  addPart(pistol, new THREE.BoxGeometry(0.06, 0.022, 0.13), glasses, 0, 0.116, -0.035);
+  const barrel = addPart(pistol, new THREE.CylinderGeometry(0.018, 0.018, 0.105, 8), pistolSteel, 0, 0.052, -0.205);
+  barrel.rotation.x = Math.PI / 2;
+  const grip = addPart(pistol, new THREE.BoxGeometry(0.075, 0.145, 0.085), pistolGrip, 0, -0.075, 0.035);
+  grip.rotation.x = -0.16;
+  addPart(pistol, new THREE.BoxGeometry(0.078, 0.045, 0.07), pistolSteel, 0, -0.158, 0.032);
+  const trigger = addPart(pistol, new THREE.TorusGeometry(0.03, 0.006, 6, 10), brass, 0, -0.012, 0.022);
+  trigger.rotation.x = Math.PI / 2;
+  const muzzleFlash = addPart(pistol, new THREE.SphereGeometry(0.035, 8, 6), muzzleMaterial, 0, 0.052, -0.26);
+  muzzleFlash.visible = false;
+
+  return { group: character, arms, legs, pistol, muzzle: muzzleFlash, muzzleFlash, aimBlend: 0 };
 }
 
 function isTouchPortraitViewport() {
@@ -2685,6 +2732,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
     const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
     let shotCooldown = 0;
+    let footMuzzleFlashUntil = 0;
+    const shotOrigin = new THREE.Vector3();
     const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
     const walkState = { x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0 };
     isOnFootRef.current = false;
@@ -2959,16 +3008,31 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return hitCount;
     };
     const fireShot = () => {
-      const directionX = forward.x;
-      const directionZ = forward.z;
-      const x = state.x + directionX * 2.65;
-      const z = state.z + directionZ * 2.65;
+      const onFoot = isOnFootRef.current;
+      const directionX = onFoot ? Math.sin(walkState.heading) : forward.x;
+      const directionZ = onFoot ? -Math.cos(walkState.heading) : forward.z;
+      let x = state.x + directionX * 2.65;
+      let z = state.z + directionZ * 2.65;
+      let height = 1.05;
+      if (onFoot) {
+        pedestrian.aimBlend = 1;
+        pedestrian.arms[1].rotation.set(1.02, 0, -0.08);
+        pedestrian.arms[0].rotation.set(0.72, 0, 0.62);
+        pedestrian.pistol.rotation.x = -0.92;
+        pedestrian.group.updateMatrixWorld(true);
+        pedestrian.muzzle.getWorldPosition(shotOrigin);
+        x = shotOrigin.x;
+        z = shotOrigin.z;
+        height = 1.42;
+        footMuzzleFlashUntil = state.time + 0.075;
+        pedestrian.muzzleFlash.visible = true;
+      }
       const mesh = new THREE.Mesh(shotGeometry, shotMaterial);
-      mesh.position.set(x, city.surfaceHeight(x, z) + 1.05, z);
+      mesh.position.set(x, city.surfaceHeight(x, z) + height, z);
       scene.add(mesh);
-      shots.push({ mesh, x, z, directionX, directionZ, age: 0, distance: 0 });
+      shots.push({ mesh, x, z, directionX, directionZ, height, age: 0, distance: 0 });
       if (soundOnRef.current) audioRef.current?.gunshot?.();
-    };
+    };รุ่ง
     const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
       const dx = x - carX;
       const dz = z - carZ;
@@ -3020,7 +3084,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           }
         }
         shot.age += dt;
-        shot.mesh.position.set(shot.x, city.surfaceHeight(shot.x, shot.z) + 1.05, shot.z);
+        shot.mesh.position.set(shot.x, city.surfaceHeight(shot.x, shot.z) + shot.height, shot.z);
         if (hit || shot.age > 1.5 || shot.distance > 125) {
           scene.remove(shot.mesh);
           shots.splice(index, 1);
@@ -3218,10 +3282,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const running = walkState.speed > 3.45;
         walkState.phase += dt * (running ? 13.5 : walkState.speed ? 8 : 2.2);
         const stride = walkState.speed ? Math.sin(walkState.phase) * (running ? 0.62 : 0.34) : 0;
+        const aiming = pressed('KeyZ');
+        pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
+        const aimBlend = pedestrian.aimBlend;
         pedestrian.legs[0].rotation.x = stride;
         pedestrian.legs[1].rotation.x = -stride;
-        pedestrian.arms[0].rotation.x = -stride * (running ? 0.95 : 0.78);
-        pedestrian.arms[1].rotation.x = stride * (running ? 0.95 : 0.78);
+        pedestrian.arms[0].rotation.set(-stride * (running ? 0.35 : 0.42) + aimBlend * 0.72, 0, aimBlend * 0.62);
+        pedestrian.arms[1].rotation.set(stride * (running ? 0.35 : 0.42) + aimBlend * 1.02, 0, -aimBlend * 0.08);
+        pedestrian.pistol.rotation.x = -aimBlend * 0.92;
+        pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
         const bodyBob = walkState.speed ? Math.abs(Math.sin(walkState.phase * 2)) * (running ? 0.045 : 0.022) : 0;
         pedestrian.group.position.set(
           walkState.x,
@@ -3300,7 +3369,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         }
       }
       shotCooldown = Math.max(0, shotCooldown - dt);
-      if (!isOnFootRef.current && pressed('KeyZ') && shotCooldown <= 0) {
+      if (pressed('KeyZ') && shotCooldown <= 0) {
         fireShot();
         shotCooldown = 0.18;
       }
@@ -3418,7 +3487,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
           <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
-            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
+            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> TIRER</span>
+            <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
             <small>Joystick poussé à fond : courir · Échap : menu</small></>
         ) : (
           <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
@@ -3436,10 +3506,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         </div>
         <small>{isOnFoot ? 'MOUVEMENT' : 'DIRIGER'}</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher et interagir' : 'Accélérer, freiner et tirer'}>
+      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher, tirer et interagir' : 'Accélérer, freiner et tirer'}>
         {[
           ['ArrowUp', '×', isOnFoot ? 'Courir' : 'Accélérer', 'accelerate'],
-          ['ArrowDown', '□', isOnFoot ? 'Reculer' : 'Freiner', 'brake'],
+          [isOnFoot ? 'KeyZ' : 'ArrowDown', '□', isOnFoot ? 'Tirer' : 'Freiner', isOnFoot ? 'foot-shoot' : 'brake'],
           ['KeyZ', '○', isOnFoot ? 'Tir en voiture' : 'Tirer', 'shoot'],
         ].map(([code, glyph, label, action]) => (
           <button key={code} type="button" data-action={action} aria-label={label} title={label}
