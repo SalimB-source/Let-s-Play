@@ -158,13 +158,13 @@ test('le Javelot du beffroi donne l’Attaque ciblée, que le remplacement retir
 
 // ── Le Licou du chien de sable ──────────────────────────────────────────────
 
-test('le Licou tue ce qu’il équipe et paie deux cartes', () => {
+test('le Licou tue ce qu’il équipe et paie une carte', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'fennec-des-decombres'); // 3/1
   const mainAvant = duel.joueur.main.length;
   equiper(duel, 'joueur', 'licou-du-chien-de-sable', porteur);
   assert.equal(duel.joueur.creatures.length, 0, 'le Fennec 3/1 passe à 3/0 : il meurt');
-  assert.equal(duel.joueur.main.length, mainAvant + 2, 'deux cartes pour un mana');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour un mana');
   assert.ok(duel.joueur.cimetiere.includes('licou-du-chien-de-sable'),
     'l’arme tombe au cimetière avec son porteur');
 });
@@ -178,7 +178,7 @@ test('sur une créature solide, le Licou reste une arme offensive et punit sa mo
   assert.equal(porteur.def, 1);
   const mainAvant = duel.joueur.main.length;
   rpgBlesserCreature(duel, 'joueur', porteur.id, 1, 'braise', null, 'magie');
-  assert.equal(duel.joueur.main.length, mainAvant + 2, 'sa mort pioche quand même');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'sa mort pioche quand même');
 });
 
 test('un renvoi en main n’est pas une mort : le Licou ne pioche pas', () => {
@@ -197,7 +197,7 @@ test('le Harnais du méhari rend un mana de sable à chaque attaque', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet');
   equiper(duel, 'joueur', 'harnais-du-mehari', porteur);
-  assert.deepEqual(porteur.atk, 4, '+2/+2 sur un 2/2');
+  assert.deepEqual(porteur.atk, 3, '+1/+2 sur un 2/2');
   rendrePret(duel, porteur);
   manaNul(duel, 'joueur');
   rpgLancerAttaque(duel, 'joueur', [porteur.id], {});
@@ -241,11 +241,11 @@ test('bloqué, le Masque du guetteur ne se déclenche pas', () => {
 
 // ── La Jitte d’Amayas ───────────────────────────────────────────────────────
 
-test('la Jitte d’Amayas : +2/+1, et une protection contre les Ténèbres', () => {
+test('la Jitte d’Amayas : +2/+2, et une protection contre les Ténèbres', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
-  assert.deepEqual([porteur.atk, porteur.def, porteur.pv], [4, 3, 3], 'le 2/2 passe 4/3');
+  assert.deepEqual([porteur.atk, porteur.def, porteur.pv], [4, 4, 4], 'le 2/2 passe 4/4');
   assert.equal(porteur.arme.compteurs, undefined, 'plus de compteurs : l’arme est simple');
   assert.equal(rpgPeutActiverArme(duel, 'joueur', porteur.id), false, 'plus de modes à activer');
   assert.equal(rpgActiverArme(duel, 'joueur', porteur.id, { mode: 'force' }).ok, false,
@@ -256,7 +256,7 @@ test('la Jitte d’Amayas : +2/+1, et une protection contre les Ténèbres', () 
   // Une source Ténèbres ne le blesse pas ; une autre couleur passe normalement.
   assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'tenebres').recus, 0,
     'la nuit glisse sur la Jitte');
-  assert.equal(porteur.pv, 3);
+  assert.equal(porteur.pv, 4);
   assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 1, 'braise').recus, 1,
     'la Braise, elle, mord comme avant');
 });

@@ -1602,7 +1602,7 @@ function rafraichirAuras(duel) {
 
 /** Protection temporaire contre les effets et les créatures d'une couleur
  *  donnée — plus l'immunité permanente que l'arme portée peut conférer
- *  (`donne.immunite`, l'Armure de cendres contre la Braise) : même porte
+ *  (`donne.immunite`, lorsqu’une arme confère une immunité) : même porte
  *  d'entrée pour tous les dégâts, ciblages et blocages du moteur. */
 export function rpgEstProtegee(entite, element) {
   // Un Site n'est pas une cible légale, quelle que soit la couleur de la
@@ -1981,6 +1981,7 @@ function attacherArme(duel, cote, entite, carteArme) {
   if (carteArme.donne?.envol) entite.envol = true;
   if (carteArme.donne?.infiltration) entite.infiltration = true;
   if (carteArme.donne?.volDeVie) entite.volDeVie = true;
+  if (carteArme.donne?.contreAttaque) entite.contreAttaque = true;
   if (carteArme.donne?.coupRapide) entite.coupRapide = true;
   if (carteArme.donne?.coupCritique) recalculerCoupCritique(entite);
   if (carteArme.donne?.tribut) entite.tribut = (entite.tribut ?? 0) + carteArme.donne.tribut;
@@ -2051,6 +2052,7 @@ function retirerArme(duel, cote, entite) {
     || Boolean(entite.infiltrationTour);
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
   if (carteArme.donne?.volDeVie) entite.volDeVie = Boolean(duelCardById(entite.carteId)?.volDeVie);
+  if (carteArme.donne?.contreAttaque) entite.contreAttaque = Boolean(duelCardById(entite.carteId)?.contreAttaque);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
   if (carteArme.coutPorteur) {
@@ -2954,6 +2956,21 @@ function gelerEntite(duel, entite) {
   duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
 }
 
+// Déclenchement d'une arme avant les blessures : un jet indépendant par adversaire.
+function gelerAdversaireDePorteur(duel, porteur, cible) {
+  if (!porteur || !cible) return;
+  const arme = armeCarteDe(porteur);
+  const effet = arme?.porteurAvantDegats;
+  if (effet?.type !== 'gel' || (hasardParDuel.get(duel) ?? Math.random)() >= effet.chance) return;
+  if (rpgEstProtegee(cible, cardColors(arme)) || rpgEstProtegeeDesSorts(cible, cardColors(arme), 'capacite')) return;
+  if (cible.bouclier > 0) {
+    briserBouclier(cible);
+    duel.log.push(`Le bouclier de ${cible.name} bloque le gel de ${arme.name} et tombe.`);
+    return;
+  }
+  gelerEntite(duel, cible);
+}
+
 /**
  * Durée, en tours du contrôleur, d'un interdit « jusqu'à la fin de son
  * prochain tour » (le venin de la Vipère, la lune de Bakunawa) : la même
@@ -3787,7 +3804,9 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // par `rafraichirAuras`.
       const modele = jetonById(effet.jeton);
       if (!modele) return;
-      const nombre = Math.max(0, Math.floor(Number(effet.nombre) || 1));
+      const nombre = effet.remplirChamp
+        ? Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length)
+        : Math.max(0, Math.floor(Number(effet.nombre) || 1));
       if (!nombre) return;
       // Cinq emplacements au maximum (mode essai) : les jetons qui n'ont pas
       // de place libre ne naissent pas — la table ne dépasse jamais ses cases.
@@ -3800,7 +3819,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       for (let i = 0; i < crees; i += 1) {
         const jeton = creerEntiteCreature(modele);
         // `ephemere` : le jeton ne survit pas au tour qui l'a vu naître —
-        // `rpgFinDeTour` le détruit (serpents du Bâton des citernes).
+        // `rpgFinDeTour` le détruit.
         if (effet.ephemere) jeton.detruireFinDuTour = true;
         duel[cote].creatures.push(jeton);
         placerDansEmplacement(duel, cote, jeton);
@@ -3976,11 +3995,13 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const cible = duel[campCible].creatures.find((entite) => entite.id === cibleId);
       if (!combattant || !cible) return;
       duel.log.push(`${combattant.name} se bat contre ${cible.name} (${combattant.atk} / ${cible.atk}).`);
+      gelerAdversaireDePorteur(duel, combattant, cible);
+      gelerAdversaireDePorteur(duel, cible, combattant);
       appliquerDegatsDeCombatSimultanes(duel, [
         {
           cote: campCible,
           entiteId: cible.id,
-          amount: combattant.atk,
+          amount: estGelee(combattant) ? 0 : combattant.atk,
           sourceElement,
           sourceType: 'capacite', sourceCreature: sourceType === 'capacite', effetSourceCote: cote,
           // Le duel de créatures nomme ses deux combattants : le mort sait
@@ -3991,7 +4012,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         {
           cote,
           entiteId: combattant.id,
-          amount: cible.atk,
+          amount: estGelee(cible) ? 0 : cible.atk,
           sourceElement: cardColors(duelCardById(cible.carteId)),
           sourceType: 'capacite', sourceCreature: sourceType === 'capacite', effetSourceCote: cote,
           sourceCote: campCible,
@@ -5990,6 +6011,8 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   appliquerBannieresAttaque(duel, cote, [attaquant]);
   attaquant.attaquee = true;
 
+  gelerAdversaireDePorteur(duel, attaquant, cible);
+  gelerAdversaireDePorteur(duel, cible, attaquant);
   const carteAttaquant = duelCardById(attaquant.carteId);
   const carteCible = duelCardById(cible.carteId);
   const couleursAttaquant = cardColors(carteAttaquant);
@@ -6006,7 +6029,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   const traque = bonusTraquePirates(attaquant, cible);
   if (duel[cote].creatures.some((entite) => entite.id === attaquant.id)) {
     coupsNormaux.push({
-      cote: autre(cote), entiteId: cible.id, amount: attaquant.atk + traque,
+      cote: autre(cote), entiteId: cible.id, amount: estGelee(attaquant) ? 0 : attaquant.atk + traque,
       sourceElement: couleursAttaquant, sourceType: 'attaque',
       sourceCote: cote, sourceId: attaquant.id,
     });
@@ -6014,7 +6037,7 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
   }
   if (duel[autre(cote)].creatures.some((entite) => entite.id === cible.id)) {
     coupsNormaux.push({
-      cote, entiteId: attaquant.id, amount: cible.atk,
+      cote, entiteId: attaquant.id, amount: estGelee(cible) ? 0 : cible.atk,
       sourceElement: couleursCible, sourceType: 'attaque',
       sourceCote: autre(cote), sourceId: cible.id,
     });
@@ -6983,6 +7006,23 @@ export function rpgLancerAttaque(
   // La déclaration passe à l'histoire : la phase d'attaque de ce camp est jouée,
   // aucun second combat ne s'ouvrira avant le tour suivant (`rpgFinDeTour`).
   duel.attaqueJouee = cote;
+  // Les jets de gel sont résolus seulement après validation de la répartition,
+  // pour qu'une déclaration invalide ne modifie jamais le duel.
+  for (const frappe of frappesRapides) {
+    if (frappe.annule || frappe.rate) continue;
+    gelerAdversaireDePorteur(duel,
+      duel[cote].creatures.find((e) => e.id === frappe.attaquantId),
+      duel[adv].creatures.find((e) => e.id === frappe.cibleId));
+  }
+  for (const attaquant of attaquants) {
+    if (attaquantsArretes.has(attaquant.id)) continue;
+    for (const bloqueurId of affectations[attaquant.id] ?? []) {
+      const bloqueur = duel[adv].creatures.find((e) => e.id === bloqueurId);
+      if (!bloqueur) continue;
+      gelerAdversaireDePorteur(duel, attaquant, bloqueur);
+      gelerAdversaireDePorteur(duel, bloqueur, attaquant);
+    }
+  }
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
   const ciblesRapidesDetruites = new Set(rpgDestructionsDepuis(duel, destructionsAvantFrappes).map((evenement) => evenement.entityId));
@@ -7124,7 +7164,7 @@ export function rpgLancerAttaque(
   // une capacité préalable ne peut plus infliger ses blessures de combat.
   let coupsNormaux = degatsCombat
     .filter((coup) => duel[coup.coteSource].creatures.some((entite) => entite.id === coup.sourceId))
-    .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, sourceCote: coteSource, sourceId }));
+    .map(({ coteSource, sourceId, ...coup }) => ({ ...coup, amount: estGelee(duel[coteSource].creatures.find((entite) => entite.id === sourceId)) ? 0 : coup.amount, sourceCote: coteSource, sourceId }));
   // Capturer les cibles des armes avant que les morts ne soient retirées du battlefield
   // par `appliquerDegatsDeCombatSimultanes`.
   const ciblesParAttaquant = new Map();

@@ -394,8 +394,8 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       // kaiga : Tojiro, rendu à sa peinture nihonga à la demande.
       'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
       'feux-de-kitsune': 'braise-souls-cendres-v6',
-      'braise-et-sable': 'braise-et-sable-souls-v1',
-      'sabre-maudit': 'braise-souls-cendres-v5',
+      'braise-et-sable': 'armurerie-sangles-v1',
+      'sabre-maudit': 'armurerie-sangles-v1',
       'frappe-iaijutsu': 'braise-souls-cendres-v6',
       'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
     };

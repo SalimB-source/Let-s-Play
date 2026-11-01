@@ -393,8 +393,7 @@ export const RPG_TENEBRES_ARMES = [
     typeLine: 'Arme — Khopesh',
     bonus: { atk: 2, def: 1 },
     donne: { tribut: 1 },
-    porteurMeurt: { type: 'reanimation-porteur' },
-    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1. Quand le porteur meurt, il revient en jeu avec 1 point de défense.',
+    text: 'Arme — Le porteur gagne +2/+1 et Tribut 1.',
     flavor: 'Le fer recourbé prête sa lame au cœur qui pèse.',
   }),
 ];

@@ -308,7 +308,7 @@ export function pastillesPourCarte(carte) {
   else if (carte.furieGains?.overkill) ajouter('overkill', 'Overkill (furie)');
   if (carte.furie) ajouter('furie', 'Furie', Number(carte.furie) || null);
   if (carte.esquive) ajouter('esquive', 'Esquive', null);
-  if (carte.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
+  if (carte.contreAttaque || carte.donne?.contreAttaque) ajouter('contreAttaque', 'Contre-attaque');
   if (carte.tenacite) ajouter('tenacite', 'Tenacité');
   if (carte.compagnie) {
     // La Compagnie se nomme par la tribu qu'elle compte : « Compagnie viking ».

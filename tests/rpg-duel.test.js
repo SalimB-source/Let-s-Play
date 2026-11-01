@@ -1169,7 +1169,7 @@ test('la révision Neige : nouvelles valeurs, nouvelles valkyries et cinq peintu
     ['brume-du-fjord', 'neige-souls-cendres-v1'],
     ['hurlement-du-blizzard', 'neige-hurlement-grizzli-v2'],
     // Et la hache de la banquise a quitté sa révision dédiée pour la passe.
-    ['hache-de-la-banquise', 'neige-hache-fil-en-bas-v2'],
+    ['hache-de-la-banquise', 'armurerie-sangles-v2'],
   ]) {
     const chemin = fileURLToPath(new URL(`../public/cards/${art}.jpg`, import.meta.url));
     assert.deepEqual(dimensionsJpeg(chemin), [CARD_ART_LARGEUR, CARD_ART_HAUTEUR],

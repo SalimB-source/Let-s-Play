@@ -15,7 +15,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Types de cartes',
     cardIds: ['takouba-des-pistes', 'baton-des-citernes', 'armure-de-cendres', 'lance-de-givre'],
     title: 'Les armes équipent vos créatures',
-    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Attaque ciblée ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même un serpent appelé à son arrivée (le Bâton des citernes, qui peut en appeler d’autres pour 3 manas). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
+    text: 'Une arme se paie en mana puis s’attache à une créature alliée : son porteur gagne le bonus imprimé (+attaque/+défense) et, selon l’arme, un mot-clé comme Attaque ciblée ou Infiltration (le Takouba rend son porteur inbloquable), un effet de combat, ou même des serpents appelés à son arrivée (le Bâton des citernes remplit les emplacements alliés vides de Serpents 1/1). Une seule arme par créature — en attacher une autre envoie la première au cimetière — et quand le porteur quitte la table, détruit ou renvoyé en main, son arme tombe avec lui au cimetière.',
   },
   {
     id: 'terrain-hybride',
