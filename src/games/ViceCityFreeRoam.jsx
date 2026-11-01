@@ -520,6 +520,7 @@ function makeCity(scene) {
   };
   const litWindowPositions = [];
   const blueWindowPositions = [];
+  const neonGlowSpecs = [];
   const darkWindowPositions = [];
   const litSideWindowPositions = [];
   const blueSideWindowPositions = [];
@@ -1054,6 +1055,31 @@ function makeCity(scene) {
   const canopyMats = [0x397348, 0x477d4a, 0x527f47].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.96 }));
   const broadleafGeometry = new THREE.IcosahedronGeometry(1, 1);
   const neon = [0xff668a, 0x45d7dc, 0xf2c968];
+  const districtLighting = {
+    downtown: { signs: [0xff4f9a, 0x32dce8, 0xffc044], glow: 1 },
+    port: { signs: [0xffa84b, 0x58ccd5, 0xe6dfc6], glow: 0.76 },
+    residential: { signs: [0xffc37a, 0x8bc0b1, 0xe2aa6f], glow: 0.48 },
+  };
+  const neonGlowSize = 48;
+  const neonGlowPixels = new Uint8Array(neonGlowSize * neonGlowSize * 4);
+  for (let y = 0; y < neonGlowSize; y += 1) for (let x = 0; x < neonGlowSize; x += 1) {
+    const radius = Math.hypot((x - (neonGlowSize - 1) / 2) / (neonGlowSize / 2),
+      (y - (neonGlowSize - 1) / 2) / (neonGlowSize / 2));
+    const pixel = (y * neonGlowSize + x) * 4;
+    neonGlowPixels[pixel] = 255;
+    neonGlowPixels[pixel + 1] = 255;
+    neonGlowPixels[pixel + 2] = 255;
+    neonGlowPixels[pixel + 3] = Math.round(Math.max(0, 1 - radius) ** 2 * 220);
+  }
+  const neonGlowTexture = new THREE.DataTexture(neonGlowPixels, neonGlowSize, neonGlowSize, THREE.RGBAFormat);
+  neonGlowTexture.colorSpace = THREE.SRGBColorSpace;
+  neonGlowTexture.magFilter = THREE.LinearFilter;
+  neonGlowTexture.minFilter = THREE.LinearFilter;
+  neonGlowTexture.needsUpdate = true;
+  const neonGlowMaterial = new THREE.MeshBasicMaterial({
+    map: neonGlowTexture, vertexColors: true, transparent: true, opacity: 0.46,
+    depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  });
   const awningMats = neon.map((accent) => {
     const size = 64;
     const pixels = new Uint8Array(size * 16 * 4);
@@ -1461,9 +1487,9 @@ function makeCity(scene) {
     const ghettoBlock = bx >= 0;
     const isPortDistrict = bx <= -2 && Math.abs(bz) <= 2;
     const isDowntownDistrict = !isPortDistrict && bx < 0 && Math.abs(bz) <= 1;
-    const districtPalette = isPortDistrict
-      ? districtPalettes.port
-      : isDowntownDistrict ? districtPalettes.downtown : districtPalettes.residential;
+    const districtName = isPortDistrict ? 'port' : isDowntownDistrict ? 'downtown' : 'residential';
+    const districtPalette = districtPalettes[districtName];
+    const districtLight = districtLighting[districtName];
     const amenityRoll = random();
     const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
@@ -1562,7 +1588,8 @@ function makeCity(scene) {
           }
         }
       }
-      const signMat = new THREE.MeshBasicMaterial({ color: neon[Math.floor(random() * neon.length)], toneMapped: false });
+      const signColor = districtLight.signs[Math.floor(random() * districtLight.signs.length)];
+      const signMat = new THREE.MeshBasicMaterial({ color: signColor, toneMapped: false });
       if (hasShop) {
         const shopWidth = Math.min(13, width * 0.64);
         const doorWidth = 1.25;
@@ -1582,6 +1609,10 @@ function makeCity(scene) {
         addBox(lot, brassMat, doorX + doorWidth * 0.31, 1.25, shopGlassZ + frontSign * 0.1, 0.055, 0.2, 0.06);
         addBox(lot, shopFrameMat, x, 3.08, frontZ + frontSign * 0.24, shopWidth + 0.36, 0.44, 0.42);
         addBox(lot, signMat, x, 3.13, frontZ + frontSign * 0.47, shopWidth, 0.28, 0.08);
+        neonGlowSpecs.push({
+          x, y: 3.13, z: frontZ + frontSign * 0.41, frontSign,
+          width: shopWidth + 3.2, height: 3.8, color: signColor, intensity: districtLight.glow,
+        });
         const awning = new THREE.Mesh(
           new THREE.BoxGeometry(shopWidth + 0.7, 0.18, 1.3),
           awningMats[Math.floor(random() * awningMats.length)],
@@ -2148,6 +2179,25 @@ function makeCity(scene) {
   };
   updateTrafficSignals(0);
 
+  if (neonGlowSpecs.length) {
+    const neonGlows = new THREE.InstancedMesh(
+      new THREE.PlaneGeometry(1, 1), neonGlowMaterial, neonGlowSpecs.length,
+    );
+    const glowMarker = new THREE.Object3D();
+    neonGlowSpecs.forEach((spec, index) => {
+      glowMarker.position.set(spec.x, spec.y, spec.z);
+      glowMarker.rotation.set(0, spec.frontSign < 0 ? Math.PI : 0, 0);
+      glowMarker.scale.set(spec.width, spec.height, 1);
+      glowMarker.updateMatrix();
+      neonGlows.setMatrixAt(index, glowMarker.matrix);
+      neonGlows.setColorAt(index, new THREE.Color(spec.color).multiplyScalar(spec.intensity));
+    });
+    neonGlows.instanceMatrix.needsUpdate = true;
+    if (neonGlows.instanceColor) neonGlows.instanceColor.needsUpdate = true;
+    neonGlows.computeBoundingSphere();
+    neonGlows.renderOrder = 1;
+    scene.add(neonGlows);
+  }
   const addWindowInstances = (positions, material, rotationY = 0) => {
     const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 1.45, 0.1), material, positions.length);
     positions.forEach(([x, y, z], index) => { marker.position.set(x, y, z); marker.rotation.set(0, rotationY, 0); marker.scale.set(1, 1, 1); marker.updateMatrix(); windows.setMatrixAt(index, marker.matrix); });
