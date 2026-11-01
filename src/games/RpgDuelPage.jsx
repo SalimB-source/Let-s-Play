@@ -1472,6 +1472,23 @@ const ECLATS_BOUCLIER = Object.freeze([
   { dx: 34, dy: 62, r: -28, d: 90 },
 ]);
 
+// Chaque fragment part d'un endroit différent de l'écu, puis s'écarte comme
+// un morceau de verre. Coordonnées relatives à la carte, adaptées au mobile.
+const FRAGMENTS_VERRE_BOUCLIER = Object.freeze([
+  { x: 38, y: 29, dx: -85, dy: -85, r: -110, d: 0, forme: 0 },
+  { x: 49, y: 27, dx: -20, dy: -105, r: 95, d: 18, forme: 1 },
+  { x: 61, y: 31, dx: 88, dy: -80, r: 125, d: 38, forme: 2 },
+  { x: 34, y: 41, dx: -110, dy: -25, r: 145, d: 23, forme: 2 },
+  { x: 44, y: 39, dx: -52, dy: -48, r: -105, d: 5, forme: 1 },
+  { x: 55, y: 41, dx: 65, dy: -45, r: 125, d: 16, forme: 0 },
+  { x: 66, y: 44, dx: 115, dy: -10, r: -155, d: 33, forme: 1 },
+  { x: 37, y: 53, dx: -105, dy: 48, r: -155, d: 35, forme: 0 },
+  { x: 48, y: 51, dx: -38, dy: 60, r: 110, d: 12, forme: 2 },
+  { x: 59, y: 53, dx: 70, dy: 60, r: -120, d: 28, forme: 1 },
+  { x: 43, y: 64, dx: -60, dy: 102, r: 140, d: 42, forme: 2 },
+  { x: 55, y: 64, dx: 45, dy: 105, r: -130, d: 25, forme: 0 },
+]);
+
 /** L'écu dessiné au cœur de l'égide — le même tracé veille et encaisse. */
 function EcuBouclier({ fissure = false }) {
   return (
@@ -1519,6 +1536,24 @@ function ImpactBouclier({ montant = 0, restant = 0, lumiere = false }) {
       <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--a" />
       <span className="rpg-bouclier-impact__anneau rpg-bouclier-impact__anneau--b" />
       <EcuBouclier fissure={brise} />
+      {brise && (
+        <span className="rpg-bouclier-verre" data-bouclier-verre="brise">
+          <svg className="rpg-bouclier-verre__fissures" viewBox="0 0 100 120" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M50 58 35 21M50 58 57 18M50 58 76 32M50 58 84 59M50 58 71 94M50 58 51 110M50 58 27 100M50 58 15 69M50 58 20 35 M35 21 27 15M76 32 83 23M71 94 81 103M27 100 20 111" />
+          </svg>
+          {FRAGMENTS_VERRE_BOUCLIER.map((fragment, index) => (
+            <i
+              key={index}
+              className={`rpg-bouclier-verre__fragment rpg-bouclier-verre__fragment--${fragment.forme}`}
+              style={{
+                '--x': `${fragment.x}%`, '--y': `${fragment.y}%`,
+                '--dx': `${fragment.dx * 3}%`, '--dy': `${fragment.dy * 3}%`,
+                '--rotation': `${fragment.r}deg`, '--delai': `${fragment.d}ms`,
+              }}
+            />
+          ))}
+        </span>
+      )}
       {ECLATS_BOUCLIER.map((eclat) => (
         <i
           key={`${eclat.dx}-${eclat.dy}`}
