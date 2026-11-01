@@ -425,7 +425,7 @@ test('une voix ne se joue jamais quand le son est coupé', () => {
     assert.equal(FakeAudio.lectures.length, 0);
 
     player.setMuted(false);
-    player.setVolume(0);
+    player.setVolumeVoix(0);
     assert.equal(player.playCardVoice(url), false);
     assert.equal(FakeAudio.lectures.length, 0);
 

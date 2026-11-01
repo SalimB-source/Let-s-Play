@@ -359,3 +359,59 @@ test('setVolume ajuste le gain de chaque fichier, dose du survol comprise', () =
   assert.equal(player.gainEchantillon(survol), 0, 'à volume 0, le survol est muet');
   player.destroy();
 });
+
+test('les voix des cartes et les dialogues génériques ont un volume indépendant des bruitages', async () => {
+  const precedent = globalThis.window;
+  class FakeMediaContext extends FakeAudioContext {
+    createMediaElementSource() { return fakeNode(); }
+  }
+  globalThis.window = { AudioContext: FakeMediaContext, Audio: FakeAudioElement };
+  const player = new RpgAudioPlayer();
+  try {
+    player.unlock();
+    const effet = player.echantillonsParNom.get('hover');
+    const pirate = player.echantillonsParNom.get('pirate_arrivee');
+    const nain = player.echantillonsParNom.get('dwarf_dialogue');
+    player.setVolume(0);
+    player.setVolumeVoix(0.4);
+    assert.equal(player.gainEchantillon(effet), 0);
+    assert.equal(player.gainEchantillon(pirate), pirate.gain * 0.4);
+    assert.equal(player.gainEchantillon(nain), nain.gain * 0.4);
+    player.play('hover');
+    player.play('pirate_arrivee');
+    assert.equal(effet.audio.playCount, 0);
+    assert.equal(pirate.audio.playCount, 1);
+    assert.equal(player.playCardVoice('/voix-test.mp3'), true);
+    const voix = player.voixEntrees.get('/voix-test.mp3');
+    assert.equal(player.gainEchantillon(voix), voix.gain * 0.4);
+    assert.equal(voix.noeud.gain.value, voix.gain * 0.4);
+
+    player.setVolume(0.6);
+    player.setVolumeVoix(0);
+    assert.equal(player.gainEchantillon(voix), 0);
+    assert.equal(voix.noeud.gain.value, 0, 'le réglage affecte immédiatement une voix en cours');
+    player.play('hover');
+    player.play('dwarf_dialogue');
+    assert.equal(effet.audio.playCount, 1);
+    assert.equal(nain.audio.playCount, 0);
+    assert.equal(player.playCardVoice('/autre.mp3'), false);
+
+    player.setVolumeVoix(1);
+    player.play('pirate_arrivee', 0.02);
+    player.playCardVoice('/voix-test.mp3', 0.02);
+    player.setVolumeVoix(0);
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    assert.equal(pirate.audio.playCount, 1, 'une voix différée ne démarre pas après coupure');
+    assert.equal(voix.audio.playCount, 1, 'la réplique différée reste muette');
+    player.setVolumeVoix(0.4);
+    player.setMuted(true);
+    assert.equal(player.gainEchantillon(effet), 0);
+    assert.equal(player.gainEchantillon(voix), 0);
+    player.setMuted(false);
+    assert.equal(player.gainEchantillon(voix), voix.gain * 0.4);
+    assert.equal(player.gainEchantillon(effet), effet.gain * 0.6);
+  } finally {
+    player.destroy();
+    globalThis.window = precedent;
+  }
+});
