@@ -552,6 +552,8 @@ function makeCity(scene) {
   const litWindowPositions = [];
   const blueWindowPositions = [];
   const neonGlowSpecs = [];
+  const neonSignMaterials = [];
+  const neonPointLights = [];
   const darkWindowPositions = [];
   const litSideWindowPositions = [];
   const blueSideWindowPositions = [];
@@ -1621,6 +1623,8 @@ function makeCity(scene) {
       }
       const signColor = districtLight.signs[Math.floor(random() * districtLight.signs.length)];
       const signMat = new THREE.MeshBasicMaterial({ color: signColor, toneMapped: false });
+      signMat.userData.originalNeonColor = signMat.color.clone();
+      neonSignMaterials.push(signMat);
       if (hasShop) {
         const shopWidth = Math.min(13, width * 0.64);
         const doorWidth = 1.25;
@@ -2211,8 +2215,9 @@ function makeCity(scene) {
   };
   updateTrafficSignals(0);
 
+  let neonGlows = null;
   if (neonGlowSpecs.length) {
-    const neonGlows = new THREE.InstancedMesh(
+    neonGlows = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1), neonGlowMaterial, neonGlowSpecs.length,
     );
     const glowMarker = new THREE.Object3D();
@@ -2229,6 +2234,15 @@ function makeCity(scene) {
     neonGlows.computeBoundingSphere();
     neonGlows.renderOrder = 1;
     scene.add(neonGlows);
+    const localLightCount = Math.min(8, neonGlowSpecs.length);
+    for (let index = 0; index < localLightCount; index += 1) {
+      const spec = neonGlowSpecs[Math.floor(index * neonGlowSpecs.length / localLightCount)];
+      const light = new THREE.PointLight(spec.color, 0, 24, 2);
+      light.position.set(spec.x, spec.y - 0.7, spec.z + spec.frontSign * 1.1);
+      light.userData.neonBaseIntensity = 5.5 * spec.intensity;
+      scene.add(light);
+      neonPointLights.push(light);
+    }
   }
   const addWindowInstances = (positions, material, rotationY = 0) => {
     const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 1.45, 0.1), material, positions.length);
@@ -2409,8 +2423,45 @@ function makeCity(scene) {
     }
     return broken;
   };
+  const puddleMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x75949a, roughness: 0.1, metalness: 0.36, clearcoat: 1,
+    clearcoatRoughness: 0.04, transparent: true, opacity: 0.56,
+    depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const puddleGeometry = new THREE.CircleGeometry(1, 18);
+  puddleGeometry.rotateX(-Math.PI / 2);
+  const puddleSpecs = [];
+  for (const roadX of [-300, -200, -100, 100, 200, 300]) {
+    for (const z of [-250, -150, -50, 50, 150, 250]) {
+      const side = z < 0 ? 1 : -1;
+      puddleSpecs.push([roadX + side * 2.45, z + ((roadX / 100) % 2) * 1.4, 1.05 + ((Math.abs(roadX + z) / 50) % 3) * 0.42, 0.34 + ((Math.abs(roadX - z) / 80) % 2) * 0.18]);
+    }
+  }
+  for (const roadZ of [-300, -200, -100, 100, 200, 300]) {
+    for (const x of [-250, -150, -50, 50, 150, 250]) {
+      const side = x < 0 ? 1 : -1;
+      puddleSpecs.push([x + ((roadZ / 100) % 2) * 1.2, roadZ + side * 2.35, 0.36 + ((Math.abs(x + roadZ) / 80) % 2) * 0.16, 1.0 + ((Math.abs(x - roadZ) / 50) % 3) * 0.4]);
+    }
+  }
+  const puddles = new THREE.InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
+  puddles.name = 'vice-city-rain-puddles';
+  puddles.visible = false;
+  puddles.receiveShadow = false;
+  const puddleMarker = new THREE.Object3D();
+  puddleSpecs.forEach(([x, z, width, depth], index) => {
+    puddleMarker.position.set(x, surfaceHeight(x, z) + 0.018, z);
+    puddleMarker.scale.set(width, 1, depth);
+    puddleMarker.rotation.y = (index % 5) * 0.31;
+    puddleMarker.updateMatrix();
+    puddles.setMatrixAt(index, puddleMarker.matrix);
+  });
+  puddles.instanceMatrix.needsUpdate = true;
+  puddles.computeBoundingSphere();
+  scene.add(puddles);
+
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
+    neonGlowMaterial, neonGlows, neonSignMaterials, neonPointLights, puddles,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
     roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
     canalBoats, updateCanalBoats, updateCanalWater, roundaboutIsland, breakFencesAt,
@@ -2813,6 +2864,22 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let engineProfile = profile.archetype;
     let playerVehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     let vehicle = playerVehicle;
+    const installFreeRoamHeadlights = (car) => {
+      const lights = [];
+      for (const side of [-1, 1]) {
+        const light = new THREE.SpotLight(0xffedc5, 0, 52, 0.47, 0.62, 2);
+        light.position.set(side * 0.58, 0.76, -1.72);
+        light.castShadow = false;
+        const target = new THREE.Object3D();
+        target.position.set(side * 0.95, -0.95, -31);
+        car.add(light, target);
+        light.target = target;
+        lights.push(light);
+      }
+      car.userData.freeRoamHeadlights = { lights };
+      return car;
+    };
+    installFreeRoamHeadlights(playerVehicle);
     let activeParkedBody = null;
     playerVehicle.position.set(-138, 0, 0);
     scene.add(playerVehicle);
@@ -2982,14 +3049,34 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const nextWeather = weatherElapsed % 105 > 72 ? 'rain' : 'clear';
       if (nextWeather !== weatherMode) {
         weatherMode = nextWeather;
-        city.roadMat.roughness = weatherMode === 'rain' ? 0.42 : 0.94;
-        city.roadMat.color.setHex(weatherMode === 'rain' ? 0x1d2934 : 0x252a32);
+        city.roadMat.roughness = weatherMode === 'rain' ? 0.24 : 0.94;
+        city.roadMat.metalness = weatherMode === 'rain' ? 0.2 : 0;
+        city.roadMat.color.setHex(weatherMode === 'rain' ? 0x1b2935 : 0x252a32);
+        city.puddles.visible = weatherMode === 'rain';
         city.roadMat.needsUpdate = true;
       }
       rain.visible = weatherMode === 'rain';
       const daylight = Math.max(0, Math.sin(((worldClock - 6) / 12) * Math.PI));
       const dusk = clamp(1 - Math.abs(worldClock - 18) / 2.8, 0, 1);
       const night = 1 - daylight;
+      const neonLevel = 0.45 + night * 0.9 + dusk * 0.18;
+      city.neonGlowMaterial.opacity = 0.42 + night * 0.34;
+      city.neonSignMaterials.forEach((material) => {
+        material.color.copy(material.userData.originalNeonColor).multiplyScalar(neonLevel);
+      });
+      city.neonPointLights.forEach((light, index) => {
+        const flicker = 0.94 + Math.sin(state.time * (2.1 + index * 0.17) + index * 8.2) * 0.035;
+        light.intensity = light.userData.neonBaseIntensity * night * flicker;
+      });
+      const headlightsOn = night > 0.3 || weatherMode === 'rain';
+      const headlightRig = playerVehicle.userData.freeRoamHeadlights;
+      if (headlightRig) headlightRig.lights.forEach((light) => {
+        light.intensity = headlightsOn ? (weatherMode === 'rain' ? 24 : 21) : 0;
+      });
+      playerVehicle.userData.headlightCones?.forEach((cone) => { cone.visible = headlightsOn; });
+      if (playerVehicle.userData.materials?.headGlow) {
+        playerVehicle.userData.materials.headGlow.opacity = headlightsOn ? 0.5 : 0.1;
+      }
       skyColor.setHSL(0.56, 0.56 - night * 0.28, 0.68 - night * 0.5 + dusk * 0.04);
       fogColor.setHSL(0.56, 0.45 - night * 0.22, 0.77 - night * 0.49 + dusk * 0.04);
       scene.background.copy(skyColor);
@@ -3684,6 +3771,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       acceleration = homeAcceleration;
       engineProfile = profile.archetype;
       playerVehicle = makeRacerCar(profile, { player: true, daylight: worldClock > 6 && worldClock < 19, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
+      installFreeRoamHeadlights(playerVehicle);
       playerVehicle.position.set(spawnX, city.surfaceHeight(spawnX, spawnZ), spawnZ);
       playerVehicle.rotation.y = -spawnHeading;
       scene.add(playerVehicle);

@@ -142,6 +142,17 @@ test('les gains, records et défis de rue sont persistés dans une clé libre di
   assert.doesNotMatch(source.slice(garageStart, garageEnd), /FREE_ROAM_PROGRESS_KEY|writeFreeRoamProgress/);
 });
 
+test('la nuit et la pluie activent phares réels, enseignes lumineuses et reflets de flaques', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.ok(source.includes('new THREE.SpotLight(0xffedc5'));
+  assert.ok(source.includes('headlightRig.lights.forEach'));
+  assert.ok(source.includes('city.neonPointLights.forEach'));
+  assert.ok(source.includes('city.neonSignMaterials.forEach'));
+  assert.ok(source.includes('new THREE.MeshPhysicalMaterial({'));
+  assert.ok(source.includes("puddles.visible = weatherMode === 'rain'"));
+  assert.ok(source.includes("city.roadMat.roughness = weatherMode === 'rain' ? 0.24"));
+});
+
 test('la pluie modifie l’accélération, le freinage et la dérive latérale', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   assert.match(source, /acceleration: acceleration \* \(isWetRoad \? 0\.88 : 1\)/);
