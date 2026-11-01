@@ -21,6 +21,7 @@ import {
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
+  viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -2231,13 +2232,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     if (joystickPointerRef.current !== event.pointerId) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const travel = Math.max(1, Math.min(bounds.width, bounds.height) * 0.34);
-    let x = (event.clientX - (bounds.left + bounds.width / 2)) / travel;
-    let y = (event.clientY - (bounds.top + bounds.height / 2)) / travel;
-    const length = Math.hypot(x, y);
-    if (length > 1) { x /= length; y /= length; }
-    touchAxesRef.current = { x, y };
+    const x = clamp((event.clientX - (bounds.left + bounds.width / 2)) / travel, -1, 1);
+    touchAxesRef.current = { x, y: 0 };
     joystickKnobRef.current?.style.setProperty('--stick-x', `${x * travel}px`);
-    joystickKnobRef.current?.style.setProperty('--stick-y', `${y * travel}px`);
+    joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
   };
   const startJoystick = (event) => {
     event.preventDefault();
@@ -2378,6 +2376,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       };
     });
     const keys = new Set();
+    const shots = [];
+    const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
+    const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
+    let shotCooldown = 0;
     const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
@@ -2460,7 +2462,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         toggleCameraRef.current?.();
         return;
       }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ'].includes(event.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
         keys.add(event.code);
@@ -2543,6 +2545,74 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       return hitCount;
     };
+    const fireShot = () => {
+      const directionX = forward.x;
+      const directionZ = forward.z;
+      const x = state.x + directionX * 2.65;
+      const z = state.z + directionZ * 2.65;
+      const mesh = new THREE.Mesh(shotGeometry, shotMaterial);
+      mesh.position.set(x, city.surfaceHeight(x, z) + 1.05, z);
+      scene.add(mesh);
+      shots.push({ mesh, x, z, directionX, directionZ, age: 0, distance: 0 });
+      if (soundOnRef.current) audioRef.current?.gunshot?.();
+    };
+    const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
+      const dx = x - carX;
+      const dz = z - carZ;
+      const cosine = Math.cos(yaw);
+      const sine = Math.sin(yaw);
+      const localX = dx * cosine - dz * sine;
+      const localZ = dx * sine + dz * cosine;
+      const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
+      return Math.abs(localX) <= halfWidth + 0.45 && Math.abs(localZ) <= halfLength + 0.55;
+    };
+    const updateShots = (dt) => {
+      for (let index = shots.length - 1; index >= 0; index -= 1) {
+        const shot = shots[index];
+        const stepX = shot.directionX * 92 * dt;
+        const stepZ = shot.directionZ * 92 * dt;
+        const stepLength = Math.hypot(stepX, stepZ);
+        const samples = Math.max(1, Math.ceil(stepLength / 0.8));
+        let hit = false;
+        for (let sample = 1; sample <= samples && !hit; sample += 1) {
+          const ratio = sample / samples;
+          const x = shot.x + stepX * ratio;
+          const z = shot.z + stepZ * ratio;
+          for (const traffic of trafficCars) {
+            if (!bulletOverlaps(x, z, traffic.car.position.x, traffic.car.position.z,
+              traffic.car.rotation.y, traffic.car.userData.width, traffic.car.userData.length)) continue;
+            const impulse = viceCityFreeDriveShotImpulse(traffic.mass);
+            traffic.velocityX += shot.directionX * impulse;
+            traffic.velocityZ += shot.directionZ * impulse;
+            traffic.angularVelocity += clamp((state.x - traffic.car.position.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            hit = true;
+            break;
+          }
+          if (hit) break;
+          for (const body of city.parkedCarBodies) {
+            if (!bulletOverlaps(x, z, body.spec.x, body.spec.z, body.spec.yaw,
+              body.spec.width, body.spec.length)) continue;
+            const impulse = viceCityFreeDriveShotImpulse(body.mass, 4.2);
+            body.velocityX += shot.directionX * impulse;
+            body.velocityZ += shot.directionZ * impulse;
+            body.angularVelocity += clamp((state.x - body.spec.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            hit = true;
+            break;
+          }
+          if (!hit) {
+            shot.x = x;
+            shot.z = z;
+            shot.distance += stepLength / samples;
+          }
+        }
+        shot.age += dt;
+        shot.mesh.position.set(shot.x, city.surfaceHeight(shot.x, shot.z) + 1.05, shot.z);
+        if (hit || shot.age > 1.5 || shot.distance > 125) {
+          scene.remove(shot.mesh);
+          shots.splice(index, 1);
+        }
+      }
+    };
     const cockpitMirrorTurn = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
     let cockpitMirrorTarget = null;
     let cockpitMirrorCamera = null;
@@ -2595,9 +2665,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       updateTraffic(dt);
       city.updateCanalBoats(dt, state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
-      const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, touchAxesRef.current.y);
-      const throttle = pressed('ArrowUp') || pressed('KeyW') || joystickInput.throttle;
-      const brake = pressed('ArrowDown') || pressed('KeyS') || joystickInput.brake;
+      const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
+      const throttle = pressed('ArrowUp') || pressed('KeyW');
+      const brake = pressed('ArrowDown') || pressed('KeyS');
       const steerInput = clamp(
         (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
           - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
@@ -2656,6 +2726,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
       vehicle.rotation.y = -state.heading;
       vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
+      shotCooldown = Math.max(0, shotCooldown - dt);
+      if (pressed('KeyZ') && shotCooldown <= 0) {
+        fireShot();
+        shotCooldown = 0.18;
+      }
+      updateShots(dt);
       animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
       const isCockpitView = cockpitViewRef.current;
       if (cockpitActive !== isCockpitView) {
@@ -2735,8 +2811,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><small>WASD · C : cockpit · M : son · Échap : menu</small></div>
-      <div className="vice-free-roam-joystick" aria-label="Joystick gauche : diriger, accélérer et freiner">
+      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER</span><small>WASD · C : cockpit · M : son · Échap : menu</small></div>
+      <div className="vice-free-roam-joystick" aria-label="Joystick gauche pour diriger">
         <div className="vice-free-roam-joystick-base" role="application" aria-label="Joystick virtuel"
           onPointerDown={startJoystick} onPointerMove={updateJoystick} onPointerUp={endJoystick}
           onPointerCancel={endJoystick} onLostPointerCapture={endJoystick}>
@@ -2744,17 +2820,20 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <button ref={joystickKnobRef} type="button" tabIndex={-1} aria-hidden="true" className="vice-free-roam-joystick-knob"
             onPointerDown={(event) => event.preventDefault()} />
         </div>
-        <small>DIRIGER · GAZ · FREIN</small>
+        <small>DIRIGER</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label="Croix directionnelle de conduite">
+      <div className="vice-free-roam-touch" role="group" aria-label="Accélérer, freiner et tirer">
         {[
-          ['ArrowUp', '↑', 'Accélérer'], ['ArrowLeft', '←', 'Tourner à gauche'],
-          ['ArrowDown', '↓', 'Freiner et reculer à l’arrêt'], ['ArrowRight', '→', 'Tourner à droite'],
-        ].map(([code, label, title]) => (
-          <button key={code} type="button" data-direction={code} aria-label={title} title={title}
+          ['ArrowUp', '×', 'Accélérer', 'accelerate'],
+          ['ArrowDown', '□', 'Freiner', 'brake'],
+          ['KeyZ', '○', 'Tirer', 'shoot'],
+        ].map(([code, glyph, label, action]) => (
+          <button key={code} type="button" data-action={action} aria-label={label} title={label}
             onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}
-            onLostPointerCapture={() => setTouchKey(code, false)}>{label}</button>
+            onLostPointerCapture={() => setTouchKey(code, false)}>
+            <span aria-hidden="true">{glyph}</span><small>{label.toUpperCase()}</small>
+          </button>
         ))}
       </div>
       {portraitTouch && (
