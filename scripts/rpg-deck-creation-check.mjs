@@ -1,7 +1,8 @@
 // Vérification d'interface du nouveau parcours de création de deck :
-// seuil à deux portes (assistée / manuelle), assistant en deux étapes
-// (couleurs puis style aggro / contrôle / mix) générant un deck de cartes
-// possédées, et atelier manuel minimaliste à filtres repliés.
+// seuil à deux portes (assistée / manuelle), assistant en trois étapes
+// (l'invite de texte lue par l'IA, puis les couleurs, puis le style aggro /
+// contrôle / mix) générant un deck de cartes possédées, et atelier manuel
+// minimaliste à filtres repliés.
 import assert from 'node:assert/strict';
 import { build } from 'vite';
 import { JSDOM } from 'jsdom';
@@ -33,4 +34,4 @@ try {
   dom.window.close();
 }
 
-console.log('✓ Création de deck : seuil assistée/manuelle, assistant couleurs → style (aggro, contrôle, mix) avec génération dans la collection, atelier manuel minimaliste et enregistrement');
+console.log('✓ Création de deck : seuil assistée/manuelle, assistant invite de texte (IA) → couleurs → style (aggro, contrôle, mix) avec génération dans la collection, atelier manuel minimaliste et enregistrement');

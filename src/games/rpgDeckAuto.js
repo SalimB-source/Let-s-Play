@@ -10,6 +10,14 @@
  * sorts choisis à la main) reste supporté par les paramètres `creatures` et
  * `sorts`, mais l'interface ne le propose plus.
  *
+ * Une **invite de texte** ouvre le parcours : le joueur peut dire son deck en
+ * toutes lettres — « un deck viking neige ténèbres, avec quelques sorts de
+ * contrôle ». `rpgDeckIntention.js` lit la phrase et rend une **intention**
+ * (couleurs, thèmes ramenés aux tribus imprimées, style et son intensité,
+ * effets voulus, familles dites, courbe, raretés, refus, cartes nommées) ; ce
+ * module la traduit en score (`normaliserIntention`, `bonusIntention`). Sans
+ * intention, rien ne change : le parcours couleurs → style reste entier.
+ *
  * Compléter, ici, est un calcul — jamais un appel réseau. Le jeu tourne hors
  * ligne (desktop, Android) et la maison préfère les règles vérifiables ; le
  * moteur est donc un module pur, déterministe, testé comme le composeur du
@@ -30,7 +38,11 @@
  *     (environ 18 créatures sur 30) ;
  *   - **Couleurs** — une couleur choisie encore absente du deck appelle ses
  *     cartes : le deck final porte bien les couleurs promises ;
- *   - **Puissance** (`rpgCardPower.js`) — en départage final seulement.
+ *   - **Puissance** (`rpgCardPower.js`) — en départage final seulement ;
+ *   - **Intention dictée** (`bonusIntention`) — le thème demandé, tant que sa
+ *     part du deck n'est pas servie, puis ce qui le complète ; les effets et
+ *     les familles dits, la courbe, les raretés, et un fort malus pour ce que
+ *     le joueur a refusé (« sans sorts »).
  *
  * Les contraintes sont dures et vérifiées : taille exacte, identité chromatique
  * choisie (toutes les couleurs de chaque carte dedans), collection du joueur,
@@ -273,12 +285,116 @@ export function scoreComplementarite(carte, etat) {
     ? ((puissanceCarte(carte) - etat.puissanceMin) / amplitude) * 0.7
     : 0.35;
   // 7. Le style de jeu choisi : neutre en `mix`, directeur en aggro/contrôle.
-  const styleBonus = bonusStyle(carte, etat.style ?? 'mix');
-  return synergie + couverture + courbe + mix + couleurs + puissance + styleBonus;
+  //    L'intention dictée en module le poids (« quelques sorts de contrôle »
+  //    pèse moins qu'un deck contrôle assumé).
+  const demande = etat.intention ?? null;
+  const styleBonus = bonusStyle(carte, etat.style ?? 'mix') * (demande?.poidsStyle ?? 1);
+  // 8. La demande en toutes lettres : le thème, les effets, les familles, la
+  //    courbe et les refus lus par `rpgDeckIntention.js`.
+  const intentionBonus = bonusIntention(carte, demande, etat);
+  return synergie + couverture + courbe + mix + couleurs + puissance + styleBonus + intentionBonus;
+}
+
+/**
+ * L'intention lue de l'invite de texte, ramenée à ce que le moteur sait
+ * noter — un objet plat, sans vocabulaire ni catalogue. `null` quand rien
+ * n'est demandé : le score historique reste alors **strictement** le même.
+ */
+export function normaliserIntention(intention) {
+  if (!intention || typeof intention !== 'object') return null;
+  const liste = (valeur) => [...new Set(Array.isArray(valeur) ? valeur.filter(Boolean) : [])];
+  const tribus = liste(intention.tribus).map((tribu) => normaliserMot(tribu)).filter(Boolean);
+  const themes = liste(intention.themes).map((theme) => (typeof theme === 'string'
+    ? { id: theme, label: theme }
+    : { id: theme?.id ?? '', label: theme?.label ?? theme?.id ?? '' }));
+  const exclusions = intention.exclusions ?? {};
+  const partTheme = Number.isFinite(Number(intention.partTheme))
+    ? Math.min(Math.max(Number(intention.partTheme), 0.2), 0.95)
+    : 0.6;
+  const poidsStyle = Number.isFinite(Number(intention.poidsStyle))
+    ? Math.min(Math.max(Number(intention.poidsStyle), 0.3), 1.6)
+    : 1;
+  const normale = {
+    texte: String(intention.texte ?? '').trim(),
+    themes,
+    tribus,
+    cartesTheme: liste(intention.cartesTheme),
+    effets: liste(intention.effets),
+    familles: liste(intention.familles),
+    raretes: liste(intention.raretes),
+    exclureFamilles: liste(exclusions.familles),
+    exclureEffets: liste(exclusions.effets),
+    exclureThemes: liste(exclusions.themes),
+    courbe: intention.courbe === 'basse' || intention.courbe === 'haute' ? intention.courbe : null,
+    partTheme,
+    poidsStyle,
+    signature: liste(intention.signature),
+  };
+  const vide = !normale.tribus.length && !normale.cartesTheme.length && !normale.effets.length
+    && !normale.familles.length && !normale.raretes.length && !normale.exclureFamilles.length
+    && !normale.exclureEffets.length && !normale.courbe && !normale.signature.length
+    && poidsStyle === 1;
+  return vide ? null : normale;
+}
+
+/**
+ * Le bonus (ou le malus) qu'une **intention dictée** applique à un candidat.
+ *
+ * C'est ici que la phrase du joueur devient un deck : « un deck viking neige
+ * ténèbres, avec quelques sorts de contrôle » pose d'abord des Vikings —
+ * jusqu'à la part du thème visée (`partTheme`, environ 60 % du deck) — puis
+ * paie le reste en sorts et en armes de ces couleurs, parce qu'une fois le
+ * thème servi, ce qui complète reprend l'avantage. Les effets demandés, les
+ * familles dites (« avec des armes »), la courbe et les raretés s'ajoutent ;
+ * les refus (« sans sorts ») coûtent cher, sans jamais être un filtre dur :
+ * un deck qui ne peut pas se passer de sorts reste un deck complet.
+ */
+export function bonusIntention(carte, intention, etat = {}) {
+  if (!intention) return 0;
+  const jetons = mecaniquesDeCarte(carte);
+  const famille = familleDeCarte(carte);
+  const cout = palierDeCout(carte?.cost);
+  let bonus = 0;
+
+  // 1. Le thème : les cartes du thème (nommément) ou ses tribus imprimées,
+  //    tant que la part visée n'est pas servie.
+  const cibleTheme = etat.cibleTheme ?? 0;
+  const themePose = etat.themePose ?? 0;
+  const porteTheme = cibleTheme > 0
+    && (etat.themeIds?.has(carte?.id)
+      || intention.tribus.some((tribu) => jetons.has(`tribu:${tribu}`)));
+  if (porteTheme) bonus += themePose < cibleTheme ? 2.3 : 0.3;
+  else if (cibleTheme > 0 && themePose >= cibleTheme) bonus += 0.85;
+
+  // 2. Les effets demandés (« quelques sorts de contrôle »).
+  let effets = 0;
+  for (const effet of intention.effets) {
+    if (jetons.has(`effet:${effet}`)) effets += 0.75;
+    if (effets >= 1.6) break;
+  }
+  bonus += effets;
+
+  // 3. Les familles dites (« avec des armes »). Dans un deck de thème, les
+  //    armes qui équipent ses créatures complètent naturellement le plan —
+  //    le bonus se cumule, pour qu'elles passent devant les sorts neutres.
+  if (intention.familles.includes(famille)) bonus += 0.85;
+  if (cibleTheme > 0 && famille === 'arme') bonus += 0.5;
+
+  // 4. La courbe dite (« deck rapide », « gros finishers »).
+  if (intention.courbe === 'basse') bonus += cout <= 2 ? 0.55 : cout >= 6 ? -0.4 : 0;
+  if (intention.courbe === 'haute') bonus += cout >= 5 ? 0.55 : cout <= 1 ? -0.4 : 0;
+
+  // 5. Les raretés dites (« un deck de légendaires »).
+  if (intention.raretes.length && intention.raretes.includes(carte?.rarity)) bonus += 0.6;
+
+  // 6. Les refus (« sans sorts ») : un fort malus, jamais une interdiction.
+  if (intention.exclureFamilles.includes(famille)) bonus -= 3.4;
+  if (intention.exclureEffets.some((effet) => jetons.has(`effet:${effet}`))) bonus -= 1.8;
+  return bonus;
 }
 
 /** L'état de construction lu à chaque ajout — pur, dérivé de la liste en cours. */
-function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix') {
+function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix', intention = null, taille = RPG_ASSISTANT_TAILLE) {
   const jetonsChoisis = new Set();
   for (const id of choixIds) {
     for (const jeton of mecaniquesDeCarte(cartesParId.get(id))) jetonsChoisis.add(jeton);
@@ -287,15 +403,34 @@ function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix') {
   const parPalier = Array(7).fill(0);
   const parFamille = { creature: 0, magie: 0, arme: 0 };
   const couleursDeck = new Set();
+  // Le thème se reconnaît de deux façons : les cartes que la vérification a
+  // nommées (`cartesTheme`, goût compris) et les tribus imprimées.
+  const themeIds = new Set(intention?.cartesTheme ?? []);
+  const estDuTheme = (id, jetons) => themeIds.has(id)
+    || (intention?.tribus ?? []).some((tribu) => jetons.has(`tribu:${tribu}`));
+  let themePose = 0;
   for (const id of cardIds) {
     const carte = cartesParId.get(id);
     if (!carte) continue;
-    for (const jeton of mecaniquesDeCarte(carte)) jetonsDeck.add(jeton);
+    const jetons = mecaniquesDeCarte(carte);
+    for (const jeton of jetons) jetonsDeck.add(jeton);
     parPalier[palierDeCout(carte.cost) - 1] += 1;
     parFamille[familleDeCarte(carte)] += 1;
     for (const couleur of (carte.couleurs ?? [])) couleursDeck.add(couleur);
+    if (estDuTheme(id, jetons)) themePose += 1;
   }
   const profil = profilStyle(style);
+  // « Sans sorts » / « que des créatures » déplacent le mix visé : la cible des
+  // familles suit le refus, pour que le score ne rame pas contre le joueur.
+  let cibleCreatures = profil.creatures;
+  if (intention?.exclureFamilles.includes('magie') && intention?.exclureFamilles.includes('arme')) {
+    cibleCreatures = taille;
+  } else if (intention?.exclureFamilles.includes('creature')) {
+    cibleCreatures = 0;
+  }
+  const cibleTheme = intention && (intention.tribus.length || intention.cartesTheme.length)
+    ? Math.max(2, Math.round(taille * intention.partTheme))
+    : 0;
   return {
     jetonsChoisis,
     jetonsDeck,
@@ -306,7 +441,11 @@ function etatDeConstruction(cardIds, choixIds, cartesParId, style = 'mix') {
     puissanceMax: 1,
     style: profil.id,
     courbeCible: profil.courbe,
-    cibleCreatures: profil.creatures,
+    cibleCreatures,
+    intention: intention ?? null,
+    themeIds,
+    themePose,
+    cibleTheme,
   };
 }
 
@@ -342,6 +481,11 @@ export function cartesPourEtape(couleurs, famille, catalogue, collection = null)
  * restent acceptés pour la compatibilité (le deck de départ en appelle un
  * sans signature), mais l'interface ne les fait plus choisir.
  *
+ * `intention` porte la demande **dictée dans l'invite de texte** (lue par
+ * `rpgDeckIntention.js`) : thèmes et tribus, effets voulus, familles dites,
+ * courbe, raretés, refus et cartes nommées. Absente, elle ne change rien —
+ * le score historique est strictement le même.
+ *
  * `taille` est paramétrable pour les tests ; le deck maison réel vaut 30.
  * Quand la collection ne mène pas jusqu'à la taille, le deck rendu reste
  * volontairement incomplet : l'atelier l'affiche en brouillon, jamais cassé.
@@ -351,6 +495,7 @@ export function genererDeckAssiste({
   creatures = [],
   sorts = [],
   style = 'mix',
+  intention = null,
   collection = null,
   catalogue,
   taille = RPG_ASSISTANT_TAILLE,
@@ -362,9 +507,13 @@ export function genererDeckAssiste({
   const cartesP = cartes.map((carte) => ({ ...carte, couleurs: couleursDe(carte) }));
   const cartesParId = new Map(cartesP.map((carte) => [carte.id, carte]));
   const possedees = (id) => !Array.isArray(collection) || collection.includes(id);
+  const demande = normaliserIntention(intention);
 
-  // 1. La signature : les choix du joueur, deux exemplaires (une mythique).
-  const choixIds = [...creatures, ...sorts].filter((id, rang, liste) => liste.indexOf(id) === rang);
+  // 1. La signature : les choix du joueur — cartes nommées dans l'invite
+  //    d'abord, puis les sélections historiques — deux exemplaires (une
+  //    mythique).
+  const choixIds = [...(demande?.signature ?? []), ...creatures, ...sorts]
+    .filter((id, rang, liste) => liste.indexOf(id) === rang);
   const cardIds = [];
   const compte = new Map();
   /** Pose des exemplaires **en plus** de ceux déjà là, sans dépasser la limite. */
@@ -395,7 +544,7 @@ export function genererDeckAssiste({
   // 3. Le remplissage : un complément par itération, le score se recalcule à
   //    chaque ajout — le prochain complément répond aux précédents.
   while (cardIds.length < taille) {
-    const etat = etatDeConstruction(cardIds, choixIds, cartesParId, style);
+    const etat = etatDeConstruction(cardIds, choixIds, cartesParId, style, demande, taille);
     etat.puissanceMin = Math.min(...puissances, 0);
     etat.puissanceMax = Math.max(...puissances, 1);
     let meilleur = null;
@@ -414,10 +563,20 @@ export function genererDeckAssiste({
     poser(meilleur.id, 1);
   }
 
-  const embleme = [...choixIds]
+  const parRaretePuisPuissance = (a, b) => (rangRareteLocale(cartesParId.get(b)) - rangRareteLocale(cartesParId.get(a)))
+    || (puissanceCarte(cartesParId.get(b)) - puissanceCarte(cartesParId.get(a)));
+  const emblemeChoisi = [...choixIds]
     .filter((id) => cartesParId.has(id) && possedees(id))
-    .sort((a, b) => (rangRareteLocale(cartesParId.get(b)) - rangRareteLocale(cartesParId.get(a)))
-      || (puissanceCarte(cartesParId.get(b)) - puissanceCarte(cartesParId.get(a))))[0] ?? null;
+    .sort(parRaretePuisPuissance)[0] ?? null;
+  // Aucune carte choisie à la main ? Un deck **dicté** porte encore un visage :
+  // la plus rare de ses cartes de thème illustre le boîtier (« les Vikings »
+  // montrent une Valkyrie, pas un sort anonyme).
+  const themeIds = new Set(demande?.cartesTheme ?? []);
+  const embleme = emblemeChoisi ?? ([...compte.keys()]
+    .filter((id) => cartesParId.has(id)
+      && (themeIds.has(id)
+        || (demande?.tribus ?? []).some((tribu) => mecaniquesDeCarte(cartesParId.get(id)).has(`tribu:${tribu}`))))
+    .sort(parRaretePuisPuissance)[0] ?? null);
   return { cardIds, embleme };
 }
 
