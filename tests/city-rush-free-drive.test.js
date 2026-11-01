@@ -97,7 +97,8 @@ test('conduite libre : flèche bas freine puis engage la marche arrière à l’
   const freinVoitureLente = viceCityFreeDriveSpeedStep({ ...params, speed: 20, maxSpeed: 25, throttle: false, brake: true, dt: 0.1 });
   assert.ok(freinLent < 5 && freinLent > 0, 'le freinage ralentit sans inverser le mouvement');
   assert.ok(30 - freinRapide > 5 - freinLent, 'le freinage gagne en force avec la vitesse');
-  assert.ok(freinVoiturePuissante < freinVoitureLente, 'une voiture à vitesse maximale supérieure freine plus fort');
+  assert.ok(freinVoitureLente - freinVoiturePuissante >= 0.45,
+    'les voitures puissantes gagnent nettement en freinage au même régime');
   let reverseSpeed = 0;
   for (let frame = 0; frame < 180; frame += 1) {
     reverseSpeed = viceCityFreeDriveSpeedStep({ ...params, speed: reverseSpeed, throttle: false, brake: true, dt: 1 / 60 });
