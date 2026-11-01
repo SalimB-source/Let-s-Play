@@ -20,6 +20,8 @@ import {
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
   viceCityFreeDriveTurnInput,
+  viceCityFreeDriveTurnStep,
+  viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
@@ -170,8 +172,27 @@ test('à pied : la pose de visée reste en portée pendant l’entrée/sortie av
   const footEnd = source.indexOf("\n      } else {\n        throttle = pressed('ArrowUp') || pressed('KeyW');", footStart);
   assert.ok(animateStart >= 0 && footStart > animateStart && footEnd > footStart);
   const footBranch = source.slice(footStart, footEnd);
-  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimPose') < footBranch.indexOf('if (pendingEntry)'));
+  assert.ok(footBranch.indexOf('const mouseAimHeading = getMouseAimHeading()') < footBranch.indexOf('if (pendingEntry)'));
+  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimPose') > footBranch.indexOf('if (pendingEntry)'));
   assert.match(footBranch, /aimPose\.armYaw \* aimBlend/u);
+  assert.match(footBranch, /movePedestrianWithSlide\(dt\)/u);
+  assert.match(footBranch, /pedestrian\.legs\[0\]\.userData\.knee\.rotation\.x/u);
+});
+
+test('à pied : l’accélération, le freinage et les changements de direction sont progressifs', () => {
+  const firstStep = viceCityFreeDriveVelocityStep(0, 0, 2.35, 0, 1 / 60);
+  assert.ok(firstStep.x > 0 && firstStep.x < 2.35, 'la vitesse monte graduellement');
+  const braking = viceCityFreeDriveVelocityStep(2, 0, 0, 0, 1 / 60);
+  assert.ok(braking.x > 0 && braking.x < 2, 'le relâchement freine sans arrêt sec');
+  const reversing = viceCityFreeDriveVelocityStep(0.3, 0, -2, 0, 1 / 60);
+  assert.ok(reversing.x > 0 && reversing.x < 0.3, 'un demi-tour freine avant de repartir en sens inverse');
+
+  const firstTurn = viceCityFreeDriveTurnStep(0, 1, 1 / 60);
+  assert.ok(firstTurn > 0 && firstTurn < 2.35, 'A/D engagent la rotation sans à-coup');
+  const heldTurn = viceCityFreeDriveTurnStep(firstTurn, 1, 1 / 60);
+  assert.ok(heldTurn > firstTurn);
+  const releasedTurn = viceCityFreeDriveTurnStep(heldTurn, 0, 1 / 60);
+  assert.ok(releasedTurn > 0 && releasedTurn < heldTurn, 'la rotation se recentre doucement');
 });
 
 test('à pied : les axes de glissade restent indépendants et la diagonale est plafonnée', () => {

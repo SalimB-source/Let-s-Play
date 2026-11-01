@@ -85,6 +85,35 @@ export function viceCityFreeDriveFootVector(forward = 0, strafe = 0) {
   };
 }
 
+/** Smooth world-space foot velocity without letting diagonal input exceed its target speed. */
+export function viceCityFreeDriveVelocityStep(velocityX, velocityZ, targetX, targetZ, dt) {
+  const currentX = Number(velocityX) || 0;
+  const currentZ = Number(velocityZ) || 0;
+  const desiredX = Number(targetX) || 0;
+  const desiredZ = Number(targetZ) || 0;
+  const targetSpeed = Math.hypot(desiredX, desiredZ);
+  const reversing = targetSpeed > 0.02 && currentX * desiredX + currentZ * desiredZ < 0;
+  const acceleration = targetSpeed < 0.02 ? 13 : reversing ? 12 : 8.5;
+  const differenceX = desiredX - currentX;
+  const differenceZ = desiredZ - currentZ;
+  const difference = Math.hypot(differenceX, differenceZ);
+  const maxChange = acceleration * Math.max(0, Number(dt) || 0);
+  const scale = difference > maxChange && difference > 1e-8 ? maxChange / difference : 1;
+  return {
+    x: currentX + differenceX * scale,
+    z: currentZ + differenceZ * scale,
+  };
+}
+
+/** Smooth A/D turn-in-place input; aiming never contributes to body rotation. */
+export function viceCityFreeDriveTurnStep(turnRate, input, dt, maxRate = 2.35) {
+  const safeRate = Number(turnRate) || 0;
+  const targetRate = clamp(Number(input) || 0, -1, 1) * Math.max(0, Number(maxRate) || 0);
+  const response = Math.abs(targetRate) > 0.01 ? 8.5 : 12;
+  const blend = 1 - Math.exp(-response * Math.max(0, Number(dt) || 0));
+  return safeRate + (targetRate - safeRate) * blend;
+}
+
 /** Dead-zoned, length-limited 2D stick vector for third-person on-foot movement. */
 export function viceCityFreeDriveJoystickVector(x = 0, y = 0) {
   const safeX = clamp(Number(x) || 0, -1, 1);

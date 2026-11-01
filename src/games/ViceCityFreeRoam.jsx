@@ -28,6 +28,8 @@ import {
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
   viceCityFreeDriveTurnInput,
+  viceCityFreeDriveTurnStep,
+  viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
@@ -2774,11 +2776,20 @@ function makeFreeRoamPedestrian() {
     } else {
       addPart(pivot, new THREE.CapsuleGeometry(0.125, 0.25, 8, 16), trousers, 0, -0.18, 0);
       addPart(pivot, new THREE.SphereGeometry(0.094, 16, 12), trousers, 0, -0.39, 0);
-      addPart(pivot, new THREE.CapsuleGeometry(0.088, 0.24, 8, 16), trousers, 0, -0.59, 0.002);
-      const shoe = addPart(pivot, new THREE.CapsuleGeometry(0.077, 0.17, 6, 12), shoes, 0, -0.745, -0.055);
+      const knee = new THREE.Group();
+      knee.position.y = -0.39;
+      pivot.add(knee);
+      const shin = addPart(knee, new THREE.CapsuleGeometry(0.088, 0.24, 8, 16), trousers, 0, -0.19, 0.002);
+      shin.castShadow = true;
+      const foot = new THREE.Group();
+      foot.position.set(0, -0.36, -0.015);
+      knee.add(foot);
+      const shoe = addPart(foot, new THREE.CapsuleGeometry(0.077, 0.17, 6, 12), shoes, 0, -0.035, -0.055);
       shoe.rotation.x = Math.PI / 2;
       shoe.scale.set(1, 0.92, 1);
-      addPart(pivot, new THREE.BoxGeometry(0.15, 0.018, 0.24), belt, 0, -0.8, -0.055);
+      addPart(foot, new THREE.BoxGeometry(0.15, 0.018, 0.24), belt, 0, -0.06, -0.055);
+      pivot.userData.knee = knee;
+      pivot.userData.foot = foot;
     }
     return pivot;
   };
@@ -3129,7 +3140,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let weatherElapsed = 0;
     let previousStreet = '';
     let worldClock = 15;
-    const walkState = { x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0 };
+    const walkState = {
+      x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0,
+      velocityX: 0, velocityZ: 0, turnRate: 0,
+    };
     const getChallengeRouteTarget = (challenge) => {
       if (!challenge || challenge.status !== 'active') return null;
       if (challenge.id === 'delivery') return challenge.target;
@@ -3735,7 +3749,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
+    const cameraLookTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
+    let pedestrianCameraTracking = false;
     const cockpitPosition = new THREE.Vector3();
     const cockpitIdentityQuat = new THREE.Quaternion();
     const cockpitFollowQuat = new THREE.Quaternion();
@@ -3774,6 +3790,38 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const isPedestrianPositionBlocked = (x, z) => isPositionBlocked(x, z)
       || overlapsVehicleHitbox(x, z, state.x, state.z, vehicle.rotation.y,
         vehicle.userData.width || 3, vehicle.userData.length || 5.2);
+    const resetPedestrianMotion = () => {
+      walkState.velocityX = 0;
+      walkState.velocityZ = 0;
+      walkState.turnRate = 0;
+      walkState.speed = 0;
+    };
+    const movePedestrianWithSlide = (dt) => {
+      const deltaX = walkState.velocityX * dt;
+      const deltaZ = walkState.velocityZ * dt;
+      if (Math.hypot(deltaX, deltaZ) < 1e-5) {
+        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+        return false;
+      }
+      const blocked = (x, z) => city.didCrossCanalWall(walkState.x, walkState.z, x, z)
+        || isPedestrianPositionBlocked(x, z);
+      const nextX = walkState.x + deltaX;
+      const nextZ = walkState.z + deltaZ;
+      if (!blocked(nextX, nextZ)) {
+        walkState.x = nextX;
+        walkState.z = nextZ;
+        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+        return true;
+      }
+      const canX = Math.abs(deltaX) > 1e-5 && !blocked(nextX, walkState.z);
+      const canZ = Math.abs(deltaZ) > 1e-5 && !blocked(walkState.x, nextZ);
+      if (canX && (!canZ || Math.abs(deltaX) >= Math.abs(deltaZ))) walkState.x = nextX;
+      else if (canZ) walkState.z = nextZ;
+      if (!canX) walkState.velocityX = 0;
+      if (!canZ) walkState.velocityZ = 0;
+      walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+      return canX || canZ;
+    };
     const getEnterableVehicles = () => [
       ...(playerVehicle.visible ? [{ mesh: playerVehicle, body: null, name: profile.name }] : []),
       ...city.parkedCarBodies.filter((body) => !body.occupied && !body.reserved && body.mesh.visible).map((body) => ({
@@ -3859,7 +3907,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         engineProfile = profile.archetype;
       }
       pedestrian.group.visible = false;
-      walkState.speed = 0;
+      resetPedestrianMotion();
       isOnFootRef.current = false;
       setIsOnFoot(false);
       const hasCockpit = vehicle === playerVehicle;
@@ -3925,6 +3973,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       state.airHeight = 0;
       jumpVelocity = 0;
       pedestrian.group.visible = false;
+      resetPedestrianMotion();
       isOnFootRef.current = false;
       setIsOnFoot(false);
       setCanUseCockpit(true);
@@ -4253,7 +4302,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
               walkState.x = safeExit.x;
               walkState.z = safeExit.z;
               walkState.heading = state.heading;
-              walkState.speed = 0;
+              resetPedestrianMotion();
               pedestrian.group.visible = true;
               isOnFootRef.current = true;
               setIsOnFoot(true);
@@ -4270,7 +4319,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         } else if (pendingEntry) {
           if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
           pendingEntry = null;
-          walkState.speed = 0;
+          resetPedestrianMotion();
           interactionNotice = 'Entrée dans la voiture annulée';
           interactionNoticeUntil = state.time + 2.4;
         } else {
@@ -4303,7 +4352,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         throttle = pressed('ArrowUp') || pressed('KeyW');
         brake = pressed('ArrowDown') || pressed('KeyS');
         const mouseAimHeading = getMouseAimHeading();
-        const aimPose = viceCityFreeDriveAimPose(walkState.heading, mouseAimHeading ?? walkState.heading);
+        let normalizedStrafe = 0;
         if (pendingEntry) {
           const dx = pendingEntry.approach.x - walkState.x;
           const dz = pendingEntry.approach.z - walkState.z;
@@ -4313,34 +4362,46 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             pendingEntry = null;
             setActiveVehicle(target);
           } else {
-            walkState.heading = Math.atan2(dx, -dz);
-            const runSpeed = 5.45;
-            const step = Math.min(distance, runSpeed * dt);
-            const nextWalkX = walkState.x + dx / distance * step;
-            const nextWalkZ = walkState.z + dz / distance * step;
+            const desiredHeading = Math.atan2(dx, -dz);
+            const headingDelta = Math.atan2(
+              Math.sin(desiredHeading - walkState.heading),
+              Math.cos(desiredHeading - walkState.heading),
+            );
+            walkState.turnRate = viceCityFreeDriveTurnStep(
+              walkState.turnRate, clamp(headingDelta * 1.4, -1, 1), dt, 2.8,
+            );
+            walkState.heading += walkState.turnRate * dt;
+            const runSpeed = Math.min(5.45, distance / Math.max(dt, 1 / 240));
+            const targetX = dx / distance * runSpeed;
+            const targetZ = dz / distance * runSpeed;
+            const velocity = viceCityFreeDriveVelocityStep(
+              walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
+            );
+            walkState.velocityX = velocity.x;
+            walkState.velocityZ = velocity.z;
+            const nextWalkX = walkState.x + walkState.velocityX * dt;
+            const nextWalkZ = walkState.z + walkState.velocityZ * dt;
             const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
               || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
             if (blocked) {
               if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
               pendingEntry = null;
-              walkState.speed = 0;
+              resetPedestrianMotion();
               interactionNotice = 'Le chemin vers la voiture est bloqué';
               interactionNoticeUntil = state.time + 2.4;
-            } else {
-              walkState.x = nextWalkX;
-              walkState.z = nextWalkZ;
-              walkState.speed = runSpeed;
-            }
+            } else movePedestrianWithSlide(dt);
           }
         } else {
           const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
-          walkState.heading += turnInput * 2.35 * dt;
+          walkState.turnRate = viceCityFreeDriveTurnStep(walkState.turnRate, turnInput, dt);
+          walkState.heading += walkState.turnRate * dt;
           const footVector = viceCityFreeDriveFootVector(
             Number(throttle) - Number(brake) - onFootJoystick.y,
             Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
               - Number(pressed('KeyQ')) + onFootJoystick.x,
           );
-          const { forward: normalizedForward, strafe: normalizedStrafe, magnitude: movementMagnitude } = footVector;
+          const { forward: normalizedForward, strafe, magnitude: movementMagnitude } = footVector;
+          normalizedStrafe = strafe;
           const forwardX = Math.sin(walkState.heading);
           const forwardZ = -Math.cos(walkState.heading);
           const rightX = Math.cos(walkState.heading);
@@ -4348,44 +4409,55 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           const shiftRun = pressed('ShiftLeft') || pressed('ShiftRight') || (throttle && !brake)
             || (onFootJoystick.magnitude >= 0.62 && normalizedForward > 0);
           const runBlend = shiftRun ? 1 : clamp((movementMagnitude - 0.55) / 0.45, 0, 1);
-          const walkSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
-          const nextWalkX = walkState.x + (forwardX * normalizedForward + rightX * normalizedStrafe) * walkSpeed * dt;
-          const nextWalkZ = walkState.z + (forwardZ * normalizedForward + rightZ * normalizedStrafe) * walkSpeed * dt;
-          const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
-            || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
-          if (!blocked && movementMagnitude > 0.04) {
-            walkState.x = nextWalkX;
-            walkState.z = nextWalkZ;
-            walkState.speed = walkSpeed;
-          } else walkState.speed = 0;
+          const targetSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
+          const targetX = (forwardX * normalizedForward + rightX * normalizedStrafe) * targetSpeed;
+          const targetZ = (forwardZ * normalizedForward + rightZ * normalizedStrafe) * targetSpeed;
+          const velocity = viceCityFreeDriveVelocityStep(
+            walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
+          );
+          walkState.velocityX = velocity.x;
+          walkState.velocityZ = velocity.z;
+          movePedestrianWithSlide(dt);
         }
-        const running = walkState.speed > 3.45;
-        walkState.phase += dt * (running ? 13.5 : walkState.speed ? 8 : 2.2);
-        const stride = walkState.speed ? Math.sin(walkState.phase) * (running ? 0.62 : 0.34) : 0;
+        const aimPose = viceCityFreeDriveAimPose(walkState.heading, mouseAimHeading ?? walkState.heading);
+        const runBlend = clamp((walkState.speed - 2.65) / 1.55, 0, 1);
+        const gaitWeight = clamp(walkState.speed / 0.65, 0, 1);
+        walkState.phase += walkState.speed * dt * (3.25 - runBlend * 1.6);
+        const stride = Math.sin(walkState.phase) * (0.32 + runBlend * 0.26) * gaitWeight;
+        const leftSwing = Math.max(0, Math.sin(walkState.phase)) * gaitWeight;
+        const rightSwing = Math.max(0, -Math.sin(walkState.phase)) * gaitWeight;
         const aiming = pressed('KeyZ') || pressed('MouseLeft') || mouseAimRef.current.active;
         pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
         const aimBlend = pedestrian.aimBlend;
         pedestrian.legs[0].rotation.x = stride;
         pedestrian.legs[1].rotation.x = -stride;
+        pedestrian.legs[0].userData.knee.rotation.x = leftSwing * (0.42 + runBlend * 0.2);
+        pedestrian.legs[1].userData.knee.rotation.x = rightSwing * (0.42 + runBlend * 0.2);
+        pedestrian.legs[0].userData.foot.rotation.x = -leftSwing * 0.18;
+        pedestrian.legs[1].userData.foot.rotation.x = -rightSwing * 0.18;
         pedestrian.arms[0].rotation.set(
-          -stride * (running ? 0.35 : 0.42) + aimBlend * 0.72,
+          -stride * (0.42 - runBlend * 0.07) + aimBlend * 0.72,
           aimPose.armYaw * aimBlend,
           aimBlend * 0.62,
         );
         pedestrian.arms[1].rotation.set(
-          stride * (running ? 0.35 : 0.42) + aimBlend * 1.02,
+          stride * (0.42 - runBlend * 0.07) + aimBlend * 1.02,
           aimPose.armYaw * aimBlend,
           -aimBlend * 0.08,
         );
         pedestrian.pistol.rotation.x = -aimBlend * 0.92;
         pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
-        const bodyBob = walkState.speed ? Math.abs(Math.sin(walkState.phase * 2)) * (running ? 0.045 : 0.022) : 0;
+        const bodyBob = Math.abs(Math.sin(walkState.phase)) * gaitWeight * (0.016 + runBlend * 0.022);
         pedestrian.group.position.set(
           walkState.x,
           city.surfaceHeight(walkState.x, walkState.z) + bodyBob,
           walkState.z,
         );
-        pedestrian.group.rotation.set(0, -walkState.heading, 0);
+        pedestrian.group.rotation.set(
+          0,
+          -walkState.heading,
+          clamp(-walkState.turnRate * 0.016 + normalizedStrafe * 0.045, -0.09, 0.09),
+        );
         if (soundOnRef.current) {
           audioRef.current?.engine({ speed: 0, throttle: 0, idle: true, engineProfile });
         }
@@ -4548,8 +4620,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
         cameraTarget.copy(pedestrian.group.position);
         cameraTarget.y += 1.2;
-        camera.lookAt(cameraTarget);
+        if (!pedestrianCameraTracking) {
+          cameraLookTarget.copy(cameraTarget);
+          pedestrianCameraTracking = true;
+        } else cameraLookTarget.lerp(cameraTarget, 1 - Math.exp(-dt * 8.5));
+        camera.lookAt(cameraLookTarget);
       } else if (isCockpitView && activeCockpit) {
+        pedestrianCameraTracking = false;
         activeCockpit.update({ speed: Math.abs(state.speed), topSpeed: maxSpeed, steer: state.steer * 0.4 }, dt, state.time);
         vehicle.updateMatrixWorld(true);
         activeCockpit.eye.getWorldPosition(cockpitPosition);
@@ -4568,6 +4645,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.fov = CITY_RUSH_COCKPIT_FOV + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
         camera.updateProjectionMatrix();
       } else {
+        pedestrianCameraTracking = false;
         cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
         cameraPosition.y += 3.2;
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
