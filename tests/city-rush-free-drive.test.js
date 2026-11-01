@@ -18,6 +18,7 @@ import {
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
+  viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
@@ -135,6 +136,15 @@ test('joystick à pied : déplacement analogique dans toutes les directions avec
   assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-12,
     'la diagonale ne dépasse pas la vitesse maximale');
   assert.ok(diagonal.x > 0 && diagonal.y > 0);
+});
+
+test('à pied : les axes de glissade restent indépendants et la diagonale est plafonnée', () => {
+  assert.deepEqual(viceCityFreeDriveFootVector(0, -1), { forward: 0, strafe: -1, magnitude: 1 });
+  assert.deepEqual(viceCityFreeDriveFootVector(0, 1), { forward: 0, strafe: 1, magnitude: 1 });
+  assert.deepEqual(viceCityFreeDriveFootVector(1, 0), { forward: 1, strafe: 0, magnitude: 1 });
+  const diagonal = viceCityFreeDriveFootVector(1, 1);
+  assert.ok(Math.abs(Math.hypot(diagonal.forward, diagonal.strafe) - 1) < 1e-12);
+  assert.equal(viceCityFreeDriveFootVector(0.2, 0.3).magnitude, Math.hypot(0.2, 0.3));
 });
 
 test('conduite libre mobile : les tirs poussent les véhicules sans éjecter les plus lourds', () => {

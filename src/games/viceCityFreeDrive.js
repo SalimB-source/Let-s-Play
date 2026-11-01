@@ -50,6 +50,19 @@ export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
   };
 }
 
+/** Normalize forward and strafe input so diagonal pedestrian movement is not faster. */
+export function viceCityFreeDriveFootVector(forward = 0, strafe = 0) {
+  const safeForward = clamp(Number(forward) || 0, -1, 1);
+  const safeStrafe = clamp(Number(strafe) || 0, -1, 1);
+  const length = Math.hypot(safeForward, safeStrafe);
+  const scale = length > 1 ? 1 / length : 1;
+  return {
+    forward: safeForward * scale,
+    strafe: safeStrafe * scale,
+    magnitude: Math.min(1, length),
+  };
+}
+
 /** Dead-zoned, length-limited 2D stick vector for third-person on-foot movement. */
 export function viceCityFreeDriveJoystickVector(x = 0, y = 0) {
   const safeX = clamp(Number(x) || 0, -1, 1);

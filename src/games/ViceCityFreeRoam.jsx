@@ -22,6 +22,7 @@ import {
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
+  viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
@@ -54,6 +55,7 @@ const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_GRID_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityGridLimit;
 const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
+const MOUSE_AIM_SENSITIVITY = 0.62;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function readFreeRoamSoundPreference() {
@@ -2988,8 +2990,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const onMouseMove = (event) => {
       const bounds = renderer.domElement.getBoundingClientRect();
       if (bounds.width < 1 || bounds.height < 1) return;
-      const x = clamp(event.clientX, bounds.left, bounds.right);
-      const y = clamp(event.clientY, bounds.top, bounds.bottom);
+      const cursorX = clamp(event.clientX, bounds.left, bounds.right);
+      const cursorY = clamp(event.clientY, bounds.top, bounds.bottom);
+      const centerX = (bounds.left + bounds.right) / 2;
+      const centerY = (bounds.top + bounds.bottom) / 2;
+      const x = centerX + (cursorX - centerX) * MOUSE_AIM_SENSITIVITY;
+      const y = centerY + (cursorY - centerY) * MOUSE_AIM_SENSITIVITY;
       mouseAimRef.current = { x, y, active: true };
       crosshairRef.current?.style.setProperty('--aim-x', `${x}px`);
       crosshairRef.current?.style.setProperty('--aim-y', `${y}px`);
@@ -3426,26 +3432,29 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           }
         } else {
           const turnInput = clamp(
-            (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
-              - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
-              + onFootJoystick.x,
+            (pressed('ArrowRight') ? 1 : 0)
+              - (pressed('ArrowLeft') || pressed('KeyA') ? 1 : 0),
             -1,
             1,
           );
           const mouseAimHeading = getMouseAimHeading();
           if (mouseAimHeading === null) walkState.heading += turnInput * 2.35 * dt;
           else walkState.heading = mouseAimHeading;
-          const moveInput = clamp(Number(throttle) - Number(brake) - onFootJoystick.y, -1, 1);
-          const movementMagnitude = Math.abs(moveInput);
+          const footVector = viceCityFreeDriveFootVector(
+            Number(throttle) - Number(brake) - onFootJoystick.y,
+            Number(pressed('KeyD')) - Number(pressed('KeyQ')) + onFootJoystick.x,
+          );
+          const { forward: normalizedForward, strafe: normalizedStrafe, magnitude: movementMagnitude } = footVector;
           const forwardX = Math.sin(walkState.heading);
           const forwardZ = -Math.cos(walkState.heading);
+          const rightX = Math.cos(walkState.heading);
+          const rightZ = Math.sin(walkState.heading);
           const shiftRun = pressed('ShiftLeft') || pressed('ShiftRight') || (throttle && !brake)
-            || (onFootJoystick.magnitude >= 0.62 && moveInput > 0);
+            || (onFootJoystick.magnitude >= 0.62 && normalizedForward > 0);
           const runBlend = shiftRun ? 1 : clamp((movementMagnitude - 0.55) / 0.45, 0, 1);
           const walkSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
-          const signedWalkSpeed = Math.sign(moveInput) * walkSpeed;
-          const nextWalkX = walkState.x + forwardX * signedWalkSpeed * dt;
-          const nextWalkZ = walkState.z + forwardZ * signedWalkSpeed * dt;
+          const nextWalkX = walkState.x + (forwardX * normalizedForward + rightX * normalizedStrafe) * walkSpeed * dt;
+          const nextWalkZ = walkState.z + (forwardZ * normalizedForward + rightZ * normalizedStrafe) * walkSpeed * dt;
           const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
             || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
           if (!blocked && movementMagnitude > 0.04) {
@@ -3678,16 +3687,17 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
           <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
-            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
+            <span><kbd>Q</kbd><kbd>D</kbd> GLISSER GAUCHE / DROITE</span>
+            <span><kbd>A</kbd><kbd>←</kbd><kbd>→</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
             <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
-            <small>Souris : viser · clic gauche : tirer · Échap : menu</small></>
+            <small>Joystick à fond / Maj : courir · souris : viser · clic gauche : tirer</small></>
         ) : (
           <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
             <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
             <small>WASD · C : cockpit · M : son · Échap : menu</small></>
         )}
       </div>
-      <div className="vice-free-roam-joystick" aria-label={isOnFoot ? 'Joystick gauche pour tourner' : 'Joystick gauche pour diriger'}>
+      <div className="vice-free-roam-joystick" aria-label={isOnFoot ? 'Joystick gauche pour se déplacer' : 'Joystick gauche pour diriger'}>
         <div className="vice-free-roam-joystick-base" role="application" aria-label="Joystick virtuel"
           onPointerDown={startJoystick} onPointerMove={updateJoystick} onPointerUp={endJoystick}
           onPointerCancel={endJoystick} onLostPointerCapture={endJoystick}>
