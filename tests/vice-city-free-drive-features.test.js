@@ -8,6 +8,7 @@ import {
   createViceCityChallenge,
   viceCityGpsRoute,
   viceCityStreetName,
+  viceCityChallengeProgress,
 } from '../src/games/viceCityFreeDriveFeatures.js';
 import { viceCityFreeDriveGlassEntryFace } from '../src/games/viceCityFreeDrive.js';
 
@@ -89,4 +90,20 @@ test('les impacts visuels utilisent la surface réelle du vitrage avant le place
   assert.match(source, /glassImpactRaycaster\.intersectObjects\(glassMeshes, false\)/);
   assert.match(source, /crack\.position\.copy\(car\.worldToLocal\(glassHit\.point\.clone\(\)\)\)/);
   assert.match(source, /entryFace\.side \* width \* 0\.435/);
+});
+
+
+test('les instructions de mission et la progression expliquent une action concrète', () => {
+  for (const challenge of VICE_CITY_CHALLENGES) {
+    assert.ok(challenge.detail.length > 35, `${challenge.id}: instruction trop courte`);
+    const running = createViceCityChallenge(challenge.id);
+    const progress = viceCityChallengeProgress(running);
+    assert.ok(progress.label.length > 0, `${challenge.id}: progression absente`);
+    assert.ok(progress.ratio >= 0 && progress.ratio <= 1);
+  }
+  const speed = createViceCityChallenge('speed');
+  speed.progress = 2.5;
+  assert.match(viceCityChallengeProgress(speed).label, /75 KM\/H.*2\.5 \/ 5 S/);
+  const delivery = createViceCityChallenge('delivery');
+  assert.equal(viceCityChallengeProgress(delivery).label, 'LIVRAISON · REPÈRE ROSE');
 });

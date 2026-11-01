@@ -6,7 +6,7 @@ import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
 import {
   VICE_CITY_CHALLENGES, VICE_CITY_POINTS_OF_INTEREST, createViceCityChallenge,
-  viceCityGpsRoute, viceCityStreetName,
+  viceCityGpsRoute, viceCityStreetName, viceCityChallengeProgress,
 } from './viceCityFreeDriveFeatures.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
@@ -2985,16 +2985,18 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (challenge.id === 'delivery' || challenge.id === 'checkpoints' || challenge.id === 'time-trial') {
         const points = challenge.id === 'delivery' ? [challenge.target] : challenge.checkpoints;
         const point = points[challenge.checkpointIndex];
-        if (point && Math.hypot(point.x - px, point.z - pz) < 13) {
+        challenge.targetLabel = challenge.id === 'delivery' ? 'VICE POINT' : `CHECKPOINT ${challenge.checkpointIndex + 1} / ${points.length}`;
+        challenge.targetDistance = point ? Math.round(Math.hypot(point.x - px, point.z - pz)) : 0;
+        if (point && challenge.targetDistance < 13) {
           challenge.checkpointIndex += 1;
           if (challenge.checkpointIndex >= points.length) completeChallenge(challenge, 'complete');
         }
       } else if (challenge.id === 'speed' || challenge.id === 'escape') {
         const nearestPolice = trafficCars.filter((traffic) => traffic.type === 'police')
           .reduce((nearest, traffic) => Math.min(nearest, Math.hypot(traffic.car.position.x - px, traffic.car.position.z - pz)), Infinity);
+        challenge.policeDistance = Number.isFinite(nearestPolice) ? Math.round(nearestPolice) : null;
         const escaped = challenge.id !== 'escape' || nearestPolice > 23;
-        challenge.progress = speed >= challenge.targetSpeed && escaped
-          ? challenge.progress + dt : Math.max(0, challenge.progress - dt * 1.4);
+        challenge.progress = speed >= challenge.targetSpeed && escaped ? challenge.progress + dt : 0;
         if (challenge.progress >= (challenge.id === 'speed' ? 5 : 12)) completeChallenge(challenge, 'complete');
       } else if (challenge.id === 'jump') {
         challenge.progress = state.jumps - (challenge.jumpsAtStart || 0);
@@ -4182,15 +4184,22 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      {challengeHud && <div className={`vice-free-roam-challenge is-${challengeHud.status}`} role="status">
-        <b>{challengeHud.title}</b><span>{challengeHud.status === 'active' ? `TEMPS ${Math.ceil(challengeHud.remaining)} S · ` : challengeHud.status === 'complete' ? 'RÉUSSIE · ' : 'ÉCHOUÉE · '}
-          {challengeHud.id === 'speed' || challengeHud.id === 'escape' ? `${Math.min(challengeHud.progress, challengeHud.id === 'speed' ? 5 : 12).toFixed(1)} S` :
-            challengeHud.id === 'drift' ? `${Math.floor(challengeHud.score)} / ${challengeHud.targetScore} PTS` :
-              challengeHud.checkpoints ? `${challengeHud.checkpointIndex} / ${challengeHud.checkpoints.length} CHECKPOINTS` :
-                challengeHud.id === 'jump' || challengeHud.id === 'slalom' ? `${Math.floor(challengeHud.progress)} / ${challengeHud.targetCount}` : 'LIVRAISON'}
-        </span>
-        {challengeHud.status === 'active' && <button type="button" onClick={() => challengeActionRef.current?.('cancel')}>×</button>}
-      </div>}
+      {challengeHud && (() => {
+        const progress = viceCityChallengeProgress(challengeHud);
+        const statusLabel = challengeHud.status === 'active' ? 'EN COURS' : challengeHud.status === 'complete' ? 'RÉUSSIE' : 'ÉCHOUÉE';
+        return <section className={`vice-free-roam-challenge is-${challengeHud.status}`} role="region" aria-label={`Mission ${challengeHud.title}`}>
+          <div className="vice-free-roam-challenge-title"><small>{challengeHud.category} · {statusLabel}</small><b>{challengeHud.title}</b></div>
+          <p>{challengeHud.detail}</p>
+          <div className="vice-free-roam-challenge-meta">
+            <strong>{progress.label}</strong>
+            <span>{challengeHud.status === 'active' ? `${Math.ceil(challengeHud.remaining)} S RESTANTES` : challengeHud.status === 'complete' ? `+${challengeHud.reward} $` : 'TEMPS ÉCOULÉ'}</span>
+          </div>
+          {challengeHud.targetLabel && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PROCHAINE CIBLE · {challengeHud.targetLabel} · {challengeHud.targetDistance} M · SUIVEZ LE TRAIT TURQUOISE SUR LA MINICARTE</div>}
+          {challengeHud.id === 'escape' && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PATROUILLE LA PLUS PROCHE · {challengeHud.policeDistance ?? '—'} M</div>}
+          <div className="vice-free-roam-challenge-bar"><i style={{ width: `${progress.ratio * 100}%` }} /></div>
+          {challengeHud.status === 'active' && <button type="button" aria-label="Abandonner la mission" title="Abandonner la mission" onClick={() => challengeActionRef.current?.('cancel')}>×</button>}
+        </section>;
+      })()}
       {featurePanel && <aside className="vice-free-roam-feature-panel" aria-label={featurePanel === 'garage' ? 'Garage municipal temporaire' : 'Missions, activités et GPS'}>
         <header><div><small>VICE CITY · MODE LIBRE</small><b>{featurePanel === 'garage' ? 'GARAGE MUNICIPAL' : 'MISSIONS & ACTIVITÉS'}</b></div>
           <button type="button" aria-label="Fermer" onClick={() => setFeaturePanel(null)}>×</button></header>
@@ -4202,7 +4211,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <div className="vice-free-roam-destination-list"><b>GPS · DESTINATION</b>{VICE_CITY_POINTS_OF_INTEREST.map((point) => <button key={point.id} type="button" className={gpsDestination === point.id ? 'is-selected' : ''}
             onClick={() => destinationActionRef.current?.(point.id)}><span>⌖ {point.name}</span><small>{point.id === 'garage' ? 'ÉCHANGE & RÉPARATION' : 'ITINÉRAIRE SUR LA MINICARTE'}</small></button>)}</div>
           <div className="vice-free-roam-challenge-list">{VICE_CITY_CHALLENGES.map((challenge) => <button key={challenge.id} type="button"
-            onClick={() => challengeActionRef.current?.(challenge.id)}><small>{challenge.category} · RÉCOMPENSE {challenge.reward} $</small><b>{challenge.title}</b><span>{challenge.detail}</span></button>)}</div>
+            onClick={() => { challengeActionRef.current?.(challenge.id); setFeaturePanel(null); }}><small>{challenge.category} · RÉCOMPENSE {challenge.reward} $</small><b>{challenge.title}</b><span>{challenge.detail}</span></button>)}</div>
         </>}
       </aside>}
       <div className="vice-free-roam-context" ref={contextRef} role="status" aria-live="polite" />
