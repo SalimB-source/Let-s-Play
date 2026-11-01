@@ -938,7 +938,7 @@
 
 /* ── Les cinq cases : la grille du PC, à la largeur d'une carte posée ──────
    La rangée reste une grille de cinq colonnes, aussi large qu'une carte posée
-   (95 % de la main) plus la gouttière tactile : les cases s'alignent dessous,
+   (105 % de la main) plus la gouttière tactile : les cases s'alignent dessous,
    au bas de chaque rangée — celles du sorcier finissent au-dessus du milieu,
    celles du joueur en dessous, comme sur le PC. La rangée garde la hauteur
    d'une carte même vide. */
@@ -989,5 +989,5 @@
 .rpg-battle[data-mode-mana="essai"].rpg-battle--touch .rpg-turn-rail__hint {
   display: none;
 }
-/* Les cartes posées se lisent à 95 % de la main ; leurs cases les suivent de
+/* Les cartes posées se lisent à 105 % de la main ; leurs cases les suivent de
    près, comme sur PC (144 px de case pour 140 de main). */
