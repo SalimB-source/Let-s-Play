@@ -11991,6 +11991,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-auto-preview .rpg-hover-card-preview { display: grid !important; pointer-events: none; }
 
+/* Sur mobile, les fiches automatiques ne doivent pas couvrir les animations.
+   Les annonces de sorts restent accessibles aux lecteurs d'écran ; les aperçus
+   demandés par le joueur et la fenêtre de réponse ne sont pas concernés. */
+.rpg-battle--touch .rpg-auto-preview { display: none; }
+.rpg-battle--touch .rpg-spell-played-stack {
+  inset: auto;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* La réponse de fin de tour ne prend plus toute la largeur sur téléphone. */
+.rpg-battle--touch .rpg-fin-tour {
+  width: min(220px, 100%);
+  justify-self: end;
+}
+
+
 /* ── Jouer : choisir un deck et affronter l’ordinateur ──────────────────────
    Fenêtre ouverte depuis la carte « Jouer » de la page Jouer (l'ancienne
    « Partie rapide »). Elle liste les decks disponibles (RPG_DECKS + maisons
