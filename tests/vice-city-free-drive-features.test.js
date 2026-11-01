@@ -9,6 +9,7 @@ import {
   viceCityGpsRoute,
   viceCityStreetName,
 } from '../src/games/viceCityFreeDriveFeatures.js';
+import { viceCityFreeDriveGlassEntryFace } from '../src/games/viceCityFreeDrive.js';
 
 test('le catalogue des missions et activités libres couvre les objectifs demandés', () => {
   const ids = VICE_CITY_CHALLENGES.map(({ id }) => id);
@@ -73,4 +74,19 @@ test('la conduite libre branche GPS, météo, dégâts et les traces de dérapag
   assert.match(source, /state\.damage = clamp\(state\.damage/);
   assert.match(source, /audioRef\.current\?\.skid/);
   assert.match(source, /wearMarks\.push\(mark\)/);
+});
+
+
+test('les impacts de balle visent la vitre du côté d’entrée et orientent la marque vers l’extérieur', () => {
+  assert.deepEqual(viceCityFreeDriveGlassEntryFace(1, 0), { axis: 'side', side: -1, rotation: -Math.PI / 2 });
+  assert.deepEqual(viceCityFreeDriveGlassEntryFace(-1, 0), { axis: 'side', side: 1, rotation: Math.PI / 2 });
+  assert.deepEqual(viceCityFreeDriveGlassEntryFace(0, 1), { axis: 'end', end: -1, rotation: Math.PI });
+  assert.deepEqual(viceCityFreeDriveGlassEntryFace(0, -1), { axis: 'end', end: 1, rotation: 0 });
+});
+
+test('les impacts visuels utilisent la surface réelle du vitrage avant le placement de secours', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /glassImpactRaycaster\.intersectObjects\(glassMeshes, false\)/);
+  assert.match(source, /crack\.position\.copy\(car\.worldToLocal\(glassHit\.point\.clone\(\)\)\)/);
+  assert.match(source, /entryFace\.side \* width \* 0\.435/);
 });

@@ -163,3 +163,15 @@ export function viceCityFreeDriveSpeedStep({
 
   return clamp(nextSpeed, -reverseMaxSpeed, maxSpeed);
 }
+
+/** Select the car-glass surface facing the incoming bullet, not the far side. */
+export function viceCityFreeDriveGlassEntryFace(directionX = 0, directionZ = -1) {
+  const x = Number(directionX) || 0;
+  const z = Number(directionZ) || 0;
+  if (Math.abs(x) > Math.abs(z)) {
+    const side = -Math.sign(x) || 1;
+    return { axis: 'side', side, rotation: side * Math.PI / 2 };
+  }
+  const end = -Math.sign(z) || -1;
+  return { axis: 'end', end, rotation: end < 0 ? Math.PI : 0 };
+}

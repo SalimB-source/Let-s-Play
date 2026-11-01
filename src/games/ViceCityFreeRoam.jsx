@@ -32,6 +32,7 @@ import {
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
+  viceCityFreeDriveGlassEntryFace,
 } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import {
@@ -2863,6 +2864,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let shotCooldown = 0;
     let footMuzzleFlashUntil = 0;
     const shotOrigin = new THREE.Vector3();
+    const glassImpactRaycaster = new THREE.Raycaster();
+    const glassWorldDirection = new THREE.Vector3();
+    const glassLocalNormal = new THREE.Vector3();
+    const glassWorldNormalMatrix = new THREE.Matrix3();
+    const glassCarQuaternion = new THREE.Quaternion();
+    const glassLocalForward = new THREE.Vector3(0, 0, 1);
     const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
     const challengeState = { current: null, rewardTotal: 0, lastUiAt: 0, lastStreetAt: 0 };
     const wearMarks = [];
@@ -3596,24 +3603,41 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if ((car.userData.glassCrackCount || 0) >= 8) return;
       car.userData.glassCrackCount = (car.userData.glassCrackCount || 0) + 1;
       const impact = car.worldToLocal(new THREE.Vector3(worldX, worldY, worldZ));
-      const inverseRotation = car.getWorldQuaternion(new THREE.Quaternion()).invert();
+      const inverseRotation = car.getWorldQuaternion(glassCarQuaternion).invert();
       const localDirection = new THREE.Vector3(directionX, 0, directionZ).applyQuaternion(inverseRotation);
       const width = car.userData.width || 2;
       const length = car.userData.length || 4.2;
-      const onSideWindow = Math.abs(localDirection.x) > Math.abs(localDirection.z);
+      const entryFace = viceCityFreeDriveGlassEntryFace(localDirection.x, localDirection.z);
       const crack = new THREE.Group();
       crack.name = 'broken-window-impact';
-      crack.position.y = clamp(impact.y, 0.78, 1.48);
-      if (onSideWindow) {
-        const side = Math.sign(localDirection.x) || 1;
-        crack.position.x = side * width * 0.455;
-        crack.position.z = clamp(impact.z, -length * 0.28, length * 0.28);
-        crack.rotation.y = side * Math.PI / 2;
+
+      // Place the mark on the actual pane surface when the shot ray crosses glass.
+      // The old 2-D hit test used a guessed car edge, which left marks hovering
+      // beside the body or on the far side of the vehicle.
+      glassWorldDirection.set(directionX, 0, directionZ).normalize();
+      const rayOrigin = new THREE.Vector3(worldX, worldY, worldZ).addScaledVector(glassWorldDirection, -12);
+      glassImpactRaycaster.set(rayOrigin, glassWorldDirection);
+      glassImpactRaycaster.near = 0;
+      glassImpactRaycaster.far = 24;
+      const glassHit = glassImpactRaycaster.intersectObjects(glassMeshes, false)[0];
+      if (glassHit?.face) {
+        crack.position.copy(car.worldToLocal(glassHit.point.clone()));
+        glassWorldNormalMatrix.getNormalMatrix(glassHit.object.matrixWorld);
+        glassLocalNormal.copy(glassHit.face.normal).applyMatrix3(glassWorldNormalMatrix);
+        glassCarQuaternion.copy(car.getWorldQuaternion(new THREE.Quaternion())).invert();
+        glassLocalNormal.applyQuaternion(glassCarQuaternion).normalize();
+        crack.position.addScaledVector(glassLocalNormal, 0.012);
+        crack.quaternion.setFromUnitVectors(glassLocalForward, glassLocalNormal);
       } else {
-        const end = Math.sign(localDirection.z) || -1;
-        crack.position.x = clamp(impact.x, -width * 0.34, width * 0.34);
-        crack.position.z = end * length * 0.34;
-        crack.rotation.y = end < 0 ? 0 : Math.PI;
+        crack.position.y = clamp(impact.y, 0.88, 1.32);
+        if (entryFace.axis === 'side') {
+          crack.position.x = entryFace.side * width * 0.435;
+          crack.position.z = clamp(impact.z, -length * 0.28, length * 0.28);
+        } else {
+          crack.position.x = clamp(impact.x, -width * 0.34, width * 0.34);
+          crack.position.z = entryFace.end * length * 0.2;
+        }
+        crack.rotation.y = entryFace.rotation;
       }
       car.add(crack);
       const hole = new THREE.Mesh(new THREE.CircleGeometry(0.052, 7), glassChipMaterial);
