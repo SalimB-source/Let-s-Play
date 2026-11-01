@@ -405,7 +405,10 @@ function declarerCombatPvp(duel, cote, attaquantIds, ciblesAttaque) {
   }
   for (const attaquant of attaquants) {
     const cibleId = ciblesRapides[attaquant.id];
-    if (!cibleId) continue;
+    if (!cibleId) {
+      if (attaquant.coupRapide && duel[adv].creatures.length) return { ok: false, raison: 'cible-obligatoire' };
+      continue;
+    }
     if (!attaquant.coupRapide) return { ok: false, raison: 'cible' };
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };

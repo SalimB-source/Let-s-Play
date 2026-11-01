@@ -2383,7 +2383,7 @@ test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche 
   assert.equal(duelSorcier.sorcier.pv, pvAdvAvant - 3, 'l’attaque sur l’adversaire touche toujours à 100 %');
 });
 
-test('sans créature désignée, l’Attaque ciblée attaque le sorcier comme n’importe quel attaquant', () => {
+test('une attaque ciblée exige une créature adverse et ne consomme rien en cas de refus', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -2391,43 +2391,24 @@ test('sans créature désignée, l’Attaque ciblée attaque le sorcier comme n�
   const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
   donner(duel, 'sorcier', 'fennec-des-decombres');
   const fennec = rpgJouerCreature(duel, 'sorcier', 'fennec-des-decombres').entite;
-
-  const pvSorcier = duel.sorcier.pv;
-  // Aucun bloqueur assigné : rien ne s’interpose, l’attaque va au sorcier.
-  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {});
-  assert.equal(res.ok, true, 'aucune cible n’est exigée : le choix appartient à l’attaquant');
-  assert.equal(duel.sorcier.pv, pvSorcier - 3, 'la voie est libre : elle frappe le sorcier');
-  assert.equal(fennec.pv, fennec.pvMax, 'la créature adverse n’a rien encaissé');
-  assert.deepEqual(res.resume.coupsRapides, [], 'aucune frappe rapide n’a été déclarée');
-  assert.equal(feriel.attaquee, true, 'l’attaque est consommée comme les autres');
+  const pv = duel.sorcier.pv;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [feriel.id], {}).raison, 'cible-obligatoire');
+  assert.equal(rpgAttaquerSorcier(duel, 'joueur', feriel.id).raison, 'cible-obligatoire');
+  assert.equal(feriel.attaquee, false);
+  assert.equal(duel.sorcier.pv, pv);
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: fennec.id }).ok, true);
 });
 
-test('une attaque ciblée qui ne frappe personne est bloquée comme n’importe quel attaquant', () => {
+test('une cible disparue après déclaration ne redirige pas la frappe vers le sorcier', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
-  donnerMana(duel, 'sorcier', 20);
   donner(duel, 'joueur', 'feriel');
   const feriel = rpgJouerCreature(duel, 'joueur', 'feriel').entite;
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const vise = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  donner(duel, 'sorcier', 'chien-du-guet');
-  const bloqueur = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
-  // Corps de test : le bloqueur (0 ATQ) absorbe le combat sans blesser Fériel.
-  Object.assign(vise, { pv: 5, def: 5, pvMax: 5 });
-  Object.assign(bloqueur, { atk: 0, pv: 1, def: 1, pvMax: 1 });
-  feriel.ready = true;
-
-  const pvSorcier = duel.sorcier.pv;
-  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], { [feriel.id]: [bloqueur.id] }, null, null, {});
+  const pv = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [feriel.id], {}, null, null, { [feriel.id]: 'disparue' }, { attaqueDeclaree: true });
   assert.equal(res.ok, true);
-  assert.equal(vise.pv, 5, 'aucune frappe rapide : la créature écartée reste intacte');
-  assert.equal(duel.sorcier.creatures.includes(bloqueur), false,
-    'le combat normal a lieu : le bloqueur meurt sous les dégâts de combat de Fériel');
-  assert.equal(feriel.pv, 2, 'le bloqueur blessant à 0, Fériel sort indemne');
-  assert.equal(duel.sorcier.pv, pvSorcier, 'bloquée, elle ne touche pas les PV du sorcier');
-  assert.equal(res.resume.frappeSorcier, 0);
-  assert.deepEqual(res.resume.paires, [[feriel.name, bloqueur.name]],
-    'le blocage est compté dans le résumé du combat');
+  assert.equal(duel.sorcier.pv, pv);
+  assert.equal(res.resume.coupsRapides[0].annule, true);
 });
 
 test('la frappe de l’Attaque ciblée n’est pas bloquable : l’attaquant s’arrête dessus', () => {
@@ -2527,7 +2508,7 @@ test('l’IA abat d’une attaque ciblée la créature qu’elle peut tuer, et s
   assert.equal(feriel.attaquee, true, 'l’attaque rapide de l’IA est bien consommée');
 });
 
-test('l’IA ne s’arrête pas sur une créature qu’elle ne tue pas : elle attaque le sorcier', () => {
+test('l’IA vise une créature même si elle ne peut pas la tuer', () => {
   const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.999 });
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -2542,8 +2523,8 @@ test('l’IA ne s’arrête pas sur une créature qu’elle ne tue pas : elle at
   const pvJoueur = duel.joueur.pv;
 
   rpgTourSorcierIA(duel);
-  assert.equal(chien.pv, 5, 'le Chien survit à la frappe : l’IA ne s’y arrête pas');
-  assert.equal(duel.joueur.pv, pvJoueur - 3, 'Fériel attaque normalement et frappe le joueur');
+  assert.equal(chien.pv, 2, 'le Chien subit la frappe même s’il survit');
+  assert.equal(duel.joueur.pv, pvJoueur, 'le joueur reste hors de portée');
   assert.equal(feriel.attaquee, true, 'l’attaque est consommée');
 });
 

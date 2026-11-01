@@ -402,3 +402,16 @@ test('pose PvP : la case choisie voyage dans l’intention, une case occupée es
   assert.equal(JSON.stringify(duel), avant, 'une intention refusée ne change rien');
 });
 
+
+test('PvP : une attaque ciblée ne peut viser le sorcier si une créature adverse est présente', () => {
+  const duel = partieNeuve(123);
+  duel.phase = 'principale';
+  duel.tour = 'joueur';
+  duel.joueur.creatures.push({ id: 'rapide-test', carteId: 'feriel', name: 'Fériel', coupRapide: true, ready: true, attaquee: false, atk: 3, pv: 2 });
+  duel.sorcier.creatures.push({ id: 'cible-test', carteId: 'chien-du-guet', name: 'Chien', ready: false, atk: 2, pv: 2 });
+  const refus = rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], ciblesAttaque: {} });
+  assert.equal(refus.raison, 'cible-obligatoire');
+  assert.ok(!duel.combatDeclare);
+  const declaration = rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], ciblesAttaque: { 'rapide-test': 'cible-test' } });
+  assert.equal(declaration.ok, true);
+});
