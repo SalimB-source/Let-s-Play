@@ -44,6 +44,8 @@ const PUBLIC = new URL('../public/', import.meta.url);
 
 /** Les deux courts MP3 de `public/` qui ne sont pas des voix de carte. */
 const DEJA_BRANCHES = new Set([
+  'La dévoreuse(1).MP3', // ancienne voix remplacée
+  'sword_breaking.mp3', // bruitage, pas une voix
   'viking warrior battle cry with horn.mp3', // bruitage `victoire`
   '26509 Thunder spark transition-full.mp3', // bruitage `foudre_marteau`
 ]);
@@ -88,13 +90,35 @@ function donner(duel, cote, carteId) {
 }
 
 test('chaque voix appartient à une créature ou à un héros du jeu', () => {
-  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 74, 'les quatre lots comptent 74 cartes');
+  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 88, 'les lots comptent 88 cartes');
   for (const carteId of RPG_ARRIVAL_VOICE_CARD_IDS) {
     const carte = cardById(carteId);
     assert.ok(carte, `${carteId} est une carte du jeu`);
     assert.ok(['creature', 'hero'].includes(carte.kind),
       `${carteId} (${carte.name}) est une créature ou un héros — jamais une magie, un terrain ni un jeton`);
   }
+});
+
+test('le nouveau lot associe chaque enregistrement à sa carte et remplace les voix annoncées', () => {
+  const lot = {
+    'le-chasseur-d-ocracoke': "Le chasseur d'ocracoke.mp3", kraken: 'Le kraken.mp3',
+    'tislit-des-aures': 'Tislit.mp3', 'chien-du-guet': 'chien de guet.mp3',
+    'faiseur-de-passage': 'faiseur de passage.mp3', 'faussoyeur-des-dunes': 'faussoyeur des dunes.mp3',
+    'ghul-des-cendres': 'ghul des cendres.mp3', 'guetteur-du-beffroi': 'guetteur du beffroi.mp3',
+    'la-devoreuse': 'la devoreuse.mp3', 'loup-des-neiges': 'loup des neiges.mp3',
+    'momie-de-lin': 'momie de lin.mp3', 'ouvrier-du-natron': 'ouvrier du natron.mp3',
+    'scribe-des-feuillets': 'scribe des feuillets.mp3', 'sonneur-fele': 'sonneur felé.mp3',
+    'veilleuse-des-citernes': 'veilleuse des citernes.mp3', salem: 'Salem.mp3',
+    'ifrit-al-ahmar': 'Ifrit el ahmar.mp3',
+  };
+  for (const [id, nom] of Object.entries(lot)) {
+    assert.equal(rpgArrivalVoiceFile(id), nom);
+    assert.ok(cardById(id));
+    assert.ok(gainVoixArrivee(rpgArrivalVoiceUrl(id)) > 0);
+    assert.equal(gainVoixArrivee(rpgArrivalVoiceUrl(id)), gainVoixArrivee(nom));
+  }
+  assert.match(rpgArrivalVoiceUrl('salem'), /\?v=674f8c1$/);
+  assert.match(rpgArrivalVoiceUrl('ifrit-al-ahmar'), /\?v=674f8c1$/);
 });
 
 test('Les quatorze Soldats de la Lune utilisent leurs voix anglaises', () => {
@@ -142,7 +166,7 @@ test('le rapprochement des noms approximatifs est figé', () => {
     'la-barbe-rousse': 'Barbe rousse.mp3',
     'la-barbe-noire': 'Black beard.mp3',
     'kagutsuchi-flamme-originelle': 'Kagutsuchi(1).MP3',
-    'la-devoreuse': 'La dévoreuse(1).MP3',
+    'la-devoreuse': 'la devoreuse.mp3',
     'kusayla-roi-des-imazighen': 'Kusayla.mp3',
     'ifrit-al-ahmar': 'Ifrit el ahmar.mp3',
     'maitre-des-hieroglyphes': 'Maitre des Hieroglyphes.mp3',
@@ -198,7 +222,7 @@ test('chaque voix est un fichier court livré dans public/, une seule fois', () 
 test('aucune voix du lot ne reste orpheline — et aucune musique ne s’y invite', () => {
   // Les pistes T01–T12 et les bruitages connus sont exclus du comptage ;
   // toutes les autres petites voix sont associées à une carte.
-  assert.equal(fichiersVoix.length, 74, 'le dépôt livre exactement 74 voix de créature');
+  assert.equal(fichiersVoix.length, 88, 'le dépôt livre exactement 88 voix de créature utilisées');
   const attribues = new Set(Object.values(RPG_ARRIVAL_VOICE_FILES));
   for (const nom of fichiersVoix) {
     assert.ok(attribues.has(nom), `${nom} est attribué à une carte`);
@@ -212,7 +236,7 @@ test('l’adresse publique encode le nom du fichier sans toucher à la base', ()
   const url = rpgArrivalVoiceUrl('dame-aux-ailes-d-or');
   assert.ok(url.endsWith("dame%20aux%20ailes%20d'or.mp3"), url);
   assert.ok(url.startsWith('/'), 'base publique de repli hors Vite');
-  assert.equal(rpgArrivalVoiceUrl(cardById('salem')), '/Salem.mp3', 'une fiche de carte suffit');
+  assert.equal(rpgArrivalVoiceUrl(cardById('salem')), '/Salem.mp3?v=674f8c1', 'une fiche de carte suffit et le cache est renouvelé');
   assert.equal(rpgArrivalVoiceUrl('fennec-des-decombres'), null, 'les cartes sans voix se taisent');
   assert.equal(rpgArrivalVoiceUrl('corsaire'), null, 'un jeton n’a pas de voix');
   assert.equal(rpgArrivalVoiceUrl(null), null);

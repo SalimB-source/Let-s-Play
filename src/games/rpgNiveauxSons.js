@@ -37,8 +37,8 @@
  *     Les MP3 fournis, eux, ne sont pas réécrits ;
  *  2. **le gain de lecture** ramène le reste, borné par ce que la crête permet
  *     (`RPG_PLAFOND_CRETE_DBFS`) : les deux voix MP3 sans marge — « Celle qui
- *     pèse » et « Le Maître des hiéroglyphes » — restent ainsi 4,1 dB et 1,4 dB
- *     sous le niveau commun. Tout le reste tombe pile dessus.
+ *     pèse », « Le Maître des hiéroglyphes » ou « Faiseur de passage » —
+ *     restent sous le niveau commun lorsque leur crête limite le gain.
  *
  * Le survol de l'interface (`hover`) garde son murmure : son fichier est joué à
  * 0,05 du niveau commun (`DOSE_SURVOL`, dans `rpgAudio.js`), 17,4 dB sous les
@@ -121,6 +121,20 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
  * dBFS]`.
  */
 export const RPG_NIVEAUX_VOIX = Object.freeze({
+  "Le chasseur d'ocracoke.mp3": [-21.16, -3.66],
+  'Le kraken.mp3': [-18.66, -2.15],
+  'Tislit.mp3': [-29.66, -14.62],
+  'chien de guet.mp3': [-22.26, -6.98],
+  'faiseur de passage.mp3': [-31.83, -4.93],
+  'faussoyeur des dunes.mp3': [-19.43, -6.06],
+  'ghul des cendres.mp3': [-22.64, -7.30],
+  'guetteur du beffroi.mp3': [-20.23, -6.45],
+  'loup des neiges.mp3': [-9.39, -1.24],
+  'momie de lin.mp3': [-26.50, -9.70],
+  'ouvrier du natron.mp3': [-28.90, -10.36],
+  'scribe des feuillets.mp3': [-24.91, -7.99],
+  'sonneur felé.mp3': [-29.54, -16.04],
+  'veilleuse des citernes.mp3': [-22.51, -6.65],
   'Sentinel of the Sands.mp3': [-21.86, -6.64],
   'Archon of the Black Hourglass.mp3': [-21.37, -6.69],
   'Dancer of the Dune Shadows.mp3': [-24.56, -8.20],
@@ -158,7 +172,7 @@ export const RPG_NIVEAUX_VOIX = Object.freeze({
   'Géant de glace.mp3': [-19.38, -4.36],
   'Hatamoto des cendres.mp3': [-17.18, -2.84],
   'Ibis des comptes.mp3': [-18.33, -1.39],
-  'Ifrit el ahmar.mp3': [-20.98, -1.82],
+  'Ifrit el ahmar.mp3': [-16.15, -1.74],
   'Ifrit furtif.MP3': [-17.22, -3.63],
   'Jarl au marteau de guerre.mp3': [-18.52, -3.42],
   'Jormungandr.mp3': [-22.32, -4.68],
@@ -166,7 +180,7 @@ export const RPG_NIVEAUX_VOIX = Object.freeze({
   'Kenshi de la forge.mp3': [-17.42, -3.41],
   'Kusayla.mp3': [-19.07, -4.12],
   'La dame des neufs mondes.mp3': [-28.62, -13.09],
-  'La dévoreuse(1).MP3': [-23.93, -10.71],
+  'la devoreuse.mp3': [-18.80, -2.35],
   'Le passeur.mp3': [-21.47, -3.01],
   'Le renegat.mp3': [-14.54, -0.55],
   'lionne du soleil.mp3': [-17.98, -2.21],
@@ -180,7 +194,7 @@ export const RPG_NIVEAUX_VOIX = Object.freeze({
   'Prête de la bouche.mp3': [-16.92, -5.81],
   'Ronin du soleil rouge.mp3': [-23.57, -6.93],
   'Sahir des braises.mp3': [-24.25, -8.62],
-  'Salem.mp3': [-21.58, -7.21],
+  'Salem.mp3': [-21.47, -4.18],
   'Seigneur des machoires.mp3': [-18.65, -1.17],
   'Serpent de verre.mp3': [-19.53, -4.56],
   'Shogun.mp3': [-17.05, -3.62],
@@ -214,7 +228,7 @@ export function gainEchantillon(nom) {
  * désechappé.
  */
 export function gainVoixArrivee(fichier) {
-  const brut = String(fichier ?? '');
+  const brut = String(fichier ?? '').split(/[?#]/u, 1)[0];
   const nom = brut.slice(brut.lastIndexOf('/') + 1);
   let decode = nom;
   try {

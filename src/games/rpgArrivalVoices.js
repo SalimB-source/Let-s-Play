@@ -2,7 +2,7 @@
  * Voix d'arrivée des créatures — un échantillon par carte, livré à la racine
  * de `public/`.
  *
- * Quatre lots de fichiers ont été déposés : le lot « Game voices » (37 MP3
+ * Plusieurs lots de fichiers ont été déposés : le lot « Game voices » (37 MP3
  * courts, 0,65 s à 3,06 s), puis 14 voix (1,07 s à 3,08 s, plus un WAV — le
  * Tengu), puis 9 voix de héros et de créatures (1,88 s à 3,97 s). Tous vivent à
  * la racine de `public/`, sauf le Tengu, ramené en PCM 16 bits mono. Le quatrième
@@ -28,8 +28,8 @@
  * la réplique naine.
  *
  * Le lecteur reste muet si le joueur a coupé le son (voir `RpgAudioPlayer`).
- * Aucun aperçu, aucune pioche, aucune réanimation ne déclenche une voix :
- * seule une entrée en jeu depuis la main, comme les accueils qu'elle remplace.
+ * Les fiches de catalogue permettent aussi d'écouter la voix. En duel, les
+ * arrivées et les retours de Tenacité utilisent la même piste.
  *
  * **La voix précède sa créature** : c'est la page qui décide *quand*, et elle
  * annonce la carte avec le geste — départ du vol depuis la main, résolution de
@@ -42,11 +42,27 @@
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
 
 /**
- * Les 74 voix livrées, carte par carte. L'ordre suit la collection — Braise,
+ * Les 88 voix livrées, carte par carte. L'ordre suit la collection — Braise,
  * Ténèbres, Sable, Eau, Neige, les héros — puis les lots suivants, rangés à
  * part, dans l'ordre où ils sont arrivés.
  */
 export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
+  // ── Nouvelles voix des créatures et héros ─────────────────────────────────
+  'le-chasseur-d-ocracoke': "Le chasseur d'ocracoke.mp3",
+  kraken: 'Le kraken.mp3',
+  'tislit-des-aures': 'Tislit.mp3',
+  'chien-du-guet': 'chien de guet.mp3',
+  'faiseur-de-passage': 'faiseur de passage.mp3',
+  'faussoyeur-des-dunes': 'faussoyeur des dunes.mp3',
+  'ghul-des-cendres': 'ghul des cendres.mp3',
+  'guetteur-du-beffroi': 'guetteur du beffroi.mp3',
+  'loup-des-neiges': 'loup des neiges.mp3',
+  'momie-de-lin': 'momie de lin.mp3',
+  'ouvrier-du-natron': 'ouvrier du natron.mp3',
+  'scribe-des-feuillets': 'scribe des feuillets.mp3',
+  'sonneur-fele': 'sonneur felé.mp3',
+  'veilleuse-des-citernes': 'veilleuse des citernes.mp3',
+
   // ── Les Soldats de la Lune · voix originales en anglais ─────────────────
   'sentinelle-des-sables': 'Sentinel of the Sands.mp3',
   'archonte-du-sablier-noir': 'Archon of the Black Hourglass.mp3',
@@ -80,8 +96,8 @@ export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
 
   // ── Balance des Heures · Ténèbres ───────────────────────────────────────
   'celui-qui-juge': 'Celui qui juge.mp3',
-  // « (1) » : suffixe de téléchargement, la carte est unique.
-  'la-devoreuse': 'La dévoreuse(1).MP3',
+  // La nouvelle voix remplace l'ancien fichier La dévoreuse(1).MP3.
+  'la-devoreuse': 'la devoreuse.mp3',
   // « Le passeur » : la carte complète est « Le Passeur au masque de chacal ».
   'passeur-au-masque-de-chacal': 'Le passeur.mp3',
   'maitre-des-hieroglyphes': 'Maitre des Hieroglyphes.mp3',
@@ -209,7 +225,10 @@ export function rpgArrivalVoiceFile(cardOrId) {
 export function rpgArrivalVoiceUrl(cardOrId) {
   const fichier = rpgArrivalVoiceFile(cardOrId);
   if (!fichier) return null;
-  return `${RPG_PUBLIC_BASE}${encodeURIComponent(fichier)}`;
+  // Ces deux fichiers ont été remplacés sous le même nom : une version évite
+  // de rejouer l'ancienne piste conservée dans le cache du navigateur.
+  const version = ['salem', 'ifrit-al-ahmar'].includes(resolveCardId(cardOrId)) ? '?v=674f8c1' : '';
+  return `${RPG_PUBLIC_BASE}${encodeURIComponent(fichier)}${version}`;
 }
 
 /** La carte a-t-elle sa propre voix d'arrivée ? */
