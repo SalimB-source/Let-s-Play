@@ -50,6 +50,17 @@ export function viceCityFreeDriveJoystickInput(x = 0, y = 0) {
   };
 }
 
+/** Keep the body on its own heading while rotating only the weapon pose toward the aim point. */
+export function viceCityFreeDriveAimPose(bodyHeading = 0, aimHeading = bodyHeading) {
+  const body = Number(bodyHeading) || 0;
+  const aim = Number(aimHeading) || 0;
+  const armYaw = body - aim;
+  return {
+    bodyHeading: body,
+    armYaw: Math.atan2(Math.sin(armYaw), Math.cos(armYaw)),
+  };
+}
+
 /** Normalize forward and strafe input so diagonal pedestrian movement is not faster. */
 export function viceCityFreeDriveFootVector(forward = 0, strafe = 0) {
   const safeForward = clamp(Number(forward) || 0, -1, 1);

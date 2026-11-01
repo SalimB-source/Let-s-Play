@@ -18,6 +18,7 @@ import {
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
+  viceCityFreeDriveAimPose,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
@@ -136,6 +137,13 @@ test('joystick à pied : déplacement analogique dans toutes les directions avec
   assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-12,
     'la diagonale ne dépasse pas la vitesse maximale');
   assert.ok(diagonal.x > 0 && diagonal.y > 0);
+});
+
+test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {
+  const pose = viceCityFreeDriveAimPose(Math.PI / 2, Math.PI / 4);
+  assert.equal(pose.bodyHeading, Math.PI / 2);
+  assert.ok(Math.abs(pose.armYaw - Math.PI / 4) < 1e-12);
+  assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
 test('à pied : les axes de glissade restent indépendants et la diagonale est plafonnée', () => {
