@@ -8,8 +8,10 @@
  *     manuelle. Il n'apparaît qu'en création ; l'édition et la copie d'un
  *     deck existant ouvrent directement l'atelier manuel, puisque le joueur
  *     sait déjà ce qu'il veut retoucher ;
- *   - `assistant` — le wizard couleurs → style (`RpgDeckAssistant`), qui
- *     rend la main à ce wrapper avec `{ couleurs, style }` ;
+ *   - `assistant` — le wizard idée → couleurs → style (`RpgDeckAssistant`),
+ *     qui rend la main à ce wrapper avec `{ couleurs, style, intention }` —
+ *     l'`intention` étant la demande dictée dans l'invite de texte, lue par
+ *     `rpgDeckIntention.js` ;
  *   - `manuel` — l'atelier minimaliste (`RpgDeckAtelier`). En sortie
  *     d'assistant, il reçoit le deck généré pré-rempli : chaque carte reste
  *     remplaçable avant l'enregistrement.
@@ -41,14 +43,15 @@ export function RpgDeckCreation({
   const [generation, setGeneration] = useState(null);
 
   /**
-   * L'assistant a renvoyé couleurs + style : le moteur compose dans le
-   * stock (pas dans le quota brut), puis l'atelier manuel s'ouvre avec le
-   * deck pré-rempli et sa carte emblème.
+   * L'assistant a renvoyé couleurs + style (+ l'intention lue de l'invite de
+   * texte) : le moteur compose dans le stock (pas dans le quota brut), puis
+   * l'atelier manuel s'ouvre avec le deck pré-rempli et sa carte emblème.
    */
-  const generer = ({ couleurs, style }) => {
+  const generer = ({ couleurs, style, intention = null }) => {
     const { cardIds, embleme } = genererDeckAssiste({
       couleurs,
       style,
+      intention,
       collection,
       catalogue: {
         cartes: RPG_DUEL_CARDS,

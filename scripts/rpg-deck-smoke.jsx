@@ -520,15 +520,21 @@ export async function checkRpgDecks(assert) {
   await atelier.settle();
   assert.ok(!atelier.container.querySelector('.rpg-hover-card-preview'), 'et disparaît quand la souris s’en va');
 
-  // --- La création assistée : couleurs puis style (aggro / contrôle / mix) ---------------------
+  // --- La création assistée : l'invite de texte, puis couleurs et style (aggro / contrôle / mix)
   // L'assistant ne vit plus dans l'atelier : on repasse par le seuil de création.
+  // La demande dictée est jouée dans `scripts/rpg-deck-creation-smoke.jsx` ; ici on
+  // passe l'invite (« Choisir moi-même ») pour vérifier le parcours à la main.
   await atelier.click([...atelier.container.querySelectorAll('.rpg-menu-link')].find((bouton) => texte(bouton).includes('Fermer')), 'fermer l’atelier manuel');
   await atelier.click(atelier.container.querySelector('.rpg-deck-choice--neuf'), 'rouvrir la création');
   await atelier.click(atelier.container.querySelector('.rpg-creation__carte--assiste'), 'choisir la création assistée');
   const assistant = atelier.container.querySelector('.rpg-assistant');
   assert.ok(assistant, 'l’assistant remplace le seuil');
   assert.ok(!atelier.container.querySelector('.rpg-atelier'), 'l’atelier est masqué pendant l’assistant');
-  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 2, 'deux étapes au fil : couleurs puis style');
+  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 3,
+    'trois étapes au fil : l’idée dictée, puis les couleurs, puis le style');
+  assert.ok(assistant.querySelector('#rpg-assistant-demande'), 'l’assistant s’ouvre sur l’invite de texte');
+  await atelier.click([...assistant.querySelectorAll('.rpg-menu-button')]
+    .find((bouton) => texte(bouton).includes('Choisir moi-même')), 'passer l’invite de texte');
   const pipSableAssistant = [...assistant.querySelectorAll('.rpg-assistant__couleur')].find((bouton) => bouton.getAttribute('aria-label') === 'Couleur Sable');
   await atelier.click(pipSableAssistant, 'couleur Sable');
   assert.equal(pipSableAssistant.getAttribute('aria-pressed'), 'true', 'la couleur Sable est retenue');

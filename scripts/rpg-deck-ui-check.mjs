@@ -176,6 +176,7 @@ const creationSource = readSource('../src/games/RpgDeckCreation.jsx');
 const choixSource = readSource('../src/games/RpgDeckModeChoice.jsx');
 const assistantSource = readSource('../src/games/RpgDeckAssistant.jsx');
 const autoSource = readSource('../src/games/rpgDeckAuto.js');
+const intentionSource = readSource('../src/games/rpgDeckIntention.js');
 // Le deck compte les exemplaires **payés** : l'atelier ne laisse pas aligner deux
 // copies d'une carte achetée une fois (doc 13, D10). Trois portes, un seul stock lu.
 const atelierStock = atelierSource;
@@ -199,18 +200,37 @@ assert.match(creationSource, /useState\(mode === 'nouveau' \? 'choix' : 'manuel'
 assert.match(creationSource, /onFermer=\{\(\) => setVue\('choix'\)\}/,
   'annuler l’assistant ramène au seuil, pas à l’étagère');
 
-// ── L'assistant : deux étapes (couleurs, style), plus de choix carte par carte ──────────────
-assert.match(assistantSource, /id: 'couleurs'/, 'la première étape reste le choix des couleurs');
-assert.match(assistantSource, /id: 'style'/, 'la seconde étape est le style de jeu');
+// ── L'assistant : l'invite de texte, puis les couleurs et le style ──────────────────────────
+assert.match(assistantSource, /id: 'idee'/, 'l’assistant s’ouvre sur l’invite de texte');
+assert.match(assistantSource, /id: 'couleurs'/, 'la deuxième étape reste le choix des couleurs');
+assert.match(assistantSource, /id: 'style'/, 'la troisième étape est le style de jeu');
 assert.doesNotMatch(assistantSource, /RPG_ASSISTANT_CREATURES|cartesPourEtape/,
   'l’assistant ne fait plus choisir 4 créatures et 4 sorts');
 assert.match(assistantSource, /RPG_STYLES_JEU\.map/, 'les trois styles sont rendus depuis les profils du moteur');
-assert.match(assistantSource, /onGenerer\(\{ couleurs: \[\.\.\.couleurs\], style \}\)/,
-  'la génération ne reçoit que les couleurs et le style');
+assert.match(assistantSource, /onGenerer\(\{ couleurs: \[\.\.\.couleurs\], style, intention: intentionCourante\(\) \}\)/,
+  'la génération reçoit les couleurs, le style et l’intention lue');
 assert.match(autoSource, /export const RPG_STYLES_JEU = \[/, 'les profils de style sont déclarés dans le moteur pur');
 assert.match(autoSource, /id: 'aggro'[\s\S]*?id: 'controle'[\s\S]*?id: 'mix'/,
   'les trois styles aggro, contrôle, mix sont déclarés dans cet ordre');
 assert.match(autoSource, /export function bonusStyle/, 'le style pèse sur le score des candidats');
+
+// ── L'IA de l'invite : une lecture locale, annoncée avant d'être jouée ──────────────────────
+assert.match(assistantSource, /id="rpg-assistant-demande"/, 'l’invite de texte porte son champ');
+assert.match(assistantSource, /<textarea/, 'la demande s’écrit dans une zone de texte');
+assert.match(assistantSource, /RPG_DEMANDES_EXEMPLES\.map/, 'des demandes d’exemple sont proposées');
+assert.match(assistantSource, /verifierIntention\(lireIntention\(texte, CATALOGUE\)/,
+  'la demande est lue puis confrontée au catalogue et à la collection');
+assert.match(assistantSource, /rpg-assistant__lecture/, 'la lecture est montrée au joueur');
+assert.match(assistantSource, /lecture\.alertes\.map/, 'ce que l’IA n’a pas reconnu est dit, pas deviné');
+assert.match(assistantSource, /Choisir moi-même/, 'l’invite peut être passée : le parcours clic reste entier');
+assert.match(intentionSource, /export function lireIntention/, 'la lecture de la demande est une fonction pure');
+assert.match(intentionSource, /export function verifierIntention/, 'la lecture est vérifiée contre le catalogue');
+assert.match(intentionSource, /export const RPG_THEMES_DECK = \[/, 'le vocabulaire des thèmes est déclaré');
+assert.doesNotMatch(intentionSource, /fetch\(|XMLHttpRequest|supabase|https?:\/\//,
+  'la lecture se fait hors ligne : aucun appel réseau dans le module d’intention');
+assert.match(autoSource, /export function normaliserIntention/, 'le moteur ramène l’intention à ce qu’il sait noter');
+assert.match(autoSource, /export function bonusIntention/, 'l’intention pèse sur le score des candidats');
+assert.match(autoSource, /intention = null,/, 'le moteur accepte une intention, et s’en passe');
 
 // ── L'atelier manuel minimaliste : filtres fins repliés, panneau allégé ─────────────────────
 assert.match(atelierSource, /rpg-atelier__toggle--filtres/, 'un seul bouton déploie les filtres avancés');

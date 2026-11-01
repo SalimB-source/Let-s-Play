@@ -1,17 +1,33 @@
 // Rendu réel du nouveau parcours de création de deck dans jsdom :
 // « Nouveau deck » ouvre un seuil à deux portes (assistée / manuelle) ;
-// l'assistant ne demande que les couleurs puis le style (aggro, contrôle, mix)
-// et génère un deck de 30 cartes possédées ; l'atelier manuel est minimaliste
-// (filtres fins repliés, recherche / couleurs / Possédées de premier niveau).
+// l'assistant s'ouvre sur une **invite de texte** — la demande du joueur est
+// lue par l'IA de l'atelier (`rpgDeckIntention.js`), qui pré-remplit les
+// couleurs et le style (aggro, contrôle, mix) et génère un deck de 30 cartes
+// possédées ; l'atelier manuel est minimaliste (filtres fins repliés,
+// recherche / couleurs / Possédées de premier niveau).
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import RpgDuelPage from '../src/games/RpgDuelPage.jsx';
 import { RPG_DUEL_CARDS, cardById, cardColors, carteJouableSansTerrain } from '../src/games/rpgCards.js';
 import { collectionJoueur } from '../src/games/rpgCollection.js';
+import { familleDeCarte } from '../src/games/rpgDeckAuto.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const texte = (element) => (element?.textContent ?? '').replace(/\s+/g, ' ').trim();
+const bouton = (racine, contenu) => [...racine.querySelectorAll('.rpg-menu-button')]
+  .find((element) => texte(element).includes(contenu));
+
+/** Écrit dans un champ React : la valeur passe par le setter natif, puis l'événement. */
+async function ecrire(assert, champ, valeur) {
+  assert.ok(champ, 'le champ à remplir existe');
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value').set;
+  await act(async () => {
+    setter.call(champ, valeur);
+    champ.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  await wait(30);
+}
 
 async function monter(assert) {
   const container = document.createElement('div');
@@ -117,31 +133,55 @@ export async function checkRpgDeckCreation(assert) {
   assert.ok(!container.querySelector('.rpg-atelier'), 'l’atelier est refermé');
   assert.ok(container.querySelector('.rpg-deck-catalog--closed'), 'retour sur l’étagère');
 
-  // ── 3. La porte assistée : couleurs, style, génération ─────────────────────
+  // ── 3. La porte assistée : l'invite de texte, puis couleurs et style ───────
   await click(container.querySelector('.rpg-deck-choice--neuf'), 'rouvrir la création');
   await click(container.querySelector('.rpg-creation__carte--assiste'), 'création assistée');
   const assistant = container.querySelector('.rpg-assistant');
   assert.ok(assistant, 'l’assistant remplace le seuil');
-  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 2, 'deux étapes : couleurs puis style');
+  assert.equal(assistant.querySelectorAll('.rpg-assistant__fil li').length, 3,
+    'trois étapes : l’idée dictée, puis les couleurs, puis le style');
 
-  // Étape 1 : les couleurs (1 à 3).
+  // Étape 1 : l'invite de texte — l'IA lit la demande avant de composer.
+  const invite = assistant.querySelector('#rpg-assistant-demande');
+  assert.ok(invite && invite.tagName === 'TEXTAREA', 'l’assistant s’ouvre sur une invite de texte');
+  const interroger = assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary');
+  assert.match(texte(interroger), /Interroger l’IA/, 'le premier geste est la lecture de la demande');
+  assert.equal(interroger.disabled, true, 'rien à lire tant que la demande est vide');
+  const exemples = [...assistant.querySelectorAll('.rpg-assistant__exemple')];
+  assert.ok(exemples.length >= 3, 'des demandes d’exemple sont proposées');
+  await click(exemples[0], 'reprendre un exemple');
+  assert.ok(invite.value.length > 10, 'l’exemple remplit l’invite');
+  await ecrire(assert, invite, 'un deck amazigh du désert, très rapide, avec des armes');
+  assert.equal(interroger.disabled, false, 'la demande écrite débloque la lecture');
+  await click(interroger, 'interroger l’IA');
+
+  // La lecture est montrée avant toute génération : couleurs, thème, style, familles.
+  const lecture = assistant.querySelector('.rpg-assistant__lecture');
+  assert.ok(lecture, 'l’assistant montre ce qu’il a compris');
+  const puces = [...lecture.querySelectorAll('.rpg-assistant__puce')].map(texte);
+  assert.ok(puces.some((puce) => puce.includes('Sable')), 'la couleur dite est reconnue');
+  assert.ok(puces.some((puce) => puce.includes('Amazighs')), 'le thème amazigh est reconnu');
+  assert.ok(puces.some((puce) => puce.includes('Aggro')), '« très rapide » est lu comme un plan aggro');
+  assert.ok(puces.some((puce) => puce.includes('armes')), 'les armes demandées sont retenues');
+  assert.ok(!assistant.querySelector('.rpg-atelier'), 'rien n’est généré avant que le joueur le demande');
+
+  // « Ajuster » mène aux couleurs et au style, déjà remplis par la lecture.
+  await click(bouton(assistant, 'Ajuster'), 'ajuster la lecture');
   const pipSable = [...assistant.querySelectorAll('.rpg-assistant__couleur')]
-    .find((bouton) => bouton.getAttribute('aria-label') === 'Couleur Sable');
-  await click(pipSable, 'choisir la couleur Sable');
-  assert.equal(pipSable.getAttribute('aria-pressed'), 'true', 'la couleur Sable est retenue');
-  const continuer = assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary');
-  await click(continuer, 'passer à l’étape du style');
+    .find((element) => element.getAttribute('aria-label') === 'Couleur Sable');
+  assert.equal(pipSable.getAttribute('aria-pressed'), 'true', 'la couleur lue est pré-retenue');
+  await click(assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'),
+    'passer à l’étape du style');
 
-  // Étape 2 : le style de jeu.
+  // Étape 3 : le style de jeu, pré-rempli mais retouchable.
   const styles = [...assistant.querySelectorAll('.rpg-assistant__style')];
   assert.equal(styles.length, 3, 'trois styles proposés');
-  assert.deepEqual(styles.map((b) => texte(b.querySelector('strong'))), ['Aggro', 'Contrôle', 'Mix'],
+  assert.deepEqual(styles.map((element) => texte(element.querySelector('strong'))), ['Aggro', 'Contrôle', 'Mix'],
     'les styles sont Aggro, Contrôle, Mix');
+  assert.equal(styles[0].getAttribute('aria-pressed'), 'true', 'le style lu (Aggro) est pré-sélectionné');
+  assert.match(texte(assistant), /Demande lue/, 'le rappel de la demande suit jusqu’au style');
   const generer = assistant.querySelector('.rpg-assistant__actions .rpg-menu-button--primary');
-  assert.equal(generer.disabled, true, 'impossible de générer sans avoir choisi un style');
-  await click(styles[0], 'choisir le style Aggro');
-  assert.equal(styles[0].getAttribute('aria-pressed'), 'true', 'le style Aggro est sélectionné');
-  assert.equal(generer.disabled, false, 'le bouton Générer se débloque');
+  assert.equal(generer.disabled, false, 'le bouton Générer est prêt');
   await click(generer, 'générer le deck');
 
   // Le deck généré atterrit dans l'atelier manuel, prêt à jouer et retouchable.
@@ -155,6 +195,8 @@ export async function checkRpgDeckCreation(assert) {
   assert.ok(idsGeneres.every((id) => collection.has(id)), 'toutes les cartes générées sont possédées');
   assert.ok(idsGeneres.every((id) => cardColors(cardById(id)).every((c) => c === 'sable')),
     'le deck respecte l’identité Sable');
+  assert.ok(idsGeneres.some((id) => familleDeCarte(cardById(id)) === 'arme'),
+    'les armes demandées dans la phrase sont bien dans le deck');
 
   // ── 4. L'enregistrement passe par le nommage puis rejoint l'étagère ────────
   await click(container.querySelector('.rpg-atelier__actions .rpg-menu-button--primary'), 'enregistrer');
@@ -191,8 +233,12 @@ export async function checkRpgDeckCreation(assert) {
   await manque.click(manque.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir la création');
   await manque.click(manque.container.querySelector('.rpg-creation__carte--assiste'), 'création assistée');
   const assistantManque = manque.container.querySelector('.rpg-assistant');
+  // L'invite peut être passée : le parcours couleurs → style reste entier.
+  await manque.click(bouton(assistantManque, 'Choisir moi-même'), 'ignorer l’invite de texte');
+  assert.ok(!assistantManque.querySelector('.rpg-assistant__lecture'),
+    'sans demande, aucune lecture n’est affichée');
   const pipTenebres = [...assistantManque.querySelectorAll('.rpg-assistant__couleur')]
-    .find((bouton) => bouton.getAttribute('aria-label') === 'Couleur Ténèbres');
+    .find((element) => element.getAttribute('aria-label') === 'Couleur Ténèbres');
   await manque.click(pipTenebres, 'choisir les Ténèbres (aucune carte possédée au départ)');
   await manque.click(assistantManque.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'), 'continuer');
   const alerte = assistantManque.querySelector('.rpg-assistant__message--alerte');
@@ -204,6 +250,24 @@ export async function checkRpgDeckCreation(assert) {
   assert.match(texte(manque.container.querySelector('.rpg-atelier__verdict')), /invalide|30|carte/,
     'le verdict annonce honnêtement un deck non jouable');
   await manque.demonter();
+
+  // ── 7. Générer droit depuis l'invite : la lecture suffit ───────────────────
+  const dictee = await monter(assert);
+  await dictee.click(dictee.onglet('Deck'), 'onglet Deck (génération directe)');
+  await dictee.click(dictee.container.querySelector('.rpg-deck-choice--neuf'), 'ouvrir la création');
+  await dictee.click(dictee.container.querySelector('.rpg-creation__carte--assiste'), 'création assistée');
+  const assistantDictee = dictee.container.querySelector('.rpg-assistant');
+  await ecrire(assert, assistantDictee.querySelector('#rpg-assistant-demande'),
+    'un deck du désert, rapide, avec des armes et des sorts');
+  await dictee.click(assistantDictee.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'),
+    'interroger l’IA');
+  assert.ok(assistantDictee.querySelector('.rpg-assistant__lecture'), 'la demande est lue');
+  await dictee.click(assistantDictee.querySelector('.rpg-assistant__actions .rpg-menu-button--primary'),
+    'générer directement depuis l’invite');
+  assert.ok(!dictee.container.querySelector('.rpg-assistant'), 'l’assistant se referme');
+  assert.match(texte(dictee.container.querySelector('.rpg-atelier__state')), /30 \/ 30 cartes/,
+    'le deck dicté est complet sans passer par les étapes');
+  await dictee.demonter();
 
   // Garde-fou : le catalogue réel permet de générer les trois styles en Sable.
   const jeu = RPG_DUEL_CARDS.filter((carte) => carteJouableSansTerrain(carte)

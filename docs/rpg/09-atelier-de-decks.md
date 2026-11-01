@@ -3,8 +3,10 @@
 > La création de deck vit **dans l'onglet Deck** du menu — aucun nouvel onglet.
 > La crate « Nouveau deck » ouvre d'abord un **seuil à deux portes**
 > (`RpgDeckModeChoice`, `src/games/RpgDeckModeChoice.jsx`) : la **création
-> assistée** (`RpgDeckAssistant`, deux questions — couleurs puis style de jeu)
-> et la **création manuelle**, qui mène à l'atelier minimaliste
+> assistée** (`RpgDeckAssistant`, qui s'ouvre sur une **invite de texte** —
+> « Quel type de deck voulez-vous ? » — puis deux questions, couleurs et style
+> de jeu, pré-remplies par la lecture) et la **création manuelle**, qui mène à
+> l'atelier minimaliste
 > (`RpgDeckAtelier`, `src/games/RpgDeckAtelier.jsx`). Le tout est orchestré par
 > `RpgDeckCreation` (`src/games/RpgDeckCreation.jsx`). À l'enregistrement, le
 > deck rejoint l'étagère comme un boîtier de plus, étiqueté **DECK MAISON**. Ce
@@ -21,8 +23,9 @@
    reçoit plus de paquet tout fait. Un clic n'ouvre **pas** directement
    l'atelier : il mène au **seuil de création** (`.rpg-creation`), deux grandes
    cartes-boutons :
-   - **✦ Création assistée** — le joueur choisit ses couleurs puis son style
-     de jeu, et le moteur compose le deck avec ses cartes possédées ;
+   - **✦ Création assistée** — le joueur **décrit son deck** dans une invite de
+     texte (ou choisit ses couleurs puis son style de jeu), et le moteur compose
+     le deck avec ses cartes possédées ;
    - **✎ Création manuelle** — l'atelier minimaliste, carte par carte.
 
    L'**édition** et la **copie** d'un deck existant ignorent le seuil : le
@@ -73,14 +76,31 @@
 
 ## La création assistée
 
-La porte **« ✦ Création assistée »** du seuil ouvre un assistant en **deux
+La porte **« ✦ Création assistée »** du seuil ouvre un assistant en **trois
 étapes** (`RpgDeckAssistant.jsx`, fil `.rpg-assistant__fil`) — le joueur ne
-choisit plus de cartes une à une, il donne une **identité** et un **plan de
-jeu** :
+choisit plus de cartes une à une : il **décrit** son deck, puis confirme
+l'**identité** et le **plan de jeu** que la lecture a reconnus.
 
-1. **Couleurs** — une à trois des cinq couleurs du jeu (les hybrides de ces
+1. **Votre idée** — l'invite de texte (`#rpg-assistant-demande`) : le jeu
+   demande « Quel type de deck voulez-vous ? » et le joueur répond en français
+   courant, par exemple
+
+   > « un deck viking neige ténèbres, avec quelques sorts de contrôle »
+
+   **« ✦ Interroger l'IA »** lance la lecture (`lireIntention` puis
+   `verifierIntention`, `src/games/rpgDeckIntention.js`) — voir « L'IA de
+   l'invite » plus bas. Quatre demandes d'exemple (`RPG_DEMANDES_EXEMPLES`)
+   remplissent l'invite d'un clic. La lecture s'affiche en **puces**
+   (`.rpg-assistant__puce`) : couleurs, thème et nombre de cartes possédées,
+   style et son intensité, effets, familles, courbe, cartes nommées — suivie
+   des **alertes** (`.rpg-assistant__message--info` / `--alerte`) qui disent ce
+   qui a été déduit et ce qui manque. Deux sorties : **« ✦ Générer le deck »**,
+   qui compose aussitôt, ou **« Ajuster → »**, qui mène aux deux étapes
+   suivantes déjà pré-remplies. **« Choisir moi-même → »** passe l'invite : le
+   parcours couleurs → style reste entier, inchangé.
+2. **Couleurs** — une à trois des cinq couleurs du jeu (les hybrides de ces
    couleurs sont retenus d'office) ;
-2. **Style de jeu** — trois grandes cartes sélectionnables
+3. **Style de jeu** — trois grandes cartes sélectionnables
    (`RPG_STYLES_JEU`, `src/games/rpgDeckAuto.js`) :
    - **⚔️ Aggro** — courbe basse (7 places à 1 mana, 8 à 2 mana…), 22
      créatures pour 8 sorts, bonus aux corps précoces, aux capacités de
@@ -95,18 +115,51 @@ jeu** :
 
 Un compteur annonce sous les styles le nombre de cartes possédées dans les
 couleurs retenues ; si la collection ne permet pas d'atteindre 30 exemplaires,
-un message prévient que le deck généré sera un **brouillon incomplet**.
+un message prévient que le deck généré sera un **brouillon incomplet**. Le
+rappel de la demande lue (« Demande lue : Neige + Ténèbres · Vikings ·
+Contrôle léger ») suit le joueur jusqu'à cette dernière étape.
 
 Puis **« ✦ Générer le deck »** : `genererDeckAssiste`
-(`src/games/rpgDeckAuto.js`, paramètre `style`) bâtit les trente cartes dans
-la collection, dans la limite du stock d'exemplaires payés (× 2 par carte,
-× 1 pour une mythique). Chaque candidat est toujours noté sur la synergie
-entre familles de mots-clés, la couverture des effets absents, la **courbe
-cible du style**, le **mix créatures / sorts du style**, les couleurs, la
-puissance intrinsèque et enfin le **bonus de style** (`bonusStyle`, neutre en
-`mix`). Le deck fini atterrit dans l'atelier manuel, annoncé **prêt à jouer**
-quand la collection suffit ; chaque carte reste remplaçable à la main avant
-l'enregistrement.
+(`src/games/rpgDeckAuto.js`, paramètres `style` et `intention`) bâtit les
+trente cartes dans la collection, dans la limite du stock d'exemplaires payés
+(× 2 par carte, × 1 pour une mythique). Chaque candidat est toujours noté sur
+la synergie entre familles de mots-clés, la couverture des effets absents, la
+**courbe cible du style**, le **mix créatures / sorts du style**, les couleurs,
+la puissance intrinsèque, le **bonus de style** (`bonusStyle`, neutre en `mix`,
+pondéré par l'intensité dictée) et enfin le **bonus d'intention**
+(`bonusIntention`) — le thème demandé tant que sa part du deck n'est pas
+servie, puis les sorts et les armes qui le complètent. Le deck fini atterrit
+dans l'atelier manuel, annoncé **prêt à jouer** quand la collection suffit ;
+chaque carte reste remplaçable à la main avant l'enregistrement.
+
+### L'IA de l'invite : une lecture locale, annoncée avant d'être jouée
+
+`src/games/rpgDeckIntention.js` traduit une phrase en **intention de deck**.
+C'est un module **pur, déterministe et hors ligne** — aucun appel réseau, aucune
+clé, aucune latence : le jeu tourne sur desktop et Android sans connexion, et
+la maison préfère une règle vérifiable à une réponse imprévisible. La lecture
+s'appuie sur un vocabulaire déclaré et sur le catalogue lui-même :
+
+| Ce que le joueur dit | Ce qui est lu |
+| --- | --- |
+| « neige », « ténèbres », « feu », « glace », « désert », « ombres » | les **couleurs** (`RPG_MOTS_COULEURS`), accents et pluriels repliés, mots anglais compris ; trois au plus |
+| « viking », « momies », « samouraï », « pirates », « serpents », « vampires », « amazigh », « djinn », « corbeau » | un **thème** (`RPG_THEMES_DECK`) ramené aux **tribus imprimées** du catalogue et aux cartes de même goût — la Hache de la banquise est viking sans porter le mot |
+| *(aucune couleur dite)* | les couleurs sont **déduites** : « un deck viking » est de Neige parce que les Vikings du catalogue sont de Neige — et la déduction est annoncée |
+| « rapide », « contrôle », « équilibré » | le **style** `aggro` / `controle` / `mix` |
+| « quelques… », « beaucoup… », « à fond » | l'**intensité** : elle pondère le style (0,55 / 1 / 1,4) et la part du thème (40 % / 60 % / 80 % du deck) |
+| « des retraits », « de la pioche », « des soins », « du gel », « des contresorts » | les **effets** voulus (`RPG_MOTS_EFFETS`) |
+| « avec des armes », « que des créatures », « des sorts » | les **familles** dites — « sort » couvre les magies **et** les armes, comme partout dans l'atelier |
+| « courbe basse », « gros finishers » | la **courbe** visée |
+| « que des légendaires » | les **raretés** préférées |
+| « sans sorts », « pas de contrôle », « éviter les armes » | des **refus** : un fort malus, jamais un filtre dur — un deck reste complet |
+| « avec le Kraken », « Takouba de Tin Hinan » | des **cartes nommées**, posées en signature (×2, ×1 si mythique) et qui illustrent le boîtier |
+
+Ce qui n'est pas reconnu est **dit**, jamais deviné en silence :
+`verifierIntention` rend ses `alertes` — un thème sans carte dans les couleurs
+retenues est écarté et annoncé, une carte nommée hors collection ou hors
+identité est signalée, et une demande muette renvoie « Aucun mot du jeu
+reconnu ». Le joueur peut toujours corriger à l'étape suivante : la lecture
+pré-remplit, elle n'enferme pas.
 
 À l'enregistrement, le **nommage** s'ouvre pour tout deck, assisté ou non :
 trois suggestions sont tirées du contenu (« Les Disciples de … », « Le Serment
@@ -131,19 +184,23 @@ que l'essentiel.
 | Panneau du deck à droite : nom en titre, compteur, **courbe de mana**, liste par type | `.rpg-atelier__deck` (collant à l'écran sur PC) : nom en champ-titre, grand `N / 30 cartes` et jauge (verte à 30, rouge au-delà), verdict de validation, **une seule ligne de chiffres** `.rpg-atelier__mini-stats` (créatures, magies, armes, coût moyen, pips de couleur) ; `courbeDeMana` dessine sept barres (1…6, 7+) ; la liste va **Créatures → Magies → Armes**, rangées « vignette · médaillon de coût · nom · − × N + » triées par coût ; la carte emblème est rangée dans le repli `.rpg-atelier__options` |
 | **« Ajouter des terrains »** | *(retiré)* : les terrains ont quitté le jeu, le mana est automatique — `completerEnTerrains` ne fait plus rien et le bouton a disparu |
 | Vider le deck | « ⌫ Vider le deck », confirmation en deux temps sur le bouton lui-même |
-| **Créer sans cliquer** | la création assistée ne vit plus dans l'atelier : elle se choisit **en amont, sur le seuil** `.rpg-creation` — deux étapes (couleurs, style) puis `genererDeckAssiste` ; le deck généré revient dans cet atelier, retouchable avant le **nommage** à l'enregistrement |
+| **Créer sans cliquer** | la création assistée ne vit plus dans l'atelier : elle se choisit **en amont, sur le seuil** `.rpg-creation` — l'invite de texte lue par l'IA, puis les couleurs et le style, et `genererDeckAssiste` ; le deck généré revient dans cet atelier, retouchable avant le **nommage** à l'enregistrement |
 
 Les règles pures du panneau (`courbeDeMana`, `repartitionCouleurs`,
 `completerEnTerrains`, `RPG_DECK_TAILLE`) vivent dans
 `src/games/rpgDeckBuilder.js` et sont testées par
 `tests/rpg-deck-builder.test.js` ; les profils de style et le score de
-génération (`RPG_STYLES_JEU`, `bonusStyle`, `genererDeckAssiste`) sont testés
-par `tests/rpg-deck-auto.test.js`. Le parcours complet — seuil à deux portes,
-assistant couleurs → style, génération dans la collection, atelier manuel et
-enregistrement — est joué dans jsdom par
+génération (`RPG_STYLES_JEU`, `bonusStyle`, `bonusIntention`,
+`genererDeckAssiste`) sont testés par `tests/rpg-deck-auto.test.js` ; la
+lecture de la demande (vocabulaire, intensités, refus, thèmes, cartes nommées,
+déduction des couleurs, génération dictée) est testée par
+`tests/rpg-deck-intention.test.js`. Le parcours complet — seuil à deux portes,
+assistant invite de texte → couleurs → style, génération dans la collection,
+atelier manuel et enregistrement — est joué dans jsdom par
 `scripts/rpg-deck-creation-smoke.jsx`
-(`npm run check:rpg-deck-creation`) ; les garde-fous de source de l'atelier
-restent dans `scripts/rpg-deck-ui-check.mjs`.
+(`npm run check:rpg-deck-creation`, ou `npm run check:rpg-deck-ia` avec les
+tests de lecture) ; les garde-fous de source de l'atelier restent dans
+`scripts/rpg-deck-ui-check.mjs`.
 
 Sous 1100 px les deux colonnes se resserrent ; sous 820 px le panneau du deck
 passe sous la grille, les cartes de style et les deux portes du seuil
@@ -409,8 +466,9 @@ casse.
 | --- | --- |
 | `src/games/rpgCollection.js` | dotation de départ, **révélations** d'étage, **gel des acquis**, `carteReveleePar`, `normaliserCollection`, et la règle des copies : `carteEnPlayset`, `exemplairesPossedables`, `plafondVisible` |
 | `src/games/rpgDeckBuilder.js` | limites (nom, plafond, `RPG_DECK_TAILLE = 30`), `peutAjouterCarte`, `rpgValiderDeckMaison`, `deckMaisonEstSelectionnable`, `normaliserDeckMaison`, `fusionnerEtatsSablier`, le rangement des decks hors stock (`reparerDeckHorsStock`, `reparerCasierHorsStock`), et le panneau du deck : `courbeDeMana`, `repartitionCouleurs` (`completerEnTerrains` ne fait plus rien : le mana est automatique) |
-| `src/games/rpgDeckAuto.js` | la création assistée : `genererDeckAssiste` (complétion notée), `scoreComplementarite`, `suggestionsNomsDeck`, `particuleDe` |
-| `src/games/RpgDeckAssistant.jsx` | l'assistant en trois étapes (couleurs, 4 créatures, 4 sorts) : composant pur, `onGenerer({ couleurs, creatures, sorts })` rend la main à l'atelier ; son catalogue passe le **stock** en `limiteDe`, pour qu'un deck né assisté soit enregistrable tel quel |
+| `src/games/rpgDeckAuto.js` | la création assistée : `genererDeckAssiste` (complétion notée), `scoreComplementarite`, `bonusStyle`, `normaliserIntention`, `bonusIntention`, `suggestionsNomsDeck`, `particuleDe` |
+| `src/games/rpgDeckIntention.js` | l'IA de l'invite de texte : le vocabulaire déclaré (`RPG_MOTS_COULEURS`, `RPG_THEMES_DECK`, `RPG_MOTS_STYLE`, `RPG_MOTS_EFFETS`, `RPG_MOTS_FAMILLES`, `RPG_INTENSITES`, `RPG_DEMANDES_EXEMPLES`), la lecture (`lireIntention`, `cartesNommees`, `couleursDeTheme`), la confrontation au catalogue et à la collection (`verifierIntention`, `themesDuCatalogue`) et le récapitulatif (`resumerIntention`) — pur, déterministe, hors ligne |
+| `src/games/RpgDeckAssistant.jsx` | l'assistant en trois étapes (l'idée dictée, les couleurs, le style) : composant pur, `onGenerer({ couleurs, style, intention })` rend la main à l'atelier ; son catalogue passe le **stock** en `limiteDe`, pour qu'un deck né assisté soit enregistrable tel quel |
 | `src/games/RpgDeckAtelier.jsx` + `rpg-deck-atelier.css` | l'éditeur façon Arena (grille, bascules, panneau du deck) : composant pur, tout état vient en props, la persistance et l'aperçu au survol restent au parent |
 | `src/games/rpgLongPress.js`, `src/games/RpgDuelPage.jsx` | le geste d'aperçu au doigt, délégué au menu entier (l'atelier compris) par `onPointerDown` |
 | `src/games/useDecksSablier.js` | casier local, collection, **stock d'exemplaires** (`exemplaires` du portefeuille), `statutSync`, suppression à pierre tombale, et la passe de rangement au montage comme après fusion |
@@ -418,7 +476,7 @@ casse.
 | `src/games/RpgDuelPage.jsx` | le câblage : crate, étagère maison, fiche, ligne d'état, `enregistrerAtelier` |
 | `src/auth/AuthContext.jsx` | le contexte de compte, lu défensivement par le hook |
 | `supabase/schema.sql` | la table `rpg_sablier_progress` et ses règles RLS |
-| `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js`, `tests/rpg-deck-auto.test.js` | les règles vérifiées (`npm run check:rpg`) |
+| `tests/rpg-collection.test.js`, `tests/rpg-deck-builder.test.js`, `tests/rpg-deck-auto.test.js`, `tests/rpg-deck-intention.test.js` | les règles vérifiées (`npm run check:rpg`, et `npm run check:rpg-deck-ia` pour la lecture de la demande) |
 | `scripts/rpg-deck-smoke.jsx` + `scripts/rpg-deck-ui-check.mjs` | la page montée dans jsdom : atelier complet, brouillon, duel maison, édition, copie, garde-fous de source (`npm run check:rpg-deck-ui`) |
 | `scripts/rpg-preview-smoke.jsx` | le scénario d'appui long, créateur de deck compris (grille, « + », ligne du deck, « − ») : l'aperçu s'ouvre, le deck ne bouge pas (`npm run check:rpg-ui`) |
 
@@ -451,6 +509,15 @@ casse.
   offrir les copies manquantes aurait vidé le comptoir de son sens. Le deck rentre
   dans son stock, la place part aux cartes légales, et payer la copie la rend —
   trois comportements qui se vérignent dans `tests/rpg-deck-builder.test.js`.
+- **L'invite de texte est lue ici, pas ailleurs** : une demande en toutes
+  lettres aurait pu partir vers un modèle de langage en ligne. Ce serait une
+  clé à cacher, un réseau à avoir, une latence à subir et une réponse qui
+  change entre deux clics — le contraire d'un atelier hors ligne (desktop,
+  Android) dont chaque règle se vérifie en test. La lecture est donc un
+  **vocabulaire déclaré** confronté au catalogue : elle reconnaît ce qui
+  existe (les tribus imprimées, les effets réels), dit ce qu'elle déduit, et
+  avoue ce qu'elle n'a pas reconnu. Le joueur garde deux portes de sortie :
+  corriger les couleurs et le style pré-remplis, ou passer l'invite d'un clic.
 - **L'assistant choisit, l'algorithme complète** : les huit cartes posées à la
   main disent ce que le joueur veut jouer ; la notation (synergie, couverture,
   courbe, mix) ne fait que traduire ce vœu en trente cartes. « Sorts » veut

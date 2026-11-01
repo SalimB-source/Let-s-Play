@@ -2,8 +2,10 @@
  * Le seuil de la création de deck — le premier écran que la crate
  * « Nouveau deck » ouvre. Deux portes, rien d'autre :
  *
- *   - **Création assistée** : deux questions (couleurs, style), le moteur
- *     compose le deck avec les cartes possédées ;
+ *   - **Création assistée** : une demande en toutes lettres (« un deck viking
+ *     neige ténèbres, avec quelques sorts de contrôle »), lue par l'IA de
+ *     l'atelier, puis deux questions (couleurs, style) que la lecture
+ *     pré-remplit — le moteur compose le deck avec les cartes possédées ;
  *   - **Création manuelle** : l'atelier minimaliste, carte par carte, à la
  *     Hearthstone.
  *
@@ -30,22 +32,25 @@ export function RpgDeckModeChoice({ onAssiste, onManuel, onRetour, surSfx = () =
         <button
           type="button"
           className="rpg-creation__carte rpg-creation__carte--assiste"
-          aria-label="Création assistée : choisir ses couleurs et son style, le jeu compose le deck"
+          aria-label="Création assistée : décrire le deck voulu, ou choisir ses couleurs et son style — le jeu compose le deck"
           onClick={() => { surSfx('apparition'); onAssiste(); }}
         >
           <i className="rpg-creation__icone" aria-hidden="true">✦</i>
           <strong>Création assistée</strong>
           <small>Le jeu compose pour vous</small>
           <span className="rpg-creation__etapes">
-            <b>1</b> Vos couleurs
+            <b>1</b> Votre idée
             <i aria-hidden="true">→</i>
-            <b>2</b> Votre style
+            <b>2</b> Vos couleurs
+            <i aria-hidden="true">→</i>
+            <b>3</b> Votre style
             <i aria-hidden="true">→</i>
             <b>✦</b> Deck généré
           </span>
           <span className="rpg-creation__desc">
-            Choisissez une à trois couleurs, puis un plan de jeu — aggro, contrôle ou mix. Le moteur bâtit un deck
-            de 30 cartes avec les cartes que vous possédez déjà.
+            Dites le deck que vous voulez — « un deck viking neige ténèbres, avec quelques sorts de contrôle » —
+            et l’atelier cherche les cartes pour vous. Ou choisissez une à trois couleurs, puis un plan de jeu :
+            aggro, contrôle ou mix. Dans les deux cas, 30 cartes prises dans votre collection.
           </span>
           <span className="rpg-creation__cta">Commencer →</span>
         </button>
