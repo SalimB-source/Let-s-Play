@@ -697,8 +697,8 @@ test('l’Attaque ciblée ne désigne pas une Tour protégée contre sa couleur'
   const protegee = poser({ contre: 'braise', toursRestants: Infinity });
   assert.deepEqual(rpgCiblesAttaqueRapide(protegee.duel, 'sorcier', [protegee.feriel.id]), {},
     'une Tour protégée contre la Braise n’est pas une cible de l’Attaque ciblée Braise');
-  // Rien n’est désigné : l’attaque reste légale, Fériel attaque normalement.
-  assert.equal(rpgLancerAttaque(protegee.duel, 'sorcier', [protegee.feriel.id], null, null, null, {}).ok, true);
+  // La protection ne permet pas d'ignorer la créature et d'attaquer le sorcier.
+  assert.equal(rpgLancerAttaque(protegee.duel, 'sorcier', [protegee.feriel.id], null, null, null, {}).raison, 'cible-obligatoire');
 
   // Sans protection, la même Tour est bien la cible : c’est la protection,
   // et elle seule, qui change la décision.

@@ -624,7 +624,7 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
-  coupRapide: 'Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+  coupRapide: 'Quand elle attaque, elle doit viser une créature adverse s’il y en a une. Elle lui inflige ses dégâts d’attaque sans riposte, avec 25 % de chances de rater. Si aucune créature adverse n’est en jeu, elle peut attaquer le sorcier normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
@@ -813,6 +813,10 @@ export function effetsDetailles(carte) {
 
   for (const pastille of pastilles) {
     if (!pastille.description) pastille.description = definitionPastille(pastille);
+    if (pastille.cle === 'coupRapide' && !pastille.description.includes('créature adverse est en jeu')
+      && !pastille.description.includes('doit viser')) {
+      pastille.description += ' Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.';
+    }
   }
 
   let texte = '';

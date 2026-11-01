@@ -112,7 +112,7 @@ export const RPG_TENEBRES_CREATURES = [
     rarity: 'inhabituelle',
     coupRapide: true,
     typeLine: 'Créature — Animal · Serpent royal',
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
     flavor: 'Il frappe avant que la main n’atteigne le seuil.',
   }),
   carte({
@@ -203,7 +203,7 @@ export const RPG_TENEBRES_CREATURES = [
     coupRapide: true,
     arrivee: { type: 'pioche', amount: 2 },
     typeLine: 'Créature légendaire — Greffier à tête d’ibis',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Quand Le Maître des hiéroglyphes arrive : piochez deux cartes.',
     flavor: 'Son calame note le verdict sans trembler, et le fleuve lui-même attend qu’il ait fini la ligne.',
   }),
   carte({
@@ -220,7 +220,7 @@ export const RPG_TENEBRES_CREATURES = [
     // La déesse entre avec une parade à usage unique. Son tribut vaut 3.
     bouclierInitial: true,
     typeLine: 'Créature légendaire — Déesse solaire',
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionnée pour attaquer, elle peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier. Tribut 3 — Quand cette créature touche le sorcier adverse, il perd 3 PV et vous en gagnez 3. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe.',
     flavor: 'Son œil droit est le midi sur les dunes ; son œil gauche est la lampe dans la tombe.',
   }),
   carte({

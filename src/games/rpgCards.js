@@ -574,7 +574,7 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -611,7 +611,7 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -756,7 +756,7 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -1359,7 +1359,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, elle attaque normalement.',
+    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1438,7 +1438,7 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement.',
+    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1458,7 +1458,7 @@ export const RPG_HERO_CARDS = [
     coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si vous ne désignez personne, il attaque normalement. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -2254,7 +2254,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.15 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avant les dégâts, 15 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 15 % de chances de geler chaque créature adverse que le porteur combat.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2318,7 +2318,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; sans proie désignée, il attaque l’adversaire normalement avec 100 % de chances de toucher). Avant les dégâts, 25 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 25 % de chances de geler chaque créature adverse que le porteur combat.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2448,7 +2448,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse avec 100 % de chances de réussir ; son attaque s’arrête là. Sans cible, il attaque normalement le sorcier. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse.',
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse avec 100 % de chances de réussir ; son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

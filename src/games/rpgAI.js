@@ -680,14 +680,7 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
     .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
 }
 
-/**
- * L’Attaque ciblée est un choix, attaquant par attaquant : frapper une créature
- * adverse — l'attaque s'arrête là, sans riposte ni blocage — ou attaquer
- * normalement, vers le sorcier. L'IA ne s'arrête que sur ce qu'elle abat : une
- * créature retirée de la table vaut plus que les dégâts rendus au visage.
- * Exception : quand l'assaut entier suffit déjà à faire tomber le sorcier,
- * aucune frappe ne détourne ces dégâts-là.
- */
+/** Choisit une créature légale pour chaque attaque ciblée obligatoire. */
 export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
   const adv = autre(cote);
@@ -697,7 +690,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     .filter(Boolean);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
   const degatsAuVisage = attaquants.reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
-  if (degatsAuVisage >= pvAdv) return cibles;
+  if (degatsAuVisage >= pvAdv && !duel[adv].creatures.length) return cibles;
   
   // Priorité aux Tours de défense : les créatures avec coupRapide doivent
   // attaquer en priorité les créatures avec prioriteAttaqueRapide: true,
@@ -727,16 +720,13 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
       montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng,
     });
-    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') continue;
+    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') {
+      const cible = duel[adv].creatures.find((entite) => !estProtegee(entite, couleursEntite(attaquant)));
+      if (cible) cibles[attaquant.id] = cible.id;
+      continue;
+    }
     const proie = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
-    // La Traque : contre une proie de la course (Abordage, Butin, cale
-    // occupée), la frappe du Chasseur porte son +N/+0 — l’IA le compte avant
-    // de décider si le coup tue.
-    const traque = Math.max(0, Number(carte?.traquePirates) || 0);
-    const estProie = Boolean(proie && (duelCardById(proie.carteId)?.abordage
-      || (proie.butin ?? duelCardById(proie.carteId)?.butin) || proie.enCale));
-    const forceFrappe = attaquant.atk + (estProie ? traque : 0);
-    if (proie && meurtSous(proie, forceFrappe, 'attaque')) cibles[attaquant.id] = proie.id;
+    if (proie) cibles[attaquant.id] = proie.id;
   }
   return cibles;
 }
@@ -995,12 +985,15 @@ function peutAttaquerUtile(entite) {
 function degatsGarantis(duel, cote, prets) {
   const adv = autre(cote);
   const bloqueurs = duel[adv].creatures.filter(peutBloquerEntite);
+  // Une attaque ciblée ne peut atteindre le sorcier tant qu'une créature
+  // adverse est présente, qu'elle puisse bloquer ou non.
+  const attaquantsDirects = prets.filter((entite) => !entite.coupRapide || !duel[adv].creatures.length);
   const bloquablePar = (attaquant) => bloqueurs.some((bloqueur) => peutBloquerAttaquant(bloqueur, attaquant)
     && !estProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId))));
-  const bloquables = prets.filter(bloquablePar)
+  const bloquables = attaquantsDirects.filter(bloquablePar)
     .map((attaquant) => attaquant.atk ?? 0)
     .sort((a, b) => b - a);
-  const directs = prets
+  const directs = attaquantsDirects
     .filter((attaquant) => !bloquablePar(attaquant))
     .reduce((somme, attaquant) => somme + (attaquant.atk ?? 0), 0);
   const retenus = bloquables.slice(0, Math.min(bloqueurs.length, bloquables.length))
@@ -1024,7 +1017,11 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   const pretsBruts = attaquantsPrets(duel, cote);
   // Jamais d'attaque à 0 sans déclencheur — la Porteuse 0/3, une Tour 0/4 ne
   // frappent pas : elles se tapent pour rien et ne bloquent plus ensuite.
-  const prets = pretsBruts.filter(peutAttaquerUtile);
+  const prets = pretsBruts.filter(peutAttaquerUtile).filter((entite) => {
+    const ennemis = duel[autre(cote)].creatures;
+    return !entite.coupRapide || !ennemis.length
+      || ennemis.some((cible) => !estProtegee(cible, couleursEntite(entite)));
+  });
   if (!prets.length) return [];
   const adv = autre(cote);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
@@ -1040,7 +1037,7 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
   }
 
   // Létal garanti : on envoie tout, même dans des échanges — conclure prime.
-  if (degatsGarantis(duel, cote, prets) >= pvAdv) return prets.map((entite) => entite.id);
+  if (!duel[adv].creatures.length && degatsGarantis(duel, cote, prets) >= pvAdv) return prets.map((entite) => entite.id);
 
   // Course : si l’adversaire nous abat au tour suivant, la défense ne sauvera
   // pas la partie — on accepte des assauts moins rentables pour presser.

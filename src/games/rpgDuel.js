@@ -5920,8 +5920,7 @@ export function rpgProvocationValide(
   const adv = autre(cote);
   const ids = [...new Set(attaquantIds ?? [])];
   const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
-    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]);
   const provocateurs = attaquants.filter((entite) => entite.provocation && !frappeSurCreature(entite));
   if (!provocateurs.length) return true;
 
@@ -5988,8 +5987,7 @@ export function rpgBlocageForceValide(
   const adv = autre(cote);
   const ids = [...new Set(attaquantIds ?? [])];
   const attaquants = duel[cote].creatures.filter((entite) => ids.includes(entite.id));
-  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]
-    && duel[adv].creatures.some((entite) => entite.id === ciblesAttaque[attaquant.id]));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesAttaque?.[attaquant?.id]);
   const assignations = new Map();
   for (const attaquant of attaquants) {
     const idsBloqueurs = blocages?.[attaquant.id] ?? [];
@@ -6677,19 +6675,22 @@ export function rpgLancerAttaque(
     || Object.keys(ciblesRapides).some((id) => !ids.includes(id))) {
     return { ok: false, raison: 'cible' };
   }
-  // L’Attaque ciblée est un CHOIX, attaquant par attaquant : frapper une créature
-  // adverse — l'attaque s'arrête alors sur cette frappe — ou attaquer
-  // normalement, vers le sorcier. Sans cible désignée il n'y a rien à frapper,
-  // et la déclaration reste parfaitement légale : l'attaquant rejoint la vague
-  // ordinaire (bloquable, blessures de combat, sorcier s'il passe). La cible
-  // désignée, elle, doit être une créature adverse non protégée.
+  // Une créature avec Attaque ciblée doit désigner une créature adverse
+  // tant qu'il en existe une, même si toutes sont protégées.
   for (const attaquant of attaquants) {
     const cibleId = ciblesRapides[attaquant.id];
-    if (!cibleId) continue;
+    if (!cibleId) {
+      // La cible est choisie à la déclaration, pas à la résolution d'un
+      // combat déjà annoncé (une créature peut arriver entre les deux).
+      if (!attaqueDeclaree && attaquant.coupRapide && duel[adv].creatures.length) {
+        return { ok: false, raison: 'cible-obligatoire' };
+      }
+      continue;
+    }
     if (!attaquant.coupRapide) return { ok: false, raison: 'cible' };
     const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
-    // Une cible disparue entre la déclaration et la résolution n'est pas une
-    // erreur d'appel : la frappe est annulée plus bas, l'attaque suit son cours.
+    // Une cible disparue après déclaration annule la frappe sans viser le sorcier.
+    if (!cible && !attaqueDeclaree) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) {
       return { ok: false, raison: 'protection' };
     }
@@ -6697,8 +6698,7 @@ export function rpgLancerAttaque(
 
   // L'attaquant dont la frappe rapide a trouvé sa cible : son attaque s'arrête
   // sur cette frappe — rien à bloquer, et personne à interposer.
-  const frappeSurCreature = (attaquant) => Boolean(ciblesRapides[attaquant?.id]
-    && duel[adv].creatures.some((entite) => entite.id === ciblesRapides[attaquant.id]));
+  const frappeSurCreature = (attaquant) => Boolean(ciblesRapides[attaquant?.id]);
 
   const bloqueursDisponiblesStrict = duel[adv].creatures.filter(peutBloquer);
   // Si le combat a déjà été déclaré (fenêtre de réponse), un bloqueur gelé
@@ -6892,11 +6892,9 @@ export function rpgLancerAttaque(
   }
   // Les attaquants dont la frappe a trouvé sa cible : leur attaque s'arrête sur
   // cette frappe. Elle ne connaît ni blocage, ni blessures de combat, ni dégâts
-  // au sorcier. Une cible disparue entre-temps annule la frappe (`annule`) et
-  // rend l'attaquant à la vague ordinaire.
-  const attaquantsArretes = new Set(frappesRapides
-    .filter((frappe) => !frappe.annule)
-    .map((frappe) => frappe.attaquantId));
+  // au sorcier. Une cible disparue entre-temps annule la frappe (`annule`)
+  // sans rediriger l'attaque vers le sorcier.
+  const attaquantsArretes = new Set(frappesRapides.map((frappe) => frappe.attaquantId));
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
@@ -7349,6 +7347,7 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   if (!pret(attaquant)) return { ok: false, raison: 'pas-pret' };
   const carte = duelCardById(attaquant.carteId);
   if (attaquant.coupRapide) {
+    if (!cibleCreatureId && duel[autre(cote)].creatures.length) return { ok: false, raison: 'cible-obligatoire' };
     if (cibleCreatureId) {
       const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleCreatureId);
       if (!cible) return { ok: false, raison: 'cible' };
