@@ -89,6 +89,7 @@ import {
   RPG_ABORDAGE_SFX,
   RPG_NAVIRE_ARRIVEE_SFX,
   RPG_PIRATE_ARRIVEE_SFX,
+  RPG_WEAPON_BREAK_SFX,
   RpgAudioPlayer,
   rpgActivationsFurieDepuisJournal,
   rpgSonArriveePirate,
@@ -101,6 +102,7 @@ import { rpgCombatSound, rpgFireSoundFor } from './rpgFireAudio.js';
 import { sonArriveeALaDesignation, sonArriveeAuPose } from './rpgArriveeAudio.js';
 import { sonSortAuLancement } from './rpgSortAudio.js';
 import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
+import { rpgDerniersCompteursArmeDepuisJournal } from './rpgWeaponAudio.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckCreation from './RpgDeckCreation.jsx';
@@ -7370,6 +7372,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     journalFurieTraiteRef.current = { duel: duelCourant, lignes: [...lignes] };
     const activationsFurie = rpgActivationsFurieDepuisJournal(nouvellesLignes);
     rpgSonsFurie(activationsFurie).forEach((nom) => jouerSfx(nom));
+    if (rpgDerniersCompteursArmeDepuisJournal(nouvellesLignes).length) {
+      jouerSfx(RPG_WEAPON_BREAK_SFX);
+    }
     setVersion((v) => v + 1);
   };
 

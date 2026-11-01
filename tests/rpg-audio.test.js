@@ -29,7 +29,7 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
     'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'furie_viking', 'furie_viking_femelle', 'hover',
-    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire',
+    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire', 'weapon_break',
     'foudre_marteau',
   ].sort(), 'le son du duel = les échantillons de la table, survol compris');
   for (const name of RPG_SFX_NAMES) {

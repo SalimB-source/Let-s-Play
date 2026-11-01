@@ -17,8 +17,11 @@
  * froissement de carte, un contre garde `card_countered` (joué à part).
  */
 import { rpgFoudreSoundFor } from './rpgFoudreAudio.js';
+import { RPG_WEAPON_BREAK_SFX } from './rpgAudio.js';
 
 /** Le son d'un sort au lancement, `null` quand le sort n'en a pas. */
 export function sonSortAuLancement(carte, { sonForce = null } = {}) {
-  return sonForce ?? rpgFoudreSoundFor(carte, 'spell');
+  if (sonForce) return sonForce;
+  if (carte?.id === 'brise-lame') return RPG_WEAPON_BREAK_SFX;
+  return rpgFoudreSoundFor(carte, 'spell');
 }

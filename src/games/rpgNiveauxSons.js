@@ -91,6 +91,7 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
   card_draw: [-20.16, -1.0],
   attackers_confirm: [-13.43, -2.73],
   player_attack_hit: [-5.95, 0.0],
+  weapon_break: [-15.24, 0.18],
   flame_gust: [-16.65, -0.15],
   card_countered: [-16.85, -2.16],
   creature_return: [-18.86, -1.0],

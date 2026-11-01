@@ -30,6 +30,9 @@
 import { RPG_DWARF_DIALOGUE_SFX } from './rpgDwarfAudio.js';
 import { gainEchantillon, gainVoixArrivee } from './rpgNiveauxSons.js';
 
+/** Son partagé par Brise-lame et la dernière usure d'une arme. */
+export const RPG_WEAPON_BREAK_SFX = 'weapon_break';
+
 /** Tonnerre partagé par l'Éclair du marteau et l'arrivée du Maître. */
 export const RPG_FOUDRE_MARTEAU_SFX = 'foudre_marteau';
 
@@ -68,6 +71,7 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['card_draw', new URL('./assets/card-draw.wav', import.meta.url), 'cardDrawAudio'],
   ['attackers_confirm', new URL('./assets/attackers-confirm.mp3', import.meta.url), 'attackersConfirmAudio'],
   ['player_attack_hit', new URL('./assets/player-attack-hit.wav', import.meta.url), 'playerAttackHitAudio'],
+  ['weapon_break', new URL('./assets/weapon-break.mp3', import.meta.url), 'weaponBreakAudio'],
   ['flame_gust', new URL('./assets/flame-gust.wav', import.meta.url), 'flameGustAudio'],
   ['card_countered', new URL('./assets/card-countered.wav', import.meta.url), 'cardCounteredAudio'],
   ['creature_return', new URL('./assets/creature-return.wav', import.meta.url), 'creatureReturnAudio'],
@@ -187,6 +191,7 @@ const RPG_SFX_TABLE = {
   card_draw: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
   attackers_confirm: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
   player_attack_hit: [{ kind: 'sample', at: 0, dur: 0.666, g: 1 }],
+  [RPG_WEAPON_BREAK_SFX]: [{ kind: 'sample', at: 0, dur: 3.024, g: 1 }],
   flame_gust: [{ kind: 'sample', at: 0, dur: 2.287, g: 1 }],
   card_countered: [{ kind: 'sample', at: 0, dur: 1.602, g: 1 }],
   creature_return: [{ kind: 'sample', at: 0, dur: 1.585, g: 1 }],
