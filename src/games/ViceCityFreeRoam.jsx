@@ -3432,8 +3432,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           }
         } else {
           const turnInput = clamp(
-            (pressed('ArrowRight') ? 1 : 0)
-              - (pressed('ArrowLeft') || pressed('KeyA') ? 1 : 0),
+            Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft')),
             -1,
             1,
           );
@@ -3442,7 +3441,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           else walkState.heading = mouseAimHeading;
           const footVector = viceCityFreeDriveFootVector(
             Number(throttle) - Number(brake) - onFootJoystick.y,
-            Number(pressed('KeyD')) - Number(pressed('KeyQ')) + onFootJoystick.x,
+            Number(pressed('KeyD')) - Number(pressed('KeyA')) + onFootJoystick.x,
           );
           const { forward: normalizedForward, strafe: normalizedStrafe, magnitude: movementMagnitude } = footVector;
           const forwardX = Math.sin(walkState.heading);
@@ -3687,8 +3686,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
         {isOnFoot ? (
           <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> RECULER</span>
-            <span><kbd>Q</kbd><kbd>D</kbd> GLISSER GAUCHE / DROITE</span>
-            <span><kbd>A</kbd><kbd>←</kbd><kbd>→</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
+            <span><kbd>A</kbd><kbd>D</kbd> GLISSER GAUCHE / DROITE</span>
+            <span><kbd>←</kbd><kbd>→</kbd> TOURNER</span><span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
             <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
             <small>Joystick à fond / Maj : courir · souris : viser · clic gauche : tirer</small></>
         ) : (
