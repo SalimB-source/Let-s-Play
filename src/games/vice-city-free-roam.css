@@ -44,3 +44,41 @@
 @media(max-width:650px){.vice-free-roam-context{top:76px;padding:8px 10px;font-size:8px;letter-spacing:.07em;white-space:normal}}
 .vice-free-roam-touch button[data-action="interact"]{grid-row:1;grid-column:2;width:60px;height:60px;border-radius:17px;border-color:#74e1dfaa;background:linear-gradient(145deg,#21464cf0,#11272df0);box-shadow:0 5px 16px #0009,inset 0 0 0 2px #74e1df20}
 .vice-free-roam-touch button:disabled{opacity:.35;filter:saturate(.35);cursor:not-allowed}
+
+/* New free-roam activities, GPS, garage and challenge HUD. */
+.vice-free-roam-header{gap:10px;flex-wrap:wrap}
+.vice-free-roam-header>button:not(.vice-free-roam-sound):not(.vice-free-roam-view){border-color:#74e1df66;color:#dffffa}
+.vice-free-roam-feature-panel{position:absolute;z-index:20;right:clamp(14px,3vw,44px);top:96px;bottom:24px;width:min(410px,calc(100vw - 28px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #7de4d966;border-radius:8px;background:linear-gradient(145deg,#131e27f2,#10151def);box-shadow:0 20px 70px #000b;backdrop-filter:blur(15px)}
+.vice-free-roam-feature-panel>header{position:relative;display:flex;align-items:center;justify-content:space-between;padding:17px 18px 13px;border-bottom:1px solid #ffffff1c;background:#ffffff08}
+.vice-free-roam-feature-panel>header>div{display:grid;gap:5px}
+.vice-free-roam-feature-panel>header small,.vice-free-roam-feature-panel p{color:#9eb5bd;font-size:10px;letter-spacing:.1em}
+.vice-free-roam-feature-panel>header b{font-size:16px;letter-spacing:.12em;color:#f6eee5}
+.vice-free-roam-feature-panel>header button{width:32px;height:32px;border:1px solid #ffffff44;border-radius:5px;background:#101820;color:#fff;font-size:24px;line-height:1;cursor:pointer}
+.vice-free-roam-feature-panel>p{margin:12px 17px;line-height:1.45;letter-spacing:.02em}
+.vice-free-roam-car-list,.vice-free-roam-challenge-list{display:grid;gap:7px;padding:0 12px 14px;overflow:auto;overscroll-behavior:contain}
+.vice-free-roam-car-list>button{display:flex;align-items:center;gap:10px;min-height:58px;padding:8px 10px;border:1px solid #ffffff1c;border-radius:5px;background:#202c35;color:#f5f1e8;text-align:left;cursor:pointer}
+.vice-free-roam-car-list>button.is-selected,.vice-free-roam-destination-list button.is-selected{border-color:#67e3d8;background:#194045}
+.vice-free-roam-car-list>button>i{flex:0 0 19px;height:19px;border:2px solid #ffffffaa;border-radius:50%}
+.vice-free-roam-car-list>button>span{display:grid;gap:4px;min-width:0}
+.vice-free-roam-car-list>button b{font-size:11px;letter-spacing:.07em}
+.vice-free-roam-car-list>button small{overflow:hidden;color:#a8bac0;font-size:8px;text-overflow:ellipsis;white-space:nowrap}
+.vice-free-roam-car-list>button em{margin-left:auto;color:#68e1d7;font-size:7px;font-style:normal;letter-spacing:.08em;white-space:nowrap}
+.vice-free-roam-repair{flex:none;margin:0 12px 10px;padding:11px;border:1px solid #73e9ae88;border-radius:5px;background:#184436;color:#c9ffe2;font:900 10px/1 system-ui,sans-serif;letter-spacing:.12em;cursor:pointer}
+.vice-free-roam-destination-list{flex:none;display:grid;gap:5px;padding:0 12px 12px}
+.vice-free-roam-destination-list>b{padding:3px 4px;color:#66e3d7;font-size:9px;letter-spacing:.15em}
+.vice-free-roam-destination-list button{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 9px;border:1px solid #ffffff20;border-radius:4px;background:#1d2932;color:#fff;text-align:left;cursor:pointer}
+.vice-free-roam-destination-list button span{font-size:9px;font-weight:900;letter-spacing:.07em}
+.vice-free-roam-destination-list button small{color:#a9bdc2;font-size:7px;letter-spacing:.04em}
+.vice-free-roam-challenge-list{grid-template-columns:1fr 1fr;min-height:0}
+.vice-free-roam-challenge-list>button{display:grid;align-content:start;gap:6px;min-height:106px;padding:10px;border:1px solid #ffffff20;border-radius:5px;background:linear-gradient(145deg,#26333c,#17222a);color:#f7f0e8;text-align:left;cursor:pointer}
+.vice-free-roam-challenge-list>button:hover,.vice-free-roam-car-list>button:hover,.vice-free-roam-destination-list button:hover{border-color:#ff86a4}
+.vice-free-roam-challenge-list>button small{color:#6fe2d6;font-size:7px;font-weight:900;letter-spacing:.1em}
+.vice-free-roam-challenge-list>button b{font-size:10px;letter-spacing:.04em}
+.vice-free-roam-challenge-list>button span{color:#bdc9ca;font-size:9px;line-height:1.35}
+.vice-free-roam-challenge{position:absolute;z-index:8;top:100px;left:50%;transform:translateX(-50%);display:grid;grid-template-columns:auto auto 24px;align-items:center;gap:12px;max-width:min(92vw,650px);padding:10px 12px;border:1px solid #6ce5d8aa;border-radius:5px;background:#10212ae8;box-shadow:0 6px 24px #0007;color:#fff;font:900 9px/1.2 system-ui,sans-serif;letter-spacing:.09em}
+.vice-free-roam-challenge>span{color:#75e7dd;white-space:nowrap}
+.vice-free-roam-challenge>button{width:24px;height:24px;border:1px solid #ffffff44;border-radius:4px;background:#222;color:white;font-size:18px;cursor:pointer}
+.vice-free-roam-challenge.is-complete{border-color:#70e6a6}.vice-free-roam-challenge.is-failed{border-color:#ff728d}.vice-free-roam-challenge.is-complete>span{color:#85f2ae}.vice-free-roam-challenge.is-failed>span{color:#ff9aad}
+@media(max-width:850px){.vice-free-roam-header{justify-content:flex-start;gap:6px;padding:10px 12px}.vice-free-roam-brand{min-width:130px;flex:1}.vice-free-roam-brand small{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vice-free-roam-location{order:3;width:100%;font-size:8px}.vice-free-roam-header button{padding:8px 9px!important;font-size:8px!important}.vice-free-roam-feature-panel{top:108px;right:10px;bottom:10px;width:min(410px,calc(100vw - 20px))}.vice-free-roam-challenge{top:112px;grid-template-columns:auto auto 24px;gap:7px;padding:8px;font-size:7px}}
+@media(max-width:540px){.vice-free-roam-header{padding-right:8px}.vice-free-roam-header>button:not(.vice-free-roam-sound):not(.vice-free-roam-view){font-size:7px!important;padding:7px 6px!important}.vice-free-roam-view{display:none}.vice-free-roam-feature-panel{top:100px;bottom:8px}.vice-free-roam-feature-panel>header{padding:12px}.vice-free-roam-challenge{top:108px;max-width:calc(100vw - 24px);grid-template-columns:1fr auto 22px}.vice-free-roam-challenge>b{max-width:38vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.vice-free-roam-challenge>span{font-size:7px}.vice-free-roam-challenge-list{grid-template-columns:1fr}.vice-free-roam-challenge-list>button{min-height:85px}.vice-free-roam-destination-list button{flex-wrap:wrap}}
+.vice-free-roam-touch button[data-action="jump"]{grid-row:1;grid-column:3;width:58px;height:58px;border-radius:17px;border-color:#f5d27eaa;background:linear-gradient(145deg,#55482bf0,#251f15f0);box-shadow:0 5px 16px #0009,inset 0 0 0 2px #f5d27e20}
