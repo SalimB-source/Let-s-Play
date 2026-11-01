@@ -6,6 +6,12 @@ export const VICE_CITY_ROAD_HILLS = Object.freeze([
   { axis: 'x', fixed: 200, center: -150, halfLength: 44, height: 2.5 },
 ]);
 
+/** Small traveling waves for the free-roam canal; intentionally shallow for boat clearance. */
+export function viceCityCanalWaveHeight(x, z, time = 0) {
+  return Math.sin(x * 0.62 + z * 0.13 + time * 1.1) * 0.052
+    + Math.cos(z * 0.24 - x * 0.37 - time * 0.78) * 0.027;
+}
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smoothStep = (value) => {
   const t = clamp(value, 0, 1);

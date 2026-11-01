@@ -29,6 +29,7 @@ import {
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import {
   VICE_CITY_OUTER_HIGHWAY,
+  viceCityCanalWaveHeight,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -225,6 +226,46 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
       bollard.castShadow = true;
       scene.add(bollard);
     }
+  }
+  const quayLampPoleMat = new THREE.MeshStandardMaterial({ color: 0x343b3b, roughness: 0.48, metalness: 0.7 });
+  const quayLampMat = new THREE.MeshBasicMaterial({ color: 0xffcf89, toneMapped: false });
+  const quayGlowSize = 32;
+  const quayGlowPixels = new Uint8Array(quayGlowSize * quayGlowSize * 4);
+  for (let y = 0; y < quayGlowSize; y += 1) for (let x = 0; x < quayGlowSize; x += 1) {
+    const radius = Math.hypot((x - (quayGlowSize - 1) / 2) / (quayGlowSize / 2),
+      (y - (quayGlowSize - 1) / 2) / (quayGlowSize / 2));
+    const pixel = (y * quayGlowSize + x) * 4;
+    quayGlowPixels[pixel] = 255;
+    quayGlowPixels[pixel + 1] = 205;
+    quayGlowPixels[pixel + 2] = 126;
+    quayGlowPixels[pixel + 3] = Math.round(clamp(1 - radius, 0, 1) ** 2 * 220);
+  }
+  const quayGlowTexture = new THREE.DataTexture(quayGlowPixels, quayGlowSize, quayGlowSize, THREE.RGBAFormat);
+  quayGlowTexture.colorSpace = THREE.SRGBColorSpace;
+  quayGlowTexture.needsUpdate = true;
+  const quayGlowMat = new THREE.MeshBasicMaterial({
+    map: quayGlowTexture, color: 0xffe0aa, transparent: true, opacity: 0.42,
+    depthWrite: false, side: THREE.DoubleSide,
+  });
+  const quayLampPoleGeometry = new THREE.CylinderGeometry(0.085, 0.14, 5.2, 8);
+  const quayLampBulbGeometry = new THREE.SphereGeometry(0.28, 10, 8);
+  for (let lampIndex = 0; lampIndex < 8; lampIndex += 1) {
+    const z = -245 + lampIndex * 70;
+    const pole = new THREE.Mesh(quayLampPoleGeometry, quayLampPoleMat);
+    pole.position.set(-326.2, 2.6, z);
+    pole.castShadow = true;
+    scene.add(pole);
+    const arm = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.09, 0.09), quayLampPoleMat);
+    arm.position.set(-325.45, 5.05, z);
+    scene.add(arm);
+    const bulb = new THREE.Mesh(quayLampBulbGeometry, quayLampMat);
+    bulb.position.set(-324.7, 4.92, z);
+    scene.add(bulb);
+    const glow = new THREE.Mesh(new THREE.CircleGeometry(3.2, 20), quayGlowMat);
+    glow.rotation.x = -Math.PI / 2;
+    glow.position.set(-323.2, 0.018, z);
+    glow.scale.set(0.85, 1.55, 1);
+    scene.add(glow);
   }
   const boats = [
     { style: 'fishing', length: 13, width: 3.2, hullColor: 0x365e69, cabinColor: 0xe8dfc9, z: -215 },
@@ -630,16 +671,30 @@ function makeCity(scene) {
   }
 
   const canalWaterMat = new THREE.MeshStandardMaterial({ color: 0x287d9b, roughness: 0.3, metalness: 0.12 });
-  const canalWaterGeometry = new THREE.PlaneGeometry(CANAL_HALF_WIDTH * 2, CITY_LIMIT * 2 + 120, 24, 240);
+  const canalWaterGeometry = new THREE.PlaneGeometry(CANAL_HALF_WIDTH * 2, CITY_LIMIT * 2 + 120, 24, 160);
   canalWaterGeometry.rotateX(-Math.PI / 2);
   const canalWaterPositions = canalWaterGeometry.attributes.position;
+  canalWaterPositions.setUsage(THREE.DynamicDrawUsage);
   for (let index = 0; index < canalWaterPositions.count; index += 1) {
-    const x = canalWaterPositions.getX(index);
-    const z = canalWaterPositions.getZ(index);
-    canalWaterPositions.setY(index, Math.sin(x * 0.62 + z * 0.13) * 0.018 + Math.cos(z * 0.24 - x * 0.37) * 0.012);
+    canalWaterPositions.setY(index, viceCityCanalWaveHeight(
+      canalWaterPositions.getX(index), canalWaterPositions.getZ(index), 0,
+    ));
   }
   canalWaterPositions.needsUpdate = true;
   canalWaterGeometry.computeVertexNormals();
+  canalWaterGeometry.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+  let lastCanalWaveUpdate = -1;
+  const updateCanalWater = (elapsed) => {
+    if (elapsed - lastCanalWaveUpdate < 1 / 30) return;
+    lastCanalWaveUpdate = elapsed;
+    for (let index = 0; index < canalWaterPositions.count; index += 1) {
+      canalWaterPositions.setY(index, viceCityCanalWaveHeight(
+        canalWaterPositions.getX(index), canalWaterPositions.getZ(index), elapsed,
+      ));
+    }
+    canalWaterPositions.needsUpdate = true;
+    canalWaterGeometry.computeVertexNormals();
+  };
   const canalWater = new THREE.Mesh(canalWaterGeometry, canalWaterMat);
   canalWater.position.set(0, -0.075, 0);
   canalWater.receiveShadow = true;
@@ -658,16 +713,33 @@ function makeCity(scene) {
     }),
   }));
   canalBoats.forEach(({ boat }, index) => { boat.name = `vice-city-river-boat-${index + 1}`; });
+  const canalWakeGeometry = new THREE.RingGeometry(0.68, 1, 28);
+  const canalWakes = canalBoats.map(({ boat }, index) => {
+    const material = new THREE.MeshBasicMaterial({
+      color: index % 2 ? 0xb5e1dc : 0xd1e6df, transparent: true, opacity: 0.18,
+      depthWrite: false, side: THREE.DoubleSide,
+    });
+    const wake = new THREE.Mesh(canalWakeGeometry, material);
+    wake.rotation.x = -Math.PI / 2;
+    wake.position.set(boat.position.x, 0.012, boat.position.z);
+    scene.add(wake);
+    return wake;
+  });
   const updateCanalBoats = (dt, elapsed) => {
     const travelLimit = CITY_LIMIT + 48;
-    for (const { boat, x, direction, speed, phase } of canalBoats) {
+    canalBoats.forEach(({ boat, x, direction, speed, phase }, index) => {
       let z = boat.position.z + direction * speed * dt;
       if (z > travelLimit) z = -travelLimit;
       else if (z < -travelLimit) z = travelLimit;
       boat.position.set(x, -0.02 + Math.sin(elapsed * 1.7 + phase) * 0.025, z);
       boat.rotation.y = direction > 0 ? 0 : Math.PI;
       boat.rotation.z = Math.sin(elapsed * 1.2 + phase) * 0.012;
-    }
+      const wake = canalWakes[index];
+      const pulse = (elapsed * 0.48 + phase) % 1;
+      wake.position.set(x, 0.015, z - direction * 5.2);
+      wake.scale.setScalar(0.75 + pulse * 1.2);
+      wake.material.opacity = (1 - pulse) * 0.2;
+    });
   };
   const canalWallMat = new THREE.MeshStandardMaterial({ color: 0x757b78, roughness: 0.9, side: THREE.DoubleSide });
   const canalWallLength = CITY_LIMIT * 2 + 100;
@@ -2254,7 +2326,7 @@ function makeCity(scene) {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
     roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
-    canalBoats, updateCanalBoats, roundaboutIsland, breakFencesAt,
+    canalBoats, updateCanalBoats, updateCanalWater, roundaboutIsland, breakFencesAt,
   };
 }
 
@@ -2754,6 +2826,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
       updateTraffic(dt);
       city.updateCanalBoats(dt, state.time);
+      city.updateCanalWater(state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
       const throttle = pressed('ArrowUp') || pressed('KeyW');

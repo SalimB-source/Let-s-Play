@@ -3,11 +3,18 @@ import assert from 'node:assert/strict';
 import {
   VICE_CITY_OUTER_HIGHWAY,
   VICE_CITY_ROAD_HILLS,
+  viceCityCanalWaveHeight,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
   viceCityRoadElevation,
 } from '../src/games/viceCityRoads.js';
+
+test('l’eau du canal ondule doucement et reste dans son tirant d’air', () => {
+  const heights = [0, 0.4, 1.2, 2.5, 4, 8].map((time) => viceCityCanalWaveHeight(0, 45, time));
+  assert.ok(heights.every((height) => Math.abs(height) <= 0.0791), 'les vagues restent peu profondes');
+  assert.ok(new Set(heights).size > 4, 'la surface se déplace au fil du temps');
+});
 
 test('les axes vallonnés montent puis redescendent avant les carrefours', () => {
   for (const hill of VICE_CITY_ROAD_HILLS) {
