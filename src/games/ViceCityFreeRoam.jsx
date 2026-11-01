@@ -310,10 +310,13 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
   }
 }
 
-function addViceCityOuterHighway(scene, roadElevation) {
+function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
   const { edge, halfWidth, accessHalfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
-  const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.92 });
+  const asphaltMat = new THREE.MeshStandardMaterial({
+    color: 0x20262d, map: surfaceTextures.map, roughnessMap: surfaceTextures.roughnessMap,
+    bumpMap: surfaceTextures.bumpMap, bumpScale: 0.022, roughness: 0.92,
+  });
   const markingMat = new THREE.MeshBasicMaterial({ color: 0xf2efe5, side: THREE.DoubleSide });
   const accessMarkMat = new THREE.MeshBasicMaterial({ color: 0xe8dfc5, side: THREE.DoubleSide });
   const allDashVertices = [];
@@ -328,6 +331,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
     });
     const makeRibbon = (width, lateralOffset, material, heightOffset, name) => {
       const positions = new Float32Array(pointCount * 2 * 3);
+      const uvs = new Float32Array(pointCount * 2 * 2);
       const indices = [];
       for (let index = 0; index < pointCount; index += 1) {
         const point = points[index];
@@ -343,6 +347,9 @@ function addViceCityOuterHighway(scene, roadElevation) {
           positions[vertex] = x;
           positions[vertex + 1] = highwayElevation(x, z) + heightOffset;
           positions[vertex + 2] = z;
+          const uvIndex = (index * 2 + edgeIndex) * 2;
+          uvs[uvIndex] = x / 28;
+          uvs[uvIndex + 1] = z / 28;
         }
         if (index < pointCount - 1) {
           const outer = index * 2;
@@ -354,6 +361,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.setIndex(indices);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, material);
@@ -499,8 +507,10 @@ function addViceCityOuterHighway(scene, roadElevation) {
       const x = horizontal ? center + vertices.getX(index) : fixed + vertices.getX(index);
       const z = horizontal ? fixed + vertices.getZ(index) : center + vertices.getZ(index);
       vertices.setY(index, highwayElevation(x, z) + 0.04);
+      geometry.attributes.uv.setXY(index, x / 28, z / 28);
     }
     vertices.needsUpdate = true;
+    geometry.attributes.uv.needsUpdate = true;
     geometry.computeVertexNormals();
     const surface = new THREE.Mesh(geometry, asphaltMat);
     surface.position.set(horizontal ? center : fixed, 0, horizontal ? fixed : center);
@@ -528,10 +538,51 @@ function addViceCityOuterHighway(scene, roadElevation) {
     addAccessStrip('horizontal', fixedZ, -edge, -accessStart, accessHalfWidth * 2);
     addAccessStrip('horizontal', fixedZ, accessStart, edge, accessHalfWidth * 2);
   }
+  return asphaltMat;
+}
+
+function makeRoadSurfaceTexture(seed, base, amplitude, colorSpace = THREE.SRGBColorSpace) {
+  const size = 192;
+  const pixels = new Uint8Array(size * size * 4);
+  let state = seed >>> 0;
+  const random = () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const u = x / size;
+      const v = y / size;
+      const broad = Math.sin(u * Math.PI * 10 + 0.7) * Math.cos(v * Math.PI * 8 - 0.4);
+      const mid = Math.sin(u * Math.PI * 38 + 1.8) * Math.sin(v * Math.PI * 34 + 0.3);
+      const value = Math.max(0, Math.min(255, base + broad * amplitude * 0.58 + mid * amplitude * 0.27 + (random() - 0.5) * amplitude * 0.55));
+      const offset = (y * size + x) * 4;
+      pixels[offset] = value;
+      pixels[offset + 1] = value;
+      pixels[offset + 2] = value;
+      pixels[offset + 3] = 255;
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, size, size, THREE.RGBAFormat);
+  texture.colorSpace = colorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function makeCity(scene) {
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
+  const asphaltTexture = makeRoadSurfaceTexture(6143, 220, 24);
+  const asphaltRoughness = makeRoadSurfaceTexture(9271, 218, 62, THREE.NoColorSpace);
+  const asphaltBump = makeRoadSurfaceTexture(6143, 220, 24, THREE.NoColorSpace);
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x252a32, map: asphaltTexture, roughnessMap: asphaltRoughness,
+    bumpMap: asphaltBump, bumpScale: 0.022, roughness: 0.94,
+  });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
   const sidewalkTileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 });
   const sidewalkTileColors = [0x9d9890, 0xa9a39a, 0xb1aaa0, 0x969188, 0xa49e95];
@@ -568,6 +619,8 @@ function makeCity(scene) {
   const horizontalRoadPatchPositions = [];
   const verticalManholePositions = [];
   const horizontalManholePositions = [];
+  const verticalDrainPositions = [];
+  const horizontalDrainPositions = [];
   const verticalSidewalkTilePositions = [];
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
@@ -621,8 +674,11 @@ function makeCity(scene) {
         const x = axis === 'x' ? fixed + positions.getX(index) : segmentCenter + positions.getX(index);
         const z = axis === 'x' ? segmentCenter + positions.getZ(index) : fixed + positions.getZ(index);
         positions.setY(index, roadElevation(x, z) + heightOffset);
+        const uv = geometry.attributes.uv;
+        uv.setXY(index, x / 28, z / 28);
       }
       positions.needsUpdate = true;
+      geometry.attributes.uv.needsUpdate = true;
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(axis === 'x' ? fixed : segmentCenter, 0, axis === 'z' ? fixed : segmentCenter);
@@ -699,6 +755,13 @@ function makeCity(scene) {
         for (const side of [-1, 1]) {
           verticalManholePositions.push([axis + side * 1.7, p]);
           horizontalManholePositions.push([p, axis + side * 1.7]);
+        }
+      }
+      for (let p = -290; p <= 290; p += 40) {
+        if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 15 || Math.abs(p) < CANAL_HALF_WIDTH + 9) continue;
+        for (const side of [-1, 1]) {
+          verticalDrainPositions.push([axis + side * 6.45, p]);
+          if (axis !== 0) horizontalDrainPositions.push([p, axis + side * 6.45]);
         }
       }
     }
@@ -972,7 +1035,9 @@ function makeCity(scene) {
       }
     }
   }
-  addViceCityOuterHighway(scene, roadElevation);
+  const highwayRoadMat = addViceCityOuterHighway(scene, roadElevation, {
+    map: asphaltTexture, roughnessMap: asphaltRoughness, bumpMap: asphaltBump,
+  });
 
   // Pavés d'angle : ils relient les segments, sans prolonger les trottoirs sur les routes.
   for (let xAxisIndex = -3; xAxisIndex <= 3; xAxisIndex += 1) {
@@ -1003,16 +1068,54 @@ function makeCity(scene) {
 
   const marker = new THREE.Object3D();
   const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, verticalDashPositions.length);
-  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
+  verticalDashPositions.forEach(([x, z], index) => {
+    const wear = 0.72 + ((index * 17) % 23) / 100;
+    marker.position.set(x, roadElevation(x, z) + 0.04, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.88 + (index % 4) * 0.035, 0.84 + (index % 5) * 0.035, 1);
+    marker.updateMatrix();
+    verticalDashes.setMatrixAt(index, marker.matrix);
+    verticalDashes.setColorAt(index, new THREE.Color().setScalar(wear));
+  });
+  verticalDashes.instanceMatrix.needsUpdate = true;
+  if (verticalDashes.instanceColor) verticalDashes.instanceColor.needsUpdate = true;
   scene.add(verticalDashes);
   const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, horizontalDashPositions.length);
-  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
+  horizontalDashPositions.forEach(([x, z], index) => {
+    const wear = 0.72 + ((index * 19) % 23) / 100;
+    marker.position.set(x, roadElevation(x, z) + 0.04, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.84 + (index % 5) * 0.035, 0.88 + (index % 4) * 0.035, 1);
+    marker.updateMatrix();
+    horizontalDashes.setMatrixAt(index, marker.matrix);
+    horizontalDashes.setColorAt(index, new THREE.Color().setScalar(wear));
+  });
+  horizontalDashes.instanceMatrix.needsUpdate = true;
+  if (horizontalDashes.instanceColor) horizontalDashes.instanceColor.needsUpdate = true;
   scene.add(horizontalDashes);
   const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
-  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.055, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
+  verticalCrosswalkPositions.forEach(([x, z], index) => {
+    marker.position.set(x, roadElevation(x, z) + 0.055, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.86 + (index % 4) * 0.04, 0.9 + (index % 3) * 0.04, 1);
+    marker.updateMatrix();
+    verticalCrosswalk.setMatrixAt(index, marker.matrix);
+    verticalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 13) % 20) / 100));
+  });
+  verticalCrosswalk.instanceMatrix.needsUpdate = true;
+  if (verticalCrosswalk.instanceColor) verticalCrosswalk.instanceColor.needsUpdate = true;
   scene.add(verticalCrosswalk);
   const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
-  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.057, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
+  horizontalCrosswalkPositions.forEach(([x, z], index) => {
+    marker.position.set(x, roadElevation(x, z) + 0.057, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.9 + (index % 3) * 0.04, 0.86 + (index % 4) * 0.04, 1);
+    marker.updateMatrix();
+    horizontalCrosswalk.setMatrixAt(index, marker.matrix);
+    horizontalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 17) % 20) / 100));
+  });
+  horizontalCrosswalk.instanceMatrix.needsUpdate = true;
+  if (horizontalCrosswalk.instanceColor) horizontalCrosswalk.instanceColor.needsUpdate = true;
   scene.add(horizontalCrosswalk);
   const addFlatRoadInstances = (geometry, material, positions, y) => {
     const mesh = new THREE.InstancedMesh(geometry, material, positions.length);
@@ -1035,6 +1138,42 @@ function makeCity(scene) {
   addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, horizontalManholePositions, 0.029);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, verticalManholePositions, 0.034);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, horizontalManholePositions, 0.035);
+  const drainBaseMat = new THREE.MeshStandardMaterial({ color: 0x20272a, metalness: 0.24, roughness: 0.78 });
+  const drainBarMat = new THREE.MeshStandardMaterial({ color: 0x777b78, metalness: 0.48, roughness: 0.52 });
+  const addDrainGrates = (positions, horizontal) => {
+    const bases = new THREE.InstancedMesh(
+      horizontal ? new THREE.BoxGeometry(1.18, 0.035, 0.42) : new THREE.BoxGeometry(0.42, 0.035, 1.18),
+      drainBaseMat,
+      positions.length,
+    );
+    const bars = new THREE.InstancedMesh(
+      horizontal ? new THREE.BoxGeometry(0.035, 0.025, 0.34) : new THREE.BoxGeometry(0.34, 0.025, 0.035),
+      drainBarMat,
+      positions.length * 5,
+    );
+    const barMarker = new THREE.Object3D();
+    positions.forEach(([x, z], index) => {
+      const y = roadElevation(x, z);
+      marker.position.set(x, y + 0.025, z);
+      marker.rotation.set(0, 0, 0);
+      marker.scale.set(1, 1, 1);
+      marker.updateMatrix();
+      bases.setMatrixAt(index, marker.matrix);
+      for (let slot = 0; slot < 5; slot += 1) {
+        const offset = (slot - 2) * 0.19;
+        barMarker.position.set(x + (horizontal ? offset : 0), y + 0.05, z + (horizontal ? 0 : offset));
+        barMarker.rotation.set(0, 0, 0);
+        barMarker.scale.set(1, 1, 1);
+        barMarker.updateMatrix();
+        bars.setMatrixAt(index * 5 + slot, barMarker.matrix);
+      }
+    });
+    bases.instanceMatrix.needsUpdate = true;
+    bars.instanceMatrix.needsUpdate = true;
+    scene.add(bases, bars);
+  };
+  addDrainGrates(verticalDrainPositions, false);
+  addDrainGrates(horizontalDrainPositions, true);
   const addSidewalkTiles = (positions, geometry, y) => {
     const tiles = new THREE.InstancedMesh(geometry, sidewalkTileMat, positions.length);
     positions.forEach(([x, z, colorIndex], index) => {
@@ -2461,7 +2600,7 @@ function makeCity(scene) {
 
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
-    neonGlowMaterial, neonGlows, neonSignMaterials, neonPointLights, puddles,
+    neonGlowMaterial, neonGlows, neonSignMaterials, neonPointLights, puddles, highwayRoadMat,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
     roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
     canalBoats, updateCanalBoats, updateCanalWater, roundaboutIsland, breakFencesAt,
@@ -3052,6 +3191,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         city.roadMat.roughness = weatherMode === 'rain' ? 0.24 : 0.94;
         city.roadMat.metalness = weatherMode === 'rain' ? 0.2 : 0;
         city.roadMat.color.setHex(weatherMode === 'rain' ? 0x1b2935 : 0x252a32);
+        city.highwayRoadMat.roughness = weatherMode === 'rain' ? 0.24 : 0.92;
+        city.highwayRoadMat.metalness = weatherMode === 'rain' ? 0.2 : 0;
+        city.highwayRoadMat.color.setHex(weatherMode === 'rain' ? 0x1b2935 : 0x20262d);
+        city.highwayRoadMat.needsUpdate = true;
         city.puddles.visible = weatherMode === 'rain';
         city.roadMat.needsUpdate = true;
       }

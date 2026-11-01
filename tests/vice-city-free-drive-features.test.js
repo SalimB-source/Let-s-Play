@@ -153,6 +153,20 @@ test('la nuit et la pluie activent phares réels, enseignes lumineuses et reflet
   assert.ok(source.includes("city.roadMat.roughness = weatherMode === 'rain' ? 0.24"));
 });
 
+test('la chaussée reçoit un grain d’asphalte, des marquages irréguliers et des grilles de drainage', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.ok(source.includes('makeRoadSurfaceTexture(6143, 220, 24)'));
+  assert.ok(source.includes('roughnessMap: asphaltRoughness'));
+  assert.ok(source.includes('bumpMap: asphaltBump'));
+  assert.ok(source.includes('map: surfaceTextures.map'));
+  assert.ok(source.includes('city.highwayRoadMat.roughness = weatherMode === \'rain\' ? 0.24'));
+  assert.ok(source.includes('uv.setXY(index, x / 28, z / 28)'));
+  assert.ok(source.includes('verticalDashes.setColorAt(index'));
+  assert.ok(source.includes('horizontalCrosswalk.setColorAt(index'));
+  assert.ok(source.includes('const addDrainGrates = (positions, horizontal) =>'));
+  assert.ok(source.includes('addDrainGrates(verticalDrainPositions, false)'));
+});
+
 test('la pluie modifie l’accélération, le freinage et la dérive latérale', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   assert.match(source, /acceleration: acceleration \* \(isWetRoad \? 0\.88 : 1\)/);
