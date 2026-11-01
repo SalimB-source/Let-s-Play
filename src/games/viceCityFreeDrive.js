@@ -98,11 +98,12 @@ export function viceCityFreeDriveSpeedStep({
 
   if (brake) {
     if (nextSpeed > 0) {
-      // Plus la voiture roule vite, plus le frein mord ; les modèles rapides
-      // reçoivent aussi un léger bonus de freinage lié à leur vitesse maximale.
+      // Le frein mord davantage à haute vitesse ; les modèles très puissants
+      // reçoivent un bonus nettement plus marqué lié à leur vitesse maximale.
+      const highPerformanceBrakeBonus = Math.max(0, maxSpeed - 25) * 0.2;
       const brakeDeceleration = BRAKE_DECELERATION
         + Math.abs(nextSpeed) * 0.12
-        + Math.max(0, maxSpeed - 25) * 0.035;
+        + highPerformanceBrakeBonus;
       nextSpeed = Math.max(0, nextSpeed - brakeDeceleration * dt);
     } else nextSpeed = Math.max(-reverseMaxSpeed, nextSpeed - reverseAcceleration * dt);
   } else if (throttle) {

@@ -6,6 +6,12 @@ export const VICE_CITY_ROAD_HILLS = Object.freeze([
   { axis: 'x', fixed: 200, center: -150, halfLength: 44, height: 2.5 },
 ]);
 
+/** Small traveling waves for the free-roam canal; intentionally shallow for boat clearance. */
+export function viceCityCanalWaveHeight(x, z, time = 0) {
+  return Math.sin(x * 0.62 + z * 0.13 + time * 1.1) * 0.052
+    + Math.cos(z * 0.24 - x * 0.37 - time * 0.78) * 0.027;
+}
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const smoothStep = (value) => {
   const t = clamp(value, 0, 1);
@@ -31,13 +37,26 @@ export const VICE_CITY_OUTER_HIGHWAY = Object.freeze({
   edge: 455,
   cornerRadius: 100,
   halfWidth: 13,
-  bankOffset: 23,
+  bankOffset: 90,
+  bridgeDeckHeight: 10,
   cityGridLimit: 300,
   cityLimit: 480,
   accessHalfWidth: 5,
 });
 
-/** Two rounded U-shaped expressways stay on their own bank of the canal. */
+/** Smooth arched deck heights for the two motorway overpasses across the river. */
+export function viceCityOuterHighwayBridgeHeight(x, z) {
+  const { edge, halfWidth, bankOffset, bridgeDeckHeight } = VICE_CITY_OUTER_HIGHWAY;
+  let height = 0;
+  for (const crossingZ of [-edge, edge]) {
+    if (Math.abs(z - crossingZ) > halfWidth) continue;
+    const ramp = clamp(1 - Math.abs(x) / bankOffset, 0, 1);
+    height = Math.max(height, bridgeDeckHeight * smoothStep(ramp));
+  }
+  return height;
+}
+
+/** Rounded perimeter roads joined into one continuous loop by elevated river crossings. */
 export function viceCityOuterHighwayPaths() {
   const { edge, cornerRadius, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const straightEnd = edge - cornerRadius;
@@ -72,13 +91,24 @@ export function viceCityOuterHighwayPaths() {
     line(side * straightEnd, edge, side * bankOffset, edge);
     return points;
   };
-  return [makePath(-1), makePath(1)];
+  const makeRiverCrossing = (z) => {
+    const points = [];
+    const steps = Math.max(1, Math.ceil((bankOffset * 2) / 6));
+    for (let step = 0; step <= steps; step += 1) {
+      const t = step / steps;
+      points.push({ x: -bankOffset + bankOffset * 2 * t, z });
+    }
+    return points;
+  };
+  return [makePath(-1), makePath(1), makeRiverCrossing(-edge), makeRiverCrossing(edge)];
 }
 
-/** True on either outer highway ribbon or one of its eight access spurs. */
+/** True on the continuous perimeter ring, river overpasses, or access spurs. */
 export function viceCityOuterHighwayContains(x, z) {
   const { edge, cornerRadius, halfWidth, bankOffset, cityGridLimit, accessHalfWidth } = VICE_CITY_OUTER_HIGHWAY;
   const straightEnd = edge - cornerRadius;
+  const onRiverOverpass = [-edge, edge].some((crossingZ) =>
+    Math.abs(z - crossingZ) <= halfWidth && Math.abs(x) <= bankOffset + halfWidth);
   const onUPath = [-1, 1].some((side) => {
     const topOrBottom = side * x >= bankOffset - 0.01
       && side * x <= straightEnd + halfWidth
@@ -99,5 +129,5 @@ export function viceCityOuterHighwayContains(x, z) {
   const onHorizontalAccess = [-300, 300].some((fixedZ) =>
     Math.abs(z - fixedZ) <= accessHalfWidth && Math.abs(x) >= accessStart - 0.01
       && Math.abs(x) <= edge + halfWidth);
-  return onUPath || onVerticalAccess || onHorizontalAccess;
+  return onUPath || onRiverOverpass || onVerticalAccess || onHorizontalAccess;
 }
