@@ -2512,6 +2512,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const mountRef = useRef(null);
   const hudRef = useRef(null);
   const contextRef = useRef(null);
+  const minimapRef = useRef(null);
   const crosshairRef = useRef(null);
   const mouseAimRef = useRef({ x: 0, y: 0, active: false });
   const isOnFootRef = useRef(false);
@@ -2659,6 +2660,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     sun.shadow.camera.left = -170; sun.shadow.camera.right = 170; sun.shadow.camera.top = 170; sun.shadow.camera.bottom = -170;
     scene.add(sun);
     const city = makeCity(scene);
+    const minimapHighwayPaths = viceCityOuterHighwayPaths();
 
     const profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
     const homeMaxSpeed = 35 * profile.powerMultiplier;
@@ -2765,6 +2767,134 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (mouseAimDirection.lengthSq() < 1e-6) return null;
       mouseAimDirection.normalize();
       return Math.atan2(mouseAimDirection.x, -mouseAimDirection.z);
+    };
+    const drawMinimap = () => {
+      const canvas = minimapRef.current;
+      let context;
+      try { context = canvas?.getContext?.('2d'); } catch { return; }
+      if (!context) return;
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = center - 4;
+      const scale = 0.31;
+      const playerX = isOnFootRef.current ? walkState.x : state.x;
+      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const heading = isOnFootRef.current ? walkState.heading : state.heading;
+      const strokeRoad = (x1, z1, x2, z2, width = 14, color = '#52616a') => {
+        context.beginPath();
+        context.moveTo(x1, z1);
+        context.lineTo(x2, z2);
+        context.lineCap = 'round';
+        context.lineWidth = width + 3;
+        context.strokeStyle = '#26343b';
+        context.stroke();
+        context.lineWidth = width;
+        context.strokeStyle = color;
+        context.stroke();
+      };
+      context.clearRect(0, 0, size, size);
+      context.save();
+      context.beginPath();
+      context.arc(center, center, radius, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = '#354b43';
+      context.fillRect(0, 0, size, size);
+      context.translate(center, center);
+      context.rotate(-heading);
+      context.scale(scale, scale);
+      context.translate(-playerX, -playerZ);
+
+      // Streets, canal and the central bridge, drawn in the same city coordinates as gameplay.
+      for (let coordinate = -300; coordinate <= 300; coordinate += BLOCK) {
+        if (coordinate !== 0) strokeRoad(coordinate, -340, coordinate, 340, 13);
+        if (coordinate === 0) strokeRoad(-340, coordinate, 340, coordinate, 15, '#8b7d68');
+        else {
+          strokeRoad(-340, coordinate, -21, coordinate, 13);
+          strokeRoad(21, coordinate, 340, coordinate, 13);
+        }
+      }
+      context.fillStyle = '#157b8a';
+      context.fillRect(-20, -490, 40, 980);
+      context.fillStyle = '#56b5bc';
+      context.fillRect(-21, -490, 1.6, 980);
+      context.fillRect(19.4, -490, 1.6, 980);
+      strokeRoad(-25, 0, 25, 0, 15, '#9a8267');
+
+      // Roundabout and elevated perimeter highway/viaducts.
+      context.beginPath();
+      context.arc(city.roundaboutIsland.x, city.roundaboutIsland.z, 25, 0, Math.PI * 2);
+      context.lineWidth = 13;
+      context.strokeStyle = '#46545b';
+      context.stroke();
+      context.beginPath();
+      context.arc(city.roundaboutIsland.x, city.roundaboutIsland.z, city.roundaboutIsland.radius, 0, Math.PI * 2);
+      context.fillStyle = '#66874f';
+      context.fill();
+      for (const path of minimapHighwayPaths) {
+        if (path.length < 2) continue;
+        context.beginPath();
+        context.moveTo(path[0].x, path[0].z);
+        for (let point = 1; point < path.length; point += 1) context.lineTo(path[point].x, path[point].z);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.lineWidth = VICE_CITY_OUTER_HIGHWAY.halfWidth * 2 + 4;
+        context.strokeStyle = '#27343b';
+        context.stroke();
+        context.lineWidth = VICE_CITY_OUTER_HIGHWAY.halfWidth * 2;
+        context.strokeStyle = '#d0a96d';
+        context.stroke();
+      }
+
+      // Building blocks make streets and open parks legible at a glance.
+      context.fillStyle = '#768078';
+      for (const building of city.buildingFootprints) {
+        if (Math.abs(building.x - playerX) > radius / scale || Math.abs(building.z - playerZ) > radius / scale
+          || building.halfWidth > 32 || building.halfDepth > 32) continue;
+        context.globalAlpha = 0.8;
+        context.fillRect(building.x - building.halfWidth, building.z - building.halfDepth,
+          building.halfWidth * 2, building.halfDepth * 2);
+      }
+      context.globalAlpha = 1;
+
+      // Nearby traffic and parked vehicles are small, high-contrast map pips.
+      for (const traffic of trafficCars) {
+        const dx = traffic.car.position.x - playerX;
+        const dz = traffic.car.position.z - playerZ;
+        if (Math.hypot(dx, dz) > radius / scale) continue;
+        context.fillStyle = traffic.type === 'police' || traffic.type === 'ambulance' ? '#6fe4e6' : '#f6d98a';
+        context.fillRect(traffic.car.position.x - 4, traffic.car.position.z - 4, 8, 8);
+      }
+      for (const body of city.parkedCarBodies) {
+        if (body.occupied) continue;
+        const dx = body.mesh.position.x - playerX;
+        const dz = body.mesh.position.z - playerZ;
+        if (Math.hypot(dx, dz) > radius / scale) continue;
+        context.fillStyle = '#e8e6da';
+        context.fillRect(body.mesh.position.x - 3, body.mesh.position.z - 3, 6, 6);
+      }
+      context.restore();
+
+      // The player arrow stays upright while the street map rotates around it.
+      context.beginPath();
+      context.arc(center, center, 8, 0, Math.PI * 2);
+      context.fillStyle = '#10191e';
+      context.fill();
+      context.beginPath();
+      context.moveTo(center, center - 8);
+      context.lineTo(center + 6, center + 6);
+      context.lineTo(center, center + 3);
+      context.lineTo(center - 6, center + 6);
+      context.closePath();
+      context.fillStyle = isOnFootRef.current ? '#67e3d8' : '#ff6689';
+      context.fill();
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 1.5;
+      context.stroke();
+      context.beginPath();
+      context.arc(center, center, radius, 0, Math.PI * 2);
+      context.strokeStyle = '#d7e1dc';
+      context.lineWidth = 3;
+      context.stroke();
     };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
@@ -3179,7 +3309,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         renderer.shadowMap.autoUpdate = shadowAutoUpdate;
       }
     };
-    let frame = 0; let last = performance.now(); let hudAt = 0;
+    let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
@@ -3492,6 +3622,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           contextRef.current.textContent = prompt;
         }
       }
+      if (now - minimapAt > 120) {
+        minimapAt = now;
+        drawMinimap();
+      }
       renderer.render(scene, camera);
       renderCockpitMirror();
     };
@@ -3514,6 +3648,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   return (
     <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
+      <div className="vice-free-roam-minimap" role="img" aria-label="Minicarte de Vice City, centrée sur votre position">
+        <canvas ref={minimapRef} width={256} height={256} aria-hidden="true" />
+        <span>VICE CITY</span>
+      </div>
       <div ref={crosshairRef} className={`vice-free-roam-crosshair${isOnFoot ? ' is-visible' : ''}`} aria-hidden="true">
         <svg viewBox="0 0 32 32" focusable="false">
           <path d="M16 2v8m0 12v8M2 16h8m12 0h8" />
