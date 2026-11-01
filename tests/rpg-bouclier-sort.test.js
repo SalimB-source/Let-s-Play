@@ -568,10 +568,11 @@ test('une destruction de zone n’use que les boucliers réellement atteints', (
   assert.equal(cher.bouclier, 1, 'le coût supérieur au seuil n’est pas visé');
 });
 
-test('une protection de couleur empêche l’effet avant que le bouclier soit consommé', () => {
+test('une capacité adverse consomme le bouclier général mais pas le bouclier coloré', () => {
   const duel = duelVide();
   const cible = poser(duel, 'sorcier', 'dune-marchante');
   cible.bouclier = 1; cible.protection = { contre: 'neige', toursRestants: 2 };
   poser(duel, 'joueur', 'valkyrie-des-glaces');
-  assert.equal(cible.pv, 4); assert.equal(cible.bouclier, 1);
+  assert.equal(cible.pv, 4); assert.equal(cible.bouclier, 0);
+  assert.equal(cible.protection.contre, 'neige');
 });

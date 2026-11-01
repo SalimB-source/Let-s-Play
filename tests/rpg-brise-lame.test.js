@@ -131,7 +131,7 @@ test('Brise-lame détruit aussi le Sabre maudit (arme portée par une magie)', (
   assert.ok(duel.sorcier.cimetiere.includes('sabre-maudit'));
 });
 
-test('une protection contre la Braise refuse la désignation', () => {
+test('un bouclier Braise bloque Brise-lame après paiement', () => {
   const duel = partie();
   duel.tour = 'sorcier';
   const ennemi = poser(duel, 'sorcier', 'momie-de-lin');
@@ -142,8 +142,9 @@ test('une protection contre la Braise refuse la désignation', () => {
   donnerBriseLame(duel);
   const mana = duel.joueur.mana.braise;
   const res = rpgLancerMagie(duel, 'joueur', 'brise-lame', ennemi.id);
-  assert.equal(res.ok, false);
-  assert.equal(res.raison, 'protection');
-  assert.equal(duel.joueur.mana.braise, mana, 'le mana reste entier');
+  assert.equal(res.ok, true);
+  assert.equal(res.bouclierBloque, true);
+  assert.ok(duel.joueur.mana.braise < mana, 'le sort est payé');
+  assert.equal(ennemi.protection, null);
   assert.equal(ennemi.arme.carteId, 'takouba-des-pistes', 'l’arme reste attachée');
 });

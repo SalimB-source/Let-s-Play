@@ -331,7 +331,7 @@ export function pastillesPourCarte(carte) {
     const contres = couleursProtectionCarte(carte);
     const contre = contres
       .map((couleur) => labels[couleur] ?? capitaliser(couleur)).join(' et ');
-    ajouter('protection', `Protection ${contre}`, null, { contres });
+    ajouter('protection', `Bouclier ${contre}`, null, { contres });
   }
   if (carte.protectionSorts) {
     ajouter('protectionSorts', 'Protection contre les magies et les sorcelleries');
@@ -454,6 +454,7 @@ export function effetsEpuisesPourEntite(carte, entite) {
   if (!carte || !entite) return [];
   const epuises = [];
   if (carte.tenacite && entite.tenaciteDisponible === false) epuises.push('tenacite');
+  if (carte.protection && !entite.protection) epuises.push('protection');
   const bouclierImprime = [carte.arrivee?.type, carte.effet?.type]
     .some((type) => type === 'bouclier' || type === 'bouclier-lumiere')
     || Boolean(carte.donne?.bouclier) || Boolean(carte.bouclierInitial);
@@ -635,7 +636,7 @@ export const EFFET_DEFINITIONS = {
   tenacite: 'Une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son propriétaire avec 1 point de défense — son effet d’arrivée se déclenche de nouveau.',
   resonance: 'Tant qu’elle est en jeu, les créatures de sa famille gagnent +1/+1.',
   compagnie: (n) => `Tant qu’elle est en jeu, elle gagne +${n ?? 1}/+${n ?? 1} pour chaque AUTRE créature de sa tribu dans son camp. Elle ne se compte pas elle-même, et une créature de la même tribu dans le camp adverse ne compte pas non plus : perdre un frère d’armes fait redescendre le bonus, jamais sous 1 PV.`,
-  protection: (couleur) => `Ne peut être ni ciblée ni touchée par les cartes ${couleur ?? 'de cette couleur'}.`,
+  protection: (couleur) => `Bouclier de ${couleur ?? 'cette couleur'} : bloque le prochain sort adverse de cette couleur, puis se brise. Les attaques, capacités et sorts alliés passent.`,
   protectionSortsContre: (couleur) => `Les Magies Rapides et Sorcelleries de ${couleur ?? 'cette couleur'} ne peuvent ni la cibler ni la blesser. Les créatures et leurs capacités fonctionnent normalement.`,
   bouclier: () => 'Bloque le premier sort ou effet de créature adverse qui atteint cette créature, même en zone : elle seule est épargnée, puis le bouclier tombe. Les attaques et les effets alliés passent normalement.',
   aura: () => 'Tant qu’elle est en jeu, seules les créatures adjacentes de son camp reçoivent son renfort : celles des deux cases qui entourent la sienne. Une case vide coupe le voisinage, et la source ne se renforce jamais elle-même. Si elle quitte la table, le bonus disparaît.',
@@ -751,7 +752,7 @@ export function definitionPastille(pastille) {
   const definition = EFFET_DEFINITIONS[pastille?.cle];
   if (typeof definition !== 'function') return definition ?? '';
   if (pastille.cle === 'protection') {
-    const couleur = String(pastille.label ?? '').replace(/^Protection\s*/u, '');
+    const couleur = String(pastille.label ?? '').replace(/^(?:Protection|Bouclier)\s*/u, '');
     return definition(couleur || null);
   }
   if (pastille.cle === 'protectionSortsContre') {

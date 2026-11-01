@@ -449,7 +449,7 @@ test('Ressac sans créature adverse ne se lance pas et ne coûte rien', () => {
   assert.equal(duel.joueur.mana.eau, 1, 'rien n’est payé');
 });
 
-test('une créature protégée contre l’Eau échappe au renvoi', () => {
+test('un bouclier Eau bloque le Ressac après paiement', () => {
   const duel = duelVide();
   duel.tour = 'joueur';
   const tiziri = creatureAdverse(duel, 'tiziri-du-djurdjura');
@@ -457,11 +457,12 @@ test('une créature protégée contre l’Eau échappe au renvoi', () => {
   mana(duel, 'joueur', 'eau', 1);
   donner(duel, 'joueur', 'ressac');
   const res = rpgLancerMagie(duel, 'joueur', 'ressac', tiziri.id);
-  assert.equal(res.ok, false);
-  assert.equal(res.raison, 'protection');
+  assert.equal(res.ok, true);
+  assert.equal(res.bouclierBloque, true);
+  assert.equal(tiziri.protection, null);
   assert.equal(duel.sorcier.creatures.length, 1, 'Tiziri reste en jeu');
-  assert.equal(duel.joueur.mana.eau, 1, 'rien n’est payé');
-  assert.ok(duel.joueur.main.includes('ressac'));
+  assert.equal(duel.joueur.mana.eau, 0, 'le sort est payé');
+  assert.ok(duel.joueur.cimetiere.includes('ressac'));
 });
 
 test('l’IA vise la menace la plus lourde avec le Ressac', () => {

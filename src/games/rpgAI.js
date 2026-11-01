@@ -110,6 +110,13 @@ function horsDAtteinteDuSort(entite, carte) {
   return Boolean(contre && couleurs.some((couleur) => [contre].flat(Infinity).includes(couleur)));
 }
 
+/** Une parade adverse bloque le sort, mais laisse la cible légale. */
+function paradeContreSort(entite, carte) {
+  const couleurs = cardColors(carte);
+  return moteur.rpgBouclierEstActif(entite)
+    || [entite?.protection?.contre].flat(Infinity).some((couleur) => couleurs.includes(couleur));
+}
+
 /** Version locale du test de protection (pur, sans dépendance au moteur). */
 function estProtegee(entite, couleurs) {
   // Les Sites partagent les emplacements du champ, jamais les règles de
@@ -117,15 +124,13 @@ function estProtegee(entite, couleurs) {
   if (duelCardById(entite?.carteId)?.kind === 'site') return true;
   const liste = [...new Set((Array.isArray(couleurs) ? couleurs.flat(Infinity) : [couleurs]).filter(Boolean))];
   // `contre` accepte une couleur seule ou une liste (la Lionne du midi ardent).
-  const contre = [...new Set([entite?.protection?.contre].flat(Infinity).filter(Boolean))];
   // L’Armure de cendres confère une immunité permanente tant qu’elle est
   // portée : l’IA doit respecter la même protection que le moteur, notamment
   // quand elle cherche un bloqueur contre son porteur.
   const immunites = [...new Set([armeById(entite?.arme?.carteId)?.donne?.immunite]
     .flat(Infinity).filter(Boolean))];
   return Boolean(liste.length && (
-    (entite?.protection?.toursRestants > 0 && contre.some((couleur) => liste.includes(couleur)))
-    || immunites.some((couleur) => liste.includes(couleur))
+    immunites.some((couleur) => liste.includes(couleur))
   ));
 }
 
@@ -369,7 +374,7 @@ function degatsRipostesZone(duel, cote, carte, touchees) {
   return touchees.reduce((total, entite) => {
     if (!entite?.contreAttaque) return total;
     if (estProtegee(entite, couleurs) || horsDAtteinteDuSort(entite, carte)
-      || moteur.rpgBouclierEstActif(entite)) return total;
+      || paradeContreSort(entite, carte)) return total;
     return total + (Number(entite.atk) || 0);
   }, 0);
 }
@@ -403,12 +408,13 @@ function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, p
     // (ou le visage) se présente. Elle garde quand même l'option en dernier
     // recours — briser la parade a aussi sa valeur.
     const paradeAdverse = sourceType === 'magie' && carte?.kind === 'magie'
-      && moteur.rpgBouclierEstActif(entite);
+      && paradeContreSort(entite, carte);
     const kill = !paradeAdverse && montant != null && meurtSous(entite, montant, sourceType);
     options.push({
       cibleId: entite.id,
       kill,
-      score: (kill ? 20 : 0) + menace(entite) - (paradeAdverse ? 6 : 0),
+      bloque: paradeAdverse,
+      score: paradeAdverse ? -2 : (kill ? 20 : 0) + menace(entite),
     });
   }
   // « Créature ou sorcier » : la magie le déclare dans `cibles`, l'arrivée du
@@ -1289,7 +1295,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         .filter((entite) => !estProtegee(entite, cardColors(carte)) && !horsDAtteinteDuSort(entite, carte)
           // Une parade adverse encaisse la vague à la place de sa porteuse ;
           // les parades du camp du lanceur ne protègent pas de son propre sort.
-          && (c !== adv || !moteur.rpgBouclierEstActif(entite)))
+          && (c !== adv || !paradeContreSort(entite, carte)))
         .reduce((somme, entite) => somme + valeurEntite(entite)
           * (entite.tenaciteDisponible ? 0.7 : 1), 0);
       // Même les créatures détruites ripostent sur le sorcier.
@@ -1308,7 +1314,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const camps = effet.cible === 'creatures-adverses' ? [adv] : [cote, adv];
       const couvertes = camps.flatMap((camp) => duel[camp].creatures
         .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
-          && (camp !== adv || !moteur.rpgBouclierEstActif(entite))));
+          && (camp !== adv || !paradeContreSort(entite, carte))));
       const brisees = couvertes
         .filter((entite) => (duelCardById(entite.carteId)?.cost ?? 0) <= seuil);
       // Chaque Contre-attaque atteinte riposte, même si elle est détruite.
@@ -1333,7 +1339,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
           .filter((entite) => !estProtegee(entite, couleursSort) && !horsDAtteinteDuSort(entite, carte)
             // La parade épargne sa porteuse et tombe : l'IA ne compte ni sa
             // mort ni sa blessure dans la valeur de la vague.
-            && !moteur.rpgBouclierEstActif(entite));
+            && !paradeContreSort(entite, carte));
         const tues = touchees.filter((entite) => meurtSous(entite, montant, 'magie'));
         const blessees = touchees
           .filter((entite) => !meurtSous(entite, montant, 'magie') && degatsApresEsquive(entite, montant, 'magie') > 0);
@@ -1366,7 +1372,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
           if (estProtegee(entite, cardColors(carte)) || horsDAtteinteDuSort(entite, carte)) return total;
           // La parade adverse encaisse la vague ; celle du camp du lanceur
           // ne protège pas contre son propre sort.
-          if (campVise === adv && moteur.rpgBouclierEstActif(entite)) return total;
+          if (campVise === adv && paradeContreSort(entite, carte)) return total;
           const recus = degatsApresEsquive(entite, montant, 'magie');
           if (recus <= 0) return total;
           return total + (meurtSous(entite, montant, 'magie') ? valeurEntite(entite) : 1.2);
@@ -1388,9 +1394,10 @@ function scoreCarte(duel, cote, carte, profil, rng) {
         else score = (pvAdv <= montant + 10 ? 6 : profil.style === 'agressif' ? 3.5 : 2) - cout * 0.2;
       } else {
         const cible = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
-        if (meilleure.kill) score = 5 + valeurEntite(cible) - cout * 0.2;
+        if (meilleure.bloque) score = 0;
+        else if (meilleure.kill) score = 5 + valeurEntite(cible) - cout * 0.2;
         else score = (profil.style === 'controle' ? 1.5 : 0.5) + menace(cible) * 0.2 - cout * 0.2;
-        if (effet.gel) score += 1.2; // la Poigne de givre fige sa cible en plus de la brûler
+        if (effet.gel && !meilleure.bloque) score += 1.2; // la Poigne de givre fige sa cible en plus de la brûler
       }
       return { score, cibleId: meilleure.cibleId };
     }
@@ -1550,7 +1557,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       // parade épargne sa porteuse (et tombe) : elle n'entre pas dans le
       // compte des créatures réellement marquées.
       const adversaires = duel[adv].creatures
-        .filter((entite) => !moteur.rpgBouclierEstActif(entite));
+        .filter((entite) => !paradeContreSort(entite, carte));
       if (!duel[adv].creatures.length) return { score: 0, cibleId: null };
       const retraitAtk = Math.abs(Number(effet.atk) || 0);
       const retraitDef = Math.abs(Number(effet.def) || 0);

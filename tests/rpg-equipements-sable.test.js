@@ -241,7 +241,7 @@ test('bloqué, le Masque du guetteur ne se déclenche pas', () => {
 
 // ── La Jitte d’Amayas ───────────────────────────────────────────────────────
 
-test('la Jitte d’Amayas : +2/+2, et une protection contre les Ténèbres', () => {
+test('la Jitte d’Amayas : +2/+2 et un bouclier contre les sorts Ténèbres', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'jitte-d-amayas', porteur);
@@ -253,12 +253,10 @@ test('la Jitte d’Amayas : +2/+2, et une protection contre les Ténèbres', () 
   assert.equal(porteur.protection?.contre, 'tenebres', 'le porteur est gardé des Ténèbres');
   assert.equal(porteur.protection?.toursRestants, Infinity, 'la garde tient tant que l’arme tient');
 
-  // Une source Ténèbres ne le blesse pas ; une autre couleur passe normalement.
-  assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'tenebres').recus, 0,
-    'la nuit glisse sur la Jitte');
-  assert.equal(porteur.pv, 4);
-  assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 1, 'braise').recus, 1,
-    'la Braise, elle, mord comme avant');
+  // Les attaques Ténèbres passent : le bouclier ne bloque que les sorts.
+  assert.equal(rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'tenebres', null, 'attaque').recus, 3);
+  assert.equal(porteur.protection.contre, 'tenebres');
+
 });
 
 test('la protection de la Jitte part avec elle — sauf celle imprimée sur la fiche', () => {
@@ -333,18 +331,16 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
   const duel = duelVide();
   // Porteur sans Butin ni déclencheur : seule la Takouba doit parler dans ce test.
   const porteur = poser(duel, 'joueur', 'dune-marchante');
-  const mur = poser(duel, 'sorcier', 'dune-marchante'); // le bloqueur écarté du test
+  // Aucune créature adverse : l’Attaque ciblée peut viser le sorcier.
   equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
   rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
-  const pvMur = mur.pv;
   const pvSorcier = duel.sorcier.pv;
   const atkAvant = porteur.atk;
   // Aucune proie désignée : le porteur attaque normalement, et aucun bloqueur
   // n'est assigné — le sorcier encaisse ses 5 dégâts.
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [] });
   assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
-  assert.equal(mur.pv, pvMur, 'la créature écartée n’a rien encaissé');
   assert.equal(duel.sorcier.pv, pvSorcier - atkAvant, 'le sorcier encaisse la frappe entière');
   assert.equal(duel.joueur.main.length, mainAvant, 'aucune pioche : aucune créature n’a été blessée');
   const chiens = duel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable');

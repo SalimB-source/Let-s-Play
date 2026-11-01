@@ -18,6 +18,8 @@ for (const [arme, seuil] of [['lance-de-givre', .15], ['javelot-du-beffroi', .25
   test(`${arme} gèle avant les dégâts à son seuil exact en combat bloqué`, () => {
     for (const [jet, gele] of [[seuil - .001, true], [seuil, false]]) {
       const { d, a, b } = scene(arme);
+      // Exercer le blocage classique indépendamment de l'Attaque ciblée de l'arme.
+      a.coupRapide = false;
       rpgReglerHasard(d, () => jet);
       const pv = a.pv;
       const r = rpgLancerAttaque(d, 'joueur', [a.id], { [a.id]: [b.id] });

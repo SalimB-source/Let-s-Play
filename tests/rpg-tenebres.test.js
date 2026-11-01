@@ -724,7 +724,7 @@ test('La Dernière Pesée libère tout le champ avant les déclenchements de mor
   assert.equal(duel.joueur.creatures.length, 0, 'toutes les créatures sont détruites');
 });
 
-test('La Dernière Pesée tue les créatures tenaces et épargne les protections', () => {
+test('La Dernière Pesée détruit aussi les créatures alliées avec un bouclier coloré', () => {
   const duel = nouveau();
   installerMana(duel);
   const tenace = poserTenebres(duel, 'chacal-du-seuil');
@@ -738,9 +738,8 @@ test('La Dernière Pesée tue les créatures tenaces et épargne les protections
   assert.ok(duel.joueur.cimetiere.includes('chacal-du-seuil'));
   assert.equal(duel.joueur.retoursProgrammes.filter((retour) => retour.tenacite).length, 1,
     'un seul retour promis pour la créature tenace');
-  // La protection de couleur, elle, écarte toujours la vague.
-  assert.ok(duel.joueur.creatures.includes(protege));
-  assert.equal(protege.pv, 1);
+  // Le bouclier coloré ne bloque pas le sort de son propre camp.
+  assert.ok(!duel.joueur.creatures.includes(protege));
 });
 
 test('La Dernière Pesée exige son tour et son mana, mais aucune cible', () => {

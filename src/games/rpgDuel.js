@@ -1600,20 +1600,14 @@ function rafraichirAuras(duel) {
   synchroniserFuries(duel);
 }
 
-/** Protection temporaire contre les effets et les créatures d'une couleur
- *  donnée — plus l'immunité permanente que l'arme portée peut conférer
- *  (`donne.immunite`, lorsqu’une arme confère une immunité) : même porte
- *  d'entrée pour tous les dégâts, ciblages et blocages du moteur. */
+/** Les sites et les anciennes immunités explicites restent protégés.
+ *  Le bouclier coloré n'interdit pas de cibler, attaquer ou bloquer. */
 export function rpgEstProtegee(entite, element) {
   // Un Site n'est pas une cible légale, quelle que soit la couleur de la
   // source. Cette porte commune le protège aussi des zones et destructions.
   if (estSite(entite)) return true;
   const couleursSources = normaliserCouleurs(element);
   if (!entite || !couleursSources.length) return false;
-  // `contre` accepte une couleur seule ou une liste (la Lionne du midi
-  // ardent est protégée contre l'Eau ET la Neige).
-  if (entite.protection?.toursRestants > 0
-    && normaliserCouleurs(entite.protection.contre).some((couleur) => couleursSources.includes(couleur))) return true;
   const immunite = armeCarteDe(entite)?.donne?.immunite;
   return Boolean(immunite && couleursSources.includes(immunite));
 }
@@ -1745,9 +1739,8 @@ function creerEntiteCreature(carte) {
     tenaciteDisponible: Boolean(carte.tenacite),
     protection: carte.protection ? {
       contre: carte.protection.contre,
-      // Sans `tours` déclaré, la protection est **permanente** (Tiziri) :
-      // `Infinity` survit aux décomptes de `rpgFinDeTour`.
-      toursRestants: carte.protection.tours ?? Infinity,
+      // Un bouclier coloré ne tombe que lorsqu'un sort adverse le brise.
+      toursRestants: Infinity,
     } : null,
     // Interdits de combat (le venin de la Vipère, la lune dévorée de
     // Bakunawa) : tours du contrôleur qui restent à couvrir, comme le gel —
@@ -1909,13 +1902,31 @@ function briserBouclier(entite) {
 
 /** Bloque une composante hostile sur une créature ; les autres cibles
  * d'une zone restent affectées. Le camp de la source doit être connu. */
-function paradeZoneBloque(duel, entite, sourceType, campCible, campLanceur) {
+function paradeZoneBloque(duel, entite, sourceType, campCible, campLanceur, sourceElement = null) {
   if (!entite || !['magie', 'capacite'].includes(sourceType)) return false;
   if (!campCible || !campLanceur || campCible === campLanceur) return false;
-  if (!rpgBouclierEstActif(entite)) return false;
-  briserBouclier(entite);
-  duel.log.push(`Le bouclier de ${entite.name} encaisse la vague et tombe.`);
-  return true;
+  // Le bouclier général intercepte en premier si les deux sont présents.
+  if (rpgBouclierEstActif(entite)) {
+    briserBouclier(entite);
+    duel.log.push(`Le bouclier de ${entite.name} encaisse la vague et tombe.`);
+    return true;
+  }
+  if (sourceType === 'magie' && bouclierColoreCorrespond(entite, sourceElement)) {
+    briserBouclierColore(duel, entite);
+    return true;
+  }
+  return false;
+}
+
+function bouclierColoreCorrespond(entite, couleurs) {
+  return Boolean(entite?.protection && normaliserCouleurs(entite.protection.contre)
+    .some((couleur) => normaliserCouleurs(couleurs).includes(couleur)));
+}
+
+function briserBouclierColore(duel, entite) {
+  const couleurs = labelCouleursProtection(entite.protection.contre);
+  entite.protection = null;
+  duel.log.push(`Le bouclier de ${couleurs} de ${entite.name} bloque le sort et se brise.`);
 }
 
 /**
@@ -1988,7 +1999,8 @@ function attacherArme(duel, cote, entite, carteArme) {
   // La Jitte d'Amayas : l'arme couvre son porteur d'une protection de couleur
   // permanente (tant qu'elle est attachée), comme celle imprimée de Tiziri.
   if (carteArme.donne?.protection) {
-    entite.protection = { contre: carteArme.donne.protection.contre, toursRestants: Infinity };
+    entite.protectionAvantArme = entite.protection ?? null;
+    entite.protection = { contre: carteArme.donne.protection.contre, toursRestants: Infinity, sourceArme: true };
   }
   if (carteArme.donne?.rapidite) {
     entite.rapidite = true;
@@ -2060,11 +2072,9 @@ function retirerArme(duel, cote, entite) {
   }
   if (carteArme.donne?.tribut) entite.tribut = Math.max(0, Number(duelCardById(entite.carteId)?.tribut) || 0);
   if (carteArme.donne?.protection) {
-    // L'arme partie, la protection retombe à celle imprimée sur la fiche.
-    const impression = duelCardById(entite.carteId)?.protection;
-    entite.protection = impression
-      ? { contre: impression.contre, toursRestants: impression.tours ?? Infinity }
-      : null;
+    if (entite.protection?.sourceArme) entite.protection = null;
+    if (!entite.protection && entite.protectionAvantArme) entite.protection = entite.protectionAvantArme;
+    entite.protectionAvantArme = null;
   }
   // Une arme du prototype peut porter un critique (`donne.coupCritique`) : son
   // départ le recalcule comme celui d'une arme-sort.
@@ -2842,7 +2852,7 @@ function resoudreEchos(duel) {
       for (const cible of cibles) {
         // L'écho est la seconde vague d'un sort : une parade neuve l'encaisse
         // comme la vague initiale et tombe à sa place.
-        if (paradeZoneBloque(duel, cible, echo.sourceType, cote, echo.coteSource)) continue;
+        if (paradeZoneBloque(duel, cible, echo.sourceType, cote, echo.coteSource, echo.sourceElement)) continue;
         const dernierEtat = { ...cible };
         const blessure = rpgBlesserCreature(duel, cote, cible.id, echo.amount, echo.sourceElement, null, echo.sourceType);
         // La protection écarte totalement l'écho ; l'Esquive, elle, n'éteint
@@ -3406,7 +3416,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)) continue;
           // La parade encaisse la vague : la créature n'est pas atteinte et
           // ne riposte pas, comme devant un sort ciblé bloqué.
-          if (paradeZoneBloque(duel, entite, sourceType, camp, cote)) continue;
+          if (paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement)) continue;
           if (tenterEsquive(duel, entite, sourceType)) {
             touchees.push({ camp, entiteId: entite.id });
             continue;
@@ -3448,7 +3458,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           if ((duelCardById(entite.carteId)?.cost ?? 0) > effet.coutMax && !effet.gel) continue;
           // La parade anti-sort épargne sa porteuse et tombe : elle n'entre
           // ni dans les victimes, ni dans les survivantes gelées ensuite.
-          if (paradeZoneBloque(duel, entite, sourceType, camp, cote)) continue;
+          if (paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement)) continue;
           // Un sort esquivé est annulé EN ENTIER sur cette créature : ni
           // destruction, ni gel — un seul jet, comme pour les dégâts de zone.
           // L'Esquive n'éteint pas sa Contre-attaque pour autant.
@@ -3629,7 +3639,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             if (entite.id === sauf || estSite(entite) || rpgEstProtegee(entite, sourceElement)
               || rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
               || (effet.exclutType && cardHasPrintedType(entite.carteId, effet.exclutType))
-              || paradeZoneBloque(duel, entite, sourceType, campCible, cote)) continue;
+              || paradeZoneBloque(duel, entite, sourceType, campCible, cote, sourceElement)) continue;
             if (tenterEsquive(duel, entite, sourceType)) {
               touchees.push({ camp: campCible, entiteId: entite.id });
               continue;
@@ -3868,7 +3878,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // s'excluent elles-mêmes (`sauf`).
       const horsSort = (entite) => contreAdversaire
         && (rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          || paradeZoneBloque(duel, entite, sourceType, adv, cote));
+          || paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement));
       // Les Esquives réussies d'un malus de zone : le débuff ne les marque
       // pas, mais l'Esquive n'éteint pas leur Contre-attaque.
       const esquivees = new Set();
@@ -4058,7 +4068,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           .filter((entite) => entite.id !== sauf
             && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-            && !paradeZoneBloque(duel, entite, sourceType, camp, cote))
+            && !paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement))
           .map((entite) => ({ camp, entiteId: entite.id, dernierEtat: { ...entite } })));
         const coups = atteintes.map(({ camp, entiteId }) => ({
           cote: camp, entiteId, amount: effet.amount ?? 0, sourceElement, sourceType,
@@ -4131,7 +4141,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         // dégât, ni gel associé, et la parade tombe. Les autres cibles sont
         // frappées normalement.
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
-          || paradeZoneBloque(duel, cible, sourceType, campCible, cote)) continue;
+          || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
         const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId);
         // La protection de couleur ou le Serpent du monde écartent la vague :
@@ -4213,7 +4223,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const cibles = zoneGel
         ? duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, sourceElement)
           && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
-          && !paradeZoneBloque(duel, entite, sourceType, adv, cote))
+          && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
         : duel[campCible].creatures.filter((entite) => entite.id === cibleId
           && (!Number.isFinite(effet.coutMax) || rpgCoutEntite(entite) <= effet.coutMax)
           && !rpgEstProtegee(entite, sourceElement)
@@ -5392,9 +5402,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   journaliserArriveeCreature(duel, cote, entite);
   if (entite.protection) {
     const couleur = labelCouleursProtection(entite.protection.contre);
-    duel.log.push(entite.protection.toursRestants === Infinity
-      ? `${entite.name} reçoit une protection permanente contre ${couleur}.`
-      : `${entite.name} reçoit une protection contre ${couleur} pour ce tour et le prochain tour adverse.`);
+    duel.log.push(`${entite.name} reçoit un bouclier contre les sorts de ${couleur}.`);
   }
   if (carte.interceptionAttaque) {
     const attaques = attaquesInterceptables(duel, cote, entite);
@@ -6467,6 +6475,16 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
       renvoiEntityId: null,
     };
   }
+  // Le bouclier coloré est lui aussi consommé à la résolution : le sort est
+  // payé, mais son effet ciblé est entièrement arrêté sur la porteuse adverse.
+  const cibleColoree = !rpgSortViseUneZone(carte) && cibleId
+    ? duel[adv].creatures.find((entite) => entite.id === cibleId) : null;
+  if (bouclierColoreCorrespond(cibleColoree, cardColors(carte))) {
+    briserBouclierColore(duel, cibleColoree);
+    if (carte.effet.type !== 'arme') camp.cimetiere.push(carteId);
+    rpgActionsEtat(duel);
+    return { ok: true, bouclierBloque: true, bouclierEntityId: cibleColoree.id, bouclierMontant: 1, renvoiMain: false, renvoiEntityId: null };
+  }
   // Le Lien se lit **à la résolution** : l'ancre doit tenir sa place sur la
   // rangée du lanceur à cet instant précis. Une ancre tuée en réponse au sort
   // laisse donc le sort se résoudre au tarif imprimé — jouer son sort avant
@@ -6498,7 +6516,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // résolution, comme tous les autres.
   if (lienActif) {
     const cibleLien = cibleDuLien(duel, cote, carte, cibleId, { auto: true });
-    if (cibleLien) {
+    if (cibleLien && !paradeZoneBloque(duel, cibleLien, 'magie', adv, cote, cardColors(carte))) {
       appliquer(duel, cote, { type: 'debuff', ...carte.lien.debuff, cible: 'creature' },
         cibleLien.id, null, cardColors(carte), 'magie', carteId);
     }
@@ -7656,17 +7674,6 @@ export function rpgFinDeTour(duel) {
   // La faveur du Kraken non utilisée s'éteint avec le tour.
   duel.magieGratuite = null;
   detruireEphemeres(duel);
-  for (const cote of ['joueur', 'sorcier']) {
-    for (const entite of duel[cote].creatures) {
-      if (!(entite.protection?.toursRestants > 0)) continue;
-      entite.protection.toursRestants -= 1;
-      if (entite.protection.toursRestants <= 0) {
-        const couleur = labelCouleursProtection(entite.protection.contre);
-        entite.protection = null;
-        duel.log.push(`${entite.name} perd sa protection contre ${couleur}.`);
-      }
-    }
-  }
   annulerBonusTemporaires(duel, duel.tour); // le bonus meurt avec le tour qui l’a vu jouer
   annulerInfiltrations(duel); // l’Infiltration aussi : redevenues bloquables
   // Le gel (la Poigne de givre, le Verglas) compte les tours du contrôleur de
