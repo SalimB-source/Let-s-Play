@@ -10520,6 +10520,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Couche de glace principale : allégée, transparente */
 .rpg-card__frost-ice {
   background:
+    /* Voile bleu translucide : lisible sur toutes les illustrations sans les masquer. */
+    linear-gradient(180deg, rgba(65,155,235,0.24), rgba(28,104,205,0.28)),
     radial-gradient(ellipse at 20% 18%, rgba(255,255,255,0.52) 0%, rgba(210,245,255,0.22) 18%, transparent 46%),
     radial-gradient(ellipse at 82% 88%, rgba(160,230,255,0.18) 0%, transparent 52%),
     radial-gradient(ellipse at 50% 50%, transparent 32%, rgba(120,210,255,0.10) 68%, rgba(180,240,255,0.18) 100%),

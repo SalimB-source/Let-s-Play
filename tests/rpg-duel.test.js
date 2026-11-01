@@ -5663,6 +5663,7 @@ test('gel : animation, état persistant, accessibilité et résolution dans les 
   assert.match(battlePage, /gelee \? 'is-frozen'/);
   assert.match(battlePage, /gelée : ne peut ni attaquer ni bloquer/);
   assert.match(battleCss, /\.rpg-card__frost\s*\{[^}]*pointer-events:\s*none;[^}]*animation:\s*rpg-freeze-spread/s);
+  assert.match(battleCss, /\.rpg-card__frost-ice\s*\{[^}]*linear-gradient\(180deg, rgba\(65,155,235,0\.24\), rgba\(28,104,205,0\.28\)\)/s, 'le givre ajoute un voile bleu translucide sur la carte');
   assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-card__frost, \.rpg-card__frost-crystals \{ animation: none;/);
   // Une créature gelée ne bouge plus : l'Envol s'arrête (lévitation et souffle),
   // le « respire » de l'illustration aussi, mais les cinématiques de combat
