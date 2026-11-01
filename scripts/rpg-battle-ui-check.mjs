@@ -1383,7 +1383,7 @@ assert.match(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*pa
   'les champs de bataille tactiles ne recadrent plus leurs cartes : aucune zone de défilement');
 assert.doesNotMatch(mobileCss, /\.rpg-battle--touch \.card-table > \.card-row \{[^}]*overflow-x:\s*auto;/s,
   'plus de masque ni de défilement horizontal autour des cartes posées');
-assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* \.95\);/,
+assert.match(mobileCss, /--rpg-field-card:\s*calc\(var\(--duel-card\) \* 1\.05\);/,
   'les cartes posées sur la table sont agrandies à 95 % de la main, toujours un peu sous elle');
 assert.match(mobileCss, /\.rpg-battle \.card-row \.rpg-card \.rpg-card__title \.rpg-mana-cost \{ display: none; \}/,
   'le coût ne s’imprime plus sur la carte posée, au doigt comme à la souris ; le bouton de capacité activée, hors du titre, garde son disque');

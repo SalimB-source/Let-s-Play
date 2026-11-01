@@ -679,7 +679,7 @@ try {
     await page.locator('.rpg-hand__card[data-card-id="fennec-des-decombres"]').click();
     await page.locator('.rpg-card--equipe[data-card-id="fennec-des-decombres"]').waitFor();
     // La face posée, au doigt : le coût ne s'imprime plus — il reste dans le
-    // libellé accessible —, la carte prend 95 % de la mesure de la main, et dans
+    // libellé accessible —, la carte prend 105 % de la mesure de la main, et dans
     // la main la pastille de couleur est plus petite que le disque de coût.
     const facePosee = await page.evaluate(() => {
       const table = document.querySelector('.card-table');
@@ -705,8 +705,8 @@ try {
     });
     assert.equal(facePosee.coutImprime, false, 'a placed card no longer prints its cost');
     assert.equal(facePosee.coutAnnonce, true, 'the cost stays in the accessible label of the placed card');
-    assert.ok(Math.abs(facePosee.largeur - facePosee.duelCard * .95) < 1.5,
-      `the placed card takes 95 % of the hand measure (${facePosee.largeur} px for ${facePosee.duelCard} px)`);
+    assert.ok(Math.abs(facePosee.largeur - facePosee.duelCard * 1.05) < 1.5,
+      `the placed card takes 105 % of the hand measure (${facePosee.largeur} px for ${facePosee.duelCard} px)`);
     // Si la main ne porte plus que des terrains à cet instant, elle n'a ni
     // pastille ni disque à comparer — le diamètre réduit est vérifié sur faces
     // synthétiques dans `check:rpg-card-markers`.

@@ -91,7 +91,7 @@
    hauteur. Le téléphone garde ce rapport : les cartes y font exactement la
    même fraction de l'écran, et tout le reste s'exprime en fractions de carte,
    comme sur le grand écran. Une plaque de sorcier fait 2 cartes de large, le
-   rail du tour 2,47, une carte posée 95 % d'une carte de la main, la bande de
+   rail du tour 2,47, une carte posée 105 % d'une carte de la main, la bande de
    la main 1,38 carte de haut. Brancher un 568 × 320, un 844 × 390 ou une
    tablette 1024 × 768 ne change donc rien aux proportions : l'image est la
    même, plus grande ou plus petite, et elle tient toujours dans l'écran.
@@ -145,11 +145,9 @@
      commandes du PC (48 à 58 px pour une carte de 140) —, jamais moins de
      44 px (la cible tactile des deux commandes principales), jamais plus de 52. */
   --rpg-touch-combat: clamp(44px, calc(var(--duel-card) * .55), 52px);
-  /* Les cartes posées sur la table restent un peu plus petites que celles de
-     la main — 95 % —, sans toucher à `--duel-card` qui règle la grille et la
-     main. Une face 4:5 à 95 % fait 1,19 carte de haut, sous la rangée de jeu,
-     et l'attaquant couché à 10° (1,40 × sa largeur) reste dans la sienne. */
-  --rpg-field-card: calc(var(--duel-card) * .95);
+  /* Les créatures posées sont légèrement agrandies, indépendamment de la
+     main et des commandes. Les rangées chargées adaptent toujours leur largeur. */
+  --rpg-field-card: calc(var(--duel-card) * 1.05);
   --rpg-field-min: 40px;
   --rpg-field-gap: max(6px, calc(var(--duel-card) * .16));
   /* La taille des statistiques et le bas de la carte sont nommés une fois ;
