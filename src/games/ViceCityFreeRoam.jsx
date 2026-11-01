@@ -2414,15 +2414,11 @@ function makeCity(scene) {
       && viceCityOuterHighwayContains(x, z);
     return !onOuterOverpass && Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
   };
-  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => {
-    const crossesCanal = Math.min(fromX, toX) <= CANAL_HALF_WIDTH
-      && Math.max(fromX, toX) >= -CANAL_HALF_WIDTH;
-    const crossesOuterOverpass = crossesCanal && [-VICE_CITY_OUTER_HIGHWAY.edge, VICE_CITY_OUTER_HIGHWAY.edge].some((crossingZ) =>
-      Math.max(Math.abs(fromZ - crossingZ), Math.abs(toZ - crossingZ)) <= VICE_CITY_OUTER_HIGHWAY.halfWidth + 1);
-    return !crossesOuterOverpass && viceCityCanalBarrierCrossed(
-      fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
-    );
-  };
+  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => viceCityCanalBarrierCrossed(
+    fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
+    [-VICE_CITY_OUTER_HIGHWAY.edge, VICE_CITY_OUTER_HIGHWAY.edge],
+    VICE_CITY_OUTER_HIGHWAY.halfWidth + 0.6,
+  );
   const surfacePitch = (x, z, yaw) => {
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);

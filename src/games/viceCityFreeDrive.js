@@ -7,7 +7,10 @@ const FREE_ROAM_STEER_BUILD_RATE = 3.6;
 const FREE_ROAM_STEER_RELEASE_RATE = 10;
 
 /** Prevent a long movement step from tunnelling through either canal wall. */
-export function viceCityCanalBarrierCrossed(fromX, fromZ, toX, toZ, canalHalfWidth = 20, bridgeHalfWidth = 7.8) {
+export function viceCityCanalBarrierCrossed(
+  fromX, fromZ, toX, toZ, canalHalfWidth = 20, bridgeHalfWidth = 7.8,
+  overpassCenters = [], overpassHalfWidth = 0,
+) {
   const deltaX = toX - fromX;
   if (Math.abs(deltaX) < 1e-8) return false;
   // The rendered wall is 0.7 m thick; stop cars at its centreline.
@@ -18,7 +21,10 @@ export function viceCityCanalBarrierCrossed(fromX, fromZ, toX, toZ, canalHalfWid
     if (!crossed) continue;
     const progress = (wallX - fromX) / deltaX;
     const crossingZ = fromZ + (toZ - fromZ) * progress;
-    if (Math.abs(crossingZ) > bridgeHalfWidth) return true;
+    const crossesOuterOverpass = overpassCenters.some((centerZ) =>
+      Math.abs(crossingZ - centerZ) <= overpassHalfWidth,
+    );
+    if (Math.abs(crossingZ) > bridgeHalfWidth && !crossesOuterOverpass) return true;
   }
   return false;
 }

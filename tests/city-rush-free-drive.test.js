@@ -199,6 +199,10 @@ test('conduite libre : les barrières du canal bloquent les franchissements hors
     'une grande étape ne peut pas sauter les deux berges');
   assert.equal(viceCityCanalBarrierCrossed(25, 30, 15, 0), true,
     'un déplacement en diagonale est bloqué au point où il coupe la berge');
+  assert.equal(viceCityCanalBarrierCrossed(25, 440, 15, 450, 20, 7.8, [-455, 455], 13.6), false,
+    'une approche diagonale qui coupe le mur sur le tablier autoroutier reste ouverte');
+  assert.equal(viceCityCanalBarrierCrossed(25, 435, 15, 445, 20, 7.8, [-455, 455], 13.6), true,
+    'le mur reste actif si la trajectoire coupe la berge avant le tablier autoroutier');
 });
 
 test('conduite libre : braquage moins brutal et adhérence latérale modérée', () => {
