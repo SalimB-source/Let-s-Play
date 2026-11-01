@@ -19,6 +19,7 @@ import {
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
+  viceCityFreeDriveAimVectorPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
   viceCityFreeDriveVelocityStep,
@@ -155,14 +156,29 @@ test('visée souris : le corps garde son cap, seuls les bras suivent le point vi
   assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
-test('visée souris : curseur, raycast et trajectoire partagent le même point', () => {
+test('visée souris 3D : le réticule et le tir partagent le rayon jusque dans la hauteur', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   assert.match(source, /const x = cursorX;\s*const y = cursorY;/u,
-    'le réticule ne doit pas être décalé par une sensibilité réduite');
-  assert.match(source, /mouseAimPlane\.constant = -\(city\.surfaceHeight\(walkState\.x, walkState\.z\) \+ 1\.42\)/u,
-    'le raycast vise au niveau où le projectile est émis');
-  assert.match(source, /mouseAimDirection\.set\(target\.x - shotOrigin\.x, 0, target\.z - shotOrigin\.z\)/u,
-    'la direction est calculée depuis le canon, pas le centre du personnage');
+    'le réticule reste exactement sous le curseur');
+  assert.match(source, /mouseRaycaster\.intersectObjects\(aimGlassCandidates, false\)/u,
+    'une vitre sous le curseur fournit le point visé réel');
+  assert.match(source, /mouseRaycaster\.ray\.at\(90, mouseAimPoint\)/u,
+    'le rayon garde une visée verticale en espace libre');
+  assert.match(source, /mouseAimDirection\.subVectors\(mouseAimPoint, shotOrigin\)/u,
+    'le vecteur part du canon et garde sa composante verticale');
+  assert.match(source, /stepY = shot\.directionY \* 92 \* dt/u,
+    'la trajectoire du projectile suit la hauteur visée');
+});
+
+test('visée 3D : le pitch incline les bras sans modifier le cap du personnage', () => {
+  const pose = viceCityFreeDriveAimVectorPose(0.7, 0, Math.SQRT1_2, -Math.SQRT1_2);
+  assert.equal(pose.bodyHeading, 0.7);
+  assert.ok(Math.abs(pose.pitch - Math.PI / 4) < 1e-12);
+  assert.ok(Math.abs(pose.armYaw - 0.7) < 1e-12,
+    'le bras compense le cap du corps pour pointer droit devant en 3D');
+  const diagonal = viceCityFreeDriveAimVectorPose(0, 1, 1, -1);
+  assert.ok(Math.abs(diagonal.pitch - Math.asin(1 / Math.sqrt(3))) < 1e-12);
+  assert.ok(Math.abs(diagonal.armYaw + Math.PI / 4) < 1e-12);
 });
 
 test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
@@ -182,8 +198,8 @@ test('à pied : la pose de visée reste en portée pendant l’entrée/sortie av
   const footEnd = source.indexOf("\n      } else {\n        throttle = pressed('ArrowUp') || pressed('KeyW');", footStart);
   assert.ok(animateStart >= 0 && footStart > animateStart && footEnd > footStart);
   const footBranch = source.slice(footStart, footEnd);
-  assert.ok(footBranch.indexOf('const mouseAimHeading = getMouseAimHeading()') < footBranch.indexOf('if (pendingEntry)'));
-  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimPose') > footBranch.indexOf('if (pendingEntry)'));
+  assert.ok(footBranch.indexOf('const mouseAimDirection = getMouseAimDirection()') < footBranch.indexOf('if (pendingEntry)'));
+  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimVectorPose') > footBranch.indexOf('if (pendingEntry)'));
   assert.match(footBranch, /aimPose\.armYaw \* aimBlend/u);
   assert.match(footBranch, /movePedestrianWithSlide\(dt\)/u);
   assert.match(footBranch, /pedestrian\.legs\[0\]\.userData\.knee\.rotation\.x/u);

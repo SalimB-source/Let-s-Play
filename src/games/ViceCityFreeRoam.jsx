@@ -27,6 +27,7 @@ import {
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
   viceCityFreeDriveAimPose,
+  viceCityFreeDriveAimVectorPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
   viceCityFreeDriveVelocityStep,
@@ -2970,7 +2971,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
     const mouseRaycaster = new THREE.Raycaster();
     const mouseNdc = new THREE.Vector2();
-    const mouseAimPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const mouseAimPoint = new THREE.Vector3();
     const mouseAimDirection = new THREE.Vector3();
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -3100,6 +3100,18 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let shotCooldown = 0;
     let footMuzzleFlashUntil = 0;
     const shotOrigin = new THREE.Vector3();
+    const aimableGlassMeshes = [playerVehicle, ...trafficCars.map(({ car }) => car),
+      ...city.parkedCarBodies.map(({ mesh }) => mesh)].map((car) => {
+      const meshes = [];
+      car.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
+          || materials.some((material) => /glass/i.test(material?.name || ''))) meshes.push(object);
+      });
+      return { car, meshes };
+    });
+    const aimGlassCandidates = [];
     const glassImpactRaycaster = new THREE.Raycaster();
     const glassWorldDirection = new THREE.Vector3();
     const glassLocalNormal = new THREE.Vector3();
@@ -3166,7 +3178,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let interactionNotice = '';
     let interactionNoticeUntil = 0;
     let pendingEntry = null;
-    const getMouseAimHeading = () => {
+    const getMouseAimDirection = () => {
       if (!mouseAimRef.current.active) return null;
       const bounds = renderer.domElement.getBoundingClientRect();
       if (bounds.width < 1 || bounds.height < 1) return null;
@@ -3175,18 +3187,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         -((mouseAimRef.current.y - bounds.top) / bounds.height) * 2 + 1,
       );
       mouseRaycaster.setFromCamera(mouseNdc, camera);
-      // Aim on the same horizontal plane as the muzzle so the cursor, arms and
-      // flat projectile path agree in screen space instead of aiming at the road.
-      mouseAimPlane.constant = -(city.surfaceHeight(walkState.x, walkState.z) + 1.42);
-      const target = mouseRaycaster.ray.intersectPlane(mouseAimPlane, mouseAimPoint);
-      if (target) {
-        pedestrian.group.updateMatrixWorld(true);
-        pedestrian.muzzle.getWorldPosition(shotOrigin);
-        mouseAimDirection.set(target.x - shotOrigin.x, 0, target.z - shotOrigin.z);
-      } else mouseAimDirection.set(mouseRaycaster.ray.direction.x, 0, mouseRaycaster.ray.direction.z);
-      if (mouseAimDirection.lengthSq() < 1e-6) return null;
-      mouseAimDirection.normalize();
-      return Math.atan2(mouseAimDirection.x, -mouseAimDirection.z);
+      // Prefer the actual windshield point under the cursor. In open space, use
+      // a distant point on the same ray so vertical mouse movement adds pitch.
+      aimGlassCandidates.length = 0;
+      for (const entry of aimableGlassMeshes) {
+        const { car, meshes } = entry;
+        if (!car.visible || Math.hypot(car.position.x - walkState.x, car.position.z - walkState.z) > 180) continue;
+        car.updateWorldMatrix(true, true);
+        aimGlassCandidates.push(...meshes);
+      }
+      const glassTarget = mouseRaycaster.intersectObjects(aimGlassCandidates, false)[0]?.point;
+      if (glassTarget) mouseAimPoint.copy(glassTarget);
+      else mouseRaycaster.ray.at(90, mouseAimPoint);
+      pedestrian.group.updateMatrixWorld(true);
+      pedestrian.muzzle.getWorldPosition(shotOrigin);
+      mouseAimDirection.subVectors(mouseAimPoint, shotOrigin);
+      if (mouseAimDirection.lengthSq() < 1e-6) mouseAimDirection.copy(mouseRaycaster.ray.direction);
+      return mouseAimDirection.normalize().clone();
     };
     let gpsTarget = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.id === 'downtown');
     const destinationActionRefValue = (id) => {
@@ -3718,7 +3735,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const cursorX = clamp(event.clientX, bounds.left, bounds.right);
       const cursorY = clamp(event.clientY, bounds.top, bounds.bottom);
       // Keep the reticle directly under the OS cursor; the same viewport point
-      // is converted to a camera ray by getMouseAimHeading().
+      // is converted to a 3D camera ray by getMouseAimDirection().
       const x = cursorX;
       const y = cursorY;
       mouseAimRef.current = { x, y, active: true };
@@ -4042,31 +4059,50 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const fireShot = () => {
       const onFoot = isOnFootRef.current;
-      const mouseAimHeading = onFoot ? getMouseAimHeading() : null;
-      const shotHeading = mouseAimHeading ?? walkState.heading;
-      const aimPose = viceCityFreeDriveAimPose(walkState.heading, shotHeading);
-      const directionX = onFoot ? Math.sin(shotHeading) : forward.x;
-      const directionZ = onFoot ? -Math.cos(shotHeading) : forward.z;
-      let x = state.x + directionX * 2.65;
-      let z = state.z + directionZ * 2.65;
-      let height = 1.05;
+      const defaultDirection = {
+        x: onFoot ? Math.sin(walkState.heading) : forward.x,
+        y: 0,
+        z: onFoot ? -Math.cos(walkState.heading) : forward.z,
+      };
+      let direction = onFoot ? getMouseAimDirection() || defaultDirection : defaultDirection;
+      let aimPose = viceCityFreeDriveAimVectorPose(
+        walkState.heading, direction.x, direction.y, direction.z,
+      );
+      let x = state.x + direction.x * 2.65;
+      let y = city.surfaceHeight(state.x, state.z) + 1.05;
+      let z = state.z + direction.z * 2.65;
+      let groundOffset = 1.05;
       if (onFoot) {
         pedestrian.aimBlend = 1;
-        pedestrian.arms[1].rotation.set(1.02, aimPose.armYaw, -0.08);
-        pedestrian.arms[0].rotation.set(0.72, aimPose.armYaw, 0.62);
-        pedestrian.pistol.rotation.x = -0.92;
-        pedestrian.group.updateMatrixWorld(true);
+        const applyAimPose = () => {
+          pedestrian.arms[1].rotation.set(1.02 + aimPose.pitch, aimPose.armYaw, -0.08);
+          pedestrian.arms[0].rotation.set(0.72 + aimPose.pitch, aimPose.armYaw, 0.62);
+          pedestrian.pistol.rotation.x = -1.02;
+          pedestrian.group.updateMatrixWorld(true);
+        };
+        applyAimPose();
+        // Re-evaluate from the final muzzle transform to remove close-range parallax.
+        direction = getMouseAimDirection() || direction;
+        aimPose = viceCityFreeDriveAimVectorPose(
+          walkState.heading, direction.x, direction.y, direction.z,
+        );
+        applyAimPose();
+        direction = getMouseAimDirection() || direction;
         pedestrian.muzzle.getWorldPosition(shotOrigin);
         x = shotOrigin.x;
+        y = shotOrigin.y;
         z = shotOrigin.z;
-        height = 1.42;
+        groundOffset = null;
         footMuzzleFlashUntil = state.time + 0.075;
         pedestrian.muzzleFlash.visible = true;
       }
       const mesh = new THREE.Mesh(shotGeometry, shotMaterial);
-      mesh.position.set(x, city.surfaceHeight(x, z) + height, z);
+      mesh.position.set(x, y, z);
       scene.add(mesh);
-      shots.push({ mesh, x, z, directionX, directionZ, height, age: 0, distance: 0 });
+      shots.push({
+        mesh, x, y, z, directionX: direction.x, directionY: direction.y, directionZ: direction.z,
+        groundOffset, age: 0, distance: 0,
+      });
       if (soundOnRef.current) audioRef.current?.gunshot?.();
     };
     const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
@@ -4079,7 +4115,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
       return Math.abs(localX) <= halfWidth + 0.45 && Math.abs(localZ) <= halfLength + 0.55;
     };
-    const breakVehicleGlass = (car, worldX, worldY, worldZ, directionX, directionZ) => {
+    const breakVehicleGlass = (car, worldX, worldY, worldZ, directionX, directionY, directionZ) => {
       if (!car) return;
       car.updateWorldMatrix(true, true);
       const glassMeshes = [];
@@ -4090,6 +4126,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           || materials.some((material) => /glass/i.test(material?.name || ''))) glassMeshes.push(object);
       });
       if (!glassMeshes.length) return;
+      glassWorldDirection.set(directionX, directionY, directionZ).normalize();
+      const rayOrigin = new THREE.Vector3(worldX, worldY, worldZ).addScaledVector(glassWorldDirection, -12);
+      glassImpactRaycaster.set(rayOrigin, glassWorldDirection);
+      glassImpactRaycaster.near = 0;
+      glassImpactRaycaster.far = 24;
+      const glassHit = glassImpactRaycaster.intersectObjects(glassMeshes, false)[0];
+      if (!glassHit?.face && Math.abs(directionY) > 1e-4) return;
       if (!car.userData.glassBroken) {
         for (const mesh of glassMeshes) {
           const replace = (material) => {
@@ -4113,7 +4156,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       car.userData.glassCrackCount = (car.userData.glassCrackCount || 0) + 1;
       const impact = car.worldToLocal(new THREE.Vector3(worldX, worldY, worldZ));
       const inverseRotation = car.getWorldQuaternion(glassCarQuaternion).invert();
-      const localDirection = new THREE.Vector3(directionX, 0, directionZ).applyQuaternion(inverseRotation);
+      const localDirection = new THREE.Vector3(directionX, directionY, directionZ).applyQuaternion(inverseRotation);
       const width = car.userData.width || 2;
       const length = car.userData.length || 4.2;
       const entryFace = viceCityFreeDriveGlassEntryFace(localDirection.x, localDirection.z);
@@ -4123,12 +4166,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       // Place the mark on the actual pane surface when the shot ray crosses glass.
       // The old 2-D hit test used a guessed car edge, which left marks hovering
       // beside the body or on the far side of the vehicle.
-      glassWorldDirection.set(directionX, 0, directionZ).normalize();
-      const rayOrigin = new THREE.Vector3(worldX, worldY, worldZ).addScaledVector(glassWorldDirection, -12);
-      glassImpactRaycaster.set(rayOrigin, glassWorldDirection);
-      glassImpactRaycaster.near = 0;
-      glassImpactRaycaster.far = 24;
-      const glassHit = glassImpactRaycaster.intersectObjects(glassMeshes, false)[0];
       if (glassHit?.face) {
         crack.position.copy(car.worldToLocal(glassHit.point.clone()));
         glassWorldNormalMatrix.getNormalMatrix(glassHit.object.matrixWorld);
@@ -4174,19 +4211,23 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       for (let index = shots.length - 1; index >= 0; index -= 1) {
         const shot = shots[index];
         const stepX = shot.directionX * 92 * dt;
+        const stepY = shot.directionY * 92 * dt;
         const stepZ = shot.directionZ * 92 * dt;
-        const stepLength = Math.hypot(stepX, stepZ);
+        const stepLength = Math.hypot(stepX, stepY, stepZ);
         const samples = Math.max(1, Math.ceil(stepLength / 0.8));
         let hit = false;
         for (let sample = 1; sample <= samples && !hit; sample += 1) {
           const ratio = sample / samples;
           const x = shot.x + stepX * ratio;
           const z = shot.z + stepZ * ratio;
+          const y = shot.groundOffset == null
+            ? shot.y + stepY * ratio
+            : city.surfaceHeight(x, z) + shot.groundOffset;
           for (const traffic of trafficCars) {
             if (!bulletOverlaps(x, z, traffic.car.position.x, traffic.car.position.z,
               traffic.car.rotation.y, traffic.car.userData.width, traffic.car.userData.length)) continue;
-            breakVehicleGlass(traffic.car, x, city.surfaceHeight(x, z) + shot.height, z,
-              shot.directionX, shot.directionZ);
+            breakVehicleGlass(traffic.car, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
             hit = true;
             break;
           }
@@ -4195,26 +4236,27 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             if (body.occupied || body.reserved) continue;
             if (!bulletOverlaps(x, z, body.spec.x, body.spec.z, body.spec.yaw,
               body.spec.width, body.spec.length)) continue;
-            breakVehicleGlass(body.mesh, x, city.surfaceHeight(x, z) + shot.height, z,
-              shot.directionX, shot.directionZ);
+            breakVehicleGlass(body.mesh, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
             hit = true;
             break;
           }
           if (!hit && isOnFootRef.current && playerVehicle.visible
             && bulletOverlaps(x, z, playerVehicle.position.x, playerVehicle.position.z,
               playerVehicle.rotation.y, playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2)) {
-            breakVehicleGlass(playerVehicle, x, city.surfaceHeight(x, z) + shot.height, z,
-              shot.directionX, shot.directionZ);
+            breakVehicleGlass(playerVehicle, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
             hit = true;
           }
           if (!hit) {
             shot.x = x;
+            shot.y = y;
             shot.z = z;
             shot.distance += stepLength / samples;
           }
         }
         shot.age += dt;
-        shot.mesh.position.set(shot.x, city.surfaceHeight(shot.x, shot.z) + shot.height, shot.z);
+        shot.mesh.position.set(shot.x, shot.y, shot.z);
         if (hit || shot.age > 1.5 || shot.distance > 125) {
           scene.remove(shot.mesh);
           shots.splice(index, 1);
@@ -4355,7 +4397,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         state.steer = 0;
         throttle = pressed('ArrowUp') || pressed('KeyW');
         brake = pressed('ArrowDown') || pressed('KeyS');
-        const mouseAimHeading = getMouseAimHeading();
+        const mouseAimDirection = getMouseAimDirection();
         let normalizedStrafe = 0;
         if (pendingEntry) {
           const dx = pendingEntry.approach.x - walkState.x;
@@ -4423,7 +4465,12 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           walkState.velocityZ = velocity.z;
           movePedestrianWithSlide(dt);
         }
-        const aimPose = viceCityFreeDriveAimPose(walkState.heading, mouseAimHeading ?? walkState.heading);
+        const aimDirection = mouseAimDirection ?? {
+          x: Math.sin(walkState.heading), y: 0, z: -Math.cos(walkState.heading),
+        };
+        const aimPose = viceCityFreeDriveAimVectorPose(
+          walkState.heading, aimDirection.x, aimDirection.y, aimDirection.z,
+        );
         const runBlend = clamp((walkState.speed - 2.65) / 1.55, 0, 1);
         const gaitWeight = clamp(walkState.speed / 0.65, 0, 1);
         walkState.phase += walkState.speed * dt * (3.25 - runBlend * 1.6);
@@ -4440,16 +4487,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         pedestrian.legs[0].userData.foot.rotation.x = -leftSwing * 0.18;
         pedestrian.legs[1].userData.foot.rotation.x = -rightSwing * 0.18;
         pedestrian.arms[0].rotation.set(
-          -stride * (0.42 - runBlend * 0.07) + aimBlend * 0.72,
+          -stride * (0.42 - runBlend * 0.07) + aimBlend * (0.72 + aimPose.pitch),
           aimPose.armYaw * aimBlend,
           aimBlend * 0.62,
         );
         pedestrian.arms[1].rotation.set(
-          stride * (0.42 - runBlend * 0.07) + aimBlend * 1.02,
+          stride * (0.42 - runBlend * 0.07) + aimBlend * (1.02 + aimPose.pitch),
           aimPose.armYaw * aimBlend,
           -aimBlend * 0.08,
         );
-        pedestrian.pistol.rotation.x = -aimBlend * 0.92;
+        pedestrian.pistol.rotation.x = -aimBlend * 1.02;
         pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
         const bodyBob = Math.abs(Math.sin(walkState.phase)) * gaitWeight * (0.016 + runBlend * 0.022);
         pedestrian.group.position.set(

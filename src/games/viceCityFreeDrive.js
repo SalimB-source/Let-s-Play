@@ -72,6 +72,23 @@ export function viceCityFreeDriveAimPose(bodyHeading = 0, aimHeading = bodyHeadi
   };
 }
 
+/** Convert a 3D aim vector into independent body-relative yaw and weapon pitch. */
+export function viceCityFreeDriveAimVectorPose(bodyHeading = 0, directionX = 0, directionY = 0, directionZ = -1) {
+  const body = Number(bodyHeading) || 0;
+  const x = Number(directionX) || 0;
+  const y = Number(directionY) || 0;
+  const z = Number(directionZ) || 0;
+  const length = Math.hypot(x, y, z);
+  if (length < 1e-8) return { ...viceCityFreeDriveAimPose(body, body), pitch: 0 };
+  const heading = Math.atan2(x, -z);
+  const armYaw = body - heading;
+  return {
+    bodyHeading: body,
+    armYaw: Math.atan2(Math.sin(armYaw), Math.cos(armYaw)),
+    pitch: Math.asin(clamp(y / length, -1, 1)),
+  };
+}
+
 /** Normalize forward and strafe input so diagonal pedestrian movement is not faster. */
 export function viceCityFreeDriveFootVector(forward = 0, strafe = 0) {
   const safeForward = clamp(Number(forward) || 0, -1, 1);
