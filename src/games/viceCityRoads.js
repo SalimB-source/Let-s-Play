@@ -44,6 +44,36 @@ export const VICE_CITY_OUTER_HIGHWAY = Object.freeze({
   accessHalfWidth: 7,
 });
 
+const buildHighwayAccessRamps = () => {
+  const { edge, cityGridLimit } = VICE_CITY_OUTER_HIGHWAY;
+  const paths = [];
+  for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+    const start = { x: sideX * 225, z: sideZ * edge };
+    const control1 = { x: sideX * 275, z: sideZ * edge };
+    const control2 = { x: sideX * cityGridLimit, z: sideZ * (cityGridLimit + 75) };
+    const end = { x: sideX * cityGridLimit, z: sideZ * cityGridLimit };
+    const points = [];
+    for (let step = 0; step <= 48; step += 1) {
+      const t = step / 48;
+      const inverse = 1 - t;
+      points.push({
+        x: inverse ** 3 * start.x + 3 * inverse ** 2 * t * control1.x
+          + 3 * inverse * t ** 2 * control2.x + t ** 3 * end.x,
+        z: inverse ** 3 * start.z + 3 * inverse ** 2 * t * control1.z
+          + 3 * inverse * t ** 2 * control2.z + t ** 3 * end.z,
+      });
+    }
+    paths.push(points);
+  }
+  return paths;
+};
+const OUTER_HIGHWAY_ACCESS_RAMPS = buildHighwayAccessRamps();
+
+/** Curved city-bound exits and entry ramps, sampled for meshes, collision, and minimap. */
+export function viceCityOuterHighwayAccessRamps() {
+  return OUTER_HIGHWAY_ACCESS_RAMPS.map((path) => path.map(({ x, z }) => ({ x, z })));
+}
+
 /** Smooth arched deck heights for the two motorway overpasses across the river. */
 export function viceCityOuterHighwayBridgeHeight(x, z) {
   const { edge, halfWidth, bankOffset, bridgeDeckHeight } = VICE_CITY_OUTER_HIGHWAY;
@@ -105,7 +135,7 @@ export function viceCityOuterHighwayPaths() {
 
 /** True on the continuous perimeter ring, river overpasses, or access spurs. */
 export function viceCityOuterHighwayContains(x, z) {
-  const { edge, cornerRadius, halfWidth, bankOffset, cityGridLimit, accessHalfWidth } = VICE_CITY_OUTER_HIGHWAY;
+  const { edge, cornerRadius, halfWidth, bankOffset, accessHalfWidth } = VICE_CITY_OUTER_HIGHWAY;
   const straightEnd = edge - cornerRadius;
   const onRiverOverpass = [-edge, edge].some((crossingZ) =>
     Math.abs(z - crossingZ) <= halfWidth && Math.abs(x) <= bankOffset + halfWidth);
@@ -122,12 +152,21 @@ export function viceCityOuterHighwayContains(x, z) {
     });
     return topOrBottom || farSide || onCorner;
   });
-  const accessStart = cityGridLimit;
-  const onVerticalAccess = [-100, 100].some((fixedX) =>
-    Math.abs(x - fixedX) <= accessHalfWidth && Math.abs(z) >= accessStart - 0.01
-      && Math.abs(z) <= edge + halfWidth);
-  const onHorizontalAccess = [-300, 300].some((fixedZ) =>
-    Math.abs(z - fixedZ) <= accessHalfWidth && Math.abs(x) >= accessStart - 0.01
-      && Math.abs(x) <= edge + halfWidth);
-  return onUPath || onRiverOverpass || onVerticalAccess || onHorizontalAccess;
+  const rampToleranceSq = (accessHalfWidth + 0.6) ** 2;
+  const onCurvedAccessRamp = OUTER_HIGHWAY_ACCESS_RAMPS.some((path) => {
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const start = path[index];
+      const end = path[index + 1];
+      const dx = end.x - start.x;
+      const dz = end.z - start.z;
+      const lengthSq = dx * dx + dz * dz;
+      const progress = lengthSq > 1e-8
+        ? clamp(((x - start.x) * dx + (z - start.z) * dz) / lengthSq, 0, 1) : 0;
+      const offsetX = x - (start.x + dx * progress);
+      const offsetZ = z - (start.z + dz * progress);
+      if (offsetX * offsetX + offsetZ * offsetZ <= rampToleranceSq) return true;
+    }
+    return false;
+  });
+  return onUPath || onRiverOverpass || onCurvedAccessRamp;
 }

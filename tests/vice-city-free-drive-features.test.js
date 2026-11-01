@@ -8,6 +8,7 @@ import {
   createViceCityChallenge,
   viceCityGpsRoute,
   viceCityStreetName,
+  viceCityDistrictName,
   viceCityChallengeProgress,
 } from '../src/games/viceCityFreeDriveFeatures.js';
 import { viceCityFreeDriveGlassEntryFace } from '../src/games/viceCityFreeDrive.js';
@@ -41,6 +42,16 @@ test('les intersections disposent de noms de rues lisibles', () => {
   assert.equal(viceCityStreetName(-300, -300), 'WASHINGTON AVE');
   assert.equal(viceCityStreetName(300, 300), 'STARFISH ISLAND RD');
   assert.ok(viceCityStreetName(0, 100).length > 0);
+});
+
+test('la ville identifie ses quartiers et ses nouveaux points de repère', () => {
+  assert.equal(viceCityDistrictName(-320, 270), 'PORT AUTONOME');
+  assert.equal(viceCityDistrictName(-200, 0), 'DOCKLANDS');
+  assert.equal(viceCityDistrictName(-64, 10), 'DOWNTOWN');
+  assert.equal(viceCityDistrictName(200, -200), 'VICE POINT');
+  assert.equal(viceCityDistrictName(200, 100), 'EASTSIDE');
+  assert.ok(VICE_CITY_POINTS_OF_INTEREST.some(({ id }) => id === 'eastside-courts'));
+  assert.equal(VICE_CITY_POINTS_OF_INTEREST.find(({ id }) => id === 'downtown').name, 'TOUR ART DÉCO');
 });
 
 test('un défi démarré est une copie isolée, temporisée et récompensée', () => {

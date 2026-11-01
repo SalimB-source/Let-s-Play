@@ -6,7 +6,7 @@ import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
 import {
   VICE_CITY_CHALLENGES, VICE_CITY_POINTS_OF_INTEREST, createViceCityChallenge,
-  viceCityGpsRoute, viceCityStreetName, viceCityChallengeProgress,
+  viceCityGpsRoute, viceCityStreetName, viceCityDistrictName, viceCityChallengeProgress,
 } from './viceCityFreeDriveFeatures.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
@@ -42,6 +42,7 @@ import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCi
 import {
   VICE_CITY_OUTER_HIGHWAY,
   viceCityCanalWaveHeight,
+  viceCityOuterHighwayAccessRamps,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -300,6 +301,26 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
     glow.scale.set(0.85, 1.55, 1);
     scene.add(glow);
   }
+  // A towering gantry crane makes the working harbor visible across the water.
+  const gantryMat = new THREE.MeshStandardMaterial({ color: 0xc56e47, roughness: 0.64, metalness: 0.38 });
+  const gantryHighlightMat = new THREE.MeshStandardMaterial({ color: 0xe4bd75, roughness: 0.48, metalness: 0.48 });
+  const gantryZ = 270;
+  for (const legX of [-357, -318]) {
+    addBox(scene, gantryMat, legX, -0.02, gantryZ, 1.1, 15.4, 1.1, true);
+    addBox(scene, gantryMat, legX, -0.02, gantryZ - 2.4, 1.1, 15.4, 0.42, true);
+    addBox(scene, gantryMat, legX, -0.02, gantryZ + 2.4, 1.1, 15.4, 0.42, true);
+  }
+  addBox(scene, gantryMat, -337.5, 14.9, gantryZ, 40.2, 0.95, 1.35, true);
+  addBox(scene, gantryHighlightMat, -337.5, 15.87, gantryZ, 40.2, 0.14, 0.14);
+  addBox(scene, gantryMat, -366, 14.15, gantryZ, 18, 0.72, 1.2, true);
+  addBox(scene, gantryHighlightMat, -366, 14.9, gantryZ, 18, 0.14, 0.14);
+  const gantryTrolley = addBox(scene, gantryHighlightMat, -350, 13.95, gantryZ, 3.2, 1.0, 2.4, true);
+  const hoistCable = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 9, 7), gantryMat);
+  hoistCable.position.set(-350, 9.4, gantryZ);
+  scene.add(hoistCable);
+  addBox(scene, gantryMat, -350, 4.7, gantryZ, 0.5, 0.3, 1.1, true);
+  gantryTrolley.userData.harborCrane = true;
+  buildingFootprints.push({ x: -318, z: gantryZ, halfWidth: 2.5, halfDepth: 2.5 });
   const boats = [
     { style: 'fishing', length: 13, width: 3.2, hullColor: 0x365e69, cabinColor: 0xe8dfc9, z: -215 },
     { style: 'speedboat', length: 15, width: 3.6, hullColor: 0xb74d3b, cabinColor: 0xf0eee4, z: -105 },
@@ -314,7 +335,7 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
 }
 
 function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
-  const { edge, halfWidth, accessHalfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
+  const { edge, halfWidth, accessHalfWidth, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
   const asphaltMat = new THREE.MeshStandardMaterial({
     color: 0x20262d, map: surfaceTextures.map, roughnessMap: surfaceTextures.roughnessMap,
@@ -497,50 +518,131 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
   dashMesh.name = 'vice-city-highway-lane-dashes';
   scene.add(dashMesh);
 
-  const addAccessStrip = (orientation, fixed, start, end, width) => {
-    const length = Math.abs(end - start);
-    const center = (start + end) / 2;
-    const horizontal = orientation === 'horizontal';
-    const geometry = horizontal
-      ? new THREE.PlaneGeometry(length, width, Math.ceil(length / 6), 1)
-      : new THREE.PlaneGeometry(width, length, 1, Math.ceil(length / 6));
-    geometry.rotateX(-Math.PI / 2);
-    const vertices = geometry.attributes.position;
-    for (let index = 0; index < vertices.count; index += 1) {
-      const x = horizontal ? center + vertices.getX(index) : fixed + vertices.getX(index);
-      const z = horizontal ? fixed + vertices.getZ(index) : center + vertices.getZ(index);
-      vertices.setY(index, highwayElevation(x, z) + 0.04);
-      geometry.attributes.uv.setXY(index, x / 28, z / 28);
-    }
-    vertices.needsUpdate = true;
-    geometry.attributes.uv.needsUpdate = true;
-    geometry.computeVertexNormals();
-    const surface = new THREE.Mesh(geometry, asphaltMat);
-    surface.position.set(horizontal ? center : fixed, 0, horizontal ? fixed : center);
-    surface.name = 'vice-city-highway-access-ramp';
-    surface.receiveShadow = true;
-    scene.add(surface);
-    for (let along = start + Math.sign(end - start) * 8; Math.sign(end - start) * (end - along) > 4; along += Math.sign(end - start) * 20) {
-      const dash = new THREE.Mesh(
-        new THREE.PlaneGeometry(horizontal ? 8 : 0.16, horizontal ? 0.16 : 8), accessMarkMat,
-      );
-      dash.rotation.x = -Math.PI / 2;
-      const x = horizontal ? along : fixed;
-      const z = horizontal ? fixed : along;
-      dash.position.set(x, highwayElevation(x, z) + 0.075, z);
-      scene.add(dash);
-    }
+  const exitNames = ['DOWNTOWN', 'PORT', 'VICE POINT', 'EASTSIDE'];
+  const signPoleMat = new THREE.MeshStandardMaterial({ color: 0x424b4d, roughness: 0.48, metalness: 0.72 });
+  const makeExitSignMaterial = (destination) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (!context) return new THREE.MeshBasicMaterial({ color: 0x0d5e4d, side: THREE.DoubleSide });
+    context.fillStyle = '#0d5e4d';
+    context.fillRect(0, 0, 512, 128);
+    context.strokeStyle = '#d5e4b9';
+    context.lineWidth = 8;
+    context.strokeRect(5, 5, 502, 118);
+    context.fillStyle = '#fff4d4';
+    context.font = '900 34px system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText('VICE CITY · SORTIE', 256, 42);
+    context.font = '900 48px system-ui, sans-serif';
+    context.fillText(destination, 256, 88);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false });
   };
-  // Carry each spur back to the city-grid boundary for a broad, visible road overlap.
-  const accessStart = cityGridLimit;
-  for (const fixedX of [-100, 100]) {
-    addAccessStrip('vertical', fixedX, -edge, -accessStart, accessHalfWidth * 2);
-    addAccessStrip('vertical', fixedX, accessStart, edge, accessHalfWidth * 2);
+  const rampDashVertices = [];
+  for (const [rampIndex, rampData] of viceCityOuterHighwayAccessRamps().entries()) {
+    const points = rampData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
+    const tangents = points.map((point, index) => {
+      const before = points[Math.max(0, index - 1)];
+      const after = points[Math.min(points.length - 1, index + 1)];
+      return new THREE.Vector2(after.x - before.x, after.z - before.z).normalize();
+    });
+    const makeRampRibbon = (width, lateralOffset, material, lift, name) => {
+      const positions = new Float32Array(points.length * 6);
+      const uvs = new Float32Array(points.length * 4);
+      const indices = [];
+      for (let index = 0; index < points.length; index += 1) {
+        const tangent = tangents[index];
+        const normalX = -tangent.y;
+        const normalZ = tangent.x;
+        for (let edgeIndex = 0; edgeIndex < 2; edgeIndex += 1) {
+          const side = edgeIndex === 0 ? -1 : 1;
+          const offset = lateralOffset + side * width / 2;
+          const x = points[index].x + normalX * offset;
+          const z = points[index].z + normalZ * offset;
+          const vertex = (index * 2 + edgeIndex) * 3;
+          positions[vertex] = x;
+          positions[vertex + 1] = highwayElevation(x, z) + lift;
+          positions[vertex + 2] = z;
+          const uvIndex = (index * 2 + edgeIndex) * 2;
+          uvs[uvIndex] = x / 28;
+          uvs[uvIndex + 1] = z / 28;
+        }
+        if (index < points.length - 1) {
+          const outer = index * 2;
+          indices.push(outer, outer + 1, outer + 2, outer + 2, outer + 1, outer + 3);
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = name;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    };
+    makeRampRibbon(accessHalfWidth * 2, 0, asphaltMat, 0.045, 'vice-city-highway-curved-exit-ramp');
+    for (const shoulder of [-1, 1]) {
+      makeRampRibbon(0.16, shoulder * (accessHalfWidth - 0.45), markingMat, 0.085,
+        'vice-city-highway-ramp-edge-line');
+      for (let index = 4; index < points.length - 4; index += 8) {
+        const point = points[index];
+        const tangent = tangents[index];
+        const normalX = -tangent.y;
+        const normalZ = tangent.x;
+        const x = point.x + normalX * shoulder * (accessHalfWidth + 1.7);
+        const z = point.z + normalZ * shoulder * (accessHalfWidth + 1.7);
+        const railPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.82, 0.12), signPoleMat);
+        railPost.position.set(x, highwayElevation(x, z) + 0.42, z);
+        railPost.castShadow = true;
+        scene.add(railPost);
+      }
+    }
+    for (let index = 2; index < points.length - 2; index += 4) {
+      const start = points[index - 1];
+      const end = points[index + 1];
+      const tangent = new THREE.Vector2(end.x - start.x, end.z - start.z).normalize();
+      const normalX = -tangent.y * 0.09;
+      const normalZ = tangent.x * 0.09;
+      const rampCorners = [
+        [start.x - normalX, start.z - normalZ], [end.x - normalX, end.z - normalZ],
+        [end.x + normalX, end.z + normalZ], [start.x + normalX, start.z + normalZ],
+      ];
+      for (const corner of [0, 1, 2, 0, 2, 3]) {
+        const [x, z] = rampCorners[corner];
+        rampDashVertices.push(x, highwayElevation(x, z) + 0.09, z);
+      }
+    }
+    const signPoint = points.at(-1);
+    const signTangent = tangents.at(-1);
+    const signNormal = new THREE.Vector2(-signTangent.y, signTangent.x);
+    const signCenterX = signPoint.x + signNormal.x * (accessHalfWidth + 4);
+    const signCenterZ = signPoint.z + signNormal.y * (accessHalfWidth + 4);
+    const signYaw = Math.atan2(signTangent.x, signTangent.y);
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.2, 0.18), signPoleMat);
+      post.position.set(signCenterX + side * 2.4, 2.1, signCenterZ);
+      post.castShadow = true;
+      scene.add(post);
+    }
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.55), makeExitSignMaterial(exitNames[rampIndex]));
+    sign.position.set(signCenterX, 4.15, signCenterZ);
+    sign.rotation.y = signYaw;
+    scene.add(sign);
+    sign.userData.exitName = exitNames[rampIndex];
   }
-  for (const fixedZ of [-300, 300]) {
-    addAccessStrip('horizontal', fixedZ, -edge, -accessStart, accessHalfWidth * 2);
-    addAccessStrip('horizontal', fixedZ, accessStart, edge, accessHalfWidth * 2);
-  }
+  const rampDashGeometry = new THREE.BufferGeometry();
+  rampDashGeometry.setAttribute('position', new THREE.Float32BufferAttribute(rampDashVertices, 3));
+  rampDashGeometry.computeVertexNormals();
+  const rampDashMesh = new THREE.Mesh(rampDashGeometry, accessMarkMat);
+  rampDashMesh.name = 'vice-city-highway-curved-ramp-lane-dashes';
+  scene.add(rampDashMesh);
   return asphaltMat;
 }
 
@@ -598,9 +700,15 @@ function makeCity(scene) {
   const manholeMat = new THREE.MeshStandardMaterial({ color: 0x62666a, roughness: 0.76, metalness: 0.18 });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
   const lotGrassPalette = [0x4f6947, 0x59724a, 0x60784d, 0x526d4b, 0x657a50];
+  const landmarkTrimMat = new THREE.MeshStandardMaterial({ color: 0xd3ad70, roughness: 0.42, metalness: 0.54 });
+  const landmarkGlowMat = new THREE.MeshStandardMaterial({
+    color: 0x55ddd1, emissive: 0x168b81, emissiveIntensity: 1.4, roughness: 0.38, metalness: 0.18,
+  });
   const districtPalettes = {
     downtown: [0xf0b89f, 0x9fc8c4, 0xf2d9b2, 0xd99d91, 0xc7d5cf],
     port: [0x81939a, 0xb98b6d, 0xc0b69d, 0x667f87, 0xd0c5ad],
+    vicePoint: [0x9fd1cb, 0xf0c19d, 0xe8d9b9, 0x9daec3, 0xf1a28b],
+    eastside: [0xd49f7f, 0xa7b99b, 0xd6c59f, 0x8fa5a1, 0xdcae8f],
     residential: [0xd4bea0, 0x9aafa3, 0xc8ada0, 0xe0d4bb, 0x91a1a0],
   };
   const litWindowPositions = [];
@@ -1233,6 +1341,8 @@ function makeCity(scene) {
   const districtLighting = {
     downtown: { signs: [0xff4f9a, 0x32dce8, 0xffc044], glow: 1 },
     port: { signs: [0xffa84b, 0x58ccd5, 0xe6dfc6], glow: 0.76 },
+    vicePoint: { signs: [0x42e3d0, 0xff8f9d, 0xffd286], glow: 0.82 },
+    eastside: { signs: [0xffb66b, 0x86c9a5, 0xffd59a], glow: 0.58 },
     residential: { signs: [0xffc37a, 0x8bc0b1, 0xe2aa6f], glow: 0.48 },
   };
   const neonGlowSize = 48;
@@ -1480,7 +1590,11 @@ function makeCity(scene) {
     }
   };
   const ghettoWallMats = [0xbca47e, 0xc6a18c, 0x9cae9a, 0xd1c39e, 0xaeb7b4].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
+  const vicePointWallMats = [0xe4c29e, 0x98c5bf, 0xd99f8c, 0xf0d7b6, 0x9aaec0]
+    .map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
   const ghettoRoofMats = [0x75483e, 0x8a5746, 0x545d5c, 0x9b704c].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 }));
+  const vicePointRoofMats = [0x45666a, 0x9b6955, 0x576270, 0xb57958]
+    .map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
   const ghettoTrimMat = new THREE.MeshStandardMaterial({ color: 0xe2d8c6, roughness: 0.84 });
   const ghettoWindowMat = new THREE.MeshStandardMaterial({ color: 0x426879, roughness: 0.28, metalness: 0.08 });
   const ghettoDoorMats = [0x59483b, 0x604344, 0x485247].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86 }));
@@ -1502,7 +1616,7 @@ function makeCity(scene) {
     parent.add(water);
     buildingFootprints.push({ x, z, halfWidth: 2.7, halfDepth: 3.3 });
   };
-  const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ) => {
+  const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ, district = 'eastside') => {
     const width = 13 + random() * 3.5;
     const depth = 12 + random() * 3.5;
     const wallHeight = 4.25 + random() * 0.55;
@@ -1510,8 +1624,10 @@ function makeCity(scene) {
     const x = centerX + slotX + (random() - 0.5) * 2;
     const z = centerZ + slotZ + (random() - 0.5) * 2;
     const frontSign = slotZ < 0 ? -1 : 1;
-    const facade = ghettoWallMats[Math.floor(random() * ghettoWallMats.length)];
-    const roof = ghettoRoofMats[Math.floor(random() * ghettoRoofMats.length)];
+    const wallPalette = district === 'vicePoint' ? vicePointWallMats : ghettoWallMats;
+    const roofPalette = district === 'vicePoint' ? vicePointRoofMats : ghettoRoofMats;
+    const facade = wallPalette[Math.floor(random() * wallPalette.length)];
+    const roof = roofPalette[Math.floor(random() * roofPalette.length)];
     const door = ghettoDoorMats[Math.floor(random() * ghettoDoorMats.length)];
     const hasGarage = random() > 0.48;
     const hasPool = random() < 0.26;
@@ -1584,6 +1700,66 @@ function makeCity(scene) {
     addGroundPlane(parent, courtyardPathMat, doorX, z + frontSign * (depth / 2 + 5.4), 2.3, 7.0, -0.032);
   };
   const addCourtyardAmenity = (parent, x, z, type) => {
+    if (type === 'court') {
+      const courtSurface = new THREE.MeshStandardMaterial({ color: 0x425559, roughness: 0.94 });
+      const courtLine = new THREE.MeshBasicMaterial({ color: 0xf2e9d3 });
+      const hoopSteel = new THREE.MeshStandardMaterial({ color: 0x3d4546, roughness: 0.58, metalness: 0.52 });
+      const hoopAccent = new THREE.MeshStandardMaterial({ color: 0xe67b49, roughness: 0.72 });
+      addGroundPlane(parent, courtSurface, x, z, 18, 18, -0.048);
+      for (const side of [-1, 1]) {
+        addBox(parent, courtLine, x, -0.047, z + side * 8.2, 17, 0.035, 0.12);
+        addBox(parent, courtLine, x + side * 8.2, -0.047, z, 0.12, 0.035, 16.4);
+        addBox(parent, courtLine, x + side * 7.5, -0.047, z, 0.12, 0.035, 7.2);
+        addBox(parent, hoopSteel, x + side * 7.8, -0.045, z, 0.16, 3.15, 0.16);
+        addBox(parent, courtLine, x + side * 7.08, 2.7, z, 0.13, 0.88, 1.36);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.055, 7, 20), hoopAccent);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.set(x + side * 6.55, 2.55, z);
+        rim.castShadow = true;
+        parent.add(rim);
+      }
+      addBox(parent, courtLine, x, -0.047, z, 0.12, 0.035, 16.4);
+      const centerCircle = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.065, 6, 32), courtLine);
+      centerCircle.rotation.x = Math.PI / 2;
+      centerCircle.position.set(x, -0.008, z);
+      parent.add(centerCircle);
+      addCourtyardBench(parent, x, z - 9.5);
+      addCourtyardBench(parent, x, z + 9.5);
+      return;
+    }
+    if (type === 'landmark') {
+      const monumentStone = new THREE.MeshStandardMaterial({ color: 0xcbbd9d, roughness: 0.72, metalness: 0.16 });
+      const monumentBrass = new THREE.MeshStandardMaterial({ color: 0xd1a45f, roughness: 0.4, metalness: 0.66 });
+      const beaconMat = new THREE.MeshBasicMaterial({ color: 0x58f0df, toneMapped: false });
+      addGroundPlane(parent, courtyardPathMat, x, z, 18, 18, -0.046);
+      addGroundPlane(parent, sidewalkMat, x, z, 8, 8, -0.038);
+      addBox(parent, monumentStone, x, -0.03, z, 4.8, 0.62, 4.8);
+      addBox(parent, monumentBrass, x, 0.59, z, 3.65, 0.16, 3.65);
+      addBox(parent, monumentStone, x, 0.75, z, 2.25, 7.3, 2.25, true);
+      for (const side of [-1, 1]) {
+        addBox(parent, monumentBrass, x + side * 0.91, 0.9, z, 0.12, 6.8, 2.35);
+        addBox(parent, monumentBrass, x, 0.9, z + side * 0.91, 2.35, 6.8, 0.12);
+      }
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(1.55, 2.5, 4), monumentBrass);
+      crown.position.set(x, 9.2, z);
+      crown.rotation.y = Math.PI / 4;
+      crown.castShadow = true;
+      parent.add(crown);
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.33, 12, 10), beaconMat);
+      beacon.position.set(x, 10.65, z);
+      parent.add(beacon);
+      const beaconLight = new THREE.PointLight(0x58f0df, 1.4, 24, 2);
+      beaconLight.position.copy(beacon.position);
+      parent.add(beaconLight);
+      for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        addBox(parent, planterMat, x + sideX * 6, -0.025, z + sideZ * 6, 2.5, 0.34, 2.5);
+        addCourtyardTree(parent, x + sideX * 6, z + sideZ * 6, 3.8);
+      }
+      addCourtyardBench(parent, x - 5, z, Math.PI / 2);
+      addCourtyardBench(parent, x + 5, z, -Math.PI / 2);
+      buildingFootprints.push({ x, z, halfWidth: 2.5, halfDepth: 2.5 });
+      return;
+    }
     if (type === 'garden') {
       if (random() > 0.45) addFencePerimeter(x, z, 9.5, 9.5);
       addGroundPlane(parent, courtyardGrassMat, x, z, 18, 18, -0.048);
@@ -1662,16 +1838,22 @@ function makeCity(scene) {
     const ghettoBlock = bx >= 0;
     const isPortDistrict = bx <= -2 && Math.abs(bz) <= 2;
     const isDowntownDistrict = !isPortDistrict && bx < 0 && Math.abs(bz) <= 1;
-    const districtName = isPortDistrict ? 'port' : isDowntownDistrict ? 'downtown' : 'residential';
+    const isVicePointDistrict = ghettoBlock && bz < 0;
+    const isEastsideDistrict = ghettoBlock && bz >= 0;
+    const districtName = isPortDistrict ? 'port' : isDowntownDistrict ? 'downtown'
+      : isVicePointDistrict ? 'vicePoint' : isEastsideDistrict ? 'eastside' : 'residential';
     const districtPalette = districtPalettes[districtName];
     const districtLight = districtLighting[districtName];
     const amenityRoll = random();
-    const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
+    const isDowntownLandmarkLot = bx === -1 && bz === 0;
+    const isVicePointCourtLot = bx === 2 && bz === -1;
+    const amenityType = isDowntownLandmarkLot ? 'landmark' : isVicePointCourtLot ? 'court'
+      : amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
     if (ghettoBlock) {
       for (const [slotX, slotZ] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) {
         const canalSideSlotX = bx === 0 && slotX < 0 ? -14 : slotX;
-        addGhettoHouse(lot, cx, cz, canalSideSlotX, slotZ);
+        addGhettoHouse(lot, cx, cz, canalSideSlotX, slotZ, districtName);
       }
     }
     // The western half keeps its denser art-deco blocks; the eastern half is low-rise residential.
@@ -1686,10 +1868,12 @@ function makeCity(scene) {
       const [slotX, slotZ] = buildingSlots[i];
       const isAlleyBuilding = alleyBlock && i < 2;
       const isCottage = cottageBlock && i === count - 1;
-      const width = isCottage ? 12 + random() * 4 : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
-      const depth = isCottage ? 14 + random() * 4 : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
-      const height = isCottage
-        ? 6.2 + random() * 1.6
+      const isLandmarkTower = isDowntownLandmarkLot && i === 0;
+      const width = isLandmarkTower ? 26 : isCottage ? 12 + random() * 4
+        : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
+      const depth = isLandmarkTower ? 23 : isCottage ? 14 + random() * 4
+        : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
+      const height = isLandmarkTower ? 54 : isCottage ? 6.2 + random() * 1.6
         : isPortDistrict ? 8 + random() * 12 : 10 + random() * (isDowntownDistrict ? 35 : 21);
       const canalSafeSlotX = bx === -1 && slotX > 20 ? slotX - 12 : slotX;
       const x = cx + canalSafeSlotX + (random() - 0.5) * 3;
@@ -1726,7 +1910,27 @@ function makeCity(scene) {
       } else {
         addBox(lot, capMat, x, height + 0.1, z, width + 0.7, 0.7, depth + 0.7);
       }
-      if (!isCottage && height > 28) {
+      if (isLandmarkTower) {
+        building.userData.landmark = 'downtown-art-deco-tower';
+        addBox(lot, landmarkTrimMat, x, height + 0.8, z, width * 0.78, 0.34, depth * 0.78);
+        addBox(lot, facade, x, height + 1.14, z, width * 0.54, 5.5, depth * 0.54, true);
+        addBox(lot, landmarkTrimMat, x, height + 6.64, z, width * 0.61, 0.24, depth * 0.61);
+        for (const bandY of [13, 28, 43]) {
+          addBox(lot, landmarkGlowMat, x, bandY, z - depth / 2 - 0.06, width, 0.13, 0.08);
+          addBox(lot, landmarkGlowMat, x, bandY, z + depth / 2 + 0.06, width, 0.13, 0.08);
+          addBox(lot, landmarkGlowMat, x - width / 2 - 0.06, bandY, z, 0.08, 0.13, depth);
+          addBox(lot, landmarkGlowMat, x + width / 2 + 0.06, bandY, z, 0.08, 0.13, depth);
+        }
+        const towerSpire = new THREE.Mesh(new THREE.ConeGeometry(1.85, 4.8, 4), landmarkTrimMat);
+        towerSpire.position.set(x, height + 9.1, z);
+        towerSpire.rotation.y = Math.PI / 4;
+        towerSpire.castShadow = true;
+        lot.add(towerSpire);
+        const towerBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), landmarkGlowMat);
+        towerBeacon.position.set(x, height + 11.8, z);
+        lot.add(towerBeacon);
+      }
+      if (!isLandmarkTower && !isCottage && height > 28) {
         addBox(lot, facade, x, height + 0.8, z, width * 0.54, 4.5, depth * 0.72, true);
       }
       // Tall window bands, a shopfront at street level, and selected lit windows.
@@ -3024,7 +3228,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     rain.visible = false;
     scene.add(rain);
     const city = makeCity(scene);
-    const minimapHighwayPaths = viceCityOuterHighwayPaths();
+    const minimapHighwayPaths = [...viceCityOuterHighwayPaths(), ...viceCityOuterHighwayAccessRamps()];
 
     let profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
     let homeMaxSpeed = 35 * profile.powerMultiplier;
@@ -3307,7 +3511,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         challengeState.lastStreetAt = state.time;
         const px = isOnFootRef.current ? walkState.x : state.x;
         const pz = isOnFootRef.current ? walkState.z : state.z;
-        const street = viceCityStreetName(px, pz);
+        const street = `${viceCityDistrictName(px, pz)} · ${viceCityStreetName(px, pz)}`;
         if (street !== previousStreet) { previousStreet = street; setStreetLabel(street); }
         const hour = Math.floor(worldClock).toString().padStart(2, '0');
         const condition = `${hour}:00 · ${weatherMode === 'rain' ? 'AVERSE' : daylight < 0.2 ? 'NUIT' : dusk > 0.4 ? 'CRÉPUSCULE' : 'CIEL DÉGAGÉ'}`;

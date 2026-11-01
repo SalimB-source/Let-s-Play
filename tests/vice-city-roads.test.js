@@ -4,6 +4,7 @@ import {
   VICE_CITY_OUTER_HIGHWAY,
   VICE_CITY_ROAD_HILLS,
   viceCityCanalWaveHeight,
+  viceCityOuterHighwayAccessRamps,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -35,19 +36,24 @@ test('les accotements rejoignent progressivement le terrain et les autres routes
   assert.equal(viceCityRoadElevation(-200, -200), 0);
 });
 
-test('les bretelles autoroutières rejoignent sans interruption les rues de la ville', () => {
+test('quatre sorties courbes relient le périphérique aux carrefours d’angle', () => {
   const { cityGridLimit, edge } = VICE_CITY_OUTER_HIGHWAY;
-  for (const fixedX of [-100, 100]) for (const side of [-1, 1]) {
-    for (let distance = cityGridLimit; distance <= edge; distance += 10) {
-      assert.ok(viceCityOuterHighwayContains(fixedX, side * distance),
-        `bretelle nord/sud continue à x=${fixedX}, z=${side * distance}`);
+  const ramps = viceCityOuterHighwayAccessRamps();
+  assert.equal(ramps.length, 4);
+  for (const ramp of ramps) {
+    assert.ok(ramp.length >= 40, 'la courbe est assez finement échantillonnée');
+    const start = ramp[0];
+    const end = ramp.at(-1);
+    assert.equal(Math.abs(start.z), edge, 'la bretelle rejoint le boulevard périphérique');
+    assert.equal(Math.abs(end.x), cityGridLimit);
+    assert.equal(Math.abs(end.z), cityGridLimit, 'la bretelle rejoint un carrefour de la grille');
+    assert.ok(Math.abs(ramp[12].x - start.x) > 8 && Math.abs(ramp[12].z - start.z) > 3,
+      'la sortie tourne au lieu de rester une longue ligne droite');
+    for (let index = 0; index < ramp.length; index += 3) {
+      assert.ok(viceCityOuterHighwayContains(ramp[index].x, ramp[index].z),
+        `la chaussée reste continue près du point ${index}`);
     }
-  }
-  for (const fixedZ of [-300, 300]) for (const side of [-1, 1]) {
-    for (let distance = cityGridLimit; distance <= edge; distance += 10) {
-      assert.ok(viceCityOuterHighwayContains(side * distance, fixedZ),
-        `bretelle est/ouest continue à x=${side * distance}, z=${fixedZ}`);
-    }
+    assert.ok(viceCityOuterHighwayContains(end.x, end.z), 'la sortie touche la rue urbaine');
   }
 });
 
@@ -71,15 +77,13 @@ test('l’autoroute forme une boucle continue et traverse le fleuve sur deux pon
   assert.ok(viceCityOuterHighwayContains(edge, 0), 'la boucle est est continue');
   assert.ok(viceCityOuterHighwayContains(0, -edge), 'le pont nord rejoint les deux rives');
   assert.ok(viceCityOuterHighwayContains(0, edge), 'le pont sud rejoint les deux rives');
-  assert.ok(viceCityOuterHighwayContains(100, -400), 'une bretelle relie la boucle aux rues de la ville');
-  assert.ok(viceCityOuterHighwayContains(400, 300), 'une bretelle rejoint aussi les rues latérales');
-  for (const fixedX of [-100, 100]) for (const side of [-1, 1]) {
-    assert.ok(viceCityOuterHighwayContains(fixedX, side * VICE_CITY_OUTER_HIGHWAY.cityGridLimit),
-      'les bretelles nord/sud touchent le bord de la grille de rues');
-  }
-  for (const fixedZ of [-300, 300]) for (const side of [-1, 1]) {
-    assert.ok(viceCityOuterHighwayContains(side * VICE_CITY_OUTER_HIGHWAY.cityGridLimit, fixedZ),
-      'les bretelles est/ouest touchent le bord de la grille de rues');
+  const curvedRamps = viceCityOuterHighwayAccessRamps();
+  assert.ok(viceCityOuterHighwayContains(curvedRamps[0][24].x, curvedRamps[0][24].z),
+    'la sortie courbe est praticable sur toute sa longueur');
+  for (const ramp of curvedRamps) {
+    const endpoint = ramp.at(-1);
+    assert.ok(viceCityOuterHighwayContains(endpoint.x, endpoint.z),
+      'chaque bretelle rejoint un carrefour du centre-ville');
   }
   assert.equal(viceCityOuterHighwayContains(0, 0), false, 'le pont rouge reste le passage du centre-ville');
   assert.equal(viceCityOuterHighwayBridgeHeight(bankOffset, -edge), 0, 'les rampes rejoignent le terrain sans marche');

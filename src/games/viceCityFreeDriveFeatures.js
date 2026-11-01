@@ -1,10 +1,21 @@
 export const VICE_CITY_POINTS_OF_INTEREST = Object.freeze([
   Object.freeze({ id: 'garage', name: 'GARAGE MUNICIPAL', short: 'GARAGE', kind: 'garage', x: -200, z: 0 }),
-  Object.freeze({ id: 'port', name: 'PORT DE VICE CITY', short: 'PORT', kind: 'poi', x: -200, z: 200 }),
+  Object.freeze({ id: 'port', name: 'TERMINAL DU PORT', short: 'PORT', kind: 'poi', x: -314, z: 280 }),
   Object.freeze({ id: 'vice-point', name: 'VICE POINT', short: 'VICE POINT', kind: 'poi', x: 200, z: -200 }),
-  Object.freeze({ id: 'downtown', name: 'DOWNTOWN', short: 'DOWNTOWN', kind: 'poi', x: 100, z: 100 }),
+  Object.freeze({ id: 'downtown', name: 'TOUR ART DÉCO', short: 'TOUR', kind: 'poi', x: -32, z: 37.5 }),
+  Object.freeze({ id: 'eastside-courts', name: 'TERRAINS D’EASTSIDE', short: 'COURTS', kind: 'poi', x: 187.5, z: -37.5 }),
   Object.freeze({ id: 'airport', name: 'AÉROPORT', short: 'AÉROPORT', kind: 'poi', x: 300, z: -300 }),
 ]);
+
+export function viceCityDistrictName(x = 0, z = 0) {
+  const east = Number(x) || 0;
+  const north = Number(z) || 0;
+  if (east <= -300) return 'PORT AUTONOME';
+  if (east < -105 && Math.abs(north) < 235) return 'DOCKLANDS';
+  if (east < 0) return 'DOWNTOWN';
+  if (north < 0) return 'VICE POINT';
+  return 'EASTSIDE';
+}
 
 export const VICE_CITY_CHALLENGES = Object.freeze([
   Object.freeze({ id: 'delivery', title: 'Livraison express', category: 'MISSION', detail: 'Conduisez jusqu’au repère rose de Vice Point et entrez dans son cercle, à moins de 13 m.', reward: 180, target: { x: 200, z: -200 }, duration: 90 }),
