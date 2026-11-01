@@ -153,6 +153,16 @@ test('visée souris : le corps garde son cap, seuls les bras suivent le point vi
   assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
+test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const start = source.indexOf('const updateShots = (dt) =>');
+  const end = source.indexOf('const cockpitMirrorTurn', start);
+  assert.ok(start >= 0 && end > start);
+  const shotUpdate = source.slice(start, end);
+  assert.match(shotUpdate, /breakVehicleGlass\(/u);
+  assert.doesNotMatch(shotUpdate, /(?:velocityX|velocityZ|angularVelocity)\s*\+=/u);
+});
+
 test('à pied : la pose de visée reste en portée pendant l’entrée/sortie avec E', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   const animateStart = source.indexOf('const animate = (now) =>');

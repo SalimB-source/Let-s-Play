@@ -25,7 +25,6 @@ import {
   viceCityFreeDriveAimPose,
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveFootVector,
-  viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
@@ -2827,6 +2826,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const shots = [];
     const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
     const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
+    const glassChipMaterial = new THREE.MeshBasicMaterial({
+      color: 0x9bc5d0, transparent: true, opacity: 0.68, side: THREE.DoubleSide, depthWrite: false,
+    });
+    const glassCrackMaterial = new THREE.LineBasicMaterial({ color: 0xd6f5ff, transparent: true, opacity: 0.92, depthWrite: false });
     let shotCooldown = 0;
     let footMuzzleFlashUntil = 0;
     const shotOrigin = new THREE.Vector3();
@@ -3310,6 +3313,80 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
       return Math.abs(localX) <= halfWidth + 0.45 && Math.abs(localZ) <= halfLength + 0.55;
     };
+    const breakVehicleGlass = (car, worldX, worldY, worldZ, directionX, directionZ) => {
+      if (!car) return;
+      car.updateWorldMatrix(true, true);
+      const glassMeshes = [];
+      car.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
+          || materials.some((material) => /glass/i.test(material?.name || ''))) glassMeshes.push(object);
+      });
+      if (!glassMeshes.length) return;
+      if (!car.userData.glassBroken) {
+        for (const mesh of glassMeshes) {
+          const replace = (material) => {
+            if (!/glass/i.test(material?.name || '') && !mesh.userData.isVehicleGlass
+              && !mesh.name.includes('dark-glazing')) return material;
+            const broken = material.clone();
+            broken.color?.setHex?.(0x829aa4);
+            broken.roughness = 0.42;
+            broken.metalness = 0.04;
+            broken.transparent = true;
+            broken.opacity = 0.22;
+            broken.depthWrite = false;
+            broken.needsUpdate = true;
+            return broken;
+          };
+          mesh.material = Array.isArray(mesh.material) ? mesh.material.map(replace) : replace(mesh.material);
+        }
+        car.userData.glassBroken = true;
+      }
+      if ((car.userData.glassCrackCount || 0) >= 8) return;
+      car.userData.glassCrackCount = (car.userData.glassCrackCount || 0) + 1;
+      const impact = car.worldToLocal(new THREE.Vector3(worldX, worldY, worldZ));
+      const inverseRotation = car.getWorldQuaternion(new THREE.Quaternion()).invert();
+      const localDirection = new THREE.Vector3(directionX, 0, directionZ).applyQuaternion(inverseRotation);
+      const width = car.userData.width || 2;
+      const length = car.userData.length || 4.2;
+      const onSideWindow = Math.abs(localDirection.x) > Math.abs(localDirection.z);
+      const crack = new THREE.Group();
+      crack.name = 'broken-window-impact';
+      crack.position.y = clamp(impact.y, 0.78, 1.48);
+      if (onSideWindow) {
+        const side = Math.sign(localDirection.x) || 1;
+        crack.position.x = side * width * 0.455;
+        crack.position.z = clamp(impact.z, -length * 0.28, length * 0.28);
+        crack.rotation.y = side * Math.PI / 2;
+      } else {
+        const end = Math.sign(localDirection.z) || -1;
+        crack.position.x = clamp(impact.x, -width * 0.34, width * 0.34);
+        crack.position.z = end * length * 0.34;
+        crack.rotation.y = end < 0 ? 0 : Math.PI;
+      }
+      car.add(crack);
+      const hole = new THREE.Mesh(new THREE.CircleGeometry(0.052, 7), glassChipMaterial);
+      hole.position.z = 0.004;
+      hole.renderOrder = 4;
+      crack.add(hole);
+      const points = [];
+      for (let spoke = 0; spoke < 8; spoke += 1) {
+        const angle = (spoke / 8) * Math.PI * 2 + 0.14;
+        const lengthOut = 0.11 + (spoke % 3) * 0.018;
+        const endX = Math.cos(angle) * lengthOut;
+        const endY = Math.sin(angle) * lengthOut;
+        points.push(new THREE.Vector3(0, 0, 0.008), new THREE.Vector3(endX, endY, 0.008));
+        if (spoke % 2 === 0) {
+          points.push(new THREE.Vector3(endX * 0.58, endY * 0.58, 0.009));
+          points.push(new THREE.Vector3(endX + Math.cos(angle + 0.55) * 0.045,
+            endY + Math.sin(angle + 0.55) * 0.045, 0.009));
+        }
+      }
+      const crackLines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), glassCrackMaterial);
+      crackLines.renderOrder = 5;
+      crack.add(crackLines);
+    };
     const updateShots = (dt) => {
       for (let index = shots.length - 1; index >= 0; index -= 1) {
         const shot = shots[index];
@@ -3325,10 +3402,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           for (const traffic of trafficCars) {
             if (!bulletOverlaps(x, z, traffic.car.position.x, traffic.car.position.z,
               traffic.car.rotation.y, traffic.car.userData.width, traffic.car.userData.length)) continue;
-            const impulse = viceCityFreeDriveShotImpulse(traffic.mass);
-            traffic.velocityX += shot.directionX * impulse;
-            traffic.velocityZ += shot.directionZ * impulse;
-            traffic.angularVelocity += clamp((state.x - traffic.car.position.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            breakVehicleGlass(traffic.car, x, city.surfaceHeight(x, z) + shot.height, z,
+              shot.directionX, shot.directionZ);
             hit = true;
             break;
           }
@@ -3337,12 +3412,17 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
             if (body.occupied || body.reserved) continue;
             if (!bulletOverlaps(x, z, body.spec.x, body.spec.z, body.spec.yaw,
               body.spec.width, body.spec.length)) continue;
-            const impulse = viceCityFreeDriveShotImpulse(body.mass, 4.2);
-            body.velocityX += shot.directionX * impulse;
-            body.velocityZ += shot.directionZ * impulse;
-            body.angularVelocity += clamp((state.x - body.spec.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            breakVehicleGlass(body.mesh, x, city.surfaceHeight(x, z) + shot.height, z,
+              shot.directionX, shot.directionZ);
             hit = true;
             break;
+          }
+          if (!hit && isOnFootRef.current && playerVehicle.visible
+            && bulletOverlaps(x, z, playerVehicle.position.x, playerVehicle.position.z,
+              playerVehicle.rotation.y, playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2)) {
+            breakVehicleGlass(playerVehicle, x, city.surfaceHeight(x, z) + shot.height, z,
+              shot.directionX, shot.directionZ);
+            hit = true;
           }
           if (!hit) {
             shot.x = x;
