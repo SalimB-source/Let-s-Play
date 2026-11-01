@@ -6223,6 +6223,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     0 0 16px rgba(var(--rpg-bouclier-teinte), .34);
   animation: rpg-bouclier-entre .55s cubic-bezier(.2, .8, .3, 1.18) both;
 }
+.rpg-bouclier-egide--colore {
+  border-color: transparent;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--bouclier-couleur-a) 22%, transparent) 0 50%, color-mix(in srgb, var(--bouclier-couleur-b) 22%, transparent) 50% 100%);
+  box-shadow: inset 0 0 18px var(--bouclier-couleur-a), 0 0 10px var(--bouclier-couleur-b);
+}
 .rpg-bouclier-egide__reflet {
   position: absolute;
   inset: -12% -72%;
@@ -6247,6 +6252,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: .34;
   animation: rpg-bouclier-veille 2.6s ease-in-out infinite alternate;
 }
+.rpg-bouclier-egide--colore .rpg-bouclier__ecu { opacity: .8; animation: none; }
 .rpg-bouclier__ecu-corps {
   fill: rgba(var(--rpg-bouclier-teinte), .12);
   stroke: rgba(234, 250, 255, .82);

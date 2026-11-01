@@ -162,6 +162,7 @@ test('Tour de Neige gèle à son arrivée, mais pas en bloquant', () => {
   assert.equal(cardById('tour-de-neige').combat, undefined, 'aucun effet de gel au blocage');
   attaquant.gelToursRestants = 0;
   attaquant.ready = true; tour.ready = true;
+  attaquant.coupRapide = false; // exercer le blocage ordinaire, pas l'Attaque ciblée
   const avant = tour.pv;
   const combat = rpgLancerAttaque(d, 'joueur', [attaquant.id], { [attaquant.id]: [tour.id] });
   assert.equal(combat.ok, true);

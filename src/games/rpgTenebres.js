@@ -232,13 +232,12 @@ export const RPG_TENEBRES_CREATURES = [
     def: 4,
     rarity: 'mythique',
     rapidite: true,
-    // Protection permanente double : ni l'Eau ni la Neige ne peuvent la
-    // cibler, la blesser ou la bloquer — le midi ardent ne s'éteint pas.
+    // Un seul bouclier bicolore bloque un sort adverse d'Eau ou de Neige.
     protection: { contre: ['eau', 'neige'] },
     // Son souffle ne balaie plus la plaine : il désigne une seule proie.
     arrivee: { type: 'degats', amount: 4, cible: 'creature' },
     typeLine: 'Créature légendaire — Lionne solaire',
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Protection — La Lionne est protégée contre l’Eau et la Neige de façon permanente. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Bouclier d’Eau et de Neige — Bloque le prochain sort adverse d’Eau ou de Neige, puis se brise. Quand La Lionne du midi ardent arrive : son souffle embrase une créature adverse ciblée — 4 dégâts.',
     flavor: 'Quand le disque rouge descend sur les colonnes, même les pierres demandent grâce.',
   }),
   carte({

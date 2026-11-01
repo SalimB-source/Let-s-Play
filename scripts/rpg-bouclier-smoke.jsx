@@ -62,6 +62,7 @@ const Dame = (entite = {}) => ({
 
 export function rendreCartesBouclier() {
   return {
+    colore: rendreTable({ protection: { contre: ['eau', 'neige'], toursRestants: Infinity } }),
     // La créature sans bouclier : ni égide, ni impact.
     neutre: rendreTable({}),
     // Le bouclier d'arrivée du Guerrier : un point, encore debout.

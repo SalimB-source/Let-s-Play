@@ -2192,12 +2192,11 @@ test('la désignation différée revalide sa cible : camp, protection, attente c
     'une cible qui n’est pas sur la table est refusée');
   assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', pose.entite.id).raison, 'cible',
     'sa propre créature n’est pas une victime : la morsure ne vise que l’adversaire');
-  // La Vipère de verre est une Eau : la protection contre l’Eau arrête sa morsure.
+  // Le bouclier d'Eau ne bloque pas la capacité d'arrivée de la Vipère.
   Object.assign(dune, { protection: { contre: 'eau', toursRestants: 2 } });
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', dune.id).raison, 'protection',
-    'la protection contre la couleur du venin refuse la morsure, comme avant');
-  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', chien.id).ok, true,
-    'une cible légale finit par refermer l’attente');
+  assert.equal(rpgResoudreArriveeCiblee(duel, 'joueur', dune.id).ok, true);
+  assert.equal(dune.empecheAttaqueToursRestants > 0, true);
+  assert.equal(dune.protection.contre, 'eau');
 
   // L’exil du Susanoo, lui, choisit dans les deux camps parmi les créatures de
   // coût 5 ou plus — mais jamais lui-même, ni une créature de coût inférieur à 5.
@@ -2632,7 +2631,7 @@ test('le Ghul retient la partie : pas de fin de tour avant la désignation, et l
 
   // Plus aucune créature légale : l'effet se dissipe et la partie repart.
   duel.sorcier.creatures = duel.sorcier.creatures.filter((entite) => entite.id !== chien.id);
-  dune.protection = { contre: 'braise', toursRestants: 1 };
+  duel.sorcier.creatures = duel.sorcier.creatures.filter((entite) => entite.id !== dune.id);
   assert.equal(rpgDissiperDestructionsSansCible(duel), 1, 'l’attente sans cible est dissipée');
   assert.equal(duel.destructionsEnAttente.length, 0);
   assert.ok(duel.log.some((ligne) => /se dissipe : aucune créature adverse/.test(ligne)),
@@ -3042,63 +3041,16 @@ test('Sahir : les destructions en chaîne précèdent aussi le partage', () => {
   assert.equal(duel.sorcier.pv, pvSorcier);
 });
 
-test('les créatures du Désert attaquent : la protection imprimée est permanente, la protection temporaire expire', () => {
+test('le bouclier bicolore imprimé ne bloque pas les attaques et ne disparaît pas en fin de tour', () => {
   const duel = duelDeBase();
-  donnerMana(duel, 'joueur', 5);
+  donnerMana(duel, 'joueur', 20);
   donner(duel, 'joueur', 'lionne-du-midi-ardent');
   const lionne = rpgJouerCreature(duel, 'joueur', 'lionne-du-midi-ardent').entite;
-
-  // La Lionne porte une protection imprimée permanente contre l’Eau et la
-  // Neige : sans `tours` sur la fiche, l’entité reçoit `Infinity` qui survit
-  // aux décomptes de fin de tour.
-  assert.deepEqual(lionne.protection, { contre: ['eau', 'neige'], toursRestants: Infinity });
-  assert.equal(rpgEstProtegee(lionne, 'eau'), true);
-  assert.equal(rpgEstProtegee(lionne, 'neige'), true);
-  assert.equal(rpgEstProtegee(lionne, 'braise'), false, 'la protection ne couvre que les couleurs indiquées');
-  assert.equal(cardById('tiziri-du-djurdjura').protection, undefined,
-    'Tiziri n’a plus de protection : elle s’engage désormais pour produire du mana d’eau');
-  assert.equal(cardById('tislit-des-aures').protection, undefined, 'la protection n’est pas attribuée à toutes les créatures');
-
-  // La protection temporaire (deux décomptes) reste une mécanique du moteur :
-  // on la pose à la main sur un Chien du guet, comme le ferait une carte à
-  // `tours: 2` — le tour posé et le tour adverse immédiatement suivant.
-  donner(duel, 'joueur', 'chien-du-guet');
-  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
-  chien.protection = { contre: 'braise', toursRestants: 2 };
-
+  assert.deepEqual(lionne.protection.contre, ['eau', 'neige']);
+  assert.equal(rpgEstProtegee(lionne, 'eau'), false);
+  assert.equal(rpgEstProtegee(lionne, 'neige'), false);
   rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'sorcier');
-  assert.equal(chien.protection.toursRestants, 1, 'la protection reste active pendant le tour adverse juste après');
-  duel.sorcier.main.push('trait-de-braise');
-  duel.sorcier.mana = { braise: 3, eau: 0, sable: 0, neige: 0 };
-  const magieBloquee = rpgLancerMagie(duel, 'sorcier', 'trait-de-braise', chien.id);
-  assert.equal(magieBloquee.raison, 'protection', 'la couleur protégée ne peut pas cibler la créature');
-  assert.ok(duel.sorcier.main.includes('trait-de-braise'), 'le sort bloqué reste en main');
-  assert.equal(chien.pv, 2, 'le sort protégé ne blesse pas');
-
-  const ifrit = {
-    id: 'ifrit-test', carteId: 'ifrit-des-ergs', name: 'Ifrit test',
-    atk: 5, def: 4, pv: 4, pvMax: 4, bouclier: 0, ready: true, attaquee: false,
-  };
-  const ghul = {
-    id: 'ghul-test', carteId: 'ghul-des-cendres', name: 'Ghul test',
-    atk: 2, def: 1, pv: 1, pvMax: 1, bouclier: 0, ready: false, attaquee: false,
-  };
-  duel.sorcier.creatures.push(ifrit, ghul);
-  assert.equal(rpgAttaquerCreature(duel, 'sorcier', ifrit.id, chien.id).ok, true);
-  assert.equal(chien.pv, 2, 'les dégâts de combat Braise sont aussi prévenus');
-  chien.ready = true;
-  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [chien.id]), {},
-    'un bloqueur Braise ne peut pas arrêter un attaquant protégé contre Braise');
-  assert.equal(rpgLancerAttaque(duel, 'joueur', [chien.id], { [chien.id]: [ghul.id] }).raison, 'protection',
-    'le moteur refuse aussi une affectation de blocage illégale');
-
-  rpgFinDeTour(duel);
-  assert.equal(duel.tour, 'joueur');
-  assert.equal(chien.protection, null, 'la protection temporaire expire après le tour adverse immédiatement suivant');
-  assert.equal(rpgEstProtegee(chien, 'braise'), false);
-  assert.equal(rpgEstProtegee(lionne, 'eau'), true, 'la protection imprimée de la Lionne, elle, ne décompte jamais');
-  assert.equal(rpgEstProtegee(lionne, 'neige'), true);
+  assert.deepEqual(lionne.protection.contre, ['eau', 'neige']);
 });
 
 test('la partie démarre table vide et chaque camp pioche 5 cartes', () => {
@@ -3146,8 +3098,8 @@ test('un coût hybride exige une source Braise et une source Sable', () => {
   assert.equal(djinn.def, 1);
   assert.equal(djinn.coupRapide, true);
   assert.deepEqual(cardColorCost(sort), { braise: 1, sable: 1 });
-  assert.equal(rpgEstProtegee({ protection: { contre: 'sable', toursRestants: 1 } }, cardColors(djinn)), true,
-    'un attaquant bicolore est arrêté par une protection contre le Sable');
+  assert.equal(rpgEstProtegee({ protection: { contre: 'sable', toursRestants: 1 } }, cardColors(djinn)), false,
+    'le bouclier coloré ne bloque pas un attaquant bicolore');
   assert.equal(rpgEstProtegee({ protection: { contre: 'eau', toursRestants: 1 } }, cardColors(djinn)), false,
     'une protection contre une troisième couleur ne s’applique pas');
 

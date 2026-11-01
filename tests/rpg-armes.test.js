@@ -331,17 +331,16 @@ test('remplacer la Lance conserve les PV et ne vole pas un bouclier venu d’ail
   assert.equal(dune.arme.carteId, 'takouba-des-pistes');
 });
 
-test('la protection contre la couleur de l’arme refuse l’attachement', () => {
+test('un bouclier coloré ne bloque pas l’attachement d’une arme alliée', () => {
   const duel = duelVide();
   const tiziri = poser(duel, 'joueur', 'tiziri-du-djurdjura');
   tiziri.protection = { contre: 'eau', toursRestants: 2 }; // protection forcée : Tiziri ne protège plus que de la Braise
   donner(duel, 'joueur', 'baton-des-citernes');
   manaPlein(duel, 'joueur');
   const res = rpgJouerArme(duel, 'joueur', 'baton-des-citernes', tiziri.id);
-  assert.equal(res.ok, false);
-  assert.equal(res.raison, 'protection');
-  assert.equal(tiziri.arme, null);
-  assert.ok(duel.joueur.main.includes('baton-des-citernes'), 'rien n’est payé');
+  assert.equal(res.ok, true);
+  assert.equal(tiziri.arme.carteId, 'baton-des-citernes');
+  assert.equal(tiziri.protection.contre, 'eau', 'le bouclier reste intact');
 });
 
 // ── Le sort de l'arme quand le porteur part ─────────────────────────────────

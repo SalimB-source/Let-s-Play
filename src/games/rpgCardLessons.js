@@ -36,7 +36,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['brise-lame', 'sabre-maudit', 'takouba-des-pistes'],
     title: 'Une Braise peut briser une arme équipée',
-    text: 'Brise-lame est une Magie Rapide de coût 3 : elle détruit une arme portée par une créature adverse, puis fait piocher une carte. La créature doit être équipée — une arme du prototype ou le Sabre maudit — sinon le sort ne se lance pas et le mana reste entier. L’arme rejoint le cimetière de son camp ; le porteur perd les bonus et les mots-clés qu’elle donnait, mais reste sur la table. Une protection contre la Braise, une protection contre les sorts ou une Esquive peuvent empêcher la destruction ; la pioche, elle, est déjà acquise.',
+    text: 'Brise-lame est une Magie Rapide de coût 3 : elle détruit une arme portée par une créature adverse, puis fait piocher une carte. La créature doit être équipée — une arme du prototype ou le Sabre maudit — sinon le sort ne se lance pas et le mana reste entier. L’arme rejoint le cimetière de son camp ; le porteur perd les bonus et les mots-clés qu’elle donnait, mais reste sur la table. Un bouclier de Braise bloque le sort et se brise ; une protection contre les sorts ou une Esquive peuvent aussi empêcher la destruction.',
   },
   {
     id: 'rituel-ephemere',
@@ -162,7 +162,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['takouba-des-pistes'],
     title: 'Infiltration : le porteur est inbloquable',
-    text: 'Le Takouba des pistes rend son porteur inbloquable : quand il attaque le sorcier, aucune créature ne peut se mettre en travers — ni au sol, ni en vol. Ses dégâts passent toujours (une protection contre sa couleur reste une affaire de ciblage, pas de blocage). Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
+    text: 'Le Takouba des pistes rend son porteur inbloquable : quand il attaque le sorcier, aucune créature ne peut se mettre en travers — ni au sol, ni en vol. Ses dégâts passent toujours (un bouclier coloré ne bloque pas les attaques). Le +2/+0 sans défense ajoutée en fait une arme d’assaut pur : elle frappe fort, elle ne protège pas.',
   },
   {
     id: 'infiltration-tin-hinan',
@@ -189,8 +189,8 @@ export const RPG_CARD_LESSONS = Object.freeze([
     id: 'protection',
     section: 'Capacités des créatures',
     cardIds: ['tiziri-du-djurdjura', 'amayas-du-hoggar', 'lionne-du-midi-ardent', 'faucon-du-zenith'],
-    title: 'La protection dépend de la couleur source',
-    text: 'Tiziri est protégée contre la Braise ; Amayas contre les Ténèbres — tous deux de façon permanente, comme le Faucon du zénith (Ténèbres) et la Lionne du midi ardent (Eau et Neige, les deux à la fois). Les attaques, blocages et effets d’une couleur protégée ne peuvent ni cibler ni blesser la créature. Une protection peut aussi être temporaire : elle dure alors le tour posé et le prochain tour adverse.',
+    title: 'Le bouclier coloré bloque un sort adverse',
+    text: 'La Lionne du midi ardent porte un bouclier d’Eau et de Neige : le premier sort adverse de l’une de ces couleurs qui l’atteint est bloqué et brise tout le bouclier. Les attaques, capacités de créatures et sorts alliés passent. Le bouclier reste en jeu jusqu’à sa rupture.',
   },
   {
     id: 'capacite-de-boualem',

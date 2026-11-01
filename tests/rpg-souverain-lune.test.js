@@ -61,12 +61,12 @@ test('En PvP il peut aussi être joué pendant la phase principale adverse', () 
   const res = rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: cible.id });
   assert.ok(res.ok, res.raison);
 });
-test('Les dégâts empêchés ne rendent aucun point de vie', () => {
+test('Le bouclier coloré ne bloque pas le combat d’arrivée ni le Vol de vie', () => {
   const d = duel(); const cible = poser(d, 'sorcier', 'dune-marchante');
   cible.protection = { contre: ['sable'], toursRestants: 2 }; d.joueur.pv = 10; d.joueur.main.push(id);
-  assert.equal(rpgJouerCreature(d, 'joueur', id, cible.id).ok, false);
-  assert.equal(d.joueur.pv, 10);
-  assert.ok(d.joueur.main.includes(id));
+  assert.equal(rpgJouerCreature(d, 'joueur', id, cible.id).ok, true);
+  assert.equal(d.joueur.pv, 13);
+  assert.ok(!d.joueur.main.includes(id));
 });
 test('Un héros adverse qui arrive pendant mon tour peut aussi voler de la vie', () => {
   const d = duel(); const cible = poser(d, 'joueur', 'dune-marchante');

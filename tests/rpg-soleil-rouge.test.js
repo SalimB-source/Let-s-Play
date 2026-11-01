@@ -261,7 +261,7 @@ test('sans créature adverse, Harakiri frappe le sorcier adverse', () => {
   }
 });
 
-test('les dégâts du Harakiri respectent la protection et la parade, pas Esquive', () => {
+test('le Harakiri traverse le bouclier coloré, mais pas la parade générale', () => {
   const duel = duelTest();
   const mort = jouer(duel, 'joueur', 'samourai-du-torii');
   // Tiziri ne porte plus de protection de Braise (son engagement pour mana l’a
@@ -270,7 +270,8 @@ test('les dégâts du Harakiri respectent la protection et la parade, pas Esquiv
   const protege = jouer(duel, 'sorcier', 'seigneur-des-machoires');
   protege.protection = { contre: 'braise', toursRestants: 2 };
   rpgBlesserCreature(duel, 'joueur', mort.id, 20, 'eau');
-  assert.equal(protege.def, 6, 'protection contre la Braise : le Harakiri ne l’entame pas');
+  assert.equal(protege.def, 5, 'la capacité traverse le bouclier Braise');
+  assert.equal(protege.protection.contre, 'braise');
   const avecBouclier = duelTest();
   const mortBouclier = jouer(avecBouclier, 'joueur', 'samourai-du-torii');
   const cibleBouclier = jouer(avecBouclier, 'sorcier', 'seigneur-des-machoires');
@@ -561,7 +562,7 @@ test('Susanoo reste hors du starter : 5/3 pour 6, Harakiri et exil à l’arriv�
   }
 });
 
-test('Susanoo respecte la protection et peut être joué sans cible sur une table vide', () => {
+test('Susanoo traverse le bouclier coloré et peut être joué sans cible sur une table vide', () => {
   const duel = duelTest();
   const petite = jouer(duel, 'sorcier', 'samourai-du-torii'); // coût 4 : hors seuil
   const protege = jouer(duel, 'sorcier', 'oni-de-la-fournaise'); // coût 5 : dans le seuil
@@ -569,10 +570,9 @@ test('Susanoo respecte la protection et peut être joué sans cible sur une tabl
   duel.joueur.main.push('susanoo');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', petite.id).raison, 'cible',
     'une créature de coût inférieur à 5 ne peut pas être ciblée par Susanoo');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', protege.id).raison, 'protection');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', 'inexistante').raison, 'cible');
-  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo').ok, true,
-    'sans cible légale de coût 5 ou plus non protégée, Susanoo se pose sans cible');
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'susanoo', protege.id).ok, true);
+  assert.equal(duel.sorcier.creatures.includes(protege), false, 'la capacité exile malgré le bouclier');
   assert.equal(duel.sorcier.creatures.includes(petite), true, 'la créature de coût 4 reste en jeu');
   const vide = duelTest();
   const susanoo = jouer(vide, 'joueur', 'susanoo');

@@ -1438,7 +1438,7 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Protection contre la Neige. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
+    text: 'Bouclier de Neige — Bloque le prochain sort adverse de Neige, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -2375,7 +2375,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 2, def: 2 },
     donne: { protection: { contre: 'tenebres' } },
-    text: 'Arme — Le porteur gagne +2/+2 et une protection contre les Ténèbres : les attaques, blocages et effets des Ténèbres ne peuvent ni le cibler ni le blesser.',
+    text: 'Arme — Le porteur gagne +2/+2 et un bouclier de Ténèbres : il bloque le prochain sort adverse de Ténèbres, puis se brise.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {

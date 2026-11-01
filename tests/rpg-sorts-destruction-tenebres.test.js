@@ -60,9 +60,11 @@ test('un bouclier adverse consomme le sort mais protège sa créature', () => {
 test('une cible protégée ou esquivant le sort reste en jeu', () => {
   const d = scene(); const victime = poser(d, 'sorcier', 'chien-du-guet'); preparer(d, faible);
   victime.protection = { contre: 'tenebres', toursRestants: Infinity };
-  assert.equal(rpgSortACibleValide(d, 'joueur', cardById(faible)), false);
-  assert.equal(rpgLancerMagie(d, 'joueur', faible, victime.id).ok, false);
-  victime.protection = null; victime.esquive = true; victime.esquiveChance = .25; rpgReglerHasard(d, () => 0);
+  assert.equal(rpgSortACibleValide(d, 'joueur', cardById(faible)), true);
+  assert.equal(rpgLancerMagie(d, 'joueur', faible, victime.id).bouclierBloque, true);
+  assert.equal(victime.protection, null);
+  preparer(d, faible);
+  victime.esquive = true; victime.esquiveChance = .25; rpgReglerHasard(d, () => 0);
   assert.equal(rpgLancerMagie(d, 'joueur', faible, victime.id).ok, true);
   assert.ok(d.sorcier.creatures.includes(victime));
 });

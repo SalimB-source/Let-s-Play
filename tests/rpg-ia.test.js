@@ -600,17 +600,16 @@ const ifritBraise = () => ({
   atk: 5, def: 4, pv: 4, pvMax: 4, bouclier: 0, esquive: 0, ready: true, attaquee: false,
 });
 
-test('la protection annule les coups de sa couleur dans l’échange simulé', () => {
+test('un bouclier coloré ne change pas le résultat simulé d’un combat', () => {
   const tiziri = {
     id: 'tiziri', carteId: 'tiziri-du-djurdjura', name: 'Tiziri',
     atk: 2, def: 1, pv: 1, pvMax: 1, bouclier: 0, esquive: 0,
     protection: { contre: 'braise', toursRestants: Infinity },
   };
-  // 5 dégâts Braise sur une 2/1 : sans protection elle meurt, avec elle elle
-  // encaisse zéro et entame l’Ifrit en retour.
+  // Une attaque Braise tue cette 2/1, avec ou sans bouclier Braise.
   assert.deepEqual(resultatBlocage(ifritBraise(), tiziri),
-    { attaquantMeurt: false, bloqueurMeurt: false, attaquantFurie: 0, bloqueurFurie: 0 },
-    'la protection Braise sauve Tiziri de l’Ifrit Braise');
+    { attaquantMeurt: false, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
+    'le bouclier Braise ne bloque pas une attaque Braise');
   assert.deepEqual(resultatBlocage(ifritBraise(), { ...tiziri, protection: null }),
     { attaquantMeurt: false, bloqueurMeurt: true, attaquantFurie: 0, bloqueurFurie: 0 },
     'sans la protection, les 5 dégâts l’emportent');
@@ -622,7 +621,7 @@ test('la protection annule les coups de sa couleur dans l’échange simulé', (
   );
 });
 
-test('le sorcier n’attaque pas dans un bloqueur protégé contre sa couleur', () => {
+test('le bouclier coloré ne rend pas un bloqueur immunisé contre les attaques', () => {
   const duel = duelNu();
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
@@ -635,13 +634,12 @@ test('le sorcier n’attaque pas dans un bloqueur protégé contre sa couleur', 
   ifrit.ready = true;
   ifrit.attaquee = false;
   ifrit.overkill = false; // évite que le débordement rende l’attaque rentable malgré la protection
-  assert.equal(rpgEstProtegee(tiziri, cardColors(cardById('ifrit-des-ergs'))), true,
-    'Tiziri est bien protégée contre la couleur de l’Ifrit');
+  assert.equal(rpgEstProtegee(tiziri, cardColors(cardById('ifrit-des-ergs'))), false,
+    'le bouclier Braise ne bloque pas les attaques');
 
-  // L’attaque ne percerait pas et n’abattrait personne : l’Ifrit resterait
-  // en jeu, entamé pour rien. L’IA garde son attaquant au camp.
-  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [],
-    'aucune attaque dans un mur protégé qui ne rend rien');
+  // Le bouclier ne change pas les dégâts de combat : l’IA peut attaquer.
+  assert.deepEqual(rpgChoisirAttaquants(duel, 'sorcier'), [ifrit.id],
+    'l’IA peut attaquer le bloqueur normalement');
 
   // La même attaque redevient bonne quand le bloqueur n’est pas protégé :
   // le Chien 2/2 meurt sans emporter l’Ifrit.
@@ -652,7 +650,7 @@ test('le sorcier n’attaque pas dans un bloqueur protégé contre sa couleur', 
     'face à un bloqueur vulnérable, l’Ifrit attaque');
 });
 
-test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA le pose', () => {
+test('l’IA ne sacrifie pas un bloqueur couvert seulement par un bouclier coloré', () => {
   const duel = duelNu();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -664,24 +662,19 @@ test('le bloqueur protégé arrête l’attaque sans une égratignure, et l’IA
   const tiziri = rpgJouerCreature(duel, 'sorcier', 'tiziri-du-djurdjura').entite;
   tiziri.protection = { contre: 'braise', toursRestants: Infinity };
 
-  // Un blocage gratuit — la bloqueuse ne peut pas mourir de ce coup-là — se
-  // prend toujours, quel que soit le seuil d’agressivité.
+  // Le combat serait mortel pour la bloqueuse malgré son bouclier.
   assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', [ifrit.id]),
-    { [ifrit.id]: [tiziri.id] }, 'Tiziri encaisse l’Ifrit Braise sans risque');
+    {}, 'le bouclier ne protège pas Tiziri du combat');
 
-  // Le moteur confirme le calcul de l’IA : la bloqueuse est intacte, l’Ifrit
-  // est entamé par la riposte.
+  // Le moteur confirme que la bloqueuse meurt et riposte avant de tomber.
   const res = rpgLancerAttaque(duel, 'joueur', [ifrit.id], { [ifrit.id]: [tiziri.id] });
   assert.equal(res.ok, true);
-  assert.equal(tiziri.pv, 1, 'la protection Braise laisse Tiziri à ses 1 PV');
+  assert.equal(duel.sorcier.creatures.includes(tiziri), false, 'le combat détruit la bloqueuse');
   assert.equal(ifrit.pv, 1, 'la riposte 2/1 laisse l’Ifrit furtif à 1 PV sur ses 3 PV');
 });
 
-test('l’Attaque ciblée ne désigne pas une Tour protégée contre sa couleur', () => {
-  // La Tour de neige est une priorité d’attaque rapide, et Fériel (3/2 Braise)
-  // la tuerait : elle la frappe en premier — sauf si une protection l’en
-  // empêche. C’est le cas de figure où l’ancienne heuristique désignait une
-  // cible que le moteur refuse (`protection`), perdant l’attaque du tour.
+test('l’Attaque ciblée peut désigner une Tour avec un bouclier coloré', () => {
+  // La Tour reste une cible légale de l'Attaque ciblée de Fériel.
   const poser = (protection) => {
     const duel = duelNu();
     donnerMana(duel, 'joueur', 20);
@@ -695,19 +688,18 @@ test('l’Attaque ciblée ne désigne pas une Tour protégée contre sa couleur'
   };
 
   const protegee = poser({ contre: 'braise', toursRestants: Infinity });
-  assert.deepEqual(rpgCiblesAttaqueRapide(protegee.duel, 'sorcier', [protegee.feriel.id]), {},
-    'une Tour protégée contre la Braise n’est pas une cible de l’Attaque ciblée Braise');
+  assert.deepEqual(rpgCiblesAttaqueRapide(protegee.duel, 'sorcier', [protegee.feriel.id]),
+    { [protegee.feriel.id]: protegee.tour.id }, 'un bouclier coloré ne bloque pas l’attaque');
   // La protection ne permet pas d'ignorer la créature et d'attaquer le sorcier.
   assert.equal(rpgLancerAttaque(protegee.duel, 'sorcier', [protegee.feriel.id], null, null, null, {}).raison, 'cible-obligatoire');
 
-  // Sans protection, la même Tour est bien la cible : c’est la protection,
-  // et elle seule, qui change la décision.
+  // La décision est la même sans bouclier.
   const nue = poser(null);
   assert.deepEqual(rpgCiblesAttaqueRapide(nue.duel, 'sorcier', [nue.feriel.id]),
     { [nue.feriel.id]: nue.tour.id });
 });
 
-test('le Trait de braise ne désigne jamais une créature protégée contre la Braise', () => {
+test('le Trait de braise privilégie une cible non protégée par un bouclier Braise', () => {
   const duel = duelNu();
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
@@ -736,7 +728,7 @@ test('le Trait de braise ne désigne jamais une créature protégée contre la B
   }
 });
 
-test('un sort de zone ne compte ni ne cible les créatures protégées', () => {
+test('l’IA tient compte des boucliers colorés pour un sort de zone', () => {
   // Table entièrement protégée contre la Braise : le Vent rouge (2 dégâts à
   // toutes les créatures adverses) ne tuerait personne — il reste en main.
   const duel = duelNu();
@@ -758,10 +750,7 @@ test('un sort de zone ne compte ni ne cible les créatures protégées', () => {
 });
 
 test('une table protégée contre sa couleur n’empêche pas une créature d’arriver', () => {
-  // Le Cavalier frappe une créature à son arrivée. Contre une table protégée
-  // contre le Sable, il n’a aucune cible légale : le moteur accepte pourtant
-  // la pose (l’arrivée ne désigne plus personne), et l’IA ne doit pas garder
-  // la carte en main pour autant.
+  // Le bouclier Sable ne bloque pas la capacité d'arrivée du Cavalier.
   const duel = duelNu();
   duel.tour = 'sorcier';
   donnerMana(duel, 'joueur', 20);
@@ -771,11 +760,11 @@ test('une table protégée contre sa couleur n’empêche pas une créature d’
   dune.protection = { contre: 'sable', toursRestants: Infinity };
   donner(duel, 'sorcier', 'cavalier-amazigh-du-desert');
 
-  assert.equal(rpgEstProtegee(dune, cardColors(cardById('cavalier-amazigh-du-desert'))), true);
+  assert.equal(rpgEstProtegee(dune, cardColors(cardById('cavalier-amazigh-du-desert'))), false);
   const choix = choisirCarteIA(duel, 'sorcier');
   assert.equal(choix?.carteId, 'cavalier-amazigh-du-desert',
-    'le Cavalier entre en jeu sans cible plutôt que de rester en main');
-  assert.equal(choix.cibleId ?? null, null, 'aucune créature protégée n’est désignée');
+    'le Cavalier entre en jeu et peut cibler');
+  assert.equal(choix.cibleId, dune.id, 'la capacité de créature peut viser le porteur');
 });
 
 // ── Les autres mécaniques du moteur dans la tête du sorcier ─────────────────
