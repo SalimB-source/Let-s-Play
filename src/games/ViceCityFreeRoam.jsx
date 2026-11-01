@@ -24,7 +24,12 @@ import {
   viceCityFreeDriveYawRate,
 } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
-import { viceCityRoadElevation } from './viceCityRoads.js';
+import {
+  VICE_CITY_OUTER_HIGHWAY,
+  viceCityOuterHighwayContains,
+  viceCityOuterHighwayPaths,
+  viceCityRoadElevation,
+} from './viceCityRoads.js';
 import './vice-city-free-roam.css';
 
 const BLOCK = 100;
@@ -40,7 +45,8 @@ const ROUNDABOUT_Z = 200;
 const ROUNDABOUT_OUTER_RADIUS = 25;
 const ROUNDABOUT_ISLAND_RADIUS = 9.8;
 const BUILDING_COLLISION_MARGIN = 0.9;
-const CITY_LIMIT = 3 * BLOCK + 54;
+const CITY_GRID_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityGridLimit;
+const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
@@ -229,6 +235,193 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
   }
 }
 
+function addViceCityOuterHighway(scene, roadElevation) {
+  const { edge, halfWidth, cityGridLimit } = VICE_CITY_OUTER_HIGHWAY;
+  const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.92 });
+  const markingMat = new THREE.MeshBasicMaterial({ color: 0xf2efe5, side: THREE.DoubleSide });
+  const accessMarkMat = new THREE.MeshBasicMaterial({ color: 0xe8dfc5, side: THREE.DoubleSide });
+  const allDashVertices = [];
+
+  for (const pathData of viceCityOuterHighwayPaths()) {
+    const points = pathData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
+    const pointCount = points.length;
+    const tangents = points.map((point, index) => {
+      const before = points[Math.max(0, index - 1)];
+      const after = points[Math.min(pointCount - 1, index + 1)];
+      return new THREE.Vector2(after.x - before.x, after.z - before.z).normalize();
+    });
+    const makeRibbon = (width, lateralOffset, material, heightOffset, name) => {
+      const positions = new Float32Array(pointCount * 2 * 3);
+      const indices = [];
+      for (let index = 0; index < pointCount; index += 1) {
+        const point = points[index];
+        const tangent = tangents[index];
+        const normalX = -tangent.y;
+        const normalZ = tangent.x;
+        for (let edgeIndex = 0; edgeIndex < 2; edgeIndex += 1) {
+          const side = edgeIndex === 0 ? -1 : 1;
+          const offset = lateralOffset + side * width / 2;
+          const x = point.x + normalX * offset;
+          const z = point.z + normalZ * offset;
+          const vertex = (index * 2 + edgeIndex) * 3;
+          positions[vertex] = x;
+          positions[vertex + 1] = roadElevation(x, z) + heightOffset;
+          positions[vertex + 2] = z;
+        }
+        if (index < pointCount - 1) {
+          const outer = index * 2;
+          const inner = outer + 1;
+          const nextOuter = outer + 2;
+          const nextInner = outer + 3;
+          indices.push(outer, inner, nextOuter, nextOuter, inner, nextInner);
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = name;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    };
+
+    makeRibbon(halfWidth * 2, 0, asphaltMat, 0.035, 'vice-city-perimeter-highway');
+    // Double solid divider and shoulder lines: access spurs can join either direction.
+    for (const offset of [-1.5, 1.5, -11.35, 11.35]) {
+      makeRibbon(0.16, offset, markingMat, 0.071, 'vice-city-highway-solid-line');
+    }
+
+    let pathLength = 0;
+    let nextDashAt = 8;
+    for (let index = 0; index < pointCount - 1; index += 1) {
+      const point = points[index];
+      const nextPoint = points[index + 1];
+      const tangent = tangents[index];
+      const segmentLength = point.distanceTo(nextPoint);
+      while (nextDashAt <= pathLength + segmentLength) {
+        const progress = (nextDashAt - pathLength) / segmentLength;
+        const centerX = point.x + (nextPoint.x - point.x) * progress;
+        const centerZ = point.z + (nextPoint.z - point.z) * progress;
+        const nextTangent = tangents[index + 1];
+        const direction = new THREE.Vector2(
+          tangent.x + (nextTangent.x - tangent.x) * progress,
+          tangent.y + (nextTangent.y - tangent.y) * progress,
+        ).normalize();
+        for (const offset of [-6.2, 6.2]) {
+          const x = centerX - direction.y * offset;
+          const z = centerZ + direction.x * offset;
+          const tangentX = direction.x;
+          const tangentZ = direction.y;
+          const normalX = -tangentZ;
+          const normalZ = tangentX;
+          const corners = [
+            [x - tangentX * 4 - normalX * 0.08, z - tangentZ * 4 - normalZ * 0.08],
+            [x + tangentX * 4 - normalX * 0.08, z + tangentZ * 4 - normalZ * 0.08],
+            [x + tangentX * 4 + normalX * 0.08, z + tangentZ * 4 + normalZ * 0.08],
+            [x - tangentX * 4 + normalX * 0.08, z - tangentZ * 4 + normalZ * 0.08],
+          ];
+          for (const corner of [0, 1, 2, 0, 2, 3]) {
+            const [dashX, dashZ] = corners[corner];
+            allDashVertices.push(dashX, roadElevation(dashX, dashZ) + 0.071, dashZ);
+          }
+        }
+        nextDashAt += 22;
+      }
+      pathLength += segmentLength;
+    }
+
+    // Lamps sit beyond the shoulders and follow the rounded bends.
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x343a3c, roughness: 0.48, metalness: 0.68 });
+    const lampMat = new THREE.MeshBasicMaterial({ color: 0xffe0a1, toneMapped: false });
+    const poleGeometry = new THREE.CylinderGeometry(0.09, 0.15, 7, 7);
+    const lampGeometry = new THREE.SphereGeometry(0.25, 8, 6);
+    let distance = 45;
+    let nextLampAt = 125;
+    for (let index = 0; index < pointCount - 1; index += 1) {
+      const point = points[index];
+      const nextPoint = points[index + 1];
+      const direction = tangents[index];
+      const length = point.distanceTo(nextPoint);
+      while (nextLampAt <= distance + length) {
+        const progress = (nextLampAt - distance) / length;
+        const centerX = point.x + (nextPoint.x - point.x) * progress;
+        const centerZ = point.z + (nextPoint.z - point.z) * progress;
+        const nextTangent = tangents[index + 1];
+        const tangentX = direction.x + (nextTangent.x - direction.x) * progress;
+        const tangentZ = direction.y + (nextTangent.y - direction.y) * progress;
+        const magnitude = Math.hypot(tangentX, tangentZ) || 1;
+        const normalX = -tangentZ / magnitude;
+        const normalZ = tangentX / magnitude;
+        for (const outerSide of [-1, 1]) {
+          const x = centerX - normalX * outerSide * 17;
+          const z = centerZ - normalZ * outerSide * 17;
+          const y = roadElevation(x, z);
+          const pole = new THREE.Mesh(poleGeometry, poleMat);
+          pole.position.set(x, y + 3.5, z);
+          pole.castShadow = true;
+          scene.add(pole);
+          const lamp = new THREE.Mesh(lampGeometry, lampMat);
+          lamp.position.set(x + normalX * outerSide * 3, y + 6.75, z + normalZ * outerSide * 3);
+          scene.add(lamp);
+        }
+        nextLampAt += 125;
+      }
+      distance += length;
+    }
+  }
+
+  const dashGeometry = new THREE.BufferGeometry();
+  dashGeometry.setAttribute('position', new THREE.Float32BufferAttribute(allDashVertices, 3));
+  dashGeometry.computeVertexNormals();
+  const dashMesh = new THREE.Mesh(dashGeometry, markingMat);
+  dashMesh.name = 'vice-city-highway-lane-dashes';
+  scene.add(dashMesh);
+
+  const addAccessStrip = (orientation, fixed, start, end, width) => {
+    const length = Math.abs(end - start);
+    const center = (start + end) / 2;
+    const horizontal = orientation === 'horizontal';
+    const geometry = horizontal
+      ? new THREE.PlaneGeometry(length, width, Math.ceil(length / 6), 1)
+      : new THREE.PlaneGeometry(width, length, 1, Math.ceil(length / 6));
+    geometry.rotateX(-Math.PI / 2);
+    const vertices = geometry.attributes.position;
+    for (let index = 0; index < vertices.count; index += 1) {
+      const x = horizontal ? center + vertices.getX(index) : fixed + vertices.getX(index);
+      const z = horizontal ? fixed + vertices.getZ(index) : center + vertices.getZ(index);
+      vertices.setY(index, roadElevation(x, z) + 0.04);
+    }
+    vertices.needsUpdate = true;
+    geometry.computeVertexNormals();
+    const surface = new THREE.Mesh(geometry, asphaltMat);
+    surface.position.set(horizontal ? center : fixed, 0, horizontal ? fixed : center);
+    surface.name = 'vice-city-highway-access-ramp';
+    surface.receiveShadow = true;
+    scene.add(surface);
+    for (let along = start + Math.sign(end - start) * 8; Math.sign(end - start) * (end - along) > 4; along += Math.sign(end - start) * 20) {
+      const dash = new THREE.Mesh(
+        new THREE.PlaneGeometry(horizontal ? 8 : 0.16, horizontal ? 0.16 : 8), accessMarkMat,
+      );
+      dash.rotation.x = -Math.PI / 2;
+      const x = horizontal ? along : fixed;
+      const z = horizontal ? fixed : along;
+      dash.position.set(x, roadElevation(x, z) + 0.075, z);
+      scene.add(dash);
+    }
+  };
+  const accessStart = cityGridLimit + 50;
+  for (const fixedX of [-100, 100]) {
+    addAccessStrip('vertical', fixedX, -edge, -accessStart, 10);
+    addAccessStrip('vertical', fixedX, accessStart, edge, 10);
+  }
+  for (const fixedZ of [-300, 300]) {
+    addAccessStrip('horizontal', fixedZ, -edge, -accessStart, 10);
+    addAccessStrip('horizontal', fixedZ, accessStart, edge, 10);
+  }
+}
+
 function makeCity(scene) {
   const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
@@ -295,7 +488,7 @@ function makeCity(scene) {
     return elevation;
   };
   const makeRoadStrip = (axis, fixed, width, material, heightOffset = 0) => {
-    const length = CITY_LIMIT * 2 + 120;
+    const length = CITY_GRID_LIMIT * 2 + 120;
     const crossesCanal = axis === 'z' && Math.abs(fixed) > ROAD_HALF + 6;
     const ranges = crossesCanal
       ? [[-length / 2, -CANAL_HALF_WIDTH], [CANAL_HALF_WIDTH, length / 2]]
@@ -633,6 +826,8 @@ function makeCity(scene) {
       }
     }
   }
+  addViceCityOuterHighway(scene, roadElevation);
+
   // Pavés d'angle : ils relient les segments, sans prolonger les trottoirs sur les routes.
   for (let xAxisIndex = -3; xAxisIndex <= 3; xAxisIndex += 1) {
     for (let zAxisIndex = -3; zAxisIndex <= 3; zAxisIndex += 1) {
@@ -1819,6 +2014,7 @@ function makeCity(scene) {
     const portSurface = portSurfaceRegions.find((region) => insideRegion(region, x, z));
     if (portSurface) return portSurface.height;
     if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
+    if (viceCityOuterHighwayContains(x, z)) return roadElevation(x, z) + 0.035;
     const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
     return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
@@ -2163,11 +2359,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         const moved = stepViceCityTrafficVehicle(traffic, dt, distanceToControl, signalState, stopLine);
         traffic.progress = moved.progress;
         traffic.speed = moved.speed;
-        if (traffic.direction > 0 && traffic.progress > CITY_LIMIT + 20) {
-          traffic.progress = -CITY_LIMIT - 20;
+        if (traffic.direction > 0 && traffic.progress > CITY_GRID_LIMIT + 20) {
+          traffic.progress = -CITY_GRID_LIMIT - 20;
           traffic.speed = 0;
-        } else if (traffic.direction < 0 && traffic.progress < -CITY_LIMIT - 20) {
-          traffic.progress = CITY_LIMIT + 20;
+        } else if (traffic.direction < 0 && traffic.progress < -CITY_GRID_LIMIT - 20) {
+          traffic.progress = CITY_GRID_LIMIT + 20;
           traffic.speed = 0;
         }
         const pushDrag = Math.exp(-2.25 * dt);
