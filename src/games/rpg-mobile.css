@@ -609,7 +609,12 @@
    vignette rétrécit. */
 .rpg-battle--touch .rpg-terrain { flex: 0 0 var(--rpg-terrain-w); width: var(--rpg-terrain-w); height: var(--rpg-terrain-h); border-radius: var(--rpg-card-radius-sm, 8px); }
 .rpg-battle--touch .card-table > .card-row--ennemi { grid-area: enemy; border-bottom: 1px solid #cead7055; }
-.rpg-battle--touch .card-table > .card-row--equipe { grid-area: allies; }
+/* Remonter la rangée entière rapproche les créatures de la ligne médiane ;
+   les cases du mode essai et les zones tactiles suivent leurs cartes. */
+.rpg-battle--touch .card-table > .card-row--equipe {
+  grid-area: allies;
+  top: calc(-1 * clamp(6px, var(--duel-card) * .14, 12px));
+}
 /* Les champs de bataille ne sont plus des zones de défilement : aucun masque
    (recadrage) autour des cartes posées, ni barre ni glissement horizontal.
    Les halos, les cartes couchées en attaque et les ombres de pile débordent
