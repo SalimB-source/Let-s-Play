@@ -6334,6 +6334,57 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   opacity: 0;
   animation: rpg-bouclier-eclat .66s ease-out calc(.12s + var(--d, 0ms)) both;
 }
+/* Rupture vitrée : la fissure se propage, puis les morceaux translucides
+   s'éloignent de leurs positions dans l'écu avant de disparaître. */
+.rpg-bouclier-verre {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-bouclier-verre__fissures {
+  position: absolute;
+  inset: 15% 19%;
+  width: 62%;
+  height: 70%;
+  overflow: visible;
+  fill: none;
+  stroke: rgba(255, 255, 255, .95);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(var(--rpg-bouclier-teinte), .9));
+  stroke-dasharray: 240;
+  animation: rpg-bouclier-verre-fissures .56s ease-out both;
+}
+.rpg-bouclier-verre__fragment {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 17%;
+  height: 19%;
+  translate: -50% -50%;
+  opacity: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(var(--rpg-bouclier-teinte),.48) 42%, rgba(255,255,255,.18) 72%, rgba(var(--rpg-bouclier-teinte),.76));
+  border: 1px solid rgba(255,255,255,.75);
+  filter: drop-shadow(0 0 4px rgba(var(--rpg-bouclier-teinte),.7));
+  animation: rpg-bouclier-verre-eclatement .66s cubic-bezier(.15,.7,.3,1) calc(.12s + var(--delai)) both;
+}
+.rpg-bouclier-verre__fragment--0 { clip-path: polygon(9% 7%, 96% 19%, 69% 96%, 25% 73%); }
+.rpg-bouclier-verre__fragment--1 { clip-path: polygon(49% 0, 100% 59%, 29% 100%, 2% 41%); }
+.rpg-bouclier-verre__fragment--2 { clip-path: polygon(3% 24%, 79% 0, 99% 84%, 52% 100%); }
+@keyframes rpg-bouclier-verre-fissures {
+  0% { opacity: 0; stroke-dashoffset: 240; }
+  22% { opacity: 1; stroke-dashoffset: 0; }
+  55% { opacity: .85; }
+  100% { opacity: 0; stroke-dashoffset: 0; }
+}
+@keyframes rpg-bouclier-verre-eclatement {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0) scale(.72); }
+  15% { opacity: .95; }
+  65% { opacity: .78; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rotation)) scale(.42); }
+}
 @keyframes rpg-bouclier-impact-vie {
   0% { opacity: 0; scale: .98; }
   12%, 68% { opacity: 1; }
