@@ -64,7 +64,6 @@ const CITY_GRID_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityGridLimit;
 const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const FREE_ROAM_PROGRESS_KEY = 'letsplay_vice_city_free_roam_progress_v1';
-const MOUSE_AIM_SENSITIVITY = 0.62;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function readFreeRoamSoundPreference() {
@@ -3176,10 +3175,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         -((mouseAimRef.current.y - bounds.top) / bounds.height) * 2 + 1,
       );
       mouseRaycaster.setFromCamera(mouseNdc, camera);
-      mouseAimPlane.constant = -city.surfaceHeight(walkState.x, walkState.z);
+      // Aim on the same horizontal plane as the muzzle so the cursor, arms and
+      // flat projectile path agree in screen space instead of aiming at the road.
+      mouseAimPlane.constant = -(city.surfaceHeight(walkState.x, walkState.z) + 1.42);
       const target = mouseRaycaster.ray.intersectPlane(mouseAimPlane, mouseAimPoint);
-      if (target) mouseAimDirection.set(target.x - walkState.x, 0, target.z - walkState.z);
-      else mouseAimDirection.set(mouseRaycaster.ray.direction.x, 0, mouseRaycaster.ray.direction.z);
+      if (target) {
+        pedestrian.group.updateMatrixWorld(true);
+        pedestrian.muzzle.getWorldPosition(shotOrigin);
+        mouseAimDirection.set(target.x - shotOrigin.x, 0, target.z - shotOrigin.z);
+      } else mouseAimDirection.set(mouseRaycaster.ray.direction.x, 0, mouseRaycaster.ray.direction.z);
       if (mouseAimDirection.lengthSq() < 1e-6) return null;
       mouseAimDirection.normalize();
       return Math.atan2(mouseAimDirection.x, -mouseAimDirection.z);
@@ -3713,10 +3717,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (bounds.width < 1 || bounds.height < 1) return;
       const cursorX = clamp(event.clientX, bounds.left, bounds.right);
       const cursorY = clamp(event.clientY, bounds.top, bounds.bottom);
-      const centerX = (bounds.left + bounds.right) / 2;
-      const centerY = (bounds.top + bounds.bottom) / 2;
-      const x = centerX + (cursorX - centerX) * MOUSE_AIM_SENSITIVITY;
-      const y = centerY + (cursorY - centerY) * MOUSE_AIM_SENSITIVITY;
+      // Keep the reticle directly under the OS cursor; the same viewport point
+      // is converted to a camera ray by getMouseAimHeading().
+      const x = cursorX;
+      const y = cursorY;
       mouseAimRef.current = { x, y, active: true };
       crosshairRef.current?.style.setProperty('--aim-x', `${x}px`);
       crosshairRef.current?.style.setProperty('--aim-y', `${y}px`);

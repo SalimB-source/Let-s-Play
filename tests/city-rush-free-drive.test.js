@@ -155,6 +155,16 @@ test('visée souris : le corps garde son cap, seuls les bras suivent le point vi
   assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
+test('visée souris : curseur, raycast et trajectoire partagent le même point', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /const x = cursorX;\s*const y = cursorY;/u,
+    'le réticule ne doit pas être décalé par une sensibilité réduite');
+  assert.match(source, /mouseAimPlane\.constant = -\(city\.surfaceHeight\(walkState\.x, walkState\.z\) \+ 1\.42\)/u,
+    'le raycast vise au niveau où le projectile est émis');
+  assert.match(source, /mouseAimDirection\.set\(target\.x - shotOrigin\.x, 0, target\.z - shotOrigin\.z\)/u,
+    'la direction est calculée depuis le canon, pas le centre du personnage');
+});
+
 test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   const start = source.indexOf('const updateShots = (dt) =>');
