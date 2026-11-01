@@ -472,7 +472,11 @@ function makeCity(scene) {
   const manholeMat = new THREE.MeshStandardMaterial({ color: 0x62666a, roughness: 0.76, metalness: 0.18 });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
   const lotGrassPalette = [0x4f6947, 0x59724a, 0x60784d, 0x526d4b, 0x657a50];
-  const palette = [0xe5b99f, 0xc9b9aa, 0x9bb6b6, 0xd5d0c3, 0xb2a0a2, 0xd4a979, 0x839e9e, 0xf0d1ae];
+  const districtPalettes = {
+    downtown: [0xf0b89f, 0x9fc8c4, 0xf2d9b2, 0xd99d91, 0xc7d5cf],
+    port: [0x81939a, 0xb98b6d, 0xc0b69d, 0x667f87, 0xd0c5ad],
+    residential: [0xd4bea0, 0x9aafa3, 0xc8ada0, 0xe0d4bb, 0x91a1a0],
+  };
   const litWindowPositions = [];
   const blueWindowPositions = [];
   const darkWindowPositions = [];
@@ -978,6 +982,26 @@ function makeCity(scene) {
   const canopyMats = [0x397348, 0x477d4a, 0x527f47].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.96 }));
   const broadleafGeometry = new THREE.IcosahedronGeometry(1, 1);
   const neon = [0xff668a, 0x45d7dc, 0xf2c968];
+  const awningMats = neon.map((accent) => {
+    const size = 64;
+    const pixels = new Uint8Array(size * 16 * 4);
+    const accentRgb = [(accent >> 16) & 0xff, (accent >> 8) & 0xff, accent & 0xff];
+    const creamRgb = [255, 231, 200];
+    for (let y = 0; y < 16; y += 1) for (let x = 0; x < size; x += 1) {
+      const color = Math.floor(x / 8) % 2 === 0 ? accentRgb : creamRgb;
+      const pixel = (y * size + x) * 4;
+      pixels[pixel] = color[0];
+      pixels[pixel + 1] = color[1];
+      pixels[pixel + 2] = color[2];
+      pixels[pixel + 3] = 255;
+    }
+    const texture = new THREE.DataTexture(pixels, size, 16, THREE.RGBAFormat);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.needsUpdate = true;
+    return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.76, side: THREE.DoubleSide });
+  });
   const courtyardPathMat = new THREE.MeshStandardMaterial({ color: 0xaaa49b, roughness: 0.9 });
   const courtyardGrassMat = new THREE.MeshStandardMaterial({ color: 0x577756, roughness: 1 });
   const planterMat = new THREE.MeshStandardMaterial({ color: 0xb28f6c, roughness: 0.92 });
@@ -1362,10 +1386,15 @@ function makeCity(scene) {
     hardstand.receiveShadow = true;
     lot.add(hardstand);
     lotRegions.push({ x: lotCenterX, z: cz, halfWidth: lotWidth / 2, halfDepth: 38 });
+    const ghettoBlock = bx >= 0;
+    const isPortDistrict = bx <= -2 && Math.abs(bz) <= 2;
+    const isDowntownDistrict = !isPortDistrict && bx < 0 && Math.abs(bz) <= 1;
+    const districtPalette = isPortDistrict
+      ? districtPalettes.port
+      : isDowntownDistrict ? districtPalettes.downtown : districtPalettes.residential;
     const amenityRoll = random();
     const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
-    const ghettoBlock = bx >= 0;
     if (ghettoBlock) {
       for (const [slotX, slotZ] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) {
         const canalSideSlotX = bx === 0 && slotX < 0 ? -14 : slotX;
@@ -1386,19 +1415,22 @@ function makeCity(scene) {
       const isCottage = cottageBlock && i === count - 1;
       const width = isCottage ? 12 + random() * 4 : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
       const depth = isCottage ? 14 + random() * 4 : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
-      const height = isCottage ? 6.2 + random() * 1.6 : 10 + random() * (Math.abs(bx) + Math.abs(bz) < 4 ? 35 : 21);
+      const height = isCottage
+        ? 6.2 + random() * 1.6
+        : isPortDistrict ? 8 + random() * 12 : 10 + random() * (isDowntownDistrict ? 35 : 21);
       const canalSafeSlotX = bx === -1 && slotX > 20 ? slotX - 12 : slotX;
       const x = cx + canalSafeSlotX + (random() - 0.5) * 3;
       const z = cz + slotZ + (random() - 0.5) * 3;
       const frontSign = slotZ < 0 ? -1 : 1;
       const frontZ = z + frontSign * (depth / 2 + 0.1);
       const frontageRoll = random();
-      const hasShop = !isCottage && frontageRoll < 0.42;
-      const hasGarage = !isCottage && frontageRoll >= 0.42 && frontageRoll < 0.61;
+      const shopChance = isDowntownDistrict ? 0.58 : isPortDistrict ? 0.28 : 0.42;
+      const hasShop = !isCottage && frontageRoll < shopChance;
+      const hasGarage = !isCottage && !hasShop && frontageRoll < 0.61;
       const garageWidth = Math.min(6.4, width * 0.38);
       const garageCenterX = x - width * 0.18;
       const entryX = isCottage ? x : hasGarage ? x + width * 0.34 : x + width * 0.28;
-      const color = palette[Math.floor(random() * palette.length)];
+      const color = districtPalette[Math.floor(random() * districtPalette.length)];
       const facade = new THREE.MeshStandardMaterial({ color, roughness: 0.83, metalness: 0.02 });
       const building = addBox(lot, facade, x, 0.1, z, width, height, depth, true);
       building.userData.cityBuilding = true;
@@ -1478,6 +1510,19 @@ function makeCity(scene) {
         addBox(lot, brassMat, doorX + doorWidth * 0.31, 1.25, shopGlassZ + frontSign * 0.1, 0.055, 0.2, 0.06);
         addBox(lot, shopFrameMat, x, 3.08, frontZ + frontSign * 0.24, shopWidth + 0.36, 0.44, 0.42);
         addBox(lot, signMat, x, 3.13, frontZ + frontSign * 0.47, shopWidth, 0.28, 0.08);
+        const awning = new THREE.Mesh(
+          new THREE.BoxGeometry(shopWidth + 0.7, 0.18, 1.3),
+          awningMats[Math.floor(random() * awningMats.length)],
+        );
+        awning.position.set(x, 3.49, frontZ + frontSign * 0.68);
+        awning.castShadow = true;
+        awning.receiveShadow = true;
+        lot.add(awning);
+        addBox(lot, shopFrameMat, x, 3.22, frontZ + frontSign * 1.31, shopWidth + 0.7, 0.38, 0.12);
+        for (const supportSide of [-1, 1]) {
+          addBox(lot, shopFrameMat, x + supportSide * (shopWidth / 2 + 0.28), 2.78,
+            frontZ + frontSign * 0.82, 0.08, 0.88, 0.08);
+        }
         // Panneau perpendiculaire de boutique, visible depuis la rue croisée.
         addBox(lot, signMat, x + width / 2 + 0.24, 3.4, z + depth * 0.15, 0.34, 2.8, 1.2);
       } else {
