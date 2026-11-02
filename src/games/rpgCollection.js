@@ -124,7 +124,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
   // Le Grand Hiver tombe avec les derniers hivers du Serment ; la Hache de la
   // banquise, commune, rejoint d'elle-même la dotation de départ.
-  'fjord-3': ['drakkar-a-tete-de-dragon', 'pere-des-corbeaux', 'grand-hiver'],
+  'fjord-3': ['drakkar-a-tete-de-dragon', 'pere-des-corbeaux', 'grand-hiver', 'tempete-de-foudre-et-de-givre'],
   'fjord-4': ['maitre-du-marteau', 'dame-des-neuf-mondes', 'serpent-du-monde'],
   // Tour de la Nécropole — la Balance des Heures (Ténèbres).
   // Les communes ouvrent en bas, les rares au milieu, les mythiques au sommet.
