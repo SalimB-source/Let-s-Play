@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import {
   VICE_CITY_OUTER_HIGHWAY,
   VICE_CITY_ROAD_HILLS,
   viceCityCanalWaveHeight,
   viceCityOuterHighwayAccessRamps,
+  viceCityOuterHighwayLoopPath,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -55,6 +57,33 @@ test('quatre sorties courbes relient le périphérique aux carrefours d’angle'
     }
     assert.ok(viceCityOuterHighwayContains(end.x, end.z), 'la sortie touche la rue urbaine');
   }
+});
+
+test('la chaussée métropolitaine possède trois voies par sens et une trajectoire de trafic fermée', () => {
+  assert.ok(VICE_CITY_OUTER_HIGHWAY.halfWidth >= 19, 'les chaussées et accotements sont assez larges pour trois voies par sens');
+  const loop = viceCityOuterHighwayLoopPath();
+  assert.deepEqual(loop[0], loop.at(-1), 'la trajectoire de trafic referme la boucle');
+  assert.ok(loop.length > 500);
+  let length = 0;
+  for (let index = 1; index < loop.length; index += 1) {
+    const segment = Math.hypot(loop[index].x - loop[index - 1].x, loop[index].z - loop[index - 1].z);
+    assert.ok(segment <= 6.1, `le trafic ne saute pas d’un tronçon à l’autre (${segment} m)`);
+    length += segment;
+  }
+  assert.ok(length > 3000, 'la boucle constitue un véritable parcours périphérique');
+});
+
+test('l’autoroute reçoit un terre-plein, des glissières, des panneaux suspendus et du trafic roulant', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /vice-city-highway-concrete-median/u);
+  assert.match(source, /vice-city-highway-continuous-guardrail/u);
+  assert.match(source, /vice-city-highway-overhead-exit-sign/u);
+  assert.match(source, /highwayCruiseSpeed/u);
+  assert.match(source, /highwayLaneChangeDuration: 2\.8/u);
+  assert.match(source, /highwayLaneChangeStartedAt/u);
+  assert.match(source, /traffic\.axis === 'highway'/u);
+  assert.match(source, /city\.isHighwayBarrierBlocked\(x, z\)/u,
+    'les barrières visibles ont aussi une collision');
 });
 
 test('l’autoroute forme une boucle continue et traverse le fleuve sur deux ponts en arche', () => {

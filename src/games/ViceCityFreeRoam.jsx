@@ -43,6 +43,7 @@ import {
   VICE_CITY_OUTER_HIGHWAY,
   viceCityCanalWaveHeight,
   viceCityOuterHighwayAccessRamps,
+  viceCityOuterHighwayLoopPath,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -334,7 +335,7 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
   }
 }
 
-function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
+function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierSegments = []) {
   const { edge, halfWidth, accessHalfWidth, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
   const asphaltMat = new THREE.MeshStandardMaterial({
@@ -396,9 +397,9 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
     };
 
     makeRibbon(halfWidth * 2, 0, asphaltMat, 0.035, 'vice-city-perimeter-highway');
-    // Double solid divider and shoulder lines: access spurs can join either direction.
-    for (const offset of [-1.5, 1.5, -11.35, 11.35]) {
-      makeRibbon(0.16, offset, markingMat, 0.071, 'vice-city-highway-solid-line');
+    // A wide center median separates three express lanes per direction from the shoulders.
+    for (const offset of [-18.4, -1.9, 1.9, 18.4]) {
+      makeRibbon(0.18, offset, markingMat, 0.071, 'vice-city-highway-solid-line');
     }
 
     let pathLength = 0;
@@ -417,7 +418,7 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
           tangent.x + (nextTangent.x - tangent.x) * progress,
           tangent.y + (nextTangent.y - tangent.y) * progress,
         ).normalize();
-        for (const offset of [-6.2, 6.2]) {
+        for (const offset of [-12.3, -7.1, 7.1, 12.3]) {
           const x = centerX - direction.y * offset;
           const z = centerZ + direction.x * offset;
           const tangentX = direction.x;
@@ -463,8 +464,8 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
         const normalX = -tangentZ / magnitude;
         const normalZ = tangentX / magnitude;
         for (const outerSide of [-1, 1]) {
-          const x = centerX - normalX * outerSide * 17;
-          const z = centerZ - normalZ * outerSide * 17;
+          const x = centerX - normalX * outerSide * (halfWidth + 3);
+          const z = centerZ - normalZ * outerSide * (halfWidth + 3);
           const y = highwayElevation(x, z);
           const pole = new THREE.Mesh(poleGeometry, poleMat);
           pole.position.set(x, y + 3.5, z);
@@ -480,21 +481,98 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
     }
   }
 
-  const overpassRailMat = new THREE.MeshStandardMaterial({ color: 0x92999c, roughness: 0.48, metalness: 0.68 });
+  const barrierMat = new THREE.MeshStandardMaterial({ color: 0x969b98, roughness: 0.76, metalness: 0.22 });
+  const barrierPosts = [];
+  const medianTransforms = [];
+  const rampEntryPoints = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
+  for (const pathData of viceCityOuterHighwayPaths()) {
+    const points = pathData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
+    const tangents = points.map((point, index) => {
+      const before = points[Math.max(0, index - 1)];
+      const after = points[Math.min(points.length - 1, index + 1)];
+      return new THREE.Vector2(after.x - before.x, after.z - before.z).normalize();
+    });
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const start = points[index];
+      const end = points[index + 1];
+      const centerX = (start.x + end.x) / 2;
+      const centerZ = (start.z + end.z) / 2;
+      if (rampEntryPoints.some((entry) => Math.hypot(centerX - entry.x, centerZ - entry.z) < 31)) continue;
+      const dx = end.x - start.x;
+      const dz = end.z - start.z;
+      const length = Math.hypot(dx, dz);
+      medianTransforms.push({
+        x: centerX,
+        z: centerZ,
+        y: highwayElevation(centerX, centerZ) + 0.42,
+        yaw: Math.atan2(dx, dz),
+        length: length + 0.4,
+      });
+      barrierSegments.push({ x1: start.x, z1: start.z, x2: end.x, z2: end.z, radius: 0.55 });
+    }
+    const outerOffset = halfWidth - 0.45;
+    for (const side of [-1, 1]) {
+      const railPoints = points.map((point, index) => {
+        const tangent = tangents[index];
+        const x = point.x - tangent.y * side * outerOffset;
+        const z = point.z + tangent.x * side * outerOffset;
+        return new THREE.Vector3(x, highwayElevation(x, z), z);
+      });
+      for (const height of [0.52, 0.98]) {
+        const railVertices = railPoints.map((point) => new THREE.Vector3(point.x, point.y + height, point.z));
+        const curve = new THREE.CatmullRomCurve3(railVertices, false, 'centripetal');
+        const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(32, points.length * 2), 0.12, 6, false), barrierMat);
+        rail.name = 'vice-city-highway-continuous-guardrail';
+        rail.castShadow = true;
+        rail.receiveShadow = true;
+        scene.add(rail);
+      }
+      for (let index = 0; index < railPoints.length - 1; index += 1) {
+        const start = railPoints[index];
+        const end = railPoints[index + 1];
+        barrierSegments.push({ x1: start.x, z1: start.z, x2: end.x, z2: end.z, radius: 0.24 });
+        if (index % 2 === 0) {
+          const point = railPoints[index];
+          const tangent = tangents[index];
+          barrierPosts.push({
+            x: point.x, z: point.z, y: point.y + 0.48,
+            yaw: Math.atan2(tangent.x, tangent.y),
+          });
+        }
+      }
+    }
+  }
+  const postGeometry = new THREE.BoxGeometry(0.14, 0.96, 0.14);
+  const postMesh = new THREE.InstancedMesh(barrierMat, postGeometry, barrierPosts.length);
+  const postMarker = new THREE.Object3D();
+  barrierPosts.forEach((post, index) => {
+    postMarker.position.set(post.x, post.y, post.z);
+    postMarker.rotation.set(0, post.yaw, 0);
+    postMarker.updateMatrix();
+    postMesh.setMatrixAt(index, postMarker.matrix);
+  });
+  postMesh.name = 'vice-city-highway-guardrail-posts';
+  postMesh.castShadow = true;
+  postMesh.receiveShadow = true;
+  scene.add(postMesh);
+
+  const medianGeometry = new THREE.BoxGeometry(0.9, 0.84, 1);
+  const medianMesh = new THREE.InstancedMesh(barrierMat, medianGeometry, medianTransforms.length);
+  const medianMarker = new THREE.Object3D();
+  medianTransforms.forEach((segment, index) => {
+    medianMarker.position.set(segment.x, segment.y, segment.z);
+    medianMarker.rotation.set(0, segment.yaw, 0);
+    medianMarker.scale.set(1, 1, segment.length);
+    medianMarker.updateMatrix();
+    medianMesh.setMatrixAt(index, medianMarker.matrix);
+  });
+  medianMesh.name = 'vice-city-highway-concrete-median';
+  medianMesh.castShadow = true;
+  medianMesh.receiveShadow = true;
+  scene.add(medianMesh);
+
   const overpassSupportMat = new THREE.MeshStandardMaterial({ color: 0x777e80, roughness: 0.86 });
   for (const crossingZ of [-edge, edge]) {
-    for (const outerSide of [-1, 1]) {
-      const railZ = crossingZ + outerSide * (halfWidth - 0.55);
-      const railPoints = [];
-      for (let x = -bankOffset; x <= bankOffset; x += 15) {
-        railPoints.push(new THREE.Vector3(x, highwayElevation(x, railZ) + 0.9, railZ));
-      }
-      const railCurve = new THREE.CatmullRomCurve3(railPoints, false, 'centripetal');
-      const rail = new THREE.Mesh(new THREE.TubeGeometry(railCurve, 48, 0.13, 6, false), overpassRailMat);
-      rail.name = 'vice-city-highway-overpass-guardrail';
-      rail.castShadow = true;
-      scene.add(rail);
-    }
     for (const supportX of [-55, 55]) {
       for (const outerSide of [-1, 1]) {
         const supportHeight = Math.max(1.2, highwayElevation(supportX, crossingZ) - 0.3);
@@ -636,6 +714,33 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures) {
     sign.rotation.y = signYaw;
     scene.add(sign);
     sign.userData.exitName = exitNames[rampIndex];
+
+    const gantryNormal = new THREE.Vector2(-signTangent.y, signTangent.x);
+    const gantryCenterX = points[0].x;
+    const gantryCenterZ = points[0].z;
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7.7, 0.5), signPoleMat);
+      post.position.set(
+        gantryCenterX + gantryNormal.x * side * (halfWidth + 2.2),
+        3.85,
+        gantryCenterZ + gantryNormal.y * side * (halfWidth + 2.2),
+      );
+      post.castShadow = true;
+      scene.add(post);
+    }
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.52, (halfWidth + 2.2) * 2), signPoleMat);
+    beam.position.set(gantryCenterX, 7.55, gantryCenterZ);
+    beam.rotation.y = Math.atan2(gantryNormal.x, gantryNormal.y);
+    beam.castShadow = true;
+    scene.add(beam);
+    const guideSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.4, 1.7), makeExitSignMaterial(exitNames[rampIndex]),
+    );
+    guideSign.position.set(gantryCenterX, 6.55, gantryCenterZ);
+    guideSign.rotation.y = Math.atan2(-gantryNormal.y, gantryNormal.x);
+    guideSign.name = 'vice-city-highway-overhead-exit-sign';
+    guideSign.userData.exitName = exitNames[rampIndex];
+    scene.add(guideSign);
   }
   const rampDashGeometry = new THREE.BufferGeometry();
   rampDashGeometry.setAttribute('position', new THREE.Float32BufferAttribute(rampDashVertices, 3));
@@ -1146,9 +1251,10 @@ function makeCity(scene) {
       }
     }
   }
+  const highwayBarrierSegments = [];
   const highwayRoadMat = addViceCityOuterHighway(scene, roadElevation, {
     map: asphaltTexture, roughnessMap: asphaltRoughness, bumpMap: asphaltBump,
-  });
+  }, highwayBarrierSegments);
 
   // Pavés d'angle : ils relient les segments, sans prolonger les trottoirs sur les routes.
   for (let xAxisIndex = -3; xAxisIndex <= 3; xAxisIndex += 1) {
@@ -2632,6 +2738,21 @@ function makeCity(scene) {
     const ahead = surfaceHeight(x + forwardX * 2, z + forwardZ * 2);
     return Math.atan2(ahead - surfaceHeight(x, z), 2);
   };
+  const isHighwayBarrierBlocked = (x, z) => {
+    if (Math.abs(x) < 320 && Math.abs(z) < 320) return false;
+    for (const segment of highwayBarrierSegments) {
+      const dx = segment.x2 - segment.x1;
+      const dz = segment.z2 - segment.z1;
+      const lengthSq = dx * dx + dz * dz;
+      const progress = lengthSq > 1e-8
+        ? clamp(((x - segment.x1) * dx + (z - segment.z1) * dz) / lengthSq, 0, 1) : 0;
+      const offsetX = x - (segment.x1 + dx * progress);
+      const offsetZ = z - (segment.z1 + dz * progress);
+      const clearance = segment.radius + BUILDING_COLLISION_MARGIN;
+      if (offsetX * offsetX + offsetZ * offsetZ <= clearance * clearance) return true;
+    }
+    return false;
+  };
   const fallenFenceSections = [];
   const hideFenceInstance = (mesh, index) => {
     marker.position.set(0, -1000, 0);
@@ -2806,6 +2927,7 @@ function makeCity(scene) {
     neonGlowMaterial, neonGlows, neonSignMaterials, neonPointLights, puddles, highwayRoadMat,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
     roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
+    highwayBarrierSegments, isHighwayBarrierBlocked,
     canalBoats, updateCanalBoats, updateCanalWater, roundaboutIsland, breakFencesAt,
   };
 }
@@ -3320,6 +3442,90 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         mass: trafficType.id === 'garbage-truck' ? 1.9 : trafficType.id === 'ambulance' ? 1.35 : trafficType.id === 'police' ? 1.15 : 1,
       };
     });
+    const highwayTrafficPath = viceCityOuterHighwayLoopPath();
+    const highwayTrafficDistances = [0];
+    for (let index = 1; index < highwayTrafficPath.length; index += 1) {
+      const previous = highwayTrafficPath[index - 1];
+      const current = highwayTrafficPath[index];
+      highwayTrafficDistances.push(highwayTrafficDistances[index - 1]
+        + Math.hypot(current.x - previous.x, current.z - previous.z));
+    }
+    const highwayTrafficLength = highwayTrafficDistances.at(-1);
+    const sampleHighwayTrafficPosition = (distance, direction, laneOffset) => {
+      const wrappedDistance = ((distance % highwayTrafficLength) + highwayTrafficLength) % highwayTrafficLength;
+      let low = 0;
+      let high = highwayTrafficDistances.length - 1;
+      while (high - low > 1) {
+        const middle = (low + high) >> 1;
+        if (highwayTrafficDistances[middle] <= wrappedDistance) low = middle;
+        else high = middle;
+      }
+      const start = highwayTrafficPath[low];
+      const end = highwayTrafficPath[high];
+      const segmentLength = highwayTrafficDistances[high] - highwayTrafficDistances[low];
+      const progress = segmentLength > 1e-6
+        ? (wrappedDistance - highwayTrafficDistances[low]) / segmentLength : 0;
+      const baseX = start.x + (end.x - start.x) * progress;
+      const baseZ = start.z + (end.z - start.z) * progress;
+      const tangentX = (end.x - start.x) / (segmentLength || 1) * direction;
+      const tangentZ = (end.z - start.z) / (segmentLength || 1) * direction;
+      const rightX = -tangentZ;
+      const rightZ = tangentX;
+      return {
+        x: baseX + rightX * laneOffset,
+        z: baseZ + rightZ * laneOffset,
+        yaw: Math.atan2(-tangentX, -tangentZ),
+      };
+    };
+    const highwayTrafficTypes = ['taxi', 'ambulance', 'white-lambo', 'garbage-truck'];
+    const highwayLaneOffsets = [4.5, 9.7, 15.0];
+    const highwayExitStarts = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
+    for (let index = 0; index < 18; index += 1) {
+      const direction = index < 9 ? 1 : -1;
+      const indexInDirection = index % 9;
+      const lane = Math.floor(indexInDirection / 3);
+      const spacingSlot = indexInDirection % 3;
+      const progress = highwayTrafficLength * [0.12, 0.44, 0.76][spacingSlot];
+      const laneOffset = highwayLaneOffsets[lane];
+      const trafficType = highwayTrafficTypes[index % highwayTrafficTypes.length];
+      const spec = CITY_RUSH_TRAFFIC_TYPES.find((candidate) => candidate.id === trafficType);
+      const car = makeTrafficVehicle(trafficType);
+      const pose = sampleHighwayTrafficPosition(progress, direction, laneOffset);
+      car.position.set(pose.x, city.surfaceHeight(pose.x, pose.z) + 0.02, pose.z);
+      car.rotation.y = pose.yaw;
+      car.rotation.x = city.surfacePitch(pose.x, pose.z, pose.yaw);
+      scene.add(car);
+      trafficCars.push({
+        car,
+        type: trafficType,
+        phase: index * 0.77,
+        axis: 'highway',
+        direction,
+        highwayLaneOffset: laneOffset,
+        highwayLaneIndex: lane,
+        highwayLaneChangeTarget: lane,
+        highwayLaneChangeFrom: laneOffset,
+        highwayLaneChangeTo: laneOffset,
+        highwayLaneChangeStartedAt: null,
+        highwayLaneChangeDuration: 2.8,
+        highwayNextLaneChangeAt: 7 + (index % 8) * 1.5,
+        highwayProgress: progress,
+        highwayCruiseSpeed: 22 + (index % 4) * 1.5,
+        progress: direction * progress,
+        crossAxis: 0,
+        speed: 0,
+        maxSpeed: spec?.speed || 7,
+        yaw: pose.yaw,
+        offsetX: 0,
+        offsetZ: 0,
+        velocityX: 0,
+        velocityZ: 0,
+        yawOffset: 0,
+        angularVelocity: 0,
+        touchingPlayer: false,
+        mass: trafficType === 'garbage-truck' ? 1.9 : trafficType === 'ambulance' ? 1.35 : 1,
+      });
+    }
     const keys = new Set();
     const shots = [];
     const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
@@ -3685,17 +3891,19 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       context.arc(city.roundaboutIsland.x, city.roundaboutIsland.z, city.roundaboutIsland.radius, 0, Math.PI * 2);
       context.fillStyle = '#66874f';
       context.fill();
-      for (const path of minimapHighwayPaths) {
+      for (const [pathIndex, path] of minimapHighwayPaths.entries()) {
         if (path.length < 2) continue;
+        const roadHalfWidth = pathIndex < 4
+          ? VICE_CITY_OUTER_HIGHWAY.halfWidth : VICE_CITY_OUTER_HIGHWAY.accessHalfWidth;
         context.beginPath();
         context.moveTo(path[0].x, path[0].z);
         for (let point = 1; point < path.length; point += 1) context.lineTo(path[point].x, path[point].z);
         context.lineCap = 'round';
         context.lineJoin = 'round';
-        context.lineWidth = VICE_CITY_OUTER_HIGHWAY.halfWidth * 2 + 4;
+        context.lineWidth = roadHalfWidth * 2 + 4;
         context.strokeStyle = '#27343b';
         context.stroke();
-        context.lineWidth = VICE_CITY_OUTER_HIGHWAY.halfWidth * 2;
+        context.lineWidth = roadHalfWidth * 2;
         context.strokeStyle = '#d0a96d';
         context.stroke();
       }
@@ -3874,10 +4082,68 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         beacon.material.opacity = Math.floor(state.time * 10 + traffic.phase + beaconIndex) % 2 === 0 ? 1 : 0.08;
       });
     };
+    const updateHighwayTraffic = (traffic, dt) => {
+      traffic.speed += (traffic.highwayCruiseSpeed - traffic.speed) * (1 - Math.exp(-dt * 1.45));
+      traffic.highwayProgress = ((traffic.highwayProgress + traffic.direction * traffic.speed * dt) % highwayTrafficLength
+        + highwayTrafficLength) % highwayTrafficLength;
+      const currentPose = sampleHighwayTrafficPosition(
+        traffic.highwayProgress, traffic.direction, traffic.highwayLaneOffset,
+      );
+      const nearExit = highwayExitStarts.some((entry) => Math.hypot(currentPose.x - entry.x, currentPose.z - entry.z) < 96);
+      if (traffic.highwayLaneChangeStartedAt == null && traffic.type !== 'garbage-truck'
+        && state.time >= traffic.highwayNextLaneChangeAt) {
+        if (nearExit) traffic.highwayNextLaneChangeAt = state.time + 1.5;
+        else {
+          const currentLane = traffic.highwayLaneIndex;
+          const nextLane = currentLane === 0 ? 1 : currentLane === 2 ? 1
+            : traffic.phase % 2 < 1 ? 0 : 2;
+          traffic.highwayLaneChangeTarget = nextLane;
+          traffic.highwayLaneChangeFrom = highwayLaneOffsets[currentLane];
+          traffic.highwayLaneChangeTo = highwayLaneOffsets[nextLane];
+          traffic.highwayLaneChangeStartedAt = state.time;
+        }
+      }
+      if (traffic.highwayLaneChangeStartedAt != null) {
+        const progress = clamp((state.time - traffic.highwayLaneChangeStartedAt)
+          / traffic.highwayLaneChangeDuration, 0, 1);
+        const eased = progress * progress * (3 - 2 * progress);
+        traffic.highwayLaneOffset = traffic.highwayLaneChangeFrom
+          + (traffic.highwayLaneChangeTo - traffic.highwayLaneChangeFrom) * eased;
+        if (progress >= 1) {
+          traffic.highwayLaneIndex = traffic.highwayLaneChangeTarget;
+          traffic.highwayLaneOffset = highwayLaneOffsets[traffic.highwayLaneIndex];
+          traffic.highwayLaneChangeStartedAt = null;
+          traffic.highwayNextLaneChangeAt = state.time + 12 + (traffic.phase % 8);
+        }
+      }
+      const pushDrag = Math.exp(-2.4 * dt);
+      traffic.offsetX += traffic.velocityX * dt;
+      traffic.offsetZ += traffic.velocityZ * dt;
+      traffic.velocityX *= pushDrag;
+      traffic.velocityZ *= pushDrag;
+      traffic.offsetX *= Math.exp(-0.45 * dt);
+      traffic.offsetZ *= Math.exp(-0.45 * dt);
+      traffic.yawOffset += traffic.angularVelocity * dt;
+      traffic.angularVelocity *= pushDrag;
+      traffic.yawOffset *= Math.exp(-0.4 * dt);
+      const pose = sampleHighwayTrafficPosition(
+        traffic.highwayProgress, traffic.direction, traffic.highwayLaneOffset,
+      );
+      const x = pose.x + traffic.offsetX;
+      const z = pose.z + traffic.offsetZ;
+      traffic.car.position.set(x, city.surfaceHeight(x, z) + 0.02, z);
+      traffic.car.rotation.y = pose.yaw + traffic.yawOffset;
+      traffic.car.rotation.x = city.surfacePitch(x, z, traffic.car.rotation.y);
+      traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+      traffic.car.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(state.time * 8 + traffic.phase + beaconIndex) % 2 === 0 ? 1 : 0.18;
+      });
+    };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
       for (const traffic of trafficCars) {
+        if (traffic.axis === 'highway') { updateHighwayTraffic(traffic, dt); continue; }
         if (traffic.pursuitActive) { updatePursuitTraffic(traffic, dt); continue; }
         const nextIndex = traffic.direction > 0
           ? Math.floor((traffic.progress + 0.001) / BLOCK) + 1
@@ -4028,7 +4294,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
     };
     const isPositionBlocked = (x, z) => {
-      if (city.isCanalBlocked(x, z)) return true;
+      if (city.isCanalBlocked(x, z) || city.isHighwayBarrierBlocked(x, z)) return true;
       if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.collisionRadius) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN

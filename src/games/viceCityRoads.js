@@ -36,7 +36,7 @@ export function viceCityRoadElevation(x, z) {
 export const VICE_CITY_OUTER_HIGHWAY = Object.freeze({
   edge: 455,
   cornerRadius: 100,
-  halfWidth: 13,
+  halfWidth: 20,
   bankOffset: 90,
   bridgeDeckHeight: 10,
   cityGridLimit: 300,
@@ -131,6 +131,18 @@ export function viceCityOuterHighwayPaths() {
     return points;
   };
   return [makePath(-1), makePath(1), makeRiverCrossing(-edge), makeRiverCrossing(edge)];
+}
+
+/** Ordered, connected centerline for traffic circulating around the full perimeter loop. */
+export function viceCityOuterHighwayLoopPath() {
+  const [westU, eastU, northBridge, southBridge] = viceCityOuterHighwayPaths();
+  const reverse = (path) => path.slice().reverse();
+  return [
+    ...westU,
+    ...southBridge.slice(1),
+    ...reverse(eastU).slice(1),
+    ...reverse(northBridge).slice(1),
+  ];
 }
 
 /** True on the continuous perimeter ring, river overpasses, or access spurs. */
