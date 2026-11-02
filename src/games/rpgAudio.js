@@ -81,6 +81,7 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['victoire', new URL('./assets/viking-warrior-battle-cry-with-horn.mp3', import.meta.url), 'victoryCryAudio'],
   ['furie_viking', new URL('./assets/furie-viking.mp3', import.meta.url), 'furieVikingAudio'],
   ['furie_viking_femelle', new URL('./assets/furie-viking-femelle.mp3', import.meta.url), 'furieVikingFemelleAudio'],
+  ['furie_loup_neige', new URL('./assets/furie-loup-neige.mp3', import.meta.url), 'furieLoupNeigeAudio'],
   ['defaite', new URL('./assets/game-lost.mp3', import.meta.url), 'gameLostAudio'],
   // Le même coup sec sert la blessure des deux camps.
   ['degats', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
@@ -204,6 +205,8 @@ const RPG_SFX_TABLE = {
   furie_viking: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
   // Cri féminin de Furie viking fourni par le joueur (1,512 s).
   furie_viking_femelle: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
+  // Grognement du Loup des neiges fourni par le joueur (environ 1,5 s).
+  furie_loup_neige: [{ kind: 'sample', at: 0, dur: 1.48, g: 1 }],
   defaite: [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }],
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
@@ -257,6 +260,8 @@ const RPG_NOMS_VIKINGS_FEMININES_FURIE = new Set([
   'Valkyrie des glaces',
   'Valkyrie des neuf nuits',
 ]);
+const RPG_LOUPS_DES_NEIGES_FURIE = new Set(['loup-des-neiges']);
+const RPG_NOMS_LOUPS_DES_NEIGES_FURIE = new Set(['Loup des neiges']);
 
 /** Les groupes de cris distincts à jouer pour les créatures qui viennent
  *  réellement d’entrer en Furie durant une même résolution de combat. */
@@ -265,11 +270,17 @@ export function rpgSonsFurie(activations = []) {
   const estFurieVikingFeminine = ({ carteId, name }) => (
     RPG_VIKINGS_FEMININES_FURIE.has(carteId) || RPG_NOMS_VIKINGS_FEMININES_FURIE.has(name)
   );
+  const estFurieLoupDesNeiges = ({ carteId, name }) => (
+    RPG_LOUPS_DES_NEIGES_FURIE.has(carteId) || RPG_NOMS_LOUPS_DES_NEIGES_FURIE.has(name)
+  );
   const sons = [];
   if (furies.some(estFurieVikingFeminine)) {
     sons.push('furie_viking_femelle');
   }
-  if (furies.some((activation) => !estFurieVikingFeminine(activation))) {
+  if (furies.some(estFurieLoupDesNeiges)) {
+    sons.push('furie_loup_neige');
+  }
+  if (furies.some((activation) => !estFurieVikingFeminine(activation) && !estFurieLoupDesNeiges(activation))) {
     sons.push('furie_viking');
   }
   return sons;

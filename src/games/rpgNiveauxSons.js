@@ -101,6 +101,7 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
   victoire: [-11.09, -0.0],
   furie_viking: [-13.8, -4.0],
   furie_viking_femelle: [-10.6, -0.9],
+  furie_loup_neige: [-23.9, -4.41],
   defaite: [-21.09, -7.12],
   degats: [-13.53, -1.04],
   degats_sorcier: [-13.53, -1.04],
