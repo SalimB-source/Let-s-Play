@@ -10022,12 +10022,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     + (cardResonanceGroup(cardById(e.carteId)) === 'samourai' ? bonusBanniereAssaut : 0)), 0);
   const vieTotaleSorcier = Math.max(0, (duel.sorcier.pv ?? 0) + (duel.sorcier.bouclier ?? 0));
   const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && !duel.brouillardCombat && puissanceDirecte > 0 && puissanceDirecte >= vieTotaleSorcier);
-  const apercusCibles = entitesAttaquantes.flatMap((attaquant) => {
-    const cible = duel.sorcier.creatures.find((e) => e.id === ciblesAttaque[attaquant.id]);
-    if (!cible) return [];
-    const arme = armeById(attaquant.arme?.carteId);
-    return [{ id: attaquant.id, texte: `${attaquant.name} → ${cible.name} : ${Math.max(0, Number(attaquant.atk) || 0)} ATQ de base · ${arme?.coupRapideImmanquable ? 'frappe immanquable' : '25 % de risque de rater'}${cible.esquive ? ' · Esquive possible' : ''}${cible.contreAttaque ? ' · attention à la Contre-attaque' : ''}` }];
-  });
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   // L'Abordage (set Lettres de Marque) : la créature (ou le porteur du
   // Grappin) vient d'accoster et attend sa prize — la table ne doit allumer
@@ -14181,50 +14175,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             </ol>
           </details>
           <div className="rpg-actions">
-            {combatEntrant && apercuBlocages.length === 0 && (
-              <details className="rpg-ordre-combat">
-                <summary>Comprendre l’ordre du combat</summary>
-                <ol>
-                  <li>Les frappes ciblées et certaines capacités se résolvent avant les blessures normales.</li>
-                  <li>Les survivants échangent leurs blessures de combat ; les critiques et l’Esquive peuvent modifier l’issue.</li>
-                  <li>D’autres effets et ripostes se déclenchent selon les cartes. Consultez l’historique après la résolution.</li>
-                </ol>
+            {!modePvp && combatEntrant?.coteAttaquant === 'joueur' && apercuBlocages.some((echange) => echange.bloqueurs.length > 1) && (
+              <details className="rpg-repartition-menu">
+                <summary>Répartition</summary>
+                <div className="rpg-repartition-menu__contenu">
+                  {apercuBlocages.filter((echange) => echange.bloqueurs.length > 1).map((echange) => (
+                    <div className="rpg-repartition-choix" key={echange.id} role="group" aria-label={`Répartition de ${echange.attaquant}`}>
+                      <strong>{echange.attaquant}</strong>
+                      <button type="button" aria-pressed={!combatEntrant.prioritesRepartition?.[echange.id]} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: null } }))}>Équilibrer</button>
+                      {echange.bloqueurs.map((bloqueur) => (
+                        <button type="button" key={bloqueur.id} aria-pressed={combatEntrant.prioritesRepartition?.[echange.id] === bloqueur.id} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: bloqueur.id } }))}>Tout sur {bloqueur.nom}</button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </details>
-            )}
-            {combatEntrant && apercuBlocages.length > 0 && (
-              <div className="rpg-combat-apercu" aria-label="Aperçu des blocages">
-                {apercuBlocages.map((echange) => (
-                  <div key={echange.id}>
-                    <strong>{echange.attaquant}</strong> ({echange.force} ATQ, {echange.defense} DEF) contre {echange.bloqueurs.map((b) => `${b.nom} (${b.attaque} ATQ, ${b.defense} DEF${b.repartition == null ? '' : `, ${b.repartition} ATQ prévue`})`).join(' et ')}
-                    {echange.alertes.length > 0 && ` · ${echange.alertes.join(' · ')}`}
-                    {echange.risques.length > 0 && <div className="rpg-combat-apercu__risque">Risque de destruction d’après les forces de base : {echange.risques.join(', ')} (hors effets).</div>}
-                    {!modePvp && combatEntrant.coteAttaquant === 'joueur' && echange.bloqueurs.length > 1 && (
-                      <div className="rpg-repartition-choix" role="group" aria-label={`Répartition de ${echange.attaquant}`}>
-                        <span>Répartir :</span>
-                        <button type="button" aria-pressed={!combatEntrant.prioritesRepartition?.[echange.id]} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: null } }))}>Équilibrer</button>
-                        {echange.bloqueurs.map((bloqueur) => (
-                          <button type="button" key={bloqueur.id} aria-pressed={combatEntrant.prioritesRepartition?.[echange.id] === bloqueur.id} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: bloqueur.id } }))}>Tout sur {bloqueur.nom}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <small>Répartition automatique égale, sauf priorité choisie en attaque solo. Elle est recalculée après les effets préalables ; si la cible prioritaire disparaît, le partage redevient égal. L’issue n’est pas garantie.</small>
-              <details className="rpg-ordre-combat">
-                <summary>Comprendre l’ordre du combat</summary>
-                <ol>
-                  <li>Les frappes ciblées et certaines capacités se résolvent avant les blessures normales.</li>
-                  <li>Les survivants échangent leurs blessures de combat ; les critiques et l’Esquive peuvent modifier l’issue.</li>
-                  <li>D’autres effets et ripostes se déclenchent selon les cartes. Consultez l’historique après la résolution.</li>
-                </ol>
-              </details>
-              </div>
-            )}
-            {phase && apercusCibles.length > 0 && (
-              <div className="rpg-combat-apercu" aria-label="Aperçu des attaques ciblées">
-                {apercusCibles.map(({ id, texte }) => <div key={id}>{texte}</div>)}
-                <small>Estimation avant effets, réactions et critiques.</small>
-              </div>
             )}
             <div className="rpg-actions__row">
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">

@@ -34,8 +34,9 @@ test('aperçu des blocages : répartition, alertes et frappe ciblée exclue', as
 test('la page limite le choix de répartition à l’attaquant solo et garde le PvP automatique', async () => {
   const { readFileSync } = await import('node:fs');
   const page = readFileSync(new URL('../src/games/RpgDuelPage.jsx', import.meta.url), 'utf8');
-  assert.match(page, /!modePvp && combatEntrant\.coteAttaquant === 'joueur' && echange\.bloqueurs\.length > 1/);
+  assert.match(page, /!modePvp && combatEntrant\?\.coteAttaquant === 'joueur' && apercuBlocages\.some/);
+  assert.match(page, /<details className="rpg-repartition-menu">/);
+  assert.doesNotMatch(page, /rpg-combat-apercu|rpg-ordre-combat|apercusCibles/);
   assert.match(page, /prioritesRepartition: combat\.prioritesRepartition \?\? null/);
   assert.match(page, /type: 'bloquer', blocages, repartitions: null/);
-  assert.match(page, /Comprendre l’ordre du combat/);
 });
