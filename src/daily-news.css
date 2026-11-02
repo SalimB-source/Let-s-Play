@@ -50,3 +50,10 @@
 .featured-dossiers--news .home-news-video .scroll-autoplay-video-poster--cover{z-index:2}
 .featured-dossiers--news .home-news-video .scroll-autoplay-video-resume{position:absolute;inset:0;z-index:3;display:block;width:100%;height:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;color:transparent;cursor:pointer}
 .featured-dossiers--news .home-news-video .scroll-autoplay-video-resume:focus-visible{outline:3px solid var(--cyan);outline-offset:-4px}
+
+/* Small news-label styles shared with the eagerly loaded home hero. The full
+   editorial/article stylesheet is loaded only with its lazy routes. */
+.news-feature-badge{position:absolute;top:18px;left:18px;background:var(--yellow);color:#090a14;padding:8px 10px;font:500 10px var(--mono);letter-spacing:.12em}
+.news-kicker,.article-byline,.aside-kicker{font:500 10px var(--mono);letter-spacing:.15em;color:var(--cyan);text-transform:uppercase}
+.read-link{margin-top:auto;font:500 11px var(--mono);letter-spacing:.15em;color:var(--yellow)}
+.read-link span{font-size:18px;margin-left:8px}

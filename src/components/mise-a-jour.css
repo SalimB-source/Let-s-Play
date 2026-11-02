@@ -131,7 +131,7 @@
 
 /* Sur téléphone, la pastille ne doit pas passer sous la barre du navigateur ni
    masquer les commandes du duel : elle remonte au-dessus de la zone sûre. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .maj-site__pastille {
     right: 10px;
     bottom: calc(10px + env(safe-area-inset-bottom, 0px));

@@ -1,17 +1,8 @@
-import { dailySeoEntries as edition20261101 } from '../news/daily/2026-11-01';
-import { dailySeoEntries as seo20261102 } from '../news/daily/2026-11-02';
+import { dailySeoEntries as dailyEditionSeo } from '../news/daily/seo-index';
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
-import { dailySeoEntries as cultureTechSeo20261029 } from '../news/daily/2026-10-29-cinema-tech';
-import { dailySeoEntries as gamingSeo20261029 } from '../news/daily/2026-10-29-gaming';
-import { dailySeoEntries } from '../news/daily/2026-10-18';
-import { dailySeoEntries as dailySeoEntries20261011 } from '../news/daily/2026-10-11';
-import { dailySeoEntries as dailySeoEntries20261014 } from '../news/daily/2026-10-14';
-import { dailySeoEntries as dailySeoEntries20261015 } from '../news/daily/2026-10-15';
-import { dailySeoEntries as dailySeoEntries20261016 } from '../news/daily/2026-10-16';
-import { dailySeoEntries as dailySeoEntries20261017 } from '../news/daily/2026-10-17';
 
 const SITE_URL = 'https://salimb-source.github.io/Let-s-Play';
 const base = import.meta.env.BASE_URL;
@@ -19,16 +10,7 @@ const SITE_NAME = 'Let’s Play';
 const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.jpg`;
 
 const pageMeta = {
-  ...seo20261102,
-  ...edition20261101,
-  ...cultureTechSeo20261029,
-  ...gamingSeo20261029,
-  ...dailySeoEntries,
-  ...dailySeoEntries20261017,
-  ...dailySeoEntries20261016,
-  ...dailySeoEntries20261015,
-  ...dailySeoEntries20261014,
-  ...dailySeoEntries20261011,
+  ...dailyEditionSeo,
   '/': {
     title: 'Let’s Play — Gaming, tech et pop culture en Algérie',
     description: 'Let’s Play est le média algérien dédié au gaming, à la tech, à l’e-sport, au cinéma et à la pop culture.',

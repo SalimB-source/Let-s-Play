@@ -1622,6 +1622,6 @@
    défilable ; le bureau garde une barre de défilement discrète. */
 .rpg-graveyard-carousel__content { gap: 8px; padding: 8px 4px; }
 .rpg-graveyard-carousel__heading { padding: 0 6px; font-size: 10px; }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-graveyard-carousel__content { gap: 7px; }
 }

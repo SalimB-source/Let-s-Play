@@ -1,0 +1,34 @@
+/* Petit habillage de la bande quotidienne, chargé avec son composant paresseux. */
+.home-quiz-band {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 26px;
+  margin: 8px 0 0;
+  background: linear-gradient(120deg, rgba(124, 58, 237, .16), rgba(34, 211, 238, .1)), var(--panel);
+  border: 1px solid var(--line-strong);
+  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+}
+.home-quiz-band h2 { margin: 6px 0; font: 800 clamp(20px, 3vw, 32px)/1.1 var(--display); text-transform: uppercase; }
+.home-quiz-band h2 em { color: var(--cyan); font-style: normal; }
+.home-quiz-band-copy p { margin: 0; color: var(--muted); }
+.home-quiz-band.is-finished { filter: grayscale(1) brightness(.82); }
+.home-quiz-band.is-finished .quiz-chip { margin-inline-start: 8px; }
+
+/* Le bandeau utilise un seul chip de progression, pas le reste du thème quiz. */
+.home-quiz-band .quiz-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  font: 500 10px var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.home-quiz-band .quiz-chip--levels { color: var(--violet); border-color: rgba(168, 85, 247, .4); }
+.home-quiz-band .quiz-chip--levels.is-complete { color: #34d399; border-color: rgba(52, 211, 153, .45); }

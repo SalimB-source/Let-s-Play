@@ -1,4 +1,5 @@
 import React from 'react';
+import '../news-article.css';
 import { Link, useParams } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import Comments from '../components/Comments';

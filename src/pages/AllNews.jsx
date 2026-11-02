@@ -1,6 +1,9 @@
 import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
 import React from 'react';
+import '../news-view-toggle.css';
+import '../news-carousel.css';
+import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchIndex } from '../search/searchIndex';
@@ -48,7 +51,7 @@ export default function AllNews() {
         <Link className="arrow-link" to="/news">{copy.back} <Arrow /></Link>
       </section>
 
-      <div className="news-carousel is-grid">
+      <div className="news-carousel is-grid" data-reveal>
         {allNewsArticles.map((article) => {
           const category = article.route.startsWith('/news/cinema/') ? copy.cinema : article.route.startsWith('/news/tech/') ? copy.tech : copy.gaming;
           const story = {

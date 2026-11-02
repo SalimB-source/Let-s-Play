@@ -341,7 +341,7 @@
   color: #fff8e6;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-desktop-login__carte {
     padding: 24px 18px 20px;
   }

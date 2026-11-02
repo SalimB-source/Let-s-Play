@@ -895,11 +895,11 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
           {/* Même information que le son, sans le son : le verdict s'affiche
               aussi (et se lit) — la question suivante arrive immédiatement. */}
           <p className="quiz-live" aria-live="polite" aria-label={`${copy.correctCount} : ${live.right}, ${copy.wrongCount} : ${live.wrong}`}>
-            <span className="quiz-live-item quiz-live-item--right" aria-hidden="true">✓ {live.right}</span>
-            <span className="quiz-live-item quiz-live-item--wrong" aria-hidden="true">✗ {live.wrong}</span>
-            <span className="quiz-live-item quiz-live-item--points" aria-hidden="true">⚡ {points}</span>
+            <span className="quiz-live-item quiz-live-item--right" aria-hidden="true">✓ <span key={live.right} className="quiz-count-pop">{live.right}</span></span>
+            <span className="quiz-live-item quiz-live-item--wrong" aria-hidden="true">✗ <span key={live.wrong} className="quiz-count-pop">{live.wrong}</span></span>
+            <span className="quiz-live-item quiz-live-item--points" aria-hidden="true">⚡ <span key={points} className="quiz-count-pop">{points}</span></span>
             {streak >= 2 && (
-              <span className={`quiz-live-item quiz-live-item--streak is-${flame}`} aria-hidden="true">
+              <span key={streak} className={`quiz-live-item quiz-live-item--streak is-${flame}`} aria-hidden="true">
                 🔥 ×{streak}
                 {copy.streakTags[flame] ? <em className="quiz-live-tag">{copy.streakTags[flame]}</em> : null}
               </span>

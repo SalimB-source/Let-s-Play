@@ -627,7 +627,7 @@
 .rpg-narrative__eyebrow > .rpg-campaign__episode { margin: 0; white-space: nowrap; color: inherit; }
 /* Au téléphone, le surtitre tient sur deux lignes voulues : la campagne, puis
    l'épisode — sans barre oblique orpheline en fin de ligne. */
-@media (max-width: 699px) {
+@media (max-width: 699px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-campaign__header-text .rpg-narrative__eyebrow > span[aria-hidden="true"] { display: none; }
   .rpg-campaign__header-text .rpg-narrative__eyebrow > .rpg-campaign__episode { display: block; margin-top: 2px; }
 }
@@ -852,7 +852,7 @@
 }
 /* Au téléphone, le livre se lit à plat : les onglets passent au-dessus de la
    page et les deux pages s'empilent — le récit, puis les paliers. */
-@media (max-width: 699px) {
+@media (max-width: 699px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-campaign__livre { padding-right: 0; }
   .rpg-campaign__acts { position: static; flex-direction: row; width: auto; margin-bottom: 0; }
   .rpg-campaign__act { flex: 1; }
@@ -1670,4 +1670,4 @@
 .rpg-tour-prochain > div { display: grid; gap: 4px; color: #e7dbc4; font-size: 12px; }
 .rpg-tour-prochain strong { color: #fff2d3; font-size: 16px; }
 .rpg-story-floor.is-next { border-color: rgba(238,198,117,.75); box-shadow: inset 3px 0 #edc16b, 0 0 18px rgba(194,140,54,.12); }
-@media (max-width: 600px) { .rpg-conquete-reprise { align-items: flex-start; flex-direction: column; } .rpg-tour-prochain .rpg-narrative-button { width: 100%; } }
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px) { .rpg-conquete-reprise { align-items: flex-start; flex-direction: column; } .rpg-tour-prochain .rpg-narrative-button { width: 100%; } }

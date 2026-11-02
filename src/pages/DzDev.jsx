@@ -1,4 +1,5 @@
 import React from 'react';
+import '../dz-dev.css';
 import { Link } from 'react-router-dom';
 
 const base = import.meta.env.BASE_URL;

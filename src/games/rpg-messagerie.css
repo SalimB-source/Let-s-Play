@@ -91,7 +91,7 @@
 }
 .rpg-messagerie-bouton--salon:hover,
 .rpg-messagerie-bouton--salon:focus-visible { border-color: #e9c46a; color: #ffe7af; outline: none; }
-@media (max-width: 520px) {
+@media (max-width: 520px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-messagerie-bouton--salon { padding: 0 10px; }
   .rpg-messagerie-bouton--salon .rpg-messagerie-bouton__libelle { display: none; }
 }

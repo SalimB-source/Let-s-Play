@@ -925,9 +925,32 @@ img{max-width:100%}
   white-space:nowrap;
 }
 .ticker b{color:var(--yellow);margin:0 26px;text-shadow:0 0 12px rgba(255,214,25,.6)}
+@media(prefers-reduced-motion:reduce){.ticker-track{animation:none;transform:none}}
 @keyframes marquee{
   from{transform:translateX(0)}
   to{transform:translateX(-50%)}
+}
+
+/* Raccourcis de navigation vers les grandes étapes de l'accueil. */
+.home-explore{
+  display:flex;justify-content:center;align-items:center;gap:10px;
+  padding:18px 0 12px;overflow-x:auto;overscroll-behavior-inline:contain;
+  scrollbar-width:thin;scroll-snap-type:x proximity;
+}
+.home-explore a{
+  display:inline-flex;align-items:center;gap:10px;flex:0 0 auto;
+  padding:11px 14px;border:1px solid var(--line-strong);
+  background:linear-gradient(120deg,rgba(124,58,237,.1),rgba(34,211,238,.04));
+  color:var(--muted);font:500 10px var(--mono);letter-spacing:.1em;
+  text-transform:uppercase;white-space:nowrap;scroll-snap-align:start;
+  transition:color .18s,border-color .18s,background .18s;
+}
+.home-explore a span{color:var(--cyan);font-size:14px;line-height:1}
+.home-explore a:hover,.home-explore a:focus-visible{color:var(--yellow);border-color:var(--cyan);background:rgba(34,211,238,.09)}
+#actu-une,#featured,#quizz-du-jour,#reels,#live{scroll-margin-top:104px}
+@media(max-width:700px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
+  .home-explore{justify-content:flex-start;gap:8px;padding:14px 0 10px}
+  .home-explore a{padding:10px 12px;font-size:9px}
 }
 
 /* ============ SECTION SCAFFOLD ============ */
@@ -2217,3 +2240,13 @@ img{max-width:100%}
 
 .nav-search-result-blank{width:62px;height:38px;display:block;flex:none;background:#070917;border:1px solid rgba(148,130,255,.12)}
 .search-result-image-blank{border:0;background:#070917}
+
+/* Résultats déjà terminés : statut consultable mais non relançable depuis
+   la recherche rapide ou l’archive. Gardé dans le CSS global car le menu
+   de recherche est présent dans le shell, même hors des pages Quizz. */
+.search-result-card.is-finished,
+.nav-search-result.is-finished { filter: grayscale(1) brightness(.78); cursor: default; pointer-events: none; }
+.search-result-card.is-finished:hover { transform: none; box-shadow: none; border-color: var(--line); }
+.search-result-card.is-finished h2,
+.search-result-card.is-finished p { color: var(--dim); }
+.nav-search-result.is-finished strong { color: var(--dim); }

@@ -430,14 +430,14 @@
 }
 
 /* ── Téléphone ─────────────────────────────────────────────────────────────── */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-profil__carte { gap: 12px; padding: 24px 18px; }
   .rpg-profil__medaillon { width: 84px; height: 84px; font-size: 28px; }
   .rpg-profil__avatar { width: 48px; height: 48px; }
   .rpg-profil__plateau { width: 96px; height: 74px; }
   .rpg-profil__cachet { width: 26px; height: 26px; font-size: 13px; }
 }
-@media (max-width: 420px) {
+@media (max-width: 420px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   /* Le champ et son bouton passent l'un sous l'autre : chacun garde ses 44 px. */
   .rpg-profil__pseudo { flex-direction: column; }
   .rpg-profil__pseudo .rpg-menu-button { width: 100%; }
@@ -501,7 +501,7 @@
   from { opacity: 0; transform: translate(-50%, -8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-niveau-toast { gap: 7px; padding: 9px 13px; }
   .rpg-niveau-toast span { display: none; }
 }

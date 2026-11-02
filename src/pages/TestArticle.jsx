@@ -1,4 +1,6 @@
 import React from 'react';
+import '../written-review.css';
+import '../news-article.css';
 import { Link, useParams } from 'react-router-dom';
 import { getTest, scoreTier, scoreLabel, videoEmbedUrl, videoWatchUrl } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';

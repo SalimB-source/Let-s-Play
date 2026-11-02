@@ -1000,7 +1000,7 @@
 
 /* ── Petits écrans ───────────────────────────────────────────────────────── */
 
-@media (max-width: 720px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-coffret__boites {
     grid-template-columns: 1fr;
     gap: 22px;

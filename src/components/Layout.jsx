@@ -857,7 +857,7 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      <main>{children}</main>
+      <main key={location.pathname} className="route-transition">{children}</main>
       <footer className="footer wrap">
         <Link className="brand" to="/" aria-label="Let's Play, home">
           <img className="brand-logo" src={logoSrc} alt="Let’s Play" width="1248" height="905" decoding="async" />

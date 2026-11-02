@@ -404,7 +404,7 @@
   .cr-mission-live-objective small { font-size: 7px; }
 }
 
-@media (max-width: 390px) {
+@media (max-width: 390px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .cr-mission-briefing-header-top { flex-direction: column; }
   .city-rush-page .cr-mission-briefing-header-top .cr-story-chapter-back { max-width: none; }
   .cr-mission-briefing-facts { grid-template-columns: 1fr 1fr; }

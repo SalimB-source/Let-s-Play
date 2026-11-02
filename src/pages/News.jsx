@@ -1,5 +1,8 @@
 import { dailyNewsListing as yesterdayStories } from '../news/daily/2026-11-01';
 import React from 'react';
+import '../news-view-toggle.css';
+import '../news-carousel.css';
+import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-02';
@@ -30,6 +33,9 @@ export default function News() {
       headingB: 'HEADLINES.',
       read: 'Read article',
       seeAll: 'View all articles',
+      archiveHeading: 'THE FULL',
+      archiveAccent: 'NEWS ARCHIVE.',
+      archiveAction: 'EXPLORE ALL ARTICLES',
     },
     fr: {
       label: 'ACTUALITÉS DU JOUR',
@@ -39,6 +45,9 @@ export default function News() {
       headingB: 'D’AUJOURD’HUI.',
       read: 'Lire l’article',
       seeAll: 'Voir tous les articles',
+      archiveHeading: 'TOUTES LES',
+      archiveAccent: 'ACTUS À LIRE.',
+      archiveAction: 'EXPLORER LES ARCHIVES',
     },
     ar: {
       label: 'أخبار اليوم',
@@ -48,6 +57,9 @@ export default function News() {
       headingB: 'أخبار اليوم.',
       read: 'اقرأ المقال',
       seeAll: 'عرض كل المقالات',
+      archiveHeading: 'كل',
+      archiveAccent: 'الأخبار.',
+      archiveAction: 'استكشف الأرشيف',
     },
   }[lang] || {
     label: 'ACTUALITÉS DU JOUR',
@@ -186,14 +198,14 @@ export default function News() {
 
       {/* LES ACTUS DU JOUR ouvrent la page — trois cartes sur trois colonnes
           avec leurs miniatures dédiées, avant le bandeau du hub. */}
-      <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour">
+      <section className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" id="actus-du-jour" data-reveal>
         <div className="section-label">
           <span>{todaySectionCopy.label}</span>
           <span>{todaySectionCopy.date}</span>
         </div>
         <div className="featured-dossiers-head news-headlines-head">
           <div>
-            <p className="eyebrow"><span className="live-dot" /> {todaySectionCopy.eyebrow}</p>
+            <p className="eyebrow">{todaySectionCopy.eyebrow}</p>
             <h2>{todaySectionCopy.headingA}<br /><em>{todaySectionCopy.headingB}</em></h2>
           </div>
           <Link className="button button-ghost news-headlines-all" to="/news/articles">
@@ -207,25 +219,14 @@ export default function News() {
           ))}
         </div>
       </section>
-      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'}>
-        <div className="section-label">
-          <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
-          <span>01.11.2026</span>
-        </div>
-        <div className="news-carousel is-grid">
-          {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
-        </div>
-      </section>
-
-
       {/* Bandeau du hub (« 02 / NEWS HUB ») : il introduit les trois univers
           qui suivent, juste sous les actus du jour. */}
       <div className="news-hub-head wrap">
         <div className="section-label"><span>02 / NEWS HUB</span><span>{copy.updated}</span></div>
-        <p className="eyebrow"><span className="live-dot" /> {copy.eyebrow}</p>
+        <p className="eyebrow">{copy.eyebrow}</p>
       </div>
 
-      <div className="news-hub-grid wrap">
+      <div className="news-hub-grid wrap" data-reveal>
         {/* Carte GAMING */}
         <Link to="/news/gaming" className="news-hub-card news-hub-card--gaming">
           <div className="news-hub-card-image">
@@ -284,12 +285,22 @@ export default function News() {
         </Link>
       </div>
 
+      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'} data-reveal>
+        <div className="section-label">
+          <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
+          <span>01.11.2026</span>
+        </div>
+        <div className="news-carousel is-grid">
+          {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
+        </div>
+      </section>
+
       <section className="cta wrap">
         <div>
-          <p className="eyebrow"><span className="live-dot" /> NEXT LEVEL UNLOCKED</p>
-          <h2>THREE WORLDS,<br /><em>ONE PRESS START.</em></h2>
+          <p className="eyebrow">{todaySectionCopy.label}</p>
+          <h2>{todaySectionCopy.archiveHeading}<br /><em>{todaySectionCopy.archiveAccent}</em></h2>
         </div>
-        <Link className="button button-yellow" to="/">RETOUR À L'ACCUEIL <Arrow /></Link>
+        <Link className="button button-yellow" to="/news/articles">{todaySectionCopy.archiveAction} <Arrow /></Link>
       </section>
     </section>
   );

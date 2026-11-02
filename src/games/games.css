@@ -24,6 +24,6 @@
 @media (hover: hover) and (pointer: fine) {
   a.game-disc-link:hover .game-disc { transform: rotateX(4deg) rotateY(0) rotateZ(0) translateY(-6px); box-shadow: 1px 2px 0 #b8b3ac, 3px 5px 0 #57565d, 8px 18px 22px -10px #000b, 0 0 25px #f3c65b4a; }
 }
-@media (max-width: 700px) { .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 20px; max-width: 460px; margin-top: 36px; } }
-@media (max-width: 560px) { .games-page { padding: 88px 0 50px; } .game-disc-stage { width: min(100%, 165px); } .game-disc-title { margin-top: 12px; } }
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) { .games-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px 20px; max-width: 460px; margin-top: 36px; } }
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) { .games-page { padding: 88px 0 50px; } .game-disc-stage { width: min(100%, 165px); } .game-disc-title { margin-top: 12px; } }
 @media (prefers-reduced-motion: reduce) { .game-disc { transition: none; } .game-disc-link:focus-visible .game-disc, a.game-disc-link:hover .game-disc { transform: rotateX(15deg) rotateY(-17deg) rotateZ(-8deg); } }

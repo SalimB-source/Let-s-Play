@@ -48,6 +48,7 @@
 @media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
   body:has(.rpg-mode-menu) .social-dock--sablier:not(.is-open) { display: none; }
 }
+.social-dock--home-hero:not(.is-open) { bottom: calc(88px + env(safe-area-inset-bottom)); }
 .social-dock > * { pointer-events: auto; }
 
 /* Conteneur du lanceur. Les pastilles de notification dépassent légèrement

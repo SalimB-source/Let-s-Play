@@ -2686,7 +2686,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hand__card:not(:disabled) { cursor: pointer; }
 .rpg-hand__card:disabled { filter: saturate(.68) brightness(.8); }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-turn-ribbon { top: 7px; min-width: 138px; padding: 6px 12px; }
   .rpg-turn-ribbon span { font-size: 7px; }
   .rpg-turn-ribbon strong { font-size: 10px; }
@@ -2707,7 +2707,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-bottombar .rpg-log { max-height: 42px; padding: 4px 7px; font-size: 9px; }
 }
 
-@media (max-width: 540px) {
+@media (max-width: 540px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .card-row { gap: 4px; }
   .rpg-card, .rpg-card-prison { width: clamp(72px, 19vw, 100px); border-width: 3px; border-radius: 8px; }
   .rpg-card--img .rpg-card__title strong { font-size: 7px; }
@@ -3240,7 +3240,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @keyframes rpg-ai-thinking-pulse {
   50% { opacity: .62; box-shadow: 0 5px 16px rgba(0, 0, 0, .38), 0 0 18px rgba(196, 104, 73, .3); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-wizard-plate__thinking { top: calc(100% + 5px); padding: 5px 7px; font-size: 7px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3510,7 +3510,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hand__card { width: clamp(82px, 10vw, 100px); }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-hidden-hand { top: 1%; }
   .rpg-hidden-hand__card { width: 52px; height: 67px; margin-left: -18px; border-width: 3px; border-radius: 7px; }
   .rpg-hidden-hand__count { font-size: 7px; }
@@ -3969,7 +3969,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   to { opacity: 1; translate: 0 0; scale: 1; }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-spell-played { grid-template-columns: 42px minmax(0, 1fr); gap: 7px; width: min(300px, calc(100vw - 24px)); min-height: 70px; padding: 6px 8px 6px 6px; }
   .rpg-spell-played__art { width: 42px; height: 54px; }
   .rpg-spell-played__details > strong { font-size: 12px; }
@@ -4119,7 +4119,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hand__card--img .rpg-hand__rarity { font-size: 5.6px; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card, .rpg-card-prison { width: clamp(72px, 18.5vw, 100px); }
   .rpg-hand__card { width: clamp(74px, 21vw, 94px); }
   .rpg-card--img .rpg-card__title { height: 24%; min-height: 24%; }
@@ -4311,7 +4311,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   box-shadow: 0 0 0 5px rgba(40, 30, 8, .92), 0 0 28px rgba(255, 208, 31, .75), 0 12px 28px rgba(0, 0, 0, .72);
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img .rpg-card__type,
   .rpg-hand__type { padding: 2px 3px; font-size: 6px; }
   .rpg-combat-window__assigned-blocker { font-size: 9px; }
@@ -4546,7 +4546,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-annonce-action__bandeau { animation: none; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img .rpg-card__type,
   .rpg-hand__type { bottom: 20%; font-size: 6px; }
   .rpg-card--img .rpg-card__foot { bottom: 3%; }
@@ -4577,7 +4577,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding-top: 72px;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .card-row {
     height: calc(26% + 64px);
     padding: 32px;
@@ -4594,7 +4594,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card, .rpg-card-prison { width: clamp(72px, 8vw, 112px); }
 }
 
-@media (max-height: 500px) and (max-width: 620px) {
+@media (max-height: 500px) and (max-width: 620px), (max-height: 500px) and (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card, .rpg-card-prison { width: clamp(54px, 15vw, 82px); }
 }
 
@@ -4897,7 +4897,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 @keyframes rpg-hover-preview-in { from { opacity: 0; } to { opacity: 1; } }
 
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-hover-card-preview {
     grid-template-columns: minmax(150px, 36vw) minmax(0, 1fr);
     gap: 12px;
@@ -5109,7 +5109,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* Portrait étroit : l'illustration passe au-dessus, la fiche dessous — la carte
    reste entière, c'est le volet qui défile. */
-@media (max-width: 720px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card-peek--catalogue .rpg-hover-card-preview {
     width: 100%;
     grid-template-columns: minmax(0, 1fr);
@@ -5349,7 +5349,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 /* Écrans étroits : la même rangée de cinq, plus serrée — la main reste
    entière sous les yeux, jamais coupée en deux colonnes qui défilent. */
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mulligan__head p {
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -6510,7 +6510,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   line-height: 1.15;
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img .rpg-card__stat--atk,
   .rpg-card--img .rpg-card__pt {
     min-width: 27px;
@@ -6815,7 +6815,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* Petit écran paysage : la barre est déjà serrée, le bouton se fait discret. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-duel-nav__decor3d {
     min-width: 24px;
     padding: 6px 8px;
@@ -7792,7 +7792,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__messagerie.is-active .rpg-mode-menu__messagerie-pastille {
   background: #fff3c4;
 }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   /* Huit onglets sur un téléphone : celui de la Messagerie garde sa bulle et
      son chiffre — et le mot, en tout petit, sous la bulle comme les libellés
      des autres onglets. Un onglet sans libellé ne se reconnaît pas : sans ce
@@ -8627,7 +8627,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__alternative-legend > span { color: rgba(214, 205, 190, .5); font: 800 7px/1.2 var(--mono, monospace); letter-spacing: .13em; text-transform: uppercase; }
 .rpg-card-catalogue__alternative-legend > b { color: rgba(244, 233, 214, .82); font: italic 10.5px/1.35 Georgia, serif; font-weight: 500; }
 .rpg-card-catalogue__alternative:not(.is-open) .rpg-card-catalogue__alternative-legend > b { color: rgba(228, 210, 178, .52); }
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card-catalogue__alternative { grid-template-columns: 46px minmax(0, 1fr); }
   .rpg-card-catalogue__alternative-art { width: 46px; }
 }
@@ -8657,7 +8657,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-deck-catalog--open .rpg-deck-list li strong { font-size: 10.5px; }
   .rpg-card-catalogue__grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
 }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mode-menu { background-position: 58% center; }
   .rpg-mode-menu__content { gap: 18px; padding: 19px 14px 14px; }
   /* Le plein écran reste à portée du pouce sans voler de la place à la barre
@@ -8806,7 +8806,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   16% { opacity: 1; transform: translate3d(calc(var(--rpg-draw-x, -100px) * .68), calc(var(--rpg-draw-y, 0px) * .68), 0) rotate(var(--card-angle, 0deg)); }
   100% { opacity: 1; transform: translate3d(0, var(--card-rise, 0), 0) rotate(var(--card-angle, 0deg)); }
 }
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card-piles { gap: 5px; }
   .rpg-card-pile--deck { min-width: 54px; }
   .rpg-card-pile--deck .rpg-card-pile__stack,
@@ -9016,7 +9016,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-bottombar .rpg-actions__row { gap: 4px; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-bottombar {
     right: 6px;
     bottom: 130px;
@@ -9159,7 +9159,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   0%, 100% { box-shadow: 0 0 6px var(--rpg-phase-glow), inset 0 0 4px rgba(255, 255, 255, .06); }
   50% { box-shadow: 0 0 12px var(--rpg-phase-glow), inset 0 0 6px rgba(255, 255, 255, .12); }
 }
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-turn-rail { gap: 4px; max-width: clamp(118px, 26vw, 148px); }
   .rpg-phase-track { gap: 2px; }
   .rpg-phase-step { gap: 5px; padding: 1px 6px 1px 2px; }
@@ -9347,7 +9347,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Sous 620 px, la colonne n'a plus la place : la souris retrouve la disposition
    compacte du doigt (barre sur toute la largeur, rail resserré et centré), au
    plus près. Ces deux règles passent après la colonne, à spécificité égale. */
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-battle:not(.rpg-battle--touch) .rpg-turn-rail {
     top: 50%;
     bottom: auto;
@@ -9723,7 +9723,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__cost { width: var(--rpg-card-marker-size, 24px); font-size: 17px; }
 .rpg-card-catalogue__meta b { font-size: 10px; }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img .rpg-mana-cost.is-compact {
     aspect-ratio: 1;
     padding: 0;
@@ -10187,7 +10187,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   to { opacity: 1; transform: none; }
 }
 
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-hover-card-preview--annonce {
     --rpg-annonce-card-width: clamp(118px, min(34vw, 42dvh), 190px);
     --rpg-annonce-column-gap: 12px;
@@ -10280,7 +10280,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mulligan__card { --rpg-card-marker-size: clamp(16px, 15cqw, 30px); }
 .rpg-hover-card-preview__face,
 .rpg-card-catalogue__art { --rpg-card-marker-size: 38px; }
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img { --rpg-card-marker-size: 20px; }
   .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
   .rpg-hover-card-preview__face,
@@ -10999,7 +10999,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
  .rpg-mode-menu__header { min-height: 59px; }
  .rpg-mode-menu__switch { order: 3; }
 }
-@media (max-width: 520px) {
+@media (max-width: 520px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
  .rpg-mode-menu__header { margin-left: -16px; margin-right: -16px; padding-left: 12px; padding-right: 12px; }
  .rpg-mode-menu__switch { margin-left: -12px; margin-right: -12px; padding: 0 8px; }
  .rpg-mode-menu__switch button { padding: 12px 10px; font-size: 11px; }
@@ -11057,7 +11057,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
  .rpg-mode-menu__switch { order: 3; width: calc(100% + 28px); flex: 0 0 calc(100% + 28px); margin: 0 -14px; padding: 0 10px; border-top: 1px solid rgba(255,255,255,.08); overflow-x: auto; }
  .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { min-height: 46px; padding: 0 13px; }
 }
-@media (max-width: 520px) {
+@media (max-width: 520px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
  .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { padding-right: 12px; padding-left: 12px; }
  .rpg-mode-menu__switch button, .rpg-mode-menu__switch button.rpg-mode-menu__souk { padding: 0 9px; font-size: 10px; }
 }
@@ -11290,7 +11290,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-btn--discard-confirm {
   white-space: nowrap;
 }
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-btn--discard-confirm { min-height: 40px; }
 }
 
@@ -12153,7 +12153,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   min-height: 44px;
   padding: 10px 18px;
 }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-partie-rapide { padding: 16px; }
   .rpg-partie-rapide__header h2 { font-size: 20px; }
   .rpg-partie-rapide__grid { grid-template-columns: 1fr; }
@@ -12535,7 +12535,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Sur un écran étroit, l'onglet garde sa cible et le panneau se resserre : il
    ne prend jamais plus de la moitié de la hauteur, et les vignettes restent
    lisibles sans pousser les noms hors du panneau. */
-@media (max-width: 800px) {
+@media (max-width: 800px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-combat-feed__panel {
     width: min(240px, calc(100vw - 20px));
     max-height: min(180px, 52vh);
@@ -12712,7 +12712,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    (voir « ONGLETS DES MODES — TÉLÉPHONE » en fin de feuille). En deux
    rangées de texte, les onglets se repliaient sans indice : sur un écran de
    390 px, « Paramètres » restait hors champ. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mode-menu__header { min-height: 52px; }
   .rpg-mode-menu__brand { min-height: 52px; }
   .rpg-mode-menu__accueil { width: 28px; height: 28px; }
@@ -12860,14 +12860,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: #ffe7af;
   outline: none;
 }
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mode-menu__quitter { min-width: 34px; min-height: 34px; margin-left: 6px; padding: 7px; }
   .rpg-mode-menu__quitter svg { width: 14px; height: 14px; }
 }
 /* Sur un téléphone étroit, deux filtres côte à côte rognent « Toutes les
    couleurs ». Ils passent l'un sous l'autre : deux rangées lisibles plutôt
    qu'un libellé coupé. */
-@media (max-width: 460px) {
+@media (max-width: 460px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card-catalogue__filters label { flex: 1 1 100%; }
 }
 
@@ -14279,7 +14279,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   max-height: none;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-xp-screen__maitrise {
     flex-direction: column;
     align-items: stretch;
@@ -15062,7 +15062,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: 3px solid #ffdc8a;
   outline-offset: 3px;
 }
-@media (max-width: 600px), (max-height: 500px) {
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (max-height: 500px) {
   .rpg-mode-carte__jouer { padding: 6px 8px; gap: 5px; font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -15093,7 +15093,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-transform: none;
   text-shadow: 0 1px 4px #000, 0 1px 2px #000;
 }
-@media (max-width: 700px) and (orientation: portrait), (hover: none) and (pointer: coarse) and (orientation: portrait) {
+@media (max-width: 700px) and (orientation: portrait), (hover:none) and (pointer:coarse) and (max-device-width:600px) and (orientation: portrait), (hover: none) and (pointer: coarse) and (orientation: portrait) {
   .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
     overflow-y: auto;
     overscroll-behavior: contain;
