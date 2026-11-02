@@ -771,7 +771,7 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
       new THREE.PlaneGeometry(8.4, 1.7), makeExitSignMaterial(exitNames[rampIndex]),
     );
     guideSign.position.set(gantryCenterX, 6.55, gantryCenterZ);
-    guideSign.rotation.y = Math.atan2(-gantryNormal.y, gantryNormal.x);
+    guideSign.rotation.y = Math.atan2(gantryTangent.x, gantryTangent.y);
     guideSign.name = 'vice-city-highway-overhead-exit-sign';
     guideSign.userData.exitName = exitNames[rampIndex];
     scene.add(guideSign);

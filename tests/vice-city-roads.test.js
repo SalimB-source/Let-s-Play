@@ -94,6 +94,8 @@ test('l’autoroute reçoit un terre-plein, des glissières, des panneaux suspen
     'les panneaux suivent l’orientation de la chaussée principale à l’entrée');
   assert.match(source, /const gantryApproach = 58/u,
     'les panneaux sont annoncés en amont de la sortie');
+  assert.match(source, /guideSign\.rotation\.y = Math\.atan2\(gantryTangent\.x, gantryTangent\.y\)/u,
+    'la face des panneaux est orientée vers les voitures qui approchent de la sortie');
 });
 
 test('l’autoroute forme une boucle continue et traverse le fleuve sur deux ponts en arche', () => {
