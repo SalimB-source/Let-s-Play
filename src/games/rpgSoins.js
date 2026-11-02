@@ -8,8 +8,8 @@
  * ce module en fait ce que la table montre et fait entendre :
  *   - un lot d'événements regroupé par cible — deux Tributs portés dans le
  *     même combat donnent un seul « +2 » sur la plaque ;
- *   - le bruitage du lot : un arpège clair qui monte pour votre camp, son
- *     double plus grave et plus sombre quand c'est l'adversaire qui se soigne ;
+ *   - le bruitage du lot : la voix sacrée fournie, jouée quand votre camp ou
+ *     l'adversaire regagne des PV ;
  *   - la phrase lue par les lecteurs d'écran.
  */
 

@@ -240,14 +240,15 @@ test('présentation : l’éclat dure le temps de ses animations', () => {
 
 /* ── Les sons du soin ─────────────────────────────────────────────────────── */
 
-test('sons : le carillon de soin a quitté le catalogue, le routage reste en place', () => {
+test('sons : la voix sacrée fournie est jouée pour chaque camp soigné', () => {
   assert.equal(RPG_SOIN_SFX, 'soin_vie');
   assert.equal(RPG_SOIN_ADVERSE_SFX, 'soin_vie_adverse');
-  for (const nom of [RPG_SOIN_SFX, RPG_SOIN_ADVERSE_SFX, 'soin_long']) {
-    assert.ok(!RPG_SFX_NAMES.includes(nom), `${nom} n’est plus déclaré`);
-    assert.equal(rpgSfx(nom), null, `${nom} se joue en silence`);
+  for (const nom of [RPG_SOIN_SFX, RPG_SOIN_ADVERSE_SFX]) {
+    assert.ok(RPG_SFX_NAMES.includes(nom), `${nom} est déclaré`);
+    assert.deepEqual(rpgSfx(nom), [{ kind: 'sample', at: 0, dur: 2, g: 1 }]);
   }
-  // Le lot de soins continue de router ses noms de bruitage : le jour où un
-  // échantillon de soin est fourni, seul le catalogue aura à le déclarer.
+  assert.ok(!RPG_SFX_NAMES.includes('soin_long'), 'le bruitage de soin long reste retiré');
+  assert.equal(rpgSfx('soin_long'), null);
   assert.equal(sonDuSoin([{ cote: 'joueur', entityId: null, montant: 3 }]), RPG_SOIN_SFX);
+  assert.equal(sonDuSoin([{ cote: 'sorcier', entityId: null, montant: 3 }]), RPG_SOIN_ADVERSE_SFX);
 });

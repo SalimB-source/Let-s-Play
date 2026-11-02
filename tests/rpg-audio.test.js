@@ -28,7 +28,7 @@ import {
 test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
-    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'freeze_impact', 'furie_loup_neige', 'furie_viking', 'furie_viking_femelle', 'hover',
+    'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'fleche_ratee', 'freeze_impact', 'furie_loup_neige', 'furie_viking', 'furie_viking_femelle', 'hover', 'soin_vie', 'soin_vie_adverse',
     'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire', 'weapon_break',
     'foudre_marteau',
   ].sort(), 'le son du duel = les échantillons de la table, survol compris');
@@ -78,6 +78,16 @@ test('le Loup des neiges joue son grognement dédié quand sa Furie s’active',
   assert.deepEqual(rpgSonsFurie(rpgActivationsFurieDepuisJournal([
     'Loup des neiges entre en furie : +1/+0.',
   ])), ['furie_loup_neige']);
+});
+
+test('la voix sacrée fournie joue pour le soin des deux camps', () => {
+  assert.ok(RPG_SFX_NAMES.includes('soin_vie'));
+  assert.ok(RPG_SFX_NAMES.includes('soin_vie_adverse'));
+  for (const nom of ['soin_vie', 'soin_vie_adverse']) {
+    assert.deepEqual(rpgSfx(nom), [{ kind: 'sample', at: 0, dur: 2, g: 1 }]);
+  }
+  assert.ok(existsSync(new URL('../src/games/assets/healing-sacred-voice.mp3', import.meta.url)),
+    'la voix sacrée fournie est copiée dans les assets bundlés du duel');
 });
 
 test('l’abordage joue le cliquetis de chaînes fourni, livré avec le jeu', () => {
@@ -163,7 +173,7 @@ test('toutes les synthèses retirées restent muettes, sans repli synthétique',
     'apparition', 'whoosh', 'hit', 'heal', 'zone', 'bell', 'blip',
     'explore', 'souffle', 'tour', 'phase', 'annonce', 'pass', 'terrain_pose', 'terrain_tap',
     'mana', 'mythic_impact', 'creature', 'magie', 'pioche', 'destruction', 'burn', 'soin_long',
-    'soin_vie', 'soin_vie_adverse', 'bouclier', 'attaque_declaree', 'attaque_confirmee',
+    'bouclier', 'attaque_declaree', 'attaque_confirmee',
     'blocage', 'choc_lames', 'sword', 'combat', 'coup_rapide',
     'impact', 'contresort', 'menu', 'select', 'erreur', 'pile', 'annuler',
   ];
