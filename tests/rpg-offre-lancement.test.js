@@ -16,12 +16,13 @@ test('l’offre apparaît dans le Souk et la quatrième diapo, sans faux achat',
   const souk = lire('../src/games/RpgSouk.jsx');
   const composant = lire('../src/games/RpgOffreLancement.jsx');
   const css = lire('../src/games/rpg-battle.css');
-  assert.match(page, /offreActive && <div className="rpg-mode-menu__diapo rpg-mode-menu__diapo--offre"><RpgOffreLancement/);
+  assert.match(page, /offreActive && <div className=\{`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre/);
   assert.match(page, /offreLancementActive=\{offreActive\}/);
   assert.match(page, /setInterval\(actualiser, 30000\)/);
   assert.match(souk, /offreLancementActive && <RpgOffreLancement/);
   assert.match(composant, /Paiement bientôt disponible/);
-  assert.doesNotMatch(composant, /<button|onClick|onOuvrirCoffret/);
-  assert.match(css, /has-offre \.rpg-mode-menu__diapo \{ animation-name: rpg-vitrine-quatre; animation-duration: 24s/);
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?has-offre \.rpg-mode-menu__diapo \{ animation: none/);
+  assert.match(composant, /<button[^>]*disabled tabIndex=\{-1\}/);
+  assert.match(composant, /length: OFFRE_LANCEMENT.boosters/);
+  assert.doesNotMatch(composant, /onClick|onOuvrirCoffret/);
+  assert.match(css, /data-offre-visible="true"\] \.rpg-mode-menu__hero-copy \{ opacity: 0/);
 });
