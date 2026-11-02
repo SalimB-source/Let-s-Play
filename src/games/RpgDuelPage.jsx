@@ -1296,9 +1296,9 @@ function CardStatIcon({ type, attaqueCiblee = false }) {
     {arc
       ? <>
           <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
-          <path d="M2.7 2.6 15.1 21.7" strokeWidth="1.2" />
-          <path d="M3 18.5 20.4 5.7" strokeWidth="1.6" />
-          <path d="m17.9 4.7 4.6-1-2.3 4.1-.3-1.7Z M1 19.1l2.7-2.4 1.6.1-.3 1.6-2.7 2 .3-1Z" fill="currentColor" stroke="none" />
+          <path data-arc-corde="" d="M2.7 2.6 15.1 21.7" strokeWidth="1.2" />
+          <path data-arc-fleche="" d="M2.6 16.25 20 4.95" strokeWidth="1.6" />
+          <path d="M17.4 4 22 3.65 19.5 7.2 19.5 5.3Z M.8 17.4l2.7-2.2 1.6.1-.4 1.6-2.7 1.9.2-1Z" fill="currentColor" stroke="none" />
         </>
       : type === 'attack'
         ? <><path d="M15 3h6v6L11 19l-6-6L15 3Z" /><path d="m3 11 10 10M8 16l-5 5" /></>

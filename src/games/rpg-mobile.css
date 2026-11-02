@@ -51,6 +51,8 @@
 /* A pair of bounded cells, not two fixed minimum-width badges: landscape
    phones can render cards narrower than the old 2 × 38px stat minimum. */
 .rpg-stat-icon { display: block; width: 1em; height: 1em; flex: 0 0 1em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Seul l’arc d’Attaque ciblée change de couleur, pas la valeur ni la défense. */
+.rpg-stat-icon[data-stat-icon="arc"] { color: #ff4545; }
 .rpg-stat-value { min-width: 0; font-variant-numeric: tabular-nums; }
 .rpg-card--img .rpg-card__foot,
 .rpg-hand__card--img .rpg-hand__stats {
