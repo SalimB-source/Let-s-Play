@@ -120,8 +120,8 @@ export const RPG_PLATEAUX = [
     id: 'ruines-de-tipaza',
     nom: 'Les Ruines de Tipaza',
     lieu: 'Tipasa, la ville romaine au bord de la mer',
-    fichier: 'plateau-ruines-de-tipaza.jpg',
-    resume: 'La mosaïque de pierre noire et blanche ouverte par le vent, les dalles romaines disjointes, les fûts de colonne et le chapiteau corinthien tombés à l’entour.',
+    fichier: 'plateau-ruines-de-tipaza-v2.jpg',
+    resume: 'Une mosaïque romaine circulaire aux nuances de pierre claire et de bleu marin, entourée de colonnes brisées et de vestiges au bord de la Méditerranée.',
   },
   {
     id: 'cour-de-l-empereur',
@@ -386,7 +386,7 @@ export function plateauParId(id) {
  * et servie depuis `public/profil/plateaux/`. Le fond pleine taille, lui, reste
  * celui de la table : la vignette ne remplace rien.
  */
-export const PLATEAU_VIGNETTE_REVISION = 'profil-plateaux-1';
+export const PLATEAU_VIGNETTE_REVISION = 'profil-plateaux-2';
 
 /** Le côté long de la vignette d'un plateau, en pixels — 3:2 comme les fonds,
  * pour une tuile de 104 px CSS nette à 2×. */

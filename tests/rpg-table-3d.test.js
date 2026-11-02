@@ -370,3 +370,14 @@ test('un objet reste collé à son emplacement peint, à toutes les tailles d\'�
   const bowl = RPG_TABLE_SCENE_THEMES['erg-du-sahara'].objets.find((objet) => objet.kind === 'bol');
   assert.ok(place(16 / 9, bowl).result.x > 0 && place(16 / 9, bowl).result.y < 0);
 });
+
+test('les Ruines de Tipaza utilisent la nouvelle peinture en 2D et en 3D', () => {
+  const plateau = plateauParId('ruines-de-tipaza');
+  const theme = tableSceneTheme(plateau.id);
+  assert.equal(plateau.fichier, 'plateau-ruines-de-tipaza-v2.jpg');
+  assert.ok(existsSync(new URL(`../public/${plateau.fichier}`, import.meta.url)));
+  assert.deepEqual(theme.objets, [], 'aucun objet de l’ancienne peinture ne flotte sur la nouvelle');
+  assert.equal(theme.plaque, null);
+  assert.equal(tablePlaqueFile(plateau), plateau.fichier);
+  assert.ok(theme.particles, 'la brise marine est conservée');
+});
