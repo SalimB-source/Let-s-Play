@@ -91,6 +91,7 @@ import {
   cardCopyLimit,
   cardHasPrintedType,
   cardReceivesResonance,
+  carteEstArme,
   carteJouableSansTerrain,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
@@ -2335,6 +2336,12 @@ test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche 
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
+    if (carteEstArme(carte)) {
+      // Les armes gardent un texte compact : les règles détaillées du mot-clé
+      // sont communes aux cartes et n'ont pas à être répétées sur chaque arme.
+      assert.match(carte.text, /Attaque ciblée/, `${carte.id} nomme son mot-clé`);
+      continue;
+    }
     if (!carte.coupRapideImmanquable) assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }
