@@ -23,6 +23,8 @@ import {
 import {
   viceCityFreeDriveParkedCarHitbox,
   viceCityFreeDriveParkedCarImpulse,
+  VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE,
+  VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
   viceCityFreeDriveJoystickVector,
@@ -69,6 +71,23 @@ const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
 const FREE_ROAM_PROGRESS_KEY = 'letsplay_vice_city_free_roam_progress_v1';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+function enlargeFreeRoamTrafficCar(car) {
+  car.scale.multiplyScalar(VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE);
+  car.userData.width *= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE;
+  car.userData.length *= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE;
+  car.userData.freeRoamSizeMultiplier = VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE;
+  return car;
+}
+
+function makeFreeRoamPlayerCar(profile, options) {
+  const car = makeRacerCar(profile, options);
+  car.scale.multiplyScalar(VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE);
+  car.userData.width = (car.userData.width || 3) * VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE;
+  car.userData.length = (car.userData.length || 5.2) * VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE;
+  car.userData.freeRoamSizeMultiplier = VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE;
+  return car;
+}
 
 function readFreeRoamSoundPreference() {
   try { return window.localStorage.getItem(FREE_ROAM_SOUND_KEY) !== 'off'; } catch { return true; }
@@ -2515,15 +2534,20 @@ function makeCity(scene) {
   // Voitures stationnées : on réutilise les modèles dédiés du trafic du jeu
   // (taxi, police, ambulance, camion-poubelle et sportive), gyrophares éteints.
   for (const spec of parkedCarSpecs) {
-    const car = makeTrafficVehicle(spec.type);
+    const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(spec.type));
+    const scaledSpec = {
+      ...spec,
+      width: spec.width * VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE,
+      length: spec.length * VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE,
+    };
     car.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
     car.rotation.y = spec.yaw;
     car.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
     scene.add(car);
     parkedCarBodies.push({
-      spec, mesh: car, velocityX: 0, velocityZ: 0, angularVelocity: 0, touchingPlayer: false,
+      spec: scaledSpec, mesh: car, velocityX: 0, velocityZ: 0, angularVelocity: 0, touchingPlayer: false,
       occupied: false, reserved: false,
-      radius: Math.hypot(spec.width / 2, spec.length / 2),
+      radius: Math.hypot(scaledSpec.width / 2, scaledSpec.length / 2),
       mass: spec.type === 'garbage-truck' ? 1.9 : spec.type === 'ambulance' ? 1.35 : spec.type === 'police' ? 1.15 : 1,
     });
   }
@@ -3372,7 +3396,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let reverseMaxSpeed = homeReverseMaxSpeed;
     let acceleration = homeAcceleration;
     let engineProfile = profile.archetype;
-    let playerVehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
+    let playerVehicle = makeFreeRoamPlayerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     let vehicle = playerVehicle;
     const installFreeRoamHeadlights = (car) => {
       const lights = [];
@@ -3423,7 +3447,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         ? [-220, -72, 78, 224][withinDirection] * directionSpec.direction
         : (withinDirection % 2 === 0 ? -185 : 185) * directionSpec.direction;
       const trafficType = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
-      const car = makeTrafficVehicle(trafficType.id);
+      const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(trafficType.id));
       const yaw = directionSpec.axis === 'x'
         ? directionSpec.direction > 0 ? -Math.PI / 2 : Math.PI / 2
         : directionSpec.direction > 0 ? Math.PI : 0;
@@ -3501,7 +3525,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const laneOffset = highwayLaneOffsets[lane];
       const trafficType = highwayTrafficTypes[index % highwayTrafficTypes.length];
       const spec = CITY_RUSH_TRAFFIC_TYPES.find((candidate) => candidate.id === trafficType);
-      const car = makeTrafficVehicle(trafficType);
+      const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(trafficType));
       const pose = sampleHighwayTrafficPosition(progress, direction, laneOffset);
       car.position.set(pose.x, city.surfaceHeight(pose.x, pose.z) + 0.02, pose.z);
       car.rotation.y = pose.yaw;
@@ -4495,7 +4519,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       reverseMaxSpeed = homeReverseMaxSpeed;
       acceleration = homeAcceleration;
       engineProfile = profile.archetype;
-      playerVehicle = makeRacerCar(profile, { player: true, daylight: worldClock > 6 && worldClock < 19, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
+      playerVehicle = makeFreeRoamPlayerCar(profile, { player: true, daylight: worldClock > 6 && worldClock < 19, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
       installFreeRoamHeadlights(playerVehicle);
       playerVehicle.position.set(spawnX, city.surfaceHeight(spawnX, spawnZ), spawnZ);
       playerVehicle.rotation.y = -spawnHeading;
@@ -5260,13 +5284,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.updateProjectionMatrix();
       } else {
         pedestrianCameraTracking = false;
-        cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
-        cameraPosition.y += 3.2;
+        cameraPosition.copy(vehicle.position).addScaledVector(forward, -5.0);
+        cameraPosition.y += 2.7;
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
         cameraTarget.set(
-          state.x + forward.x * 5.5,
-          city.surfaceHeight(state.x + forward.x * 5.5, state.z + forward.z * 5.5) + 1.05,
-          state.z + forward.z * 5.5,
+          state.x + forward.x * 3.5,
+          city.surfaceHeight(state.x + forward.x * 3.5, state.z + forward.z * 3.5) + 1.1,
+          state.z + forward.z * 3.5,
         );
         camera.lookAt(cameraTarget);
       }

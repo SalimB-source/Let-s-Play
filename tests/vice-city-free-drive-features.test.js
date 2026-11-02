@@ -72,7 +72,7 @@ test('le garage libre utilise une voiture temporaire sans toucher à la sauvegar
   const garageEnd = source.indexOf('challengeActionRef.current =', garageStart);
   assert.ok(garageStart >= 0 && garageEnd > garageStart);
   const garageAction = source.slice(garageStart, garageEnd);
-  assert.match(garageAction, /makeRacerCar\(profile/);
+  assert.match(garageAction, /makeFreeRoamPlayerCar\(profile/);
   assert.match(garageAction, /setSelectedFreeRoamCar\(profile\)/);
   assert.doesNotMatch(garageAction, /localStorage|writeFreeRoam|carId\s*=/);
   assert.match(source, /garage principal ne sera jamais remplacée/);

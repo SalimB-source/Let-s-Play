@@ -23,6 +23,8 @@ import {
   viceCityFreeDriveTurnInput,
   viceCityFreeDriveTurnStep,
   viceCityFreeDriveTurnAround,
+  VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE,
+  VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE,
   viceCityFreeDriveVelocityStep,
   viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
@@ -160,6 +162,24 @@ test('à pied : le demi-tour arrière pivote en douceur sur exactement une secon
   assert.deepEqual(finish, { heading: Math.PI, turnRate: 0, complete: true });
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   assert.match(source, /turnAroundElapsed, 1/u, 'la durée du demi-tour est fixée à une seconde');
+});
+
+test('les voitures de conduite libre sont agrandies sans désynchroniser les hitbox et la caméra suit de près', () => {
+  assert.equal(VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE, 1.14);
+  assert.equal(VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE, 1.18);
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /function enlargeFreeRoamTrafficCar\(car\)/u);
+  assert.match(source, /car\.userData\.width \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
+  assert.match(source, /car\.userData\.length \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
+  assert.equal((source.match(/enlargeFreeRoamTrafficCar\(makeTrafficVehicle\(/gu) || []).length, 3,
+    'voitures stationnées et les deux types de trafic sont agrandis');
+  assert.match(source, /function makeFreeRoamPlayerCar\(profile, options\)/u);
+  assert.equal((source.match(/playerVehicle = makeFreeRoamPlayerCar\(profile,/gu) || []).length, 2,
+    'la voiture initiale et la voiture temporaire du garage gardent la même taille');
+  assert.match(source, /addScaledVector\(forward, -5\.0\)/u,
+    'la caméra de poursuite reste juste derrière le véhicule');
+  assert.match(source, /cameraPosition\.y \+= 2\.7/u,
+    'la caméra est abaissée pour suivre le véhicule agrandi');
 });
 
 test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {

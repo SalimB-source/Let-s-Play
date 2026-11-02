@@ -1,4 +1,7 @@
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+export const VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE = 1.14;
+export const VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE = 1.18;
 const BRAKE_DECELERATION = 13.5;
 const FREE_ROAM_WHEEL_ANGLE = 0.44;
 const FREE_ROAM_WHEELBASE = 3.25;
