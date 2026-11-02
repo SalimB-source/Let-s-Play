@@ -1404,8 +1404,8 @@ function EcuBouclier({ fissure = false, couleurs = [] }) {
       {premiere && <defs><linearGradient id={idDegrade} x1="0%" y1="0%" x2="100%" y2="100%">
         <stop offset="50%" stopColor={premiere} /><stop offset="50%" stopColor={seconde} />
       </linearGradient></defs>}
-      <path className="rpg-bouclier__ecu-corps" style={premiere ? { fill: `url(#${idDegrade})`, fillOpacity: .66 } : undefined} d="M24 3 42 9v16c0 12-7.5 21.5-18 28C13.5 46.5 6 37 6 25V9Z" />
-      <path className="rpg-bouclier__ecu-ligne" d="M24 9l12 4v12c0 8.5-5 15.5-12 21-7-5.5-12-12.5-12-21V13Z" />
+      <path className="rpg-bouclier__ecu-corps" style={premiere ? { fill: `url(#${idDegrade})`, fillOpacity: .12, stroke: `url(#${idDegrade})` } : undefined} d="M24 3 42 9v16c0 12-7.5 21.5-18 28C13.5 46.5 6 37 6 25V9Z" />
+      <path className="rpg-bouclier__ecu-ligne" style={premiere ? { stroke: `url(#${idDegrade})` } : undefined} d="M24 9l12 4v12c0 8.5-5 15.5-12 21-7-5.5-12-12.5-12-21V13Z" />
       <path className="rpg-bouclier__ecu-rune" d="M24 16v18M16 25h16" />
       {fissure && (
         <>

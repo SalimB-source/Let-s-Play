@@ -18,6 +18,7 @@ assert.equal(gradient.querySelectorAll('stop').length, 2);
 assert.notEqual(gradient.children[0].getAttribute('stop-color'), gradient.children[1].getAttribute('stop-color'));
 assert.equal(gradient.getAttribute('x1'), '0%');
 assert.equal(gradient.getAttribute('y2'), '100%');
+assert.match(egide.querySelector('.rpg-bouclier__ecu-corps').getAttribute('style'), /fill-opacity:\s*0\.12/);
 for (const [nom, attendu] of [['pastilleLionne', 'Bouclier Eau et Neige'], ['pastilleIfrit', 'Bouclier Neige']]) {
   const document = new JSDOM(rendus[nom]).window.document;
   const pastille = document.querySelector('[data-pastille="protection"]');
