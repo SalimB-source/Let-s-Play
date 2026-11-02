@@ -60,9 +60,9 @@ function envoyerEvenementGlisser(target, type, dataTransfer) {
 }
 
 /**
- * Le duel de la flèche : une Tislit des Aurès (Attaque ciblée) frappe la seule
- * créature du sorcier et s'arrête sur sa proie. On vérifie ce que le lecteur
- * audio reçoit réellement : `fleche`, jamais `player_attack_hit`.
+ * Le duel de la flèche : une Tislit des Aurès (Attaque ciblée) vise la seule
+ * créature du sorcier. Le lecteur reçoit le whoosh correspondant au résultat
+ * (touche ou rate), jamais `player_attack_hit`.
  */
 export async function checkRpgFlecheAudio(assert, fichiersLus = []) {
   const sons = [];
@@ -195,8 +195,9 @@ export async function checkRpgFlecheAudio(assert, fichiersLus = []) {
 
     const noms = sons.map((son) => son.nom);
     if (process.env.RPG_FLE_DEBUG) console.log('SONS', JSON.stringify(sons), 'FICHIERS', JSON.stringify(fichiersLus.slice(fichiersAvant)));
-    assert.ok(noms.includes('fleche'),
-      `la frappe ciblée joue la flèche (sons : ${noms.join(', ') || 'aucun'})`);
+    const sfxFleche = noms.find((nom) => ['fleche', 'fleche_ratee'].includes(nom));
+    assert.ok(sfxFleche,
+      `la frappe ciblée joue le whoosh de son issue (sons : ${noms.join(', ') || 'aucun'})`);
     assert.ok(!noms.includes('player_attack_hit'),
       `une frappe ciblée seule ne joue plus le coup d’épée (sons : ${noms.join(', ')})`);
     assert.ok(!noms.includes('attackers_confirm'),
@@ -205,9 +206,13 @@ export async function checkRpgFlecheAudio(assert, fichiersLus = []) {
       'aucun choc de lames ne se charge pendant l’Attaque ciblée');
     assert.ok(!noms.includes('block_impact'),
       'l’attaque s’arrête sur sa proie : aucun choc de blocage');
-    // Le fichier réellement lu par l'élément <audio>.
-    assert.ok(fichiersLus.slice(fichiersAvant).some((src) => src.includes('arrow-shot.wav')),
-      'l’élément <audio> joue arrow-shot.wav');
+    // Le fichier réellement lu par l'élément <audio> correspond au résultat.
+    const fichiersFleche = fichiersLus.slice(fichiersAvant);
+    const fichierAttendu = sfxFleche === 'fleche'
+      ? 'arrow-whoosh-hit.mp3'
+      : 'arrow-whoosh-miss.mp3';
+    assert.ok(fichiersFleche.some((src) => src.includes(fichierAttendu)),
+      `l’élément <audio> joue ${fichierAttendu}`);
     assert.ok(!fichiersLus.slice(fichiersAvant).some((src) => src.includes('player-attack-hit.wav')),
       'player-attack-hit.wav reste muet sur une Attaque ciblée');
     // La frappe s'arrête sur la proie : le sorcier ne perd rien.

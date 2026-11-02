@@ -1,7 +1,7 @@
 /**
- * L'Attaque ciblée dans la vraie page du duel (jsdom) : la frappe de la proie
- * désignée fait siffler `fleche` (arrow-shot.wav) et laisse le coup d'épée
- * (`player_attack_hit`) au corps à corps.
+ * L'Attaque ciblée dans la vraie page du duel (jsdom) : son whoosh distinct
+ * selon qu'elle touche ou rate, et le coup d'épée (`player_attack_hit`) réservé
+ * au corps à corps.
  */
 
 import test from 'node:test';

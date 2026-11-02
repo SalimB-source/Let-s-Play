@@ -5,10 +5,9 @@
  *
  *  - **l'Attaque ciblée** (le coup rapide) est un **tir à distance** : la
  *    créature désigne sa proie avant le combat, 25 % de chances de rater, et
- *    son attaque s'arrête sur la frappe. Elle siffle comme une flèche
- *    (`fleche`, `arrow-shot.wav`) — **y compris quand la flèche manque sa
- *    cible** : un tir qui rate reste un tir, et il n'y a aucun repli d'acier
- *    derrière.
+ *    son attaque s'arrête sur la frappe. Le whoosh change selon l'issue :
+ *    `fleche` (`arrow_flying_whoosh`) si elle touche, `fleche_ratee`
+ *    (`arrow_whoosh_effect`) si elle manque — sans repli d'acier.
  *  - **le corps à corps** — une créature bloquée, ou la plaque du sorcier —
  *    garde le coup d'épée commun (`player_attack_hit`,
  *    `player-attack-hit.wav`), ou le souffle de l'élément quand une capacité
@@ -24,7 +23,7 @@
  * le choc ensuite. La frappe directe au sorcier reste à la charge de la page
  * (`resume.frappeSorcier`), c'est la plaque qui sonne, pas une créature.
  */
-import { RPG_ARROW_SFX } from './rpgAudio.js';
+import { RPG_ARROW_MISS_SFX, RPG_ARROW_SFX } from './rpgAudio.js';
 
 /** Le coup d'épée commun à toutes les frappes de créature au corps à corps. */
 export const RPG_MELEE_SFX = 'player_attack_hit';
@@ -63,9 +62,8 @@ export function rpgResolutionAToucheUneCible(resume) {
 
 /**
  * Les frappes ciblées dont la flèche est réellement partie : ni annulées (la
- * proie avait déjà disparu, l'arc ne se bande pas), ni… ratées — un tir qui
- * manque reste un tir. Une frappe `rate` siffle donc comme les autres : c'est
- * la seule chose qu'un coup rapide fait entendre, jamais l'acier du repli.
+ * proie avait déjà disparu, l'arc ne se bande pas). Les tirs qui ont touché et
+ * ceux qui ont raté restent ensuite séparés pour choisir leur whoosh.
  */
 export function rpgFrappesCibleesTirees(resume) {
   const coups = Array.isArray(resume?.coupsRapides) ? resume.coupsRapides : [];
@@ -76,27 +74,36 @@ export function rpgFrappesCibleesTirees(resume) {
  * Les sons d'une résolution de combat, dans l'ordre d'écoute :
  * `[{ nom, delai, fleches, touchees }]`. Un duel sans frappe ciblée ni corps à
  * corps (toutes les proies disparues, tout le monde gelé) ne sonne pas ici.
- *
- * La flèche part dès qu'une frappe ciblée est tirée, qu'elle porte ou non :
- * c'est le seul son d'un coup rapide, et le seul retour sonore d'un raté. La
- * page n'a donc aucun repli métallique à jouer derrière.
+ * Les tirs sont regroupés par issue : whoosh de touche puis whoosh de raté.
  *
  * `sonMelee` laisse la page passer le souffle de l'élément quand une capacité
- * de combat qui blesse se déclenche ; la flèche, elle, ne change jamais.
+ * de combat qui blesse se déclenche ; les deux whooshes restent dédiés aux
+ * résultats des Attaques ciblées.
  */
 export function rpgSonsResolutionCombat(resume, {
   sonMelee = RPG_MELEE_SFX,
   sonFleche = RPG_ARROW_SFX,
+  sonFlecheRatee = RPG_ARROW_MISS_SFX,
   delai = 0.015,
 } = {}) {
   const sons = [];
   const tirees = rpgFrappesCibleesTirees(resume);
-  if (tirees.length) {
+  const touchees = tirees.filter((coup) => !coup?.rate);
+  const ratees = tirees.filter((coup) => coup?.rate);
+  if (touchees.length && sonFleche) {
     sons.push({
       nom: sonFleche,
       delai,
-      fleches: tirees.length,
-      touchees: tirees.filter((coup) => !coup?.rate).length,
+      fleches: touchees.length,
+      touchees: touchees.length,
+    });
+  }
+  if (ratees.length && sonFlecheRatee) {
+    sons.push({
+      nom: sonFlecheRatee,
+      delai: delai + (touchees.length ? 0.12 : 0),
+      fleches: ratees.length,
+      touchees: 0,
     });
   }
   // `paires` : chaque attaquant qui a rencontré un bloqueur. Un attaquant
