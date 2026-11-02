@@ -1,3 +1,4 @@
+import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
  * Le cerveau du sorcier — décisions tactiques de l’IA du duel.
  *
@@ -211,8 +212,9 @@ export function furieGagnee(entite, degatsRecus) {
   const pv = Number(entite?.pv ?? entite?.def) || 0;
   const defenseDeBase = Number(carte?.def ?? entite?.pvMax ?? entite?.def ?? pv) || 0;
   const pvApres = pv - degats;
+  const defensePropreApres = defenseSansArmure(entite) - Math.max(0, degats - armureRestante(entite));
   return furie > 0 && degats > 0 && !entite?.furieDeclenchee
-    && pvApres > 0 && pvApres < defenseDeBase ? furie : 0;
+    && pvApres > 0 && defensePropreApres < defenseDeBase ? furie : 0;
 }
 
 /** L’entité meurt-elle sous un coup de ce type ?
@@ -1516,12 +1518,12 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       let creaturesSoignees = 0;
       let furiesEteintes = 0;
       for (const entite of camp.creatures) {
-        const soin = Math.min(montant, Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0)));
+        const soin = Math.min(montant, Math.max(0, plafondSoinCreature(entite) - (entite.pv ?? 0)));
         if (!soin) continue;
         totalSoin += soin;
         creaturesSoignees += 1;
         const defenseDeBase = Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0;
-        if (entite.furieDeclenchee && defenseDeBase > 0 && (entite.pv ?? 0) + soin >= defenseDeBase) {
+        if (entite.furieDeclenchee && defenseDeBase > 0 && defenseSansArmure(entite) + soin >= defenseDeBase) {
           furiesEteintes += 1;
         }
       }
@@ -2000,7 +2002,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       // Yamina : chaque alliée récupère ses PV manquants, le sorcier aussi.
       const soins = camp.creatures.reduce((total, entite) => total
         + Math.min(arrivee.amount ?? 0,
-          Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0))), 0);
+          Math.max(0, plafondSoinCreature(entite) - (entite.pv ?? 0))), 0);
       score += soins * 0.6 + Math.min(arrivee.etJoueur ?? 0, manquePv) * 0.8;
     }
     if (arrivee.type === 'heures') {

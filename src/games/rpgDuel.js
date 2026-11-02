@@ -1,3 +1,4 @@
+import { armureArme, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
@@ -1521,6 +1522,7 @@ function appliquerLiensArmes(duel) {
       const suivant = {};
       let dAtk = 0;
       let dDef = 0;
+      let correctionArmure = 0;
       let journal = null;
       for (const arme of portees) {
         const lien = arme ? lienDeCarte(arme) : null;
@@ -1541,6 +1543,18 @@ function appliquerLiensArmes(duel) {
         const avant = deja[arme.id] ?? { atk: 0, def: 0 };
         dAtk += (voulu.atk ?? 0) - (avant.atk ?? 0);
         dDef += (voulu.def ?? 0) - (avant.def ?? 0);
+        if (entite.arme?.carteId === arme.id) {
+          const ancienTotal = (base.def ?? 0) + (avant.def ?? 0);
+          const nouveauTotal = (base.def ?? 0) + (voulu.def ?? 0);
+          const ancienneArmure = armureArme(entite) ?? { max: Math.max(0, ancienTotal), restant: 0 };
+          const prochainMax = Math.max(0, nouveauTotal);
+          const variation = prochainMax - ancienneArmure.max;
+          const prochainRestant = variation >= 0
+            ? ancienneArmure.restant + variation
+            : Math.max(0, ancienneArmure.restant + variation);
+          correctionArmure += (prochainRestant - ancienneArmure.restant) - variation;
+          entite.arme.armure = { max: prochainMax, restant: prochainRestant };
+        }
         if (actif !== (avant.atk !== 0 || avant.def !== 0)) {
           journal = { arme, actif, base };
         }
@@ -1556,8 +1570,9 @@ function appliquerLiensArmes(duel) {
       if (!dAtk && !dDef) continue;
       entite.atk = Math.max(0, entite.atk + dAtk);
       entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + dDef);
-      entite.def = Math.max(1, entite.def + dDef);
-      entite.pv = Math.max(1, entite.pv + dDef);
+      entite.def = Math.max(1, entite.def + dDef + correctionArmure);
+      entite.pv = Math.max(1, entite.pv + dDef + correctionArmure);
+      entite.def = Math.min(entite.def, entite.pv);
       if (!journal) continue;
       const { arme, actif, base } = journal;
       const renfort = arme.lien.bonus ?? arme.lien.effet;
@@ -1974,7 +1989,9 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
 function attacherArme(duel, cote, entite, carteArme) {
   if (entite.mur || estSite(entite)) return;
   if (entite.arme) retirerArme(duel, cote, entite);
-  entite.arme = { carteId: carteArme.id, durabilite: compteursDurabiliteArme(carteArme) };
+  const defenseArme = Number(carteArme.bonus?.def) || 0;
+  entite.arme = { carteId: carteArme.id, durabilite: compteursDurabiliteArme(carteArme),
+    ...(defenseArme > 0 ? { armure: { max: defenseArme, restant: defenseArme } } : {}) };
   entite.atk += carteArme.bonus?.atk ?? 0;
   entite.pvMax = (entite.pvMax ?? entite.def) + (carteArme.bonus?.def ?? 0);
   entite.def += carteArme.bonus?.def ?? 0;
@@ -2039,6 +2056,7 @@ function attacherArme(duel, cote, entite, carteArme) {
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
   const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
+  const armure = armureArme(entite);
   // Le supplément du Lien part avec l'arme : `appliquerLiensArmes` ne le
   // retrouvera plus, puisque plus aucune arme n'est attachée. Le registre est
   // armé par arme — on ne retire que la part de CELLE-CI, les armes-sorts
@@ -2049,8 +2067,12 @@ function retirerArme(duel, cote, entite) {
   if (!carteArme) return;
   entite.atk = Math.max(0, entite.atk - (carteArme.bonus?.atk ?? 0) - (lienBonus.atk ?? 0));
   entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
-  entite.def = Math.max(1, entite.def - (carteArme.bonus?.def ?? 0) - (lienBonus.def ?? 0));
-  entite.pv = Math.max(1, Math.min(entite.pv, entite.pvMax));
+  const defenseTotale = (carteArme.bonus?.def ?? 0) + (lienBonus.def ?? 0);
+  // Seuls les points d'armure encore présents partent ; les blessures de la
+  // créature n'ont jamais été effacées par l'équipement.
+  const defenseRetiree = (armure?.restant ?? 0) + Math.min(0, defenseTotale);
+  entite.pv = Math.max(1, Math.min(entite.pv - defenseRetiree, entite.pvMax));
+  entite.def = Math.max(1, Math.min(entite.def - defenseRetiree, entite.pv));
   if (bouclierRestant) {
     entite.bouclier = Math.max(0, (entite.bouclier ?? 0) - bouclierRestant);
   }
@@ -2199,7 +2221,7 @@ function synchroniserFurieEntite(duel, entite) {
     0,
     Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0,
   );
-  const active = furie > 0 && pv > 0 && defenseDeBase > 0 && pv < defenseDeBase;
+  const active = furie > 0 && pv > 0 && defenseDeBase > 0 && defenseSansArmure(entite) < defenseDeBase;
   const voulu = active ? furie : 0;
   const delta = voulu - bonus;
   const etaitActive = Boolean(entite.furieDeclenchee);
@@ -2603,6 +2625,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
     // déjà écarté ces créatures de la vague). Tous les dégâts de combat
     // cumulés atteignent donc les PV tels quels.
     const recus = montant;
+    absorberDegatsArmure(entite, recus);
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
@@ -2889,7 +2912,7 @@ function annulerBonusTemporaires(duel, tourFerme) {
       const bonusDefense = entry.def ?? 0;
       entite.pvMax = Math.max(0, (entite.pvMax ?? 0) - bonusDefense);
       entite.pv = bonusDefense > 0
-        ? Math.min(entite.pv, entite.pvMax)
+        ? Math.min(entite.pv, plafondSoinCreature(entite, entite.pvMax))
         : Math.max(0, entite.pv - bonusDefense);
       entite.def = Math.min(entite.def, Math.max(0, entite.pv));
       // Le Tribut prêté par l'Offrande de lin repart avec le renfort.
@@ -3752,7 +3775,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
             Number(duelCardById(entite.carteId)?.def) || 0,
           );
         entite.pvMax = plafond;
-        entite.pv = Math.min(plafond, pvAvant + montant);
+        entite.pv = Math.min(plafondSoinCreature(entite, plafond), pvAvant + montant);
         entite.def = Math.min(plafond, Math.max(Number(entite.def) || 0, entite.pv));
         const gagne = entite.pv - pvAvant;
         if (gagne > 0) {
@@ -4972,6 +4995,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
   const apresEsquive = Math.max(0, amount);
   const absorbes = 0;
   const recus = apresEsquive;
+  absorberDegatsArmure(entite, recus);
   entite.pv -= recus;
   entite.def = Math.min(entite.def, Math.max(0, entite.pv));
   const elements = sourceElements ?? (sourceElement ? [sourceElement] : []);
@@ -7444,8 +7468,8 @@ export function rpgResoudreSiteCible(duel, cote, cibleId) {
   const pvMaxAvant = Math.max(1, Number(cible.pvMax) || Number(cible.def) || 1);
   cible.atk = Math.max(0, (Number(cible.atk) || 0) + 3);
   cible.pvMax = pvMaxAvant + 3;
-  cible.def = cible.pvMax;
-  cible.pv = cible.pvMax;
+  cible.pv = plafondSoinCreature(cible, cible.pvMax);
+  cible.def = cible.pv;
   cible.bouclier = 1;
   cible.bouclierEpuise = false;
   cible.tenaciteDisponible = true;
@@ -7582,7 +7606,7 @@ function resoudreRetoursProgrammes(duel) {
           const soin = Math.max(0, Number(carte.retourDeclenche.soin) || 0);
           const plafond = Math.max(0, Number(allie.pvMax ?? allie.def) || 0);
           const pvAvant = allie.pv;
-          allie.pv = Math.min(plafond, allie.pv + soin);
+          allie.pv = Math.min(plafondSoinCreature(allie, plafond), allie.pv + soin);
           allie.def = Math.min(plafond, Math.max(Number(allie.def) || 0, allie.pv));
           if (allie.pv > pvAvant) journaliserSoin(duel, cote, allie.pv - pvAvant, allie.id);
           synchroniserFurieEntite(duel, allie);
