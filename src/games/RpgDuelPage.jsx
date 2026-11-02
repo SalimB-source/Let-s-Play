@@ -125,6 +125,8 @@ import { useDecksSablier } from './useDecksSablier.js';
 import { useSablierBourse } from './useSablierBourse.js';
 import { accueilSablierPret } from './useStatutSyncSablier.js';
 import RpgSouk from './RpgSouk.jsx';
+import RpgOffreLancement from './RpgOffreLancement.jsx';
+import { FIN_OFFRE_LANCEMENT, offreLancementActive } from './rpgOffreLancement.js';
 import RpgProfilJoueur from './RpgProfilJoueur.jsx';
 import RpgPisteGains from './RpgPisteGains.jsx';
 import RpgStoryBabEl from './RpgStoryBabEl.jsx';
@@ -4696,6 +4698,21 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
 
 function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const indicationsModes = rpgIndicationsModes(progressionHistoire, { hasGame, campagneEnCours });
+  const [offreActive, setOffreActive] = useState(() => offreLancementActive());
+  useEffect(() => {
+    const actualiser = () => setOffreActive(offreLancementActive());
+    const timer = window.setInterval(actualiser, 30000);
+    // Un réveil précis à la fin de l'offre, en plus de la vérification périodique.
+    let fin = null;
+    const programmerFin = () => {
+      const delai = FIN_OFFRE_LANCEMENT - Date.now();
+      if (delai <= 0) { actualiser(); return; }
+      fin = window.setTimeout(programmerFin, Math.min(delai, 2147483647));
+    };
+    programmerFin();
+    document.addEventListener('visibilitychange', actualiser);
+    return () => { window.clearInterval(timer); if (fin !== null) window.clearTimeout(fin); document.removeEventListener('visibilitychange', actualiser); };
+  }, []);
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -5152,14 +5169,16 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           <main className="rpg-mode-menu__play">
             {/* Trois illustrations entières défilent sur leur fond assorti. */}
             <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined}>
-              <div className="rpg-mode-menu__diaporama" aria-hidden="true">
+              <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
                 {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id) => (
                   <div className="rpg-mode-menu__diapo" key={id}>
                     <img className="rpg-mode-menu__hero-backdrop" src={cardArt(id)} alt="" />
                     <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
                   </div>
                 ))}
+                {offreActive && <div className="rpg-mode-menu__diapo rpg-mode-menu__diapo--offre"><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
               </div>
+              {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
@@ -5874,6 +5893,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           </main>
         ) : screen === 'souk' ? (
           <RpgSouk
+            offreLancementActive={offreActive}
             quetes={quetes}
             credits={credits}
             aReclamer={aReclamer}

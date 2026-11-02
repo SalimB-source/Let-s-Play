@@ -15226,3 +15226,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__fissure { stroke: #ff9a42; }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__onde { border-color: rgba(255, 137, 46, .8); }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__flash { background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,180,94,.55) 38%, rgba(255,80,18,.22) 62%, rgba(255,80,18,0) 78%); }
+
+/* Le quatrième visuel remplace momentanément le texte de la vitrine, sans
+   réduire les trois autres images ni laisser de fond vide au changement. */
+.rpg-mode-menu__diaporama.has-offre .rpg-mode-menu__diapo { animation-name: rpg-vitrine-quatre; animation-duration: 24s; }
+.rpg-mode-menu__diaporama.has-offre .rpg-mode-menu__diapo:nth-child(4) { animation-delay: 17.4s; }
+@keyframes rpg-vitrine-quatre {
+  0% { opacity: 0; }
+  2.5%, 25% { opacity: 1; }
+  27.5%, 100% { opacity: 0; }
+}
+.rpg-mode-menu__hero:has(.rpg-mode-menu__diaporama.has-offre) .rpg-mode-menu__hero-copy { animation: rpg-vitrine-texte 24s linear -.6s infinite; }
+@keyframes rpg-vitrine-texte {
+  0%, 72.5% { opacity: 1; }
+  75%, 97.5% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.rpg-mode-menu__hero[data-motion-reduced="true"] .rpg-mode-menu__diaporama.has-offre .rpg-mode-menu__diapo { animation: none; }
+.rpg-mode-menu__hero[data-motion-reduced="true"]:has(.rpg-mode-menu__diaporama.has-offre) .rpg-mode-menu__hero-copy { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__diaporama.has-offre .rpg-mode-menu__diapo { animation: none; }
+  .rpg-mode-menu__hero:has(.rpg-mode-menu__diaporama.has-offre) .rpg-mode-menu__hero-copy { animation: none; }
+}
