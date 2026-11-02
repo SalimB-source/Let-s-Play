@@ -340,3 +340,17 @@ test('la croix « retour aux jeux » disparaît dans la coque PC', () => {
   const boutonPleinEcran = page.slice(debutPleinEcran, page.indexOf('</button>', debutPleinEcran));
   assert.doesNotMatch(boutonPleinEcran, /desktopMode/, 'le bouton plein écran reste offert dans la coque PC');
 });
+
+
+test('la vitrine défile entre le Masque, Ressac et Brise-lame sans étirer leurs illustrations', () => {
+  const hero = page.slice(page.indexOf('<section className="rpg-mode-menu__hero"'), page.indexOf('<div className="rpg-sand-fx"'));
+  assert.match(hero, /\['masque-du-guetteur', 'ressac', 'brise-lame'\]/);
+  assert.match(hero, /className="rpg-mode-menu__hero-keyart" src=\{cardArt\(id\)\}/);
+  assert.match(hero, /className="rpg-mode-menu__hero-backdrop" src=\{cardArt\(id\)\}/);
+  assert.match(hero, /data-motion-reduced=\{animReduite/);
+  assert.match(battleCss, /\.rpg-mode-menu__hero-keyart\s*\{[^}]*object-fit:\s*contain/s);
+  assert.match(battleCss, /\.rpg-mode-menu__hero-backdrop\s*\{[^}]*object-fit:\s*cover/s);
+  assert.match(battleCss, /animation:\s*rpg-vitrine-diaporama 18s linear infinite/);
+  assert.match(battleCss, /\[data-motion-reduced="true"\] \.rpg-mode-menu__diapo \{ animation: none/);
+  assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.rpg-mode-menu__diapo \{ animation: none/s);
+});

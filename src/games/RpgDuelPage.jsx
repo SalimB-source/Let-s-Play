@@ -5150,15 +5150,16 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            {/* Vitrine gauche : grande illustration cadrée du Sablier de Bab El,
-                à la manière de l'affiche vedette de l'accueil MTG Arena. */}
-            <section className="rpg-mode-menu__hero">
-              <img
-                className="rpg-mode-menu__hero-keyart"
-                src={`${import.meta.env.BASE_URL}sablier-de-bab-el-keyart.jpg`}
-                alt=""
-                aria-hidden="true"
-              />
+            {/* Trois illustrations entières défilent sur leur fond assorti. */}
+            <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined}>
+              <div className="rpg-mode-menu__diaporama" aria-hidden="true">
+                {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id) => (
+                  <div className="rpg-mode-menu__diapo" key={id}>
+                    <img className="rpg-mode-menu__hero-backdrop" src={cardArt(id)} alt="" />
+                    <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
+                  </div>
+                ))}
+              </div>
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
                 {Array.from({ length: 18 }).map((_, i) => (
