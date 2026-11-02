@@ -1290,11 +1290,14 @@ export function CimetiereCarousel({ cartes, campLabel, onClose }) {
 }
 
 /** Vector stat symbols remain legible even on WebViews without emoji fonts. */
-function CardStatIcon({ type }) {
-  return <svg className="rpg-stat-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    {type === 'attack'
-      ? <><path d="M15 3h6v6L11 19l-6-6L15 3Z" /><path d="m3 11 10 10M8 16l-5 5" /></>
-      : <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Z" />}
+function CardStatIcon({ type, attaqueCiblee = false }) {
+  const arc = type === 'attack' && attaqueCiblee;
+  return <svg className="rpg-stat-icon" data-stat-icon={arc ? 'arc' : type} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    {arc
+      ? <><path d="M6 3c7 0 15 8 15 15M6 3l6 9 9 6" /><path d="M4 20 19 5M15 5h4v4M4 16v4h4" /></>
+      : type === 'attack'
+        ? <><path d="M15 3h6v6L11 19l-6-6L15 3Z" /><path d="m3 11 10 10M8 16l-5 5" /></>
+        : <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Z" />}
   </svg>;
 }
 
@@ -3229,7 +3232,7 @@ export function TableCard({
               className={`rpg-card__stat--atk${classeAttaque ? ` ${classeAttaque}` : ''}`}
               data-stat-variation={classeAttaque === 'is-buffed' ? 'buff' : classeAttaque === 'is-debuffed' ? 'debuff' : undefined}
             >
-              <CardStatIcon type="attack" /><span className="rpg-stat-value">{entite.atk}</span>
+              <CardStatIcon type="attack" attaqueCiblee={entite.coupRapide} /><span className="rpg-stat-value">{entite.atk}</span>
             </span>
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
@@ -3762,7 +3765,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{defenseAffichee}</span></span>
         </footer>
       )}
@@ -4113,7 +4116,7 @@ function CarteMulligan({ carte, index, selectionnee, nouvelle, onBasculer }) {
       <SortSceau carte={carte} className="rpg-mulligan__sceau rpg-mulligan__sort" />
       {estCreature && (
         <footer className="rpg-card__foot rpg-mulligan__stats" aria-hidden="true">
-          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+          <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
           <span className="rpg-card__pt"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
         </footer>
       )}
@@ -14597,7 +14600,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   {familleSort && <SortSceau carte={carte} className="rpg-hand__sceau rpg-hand__sort" />}
                   {estCreature && (
                     <span className="rpg-hand__stats" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" /><span className="rpg-stat-value">{carte.atk}</span></span>
+                      <span className="rpg-hand__stat rpg-hand__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide} /><span className="rpg-stat-value">{carte.atk}</span></span>
                       <span className="rpg-hand__stat rpg-hand__stat--def"><CardStatIcon type="defense" /><span className="rpg-stat-value">{carte.def}</span></span>
                     </span>
                   )}
