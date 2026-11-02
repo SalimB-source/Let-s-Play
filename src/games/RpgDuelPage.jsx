@@ -1294,7 +1294,12 @@ function CardStatIcon({ type, attaqueCiblee = false }) {
   const arc = type === 'attack' && attaqueCiblee;
   return <svg className="rpg-stat-icon" data-stat-icon={arc ? 'arc' : type} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
     {arc
-      ? <><path d="M6 3c7 0 15 8 15 15M6 3l6 9 9 6" /><path d="M4 20 19 5M15 5h4v4M4 16v4h4" /></>
+      ? <>
+          <path d="M2 1.5C18 .7 22.4 8.8 16.3 22.5l-2.2-.8C19.4 9.2 16.4 4 2 3.5Z" fill="currentColor" stroke="none" />
+          <path d="M2.7 2.6 15.1 21.7" strokeWidth="1.2" />
+          <path d="M3 18.5 20.4 5.7" strokeWidth="1.6" />
+          <path d="m17.9 4.7 4.6-1-2.3 4.1-.3-1.7Z M1 19.1l2.7-2.4 1.6.1-.3 1.6-2.7 2 .3-1Z" fill="currentColor" stroke="none" />
+        </>
       : type === 'attack'
         ? <><path d="M15 3h6v6L11 19l-6-6L15 3Z" /><path d="m3 11 10 10M8 16l-5 5" /></>
         : <path d="M12 3 3 7v5c0 5 9 9 9 9s9-4 9-9V7l-9-4Z" />}
