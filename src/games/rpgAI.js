@@ -397,12 +397,13 @@ function ciblesLegales(duel, cote, carte, portee) {
  * l’autorise (et surtout quand il est létal), sinon la menace principale.
  * `montant = null` évalue un combat d’arrivée sans montant fixe.
  */
-function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, portee, profil, rng }) {
+function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, portee, profil, rng, attaquant = null, ciblesEcartees = null }) {
   const adv = autre(cote);
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
   const prets = duel[cote].creatures.filter((entite) => moteur.rpgPeutAttaquer(entite));
   const options = [];
   for (const entite of ciblesLegales(duel, cote, carte, portee)) {
+    if (ciblesEcartees?.has(entite.id)) continue;
     // Une parade anti-sort bloque tout le sort adverse qui désigne sa
     // créature : l'IA évite de gaspiller une magie dessus si une autre cible
     // (ou le visage) se présente. Elle garde quand même l'option en dernier
@@ -410,11 +411,16 @@ function meilleuresOptionsOffensives(duel, cote, carte, { montant, sourceType, p
     const paradeAdverse = sourceType === 'magie' && carte?.kind === 'magie'
       && paradeContreSort(entite, carte);
     const kill = !paradeAdverse && montant != null && meurtSous(entite, montant, sourceType);
+    // Une Contre-attaque riposte même si la cible est détruite ou esquive.
+    // Une parade ordinaire sur l'attaquant peut cependant arrêter la riposte.
+    const riposteFatale = attaquant && sourceType === 'attaque' && entite.contreAttaque
+      && !(attaquant.bouclier > 0)
+      && meurtSousCouleurs(attaquant, entite.atk, couleursEntite(entite), 'capacite');
     options.push({
       cibleId: entite.id,
       kill,
       bloque: paradeAdverse,
-      score: paradeAdverse ? -2 : (kill ? 20 : 0) + menace(entite),
+      score: paradeAdverse ? -2 : (kill ? 20 : 0) + menace(entite) - (riposteFatale ? 25 + valeurEntite(attaquant) : 0),
     });
   }
   // « Créature ou sorcier » : la magie le déclare dans `cibles`, l'arrivée du
@@ -492,14 +498,15 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
   if (carte?.effet?.type === 'destruction-cible') {
     return ciblesLegales(duel, cote, carte, 'creature')
       .filter((entite) => duelCardById(entite.carteId)?.kind !== 'site' && moteur.cibleRespecteCoutMax(carte, entite))
-      .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
+      .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte)) || menace(b) - menace(a))[0]?.id ?? null;
   }
   if (carte?.effet?.type === 'destruction-arme') {
     // Brise-lame : on désarme la plus grosse menace équipée que la protection
     // de couleur n'écarte pas. Sans arme adverse, aucune cible.
     return ciblesLegales(duel, cote, carte, 'creature')
       .filter((entite) => armesPortees(entite).length > 0)
-      .sort((a, b) => (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2))[0]?.id ?? null;
+      .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte))
+        || (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2))[0]?.id ?? null;
   }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
@@ -682,8 +689,9 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
   const couleurs = cardColors(carte);
   return campCible.creatures
     .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
-    .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2 }))
-    .sort((a, b) => b.score - a.score)[0]?.entite.id ?? null;
+    .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2,
+      bloque: carte?.kind === 'magie' && campCible === duel[autre(cote)] && paradeContreSort(entite, carte) }))
+    .sort((a, b) => Number(a.bloque) - Number(b.bloque) || b.score - a.score)[0]?.entite.id ?? null;
 }
 
 /** Choisit une créature légale pour chaque attaque ciblée obligatoire. */
@@ -724,7 +732,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
     }
     
     const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
-      montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng,
+      montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng, attaquant,
     });
     if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') {
       const cible = duel[adv].creatures.find((entite) => !estProtegee(entite, couleursEntite(attaquant)));
@@ -804,9 +812,13 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
 
   const parMenace = [...attaquants]
     .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0) || valeurEntite(b) - valeurEntite(a));
-  const menaceRestante = () => attaquants
-    .filter((entite) => !(affectations[entite.id] ?? []).length)
-    .reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
+  const menaceRestante = () => attaquants.reduce((somme, entite) => {
+    const ids = affectations[entite.id] ?? [];
+    if (!ids.length) return somme + (entite.atk ?? 0);
+    // Un bloqueur n'arrête pas nécessairement tout un Overkill.
+    const pvBloqueurs = ids.reduce((total, id) => total + Math.max(0, Number(bloqueurParId(id)?.pv) || 0), 0);
+    return somme + (entite.overkill ? Math.max(0, (entite.atk ?? 0) - pvBloqueurs) : 0);
+  }, 0);
   const pvDefense = () => Math.max(0, duel[coteDefense].pv ?? 0) + (duel[coteDefense].bouclier ?? 0);
 
   const scoreBlocage = (attaquant, bloqueur) => {
@@ -908,8 +920,12 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
   // tout le reste demeure en réserve.
   if (duel.brouillardCombat) return affectations;
 
-  // 1) Échanges favorables — du plus gros attaquant au plus petit.
-  for (const attaquant of parMenace) {
+  // 1) Échanges favorables : traiter d'abord les attaques qui ont peu de
+  // bloqueurs légaux. Un volant ne doit pas être dépensé sur une attaque au
+  // sol si lui seul peut arrêter une autre créature volante.
+  const parRarete = [...parMenace].sort((a, b) => nombreBloqueursLegaux(a) - nombreBloqueursLegaux(b)
+    || (b.atk ?? 0) - (a.atk ?? 0) || valeurEntite(b) - valeurEntite(a));
+  for (const attaquant of parRarete) {
     if ((affectations[attaquant.id] ?? []).length) continue;
     const candidats = [...libres]
       .map(bloqueurParId)
@@ -936,6 +952,12 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
         .map(bloqueurParId)
         .filter((bloqueur) => legal(attaquant, bloqueur))
         .sort((a, b) => {
+          // Face à Overkill, retenir le plus de dégâts possible prime : un
+          // petit bloqueur peut laisser passer un coup encore létal.
+          if (attaquant.overkill) {
+            const difference = excesOverkill(attaquant, a) - excesOverkill(attaquant, b);
+            if (difference) return difference;
+          }
           // Jetons d'abord, puis valeur la plus faible, puis défense la plus faible
           const jetonA = a.jeton ? 0 : 1;
           const jetonB = b.jeton ? 0 : 1;
@@ -946,18 +968,26 @@ export function choisirBloqueursIA(duel, coteAttaquant, attaquantIds = [], cible
           return (a.pv ?? 0) - (b.pv ?? 0);
         });
       if (!candidats.length) continue;
-      // Ne jamais sacrifier une créature dont la valeur dépasse de loin les dégâts évités
-      // sauf si c'est le dernier rempart avant la mort.
-      const choisi = candidats[0];
-      const degatsSauves = attaquant.atk ?? 0;
-      // Si on est à 1 PV, n'importe quel bloqueur vaut le coup ; à 10 PV, sacrifier une mythique pour 2 dégâts est absurde.
-      const valeurLimite = pvDefense() <= 5 ? Infinity : pvDefense() <= 10 ? 6 : 4;
-      if (valeurEntite(choisi) > degatsSauves * 1.2 && valeurEntite(choisi) > valeurLimite && menaceRestante() - degatsSauves >= pvDefense()) {
-        // On pourrait sacrifier une autre créature moins chère si on en a — mais si c'est la seule, on la sacrifie quand même pour survivre.
-        if (candidats.length > 1) continue;
-      }
+      // En urgence il faut parfois plusieurs sacrifices pour éviter le létal :
+      // ne pas renoncer au premier au seul motif qu'un autre bloqueur existe.
+      // Ne pas gaspiller un corps incapable d'absorber un seul point d'Overkill.
+      const choisi = candidats.find((bloqueur) => (attaquant.atk ?? 0) > excesOverkill(attaquant, bloqueur));
+      if (!choisi) continue;
       libres.delete(choisi.id);
       affectations[attaquant.id] = [choisi.id];
+    }
+    // Une seule créature ne suffit pas toujours contre Overkill : les
+    // bloqueurs encore libres peuvent se regrouper pour absorber le reste.
+    for (const attaquant of parMenace.filter((e) => e.overkill && (affectations[e.id] ?? []).length)) {
+      if (menaceRestante() < pvDefense()) break;
+      const candidats = [...libres].map(bloqueurParId)
+        .filter((bloqueur) => legal(attaquant, bloqueur) && (bloqueur.pv ?? 0) > 0)
+        .sort((a, b) => (b.pv ?? 0) - (a.pv ?? 0) || valeurEntite(a) - valeurEntite(b));
+      for (const bloqueur of candidats) {
+        if (menaceRestante() < pvDefense()) break;
+        libres.delete(bloqueur.id);
+        affectations[attaquant.id].push(bloqueur.id);
+      }
     }
   }
   return affectations;
@@ -1095,10 +1125,18 @@ export function choisirAttaquantsIA(duel, cote, options = {}) {
       const attaquant = ensemble.find((entite) => entite.id === id);
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
       if (!attaquant || !cible) continue;
+      const chanceTouche = armeById(attaquant.arme?.carteId)?.coupRapideImmanquable
+        ? 1 : 1 - moteur.RPG_COUP_RAPIDE_ECHEC_CHANCE;
       if (meurtSousCouleurs(cible, attaquant.atk, couleursEntite(attaquant), 'attaque')) {
-        leurPerte += valeurEntite(cible);
+        leurPerte += valeurEntite(cible) * chanceTouche;
       } else {
-        leurPerte += menace(cible) * 0.3;
+        leurPerte += menace(cible) * 0.3 * chanceTouche;
+      }
+      // La riposte touche l'attaquant même si la proie meurt ou esquive, mais
+      // seulement si la frappe ciblée ne rate pas avant d'atteindre la cible.
+      if (cible.contreAttaque && !(attaquant.bouclier > 0)
+          && meurtSousCouleurs(attaquant, cible.atk, couleursEntite(cible), 'capacite')) {
+        notrePerte += valeurEntite(attaquant) * chanceTouche;
       }
     }
     return {
@@ -1270,7 +1308,7 @@ function entiteDeSecours(carte, duel = null) {
  * Score d’une carte jouable maintenant, avec sa cible éventuelle.
  * Retourne null si la carte est injouable (pas de cible légale requise).
  */
-function scoreCarte(duel, cote, carte, profil, rng) {
+function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
   const adv = autre(cote);
   const camp = duel[cote];
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
@@ -1385,6 +1423,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       }
       const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
         montant, sourceType: 'magie', portee: effet.cible, profil, rng,
+        ciblesEcartees: effet.cible === 'creature' && !effet.gel && !effet.gelChance && !effet.echo ? ciblesCondamnees : null,
       });
       if (!meilleure) return null;
       let score;
@@ -1440,7 +1479,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
     if (effet.type === 'retour-main') {
       if (effet.cible === 'toutes-autres') {
         const eligible = (entite) => !entite.site && (!effet.exclutType || !cardHasPrintedType(entite.carteId, effet.exclutType));
-        const valeur = duel[adv].creatures.filter(eligible).reduce((s, e) => s + menace(e), 0)
+        const valeur = duel[adv].creatures.filter((e) => eligible(e) && !paradeContreSort(e, carte)).reduce((s, e) => s + menace(e), 0)
           - duel[cote].creatures.filter(eligible).reduce((s, e) => s + menace(e), 0);
         return { score: Math.max(0, valeur * 0.6 - cout * 0.3), cibleId: null };
       }
@@ -1452,6 +1491,7 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const cible = duel[effet.cible === 'creature-amie' ? cote : adv].creatures
         .find((entite) => entite.id === cibleId);
       if (!cible) return null;
+      if (effet.cible !== 'creature-amie' && paradeContreSort(cible, carte)) return { score: 0, cibleId };
       const tempo = effet.cible === 'creature-amie' ? valeurEntite(cible) * 0.2 : 1.5 + menace(cible) * 0.5;
       const controle = profil.style === 'controle' ? 1 : 0;
       const score = tempo + controle + (effet.pioche ?? 0) * 2 - cout * 0.3;
@@ -1461,12 +1501,14 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
       if (!cible) return null;
+      if (paradeContreSort(cible, carte)) return { score: 0, cibleId };
       return { score: Math.max(0, 4 + valeurEntite(cible) - cout * 0.3), cibleId };
     }
     if (effet.type === 'destruction-arme') {
       const cibleId = choisirCibleAutoIA(duel, cote, carte, { profil, rng });
       if (!cibleId) return null;
       const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (cible && paradeContreSort(cible, carte)) return { score: 0, cibleId };
       const valeurArmes = cible ? armesPortees(cible).length * 2 : 0;
       const score = 2 + valeurArmes + (cible ? menace(cible) * 0.35 : 0)
         + (Number(effet.pioche) || 0) * 2 - cout * 0.3;
@@ -1480,7 +1522,8 @@ function scoreCarte(duel, cote, carte, profil, rng) {
       const plancher = Number.isFinite(effet.minimum) ? effet.minimum : 0;
       const retraitAtk = Number(effet.atk) || 0;
       const retraitDef = Number(effet.def) || 0;
-      const options = ciblesLegales(duel, cote, carte, 'creature').map((entite) => {
+      const options = ciblesLegales(duel, cote, carte, 'creature')
+        .filter((entite) => !paradeContreSort(entite, carte)).map((entite) => {
         const tue = plancher <= 0 && (entite.pv ?? 0) + retraitDef <= 0;
         const apres = {
           ...entite,
@@ -1972,12 +2015,35 @@ function scoreCarte(duel, cote, carte, profil, rng) {
   return { score, cibleId };
 }
 
+/** En réponse à un blocage, ne pas dépenser un dégât pur sur un attaquant
+ * qui va tomber sans tuer son bloqueur. On se limite aux échanges simples :
+ * la moindre capacité ou source de hasard rend la prédiction incertaine. */
+function ciblesCondamneesAuCombat(duel, cote, combat) {
+  const exclues = new Set();
+  if (!combat || combat.coteAttaquant !== autre(cote) || duel.brouillardCombat) return exclues;
+  for (const id of combat.attaquants ?? []) {
+    if (combat.ciblesAttaque?.[id]) continue;
+    const bloqueurs = combat.blocages?.[id] ?? [];
+    if (bloqueurs.length !== 1) continue;
+    const attaquant = duel[autre(cote)].creatures.find((e) => e.id === id);
+    const bloqueur = duel[cote].creatures.find((e) => e.id === bloqueurs[0]);
+    if (!attaquant || !bloqueur || attaquant.overkill || estGelee(attaquant) || estGelee(bloqueur)) continue;
+    if ([attaquant, bloqueur].some((e) => e.esquive || e.coupCritique || e.bouclierLumiere || armesPortees(e).length
+      || duelCardById(e.carteId)?.combat)) continue;
+    if (estProtegee(attaquant, couleursEntite(bloqueur))) continue;
+    if ((bloqueur.atk ?? 0) >= (attaquant.pv ?? Infinity)
+      && (attaquant.atk ?? 0) < (bloqueur.pv ?? 0)) exclues.add(id);
+  }
+  return exclues;
+}
+
 /** Coups actuellement jouables, ordonnés par l'heuristique historique. */
 function candidatsCartesIA(duel, cote, options = {}) {
   const { profil, rng } = optionsIA(duel, cote, options);
   const camp = duel[cote];
   const exclus = options.exclus ?? new Set();
   const candidats = [];
+  const ciblesCondamnees = options.seulementInstants ? ciblesCondamneesAuCombat(duel, cote, options.combat) : null;
   for (const carteId of camp.main) {
     const carte = duelCardById(carteId) ?? magieById(carteId) ?? armeById(carteId);
     if (!carte || carte.kind === 'terrain' || terrainById(carteId)) continue;
@@ -1986,8 +2052,14 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
     if (!moteur.rpgPeutPayer(camp, carte)) continue;
-    const evaluation = scoreCarte(duel, cote, carte, profil, rng);
+    const evaluation = scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees);
     if (!evaluation || !(evaluation.score > 0)) continue;
+    const effet = effetLie(carte, lienSatisfait(carte, camp.creatures)) ?? {};
+    // Un simple dégât au visage non létal est rarement une raison de brûler
+    // une réponse après avoir écarté une cible déjà condamnée.
+    if (ciblesCondamnees?.size && evaluation.cibleId === 'sorcier'
+      && effet.type === 'degats' && effet.cible === 'creature' && !effet.gel && !effet.echo
+      && (effet.amount ?? 0) < (duel[autre(cote)].pv ?? 0) + (duel[autre(cote)].bouclier ?? 0)) continue;
     // Filet de sécurité : la cible désignée chez l'adversaire doit être
     // légale. Une créature protégée contre la couleur de la carte (ou dérobée
     // aux magies par le Serpent du monde) est refusée par le moteur — la carte

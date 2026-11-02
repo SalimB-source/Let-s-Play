@@ -52,7 +52,7 @@ test('la barre garde Jouer, mais plus la Conquête ; le sablier reste un raccour
     'le bouton d’accueil porte le sablier dessiné');
 });
 
-test('trois bannières larges empilées à droite, miniature tirée des cartes et titre seul sans détails', () => {
+test('trois bannières illustrées avec appel à jouer', () => {
   assert.ok(actions.length > 0, 'le bloc d’actions de la page Jouer existe');
   assert.equal((grilleModesSeulement.match(/rpg-mode-carte(?![-\w])/g) ?? []).length, 3,
     'trois bannières de mode exactement (Mode histoire, Duel en ligne, Conquête)');
@@ -65,7 +65,7 @@ test('trois bannières larges empilées à droite, miniature tirée des cartes e
   assert.doesNotMatch(grilleModesSeulement, /rpg-menu-button--partie-rapide/,
     'le mode « Jouer » a été retiré des modes de jeu à droite');
   assert.doesNotMatch(grilleModesSeulement, /<small>/,
-    'aucun détail secondaire (<small>) ne surcharge le texte des modes : seulement un titre');
+    'les descriptions restent intégrées aux bannières');
   assert.doesNotMatch(grilleModesSeulement, /rpg-mode-carte__icone/,
     'les anciennes grandes icônes de mode cèdent la place aux miniatures de cartes');
   assert.match(battleCss, /\.rpg-mode-menu__hero-actions > \.rpg-mode-carte\s*\{[^}]*width:\s*100%;/s,
@@ -77,7 +77,16 @@ test('trois bannières larges empilées à droite, miniature tirée des cartes e
 });
 
 test('les trois modes à droite sont « Mode histoire », « Duel en ligne » et « Conquête »', () => {
-  assert.doesNotMatch(grilleModesSeulement, />Jouer</, 'la bannière « Jouer » ne figure plus dans les modes à droite');
+  assert.equal((grilleModesSeulement.match(/className="rpg-mode-carte__jouer"/g) ?? []).length, 3, 'chaque mode possède un appel Jouer');
+  for (const label of ['Jouer au mode histoire', 'Jouer en duel en ligne', 'Jouer en Conquête']) {
+    assert.ok(grilleModesSeulement.includes(label), `commande accessible : ${label}`);
+  }
+  for (const id of ['mode-histoire-description', 'mode-ligne-description', 'mode-conquete-description']) {
+    assert.ok(grilleModesSeulement.includes(`aria-describedby="${id}"`));
+    assert.ok(grilleModesSeulement.includes(`id="${id}"`));
+  }
+  assert.match(battleCss, /\.rpg-mode-carte__jouer\s*\{/);
+  assert.match(battleCss, /\.rpg-mode-carte:focus-visible\s*\{/);
   assert.doesNotMatch(actions, />Partie rapide</, 'l’ancien libellé a disparu des modes');
   assert.match(actions, /rpg-menu-button--histoire/, 'le Mode histoire reste présent');
   assert.doesNotMatch(grilleModesSeulement, /rpg-menu-button--glow/,

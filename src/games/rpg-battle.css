@@ -15036,3 +15036,157 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-quests-jour__solde-mini strong { font-size: 11px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__souk-lien { font-size: 7.5px; }
 }
+
+/* Pendant le choix d'une cible, avertir avant de dépenser le sort. */
+.rpg-card__avertissement-bouclier {
+  position: absolute;
+  z-index: 15;
+  top: 32%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 6px;
+  border: 1px solid #f4ce7b;
+  border-radius: 6px;
+  background: rgba(35, 23, 13, .94);
+  color: #fff1c7;
+  font-size: clamp(9px, 0.85vw, 12px);
+  font-weight: 800;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Historique consultable aussi sur les petits écrans, sans couvrir le plateau
+   tant qu'il est fermé. Les messages restent ceux du moteur, dans l'ordre. */
+.rpg-historique { position: relative; justify-self: end; font-size: 11px; color: #f5e7c7; }
+.rpg-historique summary { cursor: pointer; padding: 4px 8px; border: 1px solid #a28650; border-radius: 6px; background: rgba(20, 16, 15, .94); }
+.rpg-historique ol { position: absolute; bottom: 100%; right: 0; width: min(320px, 75vw); max-height: min(45vh, 320px); overflow-y: auto; margin: 0 0 4px; padding: 10px 12px 10px 28px; border: 1px solid #a28650; border-radius: 8px; background: #181513; color: #f5e7c7; line-height: 1.45; }
+.rpg-historique li + li { margin-top: 4px; }
+.rpg-combat-apercu { max-height: 100px; overflow-y: auto; padding: 6px 8px; border: 1px solid #a28650; border-radius: 7px; background: rgba(20, 16, 15, .94); color: #fff0cd; font-size: 11px; line-height: 1.35; }
+.rpg-combat-apercu small { display: block; color: #d4c2a1; }
+
+/* Les bannières sont elles-mêmes les commandes : l'appel « Jouer » n'est pas
+   un bouton imbriqué, et toute la miniature reste accessible au clic. */
+.rpg-mode-menu__hero-actions > .rpg-mode-carte .rpg-mode-carte__texte {
+  justify-content: space-between;
+  gap: 8px;
+  text-align: left;
+  padding: clamp(7px, 1vh, 12px) clamp(9px, 1vw, 16px);
+}
+.rpg-mode-carte__jouer {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px;
+  border: 1px solid #f8dc9b;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #f4d993, #c58a36);
+  color: #21170c;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .5), 0 0 16px rgba(225, 167, 69, .22);
+  font: 800 10px/1 var(--mono, monospace);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: background .2s ease, box-shadow .2s ease;
+}
+.rpg-mode-carte__jouer > span { font-size: 15px; line-height: .7; }
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:is(:hover, :focus-visible) .rpg-mode-carte__jouer {
+  background: linear-gradient(135deg, #fff1c7, #e3ab54);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, .55), 0 0 20px rgba(255, 205, 113, .48);
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:focus-visible {
+  outline: 3px solid #ffdc8a;
+  outline-offset: 3px;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  .rpg-mode-carte__jouer { padding: 6px 8px; gap: 5px; font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__hero-actions > .rpg-mode-carte, .rpg-mode-carte__jouer { transition: none; }
+}
+
+/* Les teintes et éclats restent au service des illustrations des modes. */
+.rpg-mode-carte { --mode-lueur: 225, 179, 91; }
+.rpg-mode-carte.rpg-menu-button--histoire { --mode-lueur: 132, 194, 246; }
+.rpg-mode-carte.rpg-menu-button--en-ligne { --mode-lueur: 244, 118, 101; }
+.rpg-mode-carte.rpg-menu-button--conquete { --mode-lueur: 199, 157, 244; }
+.rpg-mode-menu__hero-actions > .rpg-mode-carte::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .18;
+  background: radial-gradient(ellipse at 78% 20%, rgba(var(--mode-lueur), .65), transparent 55%);
+  transition: opacity .25s ease;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte:is(:hover, :focus-visible)::before { opacity: .65; }
+.rpg-mode-carte__infos { display: grid; gap: 4px; min-width: 0; }
+.rpg-mode-carte__description {
+  color: #f1dfc1;
+  font: 500 clamp(10px, .8vw, 12px)/1.25 system-ui, sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+  text-shadow: 0 1px 4px #000, 0 1px 2px #000;
+}
+@media (max-width: 700px) and (orientation: portrait), (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions { grid-template-rows: repeat(3, minmax(72px, auto)); }
+  .rpg-mode-menu--jouer .rpg-mode-carte__description { font-size: 11px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .rpg-mode-carte__infos { gap: 2px; }
+  .rpg-mode-carte__description { font-size: 9px; line-height: 1.15; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-mode-menu__hero-actions > .rpg-mode-carte::before { transition: none; }
+}
+
+.rpg-combat-apercu__risque { color: #ffb5a5; font-weight: 700; }
+.rpg-repartition-choix { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin: 6px 0; }
+.rpg-repartition-choix button, .rpg-ordre-combat summary { min-height: 32px; padding: 5px 8px; border: 1px solid #ae9260; border-radius: 5px; background: #251e18; color: #f9e7bf; cursor: pointer; font: inherit; }
+.rpg-repartition-choix button[aria-pressed="true"] { color: #201609; background: #f1cc80; border-color: #ffe1a0; font-weight: 800; }
+.rpg-repartition-choix button:focus-visible, .rpg-ordre-combat summary:focus-visible { outline: 2px solid #ffe5a5; outline-offset: 2px; }
+.rpg-ordre-combat { color: #f6e9d1; font-size: 11px; }
+.rpg-ordre-combat summary { display: inline-flex; align-items: center; }
+.rpg-ordre-combat ol { margin: 4px 0; padding: 8px 8px 8px 26px; border-radius: 5px; background: rgba(20,16,15,.96); line-height: 1.4; }
+
+/* Résumé facultatif : il ne masque ni les récompenses ni les actions de fin. */
+.rpg-bilan-fin { width: min(100%, 470px); color: #f4e7cc; font-size: 12px; text-align: left; }
+.rpg-bilan-fin summary { padding: 8px 11px; border: 1px solid rgba(229,191,105,.5); border-radius: 7px; background: rgba(37,28,21,.92); color: #f6d990; cursor: pointer; font-weight: 700; }
+.rpg-bilan-fin summary:focus-visible { outline: 2px solid #ffe3a2; outline-offset: 2px; }
+.rpg-bilan-fin__contenu { max-height: min(26vh, 190px); overflow-y: auto; padding: 10px 12px; border: 1px solid rgba(229,191,105,.25); border-top: 0; border-radius: 0 0 7px 7px; background: rgba(10,11,18,.94); line-height: 1.4; }
+.rpg-bilan-fin__camps { display: grid; gap: 3px; margin-bottom: 8px; }
+.rpg-bilan-fin__contenu ol { margin: 5px 0 0; padding-left: 20px; color: #ded3c0; }
+.rpg-bilan-fin__contenu li + li { margin-top: 3px; }
+.rpg-overlay--loss { overflow-y: auto; }
+
+.rpg-overlay--win, .rpg-overlay--loss { align-content: safe center; }
+/* Le journal ouvert doit passer devant le rail de tour, sans masquer les
+   commandes quand il est refermé. L'overlay de fin reste au-dessus. */
+.card-table > .rpg-bottombar:has(.rpg-historique[open]),
+.rpg-battle--touch .card-table > .rpg-bottombar:has(.rpg-historique[open]) { z-index: 45; }
+/* Sur un petit écran, l'aperçu utilise l'espace à gauche des commandes au
+   lieu de comprimer les boutons dans une colonne de 100 px. */
+.rpg-combat-apercu { max-height: min(24vh, 210px); }
+.rpg-combat-apercu .rpg-ordre-combat { margin-top: 6px; }
+@media (max-height: 600px) and (orientation: landscape) {
+  .rpg-battle--touch .rpg-bottombar .rpg-combat-apercu {
+    position: absolute;
+    right: calc(100% + 6px);
+    bottom: 0;
+    width: min(310px, 53vw);
+    max-height: min(58vh, 210px);
+    overflow-y: auto;
+    z-index: 1;
+  }
+}
+@media (max-height: 420px) and (orientation: landscape) {
+  .rpg-overlay { gap: 6px; padding: 10px; }
+  .rpg-overlay h2 { font-size: 18px; }
+  .rpg-bilan-fin__contenu { max-height: 64px; padding: 6px 10px; }
+}

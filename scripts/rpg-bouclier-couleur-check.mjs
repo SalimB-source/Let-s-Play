@@ -5,6 +5,10 @@ await build({ logLevel: 'error', build: { ssr: 'scripts/rpg-bouclier-smoke.jsx',
 const { rendreCartesBouclier } = await import('../node_modules/.cache/rpg-bouclier-couleur/rpg-bouclier-smoke.js');
 const rendus = rendreCartesBouclier();
 const dom = new JSDOM(rendus.colore);
+const avertissement = new JSDOM(rendus.cibleProtegee).window.document.querySelector('[data-sort-bloque-bouclier="true"]');
+assert.ok(avertissement, 'la cible protégée indique le sort bloqué');
+assert.match(avertissement.textContent, /Sort bloqué/);
+assert.match(avertissement.getAttribute('aria-label'), /bloquera le sort/);
 const egide = dom.window.document.querySelector('.rpg-bouclier-egide--colore');
 assert.ok(egide, 'égide colorée visible');
 assert.match(egide.getAttribute('style'), /--bouclier-couleur-a:.*--bouclier-couleur-b:/);
