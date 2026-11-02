@@ -1,0 +1,23 @@
+.rpg-offre-lancement { position: relative; isolation: isolate; overflow: hidden; border: 1px solid rgba(238, 190, 103, .44); border-radius: 12px; background: linear-gradient(115deg, #1c1012, #291d18 55%, #0a0a11); color: #fff0d3; }
+.rpg-offre-lancement__art { position: absolute; z-index: -2; inset: 0 0 0 auto; width: 55%; height: 100%; object-fit: cover; object-position: center 30%; opacity: .44; }
+.rpg-offre-lancement::before { content: ''; position: absolute; z-index: -1; inset: 0; background: linear-gradient(90deg, #171014 25%, rgba(20, 12, 15, .9) 55%, rgba(20, 12, 15, .32)); }
+.rpg-offre-lancement__contenu { display: flex; align-items: flex-start; flex-direction: column; gap: 5px; padding: 20px 24px; }
+.rpg-offre-lancement__eyebrow { color: #efbd68; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.rpg-offre-lancement__titre { font-size: clamp(22px, 3vw, 34px); line-height: 1.05; }
+.rpg-offre-lancement__prix { display: flex; align-items: baseline; flex-wrap: wrap; gap: 9px; }
+.rpg-offre-lancement__prix strong { color: #ffd37a; font-size: clamp(25px, 3.4vw, 38px); line-height: 1; }
+.rpg-offre-lancement__prix span { color: #d4c4ab; font-size: 13px; }
+.rpg-offre-lancement__date { font-size: 12px; color: #e4d3bd; }
+.rpg-offre-lancement__statut { margin-top: 4px; color: #f5ce82; font-size: 12px; font-weight: 700; }
+.rpg-offre-lancement--souk { margin: 0 0 16px; max-width: 960px; }
+.rpg-offre-lancement--slide { height: 100%; border: 0; border-radius: 0; }
+.rpg-offre-lancement--slide .rpg-offre-lancement__contenu { justify-content: center; height: 100%; box-sizing: border-box; padding: clamp(10px, 3vw, 32px); }
+@media (max-height: 500px) and (orientation: landscape) {
+  .rpg-offre-lancement--slide .rpg-offre-lancement__contenu { gap: 2px; padding: 7px 12px; }
+  .rpg-offre-lancement--slide .rpg-offre-lancement__eyebrow { font-size: 9px; }
+  .rpg-offre-lancement--slide .rpg-offre-lancement__titre { font-size: clamp(16px, 4vh, 23px); }
+  .rpg-offre-lancement--slide .rpg-offre-lancement__prix strong { font-size: clamp(19px, 5vh, 27px); }
+  .rpg-offre-lancement--slide .rpg-offre-lancement__prix span,
+  .rpg-offre-lancement--slide .rpg-offre-lancement__date,
+  .rpg-offre-lancement--slide .rpg-offre-lancement__statut { font-size: 10px; }
+}

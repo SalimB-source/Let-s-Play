@@ -33,6 +33,8 @@ import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { SOUK_DIRECT_REGLES, vueCarteDeEtal } from './rpgSoukDirect.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
+import RpgOffreLancement from './RpgOffreLancement.jsx';
+import { offreLancementActive as estOffreLancementActive } from './rpgOffreLancement.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 
@@ -586,6 +588,7 @@ function CarteDeLEtal({
 }
 
 export default function RpgSouk({
+  offreLancementActive = estOffreLancementActive(),
   quetes = null,
   credits = 0,
   aReclamer = 0,
@@ -764,6 +767,7 @@ export default function RpgSouk({
               : 'Le comptoir ouvrira à votre première victoire'}
           </p>
         </div>
+        {offreLancementActive && <RpgOffreLancement illustration={cardArt?.('salem')} />}
         {/* Le paquet se suffit à lui-même : son nom, son prix et ce qu'il
             garantit sont déjà écrits sur le sachet (`PaquetDuRayon`). Aucune
             fiche de détails ne s'étale plus dessous — seul un refus (rayon

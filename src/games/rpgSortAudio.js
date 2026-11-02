@@ -10,8 +10,8 @@
  *
  * Ces souffles restent aux **créatures** : l'arrivée qui blesse et la capacité
  * de combat de Braise (`rpgArriveeAudio.js`, `rpgFireAudio.js`). Au lancement
- * d'un sort, il ne reste que le tonnerre de l'Éclair du marteau — il *est* le
- * sort, pas son habillage.
+ * d'un sort, l'Éclair du marteau et la Tempête de foudre et de givre partagent
+ * le même tonnerre : il accompagne leur foudre, pas leur couleur.
  *
  * `sonForce` laisse un appelant imposer un son : un renvoi en main garde son
  * froissement de carte, un contre garde `card_countered` (joué à part).
