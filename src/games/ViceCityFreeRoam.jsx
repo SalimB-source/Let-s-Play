@@ -484,7 +484,23 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
   const barrierMat = new THREE.MeshStandardMaterial({ color: 0x969b98, roughness: 0.76, metalness: 0.22 });
   const barrierPosts = [];
   const medianTransforms = [];
-  const rampEntryPoints = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
+  const rampPaths = viceCityOuterHighwayAccessRamps();
+  const rampCorridorClearance = accessHalfWidth + 1.2;
+  const isNearRampCorridor = (x, z) => rampPaths.some((path) => {
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const start = path[index];
+      const end = path[index + 1];
+      const dx = end.x - start.x;
+      const dz = end.z - start.z;
+      const lengthSq = dx * dx + dz * dz;
+      const progress = lengthSq > 1e-8
+        ? clamp(((x - start.x) * dx + (z - start.z) * dz) / lengthSq, 0, 1) : 0;
+      const offsetX = x - (start.x + dx * progress);
+      const offsetZ = z - (start.z + dz * progress);
+      if (offsetX * offsetX + offsetZ * offsetZ <= rampCorridorClearance ** 2) return true;
+    }
+    return false;
+  });
   for (const pathData of viceCityOuterHighwayPaths()) {
     const points = pathData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
     const tangents = points.map((point, index) => {
@@ -497,7 +513,7 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
       const end = points[index + 1];
       const centerX = (start.x + end.x) / 2;
       const centerZ = (start.z + end.z) / 2;
-      if (rampEntryPoints.some((entry) => Math.hypot(centerX - entry.x, centerZ - entry.z) < 31)) continue;
+      if (isNearRampCorridor(centerX, centerZ)) continue;
       const dx = end.x - start.x;
       const dz = end.z - start.z;
       const length = Math.hypot(dx, dz);
@@ -518,18 +534,19 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
         const z = point.z + tangent.x * side * outerOffset;
         return new THREE.Vector3(x, highwayElevation(x, z), z);
       });
-      for (const height of [0.52, 0.98]) {
-        const railVertices = railPoints.map((point) => new THREE.Vector3(point.x, point.y + height, point.z));
-        const curve = new THREE.CatmullRomCurve3(railVertices, false, 'centripetal');
-        const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(32, points.length * 2), 0.12, 6, false), barrierMat);
-        rail.name = 'vice-city-highway-continuous-guardrail';
-        rail.castShadow = true;
-        rail.receiveShadow = true;
-        scene.add(rail);
-      }
+      const railSections = [];
+      let railSection = [];
       for (let index = 0; index < railPoints.length - 1; index += 1) {
         const start = railPoints[index];
         const end = railPoints[index + 1];
+        const rampOpening = isNearRampCorridor((start.x + end.x) / 2, (start.z + end.z) / 2);
+        if (rampOpening) {
+          if (railSection.length > 1) railSections.push(railSection);
+          railSection = [];
+          continue;
+        }
+        if (railSection.length === 0) railSection.push(start);
+        railSection.push(end);
         barrierSegments.push({ x1: start.x, z1: start.z, x2: end.x, z2: end.z, radius: 0.24 });
         if (index % 2 === 0) {
           const point = railPoints[index];
@@ -539,6 +556,16 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
             yaw: Math.atan2(tangent.x, tangent.y),
           });
         }
+      }
+      if (railSection.length > 1) railSections.push(railSection);
+      for (const section of railSections) for (const height of [0.52, 0.98]) {
+        const railVertices = section.map((point) => new THREE.Vector3(point.x, point.y + height, point.z));
+        const curve = new THREE.CatmullRomCurve3(railVertices, false, 'centripetal');
+        const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(8, section.length * 2), 0.12, 6, false), barrierMat);
+        rail.name = 'vice-city-highway-continuous-guardrail';
+        rail.castShadow = true;
+        rail.receiveShadow = true;
+        scene.add(rail);
       }
     }
   }
@@ -697,27 +724,12 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
         rampDashVertices.push(x, highwayElevation(x, z) + 0.09, z);
       }
     }
-    const signPoint = points.at(-1);
-    const signTangent = tangents.at(-1);
-    const signNormal = new THREE.Vector2(-signTangent.y, signTangent.x);
-    const signCenterX = signPoint.x + signNormal.x * (accessHalfWidth + 4);
-    const signCenterZ = signPoint.z + signNormal.y * (accessHalfWidth + 4);
-    const signYaw = Math.atan2(signTangent.x, signTangent.y);
-    for (const side of [-1, 1]) {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 4.2, 0.18), signPoleMat);
-      post.position.set(signCenterX + side * 2.4, 2.1, signCenterZ);
-      post.castShadow = true;
-      scene.add(post);
-    }
-    const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.55), makeExitSignMaterial(exitNames[rampIndex]));
-    sign.position.set(signCenterX, 4.15, signCenterZ);
-    sign.rotation.y = signYaw;
-    scene.add(sign);
-    sign.userData.exitName = exitNames[rampIndex];
-
-    const gantryNormal = new THREE.Vector2(-signTangent.y, signTangent.x);
-    const gantryCenterX = points[0].x;
-    const gantryCenterZ = points[0].z;
+    const gantryTangent = tangents[0];
+    const gantryNormal = new THREE.Vector2(-gantryTangent.y, gantryTangent.x);
+    // Set the sign upstream on the mainline, not on the ramp mouth or city junction.
+    const gantryApproach = 58;
+    const gantryCenterX = points[0].x - gantryTangent.x * gantryApproach;
+    const gantryCenterZ = points[0].z - gantryTangent.y * gantryApproach;
     for (const side of [-1, 1]) {
       const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7.7, 0.5), signPoleMat);
       post.position.set(

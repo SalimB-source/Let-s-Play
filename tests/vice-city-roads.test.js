@@ -84,6 +84,14 @@ test('l’autoroute reçoit un terre-plein, des glissières, des panneaux suspen
   assert.match(source, /traffic\.axis === 'highway'/u);
   assert.match(source, /city\.isHighwayBarrierBlocked\(x, z\)/u,
     'les barrières visibles ont aussi une collision');
+  assert.match(source, /if \(isNearRampCorridor\(centerX, centerZ\)\) continue/u,
+    'le terre-plein s’interrompt le long des bretelles');
+  assert.match(source, /const rampOpening = isNearRampCorridor/u,
+    'les glissières latérales laissent aussi passer les bretelles');
+  assert.match(source, /const gantryTangent = tangents\[0\]/u,
+    'les panneaux suivent l’orientation de la chaussée principale à l’entrée');
+  assert.match(source, /const gantryApproach = 58/u,
+    'les panneaux sont annoncés en amont de la sortie');
 });
 
 test('l’autoroute forme une boucle continue et traverse le fleuve sur deux ponts en arche', () => {
