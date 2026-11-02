@@ -1,3 +1,4 @@
+import { gamingNews as edition20261101 } from '../news/daily/2026-11-01';
 import { gamingNews as gamingNews20261102, editionDate } from '../news/daily/2026-11-02';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -73,6 +74,7 @@ const FEATURED_COPY = {
 export const latestGamingStories = [
   // La nouvelle édition ouvre la liste ; les articles précédents sont conservés.
   ...gamingNews20261102,
+  ...edition20261101,
   ...gamingNews20261029,
   ...dailyNewsListing.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),
   ...dailyNewsListing20261017.filter((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/')),

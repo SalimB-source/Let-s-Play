@@ -1,3 +1,4 @@
+import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102, editionDate } from '../news/daily/2026-11-02';
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
@@ -98,6 +99,7 @@ export default function TechNews() {
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
     ...news20261102.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
+    ...edition20261101.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...cultureTechNews20261029.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...dailyNewsListing20261017.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
