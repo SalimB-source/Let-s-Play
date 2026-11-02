@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   CITY_RUSH_CARS,
@@ -16,6 +17,14 @@ import {
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
+  viceCityFreeDriveJoystickVector,
+  viceCityFreeDriveAimPose,
+  viceCityFreeDriveAimVectorPose,
+  viceCityFreeDriveTurnInput,
+  viceCityFreeDriveTurnStep,
+  viceCityFreeDriveTurnAround,
+  viceCityFreeDriveVelocityStep,
+  viceCityFreeDriveFootVector,
   viceCityFreeDriveShotImpulse,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
@@ -58,6 +67,12 @@ import {
 
 const DT = 1 / 60;
 const near = (actual, expected, epsilon = 1e-6) => Math.abs(actual - expected) <= epsilon;
+
+test('conduite libre : la déclaration du tir se ferme sans expression parasite', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /audioRef\.current\?\.gunshot\?\.\(\);\s*\};\s*const bulletOverlaps/u,
+    'aucun identifiant isolé ne doit interrompre le montage du jeu après fireShot');
+});
 const course = (id) => CITY_RUSH_COURSES.find((item) => item.id === id);
 const laneXsOf = (config) => Array.from({ length: config.laneCount }, (_, lane) => config.laneX(lane));
 const boundsFor = (id, halfWidth = 0.95) => {
@@ -118,6 +133,142 @@ test('conduite libre mobile : le joystick dirige, accélère et freine avec une 
     'les petites vibrations du doigt ne font pas braquer la voiture');
 });
 
+test('joystick à pied : déplacement analogique dans toutes les directions avec zone morte', () => {
+  assert.deepEqual(viceCityFreeDriveJoystickVector(0, 0), { x: 0, y: 0, magnitude: 0 });
+  assert.deepEqual(viceCityFreeDriveJoystickVector(0.08, -0.08), { x: 0, y: 0, magnitude: 0 });
+  assert.deepEqual(viceCityFreeDriveJoystickVector(0, -1), { x: 0, y: -1, magnitude: 1 });
+  assert.deepEqual(viceCityFreeDriveJoystickVector(1, 0), { x: 1, y: 0, magnitude: 1 });
+  const diagonal = viceCityFreeDriveJoystickVector(1, 1);
+  assert.ok(Math.abs(Math.hypot(diagonal.x, diagonal.y) - 1) < 1e-12,
+    'la diagonale ne dépasse pas la vitesse maximale');
+  assert.ok(diagonal.x > 0 && diagonal.y > 0);
+});
+
+test('à pied : A/D font tourner le personnage à gauche et à droite', () => {
+  assert.equal(viceCityFreeDriveTurnInput(true, false), -1);
+  assert.equal(viceCityFreeDriveTurnInput(false, true), 1);
+  assert.equal(viceCityFreeDriveTurnInput(true, true), 0);
+});
+
+test('à pied : le demi-tour arrière pivote en douceur sur exactement une seconde', () => {
+  const start = viceCityFreeDriveTurnAround(0, Math.PI, 0, 1);
+  const halfway = viceCityFreeDriveTurnAround(0, Math.PI, 0.5, 1);
+  const finish = viceCityFreeDriveTurnAround(0, Math.PI, 1, 1);
+  assert.deepEqual(start, { heading: 0, turnRate: 0, complete: false });
+  assert.ok(Math.abs(halfway.heading - Math.PI / 2) < 1e-12);
+  assert.ok(halfway.turnRate > 0, 'la rotation est progressive au milieu du pivot');
+  assert.deepEqual(finish, { heading: Math.PI, turnRate: 0, complete: true });
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /turnAroundElapsed, 1/u, 'la durée du demi-tour est fixée à une seconde');
+});
+
+test('visée souris : le corps garde son cap, seuls les bras suivent le point visé', () => {
+  const pose = viceCityFreeDriveAimPose(Math.PI / 2, Math.PI / 4);
+  assert.equal(pose.bodyHeading, Math.PI / 2);
+  assert.ok(Math.abs(pose.armYaw - Math.PI / 4) < 1e-12);
+  assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
+});
+
+test('visée souris 3D : le réticule et le tir partagent le rayon jusque dans la hauteur', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /const x = cursorX;\s*const y = cursorY;/u,
+    'le réticule reste exactement sous le curseur');
+  assert.match(source, /mouseRaycaster\.intersectObjects\(aimGlassCandidates, false\)/u,
+    'une vitre sous le curseur fournit le point visé réel');
+  assert.match(source, /mouseRaycaster\.ray\.at\(90, mouseAimPoint\)/u,
+    'le rayon garde une visée verticale en espace libre');
+  assert.match(source, /mouseAimDirection\.subVectors\(mouseAimPoint, shotOrigin\)/u,
+    'le vecteur part du canon et garde sa composante verticale');
+  assert.match(source, /stepY = shot\.directionY \* 92 \* dt/u,
+    'la trajectoire du projectile suit la hauteur visée');
+});
+
+test('visée 3D : le pitch incline les bras sans modifier le cap du personnage', () => {
+  const pose = viceCityFreeDriveAimVectorPose(0.7, 0, Math.SQRT1_2, -Math.SQRT1_2);
+  assert.equal(pose.bodyHeading, 0.7);
+  assert.ok(Math.abs(pose.pitch - Math.PI / 4) < 1e-12);
+  assert.ok(Math.abs(pose.armYaw - 0.7) < 1e-12,
+    'le bras compense le cap du corps pour pointer droit devant en 3D');
+  const diagonal = viceCityFreeDriveAimVectorPose(0, 1, 1, -1);
+  assert.ok(Math.abs(diagonal.pitch - Math.asin(1 / Math.sqrt(3))) < 1e-12);
+  assert.ok(Math.abs(diagonal.armYaw + Math.PI / 4) < 1e-12);
+});
+
+test('le demi-tour arrière se fait sur place et la caméra orbite derrière le personnage', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.match(source, /turnAroundTarget = walkState\.heading \+ Math\.PI/u);
+  assert.match(source, /viceCityFreeDriveTurnAround\(/u);
+  assert.match(source, /const turnInPlace = turningAround \|\| backwardInput/u,
+    'S et le joystick arrière ne déplacent pas le personnage pendant ou après le pivot');
+  assert.match(source, /const forwardInput = turnInPlace \? 0/u,
+    'le personnage ne marche pas pendant son demi-tour');
+  assert.match(source, /pedestrianCameraHeading \+= cameraTurn \* \(1 - Math\.exp\(-dt \* 5\.2\)\)/u,
+    'la caméra suit un arc autour du joueur au lieu de traverser son corps');
+});
+
+test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanches, genoux, chevilles et bassin', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const start = source.indexOf('function makeFreeRoamPedestrian()');
+  const end = source.indexOf('function isTouchPortraitViewport()', start);
+  assert.ok(start >= 0 && end > start);
+  const model = source.slice(start, end);
+  for (const joint of ['pedestrian-pelvis-joint', 'shoulder-joint-', 'elbow-joint-',
+    'hip-joint-', 'knee-joint-', 'ankle-joint-']) assert.ok(model.includes(joint), `${joint} doit être présent`);
+  assert.match(model, /elbow\.position\.y = -0\.37/u);
+  assert.match(model, /ankle\.position\.set\(0, -0\.36/u);
+  assert.match(source, /pedestrian\.pelvis\.rotation\.set\(/u,
+    'le bassin suit le déplacement au lieu de rester figé');
+});
+
+test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const start = source.indexOf('const updateShots = (dt) =>');
+  const end = source.indexOf('const cockpitMirrorTurn', start);
+  assert.ok(start >= 0 && end > start);
+  const shotUpdate = source.slice(start, end);
+  assert.match(shotUpdate, /breakVehicleGlass\(/u);
+  assert.doesNotMatch(shotUpdate, /(?:velocityX|velocityZ|angularVelocity)\s*\+=/u);
+});
+
+test('à pied : la pose de visée reste en portée pendant l’entrée/sortie avec E', () => {
+  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  const animateStart = source.indexOf('const animate = (now) =>');
+  const footStart = source.indexOf('if (isOnFootRef.current) {', animateStart);
+  const footEnd = source.indexOf("\n      } else {\n        throttle = pressed('ArrowUp') || pressed('KeyW');", footStart);
+  assert.ok(animateStart >= 0 && footStart > animateStart && footEnd > footStart);
+  const footBranch = source.slice(footStart, footEnd);
+  assert.ok(footBranch.indexOf('const mouseAimDirection = getMouseAimDirection()') < footBranch.indexOf('if (pendingEntry)'));
+  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimVectorPose') > footBranch.indexOf('if (pendingEntry)'));
+  assert.match(footBranch, /aimPose\.armYaw \* aimBlend/u);
+  assert.match(footBranch, /movePedestrianWithSlide\(dt\)/u);
+  assert.match(footBranch, /pedestrian\.legs\[0\]\.userData\.knee\.rotation\.x/u);
+});
+
+test('à pied : l’accélération, le freinage et les changements de direction sont progressifs', () => {
+  const firstStep = viceCityFreeDriveVelocityStep(0, 0, 2.35, 0, 1 / 60);
+  assert.ok(firstStep.x > 0 && firstStep.x < 2.35, 'la vitesse monte graduellement');
+  const braking = viceCityFreeDriveVelocityStep(2, 0, 0, 0, 1 / 60);
+  assert.ok(braking.x > 0 && braking.x < 2, 'le relâchement freine sans arrêt sec');
+  const reversing = viceCityFreeDriveVelocityStep(0.3, 0, -2, 0, 1 / 60);
+  assert.ok(reversing.x > 0 && reversing.x < 0.3, 'un demi-tour freine avant de repartir en sens inverse');
+
+  const firstTurn = viceCityFreeDriveTurnStep(0, 1, 1 / 60);
+  assert.ok(firstTurn > 0 && firstTurn < 2.35, 'A/D engagent la rotation sans à-coup');
+  const heldTurn = viceCityFreeDriveTurnStep(firstTurn, 1, 1 / 60);
+  assert.ok(heldTurn > firstTurn);
+  const releasedTurn = viceCityFreeDriveTurnStep(heldTurn, 0, 1 / 60);
+  assert.ok(releasedTurn > 0 && releasedTurn < heldTurn, 'la rotation se recentre doucement');
+});
+
+test('à pied : les axes de glissade restent indépendants et la diagonale est plafonnée', () => {
+  assert.deepEqual(viceCityFreeDriveFootVector(0, -1), { forward: 0, strafe: -1, magnitude: 1 });
+  assert.deepEqual(viceCityFreeDriveFootVector(0, 1), { forward: 0, strafe: 1, magnitude: 1 });
+  assert.deepEqual(viceCityFreeDriveFootVector(1, 0), { forward: 1, strafe: 0, magnitude: 1 });
+  const diagonal = viceCityFreeDriveFootVector(1, 1);
+  assert.ok(Math.abs(Math.hypot(diagonal.forward, diagonal.strafe) - 1) < 1e-12);
+  assert.equal(viceCityFreeDriveFootVector(0.2, 0.3).magnitude, Math.hypot(0.2, 0.3));
+});
+
 test('conduite libre mobile : les tirs poussent les véhicules sans éjecter les plus lourds', () => {
   assert.equal(viceCityFreeDriveShotImpulse(1), 5.2);
   assert.equal(viceCityFreeDriveShotImpulse(2), 2.6);
@@ -134,6 +285,10 @@ test('conduite libre : les barrières du canal bloquent les franchissements hors
     'une grande étape ne peut pas sauter les deux berges');
   assert.equal(viceCityCanalBarrierCrossed(25, 30, 15, 0), true,
     'un déplacement en diagonale est bloqué au point où il coupe la berge');
+  assert.equal(viceCityCanalBarrierCrossed(25, 440, 15, 450, 20, 7.8, [-455, 455], 13.6), false,
+    'une approche diagonale qui coupe le mur sur le tablier autoroutier reste ouverte');
+  assert.equal(viceCityCanalBarrierCrossed(25, 435, 15, 445, 20, 7.8, [-455, 455], 13.6), true,
+    'le mur reste actif si la trajectoire coupe la berge avant le tablier autoroutier');
 });
 
 test('conduite libre : braquage moins brutal et adhérence latérale modérée', () => {

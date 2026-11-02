@@ -4,6 +4,10 @@ import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
+import {
+  VICE_CITY_CHALLENGES, VICE_CITY_POINTS_OF_INTEREST, createViceCityChallenge,
+  viceCityGpsRoute, viceCityStreetName, viceCityDistrictName, viceCityChallengeProgress,
+} from './viceCityFreeDriveFeatures.js';
 import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
   CITY_RUSH_COCKPIT_BODY_FOLLOW,
@@ -21,15 +25,25 @@ import {
   viceCityFreeDriveParkedCarImpulse,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
-  viceCityFreeDriveShotImpulse,
+  viceCityFreeDriveJoystickVector,
+  viceCityFreeDriveAimPose,
+  viceCityFreeDriveAimVectorPose,
+  viceCityFreeDriveTurnInput,
+  viceCityFreeDriveTurnStep,
+  viceCityFreeDriveTurnAround,
+  viceCityFreeDriveVelocityStep,
+  viceCityFreeDriveFootVector,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
+  viceCityFreeDriveGlassEntryFace,
 } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import {
   VICE_CITY_OUTER_HIGHWAY,
   viceCityCanalWaveHeight,
+  viceCityOuterHighwayAccessRamps,
+  viceCityOuterHighwayLoopPath,
   viceCityOuterHighwayBridgeHeight,
   viceCityOuterHighwayContains,
   viceCityOuterHighwayPaths,
@@ -53,6 +67,7 @@ const BUILDING_COLLISION_MARGIN = 0.9;
 const CITY_GRID_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityGridLimit;
 const CITY_LIMIT = VICE_CITY_OUTER_HIGHWAY.cityLimit;
 const FREE_ROAM_SOUND_KEY = 'letsplay_vice_city_rush_sound_v1';
+const FREE_ROAM_PROGRESS_KEY = 'letsplay_vice_city_free_roam_progress_v1';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
 function readFreeRoamSoundPreference() {
@@ -61,6 +76,26 @@ function readFreeRoamSoundPreference() {
 
 function writeFreeRoamSoundPreference(enabled) {
   try { window.localStorage.setItem(FREE_ROAM_SOUND_KEY, enabled ? 'on' : 'off'); } catch { /* stockage désactivé */ }
+}
+
+function readFreeRoamProgress() {
+  const empty = { credits: 0, completedCount: 0, completedChallengeIds: [], bestTimes: {}, bestScores: {} };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(FREE_ROAM_PROGRESS_KEY) || 'null');
+    if (!saved || typeof saved !== 'object') return empty;
+    return {
+      credits: Math.max(0, Math.floor(Number(saved.credits) || 0)),
+      completedCount: Math.max(0, Math.floor(Number(saved.completedCount) || 0)),
+      completedChallengeIds: Array.isArray(saved.completedChallengeIds)
+        ? [...new Set(saved.completedChallengeIds.filter((id) => typeof id === 'string'))] : [],
+      bestTimes: saved.bestTimes && typeof saved.bestTimes === 'object' ? saved.bestTimes : {},
+      bestScores: saved.bestScores && typeof saved.bestScores === 'object' ? saved.bestScores : {},
+    };
+  } catch { return empty; }
+}
+
+function writeFreeRoamProgress(progress) {
+  try { window.localStorage.setItem(FREE_ROAM_PROGRESS_KEY, JSON.stringify(progress)); } catch { /* stockage désactivé */ }
 }
 
 function readFreeRoamCameraPreference() {
@@ -267,6 +302,26 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
     glow.scale.set(0.85, 1.55, 1);
     scene.add(glow);
   }
+  // A towering gantry crane makes the working harbor visible across the water.
+  const gantryMat = new THREE.MeshStandardMaterial({ color: 0xc56e47, roughness: 0.64, metalness: 0.38 });
+  const gantryHighlightMat = new THREE.MeshStandardMaterial({ color: 0xe4bd75, roughness: 0.48, metalness: 0.48 });
+  const gantryZ = 270;
+  for (const legX of [-357, -318]) {
+    addBox(scene, gantryMat, legX, -0.02, gantryZ, 1.1, 15.4, 1.1, true);
+    addBox(scene, gantryMat, legX, -0.02, gantryZ - 2.4, 1.1, 15.4, 0.42, true);
+    addBox(scene, gantryMat, legX, -0.02, gantryZ + 2.4, 1.1, 15.4, 0.42, true);
+  }
+  addBox(scene, gantryMat, -337.5, 14.9, gantryZ, 40.2, 0.95, 1.35, true);
+  addBox(scene, gantryHighlightMat, -337.5, 15.87, gantryZ, 40.2, 0.14, 0.14);
+  addBox(scene, gantryMat, -366, 14.15, gantryZ, 18, 0.72, 1.2, true);
+  addBox(scene, gantryHighlightMat, -366, 14.9, gantryZ, 18, 0.14, 0.14);
+  const gantryTrolley = addBox(scene, gantryHighlightMat, -350, 13.95, gantryZ, 3.2, 1.0, 2.4, true);
+  const hoistCable = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 9, 7), gantryMat);
+  hoistCable.position.set(-350, 9.4, gantryZ);
+  scene.add(hoistCable);
+  addBox(scene, gantryMat, -350, 4.7, gantryZ, 0.5, 0.3, 1.1, true);
+  gantryTrolley.userData.harborCrane = true;
+  buildingFootprints.push({ x: -318, z: gantryZ, halfWidth: 2.5, halfDepth: 2.5 });
   const boats = [
     { style: 'fishing', length: 13, width: 3.2, hullColor: 0x365e69, cabinColor: 0xe8dfc9, z: -215 },
     { style: 'speedboat', length: 15, width: 3.6, hullColor: 0xb74d3b, cabinColor: 0xf0eee4, z: -105 },
@@ -280,10 +335,13 @@ function addViceCityPort(scene, addGroundPlane, addBox, buildingFootprints, port
   }
 }
 
-function addViceCityOuterHighway(scene, roadElevation) {
-  const { edge, halfWidth, cityGridLimit, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
+function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierSegments = []) {
+  const { edge, halfWidth, accessHalfWidth, bankOffset } = VICE_CITY_OUTER_HIGHWAY;
   const highwayElevation = (x, z) => roadElevation(x, z) + viceCityOuterHighwayBridgeHeight(x, z);
-  const asphaltMat = new THREE.MeshStandardMaterial({ color: 0x20262d, roughness: 0.92 });
+  const asphaltMat = new THREE.MeshStandardMaterial({
+    color: 0x20262d, map: surfaceTextures.map, roughnessMap: surfaceTextures.roughnessMap,
+    bumpMap: surfaceTextures.bumpMap, bumpScale: 0.022, roughness: 0.92,
+  });
   const markingMat = new THREE.MeshBasicMaterial({ color: 0xf2efe5, side: THREE.DoubleSide });
   const accessMarkMat = new THREE.MeshBasicMaterial({ color: 0xe8dfc5, side: THREE.DoubleSide });
   const allDashVertices = [];
@@ -298,6 +356,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
     });
     const makeRibbon = (width, lateralOffset, material, heightOffset, name) => {
       const positions = new Float32Array(pointCount * 2 * 3);
+      const uvs = new Float32Array(pointCount * 2 * 2);
       const indices = [];
       for (let index = 0; index < pointCount; index += 1) {
         const point = points[index];
@@ -313,6 +372,9 @@ function addViceCityOuterHighway(scene, roadElevation) {
           positions[vertex] = x;
           positions[vertex + 1] = highwayElevation(x, z) + heightOffset;
           positions[vertex + 2] = z;
+          const uvIndex = (index * 2 + edgeIndex) * 2;
+          uvs[uvIndex] = x / 28;
+          uvs[uvIndex + 1] = z / 28;
         }
         if (index < pointCount - 1) {
           const outer = index * 2;
@@ -324,6 +386,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
       }
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       geometry.setIndex(indices);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, material);
@@ -334,9 +397,9 @@ function addViceCityOuterHighway(scene, roadElevation) {
     };
 
     makeRibbon(halfWidth * 2, 0, asphaltMat, 0.035, 'vice-city-perimeter-highway');
-    // Double solid divider and shoulder lines: access spurs can join either direction.
-    for (const offset of [-1.5, 1.5, -11.35, 11.35]) {
-      makeRibbon(0.16, offset, markingMat, 0.071, 'vice-city-highway-solid-line');
+    // A wide center median separates three express lanes per direction from the shoulders.
+    for (const offset of [-18.4, -1.9, 1.9, 18.4]) {
+      makeRibbon(0.18, offset, markingMat, 0.071, 'vice-city-highway-solid-line');
     }
 
     let pathLength = 0;
@@ -355,7 +418,7 @@ function addViceCityOuterHighway(scene, roadElevation) {
           tangent.x + (nextTangent.x - tangent.x) * progress,
           tangent.y + (nextTangent.y - tangent.y) * progress,
         ).normalize();
-        for (const offset of [-6.2, 6.2]) {
+        for (const offset of [-12.3, -7.1, 7.1, 12.3]) {
           const x = centerX - direction.y * offset;
           const z = centerZ + direction.x * offset;
           const tangentX = direction.x;
@@ -401,8 +464,8 @@ function addViceCityOuterHighway(scene, roadElevation) {
         const normalX = -tangentZ / magnitude;
         const normalZ = tangentX / magnitude;
         for (const outerSide of [-1, 1]) {
-          const x = centerX - normalX * outerSide * 17;
-          const z = centerZ - normalZ * outerSide * 17;
+          const x = centerX - normalX * outerSide * (halfWidth + 3);
+          const z = centerZ - normalZ * outerSide * (halfWidth + 3);
           const y = highwayElevation(x, z);
           const pole = new THREE.Mesh(poleGeometry, poleMat);
           pole.position.set(x, y + 3.5, z);
@@ -418,21 +481,125 @@ function addViceCityOuterHighway(scene, roadElevation) {
     }
   }
 
-  const overpassRailMat = new THREE.MeshStandardMaterial({ color: 0x92999c, roughness: 0.48, metalness: 0.68 });
+  const barrierMat = new THREE.MeshStandardMaterial({ color: 0x969b98, roughness: 0.76, metalness: 0.22 });
+  const barrierPosts = [];
+  const medianTransforms = [];
+  const rampPaths = viceCityOuterHighwayAccessRamps();
+  const rampCorridorClearance = accessHalfWidth + 1.2;
+  const isNearRampCorridor = (x, z) => rampPaths.some((path) => {
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const start = path[index];
+      const end = path[index + 1];
+      const dx = end.x - start.x;
+      const dz = end.z - start.z;
+      const lengthSq = dx * dx + dz * dz;
+      const progress = lengthSq > 1e-8
+        ? clamp(((x - start.x) * dx + (z - start.z) * dz) / lengthSq, 0, 1) : 0;
+      const offsetX = x - (start.x + dx * progress);
+      const offsetZ = z - (start.z + dz * progress);
+      if (offsetX * offsetX + offsetZ * offsetZ <= rampCorridorClearance ** 2) return true;
+    }
+    return false;
+  });
+  for (const pathData of viceCityOuterHighwayPaths()) {
+    const points = pathData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
+    const tangents = points.map((point, index) => {
+      const before = points[Math.max(0, index - 1)];
+      const after = points[Math.min(points.length - 1, index + 1)];
+      return new THREE.Vector2(after.x - before.x, after.z - before.z).normalize();
+    });
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const start = points[index];
+      const end = points[index + 1];
+      const centerX = (start.x + end.x) / 2;
+      const centerZ = (start.z + end.z) / 2;
+      if (isNearRampCorridor(centerX, centerZ)) continue;
+      const dx = end.x - start.x;
+      const dz = end.z - start.z;
+      const length = Math.hypot(dx, dz);
+      medianTransforms.push({
+        x: centerX,
+        z: centerZ,
+        y: highwayElevation(centerX, centerZ) + 0.42,
+        yaw: Math.atan2(dx, dz),
+        length: length + 0.4,
+      });
+      barrierSegments.push({ x1: start.x, z1: start.z, x2: end.x, z2: end.z, radius: 0.55 });
+    }
+    const outerOffset = halfWidth - 0.45;
+    for (const side of [-1, 1]) {
+      const railPoints = points.map((point, index) => {
+        const tangent = tangents[index];
+        const x = point.x - tangent.y * side * outerOffset;
+        const z = point.z + tangent.x * side * outerOffset;
+        return new THREE.Vector3(x, highwayElevation(x, z), z);
+      });
+      const railSections = [];
+      let railSection = [];
+      for (let index = 0; index < railPoints.length - 1; index += 1) {
+        const start = railPoints[index];
+        const end = railPoints[index + 1];
+        const rampOpening = isNearRampCorridor((start.x + end.x) / 2, (start.z + end.z) / 2);
+        if (rampOpening) {
+          if (railSection.length > 1) railSections.push(railSection);
+          railSection = [];
+          continue;
+        }
+        if (railSection.length === 0) railSection.push(start);
+        railSection.push(end);
+        barrierSegments.push({ x1: start.x, z1: start.z, x2: end.x, z2: end.z, radius: 0.24 });
+        if (index % 2 === 0) {
+          const point = railPoints[index];
+          const tangent = tangents[index];
+          barrierPosts.push({
+            x: point.x, z: point.z, y: point.y + 0.48,
+            yaw: Math.atan2(tangent.x, tangent.y),
+          });
+        }
+      }
+      if (railSection.length > 1) railSections.push(railSection);
+      for (const section of railSections) for (const height of [0.52, 0.98]) {
+        const railVertices = section.map((point) => new THREE.Vector3(point.x, point.y + height, point.z));
+        const curve = new THREE.CatmullRomCurve3(railVertices, false, 'centripetal');
+        const rail = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(8, section.length * 2), 0.12, 6, false), barrierMat);
+        rail.name = 'vice-city-highway-continuous-guardrail';
+        rail.castShadow = true;
+        rail.receiveShadow = true;
+        scene.add(rail);
+      }
+    }
+  }
+  const postGeometry = new THREE.BoxGeometry(0.14, 0.96, 0.14);
+  const postMesh = new THREE.InstancedMesh(barrierMat, postGeometry, barrierPosts.length);
+  const postMarker = new THREE.Object3D();
+  barrierPosts.forEach((post, index) => {
+    postMarker.position.set(post.x, post.y, post.z);
+    postMarker.rotation.set(0, post.yaw, 0);
+    postMarker.updateMatrix();
+    postMesh.setMatrixAt(index, postMarker.matrix);
+  });
+  postMesh.name = 'vice-city-highway-guardrail-posts';
+  postMesh.castShadow = true;
+  postMesh.receiveShadow = true;
+  scene.add(postMesh);
+
+  const medianGeometry = new THREE.BoxGeometry(0.9, 0.84, 1);
+  const medianMesh = new THREE.InstancedMesh(barrierMat, medianGeometry, medianTransforms.length);
+  const medianMarker = new THREE.Object3D();
+  medianTransforms.forEach((segment, index) => {
+    medianMarker.position.set(segment.x, segment.y, segment.z);
+    medianMarker.rotation.set(0, segment.yaw, 0);
+    medianMarker.scale.set(1, 1, segment.length);
+    medianMarker.updateMatrix();
+    medianMesh.setMatrixAt(index, medianMarker.matrix);
+  });
+  medianMesh.name = 'vice-city-highway-concrete-median';
+  medianMesh.castShadow = true;
+  medianMesh.receiveShadow = true;
+  scene.add(medianMesh);
+
   const overpassSupportMat = new THREE.MeshStandardMaterial({ color: 0x777e80, roughness: 0.86 });
   for (const crossingZ of [-edge, edge]) {
-    for (const outerSide of [-1, 1]) {
-      const railZ = crossingZ + outerSide * (halfWidth - 0.55);
-      const railPoints = [];
-      for (let x = -bankOffset; x <= bankOffset; x += 15) {
-        railPoints.push(new THREE.Vector3(x, highwayElevation(x, railZ) + 0.9, railZ));
-      }
-      const railCurve = new THREE.CatmullRomCurve3(railPoints, false, 'centripetal');
-      const rail = new THREE.Mesh(new THREE.TubeGeometry(railCurve, 48, 0.13, 6, false), overpassRailMat);
-      rail.name = 'vice-city-highway-overpass-guardrail';
-      rail.castShadow = true;
-      scene.add(rail);
-    }
     for (const supportX of [-55, 55]) {
       for (const outerSide of [-1, 1]) {
         const supportHeight = Math.max(1.2, highwayElevation(supportX, crossingZ) - 0.3);
@@ -456,51 +623,188 @@ function addViceCityOuterHighway(scene, roadElevation) {
   dashMesh.name = 'vice-city-highway-lane-dashes';
   scene.add(dashMesh);
 
-  const addAccessStrip = (orientation, fixed, start, end, width) => {
-    const length = Math.abs(end - start);
-    const center = (start + end) / 2;
-    const horizontal = orientation === 'horizontal';
-    const geometry = horizontal
-      ? new THREE.PlaneGeometry(length, width, Math.ceil(length / 6), 1)
-      : new THREE.PlaneGeometry(width, length, 1, Math.ceil(length / 6));
-    geometry.rotateX(-Math.PI / 2);
-    const vertices = geometry.attributes.position;
-    for (let index = 0; index < vertices.count; index += 1) {
-      const x = horizontal ? center + vertices.getX(index) : fixed + vertices.getX(index);
-      const z = horizontal ? fixed + vertices.getZ(index) : center + vertices.getZ(index);
-      vertices.setY(index, highwayElevation(x, z) + 0.04);
-    }
-    vertices.needsUpdate = true;
-    geometry.computeVertexNormals();
-    const surface = new THREE.Mesh(geometry, asphaltMat);
-    surface.position.set(horizontal ? center : fixed, 0, horizontal ? fixed : center);
-    surface.name = 'vice-city-highway-access-ramp';
-    surface.receiveShadow = true;
-    scene.add(surface);
-    for (let along = start + Math.sign(end - start) * 8; Math.sign(end - start) * (end - along) > 4; along += Math.sign(end - start) * 20) {
-      const dash = new THREE.Mesh(
-        new THREE.PlaneGeometry(horizontal ? 8 : 0.16, horizontal ? 0.16 : 8), accessMarkMat,
-      );
-      dash.rotation.x = -Math.PI / 2;
-      const x = horizontal ? along : fixed;
-      const z = horizontal ? fixed : along;
-      dash.position.set(x, highwayElevation(x, z) + 0.075, z);
-      scene.add(dash);
-    }
+  const exitNames = ['DOWNTOWN', 'PORT', 'VICE POINT', 'EASTSIDE'];
+  const signPoleMat = new THREE.MeshStandardMaterial({ color: 0x424b4d, roughness: 0.48, metalness: 0.72 });
+  const makeExitSignMaterial = (destination) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    if (!context) return new THREE.MeshBasicMaterial({ color: 0x0d5e4d, side: THREE.DoubleSide });
+    context.fillStyle = '#0d5e4d';
+    context.fillRect(0, 0, 512, 128);
+    context.strokeStyle = '#d5e4b9';
+    context.lineWidth = 8;
+    context.strokeRect(5, 5, 502, 118);
+    context.fillStyle = '#fff4d4';
+    context.font = '900 34px system-ui, sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText('VICE CITY · SORTIE', 256, 42);
+    context.font = '900 48px system-ui, sans-serif';
+    context.fillText(destination, 256, 88);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false });
   };
-  const accessStart = cityGridLimit + 50;
-  for (const fixedX of [-100, 100]) {
-    addAccessStrip('vertical', fixedX, -edge, -accessStart, 10);
-    addAccessStrip('vertical', fixedX, accessStart, edge, 10);
+  const rampDashVertices = [];
+  for (const [rampIndex, rampData] of viceCityOuterHighwayAccessRamps().entries()) {
+    const points = rampData.map(({ x, z }) => new THREE.Vector3(x, 0, z));
+    const tangents = points.map((point, index) => {
+      const before = points[Math.max(0, index - 1)];
+      const after = points[Math.min(points.length - 1, index + 1)];
+      return new THREE.Vector2(after.x - before.x, after.z - before.z).normalize();
+    });
+    const makeRampRibbon = (width, lateralOffset, material, lift, name) => {
+      const positions = new Float32Array(points.length * 6);
+      const uvs = new Float32Array(points.length * 4);
+      const indices = [];
+      for (let index = 0; index < points.length; index += 1) {
+        const tangent = tangents[index];
+        const normalX = -tangent.y;
+        const normalZ = tangent.x;
+        for (let edgeIndex = 0; edgeIndex < 2; edgeIndex += 1) {
+          const side = edgeIndex === 0 ? -1 : 1;
+          const offset = lateralOffset + side * width / 2;
+          const x = points[index].x + normalX * offset;
+          const z = points[index].z + normalZ * offset;
+          const vertex = (index * 2 + edgeIndex) * 3;
+          positions[vertex] = x;
+          positions[vertex + 1] = highwayElevation(x, z) + lift;
+          positions[vertex + 2] = z;
+          const uvIndex = (index * 2 + edgeIndex) * 2;
+          uvs[uvIndex] = x / 28;
+          uvs[uvIndex + 1] = z / 28;
+        }
+        if (index < points.length - 1) {
+          const outer = index * 2;
+          indices.push(outer, outer + 1, outer + 2, outer + 2, outer + 1, outer + 3);
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = name;
+      mesh.receiveShadow = true;
+      scene.add(mesh);
+      return mesh;
+    };
+    makeRampRibbon(accessHalfWidth * 2, 0, asphaltMat, 0.045, 'vice-city-highway-curved-exit-ramp');
+    for (const shoulder of [-1, 1]) {
+      makeRampRibbon(0.16, shoulder * (accessHalfWidth - 0.45), markingMat, 0.085,
+        'vice-city-highway-ramp-edge-line');
+      for (let index = 4; index < points.length - 4; index += 8) {
+        const point = points[index];
+        const tangent = tangents[index];
+        const normalX = -tangent.y;
+        const normalZ = tangent.x;
+        const x = point.x + normalX * shoulder * (accessHalfWidth + 1.7);
+        const z = point.z + normalZ * shoulder * (accessHalfWidth + 1.7);
+        const railPost = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.82, 0.12), signPoleMat);
+        railPost.position.set(x, highwayElevation(x, z) + 0.42, z);
+        railPost.castShadow = true;
+        scene.add(railPost);
+      }
+    }
+    for (let index = 2; index < points.length - 2; index += 4) {
+      const start = points[index - 1];
+      const end = points[index + 1];
+      const tangent = new THREE.Vector2(end.x - start.x, end.z - start.z).normalize();
+      const normalX = -tangent.y * 0.09;
+      const normalZ = tangent.x * 0.09;
+      const rampCorners = [
+        [start.x - normalX, start.z - normalZ], [end.x - normalX, end.z - normalZ],
+        [end.x + normalX, end.z + normalZ], [start.x + normalX, start.z + normalZ],
+      ];
+      for (const corner of [0, 1, 2, 0, 2, 3]) {
+        const [x, z] = rampCorners[corner];
+        rampDashVertices.push(x, highwayElevation(x, z) + 0.09, z);
+      }
+    }
+    const gantryTangent = tangents[0];
+    const gantryNormal = new THREE.Vector2(-gantryTangent.y, gantryTangent.x);
+    // Set the sign upstream on the mainline, not on the ramp mouth or city junction.
+    const gantryApproach = 58;
+    const gantryCenterX = points[0].x - gantryTangent.x * gantryApproach;
+    const gantryCenterZ = points[0].z - gantryTangent.y * gantryApproach;
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7.7, 0.5), signPoleMat);
+      post.position.set(
+        gantryCenterX + gantryNormal.x * side * (halfWidth + 2.2),
+        3.85,
+        gantryCenterZ + gantryNormal.y * side * (halfWidth + 2.2),
+      );
+      post.castShadow = true;
+      scene.add(post);
+    }
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.52, (halfWidth + 2.2) * 2), signPoleMat);
+    beam.position.set(gantryCenterX, 7.55, gantryCenterZ);
+    beam.rotation.y = Math.atan2(gantryNormal.x, gantryNormal.y);
+    beam.castShadow = true;
+    scene.add(beam);
+    const guideSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(8.4, 1.7), makeExitSignMaterial(exitNames[rampIndex]),
+    );
+    guideSign.position.set(gantryCenterX, 6.55, gantryCenterZ);
+    guideSign.rotation.y = Math.atan2(-gantryNormal.y, gantryNormal.x);
+    guideSign.name = 'vice-city-highway-overhead-exit-sign';
+    guideSign.userData.exitName = exitNames[rampIndex];
+    scene.add(guideSign);
   }
-  for (const fixedZ of [-300, 300]) {
-    addAccessStrip('horizontal', fixedZ, -edge, -accessStart, 10);
-    addAccessStrip('horizontal', fixedZ, accessStart, edge, 10);
+  const rampDashGeometry = new THREE.BufferGeometry();
+  rampDashGeometry.setAttribute('position', new THREE.Float32BufferAttribute(rampDashVertices, 3));
+  rampDashGeometry.computeVertexNormals();
+  const rampDashMesh = new THREE.Mesh(rampDashGeometry, accessMarkMat);
+  rampDashMesh.name = 'vice-city-highway-curved-ramp-lane-dashes';
+  scene.add(rampDashMesh);
+  return asphaltMat;
+}
+
+function makeRoadSurfaceTexture(seed, base, amplitude, colorSpace = THREE.SRGBColorSpace) {
+  const size = 192;
+  const pixels = new Uint8Array(size * size * 4);
+  let state = seed >>> 0;
+  const random = () => {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const u = x / size;
+      const v = y / size;
+      const broad = Math.sin(u * Math.PI * 10 + 0.7) * Math.cos(v * Math.PI * 8 - 0.4);
+      const mid = Math.sin(u * Math.PI * 38 + 1.8) * Math.sin(v * Math.PI * 34 + 0.3);
+      const value = Math.max(0, Math.min(255, base + broad * amplitude * 0.58 + mid * amplitude * 0.27 + (random() - 0.5) * amplitude * 0.55));
+      const offset = (y * size + x) * 4;
+      pixels[offset] = value;
+      pixels[offset + 1] = value;
+      pixels[offset + 2] = value;
+      pixels[offset + 3] = 255;
+    }
   }
+  const texture = new THREE.DataTexture(pixels, size, size, THREE.RGBAFormat);
+  texture.colorSpace = colorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.magFilter = THREE.LinearFilter;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
+  texture.anisotropy = 4;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function makeCity(scene) {
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x252a32, roughness: 0.94 });
+  const asphaltTexture = makeRoadSurfaceTexture(6143, 220, 24);
+  const asphaltRoughness = makeRoadSurfaceTexture(9271, 218, 62, THREE.NoColorSpace);
+  const asphaltBump = makeRoadSurfaceTexture(6143, 220, 24, THREE.NoColorSpace);
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0x252a32, map: asphaltTexture, roughnessMap: asphaltRoughness,
+    bumpMap: asphaltBump, bumpScale: 0.022, roughness: 0.94,
+  });
   const sidewalkMat = new THREE.MeshStandardMaterial({ color: 0xb8a99a, roughness: 0.9 });
   const sidewalkTileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 });
   const sidewalkTileColors = [0x9d9890, 0xa9a39a, 0xb1aaa0, 0x969188, 0xa49e95];
@@ -513,14 +817,22 @@ function makeCity(scene) {
   const manholeMat = new THREE.MeshStandardMaterial({ color: 0x62666a, roughness: 0.76, metalness: 0.18 });
   const grassMat = new THREE.MeshStandardMaterial({ color: 0x344b42, roughness: 1 });
   const lotGrassPalette = [0x4f6947, 0x59724a, 0x60784d, 0x526d4b, 0x657a50];
+  const landmarkTrimMat = new THREE.MeshStandardMaterial({ color: 0xd3ad70, roughness: 0.42, metalness: 0.54 });
+  const landmarkGlowMat = new THREE.MeshStandardMaterial({
+    color: 0x55ddd1, emissive: 0x168b81, emissiveIntensity: 1.4, roughness: 0.38, metalness: 0.18,
+  });
   const districtPalettes = {
     downtown: [0xf0b89f, 0x9fc8c4, 0xf2d9b2, 0xd99d91, 0xc7d5cf],
     port: [0x81939a, 0xb98b6d, 0xc0b69d, 0x667f87, 0xd0c5ad],
+    vicePoint: [0x9fd1cb, 0xf0c19d, 0xe8d9b9, 0x9daec3, 0xf1a28b],
+    eastside: [0xd49f7f, 0xa7b99b, 0xd6c59f, 0x8fa5a1, 0xdcae8f],
     residential: [0xd4bea0, 0x9aafa3, 0xc8ada0, 0xe0d4bb, 0x91a1a0],
   };
   const litWindowPositions = [];
   const blueWindowPositions = [];
   const neonGlowSpecs = [];
+  const neonSignMaterials = [];
+  const neonPointLights = [];
   const darkWindowPositions = [];
   const litSideWindowPositions = [];
   const blueSideWindowPositions = [];
@@ -535,6 +847,8 @@ function makeCity(scene) {
   const horizontalRoadPatchPositions = [];
   const verticalManholePositions = [];
   const horizontalManholePositions = [];
+  const verticalDrainPositions = [];
+  const horizontalDrainPositions = [];
   const verticalSidewalkTilePositions = [];
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
@@ -588,8 +902,11 @@ function makeCity(scene) {
         const x = axis === 'x' ? fixed + positions.getX(index) : segmentCenter + positions.getX(index);
         const z = axis === 'x' ? segmentCenter + positions.getZ(index) : fixed + positions.getZ(index);
         positions.setY(index, roadElevation(x, z) + heightOffset);
+        const uv = geometry.attributes.uv;
+        uv.setXY(index, x / 28, z / 28);
       }
       positions.needsUpdate = true;
+      geometry.attributes.uv.needsUpdate = true;
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(axis === 'x' ? fixed : segmentCenter, 0, axis === 'z' ? fixed : segmentCenter);
@@ -666,6 +983,13 @@ function makeCity(scene) {
         for (const side of [-1, 1]) {
           verticalManholePositions.push([axis + side * 1.7, p]);
           horizontalManholePositions.push([p, axis + side * 1.7]);
+        }
+      }
+      for (let p = -290; p <= 290; p += 40) {
+        if (Math.abs(p - Math.round(p / BLOCK) * BLOCK) < 15 || Math.abs(p) < CANAL_HALF_WIDTH + 9) continue;
+        for (const side of [-1, 1]) {
+          verticalDrainPositions.push([axis + side * 6.45, p]);
+          if (axis !== 0) horizontalDrainPositions.push([p, axis + side * 6.45]);
         }
       }
     }
@@ -939,7 +1263,10 @@ function makeCity(scene) {
       }
     }
   }
-  addViceCityOuterHighway(scene, roadElevation);
+  const highwayBarrierSegments = [];
+  const highwayRoadMat = addViceCityOuterHighway(scene, roadElevation, {
+    map: asphaltTexture, roughnessMap: asphaltRoughness, bumpMap: asphaltBump,
+  }, highwayBarrierSegments);
 
   // Pavés d'angle : ils relient les segments, sans prolonger les trottoirs sur les routes.
   for (let xAxisIndex = -3; xAxisIndex <= 3; xAxisIndex += 1) {
@@ -970,16 +1297,54 @@ function makeCity(scene) {
 
   const marker = new THREE.Object3D();
   const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, verticalDashPositions.length);
-  verticalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalDashes.setMatrixAt(index, marker.matrix); });
+  verticalDashPositions.forEach(([x, z], index) => {
+    const wear = 0.72 + ((index * 17) % 23) / 100;
+    marker.position.set(x, roadElevation(x, z) + 0.04, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.88 + (index % 4) * 0.035, 0.84 + (index % 5) * 0.035, 1);
+    marker.updateMatrix();
+    verticalDashes.setMatrixAt(index, marker.matrix);
+    verticalDashes.setColorAt(index, new THREE.Color().setScalar(wear));
+  });
+  verticalDashes.instanceMatrix.needsUpdate = true;
+  if (verticalDashes.instanceColor) verticalDashes.instanceColor.needsUpdate = true;
   scene.add(verticalDashes);
   const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, horizontalDashPositions.length);
-  horizontalDashPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.04, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalDashes.setMatrixAt(index, marker.matrix); });
+  horizontalDashPositions.forEach(([x, z], index) => {
+    const wear = 0.72 + ((index * 19) % 23) / 100;
+    marker.position.set(x, roadElevation(x, z) + 0.04, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.84 + (index % 5) * 0.035, 0.88 + (index % 4) * 0.035, 1);
+    marker.updateMatrix();
+    horizontalDashes.setMatrixAt(index, marker.matrix);
+    horizontalDashes.setColorAt(index, new THREE.Color().setScalar(wear));
+  });
+  horizontalDashes.instanceMatrix.needsUpdate = true;
+  if (horizontalDashes.instanceColor) horizontalDashes.instanceColor.needsUpdate = true;
   scene.add(horizontalDashes);
   const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
-  verticalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.055, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); verticalCrosswalk.setMatrixAt(index, marker.matrix); });
+  verticalCrosswalkPositions.forEach(([x, z], index) => {
+    marker.position.set(x, roadElevation(x, z) + 0.055, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.86 + (index % 4) * 0.04, 0.9 + (index % 3) * 0.04, 1);
+    marker.updateMatrix();
+    verticalCrosswalk.setMatrixAt(index, marker.matrix);
+    verticalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 13) % 20) / 100));
+  });
+  verticalCrosswalk.instanceMatrix.needsUpdate = true;
+  if (verticalCrosswalk.instanceColor) verticalCrosswalk.instanceColor.needsUpdate = true;
   scene.add(verticalCrosswalk);
   const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
-  horizontalCrosswalkPositions.forEach(([x, z], index) => { marker.position.set(x, roadElevation(x, z) + 0.057, z); marker.rotation.set(-Math.PI / 2, 0, 0); marker.updateMatrix(); horizontalCrosswalk.setMatrixAt(index, marker.matrix); });
+  horizontalCrosswalkPositions.forEach(([x, z], index) => {
+    marker.position.set(x, roadElevation(x, z) + 0.057, z);
+    marker.rotation.set(-Math.PI / 2, 0, 0);
+    marker.scale.set(0.9 + (index % 3) * 0.04, 0.86 + (index % 4) * 0.04, 1);
+    marker.updateMatrix();
+    horizontalCrosswalk.setMatrixAt(index, marker.matrix);
+    horizontalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 17) % 20) / 100));
+  });
+  horizontalCrosswalk.instanceMatrix.needsUpdate = true;
+  if (horizontalCrosswalk.instanceColor) horizontalCrosswalk.instanceColor.needsUpdate = true;
   scene.add(horizontalCrosswalk);
   const addFlatRoadInstances = (geometry, material, positions, y) => {
     const mesh = new THREE.InstancedMesh(geometry, material, positions.length);
@@ -1002,6 +1367,42 @@ function makeCity(scene) {
   addFlatRoadInstances(new THREE.CircleGeometry(0.46, 16), manholeRimMat, horizontalManholePositions, 0.029);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, verticalManholePositions, 0.034);
   addFlatRoadInstances(new THREE.CircleGeometry(0.34, 16), manholeMat, horizontalManholePositions, 0.035);
+  const drainBaseMat = new THREE.MeshStandardMaterial({ color: 0x20272a, metalness: 0.24, roughness: 0.78 });
+  const drainBarMat = new THREE.MeshStandardMaterial({ color: 0x777b78, metalness: 0.48, roughness: 0.52 });
+  const addDrainGrates = (positions, horizontal) => {
+    const bases = new THREE.InstancedMesh(
+      horizontal ? new THREE.BoxGeometry(1.18, 0.035, 0.42) : new THREE.BoxGeometry(0.42, 0.035, 1.18),
+      drainBaseMat,
+      positions.length,
+    );
+    const bars = new THREE.InstancedMesh(
+      horizontal ? new THREE.BoxGeometry(0.035, 0.025, 0.34) : new THREE.BoxGeometry(0.34, 0.025, 0.035),
+      drainBarMat,
+      positions.length * 5,
+    );
+    const barMarker = new THREE.Object3D();
+    positions.forEach(([x, z], index) => {
+      const y = roadElevation(x, z);
+      marker.position.set(x, y + 0.025, z);
+      marker.rotation.set(0, 0, 0);
+      marker.scale.set(1, 1, 1);
+      marker.updateMatrix();
+      bases.setMatrixAt(index, marker.matrix);
+      for (let slot = 0; slot < 5; slot += 1) {
+        const offset = (slot - 2) * 0.19;
+        barMarker.position.set(x + (horizontal ? offset : 0), y + 0.05, z + (horizontal ? 0 : offset));
+        barMarker.rotation.set(0, 0, 0);
+        barMarker.scale.set(1, 1, 1);
+        barMarker.updateMatrix();
+        bars.setMatrixAt(index * 5 + slot, barMarker.matrix);
+      }
+    });
+    bases.instanceMatrix.needsUpdate = true;
+    bars.instanceMatrix.needsUpdate = true;
+    scene.add(bases, bars);
+  };
+  addDrainGrates(verticalDrainPositions, false);
+  addDrainGrates(horizontalDrainPositions, true);
   const addSidewalkTiles = (positions, geometry, y) => {
     const tiles = new THREE.InstancedMesh(geometry, sidewalkTileMat, positions.length);
     positions.forEach(([x, z, colorIndex], index) => {
@@ -1058,6 +1459,8 @@ function makeCity(scene) {
   const districtLighting = {
     downtown: { signs: [0xff4f9a, 0x32dce8, 0xffc044], glow: 1 },
     port: { signs: [0xffa84b, 0x58ccd5, 0xe6dfc6], glow: 0.76 },
+    vicePoint: { signs: [0x42e3d0, 0xff8f9d, 0xffd286], glow: 0.82 },
+    eastside: { signs: [0xffb66b, 0x86c9a5, 0xffd59a], glow: 0.58 },
     residential: { signs: [0xffc37a, 0x8bc0b1, 0xe2aa6f], glow: 0.48 },
   };
   const neonGlowSize = 48;
@@ -1305,7 +1708,11 @@ function makeCity(scene) {
     }
   };
   const ghettoWallMats = [0xbca47e, 0xc6a18c, 0x9cae9a, 0xd1c39e, 0xaeb7b4].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
+  const vicePointWallMats = [0xe4c29e, 0x98c5bf, 0xd99f8c, 0xf0d7b6, 0x9aaec0]
+    .map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
   const ghettoRoofMats = [0x75483e, 0x8a5746, 0x545d5c, 0x9b704c].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9 }));
+  const vicePointRoofMats = [0x45666a, 0x9b6955, 0x576270, 0xb57958]
+    .map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.88 }));
   const ghettoTrimMat = new THREE.MeshStandardMaterial({ color: 0xe2d8c6, roughness: 0.84 });
   const ghettoWindowMat = new THREE.MeshStandardMaterial({ color: 0x426879, roughness: 0.28, metalness: 0.08 });
   const ghettoDoorMats = [0x59483b, 0x604344, 0x485247].map((color) => new THREE.MeshStandardMaterial({ color, roughness: 0.86 }));
@@ -1327,7 +1734,7 @@ function makeCity(scene) {
     parent.add(water);
     buildingFootprints.push({ x, z, halfWidth: 2.7, halfDepth: 3.3 });
   };
-  const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ) => {
+  const addGhettoHouse = (parent, centerX, centerZ, slotX, slotZ, district = 'eastside') => {
     const width = 13 + random() * 3.5;
     const depth = 12 + random() * 3.5;
     const wallHeight = 4.25 + random() * 0.55;
@@ -1335,8 +1742,10 @@ function makeCity(scene) {
     const x = centerX + slotX + (random() - 0.5) * 2;
     const z = centerZ + slotZ + (random() - 0.5) * 2;
     const frontSign = slotZ < 0 ? -1 : 1;
-    const facade = ghettoWallMats[Math.floor(random() * ghettoWallMats.length)];
-    const roof = ghettoRoofMats[Math.floor(random() * ghettoRoofMats.length)];
+    const wallPalette = district === 'vicePoint' ? vicePointWallMats : ghettoWallMats;
+    const roofPalette = district === 'vicePoint' ? vicePointRoofMats : ghettoRoofMats;
+    const facade = wallPalette[Math.floor(random() * wallPalette.length)];
+    const roof = roofPalette[Math.floor(random() * roofPalette.length)];
     const door = ghettoDoorMats[Math.floor(random() * ghettoDoorMats.length)];
     const hasGarage = random() > 0.48;
     const hasPool = random() < 0.26;
@@ -1409,6 +1818,66 @@ function makeCity(scene) {
     addGroundPlane(parent, courtyardPathMat, doorX, z + frontSign * (depth / 2 + 5.4), 2.3, 7.0, -0.032);
   };
   const addCourtyardAmenity = (parent, x, z, type) => {
+    if (type === 'court') {
+      const courtSurface = new THREE.MeshStandardMaterial({ color: 0x425559, roughness: 0.94 });
+      const courtLine = new THREE.MeshBasicMaterial({ color: 0xf2e9d3 });
+      const hoopSteel = new THREE.MeshStandardMaterial({ color: 0x3d4546, roughness: 0.58, metalness: 0.52 });
+      const hoopAccent = new THREE.MeshStandardMaterial({ color: 0xe67b49, roughness: 0.72 });
+      addGroundPlane(parent, courtSurface, x, z, 18, 18, -0.048);
+      for (const side of [-1, 1]) {
+        addBox(parent, courtLine, x, -0.047, z + side * 8.2, 17, 0.035, 0.12);
+        addBox(parent, courtLine, x + side * 8.2, -0.047, z, 0.12, 0.035, 16.4);
+        addBox(parent, courtLine, x + side * 7.5, -0.047, z, 0.12, 0.035, 7.2);
+        addBox(parent, hoopSteel, x + side * 7.8, -0.045, z, 0.16, 3.15, 0.16);
+        addBox(parent, courtLine, x + side * 7.08, 2.7, z, 0.13, 0.88, 1.36);
+        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.055, 7, 20), hoopAccent);
+        rim.rotation.x = Math.PI / 2;
+        rim.position.set(x + side * 6.55, 2.55, z);
+        rim.castShadow = true;
+        parent.add(rim);
+      }
+      addBox(parent, courtLine, x, -0.047, z, 0.12, 0.035, 16.4);
+      const centerCircle = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.065, 6, 32), courtLine);
+      centerCircle.rotation.x = Math.PI / 2;
+      centerCircle.position.set(x, -0.008, z);
+      parent.add(centerCircle);
+      addCourtyardBench(parent, x, z - 9.5);
+      addCourtyardBench(parent, x, z + 9.5);
+      return;
+    }
+    if (type === 'landmark') {
+      const monumentStone = new THREE.MeshStandardMaterial({ color: 0xcbbd9d, roughness: 0.72, metalness: 0.16 });
+      const monumentBrass = new THREE.MeshStandardMaterial({ color: 0xd1a45f, roughness: 0.4, metalness: 0.66 });
+      const beaconMat = new THREE.MeshBasicMaterial({ color: 0x58f0df, toneMapped: false });
+      addGroundPlane(parent, courtyardPathMat, x, z, 18, 18, -0.046);
+      addGroundPlane(parent, sidewalkMat, x, z, 8, 8, -0.038);
+      addBox(parent, monumentStone, x, -0.03, z, 4.8, 0.62, 4.8);
+      addBox(parent, monumentBrass, x, 0.59, z, 3.65, 0.16, 3.65);
+      addBox(parent, monumentStone, x, 0.75, z, 2.25, 7.3, 2.25, true);
+      for (const side of [-1, 1]) {
+        addBox(parent, monumentBrass, x + side * 0.91, 0.9, z, 0.12, 6.8, 2.35);
+        addBox(parent, monumentBrass, x, 0.9, z + side * 0.91, 2.35, 6.8, 0.12);
+      }
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(1.55, 2.5, 4), monumentBrass);
+      crown.position.set(x, 9.2, z);
+      crown.rotation.y = Math.PI / 4;
+      crown.castShadow = true;
+      parent.add(crown);
+      const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.33, 12, 10), beaconMat);
+      beacon.position.set(x, 10.65, z);
+      parent.add(beacon);
+      const beaconLight = new THREE.PointLight(0x58f0df, 1.4, 24, 2);
+      beaconLight.position.copy(beacon.position);
+      parent.add(beaconLight);
+      for (const sideX of [-1, 1]) for (const sideZ of [-1, 1]) {
+        addBox(parent, planterMat, x + sideX * 6, -0.025, z + sideZ * 6, 2.5, 0.34, 2.5);
+        addCourtyardTree(parent, x + sideX * 6, z + sideZ * 6, 3.8);
+      }
+      addCourtyardBench(parent, x - 5, z, Math.PI / 2);
+      addCourtyardBench(parent, x + 5, z, -Math.PI / 2);
+      buildingFootprints.push({ x, z, halfWidth: 2.5, halfDepth: 2.5 });
+      return;
+    }
     if (type === 'garden') {
       if (random() > 0.45) addFencePerimeter(x, z, 9.5, 9.5);
       addGroundPlane(parent, courtyardGrassMat, x, z, 18, 18, -0.048);
@@ -1487,16 +1956,22 @@ function makeCity(scene) {
     const ghettoBlock = bx >= 0;
     const isPortDistrict = bx <= -2 && Math.abs(bz) <= 2;
     const isDowntownDistrict = !isPortDistrict && bx < 0 && Math.abs(bz) <= 1;
-    const districtName = isPortDistrict ? 'port' : isDowntownDistrict ? 'downtown' : 'residential';
+    const isVicePointDistrict = ghettoBlock && bz < 0;
+    const isEastsideDistrict = ghettoBlock && bz >= 0;
+    const districtName = isPortDistrict ? 'port' : isDowntownDistrict ? 'downtown'
+      : isVicePointDistrict ? 'vicePoint' : isEastsideDistrict ? 'eastside' : 'residential';
     const districtPalette = districtPalettes[districtName];
     const districtLight = districtLighting[districtName];
     const amenityRoll = random();
-    const amenityType = amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
+    const isDowntownLandmarkLot = bx === -1 && bz === 0;
+    const isVicePointCourtLot = bx === 2 && bz === -1;
+    const amenityType = isDowntownLandmarkLot ? 'landmark' : isVicePointCourtLot ? 'court'
+      : amenityRoll < 0.32 ? 'garden' : amenityRoll < 0.63 ? 'playground' : 'plaza';
     addCourtyardAmenity(lot, cx, cz, amenityType);
     if (ghettoBlock) {
       for (const [slotX, slotZ] of [[-22, -22], [22, -22], [-22, 22], [22, 22]]) {
         const canalSideSlotX = bx === 0 && slotX < 0 ? -14 : slotX;
-        addGhettoHouse(lot, cx, cz, canalSideSlotX, slotZ);
+        addGhettoHouse(lot, cx, cz, canalSideSlotX, slotZ, districtName);
       }
     }
     // The western half keeps its denser art-deco blocks; the eastern half is low-rise residential.
@@ -1511,10 +1986,12 @@ function makeCity(scene) {
       const [slotX, slotZ] = buildingSlots[i];
       const isAlleyBuilding = alleyBlock && i < 2;
       const isCottage = cottageBlock && i === count - 1;
-      const width = isCottage ? 12 + random() * 4 : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
-      const depth = isCottage ? 14 + random() * 4 : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
-      const height = isCottage
-        ? 6.2 + random() * 1.6
+      const isLandmarkTower = isDowntownLandmarkLot && i === 0;
+      const width = isLandmarkTower ? 26 : isCottage ? 12 + random() * 4
+        : isAlleyBuilding ? 18 + random() * 4 : 20 + random() * 6;
+      const depth = isLandmarkTower ? 23 : isCottage ? 14 + random() * 4
+        : isAlleyBuilding ? 20 + random() * 4 : 20 + random() * 6;
+      const height = isLandmarkTower ? 54 : isCottage ? 6.2 + random() * 1.6
         : isPortDistrict ? 8 + random() * 12 : 10 + random() * (isDowntownDistrict ? 35 : 21);
       const canalSafeSlotX = bx === -1 && slotX > 20 ? slotX - 12 : slotX;
       const x = cx + canalSafeSlotX + (random() - 0.5) * 3;
@@ -1551,7 +2028,27 @@ function makeCity(scene) {
       } else {
         addBox(lot, capMat, x, height + 0.1, z, width + 0.7, 0.7, depth + 0.7);
       }
-      if (!isCottage && height > 28) {
+      if (isLandmarkTower) {
+        building.userData.landmark = 'downtown-art-deco-tower';
+        addBox(lot, landmarkTrimMat, x, height + 0.8, z, width * 0.78, 0.34, depth * 0.78);
+        addBox(lot, facade, x, height + 1.14, z, width * 0.54, 5.5, depth * 0.54, true);
+        addBox(lot, landmarkTrimMat, x, height + 6.64, z, width * 0.61, 0.24, depth * 0.61);
+        for (const bandY of [13, 28, 43]) {
+          addBox(lot, landmarkGlowMat, x, bandY, z - depth / 2 - 0.06, width, 0.13, 0.08);
+          addBox(lot, landmarkGlowMat, x, bandY, z + depth / 2 + 0.06, width, 0.13, 0.08);
+          addBox(lot, landmarkGlowMat, x - width / 2 - 0.06, bandY, z, 0.08, 0.13, depth);
+          addBox(lot, landmarkGlowMat, x + width / 2 + 0.06, bandY, z, 0.08, 0.13, depth);
+        }
+        const towerSpire = new THREE.Mesh(new THREE.ConeGeometry(1.85, 4.8, 4), landmarkTrimMat);
+        towerSpire.position.set(x, height + 9.1, z);
+        towerSpire.rotation.y = Math.PI / 4;
+        towerSpire.castShadow = true;
+        lot.add(towerSpire);
+        const towerBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), landmarkGlowMat);
+        towerBeacon.position.set(x, height + 11.8, z);
+        lot.add(towerBeacon);
+      }
+      if (!isLandmarkTower && !isCottage && height > 28) {
         addBox(lot, facade, x, height + 0.8, z, width * 0.54, 4.5, depth * 0.72, true);
       }
       // Tall window bands, a shopfront at street level, and selected lit windows.
@@ -1590,6 +2087,8 @@ function makeCity(scene) {
       }
       const signColor = districtLight.signs[Math.floor(random() * districtLight.signs.length)];
       const signMat = new THREE.MeshBasicMaterial({ color: signColor, toneMapped: false });
+      signMat.userData.originalNeonColor = signMat.color.clone();
+      neonSignMaterials.push(signMat);
       if (hasShop) {
         const shopWidth = Math.min(13, width * 0.64);
         const doorWidth = 1.25;
@@ -2023,6 +2522,7 @@ function makeCity(scene) {
     scene.add(car);
     parkedCarBodies.push({
       spec, mesh: car, velocityX: 0, velocityZ: 0, angularVelocity: 0, touchingPlayer: false,
+      occupied: false, reserved: false,
       radius: Math.hypot(spec.width / 2, spec.length / 2),
       mass: spec.type === 'garbage-truck' ? 1.9 : spec.type === 'ambulance' ? 1.35 : spec.type === 'police' ? 1.15 : 1,
     });
@@ -2179,8 +2679,9 @@ function makeCity(scene) {
   };
   updateTrafficSignals(0);
 
+  let neonGlows = null;
   if (neonGlowSpecs.length) {
-    const neonGlows = new THREE.InstancedMesh(
+    neonGlows = new THREE.InstancedMesh(
       new THREE.PlaneGeometry(1, 1), neonGlowMaterial, neonGlowSpecs.length,
     );
     const glowMarker = new THREE.Object3D();
@@ -2197,6 +2698,15 @@ function makeCity(scene) {
     neonGlows.computeBoundingSphere();
     neonGlows.renderOrder = 1;
     scene.add(neonGlows);
+    const localLightCount = Math.min(8, neonGlowSpecs.length);
+    for (let index = 0; index < localLightCount; index += 1) {
+      const spec = neonGlowSpecs[Math.floor(index * neonGlowSpecs.length / localLightCount)];
+      const light = new THREE.PointLight(spec.color, 0, 24, 2);
+      light.position.set(spec.x, spec.y - 0.7, spec.z + spec.frontSign * 1.1);
+      light.userData.neonBaseIntensity = 5.5 * spec.intensity;
+      scene.add(light);
+      neonPointLights.push(light);
+    }
   }
   const addWindowInstances = (positions, material, rotationY = 0) => {
     const windows = new THREE.InstancedMesh(new THREE.BoxGeometry(1.05, 1.45, 0.1), material, positions.length);
@@ -2229,20 +2739,31 @@ function makeCity(scene) {
       && viceCityOuterHighwayContains(x, z);
     return !onOuterOverpass && Math.abs(x) < CANAL_HALF_WIDTH && Math.abs(z) > BRIDGE_HALF_WIDTH;
   };
-  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => {
-    const crossesCanal = Math.min(fromX, toX) <= CANAL_HALF_WIDTH
-      && Math.max(fromX, toX) >= -CANAL_HALF_WIDTH;
-    const crossesOuterOverpass = crossesCanal && [-VICE_CITY_OUTER_HIGHWAY.edge, VICE_CITY_OUTER_HIGHWAY.edge].some((crossingZ) =>
-      Math.max(Math.abs(fromZ - crossingZ), Math.abs(toZ - crossingZ)) <= VICE_CITY_OUTER_HIGHWAY.halfWidth + 1);
-    return !crossesOuterOverpass && viceCityCanalBarrierCrossed(
-      fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
-    );
-  };
+  const didCrossCanalWall = (fromX, fromZ, toX, toZ) => viceCityCanalBarrierCrossed(
+    fromX, fromZ, toX, toZ, CANAL_HALF_WIDTH, BRIDGE_HALF_WIDTH,
+    [-VICE_CITY_OUTER_HIGHWAY.edge, VICE_CITY_OUTER_HIGHWAY.edge],
+    VICE_CITY_OUTER_HIGHWAY.halfWidth + 0.6,
+  );
   const surfacePitch = (x, z, yaw) => {
     const forwardX = Math.sin(yaw);
     const forwardZ = -Math.cos(yaw);
     const ahead = surfaceHeight(x + forwardX * 2, z + forwardZ * 2);
     return Math.atan2(ahead - surfaceHeight(x, z), 2);
+  };
+  const isHighwayBarrierBlocked = (x, z) => {
+    if (Math.abs(x) < 320 && Math.abs(z) < 320) return false;
+    for (const segment of highwayBarrierSegments) {
+      const dx = segment.x2 - segment.x1;
+      const dz = segment.z2 - segment.z1;
+      const lengthSq = dx * dx + dz * dz;
+      const progress = lengthSq > 1e-8
+        ? clamp(((x - segment.x1) * dx + (z - segment.z1) * dz) / lengthSq, 0, 1) : 0;
+      const offsetX = x - (segment.x1 + dx * progress);
+      const offsetZ = z - (segment.z1 + dz * progress);
+      const clearance = segment.radius + BUILDING_COLLISION_MARGIN;
+      if (offsetX * offsetX + offsetZ * offsetZ <= clearance * clearance) return true;
+    }
+    return false;
   };
   const fallenFenceSections = [];
   const hideFenceInstance = (mesh, index) => {
@@ -2294,6 +2815,10 @@ function makeCity(scene) {
     let hitCount = 0;
     const direction = Math.sign(speed) || 1;
     for (const body of parkedCarBodies) {
+      if (body.occupied || body.reserved) {
+        body.touchingPlayer = false;
+        continue;
+      }
       const overlaps = parkedCarOverlaps(body, x, z);
       const firstContact = overlaps && !body.touchingPlayer;
       const impulse = overlaps ? viceCityFreeDriveParkedCarImpulse(speed, body.mass, dt, firstContact) : 0;
@@ -2325,6 +2850,7 @@ function makeCity(scene) {
         && Math.hypot(x - other.spec.x, z - other.spec.z) < body.radius + other.radius * 0.72);
     };
     for (const body of parkedCarBodies) {
+      if (body.occupied || body.reserved) continue;
       const { spec, mesh } = body;
       const nextX = spec.x + body.velocityX * dt;
       const nextZ = spec.z + body.velocityZ * dt;
@@ -2372,14 +2898,283 @@ function makeCity(scene) {
     }
     return broken;
   };
+  const puddleMaterial = new THREE.MeshPhysicalMaterial({
+    color: 0x75949a, roughness: 0.1, metalness: 0.36, clearcoat: 1,
+    clearcoatRoughness: 0.04, transparent: true, opacity: 0.56,
+    depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  });
+  const puddleGeometry = new THREE.CircleGeometry(1, 18);
+  puddleGeometry.rotateX(-Math.PI / 2);
+  const puddleSpecs = [];
+  for (const roadX of [-300, -200, -100, 100, 200, 300]) {
+    for (const z of [-250, -150, -50, 50, 150, 250]) {
+      const side = z < 0 ? 1 : -1;
+      puddleSpecs.push([roadX + side * 2.45, z + ((roadX / 100) % 2) * 1.4, 1.05 + ((Math.abs(roadX + z) / 50) % 3) * 0.42, 0.34 + ((Math.abs(roadX - z) / 80) % 2) * 0.18]);
+    }
+  }
+  for (const roadZ of [-300, -200, -100, 100, 200, 300]) {
+    for (const x of [-250, -150, -50, 50, 150, 250]) {
+      const side = x < 0 ? 1 : -1;
+      puddleSpecs.push([x + ((roadZ / 100) % 2) * 1.2, roadZ + side * 2.35, 0.36 + ((Math.abs(x + roadZ) / 80) % 2) * 0.16, 1.0 + ((Math.abs(x - roadZ) / 50) % 3) * 0.4]);
+    }
+  }
+  const puddles = new THREE.InstancedMesh(puddleGeometry, puddleMaterial, puddleSpecs.length);
+  puddles.name = 'vice-city-rain-puddles';
+  puddles.visible = false;
+  puddles.receiveShadow = false;
+  const puddleMarker = new THREE.Object3D();
+  puddleSpecs.forEach(([x, z, width, depth], index) => {
+    puddleMarker.position.set(x, surfaceHeight(x, z) + 0.018, z);
+    puddleMarker.scale.set(width, 1, depth);
+    puddleMarker.rotation.y = (index % 5) * 0.31;
+    puddleMarker.updateMatrix();
+    puddles.setMatrixAt(index, puddleMarker.matrix);
+  });
+  puddles.instanceMatrix.needsUpdate = true;
+  puddles.computeBoundingSphere();
+  scene.add(puddles);
+
   return {
     ground, roadMat, sidewalkMat, buildingFootprints, parkedCarSpecs, parkedCarBodies, fenceSegments,
+    neonGlowMaterial, neonGlows, neonSignMaterials, neonPointLights, puddles, highwayRoadMat,
     trafficIntersections, updateTrafficSignals, updateParkedCars, applyParkedCarImpact,
     roadElevation, surfaceHeight, surfacePitch, isCanalBlocked, didCrossCanalWall,
+    highwayBarrierSegments, isHighwayBarrierBlocked,
     canalBoats, updateCanalBoats, updateCanalWater, roundaboutIsland, breakFencesAt,
   };
 }
 
+function makeFreeRoamPedestrian() {
+  const character = new THREE.Group();
+  character.name = 'vice-city-free-roam-pedestrian';
+  const pelvis = new THREE.Group();
+  pelvis.name = 'pedestrian-pelvis-joint';
+  pelvis.position.y = 0.78;
+  character.add(pelvis);
+
+  const skin = new THREE.MeshStandardMaterial({ color: 0xb98266, roughness: 0.83 });
+  const jacket = new THREE.MeshStandardMaterial({ color: 0x657078, roughness: 0.92 });
+  const lapelMaterial = new THREE.MeshStandardMaterial({ color: 0x77838a, roughness: 0.9, side: THREE.DoubleSide });
+  const shirt = new THREE.MeshStandardMaterial({ color: 0xd0c9b8, roughness: 0.92, side: THREE.DoubleSide });
+  const trousers = new THREE.MeshStandardMaterial({ color: 0x333d47, roughness: 0.95 });
+  const belt = new THREE.MeshStandardMaterial({ color: 0x282521, roughness: 0.82 });
+  const shoes = new THREE.MeshStandardMaterial({ color: 0x39312d, roughness: 0.9 });
+  const hair = new THREE.MeshStandardMaterial({ color: 0x302721, roughness: 0.96 });
+  const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xd8cfc0, roughness: 0.82 });
+  const iris = new THREE.MeshStandardMaterial({ color: 0x51392c, roughness: 0.62 });
+  const pupil = new THREE.MeshStandardMaterial({ color: 0x171716, roughness: 0.45 });
+  const mouth = new THREE.MeshStandardMaterial({ color: 0x774c43, roughness: 0.9 });
+  const pistolSteel = new THREE.MeshStandardMaterial({ color: 0x3c4143, roughness: 0.38, metalness: 0.68 });
+  const pistolGrip = new THREE.MeshStandardMaterial({ color: 0x252320, roughness: 0.8 });
+  const muzzleMaterial = new THREE.MeshBasicMaterial({ color: 0xffc76c, toneMapped: false });
+
+  const addPart = (parent, geometry, material, x = 0, y = 0, z = 0) => {
+    const part = new THREE.Mesh(geometry, material);
+    part.position.set(x, y, z);
+    part.castShadow = true;
+    part.receiveShadow = true;
+    parent.add(part);
+    return part;
+  };
+
+  // Build a continuous, smoothly shaded organic silhouette from tapered cross-sections.
+  const profileGeometry = (profile, radialSegments = 32, subdivisions = 4) => {
+    const interpolate = (a, b, c, d, t) => 0.5 * (
+      2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t
+        + (-a + 3 * b - 3 * c + d) * t * t * t
+    );
+    const rings = [];
+    for (let section = 0; section < profile.length - 1; section += 1) {
+      const p0 = profile[Math.max(0, section - 1)];
+      const p1 = profile[section];
+      const p2 = profile[section + 1];
+      const p3 = profile[Math.min(profile.length - 1, section + 2)];
+      for (let step = 0; step < subdivisions; step += 1) {
+        const t = step / subdivisions;
+        rings.push(p1.map((_, axis) => interpolate(p0[axis], p1[axis], p2[axis], p3[axis], t)));
+      }
+    }
+    rings.push(profile[profile.length - 1]);
+    const vertices = [];
+    const indices = [];
+    for (const [y, radiusX, radiusZ, centerZ = 0] of rings) {
+      for (let segment = 0; segment < radialSegments; segment += 1) {
+        const angle = (segment / radialSegments) * Math.PI * 2;
+        vertices.push(Math.cos(angle) * Math.max(0.002, radiusX), y,
+          centerZ + Math.sin(angle) * Math.max(0.002, radiusZ));
+      }
+    }
+    for (let ring = 0; ring < rings.length - 1; ring += 1) {
+      for (let segment = 0; segment < radialSegments; segment += 1) {
+        const next = (segment + 1) % radialSegments;
+        const lower = ring * radialSegments + segment;
+        const lowerNext = ring * radialSegments + next;
+        const upper = (ring + 1) * radialSegments + segment;
+        const upperNext = (ring + 1) * radialSegments + next;
+        indices.push(lower, upper, lowerNext, lowerNext, upper, upperNext);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  };
+
+  // Tailored jacket torso and pelvis: chest, waist and hips are part of flowing surfaces,
+  // instead of a stack of visible balls and cylinders.
+  addPart(character, profileGeometry([
+    [0.76, 0.17, 0.125], [0.82, 0.22, 0.15], [0.94, 0.215, 0.14],
+    [1.04, 0.205, 0.13], [1.14, 0.235, 0.145], [1.27, 0.29, 0.155],
+    [1.37, 0.31, 0.145], [1.44, 0.265, 0.125], [1.49, 0.12, 0.09],
+    [1.50, 0.035, 0.035],
+  ]), jacket);
+  const pelvisGeometry = profileGeometry([
+    [0.66, 0.16, 0.11], [0.72, 0.205, 0.13], [0.82, 0.235, 0.14],
+    [0.91, 0.235, 0.135], [0.99, 0.205, 0.115], [1.02, 0.17, 0.095],
+  ]);
+  pelvisGeometry.translate(0, -pelvis.position.y, 0);
+  addPart(pelvis, pelvisGeometry, trousers);
+
+  // A restrained open collar and shirt front sit naturally on the jacket chest.
+  const shirtShape = new THREE.Shape();
+  shirtShape.moveTo(-0.115, 1.43);
+  shirtShape.lineTo(0.115, 1.43);
+  shirtShape.lineTo(0.105, 1.08);
+  shirtShape.lineTo(-0.105, 1.08);
+  shirtShape.closePath();
+  const shirtPanel = addPart(character, new THREE.ShapeGeometry(shirtShape), shirt, 0, 0, -0.146);
+  shirtPanel.renderOrder = 1;
+  const leftLapelShape = new THREE.Shape();
+  leftLapelShape.moveTo(-0.15, 1.46);
+  leftLapelShape.lineTo(-0.035, 1.39);
+  leftLapelShape.lineTo(-0.09, 1.26);
+  leftLapelShape.lineTo(-0.22, 1.42);
+  leftLapelShape.closePath();
+  const leftLapel = addPart(character, new THREE.ShapeGeometry(leftLapelShape), lapelMaterial, 0, 0, -0.157);
+  leftLapel.renderOrder = 2;
+  const rightLapelShape = new THREE.Shape();
+  rightLapelShape.moveTo(0.15, 1.46);
+  rightLapelShape.lineTo(0.035, 1.39);
+  rightLapelShape.lineTo(0.09, 1.26);
+  rightLapelShape.lineTo(0.22, 1.42);
+  rightLapelShape.closePath();
+  const rightLapel = addPart(character, new THREE.ShapeGeometry(rightLapelShape), lapelMaterial, 0, 0, -0.157);
+  rightLapel.renderOrder = 2;
+  for (const y of [1.25, 1.18, 1.11]) {
+    addPart(character, new THREE.SphereGeometry(0.009, 8, 6), belt, 0, y, -0.16);
+  }
+  addPart(pelvis, new THREE.CylinderGeometry(0.226, 0.23, 0.065, 24), belt, 0, 1.005 - pelvis.position.y, 0);
+  addPart(pelvis, new THREE.BoxGeometry(0.065, 0.045, 0.014), pistolSteel,
+    0, 1.005 - pelvis.position.y, -0.229);
+
+  // Neck and tapered head use smooth profiles; the face has understated eyes, brows, ears and nose.
+  addPart(character, new THREE.CylinderGeometry(0.073, 0.09, 0.17, 20), skin, 0, 1.535, 0);
+  addPart(character, profileGeometry([
+    [1.57, 0.035, 0.04, 0], [1.60, 0.095, 0.095, 0], [1.65, 0.135, 0.13, 0],
+    [1.70, 0.155, 0.145, -0.005], [1.76, 0.17, 0.15, -0.008],
+    [1.83, 0.17, 0.15, 0], [1.89, 0.145, 0.13, 0.008],
+    [1.94, 0.095, 0.09, 0.012], [1.965, 0.018, 0.018, 0.012],
+  ], 32, 5), skin);
+  const hairCap = addPart(character,
+    new THREE.SphereGeometry(0.18, 32, 20, 0, Math.PI * 2, 0, Math.PI * 0.54), hair, 0, 1.84, 0.012);
+  hairCap.scale.set(1, 0.93, 0.94);
+  for (const side of [-1, 1]) {
+    addPart(character, new THREE.SphereGeometry(0.036, 14, 12), skin, side * 0.157, 1.75, -0.002)
+      .scale.set(0.78, 1.1, 0.72);
+    const eye = addPart(character, new THREE.SphereGeometry(0.023, 14, 10), eyeWhite,
+      side * 0.063, 1.785, -0.143);
+    eye.scale.set(1.2, 0.78, 0.42);
+    addPart(character, new THREE.SphereGeometry(0.012, 12, 10), iris,
+      side * 0.063, 1.784, -0.155);
+    addPart(character, new THREE.SphereGeometry(0.006, 8, 8), pupil,
+      side * 0.063, 1.784, -0.162);
+    const browCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * 0.11, 1.814, -0.143),
+      new THREE.Vector3(side * 0.065, 1.824, -0.151),
+      new THREE.Vector3(side * 0.025, 1.816, -0.15),
+    ]);
+    addPart(character, new THREE.TubeGeometry(browCurve, 8, 0.006, 6, false), hair);
+  }
+  addPart(character, new THREE.SphereGeometry(0.027, 14, 12), skin, 0, 1.75, -0.169)
+    .scale.set(0.72, 1.35, 0.95);
+  addPart(character, new THREE.SphereGeometry(0.02, 12, 10), skin, 0, 1.731, -0.189)
+    .scale.set(1, 0.75, 0.72);
+  const smileCurve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(-0.032, 1.675, -0.133), new THREE.Vector3(0, 1.669, -0.144),
+    new THREE.Vector3(0.032, 1.675, -0.133),
+  ]);
+  addPart(character, new THREE.TubeGeometry(smileCurve, 8, 0.004, 5, false), mouth);
+
+  const makeLimb = (side, isArm) => {
+    const pivot = new THREE.Group();
+    pivot.name = isArm ? `shoulder-joint-${side}` : `hip-joint-${side}`;
+    pivot.position.set(
+      isArm ? side * 0.315 : side * 0.12,
+      isArm ? 1.405 : 0.81 - pelvis.position.y,
+      0,
+    );
+    (isArm ? character : pelvis).add(pivot);
+    if (isArm) {
+      addPart(pivot, new THREE.SphereGeometry(0.106, 16, 12), jacket, 0, -0.055, 0);
+      addPart(pivot, new THREE.CapsuleGeometry(0.105, 0.2, 8, 16), jacket, 0, -0.18, 0);
+      const elbow = new THREE.Group();
+      elbow.name = `elbow-joint-${side}`;
+      elbow.position.y = -0.37;
+      pivot.add(elbow);
+      addPart(elbow, new THREE.SphereGeometry(0.081, 16, 12), jacket);
+      addPart(elbow, new THREE.CapsuleGeometry(0.078, 0.21, 8, 16), jacket, 0, -0.18, -0.004);
+      addPart(elbow, new THREE.CylinderGeometry(0.068, 0.071, 0.042, 14), jacket, 0, -0.31, -0.004);
+      const hand = addPart(elbow, new THREE.SphereGeometry(0.067, 14, 12), skin, 0, -0.372, -0.012);
+      hand.scale.set(0.78, 1.2, 0.68);
+      const thumb = addPart(elbow, new THREE.CapsuleGeometry(0.018, 0.052, 4, 8), skin,
+        side * 0.05, -0.35, -0.04);
+      thumb.rotation.z = side * 0.65;
+      pivot.userData.elbow = elbow;
+    } else {
+      addPart(pivot, new THREE.SphereGeometry(0.125, 16, 12), trousers, 0, -0.02, 0);
+      addPart(pivot, new THREE.CapsuleGeometry(0.125, 0.25, 8, 16), trousers, 0, -0.18, 0);
+      const knee = new THREE.Group();
+      knee.name = `knee-joint-${side}`;
+      knee.position.y = -0.39;
+      pivot.add(knee);
+      addPart(knee, new THREE.SphereGeometry(0.094, 16, 12), trousers);
+      const shin = addPart(knee, new THREE.CapsuleGeometry(0.088, 0.24, 8, 16), trousers, 0, -0.19, 0.002);
+      shin.castShadow = true;
+      const ankle = new THREE.Group();
+      ankle.name = `ankle-joint-${side}`;
+      ankle.position.set(0, -0.36, -0.015);
+      knee.add(ankle);
+      addPart(ankle, new THREE.SphereGeometry(0.071, 14, 10), trousers, 0, 0.012, 0.008);
+      const foot = new THREE.Group();
+      ankle.add(foot);
+      const shoe = addPart(foot, new THREE.CapsuleGeometry(0.077, 0.17, 6, 12), shoes, 0, -0.035, -0.055);
+      shoe.rotation.x = Math.PI / 2;
+      shoe.scale.set(1, 0.92, 1);
+      addPart(foot, new THREE.BoxGeometry(0.15, 0.018, 0.24), belt, 0, -0.06, -0.055);
+      pivot.userData.knee = knee;
+      pivot.userData.ankle = ankle;
+      pivot.userData.foot = foot;
+    }
+    return pivot;
+  };
+  const arms = [makeLimb(-1, true), makeLimb(1, true)];
+  const legs = [makeLimb(-1, false), makeLimb(1, false)];
+
+  // The firearm remains attached to the right hand and is aimed independently of the body.
+  const pistol = new THREE.Group();
+  pistol.position.set(0, -0.32, -0.018);
+  arms[1].userData.elbow.add(pistol);
+  addPart(pistol, new THREE.BoxGeometry(0.084, 0.068, 0.205), pistolGrip, 0, 0.02, -0.025);
+  addPart(pistol, new THREE.BoxGeometry(0.074, 0.043, 0.205), pistolSteel, 0, 0.064, -0.038);
+  const barrel = addPart(pistol, new THREE.CylinderGeometry(0.013, 0.013, 0.085, 8), pistolSteel, 0, 0.045, -0.177);
+  barrel.rotation.x = Math.PI / 2;
+  addPart(pistol, new THREE.BoxGeometry(0.06, 0.12, 0.065), pistolGrip, 0, -0.065, 0.034);
+  const muzzleFlash = addPart(pistol, new THREE.SphereGeometry(0.028, 8, 6), muzzleMaterial, 0, 0.045, -0.22);
+  muzzleFlash.visible = false;
+
+  return { group: character, pelvis, arms, legs, pistol, muzzle: muzzleFlash, muzzleFlash, aimBlend: 0 };
+}
 function isTouchPortraitViewport() {
   if (typeof window === 'undefined') return false;
   const touch = Boolean(window.LetsPlayAndroid)
@@ -2390,6 +3185,11 @@ function isTouchPortraitViewport() {
 export default function ViceCityFreeRoam({ carId, onExit }) {
   const mountRef = useRef(null);
   const hudRef = useRef(null);
+  const contextRef = useRef(null);
+  const minimapRef = useRef(null);
+  const crosshairRef = useRef(null);
+  const mouseAimRef = useRef({ x: 0, y: 0, active: false });
+  const isOnFootRef = useRef(false);
   const audioRef = useRef(null);
   const audioStartingRef = useRef(null);
   const onExitRef = useRef(onExit);
@@ -2401,6 +3201,21 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const [portraitTouch, setPortraitTouch] = useState(isTouchPortraitViewport);
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
+  const [isOnFoot, setIsOnFoot] = useState(false);
+  const [canUseCockpit, setCanUseCockpit] = useState(true);
+  const [featurePanel, setFeaturePanel] = useState(null);
+  const [selectedFreeRoamCar, setSelectedFreeRoamCar] = useState(null);
+  const [challengeHud, setChallengeHud] = useState(null);
+  const [freeRoamProfile, setFreeRoamProfile] = useState(readFreeRoamProgress);
+  const freeRoamRewards = freeRoamProfile.credits;
+  const [streetEventOffer, setStreetEventOffer] = useState(null);
+  const [streetLabel, setStreetLabel] = useState('OCEAN DISTRICT');
+  const [worldCondition, setWorldCondition] = useState('APRÈS-MIDI · CIEL DÉGAGÉ');
+  const [gpsDestination, setGpsDestination] = useState('downtown');
+  const destinationActionRef = useRef(null);
+  const challengeActionRef = useRef(null);
+  const garageActionRef = useRef(null);
+  const streetEventActionRef = useRef(null);
   const soundOnRef = useRef(soundOn);
   const cockpitViewRef = useRef(cockpitView);
   const toggleSoundRef = useRef(null);
@@ -2409,6 +3224,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   soundOnRef.current = soundOn;
   cockpitViewRef.current = cockpitView;
   const driveCar = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
+  const displayCar = selectedFreeRoamCar || driveCar;
   const activateAudio = () => {
     if (!soundOnRef.current) return;
     const audio = audioRef.current;
@@ -2430,6 +3246,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   };
   toggleSoundRef.current = toggleSound;
   const toggleCamera = () => {
+    if (isOnFootRef.current || !canUseCockpit) return;
     const next = !cockpitViewRef.current;
     cockpitViewRef.current = next;
     setCockpitView(next);
@@ -2444,10 +3261,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     if (joystickPointerRef.current !== event.pointerId) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const travel = Math.max(1, Math.min(bounds.width, bounds.height) * 0.34);
-    const x = clamp((event.clientX - (bounds.left + bounds.width / 2)) / travel, -1, 1);
-    touchAxesRef.current = { x, y: 0 };
+    const rawX = (event.clientX - (bounds.left + bounds.width / 2)) / travel;
+    const rawY = (event.clientY - (bounds.top + bounds.height / 2)) / travel;
+    const magnitude = Math.hypot(rawX, rawY);
+    const scale = magnitude > 1 ? 1 / magnitude : 1;
+    const x = rawX * scale;
+    const y = rawY * scale;
+    touchAxesRef.current = { x, y };
     joystickKnobRef.current?.style.setProperty('--stick-x', `${x * travel}px`);
-    joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
+    joystickKnobRef.current?.style.setProperty('--stick-y', `${y * travel}px`);
   };
   const startJoystick = (event) => {
     event.preventDefault();
@@ -2501,11 +3323,21 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
+    setSelectedFreeRoamCar(null);
+    setFeaturePanel(null);
+    setChallengeHud(null);
+    setStreetEventOffer(null);
     const scene = new THREE.Scene();
+    const skyColor = new THREE.Color();
+    const fogColor = new THREE.Color();
     scene.background = new THREE.Color(0x73c5f0);
     scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
     addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
+    const mouseRaycaster = new THREE.Raycaster();
+    const mouseNdc = new THREE.Vector2();
+    const mouseAimPoint = new THREE.Vector3();
+    const mouseAimDirection = new THREE.Vector3();
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     renderer.shadowMap.enabled = true;
@@ -2514,25 +3346,60 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
     mount.appendChild(renderer.domElement);
-    scene.add(new THREE.HemisphereLight(0xe7f0ff, 0x463d37, 2.0));
+    const hemisphere = new THREE.HemisphereLight(0xe7f0ff, 0x463d37, 2.0);
+    scene.add(hemisphere);
     const sun = new THREE.DirectionalLight(0xffd3a1, 3.1);
     sun.position.set(-100, 180, 70); sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.left = -170; sun.shadow.camera.right = 170; sun.shadow.camera.top = 170; sun.shadow.camera.bottom = -170;
     scene.add(sun);
+    const rainGeometry = new THREE.BufferGeometry();
+    const rainCount = 110;
+    const rainPositions = new Float32Array(rainCount * 6);
+    const rainHeights = Array.from({ length: rainCount }, () => Math.random() * 18 + 2);
+    rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+    const rain = new THREE.LineSegments(rainGeometry, new THREE.LineBasicMaterial({ color: 0xa5dce8, transparent: true, opacity: 0.48 }));
+    rain.visible = false;
+    scene.add(rain);
     const city = makeCity(scene);
+    const minimapHighwayPaths = [...viceCityOuterHighwayPaths(), ...viceCityOuterHighwayAccessRamps()];
 
-    const profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
-    const maxSpeed = 35 * profile.powerMultiplier;
-    const reverseMaxSpeed = Math.min(7, maxSpeed * 0.25);
-    const acceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
-    const vehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
-    vehicle.position.set(-138, 0, 0);
-    scene.add(vehicle);
+    let profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
+    let homeMaxSpeed = 35 * profile.powerMultiplier;
+    let homeReverseMaxSpeed = Math.min(7, homeMaxSpeed * 0.25);
+    let homeAcceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
+    let maxSpeed = homeMaxSpeed;
+    let reverseMaxSpeed = homeReverseMaxSpeed;
+    let acceleration = homeAcceleration;
+    let engineProfile = profile.archetype;
+    let playerVehicle = makeRacerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
+    let vehicle = playerVehicle;
+    const installFreeRoamHeadlights = (car) => {
+      const lights = [];
+      for (const side of [-1, 1]) {
+        const light = new THREE.SpotLight(0xffedc5, 0, 52, 0.47, 0.62, 2);
+        light.position.set(side * 0.58, 0.76, -1.72);
+        light.castShadow = false;
+        const target = new THREE.Object3D();
+        target.position.set(side * 0.95, -0.95, -31);
+        car.add(light, target);
+        light.target = target;
+        lights.push(light);
+      }
+      car.userData.freeRoamHeadlights = { lights };
+      return car;
+    };
+    installFreeRoamHeadlights(playerVehicle);
+    let activeParkedBody = null;
+    playerVehicle.position.set(-138, 0, 0);
+    scene.add(playerVehicle);
+    const pedestrian = makeFreeRoamPedestrian();
+    pedestrian.group.visible = false;
+    scene.add(pedestrian.group);
     let playerCockpit = null;
     const ensurePlayerCockpit = () => {
       if (!playerCockpit) {
-        playerCockpit = makeCityRushCockpit(vehicle, {
+        playerCockpit = makeCityRushCockpit(playerVehicle, {
           rightHandDrive: false,
           accent: profile.accent,
           daylight: true,
@@ -2587,16 +3454,709 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         mass: trafficType.id === 'garbage-truck' ? 1.9 : trafficType.id === 'ambulance' ? 1.35 : trafficType.id === 'police' ? 1.15 : 1,
       };
     });
+    const highwayTrafficPath = viceCityOuterHighwayLoopPath();
+    const highwayTrafficDistances = [0];
+    for (let index = 1; index < highwayTrafficPath.length; index += 1) {
+      const previous = highwayTrafficPath[index - 1];
+      const current = highwayTrafficPath[index];
+      highwayTrafficDistances.push(highwayTrafficDistances[index - 1]
+        + Math.hypot(current.x - previous.x, current.z - previous.z));
+    }
+    const highwayTrafficLength = highwayTrafficDistances.at(-1);
+    const sampleHighwayTrafficPosition = (distance, direction, laneOffset) => {
+      const wrappedDistance = ((distance % highwayTrafficLength) + highwayTrafficLength) % highwayTrafficLength;
+      let low = 0;
+      let high = highwayTrafficDistances.length - 1;
+      while (high - low > 1) {
+        const middle = (low + high) >> 1;
+        if (highwayTrafficDistances[middle] <= wrappedDistance) low = middle;
+        else high = middle;
+      }
+      const start = highwayTrafficPath[low];
+      const end = highwayTrafficPath[high];
+      const segmentLength = highwayTrafficDistances[high] - highwayTrafficDistances[low];
+      const progress = segmentLength > 1e-6
+        ? (wrappedDistance - highwayTrafficDistances[low]) / segmentLength : 0;
+      const baseX = start.x + (end.x - start.x) * progress;
+      const baseZ = start.z + (end.z - start.z) * progress;
+      const tangentX = (end.x - start.x) / (segmentLength || 1) * direction;
+      const tangentZ = (end.z - start.z) / (segmentLength || 1) * direction;
+      const rightX = -tangentZ;
+      const rightZ = tangentX;
+      return {
+        x: baseX + rightX * laneOffset,
+        z: baseZ + rightZ * laneOffset,
+        yaw: Math.atan2(-tangentX, -tangentZ),
+      };
+    };
+    const highwayTrafficTypes = ['taxi', 'ambulance', 'white-lambo', 'garbage-truck'];
+    const highwayLaneOffsets = [4.5, 9.7, 15.0];
+    const highwayExitStarts = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
+    for (let index = 0; index < 18; index += 1) {
+      const direction = index < 9 ? 1 : -1;
+      const indexInDirection = index % 9;
+      const lane = Math.floor(indexInDirection / 3);
+      const spacingSlot = indexInDirection % 3;
+      const progress = highwayTrafficLength * [0.12, 0.44, 0.76][spacingSlot];
+      const laneOffset = highwayLaneOffsets[lane];
+      const trafficType = highwayTrafficTypes[index % highwayTrafficTypes.length];
+      const spec = CITY_RUSH_TRAFFIC_TYPES.find((candidate) => candidate.id === trafficType);
+      const car = makeTrafficVehicle(trafficType);
+      const pose = sampleHighwayTrafficPosition(progress, direction, laneOffset);
+      car.position.set(pose.x, city.surfaceHeight(pose.x, pose.z) + 0.02, pose.z);
+      car.rotation.y = pose.yaw;
+      car.rotation.x = city.surfacePitch(pose.x, pose.z, pose.yaw);
+      scene.add(car);
+      trafficCars.push({
+        car,
+        type: trafficType,
+        phase: index * 0.77,
+        axis: 'highway',
+        direction,
+        highwayLaneOffset: laneOffset,
+        highwayLaneIndex: lane,
+        highwayLaneChangeTarget: lane,
+        highwayLaneChangeFrom: laneOffset,
+        highwayLaneChangeTo: laneOffset,
+        highwayLaneChangeStartedAt: null,
+        highwayLaneChangeDuration: 2.8,
+        highwayNextLaneChangeAt: 7 + (index % 8) * 1.5,
+        highwayProgress: progress,
+        highwayCruiseSpeed: 22 + (index % 4) * 1.5,
+        progress: direction * progress,
+        crossAxis: 0,
+        speed: 0,
+        maxSpeed: spec?.speed || 7,
+        yaw: pose.yaw,
+        offsetX: 0,
+        offsetZ: 0,
+        velocityX: 0,
+        velocityZ: 0,
+        yawOffset: 0,
+        angularVelocity: 0,
+        touchingPlayer: false,
+        mass: trafficType === 'garbage-truck' ? 1.9 : trafficType === 'ambulance' ? 1.35 : 1,
+      });
+    }
     const keys = new Set();
     const shots = [];
     const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
     const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
+    const glassChipMaterial = new THREE.MeshBasicMaterial({
+      color: 0x9bc5d0, transparent: true, opacity: 0.68, side: THREE.DoubleSide, depthWrite: false,
+    });
+    const glassCrackMaterial = new THREE.LineBasicMaterial({ color: 0xd6f5ff, transparent: true, opacity: 0.92, depthWrite: false });
     let shotCooldown = 0;
-    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, time: 0 };
+    let footMuzzleFlashUntil = 0;
+    const shotOrigin = new THREE.Vector3();
+    const aimableGlassMeshes = [playerVehicle, ...trafficCars.map(({ car }) => car),
+      ...city.parkedCarBodies.map(({ mesh }) => mesh)].map((car) => {
+      const meshes = [];
+      car.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
+          || materials.some((material) => /glass/i.test(material?.name || ''))) meshes.push(object);
+      });
+      return { car, meshes };
+    });
+    const aimGlassCandidates = [];
+    const glassImpactRaycaster = new THREE.Raycaster();
+    const glassWorldDirection = new THREE.Vector3();
+    const glassLocalNormal = new THREE.Vector3();
+    const glassWorldNormalMatrix = new THREE.Matrix3();
+    const glassCarQuaternion = new THREE.Quaternion();
+    const glassLocalForward = new THREE.Vector3(0, 0, 1);
+    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, lateralSpeed: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
+    const challengeState = { current: null, rewardTotal: readFreeRoamProgress().credits, lastUiAt: 0, lastStreetAt: 0 };
+    const ambientEvent = { nextAt: 48, offerId: null, expiresAt: 0, lastUiAt: 0 };
+    const missionMarker = new THREE.Group();
+    missionMarker.name = 'vice-city-active-mission-marker';
+    const missionMarkerMaterial = new THREE.MeshBasicMaterial({ color: 0xff6689, transparent: true, opacity: 0.88, depthWrite: false });
+    const missionBeamMaterial = new THREE.MeshBasicMaterial({ color: 0xff6689, transparent: true, opacity: 0.18, depthWrite: false, side: THREE.DoubleSide });
+    const missionMarkerRing = new THREE.Mesh(new THREE.TorusGeometry(4.4, 0.2, 8, 40), missionMarkerMaterial);
+    missionMarkerRing.rotation.x = -Math.PI / 2;
+    missionMarkerRing.position.y = 0.16;
+    missionMarker.add(missionMarkerRing);
+    const missionMarkerInnerRing = new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.08, 6, 32), missionMarkerMaterial);
+    missionMarkerInnerRing.rotation.x = -Math.PI / 2;
+    missionMarkerInnerRing.position.y = 0.2;
+    missionMarker.add(missionMarkerInnerRing);
+    const missionBeam = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 1.3, 14, 12, 1, true), missionBeamMaterial);
+    missionBeam.position.y = 7.1;
+    missionMarker.add(missionBeam);
+    const missionBeacon = new THREE.Mesh(new THREE.ConeGeometry(0.8, 1.7, 8), missionMarkerMaterial);
+    missionBeacon.position.y = 14.7;
+    missionMarker.add(missionBeacon);
+    missionMarker.visible = false;
+    scene.add(missionMarker);
+    const wearMarks = [];
+    let skidAt = -10;
+    let skidSoundAt = -10;
+    let jumpVelocity = 0;
+    let jumpCooldown = 0;
+    let jumpWasDown = false;
+    let weatherMode = 'clear';
+    let weatherElapsed = 0;
+    let previousStreet = '';
+    let worldClock = 15;
+    const walkState = {
+      x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0,
+      velocityX: 0, velocityZ: 0, turnRate: 0,
+    };
+    let turnAroundTarget = null;
+    let turnAroundStartHeading = 0;
+    let turnAroundElapsed = 0;
+    let backInputWasDown = false;
+    const getChallengeRouteTarget = (challenge) => {
+      if (!challenge || challenge.status !== 'active') return null;
+      if (challenge.id === 'delivery') return challenge.target;
+      return challenge.checkpoints?.[challenge.checkpointIndex] || null;
+    };
+    const updateMissionMarker = () => {
+      const challenge = challengeState.current;
+      const target = getChallengeRouteTarget(challenge);
+      missionMarker.visible = Boolean(target);
+      if (!target) return;
+      missionMarker.position.set(target.x, city.surfaceHeight(target.x, target.z), target.z);
+      missionMarkerRing.rotation.z = state.time * 0.72;
+      missionMarkerInnerRing.rotation.z = -state.time * 1.1;
+      missionBeacon.rotation.y = state.time * 0.85;
+      const pulse = 1 + Math.sin(state.time * 4.5) * 0.12;
+      missionBeacon.scale.setScalar(pulse);
+    };
+    isOnFootRef.current = false;
+    setIsOnFoot(false);
+    let interactionWasDown = false;
+    let interactionNotice = '';
+    let interactionNoticeUntil = 0;
+    let pendingEntry = null;
+    const getMouseAimDirection = () => {
+      if (!mouseAimRef.current.active) return null;
+      const bounds = renderer.domElement.getBoundingClientRect();
+      if (bounds.width < 1 || bounds.height < 1) return null;
+      mouseNdc.set(
+        ((mouseAimRef.current.x - bounds.left) / bounds.width) * 2 - 1,
+        -((mouseAimRef.current.y - bounds.top) / bounds.height) * 2 + 1,
+      );
+      mouseRaycaster.setFromCamera(mouseNdc, camera);
+      // Prefer the actual windshield point under the cursor. In open space, use
+      // a distant point on the same ray so vertical mouse movement adds pitch.
+      aimGlassCandidates.length = 0;
+      for (const entry of aimableGlassMeshes) {
+        const { car, meshes } = entry;
+        if (!car.visible || Math.hypot(car.position.x - walkState.x, car.position.z - walkState.z) > 180) continue;
+        car.updateWorldMatrix(true, true);
+        aimGlassCandidates.push(...meshes);
+      }
+      const glassTarget = mouseRaycaster.intersectObjects(aimGlassCandidates, false)[0]?.point;
+      if (glassTarget) mouseAimPoint.copy(glassTarget);
+      else mouseRaycaster.ray.at(90, mouseAimPoint);
+      pedestrian.group.updateMatrixWorld(true);
+      pedestrian.muzzle.getWorldPosition(shotOrigin);
+      mouseAimDirection.subVectors(mouseAimPoint, shotOrigin);
+      if (mouseAimDirection.lengthSq() < 1e-6) mouseAimDirection.copy(mouseRaycaster.ray.direction);
+      return mouseAimDirection.normalize().clone();
+    };
+    let gpsTarget = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.id === 'downtown');
+    const destinationActionRefValue = (id) => {
+      const next = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.id === id);
+      if (!next) return;
+      gpsTarget = next;
+      setGpsDestination(next.id);
+    };
+    destinationActionRef.current = destinationActionRefValue;
+    const updateEnvironment = (dt) => {
+      worldClock = (worldClock + dt * 24 / 210) % 24;
+      weatherElapsed += dt;
+      const nextWeather = weatherElapsed % 105 > 72 ? 'rain' : 'clear';
+      if (nextWeather !== weatherMode) {
+        weatherMode = nextWeather;
+        city.roadMat.roughness = weatherMode === 'rain' ? 0.24 : 0.94;
+        city.roadMat.metalness = weatherMode === 'rain' ? 0.2 : 0;
+        city.roadMat.color.setHex(weatherMode === 'rain' ? 0x1b2935 : 0x252a32);
+        city.highwayRoadMat.roughness = weatherMode === 'rain' ? 0.24 : 0.92;
+        city.highwayRoadMat.metalness = weatherMode === 'rain' ? 0.2 : 0;
+        city.highwayRoadMat.color.setHex(weatherMode === 'rain' ? 0x1b2935 : 0x20262d);
+        city.highwayRoadMat.needsUpdate = true;
+        city.puddles.visible = weatherMode === 'rain';
+        city.roadMat.needsUpdate = true;
+      }
+      rain.visible = weatherMode === 'rain';
+      const daylight = Math.max(0, Math.sin(((worldClock - 6) / 12) * Math.PI));
+      const dusk = clamp(1 - Math.abs(worldClock - 18) / 2.8, 0, 1);
+      const night = 1 - daylight;
+      const neonLevel = 0.45 + night * 0.9 + dusk * 0.18;
+      city.neonGlowMaterial.opacity = 0.42 + night * 0.34;
+      city.neonSignMaterials.forEach((material) => {
+        material.color.copy(material.userData.originalNeonColor).multiplyScalar(neonLevel);
+      });
+      city.neonPointLights.forEach((light, index) => {
+        const flicker = 0.94 + Math.sin(state.time * (2.1 + index * 0.17) + index * 8.2) * 0.035;
+        light.intensity = light.userData.neonBaseIntensity * night * flicker;
+      });
+      const headlightsOn = night > 0.3 || weatherMode === 'rain';
+      const headlightRig = playerVehicle.userData.freeRoamHeadlights;
+      if (headlightRig) headlightRig.lights.forEach((light) => {
+        light.intensity = headlightsOn ? (weatherMode === 'rain' ? 24 : 21) : 0;
+      });
+      playerVehicle.userData.headlightCones?.forEach((cone) => { cone.visible = headlightsOn; });
+      if (playerVehicle.userData.materials?.headGlow) {
+        playerVehicle.userData.materials.headGlow.opacity = headlightsOn ? 0.5 : 0.1;
+      }
+      skyColor.setHSL(0.56, 0.56 - night * 0.28, 0.68 - night * 0.5 + dusk * 0.04);
+      fogColor.setHSL(0.56, 0.45 - night * 0.22, 0.77 - night * 0.49 + dusk * 0.04);
+      scene.background.copy(skyColor);
+      scene.fog.color.copy(fogColor);
+      scene.fog.far = 660 - night * 220;
+      hemisphere.intensity = 0.55 + daylight * 1.65;
+      sun.intensity = 0.12 + daylight * 3.0 + dusk * 0.45;
+      sun.color.setHSL(0.09 - night * 0.52, 0.45 + daylight * 0.15, 0.52 + daylight * 0.23);
+      sun.position.set(Math.cos(worldClock / 24 * Math.PI * 2) * 170, 25 + daylight * 180, Math.sin(worldClock / 24 * Math.PI * 2) * 145);
+      if (rain.visible) {
+        const playerX = isOnFootRef.current ? walkState.x : state.x;
+        const playerZ = isOnFootRef.current ? walkState.z : state.z;
+        for (let index = 0; index < rainCount; index += 1) {
+          rainHeights[index] -= dt * (19 + (index % 7) * 1.7);
+          if (rainHeights[index] < 0) rainHeights[index] = 16 + (index % 13);
+          const x = playerX + Math.sin(index * 12.989 + state.time * 0.17) * 25;
+          const z = playerZ + Math.cos(index * 7.233 + state.time * 0.13) * 25;
+          const offset = index * 6;
+          rainPositions[offset] = x; rainPositions[offset + 1] = rainHeights[index]; rainPositions[offset + 2] = z;
+          rainPositions[offset + 3] = x + 0.6; rainPositions[offset + 4] = rainHeights[index] - 1.8; rainPositions[offset + 5] = z + 0.25;
+        }
+        rainGeometry.attributes.position.needsUpdate = true;
+      }
+      if (state.time - challengeState.lastStreetAt > 1.2) {
+        challengeState.lastStreetAt = state.time;
+        const px = isOnFootRef.current ? walkState.x : state.x;
+        const pz = isOnFootRef.current ? walkState.z : state.z;
+        const street = `${viceCityDistrictName(px, pz)} · ${viceCityStreetName(px, pz)}`;
+        if (street !== previousStreet) { previousStreet = street; setStreetLabel(street); }
+        const hour = Math.floor(worldClock).toString().padStart(2, '0');
+        const condition = `${hour}:00 · ${weatherMode === 'rain' ? 'AVERSE' : daylight < 0.2 ? 'NUIT' : dusk > 0.4 ? 'CRÉPUSCULE' : 'CIEL DÉGAGÉ'}`;
+        setWorldCondition(condition);
+      }
+    };
+    const completeChallenge = (challenge, status) => {
+      challenge.status = status;
+      if (challenge.id === 'escape') clearPolicePursuit();
+      if (status === 'complete') {
+        const saved = readFreeRoamProgress();
+        const elapsed = Math.max(0, challenge.duration - challenge.remaining);
+        const bestTimes = { ...saved.bestTimes };
+        if (challenge.duration && (bestTimes[challenge.id] == null || elapsed < bestTimes[challenge.id])) {
+          bestTimes[challenge.id] = Number(elapsed.toFixed(2));
+        }
+        const bestScores = { ...saved.bestScores };
+        if (challenge.id === 'drift') bestScores.drift = Math.max(Number(bestScores.drift) || 0, Math.floor(challenge.score));
+        const updated = {
+          ...saved,
+          credits: saved.credits + challenge.reward,
+          completedCount: saved.completedCount + 1,
+          completedChallengeIds: [...new Set([...saved.completedChallengeIds, challenge.id])],
+          bestTimes,
+          bestScores,
+        };
+        writeFreeRoamProgress(updated);
+        setFreeRoamProfile(updated);
+        challengeState.rewardTotal = updated.credits;
+        interactionNotice = `${challenge.title.toUpperCase()} · +${challenge.reward} $`;
+        interactionNoticeUntil = state.time + 4;
+      } else {
+        interactionNotice = `${challenge.title.toUpperCase()} · TEMPS ÉCOULÉ`;
+        interactionNoticeUntil = state.time + 3;
+      }
+      setChallengeHud({ ...challenge, status });
+    };
+    const updateChallenge = (dt) => {
+      const challenge = challengeState.current;
+      if (!challenge || challenge.status !== 'active') return;
+      const px = isOnFootRef.current ? walkState.x : state.x;
+      const pz = isOnFootRef.current ? walkState.z : state.z;
+      const speed = isOnFootRef.current ? 0 : Math.abs(state.speed);
+      challenge.remaining = Math.max(0, challenge.remaining - dt);
+      if (challenge.id === 'delivery' || challenge.id === 'checkpoints' || challenge.id === 'time-trial') {
+        const points = challenge.id === 'delivery' ? [challenge.target] : challenge.checkpoints;
+        const point = points[challenge.checkpointIndex];
+        challenge.targetLabel = challenge.id === 'delivery' ? 'VICE POINT' : `CHECKPOINT ${challenge.checkpointIndex + 1} / ${points.length}`;
+        challenge.targetDistance = point ? Math.round(Math.hypot(point.x - px, point.z - pz)) : 0;
+        if (point && challenge.targetDistance < 13) {
+          challenge.checkpointIndex += 1;
+          if (challenge.checkpointIndex >= points.length) completeChallenge(challenge, 'complete');
+        }
+      } else if (challenge.id === 'speed' || challenge.id === 'escape') {
+        const nearestPolice = trafficCars.filter((traffic) => traffic.type === 'police')
+          .reduce((nearest, traffic) => Math.min(nearest, Math.hypot(traffic.car.position.x - px, traffic.car.position.z - pz)), Infinity);
+        challenge.policeDistance = Number.isFinite(nearestPolice) ? Math.round(nearestPolice) : null;
+        const escaped = challenge.id !== 'escape' || nearestPolice > 23;
+        challenge.progress = speed >= challenge.targetSpeed && escaped ? challenge.progress + dt : 0;
+        if (challenge.progress >= (challenge.id === 'speed' ? 5 : 12)) completeChallenge(challenge, 'complete');
+      } else if (challenge.id === 'jump') {
+        challenge.progress = state.jumps - (challenge.jumpsAtStart || 0);
+        if (challenge.progress >= challenge.targetCount) completeChallenge(challenge, 'complete');
+      } else if (challenge.id === 'slalom') {
+        if (speed > 7) trafficCars.forEach((traffic, index) => {
+          const distance = Math.hypot(traffic.car.position.x - px, traffic.car.position.z - pz);
+          if (distance > 3.6 && distance < 10 && !challenge.passedVehicles.has(index)) challenge.passedVehicles.add(index);
+        });
+        challenge.progress = challenge.passedVehicles.size;
+        if (challenge.progress >= challenge.targetCount) completeChallenge(challenge, 'complete');
+      } else if (challenge.id === 'drift') {
+        if (speed > 7 && Math.abs(state.steer) > 0.18 && !isOnFootRef.current) {
+          challenge.score += Math.abs(state.steer) * speed * dt * 3.5;
+        }
+        challenge.progress = challenge.score;
+        if (challenge.score >= challenge.targetScore) completeChallenge(challenge, 'complete');
+      }
+      if (challenge.status === 'active' && challenge.remaining <= 0) completeChallenge(challenge, 'failed');
+      if (state.time - challengeState.lastUiAt > 0.22) {
+        challengeState.lastUiAt = state.time;
+        setChallengeHud({ ...challenge, passedVehicles: undefined });
+      }
+    };
+    const updateStreetEvent = () => {
+      if (ambientEvent.offerId) {
+        if (state.time >= ambientEvent.expiresAt) {
+          ambientEvent.offerId = null;
+          ambientEvent.expiresAt = 0;
+          ambientEvent.nextAt = state.time + 72 + Math.random() * 35;
+          setStreetEventOffer(null);
+        } else if (state.time - ambientEvent.lastUiAt >= 1) {
+          ambientEvent.lastUiAt = state.time;
+          const spec = VICE_CITY_CHALLENGES.find((challenge) => challenge.id === ambientEvent.offerId);
+          if (spec) setStreetEventOffer({ ...spec, secondsLeft: Math.ceil(ambientEvent.expiresAt - state.time) });
+        }
+        return;
+      }
+      if (state.time < ambientEvent.nextAt) return;
+      if (challengeState.current?.status === 'active') { ambientEvent.nextAt = state.time + 18; return; }
+      const options = ['delivery', 'speed', 'slalom', 'drift'];
+      const spec = VICE_CITY_CHALLENGES.find((challenge) => challenge.id === options[Math.floor(Math.random() * options.length)]);
+      if (!spec) return;
+      ambientEvent.offerId = spec.id;
+      ambientEvent.expiresAt = state.time + 28;
+      ambientEvent.lastUiAt = state.time;
+      setStreetEventOffer({ ...spec, secondsLeft: 28 });
+      interactionNotice = `ÉVÉNEMENT DE RUE · ${spec.title.toUpperCase()}`;
+      interactionNoticeUntil = state.time + 3;
+    };
+    const drawMinimap = () => {
+      const canvas = minimapRef.current;
+      let context;
+      try { context = canvas?.getContext?.('2d'); } catch { return; }
+      if (!context) return;
+      const size = canvas.width;
+      const center = size / 2;
+      const radius = center - 4;
+      const scale = 0.31;
+      const playerX = isOnFootRef.current ? walkState.x : state.x;
+      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const heading = isOnFootRef.current ? walkState.heading : state.heading;
+      const strokeRoad = (x1, z1, x2, z2, width = 14, color = '#52616a') => {
+        context.beginPath();
+        context.moveTo(x1, z1);
+        context.lineTo(x2, z2);
+        context.lineCap = 'round';
+        context.lineWidth = width + 3;
+        context.strokeStyle = '#26343b';
+        context.stroke();
+        context.lineWidth = width;
+        context.strokeStyle = color;
+        context.stroke();
+      };
+      context.clearRect(0, 0, size, size);
+      context.save();
+      context.beginPath();
+      context.arc(center, center, radius, 0, Math.PI * 2);
+      context.clip();
+      context.fillStyle = '#354b43';
+      context.fillRect(0, 0, size, size);
+      context.translate(center, center);
+      context.rotate(-heading);
+      context.scale(scale, scale);
+      context.translate(-playerX, -playerZ);
+
+      // Streets, canal and the central bridge, drawn in the same city coordinates as gameplay.
+      for (let coordinate = -300; coordinate <= 300; coordinate += BLOCK) {
+        if (coordinate !== 0) strokeRoad(coordinate, -340, coordinate, 340, 13);
+        if (coordinate === 0) strokeRoad(-340, coordinate, 340, coordinate, 15, '#8b7d68');
+        else {
+          strokeRoad(-340, coordinate, -21, coordinate, 13);
+          strokeRoad(21, coordinate, 340, coordinate, 13);
+        }
+      }
+      context.fillStyle = '#157b8a';
+      context.fillRect(-20, -490, 40, 980);
+      context.fillStyle = '#56b5bc';
+      context.fillRect(-21, -490, 1.6, 980);
+      context.fillRect(19.4, -490, 1.6, 980);
+      strokeRoad(-25, 0, 25, 0, 15, '#9a8267');
+
+      // Roundabout and elevated perimeter highway/viaducts.
+      context.beginPath();
+      context.arc(city.roundaboutIsland.x, city.roundaboutIsland.z, 25, 0, Math.PI * 2);
+      context.lineWidth = 13;
+      context.strokeStyle = '#46545b';
+      context.stroke();
+      context.beginPath();
+      context.arc(city.roundaboutIsland.x, city.roundaboutIsland.z, city.roundaboutIsland.radius, 0, Math.PI * 2);
+      context.fillStyle = '#66874f';
+      context.fill();
+      for (const [pathIndex, path] of minimapHighwayPaths.entries()) {
+        if (path.length < 2) continue;
+        const roadHalfWidth = pathIndex < 4
+          ? VICE_CITY_OUTER_HIGHWAY.halfWidth : VICE_CITY_OUTER_HIGHWAY.accessHalfWidth;
+        context.beginPath();
+        context.moveTo(path[0].x, path[0].z);
+        for (let point = 1; point < path.length; point += 1) context.lineTo(path[point].x, path[point].z);
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        context.lineWidth = roadHalfWidth * 2 + 4;
+        context.strokeStyle = '#27343b';
+        context.stroke();
+        context.lineWidth = roadHalfWidth * 2;
+        context.strokeStyle = '#d0a96d';
+        context.stroke();
+      }
+
+      // Building blocks make streets and open parks legible at a glance.
+      context.fillStyle = '#768078';
+      for (const building of city.buildingFootprints) {
+        if (Math.abs(building.x - playerX) > radius / scale || Math.abs(building.z - playerZ) > radius / scale
+          || building.halfWidth > 32 || building.halfDepth > 32) continue;
+        context.globalAlpha = 0.8;
+        context.fillRect(building.x - building.halfWidth, building.z - building.halfDepth,
+          building.halfWidth * 2, building.halfDepth * 2);
+      }
+      context.globalAlpha = 1;
+
+      const activeChallenge = challengeState.current?.status === 'active' ? challengeState.current : null;
+      let routeTarget = activeChallenge ? null : gpsTarget;
+      if (activeChallenge?.id === 'delivery') routeTarget = activeChallenge.target;
+      else if (activeChallenge?.checkpoints?.[activeChallenge.checkpointIndex]) routeTarget = activeChallenge.checkpoints[activeChallenge.checkpointIndex];
+      if (routeTarget) {
+        const route = viceCityGpsRoute({ x: playerX, z: playerZ }, routeTarget);
+        if (route.length > 1) {
+          context.beginPath();
+          context.moveTo(route[0].x, route[0].z);
+          route.slice(1).forEach((point) => context.lineTo(point.x, point.z));
+          context.lineCap = 'round'; context.lineJoin = 'round'; context.setLineDash([8, 5]);
+          context.lineWidth = 3.2 / scale; context.strokeStyle = '#62f2e4'; context.stroke(); context.setLineDash([]);
+        }
+        context.beginPath(); context.arc(routeTarget.x, routeTarget.z, 5.5, 0, Math.PI * 2);
+        context.fillStyle = '#ff6689'; context.fill(); context.lineWidth = 2; context.strokeStyle = '#fff'; context.stroke();
+      }
+      for (const point of VICE_CITY_POINTS_OF_INTEREST) {
+        const dx = point.x - playerX; const dz = point.z - playerZ;
+        if (Math.hypot(dx, dz) > radius / scale) continue;
+        context.beginPath(); context.arc(point.x, point.z, point.kind === 'garage' ? 5.5 : 4.2, 0, Math.PI * 2);
+        context.fillStyle = point.kind === 'garage' ? '#6dffb1' : '#ffe08b'; context.fill();
+        context.lineWidth = 1.4; context.strokeStyle = '#15232a'; context.stroke();
+      }
+      // Nearby traffic and parked vehicles are small, high-contrast map pips.
+      for (const traffic of trafficCars) {
+        const dx = traffic.car.position.x - playerX;
+        const dz = traffic.car.position.z - playerZ;
+        if (Math.hypot(dx, dz) > radius / scale) continue;
+        context.fillStyle = traffic.pursuitActive ? '#ff5378'
+          : traffic.type === 'police' || traffic.type === 'ambulance' ? '#6fe4e6' : '#f6d98a';
+        context.fillRect(traffic.car.position.x - 4, traffic.car.position.z - 4, 8, 8);
+      }
+      for (const body of city.parkedCarBodies) {
+        if (body.occupied) continue;
+        const dx = body.mesh.position.x - playerX;
+        const dz = body.mesh.position.z - playerZ;
+        if (Math.hypot(dx, dz) > radius / scale) continue;
+        context.fillStyle = '#e8e6da';
+        context.fillRect(body.mesh.position.x - 3, body.mesh.position.z - 3, 6, 6);
+      }
+      context.restore();
+
+      // The player arrow stays upright while the street map rotates around it.
+      context.beginPath();
+      context.arc(center, center, 8, 0, Math.PI * 2);
+      context.fillStyle = '#10191e';
+      context.fill();
+      context.beginPath();
+      context.moveTo(center, center - 8);
+      context.lineTo(center + 6, center + 6);
+      context.lineTo(center, center + 3);
+      context.lineTo(center - 6, center + 6);
+      context.closePath();
+      context.fillStyle = isOnFootRef.current ? '#67e3d8' : '#ff6689';
+      context.fill();
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 1.5;
+      context.stroke();
+      context.beginPath();
+      context.arc(center, center, radius, 0, Math.PI * 2);
+      context.strokeStyle = '#d7e1dc';
+      context.lineWidth = 3;
+      context.stroke();
+    };
+    let pursuitSirenActive = false;
+    const updatePoliceSiren = () => {
+      const pursuers = trafficCars.filter((traffic) => traffic.pursuitActive);
+      if (!pursuers.length) {
+        if (pursuitSirenActive) audioRef.current?.policeSirenOff?.();
+        pursuitSirenActive = false;
+        return;
+      }
+      const playerX = isOnFootRef.current ? walkState.x : state.x;
+      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const nearest = pursuers.reduce((distance, traffic) => Math.min(distance,
+        Math.hypot(traffic.car.position.x - playerX, traffic.car.position.z - playerZ)), Infinity);
+      audioRef.current?.policeSiren?.({ level: clamp(1 - nearest / 150, 0.12, 1), mute: !soundOnRef.current });
+      pursuitSirenActive = true;
+    };
+    const clearPolicePursuit = () => {
+      for (const traffic of trafficCars) {
+        if (!traffic.pursuitActive) continue;
+        const car = traffic.car;
+        traffic.pursuitActive = false;
+        traffic.pursuitRoute = null;
+        traffic.pursuitRouteIndex = 0;
+        traffic.progress = traffic.axis === 'x' ? car.position.x : car.position.z;
+        traffic.crossAxis = traffic.axis === 'x' ? car.position.z : car.position.x;
+        traffic.speed = 0;
+        traffic.offsetX = 0; traffic.offsetZ = 0;
+        traffic.velocityX = 0; traffic.velocityZ = 0;
+        traffic.angularVelocity = 0; traffic.yawOffset = 0;
+        traffic.yaw = traffic.axis === 'x'
+          ? traffic.direction > 0 ? -Math.PI / 2 : Math.PI / 2
+          : traffic.direction > 0 ? Math.PI : 0;
+      }
+    };
+    const activatePolicePursuit = () => {
+      clearPolicePursuit();
+      const targetX = isOnFootRef.current ? walkState.x : state.x;
+      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      const closestPolice = trafficCars.filter((traffic) => traffic.type === 'police')
+        .sort((left, right) => Math.hypot(left.car.position.x - targetX, left.car.position.z - targetZ)
+          - Math.hypot(right.car.position.x - targetX, right.car.position.z - targetZ))
+        .slice(0, 2);
+      closestPolice.forEach((traffic, index) => {
+        traffic.pursuitActive = true;
+        traffic.pursuitRoute = null;
+        traffic.pursuitRouteIndex = 0;
+        traffic.pursuitRepathAt = state.time + index * 0.18;
+      });
+    };
+    const updatePursuitTraffic = (traffic, dt) => {
+      const car = traffic.car;
+      const targetX = isOnFootRef.current ? walkState.x : state.x;
+      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      if (!traffic.pursuitRoute || state.time >= traffic.pursuitRepathAt) {
+        traffic.pursuitRoute = viceCityGpsRoute({ x: car.position.x, z: car.position.z }, { x: targetX, z: targetZ });
+        traffic.pursuitRouteIndex = Math.min(1, Math.max(0, traffic.pursuitRoute.length - 1));
+        traffic.pursuitRepathAt = state.time + 0.85;
+      }
+      const route = traffic.pursuitRoute || [];
+      while (traffic.pursuitRouteIndex < route.length - 1
+        && Math.hypot(route[traffic.pursuitRouteIndex].x - car.position.x, route[traffic.pursuitRouteIndex].z - car.position.z) < 5) {
+        traffic.pursuitRouteIndex += 1;
+      }
+      const waypoint = route[traffic.pursuitRouteIndex] || { x: targetX, z: targetZ };
+      const dx = waypoint.x - car.position.x;
+      const dz = waypoint.z - car.position.z;
+      const distance = Math.hypot(dx, dz);
+      const travel = Math.min(16.5 * dt, Math.max(0, distance - (traffic.pursuitRouteIndex === route.length - 1 ? 5.2 : 0.8)));
+      if (distance > 1e-4 && travel > 0) {
+        const oldX = car.position.x;
+        const oldZ = car.position.z;
+        const stepX = dx / distance * travel;
+        const stepZ = dz / distance * travel;
+        const blocked = (x, z) => city.didCrossCanalWall(car.position.x, car.position.z, x, z)
+          || city.isCanalBlocked(x, z)
+          || city.buildingFootprints.some((building) => Math.abs(x - building.x) < building.halfWidth + 1.5
+            && Math.abs(z - building.z) < building.halfDepth + 1.5)
+          || city.parkedCarBodies.some((body) => !body.occupied && overlapsVehicleHitbox(
+            x, z, body.mesh.position.x, body.mesh.position.z, body.mesh.rotation.y, body.spec.width, body.spec.length));
+        let nextX = car.position.x + stepX;
+        let nextZ = car.position.z + stepZ;
+        if (blocked(nextX, nextZ)) {
+          const canX = !blocked(nextX, car.position.z);
+          const canZ = !blocked(car.position.x, nextZ);
+          if (canX) nextZ = car.position.z;
+          else if (canZ) nextX = car.position.x;
+          else { traffic.pursuitRepathAt = state.time; nextX = car.position.x; nextZ = car.position.z; }
+        }
+        car.position.set(nextX, city.roadElevation(nextX, nextZ) + 0.02, nextZ);
+        traffic.speed = Math.hypot(nextX - oldX, nextZ - oldZ) / Math.max(dt, 1e-4);
+      } else traffic.speed = 0;
+      const faceX = targetX - car.position.x;
+      const faceZ = targetZ - car.position.z;
+      if (Math.hypot(faceX, faceZ) > 0.2) car.rotation.y = Math.atan2(-faceX, -faceZ);
+      car.rotation.x = city.surfacePitch(car.position.x, car.position.z, car.rotation.y);
+      car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+      car.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(state.time * 10 + traffic.phase + beaconIndex) % 2 === 0 ? 1 : 0.08;
+      });
+    };
+    const updateHighwayTraffic = (traffic, dt) => {
+      traffic.speed += (traffic.highwayCruiseSpeed - traffic.speed) * (1 - Math.exp(-dt * 1.45));
+      traffic.highwayProgress = ((traffic.highwayProgress + traffic.direction * traffic.speed * dt) % highwayTrafficLength
+        + highwayTrafficLength) % highwayTrafficLength;
+      const currentPose = sampleHighwayTrafficPosition(
+        traffic.highwayProgress, traffic.direction, traffic.highwayLaneOffset,
+      );
+      const nearExit = highwayExitStarts.some((entry) => Math.hypot(currentPose.x - entry.x, currentPose.z - entry.z) < 96);
+      if (traffic.highwayLaneChangeStartedAt == null && traffic.type !== 'garbage-truck'
+        && state.time >= traffic.highwayNextLaneChangeAt) {
+        if (nearExit) traffic.highwayNextLaneChangeAt = state.time + 1.5;
+        else {
+          const currentLane = traffic.highwayLaneIndex;
+          const nextLane = currentLane === 0 ? 1 : currentLane === 2 ? 1
+            : traffic.phase % 2 < 1 ? 0 : 2;
+          traffic.highwayLaneChangeTarget = nextLane;
+          traffic.highwayLaneChangeFrom = highwayLaneOffsets[currentLane];
+          traffic.highwayLaneChangeTo = highwayLaneOffsets[nextLane];
+          traffic.highwayLaneChangeStartedAt = state.time;
+        }
+      }
+      if (traffic.highwayLaneChangeStartedAt != null) {
+        const progress = clamp((state.time - traffic.highwayLaneChangeStartedAt)
+          / traffic.highwayLaneChangeDuration, 0, 1);
+        const eased = progress * progress * (3 - 2 * progress);
+        traffic.highwayLaneOffset = traffic.highwayLaneChangeFrom
+          + (traffic.highwayLaneChangeTo - traffic.highwayLaneChangeFrom) * eased;
+        if (progress >= 1) {
+          traffic.highwayLaneIndex = traffic.highwayLaneChangeTarget;
+          traffic.highwayLaneOffset = highwayLaneOffsets[traffic.highwayLaneIndex];
+          traffic.highwayLaneChangeStartedAt = null;
+          traffic.highwayNextLaneChangeAt = state.time + 12 + (traffic.phase % 8);
+        }
+      }
+      const pushDrag = Math.exp(-2.4 * dt);
+      traffic.offsetX += traffic.velocityX * dt;
+      traffic.offsetZ += traffic.velocityZ * dt;
+      traffic.velocityX *= pushDrag;
+      traffic.velocityZ *= pushDrag;
+      traffic.offsetX *= Math.exp(-0.45 * dt);
+      traffic.offsetZ *= Math.exp(-0.45 * dt);
+      traffic.yawOffset += traffic.angularVelocity * dt;
+      traffic.angularVelocity *= pushDrag;
+      traffic.yawOffset *= Math.exp(-0.4 * dt);
+      const pose = sampleHighwayTrafficPosition(
+        traffic.highwayProgress, traffic.direction, traffic.highwayLaneOffset,
+      );
+      const x = pose.x + traffic.offsetX;
+      const z = pose.z + traffic.offsetZ;
+      traffic.car.position.set(x, city.surfaceHeight(x, z) + 0.02, z);
+      traffic.car.rotation.y = pose.yaw + traffic.yawOffset;
+      traffic.car.rotation.x = city.surfacePitch(x, z, traffic.car.rotation.y);
+      traffic.car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += traffic.speed * dt * 0.95; });
+      traffic.car.userData.beacons?.forEach((beacon, beaconIndex) => {
+        beacon.material.opacity = Math.floor(state.time * 8 + traffic.phase + beaconIndex) % 2 === 0 ? 1 : 0.18;
+      });
+    };
     const updateTraffic = (dt) => {
       city.updateParkedCars(dt);
       city.updateTrafficSignals(state.time);
       for (const traffic of trafficCars) {
+        if (traffic.axis === 'highway') { updateHighwayTraffic(traffic, dt); continue; }
+        if (traffic.pursuitActive) { updatePursuitTraffic(traffic, dt); continue; }
         const nextIndex = traffic.direction > 0
           ? Math.floor((traffic.progress + 0.001) / BLOCK) + 1
           : Math.ceil((traffic.progress - 0.001) / BLOCK) - 1;
@@ -2674,7 +4234,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         toggleCameraRef.current?.();
         return;
       }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ'].includes(event.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ', 'KeyE', 'Space'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
         keys.add(event.code);
@@ -2682,6 +4242,26 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
     };
     const onUp = (event) => keys.delete(event.code);
+    const onMouseMove = (event) => {
+      const bounds = renderer.domElement.getBoundingClientRect();
+      if (bounds.width < 1 || bounds.height < 1) return;
+      const cursorX = clamp(event.clientX, bounds.left, bounds.right);
+      const cursorY = clamp(event.clientY, bounds.top, bounds.bottom);
+      // Keep the reticle directly under the OS cursor; the same viewport point
+      // is converted to a 3D camera ray by getMouseAimDirection().
+      const x = cursorX;
+      const y = cursorY;
+      mouseAimRef.current = { x, y, active: true };
+      crosshairRef.current?.style.setProperty('--aim-x', `${x}px`);
+      crosshairRef.current?.style.setProperty('--aim-y', `${y}px`);
+    };
+    const onMouseDown = (event) => {
+      if (event.button !== 0 || !mount.contains(event.target)) return;
+      event.preventDefault();
+      activateAudio();
+      touchKeysRef.current.add('MouseLeft');
+    };
+    const onMouseUp = () => touchKeysRef.current.delete('MouseLeft');
     const blur = () => {
       keys.clear();
       touchKeysRef.current.clear();
@@ -2692,6 +4272,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('blur', blur);
     const resize = () => {
       const width = Math.max(1, mount.clientWidth); const height = Math.max(1, mount.clientHeight);
@@ -2700,7 +4283,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
+    const cameraLookTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
+    let pedestrianCameraTracking = false;
+    let pedestrianCameraHeading = 0;
     const cockpitPosition = new THREE.Vector3();
     const cockpitIdentityQuat = new THREE.Quaternion();
     const cockpitFollowQuat = new THREE.Quaternion();
@@ -2720,7 +4306,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
     };
     const isPositionBlocked = (x, z) => {
-      if (city.isCanalBlocked(x, z)) return true;
+      if (city.isCanalBlocked(x, z) || city.isHighwayBarrierBlocked(x, z)) return true;
       if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.collisionRadius) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
@@ -2728,9 +4314,233 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (trafficCars.some(({ car }) => overlapsVehicleHitbox(
         x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length,
       ))) return true;
-      return city.parkedCarSpecs.some((car) => overlapsVehicleHitbox(
-        x, z, car.x, car.z, car.yaw, car.width, car.length,
-      ));
+      if (city.parkedCarBodies.some((body) => !body.occupied && overlapsVehicleHitbox(
+        x, z, body.spec.x, body.spec.z, body.spec.yaw, body.spec.width, body.spec.length,
+      ))) return true;
+      return vehicle !== playerVehicle && playerVehicle.visible && overlapsVehicleHitbox(
+        x, z, playerVehicle.position.x, playerVehicle.position.z, playerVehicle.rotation.y,
+        playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2,
+      );
+    };
+    const isPedestrianPositionBlocked = (x, z) => isPositionBlocked(x, z)
+      || overlapsVehicleHitbox(x, z, state.x, state.z, vehicle.rotation.y,
+        vehicle.userData.width || 3, vehicle.userData.length || 5.2);
+    const resetPedestrianMotion = () => {
+      walkState.velocityX = 0;
+      walkState.velocityZ = 0;
+      walkState.turnRate = 0;
+      walkState.speed = 0;
+      turnAroundTarget = null;
+      turnAroundElapsed = 0;
+      backInputWasDown = false;
+    };
+    const movePedestrianWithSlide = (dt) => {
+      const deltaX = walkState.velocityX * dt;
+      const deltaZ = walkState.velocityZ * dt;
+      if (Math.hypot(deltaX, deltaZ) < 1e-5) {
+        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+        return false;
+      }
+      const blocked = (x, z) => city.didCrossCanalWall(walkState.x, walkState.z, x, z)
+        || isPedestrianPositionBlocked(x, z);
+      const nextX = walkState.x + deltaX;
+      const nextZ = walkState.z + deltaZ;
+      if (!blocked(nextX, nextZ)) {
+        walkState.x = nextX;
+        walkState.z = nextZ;
+        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+        return true;
+      }
+      const canX = Math.abs(deltaX) > 1e-5 && !blocked(nextX, walkState.z);
+      const canZ = Math.abs(deltaZ) > 1e-5 && !blocked(walkState.x, nextZ);
+      if (canX && (!canZ || Math.abs(deltaX) >= Math.abs(deltaZ))) walkState.x = nextX;
+      else if (canZ) walkState.z = nextZ;
+      if (!canX) walkState.velocityX = 0;
+      if (!canZ) walkState.velocityZ = 0;
+      walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
+      return canX || canZ;
+    };
+    const getEnterableVehicles = () => [
+      ...(playerVehicle.visible ? [{ mesh: playerVehicle, body: null, name: profile.name }] : []),
+      ...city.parkedCarBodies.filter((body) => !body.occupied && !body.reserved && body.mesh.visible).map((body) => ({
+        mesh: body.mesh,
+        body,
+        name: CITY_RUSH_TRAFFIC_TYPES.find((type) => type.id === body.spec.type)?.name || 'Voiture',
+      })),
+    ];
+    const getNearestEnterableVehicle = (x, z) => getEnterableVehicles()
+      .map((target) => ({ ...target, distance: Math.hypot(target.mesh.position.x - x, target.mesh.position.z - z) }))
+      .sort((left, right) => left.distance - right.distance)[0] || null;
+    const getVehicleApproach = (target, x, z) => {
+      const yaw = target.mesh.rotation.y;
+      const rightX = Math.cos(yaw);
+      const rightZ = -Math.sin(yaw);
+      const width = target.body?.spec.width || target.mesh.userData.width || 3;
+      const length = target.body?.spec.length || target.mesh.userData.length || 5.2;
+      const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
+      const sideDistance = halfWidth + 0.35;
+      const endDistance = halfLength + 0.35;
+      const relativeX = x - target.mesh.position.x;
+      const relativeZ = z - target.mesh.position.z;
+      const localX = relativeX * rightX + relativeZ * rightZ;
+      const localZ = relativeX * Math.sin(yaw) + relativeZ * Math.cos(yaw);
+      const edgePadding = 0.15;
+      const spots = [
+        ...[-1, 1].map((side) => ({
+          x: target.mesh.position.x + rightX * side * sideDistance + Math.sin(yaw) * clamp(localZ, -halfLength + edgePadding, halfLength - edgePadding),
+          z: target.mesh.position.z + rightZ * side * sideDistance + Math.cos(yaw) * clamp(localZ, -halfLength + edgePadding, halfLength - edgePadding),
+        })),
+        ...[-1, 1].map((side) => ({
+          x: target.mesh.position.x + rightX * clamp(localX, -halfWidth + edgePadding, halfWidth - edgePadding) + Math.sin(yaw) * side * endDistance,
+          z: target.mesh.position.z + rightZ * clamp(localX, -halfWidth + edgePadding, halfWidth - edgePadding) + Math.cos(yaw) * side * endDistance,
+        })),
+      ];
+      return spots
+        .filter((spot) => !isPedestrianPositionBlocked(spot.x, spot.z))
+        .sort((left, right) => Math.hypot(left.x - x, left.z - z) - Math.hypot(right.x - x, right.z - z))[0] || null;
+    };
+    const setActiveVehicle = (target) => {
+      if (activeParkedBody) {
+        activeParkedBody.occupied = false;
+        activeParkedBody.reserved = false;
+        activeParkedBody.spec.x = state.x;
+        activeParkedBody.spec.z = state.z;
+        activeParkedBody.spec.yaw = -state.heading;
+        activeParkedBody.velocityX = 0;
+        activeParkedBody.velocityZ = 0;
+        activeParkedBody.angularVelocity = 0;
+      }
+      if (target.body) {
+        target.body.reserved = false;
+        target.body.occupied = true;
+        target.body.velocityX = 0;
+        target.body.velocityZ = 0;
+        target.body.angularVelocity = 0;
+        target.body.spec.x = target.mesh.position.x;
+        target.body.spec.z = target.mesh.position.z;
+        target.body.spec.yaw = target.mesh.rotation.y;
+      }
+      activeParkedBody = target.body;
+      vehicle = target.mesh;
+      state.x = vehicle.position.x;
+      state.z = vehicle.position.z;
+      state.heading = -vehicle.rotation.y;
+      state.speed = 0;
+      state.steer = 0;
+      state.lateralSpeed = 0;
+      if (target.body) {
+        const trafficProfile = CITY_RUSH_TRAFFIC_TYPES.find((type) => type.id === target.body.spec.type);
+        const topSpeed = trafficProfile?.id === 'white-lambo' ? 31
+          : trafficProfile?.id === 'garbage-truck' ? 18
+            : trafficProfile?.id === 'ambulance' ? 26 : 28;
+        maxSpeed = topSpeed;
+        reverseMaxSpeed = Math.min(6, maxSpeed * 0.24);
+        acceleration = trafficProfile?.id === 'garbage-truck' ? 3.8 : 5.4;
+        engineProfile = target.body.spec.type;
+        vehicle.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
+      } else {
+        maxSpeed = homeMaxSpeed;
+        reverseMaxSpeed = homeReverseMaxSpeed;
+        acceleration = homeAcceleration;
+        engineProfile = profile.archetype;
+      }
+      pedestrian.group.visible = false;
+      resetPedestrianMotion();
+      isOnFootRef.current = false;
+      setIsOnFoot(false);
+      const hasCockpit = vehicle === playerVehicle;
+      setCanUseCockpit(hasCockpit);
+      if (!hasCockpit && cockpitViewRef.current) {
+        cockpitViewRef.current = false;
+        setCockpitView(false);
+      }
+    };
+    const garagePosition = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.kind === 'garage');
+    garageActionRef.current = (action, id) => {
+      const playerX = isOnFootRef.current ? walkState.x : state.x;
+      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      if (Math.hypot(playerX - garagePosition.x, playerZ - garagePosition.z) > 38) {
+        interactionNotice = 'GARAGE MUNICIPAL · APPROCHEZ-VOUS DU REPÈRE SUR LA CARTE';
+        interactionNoticeUntil = state.time + 3.2;
+        return false;
+      }
+      if (action === 'repair') {
+        state.damage = 0;
+        (playerVehicle.userData.damageMarks || []).forEach((mark) => { mark.parent?.remove(mark); mark.geometry?.dispose(); mark.material?.dispose(); });
+        playerVehicle.userData.damageMarks = [];
+        interactionNotice = 'VÉHICULE RÉPARÉ · SERVICE GRATUIT';
+        interactionNoticeUntil = state.time + 2.8;
+        return true;
+      }
+      const nextProfile = CITY_RUSH_CARS.find((car) => car.id === id);
+      if (!nextProfile) return false;
+      if (activeParkedBody) {
+        activeParkedBody.occupied = false;
+        activeParkedBody.reserved = false;
+        activeParkedBody.spec.x = state.x;
+        activeParkedBody.spec.z = state.z;
+        activeParkedBody.spec.yaw = -state.heading;
+        activeParkedBody = null;
+      }
+      const spawnX = isOnFootRef.current ? walkState.x : state.x;
+      const spawnZ = isOnFootRef.current ? walkState.z : state.z;
+      const spawnHeading = isOnFootRef.current ? walkState.heading : state.heading;
+      scene.remove(playerVehicle);
+      playerCockpit = null;
+      profile = nextProfile;
+      homeMaxSpeed = 35 * profile.powerMultiplier;
+      homeReverseMaxSpeed = Math.min(7, homeMaxSpeed * 0.25);
+      homeAcceleration = clamp((Number(profile.accelerationRate) || 10) / 2, 3.5, 7.4);
+      maxSpeed = homeMaxSpeed;
+      reverseMaxSpeed = homeReverseMaxSpeed;
+      acceleration = homeAcceleration;
+      engineProfile = profile.archetype;
+      playerVehicle = makeRacerCar(profile, { player: true, daylight: worldClock > 6 && worldClock < 19, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
+      installFreeRoamHeadlights(playerVehicle);
+      playerVehicle.position.set(spawnX, city.surfaceHeight(spawnX, spawnZ), spawnZ);
+      playerVehicle.rotation.y = -spawnHeading;
+      scene.add(playerVehicle);
+      vehicle = playerVehicle;
+      state.x = spawnX;
+      state.z = spawnZ;
+      state.heading = spawnHeading;
+      state.speed = 0;
+      state.steer = 0;
+      state.lateralSpeed = 0;
+      state.damage = 0;
+      state.airHeight = 0;
+      jumpVelocity = 0;
+      pedestrian.group.visible = false;
+      resetPedestrianMotion();
+      isOnFootRef.current = false;
+      setIsOnFoot(false);
+      setCanUseCockpit(true);
+      setSelectedFreeRoamCar(profile);
+      interactionNotice = `${profile.name} PRÊTE · VOITURE TEMPORAIRE, GARAGE PRINCIPAL INCHANGÉ`;
+      interactionNoticeUntil = state.time + 3.2;
+      return true;
+    };
+    streetEventActionRef.current = () => {
+      ambientEvent.offerId = null;
+      ambientEvent.expiresAt = 0;
+      ambientEvent.nextAt = state.time + 75;
+      setStreetEventOffer(null);
+    };
+    challengeActionRef.current = (id) => {
+      ambientEvent.offerId = null;
+      ambientEvent.expiresAt = 0;
+      setStreetEventOffer(null);
+      if (id === 'cancel') { clearPolicePursuit(); challengeState.current = null; setChallengeHud(null); missionMarker.visible = false; return true; }
+      clearPolicePursuit();
+      const challenge = createViceCityChallenge(id, state.time);
+      if (!challenge) return false;
+      challenge.jumpsAtStart = state.jumps;
+      challengeState.current = challenge;
+      if (id === 'escape') { activateAudio(); activatePolicePursuit(); }
+      setChallengeHud({ ...challenge, status: 'active' });
+      interactionNotice = id === 'escape' ? 'ALERTE · DEUX PATROUILLES SONT À VOS TROUSSES !' : `${challenge.title.toUpperCase()} · C’EST PARTI !`;
+      interactionNoticeUntil = state.time + 2.5;
+      return true;
     };
     const applyTrafficCarImpact = (x, z, heading, speed, steer, dt) => {
       let hitCount = 0;
@@ -2742,6 +4552,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         );
         const firstContact = overlaps && !traffic.touchingPlayer;
         const impulse = overlaps ? viceCityFreeDriveParkedCarImpulse(speed, traffic.mass, dt, firstContact) : 0;
+        if (firstContact && Math.abs(speed) > 3.5 && state.time - (traffic.lastHornAt ?? -10) > 3.5) {
+          traffic.lastHornAt = state.time;
+          if (soundOnRef.current) audioRef.current?.trafficHorn?.({
+            pan: clamp((car.position.x - state.x) / 55, -1, 1),
+            intensity: clamp(Math.abs(speed) / 22, 0.35, 1.1),
+          });
+        }
         if (impulse > 0) {
           const directionX = heading.x * direction;
           const directionZ = heading.z * direction;
@@ -2758,14 +4575,53 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return hitCount;
     };
     const fireShot = () => {
-      const directionX = forward.x;
-      const directionZ = forward.z;
-      const x = state.x + directionX * 2.65;
-      const z = state.z + directionZ * 2.65;
+      const onFoot = isOnFootRef.current;
+      const defaultDirection = {
+        x: onFoot ? Math.sin(walkState.heading) : forward.x,
+        y: 0,
+        z: onFoot ? -Math.cos(walkState.heading) : forward.z,
+      };
+      let direction = onFoot ? getMouseAimDirection() || defaultDirection : defaultDirection;
+      let aimPose = viceCityFreeDriveAimVectorPose(
+        walkState.heading, direction.x, direction.y, direction.z,
+      );
+      let x = state.x + direction.x * 2.65;
+      let y = city.surfaceHeight(state.x, state.z) + 1.05;
+      let z = state.z + direction.z * 2.65;
+      let groundOffset = 1.05;
+      if (onFoot) {
+        pedestrian.aimBlend = 1;
+        const applyAimPose = () => {
+          pedestrian.arms[1].userData.elbow.rotation.x = -0.06;
+          pedestrian.arms[0].userData.elbow.rotation.x = 0.14;
+          pedestrian.arms[1].rotation.set(1.02 + aimPose.pitch, aimPose.armYaw, -0.08);
+          pedestrian.arms[0].rotation.set(0.72 + aimPose.pitch, aimPose.armYaw, 0.62);
+          pedestrian.pistol.rotation.x = -1.02 - pedestrian.arms[1].userData.elbow.rotation.x;
+          pedestrian.group.updateMatrixWorld(true);
+        };
+        applyAimPose();
+        // Re-evaluate from the final muzzle transform to remove close-range parallax.
+        direction = getMouseAimDirection() || direction;
+        aimPose = viceCityFreeDriveAimVectorPose(
+          walkState.heading, direction.x, direction.y, direction.z,
+        );
+        applyAimPose();
+        direction = getMouseAimDirection() || direction;
+        pedestrian.muzzle.getWorldPosition(shotOrigin);
+        x = shotOrigin.x;
+        y = shotOrigin.y;
+        z = shotOrigin.z;
+        groundOffset = null;
+        footMuzzleFlashUntil = state.time + 0.075;
+        pedestrian.muzzleFlash.visible = true;
+      }
       const mesh = new THREE.Mesh(shotGeometry, shotMaterial);
-      mesh.position.set(x, city.surfaceHeight(x, z) + 1.05, z);
+      mesh.position.set(x, y, z);
       scene.add(mesh);
-      shots.push({ mesh, x, z, directionX, directionZ, age: 0, distance: 0 });
+      shots.push({
+        mesh, x, y, z, directionX: direction.x, directionY: direction.y, directionZ: direction.z,
+        groundOffset, age: 0, distance: 0,
+      });
       if (soundOnRef.current) audioRef.current?.gunshot?.();
     };
     const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
@@ -2778,47 +4634,148 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
       return Math.abs(localX) <= halfWidth + 0.45 && Math.abs(localZ) <= halfLength + 0.55;
     };
+    const breakVehicleGlass = (car, worldX, worldY, worldZ, directionX, directionY, directionZ) => {
+      if (!car) return;
+      car.updateWorldMatrix(true, true);
+      const glassMeshes = [];
+      car.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
+          || materials.some((material) => /glass/i.test(material?.name || ''))) glassMeshes.push(object);
+      });
+      if (!glassMeshes.length) return;
+      glassWorldDirection.set(directionX, directionY, directionZ).normalize();
+      const rayOrigin = new THREE.Vector3(worldX, worldY, worldZ).addScaledVector(glassWorldDirection, -12);
+      glassImpactRaycaster.set(rayOrigin, glassWorldDirection);
+      glassImpactRaycaster.near = 0;
+      glassImpactRaycaster.far = 24;
+      const glassHit = glassImpactRaycaster.intersectObjects(glassMeshes, false)[0];
+      if (!glassHit?.face && Math.abs(directionY) > 1e-4) return;
+      if (!car.userData.glassBroken) {
+        for (const mesh of glassMeshes) {
+          const replace = (material) => {
+            if (!/glass/i.test(material?.name || '') && !mesh.userData.isVehicleGlass
+              && !mesh.name.includes('dark-glazing')) return material;
+            const broken = material.clone();
+            broken.color?.setHex?.(0x829aa4);
+            broken.roughness = 0.42;
+            broken.metalness = 0.04;
+            broken.transparent = true;
+            broken.opacity = 0.22;
+            broken.depthWrite = false;
+            broken.needsUpdate = true;
+            return broken;
+          };
+          mesh.material = Array.isArray(mesh.material) ? mesh.material.map(replace) : replace(mesh.material);
+        }
+        car.userData.glassBroken = true;
+      }
+      if ((car.userData.glassCrackCount || 0) >= 8) return;
+      car.userData.glassCrackCount = (car.userData.glassCrackCount || 0) + 1;
+      const impact = car.worldToLocal(new THREE.Vector3(worldX, worldY, worldZ));
+      const inverseRotation = car.getWorldQuaternion(glassCarQuaternion).invert();
+      const localDirection = new THREE.Vector3(directionX, directionY, directionZ).applyQuaternion(inverseRotation);
+      const width = car.userData.width || 2;
+      const length = car.userData.length || 4.2;
+      const entryFace = viceCityFreeDriveGlassEntryFace(localDirection.x, localDirection.z);
+      const crack = new THREE.Group();
+      crack.name = 'broken-window-impact';
+
+      // Place the mark on the actual pane surface when the shot ray crosses glass.
+      // The old 2-D hit test used a guessed car edge, which left marks hovering
+      // beside the body or on the far side of the vehicle.
+      if (glassHit?.face) {
+        crack.position.copy(car.worldToLocal(glassHit.point.clone()));
+        glassWorldNormalMatrix.getNormalMatrix(glassHit.object.matrixWorld);
+        glassLocalNormal.copy(glassHit.face.normal).applyMatrix3(glassWorldNormalMatrix);
+        glassCarQuaternion.copy(car.getWorldQuaternion(new THREE.Quaternion())).invert();
+        glassLocalNormal.applyQuaternion(glassCarQuaternion).normalize();
+        crack.position.addScaledVector(glassLocalNormal, 0.012);
+        crack.quaternion.setFromUnitVectors(glassLocalForward, glassLocalNormal);
+      } else {
+        crack.position.y = clamp(impact.y, 0.88, 1.32);
+        if (entryFace.axis === 'side') {
+          crack.position.x = entryFace.side * width * 0.435;
+          crack.position.z = clamp(impact.z, -length * 0.28, length * 0.28);
+        } else {
+          crack.position.x = clamp(impact.x, -width * 0.34, width * 0.34);
+          crack.position.z = entryFace.end * length * 0.2;
+        }
+        crack.rotation.y = entryFace.rotation;
+      }
+      car.add(crack);
+      const hole = new THREE.Mesh(new THREE.CircleGeometry(0.052, 7), glassChipMaterial);
+      hole.position.z = 0.004;
+      hole.renderOrder = 4;
+      crack.add(hole);
+      const points = [];
+      for (let spoke = 0; spoke < 8; spoke += 1) {
+        const angle = (spoke / 8) * Math.PI * 2 + 0.14;
+        const lengthOut = 0.11 + (spoke % 3) * 0.018;
+        const endX = Math.cos(angle) * lengthOut;
+        const endY = Math.sin(angle) * lengthOut;
+        points.push(new THREE.Vector3(0, 0, 0.008), new THREE.Vector3(endX, endY, 0.008));
+        if (spoke % 2 === 0) {
+          points.push(new THREE.Vector3(endX * 0.58, endY * 0.58, 0.009));
+          points.push(new THREE.Vector3(endX + Math.cos(angle + 0.55) * 0.045,
+            endY + Math.sin(angle + 0.55) * 0.045, 0.009));
+        }
+      }
+      const crackLines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), glassCrackMaterial);
+      crackLines.renderOrder = 5;
+      crack.add(crackLines);
+    };
     const updateShots = (dt) => {
       for (let index = shots.length - 1; index >= 0; index -= 1) {
         const shot = shots[index];
         const stepX = shot.directionX * 92 * dt;
+        const stepY = shot.directionY * 92 * dt;
         const stepZ = shot.directionZ * 92 * dt;
-        const stepLength = Math.hypot(stepX, stepZ);
+        const stepLength = Math.hypot(stepX, stepY, stepZ);
         const samples = Math.max(1, Math.ceil(stepLength / 0.8));
         let hit = false;
         for (let sample = 1; sample <= samples && !hit; sample += 1) {
           const ratio = sample / samples;
           const x = shot.x + stepX * ratio;
           const z = shot.z + stepZ * ratio;
+          const y = shot.groundOffset == null
+            ? shot.y + stepY * ratio
+            : city.surfaceHeight(x, z) + shot.groundOffset;
           for (const traffic of trafficCars) {
             if (!bulletOverlaps(x, z, traffic.car.position.x, traffic.car.position.z,
               traffic.car.rotation.y, traffic.car.userData.width, traffic.car.userData.length)) continue;
-            const impulse = viceCityFreeDriveShotImpulse(traffic.mass);
-            traffic.velocityX += shot.directionX * impulse;
-            traffic.velocityZ += shot.directionZ * impulse;
-            traffic.angularVelocity += clamp((state.x - traffic.car.position.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            breakVehicleGlass(traffic.car, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
             hit = true;
             break;
           }
           if (hit) break;
           for (const body of city.parkedCarBodies) {
+            if (body.occupied || body.reserved) continue;
             if (!bulletOverlaps(x, z, body.spec.x, body.spec.z, body.spec.yaw,
               body.spec.width, body.spec.length)) continue;
-            const impulse = viceCityFreeDriveShotImpulse(body.mass, 4.2);
-            body.velocityX += shot.directionX * impulse;
-            body.velocityZ += shot.directionZ * impulse;
-            body.angularVelocity += clamp((state.x - body.spec.x) * shot.directionZ * 0.035, -0.8, 0.8);
+            breakVehicleGlass(body.mesh, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
             hit = true;
             break;
           }
+          if (!hit && isOnFootRef.current && playerVehicle.visible
+            && bulletOverlaps(x, z, playerVehicle.position.x, playerVehicle.position.z,
+              playerVehicle.rotation.y, playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2)) {
+            breakVehicleGlass(playerVehicle, x, y, z,
+              shot.directionX, shot.directionY, shot.directionZ);
+            hit = true;
+          }
           if (!hit) {
             shot.x = x;
+            shot.y = y;
             shot.z = z;
             shot.distance += stepLength / samples;
           }
         }
         shot.age += dt;
-        shot.mesh.position.set(shot.x, city.surfaceHeight(shot.x, shot.z) + 1.05, shot.z);
+        shot.mesh.position.set(shot.x, shot.y, shot.z);
         if (hit || shot.age > 1.5 || shot.distance > 125) {
           scene.remove(shot.mesh);
           shots.splice(index, 1);
@@ -2831,7 +4788,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let cockpitMirrorFrame = 0;
     let cockpitMirrorBroken = false;
     const renderCockpitMirror = () => {
-      if (!cockpitActive || !playerCockpit || cockpitMirrorBroken || typeof renderer.setRenderTarget !== 'function') return;
+      if (!cockpitActive || vehicle !== playerVehicle || !playerCockpit || cockpitMirrorBroken || typeof renderer.setRenderTarget !== 'function') return;
       cockpitMirrorFrame += 1;
       if (cockpitMirrorTarget && cockpitMirrorFrame % 2 === 1) return;
       const previousTarget = renderer.getRenderTarget?.() || null;
@@ -2853,10 +4810,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         }
         cockpitMirrorCamera.position.copy(cockpitPosition);
         cockpitMirrorCamera.position.y += 0.05;
-        cockpitMirrorCamera.quaternion.copy(vehicle.quaternion).multiply(cockpitMirrorTurn);
+        cockpitMirrorCamera.quaternion.copy(playerVehicle.quaternion).multiply(cockpitMirrorTurn);
         cockpitMirrorCamera.updateMatrixWorld();
         renderer.shadowMap.autoUpdate = false;
-        vehicle.visible = false;
+        playerVehicle.visible = false;
         renderer.setRenderTarget(cockpitMirrorTarget);
         renderer.render(scene, cockpitMirrorCamera);
       } catch {
@@ -2865,88 +4822,394 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         glass.map = playerCockpit.mirror.fallback;
         glass.needsUpdate = true;
       } finally {
-        vehicle.visible = true;
+        playerVehicle.visible = true;
         renderer.setRenderTarget(previousTarget);
         renderer.shadowMap.autoUpdate = shadowAutoUpdate;
       }
     };
-    let frame = 0; let last = performance.now(); let hudAt = 0;
+    let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
+      updateEnvironment(dt);
       updateTraffic(dt);
+      updatePoliceSiren();
       city.updateCanalBoats(dt, state.time);
       city.updateCanalWater(state.time);
       const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
-      const throttle = pressed('ArrowUp') || pressed('KeyW');
-      const brake = pressed('ArrowDown') || pressed('KeyS');
-      const steerInput = clamp(
-        (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
-          - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
-          + joystickInput.steer,
-        -1,
-        1,
-      );
-      state.speed = viceCityFreeDriveSpeedStep({
-        speed: state.speed,
-        throttle,
-        brake,
-        dt,
-        maxSpeed,
-        acceleration,
-        reverseMaxSpeed,
-      });
-      if (soundOnRef.current) {
-        audioRef.current?.engine({
-          speed: Math.abs(state.speed) / maxSpeed,
-          throttle: throttle || brake ? 1 : 0,
-          idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
-          engineProfile: profile.archetype,
-        });
+      const onFootJoystick = viceCityFreeDriveJoystickVector(touchAxesRef.current.x, touchAxesRef.current.y);
+      const interactionDown = pressed('KeyE');
+      const interactionJustPressed = interactionDown && !interactionWasDown;
+      interactionWasDown = interactionDown;
+      if (interactionJustPressed) {
+        if (!isOnFootRef.current) {
+          if (Math.abs(state.speed) > 0.65) {
+            interactionNotice = 'Arrêtez la voiture avant de sortir';
+            interactionNoticeUntil = state.time + 2.4;
+          } else {
+            const carYaw = vehicle.rotation.y;
+            const rightX = Math.cos(carYaw);
+            const rightZ = -Math.sin(carYaw);
+            const width = vehicle.userData.width || 3;
+            const exitDistance = width / 2 + 1.25;
+            const safeExit = [-1, 1].map((side) => ({
+              x: state.x + rightX * side * exitDistance,
+              z: state.z + rightZ * side * exitDistance,
+            })).find(({ x, z }) => !isPedestrianPositionBlocked(x, z));
+            if (safeExit) {
+              if (activeParkedBody) {
+                activeParkedBody.occupied = false;
+                activeParkedBody.spec.x = state.x;
+                activeParkedBody.spec.z = state.z;
+                activeParkedBody.spec.yaw = -state.heading;
+              }
+              walkState.x = safeExit.x;
+              walkState.z = safeExit.z;
+              walkState.heading = state.heading;
+              resetPedestrianMotion();
+              pedestrian.group.visible = true;
+              isOnFootRef.current = true;
+              setIsOnFoot(true);
+              setCanUseCockpit(false);
+              if (cockpitViewRef.current) {
+                cockpitViewRef.current = false;
+                setCockpitView(false);
+              }
+            } else {
+              interactionNotice = 'La sortie est bloquée des deux côtés';
+              interactionNoticeUntil = state.time + 2.4;
+            }
+          }
+        } else if (pendingEntry) {
+          if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
+          pendingEntry = null;
+          resetPedestrianMotion();
+          interactionNotice = 'Entrée dans la voiture annulée';
+          interactionNoticeUntil = state.time + 2.4;
+        } else {
+          const target = getNearestEnterableVehicle(walkState.x, walkState.z);
+          if (!target || target.distance > 16) {
+            interactionNotice = 'Approchez-vous d’une voiture';
+            interactionNoticeUntil = state.time + 2.4;
+          } else {
+            const approach = getVehicleApproach(target, walkState.x, walkState.z);
+            if (!approach) {
+              interactionNotice = 'La voiture est inaccessible';
+              interactionNoticeUntil = state.time + 2.4;
+            } else if (Math.hypot(approach.x - walkState.x, approach.z - walkState.z) <= 0.7) {
+              setActiveVehicle(target);
+            } else {
+              if (target.body) target.body.reserved = true;
+              pendingEntry = { target, approach };
+              interactionNotice = `Il court vers ${target.name.toLowerCase()}…`;
+              interactionNoticeUntil = state.time + 3;
+            }
+          }
+        }
       }
-      // Le braquage monte progressivement tant qu’on maintient la touche ;
-      // un appui bref reste doux et le volant se recentre vite au relâchement.
-      state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
-      state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * dt;
-      // Les modèles du garage pointent le capot vers leur axe local -Z.
-      forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
-      const nextX = state.x + forward.x * state.speed * dt;
-      const nextZ = state.z + forward.z * state.speed * dt;
-      if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
-      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-      const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-      const pushedCars = pushedParkedCars + pushedTrafficCars;
-      // Conduite libre partout dans la ville : les trottoirs et les espaces
-      // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
-      const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
-        city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
-      if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
-        state.x = nextX;
-        state.z = nextZ;
+      let throttle = false;
+      let brake = false;
+      let steerInput = 0;
+      if (isOnFootRef.current) {
+        state.speed = 0;
+        state.steer = 0;
+        throttle = pressed('ArrowUp') || pressed('KeyW');
+        brake = pressed('ArrowDown') || pressed('KeyS');
+        const backwardInput = brake || onFootJoystick.y > 0.16;
+        if (!pendingEntry && backwardInput && !backInputWasDown) {
+          turnAroundStartHeading = walkState.heading;
+          turnAroundTarget = walkState.heading + Math.PI;
+          turnAroundElapsed = 0;
+          walkState.velocityX = 0;
+          walkState.velocityZ = 0;
+          walkState.speed = 0;
+        }
+        backInputWasDown = !pendingEntry && backwardInput;
+        const mouseAimDirection = getMouseAimDirection();
+        let normalizedStrafe = 0;
+        if (pendingEntry) {
+          const dx = pendingEntry.approach.x - walkState.x;
+          const dz = pendingEntry.approach.z - walkState.z;
+          const distance = Math.hypot(dx, dz);
+          if (distance <= 0.72) {
+            const { target } = pendingEntry;
+            pendingEntry = null;
+            setActiveVehicle(target);
+          } else {
+            const desiredHeading = Math.atan2(dx, -dz);
+            const headingDelta = Math.atan2(
+              Math.sin(desiredHeading - walkState.heading),
+              Math.cos(desiredHeading - walkState.heading),
+            );
+            walkState.turnRate = viceCityFreeDriveTurnStep(
+              walkState.turnRate, clamp(headingDelta * 1.4, -1, 1), dt, 2.8,
+            );
+            walkState.heading += walkState.turnRate * dt;
+            const runSpeed = Math.min(5.45, distance / Math.max(dt, 1 / 240));
+            const targetX = dx / distance * runSpeed;
+            const targetZ = dz / distance * runSpeed;
+            const velocity = viceCityFreeDriveVelocityStep(
+              walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
+            );
+            walkState.velocityX = velocity.x;
+            walkState.velocityZ = velocity.z;
+            const nextWalkX = walkState.x + walkState.velocityX * dt;
+            const nextWalkZ = walkState.z + walkState.velocityZ * dt;
+            const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
+              || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
+            if (blocked) {
+              if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
+              pendingEntry = null;
+              resetPedestrianMotion();
+              interactionNotice = 'Le chemin vers la voiture est bloqué';
+              interactionNoticeUntil = state.time + 2.4;
+            } else movePedestrianWithSlide(dt);
+          }
+        } else {
+          const turningAround = turnAroundTarget != null;
+          if (turningAround) {
+            turnAroundElapsed += dt;
+            const turn = viceCityFreeDriveTurnAround(
+              turnAroundStartHeading, turnAroundTarget, turnAroundElapsed, 1,
+            );
+            walkState.heading = turn.heading;
+            walkState.turnRate = turn.turnRate;
+            walkState.velocityX = 0;
+            walkState.velocityZ = 0;
+            walkState.speed = 0;
+            if (turn.complete) turnAroundTarget = null;
+          } else {
+            const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
+            walkState.turnRate = viceCityFreeDriveTurnStep(walkState.turnRate, turnInput, dt);
+            walkState.heading += walkState.turnRate * dt;
+          }
+          const rawForwardInput = Number(throttle) - Number(brake) - onFootJoystick.y;
+          const turnInPlace = turningAround || backwardInput;
+          const forwardInput = turnInPlace ? 0 : Math.max(0, rawForwardInput);
+          const footVector = viceCityFreeDriveFootVector(
+            forwardInput,
+            turnInPlace ? 0 : Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
+              - Number(pressed('KeyQ')) + onFootJoystick.x,
+          );
+          const { forward: normalizedForward, strafe, magnitude: movementMagnitude } = footVector;
+          normalizedStrafe = strafe;
+          const forwardX = Math.sin(walkState.heading);
+          const forwardZ = -Math.cos(walkState.heading);
+          const rightX = Math.cos(walkState.heading);
+          const rightZ = Math.sin(walkState.heading);
+          const shiftRun = pressed('ShiftLeft') || pressed('ShiftRight') || (throttle && !brake)
+            || (onFootJoystick.magnitude >= 0.62 && normalizedForward > 0);
+          const runBlend = shiftRun ? 1 : clamp((movementMagnitude - 0.55) / 0.45, 0, 1);
+          const targetSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
+          const targetX = (forwardX * normalizedForward + rightX * normalizedStrafe) * targetSpeed;
+          const targetZ = (forwardZ * normalizedForward + rightZ * normalizedStrafe) * targetSpeed;
+          const velocity = viceCityFreeDriveVelocityStep(
+            walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
+          );
+          walkState.velocityX = velocity.x;
+          walkState.velocityZ = velocity.z;
+          movePedestrianWithSlide(dt);
+        }
+        const aimDirection = mouseAimDirection ?? {
+          x: Math.sin(walkState.heading), y: 0, z: -Math.cos(walkState.heading),
+        };
+        const aimPose = viceCityFreeDriveAimVectorPose(
+          walkState.heading, aimDirection.x, aimDirection.y, aimDirection.z,
+        );
+        const runBlend = clamp((walkState.speed - 2.65) / 1.55, 0, 1);
+        const gaitWeight = clamp(walkState.speed / 0.65, 0, 1);
+        walkState.phase += walkState.speed * dt * (3.25 - runBlend * 1.6);
+        const stride = Math.sin(walkState.phase) * (0.32 + runBlend * 0.26) * gaitWeight;
+        const leftSwing = Math.max(0, Math.sin(walkState.phase)) * gaitWeight;
+        const rightSwing = Math.max(0, -Math.sin(walkState.phase)) * gaitWeight;
+        const aiming = pressed('KeyZ') || pressed('MouseLeft') || mouseAimRef.current.active;
+        pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
+        const aimBlend = pedestrian.aimBlend;
+        const leftElbow = pedestrian.arms[0].userData.elbow;
+        const rightElbow = pedestrian.arms[1].userData.elbow;
+        leftElbow.rotation.x = -0.08 + aimBlend * 0.22 - stride * 0.08;
+        rightElbow.rotation.x = -0.13 + aimBlend * 0.07 + stride * 0.08;
+        pedestrian.pelvis.rotation.set(
+          -stride * 0.025,
+          clamp(-walkState.turnRate * 0.035, -0.045, 0.045),
+          clamp(-normalizedStrafe * 0.045 + Math.sin(walkState.phase) * gaitWeight * 0.018, -0.06, 0.06),
+        );
+        pedestrian.legs[0].rotation.x = stride;
+        pedestrian.legs[1].rotation.x = -stride;
+        pedestrian.legs[0].userData.knee.rotation.x = leftSwing * (0.42 + runBlend * 0.2);
+        pedestrian.legs[1].userData.knee.rotation.x = rightSwing * (0.42 + runBlend * 0.2);
+        pedestrian.legs[0].userData.foot.rotation.x = -leftSwing * 0.18;
+        pedestrian.legs[1].userData.foot.rotation.x = -rightSwing * 0.18;
+        pedestrian.arms[0].rotation.set(
+          -stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (0.72 + aimPose.pitch),
+          aimPose.armYaw * aimBlend,
+          aimBlend * 0.62,
+        );
+        pedestrian.arms[1].rotation.set(
+          stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (1.02 + aimPose.pitch),
+          aimPose.armYaw * aimBlend,
+          -aimBlend * 0.08,
+        );
+        pedestrian.pistol.rotation.x = -aimBlend * (1.02 + rightElbow.rotation.x);
+        pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
+        const bodyBob = Math.abs(Math.sin(walkState.phase)) * gaitWeight * (0.016 + runBlend * 0.022);
+        pedestrian.group.position.set(
+          walkState.x,
+          city.surfaceHeight(walkState.x, walkState.z) + bodyBob,
+          walkState.z,
+        );
+        pedestrian.group.rotation.set(
+          0,
+          -walkState.heading,
+          clamp(-walkState.turnRate * 0.016 + normalizedStrafe * 0.045, -0.09, 0.09),
+        );
+        if (soundOnRef.current) {
+          audioRef.current?.engine({ speed: 0, throttle: 0, idle: true, engineProfile });
+        }
       } else {
-        const deltaX = nextX - state.x;
-        const deltaZ = nextZ - state.z;
-        const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
-        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
-        if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
-        else if (canSlideZ) state.z = nextZ;
-        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+        throttle = pressed('ArrowUp') || pressed('KeyW');
+        brake = pressed('ArrowDown') || pressed('KeyS');
+        steerInput = clamp(
+          (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
+            - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
+            + joystickInput.steer,
+          -1,
+          1,
+        );
+        const isWetRoad = weatherMode === 'rain';
+        const speedBeforeStep = state.speed;
+        state.speed = viceCityFreeDriveSpeedStep({
+          speed: state.speed,
+          throttle,
+          brake,
+          dt,
+          maxSpeed,
+          acceleration: acceleration * (isWetRoad ? 0.88 : 1),
+          reverseMaxSpeed,
+        });
+        if (isWetRoad && brake && speedBeforeStep > 0) {
+          const dryBrakingDelta = speedBeforeStep - state.speed;
+          state.speed = speedBeforeStep - dryBrakingDelta * 0.82;
+        }
+        if (soundOnRef.current) {
+          audioRef.current?.engine({
+            speed: Math.abs(state.speed) / maxSpeed,
+            throttle: throttle || brake ? 1 : 0,
+            idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
+            engineProfile,
+          });
+        }
+        // Le braquage monte progressivement tant qu’on maintient la touche ;
+        // un appui bref reste doux et le volant se recentre vite au relâchement.
+        state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
+        state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * (isWetRoad ? 0.86 : 1) * dt;
+        state.lateralSpeed += state.speed * state.steer * (isWetRoad ? 0.16 : 0.045) * dt;
+        state.lateralSpeed *= Math.exp(-(isWetRoad ? 1.9 : 6.5) * dt);
+        // Les modèles du garage pointent le capot vers leur axe local -Z.
+        forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
+        const sideX = Math.cos(state.heading);
+        const sideZ = Math.sin(state.heading);
+        const nextX = state.x + (forward.x * state.speed + sideX * state.lateralSpeed) * dt;
+        const nextZ = state.z + (forward.z * state.speed + sideZ * state.lateralSpeed) * dt;
+        if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
+        const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+        const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+        const pushedCars = pushedParkedCars + pushedTrafficCars;
+        if (pushedCars > 0 && Math.abs(state.speed) > 2.5) {
+          state.damage = clamp(state.damage + pushedCars * 1.8, 0, 100);
+          if (state.time - (state.lastDamageAt || -10) > 0.65) {
+            state.lastDamageAt = state.time;
+            const length = vehicle.userData.length || 5;
+            const scratches = vehicle.userData.damageMarks || (vehicle.userData.damageMarks = []);
+            for (let mark = 0; mark < 2; mark += 1) {
+              const x = (Math.random() - 0.5) * (vehicle.userData.width || 2.6) * 0.62;
+              const z = -length * 0.22 + Math.random() * length * 0.38;
+              const geometry = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(x, 0.78, z), new THREE.Vector3(x + (Math.random() - 0.5) * 0.22, 0.79, z - 0.38),
+              ]);
+              const scratch = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x282c30, transparent: true, opacity: 0.75 }));
+              vehicle.add(scratch); scratches.push(scratch);
+            }
+          }
+        }
+        // Conduite libre partout dans la ville : les trottoirs et les espaces
+        // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
+        const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
+          city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
+        if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
+          state.x = nextX;
+          state.z = nextZ;
+        } else {
+          if (Math.abs(state.speed) > 3) state.damage = clamp(state.damage + dt * 1.2, 0, 100);
+          const deltaX = nextX - state.x;
+          const deltaZ = nextZ - state.z;
+          const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
+          const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
+          if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
+          else if (canSlideZ) state.z = nextZ;
+          state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+          state.lateralSpeed *= canSlideX || canSlideZ ? 0.38 : 0.12;
+        }
+        if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
+          state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
+        }
+        const jumpDown = pressed('Space');
+        const jumpJustPressed = jumpDown && !jumpWasDown;
+        jumpWasDown = jumpDown;
+        jumpCooldown = Math.max(0, jumpCooldown - dt);
+        if (jumpJustPressed && Math.abs(state.speed) > 9 && jumpCooldown <= 0) {
+          jumpVelocity = 5.3; jumpCooldown = 1.7; state.jumps += 1;
+          interactionNotice = 'SAUT RÉUSSI'; interactionNoticeUntil = state.time + 1.2;
+        }
+        jumpVelocity -= 10.5 * dt;
+        state.airHeight = Math.max(0, state.airHeight + jumpVelocity * dt);
+        if (state.airHeight === 0) jumpVelocity = 0;
+        vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z) + state.airHeight, state.z);
+        const driftingNow = Math.abs(state.speed) > 8 && Math.abs(state.steer) > 0.24;
+        if (driftingNow && state.time - skidAt > 0.11) {
+          skidAt = state.time;
+          const rearX = state.x - forward.x * 1.8; const rearZ = state.z - forward.z * 1.8;
+          const sideX = Math.cos(state.heading) * 0.75; const sideZ = -Math.sin(state.heading) * 0.75;
+          for (const side of [-1, 1]) {
+            const x = rearX + sideX * side; const z = rearZ + sideZ * side;
+            const markGeometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(x, city.surfaceHeight(x, z) + 0.035, z),
+              new THREE.Vector3(x - forward.x * 1.15, city.surfaceHeight(x - forward.x * 1.15, z - forward.z * 1.15) + 0.035, z - forward.z * 1.15),
+            ]);
+            const mark = new THREE.Line(markGeometry, new THREE.LineBasicMaterial({ color: 0x17191b, transparent: true, opacity: 0.52 }));
+            mark.userData.createdAt = state.time; scene.add(mark); wearMarks.push(mark);
+          }
+          if (state.time - skidSoundAt > 1.2) {
+            skidSoundAt = state.time;
+            audioRef.current?.skid({ intensity: clamp(Math.abs(state.steer) * 1.2, 0.45, 1.1), duration: 0.42 });
+          }
+        }
+        while (wearMarks.length > 140) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
+        vehicle.rotation.y = -state.heading;
+        vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
+        if (activeParkedBody) {
+          activeParkedBody.spec.x = state.x;
+          activeParkedBody.spec.z = state.z;
+          activeParkedBody.spec.yaw = vehicle.rotation.y;
+        }
       }
-      if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
-        state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
-      }
-      vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
-      vehicle.rotation.y = -state.heading;
-      vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       shotCooldown = Math.max(0, shotCooldown - dt);
-      if (pressed('KeyZ') && shotCooldown <= 0) {
+      if ((pressed('KeyZ') || pressed('MouseLeft')) && shotCooldown <= 0) {
         fireShot();
         shotCooldown = 0.18;
       }
       updateShots(dt);
-      animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
-      const isCockpitView = cockpitViewRef.current;
+      updateChallenge(dt);
+      updateStreetEvent();
+      updateMissionMarker();
+      while (wearMarks.length && state.time - wearMarks[0].userData.createdAt > 18) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
+      if (vehicle === playerVehicle) {
+        animateRacerCar(vehicle, { speed: state.speed, maxSpeed, steer: state.steer * 0.4, braking: brake && state.speed >= 0, idle: !throttle && !brake && state.speed === 0 }, dt, state.time);
+      } else {
+        vehicle.userData.wheels?.forEach((wheel) => { wheel.rotation.x += state.speed * dt / 0.32; });
+      }
+      const isCockpitView = cockpitViewRef.current && vehicle === playerVehicle;
       if (cockpitActive !== isCockpitView) {
         cockpitActive = isCockpitView;
         const cockpit = cockpitActive ? ensurePlayerCockpit() : playerCockpit;
@@ -2956,7 +5219,28 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.updateProjectionMatrix();
       }
       const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
-      if (isCockpitView && activeCockpit) {
+      if (isOnFootRef.current) {
+        cameraTarget.copy(pedestrian.group.position);
+        cameraTarget.y += 1.2;
+        if (!pedestrianCameraTracking) {
+          cameraLookTarget.copy(cameraTarget);
+          pedestrianCameraHeading = walkState.heading;
+          pedestrianCameraTracking = true;
+        } else {
+          cameraLookTarget.lerp(cameraTarget, 1 - Math.exp(-dt * 8.5));
+          const cameraTurn = Math.atan2(
+            Math.sin(walkState.heading - pedestrianCameraHeading),
+            Math.cos(walkState.heading - pedestrianCameraHeading),
+          );
+          pedestrianCameraHeading += cameraTurn * (1 - Math.exp(-dt * 5.2));
+        }
+        forward.set(Math.sin(pedestrianCameraHeading), 0, -Math.cos(pedestrianCameraHeading));
+        cameraPosition.copy(pedestrian.group.position).addScaledVector(forward, -4.8);
+        cameraPosition.y += 2.65;
+        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
+        camera.lookAt(cameraLookTarget);
+      } else if (isCockpitView && activeCockpit) {
+        pedestrianCameraTracking = false;
         activeCockpit.update({ speed: Math.abs(state.speed), topSpeed: maxSpeed, steer: state.steer * 0.4 }, dt, state.time);
         vehicle.updateMatrixWorld(true);
         activeCockpit.eye.getWorldPosition(cockpitPosition);
@@ -2975,6 +5259,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.fov = CITY_RUSH_COCKPIT_FOV + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
         camera.updateProjectionMatrix();
       } else {
+        pedestrianCameraTracking = false;
         cameraPosition.copy(vehicle.position).addScaledVector(forward, -6.8);
         cameraPosition.y += 3.2;
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
@@ -2985,9 +5270,30 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         );
         camera.lookAt(cameraTarget);
       }
-      if (now - hudAt > 80 && hudRef.current) {
+      if (now - hudAt > 100) {
         hudAt = now;
-        hudRef.current.innerHTML = `<b>${Math.round(Math.abs(state.speed) * 3.6)}</b><small>KM/H</small>`;
+        const isOnFoot = isOnFootRef.current;
+        const displayedSpeed = isOnFoot ? Math.abs(walkState.speed) : Math.abs(state.speed);
+        if (hudRef.current) hudRef.current.innerHTML = `<b>${Math.round(displayedSpeed * 3.6)}</b><small>KM/H${isOnFoot ? '' : ` · DÉGÂTS ${Math.round(state.damage)}%`}</small>`;
+        if (contextRef.current) {
+          const nearestVehicle = isOnFoot ? getNearestEnterableVehicle(walkState.x, walkState.z) : null;
+          const prompt = interactionNotice && state.time < interactionNoticeUntil
+            ? interactionNotice
+            : isOnFoot
+              ? pendingEntry
+                ? `△ / E · COURSE VERS ${pendingEntry.target.name.toUpperCase()}`
+                : nearestVehicle && nearestVehicle.distance <= 16
+                  ? `△ / E · ENTRER DANS ${nearestVehicle.name.toUpperCase()}`
+                  : 'JOYSTICK / WASD · POUSSEZ À FOND POUR COURIR · △ / E'
+              : Math.abs(state.speed) <= 0.65
+                ? '△ / E · SORTIR DU VÉHICULE'
+                : 'FREINEZ POUR SORTIR · △ / E';
+          contextRef.current.textContent = prompt;
+        }
+      }
+      if (now - minimapAt > 120) {
+        minimapAt = now;
+        drawMinimap();
       }
       renderer.render(scene, camera);
       renderCockpitMirror();
@@ -2995,7 +5301,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
-      window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp); window.removeEventListener('blur', blur);
+      window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp);
+      window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mouseup', onMouseUp); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
       scene.traverse((object) => {
         object.geometry?.dispose?.();
@@ -3009,23 +5317,88 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   return (
     <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
+      <div className="vice-free-roam-minimap" role="img" aria-label="Minicarte de Vice City, centrée sur votre position">
+        <canvas ref={minimapRef} width={256} height={256} aria-hidden="true" />
+        <span>VICE CITY</span>
+      </div>
+      <div ref={crosshairRef} className={`vice-free-roam-crosshair${isOnFoot ? ' is-visible' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 32 32" focusable="false">
+          <path d="M16 2v8m0 12v8M2 16h8m12 0h8" />
+          <circle cx="16" cy="16" r="2.2" />
+        </svg>
+      </div>
       <header className="vice-free-roam-header">
-        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>{driveCar.name} · OCEAN DISTRICT · 1986</small></div>
-        <div className="vice-free-roam-location"><i /> CONDUITE LIBRE <span>—</span> AUCUNE COURSE</div>
+        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>{displayCar.name} · {streetLabel} · 1986</small></div>
+        <div className="vice-free-roam-location"><i /> {worldCondition} <span>—</span> {freeRoamRewards} $</div>
+        <button type="button" onClick={() => setFeaturePanel(featurePanel === 'activities' ? null : 'activities')}>✦ ACTIVITÉS</button>
+        <button type="button" onClick={() => setFeaturePanel(featurePanel === 'garage' ? null : 'garage')}>⚒ GARAGE</button>
         <button type="button" className={`vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
           aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
           <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
         </button>
         <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
-          aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
-          title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
+          disabled={isOnFoot || !canUseCockpit} aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
+          title={isOnFoot || !canUseCockpit ? 'Disponible dans une voiture personnelle du garage' : cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
           ◉ COCKPIT
         </button>
         <button type="button" onClick={onExit}>↶ MENU</button>
       </header>
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
-      <div className="vice-free-roam-controls"><b>COMMANDES</b><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span><span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER</span><small>WASD · C : cockpit · M : son · Échap : menu</small></div>
-      <div className="vice-free-roam-joystick" aria-label="Joystick gauche pour diriger">
+      {challengeHud && (() => {
+        const progress = viceCityChallengeProgress(challengeHud);
+        const statusLabel = challengeHud.status === 'active' ? 'EN COURS' : challengeHud.status === 'complete' ? 'RÉUSSIE' : 'ÉCHOUÉE';
+        return <section className={`vice-free-roam-challenge is-${challengeHud.status}`} role="region" aria-label={`Mission ${challengeHud.title}`}>
+          <div className="vice-free-roam-challenge-title"><small>{challengeHud.category} · {statusLabel}</small><b>{challengeHud.title}</b></div>
+          <p>{challengeHud.detail}</p>
+          <div className="vice-free-roam-challenge-meta">
+            <strong>{progress.label}</strong>
+            <span>{challengeHud.status === 'active' ? `${Math.ceil(challengeHud.remaining)} S RESTANTES` : challengeHud.status === 'complete' ? `+${challengeHud.reward} $` : 'TEMPS ÉCOULÉ'}</span>
+          </div>
+          {challengeHud.targetLabel && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PROCHAINE CIBLE · {challengeHud.targetLabel} · {challengeHud.targetDistance} M · REPÈRE ROSE EN VILLE, TRAIT TURQUOISE SUR LA MINICARTE</div>}
+          {challengeHud.id === 'escape' && challengeHud.status === 'active' && <div className="vice-free-roam-challenge-target">PATROUILLE LA PLUS PROCHE · {challengeHud.policeDistance ?? '—'} M</div>}
+          <div className="vice-free-roam-challenge-bar"><i style={{ width: `${progress.ratio * 100}%` }} /></div>
+          {challengeHud.status === 'active' && <button type="button" aria-label="Abandonner la mission" title="Abandonner la mission" onClick={() => challengeActionRef.current?.('cancel')}>×</button>}
+        </section>;
+      })()}
+      {streetEventOffer && <aside className="vice-free-roam-street-event" role="region" aria-label="Événement spontané de Vice City">
+        <div><small>ÉVÉNEMENT DE RUE · EXPIRE DANS {streetEventOffer.secondsLeft} S</small><b>{streetEventOffer.title}</b><p>{streetEventOffer.detail}</p><strong>RÉCOMPENSE · {streetEventOffer.reward} $</strong></div>
+        <button type="button" onClick={() => { challengeActionRef.current?.(streetEventOffer.id); setFeaturePanel(null); }}>PARTICIPER</button>
+        <button type="button" aria-label="Ignorer l’événement" onClick={() => streetEventActionRef.current?.()}>×</button>
+      </aside>}
+      {featurePanel && <aside className="vice-free-roam-feature-panel" aria-label={featurePanel === 'garage' ? 'Garage municipal temporaire' : 'Missions, activités et GPS'}>
+        <header><div><small>VICE CITY · MODE LIBRE</small><b>{featurePanel === 'garage' ? 'GARAGE MUNICIPAL' : 'MISSIONS & ACTIVITÉS'}</b></div>
+          <button type="button" aria-label="Fermer" onClick={() => setFeaturePanel(null)}>×</button></header>
+        {featurePanel === 'garage' ? <><p>Réparez ou changez de véhicule près du repère vert. Votre voiture du garage principal ne sera jamais remplacée.</p>
+          <button className="vice-free-roam-repair" type="button" onClick={() => garageActionRef.current?.('repair')}>✚ RÉPARER · 0 $</button>
+          <div className="vice-free-roam-car-list">{CITY_RUSH_CARS.map((car) => <button key={car.id} type="button" className={displayCar.id === car.id ? 'is-selected' : ''}
+            onClick={() => garageActionRef.current?.('select', car.id)}><i style={{ background: car.accent }} /><span><b>{car.name}</b><small>{car.className}</small></span><em>TEMPORAIRE</em></button>)}</div>
+        </> : <><p>Défis terminés : {freeRoamProfile.completedCount} · records et crédits sauvegardés à part du garage principal.</p>
+          <div className="vice-free-roam-destination-list"><b>GPS · DESTINATION</b>{VICE_CITY_POINTS_OF_INTEREST.map((point) => <button key={point.id} type="button" className={gpsDestination === point.id ? 'is-selected' : ''}
+            onClick={() => destinationActionRef.current?.(point.id)}><span>⌖ {point.name}</span><small>{point.id === 'garage' ? 'ÉCHANGE & RÉPARATION' : 'ITINÉRAIRE SUR LA MINICARTE'}</small></button>)}</div>
+          <div className="vice-free-roam-challenge-list">{VICE_CITY_CHALLENGES.map((challenge) => <button key={challenge.id} type="button"
+            onClick={() => { challengeActionRef.current?.(challenge.id); setFeaturePanel(null); }}><small>{challenge.category} · RÉCOMPENSE {challenge.reward} $ {freeRoamProfile.completedChallengeIds.includes(challenge.id) ? '· ✓ RÉUSSIE' : ''}</small><b>{challenge.title}</b><span>{challenge.detail}</span>
+              {freeRoamProfile.bestTimes[challenge.id] != null && <em>RECORD · {Number(freeRoamProfile.bestTimes[challenge.id]).toFixed(1)} S</em>}
+              {challenge.id === 'drift' && freeRoamProfile.bestScores.drift > 0 && <em>MEILLEUR SCORE · {freeRoamProfile.bestScores.drift} PTS</em>}
+            </button>)}</div>
+        </>}
+      </aside>}
+      <div className="vice-free-roam-context" ref={contextRef} role="status" aria-live="polite" />
+      <div className="vice-free-roam-controls">
+        <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
+        {isOnFoot ? (
+          <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> SE RETOURNER & AVANCER</span>
+            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span>
+            <span><kbd>Q</kbd><kbd>←</kbd> GLISSER À GAUCHE · <kbd>→</kbd> À DROITE</span>
+            <span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
+            <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
+            <small>S / ↓ ou joystick vers le bas : demi-tour, puis caméra derrière · Maj : courir · souris : viser sans tourner</small></>
+        ) : (
+          <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
+            <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
+            <small>WASD · Espace : saut · C : cockpit · M : son · Échap : menu</small></>
+        )}
+      </div>
+      <div className="vice-free-roam-joystick" aria-label={isOnFoot ? 'Joystick gauche pour se déplacer' : 'Joystick gauche pour diriger'}>
         <div className="vice-free-roam-joystick-base" role="application" aria-label="Joystick virtuel"
           onPointerDown={startJoystick} onPointerMove={updateJoystick} onPointerUp={endJoystick}
           onPointerCancel={endJoystick} onLostPointerCapture={endJoystick}>
@@ -3033,21 +5406,35 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <button ref={joystickKnobRef} type="button" tabIndex={-1} aria-hidden="true" className="vice-free-roam-joystick-knob"
             onPointerDown={(event) => event.preventDefault()} />
         </div>
-        <small>DIRIGER</small>
+        <small>{isOnFoot ? 'MOUVEMENT' : 'DIRIGER'}</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label="Accélérer, freiner et tirer">
+      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher, tirer, se retourner et interagir' : 'Accélérer, freiner et tirer'}>
         {[
-          ['ArrowUp', '×', 'Accélérer', 'accelerate'],
-          ['ArrowDown', '□', 'Freiner', 'brake'],
-          ['KeyZ', '○', 'Tirer', 'shoot'],
+          ['ArrowUp', '×', isOnFoot ? 'Courir' : 'Accélérer', 'accelerate'],
+          [isOnFoot ? 'KeyZ' : 'ArrowDown', '□', isOnFoot ? 'Tirer' : 'Freiner', isOnFoot ? 'foot-shoot' : 'brake'],
+          [isOnFoot ? 'ArrowDown' : 'KeyZ', isOnFoot ? '↻' : '○', isOnFoot ? 'Se retourner' : 'Tirer', isOnFoot ? 'turn-back' : 'shoot'],
         ].map(([code, glyph, label, action]) => (
-          <button key={code} type="button" data-action={action} aria-label={label} title={label}
+          <button key={action} type="button" data-action={action} aria-label={label} title={label}
+            disabled={isOnFoot && action === 'shoot'}
             onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}
             onLostPointerCapture={() => setTouchKey(code, false)}>
             <span aria-hidden="true">{glyph}</span><small>{label.toUpperCase()}</small>
           </button>
         ))}
+        {!isOnFoot && <button type="button" data-action="jump" aria-label="Sauter" title="Sauter (Espace)"
+          onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey('Space', true); }}
+          onPointerUp={() => setTouchKey('Space', false)} onPointerCancel={() => setTouchKey('Space', false)}
+          onLostPointerCapture={() => setTouchKey('Space', false)}>
+          <span aria-hidden="true">↟</span><small>SAUT</small>
+        </button>}
+        <button type="button" data-action="interact" aria-label={isOnFoot ? 'Courir vers une voiture et entrer' : 'Sortir du véhicule'}
+          title={isOnFoot ? 'Courir vers une voiture et entrer' : 'Sortir du véhicule'}
+          onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey('KeyE', true); }}
+          onPointerUp={() => setTouchKey('KeyE', false)} onPointerCancel={() => setTouchKey('KeyE', false)}
+          onLostPointerCapture={() => setTouchKey('KeyE', false)}>
+          <span aria-hidden="true">△</span><small>{isOnFoot ? 'ENTRER' : 'SORTIR'}</small>
+        </button>
       </div>
       {portraitTouch && (
         <div className="vice-free-roam-rotate" role="dialog" aria-modal="true" aria-label="Jeu en mode paysage">

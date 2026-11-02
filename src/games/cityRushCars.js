@@ -112,7 +112,7 @@ export function makeTrafficVehicle(type) {
   const m = {
     body: (isSports || policeSUV) ? paint(bodyColor, { clearcoat: 0.9, roughness: 0.22, emissiveIntensity: 0.02 }) : standard(bodyColor, { roughness: 0.55, metalness: 0.15 }),
     accent: standard(accentColor, { roughness: policeSUV ? 0.3 : 0.6 }),
-    glass: standard(isSports ? 0x101c2a : 0x1c3346, { metalness: 0.2, roughness: 0.18 }),
+    glass: standard(isSports ? 0x101c2a : 0x1c3346, { name: 'traffic-glass', metalness: 0.2, roughness: 0.18 }),
     dark: standard(0x12161f, { roughness: 0.88 }),
     chrome: standard(0xc9d3d8, { metalness: 0.6, roughness: 0.3 }),
     wheel: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.6, metalness: 0.3 }),
@@ -364,7 +364,14 @@ export function makeTrafficVehicle(type) {
       wheels.push(wheel);
     }
   }
-  group.traverse((object) => { if (object.isMesh) object.castShadow = !object.material.transparent; });
+  group.traverse((object) => {
+    if (!object.isMesh) return;
+    object.castShadow = !object.material.transparent;
+    if (object.material === m.glass) {
+      object.name = 'traffic-glazing';
+      object.userData.isVehicleGlass = true;
+    }
+  });
   group.userData = {
     kind: 'traffic',
     trafficType: type,
