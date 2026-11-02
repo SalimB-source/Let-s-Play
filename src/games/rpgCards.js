@@ -2230,7 +2230,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
     lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Avec Tin Hinan, mère des pistes, en jeu : +3/+1 au lieu de +2/+0.',
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+0.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2243,7 +2243,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 0, def: 3 },
     arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', remplirChamp: true },
-    text: 'Arme — Le porteur gagne +0/+3. Quand cette arme arrive en jeu, créez un jeton Serpent 1/1 sur chaque emplacement allié vide.',
+    text: 'Arme — Le porteur gagne +0/+3. À l’arrivée, créez un Serpent 1/1 sur chaque emplacement allié libre.',
     flavor: 'Il soulève les serpents des citernes comme des rubans de soie — puis les lâche, furieux, entre l’ennemi et vous.',
   },
   {
@@ -2270,7 +2270,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.15 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 15 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Avant les dégâts, 15 % de chances de geler chaque créature combattue.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2283,7 +2283,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     blessurePorteur: 1,
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0.',
+    text: 'Arme — À l’attachement, inflige 1 dégât au porteur, puis lui donne +2/+0.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
@@ -2302,7 +2302,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 1 },
     donne: { rapidite: true },
-    text: 'Arme — Le porteur gagne +0/+1 et Rapidité (il peut attaquer le tour où il arrive).',
+    text: 'Arme — Le porteur gagne +0/+1 et Rapidité.',
     flavor: 'Elle part avant la question.',
   },
   {
@@ -2320,7 +2320,7 @@ export const RPG_ARME_CARDS = [
     // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas ; elle s’ajoute à celle d’une créature qui esquive déjà). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3.',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+3.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2334,7 +2334,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 25 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée. Avant les dégâts, 25 % de chances de geler chaque créature combattue.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2378,7 +2378,7 @@ export const RPG_ARME_CARDS = [
       bonus: { atk: 2, def: 2 },
       remplace: { porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 0 } },
     },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Avec Le Passeur au masque de chacal en jeu : +2/+2, et la pioche ne défausse plus.',
+    text: 'Arme — Le porteur gagne +1/+1. Ses blessures au sorcier font piocher puis défausser une carte. Avec Le Passeur au masque de chacal en jeu : +2/+2, sans défausse.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2391,7 +2391,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 2, def: 2 },
     donne: { protection: { contre: 'tenebres' } },
-    text: 'Arme — Le porteur gagne +2/+2 et un bouclier de Ténèbres : il bloque le prochain sort adverse de Ténèbres, puis se brise.',
+    text: 'Arme — Le porteur gagne +2/+2 et bloque le prochain sort adverse de Ténèbres.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {
@@ -2410,7 +2410,7 @@ export const RPG_ARME_CARDS = [
     // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
     // sans qu'un seul de ses chiffres imprints ne bouge.
     lien: { ancre: 'tarek', donne: { bouclier: 1 } },
-    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Avec TAREK en jeu : un bouclier sur le porteur, en plus.',
+    text: 'Arme — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +3/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
@@ -2430,7 +2430,7 @@ export const RPG_ARME_CARDS = [
     donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {
@@ -2448,7 +2448,7 @@ export const RPG_ARME_CARDS = [
     // de combat (référence JoJo). Le moteur gère ce déclenchement pré-dégâts
     // dans `rpgLancerAttaque` (avant `appliquerDegatsDeCombatSimultanes`).
     porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +1/+2. Quand le porteur se bat avec une créature adverse : 25 % de chances de la renvoyer dans la main de son propriétaire avant d\'assigner les dégâts de combat.',
+    text: 'Arme — Le porteur gagne +1/+2. Quand il combat une créature : 25 % de chances de la renvoyer en main avant les dégâts.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
   {
@@ -2456,7 +2456,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
-    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie : il ne peut pas être bloqué et vous gagnez la moitié des dégâts qu’il inflige en points de vie, arrondie à l’entier supérieur. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
+    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie. Endurance 1 : le Sabre est détruit après son attaque.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {
@@ -2464,7 +2464,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse avec 100 % de chances de réussir ; son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse.',
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de chances de doubler ses dégâts contre une créature.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

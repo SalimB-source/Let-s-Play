@@ -41,6 +41,7 @@ import {
   RPG_DUEL_CARDS,
   armeById,
   cardById,
+  carteEstArme,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
 import { composerDeck } from '../src/games/rpgDeckComposer.js';
@@ -70,6 +71,14 @@ const equiper = (duel, cote, armeId, entite) => {
 };
 
 // ── Le catalogue ────────────────────────────────────────────────────────────
+
+test('les textes de règle des armes restent concis', () => {
+  const armes = RPG_DUEL_CARDS.filter(carteEstArme);
+  assert.ok(armes.length > 0, 'le catalogue contient des armes');
+  for (const carte of armes) {
+    assert.ok(carte.text?.length <= 180, `${carte.id} : ${carte.text?.length ?? 0} caractères maximum`);
+  }
+});
 
 /**
  * Les dix équipements du Sable (`docs/rpg/14-equipements-du-sable.md`) sont

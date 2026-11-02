@@ -189,7 +189,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Et comme les coups critiques se cumulent, sa frappe quadruple passe de
     // 25 % à 50 % de chances SANS que ce Lien ait à l'écrire.
     lien: { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
-    text: 'Arme — Le porteur gagne +2/-2. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse ; contre le sorcier, l’attaque ciblée touche à 100 %. Le sabre rejoint le cimetière quand le porteur quitte le jeu. Avec Kagutsuchi, Flamme originelle, en jeu : +2/+0 au lieu de +2/-2.',
+    text: 'Arme — Le porteur gagne +2/-2 et Coup critique (25 %). Le sabre tombe avec son porteur. Avec Kagutsuchi, Flamme originelle en jeu : +2/+0 au lieu de +2/-2.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -202,7 +202,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
     // une fois de plus. Attaque ciblée et coup critique restent intacts.
     lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse. L’arme rejoint le cimetière quand son porteur quitte le jeu. Avec Cavalier des deux sabres en jeu : +2/+0 au lieu de +1/+0.',
+    text: 'Arme — Le porteur gagne +1/+0, Attaque ciblée et Coup critique (25 %). L’arme tombe avec son porteur. Avec Cavalier des deux sabres en jeu : +2/+0 au lieu de +1/+0.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({
