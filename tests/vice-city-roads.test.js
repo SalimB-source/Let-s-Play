@@ -86,8 +86,10 @@ test('l’autoroute reçoit un terre-plein, des glissières, des panneaux suspen
     'les barrières visibles ont aussi une collision');
   assert.match(source, /if \(isNearRampCorridor\(centerX, centerZ\)\) continue/u,
     'le terre-plein s’interrompt le long des bretelles');
-  assert.match(source, /const rampOpening = isNearRampCorridor/u,
-    'les glissières latérales laissent aussi passer les bretelles');
+  assert.match(source, /const rampGuardrailClearance = halfWidth \+ rampCorridorClearance/u,
+    'le corridor ouvert tient compte du décalage des glissières par rapport aux bretelles');
+  assert.match(source, /\(start\.x \+ end\.x\) \/ 2, \(start\.z \+ end\.z\) \/ 2, rampGuardrailClearance/u,
+    'les glissières latérales laissent passer les voitures sur toute la largeur de la bretelle');
   assert.match(source, /const gantryTangent = tangents\[0\]/u,
     'les panneaux suivent l’orientation de la chaussée principale à l’entrée');
   assert.match(source, /const gantryApproach = 58/u,

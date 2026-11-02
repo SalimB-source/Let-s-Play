@@ -505,7 +505,8 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
   const medianTransforms = [];
   const rampPaths = viceCityOuterHighwayAccessRamps();
   const rampCorridorClearance = accessHalfWidth + 1.2;
-  const isNearRampCorridor = (x, z) => rampPaths.some((path) => {
+  const rampGuardrailClearance = halfWidth + rampCorridorClearance;
+  const isNearRampCorridor = (x, z, clearance = rampCorridorClearance) => rampPaths.some((path) => {
     for (let index = 0; index < path.length - 1; index += 1) {
       const start = path[index];
       const end = path[index + 1];
@@ -558,7 +559,9 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
       for (let index = 0; index < railPoints.length - 1; index += 1) {
         const start = railPoints[index];
         const end = railPoints[index + 1];
-        const rampOpening = isNearRampCorridor((start.x + end.x) / 2, (start.z + end.z) / 2);
+        const rampOpening = isNearRampCorridor(
+          (start.x + end.x) / 2, (start.z + end.z) / 2, rampGuardrailClearance,
+        );
         if (rampOpening) {
           if (railSection.length > 1) railSections.push(railSection);
           railSection = [];
