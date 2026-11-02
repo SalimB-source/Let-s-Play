@@ -6664,7 +6664,7 @@ export function rpgLancerAttaque(
   repartitions = null,
   attaquantsBloques = null,
   ciblesAttaque = null,
-  { attaqueDeclaree = false, bannieresAppliquees = false } = {},
+  { attaqueDeclaree = false, bannieresAppliquees = false, prioritesRepartition = null } = {},
 ) {
   const adv = autre(cote);
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
@@ -6970,11 +6970,19 @@ export function rpgLancerAttaque(
     const saisie = repartitions?.[attaquant.id];
     const distribution = {};
     if (saisie == null) {
-      const quotient = Math.floor(forceAttaquant / idsBloqueurs.length);
-      let reste = forceAttaquant - quotient * idsBloqueurs.length;
-      for (const bloqueurId of idsBloqueurs) {
-        distribution[bloqueurId] = quotient + (reste > 0 ? 1 : 0);
-        reste -= reste > 0 ? 1 : 0;
+      // Priorité choisie par l'attaquant en solo : on calcule après capacités
+      // préalables et critique, avec les bloqueurs encore présents. Si la
+      // cible a disparu, revenir au partage automatique plutôt que refuser.
+      const prioritaire = prioritesRepartition?.[attaquant.id];
+      if (prioritaire && idsBloqueurs.includes(prioritaire)) {
+        for (const bloqueurId of idsBloqueurs) distribution[bloqueurId] = bloqueurId === prioritaire ? forceAttaquant : 0;
+      } else {
+        const quotient = Math.floor(forceAttaquant / idsBloqueurs.length);
+        let reste = forceAttaquant - quotient * idsBloqueurs.length;
+        for (const bloqueurId of idsBloqueurs) {
+          distribution[bloqueurId] = quotient + (reste > 0 ? 1 : 0);
+          reste -= reste > 0 ? 1 : 0;
+        }
       }
     } else {
       if (Object.keys(saisie).some((id) => !idsBloqueurs.includes(id))) {
@@ -7614,8 +7622,8 @@ export function rpgPeutRepondre(duel, cote) {
 
 /** Une magie rapide de l'IA (fin de tour du joueur, blocage d'une attaque du
  *  joueur) : au plus une carte, la plus utile selon son profil. */
-export function rpgSorcierMagieRapide(duel, rng = Math.random) {
-  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true });
+export function rpgSorcierMagieRapide(duel, rng = Math.random, combat = null) {
+  const coup = choisirCarteIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng, seulementInstants: true, combat });
   if (!coup) return null;
   const res = rpgLancerMagie(duel, 'sorcier', coup.carteId, coup.cibleId);
   // La cible repart avec le résultat : la page en a besoin pour dire, au-dessus

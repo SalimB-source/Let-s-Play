@@ -71,6 +71,8 @@ import {
   tourHistoireParId,
 } from './rpgStoryTours.js';
 import { useRpgStory } from './useRpgStory.js';
+import { rpgIndicationsModes } from './rpgModeAccueil.js';
+import { enregistrerDerniereTour, lireDerniereTour, resumeConquete, tourCorrespondFiltre } from './rpgConqueteAccueil.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
@@ -103,6 +105,9 @@ import { sonArriveeALaDesignation, sonArriveeAuPose } from './rpgArriveeAudio.js
 import { sonSortAuLancement } from './rpgSortAudio.js';
 import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
 import { rpgDerniersCompteursArmeDepuisJournal } from './rpgWeaponAudio.js';
+import { rpgBouclierVientDeRompre } from './rpgShieldAudio.js';
+import { rpgApercuBlocages, rpgSortBloqueParBouclier } from './rpgCombatIndications.js';
+import { rpgBilanDuel } from './rpgBilanDuel.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
 import RpgDeckCreation from './RpgDeckCreation.jsx';
@@ -2850,6 +2855,7 @@ export function TableCard({
   canTarget,
   sacrificeTarget = false,
   spellTarget = false,
+  sortBloqueParBouclier = false,
   coupRapideCible = false,
   declaredAttacker = false,
   onClick,
@@ -3036,6 +3042,7 @@ export function TableCard({
       data-card-id={carte?.id}
       data-soin={soin ? soin.montant : undefined}
       data-miss={miss ? 'true' : undefined}
+      data-sort-bloque-bouclier={sortBloqueParBouclier ? 'true' : undefined}
       data-bouclier={(entite.bouclier ?? 0) > 0 ? entite.bouclier : undefined}
       data-bouclier-lumiere={entite.bouclierLumiere ? 'true' : undefined}
       data-armes={armes.length ? armes.join(' ') : undefined}
@@ -3055,7 +3062,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 25 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.durabilite ? `, son arme porte ${entite.arme.durabilite} compteur${entite.arme.durabilite > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={`${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 25 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? ', esquive : 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité' : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${entite.arme?.durabilite ? `, son arme porte ${entite.arme.durabilite} compteur${entite.arme.durabilite > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img
@@ -3065,6 +3072,7 @@ export function TableCard({
         alt=""
         aria-hidden="true"
       />
+      {sortBloqueParBouclier && <span className="rpg-card__avertissement-bouclier" aria-hidden="true">Sort bloqué</span>}
       {entite.furieDeclenchee && <VignetteFurie />}
       {((entite.bouclier ?? 0) > 0 || entite.bouclierLumiere) && (
         <EgideBouclier montant={entite.bouclier ?? 0} lumiere={Boolean(entite.bouclierLumiere)} />
@@ -4679,6 +4687,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
 }
 
 function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+  const indicationsModes = rpgIndicationsModes(progressionHistoire, { hasGame, campagneEnCours });
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -4690,6 +4699,17 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [confirmation, setConfirmation] = useState(null);
   // Mode Tours (Conquête) : galerie puis détail d'une tour sélectionnée.
   const [tourLibreOuverteId, setTourLibreOuverteId] = useState(null);
+  const [derniereTour, setDerniereTour] = useState(lireDerniereTour);
+  const [filtreTours, setFiltreTours] = useState('toutes');
+  const ouvrirTourLibre = (id) => {
+    if (!tourEstDebloquee(progressionHistoire, id)) return;
+    enregistrerDerniereTour(id);
+    setDerniereTour(id);
+    setTourLibreOuverteId(id);
+  };
+  const bilanConquete = screen === 'tours' ? resumeConquete(progressionHistoire, portefeuille) : null;
+  const toursFiltrees = bilanConquete?.tours.filter((tour) => tourCorrespondFiltre(tour, filtreTours)) ?? [];
+  const tourReprise = bilanConquete?.tours.find(({ tour, ouverte }) => ouverte && tour.id === derniereTour);
   const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
   const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
   const storyRef = useRef(null);
@@ -5149,45 +5169,62 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
             </section>
 
             {/* Colonne droite : les trois modes de jeu empilés l'un au-dessus
-                de l'autre en largeur, chacun illustré d'une miniature tirée des
-                cartes du jeu et ne portant que son titre. */}
+                de l'autre en largeur, chacun illustré d'une miniature et doté
+                d'un appel à jouer. Toute la bannière reste cliquable. */}
             <section className="rpg-mode-menu__modes-col" aria-label="Modes de jeu">
               <div className="rpg-mode-menu__hero-actions">
                 <button
                   type="button"
                   className="rpg-mode-carte rpg-menu-button rpg-menu-button--primary rpg-menu-button--histoire"
+                  aria-label={indicationsModes.reprendreHistoire ? 'Reprendre le duel de campagne' : 'Jouer au mode histoire'}
+                  aria-describedby="mode-histoire-description"
                   style={{ '--art-pos': '50% 20%' }}
                   onClick={() => { play('select'); onContinueRecit?.(); }}
                 >
                   <img className="rpg-mode-carte__art" src={cardArt('salem')} alt="" aria-hidden="true" />
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                    <strong>Mode histoire</strong>
+                    <span className="rpg-mode-carte__infos">
+                      <strong>Mode histoire</strong>
+                      <span id="mode-histoire-description" className="rpg-mode-carte__description">Vivez l’aventure solo · {indicationsModes.histoire}</span>
+                    </span>
+                    <span className="rpg-mode-carte__jouer" aria-hidden="true">{indicationsModes.reprendreHistoire ? 'Reprendre' : 'Jouer'} <span>→</span></span>
                   </span>
                 </button>
                 <a
                   className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne"
+                  aria-label="Jouer en duel en ligne"
+                  aria-describedby="mode-ligne-description"
                   style={{ '--art-pos': '50% 24%' }}
                   href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`}
                   onClick={() => play('select')}
                 >
                   <img className="rpg-mode-carte__art" src={cardArt('bouchra-guerriere-des-cretes')} alt="" aria-hidden="true" />
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                    <strong>
-                      Duel en ligne
-                      <span className="rpg-menu-button__live" aria-hidden="true" />
-                      <span className="sr-only">(en ligne)</span>
-                    </strong>
+                    <span className="rpg-mode-carte__infos">
+                      <strong>
+                        Duel en ligne
+                        <span className="rpg-menu-button__live" aria-hidden="true" />
+                      </strong>
+                      <span id="mode-ligne-description" className="rpg-mode-carte__description">Défiez un autre joueur</span>
+                    </span>
+                    <span className="rpg-mode-carte__jouer" aria-hidden="true">Jouer <span>→</span></span>
                   </span>
                 </a>
                 <button
                   type="button"
                   className="rpg-mode-carte rpg-menu-button rpg-menu-button--conquete"
+                  aria-label="Jouer en Conquête"
+                  aria-describedby="mode-conquete-description"
                   style={{ '--art-pos': '50% 30%' }}
                   onClick={() => { play('select'); onChangeScreen('tours'); }}
                 >
                   <img className="rpg-mode-carte__art" src={cardArt('tour-des-tenebres')} alt="" aria-hidden="true" />
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
-                    <strong>Conquête</strong>
+                    <span className="rpg-mode-carte__infos">
+                      <strong>Conquête</strong>
+                      <span id="mode-conquete-description" className="rpg-mode-carte__description">Gravissez les tours · {indicationsModes.conquete}</span>
+                    </span>
+                    <span className="rpg-mode-carte__jouer" aria-hidden="true">Jouer <span>→</span></span>
                   </span>
                 </button>
               </div>
@@ -5224,6 +5261,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   // La même règle que la galerie : la tour ouverte se montre en
                   // ruine dès que son dernier étage est déblayé.
                   const termineeLibre = tourEstTerminee(tourLibre.id, progressionHistoire);
+                  const prochainDefi = tourLibre.etages.find((etage) => etage.id === resumeLibre.prochainId);
                   return (
                     <section key={tourLibre.id} className="rpg-story-tour">
                       <header className="rpg-story-tour__header">
@@ -5253,6 +5291,20 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           </span>
                         </div>
                       )}
+                      {prochainDefi && (
+                        <section className="rpg-tour-prochain" aria-label="Prochain défi">
+                          <div>
+                            <span className="rpg-tour-prochain__eyebrow">PROCHAIN DÉFI</span>
+                            <strong>{prochainDefi.nom} · puissance {prochainDefi.puissance}</strong>
+                            <span>{prochainDefi.note}</span>
+                            {libellePacteEtage(prochainDefi.atouts) && <span>{libellePacteEtage(prochainDefi.atouts)}</span>}
+                            <span>Première victoire : +{creditsLisible(recompenseEtage(prochainDefi.id, { premiere: true }))} crédits</span>
+                          </div>
+                          <button type="button" className="rpg-narrative-button" onClick={() => { play('select'); onStartEtage(prochainDefi.id); }}>
+                            Affronter <span aria-hidden="true">→</span>
+                          </button>
+                        </section>
+                      )}
                       <ul className="rpg-story-tour__floors">
                         {tourLibre.etages.map((etage, index) => {
                           const vaincu = etageEstVaincu(progressionHistoire, etage.id);
@@ -5276,7 +5328,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                                   {pacte && <small className="rpg-story-floor__pacte" data-etage-pacte={etage.id}>{pacte}</small>}
                                 </span>
                                 <span className="rpg-story-floor__badge">
-                                  {vaincu ? 'déblayé' : debloque ? `puissance ${etage.puissance}` : 'verrouillé'}
+                                  {vaincu ? 'déblayé' : debloque ? `prochain défi · puissance ${etage.puissance}` : 'verrouillé'}
                                 </span>
                                 <span className="rpg-story-floor__gain" data-etage-gain={etage.id}>
                                   <RpgCreditIcon />
@@ -5317,8 +5369,26 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <button type="button" className="rpg-narrative-button" onClick={() => { play('annuler'); const ok = onResetHistoire(); setErreurResetHistoire(!ok); if (ok) setConfirmerResetHistoire(false); }}>Confirmer l’effacement</button>
                   <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
                 </div>}
+                <div className="rpg-conquete-bilan" aria-label="Progression de la Conquête">
+                  <span><b>{bilanConquete.etages} / {bilanConquete.totalEtages}</b> étages déblayés</span>
+                  <span><b>{bilanConquete.terminees} / {bilanConquete.tours.length}</b> tours conquises</span>
+                  <span><b>{creditsLisible(bilanConquete.gains)}</b> crédits de progression*</span>
+                  <small>* Premières victoires et butins encaissés, hors récompenses de rejeu.</small>
+                </div>
+                {tourReprise && (
+                  <button type="button" className="rpg-conquete-reprise" onClick={() => { play('select'); ouvrirTourLibre(tourReprise.tour.id); }}>
+                    <span><small>DERNIÈRE TOUR VISITÉE</small><strong>{tourReprise.tour.nom}</strong></span>
+                    <span>{tourReprise.terminee ? 'Revoir la tour' : 'Reprendre l’ascension'} →</span>
+                  </button>
+                )}
+                <div className="rpg-conquete-filtres" role="group" aria-label="Filtrer les tours">
+                  {[['toutes', 'Toutes'], ['en-cours', 'En cours'], ['disponibles', 'Disponibles'], ['terminees', 'Terminées']].map(([id, libelle]) => (
+                    <button key={id} type="button" aria-pressed={filtreTours === id} onClick={() => setFiltreTours(id)}>{libelle}</button>
+                  ))}
+                </div>
+                {!toursFiltrees.length && <p className="rpg-conquete-vide" role="status">Aucune tour dans cette catégorie.</p>}
                 <div className="rpg-story__tours">
-                  {RPG_STORY_TOURS.map((tour) => {
+                  {toursFiltrees.map(({ tour }) => {
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
                     const ouverte = tourEstDebloquee(progressionHistoire, tour.id);
                     const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : null;
@@ -5342,7 +5412,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         data-tour-terminee={terminee ? 'oui' : 'non'}
                         disabled={!ouverte}
                         title={ouverte ? undefined : `Verrouillée — terminez ${prerequis?.nom ?? 'la tour précédente'}`}
-                        onClick={() => { play('select'); setTourLibreOuverteId(tour.id); }}
+                        onClick={() => { play('select'); ouvrirTourLibre(tour.id); }}
                       >
                         <RpgStoryTowerPreview tour={tour} className="rpg-story-tower__art" detruite={terminee} />
                         <span className="rpg-story-tower__body">
@@ -9944,8 +10014,20 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const entitesAttaquantes = duel.joueur.creatures.filter((e) => attaquants.includes(e.id));
   const puissancePrets = calculerPuissanceAssaut(prets);
   const puissanceAttaquants = calculerPuissanceAssaut(entitesAttaquantes);
+  // Une Attaque ciblée contre une créature ne frappe pas le sorcier. La
+  // puissance restante est un plafond avant blocages et réactions adverses.
+  const directs = entitesAttaquantes.filter((e) => !(e.coupRapide && duel.sorcier.creatures.length));
+  const bonusBanniereAssaut = entitesAttaquantes.reduce((n, e) => n + Math.max(0, Number(cardById(e.carteId)?.banniere) || 0), 0);
+  const puissanceDirecte = directs.reduce((n, e) => n + Math.max(0, (Number(e.atk) || 0)
+    + (cardResonanceGroup(cardById(e.carteId)) === 'samourai' ? bonusBanniereAssaut : 0)), 0);
   const vieTotaleSorcier = Math.max(0, (duel.sorcier.pv ?? 0) + (duel.sorcier.bouclier ?? 0));
-  const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && puissanceAttaquants > 0 && puissanceAttaquants >= vieTotaleSorcier);
+  const menaceLetaleActive = Boolean(monTour && phase && !combatEntrant && !duel.brouillardCombat && puissanceDirecte > 0 && puissanceDirecte >= vieTotaleSorcier);
+  const apercusCibles = entitesAttaquantes.flatMap((attaquant) => {
+    const cible = duel.sorcier.creatures.find((e) => e.id === ciblesAttaque[attaquant.id]);
+    if (!cible) return [];
+    const arme = armeById(attaquant.arme?.carteId);
+    return [{ id: attaquant.id, texte: `${attaquant.name} → ${cible.name} : ${Math.max(0, Number(attaquant.atk) || 0)} ATQ de base · ${arme?.coupRapideImmanquable ? 'frappe immanquable' : '25 % de risque de rater'}${cible.esquive ? ' · Esquive possible' : ''}${cible.contreAttaque ? ' · attention à la Contre-attaque' : ''}` }];
+  });
   const carteCiblee = cibleEnCours ? cardById(cibleEnCours) : null;
   // L'Abordage (set Lettres de Marque) : la créature (ou le porteur du
   // Grappin) vient d'accoster et attend sa prize — la table ne doit allumer
@@ -10012,6 +10094,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la sienne (`duel.attaqueJouee`) et refuse la déclaration suivante. Une
   // attaque déjà déclarée, en attente de blocage, la consomme aussi.
   const attaqueJouee = duel.attaqueJouee === 'joueur' || combatEntrant?.coteAttaquant === 'joueur';
+  const apercuBlocages = rpgApercuBlocages(duel, combatEntrant);
   const repartitionValide = !combatEntrant || combatEntrant.attaquants.every((id) => {
     const coteAttaquant = combatEntrant.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
     const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === id);
@@ -10140,6 +10223,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         montant: Math.max(0, impact.montant ?? 0),
         restant: Math.max(0, impact.restant ?? 0),
         lumiere: Boolean(impact.lumiere),
+        couleurs: impact.couleurs ?? [],
         token,
       }])),
     }));
@@ -10378,6 +10462,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
+    // En PvP le nouvel état vient d'être posé dans la ref, avant le rendu React.
+    const duel = duelRef.current;
+    if (!duel) return;
     // Le Maître frappe à chaque arrivée réelle, y compris sa renaissance par
     // Tenacité. Comparer les identifiants d'entité couvre ces retours sans
     // confondre son effet avec une créature déjà installée.
@@ -10756,6 +10843,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const renforcees = [];
     const statsAugmentees = [];
     const impactsBouclier = [];
+    let bouclierBrise = false;
     avant.forEach((entite) => {
       const apres = vivants.get(entite.entityId);
       if (!apres || entite.isTerrain) return;
@@ -10769,6 +10857,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // remplacée n'a encaissé aucun coup : son reliquat
       // est simplement reparti avec l'arme, sans choc à montrer.
       const armeChangee = (apres.arme?.carteId ?? null) !== (entite.armeId ?? null);
+      if (rpgBouclierVientDeRompre(entite, apres)) bouclierBrise = true;
       if (!mouvementReduit && (lumiereAbsorbee || ((absorbesParBouclier > 0 || couleurAbsorbee) && !armeChangee))) {
         impactsBouclier.push({
           id: entite.entityId,
@@ -10799,6 +10888,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
     animerEntites(attaquesVivantes, 'attack', 650);
     declencherImpactsBouclier(impactsBouclier);
+    if (bouclierBrise) jouerSfx(RPG_WEAPON_BREAK_SFX);
     animerEntites(touches, 'hit', 620);
     animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
@@ -12374,7 +12464,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const champAvantAttaque = prendreInstantaneChamp();
     const debutJournalDestructions = rpgNombreDestructions(duel);
     if (modePvp) rpgSyncCompteurEntites(duel);
-    const repartitionsDeclarees = combatEntrant.repartitions ?? null;
     const res = rpgLancerAttaque(
       duel,
       'sorcier',
@@ -12395,7 +12484,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (modePvp) {
-      void envoyerIntentionPvp({ type: 'bloquer', blocages, repartitions: repartitionsDeclarees });
+      void envoyerIntentionPvp({ type: 'bloquer', blocages, repartitions: null });
     }
     const frappeDirecte = res.resume.frappeSorcier > 0;
     // La flèche de l'Attaque ciblée et le coup d'épée du corps à corps sont
@@ -12435,7 +12524,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     {
       const champAvantReponse = prendreInstantaneChamp();
       const debutJournalReponse = rpgNombreDestructions(duel);
-      const reponse = rpgSorcierMagieRapide(duel, rng);
+      const reponse = rpgSorcierMagieRapide(duel, rng, combat);
       if (reponse) {
         const carteReponse = cardById(reponse.carteId);
         const sonReponse = sonSortAuLancement(carteReponse);
@@ -12490,6 +12579,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       {
         attaqueDeclaree: true,
         bannieresAppliquees: Boolean(combat.bannieresAppliquees),
+        prioritesRepartition: combat.prioritesRepartition ?? null,
       },
     );
     if (!res.ok) {
@@ -13105,7 +13195,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     : modeCible === 'ennemi'
                       ? (arriveeViseSorcierEnAttente
                         ? `${carteCiblee?.name ?? 'Cet effet'} : choisissez une créature ou le sorcier adverse`
-                        : `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}`)
+                        : `Choisissez une cible adverse pour ${carteCiblee?.name ?? 'cet effet'}${carteCiblee?.kind === 'magie' ? ' — un bouclier adverse peut bloquer le sort et se briser' : ''}`)
                       : `Choisissez une cible pour ${carteCiblee?.name ?? 'cet effet'}`,
           }
           : cibleArmeEnCours
@@ -13149,7 +13239,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                         : cibleAttaqueEnCours
                           ? 'Attaque ciblée — choisissez une créature adverse avant de confirmer'
                           : attaquants.length > 0
-                          ? `${attaquants.length} attaquant${attaquants.length > 1 ? 's' : ''} choisi${attaquants.length > 1 ? 's' : ''} — confirmez l’attaque`
+                          ? `${attaquants.length} attaquant${attaquants.length > 1 ? 's' : ''} choisi${attaquants.length > 1 ? 's' : ''}${Object.keys(ciblesAttaque).length ? ` · ${Object.keys(ciblesAttaque).length} cible${Object.keys(ciblesAttaque).length > 1 ? 's' : ''} désignée${Object.keys(ciblesAttaque).length > 1 ? 's' : ''}` : ''} — confirmez l’attaque`
                           : 'Choisissez vos créatures attaquantes',
                     }
                     : null;
@@ -13643,6 +13733,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       declaredAttacker={Boolean(combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id))}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesDestruction.has(entite.id) || idsCiblesBoualem.has(entite.id)}
+                      sortBloqueParBouclier={Boolean(cibleEnCours && ['ennemi', 'tous'].includes(modeCible)
+                        && !attenteAbordage && carteCiblee?.kind === 'magie'
+                        && !rpgSortViseUneZone(carteCiblee)
+                        && cardById(entite.carteId)?.kind !== 'site'
+                        && !rpgEstProtegee(entite, cardColors(carteCiblee))
+                        && !rpgEstProtegeeDesSorts(entite, cardColors(carteCiblee))
+                        && cibleRespecteCoutMax(carteCiblee, entite)
+                        && !(carteCiblee.effet?.type === 'destruction-arme' && !armesPortees(entite).length)
+                        && !(carteCiblee.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site')
+                        && rpgSortBloqueParBouclier(entite, carteCiblee))}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id) || Object.values(ciblesAttaque).includes(entite.id)}
                       canTarget={Boolean(
                         idsCiblesDestruction.has(entite.id)
@@ -14074,7 +14174,58 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
               <li key={`${duel.log.length}-${index}-${line}`} className="rpg-log__line">{line}</li>
             ))}
           </ol>
+          <details className="rpg-historique">
+            <summary>Historique du duel</summary>
+            <ol aria-label="Historique du duel, événements les plus récents en premier">
+              {[...duel.log.slice(-100)].reverse().map((line, index) => <li key={`${duel.log.length}-${index}`}>{line}</li>)}
+            </ol>
+          </details>
           <div className="rpg-actions">
+            {combatEntrant && apercuBlocages.length === 0 && (
+              <details className="rpg-ordre-combat">
+                <summary>Comprendre l’ordre du combat</summary>
+                <ol>
+                  <li>Les frappes ciblées et certaines capacités se résolvent avant les blessures normales.</li>
+                  <li>Les survivants échangent leurs blessures de combat ; les critiques et l’Esquive peuvent modifier l’issue.</li>
+                  <li>D’autres effets et ripostes se déclenchent selon les cartes. Consultez l’historique après la résolution.</li>
+                </ol>
+              </details>
+            )}
+            {combatEntrant && apercuBlocages.length > 0 && (
+              <div className="rpg-combat-apercu" aria-label="Aperçu des blocages">
+                {apercuBlocages.map((echange) => (
+                  <div key={echange.id}>
+                    <strong>{echange.attaquant}</strong> ({echange.force} ATQ, {echange.defense} DEF) contre {echange.bloqueurs.map((b) => `${b.nom} (${b.attaque} ATQ, ${b.defense} DEF${b.repartition == null ? '' : `, ${b.repartition} ATQ prévue`})`).join(' et ')}
+                    {echange.alertes.length > 0 && ` · ${echange.alertes.join(' · ')}`}
+                    {echange.risques.length > 0 && <div className="rpg-combat-apercu__risque">Risque de destruction d’après les forces de base : {echange.risques.join(', ')} (hors effets).</div>}
+                    {!modePvp && combatEntrant.coteAttaquant === 'joueur' && echange.bloqueurs.length > 1 && (
+                      <div className="rpg-repartition-choix" role="group" aria-label={`Répartition de ${echange.attaquant}`}>
+                        <span>Répartir :</span>
+                        <button type="button" aria-pressed={!combatEntrant.prioritesRepartition?.[echange.id]} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: null } }))}>Équilibrer</button>
+                        {echange.bloqueurs.map((bloqueur) => (
+                          <button type="button" key={bloqueur.id} aria-pressed={combatEntrant.prioritesRepartition?.[echange.id] === bloqueur.id} onClick={() => setCombatEntrant((courant) => courant && ({ ...courant, prioritesRepartition: { ...courant.prioritesRepartition, [echange.id]: bloqueur.id } }))}>Tout sur {bloqueur.nom}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <small>Répartition automatique égale, sauf priorité choisie en attaque solo. Elle est recalculée après les effets préalables ; si la cible prioritaire disparaît, le partage redevient égal. L’issue n’est pas garantie.</small>
+              <details className="rpg-ordre-combat">
+                <summary>Comprendre l’ordre du combat</summary>
+                <ol>
+                  <li>Les frappes ciblées et certaines capacités se résolvent avant les blessures normales.</li>
+                  <li>Les survivants échangent leurs blessures de combat ; les critiques et l’Esquive peuvent modifier l’issue.</li>
+                  <li>D’autres effets et ripostes se déclenchent selon les cartes. Consultez l’historique après la résolution.</li>
+                </ol>
+              </details>
+              </div>
+            )}
+            {phase && apercusCibles.length > 0 && (
+              <div className="rpg-combat-apercu" aria-label="Aperçu des attaques ciblées">
+                {apercusCibles.map(({ id, texte }) => <div key={id}>{texte}</div>)}
+                <small>Estimation avant effets, réactions et critiques.</small>
+              </div>
+            )}
             <div className="rpg-actions__row">
               <div className="rpg-actions__combat" role="group" aria-label="Actions de combat">
                 {phase && (
@@ -14084,7 +14235,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       data-key-hint="Espace"
                       data-attaque-totale={puissanceAttaquants > 0 ? puissanceAttaquants : undefined}
                       data-attaque-letale={menaceLetaleActive ? 'true' : undefined}
-                      title={puissanceAttaquants > 0 ? `Puissance totale : ${puissanceAttaquants} ATQ${menaceLetaleActive ? ' (LÉTAL)' : ''} · Raccourci : Espace` : 'Raccourci clavier : Espace'}
+                      title={puissanceAttaquants > 0 ? `Puissance totale : ${puissanceAttaquants} ATQ ; jusqu’à ${puissanceDirecte} sur le sorcier avant blocages${menaceLetaleActive ? ' (létal potentiel)' : ''} · Raccourci : Espace` : 'Raccourci clavier : Espace'}
                       disabled={!attaquants.length} onClick={() => lancerAttaque()}>
                       <CombatActionIcon type="confirm" /> Confirmer l’attaque ({attaquants.length})
                     </button>
@@ -14589,6 +14740,22 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       ? 'Bab El respire : le cycle tient encore un soir.'
                       : 'Le sable recouvre votre Nom. L’Astrolabe sonne pour quelqu’un d’autre.'}
             </p>
+            <details className="rpg-bilan-fin" data-bilan-fin>
+              <summary>Voir le bilan du duel</summary>
+              {(() => {
+                const bilan = rpgBilanDuel(duel);
+                return (
+                  <div className="rpg-bilan-fin__contenu">
+                    <div className="rpg-bilan-fin__camps">
+                      <span><b>Vous</b> · {bilan.joueur.pv ?? '—'} PV · {bilan.joueur.creatures} créature(s) en jeu</span>
+                      <span><b>{nomSorcierAdverse}</b> · {bilan.sorcier.pv ?? '—'} PV · {bilan.sorcier.creatures} créature(s) en jeu</span>
+                    </div>
+                    <strong>Derniers événements</strong>
+                    {bilan.evenements.length ? <ol>{bilan.evenements.map((ligne, index) => <li key={index}>{ligne}</li>)}</ol> : <p>Aucun événement enregistré.</p>}
+                  </div>
+                );
+              })()}
+            </details>
             {/* Ce que la victoire vient de payer : le gain de l'étage (ou du
                 duel libre), et le butin de la tour quand cette victoire l'a
                 terminée. L'annonce ne vit que pour la session en cours —

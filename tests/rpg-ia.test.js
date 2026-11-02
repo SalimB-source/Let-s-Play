@@ -13,7 +13,9 @@ import {
   rpgLancerAttaque,
   rpgLancerMagie,
   rpgNouveauDuel,
+  rpgOuvrirFenetreReponse,
   rpgSorcierAnnonceSuivante,
+  rpgSorcierMagieRapide,
   rpgSorcierResoudreAnnonce,
   rpgTourSorcierIA,
   rpgVainqueur,
@@ -1007,4 +1009,114 @@ test('une zone qui réveille des Contre-attaques coûte son prix à l’IA', () 
   donner(duel, 'sorcier', 'loup-des-neiges');
   assert.notEqual(choisirCarteIA(duel, 'sorcier', { rng: () => 0.5 })?.carteId, 'braisier-du-souk',
     'le Braisier ne se pose pas devant une Contre-attaque qui va le tuer');
+});
+
+test('l’IA privilégie les cibles sans bouclier pour les sorts de renvoi et de destruction', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  duel.sorcier.mana.tenebres = 20;
+  donner(duel, 'joueur', 'dune-marchante');
+  const grande = rpgJouerCreature(duel, 'joueur', 'dune-marchante').entite;
+  donner(duel, 'joueur', 'chien-du-guet');
+  const petite = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  grande.protection = { contre: ['eau', 'tenebres'] };
+  assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('ressac')), petite.id);
+  assert.equal(choisirCibleAutoIA(duel, 'sorcier', cardById('le-jugement-des-colosses')), grande.id,
+    'la seule cible légale reste proposée même si son bouclier bloque');
+  duel.tour = 'sorcier';
+  donner(duel, 'sorcier', 'le-jugement-des-colosses');
+  assert.equal(choisirCarteIA(duel, 'sorcier'), null, 'l’IA conserve la destruction inefficace');
+  grande.protection = null;
+  assert.equal(choisirCarteIA(duel, 'sorcier')?.cibleId, grande.id);
+});
+
+test('attaque ciblée : l’IA évite une Contre-attaque fatale quand une autre cible existe', async () => {
+  const { choisirCiblesRapidesIA, choisirAttaquantsIA } = await import('../src/games/rpgAI.js');
+  const duel = duelNu();
+  const attaquant = { id: 'a', carteId: 'chien-du-guet', name: 'Attaquant', atk: 3, pv: 2, pvMax: 2, coupRapide: true, ready: true, attaquee: false };
+  const riposte = { id: 'r', carteId: 'chien-du-guet', name: 'Riposte', atk: 3, pv: 2, pvMax: 2, contreAttaque: true };
+  const proie = { id: 'p', carteId: 'chien-du-guet', name: 'Proie', atk: 1, pv: 2, pvMax: 2 };
+  duel.sorcier.creatures = [attaquant];
+  duel.joueur.creatures = [riposte, proie];
+  assert.equal(choisirCiblesRapidesIA(duel, 'sorcier', ['a']).a, 'p');
+  duel.joueur.creatures = [riposte];
+  duel.sorcier.pv = 20;
+  assert.deepEqual(choisirAttaquantsIA(duel, 'sorcier'), [], 'une frappe suicidaire sans nécessité reste en réserve');
+});
+
+test('en danger létal l’IA utilise plusieurs bloqueurs même précieux', () => {
+  const duel = duelNu();
+  duel.sorcier.pv = 10;
+  const attaquants = ['a', 'b', 'c'].map((id) => ({ id, carteId: 'chien-du-guet', name: id, atk: 5, pv: 8, pvMax: 8, ready: true }));
+  const bloqueurs = ['x', 'y'].map((id) => ({ id, carteId: 'seigneur-des-machoires', name: id, atk: 1, pv: 2, pvMax: 2, ready: true }));
+  duel.joueur.creatures = attaquants;
+  duel.sorcier.creatures = bloqueurs;
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', attaquants.map((e) => e.id));
+  assert.equal(Object.keys(blocages).length, 2, 'deux sacrifices sont nécessaires pour survivre');
+});
+
+test('l’IA tient compte des dégâts Overkill qui traversent un premier blocage', () => {
+  const duel = duelNu();
+  duel.sorcier.pv = 5;
+  const a = { id: 'a', carteId: 'chien-du-guet', name: 'Overkill', atk: 7, pv: 2, pvMax: 2, overkill: true, ready: true };
+  const b = { id: 'b', carteId: 'chien-du-guet', name: 'Autre', atk: 3, pv: 8, pvMax: 8, ready: true };
+  const x = { id: 'x', carteId: 'chien-du-guet', name: 'Garde', atk: 2, pv: 2, pvMax: 2, ready: true };
+  const y = { id: 'y', carteId: 'chien-du-guet', name: 'Sacrifice', atk: 1, pv: 1, pvMax: 1, ready: true };
+  duel.joueur.creatures = [a, b]; duel.sorcier.creatures = [x, y];
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', ['a', 'b']);
+  assert.ok(blocages.a?.length && blocages.b?.length, 'le second attaquant ne doit pas passer à cause des dégâts résiduels');
+});
+
+test('face à Overkill l’IA privilégie le bloqueur qui absorbe assez pour survivre', () => {
+  const duel = duelNu();
+  duel.sorcier.pv = 5;
+  duel.joueur.creatures = [{ id: 'a', carteId: 'chien-du-guet', name: 'Overkill', atk: 7, pv: 9, pvMax: 9, overkill: true, ready: true }];
+  duel.sorcier.creatures = [
+    { id: 'x', carteId: 'chien-du-guet', name: 'Jeton', atk: 1, pv: 1, pvMax: 1, jeton: true, ready: true },
+    { id: 'y', carteId: 'chien-du-guet', name: 'Garde', atk: 1, pv: 4, pvMax: 4, ready: true },
+  ];
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', ['a']), { a: ['y'] });
+});
+
+test('l’IA réunit plusieurs bloqueurs contre un Overkill encore létal', () => {
+  const duel = duelNu(); duel.sorcier.pv = 3;
+  duel.joueur.creatures = [{ id: 'a', carteId: 'chien-du-guet', name: 'Overkill', atk: 7, pv: 12, pvMax: 12, overkill: true, ready: true }];
+  duel.sorcier.creatures = ['x', 'y'].map((id) => ({ id, carteId: 'chien-du-guet', name: id, atk: 1, pv: 3, pvMax: 3, ready: true }));
+  const blocages = rpgChoisirBloqueurs(duel, 'joueur', ['a']);
+  assert.deepEqual(new Set(blocages.a), new Set(['x', 'y']));
+});
+
+test('l’IA réserve son bloqueur volant à l’attaque que les autres ne peuvent pas bloquer', () => {
+  const duel = duelNu(); duel.sorcier.pv = 20;
+  const sol = { id: 'sol', carteId: 'chien-du-guet', name: 'Sol', atk: 5, pv: 2, pvMax: 2, ready: true };
+  const air = { id: 'air', carteId: 'chien-du-guet', name: 'Air', atk: 3, pv: 2, pvMax: 2, envol: true, ready: true };
+  const volant = { id: 'volant', carteId: 'chien-du-guet', name: 'Volant', atk: 3, pv: 6, pvMax: 6, envol: true, ready: true };
+  const terrestre = { id: 'terrestre', carteId: 'chien-du-guet', name: 'Terrestre', atk: 2, pv: 6, pvMax: 6, ready: true };
+  duel.joueur.creatures = [sol, air]; duel.sorcier.creatures = [volant, terrestre];
+  assert.deepEqual(rpgChoisirBloqueurs(duel, 'joueur', ['sol', 'air']), { air: ['volant'], sol: ['terrestre'] });
+});
+
+test('en réponse, l’IA préfère une menace intacte à un attaquant déjà condamné par un blocage sûr', () => {
+  const duel = duelNu(); donnerMana(duel, 'sorcier', 20); donner(duel, 'sorcier', 'trait-de-braise');
+  const condamne = { id: 'a', carteId: 'chien-du-guet', name: 'Condamné', atk: 2, pv: 2, pvMax: 2, ready: true };
+  const menace = { id: 'b', carteId: 'chien-du-guet', name: 'Menace', atk: 3, pv: 3, pvMax: 3, ready: true };
+  const defenseur = { id: 'd', carteId: 'chien-du-guet', name: 'Défenseur', atk: 3, pv: 5, pvMax: 5, ready: true };
+  duel.joueur.creatures = [condamne, menace]; duel.sorcier.creatures = [defenseur];
+  const combat = { coteAttaquant: 'joueur', attaquants: ['a'], blocages: { a: ['d'] } };
+  const choix = choisirCarteIA(duel, 'sorcier', { seulementInstants: true, combat });
+  assert.equal(choix?.cibleId, 'b');
+  rpgOuvrirFenetreReponse(duel, 'joueur');
+  const utilise = rpgSorcierMagieRapide(duel, () => 0.5, combat);
+  assert.equal(utilise?.cibleId, 'b', 'la vraie réponse utilise la cible retenue');
+  donner(duel, 'sorcier', 'trait-de-braise');
+  donnerMana(duel, 'sorcier', 20);
+  duel.joueur.creatures = [condamne];
+  assert.equal(choisirCarteIA(duel, 'sorcier', { seulementInstants: true, combat }), null, 'le sort est conservé au lieu de frapper le visage sans létal');
+  condamne.overkill = true;
+  assert.equal(choisirCarteIA(duel, 'sorcier', { seulementInstants: true, combat })?.cibleId, 'a', 'Overkill peut encore atteindre le sorcier');
+  condamne.overkill = false;
+  // Une esquive rend l'échange incertain : l'IA doit pouvoir viser à nouveau.
+  condamne.esquive = 1;
+  assert.equal(choisirCarteIA(duel, 'sorcier', { seulementInstants: true, combat })?.cibleId, 'a');
 });

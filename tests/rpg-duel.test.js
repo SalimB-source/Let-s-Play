@@ -5619,3 +5619,29 @@ test('Attaque ciblée ratée : affiche un texte « MISS » façon RPG au-dessus 
   assert.match(battleCss, /\.rpg-card\.is-miss\s*\{[^}]*overflow:\s*visible/s);
   assert.match(battleCss, /\.rpg-card__miss\s*\{[^}]*bottom:\s*calc\(100%\s*\+\s*6px\)[^}]*animation:\s*rpg-card-miss-pop/s);
 });
+
+test('priorité de répartition : toutes les blessures vont au bloqueur choisi, même en cas de critique', () => {
+  const duel = duelDeBase(); donnerMana(duel, 'joueur', 30); donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'seigneur-des-machoires');
+  const attaquant = jouerGros(duel, 'joueur').entite; attaquant.ready = true;
+  attaquant.coupCritique = { chance: 1, fois: 2 };
+  const bloqueurs = ['chien-du-guet', 'porteuse-de-cruches'].map((id) => { donner(duel, 'sorcier', id); return rpgJouerCreature(duel, 'sorcier', id).entite; });
+  const res = rpgLancerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: bloqueurs.map((b) => b.id) }, null, null, null,
+    { prioritesRepartition: { [attaquant.id]: bloqueurs[1].id } });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.resume.repartitions[attaquant.id], { [bloqueurs[0].id]: 0, [bloqueurs[1].id]: attaquant.atk * 2 });
+});
+
+test('priorité disparue avant les blessures : retour au partage automatique entre les survivants', () => {
+  const duel = duelDeBase(); donnerMana(duel, 'joueur', 30); donnerMana(duel, 'sorcier', 30);
+  donner(duel, 'joueur', 'sahir-des-braises');
+  const sahir = rpgJouerCreature(duel, 'joueur', 'sahir-des-braises').entite; sahir.ready = true;
+  const bloqueurs = ['fennec-des-decombres', 'seigneur-des-machoires', 'seigneur-des-machoires'].map((id) => {
+    donner(duel, 'sorcier', id); return (id === 'seigneur-des-machoires' ? jouerGros(duel, 'sorcier') : rpgJouerCreature(duel, 'sorcier', id)).entite;
+  });
+  bloqueurs.forEach((b, i) => { b.pv = b.def = i ? 5 : 1; });
+  const res = rpgLancerAttaque(duel, 'joueur', [sahir.id], { [sahir.id]: bloqueurs.map((b) => b.id) }, null, null, null,
+    { prioritesRepartition: { [sahir.id]: bloqueurs[0].id } });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.resume.repartitions[sahir.id], { [bloqueurs[1].id]: 1, [bloqueurs[2].id]: 1 });
+});

@@ -13,7 +13,7 @@ import { IconesCarte, PastillesCarte } from '../src/games/effetIcons.jsx';
 
 void RpgDuelPage;
 
-const rendreTable = (entite, bouclierFx = null) => renderToStaticMarkup(
+const rendreTable = (entite, bouclierFx = null, sortBloqueParBouclier = false) => renderToStaticMarkup(
   <TableCard
     entite={{
       id: 'entite-bouclier',
@@ -36,6 +36,7 @@ const rendreTable = (entite, bouclierFx = null) => renderToStaticMarkup(
     cote="joueur"
     tilt={0}
     bouclierFx={bouclierFx}
+    sortBloqueParBouclier={sortBloqueParBouclier}
   />,
 );
 
@@ -64,6 +65,7 @@ const Dame = (entite = {}) => ({
 export function rendreCartesBouclier() {
   return {
     colore: rendreTable({ protection: { contre: ['eau', 'neige'], toursRestants: Infinity } }),
+    cibleProtegee: rendreTable({ protection: { contre: 'eau' } }, null, true),
     pastilleLionne: renderToStaticMarkup(<PastillesCarte carte={cardById('lionne-du-midi-ardent')} />),
     pastilleIfrit: renderToStaticMarkup(<PastillesCarte carte={cardById('ifrit-al-ahmar')} />),
     iconePretee: renderToStaticMarkup(<IconesCarte carte={cardById('chien-du-guet')} entite={{ protection: { contre: 'tenebres', toursRestants: null } }} />),

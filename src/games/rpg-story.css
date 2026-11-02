@@ -1652,3 +1652,22 @@
   font-size: 11.5px;
   letter-spacing: .02em;
 }
+
+/* Repères de progression et prochain défi : toujours lisibles au clavier et au doigt. */
+.rpg-conquete-bilan { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 12px 15px; margin: 14px 0; border: 1px solid rgba(229,191,105,.28); border-radius: 10px; background: rgba(12,14,24,.78); color: #e9dfce; font-size: 12px; }
+.rpg-conquete-bilan b { color: #f6d88f; }
+.rpg-conquete-bilan small { flex-basis: 100%; color: #c0b6a5; }
+.rpg-conquete-reprise { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; margin: 0 0 14px; padding: 12px 15px; border: 1px solid #cfa85e; border-radius: 10px; background: linear-gradient(115deg,#342619,#171721); color: #ffe5a7; text-align: left; cursor: pointer; }
+.rpg-conquete-reprise > span:first-child { display: grid; gap: 3px; }
+.rpg-conquete-reprise small, .rpg-tour-prochain__eyebrow { color: #e3bf76; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.rpg-conquete-reprise:hover, .rpg-conquete-reprise:focus-visible { border-color: #ffe5a7; box-shadow: 0 0 18px #e0a73e44; }
+.rpg-conquete-filtres { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 14px; }
+.rpg-conquete-filtres button { min-height: 40px; padding: 7px 13px; border: 1px solid #72634b; border-radius: 999px; background: #191820; color: #f1e4cb; cursor: pointer; }
+.rpg-conquete-filtres button[aria-pressed="true"] { color: #241709; border-color: #f5d99b; background: #e3bd73; font-weight: 800; }
+.rpg-conquete-filtres button:focus-visible, .rpg-conquete-reprise:focus-visible { outline: 2px solid #ffe4a5; outline-offset: 2px; }
+.rpg-conquete-vide { color: #e8d8bc; }
+.rpg-tour-prochain { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 15px; margin: 14px 0; border: 1px solid #cda861; border-radius: 10px; background: linear-gradient(120deg,rgba(85,58,25,.65),rgba(18,20,31,.95)); }
+.rpg-tour-prochain > div { display: grid; gap: 4px; color: #e7dbc4; font-size: 12px; }
+.rpg-tour-prochain strong { color: #fff2d3; font-size: 16px; }
+.rpg-story-floor.is-next { border-color: rgba(238,198,117,.75); box-shadow: inset 3px 0 #edc16b, 0 0 18px rgba(194,140,54,.12); }
+@media (max-width: 600px) { .rpg-conquete-reprise { align-items: flex-start; flex-direction: column; } .rpg-tour-prochain .rpg-narrative-button { width: 100%; } }
