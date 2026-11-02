@@ -127,6 +127,7 @@ import { accueilSablierPret } from './useStatutSyncSablier.js';
 import RpgSouk from './RpgSouk.jsx';
 import RpgOffreLancement from './RpgOffreLancement.jsx';
 import { FIN_OFFRE_LANCEMENT, offreLancementActive } from './rpgOffreLancement.js';
+import { diapoSuivante } from './rpgDiaporama.js';
 import RpgProfilJoueur from './RpgProfilJoueur.jsx';
 import RpgPisteGains from './RpgPisteGains.jsx';
 import RpgStoryBabEl from './RpgStoryBabEl.jsx';
@@ -4713,6 +4714,31 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     document.addEventListener('visibilitychange', actualiser);
     return () => { window.clearInterval(timer); if (fin !== null) window.clearTimeout(fin); document.removeEventListener('visibilitychange', actualiser); };
   }, []);
+  const [diapo, setDiapo] = useState(0);
+  const [annonceDiapo, setAnnonceDiapo] = useState('');
+  const [mouvementReduitSysteme, setMouvementReduitSysteme] = useState(
+    () => typeof window !== 'undefined' && Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches),
+  );
+  const nombreDiapos = offreActive ? 4 : 3;
+  const diapoAffichee = diapo % nombreDiapos;
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    if (!media) return undefined;
+    const actualiser = () => setMouvementReduitSysteme(media.matches);
+    actualiser();
+    media.addEventListener?.('change', actualiser);
+    return () => media.removeEventListener?.('change', actualiser);
+  }, []);
+  useEffect(() => {
+    if (screen !== 'jouer' || animReduite || mouvementReduitSysteme) return undefined;
+    const timer = window.setTimeout(() => setDiapo(diapoSuivante(diapoAffichee, 1, nombreDiapos)), 6000);
+    return () => window.clearTimeout(timer);
+  }, [screen, animReduite, mouvementReduitSysteme, diapoAffichee, nombreDiapos]);
+  const naviguerDiapo = (direction) => {
+    const suivante = diapoSuivante(diapoAffichee, direction, nombreDiapos);
+    setDiapo(suivante);
+    setAnnonceDiapo(['Masque du guetteur', 'Ressac', 'Brise-lame', 'Offre de lancement'][suivante]);
+  };
   const [catalogueCouleur, setCatalogueCouleur] = useState('toutes');
   const [catalogueType, setCatalogueType] = useState('tous');
   const [catalogueRarete, setCatalogueRarete] = useState('toutes');
@@ -5167,17 +5193,23 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            {/* Trois illustrations entières défilent sur leur fond assorti. */}
-            <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined}>
+            {/* Les trois illustrations remplissent la vitrine sans déformation. */}
+            <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={diapoAffichee === 3 ? 'true' : undefined}>
               <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
-                {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id) => (
-                  <div className="rpg-mode-menu__diapo" key={id}>
-                    <img className="rpg-mode-menu__hero-backdrop" src={cardArt(id)} alt="" />
+                {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
+                  <div className={`rpg-mode-menu__diapo${diapoAffichee === index ? ' is-active' : ''}`} key={id}>
                     <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
                   </div>
                 ))}
-                {offreActive && <div className="rpg-mode-menu__diapo rpg-mode-menu__diapo--offre"><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
+                {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === 3 ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
               </div>
+              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--precedent" aria-label="Illustration précédente" onClick={() => naviguerDiapo(-1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5 8 12l7 7M8 12h11" /></svg>
+              </button>
+              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--suivant" aria-label="Illustration suivante" onClick={() => naviguerDiapo(1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7m7-7H5" /></svg>
+              </button>
+              <span className="sr-only" aria-live="polite" aria-atomic="true">{annonceDiapo}</span>
               {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">

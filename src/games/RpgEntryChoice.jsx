@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
 import GameLoadBoundary from './GameLoadBoundary.jsx';
+import ChargementDuel from './ChargementDuel.jsx';
 import { importerAvecReprise } from './chargementJeu.js';
 import InvitePaysage, { usePortraitAuDoigt } from './InvitePaysage.jsx';
 import {
@@ -178,7 +179,7 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
     return (
       <GameLoadBoundary jeu="Le Sablier">
         <RpgDesktopLogin>
-          <Suspense fallback={<div className="rpg-entry-choice__chargement" role="status">Chargement du duel…</div>}>
+          <Suspense fallback={<ChargementDuel />}>
             <RpgDuelPage variantesPlateaux={variantesPlateaux} />
           </Suspense>
         </RpgDesktopLogin>
