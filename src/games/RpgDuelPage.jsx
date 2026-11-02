@@ -5076,42 +5076,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
         {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
-            {/* Les trois illustrations remplissent la vitrine sans déformation. */}
-            <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={diapoAffichee === 3 ? 'true' : undefined}>
-              <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
-                {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
-                  <div className={`rpg-mode-menu__diapo${diapoAffichee === index ? ' is-active' : ''}`} key={id}>
-                    <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
-                  </div>
-                ))}
-                {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === 3 ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
-              </div>
-              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--precedent" aria-label="Illustration précédente" onClick={() => naviguerDiapo(-1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5 8 12l7 7M8 12h11" /></svg>
-              </button>
-              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--suivant" aria-label="Illustration suivante" onClick={() => naviguerDiapo(1)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7m7-7H5" /></svg>
-              </button>
-              <span className="sr-only" aria-live="polite" aria-atomic="true">{annonceDiapo}</span>
-              {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
-              {/* Effet visuel thématique : grains de sable qui tombent */}
-              <div className="rpg-sand-fx" aria-hidden="true">
-                {Array.from({ length: 18 }).map((_, i) => (
-                  <span key={i} className="rpg-sand-grain" style={{ '--delay': `${i * 0.21}s`, '--left': `${5 + Math.random() * 90}%`, '--duration': `${4 + Math.random() * 5}s`, '--size': `${1 + Math.random() * 2}px` }} />
-                ))}
-              </div>
-              <div className="rpg-mode-menu__hero-copy">
-                <span className="rpg-mode-menu__eyebrow">
-                  <span className="rpg-eyebrow-dot" />
-                  PORTES DE BAB EL · 30 CARTES · SANS TERRAIN
-                </span>
-                <h2>Le sable se souvient. <em>À vous d’écrire la suite.</em></h2>
-                <p>Bâtissez votre deck, ouvrez vos paquets au Souk et affrontez les sorciers des cinq éléments.</p>
-              </div>
-              <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
-            </section>
-
-            {/* Colonne droite : les trois modes de jeu empilés l'un au-dessus
+            {/* Colonne gauche : les trois modes de jeu empilés l'un au-dessus
                 de l'autre en largeur, chacun illustré d'une miniature et doté
                 d'un appel à jouer. Toute la bannière reste cliquable. */}
             <section className="rpg-mode-menu__modes-col" aria-label="Modes de jeu">
@@ -5171,6 +5136,41 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </span>
                 </button>
               </div>
+            </section>
+
+            {/* Les trois illustrations remplissent la vitrine sans déformation. */}
+            <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={diapoAffichee === 3 ? 'true' : undefined}>
+              <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
+                {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
+                  <div className={`rpg-mode-menu__diapo${diapoAffichee === index ? ' is-active' : ''}`} key={id}>
+                    <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
+                  </div>
+                ))}
+                {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === 3 ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
+              </div>
+              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--precedent" aria-label="Illustration précédente" onClick={() => naviguerDiapo(-1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5 8 12l7 7M8 12h11" /></svg>
+              </button>
+              <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--suivant" aria-label="Illustration suivante" onClick={() => naviguerDiapo(1)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7m7-7H5" /></svg>
+              </button>
+              <span className="sr-only" aria-live="polite" aria-atomic="true">{annonceDiapo}</span>
+              {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
+              {/* Effet visuel thématique : grains de sable qui tombent */}
+              <div className="rpg-sand-fx" aria-hidden="true">
+                {Array.from({ length: 18 }).map((_, i) => (
+                  <span key={i} className="rpg-sand-grain" style={{ '--delay': `${i * 0.21}s`, '--left': `${5 + Math.random() * 90}%`, '--duration': `${4 + Math.random() * 5}s`, '--size': `${1 + Math.random() * 2}px` }} />
+                ))}
+              </div>
+              <div className="rpg-mode-menu__hero-copy">
+                <span className="rpg-mode-menu__eyebrow">
+                  <span className="rpg-eyebrow-dot" />
+                  PORTES DE BAB EL · 30 CARTES · SANS TERRAIN
+                </span>
+                <h2>Le sable se souvient. <em>À vous d’écrire la suite.</em></h2>
+                <p>Bâtissez votre deck, ouvrez vos paquets au Souk et affrontez les sorciers des cinq éléments.</p>
+              </div>
+              <div className="rpg-mode-menu__hero-glow" aria-hidden="true" />
             </section>
 
             {/* Rampe inférieure sur toute la largeur : les quêtes du jour et
