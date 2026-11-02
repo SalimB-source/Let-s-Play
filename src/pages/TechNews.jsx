@@ -1,6 +1,9 @@
 import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102, editionDate } from '../news/daily/2026-11-02';
 import React, { useEffect, useState, useMemo } from 'react';
+import '../news-view-toggle.css';
+import '../news-carousel.css';
+import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -189,7 +192,7 @@ export default function TechNews() {
         <Link className="arrow-link" to="/news">{copy.back} <Arrow /></Link>
       </div>
 
-      <section className="news-carousel-section wrap">
+      <section className="news-carousel-section wrap" data-reveal>
         <div className="section-label"><span>{copy.section}</span><span>{copy.updated}</span></div>
         <NewsFeaturedStory
           story={topStory}

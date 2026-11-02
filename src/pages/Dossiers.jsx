@@ -1,4 +1,5 @@
 import React from 'react';
+import '../dossier-article.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import VideoThumb from '../components/VideoThumb';

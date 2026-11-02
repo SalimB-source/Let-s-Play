@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import '../dz-dev.css';
 import { Link } from 'react-router-dom';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import '../actus.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -55,7 +56,7 @@ export default function Actus() {
 
   return (
     <main className="actus-page">
-      <section className="actus-section" aria-labelledby="actus-title">
+      <section className="actus-section" aria-labelledby="actus-title" data-reveal>
         <div className="actus-inner">
           <header className="actus-heading">
             <span className="actus-eyebrow">{copy.eyebrow}</span>

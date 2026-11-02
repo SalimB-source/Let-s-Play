@@ -8,22 +8,13 @@ import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
-import './profile-lists.css';
-import './news-article.css';
-import './written-review.css';
-import './components/SpoilerAlert.css';
+import './motion.css';
 import './auth/auth.css';
-import './news-carousel.css';
-import './actus.css';
-import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
 import './partners.css';
-import './dz-dev.css';
 import './reels-carousel.css';
-import './dossier-article.css';
 import './achievements/achievements.css';
-import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './messages/calls.css';
@@ -34,6 +25,7 @@ import './theme.css';        // thème clair : importé en dernier (surcharge)
 import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
+import MotionEnhancer from './components/MotionEnhancer';
 import Home from './pages/Home';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
@@ -146,6 +138,7 @@ function App() {
           <CallsProvider>
           <AchievementProvider>
             <Layout>
+              <MotionEnhancer />
               <AchievementTracker />
               {/* Une seule frontière pour toutes les pages à la demande : la
                   barre, le fond et les surcouches (appels, succès, messagerie)

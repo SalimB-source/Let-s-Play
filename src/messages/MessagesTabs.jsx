@@ -1,5 +1,4 @@
-import RpgPvpCarte from '../games/RpgPvpCarte.jsx';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fill } from '../friends/friendsCopy';
 import { formatCommentDate } from '../lib/comments';
@@ -8,6 +7,11 @@ import { callBlockLabel } from './callsCopy';
 import { describeMessagesError, messageSuggestions, pseudoLabel, reasonLabel } from './messagesCopy';
 import { MESSAGE_MAX_LENGTH, REPORT_REASONS } from './messagesApi';
 import { decouperLiens } from './liensTexte';
+
+// La carte de défi charge tout le moteur du Sablier. La messagerie l'affiche
+// uniquement pour les invitations concernées : ne pas embarquer le duel à
+// chaque visite de l'accueil ou à l'ouverture d'une conversation ordinaire.
+const RpgPvpCarte = lazy(() => import('../games/RpgPvpCarte.jsx'));
 
 /**
  * Vues de messagerie — partagées par la fenêtre sociale (bureau) et la page
@@ -768,7 +772,11 @@ export function ThreadView({
                     <p className={`messages-bubble${message.mine ? ' is-mine' : ''}`}><TexteMessage texte={message.body} /></p>
                     {/* Un défi du Sablier est un message typé : la carte
                         renvoie vers le salon, qui seul connaît son statut. */}
-                    {message.kind === 'defi-sablier' && <RpgPvpCarte message={message} />}
+                    {message.kind === 'defi-sablier' && (
+                      <Suspense fallback={null}>
+                        <RpgPvpCarte message={message} />
+                      </Suspense>
+                    )}
                     {message.mine && (
                       <button
                         type="button"

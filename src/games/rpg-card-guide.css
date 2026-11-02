@@ -231,7 +231,7 @@
   background: rgba(31, 59, 72, .92);
   color: #e9f8ff;
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card-guide { padding-top: 9px; }
   .rpg-card-guide__header { align-items: start; flex-direction: column; gap: 12px; }
   .rpg-card-guide__layout { grid-template-columns: 1fr; }

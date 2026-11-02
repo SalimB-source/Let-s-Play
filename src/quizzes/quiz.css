@@ -679,6 +679,12 @@
 @keyframes quiz-combo-pulse { 0% { transform: scale(.8); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
 .quiz-live-item--points { color: var(--yellow); }
 .quiz-live-item--streak { color: var(--yellow); animation: quiz-combo-pulse .3s ease; }
+.quiz-count-pop { display: inline-block; animation: quiz-count-pop .3s cubic-bezier(.2, .8, .25, 1); }
+@keyframes quiz-count-pop {
+  0% { opacity: .7; transform: scale(.78); }
+  65% { opacity: 1; transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
 .quiz-keys-hint { margin: 16px 0 0; color: var(--dim); font: 400 11px var(--mono); letter-spacing: .1em; }
 
 /* ---- Résultat ------------------------------------------------------------ */
@@ -689,6 +695,11 @@
   padding: 34px 30px; text-align: center;
   background: var(--panel); border: 1px solid var(--line);
   clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+  animation: quiz-result-enter .34s cubic-bezier(.2, .8, .25, 1) both;
+}
+@keyframes quiz-result-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .quiz-result-eyebrow { margin: 0; color: var(--dim); font: 500 11px var(--mono); letter-spacing: .16em; text-transform: uppercase; }
 .quiz-result-tier { margin: 10px 0 4px; font: 900 clamp(34px, 6vw, 60px)/1 var(--display); letter-spacing: .04em; }
@@ -804,18 +815,6 @@
 .quiz-comments { margin-top: 70px; }
 .quiz-comments h2 { font: 800 clamp(20px, 3vw, 30px)/1.1 var(--display); text-transform: uppercase; }
 
-/* ---- Bandeau « quizz du jour » de l'accueil -------------------------------- */
-.home-quiz-band {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px;
-  padding: 22px 26px; margin: 8px 0 0;
-  background: linear-gradient(120deg, rgba(124, 58, 237, .16), rgba(34, 211, 238, .1)), var(--panel);
-  border: 1px solid var(--line-strong);
-  clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
-}
-.home-quiz-band h2 { margin: 6px 0; font: 800 clamp(20px, 3vw, 32px)/1.1 var(--display); text-transform: uppercase; }
-.home-quiz-band h2 em { color: var(--cyan); font-style: normal; }
-.home-quiz-band-copy p { margin: 0; color: var(--muted); }
-
 /* ---- Verrouillage Confirmé/Expert ---------------------------------------- */
 .quiz-card.is-locked,
 .quiz-daily.is-locked {
@@ -891,6 +890,8 @@
   .quiz-timer.is-low .quiz-timer-track i,
   .quiz-timer.is-frozen .quiz-timer-track i,
   .quiz-live-item--streak,
+  .quiz-count-pop,
+  .quiz-result,
   .quiz-verdict,
   .quiz-verdict-points,
   .quiz-verdict-combo,
@@ -964,23 +965,6 @@
   font: 700 11px var(--mono); letter-spacing: .18em;
 }
 
-/* ---- Bande d'accueil, recherche et nav (quizz terminé) -------------------- */
-/* La bande du jour garde sa mise en page mais passe en gris : le bouton renvoie
-   à la grille (`/quizz`) puisque le quizz du jour est verrouillé. */
-.home-quiz-band.is-finished { filter: grayscale(1) brightness(.82); }
-.home-quiz-band.is-finished .quiz-chip { margin-inline-start: 8px; }
-/* Résultats de recherche et suggestions de la nav : grisés, non cliquables
-   (rendus en `<div>`/`<span>` côté `Search.jsx` et `Layout.jsx`). */
-.search-result-card.is-finished,
-.nav-search-result.is-finished {
-  filter: grayscale(1) brightness(.78);
-  cursor: default;
-  pointer-events: none;
-}
-.search-result-card.is-finished:hover { transform: none; box-shadow: none; border-color: var(--line); }
-.search-result-card.is-finished h2,
-.search-result-card.is-finished p { color: var(--dim); }
-.nav-search-result.is-finished strong { color: var(--dim); }
 
 /* ---- Confirmation avant de lancer un niveau (Facile / Confirmé / Expert) --- */
 /* Overlay + dialogue : même interaction que DeleteAccount / VideoModal

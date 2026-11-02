@@ -1,4 +1,5 @@
 import React from 'react';
+import '../quizzes/home-quiz-band.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { quizzes } from '../quizzesData';
@@ -32,7 +33,7 @@ export default function HomeQuizBand({ today }) {
   const dailyQuizFinished = Boolean(dailyQuiz) && isQuizFinished(progress, dailyQuiz.slug);
 
   return (
-    <section className="wrap" id="quizz-du-jour">
+    <section className="wrap" id="quizz-du-jour" data-reveal>
       <div
         className={`home-quiz-band${dailyQuizFinished ? ' is-finished' : ''}`}
       >

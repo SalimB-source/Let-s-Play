@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import '../dossier-article.css';
 import { Link } from 'react-router-dom';
 import useChapterVideo from '../lib/useChapterVideo';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';

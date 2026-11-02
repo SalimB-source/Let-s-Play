@@ -280,7 +280,7 @@
 
 /* Petites WebViews : une seule pluie et des halos moins coûteux, sans changer
    la géométrie de la frappe ni sa synchronisation avec l'arrivée. */
-@media (max-width: 700px) {
+@media (max-width: 700px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-marteau-arrivee__nuages { filter: blur(6px) contrast(1.08); }
   .rpg-marteau-arrivee__nuages--pres { filter: blur(4px) contrast(1.1); }
   .rpg-marteau-arrivee__pluie--pres { display: none; }

@@ -65,6 +65,8 @@ import {
   dailyStories as dailyStories20261018,
   dailyNewsListing as dailyNewsListing20261018,
 } from '../src/news/daily/2026-10-18.js';
+import { dailyStories as dailyStories20261101, dailyNewsListing as dailyNewsListing20261101 } from '../src/news/daily/2026-11-01.js';
+import { dailyStories as dailyStories20261102, dailyNewsListing as dailyNewsListing20261102 } from '../src/news/daily/2026-11-02.js';
 
 // Hôte et chemin des miniatures relus depuis la fabrique du site, jamais
 // recopiés ici : `npm run check:thumbs` interdit toute URL de miniature codée
@@ -198,6 +200,13 @@ const OFFICIAL_CHANNELS = new Set([
   'Google DeepMind', // chaîne officielle de Google DeepMind
   'PlayStation Access', // chaîne officielle PlayStation UK, présentation des jeux mensuels
   'Pokémon UNITE', // chaîne officielle du jeu
+  // Comptes officiels locaux explicitement crédités dans les entrées du 1–2.11.2026 :
+  // Octopus Panic (développeur de GRAVHOUNDS), DCM - Romandie (distributeur suisse)
+  // et Warner Bros. France (distributeur français). Les comptes régionaux restent
+  // refusés par défaut : ces trois exceptions sont des ayants droit/distributeurs.
+  'Octopus Panic',
+  'DCM - Romandie',
+  'Warner Bros. France',
 ]);
 
 /* -------------------------------------------- 1. Les données des vidéos */
@@ -256,11 +265,13 @@ const read = (file) => readFileSync(path.join(root, file), 'utf8');
 const allDailyStoryKeys = [
   ...Object.keys(cultureTechStories20261029), ...Object.keys(gamingStories20261029), ...Object.keys(dailyStories20261018), ...Object.keys(dailyStories20261017),
   ...Object.keys(dailyStories20261016), ...Object.keys(dailyStories20261015),
+  ...Object.keys(dailyStories20261101), ...Object.keys(dailyStories20261102),
   ...Object.keys(dailyStories), ...Object.keys(dailyStories20261011),
 ];
 const allDailyListings = [
   ...cultureTechListing20261029, ...gamingListing20261029, ...dailyNewsListing20261018, ...dailyNewsListing20261017,
   ...dailyNewsListing20261016, ...dailyNewsListing20261015,
+  ...dailyNewsListing20261101, ...dailyNewsListing20261102,
   ...dailyNewsListing, ...dailyNewsListing20261011,
 ];
 

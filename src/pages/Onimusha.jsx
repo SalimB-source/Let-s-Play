@@ -1,4 +1,5 @@
 import React from 'react';
+import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { getTest, videoEmbedUrl, videoWatchUrl } from '../reviewsData';

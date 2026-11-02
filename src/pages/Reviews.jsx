@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../written-review.css';
 import { Link } from 'react-router-dom';
 import { getTest, scoreTier, scoreLabel } from '../reviewsData';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -91,7 +92,7 @@ export default function Reviews(){
       {/* Test original à la une. L'ancienne grille des tests reste masquée ;
           on conserve aussi le short review et les dossiers ci-dessous. */}
       {featuredReview && (
-        <section className="written-review-section wrap" id="test-a-la-une">
+        <section className="written-review-section wrap" id="test-a-la-une" data-reveal>
           <div className="section-label"><span><b>TEST ÉCRIT</b> / À LA UNE</span><span>{featuredReview.date} · CAMPAGNE SOLO</span></div>
           <div className="written-review-heading">
             <p className="eyebrow"><span className="live-dot" /> LE REGARD DE LA RÉDACTION</p>
@@ -123,7 +124,7 @@ export default function Reviews(){
       )}
 
       {/* Short review : le test en 90 s, transcrit, avec la note. */}
-      <section className="short-review-section wrap" id="short-review">
+      <section className="short-review-section wrap" id="short-review" data-reveal>
         <div className="section-label"><span>{sr.label1}</span><span>{sr.label2}</span></div>
         <div className="short-review-head">
           <div>
@@ -165,7 +166,7 @@ export default function Reviews(){
         </div>
       </section>
 
-      <section className="featured-dossiers wrap" id="dossiers-tests">
+      <section className="featured-dossiers wrap" id="dossiers-tests" data-reveal>
         <div className="section-label"><span>{d.label1}</span><span>{d.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
@@ -192,7 +193,7 @@ export default function Reviews(){
         </div>
       </section>
 
-      <section className="reels-section wrap" id="reels-tests">
+      <section className="reels-section wrap" id="reels-tests" data-reveal>
         <div className="section-label"><span>{t.reviews.reels.label1}</span><span>{t.reviews.reels.label2}</span></div>
         <div className="reels-head">
           <div>

@@ -6,9 +6,37 @@
  *    regression introduced by ff6d390 ("Add Onimusha sales news article"),
  *    to prove a partially translated dictionary degrades instead of throwing.
  */
+import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { translations as sourceTranslations } from '../src/i18n/translations.js';
+import { frenchSiteDictionary } from '../src/i18n/translations-fr-site.js';
+
+const isPlainObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+function withBaseFallback(dict, base) {
+  if (!isPlainObject(dict)) return dict;
+  const merged = {};
+  const keys = new Set([...Object.keys(dict), ...(isPlainObject(base) ? Object.keys(base) : [])]);
+  for (const key of keys) {
+    const value = dict[key];
+    const fallback = isPlainObject(base) ? base[key] : undefined;
+    if (isPlainObject(value) && isPlainObject(fallback)) {
+      merged[key] = withBaseFallback(value, fallback);
+    } else if (value === undefined || value === null || value === '') {
+      merged[key] = fallback === undefined ? value : fallback;
+    } else {
+      merged[key] = value;
+    }
+  }
+  return merged;
+}
+assert.deepEqual(
+  frenchSiteDictionary,
+  withBaseFallback(sourceTranslations.fr, sourceTranslations.en),
+  'translations-fr-site.js is stale; run `npm run i18n:fr-site`'
+);
+console.log('French production dictionary is up to date.');
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = path.join(root, 'node_modules', '.cache', 'i18n-smoke');

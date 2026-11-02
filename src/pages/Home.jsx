@@ -9,7 +9,6 @@ import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-02';
-import { leadTrailer } from '../articleTrailers';
 
 // Le seul morceau de l'accueil qui a besoin du catalogue des quizz (226 ko) :
 // il se charge à la demande, plus bas dans la page (voir HomeQuizBand.jsx).
@@ -60,12 +59,6 @@ const newsImageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${
 
 // La une de l'accueil suit l'actu gaming de l'édition du jour.
 const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
-const featuredVideo = leadTrailer(featuredStory.to);
-const featuredNews = {
-  ...featuredStory,
-  video: featuredVideo?.id,
-  videoTitle: featuredVideo?.title,
-};
 
 // YouTube resolves this permanent channel URL to the channel's active live
 // broadcast, without requiring an API key or a server-side endpoint.
@@ -74,11 +67,34 @@ const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi98
 export default function Home() {
   const { t, lang } = useLanguage();
   const [liveStatus, setLiveStatus] = useState('unknown');
+  const [featuredTrailer, setFeaturedTrailer] = useState(null);
+  const featuredNews = {
+    ...featuredStory,
+    video: featuredTrailer?.id,
+    videoTitle: featuredTrailer?.title,
+  };
+
+  // Les métadonnées de bande-annonce couvrent tout le catalogue d'articles :
+  // elles ne sont nécessaires qu'à la une, après le premier rendu de l'accueil.
+  useEffect(() => {
+    let cancelled = false;
+    import('../articleTrailers')
+      .then(({ leadTrailer }) => {
+        if (!cancelled) setFeaturedTrailer(leadTrailer(featuredStory.to));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // La frise « Sorties du mois » et le compte à rebours ont quitté l'accueil :
   // il n'en reste que le bandeau fin « le plus attendu » sous le héros
   // (vignette + nom + date). La liste complète vit sur /calendrier.
   const today = new Date(Date.now() + CLOCK_OFFSET);
+  const exploreCopy = {
+    fr: { label: 'Explorer la page', news: 'Actu à la une', episodes: 'Épisodes', quiz: 'Quiz du jour', reels: 'Reels', live: 'Direct' },
+    en: { label: 'Explore this page', news: 'Top story', episodes: 'Episodes', quiz: 'Daily quiz', reels: 'Reels', live: 'Live' },
+    ar: { label: 'استكشف الصفحة', news: 'أبرز الأخبار', episodes: 'الحلقات', quiz: 'اختبار اليوم', reels: 'ريلز', live: 'مباشر' },
+  }[lang] || { label: 'Explore this page', news: 'Top story', episodes: 'Episodes', quiz: 'Daily quiz', reels: 'Reels', live: 'Live' };
   // Le bandeau « quizz du jour » envoie directement à la partie du jour —
   // sauf si ce quizz est TERMINÉ (ses trois niveaux faits) : il est verrouillé
   // comme partout ailleurs, et le bouton mène à la grille des quizz.
@@ -238,8 +254,14 @@ export default function Home() {
         </div>
       </section>
 
+      <nav className="home-explore wrap" aria-label={exploreCopy.label}>
+        {[['actu-une', exploreCopy.news], ['featured', exploreCopy.episodes], ['quizz-du-jour', exploreCopy.quiz], ['reels', exploreCopy.reels], ['live', exploreCopy.live]].map(([target, label]) => (
+          <a key={target} href={`#${target}`}>{label}<span aria-hidden="true">↘</span></a>
+        ))}
+      </nav>
+
       {/* ACTU À LA UNE — première mise en avant après le ticker, trailer jouable sur place. */}
-      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une">
+      <section className="featured-dossiers featured-dossiers--news wrap" id="actu-une" data-reveal>
         <div className="section-label"><span>{newsHead.label1}</span><span>{newsHead.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
@@ -275,7 +297,7 @@ export default function Home() {
       </section>
 
       {/* ÉPISODES À LA UNE — 3 colonnes, vignette statique + texte descriptif */}
-      <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured">
+      <section className="featured-dossiers featured-dossiers--episodes wrap" id="featured" data-reveal>
         <div className="section-label"><span>{labelTitle}</span><span>{head.label2}</span></div>
         <div className="featured-dossiers-head">
           <div>
@@ -325,7 +347,7 @@ export default function Home() {
 
       {/* REELS / SHORTS YOUTUBE — placés juste avant le direct : le format court
           garde le visiteur en mouvement avant le lecteur live. */}
-      <section className="reels-section wrap" id="reels">
+      <section className="reels-section wrap" id="reels" data-reveal>
         <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
           <div>
@@ -358,7 +380,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="live-section wrap" id="live">
+      <section className="live-section wrap" id="live" data-reveal>
         <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
         <div className="live-head">
           <div>
@@ -377,6 +399,7 @@ export default function Home() {
           <iframe
             src={youTubeLiveChannelEmbedUrl(liveChannelId)}
             title={t.home.live.playerTitle}
+            loading="lazy"
             allow="autoplay; encrypted-media; picture-in-picture; web-share"
             allowFullScreen
           />
@@ -387,7 +410,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="formats wrap" id="formats">
+      <section className="formats wrap" id="formats" data-reveal>
         <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
         <div className="format-grid">
           <article className="format-card card-gaming"><span className="format-number">01</span><div className="format-icon">✦</div><h3>{t.home.formats.gamingTitle}</h3><p>{t.home.formats.gamingText}</p><Link to="/reviews">{t.home.formats.explore} <Arrow /></Link></article>
@@ -398,7 +421,7 @@ export default function Home() {
 
       <PartnersSection />
 
-      <section className="cta wrap">
+      <section className="cta wrap" data-reveal>
         <div>
           <p className="eyebrow"><span className="live-dot" /> {t.home.cta.eyebrow}</p>
           <h2>{t.home.cta.h2a}<br /><em>{t.home.cta.h2b}</em></h2>

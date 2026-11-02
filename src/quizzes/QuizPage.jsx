@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import './quiz.css';
 import { useParams } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import Comments from '../components/Comments';

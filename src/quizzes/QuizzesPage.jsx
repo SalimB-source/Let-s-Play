@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './quiz.css';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useAchievements } from '../achievements/AchievementContext';

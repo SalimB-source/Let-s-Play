@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import '../profile-lists.css';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { DEMO_PROFILES } from '../auth/demoProfiles';

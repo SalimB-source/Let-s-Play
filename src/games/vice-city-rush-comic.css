@@ -1557,7 +1557,7 @@
    ouvrir. Elles sont maintenant empilées en rangées pleine largeur — icône à
    gauche, titre et détails à droite — sans le moindre défilement latéral :
    une rangée, un doigt, la course. */
-@media (max-width: 760px), (hover: none) and (pointer: coarse) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover: none) and (pointer: coarse) {
   .city-rush-page.city-rush-page .city-rush-mode-picker {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1782,7 +1782,7 @@
 /* Écran étroit et très bas (petit téléphone) : même sacrifice qu'en paysage —
    le chapeau d'étape et le libellé « cours libres » s'effacent pour que les
    trois modes tiennent dans la fenêtre. */
-@media (hover: none) and (pointer: coarse) and (max-height: 620px) and (max-width: 559px) {
+@media (hover: none) and (pointer: coarse) and (max-height: 620px) and (max-width: 559px), (hover: none) and (pointer: coarse) and (max-height: 620px) and (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .city-rush-page.city-rush-page .city-rush-intro-copy > .city-rush-overlay-kicker,
   .city-rush-page.city-rush-page .cr-story-free-mode-heading { display: none; }
 }
