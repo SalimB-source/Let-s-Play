@@ -21,5 +21,5 @@ for (const [nom, html] of Object.entries(rendusArcStat())) {
   }
 }
 const styles = readFileSync(new URL('../src/games/rpg-mobile.css', import.meta.url), 'utf8');
-assert.match(styles, /\.rpg-stat-icon\[data-stat-icon="arc"\]\s*\{\s*color:\s*#ff4545;/, 'la couleur rouge est limitée à l’arc');
-console.log('Arc rouge, épée et défense vérifiés sur table et aperçu.');
+assert.doesNotMatch(styles, /\.rpg-stat-icon\[data-stat-icon="arc"\]\s*\{[^}]*color\s*:/, 'l’arc hérite de la couleur de base');
+console.log('Arc, épée et défense vérifiés sur table et aperçu.');
