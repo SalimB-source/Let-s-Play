@@ -13902,8 +13902,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* ── PAGE D'ACCUEIL (« JOUER ») VERROUILLÉE SUR UN SEUL ÉCRAN SANS SCROLL ──
    Architecture inspirée de MTG Arena :
-   - Rangée supérieure (`minmax(0, 1fr)`) : grande vitrine illustrée à gauche
-     + les 4 bannières larges de modes empilées verticalement à droite.
+   - Rangée supérieure (`minmax(0, 1fr)`) : 3 bannières de modes empilées à gauche
+     + grande vitrine illustrée à droite.
    - Rangée inférieure (`auto`, `grid-column: 1 / -1`) : la rampe horizontale
      des quêtes du jour et des médaillons de récompenses en dessous. */
 .rpg-mode-menu.rpg-mode-menu--jouer {
@@ -13931,16 +13931,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      remontent exactement à la hauteur de l'onglet « Messagerie » à gauche. */
   padding: clamp(12px, 1.8vh, 22px) clamp(16px, 2.6vw, 42px) 62px;
   box-sizing: border-box;
-  grid-template-columns: minmax(0, 1.38fr) minmax(290px, 1fr);
+  grid-template-columns: minmax(290px, 1fr) minmax(0, 1.38fr);
   grid-template-rows: minmax(0, 1fr) auto;
   align-items: stretch;
   gap: clamp(12px, 1.6vh, 18px) clamp(14px, 1.6vw, 24px);
   overflow: hidden;
 }
 
-/* Vitrine gauche : illustration cadrée plein format + bandeau sombre en bas */
+/* Vitrine droite : illustration cadrée plein format + bandeau sombre en bas */
 .rpg-mode-menu--jouer .rpg-mode-menu__hero {
-  grid-column: 1;
+  grid-column: 2;
   grid-row: 1;
   position: relative;
   height: 100%;
@@ -14030,9 +14030,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   color: rgba(247, 237, 218, .82);
 }
 
-/* Colonne droite : les 3 modes empilés l'un au-dessus de l'autre en largeur */
+/* Colonne gauche : les 3 modes empilés l'un au-dessus de l'autre en largeur */
 .rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
-  grid-column: 2;
+  grid-column: 1;
   grid-row: 1;
   display: flex;
   flex-direction: column;
@@ -14069,11 +14069,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding-bottom: 6px;
 }
 
-/* Tablette paysage / fenêtre intermédiaire : conserve la vitrine à gauche, les
-   3 bannières empilées à droite et les quêtes alignées au niveau de Messagerie. */
+/* Tablette paysage / fenêtre intermédiaire : conserve les modes à gauche et la
+   vitrine à droite, et les quêtes alignées au niveau de Messagerie. */
 @media (min-width: 701px) and (max-width: 1140px) {
   .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
-    grid-template-columns: minmax(0, 1.12fr) minmax(260px, 1fr);
+    grid-template-columns: minmax(260px, 1fr) minmax(0, 1.12fr);
     padding: 10px clamp(12px, 1.8vw, 22px) 62px;
     gap: 10px 14px;
   }
@@ -14348,7 +14348,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero {
     grid-column: 1;
-    grid-row: 1;
+    grid-row: 2;
     height: auto;
     min-height: 108px;
     max-height: 18vh;
@@ -14364,7 +14364,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1;
   }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions > .rpg-mode-carte {
     min-height: 44px;
@@ -14924,7 +14924,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     /* 12 px en bas : les libellés « CACHET » / « SOUK → » des jalons
        affleuraient le bord de l'écran à 8 px. */
     padding: 8px 10px calc(12px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
-    grid-template-columns: minmax(0, 1.25fr) minmax(190px, 1fr);
+    grid-template-columns: minmax(190px, 1fr) minmax(0, 1.25fr);
     grid-template-rows: minmax(0, 1fr) auto;
     align-items: stretch;
     align-content: stretch;
@@ -14932,7 +14932,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     overflow: hidden;
   }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero {
-    grid-column: 1;
+    grid-column: 2;
     grid-row: 1;
     height: 100%;
     min-height: 0;
@@ -14943,7 +14943,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy > p { display: none; }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy .rpg-mode-menu__eyebrow { font-size: 8px; }
   .rpg-mode-menu--jouer .rpg-mode-menu__modes-col {
-    grid-column: 2;
+    grid-column: 1;
     grid-row: 1;
     height: 100%;
     min-height: 0;
