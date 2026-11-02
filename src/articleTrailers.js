@@ -76,6 +76,78 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // Médias des éditions des 1er et 2 novembre : pages officielles vérifiées le 02.11.2026.
+  "game-pass-novembre-2026-gravhounds": {
+  "label": "GRAVHOUNDS | Official Reveal Trailer",
+  "meta": "Octopus Panic",
+  "items": [
+    {
+      "id": "h7K6kahO2Ak",
+      "kind": "trailer",
+      "title": "GRAVHOUNDS | Official Reveal Trailer",
+      "channel": "Octopus Panic",
+      "verified": "02.11.2026",
+      "note": "Bande-annonce du 25 août 2026 illustrant Gravhounds, et non une vidéo de l’ensemble du programme Game Pass de novembre."
+    }
+  ],
+  "credit": "Vidéo et miniature officielles : Octopus Panic, YouTube."
+},
+  "cinema/hit-man-w9-2-novembre-2026": {
+  "label": "HIT MAN - Bande-annonce vostfr",
+  "meta": "DCM - Romandie",
+  "items": [
+    {
+      "id": "LAgFYCV7D0w",
+      "kind": "trailer",
+      "title": "HIT MAN - Bande-annonce vostfr",
+      "channel": "DCM - Romandie",
+      "verified": "02.11.2026",
+      "note": "Bande-annonce du distributeur suisse publiée le 19 avril 2024. Elle illustre le film ; sa date de sortie suisse ne concerne pas la diffusion W9 du 2 novembre 2026."
+    }
+  ],
+  "credit": "Vidéo et miniature officielles : DCM - Romandie, YouTube."
+},
+  "tech/jecheon-assistant-ia-generative": {
+  "label": "JEOCHEON · IA",
+  "items": [],
+  "pending": "Aucune vidéo officielle consacrée à cet assistant n’a été identifiée dans les sources consultées le 2 novembre 2026 (ActuIA et site de la ville de Jecheon). La miniature reste une carte éditoriale Let’s Play, et non une image officielle du service."
+},
+  "fortnite-treasure-hunters-1-novembre-2026": {
+  "label": "Fortnite – Treasure Hunters Trailer – Nintendo Switch 2",
+  "meta": "Nintendo of America",
+  "items": [
+    {
+      "id": "adm8SP0joNk",
+      "kind": "trailer",
+      "title": "Fortnite – Treasure Hunters Trailer – Nintendo Switch 2",
+      "channel": "Nintendo of America",
+      "verified": "02.11.2026",
+      "note": "Trailer officiel publié le 30 octobre 2026, annonçant la saison pour le 1er novembre. Ce n’est pas une nouvelle vidéo publiée le 1er novembre."
+    }
+  ],
+  "credit": "Vidéo et miniature officielles : Nintendo of America, YouTube."
+},
+  "cinema/ligne-verte-television-1-novembre-2026": {
+  "label": "La Ligne Verte - Bande Annonce Officielle (VF) - Tom Hanks / Michael Clarke Duncan",
+  "meta": "Warner Bros. France",
+  "items": [
+    {
+      "id": "mccs8Ql8m8o",
+      "kind": "trailer",
+      "title": "La Ligne Verte - Bande Annonce Officielle (VF) - Tom Hanks / Michael Clarke Duncan",
+      "channel": "Warner Bros. France",
+      "verified": "02.11.2026",
+      "note": "Bande-annonce d’archive publiée le 30 mars 2015 pour le film de 1999. Elle illustre la programmation du 1er novembre 2026, sans annoncer de nouvelle sortie."
+    }
+  ],
+  "credit": "Vidéo et miniature officielles : Warner Bros. France, YouTube."
+},
+  "tech/longcat-2-5-annonce-1-novembre-2026": {
+  "label": "LONGCAT-2.5",
+  "items": [],
+  "pending": "Aucune vidéo officielle exploitable n’a été identifiée dans le billet LongCat du 1er novembre, consulté le 2 novembre 2026. La section de démonstration affiche « Demo footage coming soon » ; le visuel est le tableau officiel de Meituan, pas une miniature vidéo."
+},
+
   // Cinéma et tech du 29.10.2026 : vidéos publiées par les sociétés concernées.
   'cinema/jumanji-open-world-nouvelle-bande-annonce': {
     label: 'JUMANJI: OPEN WORLD', meta: 'SONY PICTURES · JAKE KASDAN',

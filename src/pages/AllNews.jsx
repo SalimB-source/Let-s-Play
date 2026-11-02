@@ -1,3 +1,5 @@
+import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
+import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -22,7 +24,7 @@ export const allNewsArticles = [...new Map(
 // Réutiliser les données éditoriales lorsqu’elles sont disponibles : mêmes
 // titres, badges, dates/sources, miniatures et sentiments que les cartes Actus.
 const newsListingByRoute = new Map(
-  [...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing, ...gamingNews20261029, ...cultureTechNews20261029].map((story) => [story.to, story]),
+  [...news20261102, ...edition20261101, ...autoNewsListing, ...dailyNewsListing20261011, ...dailyNewsListing20261014, ...dailyNewsListing20261015, ...dailyNewsListing20261016, ...dailyNewsListing20261017, ...dailyNewsListing, ...gamingNews20261029, ...cultureTechNews20261029].map((story) => [story.to, story]),
 );
 
 const COPY = {

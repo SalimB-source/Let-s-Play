@@ -1,8 +1,9 @@
+import { dailyNewsListing as yesterdayStories } from '../news/daily/2026-11-01';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-10-29-gaming';
-import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-10-29-cinema-tech';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-02';
+import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-11-02';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
@@ -206,6 +207,16 @@ export default function News() {
           ))}
         </div>
       </section>
+      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'}>
+        <div className="section-label">
+          <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
+          <span>01.11.2026</span>
+        </div>
+        <div className="news-carousel is-grid">
+          {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
+        </div>
+      </section>
+
 
       {/* Bandeau du hub (« 02 / NEWS HUB ») : il introduit les trois univers
           qui suivent, juste sous les actus du jour. */}

@@ -1,3 +1,5 @@
+import { dailyStories as edition20261101 } from '../news/daily/2026-11-01';
+import { dailyStories as stories20261102 } from '../news/daily/2026-11-02';
 import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { baseUrl as base } from '../data';
@@ -36,6 +38,8 @@ const stories = {
   // communes aux articles, aux cartes des hubs, à la une de l'accueil, à la
   // recherche et au SEO. Chaque édition vit dans son fichier
   // (src/news/daily/<date>.js) ; l'import nu désigne l'édition du jour.
+  ...stories20261102,
+  ...edition20261101,
   ...cultureTechStories20261029,
   ...gamingStories20261029,
   ...dailyStories,

@@ -1,3 +1,5 @@
+import { dailySeoEntries as edition20261101 } from '../news/daily/2026-11-01';
+import { dailySeoEntries as seo20261102 } from '../news/daily/2026-11-02';
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
@@ -17,6 +19,8 @@ const SITE_NAME = 'Let’s Play';
 const DEFAULT_IMAGE = `${SITE_URL}/hero-lets-play.jpg`;
 
 const pageMeta = {
+  ...seo20261102,
+  ...edition20261101,
   ...cultureTechSeo20261029,
   ...gamingSeo20261029,
   ...dailySeoEntries,

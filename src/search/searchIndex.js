@@ -1,3 +1,5 @@
+import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
+import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
 import { gameTests } from '../reviewsData';
 import { gameReleases } from '../releasesData';
 import { quizzes as quizCatalog, quizLabel, quizQuestionsCount } from '../quizzesData';
@@ -15,6 +17,8 @@ import { dailyNewsListing as dailyNewsListing20261016 } from '../news/daily/2026
 import { dailyNewsListing as dailyNewsListing20261017 } from '../news/daily/2026-10-17';
 
 const news = [
+  ...edition20261101.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
+  ...news20261102.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...cultureTechNews20261029.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   ...gamingNews20261029.map((story) => [story.title, story.excerpt, story.to, story.keywords, story.image]),
   // Édition du 14.10.2026 et archives du 11.10.2026 : les mêmes titres et miniatures que les articles.
