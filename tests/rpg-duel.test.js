@@ -134,7 +134,7 @@ const PLEIN_ART_45 = [
   // Le Grand Hiver et la Hache de la banquise, les deux dernières cartes du
   // Serment : la première en huile, la seconde dans la dérogation
   // photoréaliste des armes, toutes deux au ratio de la face.
-  'grand-hiver', 'hache-de-la-banquise',
+  'grand-hiver', 'hache-de-la-banquise', 'tempete-de-foudre-et-de-givre',
   // Les créatures-jetons de Tarek : deux chiens de sable peints dans la
   // palette de son illustration, livrés eux aussi au format de la face.
   'chien-de-sable',
@@ -4254,7 +4254,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 51, 'les deux sorts Ténèbres rejoignent le catalogue');
+  assert.equal(RPG_MAGIE_CARDS.length, 52, 'la tempête Neige/Braise rejoint le catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);
@@ -4678,7 +4678,7 @@ test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 33, 'trente cartes Neige au catalogue avec la nouvelle soigneuse');
+  assert.equal(cartesNeige.length, 34, 'les cartes Neige comprennent la tempête bicolore');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4754,7 +4754,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 33, 'les peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 34, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {

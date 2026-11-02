@@ -2064,6 +2064,22 @@ export const RPG_MAGIE_CARDS = [
     text: 'Sorcellerie — 1 dégât à toutes les créatures, les vôtres comprises.',
     flavor: 'Le froid ne demande jamais de quel camp vous êtes.',
   },
+  {
+    id: 'tempete-de-foudre-et-de-givre',
+    name: 'Tempête de foudre et de givre',
+    element: 'neige',
+    colors: ['neige', 'braise'],
+    colorCost: { neige: 1, braise: 1 },
+    kind: 'magie',
+    typeLine: 'Sorcellerie — Neige et Braise',
+    art: 'tempete-de-foudre-et-de-givre',
+    cost: 5,
+    rarity: 'rare',
+    cibles: ['toutes'],
+    effet: { type: 'degats', amount: 3, cible: 'toutes-autres' },
+    text: 'Sorcellerie — Inflige 3 dégâts à chaque créature, y compris les vôtres.',
+    flavor: 'Le ciel se fend, et nul camp n’échappe à l’orage.',
+  },
   // ── Contresorts (deck Marée des abysses) ───────────────────────────────
   // Un contresort répond à l'annonce du sorcier : il annule la carte annoncée.
   {

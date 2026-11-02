@@ -25,7 +25,7 @@ function resolveCard(cardOrId) {
 export function rpgFoudreSoundFor(cardOrId, action) {
   const card = resolveCard(cardOrId);
   if (!card || !action) return null;
-  if (card.id === ECLAIR_DU_MARTEAU_ID && action === 'spell') return RPG_FOUDRE_MARTEAU_SFX;
+  if ((card.id === ECLAIR_DU_MARTEAU_ID || card.id === 'tempete-de-foudre-et-de-givre') && action === 'spell') return RPG_FOUDRE_MARTEAU_SFX;
   if (card.id === MAITRE_DU_MARTEAU_ID && action === 'arrival') return RPG_FOUDRE_MARTEAU_SFX;
   return null;
 }

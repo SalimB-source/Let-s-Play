@@ -2742,7 +2742,7 @@ const ETINCELLES_MARTEAU = Object.freeze([
 export function EclairDuMarteau({ effet, onTermine = null }) {
   return (
     <div
-      className="rpg-eclair-marteau"
+      className={`rpg-eclair-marteau${effet.tempeteBraise ? ' rpg-eclair-marteau--braise' : ''}`}
       data-rpg-foudre-id={effet.entityId}
       data-rpg-foudre-fx="eclair-du-marteau"
       aria-hidden="true"
@@ -10613,9 +10613,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // du Maître partagent ainsi la même frappe sur une créature ciblée. Même
     // règle de fraîcheur que la Braise : seule la blessure qui vient de tomber
     // allume l'éclair, et la créature tuée le voit sur son emplacement.
-    const idsFoudroyees = new Set(blessuresNouvelles
-      .filter((blessure) => blessureDuMarteau(blessure))
-      .map((blessure) => blessure.entityId));
+    const idsTempeteFoudre = new Set(animationsCombatNouvelles
+      .filter((animation) => animation.type === 'tempete-foudre')
+      .flatMap((animation) => animation.cibles ?? []));
+    const idsFoudroyees = new Set([
+      ...blessuresNouvelles.filter((blessure) => blessureDuMarteau(blessure)).map((blessure) => blessure.entityId),
+      ...idsTempeteFoudre,
+    ]);
     const foudroyees = new Map();
     if (!mouvementReduit && idsFoudroyees.size) {
       const marteauParEntite = new Map();
@@ -10624,6 +10628,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       }
       for (const entite of avant) {
         if (entite.isTerrain || renvoyees.has(entite.entityId)) continue;
+        if (idsTempeteFoudre.has(entite.entityId)) {
+          foudroyees.set(entite.entityId, entite);
+          continue;
+        }
         const blessure = marteauParEntite.get(entite.entityId);
         if (!blessure) continue;
         const apres = vivants.get(entite.entityId);
@@ -10736,6 +10744,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         ...entite,
         token,
         effectId: `foudre-${token}-${entite.entityId}`,
+        tempeteBraise: idsTempeteFoudre.has(entite.entityId) && entite.camp === 'joueur',
         expireA: Date.now() + DUREE_ECLAIR_MARTEAU + 400,
       }));
       setEclairsMarteau((current) => [...nettoyerFantomes(current), ...effetsFoudre]);

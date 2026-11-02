@@ -4060,12 +4060,22 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     }
     case 'degats': {
       if (effet.cible === 'toutes-autres') {
+        if (sourceCarteId === 'tempete-de-foudre-et-de-givre' && sourceType === 'magie') {
+          // Le signal est sérialisé pour le PvP et vise les cases présentes avant
+          // la vague, même si un bouclier ou une esquive intercepte les dégâts.
+          journaliserAnimationCombat(duel, {
+            type: 'tempete-foudre', sourceCarteId,
+            cibles: [cote, adv].flatMap((camp) => duel[camp].creatures
+              .filter((entite) => !estSite(entite)).map((entite) => entite.id)),
+          });
+        }
         // Photographie des deux champs : la source est épargnée et les jetons
         // créés par les morts ne subissent pas la vague qui les a fait naître.
         // Une parade d'une créature adverse encaisse la vague à sa place et
         // tombe ; les créatures du camp du lanceur ne réveillent pas la leur.
         const atteintes = [cote, adv].flatMap((camp) => duel[camp].creatures
           .filter((entite) => entite.id !== sauf
+            && !estSite(entite)
             && !rpgEstProtegee(entite, sourceElement)
             && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
             && !paradeZoneBloque(duel, entite, sourceType, camp, cote, sourceElement))

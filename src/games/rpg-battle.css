@@ -15182,3 +15182,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-attack-arrow__glow { fill: none; stroke: rgba(255, 36, 36, .25); stroke-width: 13px; stroke-linecap: round; filter: blur(3px); }
 .rpg-attack-arrow__shaft { fill: none; stroke: rgba(255, 65, 65, .9); stroke-width: 4px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(210, 20, 20, .7)); }
 .rpg-attack-arrow__tip { fill: #ff4141; }
+
+/* L'orage bicolore alterne les éclairs glacés et les impacts de Braise. */
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__ciel { filter: drop-shadow(0 0 7px rgba(255, 108, 28, .7)); }
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__eclair--halo { stroke: rgba(255, 95, 30, .7); }
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__eclair--coeur { stroke: #fff1cf; }
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__fourche,
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__arc,
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__fissure { stroke: #ff9a42; }
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__onde { border-color: rgba(255, 137, 46, .8); }
+.rpg-eclair-marteau--braise .rpg-eclair-marteau__flash { background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,180,94,.55) 38%, rgba(255,80,18,.22) 62%, rgba(255,80,18,0) 78%); }
