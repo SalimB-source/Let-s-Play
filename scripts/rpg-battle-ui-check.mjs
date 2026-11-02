@@ -1048,7 +1048,7 @@ assert.match(battleCss, /\.card-table--plateau-village-viking\s*\{[^}]*backgroun
   'Le Village Viking a sa propre couleur de repli');
 assert.match(plateauxSource, /id: 'village-viking'[\s\S]*?fichier: 'plateau-village-viking\.jpg'/,
   'Le Village Viking est un plateau déclaré, avec son fond dans public/');
-assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza\.jpg'/,
+assert.match(plateauxSource, /id: 'ruines-de-tipaza'[\s\S]*?fichier: 'plateau-ruines-de-tipaza-v2\.jpg'/,
   'les ruines romaines de Tipaza sont un plateau déclaré, avec son fond dans public/');
 assert.match(plateauxSource, /id: 'cour-de-l-empereur'[\s\S]*?fichier: 'plateau-cour-de-l-empereur\.jpg'/,
   'la cour de l’Empereur est un plateau déclaré, avec sa peinture japonaise dans public/');

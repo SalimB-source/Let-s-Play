@@ -737,7 +737,7 @@ aux boosters, comme le font les six autres boîtiers.
   les anneaux d’amarrage, une grue à contre-poids, un coffre ouvert sur le
   manifeste — le centre laissé nu pour les cartes ;
 - **Sons** : `public/audio/deep-sea-underwater-ambience.mp3` (la mer dessous)
-  et `SorcererOfTheDeepTide.mp3` existent déjà — la piste de la course
+  et `public/les ruines de tipaza.mp3` existent déjà — la piste de la course
   viendra du même vivier (doc 08).
 
 ## 14. Les figures hors recette (mythiques de boosters, par attribut)
