@@ -40,3 +40,23 @@ test('la page limite le choix de répartition à l’attaquant solo et garde le 
   assert.match(page, /prioritesRepartition: combat\.prioritesRepartition \?\? null/);
   assert.match(page, /type: 'bloquer', blocages, repartitions: null/);
 });
+
+test('flèches d’attaque : cible choisie ou sorcier, jusqu’au blocage', async () => {
+  const { rpgCiblesFlechesAttaque } = await import('../src/games/rpgCombatIndications.js');
+  const duel = { joueur: { creatures: [{ id: 'a', name: 'Archer', coupRapide: true }, { id: 'b', name: 'Soldat' }] }, sorcier: { creatures: [{ id: 'c', name: 'Garde' }] } };
+  const combat = { coteAttaquant: 'joueur', attaquants: ['a', 'b'], ciblesAttaque: {} };
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, combat).map((f) => [f.attaquantId, f.cibleId]), [['b', null]]);
+  combat.ciblesAttaque.a = 'c';
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, combat).map((f) => [f.attaquantId, f.cibleId]), [['a', 'c'], ['b', null]]);
+  combat.blocages = { b: ['c'] };
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, combat).map((f) => f.attaquantId), ['a']);
+  combat.ciblesAttaque.a = 'disparue';
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, combat), []);
+  const defense = { coteAttaquant: 'sorcier', attaquants: ['c'], blocages: {} };
+  assert.equal(rpgCiblesFlechesAttaque(duel, defense)[0].coteDefense, 'joueur');
+  duel.sorcier.creatures = [];
+  combat.ciblesAttaque = {};
+  combat.blocages = {};
+  assert.equal(rpgCiblesFlechesAttaque(duel, combat)[0].cibleId, null);
+  assert.deepEqual(rpgCiblesFlechesAttaque(duel, null), []);
+});

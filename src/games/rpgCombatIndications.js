@@ -46,3 +46,25 @@ export function rpgApercuBlocages(duel, combat) {
       bloqueurs: adversaires, alertes, risques }];
   });
 }
+
+/** Cibles annoncées avant le blocage, sans prévoir l'issue du combat. */
+export function rpgCiblesFlechesAttaque(duel, combat) {
+  if (!duel || !combat) return [];
+  const cote = combat.coteAttaquant === 'joueur' ? 'joueur' : 'sorcier';
+  const defense = cote === 'joueur' ? 'sorcier' : 'joueur';
+  const attaquants = duel[cote]?.creatures ?? [];
+  const adversaires = duel[defense]?.creatures ?? [];
+  return (combat.attaquants ?? []).flatMap((id) => {
+    const attaquant = attaquants.find((entite) => entite.id === id);
+    if (!attaquant) return [];
+    const cibleId = combat.ciblesAttaque?.[id];
+    if (cibleId) {
+      const cible = adversaires.find((entite) => entite.id === cibleId);
+      return cible ? [{ attaquantId: id, attaquant: attaquant.name, cibleId, cible: cible.name, coteDefense: defense }] : [];
+    }
+    // Une Attaque ciblée doit d'abord choisir une créature si elle peut en viser une.
+    if (attaquant.coupRapide && adversaires.length) return [];
+    if ((combat.blocages?.[id] ?? []).length) return [];
+    return [{ attaquantId: id, attaquant: attaquant.name, cibleId: null, cible: null, coteDefense: defense }];
+  });
+}

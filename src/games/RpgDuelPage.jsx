@@ -106,7 +106,7 @@ import { sonSortAuLancement } from './rpgSortAudio.js';
 import { rpgSonsResolutionCombat, rpgVagueAnnonceAcier } from './rpgAttackAudio.js';
 import { rpgDerniersCompteursArmeDepuisJournal } from './rpgWeaponAudio.js';
 import { rpgBouclierVientDeRompre } from './rpgShieldAudio.js';
-import { rpgApercuBlocages, rpgSortBloqueParBouclier } from './rpgCombatIndications.js';
+import { rpgApercuBlocages, rpgCiblesFlechesAttaque, rpgSortBloqueParBouclier } from './rpgCombatIndications.js';
 import { rpgBilanDuel } from './rpgBilanDuel.js';
 import { blessureDuMarteau, MAITRE_DU_MARTEAU_ID, rpgFoudreSoundFor } from './rpgFoudreAudio.js';
 import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSoins.js';
@@ -3297,7 +3297,7 @@ export function TableCard({
   );
 }
 
-function BlockerArrows({ tableRef, assignments }) {
+function BlockerArrows({ tableRef, assignments, attaque = false }) {
   const [layout, setLayout] = useState({ width: 0, height: 0, arrows: [] });
   const arrowCount = Object.values(assignments ?? {}).reduce((total, ids) => total + (ids?.length ?? 0), 0);
 
@@ -3316,7 +3316,7 @@ function BlockerArrows({ tableRef, assignments }) {
       if (!width || !height) return;
 
       const cards = [...table.querySelectorAll('[data-entity-id]')];
-      const findCard = (id) => cards.find((card) => card.dataset.entityId === id);
+      const findCard = (id) => id === '@sorcier' ? table.querySelector('.rpg-wizard-plate--ennemi') : id === '@joueur' ? table.querySelector('.rpg-wizard-plate--joueur') : cards.find((card) => card.dataset.entityId === id);
       const arrows = [];
       const point = (rect) => ({
         x: rect.left + rect.width / 2 - tableRect.left + table.scrollLeft,
@@ -3397,7 +3397,7 @@ function BlockerArrows({ tableRef, assignments }) {
     const table = tableRef.current;
     if (observer && table) {
       observer.observe(table);
-      table.querySelectorAll('[data-entity-id]').forEach((card) => observer.observe(card));
+      table.querySelectorAll('[data-entity-id], .rpg-wizard-plate').forEach((card) => observer.observe(card));
     }
     const frame = window.requestAnimationFrame?.(update);
 
@@ -3407,26 +3407,26 @@ function BlockerArrows({ tableRef, assignments }) {
       observer?.disconnect();
       if (frame !== undefined) window.cancelAnimationFrame?.(frame);
     };
-  }, [assignments, arrowCount, tableRef]);
+  }, [assignments, arrowCount, tableRef, attaque]);
 
   if (!arrowCount) return null;
   return (
     <svg
-      className="rpg-blocker-arrows"
+      className={attaque ? 'rpg-attack-arrows' : 'rpg-blocker-arrows'}
       viewBox={`0 0 ${layout.width || 1} ${layout.height || 1}`}
       preserveAspectRatio="none"
       aria-hidden="true"
       data-arrow-count={arrowCount}
     >
       <defs>
-        <marker id="rpg-blocker-arrow-tip" markerWidth="14" markerHeight="12" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse">
-          <path d="M 0 0 L 12 6 L 0 12 Z" className="rpg-blocker-arrow__tip" />
+        <marker id={attaque ? "rpg-attack-arrow-tip" : "rpg-blocker-arrow-tip"} markerWidth="14" markerHeight="12" refX="11" refY="6" orient="auto" markerUnits="userSpaceOnUse">
+          <path d="M 0 0 L 12 6 L 0 12 Z" className={attaque ? "rpg-attack-arrow__tip" : "rpg-blocker-arrow__tip"} />
         </marker>
       </defs>
       {layout.arrows.map((arrow) => (
         <g key={arrow.key}>
-          <path d={arrow.path} className="rpg-blocker-arrow__glow" />
-          <path d={arrow.path} className="rpg-blocker-arrow__shaft" markerEnd="url(#rpg-blocker-arrow-tip)" />
+          <path d={arrow.path} className={attaque ? "rpg-attack-arrow__glow" : "rpg-blocker-arrow__glow"} />
+          <path d={arrow.path} className={attaque ? "rpg-attack-arrow__shaft" : "rpg-blocker-arrow__shaft"} markerEnd={attaque ? "url(#rpg-attack-arrow-tip)" : "url(#rpg-blocker-arrow-tip)"} />
         </g>
       ))}
     </svg>
@@ -12999,6 +12999,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     });
   };
 
+  const combatPourFleches = vainqueur ? null : combatEntrant ?? (phase
+    ? { coteAttaquant: 'joueur', attaquants, ciblesAttaque, blocages: {} }
+    : attenteBlocageAdverse ? { coteAttaquant: 'joueur', ...duel.combatDeclare } : null);
+  const flechesAttaque = rpgCiblesFlechesAttaque(duel, combatPourFleches);
+  const destinationsAttaque = flechesAttaque.reduce((destinations, fleche) => {
+    const destination = fleche.cibleId ?? `@${fleche.coteDefense}`;
+    (destinations[destination] ??= []).push(fleche.attaquantId);
+    return destinations;
+  }, {});
+
   const bloqueursDisponibles = duel.joueur.creatures.filter((e) => !e.attaquee && !(e.gelToursRestants > 0));
   const bloqueursSelectionnes = new Set(Object.values(combatEntrant?.blocages ?? {}).flat());
   const piochesJoueur = animationsPioche.filter((animation) => animation.side === 'joueur');
@@ -13024,6 +13034,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // pour que le joueur voie chaque carte concernée (et que les flèches de
   // blocage, les halos de cible et les destructions trouvent leur élément).
   const idsActionEnCours = new Set([
+    ...flechesAttaque.flatMap(({ attaquantId, cibleId }) => [attaquantId, cibleId].filter(Boolean)),
     ...attaquants,
     ...(combatEntrant?.attaquants ?? []),
     ...Object.values(combatEntrant?.blocages ?? {}).flat(),
@@ -13613,6 +13624,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           })}
         </p>
 
+        {flechesAttaque.length > 0 && <BlockerArrows tableRef={tableRef} assignments={destinationsAttaque} attaque />}
+        {flechesAttaque.length > 0 && <p className="sr-only">{flechesAttaque.map((fleche) => `${fleche.attaquant} vise ${fleche.cible ?? (fleche.coteDefense === 'joueur' ? 'vous' : nomSorcierAdverse)}`).join(' ; ')}</p>}
         {combatEntrant && <BlockerArrows tableRef={tableRef} assignments={combatEntrant.blocages} />}
         {modePvp && (mulliganAttenteAdverse || attenteBlocageAdverse || pvp?.erreur) && (
           <div className={`rpg-pvp-table-status${pvp?.erreur ? ' is-error' : ''}`} role="status" aria-live="polite">

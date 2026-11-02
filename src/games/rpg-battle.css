@@ -15176,3 +15176,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-overlay h2 { font-size: 18px; }
   .rpg-bilan-fin__contenu { max-height: 64px; padding: 6px 10px; }
 }
+
+/* Les flèches rouges montrent la cible annoncée ; le jaune reste réservé aux blocages. */
+.rpg-attack-arrows { position: absolute; z-index: 7; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.rpg-attack-arrow__glow { fill: none; stroke: rgba(255, 36, 36, .25); stroke-width: 13px; stroke-linecap: round; filter: blur(3px); }
+.rpg-attack-arrow__shaft { fill: none; stroke: rgba(255, 65, 65, .9); stroke-width: 4px; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(210, 20, 20, .7)); }
+.rpg-attack-arrow__tip { fill: #ff4141; }
