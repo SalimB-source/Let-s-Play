@@ -1,5 +1,5 @@
 import { ciblesDefenseur } from './rpgDefenseur.js';
-import { armureArme, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
+import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
@@ -1547,7 +1547,7 @@ function appliquerLiensArmes(duel) {
         if (entite.arme?.carteId === arme.id) {
           const ancienTotal = (base.def ?? 0) + (avant.def ?? 0);
           const nouveauTotal = (base.def ?? 0) + (voulu.def ?? 0);
-          const ancienneArmure = armureArme(entite) ?? { max: Math.max(0, ancienTotal), restant: 0 };
+          const ancienneArmure = armurePrototype(entite) ?? { max: Math.max(0, ancienTotal), restant: 0 };
           const prochainMax = Math.max(0, nouveauTotal);
           const variation = prochainMax - ancienneArmure.max;
           const prochainRestant = variation >= 0
@@ -1988,6 +1988,12 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
   }
 }
 
+function recalculerVolDeVie(entite) {
+  entite.volDeVie = Boolean(duelCardById(entite.carteId)?.volDeVie)
+    || Boolean(armeCarteDe(entite)?.donne?.volDeVie)
+    || (entite.armes ?? []).some((id) => Boolean(magieById(id)?.effet?.volDeVie));
+}
+
 function attacherArme(duel, cote, entite, carteArme) {
   if (entite.mur || estSite(entite)) return;
   if (entite.arme) retirerArme(duel, cote, entite);
@@ -2058,7 +2064,7 @@ function attacherArme(duel, cote, entite, carteArme) {
 function retirerArme(duel, cote, entite) {
   const carteArme = armeCarteDe(entite);
   const bouclierRestant = Math.max(0, Number(entite.arme?.bouclier) || 0);
-  const armure = armureArme(entite);
+  const armure = armurePrototype(entite);
   // Le supplément du Lien part avec l'arme : `appliquerLiensArmes` ne le
   // retrouvera plus, puisque plus aucune arme n'est attachée. Le registre est
   // armé par arme — on ne retire que la part de CELLE-CI, les armes-sorts
@@ -2087,7 +2093,7 @@ function retirerArme(duel, cote, entite) {
   if (carteArme.donne?.infiltration) entite.infiltration = Boolean(duelCardById(entite.carteId)?.infiltration)
     || Boolean(entite.infiltrationTour);
   if (carteArme.donne?.coupRapide) entite.coupRapide = Boolean(duelCardById(entite.carteId)?.coupRapide);
-  if (carteArme.donne?.volDeVie) entite.volDeVie = Boolean(duelCardById(entite.carteId)?.volDeVie);
+  if (carteArme.donne?.volDeVie) recalculerVolDeVie(entite);
   if (carteArme.donne?.contreAttaque) entite.contreAttaque = Boolean(duelCardById(entite.carteId)?.contreAttaque);
   if (carteArme.donne?.rapidite) entite.rapidite = Boolean(duelCardById(entite.carteId)?.rapidite);
   // Le crochet rendu, le coût du porteur retombe à son imprimé.
@@ -3547,6 +3553,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
       porteur.armes ??= [];
       porteur.armes.push(sourceCarteId);
+      if ((Number(effet.def) || 0) > 0) {
+        (porteur.armuresMagiques ??= []).push({ carteId: sourceCarteId, max: effet.def, restant: effet.def });
+      }
+      if (effet.volDeVie) recalculerVolDeVie(porteur);
       porteur.atk += effet.atk ?? 0;
       porteur.pvMax += effet.def ?? 0;
       porteur.pv += effet.def ?? 0;
@@ -4526,14 +4536,18 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         porteur.armes = [];
+        const armureMagiqueRestante = (porteur.armuresMagiques ?? []).reduce((total, armure) => total + (Number(armure.restant) || 0), 0);
+        porteur.armuresMagiques = [];
+        recalculerVolDeVie(porteur);
         // Toutes les arme-sorts viennent de tomber : le critique et l'Esquive
         // reviennent à la seule fiche imprimée (ou disparaissent).
         recalculerCoupCritique(porteur);
         recalculerEsquive(porteur);
         porteur.atk = Math.max(0, porteur.atk - atk);
         porteur.pvMax = Math.max(1, (porteur.pvMax ?? porteur.def) - def);
-        porteur.def = Math.max(1, porteur.def - def);
-        porteur.pv = Math.max(1, Math.min(porteur.pv, porteur.pvMax));
+        porteur.def = Math.max(1, porteur.def - armureMagiqueRestante - Math.min(0, def));
+        porteur.pv = Math.max(1, Math.min(porteur.pv - armureMagiqueRestante - Math.min(0, def), porteur.pvMax));
+        porteur.def = Math.min(porteur.def, porteur.pv);
         if (coupRapide) {
           porteur.coupRapide = Boolean(duelCardById(porteur.carteId)?.coupRapide)
             || Boolean(armeCarteDe(porteur)?.donne?.coupRapide)

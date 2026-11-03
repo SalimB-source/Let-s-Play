@@ -246,7 +246,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'pere-des-corbeaux': 'neige-souls-cendres-v1',
   'poigne-de-givre': 'neige-loup-gele-souls-v2',
   'volva-soigneuse': 'volva-soigneuse-souls-v1',
-  'braise-et-sable': 'armurerie-sangles-v1',
+  'braise-et-sable': 'arc-fleche-souls-lueur-v3',
   'verglas': 'neige-souls-cendres-v1',
   'embuscade': 'neige-souls-cendres-v1',
   'defi-du-jarl': 'neige-souls-cendres-v1',
