@@ -2269,23 +2269,23 @@ function appliquerFurie(duel, entite, degatsRecus) {
 
 /** Total des sources d'un groupe de Résonance (élément ou tribu), dans les
  * deux camps. Le défaut Neige conserve l'ancienne signature de l'API. */
-export function rpgResonanceEnJeu(duel, element = 'neige') {
+export function rpgResonanceEnJeu(duel, element = 'neige', statistique = 'atk') {
   let total = 0;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.pv > 0)) continue;
       const carte = duelCardById(entite.carteId);
       if (cardResonanceGroup(carte) !== element) continue;
-      total += Math.max(0, Number(carte?.resonance) || 0);
+      total += Math.max(0, Number(statistique === 'def' ? (carte?.resonanceDefense ?? carte?.resonance) : carte?.resonance) || 0);
     }
   }
   return total;
 }
 
 /** Bonus total reçu par une carte : même filtrage en jeu et dans l'IA. */
-export function rpgBonusResonance(duel, carte) {
+export function rpgBonusResonance(duel, carte, statistique = 'atk') {
   return GROUPES_RESONANCE.reduce((total, groupe) => total +
-    (cardReceivesResonance(carte, groupe) ? rpgResonanceEnJeu(duel, groupe) : 0), 0);
+    (cardReceivesResonance(carte, groupe) ? rpgResonanceEnJeu(duel, groupe, statistique) : 0), 0);
 }
 
 /** Aura de table par élément ou tribu. La Résonance samouraï ne renforce que
@@ -2298,6 +2298,7 @@ export function rpgBonusResonance(duel, carte) {
  * La perte du bonus laisse au minimum 1 PV, comme en Neige. */
 function majResonance(duel) {
   const totaux = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element)]));
+  const totauxDefense = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element, 'def')]));
   const renforcees = new Set();
   const affaiblies = new Set();
   for (const cote of ['joueur', 'sorcier']) {
@@ -2324,16 +2325,22 @@ function majResonance(duel) {
         total + (cardResonanceGroup(carte) === groupe && !bloquees.includes(source.id)
           ? Math.max(0, Number(carte.resonance) || 0) : 0), 0);
       const voulu = groupes.reduce((total, groupe) => total + recuPar(groupe), 0);
+      const vouluDefense = sources.reduce((total, { source, carte }) => total
+        + (!bloquees.includes(source.id) ? Math.max(0, Number(carte.resonanceDefense ?? carte.resonance) || 0) : 0), 0);
       const actuel = Math.max(0, Number(entite.resonance) || 0);
+      // Les sauvegardes anciennes n'avaient qu'un seul bonus symétrique.
+      const defenseActuelle = Math.max(0, Number(entite.resonanceDefense ?? actuel) || 0);
       const precedents = entite.resonanceParGroupe ?? {};
       entite.resonanceParGroupe = Object.fromEntries(groupes.map((groupe) => [groupe, recuPar(groupe)]));
-      if (voulu === actuel) continue;
+      if (voulu === actuel && vouluDefense === defenseActuelle) continue;
       const delta = voulu - actuel;
+      const deltaDefense = vouluDefense - defenseActuelle;
       entite.resonance = voulu;
+      entite.resonanceDefense = vouluDefense;
       entite.atk = Math.max(0, entite.atk + delta);
-      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
-      entite.def = Math.max(1, entite.def + delta);
-      entite.pv = Math.max(1, entite.pv + delta);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + deltaDefense);
+      entite.def = Math.max(1, entite.def + deltaDefense);
+      entite.pv = Math.max(1, entite.pv + deltaDefense);
       for (const element of groupes) {
         const ancien = precedents[element] ?? 0;
         const prochain = recuPar(element);
@@ -2348,8 +2355,8 @@ function majResonance(duel) {
   for (const groupe of renforcees) {
     const label = resonanceGroupLabel(groupe);
     duel.log.push(estElement(groupe)
-      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totaux[groupe]} aux créatures ${label}.`
-      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totaux[groupe]}.`);
+      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totauxDefense[groupe]} aux créatures ${label}.`
+      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totauxDefense[groupe]}.`);
   }
   for (const groupe of affaiblies) {
     if (renforcees.has(groupe)) continue;

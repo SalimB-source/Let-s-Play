@@ -20,7 +20,7 @@ test('Le Général est un Vampire 3/2 coût 4, illustré et disponible au Souk',
   assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));
 });
 test('Résonance renforce tous les Vampires, Général compris, et se cumule avec le Fléau', () => {
-  const d = duel(); const ennemi = poser(d, 'sorcier', 'sentinelle-des-sables');
+  const d = duel(); d.tour = 'sorcier'; const ennemi = poser(d, 'sorcier', 'sentinelle-des-sables'); d.tour = 'joueur';
   const chien = poser(d, 'joueur', 'chien-du-guet'); const general = poser(d, 'joueur', id);
   assert.deepEqual([general.atk, general.pv, ennemi.atk, ennemi.pv, chien.atk], [4, 3, 4, 3, 2]);
   const fleau = poser(d, 'joueur', 'fleau-de-la-lune-noire');

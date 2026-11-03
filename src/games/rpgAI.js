@@ -1351,13 +1351,14 @@ export function couleurEngagement(carteTerrain, main = []) {
  *  `duel` fourni : l’entité naît avec la Résonance déjà en table, comme en jeu. */
 function entiteDeSecours(carte, duel = null) {
   const resonance = duel ? moteur.rpgBonusResonance(duel, carte) : 0;
+  const resonanceDefense = duel ? moteur.rpgBonusResonance(duel, carte, 'def') : 0;
   return {
     id: 'simulation',
     carteId: carte.id,
     atk: (carte.atk ?? 0) + resonance,
-    def: (carte.def ?? 0) + resonance,
-    pv: (carte.def ?? 0) + resonance,
-    pvMax: (carte.def ?? 0) + resonance,
+    def: (carte.def ?? 0) + resonanceDefense,
+    pv: (carte.def ?? 0) + resonanceDefense,
+    pvMax: (carte.def ?? 0) + resonanceDefense,
     bouclier: 0,
     esquive: Boolean(carte.esquive),
     contreAttaque: Boolean(carte.contreAttaque),

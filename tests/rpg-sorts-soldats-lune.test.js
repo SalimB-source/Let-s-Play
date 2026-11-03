@@ -25,7 +25,7 @@ test('Le voile protège une alliée et le ressac épargne les Vampires des deux 
   const d = duel(); const amie = poser(d, 'joueur', 'chien-du-guet');
   poser(d, 'sorcier', 'dune-marchante');
   const vampireAllie = poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
-  const vampireAdverse = poser(d, 'sorcier', 'sentinelle-des-sables');
+  d.tour = 'sorcier'; const vampireAdverse = poser(d, 'sorcier', 'sentinelle-des-sables'); d.tour = 'joueur';
   d.joueur.main.push(ids[0], ids[1]);
   assert.ok(rpgLancerMagie(d, 'joueur', ids[0], amie.id).ok);
   assert.equal(amie.bouclier, 1);

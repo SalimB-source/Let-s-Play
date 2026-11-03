@@ -37,7 +37,7 @@ test('Sans attaque, la pose ne blesse aucune créature', () => {
 
 test('PvP : une attaque sans bloqueur ouvre la réponse et la Sentinelle peut la frapper', () => {
   const { d, a } = fixture();
-  d.mulliganFait = { joueur: true, sorcier: true };
+  d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
   d.tour = 'sorcier'; a.ready = true;
   const attaque = rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [a.id] });
   assert.ok(attaque.ok); assert.equal(d.phase, 'blocage');

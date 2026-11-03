@@ -468,7 +468,7 @@ test('Embuscade nomme la réaction pendant le tour adverse et fournit une pastil
     assert.match(pastillesCarte(carte), /#i-embuscade/, carte.id);
   }
   assert.ok(!pastillesPourCarte(cardById('chien-du-guet')).some((p) => p.cle === 'reactionTourAdverse'));
-  assert.ok(!pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle ne réagit qu’à une attaque : sa règle est plus restrictive');
+  assert.ok(pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle possède désormais Embuscade');
   assert.ok(!pastillesPourCarte(cardById('embuscade')).some((p) => p.cle === 'reactionTourAdverse'), 'le sort homonyme ne gagne pas cette capacité');
 });
 
