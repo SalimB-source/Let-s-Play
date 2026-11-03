@@ -11753,7 +11753,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card.has-infiltration.is-attacked .rpg-card__img { opacity: .45; }
 
 /* Le losange de l'arme s'accroche à cheval sur le bord supérieur sans remplacer le cadre
-   de la créature. La carte conserve sa cible de clic et son aperçu habituel. */
+   de la créature. Le clic droit sur le losange consulte l’arme ; le clic
+   ordinaire conserve la cible de la créature. */
 .rpg-card.has-arme {
   overflow: clip;
   overflow-clip-margin: 24px;
@@ -11773,7 +11774,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 3px 4px #000c);
-  pointer-events: none;
+  pointer-events: auto;
 }
 .rpg-card__arme-vignette::before {
   content: '';
