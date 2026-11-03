@@ -58,6 +58,7 @@ import {
 } from './rpgAnimations.js';
 import { peutDemarrerAppuiLong, startRpgLongPress } from './rpgLongPress.js';
 import { startRpgTouchDrag } from './rpgTouchDrag.js';
+import { cibleApercuClicDroit } from './rpgApercuCible.js';
 import {
   etageEstDebloque,
   etageEstVaincu,
@@ -2967,7 +2968,7 @@ export function TableCard({
         aria-hidden="true"
       />
       {cartesArmes.length > 0 && (
-        <span className="rpg-card__arme-vignette" data-arme-vignette={cartesArmes[0].id} aria-hidden="true">
+        <span className="rpg-card__arme-vignette" data-arme-vignette={cartesArmes[0].id} title={`Clic droit : voir ${cartesArmes[0].name}`} aria-hidden="true">
           <img src={cardArt(cartesArmes[0])} alt="" />
           {cartesArmes.length > 1 && <span className="rpg-card__arme-nombre">+{cartesArmes.length - 1}</span>}
         </span>
@@ -9191,20 +9192,19 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // jusqu'ici.
   const surMenuContextuel = (event) => {
     event.preventDefault();
-    const hote = event.target?.closest?.('[data-card-id]')
-      ?? event.target?.closest?.('.rpg-souk__carte-place')?.querySelector?.('[data-souk-carte][data-card-id]');
-    if (!hote || hote.hasAttribute('inert') || hote.getAttribute('aria-hidden') === 'true') return;
-    const carte = cardById(hote?.dataset?.cardId);
+    const cible = cibleApercuClicDroit(event.target);
+    if (!cible) return;
+    const { hote, carteId, arme } = cible;
+    const carte = cardById(carteId);
     if (!carte) return;
-    // Le plateau se floute derrière la carte, pas elle : on retient l'élément.
+    // Le porteur reste la source visuelle, mais la fiche porte sur l'arme seule.
     carteSourceApercuRef.current = hote;
     const dansCeremonieSouk = Boolean(hote.closest?.('[data-souk-ceremonie]'));
     ouvrirApercuCatalogue(carte, {
-      armes: (hote.dataset.armes ?? '').split(' ').filter(Boolean),
-      furie: etatFurieDepuisHote(hote),
-      effetsEpuises: effetsEpuisesDepuisHote(hote),
-      // Le capteur d'Abordage dit qui il détient : la fiche empilera les deux.
-      prisonniere: hote.dataset.prisonniere ?? null,
+      armes: arme ? [] : (hote.dataset.armes ?? '').split(' ').filter(Boolean),
+      furie: arme ? null : etatFurieDepuisHote(hote),
+      effetsEpuises: arme ? [] : effetsEpuisesDepuisHote(hote),
+      prisonniere: arme ? null : (hote.dataset.prisonniere ?? null),
       surface: dansCeremonieSouk ? 'LE SOUK' : (SURFACE_FICHE[ecran] ?? 'LE SABLIER'),
       clicDroit: { x: Number(event.clientX) || 0, y: Number(event.clientY) || 0 },
     });
