@@ -237,7 +237,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents comporte 111 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 114,
+  assert.equal(RPG_CREATURE_CARDS.length, 116,
     'le Rempart rejoint les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');

@@ -420,6 +420,20 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
+    element: 'braise', cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humain · Gardien', defenseur: true, provocation: true,
+    text: 'Défenseur. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    flavor: 'Derrière lui, le brasier veille sur les derniers vivants.',
+  },
+  {
+    id: 'gardienne-des-portes-de-sable', name: 'Gardienne des portes de sable',
+    element: 'sable', cost: 2, atk: 1, def: 4, rarity: 'commune',
+    typeLine: 'Créature — Humaine · Gardienne', defenseur: true,
+    text: 'Défenseur.',
+    flavor: 'La tempête tombe ; son bouclier demeure.',
+  },
+  {
     id: 'chercheuse-des-armes-ensevelies', name: 'Chercheuse des armes ensevelies',
     element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
