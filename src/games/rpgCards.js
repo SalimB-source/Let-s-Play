@@ -869,8 +869,8 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'gardien-viking-du-fjord', name: 'Gardien viking du fjord',
     element: 'neige', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Guerrier viking', defenseur: true,
-    text: 'Défenseur.',
+    typeLine: 'Créature — Guerrier viking', defenseur: true, furie: 1,
+    text: 'Défenseur. Furie 1 — Tant qu’il est blessé, il gagne +1/+0.',
     flavor: 'Sur la crête gelée, son bouclier est la dernière porte du fjord.',
   },
   {

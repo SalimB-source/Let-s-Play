@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cardById, RPG_TOUR_CARDS, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { effetsDetailles } from '../src/games/effetIcons.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgCiblesAttaqueRapide } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgCiblesAttaqueRapide, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { RPG_REVELATIONS_PAR_ETAGE } from '../src/games/rpgCollection.js';
 import { existsSync } from 'node:fs';
@@ -167,6 +167,8 @@ test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie v
   const id = 'gardien-viking-du-fjord', carte = cardById(id);
   assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.defenseur], ['neige', 3, 2, 4, true]);
   assert.ok(cardHasPrintedType(carte, 'viking'));
+  assert.equal(carte.furie, 1);
+  assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'furie'));
   assert.ok(COLLECTION_DEPART.includes(id));
   assert.ok(existsSync(`public/cards/${id}.jpg`));
   assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'defenseur'));
@@ -178,6 +180,9 @@ test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie v
   const gardien = rpgJouerCreature(d, 'sorcier', id).entite;
   assert.equal(gardien.defenseur, true);
   assert.deepEqual([eirik.atk, eirik.def], [2, 2]);
+  assert.equal(gardien.atk, 2);
+  rpgBlesserCreature(d, 'sorcier', gardien.id, 1);
+  assert.equal(gardien.atk, 3, 'Furie 1 augmente son attaque lorsqu’il est blessé');
   assert.equal(attaquer(d, 'normal').raison, 'defenseur');
   assert.equal(attaquer(d, gardien.id).ok, true);
 });
