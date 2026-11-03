@@ -85,3 +85,21 @@ test('le Djinn de la flèche doit choisir une cible et celui des ailes vole', ()
   assert.equal(rpgPeutBloquerAttaquant(chien, ailé), false);
   assert.equal(rpgLancerAttaque(duel, 'joueur', [tireur.id], {}, null, null, { [tireur.id]: chien.id }).ok, true);
 });
+
+
+test('le Djinn de foudre conserve Rapidité et Attaque ciblée et gagne Furtivité', () => {
+  const carte = cardById('djinn-de-foudre');
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rapidite, carte.coupRapide, carte.furtif, carte.ephemere], [2, 2, 1, true, true, true, true]);
+  assert.match(carte.text, /Furtivité — Détruit à la fin du tour/);
+  assert.ok(pastillesPourCarte(carte).some((p) => p.label === 'Furtivité'));
+  for (const cote of ['joueur', 'sorcier']) {
+    const duel = duelNeuf(); duel.tour = cote;
+    const djinn = poser(duel, cote, carte.id);
+    assert.equal(djinn.ready, true);
+    assert.equal(djinn.coupRapide, true);
+    assert.equal(djinn.detruireFinDuTour, true);
+    rpgFinDeTour(duel);
+    assert.ok(!duel[cote].creatures.includes(djinn));
+    assert.ok(duel[cote].cimetiere.includes(carte.id));
+  }
+});

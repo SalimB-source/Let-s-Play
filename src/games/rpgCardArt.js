@@ -60,6 +60,8 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'vampire-des-braises': 'vampire-braise-v1',
+  'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',
   'rempart-des-sables-eternels': 'rempart-sables-v1',
@@ -116,7 +118,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'braise-souls-cendres-v6',
   'serment-de-la-forge': 'braise-souls-cendres-v4',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'ifrit-archer-immateriel-v1',
+  'ifrit-al-ahmar': 'ifrit-armee-djinns-v2',
   'la-devoreuse': 'devoreuse-nihonga-visage-v1',
   'ifrit-des-ergs': 'braise-souls-cendres-v3',
   'trait-de-braise': 'braise-souls-cendres-v5',
@@ -156,7 +158,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'tarek': 'sable-souls-desore-v3',
   'tin-hinan-des-pistes': 'sable-souls-desore-v3',
   // Bouchra, la guerrière des crêtes : peinture neuve, révision dédiée.
-  'bouchra-guerriere-des-cretes': 'bouchra-cretes-v3',
+  'bouchra-guerriere-des-cretes': 'bouchra-souls-v4',
   // Le roi Kusayla, peint pour le souverain amazigh : une révision dédiée, pour
   // qu'un repaint futur ne date que sa propre peinture. Le guépard qu'il
   // appelle à son arrivée est une créature-jeton, peinte elle aussi.
@@ -220,8 +222,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'baton-des-citernes': 'armurerie-sangles-v2',
   'djinn-de-foudre': 'sable-souls-desore-v3',
   'sonneur-fele': 'plein-art-cloche-v1',
-  // La Dame aux ailes d'or s'envole dans la nef en ruine : révision dédiée.
-  'dame-aux-ailes-d-or': 'dame-ailes-or-vol-v1',
+  // La Dame protège une enfant sous ses ailes dorées.
+  'dame-aux-ailes-d-or': 'dame-ailes-or-protection-v1',
   'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',

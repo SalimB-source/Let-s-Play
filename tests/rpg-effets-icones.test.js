@@ -117,8 +117,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
-  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Mana de Eau 1'],
-    'Tiziri n’a plus de Protection : sa pastille annonce l’engagement qui produit son mana d’eau');
+  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
+    'Tiziri ne produit plus de mana et ne porte pas de pastille de mana');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');
@@ -468,7 +468,7 @@ test('Embuscade nomme la réaction pendant le tour adverse et fournit une pastil
     assert.match(pastillesCarte(carte), /#i-embuscade/, carte.id);
   }
   assert.ok(!pastillesPourCarte(cardById('chien-du-guet')).some((p) => p.cle === 'reactionTourAdverse'));
-  assert.ok(!pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle ne réagit qu’à une attaque : sa règle est plus restrictive');
+  assert.ok(pastillesPourCarte(cardById('sentinelle-des-sables')).some((p) => p.cle === 'reactionTourAdverse'), 'la Sentinelle possède désormais Embuscade');
   assert.ok(!pastillesPourCarte(cardById('embuscade')).some((p) => p.cle === 'reactionTourAdverse'), 'le sort homonyme ne gagne pas cette capacité');
 });
 

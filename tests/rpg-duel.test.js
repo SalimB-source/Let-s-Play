@@ -236,8 +236,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents comporte 110 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 110,
+test('le set de permanents comporte 111 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 114,
     'le Rempart rejoint les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -387,7 +387,7 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'le journal annonce la riposte d’Eirik');
 });
 
-test('Bouchra, guerrière des crêtes : une mythique Sable 3/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
+test('Bouchra, guerrière des crêtes : une mythique Sable 2/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
   const carte = cardById('bouchra-guerriere-des-cretes');
   assert.deepEqual(
     {
@@ -396,7 +396,7 @@ test('Bouchra, guerrière des crêtes : une mythique Sable 3/1 pour 2, Rapidité
     },
     {
       kind: 'creature', element: 'sable', cost: 2,
-      atk: 3, def: 1, rarity: 'mythique', name: 'Bouchra, guerrière des crêtes',
+      atk: 2, def: 1, rarity: 'mythique', name: 'Bouchra, guerrière des crêtes',
     },
   );
   assert.equal(carte.typeLine, 'Créature légendaire — Guerrière amazighe');
@@ -423,16 +423,16 @@ test('Bouchra arrive prête et frappe une créature adverse sans riposte', () =>
   donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   const pose = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [3, 1, true],
-    'un corps 3/1 déjà prêt à attaquer');
+  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [2, 1, true],
+    'un corps 2/1 déjà prêt à attaquer');
   assert.equal(rpgPeutAttaquer(pose.entite), true, 'Rapidité : elle attaque le tour même');
   assert.equal(pose.entite.esquive, true, 'l’Esquive est portée par l’entité en jeu');
 
-  // Elle désigne le mur : 3 dégâts, et le mur 2/4 ne riposte pas.
+  // Elle désigne le mur : 2 dégâts, et le mur 2/4 ne riposte pas.
   rpgReglerHasard(duel, () => 0); // la flèche ne rate pas
   const attaque = rpgAttaquerCreature(duel, 'joueur', pose.entite.id, mur.id);
   assert.equal(attaque.ok, true, JSON.stringify(attaque));
-  assert.equal(mur.pv, 1, 'le mur 2/4 encaisse les 3 dégâts de l’arc');
+  assert.equal(mur.pv, 2, 'le mur 2/4 encaisse les 2 dégâts de l’arc');
   assert.equal(pose.entite.pv, 1, 'et ne riposte pas : Bouchra reste intacte');
 });
 
@@ -1287,6 +1287,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
 test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', () => {
   const consulteDeck = [
     'amayas-du-hoggar',
+    'chercheuse-des-armes-ensevelies',
     'djinn-de-la-flamme-mourante',
     'ibis-des-comptes',
     'maitre-des-hieroglyphes',
@@ -1555,8 +1556,8 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   assert.equal(fennec.atk, 3, 'Tiziri ne renforce que sa propre attaque');
   assert.equal(tiziri.atk, 2, 'Tiziri reste une 2/1');
   assert.equal(rpgEstProtegee(tiziri, ['braise']), false, 'sa protection de Braise a disparu avec sa refonte');
-  assert.equal(rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id), true,
-    'elle peut s’engager pour produire un mana d’eau');
+  assert.equal(rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id), false,
+    'elle ne produit plus de mana');
   donner(duel, 'joueur', 'amani-des-ksour');
   const amani = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
   assert.deepEqual([amani.atk, amani.def, amani.pv], [2, 5, 5], 'Amani est une 2/5');
@@ -4686,7 +4687,7 @@ test('le plein art du Serment est livré : trente cartes Neige dédiées, aucune
   assert.deepEqual(RPG_ART_PROVISOIRE, [], 'aucune carte Neige n’attend sa peinture');
   const fiches = ['creature', 'hero', 'magie', 'arme'];
   const cartesNeige = RPG_DUEL_CARDS.filter((carte) => carte.element === 'neige');
-  assert.equal(cartesNeige.length, 34, 'les cartes Neige comprennent la tempête bicolore');
+  assert.equal(cartesNeige.length, 36, 'les cartes Neige comprennent la tempête bicolore');
   assert.deepEqual([...new Set(cartesNeige.map((carte) => carte.kind))].sort(),
     ['arme', 'creature', 'hero', 'magie'], 'le set Neige couvre les quatre types de cartes jouables');
   for (const carte of cartesNeige) {
@@ -4762,7 +4763,7 @@ test('aucune peinture Neige n’est le doublon d’une autre : les figures du No
       `${carte.id} ne recopie pas la peinture de ${empreintes.get(empreinte)}`);
     empreintes.set(empreinte, carte.id);
   }
-  assert.equal(empreintes.size, 34, 'les peintures Neige sont toutes différentes');
+  assert.equal(empreintes.size, 36, 'les peintures Neige sont toutes différentes');
 });
 
 test('le Serment des Neuf Hivers est un deck mono-Neige : 30 cartes, sans terrain, mythiques en un exemplaire', () => {

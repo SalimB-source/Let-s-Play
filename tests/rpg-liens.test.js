@@ -586,7 +586,7 @@ test('Cuirasse de sel : +0/+3, +0/+4 sous Bouchra — et l’Esquive se cumule',
   assert.equal(bouchra.esquiveChance, 0.25, 'Bouchra nue : 25 %, son Esquive imprimée');
   equiper(duel, 'joueur', 'cuirasse-de-sel', bouchra);
   assert.equal(bouchra.esquiveChance, 0.5, 'cuirassée : 50 %, les deux Esquives s’ajoutent');
-  assert.deepEqual([bouchra.atk, bouchra.def], [3, 5], 'et +0/+4 en défense');
+  assert.deepEqual([bouchra.atk, bouchra.def], [2, 5], 'et +0/+4 en défense');
 
   const carte = cardById('cuirasse-de-sel');
   assert.equal(carte.cost, 2, 'le Lien n’escompte jamais le coût');

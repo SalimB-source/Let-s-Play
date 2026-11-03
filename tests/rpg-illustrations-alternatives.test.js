@@ -21,6 +21,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import {
   ALTERNATIVES_DE_BOUTIQUE,
@@ -331,4 +332,12 @@ test('les illustrations tombées pendant la partie s’affichent en fin de duel'
     'chaque illustration gagnée montre sa peinture, pas seulement son nom');
   assert.match(page, /nomDeLaCarte\(alternative\.carteId\)/,
     'la vignette nomme aussi la carte doublée');
+});
+
+test('Bouchra conserve sa peinture précédente comme alternative de boutique', () => {
+  const alternative = alternativeDeCarte('bouchra-guerriere-des-cretes');
+  assert.ok(alternative);
+  assert.equal(alternative.source, 'boutique');
+  assert.equal(createHash('sha256').update(readFileSync(cheminAlt(alternative))).digest('hex'),
+    '9d098407aaa9c97f941fb4ed6c48e213c7bcb5edfd61fd2996e5e9573f6527ef');
 });

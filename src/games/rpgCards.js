@@ -420,6 +420,23 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'chercheuse-des-armes-ensevelies', name: 'Chercheuse des armes ensevelies',
+    element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
+    cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humaine · Éclaireuse',
+    arrivee: { type: 'recherche-deck', typeCarte: 'arme' },
+    text: 'Quand elle arrive : cherchez une carte Arme au hasard dans votre deck et ajoutez-la à votre main.',
+    flavor: 'Sous le sable et les cendres, elle retrouve les lames oubliées.',
+  },
+  {
+    id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
+    cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    rapidite: true, reactionTourAdverse: true,
+    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'attaque-bloquee' },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',
+    flavor: 'La première étincelle précède toujours sa lame.',
+  },
+  {
     id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
     destruction: { type: 'exil-temporaire', cible: 'creature-amie' },
@@ -439,9 +456,9 @@ export const RPG_CREATURE_CARDS = [
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire', reactionAttaque: true,
+    typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true,
     arrivee: { type: 'degats', amount: 3, cible: 'creature', attaquanteSeulement: true },
-    text: 'Vous pouvez jouer cette créature pendant la phase d’attaque adverse. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
     flavor: 'Le désert attend que ses ennemis avancent.',
   },
   ...RPG_SOLEIL_ROUGE_CREATURES,
@@ -602,9 +619,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
-    manaEngagement: { couleur: 'eau', amount: 1 },
     arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] },
-    text: 'Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main. Engagez Tiziri : elle produit un mana d’Eau pendant ce tour.',
+    text: 'Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main.',
     flavor: 'Son chant rassemble les villages avant la tempête — et fait descendre l’eau des crêtes.',
   },
   {
@@ -612,12 +628,12 @@ export const RPG_CREATURE_CARDS = [
     name: 'Bouchra, guerrière des crêtes',
     element: 'sable',
     cost: 2,
-    atk: 3,
+    atk: 2,
     def: 1,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Guerrière amazighe',
     art: 'bouchra-guerriere-des-cretes',
-    // La mythique bon marché du Sable : 3/1 pour deux manas, et rien pour se
+    // La mythique bon marché du Sable : 2/1 pour deux manas, et rien pour se
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
@@ -673,7 +689,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 1,
     def: 1,
     rarity: 'commune',
-    typeLine: 'Créature — Ghul',
+    typeLine: 'Créature — Djinn',
     art: 'ghul-des-cendres',
     destruction: { type: 'degats', amount: 1, cible: 'creature' },
     text: 'Quand le Ghul est détruit : 1 dégât à une créature adverse de votre choix.',
@@ -827,13 +843,29 @@ export const RPG_CREATURE_CARDS = [
     art: 'djinn-de-foudre',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
+    furtif: true,
+    ephemere: true,
+    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Furtivité — Détruit à la fin du tour.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
   // Récits du Nord : les figures du panthéon nordique n'y sont jamais nommées
   // « dieux » — elles portent des titres (le Père des corbeaux, le Maître du
   // marteau), comme on les appelait pour ne pas les appeler.
+  {
+    id: 'viking-des-neiges', name: 'Viking des neiges', element: 'neige',
+    cost: 1, atk: 2, def: 1, rarity: 'commune',
+    typeLine: 'Créature — Guerrier viking',
+    text: '', flavor: 'Il marche le premier dans la neige fraîche.',
+  },
+  {
+    id: 'archere-viking-du-givre', name: 'Archère viking du givre', element: 'neige',
+    cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
+    typeLine: 'Créature — Archère viking',
+    coupRapide: true, gelCombatChance: 0.15,
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 25 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    flavor: 'Ses flèches portent le froid des longs hivers.',
+  },
   {
     id: 'eirik-du-premier-serment',
     name: 'Eirik du Premier Serment',
@@ -1127,10 +1159,10 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'sanguinaire-des-dunes', set: 'soldats-de-la-lune', name: 'Sanguinaire des dunes',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
-    cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 2 dégâts à une créature adverse ciblée.',
+    arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
@@ -1155,18 +1187,18 @@ export const RPG_CREATURE_CARDS = [
     id: 'archonte-du-sablier-noir', name: 'Archonte du sablier noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 5, atk: 4, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire',
+    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true,
     arrivee: { type: 'buff', atk: 2, def: 0, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
     flavor: 'Il mesure les siècles au nombre des royaumes engloutis.',
   },
   {
     id: 'danseuse-des-ombres-de-dune', name: 'Danseuse des ombres de dune',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire',
+    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true,
     rapidite: true, infiltration: true, volDeVie: true,
-    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
     flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
   },
   {
@@ -1518,12 +1550,13 @@ export const RPG_HERO_CARDS = [
     protection: { contre: 'eau' },
     rarity: 'mythique',
     kind: 'hero',
-    typeLine: 'Créature légendaire — Démon · Minotaure',
+    typeLine: 'Créature légendaire — Djinn · Démon · Minotaure',
     art: 'ifrit-al-ahmar',
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
+    resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──

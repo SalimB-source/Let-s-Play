@@ -21,8 +21,8 @@
  *     contrôleur de celle-ci pioche une carte (le Négociant) ;
  *   - `destruction: { type: 'degats-tueur', amount: N }` — morte en combat, la
  *     créature embrase son tueur : N dégâts à l’une des créatures qui l’ont
- *     détruite et qui a survécu à l’échange (Le Brûlot — la mort par magie ne
- *     déclenche rien, le tueur de combat seul est connu).
+ *     détruite et qui a survécu à l’échange. Le Brûlot touche aussi le
+ *     sorcier adverse à chaque mort, même sans créature tueuse.
  *
  * Et cinq contrats d’effet étendus : `arriveesAbordage: true` sur un effet
  * (la Lettre de marque en propre) drape `camp.abordageDesArrivees` — jusqu’à
@@ -142,13 +142,13 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
     id: 'le-brulot',
     name: 'Le Brûlot',
     element: 'braise',
-    cost: 2,
+    cost: 3,
     atk: 1,
     def: 1,
     rarity: 'commune',
-    destruction: { type: 'degats-tueur', amount: 2 },
+    destruction: { type: 'degats-tueur', amount: 2, degatsSorcier: 2 },
     typeLine: 'Créature — Navire · Brûlot',
-    text: 'Quand Le Brûlot meurt en combat, il inflige 2 dégâts à la créature qui l’a détruit.',
+    text: 'Quand Le Brûlot meurt : il inflige 2 dégâts à la créature qui l’a détruit et 2 dégâts au sorcier adverse.',
     flavor: 'Une voile, une mèche, une promesse.',
   }),
   carte({
@@ -285,7 +285,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
       },
     },
     typeLine: 'Site légendaire — Grotte · Trésor',
-    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique.',
+    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique. Puis la Source rejoint le cimetière.',
     flavor: 'Trois seuils sous la pierre, puis une eau que même le temps n’a jamais troublée.',
   }),
   carte({
@@ -310,7 +310,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
       },
     },
     typeLine: 'Site légendaire — Trésor enfoui',
-    text: 'Indestructible. Le Trésor occupe un emplacement du champ et arrive avec 2 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et révélez une nouvelle étape de la fouille. Quand le dernier est retiré, piochez deux cartes.',
+    text: 'Indestructible. Le Trésor occupe un emplacement du champ et arrive avec 2 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et révélez une nouvelle étape de la fouille. Quand le dernier est retiré, piochez deux cartes, puis le Trésor rejoint le cimetière.',
     flavor: 'On trouva d’abord les chaînes, puis la pierre creuse. L’or attendait plus bas.',
   }),
   carte({

@@ -719,12 +719,12 @@ export function rpgPiocher(duel, cote) {
  * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
  * ne rejoint la main. Le reste du deck garde son ordre.
  */
-function piocherCarteDeType(duel, cote, type) {
+function piocherCarteDeType(duel, cote, type, typeCarte = null) {
   const camp = duel?.[cote];
   if (!camp?.deck?.length || !type) return null;
   const candidates = [];
   camp.deck.forEach((carteId, index) => {
-    if (cardHasPrintedType(carteId, type)) candidates.push(index);
+    if (typeCarte ? cardById(carteId)?.kind === typeCarte : cardHasPrintedType(carteId, type)) candidates.push(index);
   });
   if (!candidates.length) return null;
   const rng = hasardParDuel.get(duel) ?? Math.random;
@@ -2269,23 +2269,23 @@ function appliquerFurie(duel, entite, degatsRecus) {
 
 /** Total des sources d'un groupe de Résonance (élément ou tribu), dans les
  * deux camps. Le défaut Neige conserve l'ancienne signature de l'API. */
-export function rpgResonanceEnJeu(duel, element = 'neige') {
+export function rpgResonanceEnJeu(duel, element = 'neige', statistique = 'atk') {
   let total = 0;
   for (const cote of ['joueur', 'sorcier']) {
     for (const entite of duel[cote].creatures) {
       if (!(entite.pv > 0)) continue;
       const carte = duelCardById(entite.carteId);
       if (cardResonanceGroup(carte) !== element) continue;
-      total += Math.max(0, Number(carte?.resonance) || 0);
+      total += Math.max(0, Number(statistique === 'def' ? (carte?.resonanceDefense ?? carte?.resonance) : carte?.resonance) || 0);
     }
   }
   return total;
 }
 
 /** Bonus total reçu par une carte : même filtrage en jeu et dans l'IA. */
-export function rpgBonusResonance(duel, carte) {
+export function rpgBonusResonance(duel, carte, statistique = 'atk') {
   return GROUPES_RESONANCE.reduce((total, groupe) => total +
-    (cardReceivesResonance(carte, groupe) ? rpgResonanceEnJeu(duel, groupe) : 0), 0);
+    (cardReceivesResonance(carte, groupe) ? rpgResonanceEnJeu(duel, groupe, statistique) : 0), 0);
 }
 
 /** Aura de table par élément ou tribu. La Résonance samouraï ne renforce que
@@ -2298,6 +2298,7 @@ export function rpgBonusResonance(duel, carte) {
  * La perte du bonus laisse au minimum 1 PV, comme en Neige. */
 function majResonance(duel) {
   const totaux = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element)]));
+  const totauxDefense = Object.fromEntries(GROUPES_RESONANCE.map((element) => [element, rpgResonanceEnJeu(duel, element, 'def')]));
   const renforcees = new Set();
   const affaiblies = new Set();
   for (const cote of ['joueur', 'sorcier']) {
@@ -2324,16 +2325,22 @@ function majResonance(duel) {
         total + (cardResonanceGroup(carte) === groupe && !bloquees.includes(source.id)
           ? Math.max(0, Number(carte.resonance) || 0) : 0), 0);
       const voulu = groupes.reduce((total, groupe) => total + recuPar(groupe), 0);
+      const vouluDefense = sources.reduce((total, { source, carte }) => total
+        + (!bloquees.includes(source.id) ? Math.max(0, Number(carte.resonanceDefense ?? carte.resonance) || 0) : 0), 0);
       const actuel = Math.max(0, Number(entite.resonance) || 0);
+      // Les sauvegardes anciennes n'avaient qu'un seul bonus symétrique.
+      const defenseActuelle = Math.max(0, Number(entite.resonanceDefense ?? actuel) || 0);
       const precedents = entite.resonanceParGroupe ?? {};
       entite.resonanceParGroupe = Object.fromEntries(groupes.map((groupe) => [groupe, recuPar(groupe)]));
-      if (voulu === actuel) continue;
+      if (voulu === actuel && vouluDefense === defenseActuelle) continue;
       const delta = voulu - actuel;
+      const deltaDefense = vouluDefense - defenseActuelle;
       entite.resonance = voulu;
+      entite.resonanceDefense = vouluDefense;
       entite.atk = Math.max(0, entite.atk + delta);
-      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + delta);
-      entite.def = Math.max(1, entite.def + delta);
-      entite.pv = Math.max(1, entite.pv + delta);
+      entite.pvMax = Math.max(1, (entite.pvMax ?? entite.def) + deltaDefense);
+      entite.def = Math.max(1, entite.def + deltaDefense);
+      entite.pv = Math.max(1, entite.pv + deltaDefense);
       for (const element of groupes) {
         const ancien = precedents[element] ?? 0;
         const prochain = recuPar(element);
@@ -2348,8 +2355,8 @@ function majResonance(duel) {
   for (const groupe of renforcees) {
     const label = resonanceGroupLabel(groupe);
     duel.log.push(estElement(groupe)
-      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totaux[groupe]} aux créatures ${label}.`
-      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totaux[groupe]}.`);
+      ? `La Résonance renforce la ${label} : +${totaux[groupe]}/+${totauxDefense[groupe]} aux créatures ${label}.`
+      : `La Résonance ${label.toLowerCase()} renforce les créatures de type ${label} : +${totaux[groupe]}/+${totauxDefense[groupe]}.`);
   }
   for (const groupe of affaiblies) {
     if (renforcees.has(groupe)) continue;
@@ -2725,36 +2732,34 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
       duel.log.push(`Prime : ${source.name} détruit ${mort.entite.name}${pioche ? ' — son contrôleur pioche une carte' : ''}.`);
     }
   }
-  // Le Brûlot (degats-tueur) : mort en combat, il embrase son tueur — les
-  // dégâts de l'effet tombent sur l'une des créatures qui l'ont détruit et qui
-  // a survécu à l'échange. Mort par magie ou par capacité, rien ne se
-  // déclenche : seul le tueur de combat est connu —
-  // `declencherCapaciteDestruction` passe bien par ici, son effet
-  // 'degats-tueur' est un no-op ailleurs.
+  // Après retrait simultané des mortes, seule une source encore en jeu
+  // peut subir l'explosion dirigée contre la créature qui l'a tué.
   for (const mort of mortes) {
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction?.type !== 'degats-tueur') continue;
-    const amount = Math.max(0, Number(carte.destruction.amount) || 0);
-    if (!amount) continue;
-    for (const source of mort.sources ?? []) {
-      if (mortsIds.has(source.id)) continue;
-      const tueur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
-      if (!tueur) continue;
-      duel.log.push(`${mort.entite.name} embrase son pont : ${tueur.name} subit ${amount} dégât${amount > 1 ? 's' : ''}.`);
-      if (!rpgEstProtegee(tueur, cardColors(carte)) && !paradeZoneBloque(duel, tueur, 'capacite', source.cote, mort.cote))
-        rpgBlesserCreature(duel, source.cote, tueur.id, amount, cardColors(carte), null, 'capacite', carte.id);
-      break;
-    }
+    const source = (mort.sources ?? []).find((s) => !mortsIds.has(s.id)
+      && duel[s.cote]?.creatures.some((e) => e.id === s.id));
+    if (source) embraserTueur(duel, mort.cote, carte, source);
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return esquivesContre;
 }
 
+function embraserTueur(duel, cote, carte, source) {
+  const cible = duel[source.cote]?.creatures.find((e) => e.id === source.id);
+  const amount = Math.max(0, Number(carte?.destruction?.amount) || 0);
+  if (!cible || !amount || rpgEstProtegee(cible, cardColors(carte))
+    || paradeZoneBloque(duel, cible, 'capacite', source.cote, cote)) return;
+  duel.log.push(`${carte.name} embrase ${cible.name} : ${amount} dégâts.`);
+  rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'capacite', carte.id);
+}
+
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
 function degatsCreatureCombattue(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
-  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand
+    && !(carte.combat.quand === 'attaque' && quand === 'attaque-bloquee')) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
@@ -2999,19 +3004,24 @@ function gelerEntite(duel, entite) {
   duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
 }
 
-// Déclenchement d'une arme avant les blessures : un jet indépendant par adversaire.
+// Chaque source de gel tente indépendamment de geler l'adversaire avant les blessures.
 function gelerAdversaireDePorteur(duel, porteur, cible) {
   if (!porteur || !cible) return;
+  const carte = duelCardById(porteur.carteId);
   const arme = armeCarteDe(porteur);
-  const effet = arme?.porteurAvantDegats;
-  if (effet?.type !== 'gel' || (hasardParDuel.get(duel) ?? Math.random)() >= effet.chance) return;
-  if (rpgEstProtegee(cible, cardColors(arme)) || rpgEstProtegeeDesSorts(cible, cardColors(arme), 'capacite')) return;
-  if (cible.bouclier > 0) {
-    briserBouclier(cible);
-    duel.log.push(`Le bouclier de ${cible.name} bloque le gel de ${arme.name} et tombe.`);
-    return;
+  const sources = [];
+  if (carte?.gelCombatChance) sources.push({ source: carte, chance: carte.gelCombatChance });
+  if (arme?.porteurAvantDegats?.type === 'gel') sources.push({ source: arme, chance: arme.porteurAvantDegats.chance });
+  for (const { source, chance } of sources) {
+    if ((hasardParDuel.get(duel) ?? Math.random)() >= chance) continue;
+    if (rpgEstProtegee(cible, cardColors(source)) || rpgEstProtegeeDesSorts(cible, cardColors(source), 'capacite')) continue;
+    if (cible.bouclier > 0) {
+      briserBouclier(cible);
+      duel.log.push(`Le bouclier de ${cible.name} bloque le gel de ${source.name} et tombe.`);
+      continue;
+    }
+    gelerEntite(duel, cible);
   }
-  gelerEntite(duel, cible);
 }
 
 /**
@@ -3430,7 +3440,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!victime || estSite(victime) || !cibleRespecteCoutMax({ effet }, victime)
         || rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
       const nom = victime.name;
-      enterrer(duel, campCible, victime, sourceElement);
+      enterrer(duel, campCible, victime, sourceElement, null, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
       duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le sort'} détruit ${nom}.`);
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
@@ -4098,6 +4108,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'degats': {
+      if (effet.cible === 'toutes-creatures' && Number.isFinite(effet.amountSiBlessee)) {
+        // Photographier les PV avant la vague : les blessures de cette même
+        // arrivée ne rendent pas une créature éligible au montant augmenté.
+        const atteintes = duel[adv].creatures
+          .filter((entite) => !estSite(entite) && !rpgEstProtegee(entite, sourceElement)
+            && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+            && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
+          .map((entite) => ({
+            entiteId: entite.id, dernierEtat: { ...entite },
+            amount: entite.pv < (entite.pvMax ?? entite.def) ? effet.amountSiBlessee : effet.amount,
+          }));
+        appliquerDegatsDeCombatSimultanes(duel, atteintes.map(({ entiteId, amount }) => ({
+          cote: adv, entiteId, amount, sourceElement, sourceType, sourceCote: cote,
+          sourceId: sauf, effetSourceCote: cote,
+        })));
+        ripostesDeZone(duel, cote, sauf, sourceType, atteintes.map(({ entiteId, dernierEtat }) => ({ camp: adv, entiteId, dernierEtat })));
+        return;
+      }
       if (effet.cible === 'toutes-autres') {
         if (sourceCarteId === 'tempete-de-foudre-et-de-givre' && sourceType === 'magie') {
           // Le signal est sérialisé pour le PvP et vise les cases présentes avant
@@ -4192,7 +4220,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
           || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
@@ -4606,8 +4634,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // (un Navire) dans le deck et la met en main. Le tiraire est sans choix
       // ni révélation, comme la pioche de type de la Valkyrie au corbeau ;
       // sans candidat, l'effet se dissipe sans toucher au paquet.
-      const type = effet.typeImprime ?? 'Navire';
-      const piochee = piocherCarteDeType(duel, cote, type);
+      const type = effet.typeCarte === 'arme' ? 'Arme' : (effet.typeImprime ?? 'Navire');
+      const piochee = piocherCarteDeType(duel, cote, type, effet.typeCarte);
       const source = cardById(sourceCarteId)?.name ?? 'La capacité';
       duel.log.push(piochee
         ? `${source} trouve une carte de type ${type} dans le deck : elle rejoint la main.`
@@ -4775,8 +4803,8 @@ function programmerRetourTenacite(duel, cote, entite) {
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
-function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
-  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
+function enterrer(duel, cote, entite, sourceElements = [], declenchements = null, tueur = null) {
+  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements, tueur);
 }
 
 /**
@@ -4860,7 +4888,14 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const effet = carte.destruction;
   // `degats-tueur` (Le Brûlot) ne se résout qu'au combat, là où les sources
   // des blessures sont connues : ailleurs, il n'y a pas de tueur à embraser.
-  if (effet?.type === 'degats-tueur') return;
+  if (effet?.type === 'degats-tueur') {
+    const degats = Math.max(0, Number(effet.degatsSorcier) || 0);
+    if (degats) {
+      rpgInfligerSorcier(duel, autre(cote), degats);
+      duel.log.push(`${carte.name} inflige ${degats} dégâts au sorcier adverse en mourant.`);
+    }
+    return;
+  }
   if (effet?.type === 'exil-temporaire') {
     const legales = duel[cote].creatures.filter((entite) => !estSite(entite));
     if (!legales.length) { duel.log.push(`${carte.name} : aucune créature alliée à protéger.`); return; }
@@ -4895,7 +4930,7 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
 }
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
-function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
+function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null, tueur = null) {
   if (estSite(entite)) return false;
   // Le mort qui tenait une cale la rend : le prisonnier revient EN JEU (la
   // mort du capteur n'est pas un renvoi), et la Cargaison du mort paie son
@@ -4919,6 +4954,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, cote, carte, entite.carteId);
+      if (carte.destruction.type === 'degats-tueur' && tueur) embraserTueur(duel, cote, carte, tueur);
     }
     declencherHarakiri(duel, cote, entite);
   };
@@ -5034,7 +5070,7 @@ export function rpgActionsEtat(duel) {
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise).
  *  `sourceCarteId` ne sert qu'au journal des blessures : la table y reconnaît
  *  le coup qui mérite sa propre cinématique (l'Éclair du marteau). */
-export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null) {
+export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   if (rpgEstProtegee(entite, sourceElement)) {
@@ -5067,7 +5103,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     // À 0 PV la créature meurt vraiment : Tenacité ne refuse plus la
     // destruction, elle promet seulement une renaissance au prochain tour.
     // Une morte ne s'enflamme donc jamais de Furie.
-    enterrer(duel, cote, entite, elements);
+    enterrer(duel, cote, entite, elements, null, sourceCreature);
     mortelle = true;
   } else {
     appliquerFurie(duel, entite, recus);
@@ -7048,7 +7084,7 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
-      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque');
+      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque-bloquee');
       if (bloqueur && !estGelee(bloqueur)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
@@ -7570,6 +7606,17 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   return { ok: true };
 }
 
+/** Un Site achevé rejoint le cimetière sans être détruit. */
+function terminerSite(duel, cote, entiteId) {
+  const camp = duel[cote];
+  const site = camp?.creatures.find((entite) => entite.id === entiteId && estSite(entite));
+  if (!site) return;
+  camp.creatures = camp.creatures.filter((entite) => entite.id !== entiteId);
+  camp.cimetiere.push(site.carteId);
+  duel.log.push(`${site.name} a accompli son effet et rejoint le cimetière.`);
+  rafraichirAuras(duel);
+}
+
 /**
  * Don de Bimini : la cible est entièrement soignée après avoir grandi, puis
  * conserve définitivement les deux protections promises par la Source.
@@ -7593,6 +7640,7 @@ export function rpgResoudreSiteCible(duel, cote, cibleId) {
   journaliserSoin(duel, cote, Math.max(0, cible.pv - pvAvant), cible.id);
   duel.siteEnAttente = null;
   duel.log.push(`La Source de Bimini soigne entièrement ${cible.name} : elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique.`);
+  terminerSite(duel, cote, attente.entiteId);
   return { ok: true, cibleId: cible.id };
 }
 
@@ -7606,12 +7654,14 @@ function resoudreSite(duel, cote, entite, carte) {
       if (rpgPiocher(duel, cote)) piochees += 1;
     }
     duel.log.push(`${carte.name} est découvert : ${cote === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${piochees} carte${piochees > 1 ? 's' : ''}.`);
+    terminerSite(duel, cote, entite.id);
     return;
   }
   if (recompense !== 'bimini') return;
   const cibles = duel[cote].creatures.filter((candidate) => !estSite(candidate));
   if (!cibles.length) {
     duel.log.push('La Source de Bimini est atteinte, mais aucune créature ne peut boire son eau.');
+    terminerSite(duel, cote, entite.id);
     return;
   }
   duel.siteEnAttente = { cote, entiteId: entite.id, carteId: carte.id, recompense: 'bimini' };
@@ -7626,7 +7676,7 @@ function resoudreSite(duel, cote, entite, carte) {
 
 /**
  * Les Heures tombent au début du tour du contrôleur. Le Guetteur applique son
- * effet final ; un Site révèle sa récompense et reste posé avec son art final.
+ * effet final ; un Site rejoint le cimetière après résolution de sa récompense.
  */
 function resoudreHeures(duel) {
   const camp = duel[duel.tour];

@@ -655,7 +655,7 @@ test('Cargaison fait piocher une carte à la mort comme à la prise', () => {
   assert.equal(mort.sorcier.deck.length, 1, 'une seule carte est tirée du paquet à la mort');
 });
 
-test('Le Brûlot embrase la créature qui le détruit en combat — jamais par magie', () => {
+test('Le Brûlot embrase son tueur en combat et frappe le sorcier à sa mort', () => {
   // Morte en combat : le tueur survivant encaisse 2 dégâts.
   const duel = duelVide();
   mana(duel, 'joueur', 10);
@@ -741,10 +741,11 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   donner(capture, 'sorcier', 'le-brulot');
   const brulot3 = jouer(capture, 'sorcier', 'le-brulot').entite;
   donner(capture, 'joueur', 'cotre-de-course');
-  const cotre = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id).entite;
-  assert.equal(cotre.enCale?.carteId, 'le-brulot', 'le Brûlot est pris en cale');
-  assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été embrasé : rien n’est mort');
-  assert.equal(cotre.pv, 1, 'le Cotre garde ses 1 PV');
+  const pvAvantCapture = capture.joueur.pv;
+  const refus = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id);
+  assert.equal(refus.ok, false, 'le Brûlot coûte maintenant 3 : le seuil 2 ne peut le capturer');
+  assert.ok(capture.sorcier.creatures.includes(brulot3));
+  assert.equal(capture.joueur.pv, pvAvantCapture);
 });
 
 test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon son coût augmenté', () => {
@@ -819,9 +820,9 @@ test('l’IA du sorcier choisit sa prise la plus précieuse parmi les légales',
   const tercio = jouer(prise, 'joueur', 'tercio-de-cuivre').entite; // coût 3 : trop cher
   donner(prise, 'sorcier', 'cotre-de-course');
   const cotre = jouer(prise, 'sorcier', 'cotre-de-course').entite;
-  assert.equal(cotre.enCale?.carteId, 'le-brulot',
-    'l’auto-pick a pris le Brûlot (coût 2), pas la Mousse (coût 1) ni le Tercio (coût 3, hors seuil)');
-  assert.equal(prise.joueur.creatures.includes(brulot), false);
+  assert.equal(cotre.enCale?.carteId, 'mousse-des-galiotes',
+    'le Brûlot coûte 3 et dépasse désormais le seuil de prise du Cotre');
+  assert.equal(prise.joueur.creatures.includes(brulot), true);
   assert.equal(prise.joueur.creatures.includes(tercio), true, 'le Tercio coûteux reste sur la table');
 });
 
@@ -1142,6 +1143,9 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
   assert.equal(source.heures, null);
   assert.match(cardArtEntite(source), /source-de-bimini-0\.jpg/);
   assert.equal(duel.siteEnAttente?.recompense, 'bimini');
+  assert.ok(duel.joueur.creatures.includes(source), 'la Source reste en jeu pendant le choix');
+  assert.equal(rpgResoudreSiteCible(duel, 'joueur', source.id).ok, false);
+  assert.ok(duel.joueur.creatures.includes(source), 'un choix invalide ne consomme pas le Site');
 
   const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
   assert.equal(res.ok, true);
@@ -1152,7 +1156,8 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
   assert.equal(cible.bouclier, 1);
   assert.equal(cible.tenaciteDisponible, true);
   assert.equal(duel.siteEnAttente, null);
-  assert.ok(duel.joueur.creatures.includes(source), 'le Site reste posé après sa résolution');
+  assert.ok(!duel.joueur.creatures.includes(source), 'le Site libère sa case après sa résolution');
+  assert.equal(duel.joueur.cimetiere.filter(id => id === 'source-de-bimini').length, 1);
 });
 
 test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () => {
@@ -1172,7 +1177,8 @@ test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () =>
   assert.equal(tresor.heures, null);
   assert.equal(duel.joueur.main.length, 4, 'deux pioches normales et deux cartes du Trésor');
   assert.equal(duel.joueur.deck.length, 0);
-  assert.ok(duel.joueur.creatures.includes(tresor), 'le Trésor persiste sur son emplacement');
+  assert.ok(!duel.joueur.creatures.includes(tresor), 'le Trésor libère son emplacement');
+  assert.equal(duel.joueur.cimetiere.filter(id => id === 'le-tresor-de-lima').length, 1);
 });
 
 test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures d’étapes', () => {
@@ -1195,4 +1201,35 @@ test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures 
     assert.ok(existsSync(art(id)), `${id} a sa peinture plein art`);
   }
   assert.ok(puissanceCarte(cardById('source-de-bimini')) > 40, 'le Site mythique valorise sa récompense différée');
+});
+
+
+test('les Sites achevés rejoignent le cimetière des deux camps même sans cible ni cartes, sans destruction', () => {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const id of ['source-de-bimini', 'le-tresor-de-lima']) {
+      const duel = duelVide(); mana(duel, cote, 20); donner(duel, cote, id);
+      const site = jouer(duel, cote, id).entite;
+      const avant = rpgNombreDestructions(duel);
+      site.heures.restants = 1;
+      duel.tour = cote === 'joueur' ? 'sorcier' : 'joueur';
+      rpgFinDeTour(duel);
+      assert.ok(!duel[cote].creatures.includes(site));
+      assert.equal(duel[cote].cimetiere.filter(c => c === id).length, 1);
+      assert.equal(rpgNombreDestructions(duel), avant);
+      rpgFinDeTour(duel); rpgFinDeTour(duel);
+      assert.equal(duel[cote].cimetiere.filter(c => c === id).length, 1);
+    }
+  }
+});
+
+test('la Source du sorcier quitte le champ après la consécration automatique', () => {
+  const duel = duelVide(); mana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'tercio-de-cuivre'); const cible = jouer(duel, 'sorcier', 'tercio-de-cuivre').entite;
+  donner(duel, 'sorcier', 'source-de-bimini'); const site = jouer(duel, 'sorcier', 'source-de-bimini').entite;
+  site.heures.restants = 1; const avant = cible.atk;
+  rpgFinDeTour(duel);
+  assert.equal(cible.atk, avant + 4); // croissance au début du tour et don de Bimini
+  assert.ok(!duel.sorcier.creatures.includes(site));
+  assert.equal(duel.sorcier.cimetiere.filter(id => id === 'source-de-bimini').length, 1);
+  assert.equal(duel.siteEnAttente, null);
 });

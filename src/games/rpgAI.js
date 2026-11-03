@@ -310,7 +310,8 @@ function excesOverkill(attaquant, bloqueur) {
  *  correspondant à l’attaque ou au blocage en cours. */
 function degatsAvantCombat(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
-  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand
+    && !(carte.combat.quand === 'attaque-bloquee' && quand === 'attaque')) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
@@ -1351,13 +1352,14 @@ export function couleurEngagement(carteTerrain, main = []) {
  *  `duel` fourni : l’entité naît avec la Résonance déjà en table, comme en jeu. */
 function entiteDeSecours(carte, duel = null) {
   const resonance = duel ? moteur.rpgBonusResonance(duel, carte) : 0;
+  const resonanceDefense = duel ? moteur.rpgBonusResonance(duel, carte, 'def') : 0;
   return {
     id: 'simulation',
     carteId: carte.id,
     atk: (carte.atk ?? 0) + resonance,
-    def: (carte.def ?? 0) + resonance,
-    pv: (carte.def ?? 0) + resonance,
-    pvMax: (carte.def ?? 0) + resonance,
+    def: (carte.def ?? 0) + resonanceDefense,
+    pv: (carte.def ?? 0) + resonanceDefense,
+    pvMax: (carte.def ?? 0) + resonanceDefense,
     bouclier: 0,
     esquive: Boolean(carte.esquive),
     contreAttaque: Boolean(carte.contreAttaque),
@@ -1847,7 +1849,8 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       // Le Pilote : un tuteur qui ne sert que si le type cherché est encore
       // au paquet — sinon la pose brûle son mana sans rien rapporter.
       const type = arrivee.typeImprime ?? 'Navire';
-      const resteTuteur = camp.deck.some((carteId) => cardHasPrintedType(carteId, type));
+      const resteTuteur = camp.deck.some((carteId) => arrivee.typeCarte
+        ? duelCardById(carteId)?.kind === arrivee.typeCarte : cardHasPrintedType(carteId, type));
       score += resteTuteur ? 2.5 + (camp.main.length <= 3 ? 1.5 : 0) : 0;
     }
     if (arrivee.type === 'mue-mondiale') {
@@ -1918,8 +1921,11 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
         const campsTouches = arrivee.inclutAllies ? [cote, adv] : [adv];
         const valeurVague = (camp) => duel[camp].creatures
           .filter((entite) => !estProtegee(entite, cardColors(carte)))
-          .reduce((total, entite) => total + (meurtSous(entite, arrivee.amount ?? 0, 'capacite')
-            ? valeurEntite(entite) : 0.5), 0);
+          .reduce((total, entite) => {
+            const montant = Number.isFinite(arrivee.amountSiBlessee) && entite.pv < (entite.pvMax ?? entite.def)
+              ? arrivee.amountSiBlessee : (arrivee.amount ?? 0);
+            return total + (meurtSous(entite, montant, 'capacite') ? valeurEntite(entite) : 0.5);
+          }, 0);
         if (arrivee.inclutAllies) {
           score += valeurVague(adv) - valeurVague(cote);
           // La carte elle-même entre avant la vague : un 3/3 qui s'inflige

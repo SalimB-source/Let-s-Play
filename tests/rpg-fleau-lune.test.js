@@ -29,7 +29,7 @@ test('Le coût exige huit manas dont au moins une Braise et une Ténèbres', () 
 });
 test('Résonance vampire renforce les deux camps et le Fléau, sans dégâts à son arrivée', () => {
   const d = duel(); const amie = poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
-  const ennemi = poser(d, 'sorcier', 'sentinelle-des-sables'); const chien = poser(d, 'sorcier', 'chien-du-guet');
+  d.tour = 'sorcier'; const ennemi = poser(d, 'sorcier', 'sentinelle-des-sables'); d.tour = 'joueur'; const chien = poser(d, 'sorcier', 'chien-du-guet');
   const fleau = poser(d, 'joueur', id);
   assert.ok(fleau.volDeVie && fleau.overkill);
   assert.deepEqual([fleau.atk, fleau.pv, amie.atk, amie.pv, ennemi.atk, ennemi.pv, chien.atk, chien.pv], [8, 8, 3, 3, 4, 3, 2, 2]);

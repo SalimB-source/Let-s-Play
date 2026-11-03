@@ -32,7 +32,7 @@ test('L’Archonte renforce les Vampires alliés, lui compris, jusqu’à la fin
   const d = duel(); d.joueur.main.push(ids[0], ids[1], 'chien-du-guet'); d.sorcier.main.push('sentinelle-des-sables');
   const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
   const chien = rpgJouerCreature(d, 'joueur', 'chien-du-guet').entite;
-  const ennemi = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables').entite;
+  d.tour = 'sorcier'; const ennemi = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables').entite; d.tour = 'joueur';
   const archonte = rpgJouerCreature(d, 'joueur', ids[0]).entite;
   assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [4, 6, 2, 3]);
   rpgFinDeTour(d);
