@@ -1129,10 +1129,10 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'sanguinaire-des-dunes', set: 'soldats-de-la-lune', name: 'Sanguinaire des dunes',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
-    cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
     reactionTourAdverse: true,
-    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : elle inflige 2 dégâts à une créature adverse ciblée.',
+    arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {

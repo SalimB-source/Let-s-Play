@@ -4098,6 +4098,24 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'degats': {
+      if (effet.cible === 'toutes-creatures' && Number.isFinite(effet.amountSiBlessee)) {
+        // Photographier les PV avant la vague : les blessures de cette même
+        // arrivée ne rendent pas une créature éligible au montant augmenté.
+        const atteintes = duel[adv].creatures
+          .filter((entite) => !estSite(entite) && !rpgEstProtegee(entite, sourceElement)
+            && !rpgEstProtegeeDesSorts(entite, sourceElement, sourceType)
+            && !paradeZoneBloque(duel, entite, sourceType, adv, cote, sourceElement))
+          .map((entite) => ({
+            entiteId: entite.id, dernierEtat: { ...entite },
+            amount: entite.pv < (entite.pvMax ?? entite.def) ? effet.amountSiBlessee : effet.amount,
+          }));
+        appliquerDegatsDeCombatSimultanes(duel, atteintes.map(({ entiteId, amount }) => ({
+          cote: adv, entiteId, amount, sourceElement, sourceType, sourceCote: cote,
+          sourceId: sauf, effetSourceCote: cote,
+        })));
+        ripostesDeZone(duel, cote, sauf, sourceType, atteintes.map(({ entiteId, dernierEtat }) => ({ camp: adv, entiteId, dernierEtat })));
+        return;
+      }
       if (effet.cible === 'toutes-autres') {
         if (sourceCarteId === 'tempete-de-foudre-et-de-givre' && sourceType === 'magie') {
           // Le signal est sérialisé pour le PvP et vise les cases présentes avant

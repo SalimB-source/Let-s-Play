@@ -135,7 +135,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
-  'necropole-4': ['souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
+  'necropole-4': ['sanguinaire-des-dunes', 'souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
   // Tour du Corbeau — le set hybride Neige + Ténèbres (doc 22). La neige
   // d'abord (le corbeau de givre), la nuit ensuite (la veilleuse), les deux
   // au sommet : la Valkyrie des neuf nuits et le Maître des corbeaux.
@@ -220,7 +220,9 @@ export function collectionJoueur({ acquis = null, distante = null, souk = null, 
   // pas en composer — la dotation du catalogue reste la base, et aucune
   // collection existante ne maigrit.
   const coffretDuJoueur = coffret === undefined ? coffretChoisiDeLAppareil() : coffret;
-  const base = coffretDuJoueur ? normaliserCollection(coffretDuJoueur.cardIds) : COLLECTION_DEPART;
+  // Le Sanguinaire était fourni dans l'ancienne dotation : son passage en
+  // mythique ne doit pas l'enlever aux joueurs sans coffret de bienvenue.
+  const base = coffretDuJoueur ? normaliserCollection(coffretDuJoueur.cardIds) : [...COLLECTION_DEPART, 'sanguinaire-des-dunes'];
   return fusionnerCollections(
     base,
     acquisNormalise.cartes,

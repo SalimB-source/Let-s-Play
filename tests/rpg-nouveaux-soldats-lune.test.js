@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColors, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour, rpgResoudreArriveeCiblee } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgFinDeTour, rpgResoudreArriveeCiblee, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { cardArt } from '../src/games/rpgCardArt.js';
 const ids = ['eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune', 'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree'];
@@ -44,9 +44,20 @@ test('Traqueur ne renvoie qu’une créature adverse', () => {
   assert.ok(rpgJouerCreature(d, 'joueur', ids[2], cible.id).ok);
   assert.ok(d.sorcier.main.includes('chien-du-guet')); assert.equal(d.sorcier.creatures.length, 0);
 });
-test('Sanguinaire inflige deux dégâts à l’arrivée', () => {
-  const d = duel(); const cible = poser(d, 'sorcier', 'dune-marchante');
-  poser(d, 'joueur', ids[3], cible.id); assert.equal(cible.pv, 2);
+test('Sanguinaire mythique blesse toute la table adverse selon les blessures préexistantes', () => {
+  const c = cardById(ids[3]);
+  assert.deepEqual([c.cost, c.atk, c.def, c.rarity, c.reactionTourAdverse], [3, 3, 2, 'mythique', true]);
+  const d = duel(); const indemne = poser(d, 'sorcier', 'dune-marchante');
+  const blessee = poser(d, 'sorcier', 'dune-marchante');
+  const protegee = poser(d, 'sorcier', 'dune-marchante'); protegee.bouclier = 1;
+  const allie = poser(d, 'joueur', 'dune-marchante');
+  rpgBlesserCreature(d, 'sorcier', blessee.id, 1, 'eau', null, 'attaque');
+  const pvSorcier = d.sorcier.pv;
+  poser(d, 'joueur', ids[3]);
+  assert.equal(indemne.pv, 3, 'une cible indemne ne subit que 1 dégât');
+  assert.equal(blessee.pv, 1, 'une cible déjà blessée subit 2 dégâts');
+  assert.equal(protegee.pv, 4); assert.equal(protegee.bouclier, 0);
+  assert.equal(allie.pv, 4); assert.equal(d.sorcier.pv, pvSorcier);
 });
 test('Porte-étendard renforce temporairement les Vampires alliés seulement', () => {
   const d = duel(); const vampire = poser(d, 'joueur', 'danseuse-des-ombres-de-dune'); const chien = poser(d, 'joueur', 'chien-du-guet');
@@ -81,4 +92,22 @@ test('L’arrivée différée du Gardien confère le bouclier et +0/+2 à la mê
   assert.equal(rpgResoudreArriveeCiblee(d, 'joueur', allie.id).ok, true);
   assert.equal(allie.bouclier, 1);
   assert.deepEqual([allie.atk, allie.def, allie.pv, allie.pvMax], [2, 4, 4, 4]);
+});
+
+
+test('Sanguinaire : Embuscade en PvP, sans choix de cible', () => {
+  const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier';
+  const cible = poser(d, 'sorcier', 'dune-marchante'); cible.ready = true;
+  d.joueur.main.push(ids[3]);
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [cible.id] }).ok);
+  const res = rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: ids[3], cibleDifferee: true });
+  assert.equal(res.ok, true); assert.equal(cible.pv, 3); assert.ok(!d.arriveeEnAttente);
+});
+
+test('le Sanguinaire est révélé au Souk et limité à un exemplaire mythique', async () => {
+  const { carteReveleePar, COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
+  const { cardCopyLimit } = await import('../src/games/rpgCards.js');
+  assert.equal(cardCopyLimit(cardById(ids[3])), 1);
+  assert.equal(COLLECTION_DEPART.includes(ids[3]), false);
+  assert.equal(carteReveleePar(ids[3])?.etageId, 'necropole-4');
 });

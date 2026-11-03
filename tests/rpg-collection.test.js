@@ -64,7 +64,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 60, 'la dotation : les Tours de défense communes ou inhabituelles, la Hache de la banquise et Brise-lame, sans les terrains retirés');
+  assert.equal(COLLECTION_DEPART.length, 59, 'la dotation : les Tours de défense communes ou inhabituelles, la Hache de la banquise et Brise-lame, sans les terrains retirés');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);
@@ -116,8 +116,9 @@ test('l’étage qui révèle une carte nomme son étage et sa tour', () => {
 
 test('gagner un étage ne donne plus aucune carte : le Souk les vend', () => {
   const apres = collectionJoueur({ acquis: acquisVide() });
-  assert.deepEqual(apres, [...COLLECTION_DEPART], 'la collection d’un joueur neuf est exactement la dotation');
+  assert.deepEqual(apres, [...COLLECTION_DEPART, 'sanguinaire-des-dunes'], 'la dotation historique est conservée');
   for (const id of Object.values(RPG_REVELATIONS_PAR_ETAGE).flat()) {
+    if (id === 'sanguinaire-des-dunes') continue; // ancienne dotation préservée
     assert.equal(possedeCarte(apres, id), false, `${id} s’achète au Souk, il ne se gagne plus`);
   }
 });
@@ -134,8 +135,14 @@ test('la collection grandit par les acquis, le Souk et le compte — jamais par 
   assert.equal(possedeCarte(avecCompte, 'yamina'), true, 'une carte venue d’un autre appareil aussi');
 
   const tout = collectionJoueur({ acquis: gel, distante: ['yamina'], souk: ['tarek'] });
-  assert.equal(tout.length, COLLECTION_DEPART.length + 3, 'les quatre sources s’unissent');
+  assert.equal(tout.length, COLLECTION_DEPART.length + 4, 'les quatre sources s’unissent');
   assert.ok(possedeCarte(tout, 'yamina') && possedeCarte(tout, 'tarek') && possedeCarte(tout, 'kraken'));
+});
+
+test('la dotation historique conserve le Sanguinaire devenu mythique', () => {
+  const collection = collectionJoueur({ acquis: acquisVide(), coffret: null });
+  assert.equal(possedeCarte(collection, 'sanguinaire-des-dunes'), true);
+  assert.equal(exemplairesPossedables(collection, 'sanguinaire-des-dunes'), 1);
 });
 
 test('exemplairesPossedables ouvre une carte du Souk comme une autre', () => {

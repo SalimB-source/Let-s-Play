@@ -1918,8 +1918,11 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
         const campsTouches = arrivee.inclutAllies ? [cote, adv] : [adv];
         const valeurVague = (camp) => duel[camp].creatures
           .filter((entite) => !estProtegee(entite, cardColors(carte)))
-          .reduce((total, entite) => total + (meurtSous(entite, arrivee.amount ?? 0, 'capacite')
-            ? valeurEntite(entite) : 0.5), 0);
+          .reduce((total, entite) => {
+            const montant = Number.isFinite(arrivee.amountSiBlessee) && entite.pv < (entite.pvMax ?? entite.def)
+              ? arrivee.amountSiBlessee : (arrivee.amount ?? 0);
+            return total + (meurtSous(entite, montant, 'capacite') ? valeurEntite(entite) : 0.5);
+          }, 0);
         if (arrivee.inclutAllies) {
           score += valeurVague(adv) - valeurVague(cote);
           // La carte elle-même entre avant la vague : un 3/3 qui s'inflige
