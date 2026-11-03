@@ -1,3 +1,4 @@
+import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
  * Le cerveau du sorcier — décisions tactiques de l’IA du duel.
@@ -716,7 +717,7 @@ export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = 
 
   const candidats = attaquants.map((attaquant) => ({
     attaquant,
-    cibles: ciblesLegales(duel, cote, duelCardById(attaquant.carteId), 'combat'),
+    cibles: ciblesDefenseur(ciblesLegales(duel, cote, duelCardById(attaquant.carteId), 'combat')),
   }));
   const attribution = {};
   let meilleureAttribution = {};

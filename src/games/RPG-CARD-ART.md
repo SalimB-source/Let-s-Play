@@ -519,8 +519,8 @@ aux touches visibles, aucun texte ni signature :
   déployées entre les pics, braises dans les vallées.
 - **Onna-musha des cendres** — naginata traçant son cercle sur le toit brisé
   d'un donjon en feu.
-- **Ifrit al-Ahmar** — minotaure de bronze noirci et de peau carbonisée,
-  fissures de lave, ruines de palais en flammes.
+- **Ifrit al-Ahmar** — djinn à tête de taureau immatériel, fait de fumée et de
+  flammes, qui bande un arc et une flèche de feu dans des ruines embrasées.
 - **Fériel** — archère en armure lamellaire, chèche indigo, mains au henné, sur
   la rampe d'une tour de guet en terre, flèche de braise encochée.
 - **Anqa** — l'oiseau de feu colossal s'arrachant à une plaine de cendres,

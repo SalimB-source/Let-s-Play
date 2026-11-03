@@ -133,7 +133,8 @@ test('le prototype compte sept armes, une par élément (la Neige et le Sable en
   const hache = armeById('hache-de-la-banquise');
   assert.equal(hache.cost, 3);
   assert.equal(hache.element, 'neige');
-  assert.deepEqual(hache.bonus, { atk: 2, def: 0 });
+  assert.deepEqual(hache.bonus, { atk: 3, def: 0 });
+  assert.match(hache.text, /\+3\/\+0/);
   assert.equal(hache.blessurePorteur, 1, 'l’arme mord son porteur en s’attachant');
   assert.equal(hache.donne?.bouclier, undefined);
 });
@@ -488,11 +489,11 @@ test('le sorcier joue son arme par la fenêtre d’annonce, comme ses autres car
 
 // ── La Hache de la banquise : le prix de l'attachement ─────────────────────
 
-test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +2/+0 sans parade', () => {
+test('la Hache de la banquise mord son porteur (1 dégât) puis le renforce de +3/+0 sans parade', () => {
   const duel = duelVide();
   const dune = poser(duel, 'joueur', 'dune-marchante'); // 2/4
   equiper(duel, 'joueur', 'hache-de-la-banquise', dune);
-  assert.equal(dune.atk, 4, '2 + 2 d’attaque');
+  assert.equal(dune.atk, 5, '2 + 3 d’attaque');
   assert.equal(dune.def, 3, 'la Hache ne change pas la défense : la morsure, elle, suit les PV');
   assert.equal(dune.pv, 3, 'elle a d’abord mordu son porteur : 4 − 1');
   assert.equal(dune.pvMax, 4, 'la morsure est une blessure, pas une amputation du maximum');

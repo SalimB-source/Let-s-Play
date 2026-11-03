@@ -1,3 +1,4 @@
+import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armureArme, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
@@ -1811,6 +1812,7 @@ function creerEntiteCreature(carte) {
     // Priorité d'attaque rapide (Tours de défense) : les créatures adverses
     // avec Attaque rapide doivent attaquer cette tour en priorité.
     prioriteAttaqueRapide: Boolean(carte.prioriteAttaqueRapide),
+    defenseur: Boolean(carte.defenseur),
     // L'arme attachée (`{ carteId }`), ou null : une seule par créature.
     // Bonus et mot-clé sont déjà fondus dans les champs ci-dessus (atk, def,
     // pv, esquive, envol…) ; la fiche se relit par `armeById` quand il faut
@@ -6745,6 +6747,13 @@ export function rpgLancerAttaque(
     if (!cible && !attaqueDeclaree) return { ok: false, raison: 'cible' };
     if (cible && rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) {
       return { ok: false, raison: 'protection' };
+    }
+    if (cible && !attaqueDeclaree) {
+      const ciblesLegales = duel[adv].creatures.filter((entite) =>
+        !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
+      if (!ciblesDefenseur(ciblesLegales).some((entite) => entite.id === cible.id)) {
+        return { ok: false, raison: 'defenseur' };
+      }
     }
   }
 

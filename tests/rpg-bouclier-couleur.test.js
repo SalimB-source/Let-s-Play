@@ -157,3 +157,19 @@ test('un sort rapide lancé en réponse brise le bouclier adverse', () => {
   assert.equal(cible.pv, pv);
   assert.equal(cible.protection, null);
 });
+
+test('Ifrit al-Ahmar porte un bouclier d’Eau à usage unique, pas de Neige', () => {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
+  for (const cote of ['joueur', 'sorcier']) duel[cote].mana = Object.fromEntries(RPG_ELEMENTS.map((c) => [c, 30]));
+  duel.sorcier.main.push('ifrit-al-ahmar');
+  const cible = rpgJouerCreature(duel, 'sorcier', 'ifrit-al-ahmar').entite;
+  assert.deepEqual(cible.protection.contre, 'eau');
+  const pv = cible.pv;
+  assert.equal(lancer(duel, 'joueur', 'poigne-de-givre', cible.id).ok, true);
+  assert.ok(cible.pv < pv);
+  assert.ok(cible.protection);
+  const apresNeige = cible.pv;
+  assert.equal(lancer(duel, 'joueur', 'brisure-de-verre').ok, true);
+  assert.equal(cible.pv, apresNeige);
+  assert.equal(cible.protection, null);
+});

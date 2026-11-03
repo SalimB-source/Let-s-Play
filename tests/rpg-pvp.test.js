@@ -415,3 +415,19 @@ test('PvP : une attaque ciblée ne peut viser le sorcier si une créature advers
   const declaration = rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['rapide-test'], ciblesAttaque: { 'rapide-test': 'cible-test' } });
   assert.equal(declaration.ok, true);
 });
+
+test('PvP : chaque attaquant ciblé doit choisir une proie, et il reste libre de ne pas attaquer', () => {
+  const duel = partieNeuve(123);
+  duel.phase = 'principale'; duel.tour = 'joueur';
+  duel.joueur.creatures.push(
+    { id: 'a1', carteId: 'feriel', name: 'Fériel', coupRapide: true, ready: true, attaquee: false, atk: 3, pv: 2 },
+    { id: 'a2', carteId: 'feriel', name: 'Fériel', coupRapide: true, ready: true, attaquee: false, atk: 3, pv: 2 },
+  );
+  duel.sorcier.creatures.push({ id: 'c1', carteId: 'chien-du-guet', name: 'Chien', ready: false, atk: 2, pv: 2 });
+  const avant = JSON.stringify(duel);
+  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['a1', 'a2'], ciblesAttaque: { a1: 'c1' } }).raison, 'cible-obligatoire');
+  assert.equal(JSON.stringify(duel), avant, 'le refus ne consomme pas l’attaque');
+  assert.equal(rpgPvpAppliquer(duel, 'joueur', { type: 'attaquer', declarer: true, attaquants: ['a1'], ciblesAttaque: { a1: 'c1' } }).ok, true);
+  assert.deepEqual(duel.combatDeclare.attaquants, ['a1']);
+  assert.equal(duel.joueur.creatures.find(e => e.id === 'a2').attaquee, false);
+});

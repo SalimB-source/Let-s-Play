@@ -97,8 +97,8 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'listes-5': ['sahir-des-braises', 'nuage-de-cendres', 'tarek', 'armure-de-cendres'],
   // Tour du Souk — le feu se complète ; les citernes de la Gardienne rendent
   // les premières cartes d'Eau.
-  'souk-1': ['vent-rouge', 'samourai-du-torii'],
-  'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge'],
+  'souk-1': ['pourfendeur-des-djinns', 'vent-rouge', 'samourai-du-torii', 'djinn-des-braises-voilees', 'djinn-de-la-premiere-etincelle'],
+  'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge', 'djinn-de-la-flamme-mourante', 'djinn-de-la-fleche-ardente'],
   'souk-3': ['parade-du-verre', 'frappe-iaijutsu',
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
@@ -108,7 +108,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Kusayla y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
   // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
   // campagne révélée avant la Nécropole (le roi de la nuit tombante).
-  'sables-1': ['ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation', 'sphere-de-rotation'],
+  'sables-1': ['djinn-des-ailes-de-cendre', 'djinn-du-dernier-brasier', 'ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation', 'sphere-de-rotation'],
   'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],

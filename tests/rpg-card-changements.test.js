@@ -34,7 +34,7 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.equal(values('berserk-du-crepuscule').overkill, true);
   assert.equal(values('feriel').cost, 3);
   assert.deepEqual([values('ifrit-al-ahmar').atk, values('ifrit-al-ahmar').def], [3, 7]);
-  assert.equal(values('ifrit-al-ahmar').protection.contre, 'neige');
+  assert.equal(values('ifrit-al-ahmar').protection.contre, 'eau');
   assert.equal(values('dame-des-neuf-mondes').coupRapide, true);
   assert.equal(values('pere-des-corbeaux').arrivee.coutMax, 4);
   assert.equal(values('serpent-du-monde').arrivee.pioche, 3);
