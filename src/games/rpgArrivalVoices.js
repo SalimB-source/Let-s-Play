@@ -42,11 +42,29 @@
 const RPG_PUBLIC_BASE = import.meta.env?.BASE_URL ?? '/';
 
 /**
- * Les 88 voix livrées, carte par carte. L'ordre suit la collection — Braise,
+ * Les voix livrées, carte par carte. L'ordre suit la collection — Braise,
  * Ténèbres, Sable, Eau, Neige, les héros — puis les lots suivants, rangés à
  * part, dans l'ordre où ils sont arrivés.
  */
 export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
+  // ── Voix des nouvelles cartes ────────────────────────────────────────────
+  'archere-viking-du-givre': 'Archere viking du givre.mp3',
+  'viking-des-neiges': 'Viking des neiges.mp3',
+  'gardien-viking-du-fjord': 'Gardien viking du fjord.mp3',
+  'gardien-de-la-porte-ardente': 'Gardien de la porte ardente.mp3',
+  'gardienne-des-portes-de-sable': 'gardiennne des portes du sable.mp3',
+  'chercheuse-des-armes-ensevelies': 'Chercheuse des armes ensevellies.mp3',
+  'vampire-des-braises': 'Vampire des braises.mp3',
+  'guetteuse-des-marees': 'Guetteuse des marées.mp3',
+  'rempart-des-sables-eternels': 'Le rempart des sables eternels.mp3',
+  'pourfendeur-des-djinns': 'Pourfendeur des djinns.mp3',
+  'djinn-des-braises-voilees': 'Djinn des braises voilés.mp3',
+  'djinn-de-la-flamme-mourante': 'Djinn de la flamme mourante.mp3',
+  'djinn-du-dernier-brasier': 'Djinn du dernier brasier.mp3',
+  'djinn-de-la-premiere-etincelle': 'Djinn de la premiere etincelle.mp3',
+  'djinn-de-la-fleche-ardente': 'Djinn de la fleche ardente.mp3',
+  'djinn-des-ailes-de-cendre': 'Djinnd es ailes de cendres.mp3',
+
   // ── Nouvelles voix des créatures et héros ─────────────────────────────────
   'le-chasseur-d-ocracoke': "Le chasseur d'ocracoke.mp3",
   kraken: 'Le kraken.mp3',
@@ -169,8 +187,8 @@ export const RPG_ARRIVAL_VOICE_FILES = Object.freeze({
   // la Carreira ».
   'pilote-de-la-carreira': 'Piloe de la carrera.mp3',
   'le-renegat': 'Le renegat.mp3',
-  // « Djinn d'éclair » : le seul djinn du jeu est le Djinn de foudre.
-  'djinn-de-foudre': "Djinn d'éclair.mp3",
+  // Le nouvel enregistrement remplace l’ancienne voix « Djinn d'éclair ».
+  'djinn-de-foudre': 'Djinn de foudre.mp3',
   // « La dame des neufs mondes » : la carte s'imprime « LA DAME DES NEUF
   // MONDES », au singulier.
   'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',

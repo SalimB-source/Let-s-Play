@@ -18,6 +18,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   RPG_ARRIVAL_VOICE_CARD_IDS,
   RPG_ARRIVAL_VOICE_FILES,
@@ -45,6 +47,11 @@ const PUBLIC = new URL('../public/', import.meta.url);
 /** Les deux courts MP3 de `public/` qui ne sont pas des voix de carte. */
 const DEJA_BRANCHES = new Set([
   'La dévoreuse(1).MP3', // ancienne voix remplacée
+  "Djinn d'éclair.mp3", // remplacée par Djinn de foudre
+  'arrow_flying_whoosh__#3-1793624133130.mp3',
+  'arrow_whoosh_effect_#4-1793623057823.mp3',
+  'growling_dog_for_1.5_#3-1793621698219.mp3',
+  'short_sacred_voice_a_#2-1793622835719.mp3',
   'sword_breaking.mp3', // bruitage, pas une voix
   'viking warrior battle cry with horn.mp3', // bruitage `victoire`
   '26509 Thunder spark transition-full.mp3', // bruitage `foudre_marteau`
@@ -63,7 +70,7 @@ const WAV_DEJA_BRANCHES = new Set([
 
 const fichiersVoix = readdirSync(PUBLIC)
   .filter((nom) => /\.(mp3|wav)$/i.test(nom))
-  .map((nom) => ({ nom, taille: readFileSync(new URL(nom, PUBLIC)).byteLength }))
+  .map((nom) => ({ nom, taille: readFileSync(join(fileURLToPath(PUBLIC), nom)).byteLength }))
   .filter(({ nom, taille }) => taille < 1_000_000
     // T01–T12 (et les quatre parties T08) sont des pistes audio existantes,
     // pas des répliques d'arrivée de cartes.
@@ -90,7 +97,7 @@ function donner(duel, cote, carteId) {
 }
 
 test('chaque voix appartient à une créature ou à un héros du jeu', () => {
-  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 88, 'les lots comptent 88 cartes');
+  assert.equal(RPG_ARRIVAL_VOICE_CARD_IDS.length, 104, 'les lots comptent 104 cartes');
   for (const carteId of RPG_ARRIVAL_VOICE_CARD_IDS) {
     const carte = cardById(carteId);
     assert.ok(carte, `${carteId} est une carte du jeu`);
@@ -178,7 +185,7 @@ test('le rapprochement des noms approximatifs est figé', () => {
     'tengu-du-mont-ardent': 'Tengu.wav',
     'pretre-de-la-bouche': 'Prête de la bouche.mp3',
     'pilote-de-la-carreira': 'Piloe de la carrera.mp3',
-    'djinn-de-foudre': "Djinn d'éclair.mp3",
+    'djinn-de-foudre': 'Djinn de foudre.mp3',
     'dame-des-neuf-mondes': 'La dame des neufs mondes.mp3',
     tarek: 'Tarek.mp3',
     // Troisième lot : 9 voix, dont 4 au nom approché.
@@ -222,7 +229,7 @@ test('chaque voix est un fichier court livré dans public/, une seule fois', () 
 test('aucune voix du lot ne reste orpheline — et aucune musique ne s’y invite', () => {
   // Les pistes T01–T12 et les bruitages connus sont exclus du comptage ;
   // toutes les autres petites voix sont associées à une carte.
-  assert.equal(fichiersVoix.length, 88, 'le dépôt livre exactement 88 voix de créature utilisées');
+  assert.equal(fichiersVoix.length, 104, 'le dépôt livre exactement 104 voix de créature utilisées');
   const attribues = new Set(Object.values(RPG_ARRIVAL_VOICE_FILES));
   for (const nom of fichiersVoix) {
     assert.ok(attribues.has(nom), `${nom} est attribué à une carte`);
@@ -478,5 +485,33 @@ test('les arrivées d’un même relevé sont décalées, et le démontage les c
     assert.equal(FakeAudio.lectures.length, 2, 'aucune voix ne parle après le démontage');
   } finally {
     rendre();
+  }
+});
+
+test('les nouvelles cartes utilisent les voix déposées', () => {
+  const voix = {
+    'archere-viking-du-givre': 'Archere viking du givre.mp3',
+    'viking-des-neiges': 'Viking des neiges.mp3',
+    'gardien-viking-du-fjord': 'Gardien viking du fjord.mp3',
+    'gardien-de-la-porte-ardente': 'Gardien de la porte ardente.mp3',
+    'gardienne-des-portes-de-sable': 'gardiennne des portes du sable.mp3',
+    'chercheuse-des-armes-ensevelies': 'Chercheuse des armes ensevellies.mp3',
+    'vampire-des-braises': 'Vampire des braises.mp3',
+    'guetteuse-des-marees': 'Guetteuse des marées.mp3',
+    'rempart-des-sables-eternels': 'Le rempart des sables eternels.mp3',
+    'pourfendeur-des-djinns': 'Pourfendeur des djinns.mp3',
+    'djinn-des-braises-voilees': 'Djinn des braises voilés.mp3',
+    'djinn-de-la-flamme-mourante': 'Djinn de la flamme mourante.mp3',
+    'djinn-du-dernier-brasier': 'Djinn du dernier brasier.mp3',
+    'djinn-de-la-premiere-etincelle': 'Djinn de la premiere etincelle.mp3',
+    'djinn-de-la-fleche-ardente': 'Djinn de la fleche ardente.mp3',
+    'djinn-des-ailes-de-cendre': 'Djinnd es ailes de cendres.mp3',
+    'djinn-de-foudre': 'Djinn de foudre.mp3',
+  };
+  for (const [id, fichier] of Object.entries(voix)) {
+    assert.ok(cardById(id), id);
+    assert.equal(rpgArrivalVoiceFile(id), fichier);
+    assert.equal(rpgArrivalVoiceUrl(id), `/${encodeURIComponent(fichier)}`);
+    assert.ok(gainVoixArrivee(fichier) > 0);
   }
 });
