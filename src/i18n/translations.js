@@ -184,10 +184,10 @@ export const translations = {
       ticker: ['GAMING', 'E-SPORT', 'CINEMA', 'TECH', 'POP CULTURE'],
       featured: {
         label1: '02 / FEATURED EPISODES', label2: 'FEATURED EPISODE × ALGÉRIE TÉLÉCOM',
-        eyebrow: 'Featured episode — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'GOYA, BEHIND THE SCENES.',
-        text: 'The show is presented with Algérie Télécom, and our episode on HicoSoft Studio takes the headline slot: an Algerian RPG studio aiming for international standards, filmed inside the partnership.',
+        eyebrow: 'Featured episode — Cinema Ta3 l7ite', h2a: 'NOSTALGIA,', h2b: 'RETRO TV LEGENDS.',
+        text: 'Chaft & Papou revisit the classic TV series that shaped our imagination, in Cinema Ta3 l7ite — Let’s Play by Algérie Télécom.',
         cta: 'Read the dossier', watch: 'Watch the episode',
-        desc: 'Inside HicoSoft Studio: the GOYA project, its world and the ambitions behind an Algerian RPG.',
+        desc: 'Columbo, Knight Rider, MacGyver, The A-Team and V: a nostalgic journey through cult TV with Chaft & Papou.',
         sponsorKicker: 'Broadcast partner', sponsorText: 'Let’s Play × Algérie Télécom: the operator backs the production and the release of every episode — from the Journal du Geek segment to the local studio interviews.', sponsorLink: 'Official website',
       },
       featuredPartner: {
@@ -625,10 +625,10 @@ export const translations = {
       ticker: ['GAMING', 'E-SPORT', 'CINÉMA', 'TECH', 'POP CULTURE'],
       featured: {
         label1: '02 / ÉPISODES À LA UNE', label2: 'ÉPISODE À LA UNE × ALGÉRIE TÉLÉCOM',
-        eyebrow: 'Épisode à la une — HicoSoft Studio', h2a: 'HICOSOFT,', h2b: 'EN CULISSES DU GOYA.',
-        text: 'L’émission est présentée avec Algérie Télécom, et notre épisode consacré à HicoSoft Studio passe à la une : un studio algérien de RPG qui vise les standards internationaux, filmé dans le cadre du partenariat.',
+        eyebrow: 'Épisode à la une — Cinema Ta3 l7ite', h2a: 'NOSTALGIE,', h2b: 'LES SÉRIES CULTES.',
+        text: 'Chaft & Papou revisitent les séries classiques qui ont marqué notre imagination, dans Cinema Ta3 l7ite — Let’s Play by Algérie Télécom.',
         cta: 'Lire le dossier', watch: 'Voir l’épisode',
-        desc: 'Dans les coulisses de HicoSoft Studio : le projet GOYA, son univers et les ambitions d’un RPG algérien.',
+        desc: 'Columbo, K2000, MacGyver, L’Agence tous risques et V : une plongée nostalgique dans les séries cultes avec Chaft & Papou.',
         sponsorKicker: 'Partenaire de diffusion', sponsorText: 'Let’s Play × Algérie Télécom : l’opérateur accompagne la production et la sortie des épisodes, de la chronique Journal du Geek jusqu’aux rencontres avec les studios locaux.', sponsorLink: 'Site officiel',
       },
       featuredPartner: {
@@ -1063,10 +1063,10 @@ export const translations = {
       ticker: ['ألعاب', 'رياضات إلكترونية', 'سينما', 'تقنية', 'ثقافة شعبية'],
       featured: {
         label1: '02 / الحلقات المميزة', label2: 'حلقة الواجهة × اتصالات الجزائر',
-        eyebrow: 'الحلقة المميزة — HicoSoft Studio', h2a: 'HICOSOFT،', h2b: 'خلف كواليس GOYA.',
-        text: 'البرنامج يُقدَّم بالشراكة مع اتصالات الجزائر، وحلقتنا عن HicoSoft Studio تتصدّر الواجهة: استوديو جزائري لألعاب الأدوار يطمح إلى معايير عالمية، صُوِّر في إطار هذا التعاون.',
+        eyebrow: 'الحلقة المميزة — Cinema Ta3 l7ite', h2a: 'نوستالجيا،', h2b: 'مسلسلات لا تُنسى.',
+        text: 'رحلة مع شافت وبابو إلى المسلسلات الكلاسيكية التي شكّلت خيالنا، في Cinema Ta3 l7ite — Let’s Play برعاية اتصالات الجزائر.',
         cta: 'اقرأ الملف', watch: 'شاهد الحلقة',
-        desc: 'خلف كواليس HicoSoft Studio: مشروع GOYA وعالمه وطموحات لعبة أدوار جزائرية.',
+        desc: 'كولومبو وK2000 وماكغايفر ووكالة المخاطر وV: رحلة حنين إلى المسلسلات الكلاسيكية مع شافت وبابو.',
         sponsorKicker: 'شريك البث', sponsorText: '‏Let’s Play × اتصالات الجزائر: يدعم المشغّل إنتاج الحلقات وطرحها، من فقرة Journal du Geek إلى اللقاءات مع الاستوديوهات المحلية.', sponsorLink: 'الموقع الرسمي',
       },
       featuredPartner: {

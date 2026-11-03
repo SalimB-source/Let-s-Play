@@ -49,7 +49,7 @@ export default async function handler(request, response) {
       title: typeof live.snippet?.title === 'string' ? live.snippet.title : '',
     } : {
       status: 'offline',
-    }, 's-maxage=60, stale-while-revalidate=300');
+    }, 's-maxage=60');
   } catch (error) {
     console.error('Live status check failed:', error);
     return send(response, 502, { status: 'unknown', error: 'Unable to contact YouTube.' });
