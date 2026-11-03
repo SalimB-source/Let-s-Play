@@ -420,6 +420,15 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'chercheuse-des-armes-ensevelies', name: 'Chercheuse des armes ensevelies',
+    element: 'sable', colors: ['sable', 'braise'], colorCost: { sable: 1, braise: 1 },
+    cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Humaine · Éclaireuse',
+    arrivee: { type: 'recherche-deck', typeCarte: 'arme' },
+    text: 'Quand elle arrive : cherchez une carte Arme au hasard dans votre deck et ajoutez-la à votre main.',
+    flavor: 'Sous le sable et les cendres, elle retrouve les lames oubliées.',
+  },
+  {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     rapidite: true, reactionTourAdverse: true,

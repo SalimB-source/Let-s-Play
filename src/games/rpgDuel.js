@@ -719,12 +719,12 @@ export function rpgPiocher(duel, cote) {
  * dessus suivie d'un tri : s'il ne reste aucune carte du type demandé, rien
  * ne rejoint la main. Le reste du deck garde son ordre.
  */
-function piocherCarteDeType(duel, cote, type) {
+function piocherCarteDeType(duel, cote, type, typeCarte = null) {
   const camp = duel?.[cote];
   if (!camp?.deck?.length || !type) return null;
   const candidates = [];
   camp.deck.forEach((carteId, index) => {
-    if (cardHasPrintedType(carteId, type)) candidates.push(index);
+    if (typeCarte ? cardById(carteId)?.kind === typeCarte : cardHasPrintedType(carteId, type)) candidates.push(index);
   });
   if (!candidates.length) return null;
   const rng = hasardParDuel.get(duel) ?? Math.random;
@@ -4634,8 +4634,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // (un Navire) dans le deck et la met en main. Le tiraire est sans choix
       // ni révélation, comme la pioche de type de la Valkyrie au corbeau ;
       // sans candidat, l'effet se dissipe sans toucher au paquet.
-      const type = effet.typeImprime ?? 'Navire';
-      const piochee = piocherCarteDeType(duel, cote, type);
+      const type = effet.typeCarte === 'arme' ? 'Arme' : (effet.typeImprime ?? 'Navire');
+      const piochee = piocherCarteDeType(duel, cote, type, effet.typeCarte);
       const source = cardById(sourceCarteId)?.name ?? 'La capacité';
       duel.log.push(piochee
         ? `${source} trouve une carte de type ${type} dans le deck : elle rejoint la main.`

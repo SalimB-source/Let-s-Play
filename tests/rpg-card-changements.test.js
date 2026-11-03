@@ -8,6 +8,8 @@ import {
   rpgBlesserCreature, rpgFinDeTour, rpgReglerHasard, rpgResoudreContresortBoualem,
   rpgResoudreArriveeCiblee, arriveeCiblePortee,
 } from '../src/games/rpgDuel.js';
+import { choisirCarteIA } from '../src/games/rpgAI.js';
+import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
 import { cardArt, cardArtFurie } from '../src/games/rpgCardArt.js';
 
 function duel() {
@@ -237,4 +239,31 @@ test('Feux de kitsune fait 4 dégâts à une cible ou 2 dégâts à chacune de d
       assert.equal(b.pv, 4, 'la seconde créature reste intacte');
     }
   }
+});
+
+test('Chercheuse Sable et Braise : récupère une arme au hasard à son arrivée, pour les deux camps', () => {
+  const c = cardById('chercheuse-des-armes-ensevelies');
+  assert.deepEqual([c.cost, c.atk, c.def, c.colors], [3, 2, 2, ['sable', 'braise']]);
+  assert.deepEqual(c.colorCost, { sable: 1, braise: 1 });
+  for (const cote of ['joueur', 'sorcier']) {
+    const d = duel(); d[cote].deck = ['chien-du-guet', 'sabre-maudit', 'hache-de-la-banquise'];
+    const avant = [...d[cote].deck]; poser(d, cote, c.id);
+    assert.deepEqual(d[cote].main, ['hache-de-la-banquise']);
+    assert.deepEqual(d[cote].deck, avant.slice(0, 2));
+  }
+});
+
+test('Chercheuse : aucun changement au deck si aucune arme ne reste', () => {
+  const d = duel(); d.joueur.deck = ['chien-du-guet', 'trait-de-braise'];
+  poser(d, 'joueur', 'chercheuse-des-armes-ensevelies');
+  assert.deepEqual(d.joueur.main, []);
+  assert.deepEqual(d.joueur.deck, ['chien-du-guet', 'trait-de-braise']);
+});
+
+test('la Chercheuse est disponible et l’IA sait évaluer sa recherche d’arme', () => {
+  const id = 'chercheuse-des-armes-ensevelies';
+  assert.ok(COLLECTION_DEPART.includes(id));
+  assert.ok(existsSync(fileURLToPath(new URL(`../public/cards/${id}.jpg`, import.meta.url))));
+  const d = duel(); d.tour = 'sorcier'; d.sorcier.main = [id]; d.sorcier.deck = ['sabre-maudit'];
+  assert.equal(choisirCarteIA(d, 'sorcier')?.carteId, id);
 });

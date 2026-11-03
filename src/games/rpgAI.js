@@ -1849,7 +1849,8 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       // Le Pilote : un tuteur qui ne sert que si le type cherché est encore
       // au paquet — sinon la pose brûle son mana sans rien rapporter.
       const type = arrivee.typeImprime ?? 'Navire';
-      const resteTuteur = camp.deck.some((carteId) => cardHasPrintedType(carteId, type));
+      const resteTuteur = camp.deck.some((carteId) => arrivee.typeCarte
+        ? duelCardById(carteId)?.kind === arrivee.typeCarte : cardHasPrintedType(carteId, type));
       score += resteTuteur ? 2.5 + (camp.main.length <= 3 ? 1.5 : 0) : 0;
     }
     if (arrivee.type === 'mue-mondiale') {

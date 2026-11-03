@@ -237,7 +237,7 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
 });
 
 test('le set de permanents comporte 111 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 113,
+  assert.equal(RPG_CREATURE_CARDS.length, 114,
     'le Rempart rejoint les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -1287,6 +1287,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
 test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', () => {
   const consulteDeck = [
     'amayas-du-hoggar',
+    'chercheuse-des-armes-ensevelies',
     'djinn-de-la-flamme-mourante',
     'ibis-des-comptes',
     'maitre-des-hieroglyphes',
