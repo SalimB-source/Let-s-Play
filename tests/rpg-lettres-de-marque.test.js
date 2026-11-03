@@ -1143,6 +1143,9 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
   assert.equal(source.heures, null);
   assert.match(cardArtEntite(source), /source-de-bimini-0\.jpg/);
   assert.equal(duel.siteEnAttente?.recompense, 'bimini');
+  assert.ok(duel.joueur.creatures.includes(source), 'la Source reste en jeu pendant le choix');
+  assert.equal(rpgResoudreSiteCible(duel, 'joueur', source.id).ok, false);
+  assert.ok(duel.joueur.creatures.includes(source), 'un choix invalide ne consomme pas le Site');
 
   const res = rpgResoudreSiteCible(duel, 'joueur', cible.id);
   assert.equal(res.ok, true);
@@ -1153,7 +1156,8 @@ test('la Source de Bimini porte ses trois Heures, change d’étape et consacre 
   assert.equal(cible.bouclier, 1);
   assert.equal(cible.tenaciteDisponible, true);
   assert.equal(duel.siteEnAttente, null);
-  assert.ok(duel.joueur.creatures.includes(source), 'le Site reste posé après sa résolution');
+  assert.ok(!duel.joueur.creatures.includes(source), 'le Site libère sa case après sa résolution');
+  assert.equal(duel.joueur.cimetiere.filter(id => id === 'source-de-bimini').length, 1);
 });
 
 test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () => {
@@ -1173,7 +1177,8 @@ test('le Trésor de Lima porte deux Heures puis fait piocher deux cartes', () =>
   assert.equal(tresor.heures, null);
   assert.equal(duel.joueur.main.length, 4, 'deux pioches normales et deux cartes du Trésor');
   assert.equal(duel.joueur.deck.length, 0);
-  assert.ok(duel.joueur.creatures.includes(tresor), 'le Trésor persiste sur son emplacement');
+  assert.ok(!duel.joueur.creatures.includes(tresor), 'le Trésor libère son emplacement');
+  assert.equal(duel.joueur.cimetiere.filter(id => id === 'le-tresor-de-lima').length, 1);
 });
 
 test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures d’étapes', () => {
@@ -1196,4 +1201,35 @@ test('les quatre nouvelles cartes pirates sont révélées avec leurs peintures 
     assert.ok(existsSync(art(id)), `${id} a sa peinture plein art`);
   }
   assert.ok(puissanceCarte(cardById('source-de-bimini')) > 40, 'le Site mythique valorise sa récompense différée');
+});
+
+
+test('les Sites achevés rejoignent le cimetière des deux camps même sans cible ni cartes, sans destruction', () => {
+  for (const cote of ['joueur', 'sorcier']) {
+    for (const id of ['source-de-bimini', 'le-tresor-de-lima']) {
+      const duel = duelVide(); mana(duel, cote, 20); donner(duel, cote, id);
+      const site = jouer(duel, cote, id).entite;
+      const avant = rpgNombreDestructions(duel);
+      site.heures.restants = 1;
+      duel.tour = cote === 'joueur' ? 'sorcier' : 'joueur';
+      rpgFinDeTour(duel);
+      assert.ok(!duel[cote].creatures.includes(site));
+      assert.equal(duel[cote].cimetiere.filter(c => c === id).length, 1);
+      assert.equal(rpgNombreDestructions(duel), avant);
+      rpgFinDeTour(duel); rpgFinDeTour(duel);
+      assert.equal(duel[cote].cimetiere.filter(c => c === id).length, 1);
+    }
+  }
+});
+
+test('la Source du sorcier quitte le champ après la consécration automatique', () => {
+  const duel = duelVide(); mana(duel, 'sorcier', 20);
+  donner(duel, 'sorcier', 'tercio-de-cuivre'); const cible = jouer(duel, 'sorcier', 'tercio-de-cuivre').entite;
+  donner(duel, 'sorcier', 'source-de-bimini'); const site = jouer(duel, 'sorcier', 'source-de-bimini').entite;
+  site.heures.restants = 1; const avant = cible.atk;
+  rpgFinDeTour(duel);
+  assert.equal(cible.atk, avant + 4); // croissance au début du tour et don de Bimini
+  assert.ok(!duel.sorcier.creatures.includes(site));
+  assert.equal(duel.sorcier.cimetiere.filter(id => id === 'source-de-bimini').length, 1);
+  assert.equal(duel.siteEnAttente, null);
 });

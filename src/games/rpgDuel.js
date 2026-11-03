@@ -7606,6 +7606,17 @@ export function rpgAttaquerSorcier(duel, cote, entiteId, cibleCreatureId = null)
   return { ok: true };
 }
 
+/** Un Site achevé rejoint le cimetière sans être détruit. */
+function terminerSite(duel, cote, entiteId) {
+  const camp = duel[cote];
+  const site = camp?.creatures.find((entite) => entite.id === entiteId && estSite(entite));
+  if (!site) return;
+  camp.creatures = camp.creatures.filter((entite) => entite.id !== entiteId);
+  camp.cimetiere.push(site.carteId);
+  duel.log.push(`${site.name} a accompli son effet et rejoint le cimetière.`);
+  rafraichirAuras(duel);
+}
+
 /**
  * Don de Bimini : la cible est entièrement soignée après avoir grandi, puis
  * conserve définitivement les deux protections promises par la Source.
@@ -7629,6 +7640,7 @@ export function rpgResoudreSiteCible(duel, cote, cibleId) {
   journaliserSoin(duel, cote, Math.max(0, cible.pv - pvAvant), cible.id);
   duel.siteEnAttente = null;
   duel.log.push(`La Source de Bimini soigne entièrement ${cible.name} : elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique.`);
+  terminerSite(duel, cote, attente.entiteId);
   return { ok: true, cibleId: cible.id };
 }
 
@@ -7642,12 +7654,14 @@ function resoudreSite(duel, cote, entite, carte) {
       if (rpgPiocher(duel, cote)) piochees += 1;
     }
     duel.log.push(`${carte.name} est découvert : ${cote === 'joueur' ? 'vous piochez' : 'le sorcier pioche'} ${piochees} carte${piochees > 1 ? 's' : ''}.`);
+    terminerSite(duel, cote, entite.id);
     return;
   }
   if (recompense !== 'bimini') return;
   const cibles = duel[cote].creatures.filter((candidate) => !estSite(candidate));
   if (!cibles.length) {
     duel.log.push('La Source de Bimini est atteinte, mais aucune créature ne peut boire son eau.');
+    terminerSite(duel, cote, entite.id);
     return;
   }
   duel.siteEnAttente = { cote, entiteId: entite.id, carteId: carte.id, recompense: 'bimini' };
@@ -7662,7 +7676,7 @@ function resoudreSite(duel, cote, entite, carte) {
 
 /**
  * Les Heures tombent au début du tour du contrôleur. Le Guetteur applique son
- * effet final ; un Site révèle sa récompense et reste posé avec son art final.
+ * effet final ; un Site rejoint le cimetière après résolution de sa récompense.
  */
 function resoudreHeures(duel) {
   const camp = duel[duel.tour];

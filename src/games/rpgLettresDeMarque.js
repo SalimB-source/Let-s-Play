@@ -285,7 +285,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
       },
     },
     typeLine: 'Site légendaire — Grotte · Trésor',
-    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique.',
+    text: 'Indestructible. La Source occupe un emplacement du champ et arrive avec 3 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et avancez dans la grotte. Quand le dernier est retiré, choisissez une créature alliée : soignez-la complètement ; elle gagne définitivement +3/+3 et Tenacité, ainsi qu’un bouclier à usage unique. Puis la Source rejoint le cimetière.',
     flavor: 'Trois seuils sous la pierre, puis une eau que même le temps n’a jamais troublée.',
   }),
   carte({
@@ -310,7 +310,7 @@ export const RPG_LETTRES_DE_MARQUE_CREATURES = [
       },
     },
     typeLine: 'Site légendaire — Trésor enfoui',
-    text: 'Indestructible. Le Trésor occupe un emplacement du champ et arrive avec 2 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et révélez une nouvelle étape de la fouille. Quand le dernier est retiré, piochez deux cartes.',
+    text: 'Indestructible. Le Trésor occupe un emplacement du champ et arrive avec 2 compteurs d’Heures. Au début de chacun de vos tours, retirez-en un et révélez une nouvelle étape de la fouille. Quand le dernier est retiré, piochez deux cartes, puis le Trésor rejoint le cimetière.',
     flavor: 'On trouva d’abord les chaînes, puis la pierre creuse. L’or attendait plus bas.',
   }),
   carte({
