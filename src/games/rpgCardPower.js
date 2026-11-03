@@ -173,8 +173,9 @@ function valeurEffet(effet = {}) {
     case 'destruction-coutmax': {
       // Celui qui juge : détruire les créatures à petit coût est un nettoyage
       // de terrain sélectif, plus faible qu'une destruction totale. La Neige
-      // noire y ajoute deux choses — la vague épargne son propre camp, et le
-      // gel tombe sur ce qu'elle n'a pas brisé.
+      // noire y ajoute le gel sur ce qu'elle n'a pas brisé — mais elle balaie
+      // toute la table, les siens compris. Une vague qui épargne son propre
+      // camp (`creatures-adverses`) vaut un bonus.
       let valeur = 5 + Math.min(2, Number(effet.coutMax) || 0);
       if (effet.cible === 'creatures-adverses') valeur += 1.5;
       if (effet.gel) valeur += 3;

@@ -11,8 +11,8 @@
  *     avant la tour terminale du Sablier renversé.
  *  3. **Le jeu** — le Maître exile bien une créature de coût 4 au plus, son
  *     Tribut paie, le corbeau de givre et la Valkyrie respectent leur seuil
- *     de coût, et Neige noire gèle toute la table adverse en payant son prix
- *     en PV.
+ *     de coût, et Neige noire balaie toute la table — les deux camps — en
+ *     payant son prix en PV.
  */
 
 import test from 'node:test';
@@ -158,8 +158,8 @@ test('les cartes du Corbeau réunissent les vocabulaires imprimés des deux coul
   assert.equal(neige.kind, 'magie');
   assert.equal(neige.cost, 6, 'la neige noire coûte six manas');
   assert.equal(neige.prixPv, 3, 'le Prix se paie en PV');
-  assert.deepEqual(neige.effet, { type: 'destruction-coutmax', coutMax: 3, cible: 'creatures-adverses', gel: true },
-    'la vague brise les coûts de 3 ou moins, puis fige les survivantes — d’un seul côté');
+  assert.deepEqual(neige.effet, { type: 'destruction-coutmax', coutMax: 3, cible: 'toutes-creatures', inclutAllies: true, gel: true },
+    'la vague brise les coûts de 3 ou moins, puis fige les survivantes — des deux camps');
   assert.doesNotMatch(neige.text, /dégâts? nus?/i, 'aucune carte du set ne frappe nu');
 });
 
@@ -368,7 +368,7 @@ test('la Valkyrie des neuf nuits n’emporte que les créatures de coût 3 ou mo
   assert.ok(duel.sorcier.creatures.includes(grosse), 'celle de coût 4 reste sur la table');
 });
 
-test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres — et épargne son camp', () => {
+test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres — des deux camps', () => {
   const duel = duelDeBase();
   donnerMana(duel, 'joueur', 20);
   donnerMana(duel, 'sorcier', 20);
@@ -377,8 +377,11 @@ test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres —
   donner(duel, 'sorcier', 'celle-qui-pese');
   const petite = rpgJouerCreature(duel, 'sorcier', 'momie-de-lin').entite;
   const grosse = rpgJouerCreature(duel, 'sorcier', 'celle-qui-pese').entite;
-  // Chez le joueur : la neige ne tombe jamais sur les siens.
+  // Chez le joueur : la neige tombe aussi sur les siens — même destruction,
+  // même gel. Une petite créature (coût 2) et une grosse (coût 4).
   const alliee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  donner(duel, 'joueur', 'celle-qui-pese');
+  const allieeGrosse = rpgJouerCreature(duel, 'joueur', 'celle-qui-pese').entite;
   donner(duel, 'joueur', 'neige-noire');
   const pvAvant = duel.joueur.pv;
   const sort = rpgLancerMagie(duel, 'joueur', 'neige-noire');
@@ -390,7 +393,10 @@ test('Neige noire brise les créatures de coût 3 ou moins, gèle les autres —
   assert.ok(duel.sorcier.creatures.some((entite) => entite.id === grosse.id),
     'la créature de coût 4 survit à la vague');
   assert.ok(grosse.gelToursRestants > 0, '…et reste gelée');
-  assert.ok(duel.joueur.creatures.some((entite) => entite.id === alliee.id),
-    'le camp du lanceur n’est pas touché');
-  assert.equal(alliee.gelToursRestants ?? 0, 0, 'ni détruit, ni gelé');
+  assert.equal(duel.joueur.creatures.some((entite) => entite.id === alliee.id), false,
+    'le camp du lanceur est touché aussi : la créature de coût 2 est détruite');
+  assert.ok(duel.joueur.cimetiere.includes('chien-du-guet'), 'elle rejoint le cimetière');
+  assert.ok(duel.joueur.creatures.some((entite) => entite.id === allieeGrosse.id),
+    'l’alliée de coût 4 survit à la vague');
+  assert.ok(allieeGrosse.gelToursRestants > 0, '…et reste gelée elle aussi');
 });
