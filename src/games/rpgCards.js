@@ -420,6 +420,15 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'rempart-des-sables-eternels', name: 'Le Rempart des sables éternels',
+    element: 'sable', cost: 6, atk: 5, def: 6, rarity: 'mythique',
+    typeLine: 'Créature légendaire — Géant · Gardien',
+    defenseur: true,
+    arrivee: { type: 'buff', cible: 'creatures-alliees', bouclier: 1, inclutSource: true, ignoreProtectionAlliee: true },
+    text: 'Défenseur. À son arrivée : chacune de vos créatures, lui compris, reçoit un Bouclier.',
+    flavor: 'Tant que le rempart tient, la cité ne tombera pas.',
+  },
+  {
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',

@@ -2548,7 +2548,7 @@ function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
  *  Rend les Esquives réussies contre des ATTAQUES (hors Attaque ciblée, traitée
  *  par l'appelant) : l'appelant y lit les Contre-attaques à déclencher une
  *  fois l'échange terminé. */
-function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
+function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}) {
   const blessures = new Map();
   // Les Esquives réussies contre une attaque : l'appelant en tire les
   // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
@@ -2603,6 +2603,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
     blessure.montant += degats;
     blessure.coups.push({
       amount: degats,
+      rapide: Boolean(coup.rapide),
       sourceKey: coup.sourceCote && coup.sourceId
         ? `${coup.sourceCote}:${coup.sourceId}`
         : `coup:${indexCoup}`,
@@ -2641,6 +2642,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
     // ne refuse plus la mort — elle programme seulement un retour au prochain
     // tour du camp (voir `programmerRetourTenacite`).
     if (entite.pv <= 0) {
+      onMort?.(entite, blessure);
       mortes.push({
         cote,
         entite,
@@ -3920,7 +3922,8 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const ciblesBuff = effet.cible === 'porteur'
         ? campCible.creatures.filter((entite) => entite.id === sauf && !rpgEstProtegee(entite, sourceElement))
         : campCible.creatures.filter((entite) => {
-          if ((!effet.inclutSource && entite.id === sauf) || rpgEstProtegee(entite, sourceElement)) return false;
+          if ((!effet.inclutSource && entite.id === sauf) || estSite(entite)
+            || (!(effet.ignoreProtectionAlliee && !contreAdversaire) && rpgEstProtegee(entite, sourceElement))) return false;
           if (effet.typeSeulement && !cardHasPrintedType(entite.carteId, effet.typeSeulement)) return false;
           // Le Grand Débarquement ne renforce que les cales pleines : une
           // créature sans prise à bord ne débarque personne.
@@ -7070,6 +7073,7 @@ export function rpgLancerAttaque(
     blocages: affectations,
     repartitions: repartitionFinale,
     attaquantsBloques: [...attaquantsDejaBloques],
+    attaquantsLiberes: [],
     // Chaque coup critique porté pendant le combat : `{ entiteId, fois }`.
     // La table y lit ses cinématiques (le « ×4 » enflammé de Kagutsuchi),
     // frappes ciblées, combats bloqués et attaques directes confondus.
@@ -7127,7 +7131,17 @@ export function rpgLancerAttaque(
     }
   }
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
-  appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat);
+  const bloqueursDetruitsParFrappeCiblee = new Set();
+  appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat, {
+    onMort: (entite, blessure) => {
+      // Les capacités et frappes sont simultanées : ne pas attribuer à la
+      // frappe une mort qu'elle n'aurait pas causée sans ces capacités.
+      const degatsRapides = blessure.coups.reduce((total, coup) => total + (coup.rapide ? coup.amount : 0), 0);
+      if (blessure.cote === adv && degatsRapides >= entite.pv + blessure.montant) {
+        bloqueursDetruitsParFrappeCiblee.add(entite.id);
+      }
+    },
+  });
   const ciblesRapidesDetruites = new Set(rpgDestructionsDepuis(duel, destructionsAvantFrappes).map((evenement) => evenement.entityId));
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
@@ -7145,9 +7159,17 @@ export function rpgLancerAttaque(
     if (attaquantsArretes.has(attaquant.id)) continue;
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) {
-      // Un attaquant déclaré bloqué le reste même si ses bloqueurs sont tombés
-      // sous les capacités préalables : seul le passage libre frappe le sorcier.
-      if (!attaquantsDejaBloques.has(attaquant.id)) {
+      // Si le dernier bloqueur est détruit par une Attaque ciblée pendant ce
+      // combat, l'attaquant reprend sa course. Une disparition par une autre
+      // cause ne libère pas un attaquant déjà bloqué.
+      const bloqueursDeclares = affectations[attaquant.id] ?? [];
+      const libreParFrappe = bloqueursDeclares.length > 0
+        && bloqueursDeclares.every((id) => bloqueursDetruitsParFrappeCiblee.has(id));
+      if (!attaquantsDejaBloques.has(attaquant.id) || libreParFrappe) {
+        if (libreParFrappe) {
+          resume.attaquantsLiberes.push(attaquant.id);
+          duel.log.push(`${attaquant.name} poursuit son attaque : son bloqueur a été détruit par une Attaque ciblée.`);
+        }
         const forceDirect = forcesAttaquant.get(attaquant.id) ?? forceCombatAvecCritique(attaquant).force;
         coupsSorcier.push({ attaquantId: attaquant.id, amount: forceDirect });
         if (critiquesAttaquant.has(attaquant.id)) {
