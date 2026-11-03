@@ -1142,6 +1142,7 @@ function targetMode(carte, lienActif = false) {
   if (carte?.effet?.type === 'destruction-cible') return 'tous';
   // Renvoi en main : le joueur choisit la créature qui repart dans une main.
   if (carte?.effet?.type === 'retour-main') return carte.effet.cible === 'toutes-autres' ? null : carte.effet.cible === 'creature-amie' ? 'allie' : 'ennemi';
+  if (carte?.effet?.type === 'equiper-cimetiere') return 'allie';
   if (['bouclier', 'arme'].includes(carte?.effet?.type) && carte.effet.cible === 'creature-amie') return 'allie';
   // Le Défi du Jarl se joue en deux désignations : le champion allié d'abord
   // (l'étape adverse est dérivée dans `modeCible`, une fois le champion choisi).
@@ -1251,45 +1252,40 @@ function CardPile({ count, label, variant, topCard = null, drawing = false, draw
   );
 }
 
-export function CimetiereCarousel({ cartes, campLabel, onClose }) {
-  const cartesDisponibles = cartes.map(cardById).filter(Boolean);
+export function CimetiereCarousel({ cartes, campLabel, onClose, onChoose = null }) {
+  const cartesDisponibles = cartes.map((id, index) => ({ carte: cardById(id), index })).filter(({ carte }) => carte).reverse();
+  const [filtre, setFiltre] = useState(onChoose ? 'arme' : 'toutes');
+  const [selection, setSelection] = useState(null);
   const boutonFermerRef = useRef(null);
-
-  useEffect(() => {
-    boutonFermerRef.current?.focus({ preventScroll: true });
-  }, []);
-
-  if (!cartesDisponibles.length) return null;
-  const faireDefilerHorizontalement = (event) => {
-    if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-      event.preventDefault();
-      event.currentTarget.scrollLeft += event.deltaY;
-    }
-  };
-
+  useEffect(() => { boutonFermerRef.current?.focus({ preventScroll: true }); }, []);
+  const visibles = cartesDisponibles.filter(({ carte }) => filtre === 'toutes' || (filtre === 'creature' ? ['creature', 'hero'].includes(carte.kind) : filtre === 'arme' ? carteEstArme(carte) : carte.kind === filtre && !carteEstArme(carte)));
+  const choisie = cartesDisponibles.find(({ index }) => index === selection)?.carte ?? visibles[0]?.carte;
   return (
     <div className="rpg-card-peek rpg-card-peek--catalogue rpg-graveyard-carousel" role="dialog" aria-modal="true" aria-label={`Cimetière de ${campLabel}`} onClick={onClose}>
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
-      <div className="rpg-graveyard-carousel__content" onClick={(event) => event.stopPropagation()}>
-        <div className="rpg-graveyard-carousel__heading">
-          <span>{campLabel} · CIMETIÈRE</span>
-          <strong>{cartesDisponibles.length} cartes</strong>
+      <section className="rpg-graveyard-carousel__content" onClick={(event) => event.stopPropagation()}>
+        <header className="rpg-graveyard-carousel__heading">
+          <div><span>{campLabel} · CIMETIÈRE</span><strong>{cartesDisponibles.length} carte{cartesDisponibles.length === 1 ? '' : 's'}</strong></div>
+          <button type="button" ref={boutonFermerRef} className="rpg-graveyard-carousel__close" onClick={onClose} aria-label="Fermer le cimetière">×</button>
+        </header>
+        <div className="rpg-graveyard-carousel__filters" aria-label="Filtrer les cartes">
+          {[[ 'toutes', 'Toutes' ], [ 'creature', 'Créatures' ], [ 'magie', 'Sorts' ], [ 'arme', 'Armes' ]].map(([id, label]) => <button type="button" key={id} aria-pressed={filtre === id} onClick={() => { setFiltre(id); setSelection(null); }}>{label}</button>)}
         </div>
-        <div
-          className="rpg-graveyard-carousel__cards"
-          role="list"
-          tabIndex={0}
-          aria-label={`Cartes du cimetière de ${campLabel}`}
-          onWheel={faireDefilerHorizontalement}
-        >
-          {cartesDisponibles.map((carte, index) => (
-            <div className="rpg-graveyard-carousel__item" role="listitem" data-card-id={carte.id} aria-label={carte.name} key={`${carte.id}-${index}`}>
-              <HoverCardPreview carte={carte} variante="graveyard" />
-            </div>
-          ))}
+        <div className="rpg-graveyard-carousel__body">
+          <div className="rpg-graveyard-carousel__cards" role="list" aria-label={`Cartes du cimetière de ${campLabel}`}>
+            {visibles.map(({ carte, index }) => <div className="rpg-graveyard-carousel__item" role="listitem" data-card-id={carte.id} key={`${carte.id}-${index}`}>
+              <button type="button" className="rpg-graveyard-carousel__card-button" aria-label={`Voir ${carte.name}`} aria-pressed={choisie === carte && (selection === index || selection === null && visibles[0]?.index === index)} onClick={() => setSelection(index)}>
+                <HoverCardPreview carte={carte} variante="graveyard" />
+                <span className="rpg-graveyard-carousel__name">{carte.name}</span>
+              </button>
+            </div>)}
+            {!visibles.length && <p className="rpg-graveyard-carousel__empty">Aucune carte dans cette catégorie.</p>}
+          </div>
+          <aside className="rpg-graveyard-carousel__details" aria-live="polite">
+            {choisie ? <><span>CARTE SÉLECTIONNÉE</span><h2>{choisie.name}</h2><p className="rpg-graveyard-carousel__type">{choisie.typeLine}</p><p>{choisie.text || 'Aucun effet particulier.'}</p>{onChoose && carteEstArme(choisie) && <button type="button" className="rpg-btn" onClick={() => onChoose(choisie.id)}>Choisir cette arme</button>}</> : <p>Sélectionnez une carte pour lire son effet.</p>}
+          </aside>
         </div>
-        <button type="button" ref={boutonFermerRef} className="rpg-btn rpg-btn--ghost rpg-card-peek__close" onClick={onClose}>Fermer le cimetière</button>
-      </div>
+      </section>
     </div>
   );
 }
@@ -9071,7 +9067,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
   const ouvrirCimetiere = (cote) => {
     const cartes = duel?.[cote]?.cimetiere ?? [];
-    if (!cartes.length) return;
     masquerApercuSurvol();
     setApercuAppui(null);
     setApercuCatalogue(null);
@@ -9907,8 +9902,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const attenteBoualemVisible = Boolean(attenteBoualem && idsCiblesBoualem.size > 0);
   const carteAttenteDestruction = attenteDestruction ? cardById(attenteDestruction.carteId) : null;
   const idsCiblesDestruction = new Set(attenteDestruction
-    ? duel.sorcier.creatures
-      .filter((entite) => !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
+    ? (carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? duel.joueur.creatures : duel.sorcier.creatures)
+      .filter((entite) => carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? cardById(entite.carteId)?.kind !== 'site' : !rpgEstProtegee(entite, cardColors(carteAttenteDestruction)))
       .map((entite) => entite.id)
     : []);
   // Sans cible légale, l'effet se dissipe (l'effet ci-dessus s'en charge) : le
@@ -11923,6 +11918,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       lancerMagie(carteId, entite.id, championId);
       return true;
     }
+    if (carteSource?.effet?.type === 'equiper-cimetiere') {
+      setCibleEnCours(null);
+      setCimetiereOuvert({ cote: 'joueur', porteurId: entite.id, carteId: carteSource.id });
+      return true;
+    }
     lancerMagie(cibleEnCours, entite.id);
     return true;
   };
@@ -12031,6 +12031,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       return;
     }
     if (resoudreBoualemClic(entite)) return;
+    if (attenteDestruction && carteAttenteDestruction?.destruction?.type === 'exil-temporaire') {
+      const res = rpgResoudreDestructionCiblee(duel, 'joueur', entite.id);
+      if (!res.ok) { jouerSfx('erreur'); force(); return; }
+      if (modePvp) void envoyerIntentionPvp({ type: 'resoudre-destruction', cibleId: entite.id });
+      if (!modePvp) reprendreSorcier();
+      jouerSfx('select'); force(); return;
+    }
     // Désignation du sacrifice (champ d'essai plein) : ce clic désigne la
     // créature qui fait la place — sa carte se déchire sur la table, puis la
     // pose se termine contre le sacrifice choisi (`dechirerEtPoser`).
@@ -13140,7 +13147,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           ? {
             cle: `destruction:${attenteDestruction.carteId}`,
             classe: 'rpg-target-prompt',
-            texte: `${carteAttenteDestruction?.name ?? 'Capacité de destruction'} : cliquez la créature adverse qui subira ${carteAttenteDestruction?.destruction?.amount ?? 1} dégât${(carteAttenteDestruction?.destruction?.amount ?? 1) > 1 ? 's' : ''}`,
+            texte: carteAttenteDestruction?.destruction?.type === 'exil-temporaire' ? `${carteAttenteDestruction.name} : choisissez une créature alliée à protéger jusqu’à la fin du tour` : `${carteAttenteDestruction?.name ?? 'Capacité de destruction'} : cliquez la créature adverse qui subira ${carteAttenteDestruction?.destruction?.amount ?? 1} dégât${(carteAttenteDestruction?.destruction?.amount ?? 1) > 1 ? 's' : ''}`,
           }
         : (duel.magieGratuite?.cote === 'joueur' && !cibleEnCours)
           ? {
@@ -13825,11 +13832,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
-                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id)}
+                      spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
                       selectedBlocker={bloqueurSelectionne === entite.id}
                       coupRapideCible={Object.values(combatEntrant?.ciblesAttaque ?? {}).includes(entite.id)}
-                      canTarget={Boolean(idsCiblesBoualem.has(entite.id)
+                      canTarget={Boolean(idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id)
                         || (sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')
                         || (cibleEnCours && ['allie', 'tous'].includes(modeCible)
                           // La créature qui vient d'arriver n'est jamais sa
@@ -14906,6 +14913,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           cartes={duel[cimetiereOuvert.cote].cimetiere}
           campLabel={cimetiereOuvert.cote === 'joueur' ? 'VOTRE' : 'SORCIER'}
           onClose={fermerCimetiere}
+          onChoose={cimetiereOuvert.carteId ? (armeId) => { const { carteId, porteurId } = cimetiereOuvert; fermerCimetiere(); lancerMagie(carteId, porteurId, armeId); } : null}
         />
       )}
       {apercuAppui && <ApercuCarteAppuiLong carte={cardById(apercuAppui)} armes={cartesDesIds(apercuAppuiArmes)} furieDeclenchee={Boolean(apercuAppuiFurie)} statsFurie={apercuAppuiFurie} effetsEpuises={apercuAppuiEffetsEpuises} onFermer={fermerApercuAppui} />}

@@ -15,6 +15,7 @@ import {
   RPG_ELEMENTS,
   armeById,
   cardById,
+  carteEstArme,
   cardColorCost,
   cardColors,
   cardHasPrintedType,
@@ -4801,6 +4802,38 @@ function exilerEntite(duel, cote, entite, sourceCarteId = null) {
   return true;
 }
 
+// L'exil temporaire garde seulement l'identité de la carte : équipements et
+// modifications quittent la table, le retour est une nouvelle arrivée en jeu.
+function exilerPourFinDeTour(duel, cote, entite, sourceCarteId) {
+  if (!exilerEntite(duel, cote, entite, sourceCarteId)) return;
+  if (!entite.jeton) (duel.retoursExilFinTour ??= []).push({ cote, carteId: entite.carteId });
+}
+
+function resoudreExilsFinTour(duel) {
+  const retours = duel.retoursExilFinTour ?? [];
+  duel.retoursExilFinTour = [];
+  for (const retour of retours) {
+    const camp = duel[retour.cote];
+    const carte = duelCardById(retour.carteId);
+    const index = (camp.exil ?? []).lastIndexOf(retour.carteId);
+    if (!carte || index < 0) continue;
+    if (!placesLibresChamp(duel, retour.cote)) {
+      duel.retoursExilFinTour.push(retour);
+      duel.log.push(`${carte.name} attend une place libre pour revenir.`);
+      continue;
+    }
+    camp.exil.splice(index, 1);
+    const entite = creerEntiteCreature(carte);
+    camp.creatures.push(entite);
+    placerDansEmplacement(duel, retour.cote, entite);
+    journaliserArriveeCreature(duel, retour.cote, entite, 'retour-exil');
+    duel.log.push(`${carte.name} revient en jeu à la fin du tour.`);
+    appliquerArriveeDeRetour(duel, retour.cote, carte, entite);
+  }
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+}
+
 /**
  * Sacrifice : la créature quitte la table **par la volonté de son camp** — le
  * prix d'une pose quand le champ des cinq places est plein (mode essai). Comme
@@ -4828,6 +4861,17 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   // `degats-tueur` (Le Brûlot) ne se résout qu'au combat, là où les sources
   // des blessures sont connues : ailleurs, il n'y a pas de tueur à embraser.
   if (effet?.type === 'degats-tueur') return;
+  if (effet?.type === 'exil-temporaire') {
+    const legales = duel[cote].creatures.filter((entite) => !estSite(entite));
+    if (!legales.length) { duel.log.push(`${carte.name} : aucune créature alliée à protéger.`); return; }
+    if (cote === 'sorcier' && !duel.pvp) {
+      exilerPourFinDeTour(duel, cote, legales[0], carteId);
+    } else {
+      (duel.destructionsEnAttente ??= []).push({ cote, carteId });
+      duel.log.push(`${carte.name} : désignez une créature alliée à protéger.`);
+    }
+    return;
+  }
   if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
     appliquer(duel, cote, effet, null, null, cardColors(carte), 'capacite', carteId);
     return;
@@ -5686,8 +5730,9 @@ export function rpgDissiperDestructionsSansCible(duel) {
   let dissipees = 0;
   for (const attente of attentes) {
     const carte = duelCardById(attente.carteId);
-    const legales = duel[autre(attente.cote)].creatures
-      .filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+    const allie = carte?.destruction?.type === 'exil-temporaire';
+    const legales = duel[allie ? attente.cote : autre(attente.cote)].creatures
+      .filter((entite) => allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)));
     if (legales.length) {
       restantes.push(attente);
       continue;
@@ -5712,7 +5757,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   if (!attente || attente.cote !== cote) return { ok: false, raison: 'aucune-attente' };
   const carte = duelCardById(attente.carteId);
   const adv = autre(cote);
-  const legales = duel[adv].creatures.filter((entite) => !rpgEstProtegee(entite, cardColors(carte)));
+  const allie = carte?.destruction?.type === 'exil-temporaire';
+  const legales = duel[allie ? cote : adv].creatures.filter((entite) => allie ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)));
   if (!legales.length) {
     duel.destructionsEnAttente.shift();
     return { ok: false, raison: 'aucune-cible' };
@@ -5720,7 +5766,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   const cible = legales.find((entite) => entite.id === cibleId);
   if (!cible) return { ok: false, raison: 'cible' };
   duel.destructionsEnAttente.shift();
-  appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId);
+  if (allie) exilerPourFinDeTour(duel, cote, cible, attente.carteId);
+  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId);
   rpgActionsEtat(duel);
   return { ok: true, cible };
 }
@@ -5813,6 +5860,12 @@ export function rpgJouerArme(duel, cote, carteId, cibleId = null) {
     cible = camp.creatures[camp.creatures.length - 1] ?? null;
     if (!cible) return { ok: false, raison: 'cible' };
   }
+  return resoudreAttachementArme(duel, cote, carte, cible, porteurCree);
+
+}
+
+function resoudreAttachementArme(duel, cote, carte, cible, porteurCree = false) {
+  const camp = duel[cote];
   // Le prix de l'attachement (la Hache de la banquise) : l'arme mord son
   // porteur AVANT de lui donner quoi que ce soit. La parade qu'elle accorde
   // ensuite ne bloque que les sorts : cette morsure — une capacité — passe
@@ -6238,6 +6291,8 @@ function bouclierQuiBloque(duel, cote, cibleId) {
 export function rpgSortACibleValide(duel, cote, carte) {
   if (carte?.kind !== 'magie') return true;
   if (carte.effet?.type === 'contresort') return rpgContreJouable(duel, cote, carte);
+  if (carte.effet?.type === 'equiper-cimetiere') return duel[cote].cimetiere.some((id) => carteEstArme(cardById(id)))
+    && duel[cote].creatures.some((entite) => !entite.mur && entiteCiblableParSort(entite, carte));
   if (carte.effet?.type === 'reanimation') {
     return duel[cote].cimetiere.some((id) => {
       const carteAuCimetiere = duelCardById(id);
@@ -6379,6 +6434,11 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if ((carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { ok: false, raison: 'mana' };
   } else if (!rpgPeutPayer(camp, carte)) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
+  if (carte.effet.type === 'equiper-cimetiere') {
+    const porteur = camp.creatures.find((entite) => entite.id === cibleId);
+    if (!porteur || porteur.mur || !entiteCiblableParSort(porteur, carte)) return { ok: false, raison: 'cible' };
+    if (!carteEstArme(cardById(cibleAllieeId)) || !camp.cimetiere.includes(cibleAllieeId)) return { ok: false, raison: 'arme-cimetiere' };
+  }
   // Le Serpent du monde : protégé contre les magies et les sorcelleries —
   // aucun sort ne peut le viser, quel que soit le camp du lanceur.
   for (const idVise of [cibleId, cibleAllieeId]) {
@@ -6561,7 +6621,19 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     : effetBrut;
   // Pour un duel (`combat`), `sauf` porte le champion allié — le cas `combat`
   // d’`appliquer` lit sa source dans ce paramètre.
-  appliquer(duel, cote, effet, cibleId,
+  if (effet.type === 'equiper-cimetiere') {
+    const index = camp.cimetiere.lastIndexOf(cibleAllieeId);
+    const arme = cardById(cibleAllieeId);
+    const porteur = camp.creatures.find((entite) => entite.id === cibleId);
+    if (index >= 0 && arme && porteur) {
+      camp.cimetiere.splice(index, 1);
+      if (arme.kind === 'arme') resoudreAttachementArme(duel, cote, arme, porteur);
+      else {
+        appliquer(duel, cote, arme.effet, porteur.id, null, cardColors(arme), null, arme.id);
+        appliquerLiensArmes(duel);
+      }
+    }
+  } else appliquer(duel, cote, effet, cibleId,
     cibleAllieeId ?? null,
     cardColors(carte), 'magie', carteId);
   // Le Lien à cible supplémentaire (le Poids de la Barbe Noire) : la créature
@@ -7813,6 +7885,7 @@ export function rpgFinDeTour(duel) {
     }
     if (duel.defausseEnAttente?.cote === duel.tour) duel.defausseEnAttente = null;
   }
+  resoudreExilsFinTour(duel);
   duel.tour = autre(duel.tour);
   for (const entite of duel[duel.tour].creatures) {
     const croissance = duelCardById(entite.carteId)?.croissanceTour;

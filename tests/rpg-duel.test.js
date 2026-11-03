@@ -236,8 +236,8 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents comporte 109 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 109,
+test('le set de permanents comporte 110 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 110,
     'le Rempart rejoint les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
@@ -4262,7 +4262,7 @@ test('défense automatique : une créature bloque chaque attaquant, dégâts sim
 });
 
 test('les magies : types, coûts, cibles et magies rapides de combat', () => {
-  assert.equal(RPG_MAGIE_CARDS.length, 52, 'la tempête Neige/Braise rejoint le catalogue');
+  assert.equal(RPG_MAGIE_CARDS.length, 53, 'Mémoire de l’armurerie rejoint le catalogue');
   for (const carte of RPG_MAGIE_CARDS) {
     assert.ok(RPG_ELEMENTS.includes(carte.element), 'type parmi les cinq couleurs');
     assert.ok(carte.kind === 'magie' && carte.cost >= 0);

@@ -109,7 +109,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
   // campagne révélée avant la Nécropole (le roi de la nuit tombante).
   'sables-1': ['djinn-des-ailes-de-cendre', 'djinn-du-dernier-brasier', 'ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation', 'sphere-de-rotation'],
-  'sables-2': ['brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
+  'sables-2': ['memoire-de-l-armurerie', 'brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
   'sables-3': ['rempart-des-sables-eternels', 'braise-et-sable', 'anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],

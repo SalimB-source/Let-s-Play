@@ -3076,73 +3076,39 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card-pile.is-clickable:focus-visible { box-shadow: 0 0 0 3px rgba(255, 236, 171, .95), 0 7px 16px rgba(0, 0, 0, .48); }
 .rpg-graveyard-carousel__content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  justify-items: center;
-  gap: 12px;
-  --rpg-graveyard-card-width: clamp(104px, 30dvh, 168px);
-  width: min(920px, 100%);
-  max-height: 100%;
-  overflow-y: auto;
-  padding: 12px;
+  position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px;
+  width: min(1000px, 96vw); height: min(720px, 90dvh); padding: clamp(14px, 2vw, 24px);
+  border: 1px solid #8d7650; border-radius: 12px; color: #f3ead5;
+  background: linear-gradient(145deg, #211e22, #0f1014 70%); box-shadow: 0 20px 70px #000;
 }
-.rpg-graveyard-carousel__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  color: #ffe9b1;
-  font: 800 12px/1.2 var(--display);
-  letter-spacing: .16em;
-  text-shadow: 0 2px 5px #000;
-}
-.rpg-graveyard-carousel__heading strong { color: #fff7d7; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
-.rpg-graveyard-carousel__cards {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 4px 2px 10px;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-color: rgba(255, 231, 168, .58) rgba(10, 7, 9, .62);
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-}
-.rpg-graveyard-carousel__cards:focus-visible {
-  outline: 2px solid rgba(255, 231, 168, .85);
-  outline-offset: 3px;
-}
-.rpg-graveyard-carousel__item {
-  flex: 0 0 var(--rpg-graveyard-card-width);
-  width: var(--rpg-graveyard-card-width);
-  scroll-snap-align: start;
-}
-.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard {
-  position: relative;
-  inset: auto;
-  display: block;
-  width: 100%;
-  max-height: none;
-  overflow: visible;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-  animation: none;
-}
+.rpg-graveyard-carousel__heading { display: flex; justify-content: space-between; align-items: center; color: #e4c886; letter-spacing: .12em; font: 800 14px/1.2 var(--display); }
+.rpg-graveyard-carousel__heading strong { display: block; color: #aaa69d; font: 400 12px/1.5 sans-serif; letter-spacing: 0; }
+.rpg-graveyard-carousel__close { border: 1px solid #7b6b52; border-radius: 6px; background: #252326; color: #f6ead1; width: 40px; height: 40px; font-size: 25px; cursor: pointer; }
+.rpg-graveyard-carousel__filters { display: flex; flex-wrap: wrap; gap: 7px; }
+.rpg-graveyard-carousel__filters button { padding: 7px 12px; border: 1px solid #625747; border-radius: 5px; color: #ddd4c4; background: #201f22; cursor: pointer; }
+.rpg-graveyard-carousel__filters button[aria-pressed="true"] { color: #18130b; background: #d7ba7d; border-color: #e9d39f; }
+.rpg-graveyard-carousel__body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, 260px); gap: 16px; min-height: 0; flex: 1; }
+.rpg-graveyard-carousel__cards { display: grid; align-content: start; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; overflow-y: auto; padding: 4px; scrollbar-color: #9c855c #171519; }
+.rpg-graveyard-carousel__item { min-width: 0; }
+.rpg-graveyard-carousel__card-button { display: block; width: 100%; padding: 4px; border: 1px solid transparent; border-radius: 7px; background: #252328; color: #eee6d5; text-align: left; cursor: pointer; }
+.rpg-graveyard-carousel__card-button[aria-pressed="true"], .rpg-graveyard-carousel__card-button:focus-visible { border-color: #e9ca85; outline: 2px solid #e9ca85; outline-offset: 1px; }
+.rpg-graveyard-carousel__name { display: block; padding: 7px 3px 4px; font-size: 12px; line-height: 1.25; overflow-wrap: anywhere; }
+.rpg-graveyard-carousel__details { overflow-y: auto; padding: 18px; border: 1px solid #4f473c; border-radius: 8px; background: #19181c; font: 14px/1.5 sans-serif; }
+.rpg-graveyard-carousel__details > span { color: #c5a86d; font-size: 10px; letter-spacing: .12em; }
+.rpg-graveyard-carousel__details h2 { margin: 10px 0 4px; color: #f5e3bc; font-size: 20px; }
+.rpg-graveyard-carousel__type { color: #b6a994; font-size: 12px; }
+.rpg-graveyard-carousel__empty { color: #bdb3a4; }
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard { position: relative; inset: auto; display: block; width: 100%; max-height: none; overflow: visible; padding: 0; border: 0; background: transparent; box-shadow: none; pointer-events: none; animation: none; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__empile { width: 100%; }
-.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face {
-  --rpg-card-marker-size: 16px;
-  border-width: 2px;
-  border-radius: 5px;
-}
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face { --rpg-card-marker-size: 16px; border-width: 2px; border-radius: 5px; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__details { display: none; }
+@media (max-width: 600px) {
+  .rpg-graveyard-carousel__content { width: 96vw; height: 90dvh; padding: 12px; gap: 9px; }
+  .rpg-graveyard-carousel__body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(95px, 32%); gap: 9px; }
+  .rpg-graveyard-carousel__cards { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+  .rpg-graveyard-carousel__details { padding: 10px; }
+  .rpg-graveyard-carousel__details h2 { font-size: 16px; margin: 4px 0; }
+}
 /* Le dos gravé sert de fond ; le dégradé reste dessous, le temps que l'image
    arrive et pour les contextes qui ne définissent pas la variable. */
 .rpg-card-pile__card--back {
