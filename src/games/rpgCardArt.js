@@ -222,8 +222,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'baton-des-citernes': 'armurerie-sangles-v2',
   'djinn-de-foudre': 'sable-souls-desore-v3',
   'sonneur-fele': 'plein-art-cloche-v1',
-  // La Dame aux ailes d'or s'envole dans la nef en ruine : révision dédiée.
-  'dame-aux-ailes-d-or': 'dame-ailes-or-vol-v1',
+  // La Dame protège une enfant sous ses ailes dorées.
+  'dame-aux-ailes-d-or': 'dame-ailes-or-protection-v1',
   'lionne-du-midi-ardent': 'braise-souls-cendres-v4',
   'brisure-de-verre': 'plein-art-verre-v2',
   'silence-decume': 'plein-art-bulle-v1',
