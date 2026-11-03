@@ -2554,7 +2554,10 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
   // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
   const esquivesContre = [];
   for (const [indexCoup, coup] of coups.entries()) {
-    if (coup.rapide) coup.contreAttaqueAtteinte = false;
+    if (coup.rapide) {
+      coup.contreAttaqueAtteinte = false;
+      coup.blessureRapideInfligee = false;
+    }
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
@@ -2586,6 +2589,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie } = {}) {
     }
     const degats = Math.max(0, Number(coup.amount) || 0);
     if (degats <= 0) continue;
+    if (coup.rapide) coup.blessureRapideInfligee = true;
     const cle = `${coup.cote}:${entite.id}`;
     const blessure = blessures.get(cle) ?? {
       cote: coup.cote,
@@ -7145,9 +7149,17 @@ export function rpgLancerAttaque(
     if (attaquantsArretes.has(attaquant.id)) continue;
     const idsBloqueurs = blocagesApresCapacites[attaquant.id] ?? [];
     if (!idsBloqueurs.length) {
-      // Un attaquant déclaré bloqué le reste même si ses bloqueurs sont tombés
-      // sous les capacités préalables : seul le passage libre frappe le sorcier.
-      if (!attaquantsDejaBloques.has(attaquant.id)) {
+      // Exception : une autre créature a tué tous les bloqueurs avec son
+      // Attaque rapide pendant ce combat. L'attaquant poursuit sur le sorcier.
+      // Un bloqueur retiré par une magie/capacité, une frappe ratée, esquivée
+      // ou prévenue ne suffit pas à libérer une attaque déjà bloquée.
+      const bloqueursDeclares = affectations[attaquant.id] ?? [];
+      const libereParAttaqueRapide = bloqueursDeclares.length > 0
+        && bloqueursDeclares.every((id) => ciblesRapidesDetruites.has(id)
+          && degatsAvantCombat.some((coup) => coup.rapide
+            && coup.blessureRapideInfligee && coup.entiteId === id
+            && coup.sourceCote === cote && coup.sourceId !== attaquant.id));
+      if (!attaquantsDejaBloques.has(attaquant.id) || libereParAttaqueRapide) {
         const forceDirect = forcesAttaquant.get(attaquant.id) ?? forceCombatAvecCritique(attaquant).force;
         coupsSorcier.push({ attaquantId: attaquant.id, amount: forceDirect });
         if (critiquesAttaquant.has(attaquant.id)) {
