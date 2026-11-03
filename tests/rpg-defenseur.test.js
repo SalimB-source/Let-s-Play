@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cardById, RPG_TOUR_CARDS, RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { effetsDetailles } from '../src/games/effetIcons.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgCiblesAttaqueRapide } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgCiblesAttaqueRapide, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { RPG_REVELATIONS_PAR_ETAGE } from '../src/games/rpgCollection.js';
 import { existsSync } from 'node:fs';
@@ -112,4 +112,77 @@ test('la fiche et la carte sur table montrent la nouvelle icône Défenseur', as
       assert.ok(rendu(IconesCarte).querySelector('[data-effet="defenseur"] use[href="#i-defenseur"]'));
     }
   } finally { await vite.close(); }
+});
+
+test('les nouveaux Défenseurs Braise et Sable sont jouables et disponibles', async () => {
+  const { COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
+  for (const [id, element, cost, atk, def, provocation] of [
+    ['gardien-de-la-porte-ardente', 'braise', 3, 2, 3, true],
+    ['gardienne-des-portes-de-sable', 'sable', 2, 1, 4, false],
+  ]) {
+    const carte = cardById(id);
+    assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.defenseur, !!carte.provocation], [element, cost, atk, def, true, provocation]);
+    assert.ok(COLLECTION_DEPART.includes(id));
+    assert.ok(existsSync(`public/cards/${id}.jpg`));
+    assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'defenseur'));
+    for (const cote of ['joueur', 'sorcier']) {
+      const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 });
+      d[cote].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+      d[cote].main.push(id);
+      const r = rpgJouerCreature(d, cote, id);
+      assert.ok(r.ok, `${id}: ${r.raison}`);
+      assert.equal(r.entite.defenseur, true);
+      assert.equal(!!r.entite.provocation, provocation);
+    }
+  }
+});
+
+test('les nouveaux Défenseurs protègent les autres créatures des Attaques ciblées', () => {
+  for (const id of ['gardien-de-la-porte-ardente', 'gardienne-des-portes-de-sable']) {
+    const d = scene();
+    d.sorcier.creatures = d.sorcier.creatures.filter(e => e.id === 'normal');
+    d.sorcier.mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+    d.sorcier.main.push(id);
+    const defenseur = rpgJouerCreature(d, 'sorcier', id).entite;
+    assert.equal(attaquer(d, 'normal').raison, 'defenseur');
+    assert.equal(attaquer(d, defenseur.id).ok, true);
+  }
+});
+
+test('le gardien Braise attire un bloqueur quand il attaque, sans obligation d’attaquer', () => {
+  const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 });
+  for (const c of ['joueur', 'sorcier']) d[c].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+  d.joueur.main.push('gardien-de-la-porte-ardente');
+  d.sorcier.main.push('dune-marchante');
+  const a = rpgJouerCreature(d, 'joueur', 'gardien-de-la-porte-ardente').entite;
+  const b = rpgJouerCreature(d, 'sorcier', 'dune-marchante').entite;
+  a.ready = true;
+  assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], {}).raison, 'provocation');
+  assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], { [a.id]: [b.id] }).ok, true);
+});
+
+test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie viking', async () => {
+  const { cardHasPrintedType } = await import('../src/games/rpgCards.js');
+  const { COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
+  const id = 'gardien-viking-du-fjord', carte = cardById(id);
+  assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.defenseur], ['neige', 3, 2, 4, true]);
+  assert.ok(cardHasPrintedType(carte, 'viking'));
+  assert.equal(carte.furie, 1);
+  assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'furie'));
+  assert.ok(COLLECTION_DEPART.includes(id));
+  assert.ok(existsSync(`public/cards/${id}.jpg`));
+  assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'defenseur'));
+  const d = scene();
+  d.sorcier.creatures = d.sorcier.creatures.filter(e => e.id === 'normal');
+  d.sorcier.mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+  d.sorcier.main.push('eirik-du-premier-serment', id);
+  const eirik = rpgJouerCreature(d, 'sorcier', 'eirik-du-premier-serment').entite;
+  const gardien = rpgJouerCreature(d, 'sorcier', id).entite;
+  assert.equal(gardien.defenseur, true);
+  assert.deepEqual([eirik.atk, eirik.def], [2, 2]);
+  assert.equal(gardien.atk, 2);
+  rpgBlesserCreature(d, 'sorcier', gardien.id, 1);
+  assert.equal(gardien.atk, 3, 'Furie 1 augmente son attaque lorsqu’il est blessé');
+  assert.equal(attaquer(d, 'normal').raison, 'defenseur');
+  assert.equal(attaquer(d, gardien.id).ok, true);
 });
