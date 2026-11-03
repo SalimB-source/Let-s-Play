@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
 import PartnersSection from '../components/PartnersSection';
-import { youTubeEmbedUrl, youTubeLiveChannelEmbedUrl } from '../lib/videoPlayback';
+import { youTubeEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
+import { confirmedLiveVideoId, scrollToHomeLive } from '../lib/homeLive';
+import '../home-live.css';
 import ScrollAutoplayVideo from '../components/ScrollAutoplayVideo';
 import { Arrow } from '../components/Arrow';
 import { AwaitedBand, clockOffset } from '../components/ReleasesCalendar';
@@ -32,9 +34,9 @@ const reels = [
 // Vignette statique : la lecture se fait sur YouTube via le lien "Voir l’épisode".
 // `tone` ne sert qu’à l’accent couleur de la carte (aucun logo partenaire affiché).
 const headlineEpisode = {
-  id: 'aTs0zhm6Leg',
-  href: 'https://www.youtube.com/watch?v=aTs0zhm6Leg',
-  title: 'HicoSoft Studio et le projet GOYA — Let’s Play Official',
+  id: 'WcRpsKU8JDY',
+  href: 'https://www.youtube.com/watch?v=WcRpsKU8JDY',
+  title: 'Nostalgia : Retro TV Legends That Shaped Our Imagination! — Let’s Play Official',
   tone: 'telecom',
 };
 
@@ -60,13 +62,10 @@ const newsImageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${
 // La une de l'accueil suit l'actu gaming de l'édition du jour.
 const featuredStory = dailyNewsListing.find((story) => !story.to.startsWith('/news/cinema/') && !story.to.startsWith('/news/tech/'));
 
-// YouTube resolves this permanent channel URL to the channel's active live
-// broadcast, without requiring an API key or a server-side endpoint.
-const liveChannelId = import.meta.env.VITE_YOUTUBE_CHANNEL_ID?.trim() || 'UCBi989OGXiGBjvB17Xh5GUQ';
-
 export default function Home() {
   const { t, lang } = useLanguage();
-  const [liveStatus, setLiveStatus] = useState('unknown');
+  const [liveVideoId, setLiveVideoId] = useState(null);
+  const isLive = Boolean(liveVideoId);
   const [featuredTrailer, setFeaturedTrailer] = useState(null);
   const featuredNews = {
     ...featuredStory,
@@ -101,30 +100,38 @@ export default function Home() {
 
   useEffect(() => {
     let cancelled = false;
-    const checkLiveStatus = () => {
-      fetch('/api/youtube-live')
-        .then((response) => response.ok ? response.json() : { status: 'unknown' })
-        .then((data) => {
-          if (!cancelled) setLiveStatus(data.status || 'unknown');
-        })
-        .catch(() => {
-          if (!cancelled) setLiveStatus('unknown');
-        });
+    let timer;
+    let controller;
+    let timeout;
+    const checkLiveStatus = async () => {
+      controller = new AbortController();
+      timeout = window.setTimeout(() => controller.abort(), 10_000);
+      try {
+        const response = await fetch('/api/youtube-live', { signal: controller.signal });
+        const data = response.ok ? await response.json() : null;
+        if (!cancelled) setLiveVideoId(confirmedLiveVideoId(data));
+      } catch {
+        if (!cancelled) setLiveVideoId(null);
+      } finally {
+        window.clearTimeout(timeout);
+        // Un seul appel à la fois, même si le réseau est lent.
+        if (!cancelled) timer = window.setTimeout(checkLiveStatus, 60_000);
+      }
     };
-
     checkLiveStatus();
-    const interval = window.setInterval(checkLiveStatus, 60_000);
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      window.clearTimeout(timer);
+      window.clearTimeout(timeout);
+      controller?.abort();
     };
   }, []);
 
-  const statusCopy = {
-    live: t.home.live.statusLive,
-    offline: t.home.live.statusOffline,
-    unknown: t.home.live.statusChecking,
-  }[liveStatus] || t.home.live.statusChecking;
+  const liveHeroCopy = {
+    fr: { status: 'Un live est en cours', action: 'Rejoindre le direct' },
+    en: { status: 'We’re live now', action: 'Watch live' },
+    ar: { status: 'نحن على الهواء الآن', action: 'شاهد البث المباشر' },
+  }[lang] || { status: 'Un live est en cours', action: 'Rejoindre le direct' };
 
   // Head générique pour la section épisodes — même structure que featured-dossiers de Reviews
   const headMap = {
@@ -220,6 +227,14 @@ export default function Home() {
           <p className="eyebrow"><span className="live-dot" /> {t.home.eyebrow}</p>
           <h1>{t.home.h1a}<br /><em>{t.home.h1b}</em></h1>
           <p className="hero-text">{t.home.heroText}</p>
+          {isLive && (
+            <div className="hero-live-notice">
+              <p className="hero-live-status" role="status"><span aria-hidden="true" /> {liveHeroCopy.status}</p>
+              <a className="hero-live-link" href="#live" onClick={scrollToHomeLive}>
+                {liveHeroCopy.action} <span aria-hidden="true">↓</span>
+              </a>
+            </div>
+          )}
           <div className="hero-actions">
             <a className="hero-cta hero-cta--primary" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">
               <span className="hero-cta-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m9 5 11 7-11 7z" /></svg></span>
@@ -239,6 +254,38 @@ export default function Home() {
         <AwaitedBand lang={lang} copy={t.news.countdown} offset={CLOCK_OFFSET} />
       </section>
 
+      {isLive && (
+        <section className="live-section home-live-active wrap" id="live" tabIndex={-1} aria-label={t.home.live.label}>
+          <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
+          <div className="live-head">
+            <div>
+              <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
+              <h2>{t.home.live.h2a}<br /><em>{t.home.live.h2b}</em></h2>
+            </div>
+            <div className="live-head-aside">
+              <p className="live-description">{t.home.live.description}</p>
+              <div className="live-status-card live-status-card--live">
+                <span className="live-status live-status--live"><i aria-hidden="true" /> {t.home.live.statusLive}</span>
+                <small>{t.home.live.autoRefresh}</small>
+              </div>
+            </div>
+          </div>
+          <div className="live-player hud-frame">
+            <iframe
+              src={youTubeEmbedUrl(liveVideoId)}
+              title={t.home.live.playerTitle}
+              loading="lazy"
+              allow="encrypted-media; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+          <div className="live-footer">
+            <span className="live-footer-note">{t.home.live.statusSupport}</span>
+            <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
+          </div>
+        </section>
+      )}
+
       {/* Ticker continu — chaque moitié est suffisamment longue (> viewport) pour éviter les trous sur desktop, même en 4K/5K */}
       <section className="ticker" aria-hidden="true">
         <div className="ticker-track">
@@ -255,7 +302,7 @@ export default function Home() {
       </section>
 
       <nav className="home-explore wrap" aria-label={exploreCopy.label}>
-        {[['actu-une', exploreCopy.news], ['featured', exploreCopy.episodes], ['quizz-du-jour', exploreCopy.quiz], ['reels', exploreCopy.reels], ['live', exploreCopy.live]].map(([target, label]) => (
+        {[['actu-une', exploreCopy.news], ['featured', exploreCopy.episodes], ['quizz-du-jour', exploreCopy.quiz], ['reels', exploreCopy.reels], ...(isLive ? [['live', exploreCopy.live]] : [])].map(([target, label]) => (
           <a key={target} href={`#${target}`}>{label}<span aria-hidden="true">↘</span></a>
         ))}
       </nav>
@@ -346,7 +393,7 @@ export default function Home() {
       </Suspense>
 
       {/* REELS / SHORTS YOUTUBE — placés juste avant le direct : le format court
-          garde le visiteur en mouvement avant le lecteur live. */}
+          garde le visiteur en mouvement entre les formats courts. */}
       <section className="reels-section wrap" id="reels" data-reveal>
         <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
         <div className="reels-head">
@@ -380,35 +427,6 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="live-section wrap" id="live" data-reveal>
-        <div className="section-label"><span>{t.home.live.label}</span><span>YOUTUBE · LET’S PLAY OFFICIAL</span></div>
-        <div className="live-head">
-          <div>
-            <p className="eyebrow"><span className="live-dot" /> {t.home.live.eyebrow}</p>
-            <h2>{t.home.live.h2a}<br /><em>{t.home.live.h2b}</em></h2>
-          </div>
-          <div className="live-head-aside">
-            <p className="live-description">{t.home.live.description}</p>
-            <div className={`live-status-card live-status-card--${liveStatus}`}>
-              <span className={`live-status live-status--${liveStatus}`}><i aria-hidden="true" /> {statusCopy}</span>
-              <small>{t.home.live.autoRefresh}</small>
-            </div>
-          </div>
-        </div>
-        <div className="live-player hud-frame">
-          <iframe
-            src={youTubeLiveChannelEmbedUrl(liveChannelId)}
-            title={t.home.live.playerTitle}
-            loading="lazy"
-            allow="autoplay; encrypted-media; picture-in-picture; web-share"
-            allowFullScreen
-          />
-        </div>
-        <div className="live-footer">
-          <span className="live-footer-note">{t.home.live.statusSupport}</span>
-          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel" target="_blank" rel="noreferrer">{t.home.live.channelCta} <Arrow /></a>
-        </div>
-      </section>
 
       <section className="formats wrap" id="formats" data-reveal>
         <div className="section-label"><span>{t.home.formats.label1.split(' / ')[1]}</span><span>{t.home.formats.label2}</span></div>
