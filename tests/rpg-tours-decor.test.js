@@ -8,6 +8,24 @@ import { createStoryTowerDecor } from '../src/games/rpgStoryTowerDecor.js';
 const lire = (chemin) => readFileSync(new URL(chemin, import.meta.url), 'utf8');
 const CAMERA_XZ = new THREE.Vector2(0.63, 1).normalize();
 
+// Chaque décor doit porter le folklore de sa tour, lu dans les cartes : pas de
+// silhouette générique répétée. On le vérifie par les matériaux signature que
+// chaque scène est censée employer (parchemins de la Chambre, glace du Nord,
+// algues de l'abîme, or de la pesée des âmes, etc.).
+const FOLKLORE = {
+  'tour-des-listes': ['parchemin', 'verre-du-sablier', 'laiton'],
+  'tour-du-souk': ['tissu-rouge', 'tissu-turquoise', 'laiton'],
+  'tour-des-sables': ['socle', 'pierre'],
+  'tour-des-abysses': ['algues', 'eau'],
+  'tour-des-corsaires': ['bois', 'parchemin', 'tissu-rouge'],
+  'tour-du-fjord': ['glace', 'neige', 'bois'],
+  'tour-du-soleil-rouge': ['tissu-rouge', 'bois'],
+  'tour-de-la-necropole': ['laiton', 'pierre-sombre', 'zellige'],
+  'tour-du-corbeau': ['pierre-sombre'],
+  'tour-du-sablier-renverse': ['verre-du-sablier', 'tissu-rouge', 'glace'],
+  'tour-oubliee': ['pierre-sombre', 'laiton'],
+};
+
 function resources(decor) {
   const geometries = new Set(), materials = new Set(), textures = new Set();
   decor.group.traverse((part) => {
@@ -20,6 +38,11 @@ function resources(decor) {
   return { geometries, materials, textures };
 }
 const triangles = (mesh) => (mesh.geometry.index ? mesh.geometry.index.count : mesh.geometry.attributes.position.count) / 3;
+const materiaux = (decor) => {
+  const names = new Set();
+  decor.group.traverse((part) => { if (part.isMesh) names.add(part.material.name); });
+  return names;
+};
 
 test('chaque tour a son décor de fond, fusionné et léger', () => {
   for (const tour of RPG_STORY_TOURS) {
@@ -29,20 +52,37 @@ test('chaque tour a son décor de fond, fusionné et léger', () => {
       assert.equal(decor.group.name, `decor-${tour.id}`);
       const meshes = [];
       decor.group.traverse((part) => { if (part.isMesh) meshes.push(part); });
-      assert.ok(meshes.length >= 3 && meshes.length <= 5, `${tour.id} : pièces fusionnées par matériau (${meshes.length})`);
-      assert.ok(meshes.some((mesh) => mesh.name === `sol-${tour.id}`), 'le sol est présent');
-      let total = 0;
+      assert.ok(meshes.length >= 2 && meshes.length <= 12, `${tour.id} : pièces fusionnées par matériau (${meshes.length})`);
+      assert.ok(meshes.some((mesh) => mesh.name === `${tour.id}:sol`), 'le sol est présent');
+      let total = 0, maxY = -Infinity;
       for (const mesh of meshes) {
         total += triangles(mesh);
         assert.ok(mesh.geometry.attributes.normal, 'le décor réagit à la lumière');
         for (const attribute of Object.values(mesh.geometry.attributes)) {
           assert.ok(attribute.array.every(Number.isFinite), `${tour.id}/${mesh.name} : aucun sommet invalide`);
         }
+        const bounds = new THREE.Box3().setFromObject(mesh);
+        maxY = Math.max(maxY, bounds.max.y);
       }
-      assert.ok(total > 100 && total < 6000, `${tour.id} : budget de géométrie borné (${Math.round(total)})`);
+      assert.ok(total > 100 && total < 12000, `${tour.id} : budget de géométrie borné (${Math.round(total)})`);
+      assert.ok(maxY < 3.5, `${tour.id} : le décor reste plus bas que la tour (${maxY.toFixed(2)})`);
     } finally { decor.dispose(); }
   }
   assert.equal(createStoryTowerDecor('tour-inconnue'), null, 'une tour inconnue n’a pas de décor');
+});
+
+test('chaque décor porte le folklore de sa tour, pas une silhouette générique', () => {
+  for (const tour of RPG_STORY_TOURS) {
+    const attendu = FOLKLORE[tour.id];
+    assert.ok(attendu, `${tour.id} : un folklore est défini`);
+    const decor = createStoryTowerDecor(tour.id);
+    try {
+      const presents = materiaux(decor);
+      for (const signature of attendu) {
+        assert.ok(presents.has(signature), `${tour.id} : le décor emploie « ${signature} » (${[...presents].join(', ')})`);
+      }
+    } finally { decor.dispose(); }
+  }
 });
 
 test('les silhouettes se tiennent derrière la tour, le sol sous son socle', () => {
@@ -53,7 +93,7 @@ test('les silhouettes se tiennent derrière la tour, le sol sous son socle', () 
       decor.group.traverse((part) => {
         if (!part.isMesh) return;
         const positions = part.geometry.attributes.position;
-        if (part.name === `sol-${tour.id}`) {
+        if (part.name === `${tour.id}:sol`) {
           const bounds = new THREE.Box3().setFromObject(part);
           solMinY = Math.min(solMinY, bounds.min.y);
           return;
