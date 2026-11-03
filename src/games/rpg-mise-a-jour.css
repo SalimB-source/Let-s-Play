@@ -1,0 +1,211 @@
+/* ── La mise à jour de la coque PC, dans le Sablier ──────────────────────────
+   Le vocabulaire visuel est celui du jeu — panneau sombre, filet d'or, glyphe
+   sablier —, pas celui du site (`mise-a-jour.css`, violet). Trois surfaces :
+   la pastille (bas gauche), le panneau modal, et la carte des Paramètres.
+
+   `z-index` au-dessus des surcouches du duel : la mise à jour doit pouvoir
+   couvrir n'importe quel écran, y compris pendant une partie.
+   ------------------------------------------------------------------------ */
+
+/* ── La pastille ─────────────────────────────────────────────────────────── */
+.rpg-maj__pastille {
+  position: fixed;
+  left: 14px;
+  bottom: 14px;
+  z-index: 9400;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(320px, calc(100vw - 28px));
+  padding: 9px 14px;
+  border: 1px solid rgba(230, 188, 105, .55);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(26, 20, 16, .96), rgba(12, 10, 13, .96));
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, .85), 0 0 0 1px rgba(255, 255, 255, .03) inset;
+  color: #ffe7a4;
+  font: 800 12px/1.2 var(--body, system-ui, sans-serif);
+  letter-spacing: .02em;
+  cursor: pointer;
+  animation: rpg-maj-pastille .24s ease-out both;
+}
+.rpg-maj__pastille:hover { border-color: rgba(255, 224, 150, .85); background: linear-gradient(180deg, rgba(38, 29, 22, .98), rgba(18, 14, 16, .98)); }
+.rpg-maj__pastille:focus-visible { outline: 2px solid #ffd619; outline-offset: 2px; }
+.rpg-maj__pastille--prete { border-color: rgba(150, 220, 130, .6); color: #d8f5c8; }
+.rpg-maj__pastille--erreur { border-color: rgba(231, 119, 105, .6); color: #ffd1c9; }
+.rpg-maj__glyphe { font-size: 15px; line-height: 1; }
+
+/* La mini-barre de progression dans la pastille, pendant le téléchargement. */
+.rpg-maj__pastille-barre {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, .12);
+  overflow: hidden;
+}
+.rpg-maj__pastille-barre > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #e6bc69, #ffd619);
+  transition: width .3s ease;
+}
+
+/* ── Le panneau modal ────────────────────────────────────────────────────── */
+.rpg-maj {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(5, 4, 8, .74);
+  backdrop-filter: blur(3px);
+  animation: rpg-maj-voile .18s ease-out both;
+}
+.rpg-maj__panneau {
+  width: min(440px, 100%);
+  padding: 24px 24px 20px;
+  border: 1px solid rgba(230, 188, 105, .4);
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(230, 188, 105, .14), transparent 62%),
+    linear-gradient(180deg, rgba(22, 17, 20, .98), rgba(10, 9, 14, .98));
+  box-shadow: 0 26px 60px -22px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .03) inset;
+  color: #fff2d3;
+  text-align: left;
+  animation: rpg-maj-panneau .22s cubic-bezier(.2, .9, .3, 1.1) both;
+}
+.rpg-maj__sur-titre {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 8px;
+  color: #e6bc69;
+  font: 800 10px/1.2 var(--mono, system-ui, sans-serif);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.rpg-maj__titre {
+  margin: 0 0 10px;
+  color: #fff2d3;
+  font: 800 20px/1.25 var(--display, system-ui, sans-serif);
+  letter-spacing: -.01em;
+}
+.rpg-maj__texte {
+  margin: 0 0 10px;
+  color: rgba(242, 226, 194, .78);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.rpg-maj__texte strong { color: #ffe7a4; }
+.rpg-maj__date {
+  margin: 0 0 14px;
+  color: rgba(242, 226, 194, .45);
+  font: 600 11px/1.3 var(--mono, system-ui, sans-serif);
+}
+
+/* La barre de progression du téléchargement. */
+.rpg-maj__progression {
+  height: 10px;
+  margin: 6px 0 8px;
+  border: 1px solid rgba(230, 188, 105, .3);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  overflow: hidden;
+}
+.rpg-maj__progression > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #b8863b, #e6bc69, #ffd619);
+  box-shadow: 0 0 12px rgba(255, 214, 25, .4);
+  transition: width .3s ease;
+}
+.rpg-maj__progression-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 14px;
+  color: rgba(242, 226, 194, .6);
+  font: 700 11.5px/1.3 var(--mono, system-ui, sans-serif);
+}
+
+.rpg-maj__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.rpg-maj__bouton {
+  flex: 1 1 auto;
+  min-height: 42px;
+  padding: 10px 15px;
+  border: 1px solid rgba(230, 188, 105, .4);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .05);
+  color: #fff2d3;
+  font: 800 13px/1.1 var(--body, system-ui, sans-serif);
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease, background .12s ease, border-color .12s ease;
+}
+.rpg-maj__bouton:hover { background: rgba(255, 255, 255, .1); border-color: rgba(255, 224, 150, .7); }
+.rpg-maj__bouton:active { transform: translateY(1px); }
+.rpg-maj__bouton:focus-visible { outline: 2px solid #ffd619; outline-offset: 2px; }
+.rpg-maj__bouton--ok {
+  border-color: transparent;
+  background: linear-gradient(180deg, #ffe063, #e6bc69);
+  color: #1a1408;
+}
+.rpg-maj__bouton--ok:hover { filter: brightness(1.06); background: linear-gradient(180deg, #ffe063, #e6bc69); }
+
+.rpg-maj__pied {
+  margin: 14px 0 0;
+  color: rgba(242, 226, 194, .45);
+  font: 600 11px/1.4 var(--mono, system-ui, sans-serif);
+}
+.rpg-maj__lien {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #e6bc69;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.rpg-maj__lien:hover { color: #ffe7a4; }
+
+/* ── La carte des Paramètres ─────────────────────────────────────────────── */
+.rpg-maj-carte__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rpg-maj-carte .rpg-maj__bouton { flex: 0 1 auto; justify-self: start; }
+.rpg-maj-carte .rpg-maj__progression { margin: 0; }
+
+@keyframes rpg-maj-voile { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rpg-maj-panneau { from { opacity: 0; transform: translateY(10px) scale(.985); } to { opacity: 1; transform: none; } }
+@keyframes rpg-maj-pastille { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Sur téléphone (la coque PC reste sur grand écran, mais la carte des
+   Paramètres peut être consultée sur une fenêtre étroite), la pastille
+   remonte au-dessus de la zone sûre. */
+@media (max-width: 640px) {
+  .rpg-maj__pastille {
+    left: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+  .rpg-maj__panneau { padding: 20px 18px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-maj,
+  .rpg-maj__panneau,
+  .rpg-maj__pastille { animation: none; }
+  .rpg-maj__progression > span,
+  .rpg-maj__pastille-barre > span { transition: none; }
+}

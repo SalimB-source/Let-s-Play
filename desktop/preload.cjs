@@ -41,4 +41,27 @@ contextBridge.exposeInMainWorld('letsPlayDesktop', {
   ouvrirRapportChromium: () => ipcRenderer.invoke('desktop:ouvrir-rapport-chromium'),
   /** Ouvrir une URL dans le navigateur du PC (site Let's Play, inscription…). */
   ouvrirExterne: (url) => ipcRenderer.invoke('desktop:ouvrir-externe', url),
+  /**
+   * La mise à jour de la coque, pilotée depuis le jeu.
+   * `etat()` réclame la main (le processus principal cesse d'ouvrir ses
+   * dialogues natifs) et renvoie l'état courant ; `surEtat()` s'abonne aux
+   * diffusions ; `verifier()`, `telecharger()`, `installer()` sont les ordres.
+   */
+  maj: {
+    etat: () => ipcRenderer.invoke('desktop:maj-etat'),
+    verifier: () => ipcRenderer.invoke('desktop:maj-verifier'),
+    telecharger: () => ipcRenderer.invoke('desktop:maj-telecharger'),
+    installer: () => ipcRenderer.invoke('desktop:maj-installer'),
+    surEtat: (callback) => {
+      const ecouteur = (_evenement, etat) => callback(etat);
+      ipcRenderer.on('desktop:maj', ecouteur);
+      return () => ipcRenderer.removeListener('desktop:maj', ecouteur);
+    },
+    /** Le menu « Aide » demande d'ouvrir le panneau de mise à jour dans le jeu. */
+    surOuverture: (callback) => {
+      const ecouteur = () => callback();
+      ipcRenderer.on('desktop:maj-ouvrir', ecouteur);
+      return () => ipcRenderer.removeListener('desktop:maj-ouvrir', ecouteur);
+    },
+  },
 });

@@ -93,6 +93,9 @@ jobs:
       - name: Vérifications de la coque
         run: npm run check:desktop
 
+      - name: La mise à jour pilotée depuis le jeu
+        run: npm run check:maj-desktop
+
   installeur:
     needs: verifs
     runs-on: windows-latest

@@ -139,6 +139,7 @@ import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
+import { RpgMiseAJourCarte } from './RpgMiseAJour.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
 import {
@@ -6212,6 +6213,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </div>
                 </div>
               </section>
+              {/* La mise à jour de l'installeur Windows, pilotée depuis le jeu.
+                  Hors coque PC, le composant ne rend rien (pont absent). */}
+              {desktopMode && <RpgMiseAJourCarte />}
               {desktopMode && desktopAccount && onSignOut && (
                 <section className="rpg-settings__card rpg-settings__account" aria-label="Compte Let's Play">
                   <div className="rpg-settings__card-head">

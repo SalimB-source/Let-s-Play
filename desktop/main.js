@@ -127,6 +127,36 @@ let dossierPaquet = null;
 /** Une seule proposition par session : « jouer en ligne » ne se redemande pas. */
 let sitePlusRecentPropose = false;
 
+/**
+ * La mise à jour de la coque, vue du jeu.
+ * ------------------------------------
+ * Le téléchargement et l'installation de l'installeur Windows se pilotent
+ * désormais **depuis l'interface du Sablier** (pastille + panneau + carte des
+ * Paramètres), pas depuis des dialogues natifs de l'OS. Le processus principal
+ * reste seul à parler à `electron-updater` ; il diffuse son état au rendu et
+ * reçoit ses ordres par IPC. Les dialogues natifs ne servent plus que de
+ * filet : tant que le jeu n'a pas réclamé la main (`majUiActive`), ou s'il
+ * n'est pas chargé (page « hors ligne »), on retombe sur l'ancien comportement.
+ */
+let etatMaj = {
+  phase: 'repos',
+  version: '',
+  versionInstallee: app.getVersion(),
+  datePublication: '',
+  progression: { percent: 0, octetsParSeconde: 0, transferes: 0, total: 0 },
+  erreur: '',
+};
+/** Le jeu a réclamé la main sur la mise à jour (il a appelé `desktop:maj-etat`). */
+let majUiActive = false;
+/** La dernière release vue par `update-available`, pour `downloadUpdate()`. */
+let majDistante = null;
+
+/** Diffuse l'état de mise à jour au jeu et le mémorise pour `desktop:maj-etat`. */
+function diffuserMaj(patch) {
+  etatMaj = { ...etatMaj, ...patch };
+  try { fenetrePrincipale?.webContents.send('desktop:maj', etatMaj); } catch { /* fenêtre fermée */ }
+}
+
 async function demarrer() {
   if (process.platform === 'win32') app.setAppUserModelId(APP_USER_MODEL_ID);
 
@@ -234,6 +264,11 @@ function creerFenetre() {
   fenetrePrincipale.on('closed', () => { fenetrePrincipale = null; });
   fenetrePrincipale.on('close', memoriserEtatFenetre);
 
+  // À chaque navigation, le jeu doit réclamer la main à nouveau (`desktop:maj-etat`).
+  // Sans cela, une page « hors ligne » qui remplace le jeu hériterait d'un
+  // `majUiActive` périmé et n'aurait plus le filet des dialogues natifs.
+  fenetrePrincipale.webContents.on('did-navigate', () => { majUiActive = false; });
+
   // Les liens externes (YouTube, Instagram, le dépôt…) partent au navigateur du
   // PC — comme dans l'APK, le jeu reste dans sa fenêtre.
   fenetrePrincipale.webContents.setWindowOpenHandler(({ url }) => {
@@ -330,6 +365,8 @@ function signalerErreurMaj(erreur) {
   verificationMajManuelle = false;
   telechargementMajEnCours = false;
   console.error('[desktop:update] échec :', erreur);
+  // L'erreur part d'abord dans le jeu : le panneau y a une place pour elle.
+  diffuserMaj({ phase: 'erreur', erreur: String(erreur?.message || erreur || 'Erreur inconnue') });
   // Démarrage hors ligne, réseau qui n'a pas encore repris : une relance, une
   // seule et sans rien dire, une minute plus tard. Une erreur *visible* (le
   // joueur a cliqué « Rechercher une mise à jour ») reste un dialogue.
@@ -337,7 +374,7 @@ function signalerErreurMaj(erreur) {
     relanceMajFaite = true;
     planifierVerificationMaj(60000);
   }
-  if (erreurVisible) {
+  if (erreurVisible && !majUiActive) {
     afficherDialogue({
       type: 'error',
       title: 'Mise à jour impossible',
@@ -355,39 +392,66 @@ function configurerMiseAJour() {
   // Sans updater, on ne câble rien : le jeu reste jouable.
   if (!autoUpdater) return;
 
-  autoUpdater.autoDownload = true;
+  // Le jeu décide : la coque vérifie et signale, mais ne télécharge plus sans
+  // que le joueur l'ait demandé dans le panneau du Sablier (autoDownload).
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
 
   autoUpdater.on('checking-for-update', () => {
     verificationMajEnCours = true;
+    diffuserMaj({ phase: 'verification', erreur: '' });
     console.log('[desktop:update] vérification de la Release GitHub…');
   });
 
   autoUpdater.on('update-available', (info) => {
-    // Garder le verrou de vérification pendant le téléchargement : un second
-    // checkForUpdates() simultané est rejeté par electron-updater.
-    telechargementMajEnCours = true;
+    // Le verrou de vérification tombe : le téléchargement attend l'accord du
+    // joueur, dans le jeu. Un second checkForUpdates() reste possible.
+    verificationMajEnCours = false;
     verificationMajManuelle = false;
-    console.log(`[desktop:update] v${info.version} disponible, téléchargement automatique…`);
-    afficherDialogue({
-      type: 'info',
-      title: 'Mise à jour disponible',
-      message: `La version ${info.version} du Sablier de Bab El est disponible.`,
-      detail: 'Elle est en cours de téléchargement en arrière-plan. Le jeu reste utilisable pendant le téléchargement.',
-      buttons: ['Continuer'],
-      defaultId: 0,
+    majDistante = info;
+    console.log(`[desktop:update] v${info.version} disponible — proposée dans le jeu`);
+    diffuserMaj({
+      phase: 'disponible',
+      version: info.version,
+      datePublication: info.releaseDate || '',
+      erreur: '',
     });
+    // Filet : si le jeu n'a pas (encore) réclamé la main — page hors ligne,
+    // vieille version du site sans le panneau — on garde l'ancien dialogue.
+    if (!majUiActive) {
+      afficherDialogue({
+        type: 'info',
+        title: 'Mise à jour disponible',
+        message: `La version ${info.version} du Sablier de Bab El est disponible.`,
+        detail: 'Ouvrez le jeu pour la télécharger, ou téléchargez-la maintenant en arrière-plan.',
+        buttons: ['Télécharger', 'Plus tard'],
+        defaultId: 0,
+        cancelId: 1,
+      }).then(({ response }) => {
+        if (response === 0) lancerTelechargementMaj();
+      });
+    }
   });
 
   autoUpdater.on('download-progress', (progress) => {
+    diffuserMaj({
+      phase: 'telechargement',
+      progression: {
+        percent: Math.round(progress.percent || 0),
+        octetsParSeconde: Math.round(progress.bytesPerSecond || 0),
+        transferes: Math.round(progress.transferred || 0),
+        total: Math.round(progress.total || 0),
+      },
+    });
     console.log(`[desktop:update] téléchargement ${Math.round(progress.percent)} %`);
   });
 
   autoUpdater.on('update-not-available', (info) => {
     verificationMajEnCours = false;
     console.log(`[desktop:update] application à jour (v${info.version})`);
-    if (verificationMajManuelle) {
+    diffuserMaj({ phase: 'a-jour', version: info.version, erreur: '' });
+    if (verificationMajManuelle && !majUiActive) {
       verificationMajManuelle = false;
       afficherDialogue({
         type: 'info',
@@ -397,12 +461,15 @@ function configurerMiseAJour() {
         buttons: ['OK'],
       });
     }
+    verificationMajManuelle = false;
   });
 
   autoUpdater.on('update-downloaded', async (info) => {
     verificationMajEnCours = false;
     telechargementMajEnCours = false;
     console.log(`[desktop:update] v${info.version} téléchargée, prête à installer`);
+    diffuserMaj({ phase: 'prete', version: info.version, erreur: '' });
+    if (majUiActive) return; // le panneau du jeu propose « Redémarrer et installer »
     const { response } = await afficherDialogue({
       type: 'info',
       title: 'Mise à jour prête',
@@ -422,6 +489,23 @@ function configurerMiseAJour() {
   planifierVerificationMaj(2000);
   const battement = setInterval(() => lancerVerificationMaj(false), 6 * 60 * 60 * 1000);
   battement.unref?.();
+}
+
+/** Lance le téléchargement de l'installeur (appelé par le jeu, ou le filet natif). */
+function lancerTelechargementMaj() {
+  if (!autoUpdater || !majDistante || telechargementMajEnCours) return;
+  telechargementMajEnCours = true;
+  diffuserMaj({ phase: 'telechargement', erreur: '', progression: { percent: 0, octetsParSeconde: 0, transferes: 0, total: 0 } });
+  try {
+    const resultat = autoUpdater.downloadUpdate();
+    resultat?.catch((erreur) => {
+      telechargementMajEnCours = false;
+      signalerErreurMaj(erreur);
+    });
+  } catch (erreur) {
+    telechargementMajEnCours = false;
+    signalerErreurMaj(erreur);
+  }
 }
 
 /** Programme une vérification silencieuse (jamais deux en même temps). */
@@ -518,7 +602,9 @@ function basculerEnLigne() {
 function lancerVerificationMaj(manuelle) {
   if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR || verificationMajEnCours) return;
   if (!autoUpdater) {
-    if (manuelle) {
+    if (manuelle && majUiActive) {
+      diffuserMaj({ phase: 'erreur', erreur: `La mise à jour automatique est indisponible dans cette installation${erreurUpdater ? ` (${erreurUpdater})` : ''}.` });
+    } else if (manuelle) {
       afficherDialogue({
         type: 'info',
         title: 'Mises à jour',
@@ -767,6 +853,13 @@ function construireMenu() {
         {
           label: 'Rechercher une mise à jour…',
           click: () => {
+            // Le jeu a réclamé la main : la vérification et son résultat
+            // s'affichent dans le panneau du Sablier, pas dans un dialogue OS.
+            if (majUiActive) {
+              try { fenetrePrincipale?.webContents.send('desktop:maj-ouvrir'); } catch { /* fenêtre fermée */ }
+              if (!verificationMajEnCours) lancerVerificationMaj(true);
+              return;
+            }
             if (!app.isPackaged || process.platform !== 'win32' || process.env.PORTABLE_EXECUTABLE_DIR) {
               afficherDialogue({
                 type: 'info',
@@ -909,6 +1002,50 @@ ipcMain.handle('desktop:ouvrir-externe', (_e, url) => {
     return true;
   }
   return false;
+});
+
+// ---------------------------------------------------------------------------
+// Mise à jour pilotée depuis le jeu (panneau du Sablier)
+// ---------------------------------------------------------------------------
+/** Le jeu réclame la main : il reçoit l'état courant et les diffusions à venir. */
+ipcMain.handle('desktop:maj-etat', () => {
+  majUiActive = true;
+  // Si aucune vérification n'a encore tourné (démarrage très récent), on en
+  // lance une pour que le panneau ne reste pas vide devant le joueur.
+  if (app.isPackaged && process.platform === 'win32' && !process.env.PORTABLE_EXECUTABLE_DIR
+      && etatMaj.phase === 'repos' && !verificationMajEnCours) {
+    lancerVerificationMaj(false);
+  }
+  return etatMaj;
+});
+
+/** Vérification demandée par le joueur (bouton « Rechercher une mise à jour »). */
+ipcMain.handle('desktop:maj-verifier', () => {
+  majUiActive = true;
+  lancerVerificationMaj(true);
+  return etatMaj;
+});
+
+/** Le menu « Aide » demande une vérification : on ouvre le panneau dans le jeu. */
+ipcMain.handle('desktop:maj-ouvrir', () => {
+  majUiActive = true;
+  try { fenetrePrincipale?.webContents.send('desktop:maj-ouvrir'); } catch { /* fenêtre fermée */ }
+  if (etatMaj.phase === 'repos' && !verificationMajEnCours) lancerVerificationMaj(true);
+  return etatMaj;
+});
+
+/** Téléchargement de l'installeur, demandé dans le panneau du jeu. */
+ipcMain.handle('desktop:maj-telecharger', () => {
+  majUiActive = true;
+  lancerTelechargementMaj();
+  return etatMaj;
+});
+
+/** « Redémarrer et installer » : quitte et lance l'installeur NSIS. */
+ipcMain.handle('desktop:maj-installer', () => {
+  if (!autoUpdater || etatMaj.phase !== 'prete') return false;
+  autoUpdater.quitAndInstall();
+  return true;
 });
 
 app.on('window-all-closed', async () => {

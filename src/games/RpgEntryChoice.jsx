@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import './rpg-entry-choice.css';
 import RpgDesktopLogin from './RpgDesktopLogin.jsx';
+import RpgMiseAJour from './RpgMiseAJour.jsx';
 import GameLoadBoundary from './GameLoadBoundary.jsx';
 import ChargementDuel from './ChargementDuel.jsx';
 import { importerAvecReprise } from './chargementJeu.js';
@@ -183,6 +184,10 @@ export default function RpgEntryChoice({ variantesPlateaux = false } = {}) {
             <RpgDuelPage variantesPlateaux={variantesPlateaux} />
           </Suspense>
         </RpgDesktopLogin>
+        {/* La mise à jour de la coque PC, dans le jeu : pastille + panneau.
+            Hors coque (navigateur, APK), le pont n'existe pas et ce composant
+            ne rend rien — il n'alourdit donc pas la version web. */}
+        <RpgMiseAJour />
       </GameLoadBoundary>
     );
   }
