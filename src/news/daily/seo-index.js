@@ -303,5 +303,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-02",
     "section": "Actualités tech"
+  },
+  "/news/ps-plus-novembre-2026-disponibilite-3-novembre": {
+    "title": "PS PLUS À AJOUTER CE MOIS-CI. — Let’s Play",
+    "description": "Dead Island 2, Tomb Raider IV–VI Remastered et Monster Train 2 entrent dans la période d’ajout des jeux mensuels, du 3 au 30 novembre.",
+    "image": "https://i.ytimg.com/vi/CtcxPqTAftE/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-03",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/bass-x-machina-netflix-3-novembre-2026": {
+    "title": "BASS X MACHINA LE WESTERN DÉRAILLE. — Let’s Play",
+    "description": "Netflix annonce Bass X Machina pour ce 3 novembre : un western animé steampunk porté par les voix de Brian Tyree Henry et Janelle Monáe.",
+    "image": "https://i.ytimg.com/vi/jjr5mf9i42Q/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-03",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/stm32-summit-3-novembre-2026": {
+    "title": "STM32 SUMMIT L’IA DANS LE RÉEL. — Let’s Play",
+    "description": "STMicroelectronics programme une keynote en ligne ce 3 novembre à 17 h, heure d’Alger et de Paris, sur les STM32 et l’IA physique.",
+    "image": "https://i.ytimg.com/vi/JJfcEa_THZ8/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-03",
+    "section": "Actualités tech"
   }
 };
