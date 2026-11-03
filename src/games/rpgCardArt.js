@@ -60,6 +60,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'vampire-des-braises': 'vampire-braise-v1',
   'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',
@@ -117,7 +118,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'braise-souls-cendres-v6',
   'serment-de-la-forge': 'braise-souls-cendres-v4',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'ifrit-archer-immateriel-v1',
+  'ifrit-al-ahmar': 'ifrit-armee-djinns-v2',
   'la-devoreuse': 'devoreuse-nihonga-visage-v1',
   'ifrit-des-ergs': 'braise-souls-cendres-v3',
   'trait-de-braise': 'braise-souls-cendres-v5',

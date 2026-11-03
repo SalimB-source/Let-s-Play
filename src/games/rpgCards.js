@@ -420,6 +420,14 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
+    cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    rapidite: true, reactionTourAdverse: true,
+    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'attaque-bloquee' },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',
+    flavor: 'La première étincelle précède toujours sa lame.',
+  },
+  {
     id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
     destruction: { type: 'exil-temporaire', cible: 'creature-amie' },
@@ -836,6 +844,20 @@ export const RPG_CREATURE_CARDS = [
   // Récits du Nord : les figures du panthéon nordique n'y sont jamais nommées
   // « dieux » — elles portent des titres (le Père des corbeaux, le Maître du
   // marteau), comme on les appelait pour ne pas les appeler.
+  {
+    id: 'viking-des-neiges', name: 'Viking des neiges', element: 'neige',
+    cost: 1, atk: 2, def: 1, rarity: 'commune',
+    typeLine: 'Créature — Guerrier viking',
+    text: '', flavor: 'Il marche le premier dans la neige fraîche.',
+  },
+  {
+    id: 'archere-viking-du-givre', name: 'Archère viking du givre', element: 'neige',
+    cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
+    typeLine: 'Créature — Archère viking',
+    coupRapide: true, gelCombatChance: 0.15,
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 25 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    flavor: 'Ses flèches portent le froid des longs hivers.',
+  },
   {
     id: 'eirik-du-premier-serment',
     name: 'Eirik du Premier Serment',

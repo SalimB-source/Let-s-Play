@@ -25,7 +25,7 @@ function poser(d, camp, id) {
 test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => {
   const values = (id) => cardById(id);
   assert.equal(values('seigneur-des-machoires').overkill, true);
-  assert.equal(values('le-brulot').cost, 2);
+  assert.equal(values('le-brulot').cost, 3);
   assert.deepEqual([values('tercio-de-cuivre').atk, values('tercio-de-cuivre').def], [1, 4]);
   assert.deepEqual(values('tercio-de-cuivre').croissanceTour, { atk: 1, maximum: 3 });
   assert.equal(values('la-barbe-rousse').contreAttaque, true);

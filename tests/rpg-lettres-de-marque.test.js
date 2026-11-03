@@ -655,7 +655,7 @@ test('Cargaison fait piocher une carte à la mort comme à la prise', () => {
   assert.equal(mort.sorcier.deck.length, 1, 'une seule carte est tirée du paquet à la mort');
 });
 
-test('Le Brûlot embrase la créature qui le détruit en combat — jamais par magie', () => {
+test('Le Brûlot embrase son tueur en combat et frappe le sorcier à sa mort', () => {
   // Morte en combat : le tueur survivant encaisse 2 dégâts.
   const duel = duelVide();
   mana(duel, 'joueur', 10);
@@ -741,10 +741,11 @@ test('Le Brûlot embrase la créature qui le détruit en combat — jamais par m
   donner(capture, 'sorcier', 'le-brulot');
   const brulot3 = jouer(capture, 'sorcier', 'le-brulot').entite;
   donner(capture, 'joueur', 'cotre-de-course');
-  const cotre = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id).entite;
-  assert.equal(cotre.enCale?.carteId, 'le-brulot', 'le Brûlot est pris en cale');
-  assert.equal(capture.joueur.creatures.includes(cotre), true, 'son capteur n’a pas été embrasé : rien n’est mort');
-  assert.equal(cotre.pv, 1, 'le Cotre garde ses 1 PV');
+  const pvAvantCapture = capture.joueur.pv;
+  const refus = jouer(capture, 'joueur', 'cotre-de-course', brulot3.id);
+  assert.equal(refus.ok, false, 'le Brûlot coûte maintenant 3 : le seuil 2 ne peut le capturer');
+  assert.ok(capture.sorcier.creatures.includes(brulot3));
+  assert.equal(capture.joueur.pv, pvAvantCapture);
 });
 
 test('le Grappin (4 manas) alourdit son porteur de 1, puis active Abordage selon son coût augmenté', () => {
@@ -819,9 +820,9 @@ test('l’IA du sorcier choisit sa prise la plus précieuse parmi les légales',
   const tercio = jouer(prise, 'joueur', 'tercio-de-cuivre').entite; // coût 3 : trop cher
   donner(prise, 'sorcier', 'cotre-de-course');
   const cotre = jouer(prise, 'sorcier', 'cotre-de-course').entite;
-  assert.equal(cotre.enCale?.carteId, 'le-brulot',
-    'l’auto-pick a pris le Brûlot (coût 2), pas la Mousse (coût 1) ni le Tercio (coût 3, hors seuil)');
-  assert.equal(prise.joueur.creatures.includes(brulot), false);
+  assert.equal(cotre.enCale?.carteId, 'mousse-des-galiotes',
+    'le Brûlot coûte 3 et dépasse désormais le seuil de prise du Cotre');
+  assert.equal(prise.joueur.creatures.includes(brulot), true);
   assert.equal(prise.joueur.creatures.includes(tercio), true, 'le Tercio coûteux reste sur la table');
 });
 

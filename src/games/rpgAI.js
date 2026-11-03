@@ -310,7 +310,8 @@ function excesOverkill(attaquant, bloqueur) {
  *  correspondant à l’attaque ou au blocage en cours. */
 function degatsAvantCombat(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
-  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand
+    && !(carte.combat.quand === 'attaque-bloquee' && quand === 'attaque')) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 

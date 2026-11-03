@@ -2732,36 +2732,34 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
       duel.log.push(`Prime : ${source.name} détruit ${mort.entite.name}${pioche ? ' — son contrôleur pioche une carte' : ''}.`);
     }
   }
-  // Le Brûlot (degats-tueur) : mort en combat, il embrase son tueur — les
-  // dégâts de l'effet tombent sur l'une des créatures qui l'ont détruit et qui
-  // a survécu à l'échange. Mort par magie ou par capacité, rien ne se
-  // déclenche : seul le tueur de combat est connu —
-  // `declencherCapaciteDestruction` passe bien par ici, son effet
-  // 'degats-tueur' est un no-op ailleurs.
+  // Après retrait simultané des mortes, seule une source encore en jeu
+  // peut subir l'explosion dirigée contre la créature qui l'a tué.
   for (const mort of mortes) {
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction?.type !== 'degats-tueur') continue;
-    const amount = Math.max(0, Number(carte.destruction.amount) || 0);
-    if (!amount) continue;
-    for (const source of mort.sources ?? []) {
-      if (mortsIds.has(source.id)) continue;
-      const tueur = duel[source.cote]?.creatures.find((candidate) => candidate.id === source.id);
-      if (!tueur) continue;
-      duel.log.push(`${mort.entite.name} embrase son pont : ${tueur.name} subit ${amount} dégât${amount > 1 ? 's' : ''}.`);
-      if (!rpgEstProtegee(tueur, cardColors(carte)) && !paradeZoneBloque(duel, tueur, 'capacite', source.cote, mort.cote))
-        rpgBlesserCreature(duel, source.cote, tueur.id, amount, cardColors(carte), null, 'capacite', carte.id);
-      break;
-    }
+    const source = (mort.sources ?? []).find((s) => !mortsIds.has(s.id)
+      && duel[s.cote]?.creatures.some((e) => e.id === s.id));
+    if (source) embraserTueur(duel, mort.cote, carte, source);
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
   return esquivesContre;
 }
 
+function embraserTueur(duel, cote, carte, source) {
+  const cible = duel[source.cote]?.creatures.find((e) => e.id === source.id);
+  const amount = Math.max(0, Number(carte?.destruction?.amount) || 0);
+  if (!cible || !amount || rpgEstProtegee(cible, cardColors(carte))
+    || paradeZoneBloque(duel, cible, 'capacite', source.cote, cote)) return;
+  duel.log.push(`${carte.name} embrase ${cible.name} : ${amount} dégâts.`);
+  rpgBlesserCreature(duel, source.cote, cible.id, amount, cardColors(carte), null, 'capacite', carte.id);
+}
+
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
 function degatsCreatureCombattue(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
-  if (carte.combat.quand && carte.combat.quand !== quand) return 0;
+  if (carte.combat.quand && carte.combat.quand !== quand
+    && !(carte.combat.quand === 'attaque' && quand === 'attaque-bloquee')) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 
@@ -3006,19 +3004,24 @@ function gelerEntite(duel, entite) {
   duel.log.push(`${entite.name} est gelée : ni attaque ni blocage jusqu’à la fin de son prochain tour.`);
 }
 
-// Déclenchement d'une arme avant les blessures : un jet indépendant par adversaire.
+// Chaque source de gel tente indépendamment de geler l'adversaire avant les blessures.
 function gelerAdversaireDePorteur(duel, porteur, cible) {
   if (!porteur || !cible) return;
+  const carte = duelCardById(porteur.carteId);
   const arme = armeCarteDe(porteur);
-  const effet = arme?.porteurAvantDegats;
-  if (effet?.type !== 'gel' || (hasardParDuel.get(duel) ?? Math.random)() >= effet.chance) return;
-  if (rpgEstProtegee(cible, cardColors(arme)) || rpgEstProtegeeDesSorts(cible, cardColors(arme), 'capacite')) return;
-  if (cible.bouclier > 0) {
-    briserBouclier(cible);
-    duel.log.push(`Le bouclier de ${cible.name} bloque le gel de ${arme.name} et tombe.`);
-    return;
+  const sources = [];
+  if (carte?.gelCombatChance) sources.push({ source: carte, chance: carte.gelCombatChance });
+  if (arme?.porteurAvantDegats?.type === 'gel') sources.push({ source: arme, chance: arme.porteurAvantDegats.chance });
+  for (const { source, chance } of sources) {
+    if ((hasardParDuel.get(duel) ?? Math.random)() >= chance) continue;
+    if (rpgEstProtegee(cible, cardColors(source)) || rpgEstProtegeeDesSorts(cible, cardColors(source), 'capacite')) continue;
+    if (cible.bouclier > 0) {
+      briserBouclier(cible);
+      duel.log.push(`Le bouclier de ${cible.name} bloque le gel de ${source.name} et tombe.`);
+      continue;
+    }
+    gelerEntite(duel, cible);
   }
-  gelerEntite(duel, cible);
 }
 
 /**
@@ -3437,7 +3440,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!victime || estSite(victime) || !cibleRespecteCoutMax({ effet }, victime)
         || rpgEstProtegee(victime, sourceElement) || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
       const nom = victime.name;
-      enterrer(duel, campCible, victime, sourceElement);
+      enterrer(duel, campCible, victime, sourceElement, null, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
       duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le sort'} détruit ${nom}.`);
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
@@ -4217,7 +4220,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
           || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
@@ -4800,8 +4803,8 @@ function programmerRetourTenacite(duel, cote, entite) {
 }
 
 /** Retire une créature morte, puis déclenche sa capacité de destruction. */
-function enterrer(duel, cote, entite, sourceElements = [], declenchements = null) {
-  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements);
+function enterrer(duel, cote, entite, sourceElements = [], declenchements = null, tueur = null) {
+  rejoindreCimetiere(duel, cote, entite, sourceElements, 'est détruite et rejoint le cimetière.', declenchements, tueur);
 }
 
 /**
@@ -4885,7 +4888,14 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
   const effet = carte.destruction;
   // `degats-tueur` (Le Brûlot) ne se résout qu'au combat, là où les sources
   // des blessures sont connues : ailleurs, il n'y a pas de tueur à embraser.
-  if (effet?.type === 'degats-tueur') return;
+  if (effet?.type === 'degats-tueur') {
+    const degats = Math.max(0, Number(effet.degatsSorcier) || 0);
+    if (degats) {
+      rpgInfligerSorcier(duel, autre(cote), degats);
+      duel.log.push(`${carte.name} inflige ${degats} dégâts au sorcier adverse en mourant.`);
+    }
+    return;
+  }
   if (effet?.type === 'exil-temporaire') {
     const legales = duel[cote].creatures.filter((entite) => !estSite(entite));
     if (!legales.length) { duel.log.push(`${carte.name} : aucune créature alliée à protéger.`); return; }
@@ -4920,7 +4930,7 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId) {
 }
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
-function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null) {
+function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null, tueur = null) {
   if (estSite(entite)) return false;
   // Le mort qui tenait une cale la rend : le prisonnier revient EN JEU (la
   // mort du capteur n'est pas un renvoi), et la Cargaison du mort paie son
@@ -4944,6 +4954,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, cote, carte, entite.carteId);
+      if (carte.destruction.type === 'degats-tueur' && tueur) embraserTueur(duel, cote, carte, tueur);
     }
     declencherHarakiri(duel, cote, entite);
   };
@@ -5059,7 +5070,7 @@ export function rpgActionsEtat(duel) {
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise).
  *  `sourceCarteId` ne sert qu'au journal des blessures : la table y reconnaît
  *  le coup qui mérite sa propre cinématique (l'Éclair du marteau). */
-export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null) {
+export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
   if (rpgEstProtegee(entite, sourceElement)) {
@@ -5092,7 +5103,7 @@ export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement =
     // À 0 PV la créature meurt vraiment : Tenacité ne refuse plus la
     // destruction, elle promet seulement une renaissance au prochain tour.
     // Une morte ne s'enflamme donc jamais de Furie.
-    enterrer(duel, cote, entite, elements);
+    enterrer(duel, cote, entite, elements, null, sourceCreature);
     mortelle = true;
   } else {
     appliquerFurie(duel, entite, recus);
@@ -7073,7 +7084,7 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
-      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque');
+      if (!estGelee(attaquant)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, cote, duelCardById(attaquant.carteId), bloqueur, attaquant, 'attaque-bloquee');
       if (bloqueur && !estGelee(bloqueur)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
