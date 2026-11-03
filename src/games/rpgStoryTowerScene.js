@@ -5,6 +5,7 @@
  */
 import * as THREE from 'three';
 import { createStoryTowerModel, disposeStoryTowerModel, RPG_STORY_TOWER_THEMES } from './rpgStoryTowerModels.js';
+import { createStoryTowerDecor } from './rpgStoryTowerDecor.js';
 
 const FPS = 24;
 const SPIN = 0.12;
@@ -217,7 +218,7 @@ export function createStoryTowerRuin(model, theme, tourId) {
 export function mountStoryTowerScene({ host, canvas, tourId, detail = false, detruite = false, onReady = () => {}, onUnavailable = () => {} }) {
   const theme = RPG_STORY_TOWER_THEMES[tourId];
   if (!theme) { onUnavailable(); return null; }
-  let renderer, model, shadow, motes, ruin;
+  let renderer, model, shadow, motes, ruin, decor;
   let disposed = false, failed = false, ready = false, raf = 0;
   let visible = true, calm = false, previousTime = 0, lastPaint = 0;
   let spin = -0.15, pointerTarget = 0, pointerYaw = 0;
@@ -232,6 +233,7 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
     stop();
     cleanups.forEach((cleanup) => cleanup());
     ruin?.dispose();
+    decor?.dispose();
     disposeStoryTowerModel(model);
     for (const part of [shadow, motes]) {
       part?.geometry.dispose();
@@ -310,6 +312,10 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
     scene.add(ambient, key, fill, rim);
     shadow = makeShadow();
     scene.add(shadow);
+    // Le décor de fond : sol teinté et silhouettes thématiques derrière la tour.
+    // Groupe séparé du modèle, donc jamais rogné par les coupes de la ruine.
+    decor = createStoryTowerDecor(tourId, theme);
+    if (decor) scene.add(decor.group);
     if (detruite) {
       // La tour terminée : brisée par trois coupes, noircie, et sa brèche fume.
       ruin = createStoryTowerRuin(model, theme, tourId);
