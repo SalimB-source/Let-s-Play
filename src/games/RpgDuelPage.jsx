@@ -71,6 +71,7 @@ import {
   prochainEtage,
   RPG_STORY_TOURS,
   tourHistoireParId,
+  tourPrecedente,
 } from './rpgStoryTours.js';
 import { useRpgStory } from './useRpgStory.js';
 import { rpgIndicationsModes } from './rpgModeAccueil.js';
@@ -5339,7 +5340,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   {toursFiltrees.map(({ tour }) => {
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
                     const ouverte = tourEstDebloquee(progressionHistoire, tour.id);
-                    const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : null;
+                    const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : tourPrecedente(tour.id);
                     // Ce que la tour rapporte — étages et butin du sommet — et
                     // ce qui est déjà en poche : les deux se lisent sur la carte.
                     const gains = gainsDeTour(tour.id, {

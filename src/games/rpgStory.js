@@ -12,7 +12,7 @@
  * ne casse jamais le menu.
  */
 
-import { etageHistoireParId, etagePrecedent, tourHistoireParId, tousLesEtages } from './rpgStoryTours.js';
+import { etageHistoireParId, etagePrecedent, tourHistoireParId, tourPrecedente, tousLesEtages } from './rpgStoryTours.js';
 import {
   ecrireProgression,
   effacerProgression,
@@ -70,18 +70,30 @@ export function etageEstVaincu(progression, etageId) {
 }
 
 /**
- * La tour est-elle ouverte ? Toutes les tours le sont d'emblée, sauf celles qui
+ * La tour est-elle ouverte ? L'ascension est séquentielle : seule la première
+ * tour est libre, chaque suivante ne s'ouvre qu'en terminant la précédente.
+ * Une tour déjà conquise reste accessible (on peut la rejouer). Les tours qui
  * déclarent une condition `deblocage.tour` — la Tour Oubliée, qui n'ouvre
- * qu'une fois les sept maîtres du Sablier renversé vaincus.
+ * qu'une fois les sept maîtres du Sablier renversé vaincus — gardent leur
+ * verrou explicite.
  */
 export function tourEstDebloquee(progression, tourId) {
   const tour = tourHistoireParId(tourId);
   if (!tour) return false;
+  // Une tour déjà terminée ne se referme jamais : ses étages sont rejouables.
+  if (tour.etages.length > 0 && tour.etages.every((etage) => etageEstVaincu(progression, etage.id))) return true;
+  // Verrou explicite (la Tour Oubliée après le Sablier renversé).
   const requis = tour.deblocage?.tour;
-  if (!requis) return true;
-  const tourRequis = tourHistoireParId(requis);
-  if (!tourRequis) return false;
-  return tourRequis.etages.every((etage) => etageEstVaincu(progression, etage.id));
+  if (requis) {
+    const tourRequis = tourHistoireParId(requis);
+    if (!tourRequis) return false;
+    return tourRequis.etages.every((etage) => etageEstVaincu(progression, etage.id));
+  }
+  // Ascension séquentielle : la première tour est ouverte d'emblée, chaque
+  // suivante attend que la précédente soit entièrement déblayée.
+  const precedente = tourPrecedente(tourId);
+  if (!precedente) return true;
+  return precedente.etages.every((etage) => etageEstVaincu(progression, etage.id));
 }
 
 /**

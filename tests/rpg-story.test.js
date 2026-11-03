@@ -21,6 +21,7 @@ import {
   resumeTourHistoire,
   RPG_STORY_STORAGE_KEY,
   sauverProgressionHistoire,
+  tourEstDebloquee,
 } from '../src/games/rpgStory.js';
 import {
   deckHistoire,
@@ -305,13 +306,35 @@ test('un étage se débloque après l’étage précédent de sa tour', () => {
   const vide = progressionHistoireVide();
   assert.equal(etageEstDebloque(vide, 'listes-1'), true, 'le premier étage est toujours ouvert');
   assert.equal(etageEstDebloque(vide, 'listes-2'), false);
-  assert.equal(etageEstDebloque(vide, 'souk-1'), true, 'chaque tour démarre libre');
+  assert.equal(etageEstDebloque(vide, 'souk-1'), false, 'le Souk attend la fin de la tour des Listes');
 
   const uneVictoire = marquerEtageVaincu(vide, 'listes-1');
   assert.equal(etageEstDebloque(uneVictoire, 'listes-2'), true);
   assert.equal(etageEstDebloque(uneVictoire, 'listes-3'), false, 'pas de saut d’étage');
-  assert.equal(etageEstDebloque(uneVictoire, 'souk-2'), false, 'les tours sont indépendantes');
+  assert.equal(etageEstDebloque(uneVictoire, 'souk-2'), false, 'le Souk reste verrouillé tant que les Listes ne sont pas finies');
   assert.equal(etageEstDebloque(uneVictoire, 'inconnu'), false);
+});
+
+test('les tours se débloquent séquentiellement : la première est libre, les autres attendent la précédente', () => {
+  const vide = progressionHistoireVide();
+  // Seule la première tour est ouverte au départ.
+  assert.equal(tourEstDebloquee(vide, 'tour-des-listes'), true, 'la première tour est libre');
+  for (const tour of RPG_STORY_TOURS.slice(1)) {
+    assert.equal(tourEstDebloquee(vide, tour.id), false, `${tour.id} est verrouillée au départ`);
+  }
+
+  // Finir la première tour ouvre la deuxième, pas la troisième.
+  const listes = tourHistoireParId('tour-des-listes');
+  let progression = vide;
+  for (const etage of listes.etages) progression = marquerEtageVaincu(progression, etage.id);
+  assert.equal(tourEstDebloquee(progression, 'tour-des-listes'), true, 'une tour conquise reste ouverte');
+  assert.equal(tourEstDebloquee(progression, 'tour-du-souk'), true, 'la tour du Souk s’ouvre');
+  assert.equal(tourEstDebloquee(progression, 'tour-des-sables'), false, 'la troisième attend encore');
+
+  // Finir la deuxième ouvre la troisième.
+  const souk = tourHistoireParId('tour-du-souk');
+  for (const etage of souk.etages) progression = marquerEtageVaincu(progression, etage.id);
+  assert.equal(tourEstDebloquee(progression, 'tour-des-sables'), true, 'la tour des Sables s’ouvre à son tour');
 });
 
 test('marquer un étage vaincu est immuable et idempotent', () => {
