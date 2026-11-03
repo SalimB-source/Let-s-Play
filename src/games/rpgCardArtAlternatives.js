@@ -244,6 +244,7 @@ const DEFINITIONS = [
   ['la-grande-pesee', 'La Grande Pesée'],
   ['la-derniere-pesee', 'La Dernière Pesée'],
   ['tour-des-tenebres', 'La tour des ténèbres'],
+  ['bouchra-guerriere-des-cretes', 'Bouchra sur les crêtes'],
 ];
 
 /**

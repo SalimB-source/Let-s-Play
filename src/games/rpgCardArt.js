@@ -158,7 +158,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'tarek': 'sable-souls-desore-v3',
   'tin-hinan-des-pistes': 'sable-souls-desore-v3',
   // Bouchra, la guerrière des crêtes : peinture neuve, révision dédiée.
-  'bouchra-guerriere-des-cretes': 'bouchra-cretes-v3',
+  'bouchra-guerriere-des-cretes': 'bouchra-souls-v4',
   // Le roi Kusayla, peint pour le souverain amazigh : une révision dédiée, pour
   // qu'un repaint futur ne date que sa propre peinture. Le guépard qu'il
   // appelle à son arrivée est une créature-jeton, peinte elle aussi.
