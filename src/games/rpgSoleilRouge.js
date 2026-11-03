@@ -183,13 +183,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: -2, coupCritique: 0.25 },
-    // Le Lien de la Flamme : sur Kagutsuchi, le sabre ne mord **que la
-    // force** — la défense imprimée reste intacte (+2/+0 au lieu de +2/-2).
-    // Et comme les coups critiques se cumulent, sa frappe quadruple passe de
-    // 25 % à 50 % de chances SANS que ce Lien ait à l'écrire.
-    lien: { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
-    text: 'Arme — Le porteur gagne +2/-2 et Coup critique (25 %). Le sabre tombe avec son porteur. Avec Kagutsuchi, Flamme originelle en jeu : +2/+0 au lieu de +2/-2.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.25, volDeVie: true },
+    text: 'Arme — Le porteur gagne +2/+1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({

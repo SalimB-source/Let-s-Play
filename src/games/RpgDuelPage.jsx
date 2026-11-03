@@ -3532,7 +3532,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
      écrit encore « Quand le Faussoyeur arrive : … ». Les sorts, armes, sites
      et terrains gardent leur texte : il dit ce que fait la carte. */
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
-  const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie);
+  const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie || arme.effet?.volDeVie);
   const lecture = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
   const description = estCreature ? lecture.texte : effet;

@@ -291,7 +291,7 @@ export function pastillesPourCarte(carte) {
   // pastille dit d'où il vient, tant que la Furie n'est pas allumée.
   if (carte.furieGains?.envol) ajouter('envol', 'Envol (furie)');
   if (carte.infiltration || carte.arrivee?.type === 'infiltration') ajouter('infiltration', 'Infiltration');
-  if (carte.volDeVie || carte.donne?.volDeVie) ajouter('volDeVie', 'Vol de vie');
+  if (carte.volDeVie || carte.donne?.volDeVie || carte.effet?.volDeVie) ajouter('volDeVie', 'Vol de vie');
   if (carte.rapidite) ajouter('rapidite', 'Rapidité');
   if (carte.coupRapide) ajouter('coupRapide', 'Attaque ciblée');
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
