@@ -610,9 +610,8 @@ export const RPG_CREATURE_CARDS = [
     rarity: 'commune',
     typeLine: 'Créature — Amazighe kabyle',
     art: 'tiziri-du-djurdjura',
-    manaEngagement: { couleur: 'eau', amount: 1 },
     arrivee: { type: 'recherche-deck-categories', categories: ['Magie Rapide', 'Sorcellerie'] },
-    text: 'Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main. Engagez Tiziri : elle produit un mana d’Eau pendant ce tour.',
+    text: 'Quand Tiziri arrive en jeu : cherchez dans votre deck une Magie Rapide ou une Sorcellerie et ajoutez-la à votre main.',
     flavor: 'Son chant rassemble les villages avant la tempête — et fait descendre l’eau des crêtes.',
   },
   {

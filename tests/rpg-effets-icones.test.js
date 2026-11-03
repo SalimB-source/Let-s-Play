@@ -117,8 +117,8 @@ test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('onna-musha-des-cendres'), ['Esquive', 'Harakiri'],
     'le Harakiri du Soleil rouge se lit sans chiffre derrière le nom');
   assert.deepEqual(pastillesDe('samourai-du-torii'), ['Résonance samouraï', 'Harakiri']);
-  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), ['Mana de Eau 1'],
-    'Tiziri n’a plus de Protection : sa pastille annonce l’engagement qui produit son mana d’eau');
+  assert.deepEqual(pastillesDe('tiziri-du-djurdjura'), [],
+    'Tiziri ne produit plus de mana et ne porte pas de pastille de mana');
   assert.deepEqual(pastillesDe('tin-hinan'), ['Infiltration'], 'elle donne Infiltration, la pastille le dit');
   assert.deepEqual(pastillesDe('kusayla-roi-des-imazighen'), ['Esquive', 'Contre-attaque'],
     'le roi Kusayla ajoute son Esquive à sa Contre-attaque');

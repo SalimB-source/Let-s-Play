@@ -1555,8 +1555,8 @@ test('les capacités des personnages amazighs se déclenchent à l’arrivée et
   assert.equal(fennec.atk, 3, 'Tiziri ne renforce que sa propre attaque');
   assert.equal(tiziri.atk, 2, 'Tiziri reste une 2/1');
   assert.equal(rpgEstProtegee(tiziri, ['braise']), false, 'sa protection de Braise a disparu avec sa refonte');
-  assert.equal(rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id), true,
-    'elle peut s’engager pour produire un mana d’eau');
+  assert.equal(rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id), false,
+    'elle ne produit plus de mana');
   donner(duel, 'joueur', 'amani-des-ksour');
   const amani = rpgJouerCreature(duel, 'joueur', 'amani-des-ksour').entite;
   assert.deepEqual([amani.atk, amani.def, amani.pv], [2, 5, 5], 'Amani est une 2/5');

@@ -148,32 +148,20 @@ test('Vipère / Bakunawa', () => {
   ok('interdit d\'attaque marqué', chien.empecheAttaqueToursRestants >= 1, `${chien.empecheAttaqueToursRestants}`);
 }
 
-// ─── 7. ENGAGEMENT POUR MANA (Tiziri) ───────────────────────────────────────
+// ─── 7. TIZIRI SANS PRODUCTION DE MANA ───────────────────────────────────────
 });
 
-test('Engagement pour mana', () => {
-{
+test('Tiziri ne peut plus être engagée pour produire du mana', () => {
   const duel = duelAvecMains(['tiziri-du-djurdjura']);
   rpgJouerCreature(duel, 'joueur', 'tiziri-du-djurdjura');
   const tiziri = duel.joueur.creatures[0];
-  // La protection de braise a disparu avec la refonte : Tiziri ne se paie plus
-  // que par son engagement, et son imprimé ne porte aucune protection.
-  ok('plus de protection de braise', !tiziri.protection && !rpgEstProtegee(tiziri, ['braise']));
-  ok('engageable dès son arrivée', rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
   const eauAvant = duel.joueur.mana.eau;
-  const res = rpgEngagerPourMana(duel, 'joueur', tiziri.id);
-  ok('engagement accepté', res.ok, JSON.stringify(res));
-  ok('un mana d’eau produit', duel.joueur.mana.eau === eauAvant + 1, `+${duel.joueur.mana.eau - eauAvant}`);
-  ok('Tiziri reste tournée (attaquée)', tiziri.attaquee === true && tiziri.ready === false);
-  ok('un second engagement est refusé', !rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id)
-    && !rpgEngagerPourMana(duel, 'joueur', tiziri.id).ok);
-  // Le camp adverse ne peut pas activer la créature d’autrui.
-  ok('le sorcier ne peut pas l’engager', !rpgPeutEngagerPourMana(duel, 'sorcier', tiziri.id));
-  // Au prochain tour du joueur, Tiziri se dégage et peut de nouveau produire.
+  ok('sans production de mana', !rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
+  ok('activation refusée', !rpgEngagerPourMana(duel, 'joueur', tiziri.id).ok);
+  ok('réserve inchangée', duel.joueur.mana.eau === eauAvant);
+  ok('Tiziri non engagée', !tiziri.attaquee);
   rpgFinDeTour(duel); rpgFinDeTour(duel);
-  ok('dégagée au tour suivant', tiziri.attaquee === false && tiziri.ready === true);
-  ok('de nouveau engageable', rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
-}
+  ok('toujours sans production au tour suivant', !rpgPeutEngagerPourMana(duel, 'joueur', tiziri.id));
 
 // ─── 8. RÉANIMATION : cimetière → table ─────────────────────────────────────
 });
