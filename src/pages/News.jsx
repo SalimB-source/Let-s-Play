@@ -1,9 +1,9 @@
-import { dailyNewsListing as yesterdayStories } from '../news/daily/2026-11-01';
+import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-02';
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-02';
-import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-11-02';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-03';
+import { dailyNewsListing as todayCultureTechNews } from '../news/daily/2026-11-03';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';
@@ -11,8 +11,8 @@ import { Arrow } from '../components/ReleasesCalendar';
 // Une actualité par univers, partagée avec les flux, la recherche et les articles.
 const todayStories = [
   dailyNewsListing[0],
-  cultureTechNews20261029.find((story) => story.to.startsWith('/news/cinema/')),
-  cultureTechNews20261029.find((story) => story.to.startsWith('/news/tech/')),
+  todayCultureTechNews.find((story) => story.to.startsWith('/news/cinema/')),
+  todayCultureTechNews.find((story) => story.to.startsWith('/news/tech/')),
 ].filter(Boolean);
 
 // Page intermédiaire : elle ouvre sur les actus du jour, puis laisse choisir
@@ -210,7 +210,7 @@ export default function News() {
       <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'}>
         <div className="section-label">
           <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
-          <span>01.11.2026</span>
+          <span>{yesterdayDate}</span>
         </div>
         <div className="news-carousel is-grid">
           {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}

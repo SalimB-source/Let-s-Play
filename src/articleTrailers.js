@@ -76,6 +76,53 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // Édition du 03.11.2026 : dates originales et statut de diffusion précisés dans les notes.
+  "ps-plus-novembre-2026-disponibilite-3-novembre": {
+  "label": "PS PLUS",
+  "meta": "PlayStation Access",
+  "items": [
+    {
+      "id": "CtcxPqTAftE",
+      "kind": "presentation",
+      "title": "PlayStation Plus Monthly Games - November 2026",
+      "channel": "PlayStation Access",
+      "verified": "03.11.2026",
+      "note": "Présentation officielle publiée le 28 octobre par PlayStation UK. Elle accompagne l’ouverture de la période d’ajout du 3 novembre, et non une nouvelle annonce de jeux."
+    }
+  ],
+  "credit": "Vidéo officielle : PlayStation Access, YouTube. Vérifiée sur la page publique le 03.11.2026."
+},
+  "cinema/bass-x-machina-netflix-3-novembre-2026": {
+  "label": "BASS X MACHINA",
+  "meta": "Netflix",
+  "items": [
+    {
+      "id": "jjr5mf9i42Q",
+      "kind": "trailer",
+      "title": "Bass X Machina | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "verified": "03.11.2026",
+      "note": "Bande-annonce officielle publiée le 14 octobre 2026, annonçant une première le 3 novembre. Elle illustre la série et n’est pas une nouvelle vidéo publiée aujourd’hui."
+    }
+  ],
+  "credit": "Vidéo officielle : Netflix, YouTube. Vérifiée sur la page publique le 03.11.2026."
+},
+  "tech/stm32-summit-3-novembre-2026": {
+  "label": "STM32 SUMMIT",
+  "meta": "STMicroelectronics",
+  "items": [
+    {
+      "id": "JJfcEa_THZ8",
+      "kind": "presentation",
+      "title": "STM32 Summit 2026",
+      "channel": "STMicroelectronics",
+      "verified": "03.11.2026",
+      "note": "Diffusion officielle programmée le 3 novembre 2026 à 17 h CET. Lors de la vérification, la page affichait une première à venir : il ne s’agit pas encore d’un compte rendu ni d’un replay garanti."
+    }
+  ],
+  "credit": "Vidéo officielle : STMicroelectronics, YouTube. Vérifiée sur la page publique le 03.11.2026."
+},
+
   // Médias des éditions des 1er et 2 novembre : pages officielles vérifiées le 02.11.2026.
   "game-pass-novembre-2026-gravhounds": {
   "label": "GRAVHOUNDS | Official Reveal Trailer",
