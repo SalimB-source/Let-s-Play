@@ -60,6 +60,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
+  'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',
   'rempart-des-sables-eternels': 'rempart-sables-v1',
