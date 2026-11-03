@@ -29,6 +29,7 @@ import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArm
 import {
   RPG_ELEMENTS,
   armeById,
+  carteEstArme,
   cardColorCost,
   cardColors,
   cardHasPrintedType,
@@ -1499,6 +1500,13 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
         if (effet.gel && !meilleure.bloque) score += 1.2; // la Poigne de givre fige sa cible en plus de la brûler
       }
       return { score, cibleId: meilleure.cibleId };
+    }
+    if (effet.type === 'equiper-cimetiere') {
+      const armeId = [...camp.cimetiere].reverse().find((id) => carteEstArme(armeById(id) ?? magieById(id)));
+      const cibleId = meilleureCibleAmie(duel, cote, carte);
+      const porteur = camp.creatures.find((entite) => entite.id === cibleId);
+      if (!armeId || !porteur || porteur.mur) return null;
+      return { score: 4, cibleId, cibleAllieeId: armeId };
     }
     if (effet.type === 'arme') {
       const cibleId = meilleureCibleAmie(duel, cote, carte);

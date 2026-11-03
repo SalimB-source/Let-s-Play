@@ -420,6 +420,13 @@ export const CARD_KIND_LABELS = {
  */
 export const RPG_CREATURE_CARDS = [
   {
+    id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
+    cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
+    destruction: { type: 'exil-temporaire', cible: 'creature-amie' },
+    text: 'À sa destruction : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
+    flavor: 'La marée reprend ce qu’elle protège.',
+  },
+  {
     id: 'rempart-des-sables-eternels', name: 'Le Rempart des sables éternels',
     element: 'sable', cost: 6, atk: 5, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Géant · Gardien',
@@ -1730,6 +1737,13 @@ export function terrainById(id) {
  * d'autres (parfois) les sorciers.
  */
 export const RPG_MAGIE_CARDS = [
+  {
+    id: 'memoire-de-l-armurerie', name: 'Mémoire de l’armurerie', element: 'sable', kind: 'magie',
+    typeLine: 'Sorcellerie — Sable', cost: 5, rarity: 'rare', cibles: ['creature-amie'],
+    effet: { type: 'equiper-cimetiere', cible: 'creature-amie' },
+    text: 'Équipez une créature alliée ciblée avec une arme de votre cimetière.',
+    flavor: 'Les armes oubliées attendent une main nouvelle.',
+  },
   ...RPG_CORBEAU_MAGIES,
   ...RPG_SOLEIL_ROUGE_MAGIES,
   ...RPG_TENEBRES_MAGIES,
