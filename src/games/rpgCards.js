@@ -620,12 +620,12 @@ export const RPG_CREATURE_CARDS = [
     name: 'Bouchra, guerrière des crêtes',
     element: 'sable',
     cost: 2,
-    atk: 3,
+    atk: 2,
     def: 1,
     rarity: 'mythique',
     typeLine: 'Créature légendaire — Guerrière amazighe',
     art: 'bouchra-guerriere-des-cretes',
-    // La mythique bon marché du Sable : 3/1 pour deux manas, et rien pour se
+    // La mythique bon marché du Sable : 2/1 pour deux manas, et rien pour se
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend

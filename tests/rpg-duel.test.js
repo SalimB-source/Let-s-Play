@@ -387,7 +387,7 @@ test('la Contre-attaque d’Eirik rend 2 dégâts à la créature qui le cible',
     'le journal annonce la riposte d’Eirik');
 });
 
-test('Bouchra, guerrière des crêtes : une mythique Sable 3/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
+test('Bouchra, guerrière des crêtes : une mythique Sable 2/1 pour 2, Rapidité, Esquive et Attaque ciblée', () => {
   const carte = cardById('bouchra-guerriere-des-cretes');
   assert.deepEqual(
     {
@@ -396,7 +396,7 @@ test('Bouchra, guerrière des crêtes : une mythique Sable 3/1 pour 2, Rapidité
     },
     {
       kind: 'creature', element: 'sable', cost: 2,
-      atk: 3, def: 1, rarity: 'mythique', name: 'Bouchra, guerrière des crêtes',
+      atk: 2, def: 1, rarity: 'mythique', name: 'Bouchra, guerrière des crêtes',
     },
   );
   assert.equal(carte.typeLine, 'Créature légendaire — Guerrière amazighe');
@@ -423,16 +423,16 @@ test('Bouchra arrive prête et frappe une créature adverse sans riposte', () =>
   donner(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   const pose = rpgJouerCreature(duel, 'joueur', 'bouchra-guerriere-des-cretes');
   assert.equal(pose.ok, true, JSON.stringify(pose));
-  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [3, 1, true],
-    'un corps 3/1 déjà prêt à attaquer');
+  assert.deepEqual([pose.entite.atk, pose.entite.pv, pose.entite.ready], [2, 1, true],
+    'un corps 2/1 déjà prêt à attaquer');
   assert.equal(rpgPeutAttaquer(pose.entite), true, 'Rapidité : elle attaque le tour même');
   assert.equal(pose.entite.esquive, true, 'l’Esquive est portée par l’entité en jeu');
 
-  // Elle désigne le mur : 3 dégâts, et le mur 2/4 ne riposte pas.
+  // Elle désigne le mur : 2 dégâts, et le mur 2/4 ne riposte pas.
   rpgReglerHasard(duel, () => 0); // la flèche ne rate pas
   const attaque = rpgAttaquerCreature(duel, 'joueur', pose.entite.id, mur.id);
   assert.equal(attaque.ok, true, JSON.stringify(attaque));
-  assert.equal(mur.pv, 1, 'le mur 2/4 encaisse les 3 dégâts de l’arc');
+  assert.equal(mur.pv, 2, 'le mur 2/4 encaisse les 2 dégâts de l’arc');
   assert.equal(pose.entite.pv, 1, 'et ne riposte pas : Bouchra reste intacte');
 });
 
