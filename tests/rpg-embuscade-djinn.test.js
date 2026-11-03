@@ -45,3 +45,16 @@ test('la résonance ne soigne pas et le Bouclier adverse bloque cette capacité'
   rpgBlesserCreature(d,'joueur',ifrit.id,99);
   assert.deepEqual([allie.atk,allie.pv,allie.pvMax], [2,1,2]);
 });
+
+test('Ghul des cendres est un Djinn et bénéficie de la Résonance sans perdre son effet de destruction', () => {
+  const carte = cardById('ghul-des-cendres');
+  assert.ok(cardHasPrintedType(carte, 'djinn'));
+  assert.deepEqual([carte.cost, carte.atk, carte.def, carte.rarity], [1, 1, 1, 'commune']);
+  assert.deepEqual(carte.destruction, { type: 'degats', amount: 1, cible: 'creature' });
+  const d = partie();
+  const ghul = poser(d, 'joueur', 'ghul-des-cendres');
+  const ifrit = poser(d, 'joueur', 'ifrit-al-ahmar');
+  assert.deepEqual([ghul.atk, ghul.def], [3, 1]);
+  rpgBlesserCreature(d, 'joueur', ifrit.id, 99);
+  assert.deepEqual([ghul.atk, ghul.def], [1, 1]);
+});

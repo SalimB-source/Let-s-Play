@@ -681,7 +681,7 @@ export const RPG_CREATURE_CARDS = [
     atk: 1,
     def: 1,
     rarity: 'commune',
-    typeLine: 'Créature — Ghul',
+    typeLine: 'Créature — Djinn',
     art: 'ghul-des-cendres',
     destruction: { type: 'degats', amount: 1, cible: 'creature' },
     text: 'Quand le Ghul est détruit : 1 dégât à une créature adverse de votre choix.',
