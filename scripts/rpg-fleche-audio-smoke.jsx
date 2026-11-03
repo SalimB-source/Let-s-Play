@@ -189,7 +189,23 @@ export async function checkRpgFlecheAudio(assert, fichiersLus = []) {
     const fichiersAvant = fichiersLus.length;
     await cliquer(carteSurTable('equipe', 'tislit-des-aures'), 'sélectionner Tislit');
     await attendre(() => container.querySelector('.rpg-btn--confirmer-attaque'), 'la déclaration d’attaque s’ouvre');
+    assert.equal(container.querySelector('.rpg-btn--confirmer-attaque').disabled, true,
+      'une cible adverse doit être choisie avant de confirmer');
+    const pvAvant = container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent;
+    await act(async () => {
+      container.querySelector('.rpg-btn--confirmer-attaque').click();
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { key: ' ', code: 'Space', bubbles: true, cancelable: true }));
+    });
+    assert.equal(container.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent, pvAvant,
+      'ni clic ni Espace ne déclenche une attaque directe sans cible');
+    assert.ok(container.querySelector('.rpg-btn--confirmer-attaque'), 'la sélection reste ouverte');
     await cliquer(cible, 'désigner la proie de l’Attaque ciblée');
+    assert.equal(container.querySelector('.rpg-btn--confirmer-attaque').disabled, false,
+      'la cible désignée permet de confirmer');
+    await cliquer(cible, 'retirer la désignation');
+    assert.equal(container.querySelector('.rpg-btn--confirmer-attaque').disabled, true,
+      'retirer la cible verrouille à nouveau la confirmation');
+    await cliquer(cible, 'désigner à nouveau la proie');
     await cliquer(container.querySelector('.rpg-btn--confirmer-attaque'), 'confirmer l’attaque');
     await act(async () => { await wait(400); });
 

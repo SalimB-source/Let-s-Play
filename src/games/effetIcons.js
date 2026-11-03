@@ -29,6 +29,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
   <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
   <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-defenseur" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/><path d="M12 6v2M12 14v2M7 11h2M15 11h2"/></symbol>
   <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
   <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
   <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
@@ -107,6 +108,7 @@ export const EFFET_ICONE = {
   traque: 'i-traque',
   traquePirates: 'i-traque',
   provocation: 'i-provocation',
+  defenseur: 'i-defenseur',
   tenacite: 'i-tenacite',
   infiltration: 'i-infiltration',
   volDeVie: 'i-vol-de-vie',
@@ -176,7 +178,7 @@ export function effetIcon(cle, { size = 16, classe = '', titre = '' } = {}) {
  * (type de combat d’abord, puis les protections et le Harakiri).
  */
 export const MOTS_CLES_PASTILLES = [
-  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'overkill', 'furie', 'esquive',
+  'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'defenseur', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
   'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement',
@@ -224,6 +226,7 @@ export const EFFET_LIBELLES = {
   traque: 'Traque',
   traquePirates: 'Traque',
   provocation: 'Provocation',
+  defenseur: 'Défenseur',
   tenacite: 'Tenacité',
   infiltration: 'Infiltration',
   volDeVie: 'Vol de vie',
@@ -257,7 +260,7 @@ export const EFFET_LIBELLES = {
   exil: 'Exil',
   'destruction-cible': 'Destruction',
   'destruction-totale': 'Destruction totale',
-  furtif: 'Furtif',
+  furtif: 'Furtivité',
   manaEngagement: 'Mana',
   recherche: 'Recherche',
   'recherche-deck': 'Recherche',
@@ -294,6 +297,7 @@ export function pastillesPourCarte(carte) {
   if (carte.coupCritique) ajouter('coupCritique', 'Coup critique');
   if (carte.traquePirates) ajouter('traque', 'Traque', Number(carte.traquePirates) || null);
   if (carte.provocation) ajouter('provocation', 'Provocation');
+  if (carte.defenseur || carte.prioriteAttaqueRapide) ajouter('defenseur', 'Défenseur');
   // Les Lettres de Marque : l'Abordage imprimé (créature au seuil « coût − 1 »,
   // Grappin à l'attachement — la pastille porte le seuil), la Cargaison du
   // convoi, et le déclencheur de prise du Négociant.
@@ -359,7 +363,7 @@ export function pastillesPourCarte(carte) {
   if (carte.declenchePrise) ajouter('prise', 'Prise', Number(carte.declenchePrise) || null);
   // L'Ifrit furtif : sa présence s'éteint à la fin du tour — la pastille
   // annonce ce caractère éphémère, distinct de la Rapidité qu'il garde.
-  if (carte.furtif) ajouter('furtif', 'Furtif');
+  if (carte.furtif) ajouter('furtif', 'Furtivité');
   // Tiziri s'engage pour produire du mana : la pastille nomme l'élément et
   // la quantité (« Mana d'eau 1 »), la goutte restant monochrome sur la face.
   if (carte.manaEngagement) {
@@ -479,6 +483,7 @@ const MOTIFS_LIGNE = [
   ['cargaison', /\bcargaison\b/iu],
   ['prise', /\bprises? en cale\b/iu],
   ['cale', /\bcale\b/iu],
+  ['furtif', /\bfurtif\b|\bfurtivit[ée]/iu],
   ['furie', /\bfurie\b/iu],
   ['esquive', /\besquive/iu],
   ['contreAttaque', /\bcontre[- ]attaque/iu],
@@ -487,6 +492,7 @@ const MOTIFS_LIGNE = [
   ['coupRapide', /\battaque ciblée/iu],
   ['coupCritique', /\bcoup critique/iu],
   ['provocation', /\bprovocation\b/iu],
+  ['defenseur', /\bd[ée]fenseur/iu],
   ['overkill', /\boverkill\b/iu],
   ['tenacite', /\bténacité/iu],
   ['infiltration', /\binfiltration/iu],
@@ -625,9 +631,11 @@ export const EFFET_DEFINITIONS = {
   infiltration: 'Ne peut pas être bloquée.',
   volDeVie: 'Chaque fois que cette créature inflige des dégâts, son contrôleur gagne la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
   rapidite: 'Peut attaquer le tour où elle arrive.',
+  furtif: 'Cette créature est détruite à la fin du tour où elle arrive en jeu.',
   coupRapide: 'Quand elle attaque, elle doit viser une créature adverse s’il y en a une. Elle lui inflige ses dégâts d’attaque sans riposte, avec 25 % de chances de rater. Si aucune créature adverse n’est en jeu, elle peut attaquer le sorcier normalement.',
   coupCritique: 'En combat, 25 % de chances de frapper 4 fois la créature adverse.',
   traque: (n) => `Quand elle attaque une créature avec Abordage, Butin ou une cale occupée, elle gagne +${n ?? 'N'}/+0 contre elle pour ce combat.`,
+  defenseur: 'Quand une créature adverse avec Attaque ciblée attaque, elle doit choisir un Défenseur adverse comme cible si elle peut en viser un. S’il y en a plusieurs, l’attaquant choisit lequel. Défenseur ne force pas à attaquer.',
   provocation: 'Quand elle attaque, elle doit être bloquée par au moins une créature si un blocage légal est possible.',
   furie: (n) => `Tant que sa défense actuelle est inférieure à sa DEF de base, elle gagne +${n ?? 'X'}/+0.`,
   overkill: 'Quand elle est bloquée, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier défenseur.',
@@ -673,11 +681,13 @@ const LIBELLES_IMPRIMES = [
   ['coupCritique', 'Coup critique'],
   ['traque', 'Traque'],
   ['provocation', 'Provocation'],
+  ['defenseur', 'D[ée]fenseur'],
   ['overkill', 'Overkill'],
   ['envol', 'Envol'],
   ['infiltration', 'Infiltration'],
   ['volDeVie', 'Vol de vie'],
   ['rapidite', 'Rapidité'],
+  ['furtif', 'Furtivit[ée]|Furtif'],
   ['furie', 'Furie(?: \\d+)?'],
   ['esquive', 'Esquive'],
   ['contreAttaque', 'Contre-attaque'],

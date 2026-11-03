@@ -1663,19 +1663,23 @@ export async function checkRpgBattle(assert) {
     'aucune flamme n’est rendue autour des cartes mythiques');
   await act(async () => { ferielEnJeu.click(); });
   const confirmerFeriel = ferielContainer.querySelector('.rpg-btn--confirmer-attaque');
-  assert.equal(confirmerFeriel.disabled, false,
-    'la frappe de l’Attaque ciblée est un choix : la confirmation n’exige aucune cible');
+  assert.equal(confirmerFeriel.disabled, true,
+    'la confirmation attend une cible pour l’Attaque ciblée');
   assert.ok(ferielContainer.querySelector('.rpg-card--ennemi.is-ciblable'),
     'les cibles légales de l’Attaque ciblée s’allument sur la table, sans consigne écrite');
   const chienCibleFeriel = [...ferielContainer.querySelectorAll('.rpg-card--ennemi')]
     .find((card) => card.dataset.cardId === 'chien-du-guet');
   assert.ok(chienCibleFeriel?.classList.contains('is-ciblable'), 'le Chien adverse est présenté comme cible légale');
   await act(async () => { chienCibleFeriel.click(); });
+  assert.equal(ferielContainer.querySelector('.rpg-btn--confirmer-attaque').disabled, false,
+    'la confirmation devient disponible une fois la cible désignée');
   assert.ok(chienCibleFeriel.classList.contains('is-coup-rapide-cible'),
     'la proie désignée s’allume en rouge avant l’attaque');
   await act(async () => { chienCibleFeriel.click(); });
   assert.equal(chienCibleFeriel.classList.contains('is-coup-rapide-cible'), false,
-    'un second clic sur la même créature retire la désignation : Fériel repart vers le sorcier');
+    'un second clic sur la même créature retire la désignation');
+  assert.equal(ferielContainer.querySelector('.rpg-btn--confirmer-attaque').disabled, true,
+    'sans cible, il faut désigner une créature avant de confirmer');
   await act(async () => { chienCibleFeriel.click(); });
   const pvSorcierFeriel = ferielContainer.querySelector('.rpg-wizard-plate--ennemi .rpg-wizard-plate__hp-value')?.textContent.trim();
   await act(async () => { ferielContainer.querySelector('.rpg-btn--confirmer-attaque').click(); });
