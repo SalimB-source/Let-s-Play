@@ -1666,6 +1666,73 @@
 .rpg-conquete-filtres button[aria-pressed="true"] { color: #241709; border-color: #f5d99b; background: #e3bd73; font-weight: 800; }
 .rpg-conquete-filtres button:focus-visible, .rpg-conquete-reprise:focus-visible { outline: 2px solid #ffe4a5; outline-offset: 2px; }
 .rpg-conquete-vide { color: #e8d8bc; }
+
+/* Conquête — carrousel : une seule tour, en grand, au centre. Les flèches
+   gauche/droite (et les touches ←/→) font défiler les tours ; le compteur et
+   les points situent la tour affichée. La grille `.rpg-story__tours` est
+   neutralisée ici : on n'affiche qu'une carte à la fois. */
+.rpg-story__tours.rpg-conquete-carrousel {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 14px;
+}
+.rpg-conquete-carrousel .rpg-story-tower {
+  flex: 0 1 660px;
+  width: 100%;
+  max-width: 660px;
+  height: auto;
+  border: 1px solid rgba(229, 191, 105, .32);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(12, 14, 24, .72);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+}
+.rpg-conquete-carrousel .rpg-story-tower__body { padding: 18px 22px 20px; gap: 9px; }
+.rpg-conquete-carrousel .rpg-story-tower__name { font-size: 26px; }
+.rpg-conquete-carrousel .rpg-story-tower__resume { font-size: 15px; }
+.rpg-conquete-carrousel .rpg-story-tower__cta { font-size: 13px; }
+.rpg-conquete-carrousel__fleche {
+  align-self: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfa85e;
+  border-radius: 50%;
+  background: linear-gradient(115deg, #342619, #171721);
+  color: #ffe5a7;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rpg-conquete-carrousel__fleche:hover,
+.rpg-conquete-carrousel__fleche:focus-visible { border-color: #ffe5a7; box-shadow: 0 0 18px #e0a73e44; outline: none; }
+.rpg-conquete-carrousel__pagination { display: flex; flex-direction: column; align-items: center; gap: 9px; margin: 16px 0 4px; }
+.rpg-conquete-carrousel__compteur { color: #e3bf76; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.rpg-conquete-carrousel__points { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.rpg-conquete-carrousel__points button {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #72634b;
+  background: #191820;
+  cursor: pointer;
+}
+.rpg-conquete-carrousel__points button[aria-current="true"] { background: #e3bd73; border-color: #f5d99b; }
+.rpg-conquete-carrousel__points button:focus-visible { outline: 2px solid #ffe4a5; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .rpg-story__tours.rpg-conquete-carrousel { gap: 8px; }
+  .rpg-conquete-carrousel__fleche { width: 42px; height: 42px; font-size: 20px; }
+  .rpg-conquete-carrousel .rpg-story-tower__name { font-size: 21px; }
+  .rpg-conquete-carrousel .rpg-story-tower__body { padding: 14px 16px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-conquete-carrousel .rpg-story-tower { transition: none; }
+}
 .rpg-tour-prochain { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 15px; margin: 14px 0; border: 1px solid #cda861; border-radius: 10px; background: linear-gradient(120deg,rgba(85,58,25,.65),rgba(18,20,31,.95)); }
 .rpg-tour-prochain > div { display: grid; gap: 4px; color: #e7dbc4; font-size: 12px; }
 .rpg-tour-prochain strong { color: #fff2d3; font-size: 16px; }
