@@ -12475,7 +12475,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // avant l'impact. Cible désignée (coup rapide), premier bloqueur, ou plaque.
     const ciblesChargeEnnemie = Object.fromEntries(attaquantsVivants.map((id) => [
       id,
-      combatEntrant.ciblesAttaque?.[id] ?? blocages[id]?.[0] ?? 'sorcier',
+      combatEntrant.ciblesAttaque?.[id] ?? (res.resume.attaquantsLiberes?.includes(id) ? 'sorcier' : blocages[id]?.[0]) ?? 'sorcier',
     ]));
     declencherLignesCharge('sorcier', attaquantsVivants, ciblesChargeEnnemie, champAvantAttaque);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
@@ -12581,7 +12581,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // rapide), premier bloqueur, ou la plaque du sorcier en attaque directe.
     const ciblesChargeJoueur = Object.fromEntries(attaquantsVivants.map((id) => [
       id,
-      combat.ciblesAttaque?.[id] ?? blocages[id]?.[0] ?? 'sorcier',
+      combat.ciblesAttaque?.[id] ?? (res.resume.attaquantsLiberes?.includes(id) ? 'sorcier' : blocages[id]?.[0]) ?? 'sorcier',
     ]));
     declencherLignesCharge('joueur', attaquantsVivants, ciblesChargeJoueur, champAvantAttaque);
     animerModificationsChamp(champAvantAttaque, attaquantsVivants, debutJournalDestructions);
