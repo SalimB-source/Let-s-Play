@@ -10,7 +10,7 @@ import { COLLECTION_DEPART } from '../src/games/rpgCollection.js';
 import { CARD_ART_HAUTEUR, CARD_ART_LARGEUR } from '../src/games/rpgCardArt.js';
 import {
   rpgNouveauDuel, rpgJouerCreature, rpgJouerArme, rpgLancerMagie,
-  rpgSortACibleValide,
+  rpgSortACibleValide, rpgBlesserCreature,
 } from '../src/games/rpgDuel.js';
 
 const CHEMIN = (relatif) => fileURLToPath(new URL(`../${relatif}`, import.meta.url));
@@ -119,13 +119,15 @@ test('Brise-lame détruit aussi le Sabre maudit (arme portée par une magie)', (
   const ennemi = poser(duel, 'sorcier', 'momie-de-lin');
   duel.sorcier.main.push('sabre-maudit');
   assert.equal(rpgLancerMagie(duel, 'sorcier', 'sabre-maudit', ennemi.id).ok, true);
-  assert.deepEqual([ennemi.atk, ennemi.def], [4, 2], '+2/-2 appliqué');
+  assert.deepEqual([ennemi.atk, ennemi.def], [4, 5], '+2/+1 appliqué');
   assert.equal(ennemi.coupRapide, false, 'le Sabre maudit ne donne pas Attaque ciblée');
+  assert.equal(ennemi.volDeVie, true);
   duel.tour = 'joueur';
   donnerBriseLame(duel);
   const res = rpgLancerMagie(duel, 'joueur', 'brise-lame', ennemi.id);
   assert.equal(res.ok, true);
   assert.deepEqual(ennemi.armes, [], 'la liste des armes-sorts est vidée');
+  assert.equal(ennemi.volDeVie, false);
   assert.deepEqual([ennemi.atk, ennemi.def], [2, 4], 'le bonus du sabre est retiré');
   assert.equal(ennemi.coupRapide, false, 'l’Attaque ciblée prêtée repart');
   assert.ok(duel.sorcier.cimetiere.includes('sabre-maudit'));
@@ -147,4 +149,31 @@ test('un bouclier Braise bloque Brise-lame après paiement', () => {
   assert.ok(duel.joueur.mana.braise < mana, 'le sort est payé');
   assert.equal(ennemi.protection, null);
   assert.equal(ennemi.arme.carteId, 'takouba-des-pistes', 'l’arme reste attachée');
+});
+
+test('Brise-lame retire seulement l’armure restante du Sabre et garde le Vol de vie naturel', () => {
+  const duel = partie();
+  duel.tour = 'sorcier';
+  const ennemi = poser(duel, 'sorcier', 'danseuse-des-ombres-de-dune');
+  duel.sorcier.main.push('sabre-maudit');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'sabre-maudit', ennemi.id).ok, true);
+  assert.equal(ennemi.volDeVie, true);
+  duel.tour = 'joueur'; donnerBriseLame(duel);
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brise-lame', ennemi.id).ok, true);
+  assert.equal(ennemi.volDeVie, true);
+});
+
+
+test('Brise-lame ne retire pas deux fois une armure magique déjà endommagée', () => {
+  const duel = partie(); duel.tour = 'sorcier';
+  const cible = poser(duel, 'sorcier', 'momie-de-lin');
+  duel.sorcier.main.push('sabre-maudit');
+  assert.equal(rpgLancerMagie(duel, 'sorcier', 'sabre-maudit', cible.id).ok, true);
+  rpgBlesserCreature(duel, 'sorcier', cible.id, 1, 'braise', null, 'attaque');
+  assert.equal(cible.pv, 4);
+  duel.tour = 'joueur'; donnerBriseLame(duel);
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'brise-lame', cible.id).ok, true);
+  assert.equal(cible.pv, 4);
+  assert.equal(cible.def, 4);
+  assert.equal(cible.volDeVie, false);
 });

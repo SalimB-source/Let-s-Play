@@ -127,6 +127,25 @@ test('l’Attaque ciblée choisit la cible la plus précieuse, pas la première'
   assert.notEqual(cibles[feriel.id], chien.id);
 });
 
+test('plusieurs Attaques ciblées se répartissent pour maximiser les kills', () => {
+  const duel = duelNu();
+  donnerMana(duel, 'joueur', 20);
+  donnerMana(duel, 'sorcier', 20);
+  donner(duel, 'joueur', 'chien-du-guet');
+  donner(duel, 'joueur', 'fennec-des-decombres');
+  const chien = rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite;
+  const fennec = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres').entite;
+  donner(duel, 'sorcier', 'feriel');
+  const premiere = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
+  donner(duel, 'sorcier', 'feriel');
+  const seconde = rpgJouerCreature(duel, 'sorcier', 'feriel').entite;
+
+  const cibles = rpgCiblesAttaqueRapide(duel, 'sorcier', [premiere.id, seconde.id]);
+  assert.equal(new Set(Object.values(cibles)).size, 2,
+    'deux ennemis tuables : chaque frappe vise une proie différente');
+  assert.deepEqual(new Set(Object.values(cibles)), new Set([chien.id, fennec.id]));
+});
+
 // ── Blocages ────────────────────────────────────────────────────────────────
 
 test('l’IA bloque les échanges favorables et refuse les blocages suicidaires', () => {

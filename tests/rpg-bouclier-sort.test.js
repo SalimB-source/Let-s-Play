@@ -576,3 +576,33 @@ test('une capacité adverse consomme le bouclier général mais pas le bouclier 
   assert.equal(cible.pv, 4); assert.equal(cible.bouclier, 0);
   assert.equal(cible.protection.contre, 'neige');
 });
+
+
+test('la Sphère de rotation prête un Bouclier à usage unique', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'sorcier', 'dune-marchante');
+  donner(duel, 'sorcier', 'sphere-de-rotation'); manaPlein(duel, 'sorcier');
+  assert.equal(rpgJouerArme(duel, 'sorcier', 'sphere-de-rotation', porteur.id).ok, true);
+  assert.equal(porteur.bouclier, 1);
+  const pv = porteur.pv;
+  duel.tour = 'joueur'; donner(duel, 'joueur', 'poigne-de-givre'); manaPlein(duel, 'joueur');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', porteur.id).bouclierBloque, true);
+  assert.equal(porteur.pv, pv);
+  assert.equal(porteur.gelToursRestants ?? 0, 0);
+  assert.equal(porteur.bouclier, 0);
+  donner(duel, 'joueur', 'poigne-de-givre');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'poigne-de-givre', porteur.id).ok, true);
+  assert.ok(porteur.gelToursRestants > 0);
+});
+
+test('le Bouclier intact de la Sphère part avec elle quand on la remplace', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'sorcier', 'dune-marchante');
+  manaPlein(duel, 'sorcier');
+  donner(duel, 'sorcier', 'sphere-de-rotation');
+  assert.equal(rpgJouerArme(duel, 'sorcier', 'sphere-de-rotation', porteur.id).ok, true);
+  assert.equal(porteur.bouclier, 1);
+  donner(duel, 'sorcier', 'takouba-des-pistes');
+  assert.equal(rpgJouerArme(duel, 'sorcier', 'takouba-des-pistes', porteur.id).ok, true);
+  assert.equal(porteur.bouclier, 0);
+});

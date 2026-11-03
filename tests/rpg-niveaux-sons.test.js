@@ -210,10 +210,9 @@ test('le lecteur pose sur chaque échantillon le gain de sa mesure', () => {
   const { player, rendre } = lecteurAvecRoutage();
   try {
     const context = player.ctx;
-    // Une source par *fichier* : `degats` et `degats_sorcier` partagent le même
-    // `hit.wav`, donc un seul élément et un seul nœud. Le survol, lui, a bien
-    // son fichier depuis que le bip de synthèse a été remplacé.
-    assert.equal(context.sources.length, RPG_ECHANTILLONS_NAMES.length - 1,
+    // Une source par *fichier* : `degats`/`degats_sorcier` partagent `hit.wav`
+    // et les deux soins partagent la voix sacrée. Le survol garde son fichier.
+    assert.equal(context.sources.length, RPG_ECHANTILLONS_NAMES.length - 2,
       'un nœud source par fichier du registre');
     // Chaque source rejoint un nœud de gain, qui rejoint le bus des échantillons.
     for (const source of context.sources) {

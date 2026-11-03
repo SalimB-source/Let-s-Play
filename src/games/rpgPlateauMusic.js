@@ -32,7 +32,7 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // Le Souk partage la musique des pistes caravanières ; le lecteur de
   // conquête garde la même piste en passant de l'un à l'autre.
   'place-du-souk': `${RPG_AUDIO_BASE}arabian-travel.mp3`,
-  'ruines-de-tipaza': `${RPG_AUDIO_BASE}SorcererOfTheDeepTide.mp3`,
+  'ruines-de-tipaza': `${RPG_PUBLIC_BASE}les ruines de tipaza.mp3`,
   'navire-pirate': `${RPG_AUDIO_BASE}stepanbel_pirates_main-01.mp3`,
   'abysses-phosphorescentes': `${RPG_AUDIO_BASE}deep-sea-underwater-ambience.mp3`,
   'desert-de-verre': `${RPG_AUDIO_BASE}arabian-travel.mp3`,

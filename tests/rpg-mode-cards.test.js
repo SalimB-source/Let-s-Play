@@ -7,11 +7,11 @@ import { JSDOM } from 'jsdom';
  * Refonte de la page d'accueil « Jouer » — `tests/rpg-mode-cards.test.js`
  *
  * Inspirée de l'accueil MTG Arena :
- * - À gauche en haut : grande vitrine illustrée du Sablier de Bab El.
- * - À droite en haut : les quatre modes (« Mode histoire », « Duel en ligne »,
- *   « Jouer », « Conquête ») empilés verticalement l'un au-dessus de l'autre en
+ * - À gauche en haut : les trois modes (« Mode histoire », « Duel en ligne »,
+ *   « Conquête ») empilés verticalement l'un au-dessus de l'autre en
  *   largeur, chacun illustré d'une miniature tirée des cartes du jeu et ne
  *   portant que son titre.
+ * - À droite en haut : grande vitrine illustrée du Sablier de Bab El.
  * - En dessous sur toute la largeur : la rampe horizontale des quêtes du jour
  *   en médaillons dorés + capsules d'objectif.
  * - La page d'accueil reste non scrollable (`100dvh`, `overflow: hidden`), la
@@ -63,7 +63,7 @@ test('trois bannières illustrées avec appel à jouer', () => {
       `le mode utilise la carte « ${carteId} » du jeu comme miniature`);
   }
   assert.doesNotMatch(grilleModesSeulement, /rpg-menu-button--partie-rapide/,
-    'le mode « Jouer » a été retiré des modes de jeu à droite');
+    'le mode « Jouer » a été retiré des modes de jeu');
   assert.doesNotMatch(grilleModesSeulement, /<small>/,
     'les descriptions restent intégrées aux bannières');
   assert.doesNotMatch(grilleModesSeulement, /rpg-mode-carte__icone/,
@@ -76,7 +76,7 @@ test('trois bannières illustrées avec appel à jouer', () => {
     'les trois modes restent des enfants directs de la pile');
 });
 
-test('les trois modes à droite sont « Mode histoire », « Duel en ligne » et « Conquête »', () => {
+test('les trois modes à gauche sont « Mode histoire », « Duel en ligne » et « Conquête »', () => {
   assert.equal((grilleModesSeulement.match(/className="rpg-mode-carte__jouer"/g) ?? []).length, 3, 'chaque mode possède un appel Jouer');
   for (const label of ['Jouer au mode histoire', 'Jouer en duel en ligne', 'Jouer en Conquête']) {
     assert.ok(grilleModesSeulement.includes(label), `commande accessible : ${label}`);
@@ -270,8 +270,9 @@ test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3
     assert.equal(style('.rpg-mode-menu__header').position, 'sticky');
     assert.equal(style('.rpg-mode-menu__switch').flexDirection, 'column');
 
-    // Colonne des modes à droite, empilée en largeur, et quêtes en dessous sur toute la largeur
-    assert.equal(style('.rpg-mode-menu__modes-col').gridColumn, '2');
+    // Modes à gauche, diaporama à droite et quêtes en dessous sur toute la largeur
+    assert.equal(style('.rpg-mode-menu__modes-col').gridColumn, '1');
+    assert.equal(style('.rpg-mode-menu__hero').gridColumn, '2');
     assert.equal(style('.rpg-mode-menu__modes-col').gridRow, '1');
     assert.equal(style('.rpg-mode-menu__hero-actions').gridTemplateColumns, 'minmax(0, 1fr)');
     assert.equal(style('.rpg-mode-carte').width, '100%');
@@ -339,4 +340,31 @@ test('la croix « retour aux jeux » disparaît dans la coque PC', () => {
   const debutPleinEcran = page.indexOf('className={`rpg-mode-menu__fullscreen');
   const boutonPleinEcran = page.slice(debutPleinEcran, page.indexOf('</button>', debutPleinEcran));
   assert.doesNotMatch(boutonPleinEcran, /desktopMode/, 'le bouton plein écran reste offert dans la coque PC');
+});
+
+
+test('la vitrine remplit son cadre avec le Masque, Ressac et Brise-lame sans étirer leurs illustrations', () => {
+  const hero = page.slice(page.indexOf('<section className="rpg-mode-menu__hero"'), page.indexOf('<div className="rpg-sand-fx"'));
+  assert.match(hero, /\['masque-du-guetteur', 'ressac', 'brise-lame'\]/);
+  assert.match(hero, /className="rpg-mode-menu__hero-keyart" src=\{cardArt\(id\)\}/);
+  assert.match(hero, /data-motion-reduced=\{animReduite/);
+  assert.match(battleCss, /\.rpg-mode-menu__hero-keyart\s*\{[^}]*object-fit:\s*cover/s);
+  assert.match(page, /aria-label="Illustration précédente"/);
+  assert.match(page, /aria-label="Illustration suivante"/);
+  assert.match(page, /animReduite \|\| mouvementReduitSysteme/);
+  assert.match(battleCss, /\.rpg-mode-menu__diapo\.is-active \{ opacity: 1/);
+  assert.match(battleCss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.rpg-mode-menu__diapo, \.rpg-mode-menu__hero-copy \{ transition: none/);
+});
+
+
+test('les modes précèdent le diaporama dans le DOM et sur les petits écrans', () => {
+  const accueil = page.slice(page.indexOf('<main className="rpg-mode-menu__play">'), page.indexOf(") : screen === 'tours' ? ("));
+  assert.ok(accueil.indexOf('className="rpg-mode-menu__modes-col"') < accueil.indexOf('className="rpg-mode-menu__hero"'));
+  const debutPortrait = battleCss.indexOf('@media (max-width: 700px),');
+  const portrait = battleCss.slice(debutPortrait, battleCss.indexOf('@media (max-width: 900px)', debutPortrait));
+  assert.match(portrait, /rpg-mode-menu__modes-col\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/s);
+  assert.match(portrait, /rpg-mode-menu__hero\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*2;/s);
+  const paysage = battleCss.slice(battleCss.indexOf('@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px)'));
+  assert.match(paysage, /rpg-mode-menu__modes-col\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/s);
+  assert.match(paysage, /rpg-mode-menu__hero\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
 });

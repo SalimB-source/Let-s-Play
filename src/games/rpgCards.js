@@ -712,8 +712,63 @@ export const RPG_CREATURE_CARDS = [
     overkill: true,
     furtif: true,
     ephemere: true,
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse. Furtif — détruit à la fin du tour.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Quand il attaque et qu’on le bloque, l’excédent de sa force au-delà des bloqueurs perce jusqu’au sorcier adverse. Furtivité — Détruit à la fin du tour.',
     flavor: 'Les dunes rougissent avant même qu’il apparaisse.',
+  },
+  {
+    id: 'djinn-des-braises-voilees',
+    name: 'Djinn des braises voilées',
+    element: 'braise', cost: 2, atk: 2, def: 1, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-des-braises-voilees',
+    rapidite: true, infiltration: true, furtif: true, ephemere: true,
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Infiltration — Ne peut pas être bloqué. Furtivité — Détruit à la fin du tour.',
+    flavor: 'L’ombre frappe avant que la braise ne s’éteigne.',
+  },
+  {
+    id: 'djinn-de-la-flamme-mourante',
+    name: 'Djinn de la flamme mourante',
+    element: 'braise', cost: 3, atk: 2, def: 2, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-de-la-flamme-mourante',
+    rapidite: true, furtif: true, ephemere: true,
+    arrivee: { type: 'pioche', amount: 1 },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Furtivité — Détruit à la fin du tour. Quand il arrive : piochez une carte.',
+    flavor: 'Dans sa dernière étincelle, une vérité subsiste.',
+  },
+  {
+    id: 'djinn-du-dernier-brasier',
+    name: 'Djinn du dernier brasier',
+    element: 'braise', cost: 4, atk: 4, def: 3, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-du-dernier-brasier',
+    rapidite: true, overkill: true, furtif: true, ephemere: true,
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Overkill — Ses dégâts excédentaires traversent les bloqueurs jusqu’au sorcier adverse. Furtivité — Détruit à la fin du tour.',
+    flavor: 'Il ne laisse derrière lui que la chaleur des ruines.',
+  },
+  {
+    id: 'djinn-de-la-premiere-etincelle',
+    name: 'Djinn de la première étincelle',
+    element: 'braise', cost: 1, atk: 2, def: 1, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-de-la-premiere-etincelle',
+    rapidite: true, furtif: true, ephemere: true,
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Furtivité — Détruit à la fin du tour.',
+    flavor: 'Il frappe avant que le brasier ne prenne.',
+  },
+  {
+    id: 'djinn-de-la-fleche-ardente',
+    name: 'Djinn de la flèche ardente',
+    element: 'braise', cost: 3, atk: 3, def: 1, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-de-la-fleche-ardente',
+    rapidite: true, coupRapide: true, furtif: true, ephemere: true,
+    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 25 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour.',
+    flavor: 'Une flèche de feu, puis le silence.',
+  },
+  {
+    id: 'djinn-des-ailes-de-cendre',
+    name: 'Djinn des ailes de cendre',
+    element: 'braise', cost: 4, atk: 3, def: 2, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-des-ailes-de-cendre',
+    rapidite: true, envol: true, furtif: true, ephemere: true,
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Envol — Ne peut être bloqué que par une créature avec Envol. Furtivité — Détruit à la fin du tour.',
+    flavor: 'Dans son sillage, le ciel lui-même se consume.',
   },
   {
     id: 'braisier-du-souk',
@@ -783,6 +838,15 @@ export const RPG_CREATURE_CARDS = [
     compagnie: { tribu: 'viking', atk: 1, def: 1 },
     text: 'Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Eirik lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit. Compagnie — Tant qu’il est en jeu, Eirik gagne +1/+1 pour chaque autre créature viking de son camp.',
     flavor: 'Avant le jour, son pas résonne déjà sur la glace du fjord.',
+  },
+  {
+    id: 'pourfendeur-des-djinns',
+    name: 'Pourfendeur des djinns',
+    element: 'sable', cost: 4, atk: 3, def: 4, rarity: 'rare',
+    typeLine: 'Créature — Humain · Chevalier', art: 'pourfendeur-des-djinns',
+    defenseur: true, contreAttaque: true,
+    text: 'Défenseur. Contre-attaque.',
+    flavor: 'Sa lame fend la fumée, et le désert tient bon.',
   },
   {
     id: 'guerrier-au-bouclier-rond',
@@ -1185,9 +1249,10 @@ export const RPG_TOUR_CARDS = [
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
+    defenseur: true,
     arrivee: { type: 'degats', amount: 1, cible: 'creature' },
     combat: { type: 'degats-creature-combattue', amount: 1, quand: 'blocage', sourceType: 'magie' },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : infligez 1 dégât à une créature adverse. Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : infligez 1 dégât à une créature adverse. Quand la Tour bloque une créature, elle lui inflige 1 dégât de sort avant les blessures de combat.',
     flavor: 'Elle brûle ceux qui osent s’en approcher.',
   },
   {
@@ -1205,8 +1270,9 @@ export const RPG_TOUR_CARDS = [
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
+    defenseur: true,
     arrivee: { type: 'soin', amount: 2 },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : vous récupérez 2 points de vie. Quand elle bloque : après l’assignation des blessures de combat, elle renvoie l’attaquant dans la main de son propriétaire.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : vous récupérez 2 points de vie. Quand elle bloque : après l’assignation des blessures de combat, elle renvoie l’attaquant dans la main de son propriétaire.',
     flavor: 'Les vagues se brisent contre ses fondations sans fin.',
   },
   {
@@ -1222,8 +1288,9 @@ export const RPG_TOUR_CARDS = [
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
+    defenseur: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },
   {
@@ -1239,8 +1306,9 @@ export const RPG_TOUR_CARDS = [
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
+    defenseur: true,
     arrivee: { type: 'gel', cible: 'creature' },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : une créature adverse ciblée est gelée et ne peut pas attaquer ou bloquer jusqu’à la fin du prochain tour.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : une créature adverse ciblée est gelée et ne peut pas attaquer ou bloquer jusqu’à la fin du prochain tour.',
     flavor: 'Le froid l’enveloppe, et le temps s’arrête.',
   },
   {
@@ -1257,8 +1325,9 @@ export const RPG_TOUR_CARDS = [
     mur: true,
     doitBloquer: true,
     prioriteAttaqueRapide: true,
+    defenseur: true,
     arrivee: { type: 'destruction-coutmax', coutMax: 2, cible: 'creatures-adverses' },
-    text: 'Mur — Cette créature ne peut pas attaquer et ne peut pas être équipée. Doit bloquer — Cette créature doit bloquer une créature attaquante adverse chaque tour si possible. Priorité d’attaque rapide — Les créatures adverses avec Attaque rapide doivent attaquer cette tour en priorité si elles peuvent. Quand la Tour arrive : les créatures adverses de coût 2 ou moins sont détruites.',
+    text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : les créatures adverses de coût 2 ou moins sont détruites.',
     flavor: 'L’ombre qu’elle projette étouffe toute lumière.',
   },
 ];
@@ -1430,7 +1499,7 @@ export const RPG_HERO_CARDS = [
     cost: 5,
     atk: 3,
     def: 7,
-    protection: { contre: 'neige' },
+    protection: { contre: 'eau' },
     rarity: 'mythique',
     kind: 'hero',
     typeLine: 'Créature légendaire — Démon · Minotaure',
@@ -1438,7 +1507,7 @@ export const RPG_HERO_CARDS = [
     // Le seigneur des braises ne brûle plus la table en arrivant : il choisit
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
-    text: 'Bouclier de Neige — Bloque le prochain sort adverse de Neige, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -2230,7 +2299,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 2, def: 0 },
     donne: { infiltration: true },
     lien: { ancre: 'tin-hinan', bonus: { atk: 3, def: 1 } },
-    text: 'Arme — Le porteur gagne +2/+0 et Infiltration (il ne peut pas être bloqué). Avec Tin Hinan, mère des pistes, en jeu : +3/+1 au lieu de +2/+0.',
+    text: 'Arme — Le porteur gagne +2/+0 et Infiltration. Avec Tin Hinan, mère des pistes en jeu : +3/+1 au lieu de +2/+0.',
     flavor: 'Une lame droite pour les pistes qui ne pardonnent pas.',
   },
   {
@@ -2243,7 +2312,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 0, def: 3 },
     arrivee: { type: 'jetons', jeton: 'serpent-des-citernes', remplirChamp: true },
-    text: 'Arme — Le porteur gagne +0/+3. Quand cette arme arrive en jeu, créez un jeton Serpent 1/1 sur chaque emplacement allié vide.',
+    text: 'Arme — Le porteur gagne +0/+3. À l’arrivée, créez un Serpent 1/1 sur chaque emplacement allié libre.',
     flavor: 'Il soulève les serpents des citernes comme des rubans de soie — puis les lâche, furieux, entre l’ennemi et vous.',
   },
   {
@@ -2270,7 +2339,7 @@ export const RPG_ARME_CARDS = [
     bonus: { atk: 1, def: 0 },
     donne: { coupRapide: true },
     porteurAvantDegats: { type: 'gel', chance: 0.15 },
-    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 15 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +1/+0 et Attaque ciblée. Avant les dégâts, 15 % de chances de geler chaque créature combattue.',
     flavor: 'Portée par le vent du fjord, elle frappe du ciel.',
   },
   {
@@ -2281,9 +2350,9 @@ export const RPG_ARME_CARDS = [
     typeLine: 'Arme — Hache',
     cost: 3,
     rarity: 'commune',
-    bonus: { atk: 2, def: 0 },
+    bonus: { atk: 3, def: 0 },
     blessurePorteur: 1,
-    text: 'Arme — Quand elle s’attache, la Hache inflige 1 dégât à son porteur ; puis il gagne +2/+0.',
+    text: 'Arme — À l’attachement, inflige 1 dégât au porteur, puis lui donne +3/+0.',
     flavor: 'Le manche de glace mord la main avant de mordre l’ennemi.',
   },
 
@@ -2302,7 +2371,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 0, def: 1 },
     donne: { rapidite: true },
-    text: 'Arme — Le porteur gagne +0/+1 et Rapidité (il peut attaquer le tour où il arrive).',
+    text: 'Arme — Le porteur gagne +0/+1 et Rapidité.',
     flavor: 'Elle part avant la question.',
   },
   {
@@ -2320,7 +2389,7 @@ export const RPG_ARME_CARDS = [
     // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
-    text: 'Arme — Le porteur gagne +0/+3 et Esquive (25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie ; les capacités ne s’esquivent pas ; elle s’ajoute à celle d’une créature qui esquive déjà). Avec Bouchra, guerrière des crêtes, en jeu : +0/+4 au lieu de +0/+3.',
+    text: 'Arme — Le porteur gagne +0/+3 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+3.',
     flavor: 'Le sel tient mieux que le fer quand le fer chauffe.',
   },
   {
@@ -2333,8 +2402,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'commune',
     bonus: { atk: 2, def: 0 },
     donne: { coupRapide: true },
-    porteurAvantDegats: { type: 'gel', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée (déclaré attaquant, il peut frapper une créature adverse de votre choix avec 25 % de chances de rater : elle encaisse ses dégâts, sans riposte, et son attaque s’arrête là ; il ne peut attaquer l’adversaire que si aucune créature adverse n’est en jeu, avec 100 % de chances de toucher). Avant les dégâts, 25 % de chances de geler chaque créature adverse que le porteur combat.',
+    text: 'Arme — Le porteur gagne +2/+0 et Attaque ciblée.',
     flavor: 'Il ne vise pas l’homme. Il vise la fenêtre derrière lui.',
   },
   {
@@ -2378,7 +2446,7 @@ export const RPG_ARME_CARDS = [
       bonus: { atk: 2, def: 2 },
       remplace: { porteurBlesseSorcier: { type: 'pioche-defausse', pioche: 1, defausse: 0 } },
     },
-    text: 'Arme — Le porteur gagne +1/+1. Quand le porteur inflige des blessures de combat au sorcier adverse : piochez une carte, puis défaussez-en une. Avec Le Passeur au masque de chacal en jeu : +2/+2, et la pioche ne défausse plus.',
+    text: 'Arme — Le porteur gagne +1/+1. Ses blessures au sorcier font piocher puis défausser une carte. Avec Le Passeur au masque de chacal en jeu : +2/+2, sans défausse.',
     flavor: 'Il ne rapporte pas ce qu’il a vu. Il rapporte ce qui manquait.',
   },
   {
@@ -2391,7 +2459,7 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 2, def: 2 },
     donne: { protection: { contre: 'tenebres' } },
-    text: 'Arme — Le porteur gagne +2/+2 et un bouclier de Ténèbres : il bloque le prochain sort adverse de Ténèbres, puis se brise.',
+    text: 'Arme — Le porteur gagne +2/+2 et bloque le prochain sort adverse de Ténèbres.',
     flavor: 'Le guide pare d’un geste ce que la nuit envoie.',
   },
   {
@@ -2410,7 +2478,7 @@ export const RPG_ARME_CARDS = [
     // Le porteur reçoit en plus la parade anti-sort du jeu (`lien.donne`),
     // sans qu'un seul de ses chiffres imprints ne bouge.
     lien: { ancre: 'tarek', donne: { bouclier: 1 } },
-    text: 'Arme — Arme vivante : vous pouvez la jouer sans créature ; elle crée alors un chien de sable 1/1 et s’y attache. Le porteur gagne +3/+1. Avec TAREK en jeu : un bouclier sur le porteur, en plus.',
+    text: 'Arme — Arme vivante : jouable sans cible, elle crée alors un Chien de sable 1/1 porteur. +3/+1. Avec TAREK en jeu : le porteur reçoit un bouclier.',
     flavor: 'Le désert n’attend pas qu’on lui trouve un bras.',
   },
   {
@@ -2422,20 +2490,14 @@ export const RPG_ARME_CARDS = [
     cost: 4,
     rarity: 'mythique',
     bonus: { atk: 3, def: 2 },
-    // Le cycle des Épées de X et Y, en une seule lame : l’Attaque ciblée ouvre
-    // les DEUX déclencheurs — la frappe précoce sur une créature pioche (et
-    // arrête l'attaque du porteur là), l'attaque ordinaire qui passe lève un
-    // chien. Sans lui, un porteur inbloquable ne blesserait jamais une créature
-    // et la moitié de la carte dormirait.
-    donne: { coupRapide: true },
     porteurBlesseCreature: { type: 'pioche', amount: 1 },
     porteurBlesseSorcier: { type: 'jetons', jeton: 'chien-de-sable', nombre: 1 },
-    text: 'Arme — Le porteur gagne +3/+2 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % contre l’adversaire). Quand le porteur inflige des blessures de combat à une créature : piochez une carte. Quand il en inflige au sorcier adverse : créez un chien de sable 1/1.',
+    text: 'Arme — Le porteur gagne +3/+2. Blesser une créature fait piocher 1 carte ; blesser le sorcier crée un Chien de sable 1/1.',
     flavor: 'La mère des pistes ne ferme jamais la porte : elle la laisse derrière elle.',
   },
   {
     id: 'sphere-de-rotation',
-    name: 'sphère de rotation',
+    name: 'Sphère de rotation',
     element: 'eau',
     colors: ['eau', 'sable'],
     kind: 'arme',
@@ -2443,12 +2505,13 @@ export const RPG_ARME_CARDS = [
     cost: 3,
     rarity: 'rare',
     bonus: { atk: 1, def: 2 },
+    donne: { bouclier: 1 },
     // Quand le porteur se bat avec une créature : 25 % de chances de la
     // renvoyer dans la main de son propriétaire AVANT d'assigner les dégâts
     // de combat (référence JoJo). Le moteur gère ce déclenchement pré-dégâts
     // dans `rpgLancerAttaque` (avant `appliquerDegatsDeCombatSimultanes`).
     porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +1/+2. Quand le porteur se bat avec une créature adverse : 25 % de chances de la renvoyer dans la main de son propriétaire avant d\'assigner les dégâts de combat.',
+    text: 'Arme — Le porteur gagne +1/+2 et un Bouclier. Quand il combat une créature : 25 % de chances de la renvoyer en main avant les dégâts.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
   {
@@ -2456,7 +2519,7 @@ export const RPG_ARME_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Sabre', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 2, def: 0 }, donne: { infiltration: true, volDeVie: true }, durabilite: 1, durabiliteAttaqueSeulement: true,
-    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie : il ne peut pas être bloqué et vous gagnez la moitié des dégâts qu’il inflige en points de vie, arrondie à l’entier supérieur. Endurance 1 — Après une attaque de son porteur, le Sabre est détruit.',
+    text: 'Arme — Le porteur gagne +2/+0, Infiltration et Vol de vie. Endurance 1 : le Sabre est détruit après son attaque.',
     flavor: 'Sa lame traverse la nuit avant que le sable ne retombe.',
   },
   {
@@ -2464,7 +2527,7 @@ export const RPG_ARME_CARDS = [
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
     bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée : déclaré attaquant, il peut frapper une créature adverse avec 100 % de chances de réussir ; son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — 25 % de chances d’infliger deux fois ses dégâts d’attaque à une créature adverse.',
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de chances de doubler ses dégâts contre une créature.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

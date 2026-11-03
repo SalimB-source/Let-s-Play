@@ -104,6 +104,22 @@ export default function SocialDock() {
   // Sur la page sociale, le lanceur flottant disparaît : la page se suffit
   // à elle-même.
   const onSocialRoute = /^\/(messages|messagerie)(\/|$)/.test(location.pathname || '');
+  const onHomeRoute = location.pathname === '/';
+  const [homeHeroDock, setHomeHeroDock] = useState(false);
+  useEffect(() => {
+    if (!onHomeRoute) {
+      setHomeHeroDock(false);
+      return undefined;
+    }
+    const updateHomeHeroDock = () => setHomeHeroDock(window.scrollY < window.innerHeight * 0.6);
+    updateHomeHeroDock();
+    window.addEventListener('scroll', updateHomeHeroDock, { passive: true });
+    window.addEventListener('resize', updateHomeHeroDock);
+    return () => {
+      window.removeEventListener('scroll', updateHomeHeroDock);
+      window.removeEventListener('resize', updateHomeHeroDock);
+    };
+  }, [onHomeRoute]);
   // Dans le Sablier, la fenêtre sociale passe au-dessus de la couche plein
   // écran du jeu : voir `estRouteSablier` ci-dessus et `social.css`.
   const onSablierRoute = estRouteSablier(location.pathname);
@@ -393,7 +409,7 @@ export default function SocialDock() {
   ];
 
   return (
-    <div className={`social-dock${open ? ' is-open' : ''}${onSablierRoute ? ' social-dock--sablier' : ''}`}>
+    <div className={`social-dock${open ? ' is-open' : ''}${onSablierRoute ? ' social-dock--sablier' : ''}${homeHeroDock ? ' social-dock--home-hero' : ''}`}>
       {open && (
         <section className="social-panel" role="dialog" aria-label={t.title} aria-modal="false">
           {!inThread && (

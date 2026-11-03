@@ -536,7 +536,7 @@
 @media (max-width: 959px) {
   .rpg-deck-catalog--closed .rpg-deck-catalog__choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 699px) {
+@media (max-width: 699px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-deck-catalog--closed .rpg-deck-catalog__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -611,7 +611,7 @@
   .rpg-deck-catalog--open .rpg-deck-choice .rpg-deck-choice__meta b { display: none; }
   .rpg-deck-catalog--open .rpg-deck-choice__select { grid-column: auto; justify-self: stretch; margin: 6px 0 0; padding: 7px 2px; font-size: 9px; letter-spacing: .03em; }
 }
-@media (max-width: 560px) {
+@media (max-width: 560px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-deckbox--shelf { --bw: clamp(96px, 30vw, 132px); }
   /* Les quatre puces de couleur tiennent sur une rangée dès 360 px. */
   .rpg-deck-filter__chips { gap: 4px; }
@@ -621,7 +621,7 @@
   .rpg-deck-detail__header .rpg-deckbox { margin-left: -6px; }
 }
 /* Écran large mais peu haut (portable) : l'aide cède la place, les boutons restent visibles. */
-@media (min-width: 821px) and (max-height: 700px) {
+@media (min-width: 821px) and (max-height: 700px) and (hover:hover), (min-width: 821px) and (max-height: 700px) and (min-device-width:601px) {
   .rpg-deck-catalog--closed .rpg-deck-catalog__intro p { display: none; }
 }
 /* Téléphone en paysage : peu de hauteur, on rapproche et on réduit l'étagère. */
@@ -640,7 +640,7 @@
   .rpg-menu-link.rpg-deck-detail__close { min-height: 44px; padding: 11px 18px; }
 }
 /* Très petit écran : « SÉLECTIONNER » doit tenir dans un tiers de la rangée. */
-@media (max-width: 360px) {
+@media (max-width: 360px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-deck-catalog--open .rpg-deck-choice__select { padding-inline: 1px; font-size: 8px; letter-spacing: .02em; }
 }
 

@@ -881,3 +881,10 @@ test('La Cour du Fléau est un plateau sélectionnable avec fond 4K, vignette et
   const duel = resoudrePlateauxDuDuel({ plateauChoisi: plateau.id });
   assert.equal(duel.joueur.plateau.id, plateau.id);
 });
+
+test('les Ruines de Tipaza jouent leur nouvelle musique dédiée', () => {
+  const piste = RPG_PLATEAU_MUSIC_FILES['ruines-de-tipaza'];
+  assert.match(piste, /les ruines de tipaza\.mp3$/);
+  assert.ok(existsSync(new URL('../public/les ruines de tipaza.mp3', import.meta.url)));
+  assert.equal(existsSync(new URL('../public/audio/SorcererOfTheDeepTide.mp3', import.meta.url)), false);
+});

@@ -14,7 +14,7 @@ function scene(arme, cote = 'joueur') {
   a.ready = true; b.ready = true;
   return { d, a, b };
 }
-for (const [arme, seuil] of [['lance-de-givre', .15], ['javelot-du-beffroi', .25]]) {
+for (const [arme, seuil] of [['lance-de-givre', .15]]) {
   test(`${arme} gèle avant les dégâts à son seuil exact en combat bloqué`, () => {
     for (const [jet, gele] of [[seuil - .001, true], [seuil, false]]) {
       const { d, a, b } = scene(arme);
@@ -76,4 +76,28 @@ test('l’Armure accorde une vraie Contre-attaque et son remplacement la retire'
   assert.equal(d.joueur.pv, avant - b.atk);
   equiper(d, 'sorcier', b, 'takouba-des-pistes');
   assert.equal(b.contreAttaque, false);
+});
+
+test('le Javelot du beffroi conserve son bonus et Attaque ciblée sans geler', () => {
+  const carte = armeById('javelot-du-beffroi');
+  assert.deepEqual(carte.bonus, { atk: 2, def: 0 });
+  assert.equal(carte.donne.coupRapide, true);
+  assert.equal(carte.porteurAvantDegats, undefined);
+  assert.doesNotMatch(carte.text, /gel/i);
+  for (const mode of ['attaque-ciblee', 'blocage', 'defense', 'duel']) {
+    const { d, a, b } = scene('javelot-du-beffroi', mode === 'defense' ? 'sorcier' : 'joueur');
+    // Une Attaque ciblée doit toucher, les autres combats utilisent le jet le
+    // plus favorable au gel : aucune situation ne doit geler avec le Javelot.
+    rpgReglerHasard(d, () => mode === 'attaque-ciblee' ? .9 : 0);
+    let result;
+    if (mode === 'attaque-ciblee') result = rpgLancerAttaque(d, 'joueur', [a.id], {}, null, null, { [a.id]: b.id });
+    else if (mode === 'duel') result = rpgAttaquerCreature(d, 'joueur', a.id, b.id);
+    else {
+      a.coupRapide = false;
+      result = rpgLancerAttaque(d, 'joueur', [a.id], { [a.id]: [b.id] });
+    }
+    assert.equal(result.ok, true, mode);
+    assert.equal(a.gelToursRestants ?? 0, 0, mode);
+    assert.equal(b.gelToursRestants ?? 0, 0, mode);
+  }
 });

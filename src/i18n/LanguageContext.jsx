@@ -1,5 +1,15 @@
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { translations, languages } from './translations';
+import { translations as allTranslations, languages } from './translations';
+import { frenchSiteDictionary } from './translations-fr-site';
+
+// La version publiée n'est qu'en français : son dictionnaire complet contient
+// déjà les replis anglais nécessaires, sans envoyer les paquets EN/AR au
+// navigateur. Le build SSR garde les trois langues pour les rendus et contrôles
+// de toutes les routes (`check:i18n`). `import.meta.env.SSR` est une constante
+// de build, donc Rollup élimine les dictionnaires de test du bundle web.
+const translations = import.meta.env.SSR
+  ? allTranslations
+  : { fr: frenchSiteDictionary };
 
 /**
  * Langue du site — le français, et rien d'autre.
@@ -11,16 +21,15 @@ import { translations, languages } from './translations';
  *
  * Ce qui reste dans le dépôt, et pourquoi :
  *
- *   - les dictionnaires `en` et `ar` (`src/i18n/translations.js`). `en` reste le
- *     filet de sécurité du français : une clé oubliée dans `fr` s'affiche en
- *     anglais au lieu de casser la page (voir `withBaseFallback` — c'est le bug
- *     ff6d390 qui avait blanchi la page Actus) ;
- *   - la direction du texte (`dir`) et le câblage RTL qui va avec : inertes en
- *     français, déjà en place si une langue revient un jour ;
- *   - la prop `lang` du provider : une prise réservée aux scripts de
- *     vérification, qui continuent de rendre chaque route en FR / EN / AR
- *     (`npm run check:i18n`). Aucun écran ne s'en sert, aucun visiteur ne peut
- *     changer la langue.
+ *   - les dictionnaires complets EN / FR / AR restent dans `translations.js`
+ *     pour le rendu SSR et les contrôles. Le bundle navigateur ne garde que le
+ *     français complété à la génération par les replis anglais
+ *     (`translations-fr-site.js`) : aucune clé absente ne casse une page et EN/AR
+ *     ne sont pas téléchargés par le site publié ;
+ *   - la direction du texte (`dir`) et le câblage RTL restent testés avec AR ;
+ *   - la prop `lang` du provider reste une prise réservée aux scripts SSR, qui
+ *     rendent chaque route en FR / EN / AR (`npm run check:i18n`). Aucun écran
+ *     ne s'en sert, aucun visiteur ne peut changer la langue.
  *
  * Le contexte expose `{ lang, dir, t }` : `setLang` a disparu avec le
  * sélecteur.
@@ -31,7 +40,8 @@ import { translations, languages } from './translations';
 // dictionnaire.
 export const SITE_LANG = 'fr';
 
-// Dictionnaire de secours du français : celui de l'anglais.
+// Langue de secours utilisée pendant le rendu SSR des dictionnaires source.
+// Le navigateur reçoit le même repli déjà fusionné dans `frenchSiteDictionary`.
 const BASE_LANG = 'en';
 
 function isPlainObject(value) {

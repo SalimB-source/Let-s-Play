@@ -1008,49 +1008,19 @@ test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', (
   assert.deepEqual(simple.coupCritique, { chance: 0.25, fois: 2 });
 });
 
-test('Le Sabre maudit sur Kagutsuchi : le poison tombe, le sabre donne +2/+0', () => {
+test('Le Sabre maudit accorde le même bonus à Kagutsuchi et aux autres créatures', () => {
   const sabre = cardById('sabre-maudit');
-  assert.deepEqual(sabre.lien, { ancre: 'kagutsuchi-flamme-originelle', effet: { def: 0 }, porteur: true },
-    'Lien de porteur : la défense rendue à zéro, et seulement entre ses mains');
-  assert.equal(cardById('kagutsuchi-flamme-originelle').rarity, 'mythique');
-  // Lien de porteur : l'ancre en jeu ne suffit pas, c'est ELLE qui doit tenir
-  // le sabre.
-  assert.equal(lienSatisfait(sabre, ['kagutsuchi-flamme-originelle']), false,
-    'un Lien de porteur ne se satisfait pas de l’ancre présente sur la rangée');
-  assert.equal(lienSatisfait(sabre, ['kagutsuchi-flamme-originelle'], 'kagutsuchi-flamme-originelle'), true);
-  assert.equal(lienSatisfait(sabre, ['kagutsuchi-flamme-originelle'], 'ashigaru-des-braises'), false);
-  assert.match(sabre.text, /\+2\/\+0 au lieu de \+2\/-2/);
-
+  assert.equal(sabre.lien, undefined, 'l’ancien Lien qui supprimait le malus est devenu inutile');
   const duel = duelVide();
   const k = poser(duel, 'joueur', 'kagutsuchi-flamme-originelle');
-  assert.deepEqual([k.atk, k.def], [2, 6]);
-  donner(duel, 'joueur', 'sabre-maudit');
-  manaPlein(duel, 'joueur');
+  donner(duel, 'joueur', 'sabre-maudit'); manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', k.id).ok, true);
-  assert.deepEqual([k.atk, k.def], [4, 6], 'avec le Lien : +2/+0, la défense est intacte');
-  assert.equal(k.pv, 6, 'et le porteur ne paie pas le poison en PV');
-  // Le cumul des critiques reste acquis, sans que le Lien ait à l'écrire.
+  assert.deepEqual([k.atk, k.def], [4, 7]);
+  assert.equal(k.volDeVie, true);
   assert.deepEqual(k.coupCritique, { chance: 0.5, fois: 4 });
-
-  // Une autre créature garde le poison : le Lien ne vaut que pour la Flamme.
-  const simple = poser(duel, 'joueur', 'momie-de-lin');
-  assert.deepEqual([simple.atk, simple.def, simple.pv], [2, 4, 4]);
-  donner(duel, 'joueur', 'sabre-maudit');
-  manaPlein(duel, 'joueur');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', simple.id).ok, true);
-  assert.deepEqual([simple.atk, simple.def, simple.pv], [4, 2, 2],
-    'sans Lien : +2/-2, il paie le poison en PV');
-  assert.deepEqual(simple.coupCritique, { chance: 0.25, fois: 2 });
-
-  // Et la malédiction tue : c'est elle, le prix du sabre. Un 1/1 tombe en
-  // s'attachant, et le sabre le suit au cimetière.
   const fragile = poser(duel, 'joueur', 'ashigaru-des-braises');
-  assert.deepEqual([fragile.atk, fragile.def, fragile.pv], [1, 1, 1]);
-  donner(duel, 'joueur', 'sabre-maudit');
-  manaPlein(duel, 'joueur');
+  donner(duel, 'joueur', 'sabre-maudit'); manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', fragile.id).ok, true);
-  assert.equal(duel.joueur.creatures.some((e) => e.id === fragile.id), false,
-    'un 1/1 meurt en s’attachant le sabre : c’est la malédiction');
-  assert.ok(duel.joueur.cimetiere.includes('sabre-maudit'),
-    'et l’arme ne reste pas sur un cadavre');
+  assert.deepEqual([fragile.atk, fragile.def, fragile.pv], [3, 2, 2]);
+  assert.equal(fragile.volDeVie, true);
 });

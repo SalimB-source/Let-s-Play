@@ -1,3 +1,4 @@
+import { ciblesDefenseur } from './rpgDefenseur.js';
 /**
  * Le Sablier en ligne — protocole du mode PvP.
  * --------------------------------------------
@@ -414,6 +415,11 @@ function declarerCombatPvp(duel, cote, attaquantIds, ciblesAttaque) {
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(duelCardById(attaquant.carteId)))) {
       return { ok: false, raison: 'protection' };
+    }
+    const ciblesLegales = duel[adv].creatures.filter((entite) =>
+      !rpgEstProtegee(entite, cardColors(duelCardById(attaquant.carteId))));
+    if (!ciblesDefenseur(ciblesLegales).some((entite) => entite.id === cible.id)) {
+      return { ok: false, raison: 'defenseur' };
     }
   }
   // Toujours ouvrir la fenêtre : sa présence ne doit jamais révéler la main

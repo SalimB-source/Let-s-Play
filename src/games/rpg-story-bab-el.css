@@ -88,7 +88,7 @@
 }
 
 /* ── Téléphone : les boutons s'empilent, chacun garde ses 44 px ───────────── */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-bab-el__actions { flex-direction: column; }
   .rpg-bab-el__actions .rpg-menu-button { flex: 1 1 auto; width: 100%; }
 }

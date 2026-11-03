@@ -291,7 +291,7 @@
   }
 }
 
-@media (max-width: 720px) {
+@media (max-width: 720px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-entry-choice__choix {
     grid-template-columns: minmax(0, 1fr);
   }

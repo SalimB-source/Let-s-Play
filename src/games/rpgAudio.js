@@ -82,6 +82,8 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['furie_viking', new URL('./assets/furie-viking.mp3', import.meta.url), 'furieVikingAudio'],
   ['furie_viking_femelle', new URL('./assets/furie-viking-femelle.mp3', import.meta.url), 'furieVikingFemelleAudio'],
   ['furie_loup_neige', new URL('./assets/furie-loup-neige.mp3', import.meta.url), 'furieLoupNeigeAudio'],
+  ['soin_vie', new URL('./assets/healing-sacred-voice.mp3', import.meta.url), 'healingSacredVoiceAudio'],
+  ['soin_vie_adverse', new URL('./assets/healing-sacred-voice.mp3', import.meta.url), 'healingSacredVoiceAudio'],
   ['defaite', new URL('./assets/game-lost.mp3', import.meta.url), 'gameLostAudio'],
   // Le même coup sec sert la blessure des deux camps.
   ['degats', new URL('./assets/hit.wav', import.meta.url), 'hitAudio'],
@@ -102,9 +104,9 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   ['freeze_impact', new URL('./assets/ice-freeze.wav', import.meta.url), 'iceFreezeAudio'],
   // Thunder Spark Transition, partagé par l'Éclair du marteau et l'arrivée du Maître.
   ['foudre_marteau', new URL('./assets/thunder-spark-transition-full.mp3', import.meta.url), 'foudreMarteauAudio'],
-  // La flèche de l'Attaque ciblée : un échantillon généré par
-  // `tools/make-arrow-shot.mjs` (corde lâchée + souffle du trait + empennage).
-  ['fleche', new URL('./assets/arrow-shot.wav', import.meta.url), 'arrowShotAudio'],
+  // La flèche de l'Attaque ciblée : whoosh distinct au toucher et au raté.
+  ['fleche', new URL('./assets/arrow-whoosh-hit.mp3', import.meta.url), 'arrowShotAudio'],
+  ['fleche_ratee', new URL('./assets/arrow-whoosh-miss.mp3', import.meta.url), 'arrowWhooshMissAudio'],
 ]);
 
 /** Les noms des échantillons jouables, dans l'ordre du registre. */
@@ -167,6 +169,8 @@ export const RPG_NAVIRE_ARRIVEE_SFX = 'navire_arrivee';
  * attaquant.
  */
 export const RPG_ARROW_SFX = 'fleche';
+/** Whoosh joué quand l’Attaque ciblée manque sa proie. */
+export const RPG_ARROW_MISS_SFX = 'fleche_ratee';
 
 /** Souffle froid du gel de masse (Verglas / Brume / Blizzard / Géant) — vent hivernal. */
 export const RPG_COLD_WIND_SFX = 'cold_wind';
@@ -207,6 +211,9 @@ const RPG_SFX_TABLE = {
   furie_viking_femelle: [{ kind: 'sample', at: 0, dur: 1.512, g: 1 }],
   // Grognement du Loup des neiges fourni par le joueur (environ 1,5 s).
   furie_loup_neige: [{ kind: 'sample', at: 0, dur: 1.48, g: 1 }],
+  // Même voix sacrée pour le soin de chaque camp ; les deux noms gardent le routage.
+  soin_vie: [{ kind: 'sample', at: 0, dur: 2.0, g: 1 }],
+  soin_vie_adverse: [{ kind: 'sample', at: 0, dur: 2.0, g: 1 }],
   defaite: [{ kind: 'sample', at: 0, dur: 4.493, g: 1 }],
   // Le même coup sec sert la blessure des deux camps.
   degats: [{ kind: 'sample', at: 0, dur: 0.625, g: 1 }],
@@ -231,9 +238,10 @@ const RPG_SFX_TABLE = {
   [RPG_FREEZE_IMPACT_SFX]: [{ kind: 'sample', at: 0, dur: 1.068, g: 1 }],
   // Thunder Spark Transition (MPEG-1 Layer III, 320 kbps, 44.1 kHz, 3.422 s).
   [RPG_FOUDRE_MARTEAU_SFX]: [{ kind: 'sample', at: 0, dur: 3.422, g: 1 }],
-  // La flèche de l'Attaque ciblée (arrow-shot.wav, 0.55 s, PCM 16 bits,
-  // 44,1 kHz mono — `tools/make-arrow-shot.mjs`).
-  [RPG_ARROW_SFX]: [{ kind: 'sample', at: 0, dur: 0.55, g: 1 }],
+  // Whoosh de flèche qui atteint sa cible (arrow-flying-whoosh.mp3, 3 s).
+  [RPG_ARROW_SFX]: [{ kind: 'sample', at: 0, dur: 3, g: 1 }],
+  // Whoosh qui s’éteint dans le vide quand la cible est manquée (2 s).
+  [RPG_ARROW_MISS_SFX]: [{ kind: 'sample', at: 0, dur: 2, g: 1 }],
 };
 
 /** Toutes les séquences nommées sont jouables par le lecteur et couvertes par les tests. */

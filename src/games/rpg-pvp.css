@@ -556,7 +556,7 @@ body.rpg-pvp-lock { overflow: hidden; }
   .rpg-pvp__grille { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-pvp { padding: 18px 12px 56px; }
   .rpg-pvp__header { margin-bottom: 18px; }
   .rpg-pvp__panneau { gap: 12px; padding: 15px; border-radius: 16px; }
@@ -573,7 +573,7 @@ body.rpg-pvp-lock { overflow: hidden; }
   .rpg-pvp-carte-main { width: 116px; }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 380px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-pvp-deckbox { width: clamp(88px, 31%, 116px); }
   .rpg-pvp-deckbox .rpg-deckbox { --bw: clamp(70px, 19vw, 88px); }
   .rpg-pvp-page__statut { display: none; }

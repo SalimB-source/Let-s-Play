@@ -113,7 +113,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'feux-de-kitsune': 'braise-souls-cendres-v6',
   'serment-de-la-forge': 'braise-souls-cendres-v4',
   'pere-des-corbeaux': 'odin-photoreal-v1',
-  'ifrit-al-ahmar': 'braise-souls-cendres-v3',
+  'ifrit-al-ahmar': 'ifrit-archer-immateriel-v1',
   'la-devoreuse': 'devoreuse-nihonga-visage-v1',
   'ifrit-des-ergs': 'braise-souls-cendres-v3',
   'trait-de-braise': 'braise-souls-cendres-v5',
@@ -125,8 +125,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // peinture ne partage plus la marque de passe des autres cartes Sable.
   'faucon-du-zenith': 'faucon-deesse-solaire-v1',
   'dune-marchante': 'sable-souls-desore-v3',
-  'fennec-des-decombres': 'sable-souls-desore-v3',
-  'tour-de-sable': 'sable-souls-desore-v3',
+  'fennec-des-decombres': 'fennec-esquive-pieges-v1',
+  'tour-de-sable': 'tours-souls-2026-v1',
+  'pourfendeur-des-djinns': 'pourfendeur-nuit-v2',
   'tislit-des-aures': 'sable-souls-desore-v3',
   'cavalier-amazigh-du-desert': 'sable-souls-desore-v3',
   'amayas-du-hoggar': 'sable-souls-desore-v3',
@@ -177,7 +178,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'lettre-de-marque': 'sable-souls-desore-v3',
   'le-grand-debarquement': 'sable-souls-desore-v3',
   'rapport-du-greffier': 'sable-souls-desore-v3',
-  'tour-de-braise': 'braise-souls-cendres-v5',
+  'tour-de-braise': 'tours-souls-2026-v1',
   'nuage-de-cendres': 'braise-souls-cendres-v5',
   'vent-rouge': 'braise-souls-cendres-v5',
   // Les cinq héros du récit ont été **repeints en nihonga** (pigments
@@ -240,12 +241,12 @@ const CARD_ART_CACHE_VERSIONS = {
   // 1408×768, la Dame au fil, la Poigne, l'Appât, le Défi, le Verglas, le
   // Grand Voile, l'Embuscade et le portrait photoréaliste du Père des corbeaux.
   'serpent-du-monde': 'neige-souls-cendres-v1',
-  'tour-de-neige': 'neige-souls-cendres-v1',
+  'tour-de-neige': 'tours-souls-2026-v1',
   'dame-des-neuf-mondes': 'neige-souls-cendres-v1',
   'pere-des-corbeaux': 'neige-souls-cendres-v1',
   'poigne-de-givre': 'neige-loup-gele-souls-v2',
   'volva-soigneuse': 'volva-soigneuse-souls-v1',
-  'braise-et-sable': 'armurerie-sangles-v1',
+  'braise-et-sable': 'arc-fleche-souls-lueur-v3',
   'verglas': 'neige-souls-cendres-v1',
   'embuscade': 'neige-souls-cendres-v1',
   'defi-du-jarl': 'neige-souls-cendres-v1',
@@ -331,7 +332,7 @@ const CARD_ART_CACHE_VERSIONS = {
   'les-feuillets': SANS_TEINTE,
   'la-grande-pesee': SANS_TEINTE,
   'la-derniere-pesee': SANS_TEINTE,
-  'tour-des-tenebres': SANS_TEINTE,
+  'tour-des-tenebres': 'tour-tenebres-reve-v2',
   // La passe Souls de l'Eau (octobre 2026) — premier lot : les deux héros et
   // huit cartes dont la peinture jurait (le bâton art nouveau, le portefaix
   // éclairé comme un souk, le pilote en plein jour, la source turquoise). Le
@@ -358,7 +359,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // reste l'illustration alternative.
   'seigneur-des-machoires': 'tenebres-seigneur-machoires-nil-v2',
   'vipere-de-verre': SANS_TEINTE,
-  'tour-des-flots': SANS_TEINTE,
+  'tour-des-flots': 'tours-souls-2026-v1',
   'sonneur-fele': SANS_TEINTE,
   'veilleuse-des-citernes': SANS_TEINTE,
   'silence-decume': SANS_TEINTE,

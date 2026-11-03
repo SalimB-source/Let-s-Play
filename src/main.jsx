@@ -8,22 +8,13 @@ import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles.css';
-import './profile-lists.css';
-import './news-article.css';
-import './written-review.css';
-import './components/SpoilerAlert.css';
+import './motion.css';
 import './auth/auth.css';
-import './news-carousel.css';
-import './actus.css';
-import './news-view-toggle.css';
 import './daily-news.css';
 import './monthly-releases.css';
 import './partners.css';
-import './dz-dev.css';
 import './reels-carousel.css';
-import './dossier-article.css';
 import './achievements/achievements.css';
-import './quizzes/quiz.css';
 import './friends/friends.css';
 import './messages/messages.css';
 import './messages/calls.css';
@@ -34,6 +25,7 @@ import './theme.css';        // thème clair : importé en dernier (surcharge)
 import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './theme/ThemeContext';
 import Layout from './components/Layout';
+import MotionEnhancer from './components/MotionEnhancer';
 import Home from './pages/Home';
 import { AuthProvider } from './auth/AuthContext';
 import { AchievementProvider } from './achievements/AchievementContext';
@@ -48,6 +40,7 @@ import { initSinglePlayback } from './lib/videoPlayback';
 import { normalizePhoneViewport } from './lib/phoneLayout';
 import { applyLaneCountForDevice } from './games/mirageLanes';
 import GameLoadBoundary from './games/GameLoadBoundary.jsx';
+import ChargementDuel from './games/ChargementDuel.jsx';
 import MiseAJourDisponible from './components/MiseAJourDisponible';
 import GardeErreur from './components/GardeErreur';
 import PaysageSablier from './games/PaysageSablier';
@@ -145,6 +138,7 @@ function App() {
           <CallsProvider>
           <AchievementProvider>
             <Layout>
+              <MotionEnhancer />
               <AchievementTracker />
               {/* Une seule frontière pour toutes les pages à la demande : la
                   barre, le fond et les surcouches (appels, succès, messagerie)
@@ -263,7 +257,7 @@ function App() {
             <Route path="/lets-play" element={<Games />} />
             <Route path="/jeu/mirage-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Mirage Rush…" />}><MirageRushPage /></Suspense>} />
             <Route path="/jeu/vice-city-rush" element={<Suspense fallback={<RouteLoading label="Chargement de Vice City Rush…" />}><ViceCityRushPage /></Suspense>} />
-            <Route path="/jeu/sablier-de-bab-el" element={<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<RouteLoading label="Chargement du duel…" />}><RpgEntryChoice variantesPlateaux /></Suspense></GameLoadBoundary></PaysageSablier>} />
+            <Route path="/jeu/sablier-de-bab-el" element={<PaysageSablier><GameLoadBoundary jeu="Le Sablier"><Suspense fallback={<ChargementDuel />}><RpgEntryChoice variantesPlateaux /></Suspense></GameLoadBoundary></PaysageSablier>} />
             {/* Duel en ligne : le salon sans code crée un défi, le salon avec
                 code rejoint une invitation. Le lien d'invitation est un chemin
                 réel (`…/defi/AB12CD34`) pour qu'il se colle partout. */}

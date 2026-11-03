@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { dailyStories, dailyNewsListing, dailySeoEntries, gamingNews, editionDate, editionIsoDate } from '../src/news/daily/2026-11-03.js';
+import { dailySeoEntries as indexedSeo } from '../src/news/daily/seo-index.js';
 import { getArticleTrailerEntry, leadTrailer } from '../src/articleTrailers.js';
 
 const read = file => fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
@@ -44,13 +45,15 @@ test('annonces antérieures et première à venir explicitement distinguées', (
 });
 
 test('tous les consommateurs utilisent la nouvelle édition sans retirer les archives', () => {
-  for (const file of ['src/pages/News.jsx', 'src/pages/Home.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/pages/AllNews.jsx', 'src/pages/CurrentNews.jsx', 'src/search/searchIndex.js', 'src/components/SEO.jsx']) {
+  for (const file of ['src/pages/News.jsx', 'src/pages/Home.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/pages/AllNews.jsx', 'src/pages/CurrentNews.jsx', 'src/search/searchIndex.js']) {
     assert.ok(read(file).includes("from '../news/daily/2026-11-03'"), file);
   }
+  assert.ok(read('src/components/SEO.jsx').includes("from '../news/daily/seo-index'"));
+  for (const [route, entry] of Object.entries(dailySeoEntries)) assert.deepEqual(indexedSeo[route], entry);
   const news = read('src/pages/News.jsx');
   assert.match(news, /yesterdayStories, editionDate as yesterdayDate.*2026-11-02/);
   assert.ok(news.includes('<span>{yesterdayDate}</span>'));
-  for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js', 'src/components/SEO.jsx']) {
+  for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) {
     assert.ok(read(file).includes("from '../news/daily/2026-11-01'"));
     assert.ok(read(file).includes("from '../news/daily/2026-11-02'"));
   }

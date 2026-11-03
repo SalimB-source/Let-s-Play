@@ -1,3 +1,5 @@
+import { ciblesDefenseur } from './rpgDefenseur.js';
+import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
  * Le cerveau du sorcier — décisions tactiques de l’IA du duel.
  *
@@ -211,8 +213,9 @@ export function furieGagnee(entite, degatsRecus) {
   const pv = Number(entite?.pv ?? entite?.def) || 0;
   const defenseDeBase = Number(carte?.def ?? entite?.pvMax ?? entite?.def ?? pv) || 0;
   const pvApres = pv - degats;
+  const defensePropreApres = defenseSansArmure(entite) - Math.max(0, degats - armureRestante(entite));
   return furie > 0 && degats > 0 && !entite?.furieDeclenchee
-    && pvApres > 0 && pvApres < defenseDeBase ? furie : 0;
+    && pvApres > 0 && defensePropreApres < defenseDeBase ? furie : 0;
 }
 
 /** L’entité meurt-elle sous un coup de ce type ?
@@ -694,55 +697,112 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
     .sort((a, b) => Number(a.bloque) - Number(b.bloque) || b.score - a.score)[0]?.entite.id ?? null;
 }
 
-/** Choisit une créature légale pour chaque attaque ciblée obligatoire. */
+/**
+ * Choisit ensemble les cibles de toutes les Attaques ciblées. Une attribution
+ * est évaluée sur la probabilité de tuer chaque proie : les frappes sont ainsi
+ * réparties quand plusieurs ennemis peuvent tomber, et ne se concentrent que
+ * lorsqu'il faut cumuler leurs dégâts pour obtenir un kill.
+ */
 export function choisirCiblesRapidesIA(duel, cote, attaquantIds = [], options = {}) {
-  const { profil, rng } = optionsIA(duel, cote, options);
+  const { profil } = optionsIA(duel, cote, options);
   const adv = autre(cote);
-  const cibles = {};
   const attaquants = [...new Set(attaquantIds)]
     .map((id) => duel[cote].creatures.find((entite) => entite.id === id))
-    .filter(Boolean);
+    .filter((entite) => entite?.coupRapide);
+  const ennemis = duel[adv].creatures;
   const pvAdv = Math.max(0, duel[adv].pv ?? 0) + (duel[adv].bouclier ?? 0);
   const degatsAuVisage = attaquants.reduce((somme, entite) => somme + (entite.atk ?? 0), 0);
-  if (degatsAuVisage >= pvAdv && !duel[adv].creatures.length) return cibles;
-  
-  // Priorité aux Tours de défense : les créatures avec coupRapide doivent
-  // attaquer en priorité les créatures avec prioriteAttaqueRapide: true,
-  // mais seulement si la frappe apporte une vraie valeur (kill ou menace majeure).
-  const toursPrioritaires = duel[adv].creatures
-    .filter((entite) => entite.prioriteAttaqueRapide && !entite.attaquee)
-    .sort((a, b) => (b.atk ?? 0) - (a.atk ?? 0));
+  if (!ennemis.length && degatsAuVisage >= pvAdv) return {};
+  if (!attaquants.length || !ennemis.length) return {};
 
-  for (const attaquant of attaquants) {
-    if (!attaquant.coupRapide) continue;
-    const carte = duelCardById(attaquant.carteId);
+  const candidats = attaquants.map((attaquant) => ({
+    attaquant,
+    cibles: ciblesDefenseur(ciblesLegales(duel, cote, duelCardById(attaquant.carteId), 'combat')),
+  }));
+  const attribution = {};
+  let meilleureAttribution = {};
+  let meilleurScore = -Infinity;
 
-    // Tour prioritaire : seulement si on la tue ou si on n'a rien de mieux à faire.
-    // Attaquer une Tour 0/4 avec 3 d'attaque sans la tuer gaspille la frappe.
-    if (toursPrioritaires.length > 0) {
-      // Une Tour protégée contre la couleur de l'attaquant ignore sa frappe :
-      // le moteur refuserait même la désignation (`protection`), l'IA l'écarte.
-      const tourCiblee = toursPrioritaires
-        .find((tour) => !estProtegee(tour, couleursEntite(attaquant)));
-      if (tourCiblee && meurtSousCouleurs(tourCiblee, attaquant.atk, couleursEntite(attaquant), 'attaque')) {
-        // On tue la Tour : priorité absolue, même si d'autres cibles valent plus.
-        cibles[attaquant.id] = tourCiblee.id;
-        continue;
+  const chanceDeTouche = (attaquant, cible) => {
+    const arme = armeById(attaquant.arme?.carteId);
+    const immanquable = Boolean(arme?.coupRapideImmanquable);
+    const touche = immanquable ? 1 : 1 - moteur.RPG_COUP_RAPIDE_ECHEC_CHANCE;
+    return touche * (cible.esquive ? 1 - moteur.RPG_ESQUIVE_CHANCE : 1);
+  };
+
+  const evaluerAttribution = () => {
+    let score = 0;
+    for (const cible of ennemis) {
+      const tirs = attaquants.filter((attaquant) => attribution[attaquant.id] === cible.id);
+      if (!tirs.length) continue;
+
+      // Distribution des dégâts possibles, en tenant compte des ratés et de
+      // l'Esquive. Les dégâts excédentaires ne valent pas un kill supplémentaire.
+      const pv = Math.max(1, Number(cible.pv ?? cible.def) || 1);
+      let issues = new Map([[0, 1]]);
+      for (const attaquant of tirs) {
+        const degats = Math.max(0, Number(attaquant.atk) || 0);
+        const chance = chanceDeTouche(attaquant, cible);
+        const prochaines = new Map();
+        for (const [total, probabilite] of issues) {
+          prochaines.set(total, (prochaines.get(total) ?? 0) + probabilite * (1 - chance));
+          prochaines.set(total + degats, (prochaines.get(total + degats) ?? 0) + probabilite * chance);
+        }
+        issues = prochaines;
+      }
+
+      let chanceKill = 0;
+      let degatsMoyens = 0;
+      for (const [degats, probabilite] of issues) {
+        if (degats >= pv) chanceKill += probabilite;
+        degatsMoyens += Math.min(pv, degats) * probabilite;
+      }
+      // Le nombre de kills domine l'évaluation ; menace et valeur départagent
+      // les choix qui tuent autant de créatures.
+      score += chanceKill * 100;
+      score += (degatsMoyens / pv) * Math.min(30, menace(cible) + valeurEntite(cible) * 0.25)
+        * 0.35 * (1 - profil.tauxErreur);
+      if (cible.prioriteAttaqueRapide && !cible.attaquee) {
+        score += chanceKill * 25 * (1 - profil.tauxErreur * 0.5);
       }
     }
-    
-    const meilleure = meilleuresOptionsOffensives(duel, cote, carte, {
-      montant: attaquant.atk, sourceType: 'attaque', portee: 'combat', profil, rng, attaquant,
-    });
-    if (!meilleure?.cibleId || meilleure.cibleId === 'sorcier') {
-      const cible = duel[adv].creatures.find((entite) => !estProtegee(entite, couleursEntite(attaquant)));
-      if (cible) cibles[attaquant.id] = cible.id;
-      continue;
+
+    // Une Contre-attaque peut coûter cher même si la proie meurt : pénaliser
+    // chaque frappe qui a une chance d'abattre son propre attaquant.
+    for (const attaquant of attaquants) {
+      const cible = ennemis.find((entite) => entite.id === attribution[attaquant.id]);
+      if (!cible || !cible.contreAttaque || attaquant.bouclier > 0
+          || !meurtSousCouleurs(attaquant, cible.atk, couleursEntite(cible), 'capacite')) continue;
+      score -= chanceDeTouche(attaquant, cible) * (25 + valeurEntite(attaquant));
     }
-    const proie = duel[adv].creatures.find((entite) => entite.id === meilleure.cibleId);
-    if (proie) cibles[attaquant.id] = proie.id;
-  }
-  return cibles;
+    return score;
+  };
+
+  // Le champ est borné à cinq créatures par camp : même l'exploration complète
+  // reste petite (au plus 5⁵ attributions), et évite la décision myope par tireur.
+  const explorer = (index) => {
+    if (index === candidats.length) {
+      const score = evaluerAttribution();
+      if (score > meilleurScore + 1e-9) {
+        meilleurScore = score;
+        meilleureAttribution = { ...attribution };
+      }
+      return;
+    }
+    const { attaquant, cibles } = candidats[index];
+    if (!cibles.length) {
+      explorer(index + 1);
+      return;
+    }
+    for (const cible of cibles) {
+      attribution[attaquant.id] = cible.id;
+      explorer(index + 1);
+    }
+    delete attribution[attaquant.id];
+  };
+
+  explorer(0);
+  return meilleureAttribution;
 }
 
 // ── Blocages ────────────────────────────────────────────────────────────────
@@ -1459,12 +1519,12 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       let creaturesSoignees = 0;
       let furiesEteintes = 0;
       for (const entite of camp.creatures) {
-        const soin = Math.min(montant, Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0)));
+        const soin = Math.min(montant, Math.max(0, plafondSoinCreature(entite) - (entite.pv ?? 0)));
         if (!soin) continue;
         totalSoin += soin;
         creaturesSoignees += 1;
         const defenseDeBase = Number(duelCardById(entite.carteId)?.def ?? entite.pvMax ?? entite.def) || 0;
-        if (entite.furieDeclenchee && defenseDeBase > 0 && (entite.pv ?? 0) + soin >= defenseDeBase) {
+        if (entite.furieDeclenchee && defenseDeBase > 0 && defenseSansArmure(entite) + soin >= defenseDeBase) {
           furiesEteintes += 1;
         }
       }
@@ -1943,7 +2003,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
       // Yamina : chaque alliée récupère ses PV manquants, le sorcier aussi.
       const soins = camp.creatures.reduce((total, entite) => total
         + Math.min(arrivee.amount ?? 0,
-          Math.max(0, (entite.pvMax ?? entite.pv ?? 0) - (entite.pv ?? 0))), 0);
+          Math.max(0, plafondSoinCreature(entite) - (entite.pv ?? 0))), 0);
       score += soins * 0.6 + Math.min(arrivee.etJoueur ?? 0, manquePv) * 0.8;
     }
     if (arrivee.type === 'heures') {

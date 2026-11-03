@@ -359,8 +359,8 @@ async function scenarioCreatureArmee(assert, disposition) {
       `[${disposition}] la carte d’arme ne se glisse plus derrière la créature`);
     assert.equal(armee.previousElementSibling?.querySelector?.('.rpg-card-stack__arme'), null,
       `[${disposition}] aucune plaque d’arme n’est posée avant la créature`);
-    assert.equal([...armee.querySelectorAll('img')].some((img) => img.getAttribute('src')?.includes('takouba-des-pistes')), false,
-      `[${disposition}] l’illustration de l’arme ne figure plus sur la face jouée`);
+    assert.match(armee.querySelector('.rpg-card__arme-vignette img')?.getAttribute('src') ?? '', /takouba-des-pistes/u,
+      `[${disposition}] la vignette montre l’illustration de l’arme`);
     assert.equal(armee.querySelector('.rpg-card__compteurs'), null,
       `[${disposition}] aucune pastille de compteur n’apparaît avant d’en gagner`);
     assert.doesNotMatch(armee.textContent, /Takouba des pistes|\+2\/\+0|Infiltration/u,
@@ -369,8 +369,8 @@ async function scenarioCreatureArmee(assert, disposition) {
       `[${disposition}] aucun infobulle de la face ne révèle l’effet de l’arme`);
     assert.match(armee.getAttribute('aria-label'), /Bonus d’équipement : \+2\/\+0.*Infiltration/u,
       `[${disposition}] le libellé accessible indique le bonus et l’effet sans nommer l’arme`);
-    assert.doesNotMatch(armee.getAttribute('aria-label'), /Takouba des pistes/u,
-      `[${disposition}] le nom de l’arme n’est plus annoncé depuis la carte équipée`);
+    assert.match(armee.getAttribute('aria-label'), /Takouba des pistes/u,
+      `[${disposition}] le nom de l’arme est accessible depuis la carte équipée`);
     assert.equal(armee.querySelector('.rpg-card-stack__count'), null, `[${disposition}] une créature seule n’a pas de compteur ×N`);
 
     // ── Survol : les bonus d'équipement rejoignent les effets en bleu ──────

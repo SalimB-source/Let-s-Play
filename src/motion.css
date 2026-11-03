@@ -1,0 +1,62 @@
+/* Mouvements courts et légers : aucune animation n’est nécessaire pour lire ou
+   utiliser le site. Le script d’amélioration progressive ne masque un élément
+   que lorsque IntersectionObserver est disponible et que le mouvement est
+   autorisé par le système. */
+html.motion-ready [data-reveal] {
+  transition: opacity 460ms cubic-bezier(.2, .75, .25, 1),
+    transform 460ms cubic-bezier(.2, .75, .25, 1);
+}
+
+html.motion-ready [data-reveal]:not(.is-revealed) {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+
+html.motion-ready [data-reveal].is-revealed,
+html.motion-ready [data-reveal]:focus-within {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Le contenu d’une route entre par un fondu court, sans décaler la mise en
+   page ni animer les éléments fixes de la barre de navigation. */
+@media (prefers-reduced-motion: no-preference) {
+  .route-transition {
+    animation: route-fade-in 180ms ease-out both;
+  }
+}
+
+@keyframes route-fade-in {
+  from { opacity: .78; }
+  to { opacity: 1; }
+}
+
+/* Les cartes éditoriales à la une gagnent un peu de profondeur au pointeur,
+   sans modifier leur géométrie au tactile. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .featured-dossier {
+    transition: transform 220ms ease, filter 220ms ease;
+  }
+
+  .featured-dossier:hover,
+  .featured-dossier:focus-within {
+    transform: translateY(-3px);
+    filter: drop-shadow(0 12px 20px rgba(34, 211, 238, .12));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.motion-ready [data-reveal],
+  html.motion-ready [data-reveal]:not(.is-revealed),
+  html.motion-ready [data-reveal].is-revealed {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .featured-dossier {
+    transition: none !important;
+  }
+}

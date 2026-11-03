@@ -91,6 +91,7 @@ import {
   cardCopyLimit,
   cardHasPrintedType,
   cardReceivesResonance,
+  carteEstArme,
   carteJouableSansTerrain,
   rpgValiderDeck,
 } from '../src/games/rpgCards.js';
@@ -235,9 +236,9 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents existe : quatre-vingt-deux fiches façon TCG (dont deux Sites)', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 101,
-    'Eirik rejoint les créatures du Serment, les quatre du Corbeau, puis Bouchra descend des crêtes');
+test('le set de permanents comporte 108 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 108,
+    'les six Djinns et le Pourfendeur rejoignent les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -1286,6 +1287,7 @@ test('la Valkyrie au corbeau pioche un Viking au hasard du deck, sans aucune Ré
 test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', () => {
   const consulteDeck = [
     'amayas-du-hoggar',
+    'djinn-de-la-flamme-mourante',
     'ibis-des-comptes',
     'maitre-des-hieroglyphes',
     'pilote-de-la-carreira',
@@ -2335,6 +2337,12 @@ test('l’Attaque ciblée a 25 % de chances de rater une créature, mais touche 
   const cartesCoupRapide = RPG_DUEL_CARDS.filter((carte) => carte.coupRapide || carte.donne?.coupRapide || carte.effet?.coupRapide);
   assert.ok(cartesCoupRapide.length >= 9);
   for (const carte of cartesCoupRapide) {
+    if (carteEstArme(carte)) {
+      // Les armes gardent un texte compact : les règles détaillées du mot-clé
+      // sont communes aux cartes et n'ont pas à être répétées sur chaque arme.
+      assert.match(carte.text, /Attaque ciblée/, `${carte.id} nomme son mot-clé`);
+      continue;
+    }
     if (!carte.coupRapideImmanquable) assert.match(carte.text, /25\s*%/, `${carte.id} précise les 25 % de chances de rater`);
     assert.match(carte.text, /100\s*%/, `${carte.id} précise les 100 % contre l’adversaire`);
   }

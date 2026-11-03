@@ -303,35 +303,42 @@ test('une arme sans arme vivante refuse toujours de se jouer sans créature', ()
 
 // ── La mythique ─────────────────────────────────────────────────────────────
 
-test('la Takouba de Tin Hinan : l’Attaque ciblée frappe une créature et pioche, sans chien', () => {
+test('la Takouba de Tin Hinan ne donne plus Attaque ciblée et fait piocher en combat', () => {
   const duel = duelVide();
-  const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
-  const mur = poser(duel, 'sorcier', 'dune-marchante'); // 2/5
-  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur); // → 5/4, Attaque ciblée
-  assert.equal(porteur.coupRapide, true);
-  assert.equal(porteur.infiltration, false, 'elle se fait bloquer : l’Attaque ciblée est la voie');
+  const porteur = poser(duel, 'joueur', 'chien-du-guet');
+  const mur = poser(duel, 'sorcier', 'dune-marchante');
+  const carte = armeById('takouba-de-tin-hinan');
+  assert.equal(carte.donne?.coupRapide, undefined);
+  assert.doesNotMatch(carte.text, /Attaque ciblée/);
+  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
+  assert.equal(porteur.coupRapide, false);
+  assert.equal(porteur.arme.durabilite, 2, 'durabilité normale des armes sans Attaque ciblée');
   assert.equal(rpgPeutBloquerAttaquant(mur, porteur), true);
-
   rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
-  const pvMur = mur.pv;
-  const pvSorcier = duel.sorcier.pv;
-  const atkAvant = porteur.atk;
-  // Attaque ciblée sur le mur : l'attaque s'arrête sur la frappe.
-  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], {}, null, [], { [porteur.id]: mur.id });
-  assert.equal(res.ok, true, `l’attaque passe (${res.raison ?? 'ok'})`);
-  assert.equal(mur.pv, pvMur - atkAvant, 'l’Attaque ciblée a frappé le mur');
-  assert.equal(duel.joueur.main.length, mainAvant + 1, 'une carte pour une créature blessée');
-  assert.equal(duel.sorcier.pv, pvSorcier, 'l’attaque s’est arrêtée : le sorcier ne prend rien');
-  assert.equal(duel.joueur.creatures.filter((e) => e.carteId === 'chien-de-sable').length, 0,
-    'aucun chien : le sorcier n’a pas été blessé');
+  const pvMur = mur.pv, pvPorteur = porteur.pv, pvSorcier = duel.sorcier.pv;
+  const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [mur.id] });
+  assert.equal(res.ok, true);
+  assert.equal(mur.pv, pvMur - 5, 'les blessures de combat atteignent le bloqueur');
+  assert.equal(porteur.pv, pvPorteur - mur.atk, 'le combat comporte une riposte normale');
+  assert.equal(duel.joueur.main.length, mainAvant + 1, 'la créature blessée fait piocher');
+  assert.equal(duel.sorcier.pv, pvSorcier);
+  assert.equal(duel.joueur.creatures.filter(e => e.carteId === 'chien-de-sable').length, 0);
+});
+
+test('la Takouba préserve une Attaque ciblée que le porteur possède déjà', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'feriel');
+  assert.equal(porteur.coupRapide, true);
+  equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
+  assert.equal(porteur.coupRapide, true);
 });
 
 test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', () => {
   const duel = duelVide();
   // Porteur sans Butin ni déclencheur : seule la Takouba doit parler dans ce test.
   const porteur = poser(duel, 'joueur', 'dune-marchante');
-  // Aucune créature adverse : l’Attaque ciblée peut viser le sorcier.
+  // Aucune créature adverse : le porteur peut attaquer librement le sorcier.
   equiper(duel, 'joueur', 'takouba-de-tin-hinan', porteur);
   rendrePret(duel, porteur);
   const mainAvant = duel.joueur.main.length;
@@ -349,12 +356,15 @@ test('la Takouba qui attaque le sorcier lève un chien de sable, sans pioche', (
 
 // ── La sphère de rotation ──────────────────────────────────────────────────
 
-test('la sphère de rotation donne +1/+2 à son porteur', () => {
+test('la Sphère de rotation donne +1/+2 et un Bouclier à son porteur', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2
   equiper(duel, 'joueur', 'sphere-de-rotation', porteur);
   assert.equal(porteur.atk, 3, '+1/+2');
   assert.equal(porteur.def, 4, 'bonus de défense +2');
+  assert.equal(porteur.bouclier, 1);
+  assert.equal(armeById('sphere-de-rotation').name, 'Sphère de rotation');
+  assert.equal(armeById('sphere-de-rotation').donne.bouclier, 1);
 });
 
 test('la sphère de rotation renvoie la créature adverse en main avant les dégâts avec 25 % de chance', () => {

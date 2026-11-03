@@ -30,11 +30,13 @@ test('un sort ne joue plus le souffle de son élément', () => {
   assert.equal(sonSortAuLancement(cardById('grand-debarquement')), null);
   // Aucune magie du jeu ne joue de son d'élément…
   for (const sort of SORTS) {
-    if (sort.id === 'eclair-du-marteau' || sort.id === 'brise-lame') continue;
+    if (['eclair-du-marteau', 'tempete-de-foudre-et-de-givre', 'brise-lame'].includes(sort.id)) continue;
     assert.equal(sonSortAuLancement(sort), null, `${sort.name} reste muet au lancement`);
   }
-  // …sauf l'Éclair du marteau : son tonnerre EST le sort.
-  assert.equal(sonSortAuLancement(cardById('eclair-du-marteau')), 'foudre_marteau');
+  // Les deux sorts de foudre partagent le tonnerre du marteau.
+  const tonnerre = sonSortAuLancement(cardById('eclair-du-marteau'));
+  assert.equal(tonnerre, 'foudre_marteau');
+  assert.equal(sonSortAuLancement(cardById('tempete-de-foudre-et-de-givre')), tonnerre);
   assert.equal(sonSortAuLancement(cardById('brise-lame')), 'weapon_break', 'Brise-lame joue le son de lame brisée');
   // Une carte qui n'en est pas un, ou rien du tout : silence, jamais d'erreur.
   assert.equal(sonSortAuLancement(cardById('tislit-des-aures')), null);

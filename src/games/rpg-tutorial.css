@@ -234,7 +234,7 @@
   transition: transform .18s ease;
 }
 .rpg-mode-menu__apprendre:hover .rpg-mode-menu__apprendre-arrow { transform: translate(2px, -2px); }
-@media (max-width: 620px) {
+@media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-mode-menu__hero-actions {
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
@@ -257,7 +257,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-tutorial__panel {
     width: min(370px, calc(100vw - 24px));
     padding: 17px 18px 16px;
@@ -562,7 +562,7 @@
   from { opacity: 0; transform: translate(-50%, -8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
-@media (max-width: 760px) {
+@media (max-width: 760px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-tutoriels { padding: 14px 12px 34px; }
   .rpg-tutoriels__header { grid-template-columns: 1fr auto; }
   .rpg-tutoriels__back { grid-column: 1 / -1; justify-self: start; }

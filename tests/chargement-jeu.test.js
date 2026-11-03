@@ -87,3 +87,16 @@ test('le message au joueur traduit l’erreur du navigateur', () => {
   assert.equal(messageChargementJeu(new Error('Boom')), 'Boom', 'les autres erreurs gardent leur message');
   assert.match(messageChargementJeu(null), /Erreur inconnue/, 'sans erreur, on ne laisse pas le champ vide');
 });
+
+test('un chargement du duel qui reste en attente propose de recharger sans effacer la progression', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const composant = await readFile(new URL('../src/games/ChargementDuel.jsx', import.meta.url), 'utf8');
+  const entree = await readFile(new URL('../src/games/RpgEntryChoice.jsx', import.meta.url), 'utf8');
+  const route = await readFile(new URL('../src/main.jsx', import.meta.url), 'utf8');
+  assert.match(composant, /setTimeout\(\(\) => setLent\(true\), 12000\)/);
+  assert.match(composant, /clearTimeout\(timer\)/);
+  assert.match(composant, /window\.location\.reload\(\)/);
+  assert.doesNotMatch(composant, /localStorage|sessionStorage/);
+  assert.match(entree, /fallback=\{<ChargementDuel \/>\}/);
+  assert.match(route, /fallback=\{<ChargementDuel \/>\}/);
+});

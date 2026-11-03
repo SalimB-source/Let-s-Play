@@ -375,7 +375,7 @@
 @media (max-width: 980px), (orientation: portrait) {
   .rpg-souk__direct-cartes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-souk__direct-rafraichir { flex: 1 1 100%; }
 }
 
@@ -1334,7 +1334,7 @@
   .rpg-souk__cachet .rpg-menu-button,
   .rpg-souk__semaine .rpg-menu-button { flex: 1 1 100%; }
 }
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   /* Le journal passe en deux lignes : le rayon et la date d'abord, les cartes
      ensuite — une ligne de quatre colonnes ne tient pas dans 320 px. */
   .rpg-souk__journal li { grid-template-columns: auto minmax(0, 1fr); }
@@ -1357,7 +1357,7 @@
 /* Un seul paquet de front : les prix et les boutons gardent leur taille au
    doigt. Les sept cartes de la série restent alignées — seules leurs étiquettes
    s'effacent, le numéro et son cachet suffisent. */
-@media (max-width: 600px) {
+@media (max-width: 600px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-souk__rayons { grid-template-columns: minmax(0, 1fr); }
   .rpg-souk__jours { gap: 5px; }
   .rpg-souk__jour { min-height: 62px; padding: 7px 3px 8px; gap: 0; }
@@ -1365,7 +1365,7 @@
   .rpg-souk__jour-gain { display: none; }
   .rpg-souk__jour-medaille { width: 32px; height: 32px; }
 }
-@media (max-width: 480px) {
+@media (max-width: 480px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-souk__quetes { grid-template-columns: minmax(0, 1fr); }
   .rpg-souk__quete-pied .rpg-menu-button { flex: 1 1 100%; }
   .rpg-souk__section-tete { align-items: flex-start; }
@@ -1375,7 +1375,7 @@
    grille se fait défiler verticalement sur téléphone. */
 
 /* Le mouvement ne sert à rien : la barre se pose d'un coup. */
-@media (max-width: 420px) {
+@media (max-width: 420px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   /* Le paquet garde sa prestance, séparé de l'étiquette d'achat dessous. */
   .rpg-souk__paquet { --pw: clamp(144px, 44vw, 176px); row-gap: 24px; }
   .rpg-souk__paquet-prix { padding: 8px 16px 9px; }
@@ -1707,7 +1707,7 @@
 
 /* En portrait le paquet reste au-dessus de la ligne de flottaison ; les
    actions restent accessibles pendant le déploiement des lignes suivantes. */
-@media (max-width: 640px) {
+@media (max-width: 640px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-souk__ceremonie-pied {
     position: sticky; bottom: -1px; z-index: 10; padding: 10px 0;
     background: linear-gradient(180deg, #161112ee, #100d0fff 25%);

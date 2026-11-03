@@ -102,6 +102,8 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
   furie_viking: [-13.8, -4.0],
   furie_viking_femelle: [-10.6, -0.9],
   furie_loup_neige: [-23.9, -4.41],
+  soin_vie: [-28.45, -17.23],
+  soin_vie_adverse: [-28.45, -17.23],
   defaite: [-21.09, -7.12],
   degats: [-13.53, -1.04],
   degats_sorcier: [-13.53, -1.04],
@@ -113,7 +115,8 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
   cold_wind: [-18.43, -1.41],
   freeze_impact: [-15.7, -0.2],
   foudre_marteau: [-15.01, -0.08],
-  fleche: [-16.36, -1.41],
+  fleche: [-15.07, -0.47],
+  fleche_ratee: [-16.74, -0.64],
 });
 
 /**

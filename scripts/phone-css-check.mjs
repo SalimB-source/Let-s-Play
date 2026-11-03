@@ -24,8 +24,10 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HANDHELD = 'max-device-width:600px';
+const HANDHELD_PATTERN = /max-device-width\s*:\s*600px/i;
 const PHONE_BREAKPOINT = 800; // au-delà, on est sur une grande tablette/bureau
 const LANDSCAPE_GUARD = 'min-device-width:601px';
+const LANDSCAPE_GUARD_PATTERN = /min-device-width\s*:\s*601px/i;
 
 function cssFiles(dir, out = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -54,8 +56,8 @@ for (const file of cssFiles(path.join(root, 'src')).sort()) {
   for (const query of mediaQueries(fs.readFileSync(file, 'utf8'))) {
     const maxWidths = [...query.matchAll(/(?<!device-)max-width:\s*(\d+)px/g)].map((m) => Number(m[1]));
     const minWidths = [...query.matchAll(/(?<!device-)min-width:\s*(\d+)px/g)].map((m) => Number(m[1]));
-    const hasHandheld = query.includes(HANDHELD);
-    const hasLandscapeGuard = query.includes(LANDSCAPE_GUARD);
+    const hasHandheld = HANDHELD_PATTERN.test(query);
+    const hasLandscapeGuard = LANDSCAPE_GUARD_PATTERN.test(query);
 
     // Requête « petit écran » : elle doit aussi couvrir un téléphone dont la
     // fenêtre de mise en page a été élargie.
