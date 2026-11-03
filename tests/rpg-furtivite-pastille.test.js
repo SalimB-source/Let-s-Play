@@ -27,7 +27,7 @@ test('Furtivité est un effet explicable, distinct de la Rapidité', () => {
   assert.equal(effetsDetailles({ furtif: true, text: 'Furtif — Détruit à la fin du tour.' }).pastilles[0].label, 'Furtivité', 'les anciens textes restent reconnus');
 });
 
-test('les pastilles Furtivité sont jaunes sur les fiches et les cartes de table', async () => {
+test('Furtivité partage la présentation des autres effets sur les fiches et les cartes de table', async () => {
   const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
   try {
     const { PastillesCarte, IconesCarte } = await vite.ssrLoadModule('/src/games/effetIcons.jsx');
@@ -41,6 +41,22 @@ test('les pastilles Furtivité sont jaunes sur les fiches et les cartes de table
     const badge = rendu(IconesCarte).querySelector('[data-effet="furtif"]');
     assert.ok(badge?.querySelector('use[href="#i-furtif"]'));
     const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
-    assert.match(css, /\.rpg-pastille\[data-pastille='furtif'\],[\s\S]*?\.rpg-card-icone\[data-effet='furtif'\]\s*\{[^}]*background:\s*#ffd75a/s);
+    const pastillesDoc = rendu(PastillesCarte);
+    const badgesDoc = rendu(IconesCarte);
+    for (const doc of [pastillesDoc, badgesDoc]) {
+      const style = doc.createElement('style');
+      style.textContent = css;
+      doc.head.appendChild(style);
+    }
+    for (const [doc, furtif, autre] of [
+      [pastillesDoc, '[data-pastille="furtif"]', '[data-pastille="rapidite"]'],
+      [badgesDoc, '[data-effet="furtif"]', '[data-effet="rapidite"]'],
+    ]) {
+      const vue = doc.defaultView;
+      for (const propriete of ['backgroundColor', 'borderColor', 'color']) {
+        assert.equal(vue.getComputedStyle(doc.querySelector(furtif))[propriete],
+          vue.getComputedStyle(doc.querySelector(autre))[propriete], `${furtif} : ${propriete}`);
+      }
+    }
   } finally { await vite.close(); }
 });

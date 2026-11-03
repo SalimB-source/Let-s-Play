@@ -316,13 +316,3 @@
 @media (prefers-reduced-motion: reduce) {
   .rpg-pastille-bulle { animation: none; }
 }
-
-/* Furtivité : pastille jaune pour le mot-clé, sur la fiche comme en jeu. */
-.rpg-pastille[data-pastille='furtif'],
-.rpg-card-icone[data-effet='furtif'] {
-  background: #ffd75a;
-  border-color: #ffe99b;
-  color: #3b2600;
-}
-.rpg-pastille[data-pastille='furtif'] .rpg-effet-icone,
-.rpg-card-icone[data-effet='furtif'] .rpg-effet-icone { color: #3b2600; }
