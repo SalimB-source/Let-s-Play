@@ -867,6 +867,13 @@ export const RPG_CREATURE_CARDS = [
   // « dieux » — elles portent des titres (le Père des corbeaux, le Maître du
   // marteau), comme on les appelait pour ne pas les appeler.
   {
+    id: 'gardien-viking-du-fjord', name: 'Gardien viking du fjord',
+    element: 'neige', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
+    typeLine: 'Créature — Guerrier viking', defenseur: true,
+    text: 'Défenseur.',
+    flavor: 'Sur la crête gelée, son bouclier est la dernière porte du fjord.',
+  },
+  {
     id: 'viking-des-neiges', name: 'Viking des neiges', element: 'neige',
     cost: 1, atk: 2, def: 1, rarity: 'commune',
     typeLine: 'Créature — Guerrier viking',

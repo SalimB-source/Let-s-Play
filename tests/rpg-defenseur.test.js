@@ -160,3 +160,24 @@ test('le gardien Braise attire un bloqueur quand il attaque, sans obligation d�
   assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], {}).raison, 'provocation');
   assert.equal(rpgLancerAttaque(d, 'joueur', [a.id], { [a.id]: [b.id] }).ok, true);
 });
+
+test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie viking', async () => {
+  const { cardHasPrintedType } = await import('../src/games/rpgCards.js');
+  const { COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
+  const id = 'gardien-viking-du-fjord', carte = cardById(id);
+  assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.defenseur], ['neige', 3, 2, 4, true]);
+  assert.ok(cardHasPrintedType(carte, 'viking'));
+  assert.ok(COLLECTION_DEPART.includes(id));
+  assert.ok(existsSync(`public/cards/${id}.jpg`));
+  assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'defenseur'));
+  const d = scene();
+  d.sorcier.creatures = d.sorcier.creatures.filter(e => e.id === 'normal');
+  d.sorcier.mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 30]));
+  d.sorcier.main.push('eirik-du-premier-serment', id);
+  const eirik = rpgJouerCreature(d, 'sorcier', 'eirik-du-premier-serment').entite;
+  const gardien = rpgJouerCreature(d, 'sorcier', id).entite;
+  assert.equal(gardien.defenseur, true);
+  assert.deepEqual([eirik.atk, eirik.def], [2, 2]);
+  assert.equal(attaquer(d, 'normal').raison, 'defenseur');
+  assert.equal(attaquer(d, gardien.id).ok, true);
+});
