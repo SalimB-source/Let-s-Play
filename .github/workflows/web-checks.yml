@@ -21,9 +21,13 @@ on:
       - 'vite.config.js'
       - 'src/updates/**'
       - 'src/components/MiseAJourDisponible.jsx'
+      - 'src/games/RpgMiseAJour.jsx'
+      - 'src/games/rpg-mise-a-jour.css'
       - 'tests/vercel-config.test.js'
       - 'tests/maj-version.test.js'
       - 'tests/maj-version-ui.test.js'
+      - 'tests/maj-desktop.test.js'
+      - 'tests/maj-desktop-ui.test.js'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/web-checks.yml'
@@ -33,9 +37,13 @@ on:
       - 'vite.config.js'
       - 'src/updates/**'
       - 'src/components/MiseAJourDisponible.jsx'
+      - 'src/games/RpgMiseAJour.jsx'
+      - 'src/games/rpg-mise-a-jour.css'
       - 'tests/vercel-config.test.js'
       - 'tests/maj-version.test.js'
       - 'tests/maj-version-ui.test.js'
+      - 'tests/maj-desktop.test.js'
+      - 'tests/maj-desktop-ui.test.js'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/web-checks.yml'
@@ -64,3 +72,6 @@ jobs:
 
       - name: La mise à jour au lancement
         run: npm run check:maj-version
+
+      - name: La mise à jour de la coque PC dans le jeu
+        run: npm run check:maj-desktop

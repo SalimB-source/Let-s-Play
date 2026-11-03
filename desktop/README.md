@@ -12,15 +12,23 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
 - Cible : Windows 10/11 x64 (Linux et macOS possibles en local, non produits par la CI)
 - Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
   `le-sablier-de-bab-el-<version>-portable.exe`)
-- **Mise à jour proposée au lancement** : `electron-updater` interroge la
-  Release GitHub `desktop` **2 secondes après l'ouverture** — le joueur est
-  encore au menu, c'est le moment d'installer —, puis toutes les six heures, et
-  depuis **Aide → Rechercher une mise à jour…**. Un téléchargement silencieux
-  qui échoue (démarrage hors ligne) est réessayé une fois, une minute plus tard.
-  Une fois l'installeur téléchargé, le dialogue propose **Redémarrer et
-  installer** (choix par défaut) ; s'il attend, il s'installe à la fermeture du
-  jeu. La version portable reste à mettre à jour en téléchargeant son nouvel
-  `.exe`.
+- **Mise à jour proposée au lancement, et téléchargée DANS le jeu** :
+  `electron-updater` interroge la Release GitHub `desktop` **2 secondes après
+  l'ouverture** — le joueur est encore au menu, c'est le moment d'installer —,
+  puis toutes les six heures, et depuis **Aide → Rechercher une mise à jour…**.
+  Le résultat ne s'affiche plus dans un dialogue de l'OS : le processus
+  principal diffuse son état au jeu (`desktop:maj`), qui le montre dans un
+  **panneau du Sablier** (`src/games/RpgMiseAJour.jsx`) — pastille discrète en
+  bas à gauche, panneau modal avec la version et la date, **barre de
+  progression** pendant le téléchargement, puis **Redémarrer et installer**.
+  Une carte « Mise à jour du jeu » vit aussi dans les **Paramètres**. Le
+  téléchargement attend l'accord du joueur (`autoDownload = false`) ; une
+  vérification qui échoue (démarrage hors ligne) est réessayée une fois, une
+  minute plus tard. Une fois l'installeur téléchargé, il s'installe au
+  redémarrage — ou à la fermeture du jeu si le joueur attend. Les dialogues
+  natifs ne servent plus que de filet (page « hors ligne », vieille version du
+  site sans le panneau). La version portable reste à mettre à jour en
+  téléchargeant son nouvel `.exe`. Voir « La mise à jour dans le jeu » plus bas.
 - **Le site fait foi.** L'installeur ne contient pas le jeu : la fenêtre ouvre
   `let-s-play-nu.vercel.app`, donc **chaque correctif est là au lancement
   suivant**, et l'exécutable pèse **~105 Mo** au lieu de 235 (le runtime Electron,
@@ -60,6 +68,68 @@ L'écran s'efface de lui-même quand il n'a rien à proposer : dans la coque PC
 (`pointer: coarse` / ≤ 820 px), ou si le joueur a coché « retenir ce choix »
 (`localStorage` : `letsplay_sablier_entree_v1`). Vérifié par
 `npm run check:rpg-entry-choice`.
+
+## La mise à jour dans le jeu
+
+« Intégrer le téléchargement des mises à jour du Sablier dans le jeu lui-même. »
+
+Le téléchargement et l'installation de l'installeur Windows se pilotent
+**depuis l'interface du Sablier**, plus depuis des dialogues natifs de l'OS.
+Le processus principal reste seul à parler à `electron-updater` ; le jeu ne
+fait que lire son état et lui envoyer des ordres, par un pont IPC étroit.
+
+**Le protocole.** `desktop/main.js` tient un état de mise à jour
+(`phase`, `version`, `progression`, `erreur`) et le diffuse au rendu sur le
+canal `desktop:maj` à chaque événement de l'updater. Les phases :
+
+| Phase | Ce que le joueur voit |
+|---|---|
+| `repos` | rien pour l'instant |
+| `verification` | « Recherche d'une mise à jour… » |
+| `disponible` | la version en ligne + bouton **Télécharger** |
+| `telechargement` | la barre de progression (%, taille, débit) |
+| `prete` | **Redémarrer et installer** (ou à la fermeture) |
+| `a-jour` | « Le Sablier est à jour » |
+| `erreur` | le message + **Réessayer** |
+
+Le jeu réclame la main en appelant `desktop:maj-etat` ; dès lors, la coque
+n'ouvre plus ses dialogues natifs (`majUiActive`). Les dialogues natifs ne
+restent qu'un **filet** : page « hors ligne », ou vieille version du site qui
+n'a pas encore le panneau. Le téléchargement attend l'accord du joueur
+(`autoDownload = false`) : la coque vérifie et signale, le jeu décide.
+
+**Le pont.** `preload.cjs` expose `window.letsPlayDesktop.maj` :
+`etat()`, `verifier()`, `telecharger()`, `installer()`, `surEtat(cb)` et
+`surOuverture(cb)` (le menu **Aide → Rechercher une mise à jour…** ouvre le
+panneau dans le jeu). `contextIsolation` reste actif, aucun Node dans le rendu.
+
+**Côté jeu.** `src/updates/maj-desktop.js` est un store testable qui lit le
+pont, normalise l'état et relaie les ordres ; hors coque PC (navigateur, APK),
+le pont n'existe pas et le store reste inerte. `src/games/RpgMiseAJour.jsx`
+montre trois surfaces, toutes sur le même store :
+
+- **la pastille** (bas gauche) dès qu'une mise à jour est disponible, en
+  téléchargement ou prête — elle ne couvre rien, et porte une mini-barre de
+  progression pendant le téléchargement ;
+- **le panneau modal** — version, date, barre de progression, boutons
+  « Télécharger », « Redémarrer et installer », « Plus tard ». Il s'ouvre seul
+  sur une nouvelle version (une fois par version), « Plus tard » / Échap le
+  range en pastille ;
+- **la carte des Paramètres** (`RpgMiseAJourCarte`) — la même chose posée dans
+  la grille des réglages, pour garder la main sans pastille.
+
+Le panneau est monté à la racine de la table (`RpgEntryChoice.jsx`), à côté du
+duel : il parle pendant une partie comme au menu. Esthétique du Sablier (or,
+panneaux sombres, glyphe sablier), pas celle du site.
+
+**Ne pas confondre les deux mises à jour.** Celle-ci concerne l'**installeur
+Windows de la coque** (`electron-updater`, Release `desktop`). Le **site en
+ligne**, lui, se met à jour tout seul au lancement suivant (la fenêtre le
+charge) ; le panneau du site (`MiseAJourDisponible.jsx`) ne fait que proposer
+un rechargement quand un onglet ouvert voit passer un nouveau build.
+
+Vérification : `npm run check:maj-desktop` (store, pont, câblage IPC, panneau
+monté pour de vrai dans jsdom) et `npm run check:desktop` (updater, isolation).
 
 ## Comment ça tourne
 

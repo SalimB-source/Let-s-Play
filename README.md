@@ -8468,10 +8468,16 @@ renseignement que le client compare, et il n'a rien de secret.
 **Côté PC installé.** Deux relances, dans `desktop/main.js` :
 
 - **l'installeur** est cherché 2 s après l'ouverture (au lieu de 8 s), puis
-  toutes les six heures ; le dialogue de fin de téléchargement propose
-  « Redémarrer et installer » par défaut et signale que l'installation se fera
-  de toute façon à la fermeture. Un échec silencieux (démarrage hors ligne) est
-  réessayé une fois au bout d'une minute ;
+  toutes les six heures. Le téléchargement se fait **dans le jeu lui-même** :
+  la coque diffuse son état au Sablier (`desktop:maj`), qui l'affiche dans un
+  panneau (`src/games/RpgMiseAJour.jsx`) — pastille en bas à gauche, version et
+  date, **barre de progression**, puis « Redémarrer et installer » (ou à la
+  fermeture). Une carte « Mise à jour du jeu » vit aussi dans les Paramètres.
+  Le téléchargement attend l'accord du joueur (`autoDownload = false`) ; un
+  échec silencieux (démarrage hors ligne) est réessayé une fois au bout d'une
+  minute. Les dialogues natifs de l'OS ne sont plus qu'un filet (page hors
+  ligne, vieille version du site sans le panneau). Détail : `desktop/README.md`,
+  « La mise à jour dans le jeu » ;
 - **le pack hors ligne** (option) est comparé au site en ligne : si le site est
   plus récent, la coque propose de **jouer en version en ligne** pour la
   session. Le pack reste installé et jouable hors connexion ; le menu indique le
@@ -8498,8 +8504,10 @@ pour la fenêtre de quelques minutes entre le merge et la publication du nouvel
 installeur.
 
 Vérification : `npm run check:maj-version` (protocole, veille, cascade de
-rechargement, panneau monté pour de vrai, coque PC) et `npm run check:desktop`
-(dont les déclencheurs et la numérotation du workflow).
+rechargement, panneau monté pour de vrai, coque PC), `npm run check:maj-desktop`
+(mise à jour de l'installeur pilotée depuis le jeu : store, pont IPC, panneau
+monté dans jsdom) et `npm run check:desktop` (dont les déclencheurs et la
+numérotation du workflow).
 
 ## Le Sablier : la table au doigt reprend la composition du PC
 
