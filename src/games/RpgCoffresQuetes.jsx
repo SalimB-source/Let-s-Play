@@ -93,7 +93,6 @@ function SlotCoffre({ coffre, onOuvrir, onRemplacer, peutRemplacer, large = fals
         </span>
 
         <span className="rpg-coffres-quetes__scene">
-          <span className="rpg-coffres-quetes__halo" aria-hidden="true" />
           <CoffreSvg ouvert={ouvert} />
           {coffre.paquets > 0 && (
             <span className="rpg-coffres-quetes__cartes" aria-hidden="true" title={`${coffre.paquets} paquet(s) de cartes`}>

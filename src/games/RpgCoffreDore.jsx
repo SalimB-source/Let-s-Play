@@ -147,7 +147,6 @@ export default function RpgCoffreDore({
       }}
       {...reste}
     >
-      <span className="rpg-coffre-dore__halo" aria-hidden="true" />
 
       <span className="rpg-coffre-dore__scene" aria-hidden="true">
         <span className="rpg-coffre-dore__ombre" />

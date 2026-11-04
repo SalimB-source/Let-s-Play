@@ -118,7 +118,12 @@ test('sur mobile aussi, le coffre encaissé est ouvert, vidé et grisé', async 
   // Le métal et le gain passent en niveaux de gris, comme sur l'accueil bureau.
   assert.match(regle('.is-ouvert .rpg-coffre-svg'), /grayscale\(1\)/);
   assert.match(ouvert('gain'), /grayscale\(1\)/);
-  assert.match(ouvert('halo'), /opacity:\s*0/, 'plus de halo sur un coffre vidé');
+  // La lueur épouse le tracé du SVG ; un coffre vidé n'en garde aucune. Il ne
+  // reste que l'ombre au sol, qui est noire.
+  assert.doesNotMatch(regle('.is-ouvert .rpg-coffre-svg'), /color-mix/, 'plus de lueur sur un coffre vidé');
+  assert.doesNotMatch(css, /rpg-coffres-quetes__halo/, 'le halo rond a disparu');
+  assert.match(regle('.is-encours .rpg-coffre-svg'), /drop-shadow\(0 0 \d+px color-mix/, 'la lueur suit la silhouette');
+  assert.match(regle('.is-pret .rpg-coffre-svg'), /drop-shadow\(0 0 \d+px color-mix/, 'et elle s’intensifie quand le coffre est prêt');
   // La jauge et la légende ne restent pas vertes.
   assert.doesNotMatch(ouvert('jauge-remplie'), /#9fd07a/);
   assert.doesNotMatch(ouvert('etat'), /#9fd07a/);

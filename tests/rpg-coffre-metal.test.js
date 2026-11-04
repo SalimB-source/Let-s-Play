@@ -275,7 +275,15 @@ test('le métal forcé l’emporte sur le gain, et le CSS garde la chaîne 3D in
   for (const metal of ORDRE_METAUX) {
     assert.match(css, new RegExp(`\\[data-coffre-metal='${metal}'\\]`), `le CSS connaît le métal ${metal}`);
   }
-  assert.match(css, /background:\s*radial-gradient\(circle,\s*var\(--coffre-halo-fort\)/, 'le halo prend la couleur du métal');
+  // La lueur épouse la silhouette : elle est portée par les faces, pas par un
+  // disque derrière le coffre. Chaque métal fournit sa propre couleur.
+  assert.match(css, /\.is-encours \.rpg-coffre-dore__face\s*\{[^}]*drop-shadow\(0 0 \d+px var\(--coffre-lueur\)\)/s,
+    'la lueur prend la couleur du métal et suit la forme des faces');
+  for (const metal of [...ORDRE_METAUX, METAL_SEMAINE]) {
+    assert.match(css, new RegExp(`\\[data-coffre-metal='${metal}'\\]\\s*\\{[^}]*--coffre-lueur:`, 's'),
+      `le métal ${metal} définit sa lueur`);
+  }
+  assert.doesNotMatch(css, /rpg-coffre-dore__halo/, 'le halo rond a disparu');
   assert.match(css, /\.rpg-coffre-dore__montant\s*\{[^}]*color:\s*var\(--coffre-plaque-texte\)/s, 'la plaquette aussi');
 
   // Une règle peut viser plusieurs sélecteurs : on les ramasse toutes.
@@ -402,8 +410,12 @@ test('le gain passe à droite du coffre, en gros, et la quête descend dessous',
     .match(/font-size:\s*(\d+)px/) || [])[1]);
   assert.ok(taille >= 18, `le gain est mis en valeur (${taille}px)`);
   assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite'), /flex-direction:\s*row/, 'le coffre et le gain sont côte à côte');
-  // Le halo ne doit pas se recentrer sur la ligne entière.
-  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__halo'), /left:\s*\d+px/, 'le halo reste sur le coffre, pas au milieu de la ligne');
+  // La lueur reste sur le coffre, pas au milieu de la ligne : en la portant
+  // sur les faces, elle est centrée dessus par construction — il n'y a plus
+  // de disque à repositionner quand le gain passe à droite.
+  assert.doesNotMatch(coffreCss, /is-gain-droite[^{]*__halo/, 'plus de disque à recentrer');
+  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-encours .rpg-coffre-dore__face'), /drop-shadow/,
+    'la lueur est sur le coffre lui-même');
 
   // La capsule n'est plus glissée derrière le coffre : elle est descendue.
   assert.ok(!/margin-left:\s*-/.test(bloc(rampeCss, '.rpg-quests-jour__capsule')), 'la capsule ne chevauche plus le coffre');
@@ -442,6 +454,12 @@ test('le coffre encaissé est vidé et entièrement grisé, gain compris', async
   // Le gain est grisé lui aussi, plaque et coche.
   assert.match(ouvert('montant'), /grayscale\(1\)/, 'la plaquette de gain doit être grise');
   assert.match(ouvert('coche'), /color:\s*#8e8a82/, 'la coche suit le gris');
+
+  // Un coffre vidé ne luit plus : ses faces n'ont que le gris, aucun
+  // `drop-shadow`. C'est ce qui sépare « il reste un butin » de « c'est fini ».
+  assert.doesNotMatch(ouvert('face'), /drop-shadow/, 'le coffre ouvert ne luit plus');
+  assert.match(regle('.is-pret .rpg-coffre-dore__face'), /drop-shadow/, 'le coffre prêt luit');
+  assert.match(regle('.is-encours .rpg-coffre-dore__face'), /drop-shadow/, 'le coffre fermé luit aussi, il promet encore');
 
   // Un coffre encore fermé garde sa couleur et son butin.
   assert.doesNotMatch(regle('.is-pret .rpg-coffre-dore__face'), /grayscale/);
