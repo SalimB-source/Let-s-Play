@@ -7836,13 +7836,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 700 clamp(22px, 3vw, 32px)/1 Georgia, serif;
   text-shadow: 0 3px 18px rgba(0, 0, 0, .8);
 }
-.rpg-free-tours__heading p {
-  margin: 8px 0 0;
-  color: rgba(244, 233, 214, .68);
-  font: italic 13px/1.5 Georgia, serif;
-  max-width: 60ch;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, .75);
-}
 /* Partie en cours : le bouton de reprise flotte en bas au centre du menu,
    visible sans défiler quel que soit l'onglet ouvert. */
 .rpg-menu-button--resume.rpg-menu-button--floating {

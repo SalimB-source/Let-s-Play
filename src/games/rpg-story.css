@@ -1691,7 +1691,6 @@
     gap: 8px;
   }
   .rpg-mode-menu--conquete-galerie .rpg-free-tours__heading h2 { margin: 0; font-size: 15px; line-height: 1.1; }
-  .rpg-mode-menu--conquete-galerie .rpg-free-tours__heading p { display: none; }
   .rpg-mode-menu--conquete-galerie .rpg-free-tours__heading .rpg-mode-menu__eyebrow { font-size: 8px; }
   .rpg-mode-menu--conquete-galerie .rpg-story__reset { min-height: 28px; padding: 4px 8px; font-size: 10px; }
   .rpg-mode-menu--conquete-galerie .rpg-story__reset-confirm { flex: 0 0 auto; padding: 8px; font-size: 11px; }
@@ -2003,4 +2002,150 @@
   .rpg-mode-menu--tours .rpg-story-tour__header p { font-size: 9px; }
   .rpg-mode-menu--tours .rpg-story-floor__copy strong { font-size: 11px; }
   .rpg-mode-menu--tours .rpg-story-floor__copy small { font-size: 8.5px; }
+}
+
+/* ── Conquête sur PC : la tour et sa description sans défiler ──────────────
+   La maquette portait un `aspect-ratio: 4/3` figé : à 660 px de large elle
+   faisait 493 px de haut, la carte montait à 743 px et poussait le bouton
+   « Voir les étages » et la pagination sous le bord (1122 px de page pour une
+   fenêtre de 900). On chaîne la hauteur depuis la coque jusqu'à la carte, et
+   c'est la maquette qui absorbe ce qui reste : le nom, le résumé, le butin et
+   le bouton gardent leur hauteur naturelle et se lisent toujours entiers. */
+@media (hover: hover) and (pointer: fine) {
+  .rpg-mode-menu--conquete-galerie { overflow: hidden; }
+  .rpg-mode-menu--conquete-galerie .rpg-mode-menu__content {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-mode-menu__footer { display: none; }
+  .rpg-mode-menu--conquete-galerie .rpg-mode-menu__play--full {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 10px;
+    box-sizing: border-box;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-free-tours {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 12px;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-free-tours__heading,
+  .rpg-mode-menu--conquete-galerie .rpg-story__reset-confirm,
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-bilan,
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__pagination { flex: 0 0 auto; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel {
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: stretch;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower {
+    height: 100%;
+    min-height: 0;
+  }
+  /* La maquette prend la place qui reste, sans jamais l'imposer. */
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower__art {
+    flex: 1 1 auto;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower__body {
+    flex: 0 0 auto;
+    grid-template-rows: auto auto auto auto auto auto;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__pagination { margin: 10px 0 0; }
+}
+
+/* ── Conquête dans une tour, sur PC : deux colonnes, zéro défilement ───────
+   Empilé, l'écran demandait 1331 px pour une fenêtre de 900 : la maquette
+   (340 px), le résumé, le butin, le prochain défi, puis les étages. Sur un
+   écran large il y a la place côte à côte — la tour et son texte à gauche,
+   les étages à droite — et tout se lit d'un regard, sans remonter. */
+@media (hover: hover) and (pointer: fine) {
+  .rpg-mode-menu--tours { overflow: hidden; }
+  .rpg-mode-menu--tours .rpg-mode-menu__content {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
+  .rpg-mode-menu--tours .rpg-mode-menu__footer { display: none; }
+  .rpg-mode-menu--tours .rpg-story {
+    height: 100%;
+    min-height: 0;
+    max-width: none;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    padding-bottom: 14px;
+  }
+  .rpg-mode-menu--tours .rpg-story__detail {
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .rpg-mode-menu--tours .rpg-story__back { flex: 0 0 auto; align-self: flex-start; }
+  .rpg-mode-menu--tours .rpg-story-tour {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "entete   etages"
+      "progres  etages"
+      "gains    etages"
+      "prochain etages";
+    column-gap: 18px;
+    align-content: start;
+  }
+  /* L'en-tête absorbe la hauteur libre : c'est la maquette qui grandit, pas
+     le texte, et la colonne de gauche finit au même niveau que les étages. */
+  .rpg-mode-menu--tours .rpg-story-tour__header {
+    grid-area: entete;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .rpg-mode-menu--tours .rpg-story-tour__banner { flex: 1 1 auto; height: auto; min-height: 150px; }
+  .rpg-mode-menu--tours .rpg-story-tour__heading { flex: 0 0 auto; }
+  .rpg-mode-menu--tours .rpg-story-tour__progress { grid-area: progres; }
+  .rpg-mode-menu--tours .rpg-story-tour__gains { grid-area: gains; }
+  .rpg-mode-menu--tours .rpg-tour-prochain { grid-area: prochain; margin-bottom: 0; }
+  .rpg-mode-menu--tours .rpg-story-tour__floors {
+    grid-area: etages;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px 12px 12px 0;
+  }
+  /* Les étages se partagent la colonne ; `flex-shrink: 0` pour qu'aucun ne
+     descende sous la hauteur de son texte. */
+  .rpg-mode-menu--tours .rpg-story-tour__floors > li { display: flex; flex: 1 0 auto; }
+  /* Deux lignes au lieu de trois : le gain rejoint le badge sur la ligne du
+     nom, et la note garde toute la largeur. À trois lignes la tour à sept
+     étages demandait 169 px de plus que la colonne à 1280×800. */
+  .rpg-mode-menu--tours .rpg-story-floor {
+    width: 100%;
+    grid-template-columns: 30px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "step name badge gain"
+      "step note note note"
+      "step pacte pacte pacte";
+    row-gap: 2px;
+    padding: 8px 12px;
+  }
+  .rpg-mode-menu--tours .rpg-story-floor__step { width: 28px; height: 28px; }
+  .rpg-mode-menu--tours .rpg-story-floor__gain { margin-top: 0; justify-content: flex-end; }
+  .rpg-mode-menu--tours .rpg-story-floor__badge { justify-self: end; }
 }

@@ -5366,7 +5366,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <div>
                     <span className="rpg-mode-menu__eyebrow">CONQUÊTE · LES TOURS DE BAB EL</span>
                     <h2>Choisissez votre défi</h2>
-                    <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
                   </div>
                   {!confirmerResetHistoire && (
                     <button
