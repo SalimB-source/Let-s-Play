@@ -6,11 +6,22 @@ import { LanguageProvider } from '../src/i18n/LanguageContext';
 import { AuthProvider } from '../src/auth/AuthContext';
 import Reviews from '../src/pages/Reviews';
 import TestArticle from '../src/pages/TestArticle';
+import SEO from '../src/components/SEO';
 import { getTest } from '../src/reviewsData';
 import { getArticleGallery } from '../src/articleGalleries';
 import { searchContent } from '../src/search/searchIndex';
 
 export { getTest, getArticleGallery, searchContent };
+
+// Le contrôle monte aussi le vrai composant SEO : ses métadonnées sont posées
+// dans un effet côté client, donc un rendu HTML serveur ne suffit pas.
+export function ReviewSeo({ path }) {
+  return (
+    <LanguageProvider lang="fr">
+      <MemoryRouter initialEntries={[path]}><SEO /></MemoryRouter>
+    </LanguageProvider>
+  );
+}
 
 export function renderReviewPage(path) {
   return renderToString(

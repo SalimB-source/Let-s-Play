@@ -41,6 +41,15 @@ const pageMeta = {
     description: 'Retrouvez les tests et analyses de jeux vidéo de Let’s Play : gameplay, technique, direction artistique et verdict.',
     type: 'website',
   },
+  '/reviews/ace-combat-8-wings-of-theve': {
+    title: 'Test Ace Combat 8: Wings of Theve — le verdict de Chaft — Let’s Play',
+    description: 'Chaft prend son envol dans Ace Combat 8 : campagne, combats aériens, progression et mode en ligne. Son verdict : 9/10.',
+    image: 'reviews/ace-combat-8.webp',
+    type: 'article',
+    published: '2026-11-04',
+    section: 'Tests',
+    author: 'Chaft',
+  },
   '/reviews/call-of-duty-modern-warfare-4': {
     title: 'Test Call of Duty: Modern Warfare 4 — la campagne par Chaft — Let’s Play',
     description: 'Chaft a terminé la campagne de Modern Warfare 4 sur PC : scénario, gameplay, réalisation, défauts et verdict 8/10.',

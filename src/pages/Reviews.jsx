@@ -38,6 +38,25 @@ const shortReviewVideo = {
   score: 8.5,
 };
 
+// Tests écrits de la rédaction : le plus récent en premier, sans masquer les
+// précédents. La portée de chaque note et le crédit visuel restent explicites.
+const writtenReviewFeatures = [
+  {
+    slug: 'ace-combat-8-wings-of-theve',
+    kicker: 'WINGS OF THEVE · SOLO & ONLINE',
+    credit: 'BANDAI NAMCO',
+    detail: 'CAMPAGNE · ENV. 30 MISSIONS',
+    scoreScope: 'Note du jeu',
+  },
+  {
+    slug: 'call-of-duty-modern-warfare-4',
+    kicker: 'CALL OF DUTY · CAMPAGNE SOLO',
+    credit: 'ACTIVISION',
+    detail: 'TESTÉ SUR PC · ENV. 9 H',
+    scoreScope: 'Note de la campagne',
+  },
+];
+
 // Palier de la note → libellé affiché à côté du score.
 const shortTierLabel = (tier, labels) => (
   tier === 'is-hit' ? labels.tierHit : tier === 'is-good' ? labels.tierGood : labels.tierMid
@@ -48,7 +67,9 @@ export default function Reviews(){
   const c = t.reviews.article;
   const d = t.reviews.dossiers;
   const sr = t.reviews.shortReview;
-  const featuredReview = getTest('call-of-duty-modern-warfare-4');
+  const featuredReviews = writtenReviewFeatures
+    .map((feature) => ({ ...feature, review: getTest(feature.slug) }))
+    .filter(({ review }) => review);
   const tcl = tclFeature[lang] || tclFeature.fr;
   const [player, setPlayer] = useState(null);
   const openVideo = (e, test) => {
@@ -89,37 +110,40 @@ export default function Reviews(){
 
   return (
     <>
-      {/* Test original à la une. L'ancienne grille des tests reste masquée ;
-          on conserve aussi le short review et les dossiers ci-dessous. */}
-      {featuredReview && (
+      {/* Tests originaux à la une ; le short review et les dossiers restent ci-dessous. */}
+      {featuredReviews.length > 0 && (
         <section className="written-review-section wrap" id="test-a-la-une" data-reveal>
-          <div className="section-label"><span><b>TEST ÉCRIT</b> / À LA UNE</span><span>{featuredReview.date} · CAMPAGNE SOLO</span></div>
+          <div className="section-label"><span><b>TESTS ÉCRITS</b> / À LA UNE</span><span>DERNIER TEST · {featuredReviews[0].review.date}</span></div>
           <div className="written-review-heading">
             <p className="eyebrow"><span className="live-dot" /> LE REGARD DE LA RÉDACTION</p>
-            <h1>LE TEST <em>DE CHAFT.</em></h1>
+            <h1>LES TESTS <em>DE CHAFT.</em></h1>
           </div>
-          <article className="written-review-card">
-            <Link className="written-review-link" to={featuredReview.route}>
-              <div className="written-review-image">
-                <img src={featuredReview.image} alt={featuredReview.alt} />
-                <span className="written-review-image-credit">VISUEL OFFICIEL · ACTIVISION</span>
-                <span className="written-review-score" aria-label={`Note de la campagne : ${scoreLabel(featuredReview.score, lang)} sur 10`}>
-                  <small>NOTRE NOTE</small>
-                  <strong>{scoreLabel(featuredReview.score, lang)}<i>/10</i></strong>
-                </span>
-              </div>
-              <div className="written-review-copy">
-                <span className="written-review-kicker">CALL OF DUTY · CAMPAGNE SOLO</span>
-                <h2>{featuredReview.headingName}</h2>
-                <p>{featuredReview.excerpt}</p>
-                <div className="written-review-meta">
-                  <span>{featuredReview.byline}</span>
-                  <span>TESTÉ SUR PC · ENV. 9 H</span>
-                </div>
-                <span className="written-review-read">LIRE LE TEST <Arrow /></span>
-              </div>
-            </Link>
-          </article>
+          <div className="written-review-list">
+            {featuredReviews.map(({ review, kicker, credit, detail, scoreScope }) => (
+              <article className="written-review-card" key={review.slug}>
+                <Link className="written-review-link" to={review.route}>
+                  <div className="written-review-image">
+                    <img src={review.image} alt={review.alt} />
+                    <span className="written-review-image-credit">VISUEL OFFICIEL · {credit}</span>
+                    <span className="written-review-score" aria-label={`${scoreScope} : ${scoreLabel(review.score, lang)} sur 10`}>
+                      <small>NOTRE NOTE</small>
+                      <strong>{scoreLabel(review.score, lang)}<i>/10</i></strong>
+                    </span>
+                  </div>
+                  <div className="written-review-copy">
+                    <span className="written-review-kicker">{kicker}</span>
+                    <h2>{review.headingName}</h2>
+                    <p>{review.excerpt}</p>
+                    <div className="written-review-meta">
+                      <span>{review.byline}</span>
+                      <span>{detail}</span>
+                    </div>
+                    <span className="written-review-read">LIRE LE TEST <Arrow /></span>
+                  </div>
+                </Link>
+              </article>
+            ))}
+          </div>
         </section>
       )}
 

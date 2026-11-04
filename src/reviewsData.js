@@ -11,6 +11,94 @@ export const scoreLabel = (score, lang = 'fr') => String(score).replace('.', lan
 
 export const gameTests = [
   {
+    slug: 'ace-combat-8-wings-of-theve',
+    route: '/reviews/ace-combat-8-wings-of-theve',
+    name: 'ACE COMBAT 8: WINGS OF THEVE',
+    headingName: 'ACE COMBAT 8',
+    compactHeading: true,
+    accent: 'LE CIEL EST À NOUS.',
+    cardTitle: 'ACE COMBAT 8 : LE CIEL EST À NOUS.',
+    eyebrow: 'TEST · WINGS OF THEVE · ACTION AÉRIENNE',
+    date: '04.11.2026',
+    dateLong: '4 NOVEMBRE 2026',
+    platforms: 'PC · PS5 · XBOX SERIES X|S',
+    genre: 'ACTION AÉRIENNE',
+    studio: 'PROJECT ACES · BANDAI NAMCO',
+    duration: 'CAMPAGNE : 15 À 25 H ENV.',
+    readTime: 4,
+    score: 9,
+    image: img('ace-combat-8.webp'),
+    alt: 'Visuel officiel d’Ace Combat 8 : un pilote face à un avion de chasse sur le pont d’un porte-avions',
+    coverKicker: 'DIRECTION LES NUAGES',
+    byline: 'PAR CHAFT · RÉDACTEUR EN CHEF',
+    testContextLabel: 'REPÈRES',
+    testContext: 'Sorti le 2 octobre 2026 sur PC, PS5 et Xbox Series X|S, le jeu propose une campagne d’environ 30 missions : prévoyez 15 à 25 heures selon votre rythme. ACE COMBAT ONLINE possède sa propre progression, distincte de celle du solo.',
+    excerpt: 'Des combats aériens intenses, des nuages spectaculaires et un pilotage arcade addictif : Chaft prend son envol.',
+    dek: 'Avec Wings of Theve, Ace Combat retrouve le goût du grand spectacle. Campagne cinématographique, combats nerveux et mode en ligne : Chaft a pris les commandes.',
+    lead: 'Vous aimez les avions de chasse, les dogfights spectaculaires et les missiles qui passent à quelques mètres du cockpit ? Alors attachez vos ceintures. Ace Combat 8: Wings of Theve m’a offert ce que j’espérais : des combats intenses, une mise en scène spectaculaire et une bonne dose d’adrénaline. Franchement, j’ai adoré.',
+    sections: [
+      {
+        h2: 'UN GAMEPLAY QUI DONNE DES AILES',
+        ps: [
+          'La grande force d’Ace Combat, c’est de nous faire sentir comme un as de l’aviation sans nous obliger à passer un brevet de pilote. Les commandes sont accessibles, les affrontements nerveux et le plaisir arrive vite : on enchaîne les manœuvres, on verrouille une cible et on esquive un missile avant de replonger dans la bataille.',
+          'Ce n’est pas un simulateur de vol ultra-réaliste, mais un jeu d’action aérienne arcade qui assume son sens du spectacle. Certains affrontements m’ont rappelé les films Top Gun : on est là pour les sensations, la vitesse et les moments où tout semble se jouer en une poignée de secondes.',
+        ],
+      },
+      {
+        pull: { text: 'Du rythme, de l’adrénaline et cette satisfaction incroyable lorsqu’on retourne une situation mal engagée.', by: 'CHAFT, RÉDACTEUR EN CHEF DE LET’S PLAY' },
+      },
+      {
+        h2: 'UN SPECTACLE AU-DESSUS DES NUAGES',
+        ps: [
+          'Visuellement, le jeu en met plein les yeux. Les environnements, les effets atmosphériques et la mise en scène donnent de l’ampleur aux batailles. Unreal Engine 5 et le système de nuages Cloudly contribuent à dessiner des ciels saisissants, traversés de missiles et d’explosions.',
+          'Ce que j’apprécie particulièrement, c’est cette sensation de vitesse et de puissance. Au milieu des avions et des explosions, on ne se contente pas de piloter : on a vraiment l’impression de participer à une guerre aérienne.',
+        ],
+      },
+      {
+        h2: 'SON AVION, SON ÉQUIPE, SES CHOIX',
+        ps: [
+          'Le pilotage n’est pas la seule pièce du puzzle. Au fil des missions, les points MRP permettent de progresser dans l’arbre des avions et de débloquer de nouveaux appareils, des armes spéciales et des pièces d’amélioration. Choisir son équipement apporte une touche de stratégie et de progression légère, sans éloigner le jeu de l’action.',
+          'Il faut aussi compter avec son escadrille : les commandes données aux coéquipiers permettent de les mobiliser pendant les affrontements. Préparer son appareil et gérer son équipe ajoutent une dimension bienvenue entre deux échanges de missiles.',
+        ],
+      },
+      {
+        h2: 'UNE CAMPAGNE CINÉMATOGRAPHIQUE',
+        ps: [
+          'La campagne mêle univers militaire, enjeux dramatiques et missions mises en scène pour nous faire vivre une véritable aventure aérienne. La tension donne envie d’enchaîner les sorties. Elle compte environ 30 missions, pour une durée estimée entre 15 et 25 heures selon votre rythme.',
+          'Tout n’est pas parfait : certaines séquences narratives ralentissent l’élan et quelques passages auraient mérité davantage de variété. Mais dès que je reprends les commandes, le plaisir revient immédiatement.',
+        ],
+      },
+      {
+        h2: 'ACE COMBAT ONLINE : LE COMBAT CONTINUE',
+        ps: [
+          'Pour prolonger l’expérience, ACE COMBAT ONLINE propose des affrontements entre joueurs, des missions coopératives et des événements spéciaux. On peut faire équipe avec d’autres pilotes ou retrouver des escadrilles adverses, avec du cross-play entre plateformes.',
+          'Le mode en ligne possède sa propre progression, indépendante de la campagne : les récompenses permettent de débloquer des avions et d’améliorer ses appareils au fil des missions. Une manière de continuer à voler une fois le solo terminé.',
+        ],
+      },
+      {
+        h2: 'VERDICT : ATTACHEZ VOS CEINTURES',
+        ps: [
+          'J’aurais aimé un meilleur équilibre entre narration et action, un peu plus de variété et une version PSVR2. Ces défauts n’ont pourtant pas gâché mon expérience : l’intensité des combats, le spectacle et le plaisir de pilotage restent les grands gagnants.',
+          'Ace Combat 8: Wings of Theve m’a offert exactement le jeu d’action aérienne que j’attendais. Ma note : 9/10. Si vous aimez les dogfights et l’adrénaline, vous risquez de ne plus vouloir quitter le cockpit. Et vous, qu’en pensez-vous ? Dites-le-moi en commentaire !',
+        ],
+      },
+    ],
+    pros: [
+      'Des combats aériens nerveux et accessibles',
+      'Une mise en scène spectaculaire et des ciels saisissants',
+      'La progression des avions et les commandes d’escadrille',
+      'Un mode en ligne coopératif et compétitif avec cross-play',
+    ],
+    cons: [
+      'Certaines séquences narratives ralentissent le rythme',
+      'Quelques passages manquent de variété',
+      'Pas de version PSVR2',
+    ],
+    verdictTitle: 'UN VOL SPECTACULAIRE',
+    verdictText: 'Un jeu d’action aérienne nerveux et addictif. Malgré quelques passages moins variés et l’absence de PSVR2, j’ai adoré son spectacle et ses combats.',
+    video: { id: 'F54vGYxj0ts', label: 'Bande-annonce de lancement', channel: 'Bandai Namco Entertainment America' },
+  },
+  {
     slug: 'call-of-duty-modern-warfare-4',
     route: '/reviews/call-of-duty-modern-warfare-4',
     name: 'CALL OF DUTY: MODERN WARFARE 4',
@@ -87,6 +175,7 @@ export const gameTests = [
     ],
     verdictTitle: 'LE SOLO RETROUVE SON SOUFFLE',
     verdictText: 'Une campagne prenante et spectaculaire : malgré quelques longueurs et un Price parfois en retrait, c’est pour moi le meilleur solo Call of Duty depuis Modern Warfare en 2019.',
+    video: { id: 'yLFRQaQT0qM', label: 'Bande-annonce de la campagne', channel: 'Call of Duty' },
   },
   {
     slug: 'wolverine',
