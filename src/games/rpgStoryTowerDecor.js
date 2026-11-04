@@ -129,30 +129,26 @@ const BATISSEURS = {
     }
   },
   // La Régence : galiotes, mâts, voiles, lanternes de quai ; un phare veille.
-  'tour-des-corsaires': ({ kit, m, place, random }) => {
+  'tour-des-corsaires': ({ kit, m, place, random, galiote }) => {
     const { x, z } = place(-0.3, 6.0);
-    const navire = kit.group(x, 0, z, 0.4);
-    kit.box(m.wood, 0, 0.35, 0, 2.6, 0.6, 0.9, 0, navire);
-    kit.box(m.dark, 0, 0.7, 0, 2.2, 0.14, 0.7, 0, navire);
-    kit.box(m.wood, -1.2, 0.8, 0, 0.5, 0.5, 0.8, 0, navire);
-    for (const mx of [-0.7, 0.5]) {
-      kit.cylinder(m.wood, mx, 1.5, 0, 0.06, 2.4, 0.8, 8, navire);
-      kit.ribbon(m.cream, mx, 1.7, 0.05, 0.9, 1.3, 0, false, navire);
-      kit.box(m.wood, mx, 2.3, 0, 0.7, 0.05, 0.05, 0, navire);
-    }
-    kit.ribbon(m.red, 1.2, 2.0, 0, 0.4, 0.3, 0, true, navire);   // pavillon
-    const ph = place(0.8, 6.6);
-    kit.roundTier(0, 0.5, 1.5, ph.x, ph.z);
-    kit.sphere(m.window, ph.x, 1.75, ph.z, [0.26, 0.28, 0.26]);
-    kit.dome(ph.x, 2.0, ph.z, 0.38, 0.38);
+    galiote(x, z, -0.4);                                    // la galiote de profil, sur l'océan
+    kit.ring(m.snow, x, 0.03, z, 1.9, 0.025, [Math.PI / 2, 0, 0]);   // écume autour de la coque
+    kit.ring(m.snow, x, 0.02, z, 2.3, 0.02, [Math.PI / 2, 0, 0]);
+    const ph = place(0.85, 6.8);
+    kit.rock(m.dark, ph.x, -0.1, ph.z, [0.95, 0.5, 0.95], 0.5);      // îlot rocheux du phare
+    kit.rock(m.stone, ph.x + 0.55, -0.15, ph.z + 0.3, [0.5, 0.35, 0.5], 1.2);
+    kit.roundTier(0.3, 0.45, 1.3, ph.x, ph.z);
+    kit.sphere(m.window, ph.x, 1.75, ph.z, [0.24, 0.26, 0.24]);
+    kit.dome(ph.x, 1.95, ph.z, 0.36, 0.36);
+    kit.ring(m.snow, ph.x, 0.03, ph.z, 1.0, 0.025, [Math.PI / 2, 0, 0]);
     for (let i = 0; i < 4; i += 1) {
-      const p = place(0.1 + i * 0.3, 4.6 + random() * 0.4);
-      kit.cylinder(m.wood, p.x, 0.5, p.z, 0.1, 1.1, 0.9, 8);
-      kit.sphere(m.window, p.x, 1.15, p.z, [0.07, 0.09, 0.07]);
+      const p = place(0.15 + i * 0.28, 4.6 + random() * 0.3);
+      kit.cylinder(m.wood, p.x, 0.35, p.z, 0.09, 1.0, 0.9, 8);
+      kit.sphere(m.window, p.x, 0.95, p.z, [0.07, 0.09, 0.07]);
     }
     const qu = place(-0.95, 4.9);
-    kit.cylinder(m.wood, qu.x, 0.3, qu.z, 0.22, 0.6, 1, 10);
-    kit.box(m.wood, qu.x + 0.55, 0.25, qu.z + 0.2, 0.5, 0.5, 0.5, 0.3);
+    kit.cylinder(m.wood, qu.x, 0.2, qu.z, 0.2, 0.5, 1, 10);
+    kit.box(m.wood, qu.x + 0.55, 0.15, qu.z + 0.2, 0.45, 0.4, 0.45, 0.3);
   },
   // Le Nord : drakkar à tête de dragon, pierres runiques, loups, glace.
   'tour-du-fjord': ({ kit, m, place, random, drakkar, runestone, iceShard }) => {
@@ -354,6 +350,51 @@ export function createStoryTowerDecor(tourId, theme = RPG_STORY_TOWER_THEMES[tou
     kit.ribbon(m.red, 0, 1.3 * s, 0.02, 1.0 * s, 1.0 * s, 0, false, g);
     for (let i = -2; i <= 2; i += 1) kit.sphere(m.gold, i * 0.4 * s, 0.5 * s, 0.32 * s, [0.11 * s, 0.11 * s, 0.04 * s], g);
   };
+  // Un cordage tendu entre deux points (hauban, étai), cylindre orienté.
+  const corde = (parent, a, b, r = 0.012) => {
+    const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b);
+    const dir = new THREE.Vector3().subVectors(vb, va);
+    const len = dir.length();
+    const mid = new THREE.Vector3().addVectors(va, vb).multiplyScalar(0.5);
+    const part = kit.mesh(new THREE.CylinderGeometry(r, r, len, 4), m.dark, [mid.x, mid.y, mid.z], [1, 1, 1], [0, 0, 0], parent);
+    part.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  };
+  // Galiote corsaire : coque extrudée à fond rond, étrave pointue, poupe
+  // surélevée à fenêtres, trois mâts à voiles carrées, beaupré, canons.
+  const galiote = (x, z, yaw = 0) => {
+    const g = kit.group(x, -0.1, z, yaw);
+    const forme = new THREE.Shape();
+    forme.moveTo(-1.35, 0);
+    forme.bezierCurveTo(-1.5, 0.34, -0.9, 0.46, -0.1, 0.46);
+    forme.bezierCurveTo(0.7, 0.46, 1.3, 0.3, 1.62, 0);
+    forme.bezierCurveTo(1.3, -0.3, 0.7, -0.46, -0.1, -0.46);
+    forme.bezierCurveTo(-0.9, -0.46, -1.5, -0.34, -1.35, 0);
+    const coque = new THREE.ExtrudeGeometry(forme, { depth: 0.42, bevelEnabled: true, bevelThickness: 0.2, bevelSize: 0.14, bevelSegments: 3, curveSegments: 10 });
+    kit.mesh(coque, m.wood, [0, 0, 0], [1, 1, 1], [-Math.PI / 2, 0, 0], g);
+    kit.box(m.gold, 0.05, 0.3, 0, 2.9, 0.05, 1.0, 0, g);          // ligne de flottaison dorée
+    kit.box(m.wood, 0.05, 0.56, 0, 2.7, 0.06, 0.84, 0, g);        // pont
+    for (const dz of [-0.42, 0.42]) kit.box(m.dark, 0.05, 0.7, dz, 2.5, 0.16, 0.05, 0, g); // bastingages
+    kit.box(m.wood, -1.05, 0.88, 0, 0.7, 0.55, 0.82, 0, g);       // poupe
+    kit.box(m.dark, -1.05, 1.19, 0, 0.78, 0.08, 0.9, 0, g);
+    kit.box(m.window, -1.41, 0.9, 0, 0.04, 0.32, 0.6, 0, g);      // fenêtres de poupe
+    kit.box(m.wood, 1.05, 0.78, 0, 0.5, 0.35, 0.7, 0, g);         // gaillard d'avant
+    kit.mesh(new THREE.CylinderGeometry(0.02, 0.04, 1.2, 6), m.wood, [1.95, 0.95, 0], [1, 1, 1], [0, 0, -1.25], g); // beaupré
+    for (const [mx, mh, sw] of [[0.95, 1.9, 0.9], [0, 2.2, 1.1], [-0.85, 1.7, 0.75]]) {
+      kit.cylinder(m.wood, mx, 0.6 + mh / 2, 0, 0.045, mh, 0.7, 8, g);
+      for (const [frac, wfrac] of [[0.78, 1], [0.42, 0.82]]) {
+        const yy = 0.6 + mh * frac;
+        kit.box(m.wood, mx, yy, 0, 0.04, 0.04, sw * 1.15 * wfrac, 0, g);   // vergue
+        kit.ribbon(m.cream, mx, yy - sw * 0.4 * wfrac, 0.02, sw * wfrac, sw * 0.78 * wfrac, Math.PI / 2, false, g);
+      }
+    }
+    kit.ribbon(m.red, 0, 2.95, 0, 0.45, 0.3, Math.PI / 2, true, g);        // pavillon
+    corde(g, [0, 2.8, 0], [1.9, 1.0, 0]);
+    corde(g, [0, 2.8, 0], [-1.4, 1.2, 0]);
+    corde(g, [0.95, 2.5, 0], [1.62, 0.7, 0]);
+    for (const cx of [-0.6, 0, 0.6]) for (const dz of [-0.5, 0.5]) {
+      kit.mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.3, 6), m.dark, [cx, 0.42, dz], [1, 1, 1], [Math.PI / 2, 0, 0], g); // canons
+    }
+  };
   const fennec = (x, z, yaw = 0) => {
     const g = kit.group(x, 0, z, yaw);
     kit.sphere(m.ground, 0, 0.13, 0, [0.15, 0.11, 0.22], g);
@@ -419,15 +460,32 @@ export function createStoryTowerDecor(tourId, theme = RPG_STORY_TOWER_THEMES[tou
   };
 
   // Le sol : île-diorama texturée comme le socle des tours, au bord fondu.
-  const solGeo = new THREE.CircleGeometry(14, 48);
-  solGeo.rotateX(-Math.PI / 2);
-  m.sol = new THREE.MeshStandardMaterial({
-    name: 'sol', color: new THREE.Color(theme.ground).multiplyScalar(0.55),
-    map: m.ground.map, roughness: 1, transparent: true, alphaMap: solTexture(), depthWrite: false,
-  });
-  kit.mesh(solGeo, m.sol, [0, 0, 0]);
+  // Pour les Corsaires, c'est l'océan qui porte la galiote et le phare.
+  if (tourId === 'tour-des-corsaires') {
+    const merGeo = new THREE.CircleGeometry(14, 64);
+    merGeo.rotateX(-Math.PI / 2);
+    const pos = merGeo.attributes.position;
+    for (let i = 0; i < pos.count; i += 1) {
+      const x = pos.getX(i), z = pos.getZ(i);
+      pos.setY(i, Math.sin(x * 0.7) * Math.cos(z * 0.6) * 0.05 + Math.sin(x * 1.3 + z * 0.9) * 0.03); // houle
+    }
+    merGeo.computeVertexNormals();
+    m.mer = new THREE.MeshStandardMaterial({
+      name: 'mer', color: '#17607a', roughness: 0.28, metalness: 0.3,
+      transparent: true, alphaMap: solTexture(), depthWrite: false,
+    });
+    kit.mesh(merGeo, m.mer, [0, 0, 0]);
+  } else {
+    const solGeo = new THREE.CircleGeometry(14, 48);
+    solGeo.rotateX(-Math.PI / 2);
+    m.sol = new THREE.MeshStandardMaterial({
+      name: 'sol', color: new THREE.Color(theme.ground).multiplyScalar(0.55),
+      map: m.ground.map, roughness: 1, transparent: true, alphaMap: solTexture(), depthWrite: false,
+    });
+    kit.mesh(solGeo, m.sol, [0, 0, 0]);
+  }
 
-  batisseur({ kit, m, place, random, theme, hourglass, scroll, astrolabe, raven, runestone, standingStone, drakkar, fennec, jackal, balance, tentacle, bell, chainLinks, dune, iceShard, roof, ksour, pavilion });
+  batisseur({ kit, m, place, random, theme, hourglass, scroll, astrolabe, raven, runestone, standingStone, drakkar, galiote, fennec, jackal, balance, tentacle, bell, chainLinks, dune, iceShard, roof, ksour, pavilion });
 
   // Tout est bâti au niveau y=0 puis enfoncé de 0.2 : les structures reposent
   // sur le sol (y=-0.2), lui-même sous le plan d'ombre de la scène (y=-0.1).

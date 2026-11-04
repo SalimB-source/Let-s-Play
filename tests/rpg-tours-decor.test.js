@@ -17,7 +17,7 @@ const FOLKLORE = {
   'tour-du-souk': ['tissu-rouge', 'tissu-turquoise', 'laiton'],
   'tour-des-sables': ['socle', 'pierre'],
   'tour-des-abysses': ['algues', 'eau'],
-  'tour-des-corsaires': ['bois', 'parchemin', 'tissu-rouge'],
+  'tour-des-corsaires': ['bois', 'parchemin', 'tissu-rouge', 'mer'],
   'tour-du-fjord': ['glace', 'neige', 'bois'],
   'tour-du-soleil-rouge': ['tissu-rouge', 'bois'],
   'tour-de-la-necropole': ['laiton', 'pierre-sombre', 'zellige'],
@@ -53,7 +53,7 @@ test('chaque tour a son décor de fond, fusionné et léger', () => {
       const meshes = [];
       decor.group.traverse((part) => { if (part.isMesh) meshes.push(part); });
       assert.ok(meshes.length >= 2 && meshes.length <= 12, `${tour.id} : pièces fusionnées par matériau (${meshes.length})`);
-      assert.ok(meshes.some((mesh) => mesh.name === `${tour.id}:sol`), 'le sol est présent');
+      assert.ok(meshes.some((mesh) => mesh.name === `${tour.id}:sol` || mesh.name === `${tour.id}:mer`), 'le sol (ou l’océan) est présent');
       let total = 0, maxY = -Infinity;
       for (const mesh of meshes) {
         total += triangles(mesh);
@@ -93,7 +93,7 @@ test('les silhouettes se tiennent derrière la tour, le sol sous son socle', () 
       decor.group.traverse((part) => {
         if (!part.isMesh) return;
         const positions = part.geometry.attributes.position;
-        if (part.name === `${tour.id}:sol`) {
+        if (part.name === `${tour.id}:sol` || part.name === `${tour.id}:mer`) {
           const bounds = new THREE.Box3().setFromObject(part);
           solMinY = Math.min(solMinY, bounds.min.y);
           return;
