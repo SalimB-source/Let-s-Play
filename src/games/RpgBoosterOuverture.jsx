@@ -101,11 +101,18 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   const paquetRef = useRef(null);
   const rayon = rayonParId(ouverture?.rayonId);
   const offert = Boolean(ouverture?.offert);
-  const titre = offert
-    ? `Niveau ${ouverture?.vers ?? ouverture?.niveaux ?? ''} — le comptoir offre`
-    : ouverture?.coffret
-      ? 'Le Coffret du Souk'
-      : (rayon?.titre ?? 'Le paquet du Souk');
+  // Un paquet de coffre de quête est offert lui aussi — mais il ne vient pas
+  // d'un palier de niveau. Sans cette distinction la cérémonie annoncerait
+  // « Niveau — » (sans numéro) pour des cartes gagnées en jouant.
+  const coffre = Boolean(ouverture?.coffre);
+  const niveau = offert && !coffre;
+  const titre = coffre
+    ? (ouverture?.coffreNom ?? 'Le coffre de quêtes')
+    : niveau
+      ? `Niveau ${ouverture?.vers ?? ouverture?.niveaux ?? ''} — le comptoir offre`
+      : ouverture?.coffret
+        ? 'Le Coffret du Souk'
+        : (rayon?.titre ?? 'Le paquet du Souk');
   const vitrine = cardById(rayon?.vitrine ?? 'salem');
 
   useEffect(() => {
@@ -194,20 +201,24 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   };
 
   return (
-    <div className={`rpg-souk__ceremonie${une_a_une ? ' is-paquet-anime' : ''}${passee ? ' is-passee' : ''}`} data-souk-ceremonie data-souk-phase={phase} data-souk-ceremonie-paquet={ouverture.paquets ?? 1} data-souk-ceremonie-offert={offert || undefined} data-souk-ceremonie-niveau={offert ? (ouverture.vers ?? null) : undefined}>
+    <div className={`rpg-souk__ceremonie${une_a_une ? ' is-paquet-anime' : ''}${passee ? ' is-passee' : ''}`} data-souk-ceremonie data-souk-phase={phase} data-souk-ceremonie-paquet={ouverture.paquets ?? 1} data-souk-ceremonie-offert={offert || undefined} data-souk-ceremonie-coffre={coffre || undefined} data-souk-ceremonie-niveau={niveau ? (ouverture.vers ?? null) : undefined}>
       <div className="rpg-souk__ceremonie-nappe" aria-hidden="true" />
       <section className="rpg-souk__ceremonie-corps" aria-label="Ouverture du booster">
         <header className="rpg-souk__ceremonie-tete">
           <span className="rpg-mode-menu__eyebrow" data-souk-ceremonie-offert={offert || undefined}>
-            {offert
-              ? `LE NIVEAU SONNE · ${ouverture.paquets ?? 1} PAQUET${(ouverture.paquets ?? 1) > 1 ? 'S' : ''} OFFERT${(ouverture.paquets ?? 1) > 1 ? 'S' : ''}`
-              : ouverture.coffret ? `LE COFFRET · ${ouverture.paquets} PAQUETS` : 'LE PAQUET · 5 CARTES'}
+            {coffre
+              ? `LE COFFRE S’OUVRE · ${ouverture.paquets ?? 1} PAQUET${(ouverture.paquets ?? 1) > 1 ? 'S' : ''}`
+              : niveau
+                ? `LE NIVEAU SONNE · ${ouverture.paquets ?? 1} PAQUET${(ouverture.paquets ?? 1) > 1 ? 'S' : ''} OFFERT${(ouverture.paquets ?? 1) > 1 ? 'S' : ''}`
+                : ouverture.coffret ? `LE COFFRET · ${ouverture.paquets} PAQUETS` : 'LE PAQUET · 5 CARTES'}
           </span>
           <h2>{titre}</h2>
           <p>
-            {offert
-              ? <>Offert par le niveau — aucun crédit dépensé. {ouverture.paquets > 1 ? 'Un paquet par palier franchi.' : 'Cinq cartes, une rare garantie, la mythique en dernière.'}</>
-              : ouverture.coffret
+            {coffre
+              ? <>Gagné en finissant vos quêtes — aucun crédit dépensé. {ouverture.paquets > 1 ? `${ouverture.paquets} paquets d’un coup.` : 'Cinq cartes, une rare garantie, la mythique en dernière.'}</>
+              : niveau
+                ? <>Offert par le niveau — aucun crédit dépensé. {ouverture.paquets > 1 ? 'Un paquet par palier franchi.' : 'Cinq cartes, une rare garantie, la mythique en dernière.'}</>
+                : ouverture.coffret
                 ? <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — dix paquets, une mythique assurée.</>
                 : <> {creditsLisible(ouverture.prix)} <RpgCreditIcon /> — cinq cartes, une rare garantie, la mythique en dernière.</>}
           </p>
@@ -221,7 +232,7 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
                 <div className="rpg-souk__sachet-lueur" />
                 <div className="rpg-souk__sachet-corps">
                   {vitrine && <img src={cardArt(vitrine)} alt="" />}
-                  <span className="rpg-souk__sachet-marque">{offert ? `NIVEAU ${ouverture.vers ?? ''}` : 'LE SOUK'}</span>
+                  <span className="rpg-souk__sachet-marque">{coffre ? 'COFFRE' : niveau ? `NIVEAU ${ouverture.vers ?? ''}` : 'LE SOUK'}</span>
                   <span className="rpg-souk__sachet-rune"><RuneSablier /></span>
                   <span className="rpg-souk__sachet-legende">CINQ CARTES · UN DESTIN</span>
                 </div>

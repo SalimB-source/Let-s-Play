@@ -1,5 +1,5 @@
 import { ciblesDefenseur } from './rpgDefenseur.js';
-import { armureArme, defenseSansArmure, plafondSoinCreature } from './rpgArmure.js';
+import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
@@ -145,6 +145,8 @@ import RpgModeIcon from './RpgModeIcon.jsx';
 import { RpgMiseAJourCarte } from './RpgMiseAJour.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
+import RpgAccueilMobile from './RpgAccueilMobile.jsx';
+import RpgCoffreOuverture from './RpgCoffreOuverture.jsx';
 import {
   GAINS,
   creditsLisible,
@@ -2800,7 +2802,6 @@ export function TableCard({
     : null;
   const gelee = !estSite && (entite.gelToursRestants ?? 0) > 0;
   const armure = armureArme(entite);
-  const defensePropre = defenseSansArmure(entite);
   const blessee = !estSite && entite.pv < plafondSoinCreature(entite, entite.pvMax ?? carte?.def ?? entite.pv);
   // La prisonnière de la cale (Abordage) : sa fiche, pour la mini-face qui
   // se glisse sous le coin du capteur — on voit QUI est détenu, pas
@@ -3136,8 +3137,9 @@ export function TableCard({
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
               data-stat-variation={classeDefense === 'is-buffed' ? 'buff' : classeDefense === 'is-debuffed' ? 'debuff' : undefined}
+              data-armure={armure ? armure.restant : undefined}
             >
-              <CardStatIcon type="defense" /><span className="rpg-stat-value">{armure ? <>{defensePropre}<span className="rpg-card__armure">+{armure.restant}</span></> : entite.pv}</span>
+              <CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span>
             </span>
           </footer>
         )}
@@ -4588,7 +4590,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onOuvrirPaquetCoffre = null, mobile = false, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const indicationsModes = rpgIndicationsModes(progressionHistoire, { hasGame, campagneEnCours });
   const [offreActive, setOffreActive] = useState(() => offreLancementActive());
   useEffect(() => {
@@ -4685,6 +4687,24 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const messagerieDemandes = friendsContexte.pendingCount ?? 0;
   const messageriePastille = messagerieNonLus > 0 ? messagerieNonLus : messagerieDemandes;
   const play = (n) => { try { onPlaySfx?.(n); } catch {} };
+
+  /* ── Les coffres de quêtes (accueil mobile) ──────────────────────────────
+     Un coffre prêt s'ouvre d'un tap : le portefeuille verse les crédits **et**
+     ouvre les paquets du coffre (cycle, semaine) sur-le-champ — les cartes sont
+     écrites avant toute cérémonie, comme au Souk. La cérémonie des pièces passe
+     alors devant, et « Voir les cartes » découvre le retournement qui attendait
+     dessous. `paquets` compte ce qui a réellement été tiré : un comptoir fermé
+     ne promet pas de cartes, et l'écran le dit. */
+  const [coffreOuvert, setCoffreOuvert] = useState(null);
+  const ouvrirUnCoffre = (coffre, verser) => {
+    const gagne = verser?.();
+    if (!gagne) { play('erreur'); return; }
+    const paquets = coffre.paquets > 0 ? (onOuvrirPaquetCoffre?.(coffre.paquets, coffre.nom) ?? 0) : 0;
+    setCoffreOuvert({ coffre, paquets });
+  };
+  const ouvrirCoffreQuete = (coffre) => ouvrirUnCoffre(coffre, () => onReclamerQuete?.(coffre.queteId));
+  const ouvrirCoffreCycle = (coffre) => ouvrirUnCoffre(coffre, () => onReclamerCachet?.());
+  const ouvrirCoffreSemaine = (coffre) => ouvrirUnCoffre(coffre, () => onReclamerSemaine?.());
   // La barre de l'onglet Profil : celle que le hook a déjà calculée, ou sa
   // recopie locale quand la page est montée sans lui (vérifications jsdom).
   // Un profil absent se lit « niveau 1, 0 XP » — l'onglet ne casse jamais.
@@ -4865,7 +4885,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   return (
     <section
       ref={menuScrollRef}
-      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
+      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}${screen === 'tours' && !tourLibreOuverteId ? ' rpg-mode-menu--conquete-galerie' : ''}`}
       inert={bloqueAccueil || undefined}
       style={{ backgroundImage: menuBackground }}
       // L'aperçu au survol est placé d'après la position de la carte au moment
@@ -5092,7 +5112,26 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           </nav>
         </header>
 
-        {screen === 'jouer' ? (
+        {screen === 'jouer' && mobile ? (
+          /* Sur appareil tactile, l'accueil prend la mise en scène d'un jeu
+             mobile d'arène : bandeau du joueur, arène, gros bouton, coffres.
+             Le bureau garde sa vitrine et ses trois bannières, juste en dessous. */
+          <RpgAccueilMobile
+            quetes={quetes}
+            credits={credits}
+            barreXp={barreXp}
+            nomCompte={nomCompte}
+            progressionHistoire={progressionHistoire}
+            portefeuille={portefeuille}
+            onContinueRecit={onContinueRecit}
+            onChangeScreen={onChangeScreen}
+            onOuvrirQuete={ouvrirCoffreQuete}
+            onRemplacerQuete={onRemplacerQuete}
+            onOuvrirCycle={ouvrirCoffreCycle}
+            onOuvrirSemaine={ouvrirCoffreSemaine}
+            onPlaySfx={play}
+          />
+        ) : screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
             {/* Colonne gauche : les trois modes de jeu empilés l'un au-dessus
                 de l'autre en largeur, chacun illustré d'une miniature et doté
@@ -5195,11 +5234,10 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 les jalons en médaillons alignés sous la vitrine et les modes. */}
             <RpgQuetesDuJour
               quetes={quetes}
-              credits={credits}
               onReclamerQuete={onReclamerQuete}
+              onRemplacerQuete={onRemplacerQuete}
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
-              onOuvrirSouk={() => { onChangeScreen('souk'); }}
               onPlaySfx={play}
             />
           </main>
@@ -5244,11 +5282,19 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           </span>
                           <span className={`rpg-story-tour__gains-butin${gainsLibre.butinGagne ? ' is-gagne' : gainsLibre.complete ? ' is-due' : ''}`}>
                             <b>Butin de la tour : +{creditsLisible(gainsLibre.butin)} crédits</b>
-                            {gainsLibre.butinGagne
-                              ? ' — encaissé ✓'
-                              : gainsLibre.complete
-                                ? ' — tous les étages sont déblayés : il tombera à votre prochaine victoire ici'
-                                : ' — versé quand tous les étages seront déblayés'}
+                            {/* Deux longueurs pour la même phrase : au doigt, la version
+                                longue poussait le bloc sur deux lignes et coûtait aux
+                                étages la place de la dernière carte. */}
+                            <span className="rpg-story-tour__gains-note">
+                              {gainsLibre.butinGagne
+                                ? ' — encaissé ✓'
+                                : gainsLibre.complete
+                                  ? ' — tous les étages sont déblayés : il tombera à votre prochaine victoire ici'
+                                  : ' — versé quand tous les étages seront déblayés'}
+                            </span>
+                            <span className="rpg-story-tour__gains-note-courte" aria-hidden="true">
+                              {gainsLibre.butinGagne ? ' ✓' : gainsLibre.complete ? ' — prochaine victoire' : ' — tour complète'}
+                            </span>
                           </span>
                         </div>
                       )}
@@ -5282,7 +5328,16 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                                 data-etage={etage.id}
                                 onClick={() => { play('select'); onStartEtage(etage.id); }}
                               >
-                                <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                                <span className="rpg-story-floor__step" aria-hidden="true">
+                                  {/* Une coche gravée : le glyphe « ✓ » manque dans
+                                      certaines polices mobiles et laissait la pastille
+                                      vide, sans rien dire de l'étage déblayé. */}
+                                  {vaincu ? (
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                      <path d="M5 12.5 10 17.5 19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  ) : index + 1}
+                                </span>
                                 <span className="rpg-story-floor__copy">
                                   <strong>{etage.nom}</strong>
                                   <small>{etage.note}</small>
@@ -5312,7 +5367,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <div>
                     <span className="rpg-mode-menu__eyebrow">CONQUÊTE · LES TOURS DE BAB EL</span>
                     <h2>Choisissez votre défi</h2>
-                    <p>Gravissez les tours étage par étage. Chaque victoire débloque l'étage suivant. Deck complet et PV pleins à chaque duel.</p>
                   </div>
                   {!confirmerResetHistoire && (
                     <button
@@ -5352,7 +5406,12 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     aria-label="Tour précédente"
                     onClick={() => { play('select'); naviguerTours(-1); }}
                   >
-                    <span aria-hidden="true">←</span>
+                    {/* Un chevron gravé, pas le glyphe « ← » : la police du
+                        mobile ne le rend pas partout, et une flèche invisible
+                        laisse le carrousel sans issue visible. */}
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </button>
                   {tourAffichee && (() => {
                     const tour = tourAffichee.tour;
@@ -5417,7 +5476,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     aria-label="Tour suivante"
                     onClick={() => { play('select'); naviguerTours(1); }}
                   >
-                    <span aria-hidden="true">→</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
                   </button>
                 </div>
                 <div className="rpg-conquete-carrousel__pagination">
@@ -6293,6 +6354,29 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
         )}
         <footer className="rpg-mode-menu__footer"><span>LE SABLIER</span><span>STRATÉGIE · CRÉATURES · MAGIE</span></footer>
       </div>
+      {/* La cérémonie du coffre : devant la couche du menu, et devant le
+          retournement des paquets qu'un coffre du cycle vient d'ouvrir. */}
+      {coffreOuvert && (
+        <RpgCoffreOuverture
+          coffre={coffreOuvert.coffre}
+          paquetsObtenus={coffreOuvert.paquets}
+          onFermer={() => { play('menu'); setCoffreOuvert(null); }}
+          onPlaySfx={play}
+        />
+      )}
+      {/* Le retournement des paquets d'un coffre, monté ici parce que l'accueil
+          n'est pas l'écran du Souk : sans lui, les cartes du Coffre du cycle
+          seraient rangées en silence. Il attend que les pièces soient refermées
+          (`!coffreOuvert`) pour ne pas animer deux cérémonies à la fois, et
+          laisse la main au Souk quand c'est lui qui a ouvert le paquet. */}
+      {ouverture && !coffreOuvert && screen !== 'souk' && (
+        <RpgBoosterOuverture
+          ouverture={ouverture}
+          cardArt={cardArt}
+          onFermer={onFermerOuverture}
+          onPlaySfx={play}
+        />
+      )}
       {partieRapideOuverte && (
         <div
           className="rpg-partie-rapide__overlay"
@@ -7005,9 +7089,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
     statutSync: statutSyncBourse, pousser: pousserBourse,
-    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
+    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, remplacerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, rangerCoffret, fermerOuverture, ouverture: ouvertureSouk,
+    ouvrirPaquetCoffre,
     acheterCarteDirecte, rafraichirEtal,
     acheterIllustration, basculerIllustration,
     // Le profil du joueur (dossier 20) : la barre d'XP, le niveau, et le paquet
@@ -9623,8 +9708,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           aReclamer={soukAReclamer}
           quetes={quetesSouk}
           onReclamerQuete={reclamerUneQuete}
+          onRemplacerQuete={remplacerUneQuete}
           onReclamerCachet={reclamerLeCachet}
           onReclamerSemaine={reclamerLeCachetDeLaSemaine}
+          onOuvrirPaquetCoffre={ouvrirPaquetCoffre}
+          mobile={viewport.mobile}
           portefeuille={portefeuilleSouk}
           progression={progressionHistoire}
           ouverture={ouvertureSouk}

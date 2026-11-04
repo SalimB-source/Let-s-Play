@@ -64,6 +64,7 @@ import {
   reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
   reclamerQuete,
+  remplacerQuete,
   sauverEtatQuetes,
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
@@ -478,6 +479,26 @@ export function useSablierBourse({
   }, [verserXp]);
 
   /**
+   * Change une quête du jour — une seule fois par journée, toutes quêtes
+   * confondues. Pas de crédit ni d'XP là-dedans : on échange un objectif
+   * contre un autre, on ne gagne rien. Rend le résultat du module tel quel
+   * pour que l'écran puisse dire pourquoi il refuse.
+   */
+  const remplacerUneQuete = useCallback((queteId) => {
+    const avant = etatRef.current;
+    const resultat = remplacerQuete({
+      etat: avant.quetes,
+      queteId,
+      graine: chargerGraine(compteId),
+      progression: progressionRef.current,
+    });
+    if (!resultat.ok) return resultat;
+    appliquer(avant.bourse, resultat.etat, avant.profil);
+    pousser();
+    return resultat;
+  }, [appliquer, pousser, compteId]);
+
+  /**
    * Achète et ouvre un paquet (ou un coffret de dix) : les crédits sont
    * débités, les cinq cartes rejoignent le portefeuille, les doublons sont
    * remboursés, la pitié avance — et « Ouvrir le comptoir » avance d'un cran.
@@ -543,6 +564,87 @@ export function useSablierBourse({
 
   /** Le coffret : dix paquets du comptoir, une mythique assurée. */
   const acheterCoffret = useCallback((rayonId) => acheter(rayonId, { coffret: true }), [acheter]);
+
+  /**
+   * Les paquets d'un **coffre de quête** (cycle, semaine) — `rpgCoffresQuetes.js`
+   * dit combien chaque genre en offre. Ce sont de vrais paquets offerts
+   * (`ouvrirBoosterOffert`) : aucun crédit débité, la pitié avance, les doublons
+   * remboursent, et l'ouverture est un geste du contrat d'événements — les
+   * quêtes du jour et la barre d'XP la voient comme n'importe quel paquet.
+   *
+   * Trois garde-fous, les mêmes que pour la dette des paliers :
+   *
+   *   - jamais deux cérémonies à la fois : si un paquet se retourne encore, on
+   *     rend `0` et le coffre garde ses crédits seuls ;
+   *   - le rayon est tiré **à chaque paquet**, au hasard parmi les rayons
+   *     ouverts — un joueur dont le comptoir est fermé n'a pas de cartes, et
+   *     l'écran le dit au lieu de promettre un paquet qui ne vient pas ;
+   *   - la dette des paliers (`boostersDus`) n'est **pas** touchée : ce paquet
+   *     est un butin de coffre, pas une récompense de niveau.
+   *
+   * Rend le nombre de paquets réellement ouverts (0 si aucun).
+   */
+  const ouvrirPaquetCoffre = useCallback((nombre = 1, nom = 'Coffre de quêtes') => {
+    const demandes = Math.max(0, Math.floor(Number(nombre) || 0));
+    if (!demandes) return 0;
+    if (ouvertureRef.current || monteeRef.current) return 0;
+    const avant = etatRef.current;
+    const collection = collectionJoueur({
+      acquis: chargerAcquis(),
+      distante: chargerCollectionDistante(),
+      souk: avant.bourse.cartes,
+    });
+    const rayons = rayonsOuverts(progressionRef.current, collection);
+    if (!rayons.length) return 0;
+
+    let portefeuille = avant.bourse;
+    const paquets = [];
+    const rayonsTires = [];
+    for (let index = 0; index < demandes; index += 1) {
+      const rayon = tirerParmi(rayons, rngRef.current);
+      const offert = ouvrirBoosterOffert({
+        portefeuille,
+        rayonId: rayon?.rayon?.id ?? null,
+        progression: progressionRef.current,
+        collection,
+        rng: rngRef.current,
+      });
+      if (!offert.ok) break;
+      portefeuille = offert.portefeuille;
+      paquets.push(offert.tirage);
+      rayonsTires.push(rayon?.rayon?.id ?? null);
+    }
+    if (!paquets.length) return 0;
+
+    // L'ouverture fait avancer les quêtes et l'XP, comme un achat au comptoir.
+    let suite = { bourse: portefeuille, quetes: avant.quetes, profil: avant.profil };
+    for (const rayonId of rayonsTires) {
+      suite = appliquerEvenementDuel(suite, { type: 'booster-ouvert', rayonId });
+    }
+    const cartes = paquets.flatMap((paquet) => paquet.details ?? []);
+    ouvertureRef.current = {
+      offert: true,
+      coffre: true,
+      // Le nom du coffre, pour que la cérémonie dise d'où viennent les cartes :
+      // un paquet de quête n'est pas un palier de niveau franchi.
+      coffreNom: nom,
+      rayonId: rayonsTires[0],
+      coffret: false,
+      paquets: paquets.length,
+      prix: 0,
+      cartes,
+      remboursement: paquets.reduce((somme, paquet) => somme + (paquet.remboursement ?? 0), 0),
+      nouvelles: cartes.filter((carte) => !carte.doublon).length,
+      mythique: paquets.some((paquet) => paquet.mythique),
+    };
+    // Les cartes sont écrites avant la cérémonie : fermer l'onglet en plein
+    // retournement ne coûte rien, comme partout ailleurs dans le Souk.
+    appliquer(suite.bourse, suite.quetes, suite.profil);
+    setOuverture(ouvertureRef.current);
+    pousser();
+    onCartesRangees?.();
+    return paquets.length;
+  }, [appliquer, pousser, onCartesRangees]);
 
   /** Une carte de l'étal quotidien : un débit, un exemplaire, zéro tirage. */
   const acheterCarteDirecte = useCallback((cardId) => {
@@ -812,11 +914,13 @@ export function useSablierBourse({
     statutSync,
     noterEvenementDuel,
     reclamerUneQuete,
+    remplacerUneQuete,
     reclamerTutoriel,
     reclamerLeCachet,
     reclamerLeCachetDeLaSemaine,
     acheterBooster,
     acheterCoffret,
+    ouvrirPaquetCoffre,
     rangerCoffret,
     acheterCarteDirecte,
     acheterIllustration,

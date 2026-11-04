@@ -13,7 +13,7 @@ import { JSDOM } from 'jsdom';
  *   portant que son titre.
  * - À droite en haut : grande vitrine illustrée du Sablier de Bab El.
  * - En dessous sur toute la largeur : la rampe horizontale des quêtes du jour
- *   en médaillons dorés + capsules d'objectif.
+ *   en coffres à ouvrir, gain à droite et objectif dessous.
  * - La page d'accueil reste non scrollable (`100dvh`, `overflow: hidden`), la
  *   progression d'XP vit dans son onglet dédié, et la barre verticale à gauche
  *   conserve ses boutons 3D et son bouton « Jouer » à dégradé animé.
@@ -25,6 +25,8 @@ const icones = lire('../src/games/RpgModeIcon.jsx');
 const battleCss = lire('../src/games/rpg-battle.css');
 const tutorialCss = lire('../src/games/rpg-tutorial.css');
 const quetesCss = lire('../src/games/rpg-quetes-jour.css');
+const quetesJsx = lire('../src/games/RpgQuetesDuJour.jsx');
+const coffreCss = lire('../src/games/rpg-coffre-dore.css');
 
 const actions = page.slice(
   page.indexOf('className="rpg-mode-menu__hero-actions"'),
@@ -136,8 +138,15 @@ test('modes empilés l’un au-dessus de l’autre en largeur et bouton Jouer al
     'les quêtes du jour sont placées en dessous sur toute la largeur plutôt qu’à droite');
   assert.match(quetesCss, /\.rpg-quests-jour__liste\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/s,
     'les trois quêtes du jour s’alignent horizontalement côte à côte');
-  assert.match(quetesCss, /\.rpg-quests-jour__medaillon\s*\{[^}]*border-radius:\s*50%;/s,
-    'chaque quête s’affiche avec son médaillon circulaire de récompense');
+  // La récompense n'est plus un médaillon de compte mais un coffre doré à
+  // ouvrir : le volume est peint dans le SVG, la profondeur vient d'une
+  // transformation 3D posée sur le dessin.
+  assert.match(coffreCss, /\.rpg-coffre-dore\s*\{[^}]*perspective:\s*\d+px;/s,
+    'le coffre doré vit dans un espace en perspective');
+  assert.match(coffreCss, /\.rpg-coffre-dore__dessin\s*\{[^}]*transform:\s*rotateX\([^)]*\)\s*rotateY\([^)]*\);/s,
+    'le dessin du coffre est penché en 3D');
+  assert.match(quetesJsx, /<RpgCoffreDore/, 'l’accueil monte le coffre doré pour les quêtes du jour');
+  assert.doesNotMatch(quetesJsx, /rpg-quests-jour__medaillon/, 'le médaillon circulaire a laissé la place au coffre');
 });
 
 test('groupes échangés, onglet dédié Progression d’XP, accueil non scrollable et bouton « Jouer » texte seul à dégradé animé', () => {
@@ -217,7 +226,7 @@ test('groupes échangés, onglet dédié Progression d’XP, accueil non scrolla
 
 test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3D et bouton Jouer animé', () => {
   const profilCss = lire('../src/games/rpg-profil.css');
-  const dom = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${profilCss}\n${tutorialCss}\n${quetesCss}</style></head><body>
+  const dom = new JSDOM(`<!doctype html><html><head><style>${battleCss}\n${profilCss}\n${tutorialCss}\n${quetesCss}\n${coffreCss}</style></head><body>
     <section class="rpg-mode-menu rpg-mode-menu--jouer">
       <div class="rpg-mode-menu__content">
         <header class="rpg-mode-menu__header">
@@ -251,7 +260,7 @@ test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3
           <aside class="rpg-quests-jour">
             <div class="rpg-quests-jour__rail">
               <ul class="rpg-quests-jour__liste">
-                <li class="rpg-quests-jour__quete is-encours"><div class="rpg-quests-jour__corps"><div class="rpg-quests-jour__medaillon"></div><div class="rpg-quests-jour__capsule"></div></div></li>
+                <li class="rpg-quests-jour__quete is-encours"><div class="rpg-quests-jour__corps"><div class="rpg-coffre-dore is-encours is-gain-droite"></div></div><div class="rpg-quests-jour__capsule"></div></li>
               </ul>
             </div>
           </aside>
@@ -285,7 +294,7 @@ test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3
       'les quêtes flottent sans fond derrière le conteneur',
     );
     assert.equal(style('.rpg-quests-jour').backgroundImage, 'none');
-    assert.equal(style('.rpg-quests-jour__medaillon').borderRadius, '50%');
+    assert.equal(style('.rpg-coffre-dore').perspective, '340px');
 
     const boutons = [...doc.querySelectorAll('.rpg-mode-menu__switch > button')];
     assert.deepEqual(
@@ -367,4 +376,32 @@ test('les modes précèdent le diaporama dans le DOM et sur les petits écrans',
   const paysage = battleCss.slice(battleCss.indexOf('@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px)'));
   assert.match(paysage, /rpg-mode-menu__modes-col\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/s);
   assert.match(paysage, /rpg-mode-menu__hero\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
+});
+
+test('rampe bureau : changer une quête est proposé une fois par jour, hors de la jauge', () => {
+  const jsx = lire('../src/games/RpgQuetesDuJour.jsx');
+  const css = lire('../src/games/rpg-quetes-jour.css');
+
+  // Le droit vient du module, pas d'un compteur refait à la main dans l'écran.
+  assert.match(jsx, /remplacementDisponible\(quetes\)/);
+  assert.match(jsx, /onRemplacerQuete/);
+  // On ne le propose que sur une quête encore en cours : ni un coffre déjà
+  // payé, ni un coffre prêt qu'on serait tenté de jeter.
+  assert.match(jsx, /const changeable = etat === 'encours'/);
+  assert.match(jsx, /disabled=\{!peutRemplacer\}/);
+  assert.match(jsx, /data-jouer-remplacer=\{id\}/);
+
+  // Un `progressbar` ne doit pas contenir de commande : le bouton est posé
+  // après la jauge, en frère, et la place lui est réservée dans la piste.
+  const jauge = jsx.slice(jsx.indexOf('className="rpg-quests-jour__jauge"'), jsx.indexOf('data-jouer-remplacer'));
+  assert.match(jauge, /<\/div>/, 'la jauge est refermée avant le bouton');
+  assert.match(css, /\.has-remplacement \.rpg-quests-jour__jauge \{ padding-right: \d+px; \}/);
+  assert.match(css, /\.rpg-quests-jour__quete \{[^}]*position: relative;/);
+
+  // Épuisé, le bouton reste visible mais inerte — le joueur voit que le droit
+  // existe et qu'il l'a consommé.
+  const inerte = css.slice(css.indexOf('.rpg-quests-jour__remplacer:disabled'));
+  assert.match(inerte, /cursor: not-allowed/);
+  // Le glyphe est un SVG inline : les caractères non ASCII rendent à vide.
+  assert.match(jsx, /data-jouer-remplacer[\s\S]{0,900}<svg viewBox="0 0 24 24"/);
 });

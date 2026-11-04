@@ -1,8 +1,7 @@
 /* ── Rampe horizontale des quêtes du jour (en bas de l'accueil « Jouer ») ────
-   Inspirée de la rampe inférieure de MTG Arena : trois médaillons d'or avec
-   anneau d'avancement circulaire + capsule sombre d'objectif côte à côte,
-   suivis sur la même ligne du Cachet du cycle et de la Bourse du Souk, posés
-   au-dessus d'un socle d'encadrement gravé. */
+   Chaque quête est une petite colonne : la fraction d'avancement, le coffre et
+   son gain côte à côte, puis l'objectif en toutes lettres dessous. À droite de
+   la rampe, le Cachet du cycle et le Coffre de la semaine. */
 
 .rpg-quests-jour {
   position: relative;
@@ -49,10 +48,55 @@
 }
 
 .rpg-quests-jour__quete {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+/* La place du bouton est réservée dans la jauge : sans ça, la piste passerait
+   dessous et le dernier chiffre de la fraction serait mangé. */
+.rpg-quests-jour__quete.has-remplacement .rpg-quests-jour__jauge { padding-right: 28px; }
+
+/* ── Changer une quête, une fois par jour ──────────────────────────────────
+   Petit, dans le coin haut droit : c'est une porte de sortie, pas l'action
+   principale de la ligne. Épuisé, il reste visible mais inerte — le joueur
+   voit que le droit existe et qu'il l'a consommé, plutôt que de se demander
+   où le bouton est passé. */
+.rpg-quests-jour__remplacer {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(214, 189, 138, .42);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(58, 48, 34, .92), rgba(26, 21, 15, .92));
+  color: #e2c68a;
+  cursor: pointer;
+  transition: color .16s, border-color .16s, transform .16s;
+}
+.rpg-quests-jour__remplacer svg { width: 14px; height: 14px; }
+.rpg-quests-jour__remplacer:hover:not(:disabled),
+.rpg-quests-jour__remplacer:focus-visible {
+  border-color: #ffe9ad;
+  color: #fff3d0;
+  transform: rotate(-38deg);
+  outline: none;
+}
+.rpg-quests-jour__remplacer:disabled {
+  border-color: rgba(158, 152, 142, .26);
+  background: linear-gradient(180deg, rgba(40, 38, 34, .8), rgba(20, 19, 17, .8));
+  color: #6f6a62;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-quests-jour__remplacer { transition: none; }
+  .rpg-quests-jour__remplacer:hover:not(:disabled),
+  .rpg-quests-jour__remplacer:focus-visible { transform: none; }
 }
 
 /* Fraction d'avancement centrée au-dessus du médaillon (façon « 28/45 ») */
@@ -87,74 +131,30 @@
   transition: width .35s ease;
 }
 
-/* Médaillon circulaire à gauche + capsule sombre glissée derrière à droite */
+/* Le coffre et son gain, côte à côte et centrés dans la colonne. L'objectif,
+   lui, est descendu sous le coffre : il a désormais toute la largeur. */
 .rpg-quests-jour__corps {
   position: relative;
   display: flex;
   align-items: center;
-  min-width: 0;
-}
-
-.rpg-quests-jour__medaillon {
-  position: relative;
-  z-index: 2;
-  flex: none;
-  width: 58px;
-  height: 58px;
-  padding: 3px;
-  border-radius: 50%;
-  box-sizing: border-box;
-  background:
-    conic-gradient(from -90deg, #ffb43b 0 var(--q-pct, 0%), rgba(255, 238, 198, .18) var(--q-pct, 0%) 100%);
-  box-shadow:
-    0 6px 16px rgba(0, 0, 0, .68),
-    0 0 0 1px rgba(10, 8, 7, .88);
-}
-
-.rpg-quests-jour__medaillon-coeur {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 1px;
-  border: 1px solid rgba(255, 231, 168, .55);
-  box-sizing: border-box;
-  background:
-    radial-gradient(circle at 35% 26%, rgba(255, 230, 152, .46), rgba(188, 128, 36, .34) 48%, rgba(36, 23, 10, .96) 100%);
-  box-shadow: inset 0 2px 5px rgba(255, 244, 206, .34), inset 0 -3px 6px rgba(0, 0, 0, .65);
-  color: #fff6dc;
-}
-.rpg-quests-jour__medaillon-coeur .rpg-credit {
-  font-size: 14px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .8));
-}
-.rpg-quests-jour__medaillon-coeur strong {
-  font: 900 16px/1 Georgia, 'Times New Roman', serif;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.01em;
-  color: #fffaf0;
-  text-shadow: 0 2px 5px rgba(0, 0, 0, .95), 0 0 8px rgba(0, 0, 0, .75);
+  min-width: 0;
 }
 
 .rpg-quests-jour__capsule {
   position: relative;
   z-index: 1;
-  flex: 1 1 auto;
   min-width: 0;
-  min-height: 46px;
-  margin-left: -18px;
-  padding: 6px 12px 6px 26px;
+  min-height: 34px;
+  padding: 6px 11px;
   border: 1px solid rgba(236, 219, 183, .2);
-  border-radius: 0 999px 999px 0;
+  border-radius: 12px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: linear-gradient(90deg, rgba(11, 12, 16, .92), rgba(18, 20, 27, .84));
+  background: linear-gradient(180deg, rgba(11, 12, 16, .92), rgba(18, 20, 27, .84));
   box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .06);
   transition: border-color .22s ease, background .22s ease;
 }
@@ -162,16 +162,12 @@
 .rpg-quests-jour__quete.is-encours .rpg-quests-jour__capsule {
   border-color: rgba(214, 186, 128, .26);
 }
-.rpg-quests-jour__quete.is-terminee .rpg-quests-jour__medaillon {
-  background: conic-gradient(#ffd46b 0 100%);
-  box-shadow: 0 0 18px rgba(246, 184, 62, .52), 0 6px 16px rgba(0, 0, 0, .7);
-}
 .rpg-quests-jour__quete.is-terminee .rpg-quests-jour__capsule {
   border-color: rgba(243, 196, 94, .68);
-  background: linear-gradient(90deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
+  background: linear-gradient(180deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
 }
 .rpg-quests-jour__quete.is-reclamee {
-  opacity: .56;
+  opacity: .78;
 }
 
 .rpg-quests-jour__quete-texte {
@@ -196,20 +192,6 @@
   white-space: nowrap;
 }
 
-.rpg-quests-jour__reclamer {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 44px;
-  padding: 6px 11px;
-  border-radius: 999px;
-  font-size: 11px;
-  white-space: nowrap;
-}
-.rpg-quests-jour__reclamer .rpg-credit { font-size: 1.12em; }
-
 /* ── Jalons de droite : Cachet du cycle + Série & Bourse du Souk ──────────── */
 .rpg-quests-jour__jalons {
   display: flex;
@@ -219,7 +201,7 @@
 }
 
 .rpg-quests-jour__cachet,
-.rpg-quests-jour__etape-souk {
+.rpg-quests-jour__semaine {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -237,108 +219,10 @@
   white-space: nowrap;
 }
 
-.rpg-quests-jour__jeton {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.rpg-quests-jour__medaillon--cachet {
-  width: 54px;
-  height: 54px;
-}
-.rpg-quests-jour__cachet.is-pris .rpg-quests-jour__medaillon--cachet {
-  opacity: .56;
-}
-.rpg-quests-jour__jeton-sous {
-  color: rgba(244, 226, 188, .72);
-  font: 800 8.5px/1 var(--mono, monospace);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-.rpg-quests-jour__jeton-btn {
-  flex-direction: column;
-  gap: 1px;
-  width: 58px;
-  height: 58px;
-  min-height: 44px;
-  padding: 4px;
-  border-radius: 50%;
-  animation: rpg-quests-jour-appel 2.8s ease-in-out infinite;
-}
-@keyframes rpg-quests-jour-appel {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 193, 84, .42), 0 6px 16px rgba(0, 0, 0, .65); }
-  50% { box-shadow: 0 0 0 7px rgba(245, 193, 84, 0), 0 6px 16px rgba(0, 0, 0, .65); }
-}
-
-.rpg-quests-jour__semaine {
-  min-height: 44px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-}
-
-/* Bouton Bourse & Souk : sceau doré + solde + flèche */
+/* L'icône du marchand : la rampe ne la porte plus, mais l'onglet Souk de
+   la barre latérale oui, et c'est cette feuille qui la dimensionne. */
 .rpg-market { width: 1.15em; height: 1.15em; flex: none; }
 
-.rpg-quests-jour__souk {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 5px 14px 5px 7px;
-  border: 1px solid rgba(235, 196, 112, .42);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(42, 30, 15, .94), rgba(16, 14, 16, .94));
-  color: #ffe7af;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .52), inset 0 1px 0 rgba(255, 240, 196, .16);
-}
-.rpg-quests-jour__souk:hover,
-.rpg-quests-jour__souk:focus-visible {
-  border-color: rgba(255, 219, 138, .82);
-  background: linear-gradient(135deg, rgba(64, 45, 19, .96), rgba(24, 19, 16, .96));
-}
-.rpg-quests-jour__souk-sceau {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 224, 150, .48);
-  background: radial-gradient(circle at 35% 30%, rgba(245, 196, 94, .42), rgba(54, 34, 12, .94));
-  color: #ffe8b0;
-  font-size: 16px;
-}
-.rpg-quests-jour__souk-texte {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  text-align: left;
-}
-.rpg-quests-jour__solde-mini {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  color: #fff2cc;
-  white-space: nowrap;
-}
-.rpg-quests-jour__solde-mini .rpg-credit { font-size: 13px; }
-.rpg-quests-jour__solde-mini strong {
-  font: 800 13.5px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-.rpg-quests-jour__souk-lien {
-  color: rgba(242, 214, 152, .8);
-  font: 800 9px/1 var(--mono, monospace);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
 
 @media (max-width: 1080px) {
   .rpg-quests-jour__rail {
@@ -355,11 +239,6 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
   }
-  .rpg-quests-jour__medaillon {
-    width: 44px;
-    height: 44px;
-  }
-  .rpg-quests-jour__medaillon-coeur strong { font-size: 13px; }
   .rpg-quests-jour__capsule {
     min-height: 38px;
     padding: 4px 10px 4px 22px;
@@ -367,8 +246,26 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rpg-quests-jour__jeton-btn,
-  .rpg-quests-jour__cachet.is-pret { animation: none; }
   .rpg-quests-jour__jauge-remplie,
   .rpg-quests-jour__capsule { transition: none; }
+}
+
+/* Le coffre doré remplace le médaillon : la capsule d'objectif se resserre
+   pour lui laisser sa largeur, et l'invitation à ouvrir prend la place du
+   bouton « Réclamer ». */
+.rpg-quests-jour__ouvre {
+  flex: none;
+  margin: 2px 0 0;
+  white-space: nowrap;
+  color: #ffd97a;
+  font: 800 11px/1.2 var(--font-gaming, inherit);
+  letter-spacing: .02em;
+  animation: rpg-quests-jour-ouvre 1.9s ease-in-out infinite;
+}
+@keyframes rpg-quests-jour-ouvre {
+  0%, 100% { opacity: .72; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-quests-jour__ouvre { animation: none; }
 }

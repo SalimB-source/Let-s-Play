@@ -72,6 +72,7 @@ export function etatQuetesVide() {
   return {
     version: 1, jour: null, quetes: [], progres: {}, reclamations: [],
     cachet: false, semaine: false, serie: 0, majLe: null, debutLe: null,
+    remplacement: null,
   };
 }
 
@@ -227,6 +228,15 @@ export function normaliserEtatQuetes(value) {
   const majLe = typeof brut.majLe === 'string' ? brut.majLe : null;
   const brutDebut = typeof brut.debutLe === 'string' ? brut.debutLe : null;
   const debutLe = brutDebut && !Number.isNaN(Date.parse(brutDebut)) ? brutDebut : null;
+  // Le remplacement du jour : un seul, et il doit raconter la même histoire
+  // que la fournée — l'ancienne quête a bien quitté le tirage, la nouvelle y
+  // est bien. Sans ce contrôle, un état bricolé rendrait le reroll infini.
+  const brutRemplacement = brut.remplacement && typeof brut.remplacement === 'object' ? brut.remplacement : null;
+  const remplacement = brutRemplacement
+    && QUETE_PAR_ID.has(brutRemplacement.de) && QUETE_PAR_ID.has(brutRemplacement.vers)
+    && quetes.includes(brutRemplacement.vers) && !quetes.includes(brutRemplacement.de)
+    ? { de: brutRemplacement.de, vers: brutRemplacement.vers }
+    : null;
   return {
     version: 1,
     jour,
@@ -238,6 +248,7 @@ export function normaliserEtatQuetes(value) {
     serie,
     majLe,
     debutLe,
+    remplacement,
   };
 }
 
@@ -282,6 +293,8 @@ export function ouvrirJournee({ etat, jour, graine = null, progression = null, h
     serie: suite ? base.serie + 1 : 1,
     majLe: maintenantIso,
     debutLe: maintenantIso,
+    // Le droit de changer une quête se recharge avec la fournée.
+    remplacement: null,
   };
   return { etat: maj, nouveau: true, quetes, retirees: [] };
 }
@@ -473,6 +486,58 @@ export function reclamerQuete(etat, queteId, horloge = Date.now()) {
   };
 }
 
+/** Le joueur peut-il encore changer une quête aujourd'hui ? */
+export function remplacementDisponible(etat) {
+  return !normaliserEtatQuetes(etat).remplacement;
+}
+
+/**
+ * Change **une** quête du jour, **une seule fois par journée** — le droit est
+ * partagé par les trois quêtes, pas un par quête.
+ *
+ * La remplaçante est du **même palier** : on échange un objectif contre un
+ * autre de même difficulté, jamais une quête facile contre une difficile.
+ * Elle est tirée par graine sur `(jour, graine, quête remplacée)` : le même
+ * reroll donne le même résultat sur tous les appareils du compte, et vider le
+ * stockage ne relance pas le dé.
+ *
+ * Deux garde-fous :
+ * - une quête **déjà réclamée** ne se change pas — sinon le reroll offrirait
+ *   une quatrième récompense sur une journée qui n'en compte que trois ;
+ * - `debutLe` ne bouge pas : la nouvelle quête hérite de l'échéance de la
+ *   fournée. Changer de quête ne rachète pas 24 heures.
+ *
+ * Rend `{ ok, raison, etat, quete }`. Un refus ne touche à rien.
+ */
+export function remplacerQuete({ etat, queteId, graine = null, progression = null, horloge = Date.now() } = {}) {
+  const base = normaliserEtatQuetes(etat);
+  if (base.remplacement) return { ok: false, raison: 'deja-utilise', etat: base, quete: null };
+  const quete = QUETE_PAR_ID.get(queteId);
+  if (!quete || !base.quetes.includes(queteId)) return { ok: false, raison: 'quete-inconnue', etat: base, quete: null };
+  if (base.reclamations.includes(queteId)) return { ok: false, raison: 'deja-reclamee', etat: base, quete: null };
+  if (estQueteExpiree(base, queteId, horloge)) return { ok: false, raison: 'expiree', etat: base, quete: null };
+  const pool = quetesDisponibles(progression)
+    .filter((candidate) => candidate.palier === quete.palier && !base.quetes.includes(candidate.id));
+  if (!pool.length) return { ok: false, raison: 'aucune-autre-quete', etat: base, quete: null };
+  const rng = rngSeme(graineNumerique(`sablier-quetes-remplacement:${base.jour}:${graine ?? 'sans-compte'}:${queteId}`));
+  const nouvelle = tirerParmi(pool, rng);
+  const progres = { ...base.progres };
+  delete progres[queteId];
+  progres[nouvelle.id] = 0;
+  return {
+    ok: true,
+    raison: null,
+    quete: nouvelle,
+    etat: {
+      ...base,
+      quetes: base.quetes.map((id) => (id === queteId ? nouvelle.id : id)),
+      progres,
+      remplacement: { de: queteId, vers: nouvelle.id },
+      majLe: new Date(horloge).toISOString(),
+    },
+  };
+}
+
 /** Réclame le Cachet du cycle, une seule fois par journée, les trois quêtes payées. */
 export function reclamerCachetDuCycle(etat) {
   const base = normaliserEtatQuetes(etat);
@@ -498,7 +563,14 @@ export function fusionnerQuetes(local, distant) {
   const jour = (ici.jour ?? '') >= (la.jour ?? '') ? ici.jour : la.jour;
   const plusRecent = jour === la.jour && jour !== ici.jour ? la : ici;
   const memeJour = Boolean(jour) && ici.jour === la.jour;
-  const quetes = memeJour ? [...new Set([...ici.quetes, ...la.quetes])] : plusRecent.quetes;
+  const remplacement = memeJour ? (ici.remplacement ?? la.remplacement) : plusRecent.remplacement;
+  let quetes = memeJour ? [...new Set([...ici.quetes, ...la.quetes])] : plusRecent.quetes;
+  if (remplacement) {
+    // L'appareil qui n'avait pas encore rerollé rapporte l'ancienne quête dans
+    // l'union : on la retire, et on s'assure que sa remplaçante est bien là.
+    quetes = quetes.filter((id) => id !== remplacement.de);
+    if (!quetes.includes(remplacement.vers)) quetes = [...quetes, remplacement.vers];
+  }
   const progres = {};
   for (const id of quetes) {
     progres[id] = memeJour ? Math.max(ici.progres[id] ?? 0, la.progres[id] ?? 0) : (plusRecent.progres[id] ?? 0);
@@ -525,6 +597,7 @@ export function fusionnerQuetes(local, distant) {
     serie: Math.max(ici.serie, la.serie),
     majLe: (ici.majLe ?? '') >= (la.majLe ?? '') ? ici.majLe : la.majLe,
     debutLe,
+    remplacement,
   };
   const modifie = JSON.stringify(fusion) !== JSON.stringify(ici);
   return { etat: fusion, modifie };

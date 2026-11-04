@@ -1,0 +1,581 @@
+/* Le coffre de quête de la rampe (accueil du bureau).
+   ─────────────────────────────────────────────────────────────────────────
+   Un vrai volume en 3D CSS : la caisse et le couvercle sont deux boîtes de
+   faces positionnées dans l'espace, sous une perspective. Le curseur incline
+   l'objet, et l'on voit alors réellement un autre flanc.
+
+   Le parti pris graphique : un cadre sombre qui cerne un panneau clair bombé,
+   des angles arrondis, des clous aux coins et un large blason de serrure. Le
+   couvercle déborde la caisse — c'est ce débord qui fait lire « coffre ».
+
+   Règle d'or : **aucun `filter` sur un maillon de la chaîne 3D**. Un filtre
+   aplatit le `transform-style: preserve-3d` et le cube redeviendrait une
+   carte. Les teintes d'état sont donc posées sur les faces, qui sont des
+   feuilles, et l'ombre portée est une ellipse à part — pas un drop-shadow.
+
+   La matière vient de `rpgCoffreMetal.js`, injectée en variables `--coffre-*`
+   par le composant ; le halo et la plaquette s'accordent au métal. */
+
+.rpg-coffre-dore {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: default;
+  /* La perspective vit sur le conteneur : les enfants se penchent dans le
+     même espace, sans que chacun ait sa propre fuite. */
+  perspective: 340px;
+
+  --c-largeur: 66px;
+  --c-profondeur: 58px;
+  --c-caisse: 42px;
+  --c-couvercle: 20px;
+  /* Le couvercle est un peu plus large et plus profond que la caisse. */
+  --c-debord: 8px;
+  /* Les faces débordent leur boîte de ce qu'il faut pour que leurs angles
+     arrondis se recouvrent : sans ça, le cube aurait des jours aux coins. */
+  --c-bave: 4px;
+  --c-arrondi: 13px;
+
+  --penche-x: 0deg;
+  --penche-y: 0deg;
+  --levee: 0px;
+  --ecaille: 1;
+
+  /* Repli si la palette n'est pas injectée : le coffre reste lisible, en or. */
+  --coffre-face-0: #fff6c4;
+  --coffre-face-1: #f7c944;
+  --coffre-face-2: #c08c14;
+  --coffre-face-3: #7a5205;
+  --coffre-cote-0: #9c6b0e;
+  --coffre-cote-1: #543703;
+  --coffre-dessus-0: #fffbcf;
+  --coffre-dessus-1: #ffd75e;
+  --coffre-dessus-2: #b8830f;
+  --coffre-bande-0: #fff8d8;
+  --coffre-bande-1: #dfa524;
+  --coffre-bande-2: #7d5406;
+  --coffre-reflet: #fffdf0;
+  --coffre-lueur-0: #fff6cf;
+  --coffre-lueur-1: #ffc23c;
+  --coffre-gemme-0: #ffd2d2;
+  --coffre-gemme-1: #e8434a;
+  --coffre-gemme-2: #8c1220;
+
+  --coffre-lueur: rgba(255, 206, 92, .62);
+  --coffre-plaque-bord: rgba(255, 226, 150, .55);
+  --coffre-plaque-texte: #ffe6a6;
+  --coffre-plaque-haut: rgba(58, 39, 8, .96);
+  --coffre-plaque-bas: rgba(24, 16, 4, .96);
+}
+
+/* ── Les métaux : ce qui entoure le coffre s'accorde à sa matière ────────── */
+.rpg-coffre-dore[data-coffre-metal='bronze'] {
+  --coffre-lueur: rgba(255, 158, 74, .62);
+  --coffre-plaque-bord: rgba(240, 186, 124, .55);
+  --coffre-plaque-texte: #ffd3a1;
+  --coffre-plaque-haut: rgba(56, 31, 10, .96);
+  --coffre-plaque-bas: rgba(25, 13, 4, .96);
+}
+.rpg-coffre-dore[data-coffre-metal='argent'] {
+  --coffre-lueur: rgba(198, 226, 255, .62);
+  --coffre-plaque-bord: rgba(206, 226, 246, .55);
+  --coffre-plaque-texte: #e4eefa;
+  --coffre-plaque-haut: rgba(38, 48, 60, .96);
+  --coffre-plaque-bas: rgba(15, 20, 27, .96);
+}
+.rpg-coffre-dore[data-coffre-metal='or'] {
+  --coffre-lueur: rgba(255, 206, 92, .62);
+  --coffre-plaque-bord: rgba(255, 226, 150, .55);
+  --coffre-plaque-texte: #ffe6a6;
+  --coffre-plaque-haut: rgba(58, 39, 8, .96);
+  --coffre-plaque-bas: rgba(24, 16, 4, .96);
+}
+/* Le violet de la semaine : plus profond, plus saturé que les trois métaux. */
+.rpg-coffre-dore[data-coffre-metal='violet'] {
+  --coffre-lueur: rgba(184, 124, 255, .68);
+  --coffre-plaque-bord: rgba(206, 170, 255, .6);
+  --coffre-plaque-texte: #e6d4ff;
+  --coffre-plaque-haut: rgba(45, 24, 82, .96);
+  --coffre-plaque-bas: rgba(20, 10, 38, .96);
+}
+
+/* ── La scène : le cadre où le coffre est posé ───────────────────────────── */
+.rpg-coffre-dore__scene {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 96px;
+  height: 98px;
+  transform-style: preserve-3d;
+}
+
+.rpg-coffre-dore__ombre {
+  position: absolute;
+  left: 4px;
+  top: 84px;
+  width: 88px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, .62) 0%, rgba(0, 0, 0, .28) 55%, transparent 72%);
+}
+
+/* Le repos de l'objet : trois quarts arrière-droite, légèrement dessus. */
+.rpg-coffre-dore__dessin {
+  position: absolute;
+  left: 15px;
+  top: 19px;
+  width: var(--c-largeur);
+  height: calc(var(--c-caisse) + var(--c-couvercle));
+  transform: rotateX(-14deg) rotateY(-24deg);
+  transform-style: preserve-3d;
+}
+
+/* Ce que le curseur ajoute au repos. */
+.rpg-coffre-dore__cube {
+  position: absolute;
+  inset: 0;
+  transform: translateY(var(--levee)) rotateX(var(--penche-x)) rotateY(var(--penche-y)) scale(var(--ecaille));
+  transform-style: preserve-3d;
+  transition: transform .18s ease-out;
+}
+
+/* ── Les deux boîtes ─────────────────────────────────────────────────────── */
+.rpg-coffre-dore__caisse,
+.rpg-coffre-dore__couvercle {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.rpg-coffre-dore__caisse {
+  left: 0;
+  top: var(--c-couvercle);
+  width: var(--c-largeur);
+  height: var(--c-caisse);
+  --w: var(--c-largeur);
+  --h: var(--c-caisse);
+  --d: var(--c-profondeur);
+}
+.rpg-coffre-dore__couvercle {
+  left: calc(var(--c-debord) / -2);
+  top: 0;
+  width: calc(var(--c-largeur) + var(--c-debord));
+  height: var(--c-couvercle);
+  --w: calc(var(--c-largeur) + var(--c-debord));
+  --h: var(--c-couvercle);
+  --d: calc(var(--c-profondeur) + var(--c-debord));
+  /* La charnière est l'arête arrière-basse du couvercle : il bascule vers
+     l'arrière, comme un vrai coffre, au lieu de pivoter sur son centre. */
+  transform-origin: 50% 100% calc(var(--d) / -2);
+  transition: transform .34s cubic-bezier(.34, 1.4, .64, 1);
+}
+
+/* ── Les faces : un cadre sombre, et dedans un panneau clair bombé ───────── */
+.rpg-coffre-dore__face {
+  position: absolute;
+  left: calc(-1 * var(--c-bave));
+  top: calc(-1 * var(--c-bave));
+  display: block;
+  width: calc(var(--w) + 2 * var(--c-bave));
+  height: calc(var(--h) + 2 * var(--c-bave));
+  border-radius: var(--c-arrondi);
+  backface-visibility: hidden;
+  background: linear-gradient(180deg, var(--coffre-cote-0), var(--coffre-cote-1));
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35);
+  transition: filter .22s ease;
+}
+
+/* Le panneau incrusté : c'est lui qui donne le bombé et la couleur vive. */
+.rpg-coffre-dore__face::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: calc(var(--c-arrondi) - 5px);
+  background: linear-gradient(165deg, var(--coffre-face-0) 0%, var(--coffre-face-1) 40%, var(--coffre-face-2) 100%);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, .5),
+    inset 0 -3px 5px rgba(0, 0, 0, .28),
+    0 1px 2px rgba(0, 0, 0, .3);
+}
+
+.rpg-coffre-dore__face--avant { transform: translateZ(calc(var(--d) / 2)); }
+.rpg-coffre-dore__face--arriere { transform: rotateY(180deg) translateZ(calc(var(--d) / 2)); }
+.rpg-coffre-dore__face--droite,
+.rpg-coffre-dore__face--gauche {
+  width: calc(var(--d) + 2 * var(--c-bave));
+  left: calc((var(--w) - var(--d)) / 2 - var(--c-bave));
+}
+.rpg-coffre-dore__face--droite { transform: rotateY(90deg) translateZ(calc(var(--w) / 2)); }
+.rpg-coffre-dore__face--gauche {
+  transform: rotateY(-90deg) translateZ(calc(var(--w) / 2));
+  filter: brightness(.8);
+}
+.rpg-coffre-dore__face--dessus {
+  height: calc(var(--d) + 2 * var(--c-bave));
+  top: calc((var(--h) - var(--d)) / 2 - var(--c-bave));
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+}
+/* Le dessus regarde le ciel : son panneau prend la palette la plus claire. */
+.rpg-coffre-dore__face--dessus::before {
+  background: linear-gradient(150deg, var(--coffre-dessus-0) 0%, var(--coffre-dessus-1) 45%, var(--coffre-dessus-2) 100%);
+}
+.rpg-coffre-dore__face--dessous,
+.rpg-coffre-dore__face--fond {
+  height: calc(var(--d) + 2 * var(--c-bave));
+  top: calc((var(--h) - var(--d)) / 2 - var(--c-bave));
+  transform: rotateX(-90deg) translateZ(calc(var(--h) / 2));
+  background: var(--coffre-face-3);
+}
+.rpg-coffre-dore__face--dessous::before,
+.rpg-coffre-dore__face--fond::before { background: var(--coffre-face-3); box-shadow: none; }
+
+/* ── Les ferrures, les clous, le blason, la gemme ────────────────────────── */
+.rpg-coffre-dore__ferrure {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 42%;
+  width: 16%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--coffre-bande-0) 0%, var(--coffre-bande-1) 45%, var(--coffre-bande-2) 100%);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+.rpg-coffre-dore__ferrure--g { left: 15%; }
+.rpg-coffre-dore__ferrure--d { left: auto; right: 15%; }
+
+.rpg-coffre-dore__traverse {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 3px;
+  height: 18%;
+  border-radius: 5px;
+  background: linear-gradient(180deg, var(--coffre-bande-0), var(--coffre-bande-1) 40%, var(--coffre-bande-2));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .45);
+}
+
+/* Quatre clous d'un coup : un seul nœud, quatre dégradés radiaux. */
+.rpg-coffre-dore__clous {
+  position: absolute;
+  inset: 8px;
+  background-image:
+    radial-gradient(circle 4px at 4px 4px, var(--coffre-bande-0) 0%, var(--coffre-bande-1) 58%, var(--coffre-bande-2) 90%, transparent 100%),
+    radial-gradient(circle 4px at calc(100% - 4px) 4px, var(--coffre-bande-0) 0%, var(--coffre-bande-1) 58%, var(--coffre-bande-2) 90%, transparent 100%),
+    radial-gradient(circle 4px at 4px calc(100% - 4px), var(--coffre-bande-0) 0%, var(--coffre-bande-1) 58%, var(--coffre-bande-2) 90%, transparent 100%),
+    radial-gradient(circle 4px at calc(100% - 4px) calc(100% - 4px), var(--coffre-bande-0) 0%, var(--coffre-bande-1) 58%, var(--coffre-bande-2) 90%, transparent 100%);
+  background-repeat: no-repeat;
+}
+
+/* Le blason de serrure : large, en écu, posé à cheval sur la jointure. */
+.rpg-coffre-dore__serrure {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 28px;
+  height: 32px;
+  margin-left: -14px;
+  border-radius: 9px 9px 46% 46% / 9px 9px 36% 36%;
+  background: linear-gradient(170deg, var(--coffre-bande-0) 0%, var(--coffre-bande-1) 48%, var(--coffre-bande-2) 100%);
+  box-shadow:
+    0 0 0 1.5px var(--coffre-cote-1),
+    inset 0 1.5px 0 rgba(255, 255, 255, .6),
+    0 2px 4px rgba(0, 0, 0, .45);
+}
+.rpg-coffre-dore__serrure::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 6px 6px 44% 44% / 6px 6px 34% 34%;
+  background: linear-gradient(170deg, rgba(255, 255, 255, .3), rgba(0, 0, 0, .2));
+}
+.rpg-coffre-dore__trou {
+  position: absolute;
+  left: 50%;
+  top: 9px;
+  width: 7.5px;
+  height: 7.5px;
+  margin-left: -3.75px;
+  border-radius: 50%;
+  background: var(--coffre-cote-1);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .8);
+}
+.rpg-coffre-dore__trou::after {
+  content: '';
+  position: absolute;
+  left: 2.2px;
+  top: 5.5px;
+  width: 3px;
+  height: 9px;
+  border-radius: 0 0 1px 1px;
+  background: var(--coffre-cote-1);
+}
+
+.rpg-coffre-dore__moraillon {
+  position: absolute;
+  left: 50%;
+  bottom: -2px;
+  width: 18px;
+  height: 12px;
+  margin-left: -9px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--coffre-bande-0), var(--coffre-bande-2));
+  box-shadow: 0 0 0 1px var(--coffre-cote-1), inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+
+.rpg-coffre-dore__gemme {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 19px;
+  height: 19px;
+  margin: -9.5px 0 0 -9.5px;
+  border-radius: 5px;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--coffre-gemme-0) 0%, var(--coffre-gemme-1) 50%, var(--coffre-gemme-2) 100%);
+  box-shadow: 0 0 0 1.5px var(--coffre-cote-1), inset 0 1px 0 rgba(255, 255, 255, .6);
+}
+.rpg-coffre-dore__gemme::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--coffre-reflet);
+  opacity: .9;
+}
+
+/* ── L'intérieur : la gueule du coffre, à la place du dessus ─────────────── */
+.rpg-coffre-dore__gueule {
+  position: absolute;
+  left: 3px;
+  top: calc((var(--h) - var(--d)) / 2 + 3px);
+  display: block;
+  width: calc(var(--w) - 6px);
+  height: calc(var(--d) - 6px);
+  border-radius: 6px;
+  transform: rotateX(90deg) translateZ(calc(var(--h) / 2));
+  background: radial-gradient(ellipse at 50% 42%, var(--coffre-face-2) 0%, var(--coffre-face-3) 46%, #1a1206 88%);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+.rpg-coffre-dore__lueur {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: radial-gradient(circle at 50% 50%, var(--coffre-lueur-0) 0%, var(--coffre-lueur-1) 38%, transparent 68%);
+  opacity: .8;
+}
+.rpg-coffre-dore__piece {
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, var(--coffre-bande-0), var(--coffre-bande-1) 55%, var(--coffre-bande-2));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .3);
+  transition: opacity .25s ease;
+}
+.rpg-coffre-dore__piece--1 { left: 7px; top: 13px; }
+.rpg-coffre-dore__piece--2 { left: 24px; top: 28px; }
+.rpg-coffre-dore__piece--3 { left: 39px; top: 11px; }
+
+/* ── Verrouillé : fermé, métal éteint ────────────────────────────────────── */
+/* ── La lueur épouse le coffre ─────────────────────────────────────────────
+   Pas de disque derrière : un `drop-shadow` posé sur chaque **face** suit le
+   tracé de cette face, et l'union des faces dessine le contour du volume.
+   La lueur s'incline donc avec le coffre au curseur, ce qu'un halo fixe ne
+   saurait pas faire.
+
+   Le filtre reste sur les feuilles `__face`, jamais sur `__scene`, `__dessin`
+   ou `__cube` : sur un ancêtre `preserve-3d` il aplatirait le cube. */
+.rpg-coffre-dore.is-encours .rpg-coffre-dore__face {
+  filter: saturate(.95) brightness(.88)
+    drop-shadow(0 0 4px var(--coffre-lueur)) drop-shadow(0 0 10px var(--coffre-lueur));
+}
+.rpg-coffre-dore.is-encours .rpg-coffre-dore__face--gauche {
+  filter: saturate(.95) brightness(.7)
+    drop-shadow(0 0 4px var(--coffre-lueur)) drop-shadow(0 0 10px var(--coffre-lueur));
+}
+/* Prêt : la lueur double, le coffre appelle le tap. */
+.rpg-coffre-dore.is-pret .rpg-coffre-dore__face {
+  filter: drop-shadow(0 0 5px var(--coffre-lueur)) drop-shadow(0 0 15px var(--coffre-lueur));
+}
+
+/* ── Prêt : entrouvert, halo, butin qui luit, il flotte ──────────────────── */
+.rpg-coffre-dore.is-pret .rpg-coffre-dore__couvercle { transform: rotateX(9deg); }
+.rpg-coffre-dore.is-pret .rpg-coffre-dore__gueule { opacity: 1; }
+.rpg-coffre-dore.is-pret .rpg-coffre-dore__scene { animation: rpg-coffre-dore-flotte 2.6s ease-in-out infinite; }
+
+/* ── Ouvert : vidé et grisé ────────────────────────────────────────────────
+   Le butin est en bourse : le coffre n'a plus rien à promettre. Il passe en
+   niveaux de gris, son intérieur est vide, et il rapetisse d'un cran en se
+   posant plus bas — c'est ce qui laisse la place au couvercle levé sans qu'il
+   aille toucher la barre d'avancement au-dessus. */
+.rpg-coffre-dore.is-ouvert { --ecaille: .84; --levee: 8px; }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__couvercle { transform: rotateX(38deg); }
+/* L'intérieur est vidé : plus une pièce, plus de lueur, et un creux sombre
+   qui se lit comme « il n'y a plus rien dedans ». */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__gueule {
+  opacity: 1;
+  filter: grayscale(1) brightness(.7);
+  background: radial-gradient(ellipse at 50% 40%, #3a352c 0%, #1a1814 55%, #0b0a08 92%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, .85);
+}
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__piece { opacity: 0; }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__lueur { opacity: 0; }
+/* Tout le métal passe en niveaux de gris — ferrures, blason et gemme compris,
+   puisqu'ils sont enfants de la face. */
+/* Ouvert : ni lueur ni couleur — le coffre est vide, il ne promet plus rien.
+   L'absence de `drop-shadow` ici est volontaire, pas un oubli. */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face { filter: grayscale(1) brightness(.82); }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face--gauche { filter: grayscale(1) brightness(.66); }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__ombre { opacity: .7; }
+
+/* ── Le curseur : l'objet se tourne vers lui et se soulève ───────────────── */
+.rpg-coffre-dore.is-cliquable { cursor: pointer; }
+.rpg-coffre-dore.is-verrouille { cursor: default; }
+.rpg-coffre-dore.is-cliquable:hover,
+.rpg-coffre-dore.is-cliquable:focus-visible { --levee: -4px; }
+.rpg-coffre-dore.is-cliquable:hover .rpg-coffre-dore__couvercle,
+.rpg-coffre-dore.is-cliquable:focus-visible .rpg-coffre-dore__couvercle { transform: rotateX(22deg); }
+.rpg-coffre-dore.is-cliquable:hover .rpg-coffre-dore__face,
+.rpg-coffre-dore.is-cliquable:focus-visible .rpg-coffre-dore__face { filter: brightness(1.1)
+    drop-shadow(0 0 6px var(--coffre-lueur)) drop-shadow(0 0 18px var(--coffre-lueur)); }
+.rpg-coffre-dore.is-cliquable:active { --levee: 1px; }
+.rpg-coffre-dore.is-cliquable:focus-visible { outline: 2px solid var(--coffre-plaque-texte); outline-offset: 3px; border-radius: 12px; }
+
+/* ── La gerbe : le clic fait jaillir les pièces ──────────────────────────── */
+.rpg-coffre-dore__gerbe {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 38px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.rpg-coffre-dore__eclat {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, var(--coffre-bande-0), var(--coffre-bande-1) 55%, var(--coffre-bande-2));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .3);
+  opacity: 0;
+}
+.rpg-coffre-dore.is-gerbe .rpg-coffre-dore__couvercle { transform: rotateX(72deg); }
+.rpg-coffre-dore.is-gerbe .rpg-coffre-dore__eclat {
+  animation: rpg-coffre-dore-jaillit .72s ease-out forwards;
+  animation-delay: calc(var(--i) * 42ms);
+}
+
+/* ── Verrouillé : la secousse dit « pas encore » ─────────────────────────── */
+.rpg-coffre-dore.is-secousse .rpg-coffre-dore__scene { animation: rpg-coffre-dore-secousse .4s ease; }
+.rpg-coffre-dore.is-secousse .rpg-coffre-dore__couvercle { transform: rotateX(4deg); }
+
+/* ── Le montant, sur une plaquette du même métal sous le coffre ─────────── */
+.rpg-coffre-dore__montant {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: -6px;
+  padding: 1px 8px;
+  border: 1px solid var(--coffre-plaque-bord);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--coffre-plaque-haut), var(--coffre-plaque-bas));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .6);
+  color: var(--coffre-plaque-texte);
+  font: 800 15px/1.35 var(--font-gaming, inherit);
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.rpg-coffre-dore__montant svg { width: 13px; height: 13px; display: block; }
+.rpg-coffre-dore__coche { color: #9fd07a; }
+
+.rpg-coffre-dore__sous {
+  color: rgba(233, 214, 176, .78);
+  font: 800 8.5px/1.2 var(--mono, monospace);
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+@keyframes rpg-coffre-dore-flotte {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes rpg-coffre-dore-secousse {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+@keyframes rpg-coffre-dore-jaillit {
+  0% { opacity: 0; transform: translate(0, 0) scale(.4); }
+  18% { opacity: 1; }
+  55% { opacity: 1; transform: translate(calc((var(--i) - 2.5) * 9px), -40px) scale(1); }
+  100% { opacity: 0; transform: translate(calc((var(--i) - 2.5) * 16px), -4px) scale(.7) rotate(200deg); }
+}
+
+/* ── Le gain à droite du coffre ────────────────────────────────────────────
+   Quand la description de la quête passe sous le coffre, le gain prend la
+   place laissée libre à droite et devient le second point focal : plus gros,
+   cerclé de métal, précédé de son « + ». Il n'est plus une étiquette sous le
+   dessin, c'est la promesse de la ligne. */
+.rpg-coffre-dore.is-gain-droite {
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  gap: 0;
+}
+
+.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant {
+  margin: 0 0 0 -10px;
+  padding: 6px 15px 6px 13px;
+  gap: 6px;
+  border-width: 1.5px;
+  font-size: 22px;
+  line-height: 1.15;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 19px; height: 19px; }
+.rpg-coffre-dore.is-gain-droite.is-pret .rpg-coffre-dore__montant {
+  box-shadow:
+    0 0 16px var(--coffre-lueur),
+    0 4px 12px rgba(0, 0, 0, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+
+/* ── Le gain grisé, une fois encaissé ──────────────────────────────────────
+   Placé après la variante « à droite » : même spécificité, c'est l'ordre qui
+   tranche, et c'est l'état ouvert qui doit avoir le dernier mot. */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__montant {
+  color: #9a958c;
+  border-color: rgba(158, 152, 142, .3);
+  background: linear-gradient(180deg, rgba(44, 42, 38, .95), rgba(20, 19, 17, .95));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+  filter: grayscale(1);
+}
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__coche { color: #8e8a82; }
+
+/* Le mouvement réduit garde le volume, les états et la lumière, et retire
+   l'animation. L'inclinaison au curseur est coupée côté composant. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-coffre-dore__scene,
+  .rpg-coffre-dore__eclat,
+  .rpg-coffre-dore__cube,
+  .rpg-coffre-dore__couvercle { animation: none !important; transition: none !important; }
+  .rpg-coffre-dore.is-gerbe .rpg-coffre-dore__eclat { opacity: 0; }
+}

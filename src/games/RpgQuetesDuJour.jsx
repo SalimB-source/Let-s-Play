@@ -1,27 +1,29 @@
 /**
  * Rampe inférieure des quêtes du jour dans l'accueil « Jouer ».
  *
- * Inspirée des médaillons alignés au bas de l'écran d'accueil : chaque quête
- * affiche sa fraction d'avancement au-dessus d'un médaillon doré circulaire
- * frappé de sa récompense, prolongé d'une capsule sombre donnant l'objectif
- * précis (ou le bouton d'encaissement dès qu'elle est prête). À droite sur la
- * même ligne vivent le Cachet du cycle, la série hebdomadaire et l'accès au
- * Souk avec le solde courant.
+ * Chaque quête affiche sa fraction d'avancement, puis le coffre et son gain
+ * côte à côte, puis l'objectif en toutes lettres sous le coffre. Le métal du
+ * coffre dit le gain ; à droite de la rampe vivent le Cachet du cycle et le
+ * Coffre de la semaine, en violet.
+ *
+ * Pas de raccourci vers le Souk ici : l'onglet Souk de la barre latérale porte
+ * déjà le solde et l'entrée, et la rampe n'a que faire d'un bouton de plus.
  *
  * Aucune arithmétique de quête ne vit ici : le composant lit `vueDeLaQuete` et
  * les barèmes partagés, et relaie les gestes du portefeuille.
  */
-import { GAINS, creditsLisible } from './rpgCredits.js';
+import { GAINS } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, PALIERS, cachetDeLaSemaineDisponible, cachetDisponible,
-  joursAvantLeCachetDeLaSemaine, quetesAReclamer, serieComplete, vueDeLaQuete,
+  joursAvantLeCachetDeLaSemaine, quetesAReclamer, remplacementDisponible, serieComplete, vueDeLaQuete,
 } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
-import RpgMarketIcon from './RpgMarketIcon.jsx';
+import RpgCoffreDore from './RpgCoffreDore.jsx';
+import { METAL_SEMAINE, libelleCoffre } from './rpgCoffreMetal.js';
 import './rpg-quetes-jour.css';
 
 /** Une quête du jour présentée en médaillon circulaire + capsule d'objectif. */
-function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
+function LigneQuete({ id, etatQuetes, onReclamer, onRemplacer, peutRemplacer, onPlaySfx }) {
   const vue = vueDeLaQuete(etatQuetes, id);
   if (!vue) return null;
   const { quete, progres, reste, pourcent, reclamee, terminee, etat } = vue;
@@ -30,10 +32,18 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
     const gagne = onReclamer?.(id);
     onPlaySfx?.(gagne ? 'bell' : 'erreur');
   };
+  // On ne propose le changement que sur une quête encore en cours : ni sur un
+  // coffre déjà ouvert (la récompense est payée), ni sur un coffre prêt (on ne
+  // jette pas un gain qui n'attend plus qu'un clic).
+  const changeable = etat === 'encours';
+  const remplacer = () => {
+    const resultat = onRemplacer?.(id);
+    onPlaySfx?.(resultat?.ok ? 'select' : 'erreur');
+  };
 
   return (
     <li
-      className={`rpg-quests-jour__quete is-${etat}`}
+      className={`rpg-quests-jour__quete is-${etat}${changeable ? ' has-remplacement' : ''}`}
       style={{ '--q-pct': `${pourcent}%` }}
       data-jouer-quete={id}
       data-jouer-quete-etat={etat}
@@ -53,52 +63,83 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
         </span>
       </div>
 
-      <div className="rpg-quests-jour__corps">
-        <div className="rpg-quests-jour__medaillon" aria-hidden="true">
-          <span className="rpg-quests-jour__medaillon-coeur">
-            <RpgCreditIcon />
-            <strong>{quete.recompense}</strong>
-          </span>
-        </div>
+      {changeable && (
+        <button
+          type="button"
+          className="rpg-quests-jour__remplacer"
+          data-jouer-remplacer={id}
+          data-jouer-remplacer-etat={peutRemplacer ? 'disponible' : 'epuise'}
+          disabled={!peutRemplacer}
+          onClick={remplacer}
+          title={peutRemplacer
+            ? `Changer cette quête contre une autre du même palier — une seule fois par jour.`
+            : 'Vous avez déjà changé une quête aujourd’hui. Recharge à la prochaine fournée.'}
+          aria-label={peutRemplacer
+            ? `Changer la quête « ${quete.titre} » contre une autre du même palier. Un seul changement par jour.`
+            : `Changement du jour déjà utilisé pour « ${quete.titre} ».`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            <path d="M20.5 3.2V9h-5.8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
 
-        <div className="rpg-quests-jour__capsule">
-          <span className="sr-only">
-            {quete.titre} ({palierLibelle}) — +{quete.recompense} crédits :
+      {/* Le coffre et son gain côte à côte : la récompense est le second
+          point focal de la ligne, à droite, en gros. */}
+      <div className="rpg-quests-jour__corps">
+        <RpgCoffreDore
+          etat={reclamee ? 'ouvert' : terminee ? 'pret' : 'encours'}
+          montant={quete.recompense}
+          gain="droite"
+          onClick={terminee && !reclamee ? reclamer : null}
+          title={
+            reclamee
+              ? `${quete.titre} — coffre ouvert, ${quete.recompense} crédits en bourse.`
+              : terminee
+                ? `Ouvrir le coffre : +${quete.recompense} crédits`
+                : `${quete.titre} (${palierLibelle}) — encore ${reste} pour ouvrir le coffre de ${quete.recompense} crédits.`
+          }
+          aria-label={`${quete.titre} (${palierLibelle}) — ${libelleCoffre(quete.recompense)}, ${quete.recompense} crédits${terminee && !reclamee ? ', à ouvrir' : ''}`}
+          {...(terminee && !reclamee ? { 'data-jouer-reclamer': id } : {})}
+        />
+      </div>
+
+      {/* L'objectif se lit sous le coffre, sur toute la largeur de la colonne :
+          le texte n'est plus serré derrière le dessin. */}
+      <div className="rpg-quests-jour__capsule">
+        <span className="sr-only">
+          {quete.titre} ({palierLibelle}) — +{quete.recompense} crédits :
+        </span>
+        <p className="rpg-quests-jour__quete-texte">{quete.texte}</p>
+        {reclamee ? (
+          <p className="rpg-quests-jour__pris" data-jouer-pris>Coffre ouvert</p>
+        ) : terminee ? (
+          <p className="rpg-quests-jour__ouvre">Ouvrez le coffre&nbsp;!</p>
+        ) : (
+          <span className="rpg-quests-jour__encore sr-only" data-jouer-reste={reste}>
+            {reste === 1 ? 'Encore 1.' : `Encore ${reste}.`}
           </span>
-          <p className="rpg-quests-jour__quete-texte">{quete.texte}</p>
-          {reclamee ? (
-            <p className="rpg-quests-jour__pris" data-jouer-pris>✓ Réclamée</p>
-          ) : terminee ? (
-            <button
-              type="button"
-              className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__reclamer"
-              data-jouer-reclamer={id}
-              title={`Encaisser ${quete.recompense} crédits`}
-              onClick={reclamer}
-            >
-              Réclamer {quete.recompense} <RpgCreditIcon />
-              <span className="sr-only">crédits</span>
-            </button>
-          ) : (
-            <span className="rpg-quests-jour__encore sr-only" data-jouer-reste={reste}>
-              {reste === 1 ? 'Encore 1.' : `Encore ${reste}.`}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </li>
   );
 }
 
 export default function RpgQuetesDuJour({
-  quetes, credits = 0,
-  onReclamerQuete, onReclamerCachet, onReclamerSemaine, onOuvrirSouk, onPlaySfx,
+  quetes,
+  onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onPlaySfx,
 }) {
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
   const prises = liste.filter((id) => vueDeLaQuete(quetes, id)?.reclamee).length;
+  // Un seul changement par journée, partagé par les trois quêtes.
+  const peutRemplacer = remplacementDisponible(quetes);
   const cachetPris = Boolean(quetes?.cachet);
   const cachetPret = cachetDisponible(quetes);
   const semainePrete = cachetDeLaSemaineDisponible(quetes);
+  // `semaine` est le drapeau « encaissé ». Sans lui, le coffre violet restait
+  // affiché « en cours » une fois réclamé : il avait l'air d'attendre encore.
+  const semainePrise = Boolean(quetes?.semaine);
   const serie = Math.max(0, Math.floor(Number(quetes?.serie) || 0));
   const joursRestants = joursAvantLeCachetDeLaSemaine(quetes);
   const aReclamer = quetesAReclamer(quetes).length;
@@ -120,6 +161,8 @@ export default function RpgQuetesDuJour({
                 id={id}
                 etatQuetes={quetes}
                 onReclamer={onReclamerQuete}
+                onRemplacer={onRemplacerQuete}
+                peutRemplacer={peutRemplacer}
                 onPlaySfx={onPlaySfx}
               />
             ))}
@@ -131,7 +174,7 @@ export default function RpgQuetesDuJour({
         )}
 
         <div className="rpg-quests-jour__jalons">
-          {/* Médaillon 4 : Le Cachet du cycle (récompense des 3 quêtes réclamées) */}
+          {/* Jalon 4 : le Cachet du cycle, payé quand les 3 quêtes sont réclamées. */}
           <div
             className={`rpg-quests-jour__cachet${cachetPret ? ' is-pret' : ''}${cachetPris ? ' is-pris' : ''}`}
             style={{ '--q-pct': `${pctCycle}%` }}
@@ -140,46 +183,28 @@ export default function RpgQuetesDuJour({
             <span className="rpg-quests-jour__compte" data-jouer-compte={`${prises}/${liste.length}`}>
               {prises}/{liste.length}
             </span>
-            {cachetPret ? (
-              <button
-                type="button"
-                className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__reclamer rpg-quests-jour__jeton-btn"
-                data-jouer-cachet-reclamer
-                title={
-                  `Les ${liste.length} quêtes sont réclamées : encaisser le Cachet (+${GAINS.cachetDuCycle} crédits)`
-                }
-                onClick={() => {
-                  const gagne = onReclamerCachet?.();
-                  onPlaySfx?.(gagne ? 'victoire' : 'erreur');
-                }}
-              >
-                <RpgCreditIcon />
-                <strong>+{GAINS.cachetDuCycle}</strong>
-                <span className="rpg-quests-jour__jeton-sous">Cachet</span>
-                <span className="sr-only">crédits</span>
-              </button>
-            ) : (
-              <div
-                className="rpg-quests-jour__jeton"
-                title={
-                  cachetPris
-                    ? 'Cachet du jour encaissé — le prochain demain.'
+            <RpgCoffreDore
+              etat={cachetPris ? 'ouvert' : cachetPret ? 'pret' : 'encours'}
+              montant={GAINS.cachetDuCycle}
+              sousTitre="Cachet"
+              onClick={cachetPret ? () => {
+                const gagne = onReclamerCachet?.();
+                onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+              } : null}
+              title={
+                cachetPris
+                  ? 'Cachet du jour encaissé — le prochain demain.'
+                  : cachetPret
+                    ? `Les ${liste.length} quêtes sont réclamées : ouvrir le Coffre du cycle (+${GAINS.cachetDuCycle} crédits)`
                     : `Cachet du cycle (+${GAINS.cachetDuCycle}) : réclamez les ${liste.length} quêtes du jour.`
-                }
-              >
-                <span className="rpg-quests-jour__medaillon rpg-quests-jour__medaillon--cachet" aria-hidden="true">
-                  <span className="rpg-quests-jour__medaillon-coeur">
-                    <RpgCreditIcon />
-                    <strong>{cachetPris ? '✓' : GAINS.cachetDuCycle}</strong>
-                  </span>
-                </span>
-                <span className="rpg-quests-jour__jeton-sous">Cachet</span>
-              </div>
-            )}
+              }
+              aria-label={`Cachet du cycle — ${libelleCoffre(GAINS.cachetDuCycle)}, ${GAINS.cachetDuCycle} crédits${cachetPret ? ', à ouvrir' : ''}`}
+              {...(cachetPret ? { 'data-jouer-cachet-reclamer': true } : {})}
+            />
           </div>
 
-          {/* Médaillon 5 : Série hebdomadaire + Bourse & accès direct au Souk */}
-          <div className="rpg-quests-jour__etape-souk" style={{ '--q-pct': `${pctSerie}%` }}>
+          {/* Jalon 5 : la série hebdomadaire et son coffre violet. */}
+          <div className="rpg-quests-jour__semaine" style={{ '--q-pct': `${pctSerie}%` }}>
             <span
               className="rpg-quests-jour__serie"
               data-jouer-serie={serie}
@@ -192,45 +217,26 @@ export default function RpgQuetesDuJour({
               {serie}/{JOURS_DE_LA_SERIE} j
             </span>
 
-            {semainePrete ? (
-              <button
-                type="button"
-                className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__semaine"
-                data-jouer-semaine-reclamer
-                onClick={() => {
-                  const gagne = onReclamerSemaine?.();
-                  onPlaySfx?.(gagne ? 'victoire' : 'erreur');
-                }}
-              >
-                +{GAINS.cachetDeLaSemaine} <RpgCreditIcon />
-                <span className="sr-only">Réclamer les {JOURS_DE_LA_SERIE} jours en crédits</span>
-              </button>
-            ) : null}
+            <RpgCoffreDore
+              etat={semainePrise ? 'ouvert' : semainePrete ? 'pret' : 'encours'}
+              montant={GAINS.cachetDeLaSemaine}
+              metal={METAL_SEMAINE}
+              sousTitre="Semaine"
+              onClick={semainePrete ? () => {
+                const gagne = onReclamerSemaine?.();
+                onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+              } : null}
+              title={
+                semainePrise
+                  ? 'Coffre de la semaine ouvert — le prochain dans sept jours.'
+                  : semainePrete
+                    ? `Ouvrir le Coffre de la semaine : +${GAINS.cachetDeLaSemaine} crédits`
+                    : `Coffre de la semaine (+${GAINS.cachetDeLaSemaine}) : ${joursRestants} jour(s) de série encore.`
+              }
+              aria-label={`Coffre de la semaine — ${libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE)}, ${GAINS.cachetDeLaSemaine} crédits${semainePrise ? ', déjà ouvert' : semainePrete ? ', à ouvrir' : ''}`}
+              {...(semainePrete ? { 'data-jouer-semaine-reclamer': true } : {})}
+            />
 
-            <button
-              type="button"
-              className="rpg-menu-button rpg-quests-jour__souk"
-              data-jouer-souk
-              title="Aller au Souk dépenser vos crédits"
-              onClick={() => { onPlaySfx?.('menu'); onOuvrirSouk?.(); }}
-            >
-              <span className="rpg-quests-jour__souk-sceau" aria-hidden="true">
-                <RpgMarketIcon />
-              </span>
-              <span className="rpg-quests-jour__souk-texte">
-                <span
-                  className="rpg-quests-jour__solde-mini"
-                  data-jouer-solde={credits}
-                  aria-label={`Bourse : ${credits} crédits`}
-                >
-                  <RpgCreditIcon anime /> <strong>{creditsLisible(credits)}</strong>
-                  <em className="sr-only">crédits</em>
-                </span>
-                <span className="rpg-quests-jour__souk-lien">
-                  Souk <span aria-hidden="true">→</span>
-                </span>
-              </span>
-            </button>
           </div>
         </div>
       </div>

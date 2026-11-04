@@ -1,0 +1,291 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   L'ACCUEIL MOBILE — une arène, un gros bouton, des coffres
+   ──────────────────────────────────────────────────────────────────────────
+   Monté uniquement sur appareil tactile (`RpgAccueilMobile.jsx`). La coque du
+   menu est déjà verrouillée sur un seul écran en paysage (voir rpg-battle.css,
+   « ACCUEIL VERROUILLÉ SUR UN SEUL ÉCRAN ») : ce fichier ne fait que répartir
+   la hauteur restante entre trois bandes.
+
+     bandeau du joueur   ~38 px   fixe
+     arène + bouton      le reste flexible  ← l'arène prend ce qui reste
+     rangée de coffres   ~92 px   fixe
+
+   Tout est en `min-height: 0` + `flex` : sur un écran de 320 px de haut, c'est
+   l'arène qui rétrécit, jamais le bouton ni les coffres — ils restent visibles
+   et touchables sans aucun défilement.
+   ══════════════════════════════════════════════════════════════════════════ */
+.rpg-accueil-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 6px 8px 6px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Le bandeau du joueur ──────────────────────────────────────────────── */
+.rpg-accueil-mobile__bandeau {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.rpg-accueil-mobile__joueur {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 3px 8px 3px 3px;
+  border: 1px solid rgba(240, 214, 158, .28);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(34, 30, 40, .95), rgba(16, 14, 20, .95));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, .14), 0 2px 8px rgba(0, 0, 0, .45);
+}
+.rpg-accueil-mobile__niveau {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 240, 200, .75);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #6fc3ff, #1f6fb5);
+  color: #04202f;
+  font: 900 13px/1 system-ui, sans-serif;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 0 #12456f;
+}
+.rpg-accueil-mobile__identite { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.rpg-accueil-mobile__pseudo {
+  color: #fff1d5;
+  font: 800 11px/1.1 system-ui, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-accueil-mobile__xp {
+  position: relative;
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  background: rgba(8, 8, 12, .85);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .7);
+  overflow: hidden;
+}
+.rpg-accueil-mobile__xp-remplie {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4aa8e8, #8fe3ff);
+  transition: width .35s ease;
+}
+.rpg-accueil-mobile__xp-texte {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #eaf6ff;
+  font: 800 7px/1 var(--mono, monospace);
+  font-style: normal;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .9);
+}
+
+.rpg-accueil-mobile__bourse {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 7px;
+  border: 1px solid rgba(240, 214, 158, .38);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(40, 32, 22, .96), rgba(18, 15, 12, .96));
+  color: #f6d88f;
+  font: 900 12px/1 system-ui, sans-serif;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, .18), 0 2px 8px rgba(0, 0, 0, .45);
+}
+.rpg-accueil-mobile__bourse .rpg-credit-icon { width: 15px; height: 15px; }
+.rpg-accueil-mobile__bourse-plus {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #7ed957, #3f8f2a);
+  color: #06240a;
+  font: 900 12px/1 system-ui, sans-serif;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), 0 1px 0 #245c17;
+}
+.rpg-accueil-mobile__souk {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(240, 214, 158, .38);
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(40, 32, 22, .96), rgba(18, 15, 12, .96));
+  color: #e9b94d;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, .18), 0 2px 0 #09070b;
+}
+.rpg-accueil-mobile__souk svg { width: 18px; height: 18px; }
+.rpg-accueil-mobile__bourse:focus-visible,
+.rpg-accueil-mobile__souk:focus-visible { outline: 2px solid #ffe9ad; outline-offset: 2px; }
+
+/* ── L'arène ───────────────────────────────────────────────────────────── */
+.rpg-accueil-mobile__scene {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 0;
+}
+.rpg-accueil-mobile__modes {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 5px;
+}
+.rpg-accueil-mobile__mode {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 6px;
+  border: 1px solid rgba(240, 214, 158, .24);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(32, 28, 36, .95), rgba(15, 13, 18, .95));
+  color: #cdbfa6;
+  font: 800 10px/1 system-ui, sans-serif;
+  letter-spacing: .04em;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.rpg-accueil-mobile__mode.is-actif {
+  border-color: rgba(255, 214, 120, .85);
+  background: linear-gradient(180deg, rgba(90, 62, 24, .95), rgba(44, 30, 12, .95));
+  color: #ffe9b8;
+  box-shadow: inset 0 1px 0 rgba(255, 248, 220, .28), 0 0 12px rgba(240, 176, 60, .28);
+}
+.rpg-accueil-mobile__mode:focus-visible { outline: 2px solid #ffe9ad; outline-offset: 2px; }
+.rpg-accueil-mobile__mode-icone { flex: 0 0 auto; display: inline-flex; color: #e9b94d; }
+.rpg-accueil-mobile__mode-icone svg { width: 12px; height: 12px; display: block; }
+.rpg-accueil-mobile__mode.is-actif .rpg-accueil-mobile__mode-icone { color: #ffd97a; }
+
+.rpg-accueil-mobile__arene {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: 1px solid rgba(240, 214, 158, .22);
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 118%, rgba(226, 150, 44, .22), transparent 60%),
+    linear-gradient(180deg, #141828, #080a12 78%);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 214, .1), 0 4px 16px rgba(0, 0, 0, .5);
+}
+.rpg-accueil-mobile__maquette {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* L'arène n'est pas une fiche technique : la pastille « VUE 3D » de la galerie
+   n'a rien à dire ici. Celle de la ruine, elle, reste — elle dit un état de jeu. */
+.rpg-accueil-mobile__arene .rpg-story-stage__badge:not(.rpg-story-stage__badge--ruine) { display: none; }
+
+.rpg-accueil-mobile__keyart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 28%;
+  opacity: .8;
+}
+/* La plaque de l'arène, posée en bas à gauche : le nom et les étages. */
+.rpg-accueil-mobile__plaque {
+  position: absolute;
+  left: 8px;
+  bottom: 7px;
+  z-index: 2;
+  display: grid;
+  gap: 1px;
+  max-width: 62%;
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 226, 160, .35);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12, 11, 16, .82), rgba(6, 6, 10, .9));
+  backdrop-filter: blur(3px);
+}
+.rpg-accueil-mobile__plaque b {
+  color: #e3bf76;
+  font: 900 8px/1.2 var(--mono, monospace);
+  letter-spacing: .16em;
+}
+.rpg-accueil-mobile__plaque em {
+  color: #fff1d5;
+  font: 800 clamp(13px, 2.4vh, 18px)/1.1 var(--font-gaming, Georgia, serif);
+  font-style: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rpg-accueil-mobile__plaque small { color: rgba(240, 226, 198, .78); font-size: 9.5px; }
+
+/* ── Le gros bouton de jeu ─────────────────────────────────────────────── */
+.rpg-accueil-mobile__jouer {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 18px;
+  border: 1px solid rgba(255, 232, 166, .95);
+  border-radius: 13px;
+  background-color: #d6671a;
+  background-image: linear-gradient(180deg, #ffd468 0%, #f0a02a 42%, #e07d1c 58%, #b8430e 100%);
+  color: #2a1704;
+  font: 900 clamp(15px, 2.6vh, 20px)/1 system-ui, -apple-system, sans-serif;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255, 248, 220, .55);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 252, 235, .8),
+    inset 0 -6px 12px rgba(132, 42, 4, .28),
+    0 5px 0 #6e2606,
+    0 9px 18px rgba(232, 118, 28, .38);
+  transition: transform .12s ease, box-shadow .14s ease;
+}
+.rpg-accueil-mobile__jouer:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 2px 6px rgba(88, 28, 3, .4), 0 2px 0 #6e2606, 0 4px 10px rgba(232, 118, 28, .3);
+}
+.rpg-accueil-mobile__jouer:focus-visible { outline: 3px solid #ffe9ad; outline-offset: 3px; }
+
+/* ── Très petit paysage : on serre, rien ne disparaît ──────────────────── */
+@media (max-height: 380px) {
+  .rpg-accueil-mobile { gap: 4px; padding: 4px 6px; }
+  .rpg-accueil-mobile__niveau { width: 22px; height: 22px; font-size: 11px; }
+  .rpg-accueil-mobile__pseudo { font-size: 10px; }
+  .rpg-accueil-mobile__mode { min-height: 22px; font-size: 9px; }
+  .rpg-accueil-mobile__jouer { min-height: 36px; padding: 6px 14px; letter-spacing: .12em; }
+  .rpg-accueil-mobile__plaque { padding: 3px 8px; }
+  .rpg-accueil-mobile__plaque small { font-size: 8.5px; }
+  .rpg-coffres-quetes__scene { height: 32px; }
+  .rpg-coffres-quetes__titre { font-size: 8.5px; }
+}
+
+/* Le mouvement réduit coupe les rebonds, garde les états. */
+@media (prefers-reduced-motion: reduce) {
+  .rpg-accueil-mobile__jouer { transition: none; }
+  .rpg-accueil-mobile__xp-remplie { transition: none; }
+}
