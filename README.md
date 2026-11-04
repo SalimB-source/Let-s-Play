@@ -15,6 +15,14 @@ Pour produire la version de production :
 npm run build
 ```
 
+## Jeu de conduite : version actuelle
+
+La route `/jeu/vice-city-rush` propose désormais **l’auto-école (23 situations)** et **la conduite libre**, accessible depuis son accueil. Les anciens modes course, histoire et tournoi et leurs ressources dédiées ont été retirés. Le moteur 3D est chargé seulement au lancement de la conduite.
+
+Documentation et vérifications à jour : [`docs/driving-school.md`](docs/driving-school.md). Tests : `npm run check:city-rush` ; interfaces : `npm run check:driving-interface` et `npm run check:free-drive-interface` (Chromium requis).
+
+Les anciennes sections « Vice City Rush » plus bas constituent l’historique du développement ; leurs commandes de contrôle des modes retirés ne sont plus proposées dans `package.json`.
+
 ## Thème clair / sombre
 
 Le site se joue en deux thèmes. Le **sombre** reste l'identité d'origine et le

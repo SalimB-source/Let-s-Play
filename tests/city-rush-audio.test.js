@@ -391,53 +391,11 @@ test('destroy() coupe tout et ferme le contexte', async () => {
   } finally { delete globalThis.window; }
 });
 
-test('le monde déclenche les bruitages au bon endroit', async () => {
-  const [world, page] = await Promise.all([
-    readFile(new URL('../src/games/ViceCityWorld.jsx', import.meta.url), 'utf8'),
-    readFile(new URL('../src/games/ViceCityRushPage.jsx', import.meta.url), 'utf8'),
-  ]);
-  // Le moteur est piloté à l’image près par le monde.
-  assert.match(world, /audioRef\?\.current\?\.engine\(\{/);
-  // Sur le tōgé seulement, le cri de pneus est déclenché à l'entrée d'une
-  // dérive (ou au changement de sens), jamais répété à chaque image.
-  const driftUpdateStart = world.indexOf('      const playerDrift =');
-  const driftUpdateEnd = world.indexOf('      lastPlayerDrift = playerDrift;', driftUpdateStart);
-  assert.ok(driftUpdateStart >= 0 && driftUpdateEnd > driftUpdateStart, 'la mise à jour du drift du joueur existe');
-  const driftUpdate = world.slice(driftUpdateStart, driftUpdateEnd);
-  assert.match(driftUpdate, /if \(tougeDrift && drifting && \(!wasDrifting \|\| Math\.sign\(playerDrift\) !== Math\.sign\(lastPlayerDrift\)\)\)/,
-    'le son est limité aux débuts de drift et aux changements de sens du tōgé');
-  assert.equal([...driftUpdate.matchAll(/audioRef\?\.current\?\.skid\?\.\(/g)].length, 1,
-    'un seul appel au cri de pneus est fait dans cette transition');
-  assert.match(driftUpdate, /audioRef\?\.current\?\.skid\?\.\(\{[\s\S]*?pan: vehiclePan\('player'\),[\s\S]*?duration: 0\.58,/,
-    'le cri est panoramiqué sur le joueur et accompagne la dérive');
-  // Tir rouge d'AK-47 au départ, dérapage de la cible à l'impact. Le fusil à
-  // pompe bleu a son propre coup de tonnerre, panoramiqué lui aussi.
-  assert.match(world, /audioRef\?\.current\?\.machineGun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
-  assert.match(world, /audioRef\?\.current\?\.shotgun\(\{ pan: vehiclePan\(attackerId\) \}\)/);
-  assert.match(world, /audioRef\?\.current\?\.skid\(\{\s*pan: vehiclePan\(target\.id\),/);
-  // L'attaque d'hélicoptère est retirée du monde ; les explosions restent
-  // utilisées pour les voitures de police détruites et l'épave du pilote.
-  assert.doesNotMatch(world, /audioRef\?\.current\?\.helicopterStart\(\)/);
-  assert.doesNotMatch(world, /audioRef\?\.current\?\.missileLaunch\(/);
-  assert.doesNotMatch(world, /audioRef\?\.current\?\.helicopterStop\(\)/);
-  assert.match(world, /audioRef\?\.current\?\.explosion\(/);
-  // Tir bleu droit, rafale rouge, zones lentes, ramassages, tours et arrivée.
-  assert.match(world, /audioRef\?\.current\?\.gunshot\(\{ pan: vehiclePan\(attackerId\) \}\)/);
-  assert.match(world, /audioRef\?\.current\?\.pickup\(type, \{ ready/);
-  assert.match(world, /audioRef\?\.current\?\.countdownBeep\(step\)/);
-  // Sortie de mini-garage : le bruitage d'atelier, avec les points rendus.
-  assert.match(world, /audioRef\?\.current\?\.garageRepair\?\.\(\{ pan: vehiclePan\('player'\), restored: healthRestored \}\)/,
-    'le garage joue la réparation et sait combien de points la coque a repris');
-  // Escouade de police : sirène pilotée par la proximité, extinction à la fin.
-  assert.match(world, /audioRef\?\.current\?\.policeSiren\?\.\(\{/);
-  assert.match(world, /audioRef\?\.current\?\.policeSirenOff\?\.\(\)/);
-  assert.match(world, /audioRef\?\.current\?\.lap\(finalLap\)/);
-  assert.match(world, /audioRef\?\.current\?\.finish\(standings\.rank\)/);
-  // La page crée l’instance, la transmet au monde et garde un bouton SON.
-  assert.match(page, /new CityRushAudio\(\)/);
-  assert.match(page, /audioRef=\{audioRef\}/);
-  assert.match(page, /city-rush-sound-button/);
-  assert.match(page, /if \(soundOnRef\.current\) audioRef\.current\?\.start\(\)/);
+test('la ville libre pilote son moteur, les dérapages et les avertisseurs', async () => {
+  const world = await readFile(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
+  assert.ok(world.includes('audioRef.current?.engine('));
+  assert.ok(world.includes('audioRef.current?.skid('));
+  assert.ok(world.includes('audioRef.current?.trafficHorn?.('));
 });
 
 test('les bruitages ne sont jamais créés hors d’un contexte vivant', () => {

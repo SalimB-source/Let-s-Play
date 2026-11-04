@@ -1539,6 +1539,15 @@ export class CityRushAudio {
    * niveau 0 → 1. Les valeurs sont quantifiées (16 crans) pour ne pas empiler
    * d'automations inutiles, comme le régime moteur.
    */
+  // Short two-tone pulses for the French learning scenario; no music or siren timers.
+  schoolEmergencySiren({ time = 0, level = 1, mute = false } = {}) {
+    if (mute || !this.ready()) return;
+    const beat = Math.floor(time / .32);
+    if (this.schoolSirenBeat === beat) return;
+    this.schoolSirenBeat = beat;
+    this.tone(beat % 2 ? 580 : 435, this.context.currentTime + .005, .3, 'triangle', .045 * clamp(level,0,1), { destination:this.sfxBus, attack:.01 });
+  }
+
   policeSiren({ level = 1, mute = false } = {}) {
     if (!this.running || !this.context) return;
     const nodes = this.ensureSiren();

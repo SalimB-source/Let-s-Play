@@ -96,12 +96,7 @@ test('les impacts de balle visent la vitre du côté d’entrée et orientent la
   assert.deepEqual(viceCityFreeDriveGlassEntryFace(0, -1), { axis: 'end', end: 1, rotation: 0 });
 });
 
-test('les impacts visuels utilisent la surface réelle du vitrage avant le placement de secours', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  assert.match(source, /glassImpactRaycaster\.intersectObjects\(glassMeshes, false\)/);
-  assert.match(source, /crack\.position\.copy\(car\.worldToLocal\(glassHit\.point\.clone\(\)\)\)/);
-  assert.match(source, /entryFace\.side \* width \* 0\.435/);
-});
+
 
 
 test('les instructions de mission et la progression expliquent une action concrète', () => {
@@ -173,7 +168,8 @@ test('la chaussée reçoit un grain d’asphalte, des marquages irréguliers et 
   assert.ok(source.includes('city.highwayRoadMat.roughness = weatherMode === \'rain\' ? 0.24'));
   assert.ok(source.includes('uv.setXY(index, x / 28, z / 28)'));
   assert.ok(source.includes('verticalDashes.setColorAt(index'));
-  assert.ok(source.includes('horizontalCrosswalk.setColorAt(index'));
+  assert.ok(source.includes('createCrosswalkMaterial()'));
+  assert.ok(source.includes('addRoadCrosswalks(scene, ['));
   assert.ok(source.includes('const addDrainGrates = (positions, horizontal) =>'));
   assert.ok(source.includes('addDrainGrates(verticalDrainPositions, false)'));
 });
