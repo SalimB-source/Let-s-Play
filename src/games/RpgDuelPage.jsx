@@ -11389,7 +11389,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             if (!modePvp) apresCombatSorcier();
           } else {
             const vivants = new Set(attaquantsVivants);
-            const bloqueursVivants = new Set(duel.sorcier.creatures
+            const bloqueursVivants = new Set(duel.joueur.creatures
               .filter((entite) => !entite.attaquee)
               .map((entite) => entite.id));
             setCombatEntrant((courant) => {
@@ -12505,7 +12505,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const assignerBloqueur = (attaquantId, bloqueurId) => {
     const attaquant = duel.sorcier.creatures.find((entite) => entite.id === attaquantId);
     const bloqueur = duel.joueur.creatures.find((entite) => entite.id === bloqueurId && !entite.attaquee);
-    if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || !attaquant || !bloqueur) return;
+    if (!reponseActive || combatEntrant?.coteAttaquant === 'joueur' || combatEntrant?.blocagesDeclares || !attaquant || !bloqueur) return;
     const retireDeCetteAttaque = (combatEntrant?.blocages[attaquantId] ?? []).includes(bloqueurId);
     // Un attaquant qui frappe une créature à l’Attaque ciblée n'est pas bloquable :
     // sa frappe a clos son attaque.
@@ -12572,7 +12572,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // sa frappe a déjà clos son attaque.
     const blocages = Object.fromEntries(Object.entries(combatEntrant.blocages)
       .filter(([id]) => vivants.has(id))
-      .map(([id, idsBloqueurs]) => [id, combatEntrant.ciblesAttaque?.[id] ? [] : idsBloqueurs]));
+      .map(([id, idsBloqueurs]) => [id, combatEntrant.ciblesAttaque?.[id] ? [] : idsBloqueurs.filter((bloqueurId) => duel.joueur.creatures.some((entite) => entite.id === bloqueurId))]));
     const sonAttaque = rpgCombatSound(duel, attaquantsVivants, blocages);
     const sonFrappeDirecte = rpgCombatSound(duel, attaquantsVivants);
     const champAvantAttaque = prendreInstantaneChamp();
@@ -12584,7 +12584,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       attaquantsVivants,
       blocages,
       null, // Le moteur partage les blessures après les capacités du Sahir.
-      null,
+      combatEntrant.attaquantsBloques ?? null,
       Object.fromEntries(Object.entries(combatEntrant.ciblesAttaque ?? {})
         .filter(([id]) => attaquantsVivants.includes(id))),
       {
@@ -12736,6 +12736,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const resoudreCombat = () => {
+    if (combatEntrant?.coteAttaquant === 'sorcier' && !combatEntrant.blocagesDeclares) {
+      if (!repartitionValide || !blocageForceValide || !provocationValide) return;
+      setBloqueurSelectionne(null);
+      setCombatEntrant((courant) => courant && ({
+        ...courant,
+        blocagesDeclares: true,
+        attaquantsBloques: courant.attaquants.filter((id) => courant.blocages[id]?.length),
+      }));
+      return;
+    }
     if (combatEntrant?.coteAttaquant === 'joueur') resoudreAttaqueJoueur();
     else resoudreAttaqueEnnemie();
   };
@@ -13347,6 +13357,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     classe: 'rpg-combat-prompt',
                     texte: combatEntrant.coteAttaquant === 'joueur'
                       ? 'Blocages déclarés — jouez un sort rapide ou acceptez les blocages'
+                      : combatEntrant.blocagesDeclares
+                        ? 'Blocages déclarés — jouez une magie rapide ou une créature avec Embuscade, puis résolvez le combat'
                       : !blocageForceValide
                         ? 'Blocage forcé — assignez chaque créature marquée à un attaquant qu’elle peut bloquer'
                         : !provocationValide
@@ -13891,7 +13903,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           'joueur',
                         ).some((cible) => cible.id === entite.id))
                       )}
-                      canReceiveBlocker={Boolean(reponseActive && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
+                      canReceiveBlocker={Boolean(reponseActive && !combatEntrant?.blocagesDeclares && combatEntrant?.coteAttaquant !== 'joueur' && combatEntrant?.attaquants.includes(entite.id) && !combatEntrant?.ciblesAttaque?.[entite.id] && !entite.infiltration)}
                       onAssignBlocker={assignerBloqueur}
                       actionFx={animationsEntites[entite.id]}
                       soin={soinDeCarte(entite, pile, deployee)}
@@ -14354,14 +14366,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     data-tutorial-target={cibleTutoriel('resolve-combat') ? 'resolve-combat' : undefined}
                     data-key-hint="Espace"
                     onClick={resoudreCombat}
-                    disabled={!repartitionValide || !blocageForceValide || !provocationValide}
+                    disabled={!combatEntrant.blocagesDeclares && (!repartitionValide || !blocageForceValide || !provocationValide)}
                     title={!blocageForceValide
                       ? 'Blocage forcé : assignez chaque créature marquée à un attaquant qu’elle peut légalement bloquer'
                       : !provocationValide
                         ? 'Provocation : assignez au moins un bloqueur légal à chaque attaquant qui peut être bloqué'
                         : 'Raccourci clavier : Espace'}
                   >
-                    {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : '⚔ Résoudre le combat'}
+                    {combatEntrant.coteAttaquant === 'joueur' ? '✓ Accepter les blocages' : combatEntrant.blocagesDeclares ? '⚔ Résoudre le combat' : '✓ Déclarer les bloqueurs'}
                   </button>
                 )}
                 {cibleEnCours && !attenteSiteBimini && (
