@@ -17,6 +17,7 @@ import {
   joursAvantLeCachetDeLaSemaine, quetesAReclamer, serieComplete, vueDeLaQuete,
 } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
+import RpgCoffreDore from './RpgCoffreDore.jsx';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import './rpg-quetes-jour.css';
 
@@ -54,12 +55,22 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
       </div>
 
       <div className="rpg-quests-jour__corps">
-        <div className="rpg-quests-jour__medaillon" aria-hidden="true">
-          <span className="rpg-quests-jour__medaillon-coeur">
-            <RpgCreditIcon />
-            <strong>{quete.recompense}</strong>
-          </span>
-        </div>
+        {/* Le butin se présente comme un coffre à ouvrir, plus comme un
+            médaillon de compte : même récompense, même geste. */}
+        <RpgCoffreDore
+          etat={reclamee ? 'ouvert' : terminee ? 'pret' : 'encours'}
+          montant={quete.recompense}
+          onClick={terminee && !reclamee ? reclamer : null}
+          title={
+            reclamee
+              ? `${quete.titre} — coffre ouvert, ${quete.recompense} crédits en bourse.`
+              : terminee
+                ? `Ouvrir le coffre : +${quete.recompense} crédits`
+                : `${quete.titre} (${palierLibelle}) — encore ${reste} pour ouvrir le coffre de ${quete.recompense} crédits.`
+          }
+          aria-label={`${quete.titre} (${palierLibelle}) — ${quete.recompense} crédits${terminee && !reclamee ? ', coffre à ouvrir' : ''}`}
+          {...(terminee && !reclamee ? { 'data-jouer-reclamer': id } : {})}
+        />
 
         <div className="rpg-quests-jour__capsule">
           <span className="sr-only">
@@ -67,18 +78,9 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
           </span>
           <p className="rpg-quests-jour__quete-texte">{quete.texte}</p>
           {reclamee ? (
-            <p className="rpg-quests-jour__pris" data-jouer-pris>✓ Réclamée</p>
+            <p className="rpg-quests-jour__pris" data-jouer-pris>Coffre ouvert</p>
           ) : terminee ? (
-            <button
-              type="button"
-              className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__reclamer"
-              data-jouer-reclamer={id}
-              title={`Encaisser ${quete.recompense} crédits`}
-              onClick={reclamer}
-            >
-              Réclamer {quete.recompense} <RpgCreditIcon />
-              <span className="sr-only">crédits</span>
-            </button>
+            <p className="rpg-quests-jour__ouvre">Ouvrez le coffre&nbsp;!</p>
           ) : (
             <span className="rpg-quests-jour__encore sr-only" data-jouer-reste={reste}>
               {reste === 1 ? 'Encore 1.' : `Encore ${reste}.`}
@@ -140,42 +142,24 @@ export default function RpgQuetesDuJour({
             <span className="rpg-quests-jour__compte" data-jouer-compte={`${prises}/${liste.length}`}>
               {prises}/{liste.length}
             </span>
-            {cachetPret ? (
-              <button
-                type="button"
-                className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__reclamer rpg-quests-jour__jeton-btn"
-                data-jouer-cachet-reclamer
-                title={
-                  `Les ${liste.length} quêtes sont réclamées : encaisser le Cachet (+${GAINS.cachetDuCycle} crédits)`
-                }
-                onClick={() => {
-                  const gagne = onReclamerCachet?.();
-                  onPlaySfx?.(gagne ? 'victoire' : 'erreur');
-                }}
-              >
-                <RpgCreditIcon />
-                <strong>+{GAINS.cachetDuCycle}</strong>
-                <span className="rpg-quests-jour__jeton-sous">Cachet</span>
-                <span className="sr-only">crédits</span>
-              </button>
-            ) : (
-              <div
-                className="rpg-quests-jour__jeton"
-                title={
-                  cachetPris
-                    ? 'Cachet du jour encaissé — le prochain demain.'
+            <RpgCoffreDore
+              etat={cachetPris ? 'ouvert' : cachetPret ? 'pret' : 'encours'}
+              montant={GAINS.cachetDuCycle}
+              sousTitre="Cachet"
+              onClick={cachetPret ? () => {
+                const gagne = onReclamerCachet?.();
+                onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+              } : null}
+              title={
+                cachetPris
+                  ? 'Cachet du jour encaissé — le prochain demain.'
+                  : cachetPret
+                    ? `Les ${liste.length} quêtes sont réclamées : ouvrir le Coffre du cycle (+${GAINS.cachetDuCycle} crédits)`
                     : `Cachet du cycle (+${GAINS.cachetDuCycle}) : réclamez les ${liste.length} quêtes du jour.`
-                }
-              >
-                <span className="rpg-quests-jour__medaillon rpg-quests-jour__medaillon--cachet" aria-hidden="true">
-                  <span className="rpg-quests-jour__medaillon-coeur">
-                    <RpgCreditIcon />
-                    <strong>{cachetPris ? '✓' : GAINS.cachetDuCycle}</strong>
-                  </span>
-                </span>
-                <span className="rpg-quests-jour__jeton-sous">Cachet</span>
-              </div>
-            )}
+              }
+              aria-label={`Cachet du cycle — ${GAINS.cachetDuCycle} crédits${cachetPret ? ', coffre à ouvrir' : ''}`}
+              {...(cachetPret ? { 'data-jouer-cachet-reclamer': true } : {})}
+            />
           </div>
 
           {/* Médaillon 5 : Série hebdomadaire + Bourse & accès direct au Souk */}
@@ -192,20 +176,22 @@ export default function RpgQuetesDuJour({
               {serie}/{JOURS_DE_LA_SERIE} j
             </span>
 
-            {semainePrete ? (
-              <button
-                type="button"
-                className="rpg-menu-button rpg-menu-button--primary rpg-quests-jour__semaine"
-                data-jouer-semaine-reclamer
-                onClick={() => {
-                  const gagne = onReclamerSemaine?.();
-                  onPlaySfx?.(gagne ? 'victoire' : 'erreur');
-                }}
-              >
-                +{GAINS.cachetDeLaSemaine} <RpgCreditIcon />
-                <span className="sr-only">Réclamer les {JOURS_DE_LA_SERIE} jours en crédits</span>
-              </button>
-            ) : null}
+            <RpgCoffreDore
+              etat={semainePrete ? 'pret' : 'encours'}
+              montant={GAINS.cachetDeLaSemaine}
+              sousTitre="Semaine"
+              onClick={semainePrete ? () => {
+                const gagne = onReclamerSemaine?.();
+                onPlaySfx?.(gagne ? 'victoire' : 'erreur');
+              } : null}
+              title={
+                semainePrete
+                  ? `Ouvrir le Coffre de la semaine : +${GAINS.cachetDeLaSemaine} crédits`
+                  : `Coffre de la semaine (+${GAINS.cachetDeLaSemaine}) : ${joursRestants} jour(s) de série encore.`
+              }
+              aria-label={`Coffre de la semaine — ${GAINS.cachetDeLaSemaine} crédits${semainePrete ? ', à ouvrir' : ''}`}
+              {...(semainePrete ? { 'data-jouer-semaine-reclamer': true } : {})}
+            />
 
             <button
               type="button"

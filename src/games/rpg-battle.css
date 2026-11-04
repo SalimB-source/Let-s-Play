@@ -14931,9 +14931,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     gap: 6px;
   }
   .rpg-mode-menu--jouer .rpg-quests-jour__jauge { display: none; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon { width: 38px; height: 38px; padding: 2.5px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon-coeur strong { font-size: 11px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon-coeur .rpg-credit { font-size: 10px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__capsule {
     min-height: 32px;
     margin-left: -13px;
@@ -14941,15 +14938,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-mode-menu--jouer .rpg-quests-jour__quete-texte { font-size: 10px; line-height: 1.22; }
   .rpg-mode-menu--jouer .rpg-quests-jour__pris { font-size: 8.5px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__reclamer { min-height: 30px; padding: 4px 9px; font-size: 10px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__vide { padding: 8px 12px; font-size: 11px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__jalons { align-items: center; gap: 8px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__compte,
   .rpg-mode-menu--jouer .rpg-quests-jour__serie { font-size: 9px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__medaillon--cachet { width: 38px; height: 38px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__jeton-btn { width: 40px; height: 40px; min-height: 40px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__jeton-sous { font-size: 7px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__semaine { min-height: 32px; padding: 4px 8px; font-size: 10px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__souk { min-height: 36px; gap: 6px; padding: 3px 10px 3px 5px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__souk-sceau { width: 26px; height: 26px; font-size: 12px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__solde-mini strong { font-size: 11px; }

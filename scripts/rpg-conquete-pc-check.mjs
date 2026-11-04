@@ -48,9 +48,15 @@ const mesurerGalerie = () => {
     viewport: { w: innerWidth, h: innerHeight },
     menu: { scrollH: menu.scrollHeight, clientH: menu.clientHeight, scrollTop: menu.scrollTop },
     carte: carte ? { ...carte.getBoundingClientRect().toJSON(), rogne: carte.scrollHeight - carte.clientHeight } : null,
+    body: rect('.rpg-conquete-carrousel .rpg-story-tower__body'),
     art: rect('.rpg-conquete-carrousel .rpg-story-tower__art'),
     nom: rect('.rpg-conquete-carrousel .rpg-story-tower__name'),
-    resume: resume ? { ...resume.getBoundingClientRect().toJSON(), rogne: resume.scrollHeight - resume.clientHeight } : null,
+    resume: resume ? {
+      ...resume.getBoundingClientRect().toJSON(),
+      rogne: resume.scrollHeight - resume.clientHeight,
+      interligne: getComputedStyle(resume).lineHeight.replace('px', '') / parseFloat(getComputedStyle(resume).fontSize),
+      police: getComputedStyle(resume).fontSize,
+    } : null,
     cta: rect('.rpg-conquete-carrousel .rpg-story-tower__cta'),
     pagination: rect('.rpg-conquete-carrousel__pagination'),
     intro: document.querySelector('.rpg-free-tours__heading p')?.textContent ?? null,
@@ -104,8 +110,10 @@ for (const [width, height] of FORMATS) {
     const points = page.locator('.rpg-conquete-carrousel__points button');
     const total = await points.count();
     assert.equal(total, RPG_STORY_TOURS.length, `${width}×${height} : les onze tours sont là`);
-    let glissesGalerie = 0;
     let glissesEtages = 0;
+    // Toutes les tours doivent donner la MÊME carte : c'est la demande, et ce
+    // qui évite que la maquette grandisse et rapetisse en fléchant.
+    const tailles = new Set();
 
     for (let i = 0; i < total; i += 1) {
       await points.nth(i).click();
@@ -123,7 +131,14 @@ for (const [width, height] of FORMATS) {
         assert.ok(boite.left >= -1 && boite.right <= g.viewport.w + 1, `${pg} : ${nom} tient en largeur`);
       }
       assert.ok(g.carte.rogne <= 1, `${pg} : carte rognée de ${g.carte.rogne}px`);
-      assert.ok(g.resume.rogne <= 1, `${pg} : résumé rogné de ${g.resume.rogne}px`);
+      // Le résumé est volontairement plafonné à deux lignes : c'est ce qui
+      // donne à toutes les tours la même carte. On vérifie la hauteur tenue,
+      // pas l'absence de troncature — le texte entier se lit dans la tour.
+      const interligne = parseFloat(g.resume.interligne) || 0;
+      const taillePolice = parseFloat(g.resume.police) || 0;
+      assert.ok(Math.abs(g.resume.height - 2 * interligne * taillePolice) <= 1.5,
+        `${pg} : le résumé tient exactement deux lignes (${g.resume.height.toFixed(1)}px, attendu ${(2 * interligne * taillePolice).toFixed(1)})`);
+      tailles.add(`${g.carte.height.toFixed(0)}|${g.art.height.toFixed(0)}|${g.body.height.toFixed(0)}|${g.resume.height.toFixed(0)}`);
       assert.ok(g.art.height >= 90, `${pg} : la maquette garde une taille lisible (${g.art.height.toFixed(0)})`);
 
       // ── Dans la tour : la tour, son texte et les étages côte à côte ─────
@@ -158,7 +173,8 @@ for (const [width, height] of FORMATS) {
       await page.locator('.rpg-story__back').click();
       await page.locator('.rpg-conquete-carrousel .rpg-story-tower').waitFor();
     }
-    console.log(`✓ ${width}×${height} — 11 tours : galerie et étages sans défilement, tour + description visibles${glissesEtages ? ` (${glissesEtages} colonne(s) d’étages glissante(s))` : ''}`);
+    assert.equal(tailles.size, 1, `${width}×${height} : les onze tours ont la même carte (relevé ${[...tailles].join(' / ')})`);
+    console.log(`✓ ${width}×${height} — 11 tours identiques, galerie et étages sans défilement, résumé sur 2 lignes${glissesEtages ? ` (${glissesEtages} colonne(s) d’étages glissante(s))` : ''}`);
   } finally {
     await browser.close();
   }
