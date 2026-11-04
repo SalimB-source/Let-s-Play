@@ -5511,7 +5511,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               onRestart={onRestartRecit}
               sauvegardeOk={sauvegardeHistoireOk}
               duelEnCours={duelEnCours} campagneEnCours={campagneEnCours}
-            />
+            >
             <div className="rpg-story__footer">
               {!confirmerResetHistoire && (
                 <button
@@ -5529,6 +5529,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmerResetHistoire(false)}>Annuler</button>
               </div>}
             </div>
+            </RpgStoryCampaign>
           </main>
         ) : screen === 'decks' ? (atelier ? (
           <main className="rpg-deck-catalog rpg-deck-catalog--atelier" aria-label="Atelier de deck">
