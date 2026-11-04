@@ -374,10 +374,10 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
   for (const carte of RPG_SOLEIL_ROUGE_CARDS) {
     const versionsSpecifiques = {
       // Cartes repeintes en huile sombre, réaliste (dérogation Souls
-      // documentée par `RPG-CARD-ART.md`). Le lot est daté par sa révision :
-      // v2 pour Susanoo et Kagutsuchi, v3 pour le second lot, v4 pour le
-      // troisième. Trois cartes du set gardent leur kaiga.
-      'susanoo': 'braise-souls-cendres-v2',
+      // documentée par `RPG-CARD-ART.md`). Susanoo porte sa révision dédiée
+      // (tempête sombre de l’image d’origine) ; Kagutsuchi reste en v2, les autres lots suivent
+      // leurs propres révisions. Trois cartes du set gardent leur kaiga.
+      'susanoo': 'braise-souls-susanoo-face-tempete-v8',
       'kagutsuchi-flamme-originelle': 'braise-souls-cendres-v2',
       'orochi': 'braise-souls-cendres-v3',
       'oni-de-la-fournaise': 'braise-souls-cendres-v3',
