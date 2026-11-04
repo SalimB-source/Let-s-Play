@@ -82,4 +82,4 @@ for (const row of rows) {
   console.log(`  ${row.city.padEnd(18)} ${row.skyName.padEnd(17)} ${Object.keys(row.materials).length} types de matériaux, 0 shader GLSL`);
 }
 console.log('  types présents :', [...catalog.entries()].map(([type, count]) => `${type.replace('Mesh', '').replace('Material', '')}×${count}`).join(', '));
-console.log('check:city-rush-webgpu ✓ — en essai WebGPU les neuf parcours montent un ciel peint et ne demandent plus un seul shader GLSL : every matériau de la scène a une version « nœuds », donc trois.js peut compiler la course en WGSL.'.replace('every', 'chaque'));
+console.log('check:city-rush-webgpu ✓ — en essai WebGPU les neuf parcours montent un ciel peint et ne demandent plus un seul shader GLSL : chaque matériau de la scène a une version « nœuds », donc three.js peut compiler la course en WGSL.\n');
