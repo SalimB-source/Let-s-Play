@@ -116,19 +116,33 @@
 .rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__etat { color: #9a958c; }
 
 /* ── Le coffre ─────────────────────────────────────────────────────────── */
+/* Le coffre est calé en bas de sa scène et garde sa taille ; l'air au-dessus
+   est réservé au couvercle levé. Sans lui, le viewBox rognerait le couvercle
+   d'un coffre ouvert grandeur nature — c'était la seule raison de le
+   rapetisser, et ce n'en est plus une. L'arène du dessus est flexible, elle
+   absorbe ces quelques pixels sans faire défiler la page. */
 .rpg-coffres-quetes__scene {
+  --coffre-h: 40px;
+  --scene-air: 12px;
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   width: 100%;
-  height: 40px;
+  height: calc(var(--coffre-h) + var(--scene-air));
 }
 .rpg-coffre-svg {
   position: relative;
   width: auto;
   height: 100%;
   filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .5));
+}
+/* Dans la rangée, le coffre garde sa hauteur propre et déborde de son viewBox
+   vers le haut : c'est l'air de la scène qui l'accueille. La cérémonie, elle,
+   garde `height: 100%` et son cadrage. */
+.rpg-coffres-quetes__scene .rpg-coffre-svg {
+  height: var(--coffre-h);
+  overflow: visible;
 }
 .rpg-coffres-quetes__slot.is-encours .rpg-coffre-svg,
 .rpg-coffres-quetes__slot.is-expire .rpg-coffre-svg { filter: grayscale(.55) brightness(.72) drop-shadow(0 3px 4px rgba(0, 0, 0, .5)); }
@@ -169,10 +183,10 @@
    toucher à la cérémonie d'ouverture, qui partage `CoffreSvg` et doit garder
    son coffre plein au moment où les pièces jaillissent.
 
-   Le viewBox est fixe : c'est le coffre qui rapetisse, ancré au sol, pour que
-   le couvercle levé tienne dans le cadre au lieu d'être rogné en haut. Le
-   couple échelle/descente est mesuré, pas deviné : à .74 et 3 px il reste
-   environ 3 unités viewBox de marge en haut comme en bas. */
+   Le coffre garde exactement la taille des autres : c'est la scène qui lui
+   ménage de l'air au-dessus, et le SVG qui déborde de son viewBox pour
+   l'occuper. La descente de 4 px est mesurée, pas devinée — elle laisse le
+   couvercle levé sous le badge du haut sans rognage. */
 .rpg-coffre-svg__gueule { opacity: 0; }
 .rpg-coffre-svg__gueule > ellipse:first-child { fill: #1b1814; }
 .rpg-coffre-svg__gueule > ellipse:last-child { fill: #0a0908; }
@@ -181,7 +195,7 @@
   transform-origin: 32px 53px;
   transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
 }
-.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__ensemble { transform: translateY(3px) scale(.74); }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__ensemble { transform: translateY(4px); }
 .rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__couvercle { transform: rotate(-40deg); }
 .rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__gueule { opacity: 1; }
 .rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg {
@@ -198,7 +212,7 @@
 /* La pastille « cartes » : ce coffre ajoute un paquet, on l'annonce avant. */
 .rpg-coffres-quetes__cartes {
   position: absolute;
-  top: -1px;
+  top: calc(var(--scene-air, 0px) - 1px);
   right: 2px;
   min-width: 15px;
   padding: 0 3px;

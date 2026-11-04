@@ -465,8 +465,8 @@ test('le coffre encaissé est vidé et entièrement grisé, gain compris', async
   assert.doesNotMatch(regle('.is-pret .rpg-coffre-dore__face'), /grayscale/);
   assert.doesNotMatch(regle('.is-encours .rpg-coffre-dore__face'), /grayscale/);
 
-  // Le couvercle bâille plus grand qu'un coffre simplement prêt, et l'ensemble
-  // se fait plus petit pour que le couvercle levé tienne dans la scène.
+  // Le couvercle bâille plus grand qu'un coffre simplement prêt, mais le
+  // coffre garde sa taille : un coffre encaissé n'est pas un coffre réduit.
   const angle = (etat) => Number(
     regle(`.is-${etat} .rpg-coffre-dore__couvercle`).match(/rotateX\((\d+)deg\)/)[1],
   );
@@ -475,7 +475,7 @@ test('le coffre encaissé est vidé et entièrement grisé, gain compris', async
   // par la variable qu'il est seul à déclarer.
   const racine = blocs.find((b) => b.selecteur.includes('.is-ouvert') && /--ecaille:/.test(b.regles)).regles;
   const ecaille = Number(racine.match(/--ecaille:\s*([\d.]+)/)[1]);
-  assert.ok(ecaille > 0 && ecaille < 1, 'le coffre vidé se fait plus petit pour tenir dans la scène');
+  assert.equal(ecaille, 1, 'le coffre ouvert garde exactement la taille des autres');
   // L'échelle est bien branchée sur le cube, sinon la déclaration ne sert à rien.
   assert.match(regle('.rpg-coffre-dore__cube'), /scale\(var\(--ecaille\)\)/);
 });
