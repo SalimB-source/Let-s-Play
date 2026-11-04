@@ -9,7 +9,7 @@ import { GAINS } from '../src/games/rpgCredits.js';
 import { QUETES } from '../src/games/rpgQuetes.js';
 import {
   METAUX_COFFRE, ORDRE_METAUX, SEUIL_ARGENT, SEUIL_OR,
-  libelleCoffre, metalPourGain, paletteCoffre,
+  libelleCoffre, metalPourGain, paletteCoffre, variablesCoffre,
 } from '../src/games/rpgCoffreMetal.js';
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,6 +29,7 @@ function installerDom() {
   globalThis.Node = dom.window.Node;
   globalThis.Event = dom.window.Event;
   globalThis.MouseEvent = dom.window.MouseEvent;
+  globalThis.PointerEvent = dom.window.MouseEvent;
   globalThis.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16);
   globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
   return dom;
@@ -101,124 +102,189 @@ test('les trois palettes sont complètes et distinctes', () => {
   assert.equal(empreintes.size, 3, 'les trois métaux ne partagent pas la même matière');
 });
 
-/* ── Le dessin : le composant rend vraiment les trois coffres ────────────── */
+/* ── Le cube : le composant rend un vrai volume, pas une image ───────────── */
 
-test('le coffre rendu porte son métal, sa matière et son état', async () => {
+/** Monter les trois métaux côte à côte, dans les trois états. */
+async function avecCoffres(fn) {
   const dom = installerDom();
   const vite = await createServer({
     server: { middlewareMode: true },
     ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
     appType: 'custom', logLevel: 'silent',
   });
+  const container = document.createElement('div');
   try {
     const { default: RpgCoffreDore } = await vite.ssrLoadModule('/src/games/RpgCoffreDore.jsx');
-    const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
-
-    const clics = [];
-    await act(async () => {
-      root.render(React.createElement('div', null, [
-        React.createElement(RpgCoffreDore, { key: 'b', etat: 'encours', montant: 60 }),
-        React.createElement(RpgCoffreDore, { key: 'a', etat: 'encours', montant: 70 }),
-        React.createElement(RpgCoffreDore, { key: 'o', etat: 'pret', montant: 100, onClick: () => clics.push('or') }),
-        React.createElement(RpgCoffreDore, { key: 'v', etat: 'ouvert', montant: 80, sousTitre: 'Cachet' }),
-      ]));
-    });
-    await act(async () => { await wait(20); });
-
-    try {
-      const coffres = [...container.querySelectorAll('[data-coffre-dore]')];
-      assert.equal(coffres.length, 4);
-      assert.deepEqual(coffres.map((c) => c.dataset.coffreMetal), ['bronze', 'argent', 'or', 'or']);
-      assert.deepEqual(coffres.map((c) => c.dataset.coffreDore), ['encours', 'encours', 'pret', 'ouvert']);
-
-      // Chaque coffre peint sa propre matière : aucun dégradé partagé.
-      const tete = (c) => c.querySelector('linearGradient stop')?.getAttribute('stop-color');
-      assert.deepEqual(coffres.slice(0, 3).map(tete), [
-        METAUX_COFFRE.bronze.face[0], METAUX_COFFRE.argent.face[0], METAUX_COFFRE.or.face[0],
-      ]);
-      const refs = coffres.map((c) => c.querySelector('linearGradient')?.id);
-      assert.equal(new Set(refs).size, 4, 'les identifiants de dégradés ne se percutent pas');
-
-      // Le volume : flanc, dessus du couvercle, ferrures, serrure, pierre.
-      const or = coffres[2];
-      assert.ok(or.querySelector('.rpg-coffre-dore__couvercle'), 'le couvercle est un groupe à part');
-      assert.ok(or.querySelector('.rpg-coffre-dore__serrure'), 'la platine de serrure est dessinée');
-      assert.ok(or.querySelector('.rpg-coffre-dore__gemme'), 'une pierre est sertie sur le couvercle');
-      assert.ok(or.querySelector('.rpg-coffre-dore__butin'), 'du butin attend dedans');
-      assert.ok(or.querySelector('clipPath'), 'les ferrures sont découpées par la silhouette');
-      assert.ok(or.querySelector('.rpg-coffre-dore__ombre'), 'le coffre est assis sur son ombre');
-
-      // Prêt = bouton ; verrouillé = simple dessin, pas un bouton mort.
-      assert.equal(coffres[0].tagName, 'DIV', 'un coffre verrouillé n’est pas cliquable');
-      assert.equal(or.tagName, 'BUTTON');
-      await act(async () => { or.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); });
-      assert.deepEqual(clics, ['or']);
-
-      // Ouvert : la coche est un SVG, pas un glyphe qui peut manquer.
-      const ouvert = coffres[3];
-      assert.ok(ouvert.querySelector('.rpg-coffre-dore__coche path'), 'la coche est tracée');
-      assert.equal(ouvert.querySelector('.rpg-coffre-dore__sous')?.textContent, 'Cachet');
-      assert.equal(ouvert.dataset.coffreDoreMontant, '80');
-
-      // Les identifiants du coffre restent valides dans un url(#…) : `useId`
-      // sort des deux-points, qui casseraient la référence au dégradé.
-      for (const c of coffres) {
-        const siens = [...c.querySelectorAll('linearGradient, radialGradient, clipPath')]
-          .filter((g) => g.id.startsWith('coffre-'));
-        assert.ok(siens.length >= 8, 'le coffre porte bien ses propres dégradés et découpes');
-        for (const g of siens) {
-          assert.match(g.id, /^[A-Za-z0-9-]+$/, `identifiant SVG utilisable : ${g.id}`);
-        }
-        for (const g of c.querySelectorAll('[id]')) {
-          assert.ok(!g.id.includes(':'), `pas de deux-points dans ${g.id}`);
-        }
-      }
-    } finally {
-      await act(async () => { root.unmount(); });
-      container.remove();
-    }
+    const rendu = async (props) => {
+      await act(async () => { root.render(React.createElement(RpgCoffreDore, props)); });
+      await act(async () => { await wait(10); });
+      return container.querySelector('[data-coffre-dore]');
+    };
+    await fn({ rendu, container });
+    await act(async () => { root.unmount(); });
   } finally {
+    container.remove();
     await vite.close();
     dom.window.close();
   }
+}
+
+/** jsdom ne met rien en page : sans boîte, l'inclinaison n'a rien à calculer. */
+function donnerBoite(el, w = 86, h = 92) {
+  el.getBoundingClientRect = () => ({
+    x: 0, y: 0, left: 0, top: 0, width: w, height: h, right: w, bottom: h, toJSON() { return this; },
+  });
+}
+
+const bouger = async (el, x, y) => {
+  await act(async () => {
+    el.dispatchEvent(new window.MouseEvent('pointermove', { bubbles: true, clientX: x, clientY: y }));
+  });
+};
+
+test('le coffre est un cube : deux boîtes de faces, une charnière arrière', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'pret', montant: 100 });
+
+    assert.equal(coffre.dataset.coffreMetal, 'or');
+    assert.equal(coffre.dataset.coffreDore, 'pret');
+
+    // Deux volumes distincts, chacun avec ses faces posées dans l'espace.
+    const caisse = coffre.querySelector('.rpg-coffre-dore__caisse');
+    const couvercle = coffre.querySelector('.rpg-coffre-dore__couvercle');
+    assert.ok(caisse && couvercle, 'la caisse et le couvercle sont deux boîtes');
+    assert.equal(caisse.querySelectorAll('.rpg-coffre-dore__face').length, 5, 'la caisse a cinq faces, le dessus étant la gueule');
+    assert.equal(couvercle.querySelectorAll('.rpg-coffre-dore__face').length, 6, 'le couvercle est fermé dessous');
+    for (const cote of ['avant', 'arriere', 'droite', 'gauche', 'dessus', 'dessous']) {
+      assert.ok(couvercle.querySelector(`.rpg-coffre-dore__face--${cote}`), `face ${cote} du couvercle`);
+    }
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__gueule'), 'l’intérieur du coffre est dessiné');
+    assert.equal(coffre.querySelectorAll('.rpg-coffre-dore__piece').length, 3, 'du butin attend dedans');
+
+    // La matière est injectée en variables : une seule source, le module pur.
+    for (const [nom, valeur] of Object.entries(variablesCoffre('or'))) {
+      assert.equal(coffre.style.getPropertyValue(nom), valeur, `${nom} vient de la palette`);
+    }
+
+    // Les ferrures, la serrure et la pierre sont de vrais éléments.
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__serrure .rpg-coffre-dore__trou'), 'la serrure a son trou');
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__moraillon'), 'le moraillon pend du couvercle');
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__face--dessus .rpg-coffre-dore__gemme'), 'la gemme est sertie sur le dessus');
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__ombre'), 'le coffre est assis sur son ombre');
+  });
 });
 
-test('le métal forcé l’emporte sur le gain, et le CSS accorde le halo au métal', async () => {
-  const dom = installerDom();
-  const vite = await createServer({
-    server: { middlewareMode: true },
-    ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
-    appType: 'custom', logLevel: 'silent',
-  });
-  try {
-    const { default: RpgCoffreDore } = await vite.ssrLoadModule('/src/games/RpgCoffreDore.jsx');
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const root = createRoot(container);
-    await act(async () => {
-      root.render(React.createElement(RpgCoffreDore, { etat: 'pret', montant: 60, metal: 'or' }));
-    });
-    try {
-      const coffre = container.querySelector('[data-coffre-dore]');
-      assert.equal(coffre.dataset.coffreMetal, 'or', 'le métal imposé gagne');
-      assert.equal(coffre.querySelector('linearGradient stop')?.getAttribute('stop-color'), METAUX_COFFRE.or.face[0]);
-    } finally {
-      await act(async () => { root.unmount(); });
-      container.remove();
+test('les trois métaux peignent trois matières différentes', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const vus = [];
+    for (const [gain, metal] of [[60, 'bronze'], [70, 'argent'], [100, 'or']]) {
+      const coffre = await rendu({ etat: 'encours', montant: gain });
+      assert.equal(coffre.dataset.coffreMetal, metal);
+      vus.push(coffre.style.getPropertyValue('--coffre-face-1'));
     }
-  } finally {
-    await vite.close();
-    dom.window.close();
-  }
+    assert.equal(new Set(vus).size, 3, 'aucun métal ne partage la matière d’un autre');
+    assert.deepEqual(vus, [METAUX_COFFRE.bronze.face[1], METAUX_COFFRE.argent.face[1], METAUX_COFFRE.or.face[1]]);
+  });
+});
 
-  // Le halo, les éclats et la plaquette suivent le métal, pas une or fixe.
+test('le curseur incline le cube, et le départ le remet au repos', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'pret', montant: 100, onClick: () => {} });
+    donnerBoite(coffre);
+    assert.equal(coffre.style.getPropertyValue('--penche-x'), '0.00deg');
+
+    // Curseur en haut à droite : l'objet se tourne vers lui.
+    await bouger(coffre, 86, 0);
+    assert.equal(coffre.style.getPropertyValue('--penche-y'), '13.00deg');
+    assert.equal(coffre.style.getPropertyValue('--penche-x'), '-7.00deg');
+
+    // En bas à gauche, l'inclinaison s'inverse.
+    await bouger(coffre, 0, 92);
+    assert.equal(coffre.style.getPropertyValue('--penche-y'), '-13.00deg');
+    assert.equal(coffre.style.getPropertyValue('--penche-x'), '7.00deg');
+
+    // React synthétise le « leave » depuis pointerout + relatedTarget.
+    await act(async () => {
+      coffre.dispatchEvent(new window.MouseEvent('pointerout', { bubbles: true, relatedTarget: document.body }));
+    });
+    assert.equal(coffre.style.getPropertyValue('--penche-x'), '0.00deg');
+    assert.equal(coffre.style.getPropertyValue('--penche-y'), '0.00deg');
+  });
+});
+
+test('cliquer un coffre prêt réclame aussitôt et fait jaillir la gerbe', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const clics = [];
+    const coffre = await rendu({ etat: 'pret', montant: 100, onClick: () => clics.push('or') });
+    assert.equal(coffre.tagName, 'BUTTON', 'un coffre prêt est un vrai bouton');
+
+    await act(async () => { coffre.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); });
+    assert.deepEqual(clics, ['or'], 'la récompense part tout de suite, l’animation ne la retarde pas');
+    assert.ok(coffre.classList.contains('is-gerbe'), 'les pièces jaillissent');
+    assert.equal(coffre.querySelectorAll('.rpg-coffre-dore__eclat').length, 6);
+  });
+});
+
+test('un coffre verrouillé tressaut mais ne verse rien', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'encours', montant: 60 });
+    assert.equal(coffre.tagName, 'DIV', 'pas de bouton mort : le coffre verrouillé n’en est pas un');
+    await act(async () => { coffre.dispatchEvent(new window.MouseEvent('pointerdown', { bubbles: true })); });
+    assert.ok(coffre.classList.contains('is-secousse'), 'il répond « pas encore »');
+    assert.ok(!coffre.classList.contains('is-gerbe'), 'aucune pièce ne sort d’un coffre fermé');
+  });
+});
+
+test('le mouvement réduit coupe l’inclinaison et la gerbe, pas le coffre', async () => {
+  await avecCoffres(async ({ rendu, container }) => {
+    const vraiMatchMedia = window.matchMedia;
+    window.matchMedia = (q) => ({ matches: q.includes('reduce'), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+    try {
+      const clics = [];
+      const coffre = await rendu({ etat: 'pret', montant: 100, onClick: () => clics.push('or') });
+      donnerBoite(coffre);
+      await bouger(coffre, 86, 0);
+      assert.equal(coffre.style.getPropertyValue('--penche-y'), '0.00deg', 'le cube ne suit pas le curseur');
+      await act(async () => { coffre.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); });
+      assert.deepEqual(clics, ['or'], 'réclamer marche toujours');
+      assert.ok(!coffre.classList.contains('is-gerbe'), 'pas de gerbe animée');
+      assert.ok(container.querySelector('.rpg-coffre-dore__caisse'), 'le volume est intact');
+    } finally {
+      window.matchMedia = vraiMatchMedia;
+    }
+  });
+});
+
+test('le métal forcé l’emporte sur le gain, et le CSS garde la chaîne 3D intacte', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'pret', montant: 60, metal: 'or' });
+    assert.equal(coffre.dataset.coffreMetal, 'or', 'le métal imposé gagne');
+    assert.equal(coffre.style.getPropertyValue('--coffre-face-1'), METAUX_COFFRE.or.face[1]);
+  });
+
   const css = await import('node:fs').then((fs) => fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8'));
   for (const metal of ORDRE_METAUX) {
     assert.match(css, new RegExp(`\\[data-coffre-metal='${metal}'\\]`), `le CSS connaît le métal ${metal}`);
   }
   assert.match(css, /background:\s*radial-gradient\(circle,\s*var\(--coffre-halo-fort\)/, 'le halo prend la couleur du métal');
-  assert.match(css, /\.rpg-coffre-dore__eclats\s*\{[^}]*fill:\s*var\(--coffre-eclat\)/, 'les éclats aussi');
   assert.match(css, /\.rpg-coffre-dore__montant\s*\{[^}]*color:\s*var\(--coffre-plaque-texte\)/s, 'la plaquette aussi');
+
+  // Une règle peut viser plusieurs sélecteurs : on les ramasse toutes.
+  const blocs = (sel) => [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter((m) => m[1].includes(`.rpg-coffre-dore${sel}`))
+    .map((m) => m[2]);
+
+  // La chaîne 3D doit rester intacte de la scène jusqu'aux boîtes.
+  for (const sel of ['__scene', '__dessin', '__cube', '__caisse', '__couvercle']) {
+    assert.ok(blocs(sel).some((b) => /transform-style:\s*preserve-3d/.test(b)), `${sel} garde le volume`);
+    // Un filtre sur un maillon 3D l'aplatirait : il n'y en a que sur les faces.
+    assert.ok(blocs(sel).every((b) => !/\bfilter:/.test(b)), `${sel} ne porte aucun filtre qui aplatirait le cube`);
+  }
+  // La charnière est à l'arrière, pas au centre du couvercle.
+  assert.ok(
+    blocs('__couvercle').some((b) => /transform-origin:\s*50%\s*100%\s*calc\(var\(--c-profondeur\)\s*\/\s*-2\)/.test(b)),
+    'le couvercle bascule sur son arête arrière',
+  );
 });

@@ -111,3 +111,26 @@ const LIBELLES_COFFRE = Object.freeze({
 export function libelleCoffre(montant) {
   return LIBELLES_COFFRE[metalPourGain(montant)];
 }
+
+/**
+ * La matière d'un coffre, en variables CSS.
+ *
+ * Le cube est construit en 3D CSS (six faces réelles) et non plus peint dans
+ * un SVG : les dégradés vivent donc dans la feuille de style. Pour garder une
+ * seule source de vérité — ce fichier — le composant injecte la palette en
+ * variables sur le coffre, et le CSS n'a plus qu'à les consommer.
+ */
+export function variablesCoffre(metal) {
+  const p = paletteCoffre(metal);
+  const vars = {
+    '--coffre-reflet': p.reflet,
+  };
+  const groupes = {
+    face: p.face, cote: p.cote, dessus: p.dessus,
+    bande: p.bande, lueur: p.lueur, gemme: p.gemme,
+  };
+  for (const [nom, couleurs] of Object.entries(groupes)) {
+    couleurs.forEach((couleur, i) => { vars[`--coffre-${nom}-${i}`] = couleur; });
+  }
+  return vars;
+}
