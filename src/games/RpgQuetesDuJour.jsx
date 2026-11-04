@@ -18,6 +18,7 @@ import {
 } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCoffreDore from './RpgCoffreDore.jsx';
+import { libelleCoffre } from './rpgCoffreMetal.js';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import './rpg-quetes-jour.css';
 
@@ -68,7 +69,7 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
                 ? `Ouvrir le coffre : +${quete.recompense} crédits`
                 : `${quete.titre} (${palierLibelle}) — encore ${reste} pour ouvrir le coffre de ${quete.recompense} crédits.`
           }
-          aria-label={`${quete.titre} (${palierLibelle}) — ${quete.recompense} crédits${terminee && !reclamee ? ', coffre à ouvrir' : ''}`}
+          aria-label={`${quete.titre} (${palierLibelle}) — ${libelleCoffre(quete.recompense)}, ${quete.recompense} crédits${terminee && !reclamee ? ', à ouvrir' : ''}`}
           {...(terminee && !reclamee ? { 'data-jouer-reclamer': id } : {})}
         />
 
@@ -157,7 +158,7 @@ export default function RpgQuetesDuJour({
                     ? `Les ${liste.length} quêtes sont réclamées : ouvrir le Coffre du cycle (+${GAINS.cachetDuCycle} crédits)`
                     : `Cachet du cycle (+${GAINS.cachetDuCycle}) : réclamez les ${liste.length} quêtes du jour.`
               }
-              aria-label={`Cachet du cycle — ${GAINS.cachetDuCycle} crédits${cachetPret ? ', coffre à ouvrir' : ''}`}
+              aria-label={`Cachet du cycle — ${libelleCoffre(GAINS.cachetDuCycle)}, ${GAINS.cachetDuCycle} crédits${cachetPret ? ', à ouvrir' : ''}`}
               {...(cachetPret ? { 'data-jouer-cachet-reclamer': true } : {})}
             />
           </div>
@@ -189,7 +190,7 @@ export default function RpgQuetesDuJour({
                   ? `Ouvrir le Coffre de la semaine : +${GAINS.cachetDeLaSemaine} crédits`
                   : `Coffre de la semaine (+${GAINS.cachetDeLaSemaine}) : ${joursRestants} jour(s) de série encore.`
               }
-              aria-label={`Coffre de la semaine — ${GAINS.cachetDeLaSemaine} crédits${semainePrete ? ', à ouvrir' : ''}`}
+              aria-label={`Coffre de la semaine — ${libelleCoffre(GAINS.cachetDeLaSemaine)}, ${GAINS.cachetDeLaSemaine} crédits${semainePrete ? ', à ouvrir' : ''}`}
               {...(semainePrete ? { 'data-jouer-semaine-reclamer': true } : {})}
             />
 
