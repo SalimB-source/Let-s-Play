@@ -49,6 +49,7 @@
   --penche-x: 0deg;
   --penche-y: 0deg;
   --levee: 0px;
+  --ecaille: 1;
 
   /* Repli si la palette n'est pas injectée : le coffre reste lisible, en or. */
   --coffre-face-0: #fff6c4;
@@ -148,7 +149,7 @@
 .rpg-coffre-dore__cube {
   position: absolute;
   inset: 0;
-  transform: translateY(var(--levee)) rotateX(var(--penche-x)) rotateY(var(--penche-y));
+  transform: translateY(var(--levee)) rotateX(var(--penche-x)) rotateY(var(--penche-y)) scale(var(--ecaille));
   transform-style: preserve-3d;
   transition: transform .18s ease-out;
 }
@@ -416,13 +417,28 @@
 .rpg-coffre-dore.is-pret .rpg-coffre-dore__gueule { opacity: 1; }
 .rpg-coffre-dore.is-pret .rpg-coffre-dore__scene { animation: rpg-coffre-dore-flotte 2.6s ease-in-out infinite; }
 
-/* ── Ouvert : grand ouvert, métal assombri, le butin est déjà parti ──────── */
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__couvercle { transform: rotateX(58deg); }
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__gueule { opacity: 1; }
+/* ── Ouvert : vidé et grisé ────────────────────────────────────────────────
+   Le butin est en bourse : le coffre n'a plus rien à promettre. Il passe en
+   niveaux de gris, son intérieur est vide, et il rapetisse d'un cran en se
+   posant plus bas — c'est ce qui laisse la place au couvercle levé sans qu'il
+   aille toucher la barre d'avancement au-dessus. */
+.rpg-coffre-dore.is-ouvert { --ecaille: .84; --levee: 8px; }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__couvercle { transform: rotateX(38deg); }
+/* L'intérieur est vidé : plus une pièce, plus de lueur, et un creux sombre
+   qui se lit comme « il n'y a plus rien dedans ». */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__gueule {
+  opacity: 1;
+  filter: grayscale(1) brightness(.7);
+  background: radial-gradient(ellipse at 50% 40%, #3a352c 0%, #1a1814 55%, #0b0a08 92%);
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, .85);
+}
 .rpg-coffre-dore.is-ouvert .rpg-coffre-dore__piece { opacity: 0; }
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__lueur { opacity: .3; }
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face { filter: saturate(.72) brightness(.85); }
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face--gauche { filter: saturate(.72) brightness(.68); }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__lueur { opacity: 0; }
+/* Tout le métal passe en niveaux de gris — ferrures, blason et gemme compris,
+   puisqu'ils sont enfants de la face. */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face { filter: grayscale(1) brightness(.82); }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__face--gauche { filter: grayscale(1) brightness(.66); }
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__ombre { opacity: .7; }
 
 /* ── Le curseur : l'objet se tourne vers lui et se soulève ───────────────── */
 .rpg-coffre-dore.is-cliquable { cursor: pointer; }
@@ -486,7 +502,6 @@
 }
 .rpg-coffre-dore__montant svg { width: 13px; height: 13px; display: block; }
 .rpg-coffre-dore__coche { color: #9fd07a; }
-.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__montant { color: #b9b2a2; border-color: rgba(185, 178, 162, .32); }
 
 .rpg-coffre-dore__sous {
   color: rgba(233, 214, 176, .78);
@@ -547,6 +562,18 @@
     0 4px 12px rgba(0, 0, 0, .6),
     inset 0 1px 0 rgba(255, 255, 255, .22);
 }
+
+/* ── Le gain grisé, une fois encaissé ──────────────────────────────────────
+   Placé après la variante « à droite » : même spécificité, c'est l'ordre qui
+   tranche, et c'est l'état ouvert qui doit avoir le dernier mot. */
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__montant {
+  color: #9a958c;
+  border-color: rgba(158, 152, 142, .3);
+  background: linear-gradient(180deg, rgba(44, 42, 38, .95), rgba(20, 19, 17, .95));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+  filter: grayscale(1);
+}
+.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__coche { color: #8e8a82; }
 
 /* Le mouvement réduit garde le volume, les états et la lumière, et retire
    l'animation. L'inclinaison au curseur est coupée côté composant. */

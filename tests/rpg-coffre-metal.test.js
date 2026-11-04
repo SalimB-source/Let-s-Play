@@ -413,3 +413,73 @@ test('le gain passe à droite du coffre, en gros, et la quête descend dessous',
   const fermetureCorps = corps.indexOf('</div>');
   assert.ok(capsule > fermetureCorps, 'la capsule est sortie du corps : elle est sous le coffre');
 });
+
+test('le coffre encaissé est vidé et entièrement grisé, gain compris', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8');
+  const blocs = [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .map((m) => ({ selecteur: m[1].trim(), regles: m[2] }));
+  // Une règle peut être groupée : on concatène tous les blocs qui visent le
+  // sélecteur cherché, puis on raisonne sur l'ensemble.
+  const regle = (needle) => blocs
+    .filter((b) => b.selecteur.includes(needle))
+    .map((b) => b.regles)
+    .join(' ');
+
+  const ouvert = (needle) => regle(`.is-ouvert .rpg-coffre-dore__${needle}`);
+
+  // Le métal passe en niveaux de gris. Le filtre est sur la face, donc il
+  // emporte toute sa garniture : ferrures, blason, gemme et clous.
+  assert.match(ouvert('face'), /grayscale\(1\)/, 'les faces du coffre ouvert doivent être grises');
+  assert.match(ouvert('face--gauche'), /grayscale\(1\)/, 'la face gauche aussi');
+
+  // Rien ne brille plus, et il ne reste aucune pièce au fond : on voit le creux.
+  assert.match(ouvert('lueur'), /opacity:\s*0\s*;/, 'plus de lueur dans un coffre vidé');
+  assert.match(ouvert('piece'), /opacity:\s*0\s*;/, 'plus de pièces au fond');
+  assert.match(ouvert('gueule'), /opacity:\s*1\s*;/, 'l’intérieur vide doit être visible');
+  assert.match(ouvert('gueule'), /inset 0 \d+px \d+px/, 'le creux doit avoir de la profondeur');
+
+  // Le gain est grisé lui aussi, plaque et coche.
+  assert.match(ouvert('montant'), /grayscale\(1\)/, 'la plaquette de gain doit être grise');
+  assert.match(ouvert('coche'), /color:\s*#8e8a82/, 'la coche suit le gris');
+
+  // Un coffre encore fermé garde sa couleur et son butin.
+  assert.doesNotMatch(regle('.is-pret .rpg-coffre-dore__face'), /grayscale/);
+  assert.doesNotMatch(regle('.is-encours .rpg-coffre-dore__face'), /grayscale/);
+
+  // Le couvercle bâille plus grand qu'un coffre simplement prêt, et l'ensemble
+  // se fait plus petit pour que le couvercle levé tienne dans la scène.
+  const angle = (etat) => Number(
+    regle(`.is-${etat} .rpg-coffre-dore__couvercle`).match(/rotateX\((\d+)deg\)/)[1],
+  );
+  assert.ok(angle('ouvert') > angle('pret'), 'le coffre encaissé doit être ouvert plus grand');
+  // Le sélecteur est précédé d'un commentaire : on identifie le bloc racine
+  // par la variable qu'il est seul à déclarer.
+  const racine = blocs.find((b) => b.selecteur.includes('.is-ouvert') && /--ecaille:/.test(b.regles)).regles;
+  const ecaille = Number(racine.match(/--ecaille:\s*([\d.]+)/)[1]);
+  assert.ok(ecaille > 0 && ecaille < 1, 'le coffre vidé se fait plus petit pour tenir dans la scène');
+  // L'échelle est bien branchée sur le cube, sinon la déclaration ne sert à rien.
+  assert.match(regle('.rpg-coffre-dore__cube'), /scale\(var\(--ecaille\)\)/);
+});
+
+test('la plaquette grisée l’emporte sur la variante « gain à droite »', async () => {
+  // Même spécificité des deux côtés : c'est l'ordre qui tranche. Si la règle
+  // du gain à droite repassait devant, le badge encaissé regagnerait son
+  // ombre portée et son fond métal.
+  const fs = await import('node:fs');
+  const css = fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8');
+  const droite = css.indexOf('.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant {');
+  const ouvert = css.indexOf('.rpg-coffre-dore.is-ouvert .rpg-coffre-dore__montant {');
+  assert.ok(droite > 0 && ouvert > droite, 'l’état ouvert doit être écrit après la variante à droite');
+});
+
+test('le coffre de la semaine passe à l’état ouvert une fois encaissé', async () => {
+  // Il restait bloqué sur « en cours » : le drapeau `semaine` n'était pas lu.
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('src/games/RpgQuetesDuJour.jsx', 'utf8');
+  assert.match(src, /const semainePrise = Boolean\(quetes\?\.semaine\)/);
+  assert.match(src, /etat=\{semainePrise \? 'ouvert' : semainePrete \? 'pret' : 'encours'\}/);
+  // Et le drapeau lu est bien celui que pose l'encaissement.
+  const quetes = fs.readFileSync('src/games/rpgQuetes.js', 'utf8');
+  assert.match(quetes, /semaine:\s*true/);
+});

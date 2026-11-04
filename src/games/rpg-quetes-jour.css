@@ -122,7 +122,7 @@
   background: linear-gradient(180deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
 }
 .rpg-quests-jour__quete.is-reclamee {
-  opacity: .56;
+  opacity: .78;
 }
 
 .rpg-quests-jour__quete-texte {

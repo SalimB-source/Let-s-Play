@@ -105,6 +105,9 @@ export default function RpgQuetesDuJour({
   const cachetPris = Boolean(quetes?.cachet);
   const cachetPret = cachetDisponible(quetes);
   const semainePrete = cachetDeLaSemaineDisponible(quetes);
+  // `semaine` est le drapeau « encaissé ». Sans lui, le coffre violet restait
+  // affiché « en cours » une fois réclamé : il avait l'air d'attendre encore.
+  const semainePrise = Boolean(quetes?.semaine);
   const serie = Math.max(0, Math.floor(Number(quetes?.serie) || 0));
   const joursRestants = joursAvantLeCachetDeLaSemaine(quetes);
   const aReclamer = quetesAReclamer(quetes).length;
@@ -181,7 +184,7 @@ export default function RpgQuetesDuJour({
             </span>
 
             <RpgCoffreDore
-              etat={semainePrete ? 'pret' : 'encours'}
+              etat={semainePrise ? 'ouvert' : semainePrete ? 'pret' : 'encours'}
               montant={GAINS.cachetDeLaSemaine}
               metal={METAL_SEMAINE}
               sousTitre="Semaine"
@@ -190,11 +193,13 @@ export default function RpgQuetesDuJour({
                 onPlaySfx?.(gagne ? 'victoire' : 'erreur');
               } : null}
               title={
-                semainePrete
-                  ? `Ouvrir le Coffre de la semaine : +${GAINS.cachetDeLaSemaine} crédits`
-                  : `Coffre de la semaine (+${GAINS.cachetDeLaSemaine}) : ${joursRestants} jour(s) de série encore.`
+                semainePrise
+                  ? 'Coffre de la semaine ouvert — le prochain dans sept jours.'
+                  : semainePrete
+                    ? `Ouvrir le Coffre de la semaine : +${GAINS.cachetDeLaSemaine} crédits`
+                    : `Coffre de la semaine (+${GAINS.cachetDeLaSemaine}) : ${joursRestants} jour(s) de série encore.`
               }
-              aria-label={`Coffre de la semaine — ${libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE)}, ${GAINS.cachetDeLaSemaine} crédits${semainePrete ? ', à ouvrir' : ''}`}
+              aria-label={`Coffre de la semaine — ${libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE)}, ${GAINS.cachetDeLaSemaine} crédits${semainePrise ? ', déjà ouvert' : semainePrete ? ', à ouvrir' : ''}`}
               {...(semainePrete ? { 'data-jouer-semaine-reclamer': true } : {})}
             />
 
