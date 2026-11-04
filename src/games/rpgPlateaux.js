@@ -124,7 +124,7 @@ export const RPG_PLATEAUX = [
     nom: 'Le Champ de bataille viking',
     lieu: 'Au nord du fjord, la lice des clans sous le ciel de cendre',
     fichier: 'plateau-champ-de-bataille-viking.jpg',
-    resume: 'Une lice viking vue parfaitement de dessus : une vaste arène de pierre claire, sobre et dégagée au centre pour lire les cartes. Sur les bords, des palissades, des boucliers ronds, des haches, des lances brisées, des bannières au corbeau et des braseros ardents. Des plumes claires et noires flottent doucement dans le vent, loin du cœur du champ de bataille.',
+    resume: 'Une lice viking vue parfaitement de dessus : une vaste arène de pierre claire, sobre et dégagée pour lire les cartes. Au milieu, un Valknut — trois triangles entrelacés — est discrètement gravé dans la pierre. Sur les bords, des palissades, des boucliers ronds, des haches, des lances brisées, des bannières au corbeau et des braseros ardents. Des plumes claires et noires flottent doucement dans le vent, loin du cœur du champ de bataille.',
   },
   {
     id: 'ruines-de-tipaza',
@@ -396,7 +396,7 @@ export function plateauParId(id) {
  * et servie depuis `public/profil/plateaux/`. Le fond pleine taille, lui, reste
  * celui de la table : la vignette ne remplace rien.
  */
-export const PLATEAU_VIGNETTE_REVISION = 'profil-plateaux-2';
+export const PLATEAU_VIGNETTE_REVISION = 'profil-plateaux-3';
 
 /** Le côté long de la vignette d'un plateau, en pixels — 3:2 comme les fonds,
  * pour une tuile de 104 px CSS nette à 2×. */

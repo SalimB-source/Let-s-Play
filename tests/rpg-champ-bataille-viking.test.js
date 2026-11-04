@@ -24,6 +24,8 @@ test('la lice viking est un nouveau plateau sélectionnable, avec fond 4K et vig
   assert.ok(plateau?.choixSeulement);
   assert.match(plateau.nom, /bataille viking/i);
   assert.match(plateau.resume, /plumes.*flottent/i);
+  assert.match(plateau.resume, /au milieu, un Valknut.*triangles entrelacés/i,
+    'le symbole nordique est gravé au centre sans couvrir les cartes');
   const fond = new URL(`../public/${plateau.fichier}`, import.meta.url);
   assert.deepEqual(tailleJpeg(fond), [3840, 2560]);
   const vignette = new URL(`../public/${vignettePlateauRelative(plateau)}`, import.meta.url);
