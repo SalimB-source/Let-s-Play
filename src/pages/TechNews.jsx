@@ -1,4 +1,5 @@
-import { dailyNewsListing as news20261103, editionDate } from '../news/daily/2026-11-03';
+import { dailyNewsListing as news20261104, editionDate } from '../news/daily/2026-11-04';
+import { dailyNewsListing as news20261103 } from '../news/daily/2026-11-03';
 import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
 import React, { useEffect, useState, useMemo } from 'react';
@@ -102,6 +103,7 @@ export default function TechNews() {
   // Blanche. Les plus récentes ouvrent la page ; chaque carte affiche le
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
   const articles = useMemo(() => [
+    ...news20261104.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261103.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261102.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...edition20261101.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),

@@ -1,12 +1,12 @@
-import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-02';
+import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-03';
 import React from 'react';
 import '../news-view-toggle.css';
 import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-03';
-import { dailyNewsListing as todayCultureTechNews } from '../news/daily/2026-11-03';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-04';
+import { dailyNewsListing as todayCultureTechNews } from '../news/daily/2026-11-04';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from '../components/ReleasesCalendar';

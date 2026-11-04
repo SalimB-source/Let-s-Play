@@ -76,6 +76,44 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+  // Édition du 04.11.2026 : médias officiels et absence explicite de vidéo pour les Labs Apple.
+  "lightyear-frontier-1-0-4-novembre-2026": {
+  "label": "LIGHTYEAR FRONTIER",
+  "meta": "Lightyear Frontier",
+  "items": [
+    {
+      "id": "YlFr76IUmrk",
+      "kind": "trailer",
+      "title": "Lightyear Frontier: 1.0 Release Date Reveal Trailer",
+      "channel": "Lightyear Frontier",
+      "verified": "04.11.2026",
+      "note": "Bande-annonce de la chaîne officielle du jeu, publiée le 30 septembre 2026. Elle annonce la version 1.0 pour le 4 novembre, et n’est pas une nouvelle vidéo mise en ligne aujourd’hui."
+    }
+  ],
+  "credit": "Vidéo officielle : Lightyear Frontier, YouTube."
+},
+  "cinema/godzilla-minus-zero-sortie-france-4-novembre-2026": {
+  "label": "GODZILLA MINUS ZERO",
+  "meta": "All The Anime, France",
+  "items": [
+    {
+      "id": "t3ou5N7e9M0",
+      "kind": "trailer",
+      "title": "Trailer Officiel #2 - GODZILLA MINUS ZERO",
+      "channel": "All The Anime, France",
+      "verified": "04.11.2026",
+      "note": "Bande-annonce officielle publiée le 11 octobre 2026. Sa description annonce une sortie française le 4 novembre : les dates et disponibilités restent propres à chaque territoire."
+    }
+  ],
+  "credit": "Vidéo officielle : All The Anime, France, YouTube."
+},
+  "tech/siri-ai-developer-preview-labs-4-novembre-2026": {
+  "label": "SIRI AI",
+  "meta": "APPLE DEVELOPER",
+  "items": [],
+  "pending": "Aucune vidéo officielle spécifique aux Group Labs des 4 et 5 novembre n’a été identifiée dans l’annonce Apple consultée. Le visuel est l’illustration officielle Siri AI ; les inscriptions et la documentation sont accessibles depuis la source, sans lecteur vidéo présenté comme une retransmission."
+},
+
   // Édition du 03.11.2026 : dates originales et statut de diffusion précisés dans les notes.
   "ps-plus-novembre-2026-disponibilite-3-novembre": {
   "label": "PS PLUS",
