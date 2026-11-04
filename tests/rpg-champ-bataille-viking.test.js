@@ -26,6 +26,7 @@ test('la lice viking est un nouveau plateau sélectionnable, avec fond 4K et vig
   assert.match(plateau.resume, /plumes.*flottent/i);
   assert.match(plateau.resume, /au milieu, un Valknut.*triangles entrelacés/i,
     'le symbole nordique est gravé au centre sans couvrir les cartes');
+  assert.match(plateau.resume, /Aucun brasero ni flamme/i, 'la nouvelle peinture est froide, sans feu');
   const fond = new URL(`../public/${plateau.fichier}`, import.meta.url);
   assert.deepEqual(tailleJpeg(fond), [3840, 2560]);
   const vignette = new URL(`../public/${vignettePlateauRelative(plateau)}`, import.meta.url);
@@ -34,8 +35,10 @@ test('la lice viking est un nouveau plateau sélectionnable, avec fond 4K et vig
   assert.equal(tablePlaqueFile(plateau), plateau.fichier);
   const theme = tableSceneTheme(plateau.id);
   assert.equal(theme.objets.length, 0);
-  assert.ok(theme.lights.some(({ flicker }) => flicker > 0));
-  assert.ok(theme.particles.vx > 0);
+  assert.equal(theme.lights.length, 0, 'aucun ancien reflet de brasero en 3D');
+  assert.ok(theme.particles.vx > 0 && theme.particles.vy < 0, 'du givre porté par le vent');
+  assert.doesNotMatch(lire('../src/games/RpgDuelPage.jsx'), /RpgBraisesVikings/,
+    'aucune braise animée ne doit flotter sur cette peinture sans feu');
   assert.equal(RPG_PLATEAU_MUSIC_FILES[plateau.id], '/Last Valkyrie song.mp3');
   assert.ok(existsSync(new URL('../public/Last Valkyrie song.mp3', import.meta.url)));
   assert.notEqual(RPG_PLATEAU_MUSIC_FILES[plateau.id], RPG_PLATEAU_MUSIC_FILES['village-viking']);
