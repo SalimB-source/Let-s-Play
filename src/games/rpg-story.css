@@ -2170,3 +2170,33 @@
   .rpg-mode-menu--tours .rpg-story-floor__gain { margin-top: 0; justify-content: flex-end; }
   .rpg-mode-menu--tours .rpg-story-floor__badge { justify-self: end; }
 }
+
+/* La campagne est une page, non une carte centrée : le décor remplit toute la
+   zone disponible à côté de la navigation, y compris sous les actions. Le
+   contenu reste lisible et la page défile si la hauteur ne suffit pas. */
+.rpg-mode-menu--histoire .rpg-story {
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  grid-template-rows: minmax(100%, auto);
+}
+.rpg-mode-menu--histoire .rpg-campaign {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  border: 0;
+}
+.rpg-mode-menu--histoire .rpg-campaign__copy {
+  width: 100%;
+  max-width: 760px;
+  padding: clamp(24px, 5vw, 72px);
+}
+.rpg-mode-menu--histoire .rpg-story__footer {
+  position: relative;
+  margin-top: auto;
+  padding: 0 clamp(24px, 5vw, 72px) clamp(24px, 4vw, 48px);
+}
+.rpg-mode-menu--histoire .rpg-mode-menu__footer { display: none; }

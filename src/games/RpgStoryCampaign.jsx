@@ -5,7 +5,7 @@ import { RPG_STORY_ACTES, RPG_STORY_CAMPAIGN_FLOORS, RPG_STORY_CAMPAIGN_MINIATUR
 import { StoryPortrait, StoryStorageNotice } from './RpgStoryScene.jsx';
 
 /** Entrée narrative, sans remplacer la galerie des tours libres. */
-export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, onContinue, onJournal, onRestart, sauvegardeOk, duelEnCours = false, campagneEnCours = false }) {
+export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, onContinue, onJournal, onRestart, sauvegardeOk, duelEnCours = false, campagneEnCours = false, children }) {
   const [confirmer, setConfirmer] = useState(null);
   const [acteApercuId, setActeApercuId] = useState(null);
   // La feuille ne se tourne qu'au changement d'acte : au premier rendu, le
@@ -154,6 +154,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
           <button type="button" className="rpg-narrative-button rpg-narrative-button--quiet" onClick={() => setConfirmer(null)}>Annuler</button>
         </div>}
       </div>
+      {children}
       <span className="rpg-campaign__chapter" aria-hidden="true">{acteAffiche.titre.toUpperCase()}<br /><b>{acteAffiche.romain}</b></span>
     </section>
   );
