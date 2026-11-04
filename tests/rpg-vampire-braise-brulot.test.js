@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cardById, RPG_ELEMENTS, cardHasPrintedType } from '../src/games/rpgCards.js';
+import { cardArt } from '../src/games/rpgCardArt.js';
 import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgAttaquerCreature, rpgLancerMagie, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 import { resultatBlocage } from '../src/games/rpgAI.js';
 function duel() { const d=rpgNouveauDuel({joueurDeck:[],sorcierDeck:[],rng:()=>0.9}); for (const cote of ['joueur','sorcier']) d[cote].mana=Object.fromEntries(RPG_ELEMENTS.map(e=>[e,40])); return d; }
 function pose(d,c,id, cible=null, opts={}) { d[c].main.push(id); const r=rpgJouerCreature(d,c,id,cible,opts); assert.equal(r.ok,true,`${id}: ${r.raison}`); return r.entite; }
-test('Vampire des braises : 2/2 coût 2, Rapidité, Embuscade et Vampire',()=>{
- const c=cardById('vampire-des-braises'); assert.deepEqual([c.cost,c.atk,c.def,c.element,c.rapidite,c.reactionTourAdverse],[2,2,2,'braise',true,true]); assert.ok(cardHasPrintedType(c,'Vampire'));
+test('Vampire des braises : 2/2 coût 3, Rapidité, Embuscade et Vampire',()=>{
+ const c=cardById('vampire-des-braises'); assert.deepEqual([c.cost,c.atk,c.def,c.element,c.rapidite,c.reactionTourAdverse],[3,2,2,'braise',true,true]); assert.ok(cardHasPrintedType(c,'Vampire'));
+ assert.match(cardArt(c.id), /vampire-braise-souffle-v2$/, 'le nouvel art qui crache du feu contourne le cache');
 });
 test('Vampire inflige 1 dégât à chaque bloqueur avant les dégâts de combat',()=>{
  const d=duel(), a=pose(d,'joueur','vampire-des-braises'), b=pose(d,'sorcier','dune-marchante');

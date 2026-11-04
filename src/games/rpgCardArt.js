@@ -60,7 +60,7 @@ const SET_NEIGE_SOULS_VERSION = 'neige-souls-cendres-v1';
 const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
-  'vampire-des-braises': 'vampire-braise-v1',
+  'vampire-des-braises': 'vampire-braise-souffle-v2',
   'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',
@@ -93,7 +93,7 @@ const CARD_ART_CACHE_VERSIONS = {
   // Braise — la refonte Souls (huile sombre, réaliste) du set Soleil rouge.
   // Une révision partagée pour le lot ; Susanoo et Kagutsuchi, repeints une
   // seconde fois de zéro, portent leur propre révision.
-  'susanoo': 'braise-souls-cendres-v2',
+  'susanoo': 'braise-souls-susanoo-face-tempete-v8',
   'kagutsuchi-flamme-originelle': 'braise-souls-cendres-v2',
   'orochi': 'braise-souls-cendres-v3',
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',

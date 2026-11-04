@@ -2508,6 +2508,30 @@ function riposteDeContreAttaque(duel, defenseur, source) {
   return true;
 }
 
+/** La réplique imprimée du Gardien de la porte ardente ne vaut qu'une blessure :
+ * elle se déclenche à la désignation par Attaque ciblée, même si la frappe rate
+ * ou détruit le Gardien, et ne répond jamais aux sorts ni au combat ordinaire. */
+function riposteSurAttaqueCiblee(duel, defenseur, coteAttaquant, attaquantId) {
+  // Relire la carte pour que les créatures déjà sauvegardées gagnent aussi
+  // cette capacité, sans migration de leurs entités en jeu.
+  const carte = duelCardById(defenseur?.carteId);
+  const force = Math.max(0, Number(carte?.riposteAttaqueCiblee) || 0);
+  const attaquant = duel[coteAttaquant].creatures.find((entite) => entite.id === attaquantId);
+  if (!force || !attaquant) return false;
+  const coteDefenseur = autre(coteAttaquant);
+  presenterEffet(duel, coteDefenseur, defenseur.carteId);
+  journaliserAnimationCombat(duel, {
+    type: 'contre-attaque',
+    depuis: { type: 'creature', cote: coteDefenseur, entiteId: defenseur.id },
+    cible: { type: 'creature', cote: coteAttaquant, entiteId: attaquant.id },
+  });
+  duel.log.push(`${defenseur.name} réplique à l’Attaque ciblée de ${attaquant.name} : ${force} dégât${force > 1 ? 's' : ''}.`);
+  if (!rpgEstProtegee(attaquant, cardColors(carte))
+    && paradeZoneBloque(duel, attaquant, 'capacite', coteAttaquant, coteDefenseur)) return true;
+  rpgBlesserCreature(duel, coteAttaquant, attaquant.id, force, cardColors(carte), null, 'capacite', defenseur.carteId);
+  return true;
+}
+
 /**
  * La Contre-attaque d'un effet ciblé : la créature adverse désignée par une
  * capacité riposte sur la créature source, celle d'un sort sur le sorcier qui
@@ -7471,19 +7495,19 @@ export function rpgLancerAttaque(
   for (const traque of traquesCombat) {
     duel.log.push(`Traque : ${traque.attaquant} gagne +${traque.bonus}/+0 contre ${traque.cible} pour ce combat.`);
   }
-  // Contre-attaque : la cible d’une attaque ciblée rend le coup, qu'elle ait
-  // encaissé la frappe ou qu'elle l'ait esquivée — seule une frappe RATÉE ne
-  // lui laisse rien à rendre. Même une cible détruite rend le coup avec son
-  // attaque au moment de la frappe. La riposte est résolue après
-  // le journal de la frappe rapide, pour que le récit se lise dans l'ordre.
+  // Le Gardien répond dès qu'il est désigné, même sur une frappe ratée ou
+  // mortelle. La Contre-attaque ordinaire, elle, exige un coup réellement porté
+  // (ou esquivé). Les deux se lisent après la frappe dans le journal.
   for (const frappe of frappesRapides) {
-    if (frappe.annule || frappe.rate) continue;
-    const coup = degatsAvantCombat.find((candidate) => candidate.rapide
-      && candidate.sourceId === frappe.attaquantId && candidate.entiteId === frappe.cibleId);
-    if (!coup?.contreAttaqueAtteinte) continue;
+    if (frappe.annule) continue;
     const defenseur = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId)
       ?? (ciblesRapidesDetruites.has(frappe.cibleId) ? etatsCiblesRapides.get(frappe.cibleId) : null);
     if (!defenseur) continue;
+    riposteSurAttaqueCiblee(duel, defenseur, cote, frappe.attaquantId);
+    if (frappe.rate) continue;
+    const coup = degatsAvantCombat.find((candidate) => candidate.rapide
+      && candidate.sourceId === frappe.attaquantId && candidate.entiteId === frappe.cibleId);
+    if (!coup?.contreAttaqueAtteinte) continue;
     riposteDeContreAttaque(duel, defenseur, {
       type: 'creature', cote, entiteId: frappe.attaquantId,
     });

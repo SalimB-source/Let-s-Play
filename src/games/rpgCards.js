@@ -421,9 +421,10 @@ export const CARD_KIND_LABELS = {
 export const RPG_CREATURE_CARDS = [
   {
     id: 'gardien-de-la-porte-ardente', name: 'Gardien de la porte ardente',
-    element: 'braise', cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
+    element: 'braise', cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain · Gardien', defenseur: true, provocation: true,
-    text: 'Défenseur. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible.',
+    riposteAttaqueCiblee: 1,
+    text: 'Défenseur. Provocation — Quand cette créature attaque, elle doit être bloquée par au moins une créature si possible. Quand une créature adverse le cible avec Attaque ciblée, il lui inflige 1 dégât, même si l’attaque rate ou le détruit.',
     flavor: 'Derrière lui, le brasier veille sur les derniers vivants.',
   },
   {
@@ -444,7 +445,7 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
-    cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
     rapidite: true, reactionTourAdverse: true,
     combat: { type: 'degats-creature-combattue', amount: 1, quand: 'attaque-bloquee' },
     text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',

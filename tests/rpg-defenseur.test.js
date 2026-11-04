@@ -7,8 +7,8 @@ import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 import { RPG_REVELATIONS_PAR_ETAGE } from '../src/games/rpgCollection.js';
 import { existsSync } from 'node:fs';
 
-function scene() {
-  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
+function scene(rng = () => 0.5) {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng });
   duel.phase = 'principale'; duel.tour = 'joueur';
   duel.mulliganFait = { joueur: true, sorcier: true };
   duel.joueur.creatures.push({ id: 'a', carteId: 'feriel', name: 'Fériel', coupRapide: true, ready: true, attaquee: false, atk: 3, pv: 3 });
@@ -117,11 +117,15 @@ test('la fiche et la carte sur table montrent la nouvelle icône Défenseur', as
 test('les nouveaux Défenseurs Braise et Sable sont jouables et disponibles', async () => {
   const { COLLECTION_DEPART } = await import('../src/games/rpgCollection.js');
   for (const [id, element, cost, atk, def, provocation] of [
-    ['gardien-de-la-porte-ardente', 'braise', 3, 2, 3, true],
+    ['gardien-de-la-porte-ardente', 'braise', 3, 2, 4, true],
     ['gardienne-des-portes-de-sable', 'sable', 2, 1, 4, false],
   ]) {
     const carte = cardById(id);
     assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.defenseur, !!carte.provocation], [element, cost, atk, def, true, provocation]);
+    if (id === 'gardien-de-la-porte-ardente') {
+      assert.equal(carte.riposteAttaqueCiblee, 1);
+      assert.match(carte.text, /Attaque ciblée.*1 dégât/);
+    }
     assert.ok(COLLECTION_DEPART.includes(id));
     assert.ok(existsSync(`public/cards/${id}.jpg`));
     assert.ok(effetsDetailles(carte).pastilles.some(p => p.cle === 'defenseur'));
@@ -131,6 +135,8 @@ test('les nouveaux Défenseurs Braise et Sable sont jouables et disponibles', as
       d[cote].main.push(id);
       const r = rpgJouerCreature(d, cote, id);
       assert.ok(r.ok, `${id}: ${r.raison}`);
+      assert.equal(r.entite.atk, atk, `${id} : attaque sur le plateau`);
+      assert.equal(r.entite.pv, def, `${id} : points de vie sur le plateau`);
       assert.equal(r.entite.defenseur, true);
       assert.equal(!!r.entite.provocation, provocation);
     }
@@ -147,6 +153,52 @@ test('les nouveaux Défenseurs protègent les autres créatures des Attaques cib
     assert.equal(attaquer(d, 'normal').raison, 'defenseur');
     assert.equal(attaquer(d, defenseur.id).ok, true);
   }
+});
+
+const poserGardienBraise = (duel) => {
+  duel.sorcier.creatures = [];
+  duel.sorcier.mana = Object.fromEntries(RPG_ELEMENTS.map((element) => [element, 30]));
+  duel.sorcier.main.push('gardien-de-la-porte-ardente');
+  return rpgJouerCreature(duel, 'sorcier', 'gardien-de-la-porte-ardente').entite;
+};
+
+test('le Gardien 2/4 inflige exactement 1 dégât à la créature qui le vise avec Attaque ciblée', () => {
+  const duel = scene();
+  const gardien = poserGardienBraise(duel);
+  const attaquant = duel.joueur.creatures[0];
+  assert.equal(attaquer(duel, gardien.id).ok, true);
+  assert.equal(gardien.pv, 1, 'il encaisse la frappe de 3 sur ses 4 PV');
+  assert.equal(attaquant.pv, 2, 'la réplique retire 1 PV, pas les 2 ATQ du Gardien');
+  assert.match(duel.log.join(' '), /Gardien de la porte ardente réplique à l’Attaque ciblée.*1 dégât/);
+});
+
+test('le Gardien réplique même si l’Attaque ciblée rate ou le détruit', () => {
+  const rate = scene(() => 0);
+  const gardienRate = poserGardienBraise(rate);
+  const attaquantRate = rate.joueur.creatures[0];
+  assert.equal(attaquer(rate, gardienRate.id).ok, true);
+  assert.equal(gardienRate.pv, 4);
+  assert.equal(attaquantRate.pv, 2, 'être ciblé suffit à déclencher la réplique');
+
+  const mortel = scene();
+  const gardienMortel = poserGardienBraise(mortel);
+  const attaquantMortel = mortel.joueur.creatures[0];
+  attaquantMortel.atk = 5;
+  assert.equal(attaquer(mortel, gardienMortel.id).ok, true);
+  assert.ok(!mortel.sorcier.creatures.includes(gardienMortel));
+  assert.equal(attaquantMortel.pv, 2, 'la cible détruite répond quand même');
+});
+
+test('la réplique du Gardien ne part ni sur une magie ni sur un combat bloqué ordinaire', () => {
+  const duel = scene();
+  const gardien = poserGardienBraise(duel);
+  const attaquant = duel.joueur.creatures[0];
+  rpgBlesserCreature(duel, 'sorcier', gardien.id, 1, ['sable'], null, 'magie');
+  assert.equal(attaquant.pv, 3);
+  attaquant.coupRapide = false;
+  attaquant.atk = 1;
+  assert.equal(rpgLancerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: [gardien.id] }).ok, true);
+  assert.equal(attaquant.pv, 1, 'seuls les 2 dégâts du blocage normal sont subis');
 });
 
 test('le gardien Braise attire un bloqueur quand il attaque, sans obligation d’attaquer', () => {

@@ -591,7 +591,7 @@ poussiéreux. Aucune image ne porte de cadre, de marge, de texte, de
 calligraphie, de signature ni de glyphe. Les vingt-neuf peintures sont livrées
 **plein art 4:5** (1024×1280) sous leurs anciens noms de fichiers. Révisions
 de cache (`CARD_ART_CACHE_VERSIONS`), une par lot : `braise-souls-cendres-v2`
-(Susanoo, Kagutsuchi), `-v3` (Orochi, Oni, Daimyō, Tengu, Onna-musha, Fériel,
+(Kagutsuchi ; Susanoo a depuis sa révision dédiée), `-v3` (Orochi, Oni, Daimyō, Tengu, Onna-musha, Fériel,
 Ifrit al-Ahmar, Anqa, Ifrit des ergs, Sahir) et `-v4` (Cavalier, Lionne,
 Shogun promu, Kenshi, Rōnin, Hatamoto, Ashigaru, Braisier, Serment de la
 forge, Armure de cendres) et `-v5` (Tour de braise, Sabre maudit, Trait de
@@ -604,7 +604,8 @@ Montagne du Soleil rouge — un terrain, hors du lot des cartes jouées.
 Les idées et les sujets documentés du set sont conservés — mêmes créatures,
 mêmes scènes, même esprit ; seule la facture change. Susanoo et Kagutsuchi ont
 été **repeints de zéro** (composition neuve, sans référence à l'ancienne
-carte) et portent à ce titre la révision `braise-souls-cendres-v2`.
+carte) ; Kagutsuchi porte encore la révision `braise-souls-cendres-v2`, Susanoo
+une révision ultérieure où Orochi occupe le premier plan.
 
 ### Les illustrations alternatives
 
@@ -760,10 +761,12 @@ La protection et le contresort de Boualem s’appliquent aux capacités ciblées
 Sans créature ciblable déjà présente, Susanoo peut être posé sans cible.
 
 Le joueur désigne la cible dans l’interface ; l’IA privilégie une menace
-adverse. Illustration kaiga colorée dédiée `susanoo.jpg`, 1024×1280,
-version `susanoo-kaiga-couleurs-v1` : kami des tempêtes au katana sur une
-côte balayée par un vortex. Un exemplaire remplace une Onna-musha dans le
-deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
+adverse. L’illustration actuelle `susanoo.jpg` (768×960, révision
+`braise-souls-susanoo-face-tempete-v8`) retrouve la tempête sombre de l’image de
+base : Orochi se dessine dans le tourbillon d’eau qui monte de la mer à gauche.
+Susanoo, plus petit et plus éloigné sur la droite, se tourne et regarde vers
+cette tempête, une main tendue pour la commander. Un exemplaire remplace une Onna-musha dans
+le deck Soleil rouge : toujours 40 cartes, 17 créatures, 7 magies et 16 terrains.
 Susanoo se débloque à `sables-3`.
 
 ## Dérogation : deux armes et le serpent en photoréaliste (octobre 2026)
