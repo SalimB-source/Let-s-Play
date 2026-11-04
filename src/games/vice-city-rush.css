@@ -2389,8 +2389,8 @@
   border-color: var(--cr-border-strong);
 }
 
-/* Écran de pause : la conduite et la vue se règlent sans quitter la course.
-   Rangée plus discrète que REPRENDRE / MENU PRINCIPAL, juste en dessous. */
+/* Écran de pause : la conduite, la vue et le rendu se règlent sans quitter la
+   course. Rangée plus discrète que REPRENDRE / MENU PRINCIPAL, juste en dessous. */
 .city-rush-pause-options {
   margin-top: 12px;
   gap: 10px;
@@ -2398,6 +2398,14 @@
 
 .city-rush-pause-options .city-rush-text-button {
   font-size: 9px;
+}
+
+/* Rendu cinéma armé : le bouton s'allume comme les interrupteurs de la barre
+   (plein écran, cockpit), pour se lire d'un coup d'œil en pleine course. */
+.city-rush-pause-options .city-rush-pause-graphics[aria-pressed='true'] {
+  color: var(--cr-text);
+  border-color: var(--cr-border-strong);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .city-rush-result-grid {

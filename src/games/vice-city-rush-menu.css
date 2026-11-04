@@ -378,6 +378,13 @@
   cursor: pointer;
 }
 .vcr-menu-panel button:hover { border-color: #ffd23e; color: #ffd23e; }
+/* Le rendu cinéma armé se lit comme un interrupteur allumé ; refusé sur un
+   appareil allégé, il reste lisible mais s'annonce par son libellé. */
+.vcr-menu-panel .vcr-menu-graphics-option[aria-pressed='true'] {
+  border-color: #ffd23e;
+  color: #ffd23e;
+  background: rgba(255, 210, 62, 0.12);
+}
 .vcr-menu-panel-close { margin-top: 14px; }
 
 /* ── Mobile ────────────────────────────────────────────────────────────── */

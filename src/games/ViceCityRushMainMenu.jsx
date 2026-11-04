@@ -109,6 +109,9 @@ export default function ViceCityRushMainMenu({
   onToggleCamera,
   drivingMode = 'free',
   onToggleDriving,
+  graphicsMode = 'standard',
+  onToggleGraphics,
+  cinemaSupported = true,
   onToggleFullscreen,
   onStartTutorial,
   onStartFreeDrive,
@@ -149,11 +152,13 @@ export default function ViceCityRushMainMenu({
       else if (isFullscreenShortcut(event)) { event.preventDefault(); onToggleFullscreen?.(); }
       else if (key === 'm') { event.preventDefault(); onToggleSound?.(); }
       else if (key === 'c' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); onToggleCamera?.(); }
+      // V : rendu cinéma ⇄ standard (le halo de post-traitement).
+      else if (key === 'v' && !event.ctrlKey && !event.metaKey && !event.altKey) { event.preventDefault(); onToggleGraphics?.(); }
       else if (key === 'escape') { setPanel(null); }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [index, panel, navigate, onToggleFullscreen, onToggleSound, onToggleCamera, onPick]);
+  }, [index, panel, navigate, onToggleFullscreen, onToggleSound, onToggleCamera, onToggleGraphics, onPick]);
 
   // Tactile : un glissé horizontal fait défiler le carrousel.
   const onTouchStart = (event) => { touchX.current = event.touches[0]?.clientX ?? null; };
@@ -283,6 +288,24 @@ export default function ViceCityRushMainMenu({
               title={drivingMode === 'lanes' ? 'Passer à la conduite libre : la voiture glisse où tu veux' : 'Passer à la conduite par voies : un écart de voie par pression'}
             >
               CONDUITE : {drivingMode === 'lanes' ? 'VOIES' : 'LIBRE'}
+            </button>
+            {/* Le rendu : la scène droit dans l'écran (standard) ou passée par
+                la chaîne de post-traitement (halo sur les néons et les phares).
+                `cinemaSupported` dit la vérité quand la machine est allégée
+                (tactile, coque Android) : le choix est gardé, il s'appliquera
+                sur un appareil capable. */}
+            <button
+              type="button"
+              className="vcr-menu-graphics-option"
+              onClick={onToggleGraphics}
+              aria-pressed={graphicsMode === 'cinema'}
+              title={!cinemaSupported
+                ? 'Rendu cinéma refusé sur cet appareil (qualité allégée) : le choix s’appliquera sur un appareil capable'
+                : graphicsMode === 'cinema'
+                  ? 'Revenir au rendu standard, sans halo'
+                  : 'Halo de post-traitement sur les néons, phares et gyrophares'}
+            >
+              RENDU : {graphicsMode === 'cinema' ? 'CINÉMA' : 'STANDARD'}{cinemaSupported ? '' : ' · NON DISPO ICI'}
             </button>
             <button type="button" onClick={onToggleFullscreen}>PLEIN ÉCRAN · F</button>
             <button type="button" onClick={onStartTutorial}>TUTORIEL GUIDÉ</button>

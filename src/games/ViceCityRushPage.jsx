@@ -26,6 +26,15 @@ import {
   nextCityRushDrivingMode,
   normalizeCityRushDrivingMode,
 } from './cityRushFreeDrive.js';
+import {
+  CITY_RUSH_GRAPHICS_CINEMA,
+  CITY_RUSH_GRAPHICS_PREF_KEY,
+  cityRushCinemaAvailable,
+  cityRushGraphicsModeLabel,
+  cityRushLiteDevice,
+  nextCityRushGraphicsMode,
+  normalizeCityRushGraphicsMode,
+} from './cityRushPost.js';
 import { CityRushAudio } from './cityRushAudio';
 import { isFullscreenShortcut, nativeFullscreenElement, opensFullscreenOnLaunch } from './gameFullscreen';
 import useGameFullscreen from './useGameFullscreen';
@@ -386,6 +395,15 @@ function readDrivingPref() {
 function writeDrivingPref(value) {
   try { window.localStorage.setItem(CITY_RUSH_DRIVING_PREF_KEY, normalizeCityRushDrivingMode(value)); } catch {}
 }
+// Rendu de la course (standard ou cinéma) : préférence de l'appareil. Le
+// niveau cinéma ajoute le halo de post-traitement ; la qualité allégée le
+// refuse (voir `cityRushCinemaAvailable`), mais le choix reste mémorisé.
+function readGraphicsPref() {
+  try { return normalizeCityRushGraphicsMode(window.localStorage.getItem(CITY_RUSH_GRAPHICS_PREF_KEY)); } catch { return normalizeCityRushGraphicsMode(null); }
+}
+function writeGraphicsPref(value) {
+  try { window.localStorage.setItem(CITY_RUSH_GRAPHICS_PREF_KEY, normalizeCityRushGraphicsMode(value)); } catch {}
+}
 
 /** Icône de la vue cockpit : un volant, décoratif (le bouton porte son libellé). */
 function CockpitIcon() {
@@ -621,6 +639,21 @@ export default function ViceCityRushPage() {
   const cockpitView = cameraMode === CITY_RUSH_CAMERA_COCKPIT;
   const [drivingMode, setDrivingMode] = useState(readDrivingPref);
   const freeDrive = drivingMode === CITY_RUSH_DRIVING_FREE;
+  // Rendu : standard (la scène droit dans l'écran) ou cinéma (chaîne de
+  // post-traitement). L'appareil est interrogé une fois : la qualité allégée
+  // (tactile, WebView Android) garde le rendu standard, et l'option le dit.
+  const [graphicsMode, setGraphicsMode] = useState(readGraphicsPref);
+  const [liteDevice] = useState(cityRushLiteDevice);
+  // `cinemaSupported` : la machine en est-elle capable ? `cinemaAvailable` :
+  // le cinéma tourne-t-il *maintenant* (mode cinéma demandé sur une machine
+  // capable). L'écran-titre annonce la première, la pause décrit la seconde.
+  const cinemaSupported = !liteDevice;
+  const cinemaAvailable = cityRushCinemaAvailable({ mode: graphicsMode, lite: liteDevice });
+  // Ce que la chaîne a réellement monté (le monde le publie à chaque
+  // `setGraphics`) : l'option le dit au survol au lieu de promettre un halo
+  // que la carte refuse. Hors course, rien n'est monté : `null`.
+  const [graphicsLive, setGraphicsLive] = useState(null);
+  const handleWorldGraphics = useCallback((state) => setGraphicsLive(state), []);
   // Écran-titre façon NFS : Most Wanted posé à l'arrivée : le carrousel du
   // menu chapeaute la page. Version légère — la photo du modèle sert de décor
   // statique, aucune scène 3D n'est montée tant que le menu est ouvert.
@@ -1187,6 +1220,7 @@ export default function ViceCityRushPage() {
   useEffect(() => { writeSoundPref(soundOn); }, [soundOn]);
   useEffect(() => { writeCameraPref(cameraMode); }, [cameraMode]);
   useEffect(() => { writeDrivingPref(drivingMode); }, [drivingMode]);
+  useEffect(() => { writeGraphicsPref(graphicsMode); }, [graphicsMode]);
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -1224,6 +1258,11 @@ export default function ViceCityRushPage() {
   // Conduite libre ⇄ par voies (menu Options, écran de pause). Le monde
   // l'applique tout de suite, même en pleine course.
   const toggleDriving = useCallback(() => setDrivingMode((current) => nextCityRushDrivingMode(current)), []);
+
+  // Rendu cinéma ⇄ standard (menu Options, écran de pause). Le monde applique
+  // le changement tout de suite, même en pleine course : la chaîne se monte
+  // (ou se démonte) sans reconstruire la scène, la course ne s'arrête pas.
+  const toggleGraphics = useCallback(() => setGraphicsMode((current) => nextCityRushGraphicsMode(current)), []);
 
   // Le navigateur vient de refermer le plein écran (Échap, geste « retour »
   // d'Android) : en pleine course, on suspend plutôt que de laisser la voiture
@@ -2025,6 +2064,9 @@ export default function ViceCityRushPage() {
           onToggleCamera={toggleCamera}
           drivingMode={drivingMode}
           onToggleDriving={toggleDriving}
+          graphicsMode={graphicsMode}
+          onToggleGraphics={toggleGraphics}
+          cinemaSupported={cinemaSupported}
           onToggleFullscreen={toggleImmersive}
           onStartTutorial={handleTitleTutorial}
           onStartFreeDrive={() => { audioRef.current?.stop(); setFreeRoamCarId('pulse-rs'); setTitleMenuOpen(false); setFreeRoamOpen(true); }}
@@ -2132,7 +2174,11 @@ export default function ViceCityRushPage() {
             className={`city-rush-viewport${phase === 'intro' ? ' is-intro' : ''}${phase === 'playing' ? ' is-live' : ''}${tutorialMode ? ' is-tutorial' : ''}${hud.boostLeft > 0 && phase === 'playing' ? ' is-boosting' : ''}${hud.stunLeft > 0 && phase === 'playing' ? ' is-stunned' : ''}${hud.trafficImpactLeft > 0 && phase === 'playing' ? ' is-impacting' : ''}${hud.playerHealthFlash > 0 && phase === 'playing' ? ' is-hurt' : ''}${policeAim > 0 && phase === 'playing' ? ' is-aimed' : ''}`}
             style={policeAim > 0 ? { '--cr-aim': policeAim.toFixed(2) } : undefined}
           >
-            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (missionMode ? Boolean(currentMission?.policeFromStart) : storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} cameraMode={cameraMode} drivingMode={drivingMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} audioRef={audioRef} />
+            {/* `onGraphics` raconte ce que le moteur a **réellement** monté : le
+                cinéma peut être refusé (qualité allégée, carte sans cible
+                flottante). L'écran de pause peut alors le dire — voir
+                `cinemaLive`, qui ne sert qu'à l'infobulle. */}
+            <ViceCityWorld cityId={cityId} carId={selectedCar.id} active={phase === 'playing'} phase={phase} countdown={countdown} runId={runId} roster={roster} raceLaps={currentLaps} racePoliceFromStart={!tutorialMode && (missionMode ? Boolean(currentMission?.policeFromStart) : storyMode ? Boolean(currentStoryRace?.policeFromStart) : mode.policeFromStart)} raceFormat={sprintMode ? 'sprint' : 'laps'} storyRules={storyRules} tutorialMode={tutorialMode} cameraMode={cameraMode} drivingMode={drivingMode} graphicsMode={graphicsMode} actionsRef={actionsRef} onReady={() => setWorldError('')} onError={(message) => setWorldError(message)} onHud={setHud} onFinish={finishRace} onEffect={effectMessage} onTutorial={tutorialEvent} onGraphics={handleWorldGraphics} audioRef={audioRef} />
             <div className="city-rush-drive-touch" aria-label="Accélération et freinage tactiles">
               {[
                 ['accelerate', '↑', 'ACCÉLÉRER'], ['brake', '↓', 'FREINER'],
@@ -3250,6 +3296,23 @@ export default function ViceCityRushPage() {
                     aria-pressed={cockpitView}
                   >
                     CAMÉRA : {cityRushCameraModeLabel(cameraMode)} · C
+                  </button>
+                  {/* Le rendu se change aussi en pleine course : la chaîne
+                      se monte ou se démonte sans reconstruire la scène. */}
+                  <button
+                    type="button"
+                    className="city-rush-text-button city-rush-pause-graphics"
+                    onClick={toggleGraphics}
+                    aria-pressed={graphicsMode === CITY_RUSH_GRAPHICS_CINEMA}
+                    title={!cinemaAvailable
+                      ? 'Rendu cinéma refusé sur cet appareil (qualité allégée)'
+                      : graphicsMode !== CITY_RUSH_GRAPHICS_CINEMA
+                        ? 'Halo de post-traitement sur les néons, phares et gyrophares'
+                        : graphicsLive && graphicsLive.active === false
+                          ? `Chaîne cinéma indisponible ici${graphicsLive.error ? ` (${graphicsLive.error})` : ''} : rendu standard`
+                          : 'Rendu cinéma actif : halo sur les néons et les phares'}
+                  >
+                    RENDU : {cityRushGraphicsModeLabel(graphicsMode)}
                   </button>
                 </div>
                 <small>{city.name} · {activeModeLabel} · la route attend.</small>

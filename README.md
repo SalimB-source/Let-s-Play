@@ -968,6 +968,96 @@ part occupée par la voiture (elle est le sujet du cadre, pas un détail du déc
 et recul maximal qui fait tenir une voiture entière sur un écran de téléphone.
 Le rendu réel, lui, se juge dans un vrai navigateur (`npm run dev`).
 
+## Vice City Rush : « RENDU : CINÉMA », le halo de post-traitement
+
+La course se dessinait **droit dans l'écran** : chaque matériau appliquait son
+tone-mapping ACES et son encodage sRGB, comme le fait three.js quand la cible de
+rendu est le framebuffer par défaut. C'est toujours le cas — c'est le niveau
+**STANDARD**, le défaut, image pour image. Le niveau **CINÉMA**, facultatif,
+intercale une chaîne de passes entre la scène et l'écran :
+
+```
+scène ──▶ RenderPass ──▶ UnrealBloomPass ──▶ OutputPass ──▶ écran
+          (cible HDR)     (le halo)          (ACES + sRGB)
+```
+
+| Où l'on règle le rendu | Comment |
+|---|---|
+| Écran-titre → **OPTIONS** → entrée **RENDU** | bascule STANDARD ⇄ CINÉMA, mémorisée sur l'appareil |
+| Touche **V** (écran-titre) | la même bascule, sans souris |
+| Écran de **pause**, en pleine course | bascule aussi : la chaîne se monte ou se démonte sans reconstruire la scène, la course ne s'arrête pas |
+
+**Pourquoi ça marche sans refaire le jeu.** Quand three.js dessine dans une
+**cible de rendu** — et non dans l'écran — il n'applique **ni tone-mapping ni
+conversion d'espace colorimétrique** : les matériaux écrivent leurs valeurs
+linéaires brutes, éventuellement supérieures à 1. C'est exactement ce qu'il faut
+pour un *bloom* : le seuil se lit sur la luminance réelle des néons, des phares
+et des gyrophares, pas sur une image déjà écrasée à 1. `OutputPass` refait
+ensuite, **une seule fois pour toute l'image**, l'ACES et l'sRGB que le renderer
+appliquait auparavant matériau par matériau. La chaîne est donc
+colorimétriquement équivalente au rendu direct — mêmes couleurs, même exposition
+(`toneMappingExposure` reste lu sur le renderer) — plus le halo.
+
+**Les trois écarts assumés du mode cinéma**, à connaître avant de toucher aux
+réglages :
+
+- les surfaces `toneMapped: false` (enseignes au trait, phares, gyrophares,
+  drapeaux de départ) ne court-circuitent plus l'ACES : elles passent dans la
+  chaîne comme le reste. Leur valeur reste à 1, donc elles ressortent très
+  lumineuses et **prennent le halo** — c'est le but ;
+- le **ciel** et le **skyline** peints écrivent des couleurs composées « comme à
+  l'écran » ; passées dans ACES elles s'éclaircissent de quelques pour cent.
+  C'est le seul écart de couleur, et il n'existe qu'en cinéma ;
+- le MSAA du canvas ne sert plus : la cible porte l'anticrénelage
+  (`samples: 4`), et seulement quand le matériau accepte une cible flottante
+  (`EXT_color_buffer_half_float`). Sans elle, cible 8 bits et pas de MSAA : le
+  halo reste, un peu plus « numérique ».
+
+**Les réglages du halo suivent l'ambiance du parcours** (`cityRushCinemaSettings`) :
+seuil 0,58 et force 0,45–0,75 la nuit, seuil 0,90 et force 0,26–0,36 le jour, pour
+que le bitume clair de Vice City ne se couvre pas d'un voile laiteux. La ville
+qui éteint ses enseignes (`theme.glow` bas) produit un halo plus sage.
+
+**La qualité allégée refuse le cinéma.** `cityRushLiteDevice()` (écran tactile,
+`window.LetsPlayAndroid`, WebView) est la règle historique de `detectLiteQuality`,
+désormais dans `cityRushPost.js` pour que la page et le moteur répondent d'une
+seule voix. Sur ces appareils, l'entrée RENDU affiche **« NON DISPO ICI »**, le
+choix reste mémorisé et revivra sur une machine capable.
+
+### Où vit le code
+
+- `src/games/cityRushPost.js` — le mode, sa préférence (`localStorage`,
+  `letsplay_vice_city_rush_graphics_v1`), les réglages du halo selon le thème, la
+  détection du matériel et la chaîne three.js (`createCityRushPostChain`) ;
+- `src/games/ViceCityWorld.jsx` — le montage initial, `setGraphics` (à chaud),
+  `renderMainView` (la chaîne ou le rendu direct), et `withRenderPass` : le
+  rétroviseur du cockpit est une **passe imbriquée** dans le RenderPass, il doit
+  rendre au composer sa cible à la sortie, sinon tout le reste de l'image part
+  dans le rétroviseur ;
+- `src/games/ViceCityRushPage.jsx` — l'état, la préférence, l'entrée d'options et
+  le bouton de l'écran de pause ; `ViceCityRushMainMenu.jsx` — l'entrée RENDU et
+  la touche V.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-graphics
+```
+
+Deux moitiés. La première monte la vraie page dans jsdom (moteur 3D doublé) :
+l'entrée RENDU, la touche V, l'écran de pause, la préférence gardée, la valeur
+transmise au monde, et l'aveu « NON DISPO ICI » sur la coque Android. La seconde
+construit une course **pour de vrai** avec un renderer factice et de vraies
+passes three.js : la scène entre par la cible du composer et jamais par l'écran,
+la chaîne finit dans l'écran, le rétroviseur ne vole pas la cible, et le passage
+à STANDARD en pleine course démonte la chaîne. `tests/city-rush-post.test.js`
+fige les règles pures (défaut, préférence, réglages par thème, support matériel).
+
+jsdom n'a pas de WebGL : ces vérifications disent la **structure** de la chaîne,
+pas la beauté du halo. Pour juger le rendu, ouvrir le jeu dans un vrai
+navigateur (`npm run dev`), lancer une course, et basculer RENDU en pause sur une
+ville de nuit (New York, Tokyo) puis sur une ville de jour (Vice City).
+
 ## Vice City Rush : les tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq

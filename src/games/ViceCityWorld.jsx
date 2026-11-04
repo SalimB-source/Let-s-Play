@@ -290,6 +290,13 @@ import {
   CITY_RUSH_TUTORIAL_TICK_MS,
 } from './cityRushTutorial.js';
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
+import {
+  CITY_RUSH_GRAPHICS_CINEMA,
+  cityRushCinemaSettings,
+  cityRushLiteDevice,
+  createCityRushPostChain,
+  normalizeCityRushGraphicsMode,
+} from './cityRushPost.js';
 import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
@@ -485,15 +492,11 @@ const skidOffset = (remaining, duration = 0.85, side = 1, amplitude = 0.24, freq
 };
 
 // Qualité « allégée » sur les écrans tactiles / WebView Android : pas d'ombres,
-// pas de deuxième rangée d'immeubles, pluie plus légère.
+// pas de deuxième rangée d'immeubles, pluie plus légère, pas de chaîne cinéma.
+// La règle vit dans `cityRushPost.js` (`cityRushLiteDevice`) pour que la page
+// et le moteur répondent d'une seule voix.
 function detectLiteQuality() {
-  if (typeof window === 'undefined') return false;
-  if (window.LetsPlayAndroid) return true;
-  try {
-    return Boolean(window.matchMedia?.('(pointer: coarse)')?.matches);
-  } catch {
-    return false;
-  }
+  return cityRushLiteDevice();
 }
 
 // L'éclatement d'un bonus garde son flash et son anneau mais renonce aux éclats
@@ -1877,7 +1880,11 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false) {
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, initialGraphicsMode = null) {
+  // Rendu demandé par la page (`setGraphics` le change ensuite à chaud) :
+  // il est connu avant la première image pour que la course ne s'ouvre pas en
+  // standard puis ne bascule en cinéma devant le joueur.
+  let requestedGraphics = normalizeCityRushGraphicsMode(initialGraphicsMode);
   // Sprint : course solo à checkpoints, sans police ni arme ; seuls les pads
   // turbo restent disponibles comme bonus.
   const sprint = raceFormat === 'sprint';
@@ -2063,6 +2070,61 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   headlamp.target.position.set(0, 0, PLAYER_Z - 16);
   headlamp.visible = !lite && lightRig.headlamp > 0;
   scene.add(headlamp, headlamp.target);
+
+  // ── Post-traitement (facultatif) : la chaîne « cinéma » ───────────────
+  // Le rendu standard dessine la scène droit dans l'écran, comme toujours. Le
+  // rendu cinéma l'écrit dans une cible, y lit le halo (`UnrealBloomPass`),
+  // puis refait l'ACES et l'sRGB **une fois pour toute l'image** (`OutputPass`).
+  // Voir `cityRushPost.js` pour la colorimétrie exacte. La chaîne se monte et
+  // se démonte à chaud (`setGraphics`), sans reconstruire la scène : la course
+  // ne s'arrête pas quand le joueur change de rendu en pleine course.
+  const cinemaSettings = cityRushCinemaSettings({ daylight, glow: theme.glow ?? 1 });
+  let graphicsMode = requestedGraphics;
+  let postChain = null;
+  const wantsCinema = () => graphicsMode === CITY_RUSH_GRAPHICS_CINEMA && !lite;
+  function disposePostChain() {
+    if (!postChain) return;
+    postChain.dispose();
+    postChain = null;
+  }
+  function postMountSize() {
+    const bounds = mount.getBoundingClientRect();
+    return {
+      width: Math.max(1, Math.floor(bounds.width || mount.clientWidth || 1)),
+      height: Math.max(1, Math.floor(bounds.height || mount.clientHeight || 1)),
+    };
+  }
+  // La chaîne suit la taille **et** le pixel ratio du renderer (c'est `resize`
+  // qui s'en charge, à chaque changement de taille comme de palier de
+  // résolution) : sinon le post-traitement annulerait le gain de pixels.
+  function syncPostChain() {
+    if (!wantsCinema()) {
+      disposePostChain();
+      return;
+    }
+    if (postChain) return;
+    const size = postMountSize();
+    try {
+      postChain = createCityRushPostChain({
+        renderer,
+        scene,
+        camera,
+        width: size.width,
+        height: size.height,
+        settings: cinemaSettings,
+      });
+    } catch (error) {
+      // Cible refusée, contexte à bout de mémoire : le jeu garde son rendu
+      // standard plutôt que de rester noir. La page l'apprend (`setGraphics`).
+      postChain = null;
+      graphicsMode = normalizeCityRushGraphicsMode(null);
+      getCallbacks().graphics?.({ mode: graphicsMode, active: false, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  // Montage initial : la course s'ouvre sur le rendu demandé, pas sur un
+  // standard qui basculerait sous les yeux du joueur à la première image.
+  if (graphicsMode === CITY_RUSH_GRAPHICS_CINEMA && lite) graphicsMode = normalizeCityRushGraphicsMode(null);
+  syncPostChain();
 
   // ── Décor : ciel, skyline, route, boucle de 1 200 m + zone de départ ─
   const stageMaterials = createStageMaterials(city, theme, sceneryRandom);
@@ -9411,6 +9473,8 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     camera.aspect = width / height;
     camera.fov = aspectFov(cameraBaseFov + fovOffset);
     camera.updateProjectionMatrix();
+    // Même taille, même pixel ratio : la cible de la chaîne cinéma suit l'écran.
+    if (postChain) postChain.setSize(width, height, renderer.getPixelRatio());
   };
   const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(resize) : null;
   observer?.observe(mount);
@@ -9813,6 +9877,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   function applyResolutionStep(step) {
     resolutionStep = step;
     renderer.setPixelRatio(Math.max(0.6, pixelRatioCap * RESOLUTION_STEPS[step]));
+    // `resize` remet déjà la cible de la chaîne à l'échelle du nouveau ratio.
     resize();
   }
   function adaptResolution(dt) {
@@ -10930,7 +10995,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     updateCamera(dt);
     tougeSkyline?.update(camera);
     renderCockpitMirror();
-    renderMainView();
+    renderMainView(dt);
   }
 
   // ── Rétroviseur intérieur ────────────────────────────────────────────
@@ -10940,6 +11005,20 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // recalculées. En qualité allégée (tactile, WebView Android) ou sans cible
   // de rendu, le miroir garde son reflet peint.
   const MIRROR_TURN = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
+  // `THREE.WebGLRenderTarget`. Plusieurs rétroviseurs peuvent coexister (la
+  // chaîne cinéma en ajoute un au rendu du cockpit) : `withRenderPass` les
+  // empile et rétablit celui du dessous, sans quoi la seconde passe
+  // dessinerait dans le miroir du cockpit.
+  const renderTargetStack = [];
+  function withRenderPass(target, draw) {
+    renderTargetStack.push(renderer.getRenderTarget());
+    try {
+      renderer.setRenderTarget(target);
+      draw();
+    } finally {
+      renderer.setRenderTarget(renderTargetStack.pop() ?? null);
+    }
+  }
   let mirrorTarget = null;
   let mirrorCamera = null;
   let mirrorFrame = 0;
@@ -10971,8 +11050,11 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       mirrorCamera.updateMatrixWorld();
       renderer.shadowMap.autoUpdate = false;
       playerCar.visible = false;
-      renderer.setRenderTarget(mirrorTarget);
-      renderer.render(scene, mirrorCamera);
+      // `withRenderPass` : en chaîne cinéma, le rendu du miroir est une **passe
+      // imbriquée** dans le RenderPass de la scène ; il faut rendre au composer
+      // sa cible à la sortie, sinon tout le reste de l'image part dans le
+      // rétroviseur.
+      withRenderPass(mirrorTarget, () => renderer.render(scene, mirrorCamera));
     } catch {
       // Cible flottante refusée, contexte perdu : le miroir garde son reflet
       // peint et la course continue.
@@ -10982,7 +11064,6 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       glass.needsUpdate = true;
     } finally {
       playerCar.visible = true;
-      renderer.setRenderTarget(null);
       renderer.shadowMap.autoUpdate = shadowAutoUpdate;
     }
   }
@@ -11044,11 +11125,14 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     for (const patrol of patrolCars) consider(patrol.mesh, COCKPIT_SOLID_MARGIN);
     return ghosts || NO_COCKPIT_GHOSTS;
   }
-  function renderMainView() {
+  function renderMainView(dt = 0) {
     const ghosts = cockpitGhostCars();
     for (const mesh of ghosts) mesh.visible = false;
     try {
-      renderer.render(scene, camera);
+      // Rendu standard : la scène droit dans l'écran. Rendu cinéma : la même
+      // scène, puis le halo, puis l'ACES + sRGB de sortie (voir cityRushPost.js).
+      if (postChain) postChain.render(dt);
+      else renderer.render(scene, camera);
     } finally {
       for (const mesh of ghosts) mesh.visible = true;
     }
@@ -11232,6 +11316,26 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       syncCockpitView();
     },
     get cameraMode() { return cameraMode; },
+    // Rendu de la course : `'standard'` (scène droit dans l'écran, défaut) ou
+    // `'cinema'` (chaîne de post-traitement : halo sur les néons et les phares,
+    // ACES + sRGB refaits en sortie). Applicable à tout moment, même en pleine
+    // course : la chaîne se monte ou se démonte sans reconstruire la scène.
+    // En qualité allégée (tactile, WebView Android) le cinéma est refusé —
+    // `active` dit alors ce qui tourne vraiment, pas ce qui a été demandé.
+    setGraphics(mode) {
+      requestedGraphics = normalizeCityRushGraphicsMode(mode);
+      // `graphicsMode` dit ce qui **tourne** : en qualité allégée, le cinéma
+      // demandé retombe sur le rendu standard (le choix reste en mémoire côté
+      // page, il revivra sur un appareil capable).
+      graphicsMode = requestedGraphics === CITY_RUSH_GRAPHICS_CINEMA && lite ? normalizeCityRushGraphicsMode(null) : requestedGraphics;
+      syncPostChain();
+      const active = Boolean(postChain);
+      getCallbacks().graphics?.({ mode: graphicsMode, requested: requestedGraphics, active, lite });
+      return active;
+    },
+    get graphicsMode() { return graphicsMode; },
+    get graphicsActive() { return Boolean(postChain); },
+    get postChain() { return postChain; },
     // Conduite : `'free'` (volant libre) ou `'lanes'` (écart de voie entière).
     // Applicable à tout moment, même en pleine course : en repassant aux voies,
     // la voiture rejoint le centre de la voie la plus proche ; en passant au
@@ -11298,16 +11402,17 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       startLine.dispose();
       smoke.dispose();
       mirrorTarget?.dispose();
+      disposePostChain();
       disposeScene(scene, renderer);
     },
   };
 }
 
-export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, cameraMode = 'chase', drivingMode = CITY_RUSH_DRIVING_FREE, onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, actionsRef, audioRef }) {
+export default function ViceCityWorld({ active, phase = 'intro', countdown = null, cityId, carId, runId, roster = null, raceLaps = CITY_RUSH_LAPS, racePoliceFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, cameraMode = 'chase', drivingMode = CITY_RUSH_DRIVING_FREE, graphicsMode = 'standard', onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, onGraphics, actionsRef, audioRef }) {
   const mountRef = useRef(null);
   const worldRef = useRef(null);
   const callbacksRef = useRef({});
-  callbacksRef.current = { onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial };
+  callbacksRef.current = { onReady, onError, onHud, onFinish, onPickup, onEffect, onLap, onTutorial, onGraphics };
   // La vue choisie suit le monde quand il est reconstruit (nouvelle voiture,
   // nouveau parcours) sans le reconstruire elle-même.
   const cameraModeRef = useRef(cameraMode);
@@ -11315,6 +11420,11 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
   // Même chose pour la conduite (libre par défaut, voies au choix).
   const drivingModeRef = useRef(drivingMode);
   drivingModeRef.current = drivingMode;
+
+  // Rendu (standard / cinéma) : comme la conduite, la préférence est lue à la
+  // création du monde **et** appliquée à chaud ensuite.
+  const graphicsModeRef = useRef(graphicsMode);
+  graphicsModeRef.current = graphicsMode;
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
@@ -11328,7 +11438,8 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
         effect: (data) => callbacksRef.current.onEffect?.(data),
         lap: (data) => callbacksRef.current.onLap?.(data),
         tutorial: (data) => callbacksRef.current.onTutorial?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode);
+        graphics: (data) => callbacksRef.current.onGraphics?.(data),
+      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode, graphicsModeRef.current);
     } catch (error) {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
       return undefined;
@@ -11336,6 +11447,7 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
     worldRef.current = world;
     world.setCameraMode?.(cameraModeRef.current);
     world.setDrivingMode?.(drivingModeRef.current);
+    world.setGraphics?.(graphicsModeRef.current);
     if (actionsRef) actionsRef.current = (name) => world.action(name);
     callbacksRef.current.onReady?.();
     return () => {
@@ -11356,6 +11468,10 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
   useEffect(() => {
     worldRef.current?.setDrivingMode?.(drivingMode);
   }, [drivingMode]);
+
+  useEffect(() => {
+    worldRef.current?.setGraphics?.(graphicsMode);
+  }, [graphicsMode]);
 
   useEffect(() => {
     if (active) worldRef.current?.start();
