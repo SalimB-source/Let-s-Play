@@ -160,3 +160,32 @@ test('sur mobile aussi, le coffre encaissé est ouvert, vidé et grisé', async 
     }
   }
 });
+
+test('sur mobile, la barre du haut remplace la fraction, sans désaligner les coffres', async () => {
+  const fs = await import('node:fs');
+  const jsx = fs.readFileSync('src/games/RpgCoffresQuetes.jsx', 'utf8');
+  const css = fs.readFileSync('src/games/rpg-coffres-quetes.css', 'utf8');
+  const regle = (needle) => [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter((m) => m[1].includes(needle)).map((m) => m[2]).join(' ');
+
+  // Une quête en cours montre la barre ; les autres états gardent leur badge,
+  // ils n'ont plus rien à faire progresser.
+  assert.match(jsx, /coffre\.etat === 'encours' \? \(/);
+  assert.match(jsx, /data-coffre-progres=\{`\$\{coffre\.progres\}\/\$\{coffre\.objectif\}`\}/);
+  assert.match(jsx, /data-coffre-legende=\{legendeCoffre\(coffre\)\}/);
+  // La barre du bas a disparu : il n'en reste qu'une, en haut.
+  assert.equal((jsx.match(/rpg-coffres-quetes__jauge"/g) || []).length, 1);
+  // Elle précède la scène du coffre.
+  assert.ok(jsx.indexOf('rpg-coffres-quetes__jauge"') < jsx.indexOf('rpg-coffres-quetes__scene"'),
+    'la barre est au-dessus du coffre');
+
+  // Barre et badge occupent la même hauteur : sinon les coffres ne seraient
+  // plus alignés d'un emplacement à l'autre.
+  const hBarre = regle('.rpg-coffres-quetes__jauge').match(/min-height:\s*(\d+)px/);
+  const hBadge = regle('.rpg-coffres-quetes__etat').match(/min-height:\s*(\d+)px/);
+  assert.ok(hBarre && hBadge && hBarre[1] === hBadge[1], 'barre et badge à la même hauteur de rangée');
+
+  // La place du bouton refresh est réservée sur la barre, puisque c'est elle
+  // qui occupe désormais le haut d'une quête en cours.
+  assert.match(css, /\.has-remplacement \.rpg-coffres-quetes__jauge \{ padding-right: \d+px; \}/);
+});

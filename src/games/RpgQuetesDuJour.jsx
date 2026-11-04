@@ -22,6 +22,29 @@ import RpgCoffreDore from './RpgCoffreDore.jsx';
 import { METAL_SEMAINE, libelleCoffre } from './rpgCoffreMetal.js';
 import './rpg-quetes-jour.css';
 
+/**
+ * La barre d'avancement, seule au-dessus du coffre. La fraction chiffrée n'est
+ * plus écrite à l'écran : elle reste dans les attributs du `progressbar`, donc
+ * les lecteurs d'écran l'annoncent toujours, et dans un `data-*` pour le debug.
+ */
+function Jauge({ pct, progres, objectif, libelle, ...reste }) {
+  return (
+    <div
+      className="rpg-quests-jour__jauge"
+      role="progressbar"
+      aria-label={libelle}
+      aria-valuenow={progres}
+      aria-valuemin={0}
+      aria-valuemax={objectif}
+      {...reste}
+    >
+      <span className="rpg-quests-jour__jauge-piste" aria-hidden="true">
+        <span className="rpg-quests-jour__jauge-remplie" style={{ width: `${pct}%` }} />
+      </span>
+    </div>
+  );
+}
+
 /** Une quête du jour présentée en médaillon circulaire + capsule d'objectif. */
 function LigneQuete({ id, etatQuetes, onReclamer, onRemplacer, peutRemplacer, onPlaySfx }) {
   const vue = vueDeLaQuete(etatQuetes, id);
@@ -48,20 +71,13 @@ function LigneQuete({ id, etatQuetes, onReclamer, onRemplacer, peutRemplacer, on
       data-jouer-quete={id}
       data-jouer-quete-etat={etat}
     >
-      <div
-        className="rpg-quests-jour__jauge"
-        role="progressbar"
-        aria-label={`${quete.titre} (${palierLibelle}) : ${progres} sur ${quete.objectif}`}
-        aria-valuenow={progres}
-        aria-valuemin={0}
-        aria-valuemax={quete.objectif}
+      <Jauge
+        pct={pourcent}
+        progres={progres}
+        objectif={quete.objectif}
+        libelle={`${quete.titre} (${palierLibelle}) : ${progres} sur ${quete.objectif}`}
         data-jouer-progres={`${progres}/${quete.objectif}`}
-      >
-        <span className="rpg-quests-jour__jauge-texte">{progres}/{quete.objectif}</span>
-        <span className="rpg-quests-jour__jauge-piste" aria-hidden="true">
-          <span className="rpg-quests-jour__jauge-remplie" style={{ width: `${pourcent}%` }} />
-        </span>
-      </div>
+      />
 
       {changeable && (
         <button
@@ -180,9 +196,13 @@ export default function RpgQuetesDuJour({
             style={{ '--q-pct': `${pctCycle}%` }}
             data-jouer-cachet={cachetPris ? 'pris' : cachetPret ? 'disponible' : 'attente'}
           >
-            <span className="rpg-quests-jour__compte" data-jouer-compte={`${prises}/${liste.length}`}>
-              {prises}/{liste.length}
-            </span>
+            <Jauge
+              pct={pctCycle}
+              progres={prises}
+              objectif={liste.length}
+              libelle={`Cachet du cycle : ${prises} quête(s) réclamée(s) sur ${liste.length}`}
+              data-jouer-compte={`${prises}/${liste.length}`}
+            />
             <RpgCoffreDore
               etat={cachetPris ? 'ouvert' : cachetPret ? 'pret' : 'encours'}
               montant={GAINS.cachetDuCycle}
@@ -205,17 +225,22 @@ export default function RpgQuetesDuJour({
 
           {/* Jalon 5 : la série hebdomadaire et son coffre violet. */}
           <div className="rpg-quests-jour__semaine" style={{ '--q-pct': `${pctSerie}%` }}>
-            <span
-              className="rpg-quests-jour__serie"
-              data-jouer-serie={serie}
+            <Jauge
+              pct={pctSerie}
+              progres={serie}
+              objectif={JOURS_DE_LA_SERIE}
+              libelle={
+                serieComplete(quetes) || serie === 0
+                  ? `${serie} jour(s) d’affilée`
+                  : `${serie} jour(s) d’affilée — Cachet de la semaine dans ${joursRestants} jour(s)`
+              }
               title={
                 serieComplete(quetes) || serie === 0
                   ? `${serie} jour(s) d’affilée`
                   : `${serie} jour(s) d’affilée — Cachet de la semaine dans ${joursRestants} jour(s)`
               }
-            >
-              {serie}/{JOURS_DE_LA_SERIE} j
-            </span>
+              data-jouer-serie={serie}
+            />
 
             <RpgCoffreDore
               etat={semainePrise ? 'ouvert' : semainePrete ? 'pret' : 'encours'}

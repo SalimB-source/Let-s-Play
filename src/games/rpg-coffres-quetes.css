@@ -30,7 +30,8 @@
 }
 /* La place du bouton est réservée dans le badge du haut, sinon la fraction
    d'avancement passerait dessous. */
-.rpg-coffres-quetes__slot.has-remplacement .rpg-coffres-quetes__etat { padding-right: 22px; }
+.rpg-coffres-quetes__slot.has-remplacement .rpg-coffres-quetes__etat,
+.rpg-coffres-quetes__slot.has-remplacement .rpg-coffres-quetes__jauge { padding-right: 22px; }
 
 /* ── Changer une quête, une fois par jour ──────────────────────────────────
    Frère du bouton principal, jamais son enfant : un bouton imbriqué est
@@ -97,6 +98,7 @@
 /* Le badge du haut : la fraction, « Ouvrir ! » ou la coche. */
 .rpg-coffres-quetes__etat {
   align-self: stretch;
+  min-height: 16px;
   padding: 1px 4px;
   border-radius: 6px;
   background: rgba(10, 9, 13, .8);
@@ -243,13 +245,24 @@
 }
 .rpg-coffres-quetes__gain .rpg-credit-icon { width: 11px; height: 11px; }
 
+/* La barre du haut remplace la fraction chiffrée. Elle occupe exactement la
+   hauteur du badge des autres états : sans ça, les coffres ne seraient plus
+   alignés d'un emplacement à l'autre. La fraction reste lisible par les
+   lecteurs d'écran via le `progressbar` et `data-coffre-progres`. */
 .rpg-coffres-quetes__jauge {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  min-height: 16px;
+  min-width: 0;
+}
+.rpg-coffres-quetes__jauge-piste {
   display: block;
   width: 100%;
-  height: 4px;
-  margin-top: 1px;
+  height: 6px;
   border-radius: 999px;
-  background: rgba(255, 240, 205, .14);
+  background: rgba(10, 9, 13, .72);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .7), 0 0 0 1px rgba(255, 240, 205, .16);
   overflow: hidden;
 }
 .rpg-coffres-quetes__jauge-remplie {
