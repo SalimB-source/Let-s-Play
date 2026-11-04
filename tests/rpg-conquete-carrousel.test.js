@@ -98,6 +98,8 @@ test('Conquête : une tour à la fois, flèches en boucle, et retour sur la dern
     const root = await monterSession(container);
     try {
       await allerConquete(container);
+      assert.ok(container.querySelector('.rpg-mode-menu')?.classList.contains('rpg-mode-menu--conquete-galerie'),
+        'la galerie porte la coque mobile « un seul écran »');
       assert.equal(container.querySelectorAll('.rpg-conquete-carrousel .rpg-story-tower').length, 1,
         'une seule tour est affichée à la fois');
       assert.equal(tourAffichee(container), RPG_STORY_TOURS[0].id, 'sans mémorisation, la première tour');
@@ -120,7 +122,11 @@ test('Conquête : une tour à la fois, flèches en boucle, et retour sur la dern
       await cliquer(container.querySelector('.rpg-conquete-carrousel__points button:nth-child(1)'), 'premier point');
       assert.equal(tourAffichee(container), RPG_STORY_TOURS[0].id, 'retour sur la première tour');
       await cliquer(container.querySelector(`.rpg-story-tower[data-tour="${RPG_STORY_TOURS[0].id}"]`), 'la première tour (débloquée)');
+      assert.ok(!container.querySelector('.rpg-mode-menu')?.classList.contains('rpg-mode-menu--conquete-galerie'),
+        'le détail d’une tour garde son défilement propre (la coque ne s’applique qu’à la galerie)');
       await cliquer(container.querySelector('.rpg-story__back'), 'retour aux tours');
+      assert.ok(container.querySelector('.rpg-mode-menu')?.classList.contains('rpg-mode-menu--conquete-galerie'),
+        'de retour à la galerie, la coque mobile est de nouveau posée');
       assert.equal(tourAffichee(container), RPG_STORY_TOURS[0].id, 'au retour, la tour ouverte reste affichée');
       assert.equal(window.localStorage.getItem('letsplay_sablier_derniere_tour_v1'), RPG_STORY_TOURS[0].id,
         'ouvrir une tour enregistre la dernière tour jouée');

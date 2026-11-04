@@ -4864,7 +4864,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   return (
     <section
       ref={menuScrollRef}
-      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}`}
+      className={`rpg-mode-menu rpg-mode-menu--${screen}${hasGame ? ' rpg-mode-menu--reprise' : ''}${screen === 'tours' && !tourLibreOuverteId ? ' rpg-mode-menu--conquete-galerie' : ''}`}
       inert={bloqueAccueil || undefined}
       style={{ backgroundImage: menuBackground }}
       // L'aperçu au survol est placé d'après la position de la carte au moment
