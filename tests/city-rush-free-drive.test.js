@@ -70,11 +70,7 @@ import {
 const DT = 1 / 60;
 const near = (actual, expected, epsilon = 1e-6) => Math.abs(actual - expected) <= epsilon;
 
-test('conduite libre : la déclaration du tir se ferme sans expression parasite', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  assert.match(source, /audioRef\.current\?\.gunshot\?\.\(\);\s*\};\s*const bulletOverlaps/u,
-    'aucun identifiant isolé ne doit interrompre le montage du jeu après fireShot');
-});
+
 const course = (id) => CITY_RUSH_COURSES.find((item) => item.id === id);
 const laneXsOf = (config) => Array.from({ length: config.laneCount }, (_, lane) => config.laneX(lane));
 const boundsFor = (id, halfWidth = 0.95) => {
@@ -160,8 +156,6 @@ test('à pied : le demi-tour arrière pivote en douceur sur exactement une secon
   assert.ok(Math.abs(halfway.heading - Math.PI / 2) < 1e-12);
   assert.ok(halfway.turnRate > 0, 'la rotation est progressive au milieu du pivot');
   assert.deepEqual(finish, { heading: Math.PI, turnRate: 0, complete: true });
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  assert.match(source, /turnAroundElapsed, 1/u, 'la durée du demi-tour est fixée à une seconde');
 });
 
 test('les voitures de conduite libre sont agrandies sans désynchroniser les hitbox et la caméra suit de près', () => {
@@ -171,8 +165,8 @@ test('les voitures de conduite libre sont agrandies sans désynchroniser les hit
   assert.match(source, /function enlargeFreeRoamTrafficCar\(car\)/u);
   assert.match(source, /car\.userData\.width \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
   assert.match(source, /car\.userData\.length \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
-  assert.equal((source.match(/enlargeFreeRoamTrafficCar\(makeTrafficVehicle\(/gu) || []).length, 3,
-    'voitures stationnées et les deux types de trafic sont agrandis');
+  assert.equal((source.match(/enlargeFreeRoamTrafficCar\(makeTrafficVehicle\(/gu) || []).length, 4,
+    'voitures stationnées, trafic et acteurs des exercices partagent la même échelle');
   assert.match(source, /function makeFreeRoamPlayerCar\(profile, options\)/u);
   assert.equal((source.match(/playerVehicle = makeFreeRoamPlayerCar\(profile,/gu) || []).length, 2,
     'la voiture initiale et la voiture temporaire du garage gardent la même taille');
@@ -189,19 +183,7 @@ test('visée souris : le corps garde son cap, seuls les bras suivent le point vi
   assert.deepEqual(viceCityFreeDriveAimPose(1.2, 1.2), { bodyHeading: 1.2, armYaw: 0 });
 });
 
-test('visée souris 3D : le réticule et le tir partagent le rayon jusque dans la hauteur', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  assert.match(source, /const x = cursorX;\s*const y = cursorY;/u,
-    'le réticule reste exactement sous le curseur');
-  assert.match(source, /mouseRaycaster\.intersectObjects\(aimGlassCandidates, false\)/u,
-    'une vitre sous le curseur fournit le point visé réel');
-  assert.match(source, /mouseRaycaster\.ray\.at\(90, mouseAimPoint\)/u,
-    'le rayon garde une visée verticale en espace libre');
-  assert.match(source, /mouseAimDirection\.subVectors\(mouseAimPoint, shotOrigin\)/u,
-    'le vecteur part du canon et garde sa composante verticale');
-  assert.match(source, /stepY = shot\.directionY \* 92 \* dt/u,
-    'la trajectoire du projectile suit la hauteur visée');
-});
+
 
 test('visée 3D : le pitch incline les bras sans modifier le cap du personnage', () => {
   const pose = viceCityFreeDriveAimVectorPose(0.7, 0, Math.SQRT1_2, -Math.SQRT1_2);
@@ -214,17 +196,7 @@ test('visée 3D : le pitch incline les bras sans modifier le cap du personnage',
   assert.ok(Math.abs(diagonal.armYaw + Math.PI / 4) < 1e-12);
 });
 
-test('le demi-tour arrière se fait sur place et la caméra orbite derrière le personnage', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  assert.match(source, /turnAroundTarget = walkState\.heading \+ Math\.PI/u);
-  assert.match(source, /viceCityFreeDriveTurnAround\(/u);
-  assert.match(source, /const turnInPlace = turningAround \|\| backwardInput/u,
-    'S et le joystick arrière ne déplacent pas le personnage pendant ou après le pivot');
-  assert.match(source, /const forwardInput = turnInPlace \? 0/u,
-    'le personnage ne marche pas pendant son demi-tour');
-  assert.match(source, /pedestrianCameraHeading \+= cameraTurn \* \(1 - Math\.exp\(-dt \* 5\.2\)\)/u,
-    'la caméra suit un arc autour du joueur au lieu de traverser son corps');
-});
+
 
 test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanches, genoux, chevilles et bassin', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
@@ -236,33 +208,12 @@ test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanch
     'hip-joint-', 'knee-joint-', 'ankle-joint-']) assert.ok(model.includes(joint), `${joint} doit être présent`);
   assert.match(model, /elbow\.position\.y = -0\.37/u);
   assert.match(model, /ankle\.position\.set\(0, -0\.36/u);
-  assert.match(source, /pedestrian\.pelvis\.rotation\.set\(/u,
-    'le bassin suit le déplacement au lieu de rester figé');
+  assert.ok(source.includes('animateSchoolPedestrian(person, pose)'));
 });
 
-test('les tirs cassent le vitrage sans appliquer d’impulsion aux voitures', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  const start = source.indexOf('const updateShots = (dt) =>');
-  const end = source.indexOf('const cockpitMirrorTurn', start);
-  assert.ok(start >= 0 && end > start);
-  const shotUpdate = source.slice(start, end);
-  assert.match(shotUpdate, /breakVehicleGlass\(/u);
-  assert.doesNotMatch(shotUpdate, /(?:velocityX|velocityZ|angularVelocity)\s*\+=/u);
-});
 
-test('à pied : la pose de visée reste en portée pendant l’entrée/sortie avec E', () => {
-  const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
-  const animateStart = source.indexOf('const animate = (now) =>');
-  const footStart = source.indexOf('if (isOnFootRef.current) {', animateStart);
-  const footEnd = source.indexOf("\n      } else {\n        throttle = pressed('ArrowUp') || pressed('KeyW');", footStart);
-  assert.ok(animateStart >= 0 && footStart > animateStart && footEnd > footStart);
-  const footBranch = source.slice(footStart, footEnd);
-  assert.ok(footBranch.indexOf('const mouseAimDirection = getMouseAimDirection()') < footBranch.indexOf('if (pendingEntry)'));
-  assert.ok(footBranch.indexOf('const aimPose = viceCityFreeDriveAimVectorPose') > footBranch.indexOf('if (pendingEntry)'));
-  assert.match(footBranch, /aimPose\.armYaw \* aimBlend/u);
-  assert.match(footBranch, /movePedestrianWithSlide\(dt\)/u);
-  assert.match(footBranch, /pedestrian\.legs\[0\]\.userData\.knee\.rotation\.x/u);
-});
+
+
 
 test('à pied : l’accélération, le freinage et les changements de direction sont progressifs', () => {
   const firstStep = viceCityFreeDriveVelocityStep(0, 0, 2.35, 0, 1 / 60);

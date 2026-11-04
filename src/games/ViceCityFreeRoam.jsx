@@ -1,3 +1,23 @@
+import { narrowPassageBlocked, keepPassageMarking } from './roadCodeExercises.js';
+import { sidewalkSignalFor, indexTrafficSignalLenses } from './drivingSidewalkSignals.js';
+import { drivingTeachingEnabled } from './drivingLearning.js';
+import { addTeachingHalo, addTeachingBarGlow, isExerciseSignal } from './drivingTeachingGlow.js';
+import { createDrivingSideMirrors, renderDrivingSideMirrors, disposeDrivingSideMirrors } from './drivingSideMirrors.js';
+import { createSchoolCyclist, animateSchoolCyclist } from './drivingSchoolCyclist.js';
+import { schoolPedestrianMotion, animateSchoolPedestrian } from './drivingSchoolPedestrian.js';
+import { schoolTurnSignal, updateSchoolIndicators } from './drivingSchoolIndicators.js';
+import { updateDrivingRoute } from './drivingRoute.js';
+import { drivingSchoolVehicleTuning, drivingSchoolYawRate } from './drivingSchoolVehicle.js';
+import { keepOrdinaryRoadMarking, trimParkingSeparator } from './drivingRoadMarkings.js';
+import { createRoundaboutRoadSurface, ROUNDABOUT_ROAD_OFFSET } from './roundaboutRoadSurface.js';
+import { rectangleTouchesRoundabout, sidewalkRangesOutsideRoundabout } from './roundaboutSidewalks.js';
+import { CROSSWALK_STRIPE_OFFSETS, createCrosswalkMaterial, addRoadCrosswalks } from './roadCrosswalks.js';
+import { createDrivingGroundMarker, placeDrivingGroundMarker } from './drivingGroundMarker.js';
+import { priorityActorPose, actorPauseSeconds } from './frenchPriorityExercises.js';
+import { insideExercise } from './drivingExercises.js';
+import { createExerciseZone, drawExerciseMap } from './drivingExerciseZone.js';
+import { addDrivingSchoolScenery } from './drivingSchoolScenery.js';
+import { schoolBumpHeight, SCHOOL_STOP_JUNCTION, leftTrafficOffset } from './drivingSchoolRoads.js';
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
@@ -27,18 +47,9 @@ import {
   VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE,
   viceCityCanalBarrierCrossed,
   viceCityFreeDriveJoystickInput,
-  viceCityFreeDriveJoystickVector,
-  viceCityFreeDriveAimPose,
-  viceCityFreeDriveAimVectorPose,
-  viceCityFreeDriveTurnInput,
-  viceCityFreeDriveTurnStep,
-  viceCityFreeDriveTurnAround,
-  viceCityFreeDriveVelocityStep,
-  viceCityFreeDriveFootVector,
   viceCityFreeDriveSpeedStep,
   viceCityFreeDriveSteerStep,
   viceCityFreeDriveYawRate,
-  viceCityFreeDriveGlassEntryFace,
 } from './viceCityFreeDrive.js';
 import { stepViceCityTrafficVehicle, viceCityTrafficSignalState } from './viceCityTraffic.js';
 import {
@@ -592,7 +603,7 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
     }
   }
   const postGeometry = new THREE.BoxGeometry(0.14, 0.96, 0.14);
-  const postMesh = new THREE.InstancedMesh(barrierMat, postGeometry, barrierPosts.length);
+  const postMesh = new THREE.InstancedMesh(postGeometry, barrierMat, barrierPosts.length);
   const postMarker = new THREE.Object3D();
   barrierPosts.forEach((post, index) => {
     postMarker.position.set(post.x, post.y, post.z);
@@ -606,7 +617,7 @@ function addViceCityOuterHighway(scene, roadElevation, surfaceTextures, barrierS
   scene.add(postMesh);
 
   const medianGeometry = new THREE.BoxGeometry(0.9, 0.84, 1);
-  const medianMesh = new THREE.InstancedMesh(barrierMat, medianGeometry, medianTransforms.length);
+  const medianMesh = new THREE.InstancedMesh(medianGeometry, barrierMat, medianTransforms.length);
   const medianMarker = new THREE.Object3D();
   medianTransforms.forEach((segment, index) => {
     medianMarker.position.set(segment.x, segment.y, segment.z);
@@ -819,7 +830,8 @@ function makeRoadSurfaceTexture(seed, base, amplitude, colorSpace = THREE.SRGBCo
   return texture;
 }
 
-function makeCity(scene) {
+function makeCity(scene, schoolMode = false, schoolExercise) {
+  const leftTraffic = schoolMode && schoolExercise?.trafficSide === 'left';
   const asphaltTexture = makeRoadSurfaceTexture(6143, 220, 24);
   const asphaltRoughness = makeRoadSurfaceTexture(9271, 218, 62, THREE.NoColorSpace);
   const asphaltBump = makeRoadSurfaceTexture(6143, 220, 24, THREE.NoColorSpace);
@@ -831,8 +843,9 @@ function makeCity(scene) {
   const sidewalkTileMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.96 });
   const sidewalkTileColors = [0x9d9890, 0xa9a39a, 0xb1aaa0, 0x969188, 0xa49e95];
   const curbMat = new THREE.MeshStandardMaterial({ color: 0x8e8b84, roughness: 0.92 });
-  const lineMat = new THREE.MeshBasicMaterial({ color: 0xf1d8a0 });
-  const crosswalkMat = new THREE.MeshBasicMaterial({ color: 0xe9e5da });
+  const lineMat = new THREE.MeshBasicMaterial({ color: 0xf4f0e6 });
+  const ordinaryMarkingExclusion = { x: ROUNDABOUT_X, z: ROUNDABOUT_Z, radius: ROUNDABOUT_OUTER_RADIUS + .5 };
+  const crosswalkMat = createCrosswalkMaterial();
   const parkingMarkMat = new THREE.MeshBasicMaterial({ color: 0xc9c5b5 });
   const roadPatchMat = new THREE.MeshStandardMaterial({ color: 0x34383d, roughness: 1 });
   const manholeRimMat = new THREE.MeshStandardMaterial({ color: 0x161a1f, roughness: 0.92 });
@@ -908,9 +921,14 @@ function makeCity(scene) {
   const makeRoadStrip = (axis, fixed, width, material, heightOffset = 0) => {
     const length = CITY_GRID_LIMIT * 2 + 120;
     const crossesCanal = axis === 'z' && Math.abs(fixed) > ROAD_HALF + 6;
-    const ranges = crossesCanal
+    let ranges = crossesCanal
       ? [[-length / 2, -CANAL_HALF_WIDTH], [CANAL_HALF_WIDTH, length / 2]]
       : [[-length / 2, length / 2]];
+    if (material === lineMat) {
+      // These strips delimit parking, not the travelling lane through the ring.
+      ranges = trimParkingSeparator(axis === 'x' ? 'z' : 'x', fixed, width, ranges,
+        ordinaryMarkingExclusion, schoolExercise?.bounds);
+    }
     const meshes = [];
     for (const [start, end] of ranges) {
       const segmentLength = end - start;
@@ -975,9 +993,11 @@ function makeCity(scene) {
     for (let crossing = -3; crossing <= 3; crossing += 1) {
       const crossAxis = crossing * BLOCK;
       for (const side of [-1, 1]) {
-        const horizontalOffset = axis === 0 && crossAxis === 0 ? CANAL_HALF_WIDTH + 2 : 14;
-        for (let stripe = -6.4; stripe <= 6.4; stripe += 1.6) {
-          if (axis !== 0) verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * 14]);
+        // Keep zebras on the roundabout approaches, not across its ring.
+        const crossingOffset = axis === ROUNDABOUT_X && crossAxis === ROUNDABOUT_Z ? ROUNDABOUT_OUTER_RADIUS + 7 : 14;
+        const horizontalOffset = axis === 0 && crossAxis === 0 ? CANAL_HALF_WIDTH + 2 : crossingOffset;
+        for (const stripe of CROSSWALK_STRIPE_OFFSETS) {
+          if (axis !== 0) verticalCrosswalkPositions.push([axis + stripe, crossAxis + side * crossingOffset]);
           const horizontalX = crossAxis + side * horizontalOffset;
           if (axis === 0 || Math.abs(horizontalX) > CANAL_HALF_WIDTH + 2) {
             horizontalCrosswalkPositions.push([horizontalX, axis + stripe]);
@@ -1204,9 +1224,8 @@ function makeCity(scene) {
     }
   }
   const sidewalkHeight = 0.12;
+  const roundaboutSidewalkExclusion = { x: ROUNDABOUT_X, z: ROUNDABOUT_Z, radius: ROUNDABOUT_OUTER_RADIUS + .25 };
   const sidewalkSegmentLength = BLOCK - 2 * (ROAD_HALF + 3.2);
-  const verticalSidewalkGeometry = new THREE.PlaneGeometry(3.2, sidewalkSegmentLength, 1, 48);
-  const horizontalSidewalkGeometry = new THREE.PlaneGeometry(sidewalkSegmentLength, 3.2, 48, 1);
   const cornerSidewalkGeometry = new THREE.PlaneGeometry(3.2, 3.2);
   const fitSidewalkToElevation = (mesh) => {
     mesh.geometry = mesh.geometry.clone();
@@ -1219,7 +1238,7 @@ function makeCity(scene) {
     positions.needsUpdate = true;
     mesh.geometry.computeVertexNormals();
   };
-  const addSlopedCurb = (x, z, width, depth) => {
+  const addUnclippedSlopedCurb = (x, z, width, depth) => {
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(width, sidewalkHeight, depth, width > depth ? 48 : 1, 1, depth >= width ? 48 : 1),
       curbMat,
@@ -1234,6 +1253,15 @@ function makeCity(scene) {
     mesh.receiveShadow = true;
     scene.add(mesh);
   };
+  const addSlopedCurb = (x, z, width, depth) => {
+    const alongX = width >= depth;
+    const center = alongX ? x : z, length = alongX ? width : depth;
+    for (const [start, end] of sidewalkRangesOutsideRoundabout(alongX ? 'x' : 'z', alongX ? z : x,
+      (alongX ? depth : width) / 2, center - length / 2, center + length / 2, roundaboutSidewalkExclusion)) {
+      addUnclippedSlopedCurb(alongX ? (start + end) / 2 : x, alongX ? z : (start + end) / 2,
+        alongX ? end - start : width, alongX ? depth : end - start);
+    }
+  };
   for (let axisIndex = -3; axisIndex <= 3; axisIndex += 1) {
     const axis = axisIndex * BLOCK;
     for (let block = -3; block < 3; block += 1) {
@@ -1247,26 +1275,31 @@ function makeCity(scene) {
           .filter(([start, end]) => end - start > 0.5);
       for (const side of [-1, 1]) {
         const sidewalkOffset = side * (ROAD_HALF + 1.6);
-        if (axis !== 0) {
-          const sidewalkV = new THREE.Mesh(verticalSidewalkGeometry, sidewalkMat);
+        if (axis !== 0) for (const [start, end] of sidewalkRangesOutsideRoundabout('z', axis + sidewalkOffset, 1.6,
+          sidewalkStart, sidewalkEnd, roundaboutSidewalkExclusion)) {
+          const length = end - start, center = (start + end) / 2;
+          const sidewalkV = new THREE.Mesh(new THREE.PlaneGeometry(3.2, length, 1, 48), sidewalkMat);
           sidewalkV.rotation.x = -Math.PI / 2;
-          sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, segmentCenter);
+          sidewalkV.position.set(axis + sidewalkOffset, sidewalkHeight, center);
           fitSidewalkToElevation(sidewalkV);
           sidewalkV.receiveShadow = true;
           scene.add(sidewalkV);
-          sidewalkRegions.push({ x: axis + sidewalkOffset, z: segmentCenter, halfWidth: 1.6, halfDepth: sidewalkSegmentLength / 2 });
+          sidewalkRegions.push({ x: axis + sidewalkOffset, z: center, halfWidth: 1.6, halfDepth: length / 2 });
         }
-        for (const [rangeStart, rangeEnd] of horizontalSidewalkRanges) {
-          const rangeLength = rangeEnd - rangeStart;
-          const rangeCenter = (rangeStart + rangeEnd) / 2;
-          const sidewalkH = new THREE.Mesh(new THREE.PlaneGeometry(rangeLength, 3.2, 48, 1), sidewalkMat);
-          sidewalkH.rotation.x = -Math.PI / 2;
-          sidewalkH.position.set(rangeCenter, sidewalkHeight, axis + sidewalkOffset);
-          fitSidewalkToElevation(sidewalkH);
-          sidewalkH.receiveShadow = true;
-          scene.add(sidewalkH);
-          sidewalkRegions.push({ x: rangeCenter, z: axis + sidewalkOffset, halfWidth: rangeLength / 2, halfDepth: 1.6 });
-          addSlopedCurb(rangeCenter, axis + side * (ROAD_HALF - 0.1), rangeLength, 0.2);
+        for (const [originalStart, originalEnd] of horizontalSidewalkRanges) {
+          for (const [rangeStart, rangeEnd] of sidewalkRangesOutsideRoundabout('x', axis + sidewalkOffset, 1.6,
+            originalStart, originalEnd, roundaboutSidewalkExclusion)) {
+            const rangeLength = rangeEnd - rangeStart;
+            const rangeCenter = (rangeStart + rangeEnd) / 2;
+            const sidewalkH = new THREE.Mesh(new THREE.PlaneGeometry(rangeLength, 3.2, 48, 1), sidewalkMat);
+            sidewalkH.rotation.x = -Math.PI / 2;
+            sidewalkH.position.set(rangeCenter, sidewalkHeight, axis + sidewalkOffset);
+            fitSidewalkToElevation(sidewalkH);
+            sidewalkH.receiveShadow = true;
+            scene.add(sidewalkH);
+            sidewalkRegions.push({ x: rangeCenter, z: axis + sidewalkOffset, halfWidth: rangeLength / 2, halfDepth: 1.6 });
+            addSlopedCurb(rangeCenter, axis + side * (ROAD_HALF - 0.1), rangeLength, 0.2);
+          }
         }
         if (axis !== 0) addSlopedCurb(axis + side * (ROAD_HALF - 0.1), segmentCenter, 0.2, sidewalkSegmentLength);
 
@@ -1299,6 +1332,7 @@ function makeCity(scene) {
         if (xAxis === 0 && zAxis !== 0) continue;
         const centerX = xAxis + sideX * (ROAD_HALF + 1.6);
         const centerZ = zAxis + sideZ * (ROAD_HALF + 1.6);
+        if (rectangleTouchesRoundabout(centerX, centerZ, 1.6, 1.6, roundaboutSidewalkExclusion)) continue;
         const corner = new THREE.Mesh(cornerSidewalkGeometry, sidewalkMat);
         corner.rotation.x = -Math.PI / 2;
         corner.position.set(centerX, sidewalkHeight, centerZ);
@@ -1317,9 +1351,14 @@ function makeCity(scene) {
     }
   }
 
+  // Ordinary centre/parking markings never run across the circular carriageway.
+  const filterMarkings = (positions, halfWidth, halfDepth, parking = false) => positions.filter(([x, z]) =>
+    keepPassageMarking(schoolExercise,x,z,halfDepth) && keepOrdinaryRoadMarking(x, z, halfWidth, halfDepth, ordinaryMarkingExclusion, parking ? schoolExercise?.bounds : null));
+  const cleanVerticalDashes = filterMarkings(verticalDashPositions, .11, 2);
+  const cleanHorizontalDashes = filterMarkings(horizontalDashPositions, 2, .11);
   const marker = new THREE.Object3D();
-  const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, verticalDashPositions.length);
-  verticalDashPositions.forEach(([x, z], index) => {
+  const verticalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 4), lineMat, cleanVerticalDashes.length);
+  cleanVerticalDashes.forEach(([x, z], index) => {
     const wear = 0.72 + ((index * 17) % 23) / 100;
     marker.position.set(x, roadElevation(x, z) + 0.04, z);
     marker.rotation.set(-Math.PI / 2, 0, 0);
@@ -1331,8 +1370,8 @@ function makeCity(scene) {
   verticalDashes.instanceMatrix.needsUpdate = true;
   if (verticalDashes.instanceColor) verticalDashes.instanceColor.needsUpdate = true;
   scene.add(verticalDashes);
-  const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, horizontalDashPositions.length);
-  horizontalDashPositions.forEach(([x, z], index) => {
+  const horizontalDashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(4, 0.22), lineMat, cleanHorizontalDashes.length);
+  cleanHorizontalDashes.forEach(([x, z], index) => {
     const wear = 0.72 + ((index * 19) % 23) / 100;
     marker.position.set(x, roadElevation(x, z) + 0.04, z);
     marker.rotation.set(-Math.PI / 2, 0, 0);
@@ -1344,31 +1383,17 @@ function makeCity(scene) {
   horizontalDashes.instanceMatrix.needsUpdate = true;
   if (horizontalDashes.instanceColor) horizontalDashes.instanceColor.needsUpdate = true;
   scene.add(horizontalDashes);
-  const verticalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(1.35, 0.65), crosswalkMat, verticalCrosswalkPositions.length);
-  verticalCrosswalkPositions.forEach(([x, z], index) => {
-    marker.position.set(x, roadElevation(x, z) + 0.055, z);
-    marker.rotation.set(-Math.PI / 2, 0, 0);
-    marker.scale.set(0.86 + (index % 4) * 0.04, 0.9 + (index % 3) * 0.04, 1);
-    marker.updateMatrix();
-    verticalCrosswalk.setMatrixAt(index, marker.matrix);
-    verticalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 13) % 20) / 100));
-  });
-  verticalCrosswalk.instanceMatrix.needsUpdate = true;
-  if (verticalCrosswalk.instanceColor) verticalCrosswalk.instanceColor.needsUpdate = true;
-  scene.add(verticalCrosswalk);
-  const horizontalCrosswalk = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.65, 1.35), crosswalkMat, horizontalCrosswalkPositions.length);
-  horizontalCrosswalkPositions.forEach(([x, z], index) => {
-    marker.position.set(x, roadElevation(x, z) + 0.057, z);
-    marker.rotation.set(-Math.PI / 2, 0, 0);
-    marker.scale.set(0.9 + (index % 3) * 0.04, 0.86 + (index % 4) * 0.04, 1);
-    marker.updateMatrix();
-    horizontalCrosswalk.setMatrixAt(index, marker.matrix);
-    horizontalCrosswalk.setColorAt(index, new THREE.Color().setScalar(0.78 + ((index * 17) % 20) / 100));
-  });
-  horizontalCrosswalk.instanceMatrix.needsUpdate = true;
-  if (horizontalCrosswalk.instanceColor) horizontalCrosswalk.instanceColor.needsUpdate = true;
-  scene.add(horizontalCrosswalk);
+  // Batched paint geometry: consistent four-metre bands following the road.
+  addRoadCrosswalks(scene, [
+    ...verticalCrosswalkPositions.map(([x, z]) => ({ x, z, axis: 'z' })),
+    ...horizontalCrosswalkPositions.map(([x, z]) => ({ x, z, axis: 'x' })),
+  ].filter((stripe) => !schoolExercise?.replacedCrossings?.some((crossing) => crossing.axis === stripe.axis
+    && (stripe.axis === 'z' ? Math.abs(stripe.z - crossing.z) < .1 && Math.abs(stripe.x - crossing.x) < 6.4
+      : Math.abs(stripe.x - crossing.x) < .1 && Math.abs(stripe.z - crossing.z) < 6.4))), roadElevation, crosswalkMat);
   const addFlatRoadInstances = (geometry, material, positions, y) => {
+    const halfWidth = (geometry.parameters.width ?? (geometry.parameters.radius || 0) * 2) / 2;
+    const halfDepth = (geometry.parameters.height ?? (geometry.parameters.radius || 0) * 2) / 2;
+    positions = filterMarkings(positions, halfWidth, halfDepth, material === parkingMarkMat);
     const mesh = new THREE.InstancedMesh(geometry, material, positions.length);
     positions.forEach(([x, z], index) => {
       marker.position.set(x, y + roadElevation(x, z), z);
@@ -1426,6 +1451,8 @@ function makeCity(scene) {
   addDrainGrates(verticalDrainPositions, false);
   addDrainGrates(horizontalDrainPositions, true);
   const addSidewalkTiles = (positions, geometry, y) => {
+    positions = positions.filter(([x, z]) => !rectangleTouchesRoundabout(x, z,
+      geometry.parameters.width / 2, geometry.parameters.height / 2, roundaboutSidewalkExclusion));
     const tiles = new THREE.InstancedMesh(geometry, sidewalkTileMat, positions.length);
     positions.forEach(([x, z, colorIndex], index) => {
       marker.position.set(x, y + roadElevation(x, z), z);
@@ -2214,8 +2241,8 @@ function makeCity(scene) {
     const parkingSegmentStart = horizontalParked ? bx * BLOCK : bz * BLOCK;
     for (const alongStreet of parkingStallCenters(parkingSegmentStart)) {
       const spot = horizontalParked
-        ? { x: alongStreet, z: bz * BLOCK + parkingSide * 5.3, yaw: Math.PI / 2 }
-        : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: 0 };
+        ? { x: alongStreet, z: bz * BLOCK + parkingSide * 5.3, yaw: schoolMode ? (parkingSide < 0 ? (leftTraffic ? -Math.PI / 2 : Math.PI / 2) : (leftTraffic ? Math.PI / 2 : -Math.PI / 2)) : Math.PI / 2 }
+        : { x: bx * BLOCK + parkingSide * 5.3, z: alongStreet, yaw: schoolMode && (leftTraffic ? parkingSide > 0 : parkingSide < 0) ? Math.PI : 0 };
       const modelIndex = Math.abs(bx * 5 + bz * 3 + parkedCarSpecs.length) % CITY_RUSH_TRAFFIC_TYPES.length;
       const parkedType = CITY_RUSH_TRAFFIC_TYPES[modelIndex];
       if (Math.abs(spot.x) < CANAL_HALF_WIDTH + 4 && Math.abs(spot.z) > BRIDGE_HALF_WIDTH) continue;
@@ -2242,21 +2269,10 @@ function makeCity(scene) {
     }
   }
 
-  const roundaboutRoad = new THREE.Mesh(
-    new THREE.CylinderGeometry(ROUNDABOUT_OUTER_RADIUS, ROUNDABOUT_OUTER_RADIUS, 0.16, 96),
-    new THREE.MeshStandardMaterial({ color: 0x343432, roughness: 0.94 }),
+  const roundaboutRoad = createRoundaboutRoadSurface(
+    roadMat, ROUNDABOUT_X, ROUNDABOUT_Z, ROUNDABOUT_OUTER_RADIUS, roadElevation,
   );
-  roundaboutRoad.position.set(ROUNDABOUT_X, 0.03, ROUNDABOUT_Z);
-  roundaboutRoad.receiveShadow = true;
   scene.add(roundaboutRoad);
-  const outerRoundaboutLine = new THREE.Mesh(new THREE.RingGeometry(23.1, 23.35, 96), lineMat);
-  outerRoundaboutLine.rotation.x = -Math.PI / 2;
-  outerRoundaboutLine.position.set(ROUNDABOUT_X, 0.116, ROUNDABOUT_Z);
-  scene.add(outerRoundaboutLine);
-  const innerRoundaboutLine = new THREE.Mesh(new THREE.RingGeometry(10.8, 11.05, 96), lineMat);
-  innerRoundaboutLine.rotation.x = -Math.PI / 2;
-  innerRoundaboutLine.position.set(ROUNDABOUT_X, 0.116, ROUNDABOUT_Z);
-  scene.add(innerRoundaboutLine);
   const islandCurbMat = new THREE.MeshStandardMaterial({ color: 0xd0c7b3, roughness: 0.86 });
   const islandCurb = new THREE.Mesh(new THREE.CylinderGeometry(10.55, 10.75, 0.42, 96), islandCurbMat);
   islandCurb.position.set(ROUNDABOUT_X, 0.31, ROUNDABOUT_Z);
@@ -2566,6 +2582,8 @@ function makeCity(scene) {
     depthWrite: false, toneMapped: false,
   });
   for (let ix = -3; ix <= 3; ix += 1) for (let iz = -3; iz <= 3; iz += 1) {
+    if (schoolExercise?.priority && !schoolExercise.priority.keepTrafficLights && ix * BLOCK === schoolExercise.center.x && iz * BLOCK === schoolExercise.center.z) continue;
+    if (schoolMode && ix * BLOCK === SCHOOL_STOP_JUNCTION.x && iz * BLOCK === SCHOOL_STOP_JUNCTION.z) continue;
     const intersection = { ix, iz, signals: [], lastX: null, lastZ: null };
     const x = ix * BLOCK;
     const z = iz * BLOCK;
@@ -2579,7 +2597,12 @@ function makeCity(scene) {
       { axis: 'z', x: x + 8.5, z: z + 8.5, yaw: 0 },
     ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection && !isRiverEdgeIntersection
       && (ix !== 0 || approach.axis === 'x'));
-    for (const originalApproach of approaches) {
+    // School roadside heads belong at the stop line, on the pavement mast,
+    // rather than on the far corner of the junction.
+    for (const original of schoolMode ? [] : approaches) {
+      const originalApproach = leftTraffic
+        ? { ...original, [original.axis === 'x' ? 'z' : 'x']: 2 * (original.axis === 'x' ? z : x) - original[original.axis === 'x' ? 'z' : 'x'] }
+        : original;
       const approach = ix === 0
         ? { ...originalApproach, x: Math.sign(originalApproach.x) * (CANAL_HALF_WIDTH + 1.7) }
         : originalApproach;
@@ -2598,16 +2621,31 @@ function makeCity(scene) {
       { axis: 'z', x: x + 2.35, z: z + 18, yaw: 0, supportX: x + mastSideOffset, supportZ: z + 18 },
     ].filter((approach) => !isBridgeApproachIntersection && !isRoundaboutIntersection && !isRiverEdgeIntersection
       && (ix !== 0 || (iz === 0 && approach.axis === 'x')));
-    for (const approach of overheadApproaches) {
+    for (const original of overheadApproaches) {
+      const approach = leftTraffic ? {
+        ...original,
+        x: original.axis === 'z' ? 2 * x - original.x : original.x,
+        z: original.axis === 'x' ? 2 * z - original.z : original.z,
+        supportX: original.axis === 'z' ? 2 * x - original.supportX : original.supportX,
+        supportZ: original.axis === 'x' ? 2 * z - original.supportZ : original.supportZ,
+      } : original;
       const lightIndex = trafficSignalSpecs.length + overheadTrafficSignalSpecs.length;
       const spec = { ...approach, ix, iz, lensIndices: { red: lightIndex * 3, yellow: lightIndex * 3 + 1, green: lightIndex * 3 + 2 } };
       overheadTrafficSignalSpecs.push(spec);
       intersection.signals.push(spec);
+      if (schoolMode) {
+        const sidewalk = sidewalkSignalFor(spec);
+        trafficSignalSpecs.push(sidewalk);
+        intersection.signals.push(sidewalk);
+      }
     }
     trafficIntersections.push(intersection);
   }
+  indexTrafficSignalLenses(trafficSignalSpecs, overheadTrafficSignalSpecs);
+  const sidewalkPoleHeight = schoolMode ? 3.55 : 4.55;
+  const sidewalkHeadHeight = schoolMode ? 3.05 : 4.05;
   const trafficSignalPoles = new THREE.InstancedMesh(
-    new THREE.CylinderGeometry(0.095, 0.13, 4.55, 8), signalPoleMat, trafficSignalSpecs.length,
+    new THREE.CylinderGeometry(0.095, 0.13, sidewalkPoleHeight, 8), signalPoleMat, trafficSignalSpecs.length,
   );
   const trafficSignalHousings = new THREE.InstancedMesh(
     new THREE.BoxGeometry(0.56, 1.5, 0.42), signalHousingMat, trafficSignalSpecs.length,
@@ -2640,9 +2678,15 @@ function makeCity(scene) {
     mesh.setMatrixAt(index, carMatrix);
   };
   trafficSignalSpecs.forEach((spec, index) => {
-    setTrafficLightInstance(trafficSignalPoles, index, spec, [0, 2.275, 0]);
-    setTrafficLightInstance(trafficSignalHousings, index, spec, [0, 4.05, 0]);
-    for (const [colorIndex, y] of [[0, 4.48], [1, 4.05], [2, 3.62]]) {
+    setTrafficLightInstance(trafficSignalPoles, index, spec, [0, sidewalkPoleHeight / 2, 0]);
+    setTrafficLightInstance(trafficSignalHousings, index, spec, [0, sidewalkHeadHeight, 0]);
+    if (schoolMode && isExerciseSignal(schoolExercise, spec)) {
+      const haloRoot = new THREE.Group();
+      haloRoot.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
+      addTeachingHalo(haloRoot, { width: 1.5, height: 2.5, y: sidewalkHeadHeight });
+      scene.add(haloRoot);
+    }
+    for (const [colorIndex, y] of [[0, sidewalkHeadHeight + .43], [1, sidewalkHeadHeight], [2, sidewalkHeadHeight - .43]]) {
       const lensIndex = index * 3 + colorIndex;
       setTrafficLightInstance(trafficSignalLenses, lensIndex, spec, [0, y, 0.245]);
       setTrafficLightInstance(trafficSignalGlows, lensIndex, spec, [0, y, 0.17]);
@@ -2662,6 +2706,14 @@ function makeCity(scene) {
     marker.scale.set(armLength, 1, 1);
     marker.updateMatrix();
     overheadSignalArms.setMatrixAt(index, marker.matrix);
+    if (schoolMode && isExerciseSignal(schoolExercise, spec)) {
+      const barY = roadElevation(spec.x, spec.z) + 6.48;
+      addTeachingBarGlow(scene, new THREE.Vector3(spec.supportX, barY, spec.supportZ), new THREE.Vector3(spec.x, barY, spec.z));
+      const housingHalo = new THREE.Group();
+      housingHalo.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
+      addTeachingHalo(housingHalo, { width: 1.7, height: 2.8, y: 5.78 });
+      scene.add(housingHalo);
+    }
     setTrafficLightInstance(overheadSignalHousings, index, spec, [0, 5.78, 0]);
     for (const [colorIndex, y] of [[0, 6.2], [1, 5.78], [2, 5.36]]) {
       const lensIndex = spec.lensIndices.red + colorIndex;
@@ -2751,6 +2803,10 @@ function makeCity(scene) {
   const insideRegion = (region, x, z) => Math.abs(x - region.x) <= region.halfWidth && Math.abs(z - region.z) <= region.halfDepth;
   const surfaceHeight = (x, z) => {
     if (sidewalkRegions.some((region) => insideRegion(region, x, z))) return sidewalkHeight + roadElevation(x, z);
+    // Match the flat continuous junction, without an invisible raised disk.
+    if (Math.abs(x - ROUNDABOUT_X) <= ROUNDABOUT_OUTER_RADIUS && Math.abs(z - ROUNDABOUT_Z) <= ROUNDABOUT_OUTER_RADIUS) {
+      return roadElevation(x, z) + ROUNDABOUT_ROAD_OFFSET;
+    }
     const portSurface = portSurfaceRegions.find((region) => insideRegion(region, x, z));
     if (portSurface) return portSurface.height;
     if (lotRegions.some((region) => insideRegion(region, x, z))) return -0.065;
@@ -2759,7 +2815,7 @@ function makeCity(scene) {
     }
     const roadX = Math.abs(x - Math.round(x / BLOCK) * BLOCK) <= ROAD_HALF;
     const roadZ = Math.abs(z - Math.round(z / BLOCK) * BLOCK) <= ROAD_HALF;
-    return roadX || roadZ ? roadElevation(x, z) : -0.12 + roadElevation(x, z);
+    return roadX || roadZ ? roadElevation(x, z) + (schoolMode ? schoolBumpHeight(x, z) : 0) : -0.12 + roadElevation(x, z);
   };
   const isCanalBlocked = (x, z) => {
     const onOuterOverpass = viceCityOuterHighwayBridgeHeight(x, z) > 0.5
@@ -2991,9 +3047,7 @@ function makeFreeRoamPedestrian() {
   const iris = new THREE.MeshStandardMaterial({ color: 0x51392c, roughness: 0.62 });
   const pupil = new THREE.MeshStandardMaterial({ color: 0x171716, roughness: 0.45 });
   const mouth = new THREE.MeshStandardMaterial({ color: 0x774c43, roughness: 0.9 });
-  const pistolSteel = new THREE.MeshStandardMaterial({ color: 0x3c4143, roughness: 0.38, metalness: 0.68 });
-  const pistolGrip = new THREE.MeshStandardMaterial({ color: 0x252320, roughness: 0.8 });
-  const muzzleMaterial = new THREE.MeshBasicMaterial({ color: 0xffc76c, toneMapped: false });
+  const buckleMetal = new THREE.MeshStandardMaterial({ color: 0x3c4143, roughness: 0.38, metalness: 0.68 });
 
   const addPart = (parent, geometry, material, x = 0, y = 0, z = 0) => {
     const part = new THREE.Mesh(geometry, material);
@@ -3092,7 +3146,7 @@ function makeFreeRoamPedestrian() {
     addPart(character, new THREE.SphereGeometry(0.009, 8, 6), belt, 0, y, -0.16);
   }
   addPart(pelvis, new THREE.CylinderGeometry(0.226, 0.23, 0.065, 24), belt, 0, 1.005 - pelvis.position.y, 0);
-  addPart(pelvis, new THREE.BoxGeometry(0.065, 0.045, 0.014), pistolSteel,
+  addPart(pelvis, new THREE.BoxGeometry(0.065, 0.045, 0.014), buckleMetal,
     0, 1.005 - pelvis.position.y, -0.229);
 
   // Neck and tapered head use smooth profiles; the face has understated eyes, brows, ears and nose.
@@ -3188,19 +3242,7 @@ function makeFreeRoamPedestrian() {
   const arms = [makeLimb(-1, true), makeLimb(1, true)];
   const legs = [makeLimb(-1, false), makeLimb(1, false)];
 
-  // The firearm remains attached to the right hand and is aimed independently of the body.
-  const pistol = new THREE.Group();
-  pistol.position.set(0, -0.32, -0.018);
-  arms[1].userData.elbow.add(pistol);
-  addPart(pistol, new THREE.BoxGeometry(0.084, 0.068, 0.205), pistolGrip, 0, 0.02, -0.025);
-  addPart(pistol, new THREE.BoxGeometry(0.074, 0.043, 0.205), pistolSteel, 0, 0.064, -0.038);
-  const barrel = addPart(pistol, new THREE.CylinderGeometry(0.013, 0.013, 0.085, 8), pistolSteel, 0, 0.045, -0.177);
-  barrel.rotation.x = Math.PI / 2;
-  addPart(pistol, new THREE.BoxGeometry(0.06, 0.12, 0.065), pistolGrip, 0, -0.065, 0.034);
-  const muzzleFlash = addPart(pistol, new THREE.SphereGeometry(0.028, 8, 6), muzzleMaterial, 0, 0.045, -0.22);
-  muzzleFlash.visible = false;
-
-  return { group: character, pelvis, arms, legs, pistol, muzzle: muzzleFlash, muzzleFlash, aimBlend: 0 };
+  return { group: character, pelvis, arms, legs };
 }
 function isTouchPortraitViewport() {
   if (typeof window === 'undefined') return false;
@@ -3209,14 +3251,20 @@ function isTouchPortraitViewport() {
   return touch && window.innerHeight > window.innerWidth;
 }
 
-export default function ViceCityFreeRoam({ carId, onExit }) {
+export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, schoolTarget, schoolExercise, schoolPriorityState, schoolFault, schoolNotice, schoolControls, schoolPaused = false, onTelemetry }) {
+  const schoolTargetRef = useRef(schoolTarget);
+  schoolTargetRef.current = schoolTarget;
+  const priorityRef = useRef(schoolPriorityState);
+  priorityRef.current = schoolPriorityState;
+  const telemetryRef = useRef(onTelemetry);
+  telemetryRef.current = onTelemetry;
   const mountRef = useRef(null);
   const hudRef = useRef(null);
+  const turnSignalRef = useRef(null);
+  const leftMirrorRef = useRef(null);
+  const rightMirrorRef = useRef(null);
   const contextRef = useRef(null);
   const minimapRef = useRef(null);
-  const crosshairRef = useRef(null);
-  const mouseAimRef = useRef({ x: 0, y: 0, active: false });
-  const isOnFootRef = useRef(false);
   const audioRef = useRef(null);
   const audioStartingRef = useRef(null);
   const onExitRef = useRef(onExit);
@@ -3228,8 +3276,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const [portraitTouch, setPortraitTouch] = useState(isTouchPortraitViewport);
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
-  const [isOnFoot, setIsOnFoot] = useState(false);
-  const [canUseCockpit, setCanUseCockpit] = useState(true);
   const [featurePanel, setFeaturePanel] = useState(null);
   const [selectedFreeRoamCar, setSelectedFreeRoamCar] = useState(null);
   const [challengeHud, setChallengeHud] = useState(null);
@@ -3245,6 +3291,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   const streetEventActionRef = useRef(null);
   const soundOnRef = useRef(soundOn);
   const cockpitViewRef = useRef(cockpitView);
+  const schoolPausedRef = useRef(schoolPaused);
+  schoolPausedRef.current = schoolPaused;
   const toggleSoundRef = useRef(null);
   const toggleCameraRef = useRef(null);
   onExitRef.current = onExit;
@@ -3273,7 +3321,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
   };
   toggleSoundRef.current = toggleSound;
   const toggleCamera = () => {
-    if (isOnFootRef.current || !canUseCockpit) return;
     const next = !cockpitViewRef.current;
     cockpitViewRef.current = next;
     setCockpitView(next);
@@ -3295,6 +3342,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const x = rawX * scale;
     const y = rawY * scale;
     touchAxesRef.current = { x, y };
+    joystickKnobRef.current?.style.setProperty('--wheel-angle', `${x * 90}deg`);
     joystickKnobRef.current?.style.setProperty('--stick-x', `${x * travel}px`);
     joystickKnobRef.current?.style.setProperty('--stick-y', `${y * travel}px`);
   };
@@ -3311,6 +3359,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     touchAxesRef.current = { x: 0, y: 0 };
     joystickKnobRef.current?.style.setProperty('--stick-x', '0px');
     joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
+    joystickKnobRef.current?.style.setProperty('--wheel-angle', '0deg');
   };
   const activateLandscape = () => {
     Promise.resolve(landscapeSessionRef.current?.enter({ fullscreen: true })).catch(() => {});
@@ -3348,6 +3397,16 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
   }, []);
   useEffect(() => {
+    if (schoolMode && schoolPaused) {
+      audioRef.current?.pause();
+      joystickPointerRef.current = null; touchKeysRef.current.clear(); touchAxesRef.current = { x: 0, y: 0 };
+      joystickKnobRef.current?.style.setProperty('--wheel-angle', '0deg');
+      joystickKnobRef.current?.style.setProperty('--stick-x', '0px');
+      joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
+    }
+    else if (soundOnRef.current && audioRef.current?.running) audioRef.current.resume();
+  }, [schoolMode, schoolPaused]);
+  useEffect(() => {
     const mount = mountRef.current;
     if (!mount) return undefined;
     setSelectedFreeRoamCar(null);
@@ -3355,16 +3414,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     setChallengeHud(null);
     setStreetEventOffer(null);
     const scene = new THREE.Scene();
+    const schoolMarker = schoolMode ? createDrivingGroundMarker(0x47ffb0) : null;
+    if (schoolMarker) scene.add(schoolMarker);
     const skyColor = new THREE.Color();
     const fogColor = new THREE.Color();
     scene.background = new THREE.Color(0x73c5f0);
     scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
     addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
-    const mouseRaycaster = new THREE.Raycaster();
-    const mouseNdc = new THREE.Vector2();
-    const mouseAimPoint = new THREE.Vector3();
-    const mouseAimDirection = new THREE.Vector3();
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     renderer.shadowMap.enabled = true;
@@ -3388,7 +3445,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const rain = new THREE.LineSegments(rainGeometry, new THREE.LineBasicMaterial({ color: 0xa5dce8, transparent: true, opacity: 0.48 }));
     rain.visible = false;
     scene.add(rain);
-    const city = makeCity(scene);
+    const city = makeCity(scene, schoolMode, schoolExercise);
+    if (schoolMode) addDrivingSchoolScenery(scene, city.roadElevation, schoolExercise);
+    let schoolRoute = null;
+    if (schoolExercise) {
+      schoolRoute = createExerciseZone(scene, renderer, schoolExercise, city.surfaceHeight);
+      // Remove parked obstacles within the controlled training section.
+      for (const body of city.parkedCarBodies) if (insideExercise(schoolExercise.bounds, body.spec.x, body.spec.z)) { body.mesh.visible = false; body.occupied = true; }
+    }
     const minimapHighwayPaths = [...viceCityOuterHighwayPaths(), ...viceCityOuterHighwayAccessRamps()];
 
     let profile = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
@@ -3417,17 +3481,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return car;
     };
     installFreeRoamHeadlights(playerVehicle);
-    let activeParkedBody = null;
-    playerVehicle.position.set(-138, 0, 0);
+    playerVehicle.position.set(schoolExercise?.spawn.x ?? -138, schoolExercise ? city.surfaceHeight(schoolExercise.spawn.x, schoolExercise.spawn.z) : 0, schoolExercise?.spawn.z ?? 0);
     scene.add(playerVehicle);
-    const pedestrian = makeFreeRoamPedestrian();
-    pedestrian.group.visible = false;
-    scene.add(pedestrian.group);
     let playerCockpit = null;
     const ensurePlayerCockpit = () => {
       if (!playerCockpit) {
         playerCockpit = makeCityRushCockpit(playerVehicle, {
-          rightHandDrive: false,
+          rightHandDrive: schoolMode && schoolExercise?.trafficSide === 'left',
           accent: profile.accent,
           daylight: true,
           label: profile.name,
@@ -3444,8 +3504,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const withinDirection = index % 4;
       const laneIndex = directionSpec.axis === 'z' ? (withinDirection < 2 ? -1 : 1) : 0;
       const crossAxis = directionSpec.axis === 'x'
-        ? -directionSpec.direction * 2.35
-        : laneIndex * BLOCK + directionSpec.direction * 2.35;
+        ? leftTrafficOffset('x', directionSpec.direction) * (schoolExercise?.trafficSide === 'right' ? -1 : 1)
+        : laneIndex * BLOCK + leftTrafficOffset('z', directionSpec.direction) * (schoolExercise?.trafficSide === 'right' ? -1 : 1);
       const progress = directionSpec.axis === 'x'
         ? [-220, -72, 78, 224][withinDirection] * directionSpec.direction
         : (withinDirection % 2 === 0 ? -185 : 185) * directionSpec.direction;
@@ -3517,7 +3577,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       };
     };
     const highwayTrafficTypes = ['taxi', 'ambulance', 'white-lambo', 'garbage-truck'];
-    const highwayLaneOffsets = [4.5, 9.7, 15.0];
+    const highwayLaneOffsets = [4.5, 9.7, 15.0].map((offset) => schoolMode && schoolExercise?.trafficSide === 'left' ? -offset : offset);
     const highwayExitStarts = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
     for (let index = 0; index < 18; index += 1) {
       const direction = index < 9 ? 1 : -1;
@@ -3566,35 +3626,46 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       });
     }
     const keys = new Set();
-    const shots = [];
-    const shotGeometry = new THREE.SphereGeometry(0.12, 8, 6);
-    const shotMaterial = new THREE.MeshBasicMaterial({ color: 0xffe28a, toneMapped: false });
-    const glassChipMaterial = new THREE.MeshBasicMaterial({
-      color: 0x9bc5d0, transparent: true, opacity: 0.68, side: THREE.DoubleSide, depthWrite: false,
+    if (schoolExercise) {
+      for (const traffic of trafficCars) {
+        scene.remove(traffic.car);
+        // Keep detached geometry reachable for the scene's disposal traversal.
+        traffic.car.visible = false; scene.add(traffic.car);
+      }
+      trafficCars.length = 0;
+    }
+    const priorityCars = (schoolExercise?.priority?.actors || []).map((actor) => {
+      const person = actor.type === 'pedestrian' ? makeFreeRoamPedestrian() : null;
+      const cyclist = actor.type === 'cyclist' ? createSchoolCyclist(makeFreeRoamPedestrian()) : null;
+      if (cyclist) cyclist.pathLength = actor.points.slice(1).reduce((length, point, i) => length + Math.hypot(point.x - actor.points[i].x, point.z - actor.points[i].z), 0);
+      const car = person ? person.group : cyclist ? cyclist.group : enlargeFreeRoamTrafficCar(makeTrafficVehicle(actor.type));
+      if (actor.emergency) car.userData.beacons?.forEach(beacon => { beacon.material.color.setHex(0x28baff); });
+      if (person) {
+        car.userData.width = .65; car.userData.length = .65;
+      }
+      const pedestrianHalo = person && drivingTeachingEnabled(schoolExercise) ? addTeachingHalo(car, { width: 1.65, height: 2.7, y: 1 }) : null;
+      let teachingLabel = null;
+      if (drivingTeachingEnabled(schoolExercise) && schoolExercise.id === 'blocked-junction' && actor.id === 'queue') {
+        const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#152522'; context.fillRect(2, 2, 508, 94);
+        context.strokeStyle = '#ffcf50'; context.lineWidth = 5; context.strokeRect(3, 3, 506, 92);
+        context.fillStyle = '#ffcf50'; context.font = 'bold 39px sans-serif'; context.textAlign = 'center'; context.textBaseline = 'middle';
+        context.fillText('SORTIE BLOQUÉE', 256, 49);
+        context.beginPath(); context.moveTo(239, 96); context.lineTo(273, 96); context.lineTo(256, 127); context.closePath(); context.fill();
+        const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace;
+        teachingLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, depthTest: true, depthWrite: false }));
+        teachingLabel.name = 'blocked-exit-teaching-label'; teachingLabel.position.set(0, 3.5, 0); teachingLabel.scale.set(7, 1.75, 1);
+        car.add(teachingLabel);
+      }
+      car.name = `priority-exercise-${actor.id}`; scene.add(car); return { actor, car, person, cyclist, teachingLabel, pedestrianHalo };
     });
-    const glassCrackMaterial = new THREE.LineBasicMaterial({ color: 0xd6f5ff, transparent: true, opacity: 0.92, depthWrite: false });
-    let shotCooldown = 0;
-    let footMuzzleFlashUntil = 0;
-    const shotOrigin = new THREE.Vector3();
-    const aimableGlassMeshes = [playerVehicle, ...trafficCars.map(({ car }) => car),
-      ...city.parkedCarBodies.map(({ mesh }) => mesh)].map((car) => {
-      const meshes = [];
-      car.traverse((object) => {
-        if (!object.isMesh) return;
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
-          || materials.some((material) => /glass/i.test(material?.name || ''))) meshes.push(object);
-      });
-      return { car, meshes };
-    });
-    const aimGlassCandidates = [];
-    const glassImpactRaycaster = new THREE.Raycaster();
-    const glassWorldDirection = new THREE.Vector3();
-    const glassLocalNormal = new THREE.Vector3();
-    const glassWorldNormalMatrix = new THREE.Matrix3();
-    const glassCarQuaternion = new THREE.Quaternion();
-    const glassLocalForward = new THREE.Vector3(0, 0, 1);
-    const state = { x: -138, z: 0, heading: Math.PI / 2, speed: 0, steer: 0, lateralSpeed: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
+    const state = { x: schoolExercise?.spawn.x ?? -138, z: schoolExercise?.spawn.z ?? (schoolMode ? 2.35 : 0), heading: schoolExercise?.spawn.heading ?? (schoolMode ? -Math.PI / 2 : Math.PI / 2), speed: 0, steer: 0, lateralSpeed: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
+    if (schoolExercise) {
+      playerVehicle.rotation.y = -state.heading;
+      camera.position.set(state.x - Math.sin(state.heading) * 5, city.surfaceHeight(state.x, state.z) + 2.7, state.z + Math.cos(state.heading) * 5);
+      camera.lookAt(state.x, city.surfaceHeight(state.x, state.z) + 1, state.z);
+    }
     const challengeState = { current: null, rewardTotal: readFreeRoamProgress().credits, lastUiAt: 0, lastStreetAt: 0 };
     const ambientEvent = { nextAt: 48, offerId: null, expiresAt: 0, lastUiAt: 0 };
     const missionMarker = new THREE.Group();
@@ -3627,14 +3698,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let weatherElapsed = 0;
     let previousStreet = '';
     let worldClock = 15;
-    const walkState = {
-      x: state.x, z: state.z, heading: state.heading, speed: 0, phase: 0,
-      velocityX: 0, velocityZ: 0, turnRate: 0,
-    };
-    let turnAroundTarget = null;
-    let turnAroundStartHeading = 0;
-    let turnAroundElapsed = 0;
-    let backInputWasDown = false;
     const getChallengeRouteTarget = (challenge) => {
       if (!challenge || challenge.status !== 'active') return null;
       if (challenge.id === 'delivery') return challenge.target;
@@ -3652,39 +3715,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       const pulse = 1 + Math.sin(state.time * 4.5) * 0.12;
       missionBeacon.scale.setScalar(pulse);
     };
-    isOnFootRef.current = false;
-    setIsOnFoot(false);
-    let interactionWasDown = false;
     let interactionNotice = '';
     let interactionNoticeUntil = 0;
-    let pendingEntry = null;
-    const getMouseAimDirection = () => {
-      if (!mouseAimRef.current.active) return null;
-      const bounds = renderer.domElement.getBoundingClientRect();
-      if (bounds.width < 1 || bounds.height < 1) return null;
-      mouseNdc.set(
-        ((mouseAimRef.current.x - bounds.left) / bounds.width) * 2 - 1,
-        -((mouseAimRef.current.y - bounds.top) / bounds.height) * 2 + 1,
-      );
-      mouseRaycaster.setFromCamera(mouseNdc, camera);
-      // Prefer the actual windshield point under the cursor. In open space, use
-      // a distant point on the same ray so vertical mouse movement adds pitch.
-      aimGlassCandidates.length = 0;
-      for (const entry of aimableGlassMeshes) {
-        const { car, meshes } = entry;
-        if (!car.visible || Math.hypot(car.position.x - walkState.x, car.position.z - walkState.z) > 180) continue;
-        car.updateWorldMatrix(true, true);
-        aimGlassCandidates.push(...meshes);
-      }
-      const glassTarget = mouseRaycaster.intersectObjects(aimGlassCandidates, false)[0]?.point;
-      if (glassTarget) mouseAimPoint.copy(glassTarget);
-      else mouseRaycaster.ray.at(90, mouseAimPoint);
-      pedestrian.group.updateMatrixWorld(true);
-      pedestrian.muzzle.getWorldPosition(shotOrigin);
-      mouseAimDirection.subVectors(mouseAimPoint, shotOrigin);
-      if (mouseAimDirection.lengthSq() < 1e-6) mouseAimDirection.copy(mouseRaycaster.ray.direction);
-      return mouseAimDirection.normalize().clone();
-    };
     let gpsTarget = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.id === 'downtown');
     const destinationActionRefValue = (id) => {
       const next = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.id === id);
@@ -3741,8 +3773,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       sun.color.setHSL(0.09 - night * 0.52, 0.45 + daylight * 0.15, 0.52 + daylight * 0.23);
       sun.position.set(Math.cos(worldClock / 24 * Math.PI * 2) * 170, 25 + daylight * 180, Math.sin(worldClock / 24 * Math.PI * 2) * 145);
       if (rain.visible) {
-        const playerX = isOnFootRef.current ? walkState.x : state.x;
-        const playerZ = isOnFootRef.current ? walkState.z : state.z;
+        const playerX = state.x;
+        const playerZ = state.z;
         for (let index = 0; index < rainCount; index += 1) {
           rainHeights[index] -= dt * (19 + (index % 7) * 1.7);
           if (rainHeights[index] < 0) rainHeights[index] = 16 + (index % 13);
@@ -3756,8 +3788,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       if (state.time - challengeState.lastStreetAt > 1.2) {
         challengeState.lastStreetAt = state.time;
-        const px = isOnFootRef.current ? walkState.x : state.x;
-        const pz = isOnFootRef.current ? walkState.z : state.z;
+        const px = state.x;
+        const pz = state.z;
         const street = `${viceCityDistrictName(px, pz)} · ${viceCityStreetName(px, pz)}`;
         if (street !== previousStreet) { previousStreet = street; setStreetLabel(street); }
         const hour = Math.floor(worldClock).toString().padStart(2, '0');
@@ -3799,9 +3831,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const updateChallenge = (dt) => {
       const challenge = challengeState.current;
       if (!challenge || challenge.status !== 'active') return;
-      const px = isOnFootRef.current ? walkState.x : state.x;
-      const pz = isOnFootRef.current ? walkState.z : state.z;
-      const speed = isOnFootRef.current ? 0 : Math.abs(state.speed);
+      const px = state.x;
+      const pz = state.z;
+      const speed = Math.abs(state.speed);
       challenge.remaining = Math.max(0, challenge.remaining - dt);
       if (challenge.id === 'delivery' || challenge.id === 'checkpoints' || challenge.id === 'time-trial') {
         const points = challenge.id === 'delivery' ? [challenge.target] : challenge.checkpoints;
@@ -3830,7 +3862,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         challenge.progress = challenge.passedVehicles.size;
         if (challenge.progress >= challenge.targetCount) completeChallenge(challenge, 'complete');
       } else if (challenge.id === 'drift') {
-        if (speed > 7 && Math.abs(state.steer) > 0.18 && !isOnFootRef.current) {
+        if (speed > 7 && Math.abs(state.steer) > 0.18) {
           challenge.score += Math.abs(state.steer) * speed * dt * 3.5;
         }
         challenge.progress = challenge.score;
@@ -3874,12 +3906,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       try { context = canvas?.getContext?.('2d'); } catch { return; }
       if (!context) return;
       const size = canvas.width;
+      if (schoolExercise) { drawExerciseMap(context, size, schoolExercise, state, schoolTargetRef.current, priorityRef.current, schoolRoute?.userData.route.points.slice(schoolRoute.userData.route.startIndex)); return; }
       const center = size / 2;
       const radius = center - 4;
       const scale = 0.31;
-      const playerX = isOnFootRef.current ? walkState.x : state.x;
-      const playerZ = isOnFootRef.current ? walkState.z : state.z;
-      const heading = isOnFootRef.current ? walkState.heading : state.heading;
+      const playerX = state.x;
+      const playerZ = state.z;
+      const heading = state.heading;
       const strokeRoad = (x1, z1, x2, z2, width = 14, color = '#52616a') => {
         context.beginPath();
         context.moveTo(x1, z1);
@@ -4011,7 +4044,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       context.lineTo(center, center + 3);
       context.lineTo(center - 6, center + 6);
       context.closePath();
-      context.fillStyle = isOnFootRef.current ? '#67e3d8' : '#ff6689';
+      context.fillStyle = '#ff6689';
       context.fill();
       context.strokeStyle = '#ffffff';
       context.lineWidth = 1.5;
@@ -4030,8 +4063,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         pursuitSirenActive = false;
         return;
       }
-      const playerX = isOnFootRef.current ? walkState.x : state.x;
-      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const playerX = state.x;
+      const playerZ = state.z;
       const nearest = pursuers.reduce((distance, traffic) => Math.min(distance,
         Math.hypot(traffic.car.position.x - playerX, traffic.car.position.z - playerZ)), Infinity);
       audioRef.current?.policeSiren?.({ level: clamp(1 - nearest / 150, 0.12, 1), mute: !soundOnRef.current });
@@ -4057,8 +4090,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const activatePolicePursuit = () => {
       clearPolicePursuit();
-      const targetX = isOnFootRef.current ? walkState.x : state.x;
-      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      const targetX = state.x;
+      const targetZ = state.z;
       const closestPolice = trafficCars.filter((traffic) => traffic.type === 'police')
         .sort((left, right) => Math.hypot(left.car.position.x - targetX, left.car.position.z - targetZ)
           - Math.hypot(right.car.position.x - targetX, right.car.position.z - targetZ))
@@ -4072,8 +4105,8 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     };
     const updatePursuitTraffic = (traffic, dt) => {
       const car = traffic.car;
-      const targetX = isOnFootRef.current ? walkState.x : state.x;
-      const targetZ = isOnFootRef.current ? walkState.z : state.z;
+      const targetX = state.x;
+      const targetZ = state.z;
       if (!traffic.pursuitRoute || state.time >= traffic.pursuitRepathAt) {
         traffic.pursuitRoute = viceCityGpsRoute({ x: car.position.x, z: car.position.z }, { x: targetX, z: targetZ });
         traffic.pursuitRouteIndex = Math.min(1, Math.max(0, traffic.pursuitRoute.length - 1));
@@ -4203,6 +4236,14 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         if (traffic.approachKey !== approachKey) {
           traffic.approachKey = approachKey;
           traffic.committedIntersection = false;
+          traffic.schoolStopTime = 0;
+        }
+        if (schoolMode && intersectionXIndex * BLOCK === SCHOOL_STOP_JUNCTION.x && intersectionZIndex * BLOCK === SCHOOL_STOP_JUNCTION.z) {
+          if (distanceToSignal <= 18.5 && traffic.speed < 0.3) traffic.schoolStopTime = (traffic.schoolStopTime || 0) + dt;
+          // Stagger approaches so perpendicular traffic does not depart together.
+          const slot = Math.floor(state.time / 5) % 4;
+          const approachSlot = (traffic.axis === 'x' ? 0 : 2) + (traffic.direction > 0 ? 0 : 1);
+          signalState = traffic.schoolStopTime >= 1 && slot === approachSlot ? 'green' : 'red';
         }
         if (traffic.committedIntersection || (signalState === 'green' && distanceToSignal <= 18)) {
           traffic.committedIntersection = true;
@@ -4251,6 +4292,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
     };
     const onDown = (event) => {
+      if (schoolMode && schoolPausedRef.current) {
+        if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
+        return;
+      }
       if (event.code === 'KeyM') {
         event.preventDefault();
         toggleSoundRef.current?.();
@@ -4261,7 +4306,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         toggleCameraRef.current?.();
         return;
       }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyZ', 'KeyE', 'Space'].includes(event.code)) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'Space'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
         keys.add(event.code);
@@ -4269,26 +4314,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
     };
     const onUp = (event) => keys.delete(event.code);
-    const onMouseMove = (event) => {
-      const bounds = renderer.domElement.getBoundingClientRect();
-      if (bounds.width < 1 || bounds.height < 1) return;
-      const cursorX = clamp(event.clientX, bounds.left, bounds.right);
-      const cursorY = clamp(event.clientY, bounds.top, bounds.bottom);
-      // Keep the reticle directly under the OS cursor; the same viewport point
-      // is converted to a 3D camera ray by getMouseAimDirection().
-      const x = cursorX;
-      const y = cursorY;
-      mouseAimRef.current = { x, y, active: true };
-      crosshairRef.current?.style.setProperty('--aim-x', `${x}px`);
-      crosshairRef.current?.style.setProperty('--aim-y', `${y}px`);
-    };
-    const onMouseDown = (event) => {
-      if (event.button !== 0 || !mount.contains(event.target)) return;
-      event.preventDefault();
-      activateAudio();
-      touchKeysRef.current.add('MouseLeft');
-    };
-    const onMouseUp = () => touchKeysRef.current.delete('MouseLeft');
     const blur = () => {
       keys.clear();
       touchKeysRef.current.clear();
@@ -4296,12 +4321,11 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       joystickPointerRef.current = null;
       joystickKnobRef.current?.style.setProperty('--stick-x', '0px');
       joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
+    joystickKnobRef.current?.style.setProperty('--wheel-angle', '0deg');
     };
     window.addEventListener('keydown', onDown);
     window.addEventListener('keyup', onUp);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('mouseup', onMouseUp);
+    mount.addEventListener('pointerdown', activateAudio);
     window.addEventListener('blur', blur);
     const resize = () => {
       const width = Math.max(1, mount.clientWidth); const height = Math.max(1, mount.clientHeight);
@@ -4310,10 +4334,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
-    const cameraLookTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
-    let pedestrianCameraTracking = false;
-    let pedestrianCameraHeading = 0;
     const cockpitPosition = new THREE.Vector3();
     const cockpitIdentityQuat = new THREE.Quaternion();
     const cockpitFollowQuat = new THREE.Quaternion();
@@ -4333,11 +4354,13 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       return Math.abs(localX) < halfWidth && Math.abs(localZ) < halfLength;
     };
     const isPositionBlocked = (x, z) => {
+      if (narrowPassageBlocked(schoolExercise,x,z,state.heading)) return true;
       if (city.isCanalBlocked(x, z) || city.isHighwayBarrierBlocked(x, z)) return true;
       if (Math.hypot(x - city.roundaboutIsland.x, z - city.roundaboutIsland.z) < city.roundaboutIsland.collisionRadius) return true;
       if (city.buildingFootprints.some((building) =>
         Math.abs(x - building.x) < building.halfWidth + BUILDING_COLLISION_MARGIN
         && Math.abs(z - building.z) < building.halfDepth + BUILDING_COLLISION_MARGIN)) return true;
+      if (priorityCars.some(({ car }) => overlapsVehicleHitbox(x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length))) return true;
       if (trafficCars.some(({ car }) => overlapsVehicleHitbox(
         x, z, car.position.x, car.position.z, car.rotation.y, car.userData.width, car.userData.length,
       ))) return true;
@@ -4349,143 +4372,10 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2,
       );
     };
-    const isPedestrianPositionBlocked = (x, z) => isPositionBlocked(x, z)
-      || overlapsVehicleHitbox(x, z, state.x, state.z, vehicle.rotation.y,
-        vehicle.userData.width || 3, vehicle.userData.length || 5.2);
-    const resetPedestrianMotion = () => {
-      walkState.velocityX = 0;
-      walkState.velocityZ = 0;
-      walkState.turnRate = 0;
-      walkState.speed = 0;
-      turnAroundTarget = null;
-      turnAroundElapsed = 0;
-      backInputWasDown = false;
-    };
-    const movePedestrianWithSlide = (dt) => {
-      const deltaX = walkState.velocityX * dt;
-      const deltaZ = walkState.velocityZ * dt;
-      if (Math.hypot(deltaX, deltaZ) < 1e-5) {
-        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
-        return false;
-      }
-      const blocked = (x, z) => city.didCrossCanalWall(walkState.x, walkState.z, x, z)
-        || isPedestrianPositionBlocked(x, z);
-      const nextX = walkState.x + deltaX;
-      const nextZ = walkState.z + deltaZ;
-      if (!blocked(nextX, nextZ)) {
-        walkState.x = nextX;
-        walkState.z = nextZ;
-        walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
-        return true;
-      }
-      const canX = Math.abs(deltaX) > 1e-5 && !blocked(nextX, walkState.z);
-      const canZ = Math.abs(deltaZ) > 1e-5 && !blocked(walkState.x, nextZ);
-      if (canX && (!canZ || Math.abs(deltaX) >= Math.abs(deltaZ))) walkState.x = nextX;
-      else if (canZ) walkState.z = nextZ;
-      if (!canX) walkState.velocityX = 0;
-      if (!canZ) walkState.velocityZ = 0;
-      walkState.speed = Math.hypot(walkState.velocityX, walkState.velocityZ);
-      return canX || canZ;
-    };
-    const getEnterableVehicles = () => [
-      ...(playerVehicle.visible ? [{ mesh: playerVehicle, body: null, name: profile.name }] : []),
-      ...city.parkedCarBodies.filter((body) => !body.occupied && !body.reserved && body.mesh.visible).map((body) => ({
-        mesh: body.mesh,
-        body,
-        name: CITY_RUSH_TRAFFIC_TYPES.find((type) => type.id === body.spec.type)?.name || 'Voiture',
-      })),
-    ];
-    const getNearestEnterableVehicle = (x, z) => getEnterableVehicles()
-      .map((target) => ({ ...target, distance: Math.hypot(target.mesh.position.x - x, target.mesh.position.z - z) }))
-      .sort((left, right) => left.distance - right.distance)[0] || null;
-    const getVehicleApproach = (target, x, z) => {
-      const yaw = target.mesh.rotation.y;
-      const rightX = Math.cos(yaw);
-      const rightZ = -Math.sin(yaw);
-      const width = target.body?.spec.width || target.mesh.userData.width || 3;
-      const length = target.body?.spec.length || target.mesh.userData.length || 5.2;
-      const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
-      const sideDistance = halfWidth + 0.35;
-      const endDistance = halfLength + 0.35;
-      const relativeX = x - target.mesh.position.x;
-      const relativeZ = z - target.mesh.position.z;
-      const localX = relativeX * rightX + relativeZ * rightZ;
-      const localZ = relativeX * Math.sin(yaw) + relativeZ * Math.cos(yaw);
-      const edgePadding = 0.15;
-      const spots = [
-        ...[-1, 1].map((side) => ({
-          x: target.mesh.position.x + rightX * side * sideDistance + Math.sin(yaw) * clamp(localZ, -halfLength + edgePadding, halfLength - edgePadding),
-          z: target.mesh.position.z + rightZ * side * sideDistance + Math.cos(yaw) * clamp(localZ, -halfLength + edgePadding, halfLength - edgePadding),
-        })),
-        ...[-1, 1].map((side) => ({
-          x: target.mesh.position.x + rightX * clamp(localX, -halfWidth + edgePadding, halfWidth - edgePadding) + Math.sin(yaw) * side * endDistance,
-          z: target.mesh.position.z + rightZ * clamp(localX, -halfWidth + edgePadding, halfWidth - edgePadding) + Math.cos(yaw) * side * endDistance,
-        })),
-      ];
-      return spots
-        .filter((spot) => !isPedestrianPositionBlocked(spot.x, spot.z))
-        .sort((left, right) => Math.hypot(left.x - x, left.z - z) - Math.hypot(right.x - x, right.z - z))[0] || null;
-    };
-    const setActiveVehicle = (target) => {
-      if (activeParkedBody) {
-        activeParkedBody.occupied = false;
-        activeParkedBody.reserved = false;
-        activeParkedBody.spec.x = state.x;
-        activeParkedBody.spec.z = state.z;
-        activeParkedBody.spec.yaw = -state.heading;
-        activeParkedBody.velocityX = 0;
-        activeParkedBody.velocityZ = 0;
-        activeParkedBody.angularVelocity = 0;
-      }
-      if (target.body) {
-        target.body.reserved = false;
-        target.body.occupied = true;
-        target.body.velocityX = 0;
-        target.body.velocityZ = 0;
-        target.body.angularVelocity = 0;
-        target.body.spec.x = target.mesh.position.x;
-        target.body.spec.z = target.mesh.position.z;
-        target.body.spec.yaw = target.mesh.rotation.y;
-      }
-      activeParkedBody = target.body;
-      vehicle = target.mesh;
-      state.x = vehicle.position.x;
-      state.z = vehicle.position.z;
-      state.heading = -vehicle.rotation.y;
-      state.speed = 0;
-      state.steer = 0;
-      state.lateralSpeed = 0;
-      if (target.body) {
-        const trafficProfile = CITY_RUSH_TRAFFIC_TYPES.find((type) => type.id === target.body.spec.type);
-        const topSpeed = trafficProfile?.id === 'white-lambo' ? 31
-          : trafficProfile?.id === 'garbage-truck' ? 18
-            : trafficProfile?.id === 'ambulance' ? 26 : 28;
-        maxSpeed = topSpeed;
-        reverseMaxSpeed = Math.min(6, maxSpeed * 0.24);
-        acceleration = trafficProfile?.id === 'garbage-truck' ? 3.8 : 5.4;
-        engineProfile = target.body.spec.type;
-        vehicle.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
-      } else {
-        maxSpeed = homeMaxSpeed;
-        reverseMaxSpeed = homeReverseMaxSpeed;
-        acceleration = homeAcceleration;
-        engineProfile = profile.archetype;
-      }
-      pedestrian.group.visible = false;
-      resetPedestrianMotion();
-      isOnFootRef.current = false;
-      setIsOnFoot(false);
-      const hasCockpit = vehicle === playerVehicle;
-      setCanUseCockpit(hasCockpit);
-      if (!hasCockpit && cockpitViewRef.current) {
-        cockpitViewRef.current = false;
-        setCockpitView(false);
-      }
-    };
     const garagePosition = VICE_CITY_POINTS_OF_INTEREST.find((point) => point.kind === 'garage');
     garageActionRef.current = (action, id) => {
-      const playerX = isOnFootRef.current ? walkState.x : state.x;
-      const playerZ = isOnFootRef.current ? walkState.z : state.z;
+      const playerX = state.x;
+      const playerZ = state.z;
       if (Math.hypot(playerX - garagePosition.x, playerZ - garagePosition.z) > 38) {
         interactionNotice = 'GARAGE MUNICIPAL · APPROCHEZ-VOUS DU REPÈRE SUR LA CARTE';
         interactionNoticeUntil = state.time + 3.2;
@@ -4501,17 +4391,9 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       const nextProfile = CITY_RUSH_CARS.find((car) => car.id === id);
       if (!nextProfile) return false;
-      if (activeParkedBody) {
-        activeParkedBody.occupied = false;
-        activeParkedBody.reserved = false;
-        activeParkedBody.spec.x = state.x;
-        activeParkedBody.spec.z = state.z;
-        activeParkedBody.spec.yaw = -state.heading;
-        activeParkedBody = null;
-      }
-      const spawnX = isOnFootRef.current ? walkState.x : state.x;
-      const spawnZ = isOnFootRef.current ? walkState.z : state.z;
-      const spawnHeading = isOnFootRef.current ? walkState.heading : state.heading;
+      const spawnX = state.x;
+      const spawnZ = state.z;
+      const spawnHeading = state.heading;
       scene.remove(playerVehicle);
       playerCockpit = null;
       profile = nextProfile;
@@ -4537,11 +4419,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       state.damage = 0;
       state.airHeight = 0;
       jumpVelocity = 0;
-      pedestrian.group.visible = false;
-      resetPedestrianMotion();
-      isOnFootRef.current = false;
-      setIsOnFoot(false);
-      setCanUseCockpit(true);
       setSelectedFreeRoamCar(profile);
       interactionNotice = `${profile.name} PRÊTE · VOITURE TEMPORAIRE, GARAGE PRINCIPAL INCHANGÉ`;
       interactionNoticeUntil = state.time + 3.2;
@@ -4601,214 +4478,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       return hitCount;
     };
-    const fireShot = () => {
-      const onFoot = isOnFootRef.current;
-      const defaultDirection = {
-        x: onFoot ? Math.sin(walkState.heading) : forward.x,
-        y: 0,
-        z: onFoot ? -Math.cos(walkState.heading) : forward.z,
-      };
-      let direction = onFoot ? getMouseAimDirection() || defaultDirection : defaultDirection;
-      let aimPose = viceCityFreeDriveAimVectorPose(
-        walkState.heading, direction.x, direction.y, direction.z,
-      );
-      let x = state.x + direction.x * 2.65;
-      let y = city.surfaceHeight(state.x, state.z) + 1.05;
-      let z = state.z + direction.z * 2.65;
-      let groundOffset = 1.05;
-      if (onFoot) {
-        pedestrian.aimBlend = 1;
-        const applyAimPose = () => {
-          pedestrian.arms[1].userData.elbow.rotation.x = -0.06;
-          pedestrian.arms[0].userData.elbow.rotation.x = 0.14;
-          pedestrian.arms[1].rotation.set(1.02 + aimPose.pitch, aimPose.armYaw, -0.08);
-          pedestrian.arms[0].rotation.set(0.72 + aimPose.pitch, aimPose.armYaw, 0.62);
-          pedestrian.pistol.rotation.x = -1.02 - pedestrian.arms[1].userData.elbow.rotation.x;
-          pedestrian.group.updateMatrixWorld(true);
-        };
-        applyAimPose();
-        // Re-evaluate from the final muzzle transform to remove close-range parallax.
-        direction = getMouseAimDirection() || direction;
-        aimPose = viceCityFreeDriveAimVectorPose(
-          walkState.heading, direction.x, direction.y, direction.z,
-        );
-        applyAimPose();
-        direction = getMouseAimDirection() || direction;
-        pedestrian.muzzle.getWorldPosition(shotOrigin);
-        x = shotOrigin.x;
-        y = shotOrigin.y;
-        z = shotOrigin.z;
-        groundOffset = null;
-        footMuzzleFlashUntil = state.time + 0.075;
-        pedestrian.muzzleFlash.visible = true;
-      }
-      const mesh = new THREE.Mesh(shotGeometry, shotMaterial);
-      mesh.position.set(x, y, z);
-      scene.add(mesh);
-      shots.push({
-        mesh, x, y, z, directionX: direction.x, directionY: direction.y, directionZ: direction.z,
-        groundOffset, age: 0, distance: 0,
-      });
-      if (soundOnRef.current) audioRef.current?.gunshot?.();
-    };
-    const bulletOverlaps = (x, z, carX, carZ, yaw, width, length) => {
-      const dx = x - carX;
-      const dz = z - carZ;
-      const cosine = Math.cos(yaw);
-      const sine = Math.sin(yaw);
-      const localX = dx * cosine - dz * sine;
-      const localZ = dx * sine + dz * cosine;
-      const { halfWidth, halfLength } = viceCityFreeDriveParkedCarHitbox(width, length);
-      return Math.abs(localX) <= halfWidth + 0.45 && Math.abs(localZ) <= halfLength + 0.55;
-    };
-    const breakVehicleGlass = (car, worldX, worldY, worldZ, directionX, directionY, directionZ) => {
-      if (!car) return;
-      car.updateWorldMatrix(true, true);
-      const glassMeshes = [];
-      car.traverse((object) => {
-        if (!object.isMesh) return;
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        if (object.userData.isVehicleGlass || object.name.includes('dark-glazing')
-          || materials.some((material) => /glass/i.test(material?.name || ''))) glassMeshes.push(object);
-      });
-      if (!glassMeshes.length) return;
-      glassWorldDirection.set(directionX, directionY, directionZ).normalize();
-      const rayOrigin = new THREE.Vector3(worldX, worldY, worldZ).addScaledVector(glassWorldDirection, -12);
-      glassImpactRaycaster.set(rayOrigin, glassWorldDirection);
-      glassImpactRaycaster.near = 0;
-      glassImpactRaycaster.far = 24;
-      const glassHit = glassImpactRaycaster.intersectObjects(glassMeshes, false)[0];
-      if (!glassHit?.face && Math.abs(directionY) > 1e-4) return;
-      if (!car.userData.glassBroken) {
-        for (const mesh of glassMeshes) {
-          const replace = (material) => {
-            if (!/glass/i.test(material?.name || '') && !mesh.userData.isVehicleGlass
-              && !mesh.name.includes('dark-glazing')) return material;
-            const broken = material.clone();
-            broken.color?.setHex?.(0x829aa4);
-            broken.roughness = 0.42;
-            broken.metalness = 0.04;
-            broken.transparent = true;
-            broken.opacity = 0.22;
-            broken.depthWrite = false;
-            broken.needsUpdate = true;
-            return broken;
-          };
-          mesh.material = Array.isArray(mesh.material) ? mesh.material.map(replace) : replace(mesh.material);
-        }
-        car.userData.glassBroken = true;
-      }
-      if ((car.userData.glassCrackCount || 0) >= 8) return;
-      car.userData.glassCrackCount = (car.userData.glassCrackCount || 0) + 1;
-      const impact = car.worldToLocal(new THREE.Vector3(worldX, worldY, worldZ));
-      const inverseRotation = car.getWorldQuaternion(glassCarQuaternion).invert();
-      const localDirection = new THREE.Vector3(directionX, directionY, directionZ).applyQuaternion(inverseRotation);
-      const width = car.userData.width || 2;
-      const length = car.userData.length || 4.2;
-      const entryFace = viceCityFreeDriveGlassEntryFace(localDirection.x, localDirection.z);
-      const crack = new THREE.Group();
-      crack.name = 'broken-window-impact';
-
-      // Place the mark on the actual pane surface when the shot ray crosses glass.
-      // The old 2-D hit test used a guessed car edge, which left marks hovering
-      // beside the body or on the far side of the vehicle.
-      if (glassHit?.face) {
-        crack.position.copy(car.worldToLocal(glassHit.point.clone()));
-        glassWorldNormalMatrix.getNormalMatrix(glassHit.object.matrixWorld);
-        glassLocalNormal.copy(glassHit.face.normal).applyMatrix3(glassWorldNormalMatrix);
-        glassCarQuaternion.copy(car.getWorldQuaternion(new THREE.Quaternion())).invert();
-        glassLocalNormal.applyQuaternion(glassCarQuaternion).normalize();
-        crack.position.addScaledVector(glassLocalNormal, 0.012);
-        crack.quaternion.setFromUnitVectors(glassLocalForward, glassLocalNormal);
-      } else {
-        crack.position.y = clamp(impact.y, 0.88, 1.32);
-        if (entryFace.axis === 'side') {
-          crack.position.x = entryFace.side * width * 0.435;
-          crack.position.z = clamp(impact.z, -length * 0.28, length * 0.28);
-        } else {
-          crack.position.x = clamp(impact.x, -width * 0.34, width * 0.34);
-          crack.position.z = entryFace.end * length * 0.2;
-        }
-        crack.rotation.y = entryFace.rotation;
-      }
-      car.add(crack);
-      const hole = new THREE.Mesh(new THREE.CircleGeometry(0.052, 7), glassChipMaterial);
-      hole.position.z = 0.004;
-      hole.renderOrder = 4;
-      crack.add(hole);
-      const points = [];
-      for (let spoke = 0; spoke < 8; spoke += 1) {
-        const angle = (spoke / 8) * Math.PI * 2 + 0.14;
-        const lengthOut = 0.11 + (spoke % 3) * 0.018;
-        const endX = Math.cos(angle) * lengthOut;
-        const endY = Math.sin(angle) * lengthOut;
-        points.push(new THREE.Vector3(0, 0, 0.008), new THREE.Vector3(endX, endY, 0.008));
-        if (spoke % 2 === 0) {
-          points.push(new THREE.Vector3(endX * 0.58, endY * 0.58, 0.009));
-          points.push(new THREE.Vector3(endX + Math.cos(angle + 0.55) * 0.045,
-            endY + Math.sin(angle + 0.55) * 0.045, 0.009));
-        }
-      }
-      const crackLines = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points), glassCrackMaterial);
-      crackLines.renderOrder = 5;
-      crack.add(crackLines);
-    };
-    const updateShots = (dt) => {
-      for (let index = shots.length - 1; index >= 0; index -= 1) {
-        const shot = shots[index];
-        const stepX = shot.directionX * 92 * dt;
-        const stepY = shot.directionY * 92 * dt;
-        const stepZ = shot.directionZ * 92 * dt;
-        const stepLength = Math.hypot(stepX, stepY, stepZ);
-        const samples = Math.max(1, Math.ceil(stepLength / 0.8));
-        let hit = false;
-        for (let sample = 1; sample <= samples && !hit; sample += 1) {
-          const ratio = sample / samples;
-          const x = shot.x + stepX * ratio;
-          const z = shot.z + stepZ * ratio;
-          const y = shot.groundOffset == null
-            ? shot.y + stepY * ratio
-            : city.surfaceHeight(x, z) + shot.groundOffset;
-          for (const traffic of trafficCars) {
-            if (!bulletOverlaps(x, z, traffic.car.position.x, traffic.car.position.z,
-              traffic.car.rotation.y, traffic.car.userData.width, traffic.car.userData.length)) continue;
-            breakVehicleGlass(traffic.car, x, y, z,
-              shot.directionX, shot.directionY, shot.directionZ);
-            hit = true;
-            break;
-          }
-          if (hit) break;
-          for (const body of city.parkedCarBodies) {
-            if (body.occupied || body.reserved) continue;
-            if (!bulletOverlaps(x, z, body.spec.x, body.spec.z, body.spec.yaw,
-              body.spec.width, body.spec.length)) continue;
-            breakVehicleGlass(body.mesh, x, y, z,
-              shot.directionX, shot.directionY, shot.directionZ);
-            hit = true;
-            break;
-          }
-          if (!hit && isOnFootRef.current && playerVehicle.visible
-            && bulletOverlaps(x, z, playerVehicle.position.x, playerVehicle.position.z,
-              playerVehicle.rotation.y, playerVehicle.userData.width || 3, playerVehicle.userData.length || 5.2)) {
-            breakVehicleGlass(playerVehicle, x, y, z,
-              shot.directionX, shot.directionY, shot.directionZ);
-            hit = true;
-          }
-          if (!hit) {
-            shot.x = x;
-            shot.y = y;
-            shot.z = z;
-            shot.distance += stepLength / samples;
-          }
-        }
-        shot.age += dt;
-        shot.mesh.position.set(shot.x, shot.y, shot.z);
-        if (hit || shot.age > 1.5 || shot.distance > 125) {
-          scene.remove(shot.mesh);
-          shots.splice(index, 1);
-        }
-      }
-    };
+    const schoolSideMirrors = schoolMode ? createDrivingSideMirrors() : null;
     const cockpitMirrorTurn = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
     let cockpitMirrorTarget = null;
     let cockpitMirrorCamera = null;
@@ -4857,378 +4527,161 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
     let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
+      if (schoolMode && schoolPausedRef.current) {
+        last = now; keys.clear(); touchKeysRef.current.clear(); touchAxesRef.current = { x: 0, y: 0 };
+        return;
+      }
       const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
       updateEnvironment(dt);
       updateTraffic(dt);
+      for (const { actor, car, person, cyclist, teachingLabel, pedestrianHalo } of priorityCars) {
+        const pose = person ? schoolPedestrianMotion(actor, state.time, priorityRef.current?.triggerTime)
+          : priorityActorPose(actor, state.time, priorityRef.current?.triggerTime, actorPauseSeconds(priorityRef.current, actor.id, state.time));
+        car.position.set(pose.x, city.surfaceHeight(pose.x, pose.z) + .02, pose.z);
+        car.rotation.y = pose.yaw;
+        if (actor.emergency) {
+          const active=priorityRef.current?.triggerTime!=null&&!pose.clear;
+          car.userData.beacons?.forEach((beacon,i)=>{beacon.material.opacity=!pose.clear&&(Math.floor(state.time*6+i)%2===0)?1:.08;});
+          if(active) audioRef.current?.schoolEmergencySiren?.({time:state.time,level:clamp(1-Math.hypot(pose.x-state.x,pose.z-state.z)/100,.2,1),mute:!soundOnRef.current});
+        }
+        if (teachingLabel) teachingLabel.visible = !pose.clear;
+        if (pedestrianHalo) pedestrianHalo.visible = !pose.clear;
+        if (person) animateSchoolPedestrian(person, pose);
+        if (cyclist) animateSchoolCyclist(cyclist, Math.min(pose.traveled, cyclist.pathLength));
+        const advanced = Math.max(0, pose.traveled - (car.userData.schoolTraveled ?? 0));
+        car.userData.schoolTraveled = pose.traveled;
+        car.userData.wheels?.forEach((wheel) => { wheel.rotation.x += advanced; });
+      }
       updatePoliceSiren();
       city.updateCanalBoats(dt, state.time);
       city.updateCanalWater(state.time);
-      const pressed = (code) => keys.has(code) || touchKeysRef.current.has(code);
+      const pressed = (code) => !(schoolMode && code === 'Space') && (keys.has(code) || touchKeysRef.current.has(code));
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
-      const onFootJoystick = viceCityFreeDriveJoystickVector(touchAxesRef.current.x, touchAxesRef.current.y);
-      const interactionDown = pressed('KeyE');
-      const interactionJustPressed = interactionDown && !interactionWasDown;
-      interactionWasDown = interactionDown;
-      if (interactionJustPressed) {
-        if (!isOnFootRef.current) {
-          if (Math.abs(state.speed) > 0.65) {
-            interactionNotice = 'Arrêtez la voiture avant de sortir';
-            interactionNoticeUntil = state.time + 2.4;
-          } else {
-            const carYaw = vehicle.rotation.y;
-            const rightX = Math.cos(carYaw);
-            const rightZ = -Math.sin(carYaw);
-            const width = vehicle.userData.width || 3;
-            const exitDistance = width / 2 + 1.25;
-            const safeExit = [-1, 1].map((side) => ({
-              x: state.x + rightX * side * exitDistance,
-              z: state.z + rightZ * side * exitDistance,
-            })).find(({ x, z }) => !isPedestrianPositionBlocked(x, z));
-            if (safeExit) {
-              if (activeParkedBody) {
-                activeParkedBody.occupied = false;
-                activeParkedBody.spec.x = state.x;
-                activeParkedBody.spec.z = state.z;
-                activeParkedBody.spec.yaw = -state.heading;
-              }
-              walkState.x = safeExit.x;
-              walkState.z = safeExit.z;
-              walkState.heading = state.heading;
-              resetPedestrianMotion();
-              pedestrian.group.visible = true;
-              isOnFootRef.current = true;
-              setIsOnFoot(true);
-              setCanUseCockpit(false);
-              if (cockpitViewRef.current) {
-                cockpitViewRef.current = false;
-                setCockpitView(false);
-              }
-            } else {
-              interactionNotice = 'La sortie est bloquée des deux côtés';
-              interactionNoticeUntil = state.time + 2.4;
-            }
-          }
-        } else if (pendingEntry) {
-          if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
-          pendingEntry = null;
-          resetPedestrianMotion();
-          interactionNotice = 'Entrée dans la voiture annulée';
-          interactionNoticeUntil = state.time + 2.4;
-        } else {
-          const target = getNearestEnterableVehicle(walkState.x, walkState.z);
-          if (!target || target.distance > 16) {
-            interactionNotice = 'Approchez-vous d’une voiture';
-            interactionNoticeUntil = state.time + 2.4;
-          } else {
-            const approach = getVehicleApproach(target, walkState.x, walkState.z);
-            if (!approach) {
-              interactionNotice = 'La voiture est inaccessible';
-              interactionNoticeUntil = state.time + 2.4;
-            } else if (Math.hypot(approach.x - walkState.x, approach.z - walkState.z) <= 0.7) {
-              setActiveVehicle(target);
-            } else {
-              if (target.body) target.body.reserved = true;
-              pendingEntry = { target, approach };
-              interactionNotice = `Il court vers ${target.name.toLowerCase()}…`;
-              interactionNoticeUntil = state.time + 3;
-            }
-          }
-        }
-      }
       let throttle = false;
       let brake = false;
       let steerInput = 0;
-      if (isOnFootRef.current) {
-        state.speed = 0;
-        state.steer = 0;
-        throttle = pressed('ArrowUp') || pressed('KeyW');
-        brake = pressed('ArrowDown') || pressed('KeyS');
-        const backwardInput = brake || onFootJoystick.y > 0.16;
-        if (!pendingEntry && backwardInput && !backInputWasDown) {
-          turnAroundStartHeading = walkState.heading;
-          turnAroundTarget = walkState.heading + Math.PI;
-          turnAroundElapsed = 0;
-          walkState.velocityX = 0;
-          walkState.velocityZ = 0;
-          walkState.speed = 0;
-        }
-        backInputWasDown = !pendingEntry && backwardInput;
-        const mouseAimDirection = getMouseAimDirection();
-        let normalizedStrafe = 0;
-        if (pendingEntry) {
-          const dx = pendingEntry.approach.x - walkState.x;
-          const dz = pendingEntry.approach.z - walkState.z;
-          const distance = Math.hypot(dx, dz);
-          if (distance <= 0.72) {
-            const { target } = pendingEntry;
-            pendingEntry = null;
-            setActiveVehicle(target);
-          } else {
-            const desiredHeading = Math.atan2(dx, -dz);
-            const headingDelta = Math.atan2(
-              Math.sin(desiredHeading - walkState.heading),
-              Math.cos(desiredHeading - walkState.heading),
-            );
-            walkState.turnRate = viceCityFreeDriveTurnStep(
-              walkState.turnRate, clamp(headingDelta * 1.4, -1, 1), dt, 2.8,
-            );
-            walkState.heading += walkState.turnRate * dt;
-            const runSpeed = Math.min(5.45, distance / Math.max(dt, 1 / 240));
-            const targetX = dx / distance * runSpeed;
-            const targetZ = dz / distance * runSpeed;
-            const velocity = viceCityFreeDriveVelocityStep(
-              walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
-            );
-            walkState.velocityX = velocity.x;
-            walkState.velocityZ = velocity.z;
-            const nextWalkX = walkState.x + walkState.velocityX * dt;
-            const nextWalkZ = walkState.z + walkState.velocityZ * dt;
-            const blocked = city.didCrossCanalWall(walkState.x, walkState.z, nextWalkX, nextWalkZ)
-              || isPedestrianPositionBlocked(nextWalkX, nextWalkZ);
-            if (blocked) {
-              if (pendingEntry.target.body) pendingEntry.target.body.reserved = false;
-              pendingEntry = null;
-              resetPedestrianMotion();
-              interactionNotice = 'Le chemin vers la voiture est bloqué';
-              interactionNoticeUntil = state.time + 2.4;
-            } else movePedestrianWithSlide(dt);
-          }
-        } else {
-          const turningAround = turnAroundTarget != null;
-          if (turningAround) {
-            turnAroundElapsed += dt;
-            const turn = viceCityFreeDriveTurnAround(
-              turnAroundStartHeading, turnAroundTarget, turnAroundElapsed, 1,
-            );
-            walkState.heading = turn.heading;
-            walkState.turnRate = turn.turnRate;
-            walkState.velocityX = 0;
-            walkState.velocityZ = 0;
-            walkState.speed = 0;
-            if (turn.complete) turnAroundTarget = null;
-          } else {
-            const turnInput = viceCityFreeDriveTurnInput(pressed('KeyA'), pressed('KeyD'));
-            walkState.turnRate = viceCityFreeDriveTurnStep(walkState.turnRate, turnInput, dt);
-            walkState.heading += walkState.turnRate * dt;
-          }
-          const rawForwardInput = Number(throttle) - Number(brake) - onFootJoystick.y;
-          const turnInPlace = turningAround || backwardInput;
-          const forwardInput = turnInPlace ? 0 : Math.max(0, rawForwardInput);
-          const footVector = viceCityFreeDriveFootVector(
-            forwardInput,
-            turnInPlace ? 0 : Number(pressed('ArrowRight')) - Number(pressed('ArrowLeft'))
-              - Number(pressed('KeyQ')) + onFootJoystick.x,
-          );
-          const { forward: normalizedForward, strafe, magnitude: movementMagnitude } = footVector;
-          normalizedStrafe = strafe;
-          const forwardX = Math.sin(walkState.heading);
-          const forwardZ = -Math.cos(walkState.heading);
-          const rightX = Math.cos(walkState.heading);
-          const rightZ = Math.sin(walkState.heading);
-          const shiftRun = pressed('ShiftLeft') || pressed('ShiftRight') || (throttle && !brake)
-            || (onFootJoystick.magnitude >= 0.62 && normalizedForward > 0);
-          const runBlend = shiftRun ? 1 : clamp((movementMagnitude - 0.55) / 0.45, 0, 1);
-          const targetSpeed = movementMagnitude * (2.35 + runBlend * 3.1);
-          const targetX = (forwardX * normalizedForward + rightX * normalizedStrafe) * targetSpeed;
-          const targetZ = (forwardZ * normalizedForward + rightZ * normalizedStrafe) * targetSpeed;
-          const velocity = viceCityFreeDriveVelocityStep(
-            walkState.velocityX, walkState.velocityZ, targetX, targetZ, dt,
-          );
-          walkState.velocityX = velocity.x;
-          walkState.velocityZ = velocity.z;
-          movePedestrianWithSlide(dt);
-        }
-        const aimDirection = mouseAimDirection ?? {
-          x: Math.sin(walkState.heading), y: 0, z: -Math.cos(walkState.heading),
-        };
-        const aimPose = viceCityFreeDriveAimVectorPose(
-          walkState.heading, aimDirection.x, aimDirection.y, aimDirection.z,
-        );
-        const runBlend = clamp((walkState.speed - 2.65) / 1.55, 0, 1);
-        const gaitWeight = clamp(walkState.speed / 0.65, 0, 1);
-        walkState.phase += walkState.speed * dt * (3.25 - runBlend * 1.6);
-        const stride = Math.sin(walkState.phase) * (0.32 + runBlend * 0.26) * gaitWeight;
-        const leftSwing = Math.max(0, Math.sin(walkState.phase)) * gaitWeight;
-        const rightSwing = Math.max(0, -Math.sin(walkState.phase)) * gaitWeight;
-        const aiming = pressed('KeyZ') || pressed('MouseLeft') || mouseAimRef.current.active;
-        pedestrian.aimBlend += ((aiming ? 1 : 0) - pedestrian.aimBlend) * clamp(dt * (aiming ? 13 : 5), 0, 1);
-        const aimBlend = pedestrian.aimBlend;
-        const leftElbow = pedestrian.arms[0].userData.elbow;
-        const rightElbow = pedestrian.arms[1].userData.elbow;
-        leftElbow.rotation.x = -0.08 + aimBlend * 0.22 - stride * 0.08;
-        rightElbow.rotation.x = -0.13 + aimBlend * 0.07 + stride * 0.08;
-        pedestrian.pelvis.rotation.set(
-          -stride * 0.025,
-          clamp(-walkState.turnRate * 0.035, -0.045, 0.045),
-          clamp(-normalizedStrafe * 0.045 + Math.sin(walkState.phase) * gaitWeight * 0.018, -0.06, 0.06),
-        );
-        pedestrian.legs[0].rotation.x = stride;
-        pedestrian.legs[1].rotation.x = -stride;
-        pedestrian.legs[0].userData.knee.rotation.x = leftSwing * (0.42 + runBlend * 0.2);
-        pedestrian.legs[1].userData.knee.rotation.x = rightSwing * (0.42 + runBlend * 0.2);
-        pedestrian.legs[0].userData.foot.rotation.x = -leftSwing * 0.18;
-        pedestrian.legs[1].userData.foot.rotation.x = -rightSwing * 0.18;
-        pedestrian.arms[0].rotation.set(
-          -stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (0.72 + aimPose.pitch),
-          aimPose.armYaw * aimBlend,
-          aimBlend * 0.62,
-        );
-        pedestrian.arms[1].rotation.set(
-          stride * (0.42 - runBlend * 0.07) * (1 - aimBlend) + aimBlend * (1.02 + aimPose.pitch),
-          aimPose.armYaw * aimBlend,
-          -aimBlend * 0.08,
-        );
-        pedestrian.pistol.rotation.x = -aimBlend * (1.02 + rightElbow.rotation.x);
-        pedestrian.muzzleFlash.visible = state.time < footMuzzleFlashUntil;
-        const bodyBob = Math.abs(Math.sin(walkState.phase)) * gaitWeight * (0.016 + runBlend * 0.022);
-        pedestrian.group.position.set(
-          walkState.x,
-          city.surfaceHeight(walkState.x, walkState.z) + bodyBob,
-          walkState.z,
-        );
-        pedestrian.group.rotation.set(
-          0,
-          -walkState.heading,
-          clamp(-walkState.turnRate * 0.016 + normalizedStrafe * 0.045, -0.09, 0.09),
-        );
-        if (soundOnRef.current) {
-          audioRef.current?.engine({ speed: 0, throttle: 0, idle: true, engineProfile });
-        }
-      } else {
-        throttle = pressed('ArrowUp') || pressed('KeyW');
-        brake = pressed('ArrowDown') || pressed('KeyS');
-        steerInput = clamp(
-          (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
-            - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
-            + joystickInput.steer,
-          -1,
-          1,
-        );
-        const isWetRoad = weatherMode === 'rain';
-        const speedBeforeStep = state.speed;
-        state.speed = viceCityFreeDriveSpeedStep({
-          speed: state.speed,
-          throttle,
-          brake,
-          dt,
-          maxSpeed,
-          acceleration: acceleration * (isWetRoad ? 0.88 : 1),
-          reverseMaxSpeed,
+      throttle = pressed('ArrowUp') || pressed('KeyW');
+      brake = pressed('ArrowDown') || pressed('KeyS');
+      steerInput = clamp(
+        (pressed('ArrowRight') || pressed('KeyD') ? 1 : 0)
+          - (pressed('ArrowLeft') || pressed('KeyA') || pressed('KeyQ') ? 1 : 0)
+          + joystickInput.steer,
+        -1,
+        1,
+      );
+      const isWetRoad = weatherMode === 'rain';
+      const speedBeforeStep = state.speed;
+      state.speed = viceCityFreeDriveSpeedStep(drivingSchoolVehicleTuning({
+        speed: state.speed,
+        throttle,
+        brake,
+        dt,
+        maxSpeed,
+        acceleration: acceleration * (isWetRoad ? 0.88 : 1),
+        reverseMaxSpeed,
+      }, schoolMode));
+      if (isWetRoad && brake && speedBeforeStep > 0) {
+        const dryBrakingDelta = speedBeforeStep - state.speed;
+        state.speed = speedBeforeStep - dryBrakingDelta * 0.82;
+      }
+      if (soundOnRef.current) {
+        audioRef.current?.engine({
+          speed: Math.abs(state.speed) / maxSpeed,
+          throttle: throttle || brake ? 1 : 0,
+          idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
+          engineProfile,
         });
-        if (isWetRoad && brake && speedBeforeStep > 0) {
-          const dryBrakingDelta = speedBeforeStep - state.speed;
-          state.speed = speedBeforeStep - dryBrakingDelta * 0.82;
-        }
-        if (soundOnRef.current) {
-          audioRef.current?.engine({
-            speed: Math.abs(state.speed) / maxSpeed,
-            throttle: throttle || brake ? 1 : 0,
-            idle: Math.abs(state.speed) < 0.08 && !throttle && !brake,
-            engineProfile,
-          });
-        }
-        // Le braquage monte progressivement tant qu’on maintient la touche ;
-        // un appui bref reste doux et le volant se recentre vite au relâchement.
-        state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
-        state.heading += viceCityFreeDriveYawRate(state.speed, state.steer) * (isWetRoad ? 0.86 : 1) * dt;
-        state.lateralSpeed += state.speed * state.steer * (isWetRoad ? 0.16 : 0.045) * dt;
-        state.lateralSpeed *= Math.exp(-(isWetRoad ? 1.9 : 6.5) * dt);
-        // Les modèles du garage pointent le capot vers leur axe local -Z.
-        forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
-        const sideX = Math.cos(state.heading);
-        const sideZ = Math.sin(state.heading);
-        const nextX = state.x + (forward.x * state.speed + sideX * state.lateralSpeed) * dt;
-        const nextZ = state.z + (forward.z * state.speed + sideZ * state.lateralSpeed) * dt;
-        if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
-        const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-        const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
-        const pushedCars = pushedParkedCars + pushedTrafficCars;
-        if (pushedCars > 0 && Math.abs(state.speed) > 2.5) {
-          state.damage = clamp(state.damage + pushedCars * 1.8, 0, 100);
-          if (state.time - (state.lastDamageAt || -10) > 0.65) {
-            state.lastDamageAt = state.time;
-            const length = vehicle.userData.length || 5;
-            const scratches = vehicle.userData.damageMarks || (vehicle.userData.damageMarks = []);
-            for (let mark = 0; mark < 2; mark += 1) {
-              const x = (Math.random() - 0.5) * (vehicle.userData.width || 2.6) * 0.62;
-              const z = -length * 0.22 + Math.random() * length * 0.38;
-              const geometry = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(x, 0.78, z), new THREE.Vector3(x + (Math.random() - 0.5) * 0.22, 0.79, z - 0.38),
-              ]);
-              const scratch = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x282c30, transparent: true, opacity: 0.75 }));
-              vehicle.add(scratch); scratches.push(scratch);
-            }
-          }
-        }
-        // Conduite libre partout dans la ville : les trottoirs et les espaces
-        // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
-        const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
-          city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
-        if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
-          state.x = nextX;
-          state.z = nextZ;
-        } else {
-          if (Math.abs(state.speed) > 3) state.damage = clamp(state.damage + dt * 1.2, 0, 100);
-          const deltaX = nextX - state.x;
-          const deltaZ = nextZ - state.z;
-          const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
-          const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
-          if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
-          else if (canSlideZ) state.z = nextZ;
-          state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
-          state.lateralSpeed *= canSlideX || canSlideZ ? 0.38 : 0.12;
-        }
-        if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
-          state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
-        }
-        const jumpDown = pressed('Space');
-        const jumpJustPressed = jumpDown && !jumpWasDown;
-        jumpWasDown = jumpDown;
-        jumpCooldown = Math.max(0, jumpCooldown - dt);
-        if (jumpJustPressed && Math.abs(state.speed) > 9 && jumpCooldown <= 0) {
-          jumpVelocity = 5.3; jumpCooldown = 1.7; state.jumps += 1;
-          interactionNotice = 'SAUT RÉUSSI'; interactionNoticeUntil = state.time + 1.2;
-        }
-        jumpVelocity -= 10.5 * dt;
-        state.airHeight = Math.max(0, state.airHeight + jumpVelocity * dt);
-        if (state.airHeight === 0) jumpVelocity = 0;
-        vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z) + state.airHeight, state.z);
-        const driftingNow = Math.abs(state.speed) > 8 && Math.abs(state.steer) > 0.24;
-        if (driftingNow && state.time - skidAt > 0.11) {
-          skidAt = state.time;
-          const rearX = state.x - forward.x * 1.8; const rearZ = state.z - forward.z * 1.8;
-          const sideX = Math.cos(state.heading) * 0.75; const sideZ = -Math.sin(state.heading) * 0.75;
-          for (const side of [-1, 1]) {
-            const x = rearX + sideX * side; const z = rearZ + sideZ * side;
-            const markGeometry = new THREE.BufferGeometry().setFromPoints([
-              new THREE.Vector3(x, city.surfaceHeight(x, z) + 0.035, z),
-              new THREE.Vector3(x - forward.x * 1.15, city.surfaceHeight(x - forward.x * 1.15, z - forward.z * 1.15) + 0.035, z - forward.z * 1.15),
+      }
+      // Le braquage monte progressivement tant qu’on maintient la touche ;
+      // un appui bref reste doux et le volant se recentre vite au relâchement.
+      state.steer = viceCityFreeDriveSteerStep(state.steer, steerInput, dt);
+      state.heading += drivingSchoolYawRate(viceCityFreeDriveYawRate(state.speed, state.steer), schoolMode) * (isWetRoad ? 0.86 : 1) * dt;
+      state.lateralSpeed += state.speed * state.steer * (isWetRoad ? 0.16 : 0.045) * dt;
+      state.lateralSpeed *= Math.exp(-(isWetRoad ? 1.9 : 6.5) * dt);
+      // Les modèles du garage pointent le capot vers leur axe local -Z.
+      forward.set(Math.sin(state.heading), 0, -Math.cos(state.heading));
+      const sideX = Math.cos(state.heading);
+      const sideZ = Math.sin(state.heading);
+      const nextX = state.x + (forward.x * state.speed + sideX * state.lateralSpeed) * dt;
+      const nextZ = state.z + (forward.z * state.speed + sideZ * state.lateralSpeed) * dt;
+      if (city.breakFencesAt(nextX, nextZ, forward.x, forward.z) > 0) state.speed *= 0.88;
+      const pushedParkedCars = city.applyParkedCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+      const pushedTrafficCars = applyTrafficCarImpact(nextX, nextZ, forward, state.speed, state.steer, dt);
+      const pushedCars = pushedParkedCars + pushedTrafficCars;
+      if (pushedCars > 0 && Math.abs(state.speed) > 2.5) {
+        state.damage = clamp(state.damage + pushedCars * 1.8, 0, 100);
+        if (state.time - (state.lastDamageAt || -10) > 0.65) {
+          state.lastDamageAt = state.time;
+          const length = vehicle.userData.length || 5;
+          const scratches = vehicle.userData.damageMarks || (vehicle.userData.damageMarks = []);
+          for (let mark = 0; mark < 2; mark += 1) {
+            const x = (Math.random() - 0.5) * (vehicle.userData.width || 2.6) * 0.62;
+            const z = -length * 0.22 + Math.random() * length * 0.38;
+            const geometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(x, 0.78, z), new THREE.Vector3(x + (Math.random() - 0.5) * 0.22, 0.79, z - 0.38),
             ]);
-            const mark = new THREE.Line(markGeometry, new THREE.LineBasicMaterial({ color: 0x17191b, transparent: true, opacity: 0.52 }));
-            mark.userData.createdAt = state.time; scene.add(mark); wearMarks.push(mark);
-          }
-          if (state.time - skidSoundAt > 1.2) {
-            skidSoundAt = state.time;
-            audioRef.current?.skid({ intensity: clamp(Math.abs(state.steer) * 1.2, 0.45, 1.1), duration: 0.42 });
+            const scratch = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x282c30, transparent: true, opacity: 0.75 }));
+            vehicle.add(scratch); scratches.push(scratch);
           }
         }
-        while (wearMarks.length > 140) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
-        vehicle.rotation.y = -state.heading;
-        vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
-        if (activeParkedBody) {
-          activeParkedBody.spec.x = state.x;
-          activeParkedBody.spec.z = state.z;
-          activeParkedBody.spec.yaw = vehicle.rotation.y;
+      }
+      // Conduite libre partout dans la ville : les trottoirs et les espaces
+      // ouverts restent franchissables, seuls les bâtiments et véhicules bloquent.
+      const isMovementBlocked = (fromX, fromZ, toX, toZ) =>
+        (schoolExercise && !insideExercise(schoolExercise.bounds, toX, toZ, 3.5)) || city.didCrossCanalWall(fromX, fromZ, toX, toZ) || isPositionBlocked(toX, toZ);
+      if (!isMovementBlocked(state.x, state.z, nextX, nextZ)) {
+        state.x = nextX;
+        state.z = nextZ;
+      } else {
+        if (Math.abs(state.speed) > 3) state.damage = clamp(state.damage + dt * 1.2, 0, 100);
+        const deltaX = nextX - state.x;
+        const deltaZ = nextZ - state.z;
+        const canSlideX = Math.abs(deltaX) > 1e-6 && !isMovementBlocked(state.x, state.z, nextX, state.z);
+        const canSlideZ = Math.abs(deltaZ) > 1e-6 && !isMovementBlocked(state.x, state.z, state.x, nextZ);
+        if (canSlideX && (!canSlideZ || Math.abs(deltaX) >= Math.abs(deltaZ))) state.x = nextX;
+        else if (canSlideZ) state.z = nextZ;
+        state.speed *= canSlideX || canSlideZ ? 0.72 : pushedCars > 0 ? 0.62 : 0.18;
+        state.lateralSpeed *= canSlideX || canSlideZ ? 0.38 : 0.12;
+      }
+      if (Math.abs(state.x) > CITY_LIMIT || Math.abs(state.z) > CITY_LIMIT) {
+        state.x = clamp(state.x, -CITY_LIMIT, CITY_LIMIT); state.z = clamp(state.z, -CITY_LIMIT, CITY_LIMIT); state.speed = 0;
+      }
+      const jumpDown = pressed('Space');
+      const jumpJustPressed = jumpDown && !jumpWasDown;
+      jumpWasDown = jumpDown;
+      jumpCooldown = Math.max(0, jumpCooldown - dt);
+      if (jumpJustPressed && Math.abs(state.speed) > 9 && jumpCooldown <= 0) {
+        jumpVelocity = 5.3; jumpCooldown = 1.7; state.jumps += 1;
+        interactionNotice = 'SAUT RÉUSSI'; interactionNoticeUntil = state.time + 1.2;
+      }
+      jumpVelocity -= 10.5 * dt;
+      state.airHeight = Math.max(0, state.airHeight + jumpVelocity * dt);
+      if (state.airHeight === 0) jumpVelocity = 0;
+      vehicle.position.set(state.x, city.surfaceHeight(state.x, state.z) + state.airHeight, state.z);
+      const driftingNow = Math.abs(state.speed) > 8 && Math.abs(state.steer) > 0.24;
+      if (driftingNow && state.time - skidAt > 0.11) {
+        skidAt = state.time;
+        const rearX = state.x - forward.x * 1.8; const rearZ = state.z - forward.z * 1.8;
+        const sideX = Math.cos(state.heading) * 0.75; const sideZ = -Math.sin(state.heading) * 0.75;
+        for (const side of [-1, 1]) {
+          const x = rearX + sideX * side; const z = rearZ + sideZ * side;
+          const markGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(x, city.surfaceHeight(x, z) + 0.035, z),
+            new THREE.Vector3(x - forward.x * 1.15, city.surfaceHeight(x - forward.x * 1.15, z - forward.z * 1.15) + 0.035, z - forward.z * 1.15),
+          ]);
+          const mark = new THREE.Line(markGeometry, new THREE.LineBasicMaterial({ color: 0x17191b, transparent: true, opacity: 0.52 }));
+          mark.userData.createdAt = state.time; scene.add(mark); wearMarks.push(mark);
+        }
+        if (state.time - skidSoundAt > 1.2) {
+          skidSoundAt = state.time;
+          audioRef.current?.skid({ intensity: clamp(Math.abs(state.steer) * 1.2, 0.45, 1.1), duration: 0.42 });
         }
       }
-      shotCooldown = Math.max(0, shotCooldown - dt);
-      if ((pressed('KeyZ') || pressed('MouseLeft')) && shotCooldown <= 0) {
-        fireShot();
-        shotCooldown = 0.18;
-      }
-      updateShots(dt);
+      while (wearMarks.length > 140) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
+      vehicle.rotation.y = -state.heading;
+      vehicle.rotation.x = city.surfacePitch(state.x, state.z, -state.heading);
       updateChallenge(dt);
-      updateStreetEvent();
+      if (!schoolMode) updateStreetEvent();
       updateMissionMarker();
       while (wearMarks.length && state.time - wearMarks[0].userData.createdAt > 18) { const old = wearMarks.shift(); scene.remove(old); old.geometry.dispose(); old.material.dispose(); }
       if (vehicle === playerVehicle) {
@@ -5246,28 +4699,7 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.updateProjectionMatrix();
       }
       const activeCockpit = isCockpitView ? ensurePlayerCockpit() : null;
-      if (isOnFootRef.current) {
-        cameraTarget.copy(pedestrian.group.position);
-        cameraTarget.y += 1.2;
-        if (!pedestrianCameraTracking) {
-          cameraLookTarget.copy(cameraTarget);
-          pedestrianCameraHeading = walkState.heading;
-          pedestrianCameraTracking = true;
-        } else {
-          cameraLookTarget.lerp(cameraTarget, 1 - Math.exp(-dt * 8.5));
-          const cameraTurn = Math.atan2(
-            Math.sin(walkState.heading - pedestrianCameraHeading),
-            Math.cos(walkState.heading - pedestrianCameraHeading),
-          );
-          pedestrianCameraHeading += cameraTurn * (1 - Math.exp(-dt * 5.2));
-        }
-        forward.set(Math.sin(pedestrianCameraHeading), 0, -Math.cos(pedestrianCameraHeading));
-        cameraPosition.copy(pedestrian.group.position).addScaledVector(forward, -4.8);
-        cameraPosition.y += 2.65;
-        camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
-        camera.lookAt(cameraLookTarget);
-      } else if (isCockpitView && activeCockpit) {
-        pedestrianCameraTracking = false;
+      if (isCockpitView && activeCockpit) {
         activeCockpit.update({ speed: Math.abs(state.speed), topSpeed: maxSpeed, steer: state.steer * 0.4 }, dt, state.time);
         vehicle.updateMatrixWorld(true);
         activeCockpit.eye.getWorldPosition(cockpitPosition);
@@ -5286,7 +4718,6 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
         camera.fov = CITY_RUSH_COCKPIT_FOV + speedRatio * CITY_RUSH_COCKPIT_SPEED_FOV;
         camera.updateProjectionMatrix();
       } else {
-        pedestrianCameraTracking = false;
         cameraPosition.copy(vehicle.position).addScaledVector(forward, -5.0);
         cameraPosition.y += 2.7;
         camera.position.lerp(cameraPosition, 1 - Math.exp(-dt * 5.2));
@@ -5299,63 +4730,68 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       }
       if (now - hudAt > 100) {
         hudAt = now;
-        const isOnFoot = isOnFootRef.current;
-        const displayedSpeed = isOnFoot ? Math.abs(walkState.speed) : Math.abs(state.speed);
-        if (hudRef.current) hudRef.current.innerHTML = `<b>${Math.round(displayedSpeed * 3.6)}</b><small>KM/H${isOnFoot ? '' : ` · DÉGÂTS ${Math.round(state.damage)}%`}</small>`;
-        if (contextRef.current) {
-          const nearestVehicle = isOnFoot ? getNearestEnterableVehicle(walkState.x, walkState.z) : null;
-          const prompt = interactionNotice && state.time < interactionNoticeUntil
-            ? interactionNotice
-            : isOnFoot
-              ? pendingEntry
-                ? `△ / E · COURSE VERS ${pendingEntry.target.name.toUpperCase()}`
-                : nearestVehicle && nearestVehicle.distance <= 16
-                  ? `△ / E · ENTRER DANS ${nearestVehicle.name.toUpperCase()}`
-                  : 'JOYSTICK / WASD · POUSSEZ À FOND POUR COURIR · △ / E'
-              : Math.abs(state.speed) <= 0.65
-                ? '△ / E · SORTIR DU VÉHICULE'
-                : 'FREINEZ POUR SORTIR · △ / E';
-          contextRef.current.textContent = prompt;
+        telemetryRef.current?.({ x: state.x, z: state.z, heading: state.heading, signedSpeed: state.speed * 3.6, speed: Math.abs(state.speed) * 3.6, damage: state.damage, time: state.time });
+        if (hudRef.current) hudRef.current.innerHTML = `<b>${Math.round(Math.abs(state.speed) * 3.6)}</b><small>KM/H · DÉGÂTS ${Math.round(state.damage)}%</small>`;
+        if (contextRef.current) contextRef.current.textContent = interactionNotice && state.time < interactionNoticeUntil ? interactionNotice : '';
+      }
+
+      if (schoolMode && schoolExercise) {
+        const direction = schoolTurnSignal(schoolExercise, state, priorityRef.current);
+        const signal = updateSchoolIndicators(playerVehicle, direction, state.time);
+        if (turnSignalRef.current) {
+          turnSignalRef.current.dataset.direction = direction ?? 'none';
+          turnSignalRef.current.dataset.lit = String(signal.lit);
+          turnSignalRef.current.setAttribute('aria-label', direction ? `Clignotant automatique ${direction === 'right' ? 'droit' : 'gauche'}` : 'Clignotants éteints');
         }
       }
+      if (schoolRoute) updateDrivingRoute(schoolRoute, state);
       if (now - minimapAt > 120) {
         minimapAt = now;
         drawMinimap();
       }
+      if (schoolMarker && schoolTargetRef.current) {
+        const target = schoolTargetRef.current;
+        placeDrivingGroundMarker(schoolMarker, target.x, target.z, target.radius ?? 4, city.surfaceHeight);
+      }
       renderer.render(scene, camera);
       renderCockpitMirror();
+      if (schoolSideMirrors) renderDrivingSideMirrors(schoolSideMirrors, renderer, scene, playerVehicle, { left: leftMirrorRef.current, right: rightMirrorRef.current }, now);
     };
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
       window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp);
-      window.removeEventListener('mousemove', onMouseMove); window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('mouseup', onMouseUp); window.removeEventListener('blur', blur);
+      mount.removeEventListener('pointerdown', activateAudio); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
+      if (schoolSideMirrors) disposeDrivingSideMirrors(schoolSideMirrors);
       scene.traverse((object) => {
         object.geometry?.dispose?.();
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.filter(Boolean).forEach((material) => { for (const value of Object.values(material)) if (value?.isTexture) value.dispose(); material.dispose?.(); });
       });
-      renderer.dispose(); renderer.domElement.remove();
+      renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
     };
-  }, [carId]);
+  }, [carId, schoolMode, schoolExercise]);
 
   return (
-    <div className="vice-free-roam" role="application" aria-label="Conduite libre dans Vice City">
+    <div className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
-      <div className="vice-free-roam-minimap" role="img" aria-label="Minicarte de Vice City, centrée sur votre position">
+      {schoolMode && <div className="driving-side-mirrors" aria-label="Rétroviseurs latéraux en direct">
+        <div className="driving-side-mirror" role="img" aria-label="Vue du rétroviseur gauche en direct">
+          <canvas ref={leftMirrorRef} width={256} height={128} aria-hidden="true" /><span>Rétro gauche</span>
+        </div>
+        <div className="driving-side-mirror" role="img" aria-label="Vue du rétroviseur droit en direct">
+          <canvas ref={rightMirrorRef} width={256} height={128} aria-hidden="true" /><span>Rétro droit</span>
+        </div>
+      </div>}
+      <div className="vice-free-roam-minimap" role="img" aria-label={schoolExercise ? "Plan de la section de l’exercice" : "Minicarte de Vice City, centrée sur votre position"}>
         <canvas ref={minimapRef} width={256} height={256} aria-hidden="true" />
-        <span>VICE CITY</span>
+        <span>{schoolExercise ? 'ZONE D’EXERCICE' : 'VICE CITY'}</span>
       </div>
-      <div ref={crosshairRef} className={`vice-free-roam-crosshair${isOnFoot ? ' is-visible' : ''}`} aria-hidden="true">
-        <svg viewBox="0 0 32 32" focusable="false">
-          <path d="M16 2v8m0 12v8M2 16h8m12 0h8" />
-          <circle cx="16" cy="16" r="2.2" />
-        </svg>
-      </div>
+      {schoolMode && schoolFault && <p className="driving-fault-notice" role="status" aria-live="polite" aria-atomic="true">{schoolFault}</p>}
+      {schoolMode && schoolNotice && <p className="driving-success-notice" role="status">{schoolNotice}</p>}
       <header className="vice-free-roam-header">
-        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>FREE DRIVE</b><small>{displayCar.name} · {streetLabel} · 1986</small></div>
+        <div className="vice-free-roam-brand"><span>VICE CITY</span><b>{schoolExercise ? 'EXERCICE ROUTIER' : 'FREE DRIVE'}</b><small>{schoolExercise ? schoolExercise.title : `${displayCar.name} · ${streetLabel} · 1986`}</small></div>
         <div className="vice-free-roam-location"><i /> {worldCondition} <span>—</span> {freeRoamRewards} $</div>
         <button type="button" onClick={() => setFeaturePanel(featurePanel === 'activities' ? null : 'activities')}>✦ ACTIVITÉS</button>
         <button type="button" onClick={() => setFeaturePanel(featurePanel === 'garage' ? null : 'garage')}>⚒ GARAGE</button>
@@ -5364,12 +4800,15 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
           <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
         </button>
         <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
-          disabled={isOnFoot || !canUseCockpit} aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
-          title={isOnFoot || !canUseCockpit ? 'Disponible dans une voiture personnelle du garage' : cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
+          aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
+          title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
           ◉ COCKPIT
         </button>
-        <button type="button" onClick={onExit}>↶ MENU</button>
+        <button type="button" className="vice-free-roam-menu" onClick={onExit}>↶ MENU</button>
       </header>
+      {schoolMode && <div className="driving-turn-signal" ref={turnSignalRef} data-direction="none" data-lit="false" aria-label="Clignotants éteints">
+        <span data-side="left" aria-hidden="true">◀</span><small>CLIGNOTANTS AUTO</small><span data-side="right" aria-hidden="true">▶</span>
+      </div>}
       <div className="vice-free-roam-speed" ref={hudRef}><b>0</b><small>KM/H</small></div>
       {challengeHud && (() => {
         const progress = viceCityChallengeProgress(challengeHud);
@@ -5411,68 +4850,57 @@ export default function ViceCityFreeRoam({ carId, onExit }) {
       </aside>}
       <div className="vice-free-roam-context" ref={contextRef} role="status" aria-live="polite" />
       <div className="vice-free-roam-controls">
-        <b>{isOnFoot ? 'À PIED' : 'COMMANDES'}</b>
-        {isOnFoot ? (
-          <><span><kbd>W</kbd><kbd>↑</kbd> AVANCER / COURIR</span><span><kbd>S</kbd><kbd>↓</kbd> SE RETOURNER & AVANCER</span>
-            <span><kbd>A</kbd><kbd>D</kbd> TOURNER</span>
-            <span><kbd>Q</kbd><kbd>←</kbd> GLISSER À GAUCHE · <kbd>→</kbd> À DROITE</span>
-            <span><kbd>Z</kbd><kbd>□</kbd> / CLIC GAUCHE · TIRER</span>
-            <span><kbd>E</kbd> ENTRER / SORTIR · MOBILE △</span>
-            <small>S / ↓ ou joystick vers le bas : demi-tour, puis caméra derrière · Maj : courir · souris : viser sans tourner</small></>
-        ) : (
-          <><span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
-            <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span><span><kbd>Z</kbd> TIRER · <kbd>E</kbd> SORTIR</span>
-            <small>WASD · Espace : saut · C : cockpit · M : son · Échap : menu</small></>
-        )}
+        <b>COMMANDES</b>
+        <span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
+        <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span>
+        <small>WASD · Espace : saut · C : cockpit · M : son · Échap : menu</small>
       </div>
-      <div className="vice-free-roam-joystick" aria-label={isOnFoot ? 'Joystick gauche pour se déplacer' : 'Joystick gauche pour diriger'}>
-        <div className="vice-free-roam-joystick-base" role="application" aria-label="Joystick virtuel"
+      {schoolMode && (schoolControls?.steering ?? 'buttons') === 'buttons' && <div className="school-touch-direction" role="group" aria-label="Direction tactile">
+        {[['ArrowLeft','←','Tourner à gauche'],['ArrowRight','→','Tourner à droite']].map(([code,glyph,label]) => <button key={code} type="button" aria-label={label}
+          onPointerDown={event => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); event.currentTarget.dataset.held='true'; setTouchKey(code,true); }}
+          onPointerUp={event => { event.currentTarget.dataset.held='false'; setTouchKey(code,false); }} onPointerCancel={event => { event.currentTarget.dataset.held='false'; setTouchKey(code,false); }} onLostPointerCapture={event => { event.currentTarget.dataset.held='false'; setTouchKey(code,false); }}><span aria-hidden="true">{glyph}</span></button>)}
+      </div>}
+      {(!schoolMode || schoolControls?.steering === 'wheel') && <>
+      <div className={`vice-free-roam-joystick${schoolMode ? ' school-touch-wheel' : ''}`} aria-label="Joystick gauche pour diriger">
+        <div className="vice-free-roam-joystick-base" role="application" aria-label={schoolMode ? "Volant tactile : glissez à gauche ou à droite" : "Joystick virtuel"}
           onPointerDown={startJoystick} onPointerMove={updateJoystick} onPointerUp={endJoystick}
           onPointerCancel={endJoystick} onLostPointerCapture={endJoystick}>
           <span className="vice-free-roam-joystick-axis" aria-hidden="true" />
           <button ref={joystickKnobRef} type="button" tabIndex={-1} aria-hidden="true" className="vice-free-roam-joystick-knob"
             onPointerDown={(event) => event.preventDefault()} />
         </div>
-        <small>{isOnFoot ? 'MOUVEMENT' : 'DIRIGER'}</small>
+        <small>DIRIGER</small>
       </div>
-      <div className="vice-free-roam-touch" role="group" aria-label={isOnFoot ? 'Marcher, tirer, se retourner et interagir' : 'Accélérer, freiner et tirer'}>
+      </>}
+      <div className={`vice-free-roam-touch${schoolMode ? '' : ' is-driving-only'}`} role="group" aria-label="Commandes de conduite">
         {[
-          ['ArrowUp', '×', isOnFoot ? 'Courir' : 'Accélérer', 'accelerate'],
-          [isOnFoot ? 'KeyZ' : 'ArrowDown', '□', isOnFoot ? 'Tirer' : 'Freiner', isOnFoot ? 'foot-shoot' : 'brake'],
-          [isOnFoot ? 'ArrowDown' : 'KeyZ', isOnFoot ? '↻' : '○', isOnFoot ? 'Se retourner' : 'Tirer', isOnFoot ? 'turn-back' : 'shoot'],
+          ['ArrowUp', schoolMode ? '↑' : '×', 'Accélérer', 'accelerate'],
+          ['ArrowDown', schoolMode ? '▰' : '□', 'Freiner', 'brake'],
         ].map(([code, glyph, label, action]) => (
           <button key={action} type="button" data-action={action} aria-label={label} title={label}
-            disabled={isOnFoot && action === 'shoot'}
             onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey(code, true); }}
             onPointerUp={() => setTouchKey(code, false)} onPointerCancel={() => setTouchKey(code, false)}
             onLostPointerCapture={() => setTouchKey(code, false)}>
             <span aria-hidden="true">{glyph}</span><small>{label.toUpperCase()}</small>
           </button>
         ))}
-        {!isOnFoot && <button type="button" data-action="jump" aria-label="Sauter" title="Sauter (Espace)"
+        {!schoolMode && <button type="button" data-action="jump" aria-label="Sauter" title="Sauter (Espace)"
           onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey('Space', true); }}
           onPointerUp={() => setTouchKey('Space', false)} onPointerCancel={() => setTouchKey('Space', false)}
           onLostPointerCapture={() => setTouchKey('Space', false)}>
           <span aria-hidden="true">↟</span><small>SAUT</small>
         </button>}
-        <button type="button" data-action="interact" aria-label={isOnFoot ? 'Courir vers une voiture et entrer' : 'Sortir du véhicule'}
-          title={isOnFoot ? 'Courir vers une voiture et entrer' : 'Sortir du véhicule'}
-          onPointerDown={(event) => { event.preventDefault(); activateAudio(); event.currentTarget.setPointerCapture?.(event.pointerId); setTouchKey('KeyE', true); }}
-          onPointerUp={() => setTouchKey('KeyE', false)} onPointerCancel={() => setTouchKey('KeyE', false)}
-          onLostPointerCapture={() => setTouchKey('KeyE', false)}>
-          <span aria-hidden="true">△</span><small>{isOnFoot ? 'ENTRER' : 'SORTIR'}</small>
-        </button>
       </div>
       {portraitTouch && (
         <div className="vice-free-roam-rotate" role="dialog" aria-modal="true" aria-label="Jeu en mode paysage">
           <span aria-hidden="true">↻</span>
           <h2>VICE CITY SE JOUE EN PAYSAGE</h2>
-          <p>Tournez votre téléphone pour continuer la conduite libre.</p>
+          <p>Tournez votre téléphone pour continuer.</p>
           <button type="button" onClick={activateLandscape}>ACTIVER LE PAYSAGE</button>
           <small>Si la rotation automatique est refusée, tournez l’appareil manuellement.</small>
         </div>
       )}
-      <div className="vice-free-roam-compass">VC <i>N</i><span>OCEAN GRID · 06 × 06</span></div>
+      <div className="vice-free-roam-compass">VC <i>N</i><span>{schoolExercise ? `SECTION FERMÉE · CONDUITE À ${schoolExercise.trafficSide === 'right' ? 'DROITE · FRANCE' : 'GAUCHE'}` : 'OCEAN GRID · 06 × 06'}</span></div>
     </div>
   );
 }

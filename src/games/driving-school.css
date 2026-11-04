@@ -1,0 +1,164 @@
+.driving-school{background:#f4f5ef;color:#152c29;min-height:100vh;font-family:Inter,system-ui,sans-serif}.driving-shell{max-width:1220px;margin:auto;padding:30px}.driving-top{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #cdd5cd;padding-bottom:25px;font-size:12px;font-weight:700;letter-spacing:1px}.driving-top a{color:inherit}.driving-hero{display:grid;grid-template-columns:1fr 300px;gap:50px;align-items:center;padding:75px 0}.driving-eyebrow,.driving-school small{font-size:11px;letter-spacing:1px}.driving-eyebrow{color:#38745c;font-weight:800}.driving-hero h1{font-size:clamp(42px,5.7vw,78px);line-height:1.06;letter-spacing:-3px;margin:22px 0}.driving-hero em{color:#377b60;font-style:normal}.driving-hero p{max-width:570px;font-size:17px;line-height:1.8;color:#52655e}.driving-actions{display:flex;gap:12px;margin:25px 0}.driving-school button{cursor:pointer;font:inherit}.driving-actions button,.driving-theory button,.driving-instructor button{background:#183f33;color:white;border:0;padding:15px 22px;border-radius:7px;font-weight:650}.driving-actions .secondary{background:transparent;border:1px solid #bac8bd;color:#183f33}.driving-sign{text-align:center;transform:rotate(-6deg)}.driving-sign>span{display:grid;place-items:center;width:230px;height:230px;border:20px solid #d35143;border-radius:50%;background:#fff;font-size:105px;font-weight:800;box-shadow:12px 20px 0 #dce3d9;margin:auto auto 30px}.driving-sign small{line-height:1.8;color:#64796b}.driving-section-title{display:flex;align-items:center;justify-content:space-between;gap:15px}.driving-section-title h2{font-size:24px}.driving-section-title span{font-size:10px;letter-spacing:2px}.driving-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:15px 0 35px}.driving-card{background:#fff;border:1px solid #d9dfd5;border-radius:12px;padding:26px;text-align:left;color:inherit}.driving-card.selected{border:2px solid #397a5d;background:#eaf0e5}.driving-card h3{font-size:19px;margin:25px 0 12px}.driving-card p,.driving-theory p{line-height:1.8;color:#53665e}.driving-card b{font-size:12px;color:#377b60}.driving-theory{display:grid;grid-template-columns:1fr 1fr;gap:50px;border-top:1px solid #d0dacf;padding:35px 0}.driving-result{border-left:4px solid #377b60;background:#e5ecdf;padding:25px;margin-bottom:25px}.driving-history{padding:20px 0}.driving-history p{display:flex;justify-content:space-between;border-bottom:1px solid #d0dacf;padding:15px}.driving-instructor{position:fixed;z-index:70;top:110px;left:20px;max-width:300px;background:#f4f5eff2;border:1px solid #b9ccba;border-radius:12px;padding:20px;color:#152c29;box-shadow:0 12px 35px #0003}.driving-instructor h2{font-size:22px;margin:10px 0}.driving-instructor p{font-size:12px;line-height:1.6}.driving-instructor button{display:block;margin-top:12px;padding:10px}.driving-school-world .vice-free-roam-header>button:nth-of-type(-n+2),.driving-school-world .vice-free-roam-controls,.driving-school-world .vice-free-roam-context,.driving-school-world [data-action=shoot],.driving-school-world [data-action=jump],.driving-school-world [data-action=interact]{display:none!important}.driving-school button:focus-visible{outline:3px solid #e29b32;outline-offset:4px}@media(max-width:760px){.driving-shell{padding:20px}.driving-top>span:last-child{display:none}.driving-hero{grid-template-columns:1fr;padding:40px 0;gap:25px}.driving-sign{display:none}.driving-cards,.driving-theory{grid-template-columns:1fr}.driving-section-title{align-items:start}.driving-actions{flex-wrap:wrap}.driving-instructor{top:80px;left:8px;max-width:235px;padding:12px}.driving-instructor p{margin:5px 0}.driving-history p{gap:15px}}@media(max-height:520px){.driving-instructor{top:65px;max-width:210px;padding:10px}.driving-instructor p{font-size:10px;margin:4px 0}.driving-instructor h2{font-size:16px}.driving-instructor button{padding:6px;margin-top:5px}}
+.driving-retry{background:#183f33;color:white;border:0;padding:12px 20px;border-radius:7px}.driving-school-world .vice-free-roam-location{display:none}
+/* Keep the exercise and its instructor in one fullscreen stacking context. */
+.driving-school.is-driving{position:fixed;inset:0;z-index:20000;overflow:hidden;background:#15292e;isolation:isolate}
+.driving-school.is-driving .driving-school-world{z-index:1}
+.driving-school.is-driving .driving-instructor{z-index:20;max-height:calc(100dvh - 130px);overflow-y:auto;overscroll-behavior:contain}
+.driving-school.is-driving .vice-free-roam-minimap{left:20px;right:auto;top:auto;bottom:22px;width:140px}
+.driving-school.is-driving .vice-free-roam-compass{display:none}
+.driving-correction{padding:16px;border:1px solid #bacdb8;border-radius:8px;background:#f5f8ed;margin:18px 0}
+.driving-correction a,.driving-theory a{color:#225c44;text-decoration:underline}
+@media(max-height:520px){.driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 78px)}.driving-school.is-driving .vice-free-roam-minimap{left:12px;right:auto;top:auto;bottom:12px;width:110px}}
+/* Persistent while over the posted legal limit; no flashing or input capture. */
+.driving-speed-alert{position:fixed;z-index:40;left:50%;bottom:26px;transform:translateX(-50%);display:grid;gap:6px;width:min(480px,calc(100vw - 32px));padding:16px 20px;border:2px solid #ff8a8a;border-radius:10px;background:#a20e19f5;box-shadow:0 5px 32px #59030a80;color:#fff;text-align:center;pointer-events:none;font-variant-numeric:tabular-nums}
+.driving-speed-alert strong{font-size:16px;letter-spacing:.04em}.driving-speed-alert span{font-size:13px}
+.driving-school.is-driving.is-overspeed::after{content:"";position:fixed;inset:0;z-index:35;border:6px solid #ec293a;box-shadow:inset 0 0 42px #e21d2d55;pointer-events:none}
+@media(max-width:760px),(max-height:520px){.driving-speed-alert{bottom:12px;width:min(360px,calc(100vw - 32px));padding:10px 12px}.driving-speed-alert strong{font-size:12px}.driving-speed-alert span{font-size:11px}}
+/* Make the current action the strongest text in the instructor panel. */
+.driving-objective{margin:16px 0;padding:14px;border-left:4px solid #269fff;border-radius:0 8px 8px 0;background:#e1eef6}
+.driving-objective-label{display:block;margin-bottom:7px;color:#1a577e;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+.driving-instructor .driving-objective p{margin:0;color:#102e40;font-size:clamp(20px,1.8vw,25px);font-weight:750;line-height:1.35;overflow-wrap:break-word}
+@media(max-width:760px),(max-height:520px){.driving-objective{margin:10px 0;padding:10px}.driving-instructor .driving-objective p{font-size:18px;line-height:1.35}}
+.driving-turn-signal{position:absolute;z-index:22;left:20px;bottom:180px;display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid #61756f;border-radius:8px;background:#12201feb;color:#52645e;pointer-events:none}
+.driving-turn-signal span{font-size:25px;line-height:1}.driving-turn-signal small{font-size:9px;color:#cbd8d2;letter-spacing:.04em}
+.driving-turn-signal[data-direction=left][data-lit=true] [data-side=left],.driving-turn-signal[data-direction=right][data-lit=true] [data-side=right]{color:#ffbd32;text-shadow:0 0 10px #ffad32}
+@media(max-width:760px){.driving-turn-signal{left:12px;bottom:138px;gap:8px;padding:7px}.driving-turn-signal small{font-size:8px}}
+/* Errors stay distinguishable from neutral instructions, in lessons and results. */
+.driving-school .driving-error{color:#b4232b;font-weight:750}
+.driving-instructor .driving-error{padding:9px 11px;border-left:3px solid #b4232b;border-radius:0 6px 6px 0;background:#fff0ef}
+.driving-result li.driving-error{margin:8px 0;line-height:1.5}
+.driving-session-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.driving-instructor .driving-session-actions button{margin:0;padding:10px 12px;font-size:13px}
+.driving-instructor .driving-session-quit{background:transparent;color:#183f33;border:1px solid #8da99c}
+.driving-card{display:flex;flex-direction:column;align-items:stretch}
+.driving-card-select{display:block;flex:1;width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:left}
+.driving-card-launch{margin-top:20px;padding:12px 18px;border:0;border-radius:7px;background:#183f33;color:#fff;font-weight:750}
+.driving-card-launch:hover{background:#28654e}.driving-card-launch:active{background:#102e25}
+.driving-result,.driving-lessons{scroll-margin-top:85px}
+.driving-result-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.driving-result-actions button{padding:12px 18px;border:1px solid #183f33;border-radius:7px;background:#183f33;color:#fff;font-weight:700}
+.driving-result-actions button:hover:not(:disabled){background:#28654e}
+.driving-result-actions .driving-result-quit{background:transparent;color:#183f33}
+.driving-result-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:480px){.driving-result-actions{flex-direction:column}.driving-result-actions button{width:100%}}
+/* Five-second reading: one short instruction, numeric essentials, no prose. */
+.driving-quick-stats{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin:10px 0;font-size:14px;font-variant-numeric:tabular-nums}
+.driving-instructor .driving-hold{margin:8px 0;font-size:13px;font-variant-numeric:tabular-nums}
+
+@media(max-width:760px){.driving-school.is-driving .vice-free-roam-minimap{left:12px;right:auto;top:auto;bottom:12px;width:110px}}
+@media(max-height:520px){.driving-turn-signal{left:12px;bottom:138px;padding:6px 8px}}
+/* Reserve the bottom-left corner for the map and its indicator row. */
+.driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 300px)}
+@media(max-width:760px){.driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 270px)}}
+@media(max-height:520px){.driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 260px)}}
+/* Bottom-left stack: map above, automatic indicators below. */
+.driving-school.is-driving .vice-free-roam-minimap{bottom:78px}
+.driving-school.is-driving .driving-turn-signal{left:20px;bottom:22px}
+.driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 350px)}
+@media(max-width:760px),(max-height:520px){
+  .driving-school.is-driving .vice-free-roam-minimap{left:12px;bottom:64px}
+  .driving-school.is-driving .driving-turn-signal{left:12px;bottom:12px}
+  .driving-school.is-driving .driving-instructor{max-height:calc(100dvh - 310px)}
+}
+.driving-result .driving-fault-context{font-size:12px;color:#6b4b48;font-weight:500;margin:5px 0}
+.driving-result .driving-fault-reason{font-size:14px;margin:6px 0}
+.driving-result .driving-fault-advice{font-size:14px;color:#244b3c;font-weight:600;margin:6px 0 16px}
+/* Real rear-facing cameras, shown in either chase or cockpit view. */
+.driving-side-mirrors{position:absolute;z-index:30;top:55%;left:50%;width:min(92%,clamp(320px,70vw,920px));transform:translate(-50%,-50%);display:flex;justify-content:space-between;pointer-events:none}
+.driving-side-mirror{position:relative;width:clamp(100px,16vw,180px);aspect-ratio:2/1;overflow:hidden;border:2px solid #a1b8b2;border-radius:5px;background:#152522;box-shadow:0 3px 12px #0008}
+.driving-side-mirror canvas{display:block;width:100%;height:100%}
+.driving-side-mirror span{position:absolute;bottom:0;left:0;right:0;padding:3px 5px;background:#0b171bdb;color:#fff;text-align:center;font:700 10px/1.2 system-ui,sans-serif;letter-spacing:.03em}
+.driving-side-mirror canvas[data-status=unavailable]+span::before{content:'Vue indisponible · ';color:#ffd37a}
+@media(max-width:760px),(max-height:520px){.driving-side-mirrors{top:55%}.driving-side-mirror{width:clamp(90px,16vw,112px)}.driving-side-mirror span{font-size:8px;padding:2px}}
+
+/* Reserve a real layout row for the brief: never draw it over traffic lights. */
+.driving-school.is-driving{display:grid;grid-template-rows:auto minmax(0,1fr);grid-template-columns:minmax(0,1fr);height:100dvh;min-height:0;animation:none;transition:none;opacity:1;transform:none}
+.driving-school.is-driving .driving-school-world{position:relative;inset:auto;grid-row:2;grid-column:1;min-height:0;min-width:0;width:100%;height:100%}
+.driving-school.is-driving .driving-instructor{position:relative;inset:auto;transform:none;grid-row:1;grid-column:1;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px 14px;width:100%;max-width:none;max-height:none;overflow:visible;box-sizing:border-box;margin:0;padding:8px 16px;border:0;border-bottom:1px solid #b9ccba;border-radius:0;background:#f8faf6;box-shadow:none}
+.driving-brief-heading{display:grid;gap:3px;min-width:0;max-width:200px}
+.driving-instructor .driving-brief-heading h2{display:block;margin:0;font-size:11px;line-height:1.3;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.driving-brief-heading small{white-space:nowrap;font-size:11px;letter-spacing:0;color:#52655e}
+.driving-instructor .driving-objective{margin:0;padding:0;border:0;background:transparent;min-width:0}
+.driving-instructor .driving-objective-label{display:none}
+.driving-instructor .driving-objective p{margin:0;font-size:18px;line-height:1.3;font-weight:600;color:#102e40}
+.driving-brief-footer{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border:0;padding:0;min-width:0}
+.driving-brief-footer .driving-quick-stats{margin:0;gap:10px;font-size:12px}
+.driving-brief-footer .driving-hold{margin:0;font-size:12px}
+.driving-brief-details{position:relative;font-size:12px}
+.driving-brief-details summary{cursor:pointer;padding:4px;color:#244e3f;font-weight:650;border-radius:4px;white-space:nowrap}
+.driving-brief-details summary:focus-visible{outline:3px solid #e29b32;outline-offset:2px}
+.driving-brief-popover{position:absolute;top:calc(100% + 12px);right:0;width:min(260px,calc(100vw - 32px));box-sizing:border-box;padding:14px;border:1px solid #b9ccba;border-radius:10px;background:#f8faf6;box-shadow:0 5px 20px #0005}
+.driving-brief-popover .driving-session-actions{display:grid}
+.driving-instructor .driving-error{grid-column:1/-1;margin:0;padding:5px 8px;font-size:12px}
+.driving-instructor .driving-brief-restart{display:inline-flex;align-items:center;margin:0 0 0 auto;padding:7px 10px;font-size:12px;line-height:1.2;white-space:nowrap}
+.driving-brief-exercise{margin-bottom:8px;font-size:13px;font-weight:650}
+@media(max-width:1100px){
+  .driving-school.is-driving .driving-instructor{grid-template-columns:auto minmax(0,1fr);gap:6px 12px;padding:7px 12px}
+  .driving-brief-footer{grid-column:1/-1}
+  .driving-instructor .driving-objective p{font-size:17px}
+}
+@media(max-width:480px){
+  .driving-school.is-driving .driving-instructor{padding:6px 10px;gap:5px 10px}
+  .driving-instructor .driving-objective p{font-size:16px}
+  .driving-brief-footer{gap:5px 8px}
+  .driving-brief-footer .driving-quick-stats{gap:8px;font-size:11px}
+  .driving-brief-footer .driving-hold{font-size:11px}
+}
+/* The site navigation must not intercept the fullscreen exercise's top strip. */
+body:has(.driving-school.is-driving) .nav{display:none!important}
+
+/* One consistent right-hand control column, also on small touch screens. */
+.driving-school-world .vice-free-roam-header{display:grid;grid-template-columns:minmax(0,1fr) 112px;grid-template-rows:repeat(3,34px);gap:6px 12px;align-items:stretch;justify-content:normal;padding:10px 12px;background:none}
+.driving-school-world .vice-free-roam-header .vice-free-roam-brand{grid-column:1;grid-row:1/4;align-self:start;min-width:0;max-width:100%;justify-self:start}
+.driving-school-world .vice-free-roam-header .vice-free-roam-sound{grid-column:2;grid-row:1}
+.driving-school-world .vice-free-roam-header .vice-free-roam-view{display:block;grid-column:2;grid-row:2}
+.driving-school-world .vice-free-roam-header .vice-free-roam-menu{grid-column:2;grid-row:3}
+.driving-school-world .vice-free-roam-header>button{box-sizing:border-box;width:100%;height:100%;margin:0;padding:6px 8px!important;font-size:11px!important;letter-spacing:.04em;text-align:center;white-space:nowrap}
+@media(max-width:480px),(max-height:400px){.driving-school-world .vice-free-roam-header{grid-template-columns:minmax(0,1fr) 100px;grid-template-rows:repeat(3,30px);gap:5px 8px;padding:8px}.driving-school-world .vice-free-roam-header .vice-free-roam-brand b{font-size:16px}.driving-school-world .vice-free-roam-header .vice-free-roam-brand small{max-width:180px}}
+@media(max-width:1100px){.driving-brief-heading{max-width:clamp(80px,18vw,160px)}}
+/* Fixed high contrast, independent of sky colour and scene lighting. */
+.driving-school.is-driving .driving-instructor{background:#101c2c;color:#f5f8fc;border-bottom:2px solid #f2c94c;box-shadow:0 3px 10px #0006;opacity:1;backdrop-filter:none}
+.driving-school.is-driving .driving-instructor .driving-objective p{color:#fff;text-shadow:none}
+.driving-school.is-driving .driving-brief-heading h2,.driving-school.is-driving .driving-brief-heading small{color:#dce6f2}
+.driving-school.is-driving .driving-brief-footer{color:#f5f8fc}
+.driving-school.is-driving .driving-brief-details summary{color:#f5f8fc;border:1px solid #6c809b;background:#1c3048}
+.driving-school.is-driving .driving-brief-restart{background:#f2c94c;color:#101c2c;border:1px solid #f2c94c;font-weight:750}
+.driving-school.is-driving .driving-brief-restart:hover{background:#ffdf78}
+.driving-school.is-driving .driving-brief-popover{background:#101c2c;color:#f5f8fc;border-color:#6c809b}
+.driving-school.is-driving .driving-brief-popover .driving-session-quit{color:#f5f8fc;border-color:#8ca2bc;background:#1c3048}
+.driving-school.is-driving .driving-instructor .driving-error{color:#ffb9b9;background:#491c26;border-color:#ff8383;font-weight:750}
+/* The brief already identifies the exercise: keep the road's top-left clear. */
+.driving-school-world .vice-free-roam-header .vice-free-roam-brand{display:none}
+/* Keep the opaque brief below the scene instead of above it. */
+.driving-school.is-driving{grid-template-rows:minmax(0,1fr) auto}
+.driving-school.is-driving .driving-school-world{grid-row:1}
+.driving-school.is-driving .driving-instructor{grid-row:2;border-bottom:0;border-top:2px solid #f2c94c;box-shadow:0 -3px 10px #0006;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+.driving-school.is-driving .driving-brief-popover{top:auto;bottom:calc(100% + 12px)}
+
+/* Main instruction above the scene; secondary controls stay below it. */
+.driving-school.is-driving{grid-template-rows:auto minmax(0,1fr) auto}
+.driving-school.is-driving .driving-top-brief{grid-row:1;grid-column:1;z-index:20;display:flex;align-items:center;justify-content:center;box-sizing:border-box;margin:0;padding:12px 20px;padding-top:max(12px,env(safe-area-inset-top));border:0;border-bottom:2px solid #f2c94c;border-radius:0;background:#101c2c;color:#fff;text-align:center}
+.driving-top-brief p{margin:0;max-width:1100px;font-size:clamp(21px,2.2vw,30px);line-height:1.3;font-weight:650;overflow-wrap:break-word}
+.driving-school.is-driving .driving-school-world{grid-row:2}
+.driving-school.is-driving .driving-instructor{grid-row:3;grid-template-columns:auto minmax(0,1fr)}
+.driving-school.is-driving .driving-brief-footer{grid-column:2}
+@media(max-width:600px){.driving-school.is-driving .driving-top-brief{padding:9px 12px;padding-top:max(9px,env(safe-area-inset-top))}.driving-top-brief p{font-size:21px}.driving-school.is-driving .driving-instructor{grid-template-columns:minmax(0,1fr)}.driving-school.is-driving .driving-brief-heading{max-width:none;display:flex;justify-content:space-between;gap:8px}.driving-school.is-driving .driving-brief-footer{grid-column:1}}
+
+/* Faults have their own top-left slot, separate from the centred objective. */
+.driving-school-world .driving-fault-notice{position:absolute;z-index:25;top:12px;left:12px;box-sizing:border-box;max-width:min(340px,calc(100% - 148px));margin:0;padding:10px 12px;border:1px solid #ff8383;border-left:4px solid #ff8383;border-radius:6px;background:#491c26;color:#ffb9b9;font-size:15px;font-weight:750;line-height:1.4;overflow-wrap:break-word;pointer-events:none;box-shadow:0 3px 12px #0005}
+@media(max-width:480px){.driving-school-world .driving-fault-notice{top:8px;left:8px;max-width:calc(100% - 124px);padding:8px 10px;font-size:13px}}
+
+/* Equal side columns keep the legal maximum at the actual screen centre. */
+.driving-school.is-driving .driving-instructor{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
+.driving-school.is-driving .driving-max-speed{grid-column:2;grid-row:1;justify-self:center;align-self:center;color:#fff;font-size:16px;line-height:1.3;text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.driving-school.is-driving .driving-brief-heading{grid-column:1;grid-row:1}
+.driving-school.is-driving .driving-brief-footer{grid-column:3;grid-row:1;justify-content:flex-end}
+@media(max-width:850px){.driving-school.is-driving .driving-brief-footer{grid-column:1/-1;grid-row:2}.driving-school.is-driving .driving-brief-heading{display:grid;max-width:100%;min-width:0}.driving-school.is-driving .driving-max-speed{font-size:15px}}
+.driving-assistance{display:flex;flex-wrap:wrap;gap:12px 24px;margin:24px 0;padding:20px;border:1px solid #bacdb8;border-radius:10px;background:#fff}
+.driving-assistance legend{padding:0 8px;font-weight:750}.driving-assistance label{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px}.driving-assistance p,.driving-assistance small{width:100%;margin:0;line-height:1.6}.driving-assistance input{accent-color:#28654e;width:18px;height:18px}
+.driving-school-world .driving-success-notice{position:absolute;z-index:25;top:12px;left:12px;max-width:min(340px,calc(100% - 148px));box-sizing:border-box;margin:0;padding:10px 12px;border:1px solid #80dab1;border-left:4px solid #80dab1;border-radius:6px;background:#15382d;color:#daffeb;font-size:14px;line-height:1.4;pointer-events:none}
+.driving-error-review{margin:16px 0;padding:14px;border:1px solid #abc2b5;border-radius:8px;background:#f8fbf7;color:#193b31;font-weight:400}.driving-error-review summary{font-weight:750;cursor:pointer}.driving-error-review h3{font-size:16px}.driving-error-review svg{display:block;width:min(100%,420px);margin:16px 0}.driving-error-review p{font-size:14px;line-height:1.6}.driving-error-review button{display:block;margin-top:15px;padding:10px 14px;border:0;border-radius:6px;background:#183f33;color:white}.driving-error-review a{color:#244f7a;text-decoration:underline}
+@media(max-width:480px){.driving-school-world .driving-success-notice{top:8px;left:8px;max-width:calc(100% - 124px);font-size:13px;padding:8px 10px}}
+.driving-progress{margin:30px 0;padding:24px;border:1px solid #bccfbe;border-radius:12px;background:#edf3e9}.driving-progress>p{line-height:1.7;color:#425f50}.driving-skill-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.driving-skill{padding:18px;border:1px solid #d0dccb;border-radius:9px;background:white}.driving-skill h3{font-size:16px;margin:0 0 8px}.driving-skill>strong{font-size:13px;color:#52655e}.driving-skill progress{display:block;width:100%;height:9px;margin-top:14px;accent-color:#377b60}.driving-skill p{font-size:12px;line-height:1.6;color:#52655e}.driving-skill.is-confirmed{border-color:#398364;background:#f7fff8}.driving-badge{display:inline-block;color:#305c3b;font-size:13px;font-weight:750}.driving-recommendation{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:20px 0;padding:18px;background:#fff;border-radius:9px}.driving-recommendation h3{margin:0;font-size:16px}.driving-recommendation p{font-size:13px;line-height:1.6}.driving-recommendation button{flex-shrink:0;border:0;border-radius:7px;padding:12px 16px;background:#183f33;color:#fff;font-weight:750}.driving-progress>small{display:block;line-height:1.7;color:#52655e}.driving-earned-badges{padding:18px 24px;border:1px solid #d5b55d;border-radius:10px;background:#fff5d1;color:#5d471b}.driving-earned-badges h3{margin-top:0}.driving-earned-badges p{font-weight:750}
+@media(max-width:760px){.driving-skill-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.driving-progress{padding:16px}.driving-recommendation{flex-direction:column;align-items:stretch}}
+@media(max-width:480px){.driving-skill-grid{grid-template-columns:1fr}.driving-recommendation button{width:100%}}
