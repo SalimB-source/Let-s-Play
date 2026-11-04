@@ -280,7 +280,7 @@
   .rpg-accueil-mobile__jouer { min-height: 36px; padding: 6px 14px; letter-spacing: .12em; }
   .rpg-accueil-mobile__plaque { padding: 3px 8px; }
   .rpg-accueil-mobile__plaque small { font-size: 8.5px; }
-  .rpg-coffres-quetes__scene { height: 32px; }
+  .rpg-coffres-quetes__scene { --coffre-h: 32px; --scene-air: 10px; }
   .rpg-coffres-quetes__titre { font-size: 8.5px; }
 }
 

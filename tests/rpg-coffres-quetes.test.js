@@ -134,12 +134,20 @@ test('sur mobile aussi, le coffre encaissé est ouvert, vidé et grisé', async 
     > angle('.rpg-coffre-svg.is-ouvert .rpg-coffre-svg__couvercle'), 'le coffre de la rangée bâille plus grand');
 
   // Le viewBox est fixe : c'est le coffre qui rétrécit pour laisser passer le
-  // couvercle, sinon il serait rogné en haut.
+  // couvercle : c'est la scène qui lui ménage de l'air au-dessus.
   assert.match(jsx, /viewBox="0 0 64 58"/);
   const ensemble = regle('.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__ensemble');
-  const k = Number(ensemble.match(/scale\(([\d.]+)\)/)[1]);
-  assert.ok(k > 0 && k < 1, 'le coffre vidé doit rétrécir pour tenir dans le cadre');
-  assert.match(ensemble, /translateY\(\d+px\)/, 'et descendre pour dégager le haut du cadre');
+  assert.doesNotMatch(ensemble, /scale\(/, 'le coffre ouvert ne rétrécit pas');
+  assert.match(ensemble, /translateY\(\d+px\)/, 'il descend seulement pour dégager le haut du cadre');
+  // L'air vient de la scène, pas d'un coffre plus petit : le SVG garde sa
+  // hauteur propre et déborde de son viewBox vers le haut.
+  const scene = regle('.rpg-coffres-quetes__scene');
+  assert.match(scene, /--scene-air:\s*\d+px/, 'la scène réserve de l’air');
+  assert.match(scene, /height: calc\(var\(--coffre-h\) \+ var\(--scene-air\)\)/);
+  assert.match(scene, /align-items: flex-end/, 'le coffre est calé en bas, sa taille ne bouge pas');
+  const svg = regle('.rpg-coffres-quetes__scene .rpg-coffre-svg');
+  assert.match(svg, /height: var\(--coffre-h\)/, 'le SVG garde la hauteur du coffre, pas celle de la scène');
+  assert.match(svg, /overflow: visible/, 'le couvercle peut occuper l’air réservé');
 
   // La cérémonie d'ouverture partage CoffreSvg : elle garde son coffre plein,
   // donc aucune des règles ci-dessus ne doit déborder sur elle.

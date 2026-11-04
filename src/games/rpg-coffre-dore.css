@@ -420,7 +420,7 @@
    niveaux de gris, son intérieur est vide, et il rapetisse d'un cran en se
    posant plus bas — c'est ce qui laisse la place au couvercle levé sans qu'il
    aille toucher la barre d'avancement au-dessus. */
-.rpg-coffre-dore.is-ouvert { --ecaille: .84; --levee: 8px; }
+.rpg-coffre-dore.is-ouvert { --ecaille: 1; --levee: 8px; }
 .rpg-coffre-dore.is-ouvert .rpg-coffre-dore__couvercle { transform: rotateX(38deg); }
 /* L'intérieur est vidé : plus une pièce, plus de lueur, et un creux sombre
    qui se lit comme « il n'y a plus rien dedans ». */
