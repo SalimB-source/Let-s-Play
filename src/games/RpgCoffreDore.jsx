@@ -22,6 +22,10 @@
  * Trois états : `encours` (fermé, métal éteint), `pret` (couvercle entrouvert,
  * halo, butin qui luit), `ouvert` (grand ouvert, métal assombri).
  *
+ * Le gain se pose sous le coffre par défaut, ou à sa droite (`gain="droite"`)
+ * quand la description de la quête passe en dessous : il devient alors le
+ * second point focal de la ligne, en gros, avec son « + ».
+ *
  * L'interaction :
  *   - le pointeur incline le cube (`--penche-x` / `--penche-y`) ;
  *   - survoler un coffre prêt soulève davantage le couvercle ;
@@ -63,7 +67,7 @@ function Face({ cote, garniture = null }) {
 }
 
 export default function RpgCoffreDore({
-  etat = 'encours', montant = null, metal: metalForce = null,
+  etat = 'encours', montant = null, metal: metalForce = null, gain = 'dessous',
   sousTitre = null, onClick = null, title = null, style = null, ...reste
 }) {
   const metal = metalForce ?? metalPourGain(montant);
@@ -114,10 +118,12 @@ export default function RpgCoffreDore({
     onClick?.(evt);
   }, [pret, onClick, programmer]);
 
+  const aDroite = gain === 'droite';
   const classes = [
     'rpg-coffre-dore',
     `is-${etat}`,
     onClick ? 'is-cliquable' : 'is-verrouille',
+    aDroite ? 'is-gain-droite' : '',
     gerbe ? 'is-gerbe' : '',
     secousse ? 'is-secousse' : '',
   ].filter(Boolean).join(' ');
@@ -129,6 +135,7 @@ export default function RpgCoffreDore({
       data-coffre-dore={etat}
       data-coffre-metal={metal}
       data-coffre-dore-montant={montant ?? undefined}
+      data-coffre-gain={gain}
       title={title ?? undefined}
       onPointerMove={survol}
       onPointerLeave={repos}
@@ -224,7 +231,7 @@ export default function RpgCoffreDore({
               <path d="M5 12.5 10 17.5 19 7" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ) : <RpgCreditIcon />}
-          <strong>{montant}</strong>
+          <strong>{aDroite && !ouvert ? `+${montant}` : montant}</strong>
         </span>
       )}
       {sousTitre && <span className="rpg-coffre-dore__sous">{sousTitre}</span>}

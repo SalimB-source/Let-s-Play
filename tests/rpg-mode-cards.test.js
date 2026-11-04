@@ -13,7 +13,7 @@ import { JSDOM } from 'jsdom';
  *   portant que son titre.
  * - À droite en haut : grande vitrine illustrée du Sablier de Bab El.
  * - En dessous sur toute la largeur : la rampe horizontale des quêtes du jour
- *   en médaillons dorés + capsules d'objectif.
+ *   en coffres à ouvrir, gain à droite et objectif dessous.
  * - La page d'accueil reste non scrollable (`100dvh`, `overflow: hidden`), la
  *   progression d'XP vit dans son onglet dédié, et la barre verticale à gauche
  *   conserve ses boutons 3D et son bouton « Jouer » à dégradé animé.
@@ -260,7 +260,7 @@ test('styles calculés : bannières empilées, quêtes en bas, barre verticale 3
           <aside class="rpg-quests-jour">
             <div class="rpg-quests-jour__rail">
               <ul class="rpg-quests-jour__liste">
-                <li class="rpg-quests-jour__quete is-encours"><div class="rpg-quests-jour__corps"><div class="rpg-coffre-dore is-encours"></div><div class="rpg-quests-jour__capsule"></div></div></li>
+                <li class="rpg-quests-jour__quete is-encours"><div class="rpg-quests-jour__corps"><div class="rpg-coffre-dore is-encours is-gain-droite"></div></div><div class="rpg-quests-jour__capsule"></div></li>
               </ul>
             </div>
           </aside>

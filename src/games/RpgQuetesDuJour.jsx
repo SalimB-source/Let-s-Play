@@ -1,9 +1,9 @@
 /**
  * Rampe inférieure des quêtes du jour dans l'accueil « Jouer ».
  *
- * Chaque quête affiche sa fraction d'avancement au-dessus d'un coffre à ouvrir,
- * prolongé d'une capsule sombre donnant l'objectif précis. Le métal du coffre
- * dit le gain ; à droite sur la même ligne vivent le Cachet du cycle et le
+ * Chaque quête affiche sa fraction d'avancement, puis le coffre et son gain
+ * côte à côte, puis l'objectif en toutes lettres sous le coffre. Le métal du
+ * coffre dit le gain ; à droite de la rampe vivent le Cachet du cycle et le
  * Coffre de la semaine, en violet.
  *
  * Pas de raccourci vers le Souk ici : l'onglet Souk de la barre latérale porte
@@ -55,12 +55,13 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
         </span>
       </div>
 
+      {/* Le coffre et son gain côte à côte : la récompense est le second
+          point focal de la ligne, à droite, en gros. */}
       <div className="rpg-quests-jour__corps">
-        {/* Le butin se présente comme un coffre à ouvrir, plus comme un
-            médaillon de compte : même récompense, même geste. */}
         <RpgCoffreDore
           etat={reclamee ? 'ouvert' : terminee ? 'pret' : 'encours'}
           montant={quete.recompense}
+          gain="droite"
           onClick={terminee && !reclamee ? reclamer : null}
           title={
             reclamee
@@ -72,22 +73,24 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
           aria-label={`${quete.titre} (${palierLibelle}) — ${libelleCoffre(quete.recompense)}, ${quete.recompense} crédits${terminee && !reclamee ? ', à ouvrir' : ''}`}
           {...(terminee && !reclamee ? { 'data-jouer-reclamer': id } : {})}
         />
+      </div>
 
-        <div className="rpg-quests-jour__capsule">
-          <span className="sr-only">
-            {quete.titre} ({palierLibelle}) — +{quete.recompense} crédits :
+      {/* L'objectif se lit sous le coffre, sur toute la largeur de la colonne :
+          le texte n'est plus serré derrière le dessin. */}
+      <div className="rpg-quests-jour__capsule">
+        <span className="sr-only">
+          {quete.titre} ({palierLibelle}) — +{quete.recompense} crédits :
+        </span>
+        <p className="rpg-quests-jour__quete-texte">{quete.texte}</p>
+        {reclamee ? (
+          <p className="rpg-quests-jour__pris" data-jouer-pris>Coffre ouvert</p>
+        ) : terminee ? (
+          <p className="rpg-quests-jour__ouvre">Ouvrez le coffre&nbsp;!</p>
+        ) : (
+          <span className="rpg-quests-jour__encore sr-only" data-jouer-reste={reste}>
+            {reste === 1 ? 'Encore 1.' : `Encore ${reste}.`}
           </span>
-          <p className="rpg-quests-jour__quete-texte">{quete.texte}</p>
-          {reclamee ? (
-            <p className="rpg-quests-jour__pris" data-jouer-pris>Coffre ouvert</p>
-          ) : terminee ? (
-            <p className="rpg-quests-jour__ouvre">Ouvrez le coffre&nbsp;!</p>
-          ) : (
-            <span className="rpg-quests-jour__encore sr-only" data-jouer-reste={reste}>
-              {reste === 1 ? 'Encore 1.' : `Encore ${reste}.`}
-            </span>
-          )}
-        </div>
+        )}
       </div>
     </li>
   );

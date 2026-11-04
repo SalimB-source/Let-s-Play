@@ -1,8 +1,7 @@
 /* ── Rampe horizontale des quêtes du jour (en bas de l'accueil « Jouer ») ────
-   Inspirée de la rampe inférieure de MTG Arena : trois médaillons d'or avec
-   anneau d'avancement circulaire + capsule sombre d'objectif côte à côte,
-   suivis sur la même ligne du Cachet du cycle et de la Bourse du Souk, posés
-   au-dessus d'un socle d'encadrement gravé. */
+   Chaque quête est une petite colonne : la fraction d'avancement, le coffre et
+   son gain côte à côte, puis l'objectif en toutes lettres dessous. À droite de
+   la rampe, le Cachet du cycle et le Coffre de la semaine. */
 
 .rpg-quests-jour {
   position: relative;
@@ -87,30 +86,30 @@
   transition: width .35s ease;
 }
 
-/* Médaillon circulaire à gauche + capsule sombre glissée derrière à droite */
+/* Le coffre et son gain, côte à côte et centrés dans la colonne. L'objectif,
+   lui, est descendu sous le coffre : il a désormais toute la largeur. */
 .rpg-quests-jour__corps {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: center;
   min-width: 0;
 }
 
 .rpg-quests-jour__capsule {
   position: relative;
   z-index: 1;
-  flex: 1 1 auto;
   min-width: 0;
-  min-height: 46px;
-  margin-left: -18px;
-  padding: 6px 12px 6px 26px;
+  min-height: 34px;
+  padding: 6px 11px;
   border: 1px solid rgba(236, 219, 183, .2);
-  border-radius: 0 999px 999px 0;
+  border-radius: 12px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: linear-gradient(90deg, rgba(11, 12, 16, .92), rgba(18, 20, 27, .84));
+  background: linear-gradient(180deg, rgba(11, 12, 16, .92), rgba(18, 20, 27, .84));
   box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .06);
   transition: border-color .22s ease, background .22s ease;
 }
@@ -120,7 +119,7 @@
 }
 .rpg-quests-jour__quete.is-terminee .rpg-quests-jour__capsule {
   border-color: rgba(243, 196, 94, .68);
-  background: linear-gradient(90deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
+  background: linear-gradient(180deg, rgba(58, 39, 14, .94), rgba(24, 18, 12, .9));
 }
 .rpg-quests-jour__quete.is-reclamee {
   opacity: .56;

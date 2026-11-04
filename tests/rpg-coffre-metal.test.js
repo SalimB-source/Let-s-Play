@@ -358,3 +358,49 @@ test('le coffre est arrondi : cadre sombre, panneau incrusté, clous et blason',
   // Le couvercle déborde la caisse : c'est ce qui fait lire « coffre ».
   assert.match(bloc('.rpg-coffre-dore__couvercle'), /--w:\s*calc\(var\(--c-largeur\) \+ var\(--c-debord\)\)/, 'le couvercle déborde');
 });
+
+test('le gain passe à droite du coffre, en gros, et la quête descend dessous', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    // Par défaut le gain reste sous le dessin : les jalons compacts (Cachet,
+    // Semaine) n'ont pas la place de le porter à côté.
+    const dessous = await rendu({ etat: 'pret', montant: 80, sousTitre: 'Cachet' });
+    assert.equal(dessous.dataset.coffreGain, 'dessous');
+    assert.ok(!dessous.classList.contains('is-gain-droite'));
+    assert.equal(dessous.querySelector('.rpg-coffre-dore__montant strong')?.textContent, '80');
+
+    const droite = await rendu({ etat: 'pret', montant: 55, gain: 'droite' });
+    assert.equal(droite.dataset.coffreGain, 'droite');
+    assert.ok(droite.classList.contains('is-gain-droite'));
+    // À droite, le gain se lit comme une promesse : « +55 ».
+    assert.equal(droite.querySelector('.rpg-coffre-dore__montant strong')?.textContent, '+55');
+    assert.equal(droite.dataset.coffreDoreMontant, '55', 'la donnée reste numérique');
+
+    // Une fois en bourse, le « + » tombe : ce n'est plus à gagner.
+    const pris = await rendu({ etat: 'ouvert', montant: 55, gain: 'droite' });
+    assert.equal(pris.querySelector('.rpg-coffre-dore__montant strong')?.textContent, '55');
+    assert.ok(pris.querySelector('.rpg-coffre-dore__coche'), 'la coche remplace la pièce');
+  });
+
+  const fs = await import('node:fs');
+  const coffreCss = fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8');
+  const rampeCss = fs.readFileSync('src/games/rpg-quetes-jour.css', 'utf8');
+  const rampe = fs.readFileSync('src/games/RpgQuetesDuJour.jsx', 'utf8');
+  const bloc = (css, sel) => [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter((m) => m[1].includes(sel)).map((m) => m[2]).join('\n');
+
+  // Le gain à droite est plus gros que l'étiquette d'origine (13 px).
+  const taille = Number((bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant')
+    .match(/font-size:\s*(\d+)px/) || [])[1]);
+  assert.ok(taille >= 18, `le gain est mis en valeur (${taille}px)`);
+  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite'), /flex-direction:\s*row/, 'le coffre et le gain sont côte à côte');
+  // Le halo ne doit pas se recentrer sur la ligne entière.
+  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__halo'), /left:\s*41px/, 'le halo reste sur le coffre');
+
+  // La capsule n'est plus glissée derrière le coffre : elle est descendue.
+  assert.ok(!/margin-left:\s*-/.test(bloc(rampeCss, '.rpg-quests-jour__capsule')), 'la capsule ne chevauche plus le coffre');
+  assert.match(rampe, /gain="droite"/, 'la quête demande le gain à droite');
+  const corps = rampe.slice(rampe.indexOf('className="rpg-quests-jour__corps"'));
+  const capsule = corps.indexOf('className="rpg-quests-jour__capsule"');
+  const fermetureCorps = corps.indexOf('</div>');
+  assert.ok(capsule > fermetureCorps, 'la capsule est sortie du corps : elle est sous le coffre');
+});

@@ -517,6 +517,37 @@
   100% { opacity: 0; transform: translate(calc((var(--i) - 2.5) * 16px), -4px) scale(.7) rotate(200deg); }
 }
 
+/* ── Le gain à droite du coffre ────────────────────────────────────────────
+   Quand la description de la quête passe sous le coffre, le gain prend la
+   place laissée libre à droite et devient le second point focal : plus gros,
+   cerclé de métal, précédé de son « + ». Il n'est plus une étiquette sous le
+   dessin, c'est la promesse de la ligne. */
+.rpg-coffre-dore.is-gain-droite {
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  gap: 0;
+}
+/* Le halo reste centré sur le coffre, pas sur la ligne entière. */
+.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__halo { left: 41px; }
+
+.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant {
+  margin: 0 0 0 -8px;
+  padding: 5px 13px 5px 11px;
+  gap: 5px;
+  border-width: 1.5px;
+  font-size: 19px;
+  line-height: 1.15;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .6), inset 0 1px 0 rgba(255, 255, 255, .16);
+}
+.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 16px; height: 16px; }
+.rpg-coffre-dore.is-gain-droite.is-pret .rpg-coffre-dore__montant {
+  box-shadow:
+    0 0 16px var(--coffre-halo-fort),
+    0 4px 12px rgba(0, 0, 0, .6),
+    inset 0 1px 0 rgba(255, 255, 255, .22);
+}
+
 /* Le mouvement réduit garde le volume, les états et la lumière, et retire
    l'animation. L'inclinaison au curseur est coupée côté composant. */
 @media (prefers-reduced-motion: reduce) {

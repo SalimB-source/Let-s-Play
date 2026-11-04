@@ -14932,9 +14932,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-mode-menu--jouer .rpg-quests-jour__jauge { display: none; }
   .rpg-mode-menu--jouer .rpg-quests-jour__capsule {
-    min-height: 32px;
-    margin-left: -13px;
-    padding: 3px 8px 3px 18px;
+    min-height: 28px;
+    padding: 3px 8px;
   }
   .rpg-mode-menu--jouer .rpg-quests-jour__quete-texte { font-size: 10px; line-height: 1.22; }
   .rpg-mode-menu--jouer .rpg-quests-jour__pris { font-size: 8.5px; }
