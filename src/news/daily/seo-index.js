@@ -327,5 +327,29 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-03",
     "section": "Actualités tech"
+  },
+  "/news/lightyear-frontier-1-0-4-novembre-2026": {
+    "title": "LIGHTYEAR FRONTIER LE CAP DE LA 1.0. — Let’s Play",
+    "description": "La version 1.0 est annoncée pour ce 4 novembre sur Steam et Xbox Series X|S. Deux régions et une conclusion à l’histoire accompagnent cette sortie d’accès anticipé.",
+    "image": "https://i.ytimg.com/vi/YlFr76IUmrk/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-04",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/godzilla-minus-zero-sortie-france-4-novembre-2026": {
+    "title": "GODZILLA MINUS ZERO DÉBARQUE EN FRANCE. — Let’s Play",
+    "description": "Le distributeur annonce Godzilla Minus Zero en salles françaises ce 4 novembre, avec des séances en VF et en VOSTFR.",
+    "image": "https://i.ytimg.com/vi/t3ou5N7e9M0/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-04",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/siri-ai-developer-preview-labs-4-novembre-2026": {
+    "title": "SIRI AI LES APPS EN BÊTA. — Let’s Play",
+    "description": "Après l’ouverture de la Developer Preview le 3 novembre, Apple propose des Group Labs les 4 et 5 novembre. L’intégration des apps reste un aperçu développeur.",
+    "image": "https://devimages-cdn.apple.com/wwdc-services/articles/images/511D5BB8-613D-4B6E-BB7A-C19C1991B592/2048.jpeg",
+    "type": "article",
+    "published": "2026-11-04",
+    "section": "Actualités tech"
   }
 };
