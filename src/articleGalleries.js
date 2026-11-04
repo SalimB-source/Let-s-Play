@@ -17,6 +17,22 @@
 import { youTubeFrameUrl } from './lib/videoThumbnails';
 
 export const articleGalleries = {
+  // Test original de Chaft : visuels promotionnels officiels de Bandai Namco,
+  // distincts des images de sa propre partie.
+  'ace-combat-8-wings-of-theve': {
+    label: 'ACE COMBAT 8',
+    meta: 'BANDAI NAMCO · VISUELS OFFICIELS',
+    items: [
+      { src: 'screenshots/ace-combat-8/escadrille.webp', alt: 'Deux avions de l’escadrille Lux Lunae volent devant les nuages dans Ace Combat 8', caption: '01 / L’escadrille Lux Lunae en vol' },
+      { src: 'screenshots/ace-combat-8/armement.webp', alt: 'Menu de sélection des armes spéciales d’un avion de chasse dans Ace Combat 8', caption: '02 / Choisir son armement' },
+      { src: 'screenshots/ace-combat-8/online.webp', alt: 'Un avion survole une structure en feu lors d’une mission d’Ace Combat Online', caption: '03 / Le combat continue en ligne' },
+    ],
+    credit: 'Couverture et images promotionnelles officielles publiées par Bandai Namco. Ces visuels illustrent le test et ne proviennent pas de la partie de Chaft.',
+    creditSources: [
+      { label: 'Bandai Namco Europe — page officielle du jeu', href: 'https://en.bandainamcoent.eu/ace-combat/ace-combat-8-wings-of-theve' },
+      { label: 'Bandai Namco — présentation officielle du jeu', href: 'https://www.bandainamcoent.com/news/ace-combat-8-wings-of-theve-game-overview' },
+    ],
+  },
   // Test original de Chaft : visuels de campagne publiés par l'éditeur, et
   // non des captures de la partie PC de la rédaction.
   'call-of-duty-modern-warfare-4': {

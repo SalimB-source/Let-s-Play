@@ -14,6 +14,7 @@ function Check(){ return <span aria-hidden="true">✓</span>; }
 function Cross(){ return <span aria-hidden="true">–</span>; }
 
 const COVER_NAMES = {
+  'ace-combat-8-wings-of-theve': 'ACE COMBAT 8',
   'call-of-duty-modern-warfare-4': 'MODERN WARFARE 4',
   wolverine: 'WOLVERINE',
   orbitals: 'ORBITALS',
@@ -62,7 +63,7 @@ export default function TestArticle(){
 
         {a.testContext && (
           <div className="review-test-context" role="note">
-            <strong>CONDITIONS DU TEST</strong>
+            <strong>{a.testContextLabel || 'CONDITIONS DU TEST'}</strong>
             <p>{a.testContext}</p>
           </div>
         )}
@@ -72,7 +73,8 @@ export default function TestArticle(){
             <div className="article-video-frame hud-frame">
               <iframe
                 src={videoEmbedUrl(a.video.id)}
-                title={`${a.name} — ${c.videoKicker}`}
+                title={`${a.name} — ${a.video.label} (${a.video.channel})`}
+                loading="lazy"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
