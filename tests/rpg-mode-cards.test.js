@@ -391,10 +391,13 @@ test('rampe bureau : changer une quête est proposé une fois par jour, hors de 
   assert.match(jsx, /disabled=\{!peutRemplacer\}/);
   assert.match(jsx, /data-jouer-remplacer=\{id\}/);
 
-  // Un `progressbar` ne doit pas contenir de commande : le bouton est posé
-  // après la jauge, en frère, et la place lui est réservée dans la piste.
-  const jauge = jsx.slice(jsx.indexOf('className="rpg-quests-jour__jauge"'), jsx.indexOf('data-jouer-remplacer'));
-  assert.match(jauge, /<\/div>/, 'la jauge est refermée avant le bouton');
+  // Un `progressbar` ne doit pas contenir de commande. La barre est un
+  // composant à part qui ne rend que des `span` : le bouton ne peut pas s'y
+  // retrouver, et la place lui est réservée dans la rangée.
+  const jauge = jsx.slice(jsx.indexOf('function Jauge('), jsx.indexOf('/** Une quête du jour'));
+  assert.match(jauge, /role="progressbar"/);
+  assert.doesNotMatch(jauge, /<button|onClick/, 'aucune commande dans la barre');
+  assert.match(jsx, /<Jauge[\s\S]{0,400}\/>\s*\n\s*\{changeable && \(/, 'la barre est rendue avant le bouton, en frère');
   assert.match(css, /\.has-remplacement \.rpg-quests-jour__jauge \{ padding-right: \d+px; \}/);
   assert.match(css, /\.rpg-quests-jour__quete \{[^}]*position: relative;/);
 
@@ -404,4 +407,32 @@ test('rampe bureau : changer une quête est proposé une fois par jour, hors de 
   assert.match(inerte, /cursor: not-allowed/);
   // Le glyphe est un SVG inline : les caractères non ASCII rendent à vide.
   assert.match(jsx, /data-jouer-remplacer[\s\S]{0,900}<svg viewBox="0 0 24 24"/);
+});
+
+test('la progression se lit en barre au-dessus du coffre, plus en fraction chiffrée', () => {
+  const jsx = lire('../src/games/RpgQuetesDuJour.jsx');
+  const css = lire('../src/games/rpg-quetes-jour.css');
+
+  // Les trois fractions ont disparu de l'écran : quête, cachet et semaine.
+  assert.doesNotMatch(jsx, /rpg-quests-jour__jauge-texte/, 'plus de « 0/8 » à côté de la barre');
+  assert.doesNotMatch(jsx, /rpg-quests-jour__compte/, 'plus de « 0/3 » sur le cachet');
+  assert.doesNotMatch(jsx, /rpg-quests-jour__serie/, 'plus de « 3/7 j » sur la semaine');
+  assert.doesNotMatch(css, /jauge-texte|__compte|__serie/, 'leurs règles sont parties aussi');
+  // Les trois endroits posent la même barre, au-dessus du coffre.
+  assert.equal((jsx.match(/<Jauge/g) || []).length, 3, 'quête, cachet et semaine partagent la barre');
+
+  // La fraction n'est pas perdue : elle reste annoncée et inspectable.
+  assert.match(jsx, /aria-valuenow=\{progres\}/);
+  assert.match(jsx, /aria-valuemax=\{objectif\}/);
+  assert.match(jsx, /data-jouer-progres=\{`\$\{progres\}\/\$\{quete\.objectif\}`\}/);
+  assert.match(jsx, /data-jouer-compte=/);
+  assert.match(jsx, /data-jouer-serie=\{serie\}/);
+
+  // Sans le texte à sa gauche, la piste n'est plus plafonnée : elle cadre le
+  // coffre sur la largeur de la colonne.
+  const piste = css.slice(css.indexOf('.rpg-quests-jour__jauge-piste {'));
+  assert.doesNotMatch(piste.slice(0, piste.indexOf('}')), /max-width/, 'la piste prend la largeur disponible');
+  // Et elle se voit même à 0 % : un sillon sombre cerclé, pas un aplat translucide.
+  assert.match(piste.slice(0, piste.indexOf('}')), /background: rgba\(10, 9, 13/);
+  assert.match(piste.slice(0, piste.indexOf('}')), /0 0 0 1px rgba\(255, 240, 205/);
 });

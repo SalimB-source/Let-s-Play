@@ -88,9 +88,25 @@ function SlotCoffre({ coffre, onOuvrir, onRemplacer, peutRemplacer, large = fals
         title={pret ? `Ouvrir le ${coffre.nom.toLowerCase()}` : coffre.texte}
         onClick={() => onOuvrir?.(coffre)}
       >
-        <span className="rpg-coffres-quetes__etat" data-coffre-legende={legendeCoffre(coffre)}>
-          {legendeCoffre(coffre)}
-        </span>
+        {coffre.etat === 'encours' ? (
+          <span
+            className="rpg-coffres-quetes__jauge"
+            role="progressbar"
+            aria-label={`${coffre.titre} : ${coffre.progres} sur ${coffre.objectif}`}
+            aria-valuenow={coffre.progres}
+            aria-valuemin={0}
+            aria-valuemax={coffre.objectif}
+            data-coffre-progres={`${coffre.progres}/${coffre.objectif}`}
+          >
+            <span className="rpg-coffres-quetes__jauge-piste" aria-hidden="true">
+              <span className="rpg-coffres-quetes__jauge-remplie" style={{ width: `${coffre.pourcent}%` }} />
+            </span>
+          </span>
+        ) : (
+          <span className="rpg-coffres-quetes__etat" data-coffre-legende={legendeCoffre(coffre)}>
+            {legendeCoffre(coffre)}
+          </span>
+        )}
 
         <span className="rpg-coffres-quetes__scene">
           <CoffreSvg ouvert={ouvert} />
@@ -106,17 +122,6 @@ function SlotCoffre({ coffre, onOuvrir, onRemplacer, peutRemplacer, large = fals
         <span className="rpg-coffres-quetes__gain">
           <RpgCreditIcon />
           <b>{creditsLisible(coffre.credits)}</b>
-        </span>
-
-        <span
-          className="rpg-coffres-quetes__jauge"
-          role="progressbar"
-          aria-label={`${coffre.titre} : ${coffre.progres} sur ${coffre.objectif}`}
-          aria-valuenow={coffre.progres}
-          aria-valuemin={0}
-          aria-valuemax={coffre.objectif}
-        >
-          <span className="rpg-coffres-quetes__jauge-remplie" style={{ width: `${coffre.pourcent}%` }} />
         </span>
       </button>
 
