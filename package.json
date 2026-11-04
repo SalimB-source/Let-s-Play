@@ -171,10 +171,11 @@
     "check:rpg-combat-controls": "node scripts/rpg-combat-controls-check.mjs",
     "art:aleger": "bash scripts/aleger-art-cartes.sh",
     "check:rpg-art": "node --test tests/rpg-art-allegee.test.js",
-    "check:city-rush": "node --test tests/*driving*.test.js tests/blocked-junction-clarity.test.js tests/french-priority.test.js tests/parking-choice-exercise.test.js tests/real-situation-exercises.test.js tests/road-crosswalks.test.js tests/roundabout-road-surface.test.js tests/roundabout-sidewalks.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js tests/city-rush-cars.test.js tests/city-rush-cockpit.test.js tests/city-rush-free-drive.test.js tests/city-rush-audio.test.js",
+    "check:city-rush": "node --test tests/*driving*.test.js tests/blocked-junction-clarity.test.js tests/french-priority.test.js tests/parking-choice-exercise.test.js tests/real-situation-exercises.test.js tests/road-crosswalks.test.js tests/roundabout-road-surface.test.js tests/roundabout-sidewalks.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js tests/city-rush-cars.test.js tests/city-rush-cockpit.test.js tests/city-rush-free-drive.test.js tests/city-rush-audio.test.js tests/city-rush-webgpu.test.js",
     "check:driving-interface": "node scripts/driving-school-interface-check.mjs",
     "check:city-rush-free-drive": "node --test tests/city-rush-free-drive.test.js tests/vice-city-free-drive-features.test.js tests/vice-city-roads.test.js tests/vice-city-traffic.test.js",
     "check:city-rush-cockpit": "node --test tests/city-rush-cockpit.test.js",
+    "check:city-rush-webgpu": "node --test tests/city-rush-webgpu.test.js && node scripts/city-rush-webgpu-check.mjs",
     "check:free-drive-interface": "node scripts/driving-free-mode-check.mjs",
     "check:road-code-interface": "node scripts/driving-road-code-check.mjs",
     "check:live-assistance": "node scripts/driving-live-assistance-check.mjs"

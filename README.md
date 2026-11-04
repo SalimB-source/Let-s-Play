@@ -21,6 +21,45 @@ La route `/jeu/vice-city-rush` propose désormais **l’auto-école (23 situatio
 
 Documentation et vérifications à jour : [`docs/driving-school.md`](docs/driving-school.md). Tests : `npm run check:city-rush` ; interfaces : `npm run check:driving-interface` et `npm run check:free-drive-interface` (Chromium requis).
 
+### Le bouton RENDU de la conduite libre : standard, cinéma, essai WebGPU
+
+La barre de la conduite libre porte une entrée **◈ RENDU** (touche **V** aussi)
+qui fait le tour de trois rendus :
+
+| Mode | Ce que la ville fait | Coût |
+| --- | --- | --- |
+| **STANDARD** | la ville se dessine droit dans l'écran, ACES et sRGB faits par chaque matériau | le moins cher, rien de plus qu'avant |
+| **CINÉMA** | la scène passe dans une cible HDR, reçoit le halo des néons et du soleil (`UnrealBloomPass`), puis revient à l'écran par `OutputPass` qui refait ACES et sRGB **une seule fois** pour toute l'image | une cible de rendu et trois passes plein écran |
+| **WEBGPU · ESSAI** | la ville est reconstruite avec `WebGPURenderer` (`three/webgpu`), dessinée en WGSL par le GPU | un demi-mégaoctet de code, chargé seulement si on le demande |
+
+Trois règles, tenues par `src/games/cityRushPost.js` :
+
+- **l'essai ne se promet pas.** Le navigateur doit exposer `navigator.gpu`
+  **et** `requestAdapter()` doit rendre une carte. Sans les deux, le cycle
+  revient au standard et l'annonce (`STANDARD · REPLI`, infobulle explicite) :
+  il n'y a jamais un mode qui ne dessine rien ;
+- **un moteur ne se remplace pas à chaud.** Chaque changement d'époque
+  (`graphicsEpoch`) démonte et remonte la ville — un renderer, une scène ;
+- **la qualité allégée** (écran tactile, WebView Android, `window.LetsPlayAndroid`)
+  reste en standard : c'est le matériel qu'on ménage, et le choix du joueur
+  revit sur un appareil capable.
+
+Deux détails du portage WebGPU, propres à la ville :
+
+- les ombres passent de `PCFSoftShadowMap` à `PCFShadowMap` : le backend WebGPU
+  de three.js ne connaît pas le filtrage doux et l'ignorerait en silence ;
+- le **rétroviseur du cockpit** garde son miroir peint sous WebGPU : il repose
+  sur `setRenderTarget` et une cible `HalfFloatType`, dont les réglages diffèrent
+  d'un backend à l'autre, et une image fausse serait pire qu'un miroir sage.
+
+Vérifications : `npm run check:city-rush-webgpu` — les règles pures
+(`tests/city-rush-webgpu.test.js`, 12 cas) puis la **vraie page** montée en
+jsdom avec un renderer factice et un `navigator.gpu` simulé
+(`scripts/city-rush-webgpu-check.mjs`) : sans carte l'essai n'est jamais tenté,
+avec carte le moteur WebGPU est réellement ouvert, le halo est bien la chaîne
+qui dessine, et une préférence WebGPU retrouvée sur un appareil sans carte rend
+une ville en standard — jamais un écran noir.
+
 Les anciennes sections « Vice City Rush » plus bas constituent l’historique du développement ; leurs commandes de contrôle des modes retirés ne sont plus proposées dans `package.json`.
 
 ## Thème clair / sombre
@@ -1948,6 +1987,7 @@ de plus dans le bundle. Une seule classe, `CityRushAudio`, sur le modèle de
 
 ```bash
 npm run check:city-rush          # règles pures (tours, repli, classement, objets, éclatement des bonus, voies de l'escouade, barre de vie du pilote, herse des quatre étoiles, SUV des cinq étoiles, hélicoptère d'observation) + thèmes (plein jour de Vice City, rigueur lumière des cinq villes)
+npm run check:city-rush-webgpu   # le bouton RENDU de la conduite libre : règles du cycle, et la vraie page en jsdom (sans carte, avec carte, repli)
 npm run check:city-rush-audio    # bande-son : tempo des villes, partition disco (grosse caisse, refrain en mesure 5), régime moteur, bruitages, pause et coupure
 npm run check:city-rush-cars     # les cabriolets et leurs pilotes : plus de casque, têtes des douze avatars, cheveux de l'avatar, animation tête/bras, budget de meshes
 npm run check:city-rush-garage   # le garage dans la vraie page (jsdom) : les trois voitures les moins puissantes offertes à tous (pastille « OFFERTE », aucun prix, départ sans billet vert), les cinq autres verrouillées avec leur prix

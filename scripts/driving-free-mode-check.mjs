@@ -19,8 +19,8 @@ try {
     const buttons=await page.locator('.vice-free-roam-header>button').evaluateAll(els=>els.map(el=>{
       const rect=el.getBoundingClientRect();return {text:el.textContent.trim(),x:rect.x,y:rect.y,width:rect.width,height:rect.height,right:rect.right,bottom:rect.bottom,visible:getComputedStyle(el).display!=='none'};
     }));
-    assert.equal(buttons.length,5);
-    for (const [i,label] of ['ACTIVITÉS','GARAGE','SON','COCKPIT','MENU'].entries()) {
+    assert.equal(buttons.length,6);
+    for (const [i,label] of ['ACTIVITÉS','GARAGE','SON','RENDU','COCKPIT','MENU'].entries()) {
       const button=buttons[i];assert.ok(button.text.includes(label));assert.ok(button.visible,label);
       assert.equal(button.width,112);assert.equal(button.x,buttons[0].x);
       assert.ok(button.right<=viewport.width && button.bottom<=viewport.height);
@@ -34,6 +34,22 @@ try {
   await page.locator('.vice-free-roam-world canvas').click({position:{x:400,y:180}});
   assert.equal(await page.locator('.vice-free-roam-crosshair').count(),0);
   assert.equal(await page.getByRole('button',{name:/Sortir du véhicule|Tirer|Courir vers/}).count(),0);
+  // Le rendu est un vrai réglage : le bouton change de mode, la ville se
+  // reconstruit, et le choix survit à l'appareil.
+  const graphics=page.locator('.vice-free-roam-graphics');
+  assert.equal(await graphics.getAttribute('data-graphics-mode'),'standard');
+  assert.match((await graphics.textContent()).trim(),/STANDARD/);
+  await graphics.evaluate(el=>el.click());
+  await page.waitForFunction(()=>document.querySelector('.vice-free-roam-graphics')?.dataset.graphicsMode==='cinema');
+  await page.waitForSelector('.vice-free-roam-world canvas');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('letsplay_vice_city_rush_graphics_v1')),'cinema');
+  // Ce Chromium (SwiftShader) n'expose pas `navigator.gpu` : le cycle ne promet
+  // donc pas l'essai, il retombe au standard en l'annonçant.
+  assert.equal(await page.evaluate(()=>Boolean(navigator.gpu)),false);
+  await page.locator('.vice-free-roam-graphics').evaluate(el=>el.click());
+  await page.waitForFunction(()=>document.querySelector('.vice-free-roam-graphics')?.dataset.graphicsMode==='standard');
+  assert.match((await graphics.textContent()).trim(),/REPLI/,'sans carte, le repli est annoncé');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('letsplay_vice_city_rush_graphics_v1')),'standard');
   // Camera and sound remain usable from the repositioned column.
   const camera=page.locator('.vice-free-roam-view');
   const before=await camera.getAttribute('aria-pressed');await camera.evaluate(el=>el.click());
