@@ -39,7 +39,17 @@ function Usager({actor}) {
 }
 
 // Each miniature describes the actual manoeuvre, signs and conflicting road users.
-export default function SchoolSituationArt({ exercise, className = '' }) {
+/**
+ * La vignette d'une situation : la scène dessinée en SVG par
+ * `schoolSituationArt.js` (le modèle, sans React), mise en page pour le hub.
+ *
+ * Le fichier s'appelle `SchoolSituationIllustration` et non `…Art` : sous
+ * Windows, `./SchoolSituationArt` (sans extension) aurait résolu
+ * `schoolSituationArt.js` — le modèle, qui n'a pas d'export par défaut — et
+ * cassé le build du PC loin des yeux. Deux noms qui ne diffèrent plus par la
+ * seule casse, et `npm run check:desktop` le vérifie.
+ */
+export default function SchoolSituationIllustration({ exercise, className = '' }) {
   const chapter=schoolChapter(exercise), scene=schoolSituationScene(exercise);
   const junction=scene.layout==='junction', roundabout=scene.layout==='roundabout';
   return <svg className={`school-situation-art ${className}`} viewBox="0 0 360 210" role="img" aria-label={`${exercise.title} : ${scene.caption}`} focusable="false" data-situation={exercise.id} data-layout={scene.layout}>
