@@ -65,6 +65,7 @@
     "check:rpg-reprise": "node --test tests/rpg-menu-reprise-fin-partie.test.js",
     "check:rpg-conquete-carrousel": "node --test tests/rpg-conquete-carrousel.test.js",
   "check:rpg-conquete-mobile": "node scripts/rpg-conquete-mobile-check.mjs",
+  "check:rpg-conquete-etages": "node scripts/rpg-conquete-etages-check.mjs",
   "check:rpg-coffres-quetes": "node --test tests/rpg-coffres-quetes.test.js",
   "check:rpg-accueil-mobile": "node --test tests/rpg-accueil-mobile.test.js && node scripts/rpg-accueil-mobile-check.mjs",
     "check:rpg-tours-decor": "node --test tests/rpg-tours-decor.test.js",

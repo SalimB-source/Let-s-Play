@@ -5281,11 +5281,19 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                           </span>
                           <span className={`rpg-story-tour__gains-butin${gainsLibre.butinGagne ? ' is-gagne' : gainsLibre.complete ? ' is-due' : ''}`}>
                             <b>Butin de la tour : +{creditsLisible(gainsLibre.butin)} crédits</b>
-                            {gainsLibre.butinGagne
-                              ? ' — encaissé ✓'
-                              : gainsLibre.complete
-                                ? ' — tous les étages sont déblayés : il tombera à votre prochaine victoire ici'
-                                : ' — versé quand tous les étages seront déblayés'}
+                            {/* Deux longueurs pour la même phrase : au doigt, la version
+                                longue poussait le bloc sur deux lignes et coûtait aux
+                                étages la place de la dernière carte. */}
+                            <span className="rpg-story-tour__gains-note">
+                              {gainsLibre.butinGagne
+                                ? ' — encaissé ✓'
+                                : gainsLibre.complete
+                                  ? ' — tous les étages sont déblayés : il tombera à votre prochaine victoire ici'
+                                  : ' — versé quand tous les étages seront déblayés'}
+                            </span>
+                            <span className="rpg-story-tour__gains-note-courte" aria-hidden="true">
+                              {gainsLibre.butinGagne ? ' ✓' : gainsLibre.complete ? ' — prochaine victoire' : ' — tour complète'}
+                            </span>
                           </span>
                         </div>
                       )}
@@ -5319,7 +5327,16 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                                 data-etage={etage.id}
                                 onClick={() => { play('select'); onStartEtage(etage.id); }}
                               >
-                                <span className="rpg-story-floor__step" aria-hidden="true">{vaincu ? '✓' : index + 1}</span>
+                                <span className="rpg-story-floor__step" aria-hidden="true">
+                                  {/* Une coche gravée : le glyphe « ✓ » manque dans
+                                      certaines polices mobiles et laissait la pastille
+                                      vide, sans rien dire de l'étage déblayé. */}
+                                  {vaincu ? (
+                                    <svg viewBox="0 0 24 24" focusable="false">
+                                      <path d="M5 12.5 10 17.5 19 7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  ) : index + 1}
+                                </span>
                                 <span className="rpg-story-floor__copy">
                                   <strong>{etage.nom}</strong>
                                   <small>{etage.note}</small>

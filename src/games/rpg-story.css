@@ -351,6 +351,8 @@
 .rpg-story-tour__gains-total b { color: var(--yellow); }
 
 .rpg-story-tour__gains-butin { min-width: 0; }
+/* La version courte de la phrase du butin n'existe que sur le paysage tactile. */
+.rpg-story-tour__gains-note-courte { display: none; }
 .rpg-story-tour__gains-butin b { color: #e8d3aa; font-weight: 700; }
 .rpg-story-tour__gains-butin.is-due b { color: var(--yellow); }
 .rpg-story-tour__gains-butin.is-gagne b { color: #9fd07a; }
@@ -428,6 +430,8 @@
 
 /* Le conteneur s'efface : son nom et sa description se placent directement sur
    la grille de l'étage. */
+.rpg-story-floor__step svg { width: 62%; height: 62%; display: block; }
+
 .rpg-story-floor__copy { display: contents; }
 
 .rpg-story-floor__copy strong { grid-area: name; min-width: 0; font-size: 14px; }
@@ -1841,4 +1845,162 @@
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche[data-carrousel="precedente"] { left: 5px; }
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche[data-carrousel="suivante"] { right: 5px; }
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche:active { transform: translateY(-50%) scale(.94); }
+}
+
+/* ── Conquête, DANS une tour : la liste des étages au doigt ────────────────
+   C'est l'écran qui défilait le plus : la maquette 3D faisait 287 px de haut
+   dans un écran de 390, et les cinq étages commençaient à 759 px du bord —
+   trois écrans et demie à remonter (1334 px pour 390). Les cartes d'étage
+   perdaient en plus 64 px de gouttière et le plafond de 780 px de la colonne.
+   Ici la page ne défile plus du tout : la maquette devient une vignette, le
+   « prochain défi » s'efface (la carte `is-next` EST le bouton), et les étages
+   se partagent la hauteur restante en prenant toute la largeur. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  /* La chaîne de hauteurs, du cadre jusqu'à la liste : sans elle chaque
+     étage `height: 100%` se résout contre un parent de hauteur libre, et la
+     liste reprend la hauteur de son contenu au lieu de s'y contraindre. */
+  .rpg-mode-menu--tours { overflow: hidden; }
+  .rpg-mode-menu--tours .rpg-mode-menu__content {
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    padding: 0;
+  }
+  .rpg-mode-menu--tours .rpg-story {
+    padding: 4px 6px;
+    height: 100%;
+    min-height: 0;
+    max-width: none;
+    margin: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+  }
+  .rpg-mode-menu--tours .rpg-story__detail {
+    position: relative;
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  /* Le retour passe en surimpression dans le coin libre de l'en-tête : sa
+     rangée coûtait 26 px, et sur la tour à sept étages ces 26 px sont la
+     différence entre tout voir et devoir glisser. */
+  .rpg-mode-menu--tours .rpg-story__back {
+    position: absolute;
+    top: 3px;
+    right: 8px;
+    z-index: 4;
+    min-height: 20px;
+    padding: 2px 8px;
+    font-size: 9.5px;
+    background: rgba(10, 10, 18, .92);
+  }
+  .rpg-mode-menu--tours .rpg-story-tour {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 3px;
+    padding-bottom: 4px;
+  }
+
+  /* L'en-tête se couche : vignette à gauche, titres à droite. */
+  .rpg-mode-menu--tours .rpg-story-tour__header {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: center;
+    gap: 9px;
+  }
+  .rpg-mode-menu--tours .rpg-story-tour__banner { height: 48px; border-bottom: none; }
+  /* Aucune pastille sur une vignette de 76 px : « VUE 3D » n'a rien à dire
+     ici, et « TOUR DÉTRUITE » s'y repliait sur deux lignes en débordant. La
+     ruine se voit sur la maquette, et la galerie la nomme en toutes lettres. */
+  .rpg-mode-menu--tours .rpg-story-tour__banner .rpg-story-stage__badge { display: none; }
+  .rpg-mode-menu--tours .rpg-story-tour__heading { padding: 3px 92px 3px 0; min-width: 0; }
+  .rpg-mode-menu--tours .rpg-story-tour__heading .rpg-mode-menu__eyebrow { font-size: 7.5px; }
+  .rpg-mode-menu--tours .rpg-story-tour__header h3 { font-size: 14px; margin: 1px 0 2px; }
+  /* Le résumé de la tour se lit sur sa carte, dans la galerie : ici la place
+     est pour les étages, qu'on est venu choisir. */
+  .rpg-mode-menu--tours .rpg-story-tour__header p { display: none; }
+  .rpg-mode-menu--tours .rpg-story-tour__progress { flex: 0 0 auto; margin: 0 8px; height: 3px; }
+
+  /* Le butin de la tour tient sur une ligne ; le détail du versement se lit
+     dans la carte d'étage, il n'a pas besoin d'être répété ici. */
+  .rpg-mode-menu--tours .rpg-story-tour__gains {
+    flex: 0 0 auto;
+    margin: 0 8px;
+    padding: 0 2px;
+    gap: 0 10px;
+    font-size: 8.5px;
+    line-height: 1.15;
+  }
+  .rpg-mode-menu--tours .rpg-story-tour__gains-butin { font-size: 8px; }
+  .rpg-mode-menu--tours .rpg-story-tour__gains-note { display: none; }
+  .rpg-mode-menu--tours .rpg-story-tour__gains-note-courte { display: inline; }
+
+  /* Le prochain défi est déjà la carte `is-next`, qui se tape directement. */
+  .rpg-mode-menu--tours .rpg-tour-prochain { display: none; }
+
+  /* Les étages : toute la largeur, et la hauteur qui reste. */
+  .rpg-mode-menu--tours .rpg-story-tour__floors {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 6px;
+    /* Filet de sécurité : les tours à sept étages peuvent encore déborder de
+       quelques pixels. C'est alors la LISTE qui glisse, jamais la page. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  /* `flex-shrink: 0` : une carte ne descend jamais sous la hauteur de son
+     texte. Elles grandissent pour remplir l'écran quand la tour est courte,
+     et c'est la liste qui glisse de quelques pixels quand elle est haute. */
+  .rpg-mode-menu--tours .rpg-story-tour__floors > li { display: flex; flex: 1 0 auto; }
+  .rpg-mode-menu--tours .rpg-story-floor {
+    width: 100%;
+    /* Le nom, le badge et le gain tiennent sur la première ligne ; la note
+       prend TOUTE la largeur dessous, sinon elle se repliait sur deux lignes
+       dans une colonne étroite et rognait la carte de 6 px. Le pacte a sa
+       propre ligne : avec `display: contents` il portait la même `grid-area`
+       que la note et se superposait à elle. */
+    grid-template-columns: 20px minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "step name badge gain"
+      "step note note note"
+      "step pacte pacte pacte";
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 0;
+    padding: 1px 8px;
+  }
+  .rpg-mode-menu--tours .rpg-story-floor__step { width: 18px; height: 18px; font-size: 9.5px; }
+  .rpg-mode-menu--tours .rpg-story-floor__step svg { width: 62%; height: 62%; display: block; }
+
+.rpg-story-floor__copy { display: contents; }
+  .rpg-mode-menu--tours .rpg-story-floor__copy strong { grid-area: name; font-size: 11.5px; line-height: 1.2; }
+  .rpg-mode-menu--tours .rpg-story-floor__copy small { grid-area: note; font-size: 9px; line-height: 1.2; }
+  .rpg-mode-menu--tours .rpg-story-floor__pacte { grid-area: pacte; font-size: 8.5px; line-height: 1.2; }
+  /* La pastille épouse son texte : la colonne de droite est calée sur le gain,
+     bien plus long, et « VERROUILLÉ » s'y étirait sur 280 px. */
+  .rpg-mode-menu--tours .rpg-story-floor__badge { font-size: 8px; padding: 1px 5px; white-space: nowrap; justify-self: end; }
+  /* Le pied de page (« LE SABLIER · STRATÉGIE… ») ne dit rien qu'on n'ait déjà
+     lu : ses 50 px vont aux étages. */
+  .rpg-mode-menu--tours .rpg-mode-menu__footer { display: none; }
+  .rpg-mode-menu--tours .rpg-story-floor__gain { margin-top: 0; font-size: 8.5px; justify-content: flex-end; white-space: nowrap; }
+}
+
+/* Très petit paysage (≤ 380 px de haut) : la vignette rétrécit encore pour
+   laisser aux étages de quoi respirer. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 380px) {
+  .rpg-mode-menu--tours .rpg-story-tour__header { grid-template-columns: 62px minmax(0, 1fr); gap: 7px; }
+  .rpg-mode-menu--tours .rpg-story-tour__banner { height: 44px; }
+  .rpg-mode-menu--tours .rpg-story-tour__header h3 { font-size: 12.5px; }
+  .rpg-mode-menu--tours .rpg-story-tour__header p { font-size: 9px; }
+  .rpg-mode-menu--tours .rpg-story-floor__copy strong { font-size: 11px; }
+  .rpg-mode-menu--tours .rpg-story-floor__copy small { font-size: 8.5px; }
 }
