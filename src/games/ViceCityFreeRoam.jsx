@@ -21,6 +21,22 @@ import { schoolBumpHeight, SCHOOL_STOP_JUNCTION, leftTrafficOffset } from './dri
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
+import {
+  CITY_RUSH_GRAPHICS_CINEMA,
+  CITY_RUSH_GRAPHICS_PREF_KEY,
+  CITY_RUSH_GRAPHICS_STANDARD,
+  CITY_RUSH_GRAPHICS_WEBGPU,
+  cityRushCinemaAvailable,
+  cityRushCinemaSettings,
+  cityRushGraphicsModeLabel,
+  cityRushLiteDevice,
+  cityRushNextGraphicsMode,
+  cityRushWebGpuAvailable,
+  cityRushWebGpuSupport,
+  createCityRushPostChain,
+  createCityRushRenderer,
+  normalizeCityRushGraphicsMode,
+} from './cityRushPost.js';
 import { makeTrafficVehicle } from './cityRushCars.js';
 import { makeRacerCar, animateRacerCar } from './cityRushRacerModels.js';
 import { CityRushAudio } from './cityRushAudio.js';
@@ -106,6 +122,15 @@ function readFreeRoamSoundPreference() {
 
 function writeFreeRoamSoundPreference(enabled) {
   try { window.localStorage.setItem(FREE_ROAM_SOUND_KEY, enabled ? 'on' : 'off'); } catch { /* stockage désactivé */ }
+}
+
+/** Le rendu choisi pour la ville : `standard`, `cinema` ou `webgpu`. */
+function readFreeRoamGraphicsPreference() {
+  try { return normalizeCityRushGraphicsMode(window.localStorage.getItem(CITY_RUSH_GRAPHICS_PREF_KEY)); } catch { return normalizeCityRushGraphicsMode(null); }
+}
+
+function writeFreeRoamGraphicsPreference(mode) {
+  try { window.localStorage.setItem(CITY_RUSH_GRAPHICS_PREF_KEY, normalizeCityRushGraphicsMode(mode)); } catch { /* stockage désactivé */ }
 }
 
 function readFreeRoamProgress() {
@@ -3276,6 +3301,38 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   const [portraitTouch, setPortraitTouch] = useState(isTouchPortraitViewport);
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
+  // Rendu de la ville : standard (WebGL), cinéma (halo) ou essai WebGPU. La
+  // préférence suit l'appareil, comme le son et la caméra. `graphicsLive` dit
+  // ce qui **tourne** réellement — le moteur peut refuser l'essai.
+  const [graphicsMode, setGraphicsMode] = useState(readFreeRoamGraphicsPreference);
+  // Le cycle s'appuie sur une **référence** : deux clics rapides ne doivent pas
+  // avancer du même cran (deux clics rapprochés doivent faire cinéma *puis*
+  // WebGPU, pas cinéma deux fois).
+  const graphicsModeRef = useRef(graphicsMode);
+  const [graphicsLive, setGraphicsLive] = useState(null);
+  const [liteDevice] = useState(cityRushLiteDevice);
+  const [webGpuReady, setWebGpuReady] = useState(false);
+  const webGpuApi = cityRushWebGpuSupport();
+  const webGpuSupported = webGpuApi && !liteDevice;
+  useEffect(() => {
+    if (!webGpuSupported || webGpuReady) return undefined;
+    let alive = true;
+    // La carte est sondée une fois ; un échec n'est pas définitif (elle peut
+    // accorder l'adaptateur plus tard), la sonde resonde au prochain montage.
+    cityRushWebGpuAvailable().then((available) => { if (alive) setWebGpuReady(available); });
+    return () => { alive = false; };
+  }, [webGpuSupported, webGpuReady]);
+  // Le rendu effectif demandé à la ville : l'essai n'est tenté que si la carte
+  // a répondu ; sinon on retombe sur le standard sans faire semblant.
+  const requestedGraphics = webGpuSupported && webGpuReady ? graphicsMode : normalizeCityRushGraphicsMode(graphicsMode === CITY_RUSH_GRAPHICS_WEBGPU ? null : graphicsMode);
+  // Lu par l'effet de montage, qui ne dépend pas du rendu : changer de rendu
+  // reconstruit la ville via `graphicsEpoch` (un renderer ne se remplace pas à
+  // chaud), sans que l'effet se relance à chaque réglage.
+  const requestedGraphicsRef = useRef(requestedGraphics);
+  requestedGraphicsRef.current = requestedGraphics;
+  // Chaque demande explicite de rendu incrémente l'époque : la ville est
+  // reconstruite une fois, proprement, avec le nouveau moteur.
+  const [graphicsEpoch, setGraphicsEpoch] = useState(0);
   const [featurePanel, setFeaturePanel] = useState(null);
   const [selectedFreeRoamCar, setSelectedFreeRoamCar] = useState(null);
   const [challengeHud, setChallengeHud] = useState(null);
@@ -3327,6 +3384,39 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     writeFreeRoamCameraPreference(next);
   };
   toggleCameraRef.current = toggleCamera;
+  // Rendu : STANDARD → CINÉMA → WEBGPU · ESSAI → STANDARD (bouton et touche V).
+  // Un renderer ne se remplace pas à chaud : chaque changement reconstruit la
+  // ville (`graphicsEpoch`), ce qui dure le temps d'une image en WebGL.
+  const cycleGraphics = () => {
+    const current = graphicsModeRef.current;
+    const wanted = cityRushNextGraphicsMode(current);
+    const gpuReady = webGpuSupported && webGpuReady;
+    // L'essai demandé sans carte ne se fait pas en silence : on retombe au
+    // standard et on le dit (`· REPLI`), plutôt que de laisser croire.
+    const next = wanted === CITY_RUSH_GRAPHICS_WEBGPU && !gpuReady ? CITY_RUSH_GRAPHICS_STANDARD : wanted;
+    graphicsModeRef.current = next;
+    setGraphicsMode(next);
+    writeFreeRoamGraphicsPreference(next);
+    setGraphicsLive(wanted === CITY_RUSH_GRAPHICS_WEBGPU && !gpuReady
+      ? { mode: CITY_RUSH_GRAPHICS_STANDARD, requested: wanted, reason: 'WebGPU indisponible sur cet appareil' }
+      : null);
+    setGraphicsEpoch((epoch) => epoch + 1);
+  };
+  const graphicsRef = useRef(cycleGraphics);
+  graphicsRef.current = cycleGraphics;
+  // Ce que le bouton annonce : le mode demandé, sauf quand le moteur a dû
+  // renoncer — là, c'est la vérité qui s'affiche, suivie de « · REPLI ». Un
+  // mode « cinéma » reste du cinéma même si le GPU ne dessine pas en WGSL.
+  const runningGraphics = graphicsLive?.reason
+    ? graphicsLive.mode
+    : normalizeCityRushGraphicsMode(graphicsLive?.mode || graphicsMode);
+  // Le libellé reste court : la colonne d'actions fait 112 px. Le mot
+  // « RENDU » est porté par l'infobulle et par le lecteur d'écran.
+  const graphicsLabel = graphicsLive?.reason
+    ? `${cityRushGraphicsModeLabel(runningGraphics)} · REPLI`
+    : cityRushGraphicsModeLabel(runningGraphics);
+  // Le moteur effectivement ouvert (`webgl`/`webgpu`), pour l'infobulle.
+  const graphicsEngine = graphicsLive?.renderer || null;
   const setTouchKey = (code, pressed) => {
     if (pressed) touchKeysRef.current.add(code);
     else touchKeysRef.current.delete(code);
@@ -3413,6 +3503,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     setFeaturePanel(null);
     setChallengeHud(null);
     setStreetEventOffer(null);
+    // Le renderer est choisi par `createCityRushRenderer` et ouvert en fin
+    // d'effet (voir plus bas) : l'école d'exercice le reçoit, tout le reste
+    // s'en passe.
+    let renderer = null;
+    // Tout le montage de la ville vit dans `build`, appelé dès que le renderer
+    // est ouvert — immédiatement en WebGL, après un `await` en WebGPU.
+    const build = () => {
     const scene = new THREE.Scene();
     const schoolMarker = schoolMode ? createDrivingGroundMarker(0x47ffb0) : null;
     if (schoolMarker) scene.add(schoolMarker);
@@ -3422,10 +3519,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
     addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // Le backend WebGPU de three.js ne connaît pas les ombres « douces » : on
+    // lui donne le filtrage dur, sinon le réglage est ignoré sans le dire.
+    renderer.shadowMap.type = renderer.isCityRushWebGpu ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.15;
@@ -4306,6 +4405,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         toggleCameraRef.current?.();
         return;
       }
+      // V : le rendu, comme sur l'écran-titre de la course.
+      if (event.code === 'KeyV') {
+        event.preventDefault();
+        graphicsRef.current?.();
+        return;
+      }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'Space'].includes(event.code)) {
         event.preventDefault();
         activateAudio();
@@ -4327,11 +4432,40 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     window.addEventListener('keyup', onUp);
     mount.addEventListener('pointerdown', activateAudio);
     window.addEventListener('blur', blur);
+    // CINÉMA : la ville est dessinée dans une cible HDR, passe par le halo, puis
+    // revient à l'écran par `OutputPass` (qui refait l'ACES et le sRGB une seule
+    // fois). En qualité allégée le halo n'est pas monté : c'est le matériel
+    // qu'on ménage. `postChain` reste nul en standard et en WebGPU.
+    let postChain = null;
+    const postWanted = cityRushCinemaAvailable({ mode: requestedGraphicsRef.current, lite: liteDevice });
     const resize = () => {
       const width = Math.max(1, mount.clientWidth); const height = Math.max(1, mount.clientHeight);
       renderer.setSize(width, height, false); camera.aspect = width / height; camera.updateProjectionMatrix();
+      postChain?.setSize(width, height);
     };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
+    if (postWanted) {
+      try {
+        // La ville est en plein jour : seuil haut, halo discret.
+        postChain = createCityRushPostChain({
+          renderer, scene, camera,
+          width: Math.max(1, mount.clientWidth), height: Math.max(1, mount.clientHeight),
+          settings: cityRushCinemaSettings({ daylight: true, glow: 0.35 }),
+        });
+      } catch {
+        // Pas de cible flottante, pas de passes : la ville reste jouable en
+        // standard, et le bouton le dira (`· REPLI`).
+        postChain = null;
+        setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: CITY_RUSH_GRAPHICS_CINEMA, reason: 'Halo indisponible sur ce matériel' });
+      }
+    }
+    // Ce qui tourne réellement, lisible dans le DOM : `halo` quand la scène
+    // passe par la chaîne de post-traitement, `direct` sinon. C'est aussi ce que
+    // lisent les vérifications.
+    mount.dataset.renderPass = postChain ? 'halo' : 'direct';
+    // Le rétroviseur du cockpit n'est pas rendu en WebGPU (voir plus bas) : on
+    // l'annonce sur le montage, pour que la vérification puisse le constater.
+    mount.dataset.cockpitMirror = renderer.isCityRushWebGpu ? 'painted' : 'live';
     const forward = new THREE.Vector3();
     const cameraTarget = new THREE.Vector3();
     const cameraPosition = new THREE.Vector3();
@@ -4484,6 +4618,11 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     let cockpitMirrorCamera = null;
     let cockpitMirrorFrame = 0;
     let cockpitMirrorBroken = false;
+    // En WebGPU, la cible de rendu flottante du rétroviseur (HalfFloatType) et
+    // `setRenderTarget` ne se comportent pas comme en WebGL : plutôt qu'une
+    // image cassée ou une exception par image, on garde le miroir peint fourni
+    // par la planche de bord.
+    if (renderer.isCityRushWebGpu) cockpitMirrorBroken = true;
     const renderCockpitMirror = () => {
       if (!cockpitActive || vehicle !== playerVehicle || !playerCockpit || cockpitMirrorBroken || typeof renderer.setRenderTarget !== 'function') return;
       cockpitMirrorFrame += 1;
@@ -4753,7 +4892,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         const target = schoolTargetRef.current;
         placeDrivingGroundMarker(schoolMarker, target.x, target.z, target.radius ?? 4, city.surfaceHeight);
       }
-      renderer.render(scene, camera);
+      if (postChain) postChain.render(dt); else renderer.render(scene, camera);
       renderCockpitMirror();
       if (schoolSideMirrors) renderDrivingSideMirrors(schoolSideMirrors, renderer, scene, playerVehicle, { left: leftMirrorRef.current, right: rightMirrorRef.current }, now);
     };
@@ -4763,15 +4902,67 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp);
       mount.removeEventListener('pointerdown', activateAudio); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
+      postChain?.dispose();
       if (schoolSideMirrors) disposeDrivingSideMirrors(schoolSideMirrors);
       scene.traverse((object) => {
         object.geometry?.dispose?.();
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         materials.filter(Boolean).forEach((material) => { for (const value of Object.values(material)) if (value?.isTexture) value.dispose(); material.dispose?.(); });
       });
-      renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove();
+      renderer?.dispose();
+      renderer?.forceContextLoss?.();
+      renderer?.domElement?.remove();
     };
-  }, [carId, schoolMode, schoolExercise]);
+    };
+    // Ouverture du renderer : immédiate en WebGL, après un `await` en WebGPU.
+    // Pendant l'attente (quelques dizaines de millisecondes, la première fois :
+    // le morceau `three/webgpu` se télécharge), l'écran ne montre rien d'autre
+    // que le décor HTML ; la ville apparaît d'un coup, jamais à moitié.
+    let cancelled = false;
+    let teardown = () => {};
+    createCityRushRenderer({ mode: requestedGraphicsRef.current, lite: liteDevice, antialias: true })
+      .then((opened) => opened)
+      .catch(() => {
+        // Moteur refusé au dernier moment : on le dit, et la ville tourne en
+        // WebGL standard — jamais d'écran noir.
+        setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: CITY_RUSH_GRAPHICS_WEBGPU, reason: 'WebGPU refusé par le navigateur' });
+        return createCityRushRenderer({ mode: CITY_RUSH_GRAPHICS_STANDARD, lite: liteDevice, antialias: true });
+      })
+      .then((opened) => {
+        if (!opened) return;
+        renderer = opened;
+        if (cancelled) {
+          renderer.dispose?.();
+          renderer.domElement?.remove?.();
+          return;
+        }
+        const engine = renderer.isCityRushWebGpu ? 'webgpu' : 'webgl';
+        setGraphicsLive((previous) => (
+          // Un refus déjà annoncé (essai impossible, moteur qui renonce) reste
+          // affiché : la reconstruction ne doit pas effacer l'explication.
+          previous?.reason
+            ? previous
+            : {
+              mode: engine === 'webgpu'
+                ? CITY_RUSH_GRAPHICS_WEBGPU
+                : normalizeCityRushGraphicsMode(requestedGraphicsRef.current === CITY_RUSH_GRAPHICS_WEBGPU ? null : requestedGraphicsRef.current),
+              renderer: engine,
+            }
+        ));
+        try {
+          teardown = build();
+        } catch (error) {
+          // Une construction qui échoue ne doit pas laisser une promesse
+          // rejetée dans le vide : la ville le dit, et l'écran reste propre.
+          console.error('Vice City : montage impossible', error);
+          setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: requestedGraphicsRef.current, reason: 'montage impossible' });
+        }
+      });
+    return () => {
+      cancelled = true;
+      teardown();
+    };
+  }, [carId, schoolMode, schoolExercise, liteDevice, graphicsEpoch]);
 
   return (
     <div className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
@@ -4798,6 +4989,24 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         <button type="button" className={`vice-free-roam-sound${soundOn ? ' is-on' : ''}`} onClick={toggleSound}
           aria-pressed={soundOn} title={soundOn ? 'Couper le son (M)' : 'Activer le son (M)'}>
           <span aria-hidden="true">{soundOn ? '♫' : '♪'}</span> SON {soundOn ? 'ON' : 'OFF'}
+        </button>
+        {/* Le rendu de la ville : standard (WebGL), cinéma (halo) ou essai
+            WebGPU. Le libellé dit le mode demandé ; « · REPLI » apparaît si le
+            moteur a dû renoncer (carte absente, pilote qui refuse). */}
+        <button type="button" className={`vice-free-roam-graphics${runningGraphics !== 'standard' ? ' is-on' : ''}`}
+          data-graphics-mode={runningGraphics} onClick={() => graphicsRef.current()}
+          aria-pressed={runningGraphics !== 'standard'}
+          aria-label={`Rendu de la ville : ${graphicsLabel}${graphicsLive?.reason ? ` (${graphicsLive.reason})` : ''}`}
+          title={graphicsLive?.reason
+            // Un refus se dit tel quel : le joueur sait pourquoi le clic n'a
+            // pas donné ce qu'il demandait.
+            ? `${graphicsLive.reason} — la ville reste en ${cityRushGraphicsModeLabel(runningGraphics).toLowerCase()}`
+            : graphicsMode === 'webgpu'
+              ? (graphicsEngine === 'webgpu' ? 'Essai WebGPU actif : la ville est dessinée en WGSL par le GPU' : 'Essai WebGPU : la ville est reconstruite, dessinée en WGSL par le GPU')
+              : graphicsMode === 'cinema'
+                ? 'Halo de post-traitement sur les néons et le soleil (puis essai WebGPU)'
+                : (webGpuSupported ? 'Rendu standard · puis cinéma, puis essai WebGPU' : 'Rendu standard (WebGL) · essai WebGPU indisponible sur cet appareil')}>
+          ◈ {graphicsLabel}
         </button>
         <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
           aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
@@ -4853,7 +5062,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         <b>COMMANDES</b>
         <span><kbd>↑</kbd> ACCÉLÉRER</span><span><kbd>↓</kbd> FREIN · RECUL À L’ARRÊT</span>
         <span><kbd>←</kbd><kbd>→</kbd> BRAQUER</span>
-        <small>WASD · Espace : saut · C : cockpit · M : son · Échap : menu</small>
+        <small>WASD · Espace : saut · C : cockpit · M : son · V : rendu · Échap : menu</small>
       </div>
       {schoolMode && (schoolControls?.steering ?? 'buttons') === 'buttons' && <div className="school-touch-direction" role="group" aria-label="Direction tactile">
         {[['ArrowLeft','←','Tourner à gauche'],['ArrowRight','→','Tourner à droite']].map(([code,glyph,label]) => <button key={code} type="button" aria-label={label}
