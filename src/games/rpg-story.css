@@ -1605,6 +1605,7 @@
   line-height: 1;
   cursor: pointer;
 }
+.rpg-conquete-carrousel__fleche svg { width: 58%; height: 58%; display: block; }
 .rpg-conquete-carrousel__fleche:hover,
 .rpg-conquete-carrousel__fleche:focus-visible { border-color: #ffe5a7; box-shadow: 0 0 18px #e0a73e44; outline: none; }
 .rpg-conquete-carrousel__pagination { display: flex; flex-direction: column; align-items: center; gap: 9px; margin: 16px 0 4px; }
@@ -1810,4 +1811,34 @@
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower__cta { font-size: 9.5px; }
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__compteur { font-size: 8px; }
   .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__points button { width: 8px; height: 8px; }
+}
+
+/* ── Au doigt, la carte de tour prend TOUTE la largeur ──────────────────────
+   Les flèches étaient des frères flex (`flex-shrink: 0`, 42 à 52 px chacune) :
+   elles retiraient jusqu'à 100 px à la carte, qui flottait au milieu de bandes
+   vides. Sur téléphone on les pose **par-dessus** la carte — le geste attendu
+   d'un carrousel tactile est le balayage, la flèche n'est qu'un rappel — et la
+   tour occupe toute la largeur disponible. Le bureau garde ses flèches en
+   regard et son 660 px de confort de lecture. */
+@media (hover: none) and (pointer: coarse) {
+  .rpg-mode-menu--conquete-galerie .rpg-story__tours.rpg-conquete-carrousel {
+    position: relative;
+    gap: 0;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower {
+    flex: 1 1 100%;
+    max-width: none;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    /* Un fond opaque : la flèche passe sur la maquette, elle doit rester lue. */
+    background: linear-gradient(115deg, rgba(52, 38, 25, .94), rgba(23, 23, 33, .94));
+    box-shadow: 0 2px 10px rgba(0, 0, 0, .55);
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche[data-carrousel="precedente"] { left: 5px; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche[data-carrousel="suivante"] { right: 5px; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche:active { transform: translateY(-50%) scale(.94); }
 }

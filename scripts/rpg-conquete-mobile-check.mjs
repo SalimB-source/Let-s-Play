@@ -35,6 +35,7 @@ const mesurer = () => {
   return {
     viewport: { w: innerWidth, h: innerHeight },
     menu: { scrollH: menu.scrollHeight, clientH: menu.clientHeight, scrollTop: menu.scrollTop },
+    piste: rect('.rpg-conquete-carrousel'),
     card: rect('.rpg-conquete-carrousel .rpg-story-tower'),
     art: rect('.rpg-conquete-carrousel .rpg-story-tower__art'),
     body: rect('.rpg-conquete-carrousel .rpg-story-tower__body'),
@@ -73,7 +74,13 @@ try {
   for (const [width, height] of FORMATS) {
     await page.setViewportSize({ width, height });
     await page.goto(URL);
-    await page.locator('.rpg-mode-menu__hero-actions .rpg-menu-button--conquete').click();
+    // Au doigt, l'accueil est celui du jeu mobile : son gros bouton
+    // « CONQUÉRIR » ouvre la galerie. Le bouton du bureau reste le chemin de
+    // repli si la coque tactile n'est pas reconnue par le navigateur de test.
+    // Un sélecteur combiné : `click()` attend l'apparition de l'un OU l'autre.
+    // (`count()` ne attend pas — il renverrait 0 pendant que React bascule
+    // encore du bureau vers la coque tactile.)
+    await page.locator('[data-accueil-jouer="conquete"], .rpg-mode-menu__hero-actions .rpg-menu-button--conquete').first().click();
     await page.locator('.rpg-conquete-carrousel .rpg-story-tower').waitFor();
     // Le Sablier est une couche plein écran : la navigation du site n'est pas
     // dans le viewport de jeu (elle est masquée par la couche immersive).
@@ -96,6 +103,9 @@ try {
       assert.ok(m.card && m.card.top >= -1 && m.card.left >= -1, `${prefixed} : la carte commence dans l'écran`);
       assert.ok(m.card.bottom <= m.viewport.h + 1, `${prefixed} : le bas de la carte tient (${m.card.bottom.toFixed(0)} ≤ ${m.viewport.h})`);
       assert.ok(m.card.right <= m.viewport.w + 1, `${prefixed} : la droite de la carte tient`);
+      // La carte prend TOUTE la largeur de la piste : les flèches se posent
+      // par-dessus au doigt, elles ne lui retirent plus de la place.
+      assert.ok(m.piste && m.card.width >= m.piste.width - 2, `${prefixed} : la carte occupe toute la largeur (${m.card.width.toFixed(0)} / ${m.piste?.width.toFixed(0)})`);
       assert.ok(m.art && m.art.height >= 50, `${prefixed} : la maquette garde une hauteur lisible (${m.art?.height})`);
       assert.ok(m.body && m.body.bottom <= m.card.bottom + 1, `${prefixed} : le texte ne sort pas de la carte`);
       assert.ok(m.cta && m.cta.bottom <= m.card.bottom + 1, `${prefixed} : « Voir les étages » reste dans la carte`);
