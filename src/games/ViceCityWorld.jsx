@@ -292,9 +292,12 @@ import {
 import { cityRushLightRig, cityRushTheme } from './cityRushThemes';
 import {
   CITY_RUSH_GRAPHICS_CINEMA,
+  CITY_RUSH_GRAPHICS_STANDARD,
+  CITY_RUSH_GRAPHICS_WEBGPU,
   cityRushCinemaSettings,
   cityRushLiteDevice,
   createCityRushPostChain,
+  createCityRushRenderer,
   normalizeCityRushGraphicsMode,
 } from './cityRushPost.js';
 import {
@@ -303,7 +306,7 @@ import {
   cityRushTrafficLod,
 } from './cityRushLod.js';
 import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
-import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
+import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyDomePainted, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
 import { buildNordschleifeTrack, makeNordschleifeRoad } from './nordschleifeStage';
 import { buildTougeTrack, makeTougeRoad, makeTougeSkyline } from './tougeStage';
@@ -1885,7 +1888,37 @@ function disposeScene(scene, renderer) {
  *     explosion), déclenchés ici parce que le monde connaît la voie de la
  *     voiture touchée — donc son placement stéréo — au moment exact.
  */
-export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, initialGraphicsMode = null) {
+/**
+ * Le chemin **asynchrone** de la page : il ouvre le renderer du mode demandé,
+ * puis construit le monde avec (`createCityRushWorld` reste synchrone, voir
+ * plus bas pourquoi). Seul l'essai WEBGPU en a besoin — l'initialisation d'un
+ * `WebGPURenderer` demande un `await`, et c'est aussi là qu'un navigateur sans
+ * carte rend les armes : le monde naît alors en STANDARD, et `webGpuError` dit
+ * pourquoi pour que l'écran de pause puisse l'annoncer.
+ */
+export async function createCityRushWorldAsync(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, initialGraphicsMode = null) {
+  const lite = cityRushLiteDevice();
+  const requested = normalizeCityRushGraphicsMode(initialGraphicsMode);
+  if (requested !== CITY_RUSH_GRAPHICS_WEBGPU || lite) {
+    const world = createCityRushWorld(mount, city, getCallbacks, selectedCarId, audioRef, initialRoster, raceLaps, policeFromStart, raceFormat, storyRules, tutorialMode, initialGraphicsMode);
+    return { world, webGpuError: requested === CITY_RUSH_GRAPHICS_WEBGPU && lite ? 'qualité allégée' : '' };
+  }
+  let renderer = null;
+  let webGpuError = '';
+  try {
+    renderer = await createCityRushRenderer({ mode: requested, lite, antialias: true });
+  } catch (error) {
+    webGpuError = error instanceof Error ? error.message : String(error);
+  }
+  const world = createCityRushWorld(
+    mount, city, getCallbacks, selectedCarId, audioRef, initialRoster, raceLaps,
+    policeFromStart, raceFormat, storyRules, tutorialMode,
+    renderer ? requested : 'standard', renderer,
+  );
+  return { world, webGpuError };
+}
+
+export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = CITY_RUSH_CARS[0].id, audioRef = null, initialRoster = null, raceLaps = CITY_RUSH_LAPS, policeFromStart = false, raceFormat = 'laps', storyRules = null, tutorialMode = false, initialGraphicsMode = null, providedRenderer = null) {
   // Rendu demandé par la page (`setGraphics` le change ensuite à chaud) :
   // il est connu avant la première image pour que la course ne s'ouvre pas en
   // standard puis ne bascule en cinéma devant le joueur.
@@ -2026,16 +2059,25 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   camera.position.copy(CHASE_POSITION);
   camera.lookAt(CHASE_LOOK);
 
-  const renderer = new THREE.WebGLRenderer({ antialias: !lite, alpha: false, powerPreference: 'high-performance' });
+  // Le renderer vient de la page ou du constructeur historique. WebGL par
+  // défaut ; l'essai WEBGPU passe un renderer déjà **initialisé** par
+  // `createCityRushWorldAsync` ci-dessous (l'initialisation de WebGPU est
+  // asynchrone, et cette fonction-là doit rester synchrone : vingt harnais de
+  // vérification l'appellent dans la même instruction).
+  const renderer = providedRenderer || new THREE.WebGLRenderer({ antialias: !lite, alpha: false, powerPreference: 'high-performance' });
+  const webGpu = Boolean(renderer.isCityRushWebGpu);
   // Résolution adaptative : le plafond dépend de l'écran, le palier courant
   // baisse si la machine ne tient plus la cadence (voir `adaptResolution`).
   const pixelRatioCap = Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 1.5);
   renderer.setPixelRatio(pixelRatioCap);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  // WebGPU n'a pas de tone-mapping par le renderer : three.js passe alors par
+  // une passe plein écran interne, et l'exposition ACES se règle sur la scène
+  // (`renderer.toneMapping` reste la même constante qu'en WebGL).
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = lightRig.exposure;
   renderer.shadowMap.enabled = !lite;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = webGpu ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   // Reflets studio des carrosseries : la carte d'environnement est dérivée du
   // renderer, donc branchée juste après sa création (avant les voitures).
   configureCarReflections(renderer);
@@ -2103,7 +2145,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // qui s'en charge, à chaque changement de taille comme de palier de
   // résolution) : sinon le post-traitement annulerait le gain de pixels.
   function syncPostChain() {
-    if (!wantsCinema()) {
+    // WebGPU ne connaît pas cette chaîne (elle est écrite pour le renderer
+    // WebGL) : l'essai garde le rendu direct, et l'écran de pause le dit.
+    if (!wantsCinema() || webGpu) {
       disposePostChain();
       return;
     }
@@ -2129,6 +2173,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
   // Montage initial : la course s'ouvre sur le rendu demandé, pas sur un
   // standard qui basculerait sous les yeux du joueur à la première image.
   if (graphicsMode === CITY_RUSH_GRAPHICS_CINEMA && lite) graphicsMode = normalizeCityRushGraphicsMode(null);
+  // WEBGPU demandé mais pas obtenu (qualité allégée, carte absente) : la course
+  // tourne en WebGL standard, et `setGraphics` le racontera à la page.
+  if (graphicsMode === CITY_RUSH_GRAPHICS_WEBGPU && !webGpu) graphicsMode = normalizeCityRushGraphicsMode(null);
   syncPostChain();
 
   // ── Décor : ciel, skyline, route, boucle de 1 200 m + zone de départ ─
@@ -2163,7 +2210,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       object.castShadow = !lite && !object.material.transparent;
     });
   }
-  const sky = makeSkyDome(theme);
+  // Ciel : le dôme de shader historique, sauf en essai WebGPU — three.js n'y
+  // compile pas de GLSL. Le ciel peint reprend les mêmes maths (`cityRushStage`
+  // en expose la texture), il est simplement cuit une fois au lieu d'être
+  // calculé par pixel et par image.
+  const sky = (webGpu ? makeSkyDomePainted(theme) : null) || makeSkyDome(theme);
+  const skyIsPainted = !sky.material.uniforms;
   scene.add(sky);
   const tougeSkyline = touge ? makeTougeSkyline(city, theme, sceneryRandom) : null;
   scene.add(tougeSkyline?.object || makeSkyline(city, theme, sceneryRandom));
@@ -11020,7 +11072,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     smoke.update(dt, worldTravel);
     updatePickupPop(dt);
     updatePickupBursts(dt);
-    sky.material.uniforms.time.value = clockTime;
+    if (!skyIsPainted) sky.material.uniforms.time.value = clockTime;
     if (headlamp.visible) {
       // En vue cockpit, le projecteur passe au nez de la voiture : posé dans
       // la moitié arrière de la caisse, il éclairerait l'habitacle par
@@ -11070,7 +11122,10 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     try {
       if (!mirrorTarget) {
         withCockpitVisualRandom(() => {
-          const halfFloat = Boolean(renderer.capabilities?.isWebGL2 && renderer.extensions?.has?.('EXT_color_buffer_float'));
+          // WebGPU n'a pas d'extension à interroger : il accepte la cible
+          // flottante quand il existe, et le `catch` du rétroviseur couvre le
+          // reste (reflet peint).
+          const halfFloat = webGpu || Boolean(renderer.capabilities?.isWebGL2 && renderer.extensions?.has?.('EXT_color_buffer_float'));
           mirrorTarget = new THREE.WebGLRenderTarget(320, 80, { type: halfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType });
           mirrorCamera = new THREE.PerspectiveCamera(15, 4, 0.3, 180);
         });
@@ -11366,15 +11421,31 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       requestedGraphics = normalizeCityRushGraphicsMode(mode);
       // `graphicsMode` dit ce qui **tourne** : en qualité allégée, le cinéma
       // demandé retombe sur le rendu standard (le choix reste en mémoire côté
-      // page, il revivra sur un appareil capable).
+      // page, il revivra sur un appareil capable). WEBGPU, lui, ne se change
+      // pas à chaud : le renderer est WebGL, on le dit au lieu de faire
+      // semblant (la page reconstruit le monde pour l'essai, voir `async`).
       graphicsMode = requestedGraphics === CITY_RUSH_GRAPHICS_CINEMA && lite ? normalizeCityRushGraphicsMode(null) : requestedGraphics;
+      if (graphicsMode === CITY_RUSH_GRAPHICS_WEBGPU && !webGpu) graphicsMode = normalizeCityRushGraphicsMode(null);
       syncPostChain();
       const active = Boolean(postChain);
-      getCallbacks().graphics?.({ mode: graphicsMode, requested: requestedGraphics, active, lite });
+      getCallbacks().graphics?.({
+        mode: graphicsMode,
+        requested: requestedGraphics,
+        active,
+        lite,
+        renderer: webGpu ? CITY_RUSH_GRAPHICS_WEBGPU : CITY_RUSH_GRAPHICS_STANDARD,
+        webGpuError: graphicsMode !== requestedGraphics && requestedGraphics === CITY_RUSH_GRAPHICS_WEBGPU
+          ? 'renderer WebGL (essai non démarré dans ce monde)'
+          : '',
+      });
       return active;
     },
     get graphicsMode() { return graphicsMode; },
     get graphicsActive() { return Boolean(postChain); },
+    get lite() { return lite; },
+    // Le moteur réellement ouvert pour cette course : `'standard'` (WebGL) ou
+    // `'webgpu'`. La page s'en sert pour dire la vérité, pas le souhait.
+    get rendererMode() { return webGpu ? CITY_RUSH_GRAPHICS_WEBGPU : CITY_RUSH_GRAPHICS_STANDARD; },
     get postChain() { return postChain; },
     // Conduite : `'free'` (volant libre) ou `'lanes'` (écart de voie entière).
     // Applicable à tout moment, même en pleine course : en repassant aux voies,
@@ -11465,34 +11536,64 @@ export default function ViceCityWorld({ active, phase = 'intro', countdown = nul
   // création du monde **et** appliquée à chaud ensuite.
   const graphicsModeRef = useRef(graphicsMode);
   graphicsModeRef.current = graphicsMode;
+  // La course est-elle en train de tourner ? Le monde asynchrone la démarre dès
+  // qu'il est prêt s'il a manqué le top départ pendant sa construction.
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
   useEffect(() => {
     if (!mountRef.current) return undefined;
     const city = CITY_RUSH_COURSES.find((item) => item.id === cityId) || CITY_RUSH_COURSES[0];
-    let world;
-    try {
-      world = createCityRushWorld(mountRef.current, city, () => ({
-        hud: (data) => callbacksRef.current.onHud?.(data),
-        finish: (data) => callbacksRef.current.onFinish?.(data),
-        pickup: (data) => callbacksRef.current.onPickup?.(data),
-        effect: (data) => callbacksRef.current.onEffect?.(data),
-        lap: (data) => callbacksRef.current.onLap?.(data),
-        tutorial: (data) => callbacksRef.current.onTutorial?.(data),
-        graphics: (data) => callbacksRef.current.onGraphics?.(data),
-      }), carId, audioRef, roster, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode, graphicsModeRef.current);
-    } catch (error) {
+    const callbacks = () => ({
+      hud: (data) => callbacksRef.current.onHud?.(data),
+      finish: (data) => callbacksRef.current.onFinish?.(data),
+      pickup: (data) => callbacksRef.current.onPickup?.(data),
+      effect: (data) => callbacksRef.current.onEffect?.(data),
+      lap: (data) => callbacksRef.current.onLap?.(data),
+      tutorial: (data) => callbacksRef.current.onTutorial?.(data),
+      graphics: (data) => callbacksRef.current.onGraphics?.(data),
+    });
+    // Construction **asynchrone** : elle ne l'est que pour l'essai WebGPU, dont
+    // le renderer s'initialise avec un `await`. En WebGL, le monde naît dans la
+    // même image, comme avant.
+    let world = null;
+    let cancelled = false;
+    createCityRushWorldAsync(
+      mountRef.current, city, callbacks, carId, audioRef, roster, raceLaps,
+      racePoliceFromStart, raceFormat, storyRules, tutorialMode, graphicsModeRef.current,
+    ).then((built) => {
+      // L'effet a été démonté pendant l'attente (changement de voiture, de
+      // parcours, de page) : le monde en cours de construction n'a plus de
+      // place dans le document, on le jette proprement.
+      if (cancelled || !mountRef.current) {
+        built.world.destroy();
+        return;
+      }
+      world = built.world;
+      worldRef.current = world;
+      world.setCameraMode?.(cameraModeRef.current);
+      world.setDrivingMode?.(drivingModeRef.current);
+      world.setGraphics?.(graphicsModeRef.current);
+      if (built.webGpuError) {
+        callbacksRef.current.onGraphics?.({
+          mode: world.graphicsMode,
+          requested: 'webgpu',
+          active: false,
+          lite: Boolean(world.lite),
+          renderer: world.rendererMode,
+          webGpuError: built.webGpuError,
+        });
+      }
+      if (actionsRef) actionsRef.current = (name) => world.action(name);
+      callbacksRef.current.onReady?.();
+      if (activeRef.current) world.start();
+    }).catch((error) => {
       callbacksRef.current.onError?.(error instanceof Error ? error.message : String(error));
-      return undefined;
-    }
-    worldRef.current = world;
-    world.setCameraMode?.(cameraModeRef.current);
-    world.setDrivingMode?.(drivingModeRef.current);
-    world.setGraphics?.(graphicsModeRef.current);
-    if (actionsRef) actionsRef.current = (name) => world.action(name);
-    callbacksRef.current.onReady?.();
+    });
     return () => {
-      world.destroy();
-      worldRef.current = null;
+      cancelled = true;
+      world?.destroy();
+      if (worldRef.current === world) worldRef.current = null;
       if (actionsRef) actionsRef.current = null;
     };
   }, [cityId, carId, raceLaps, racePoliceFromStart, raceFormat, storyRules, tutorialMode, actionsRef, audioRef]);

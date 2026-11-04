@@ -385,6 +385,14 @@
   color: #ffd23e;
   background: rgba(255, 210, 62, 0.12);
 }
+/* L'essai WebGPU se distingue du cinéma : c'est un autre moteur, pas un autre
+   étalonnage. Le liseré pointillé dit « expérimental » sans crier. */
+.vcr-menu-panel .vcr-menu-graphics-option[data-graphics-mode='webgpu'] {
+  border-style: dashed;
+  border-color: #6fe3ff;
+  color: #6fe3ff;
+  background: rgba(111, 227, 255, 0.1);
+}
 .vcr-menu-panel-close { margin-top: 14px; }
 
 /* ── Mobile ────────────────────────────────────────────────────────────── */

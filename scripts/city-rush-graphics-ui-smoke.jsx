@@ -120,8 +120,49 @@ export async function checkCityRushGraphicsUi(assert) {
         await key('v');
         assert.equal(squash(graphicsOption(node).textContent), 'RENDU : CINÉMA', 'V repasse au rendu cinéma');
         assert.equal(stored(), 'cinema');
+
       } finally {
         await unmount();
+      }
+    }
+
+    // ── 1 bis. L'essai WebGPU : un navigateur qui expose l'API et une carte ──
+    {
+      window.localStorage.clear();
+      const savedGpu = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(window.navigator), 'gpu');
+      Object.defineProperty(window.navigator, 'gpu', {
+        configurable: true,
+        value: { requestAdapter: async () => ({ name: 'carte de vérification' }) },
+      });
+      const { resetCityRushWebGpuProbe } = await import('../src/games/cityRushPost.js');
+      resetCityRushWebGpuProbe();
+      const { node, unmount } = await mountPage();
+      try {
+        const menu = node.querySelector('.vcr-menu');
+        const options = [...menu.querySelectorAll('.vcr-entry')]
+          .find((entry) => (entry.getAttribute('aria-label') || '').toUpperCase().includes('OPTIONS'));
+        await click(options);
+        const option = graphicsOption(node);
+        assert.equal(squash(option.textContent), 'RENDU : STANDARD');
+        // L'essai est offert : le cycle fait le tour des trois modes.
+        await click(option);
+        assert.equal(squash(graphicsOption(node).textContent), 'RENDU : CINÉMA');
+        await click(graphicsOption(node));
+        const webGpu = graphicsOption(node);
+        assert.equal(squash(webGpu.textContent), 'RENDU : WEBGPU · ESSAI', 'WEBGPU est proposé quand une carte répond');
+        assert.equal(webGpu.getAttribute('data-graphics-mode'), 'webgpu', 'la coque distingue l’essai');
+        assert.equal(stored(), 'webgpu', 'la préférence garde l’essai');
+        assert.equal(webGpu.getAttribute('aria-pressed'), 'false', 'l’essai n’est pas le cinéma');
+        assert.match(webGpu.title, /WGSL|WebGPU/i, 'l’infobulle dit ce que fait l’essai');
+        await click(webGpu);
+        assert.equal(squash(graphicsOption(node).textContent), 'RENDU : STANDARD', 'l’essai se referme sur le standard');
+        assert.equal(stored(), 'standard');
+      } finally {
+        await unmount();
+        if (savedGpu) Object.defineProperty(window.navigator, 'gpu', savedGpu);
+        else delete window.navigator.gpu;
+        resetCityRushWebGpuProbe();
+        window.localStorage.clear();
       }
     }
 

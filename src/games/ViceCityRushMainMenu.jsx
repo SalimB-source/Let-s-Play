@@ -110,6 +110,8 @@ export default function ViceCityRushMainMenu({
   drivingMode = 'free',
   onToggleDriving,
   graphicsMode = 'standard',
+  webGpuSupported = false,
+  webGpuHint = '',
   onToggleGraphics,
   cinemaSupported = true,
   onToggleFullscreen,
@@ -299,13 +301,18 @@ export default function ViceCityRushMainMenu({
               className="vcr-menu-graphics-option"
               onClick={onToggleGraphics}
               aria-pressed={graphicsMode === 'cinema'}
-              title={!cinemaSupported
-                ? 'Rendu cinéma refusé sur cet appareil (qualité allégée) : le choix s’appliquera sur un appareil capable'
-                : graphicsMode === 'cinema'
-                  ? 'Revenir au rendu standard, sans halo'
-                  : 'Halo de post-traitement sur les néons, phares et gyrophares'}
+              data-graphics-mode={graphicsMode}
+              title={graphicsMode === 'webgpu'
+                ? (webGpuHint || 'Essai WebGPU : la course reconstruite au départ, dessinée en WGSL par le GPU')
+                : !cinemaSupported
+                  ? 'Rendu cinéma refusé sur cet appareil (qualité allégée) : le choix s’appliquera sur un appareil capable'
+                  : graphicsMode === 'cinema'
+                    ? (webGpuSupported ? 'Passer à l’essai WebGPU, puis revenir au rendu standard' : 'Revenir au rendu standard, sans halo')
+                    : graphicsMode === 'webgpu'
+                      ? 'Revenir au rendu standard'
+                      : (webGpuSupported ? 'Halo de post-traitement sur les néons, phares et gyrophares · puis essai WebGPU' : 'Halo de post-traitement sur les néons, phares et gyrophares')}
             >
-              RENDU : {graphicsMode === 'cinema' ? 'CINÉMA' : 'STANDARD'}{cinemaSupported ? '' : ' · NON DISPO ICI'}
+              RENDU : {graphicsMode === 'cinema' ? 'CINÉMA' : graphicsMode === 'webgpu' ? 'WEBGPU · ESSAI' : 'STANDARD'}{(graphicsMode === 'webgpu' ? webGpuSupported : cinemaSupported) ? '' : ' · NON DISPO ICI'}
             </button>
             <button type="button" onClick={onToggleFullscreen}>PLEIN ÉCRAN · F</button>
             <button type="button" onClick={onStartTutorial}>TUTORIEL GUIDÉ</button>

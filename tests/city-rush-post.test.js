@@ -8,7 +8,13 @@ const {
   CITY_RUSH_GRAPHICS_MODES,
   CITY_RUSH_GRAPHICS_PREF_KEY,
   CITY_RUSH_GRAPHICS_STANDARD,
+  CITY_RUSH_GRAPHICS_WEBGPU,
   cityRushCinemaAvailable,
+  cityRushNextGraphicsMode,
+  cityRushWebGpuAvailable,
+  cityRushWebGpuMaybe,
+  cityRushWebGpuSupport,
+  resetCityRushWebGpuProbe,
   cityRushCinemaSettings,
   cityRushGraphicsModeLabel,
   cityRushPostSupport,
@@ -33,7 +39,7 @@ function fakeRenderer({ webgl2 = true, extensions = ['EXT_color_buffer_half_floa
 
 test('le rendu standard reste le défaut ; toute valeur inconnue y retombe', () => {
   assert.equal(CITY_RUSH_DEFAULT_GRAPHICS, CITY_RUSH_GRAPHICS_STANDARD);
-  assert.deepEqual([...CITY_RUSH_GRAPHICS_MODES], ['standard', 'cinema']);
+  assert.deepEqual([...CITY_RUSH_GRAPHICS_MODES], ['standard', 'cinema', 'webgpu']);
   assert.equal(CITY_RUSH_GRAPHICS_PREF_KEY, 'letsplay_vice_city_rush_graphics_v1');
   assert.equal(normalizeCityRushGraphicsMode('cinema'), CITY_RUSH_GRAPHICS_CINEMA);
   for (const value of ['standard', undefined, null, '', 'CINÉMA', 'ultra', 'cinema ', 42, {}]) {
@@ -44,6 +50,13 @@ test('le rendu standard reste le défaut ; toute valeur inconnue y retombe', () 
   assert.equal(nextCityRushGraphicsMode('n-importe-quoi'), 'cinema');
   assert.equal(cityRushGraphicsModeLabel('cinema'), 'CINÉMA');
   assert.equal(cityRushGraphicsModeLabel(null), 'STANDARD');
+  assert.equal(cityRushGraphicsModeLabel('webgpu'), 'WEBGPU · ESSAI');
+  // Le cycle de la souris fait le tour des trois ; la touche V, historique,
+  // n'engage pas un essai par une frappe au clavier.
+  assert.equal(cityRushNextGraphicsMode('standard'), 'cinema');
+  assert.equal(cityRushNextGraphicsMode('cinema'), 'webgpu');
+  assert.equal(cityRushNextGraphicsMode('webgpu'), 'standard');
+  assert.equal(cityRushNextGraphicsMode('n-importe-quoi'), 'cinema');
 });
 
 test('le cinéma ne tourne jamais en qualité allégée (tactile, WebView Android)', () => {
@@ -132,4 +145,30 @@ test('sans cible flottante, la chaîne se monte quand même', () => {
   assert.equal(chain.halfFloat, false);
   assert.equal(chain.samples, 0);
   chain.dispose();
+});
+
+test('l’essai WebGPU ne s’ouvre que sur un navigateur qui a une carte', async () => {
+  // `navigator.gpu` absent (Safari ancien, Firefox sans drapeau) : rien.
+  assert.equal(cityRushWebGpuSupport({ navigator: {} }), false);
+  assert.equal(cityRushWebGpuSupport({}), false);
+  assert.equal(cityRushWebGpuSupport(null), false);
+  // `navigator.gpu` présent mais sans adaptateur : le second verrou refuse.
+  const noAdapter = { navigator: { gpu: { requestAdapter: async () => null } } };
+  assert.equal(cityRushWebGpuSupport(noAdapter), true);
+  resetCityRushWebGpuProbe();
+  assert.equal(await cityRushWebGpuAvailable(noAdapter), false);
+  // Une carte répond : l'essai est possible.
+  const adapter = { navigator: { gpu: { requestAdapter: async () => ({ name: 'fake' }) } } };
+  resetCityRushWebGpuProbe();
+  assert.equal(await cityRushWebGpuAvailable(adapter), true);
+  // Une erreur de sonde ne casse pas le jeu : même réponse qu'une absence.
+  const broken = { navigator: { gpu: { requestAdapter: async () => { throw new Error('denied'); } } } };
+  resetCityRushWebGpuProbe();
+  assert.equal(await cityRushWebGpuAvailable(broken), false);
+  // Jamais en qualité allégée, même avec une carte.
+  assert.equal(cityRushWebGpuMaybe({ mode: 'webgpu', lite: true, support: true }), false);
+  assert.equal(cityRushWebGpuMaybe({ mode: 'webgpu', lite: false, support: false }), false);
+  assert.equal(cityRushWebGpuMaybe({ mode: 'webgpu', lite: false, support: true }), true);
+  assert.equal(cityRushWebGpuMaybe({ mode: 'cinema', lite: false, support: true }), false);
+  resetCityRushWebGpuProbe();
 });

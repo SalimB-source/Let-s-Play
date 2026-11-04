@@ -199,6 +199,158 @@ export function makeSkyDome(theme) {
   return dome;
 }
 
+/**
+ * Le **ciel en portée matériau** : le même ciel, calculé une fois par pixel dans
+ * une texture, au lieu d'un `ShaderMaterial` par image.
+ *
+ * La course garde son dôme de shader (c'est le rendu historique, et il suit
+ * l'heure de jeu sans rien recalculer). L'essai **WebGPU** ne peut pas compiler
+ * de GLSL : il demande à cette fonction une version cuite du même ciel. Les
+ * maths sont reprises ligne pour ligne du fragment shader ci-dessus — mêmes
+ * couleurs, même disque solaire, mêmes rayures, même lune, mêmes étoiles —, pour
+ * que le joueur ne voie pas deux ciels différents selon le moteur.
+ *
+ * Le rendu est fait en coordonnées **normalisées** : la texture est un
+ * équirectangulaire de la demi-sphère supérieure, étiré sur le dôme. La
+ * résolution (768 × 384) est celle d'un ciel de nuit : les dégradés sont larges,
+ * et 300 Ko de texture ne pèsent rien à côté des 1 500 Kio de la skyline.
+ */
+export function makeSkyDomeTexture(theme, { width = 768, height = 384 } = {}) {
+  const sky = theme.sky;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  const image = context.createImageData(width, height);
+  const toRgb = (hex) => hexToRgb(hex);
+  const top = toRgb(sky.top);
+  const mid = toRgb(sky.mid);
+  const horizon = toRgb(sky.horizon);
+  const haze = toRgb(sky.haze);
+  const sunColor = toRgb(sky.sun.color);
+  const sunGlow = toRgb(sky.sun.glow);
+  const sunDirection = new THREE.Vector3(0.05, sky.sun.elevation, -1).normalize();
+  const moonDirection = new THREE.Vector3(-0.55, 0.42, -0.72).normalize();
+  const smoothstep = (edge0, edge1, x) => {
+    const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0 || 1e-6)));
+    return t * t * (3 - 2 * t);
+  };
+  const hash = (x, y) => {
+    const value = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+    return value - Math.floor(value);
+  };
+  for (let py = 0; py < height; py += 1) {
+    // Le dôme est une sphère : le shader lit `normalize(position)`, donc chaque
+    // texel doit porter une **direction**, pas un angle. On échantillonne en
+    // coordonnées sphériques puis on projette, comme la géométrie.
+    const polar = ((py + 0.5) / height) * Math.PI; // 0 au pôle nord de la sphère
+    const sinPolar = Math.sin(polar);
+    const cosPolar = Math.cos(polar);
+    for (let px = 0; px < width; px += 1) {
+      const azimuth = ((px + 0.5) / width) * Math.PI * 2;
+      const dir = new THREE.Vector3(sinPolar * Math.sin(azimuth), cosPolar, sinPolar * Math.cos(azimuth));
+      const level = dir.y;
+      let r = horizon[0] + (mid[0] - horizon[0]) * smoothstep(0.0, 0.22, level);
+      let g = horizon[1] + (mid[1] - horizon[1]) * smoothstep(0.0, 0.22, level);
+      let b = horizon[2] + (mid[2] - horizon[2]) * smoothstep(0.0, 0.22, level);
+      const upper = smoothstep(0.18, 0.75, level);
+      r += (top[0] - r) * upper;
+      g += (top[1] - g) * upper;
+      b += (top[2] - b) * upper;
+      const hazeBand = (1 - smoothstep(-0.02, 0.09, Math.abs(level))) * 0.42;
+      r += (haze[0] - r) * hazeBand;
+      g += (haze[1] - g) * hazeBand;
+      b += (haze[2] - b) * hazeBand;
+      const under = smoothstep(0.0, -0.25, level);
+      r += (horizon[0] * 0.35 - r) * under;
+      g += (horizon[1] * 0.35 - g) * under;
+      b += (horizon[2] * 0.35 - b) * under;
+      // Soleil : halo exponentiel, disque, puis rayures éventuelles.
+      const sunDot = Math.max(-1, Math.min(1, dir.dot(sunDirection)));
+      const sunAngle = Math.acos(sunDot);
+      const glow = Math.exp(-sunAngle * sunAngle * 7) * 0.55 + Math.exp(-sunAngle * sunAngle * 60) * 0.35;
+      const glowMix = glow * (level >= -0.05 ? 1 : 0);
+      r += (sunGlow[0] - r) * glowMix;
+      g += (sunGlow[1] - g) * glowMix;
+      b += (sunGlow[2] - b) * glowMix;
+      let disc = 1 - smoothstep(sky.sun.radius - 0.012, sky.sun.radius + 0.004, sunAngle);
+      if (sky.sun.stripes > 0.5) {
+        const bandPosition = (sunDirection.y - level) / sky.sun.radius;
+        const stripe = bandPosition * 5.2 + 0.3;
+        const cut = (bandPosition >= 0 ? 1 : 0)
+          * (stripe - Math.floor(stripe) >= 0.5 ? 1 : 0)
+          * smoothstep(0, 0.9, bandPosition);
+        disc *= 1 - cut;
+      }
+      const sunShade = smoothstep(sunDirection.y - sky.sun.radius, sunDirection.y + sky.sun.radius * 0.6, level);
+      const discMix = disc * (level >= -0.01 ? 1 : 0);
+      r += (sunGlow[0] + (sunColor[0] - sunGlow[0]) * sunShade - r) * discMix;
+      g += (sunGlow[1] + (sunColor[1] - sunGlow[1]) * sunShade - g) * discMix;
+      b += (sunGlow[2] + (sunColor[2] - sunGlow[2]) * sunShade - b) * discMix;
+      // Lune et son halo.
+      if (sky.moon > 0.5) {
+        const moonAngle = Math.acos(Math.max(-1, Math.min(1, dir.dot(moonDirection))));
+        const moonDisc = 1 - smoothstep(0.028, 0.034, moonAngle);
+        const moonHalo = Math.exp(-moonAngle * moonAngle * 90) * 0.25;
+        const moonMix = Math.min(1, moonDisc + moonHalo);
+        r += (0.93 - r) * moonMix;
+        g += (0.95 - g) * moonMix;
+        b += (1.0 - b) * moonMix;
+      }
+      // Étoiles : cellules en projection plate, comme dans le shader (le
+      // scintillement est figé à `time = 0`, une texture ne s'anime pas).
+      if (sky.stars > 0.01 && level > 0.06) {
+        const cellScale = Math.max(0.08, Math.abs(level));
+        const cellX = Math.floor((dir.x / cellScale) * 48);
+        const cellZ = Math.floor((dir.z / cellScale) * 48);
+        const h = hash(cellX, cellZ);
+        if (h > 1 - sky.stars * 0.045) {
+          const centerX = (cellX + 0.5 + hash(cellX + 7, cellZ + 13) * 0.5 - 0.25) / 48 * cellScale;
+          const centerZ = (cellZ + 0.5 + hash(cellX + 7, cellZ + 13) * 0.5 - 0.25) / 48 * cellScale;
+          const d = Math.hypot(dir.x - centerX, dir.z - centerZ) * 48 / cellScale;
+          const twinkle = 0.65; // 0,65 + 0,35 · sin(0 + h · 40) en moyenne figée
+          const star = smoothstep(0.32, 0.05, d) * smoothstep(0.06, 0.3, level) * twinkle;
+          r += 0.85 * star * sky.stars;
+          g += 0.92 * star * sky.stars;
+          b += 1.0 * star * sky.stars;
+        }
+      }
+      const offset = (py * width + px) * 4;
+      image.data[offset] = Math.max(0, Math.min(255, Math.round(r * 255)));
+      image.data[offset + 1] = Math.max(0, Math.min(255, Math.round(g * 255)));
+      image.data[offset + 2] = Math.max(0, Math.min(255, Math.round(b * 255)));
+      image.data[offset + 3] = 255;
+    }
+  }
+  context.putImageData(image, 0, 0);
+  return canvas;
+}
+
+/**
+ * Le dôme du ciel **sans shader** : une sphère peinte de `makeSkyDomeTexture`.
+ * Même rayon, même ordre de rendu que le dôme historique, pour que la
+ * silhouette et la brume se posent dessus de la même façon. Réservé à l'essai
+ * WebGPU : la course garde son dôme de shader, qui suit `time` (le ciel de nuit
+ * y respire lentement, les étoiles scintillent).
+ */
+export function makeSkyDomePainted(theme, { width = 768, height = 384 } = {}) {
+  const canvas = makeSkyDomeTexture(theme, { width, height });
+  if (!canvas) return null;
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = false;
+  const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.BackSide, depthWrite: false, fog: false, toneMapped: false });
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(330, 28, 18), material);
+  dome.renderOrder = -10;
+  dome.frustumCulled = false;
+  dome.name = 'sky-dome-painted';
+  return dome;
+}
+
 export function makeSkyline(city, theme, random) {
   const texture = makeSkylineTexture(city, theme, random);
   const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false, toneMapped: false, fog: false });

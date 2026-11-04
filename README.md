@@ -984,7 +984,7 @@ scène ──▶ RenderPass ──▶ UnrealBloomPass ──▶ OutputPass ─�
 | Où l'on règle le rendu | Comment |
 |---|---|
 | Écran-titre → **OPTIONS** → entrée **RENDU** | bascule STANDARD ⇄ CINÉMA, mémorisée sur l'appareil |
-| Touche **V** (écran-titre) | la même bascule, sans souris |
+| Touche **V** (écran-titre) | la même bascule, sans souris (elle n'engage pas l'essai WebGPU, voir plus bas) |
 | Écran de **pause**, en pleine course | bascule aussi : la chaîne se monte ou se démonte sans reconstruire la scène, la course ne s'arrête pas |
 
 **Pourquoi ça marche sans refaire le jeu.** Quand three.js dessine dans une
@@ -1057,6 +1057,105 @@ jsdom n'a pas de WebGL : ces vérifications disent la **structure** de la chaîn
 pas la beauté du halo. Pour juger le rendu, ouvrir le jeu dans un vrai
 navigateur (`npm run dev`), lancer une course, et basculer RENDU en pause sur une
 ville de nuit (New York, Tokyo) puis sur une ville de jour (Vice City).
+
+## Vice City Rush : l'essai WebGPU
+
+Le jeu dessine en **WebGL 2** (three.js `WebGLRenderer`). Depuis peu, three.js
+livre un second moteur, `WebGPURenderer`, qui compile la scène en **WGSL** et la
+confie au GPU par l'API `navigator.gpu`. L'entrée RENDU propose donc un
+troisième choix, **WEBGPU · ESSAI**, à côté de STANDARD et CINÉMA.
+
+```
+RENDU : STANDARD ⇄ CINÉMA → WEBGPU · ESSAI → STANDARD
+        (souris : les trois ;  touche V : standard ⇄ cinéma seulement)
+```
+
+**C'est un essai, et il le dit.** Trois verrous, dans cet ordre :
+
+1. **le navigateur** expose `navigator.gpu` (`cityRushWebGpuSupport`) ;
+2. **une carte** répond à `requestAdapter` (`cityRushWebGpuAvailable`, une sonde
+   par session, un échec n'est jamais définitif) ;
+3. **la qualité n'est pas allégée** — tactile, WebView Android : l'essai ne
+   s'ouvre pas, c'est le matériel qu'on ménage.
+
+Si les trois passent, la page démarre un `WebGPURenderer` et **reconstruit le
+monde** avec (`createCityRushWorldAsync`). Si l'initialisation échoue quand
+même — carte occupée, pilote refusé, contexte perdu — la course naît en WebGL
+**standard**, et `onGraphics` remonte le message : l'écran de pause l'affiche
+dans l'infobulle de l'entrée RENDU. Aucun écran noir.
+
+**Ce qu'il a fallu changer dans la scène.** Un seul obstacle, mais de taille :
+le **ciel** était un `ShaderMaterial` — du GLSL écrit à la main, que WebGPU ne
+compile pas (three.js le remplace par un matériau vide : le ciel disparaît). La
+course garde son dôme de shader en WebGL ; en essai WebGPU, elle demande à
+`makeSkyDomePainted` une texture **cuite une fois** (`makeSkyDomeTexture`), qui
+reprend les maths du shader ligne pour ligne — dégradés, halo et disque
+solaire, rayures, lune, étoiles. Le scintillement des étoiles est figé (une
+texture ne s'anime pas) : c'est le seul écart visuel, et il ne concerne que
+l'essai.
+
+**Ce qui n'a pas changé**, et c'est ce qui rend l'essai possible : tout le reste
+de la scène est fait de matériaux de bibliothèque (Standard, Lambert, Phong,
+Basic, Physical, Points, Line, Sprite), que three.js sait traduire en WGSL. Le
+soleil, les gyrophares, le trafic, le cockpit, la pluie, la fumée : rien à
+réécrire.
+
+**Ce que l'essai ne fait pas**, volontairement :
+
+- **pas de CINÉMA** : la chaîne de post-traitement est écrite pour le renderer
+  WebGL (cibles, passes, `OutputPass`). Les deux choix sont exclusifs ; le
+  dernier choisi gagne, et l'infobulle le dit ;
+- **pas de MSAA par le canvas** : le renderer WebGPU de three.js l'ignore ; le
+  rendu passe par une cible interne ;
+- **pas de bascule à chaud** : un renderer ne se remplace pas en pleine course.
+  L'essai s'applique **au prochain départ** (le monde est reconstruit), là où
+  CINÉMA se monte et se démonte en direct.
+
+**Le coût dans le téléchargement.** `three/webgpu` pèse **461 Kio** — il est
+importé **paresseusement** (`import('three/webgpu')` dans
+`createCityRushRenderer`) et rangé par le build dans son propre morceau
+(`three.webgpu-*.js`) : personne ne le télécharge sans choisir l'essai.
+
+**La préférence** est la même clé que le cinéma
+(`letsplay_vice_city_rush_graphics_v1`, valeurs `standard`, `cinema`,
+`webgpu`) : elle survit au rechargement, et un appareil qui ne sait pas ouvrir
+l'essai le dit (`NON DISPO ICI`) sans effacer le choix.
+
+### Où vit le code
+
+- `src/games/cityRushPost.js` — le troisième mode, son cycle
+  (`cityRushNextGraphicsMode`), la sonde de navigateur, l'usine de renderer
+  (`createCityRushRenderer`, seul endroit qui importe `three/webgpu`) ;
+- `src/games/cityRushStage.js` — `makeSkyDomeTexture` (les maths du ciel, en
+  Canvas 2D) et `makeSkyDomePainted` (le dôme sans shader) ;
+- `src/games/ViceCityWorld.jsx` — `createCityRushWorldAsync` (le seul chemin
+  asynchrone), le choix du ciel selon le moteur, `setGraphics` qui refuse un
+  WebGPU demandé sur un renderer WebGL, et `rendererMode` ;
+- `src/games/ViceCityRushPage.jsx` / `ViceCityRushMainMenu.jsx` — la sonde au
+  montage, le cycle à trois, l'aveu « NON DISPO ICI ».
+
+### Vérifications
+
+```bash
+npm run check:city-rush-webgpu
+npm run check:city-rush-graphics
+```
+
+Le premier construit **les neuf parcours** avec un renderer marqué WebGPU et
+inspecte tous les matériaux de la scène : le ciel doit être le dôme **peint**,
+aucun `ShaderMaterial` ne doit subsister, et chaque type de matériau présent
+doit avoir une version « nœuds » (celle que three.js compile en WGSL). Le
+second vérifie l'entrée RENDU : les trois modes sur une machine qui expose
+`navigator.gpu` et une carte, le retour au standard sur une machine qui n'en a
+pas, la préférence mémorisée. `tests/city-rush-webgpu.test.js` fige le ciel
+peint (pixels, soleil, nuit, absence de GLSL) et le repli propre sans API.
+
+Ce que ces vérifications **ne peuvent pas** dire : si l'essai tourne vraiment.
+Il n'y a pas de GPU en intégration continue. Pour le juger, ouvrir le jeu dans
+Chrome ou Edge récent (`npm run dev`), OPTIONS → RENDU jusqu'à **WEBGPU ·
+ESSAI**, puis lancer une course et comparer avec STANDARD : mêmes couleurs,
+même ciel, mêmes ombres — et dans la console, aucun
+« Material … is not compatible ».
 
 ## Vice City Rush : les niveaux de détail du trafic
 

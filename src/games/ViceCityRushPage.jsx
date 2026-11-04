@@ -29,10 +29,15 @@ import {
 import {
   CITY_RUSH_GRAPHICS_CINEMA,
   CITY_RUSH_GRAPHICS_PREF_KEY,
+  CITY_RUSH_GRAPHICS_WEBGPU,
   cityRushCinemaAvailable,
   cityRushGraphicsModeLabel,
   cityRushLiteDevice,
+  cityRushNextGraphicsMode,
   nextCityRushGraphicsMode,
+  cityRushWebGpuAvailable,
+  cityRushWebGpuMaybe,
+  cityRushWebGpuSupport,
   normalizeCityRushGraphicsMode,
 } from './cityRushPost.js';
 import { CityRushAudio } from './cityRushAudio';
@@ -644,6 +649,22 @@ export default function ViceCityRushPage() {
   // (tactile, WebView Android) garde le rendu standard, et l'option le dit.
   const [graphicsMode, setGraphicsMode] = useState(readGraphicsPref);
   const [liteDevice] = useState(cityRushLiteDevice);
+  // L'essai WebGPU : l'API est interrogée tout de suite (question synchrone),
+  // la carte ensuite (question asynchrone, une fois par session). Tant que la
+  // carte n'a pas répondu, l'entrée RENDU n'annonce rien d'autre que
+  // « indisponible » — plutôt que de promettre puis de retirer.
+  const [webGpuApi] = useState(cityRushWebGpuSupport);
+  const [webGpuReady, setWebGpuReady] = useState(false);
+  useEffect(() => {
+    if (!webGpuApi) return undefined;
+    let alive = true;
+    cityRushWebGpuAvailable().then((available) => { if (alive) setWebGpuReady(available); });
+    return () => { alive = false; };
+  }, [webGpuApi]);
+  // `webGpuSupported` : la machine peut-elle ouvrir l'essai ? (API + carte +
+  // pas de qualité allégée). `webGpuAvailable` : l'essai tourne-t-il
+  // *maintenant* ? `null` hors course, comme `graphicsLive`.
+  const webGpuSupported = !liteDevice && webGpuApi && webGpuReady;
   // `cinemaSupported` : la machine en est-elle capable ? `cinemaAvailable` :
   // le cinéma tourne-t-il *maintenant* (mode cinéma demandé sur une machine
   // capable). L'écran-titre annonce la première, la pause décrit la seconde.
@@ -1262,7 +1283,15 @@ export default function ViceCityRushPage() {
   // Rendu cinéma ⇄ standard (menu Options, écran de pause). Le monde applique
   // le changement tout de suite, même en pleine course : la chaîne se monte
   // (ou se démonte) sans reconstruire la scène, la course ne s'arrête pas.
-  const toggleGraphics = useCallback(() => setGraphicsMode((current) => nextCityRushGraphicsMode(current)), []);
+  // Cycle de la souris : STANDARD → CINÉMA → WEBGPU → STANDARD. L'essai WebGPU
+  // ne s'arrête pas sur un appareil qui ne peut pas l'ouvrir : on le traverse.
+  const toggleGraphics = useCallback(() => {
+    if (liteDevice || !webGpuSupported) {
+      setGraphicsMode((current) => nextCityRushGraphicsMode(current));
+      return;
+    }
+    setGraphicsMode((current) => cityRushNextGraphicsMode(current));
+  }, [liteDevice, webGpuSupported]);
 
   // Le navigateur vient de refermer le plein écran (Échap, geste « retour »
   // d'Android) : en pleine course, on suspend plutôt que de laisser la voiture
@@ -2067,6 +2096,8 @@ export default function ViceCityRushPage() {
           graphicsMode={graphicsMode}
           onToggleGraphics={toggleGraphics}
           cinemaSupported={cinemaSupported}
+          webGpuSupported={webGpuSupported}
+          webGpuHint={graphicsLive?.webGpuError || ''}
           onToggleFullscreen={toggleImmersive}
           onStartTutorial={handleTitleTutorial}
           onStartFreeDrive={() => { audioRef.current?.stop(); setFreeRoamCarId('pulse-rs'); setTitleMenuOpen(false); setFreeRoamOpen(true); }}
@@ -3304,13 +3335,17 @@ export default function ViceCityRushPage() {
                     className="city-rush-text-button city-rush-pause-graphics"
                     onClick={toggleGraphics}
                     aria-pressed={graphicsMode === CITY_RUSH_GRAPHICS_CINEMA}
-                    title={!cinemaAvailable
-                      ? 'Rendu cinéma refusé sur cet appareil (qualité allégée)'
-                      : graphicsMode !== CITY_RUSH_GRAPHICS_CINEMA
-                        ? 'Halo de post-traitement sur les néons, phares et gyrophares'
-                        : graphicsLive && graphicsLive.active === false
-                          ? `Chaîne cinéma indisponible ici${graphicsLive.error ? ` (${graphicsLive.error})` : ''} : rendu standard`
-                          : 'Rendu cinéma actif : halo sur les néons et les phares'}
+                    title={graphicsMode === CITY_RUSH_GRAPHICS_WEBGPU
+                      ? (graphicsLive?.webGpuError
+                        ? `Essai WebGPU non démarré (${graphicsLive.webGpuError}) : la course tourne en WebGL`
+                        : 'Essai WebGPU : la course sera reconstruite au prochain départ, dessinée par le GPU en WGSL')
+                      : !cinemaAvailable
+                        ? 'Rendu cinéma refusé sur cet appareil (qualité allégée)'
+                        : graphicsMode !== CITY_RUSH_GRAPHICS_CINEMA
+                          ? 'Halo de post-traitement sur les néons, phares et gyrophares · puis essai WebGPU'
+                          : graphicsLive && graphicsLive.active === false
+                            ? `Chaîne cinéma indisponible ici${graphicsLive.error ? ` (${graphicsLive.error})` : ''} : rendu standard`
+                            : 'Rendu cinéma actif : halo sur les néons et les phares'}
                   >
                     RENDU : {cityRushGraphicsModeLabel(graphicsMode)}
                   </button>

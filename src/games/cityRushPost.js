@@ -56,12 +56,64 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
+/**
+ * L'usine de renderer de la course. Elle cache une décision : WebGL pour tout
+ * le monde, sauf l'essai **WEBGPU**.
+ *
+ * Pourquoi une fonction et pas un choix dans la page : le moteur 3D n'a le droit
+ * de dessiner en WebGPU que si la scène est **compatible**. Le seul obstacle
+ * connu de Vice City Rush est le dôme du ciel, écrit en GLSL (`ShaderMaterial`,
+ * que WebGPU ne compile pas) : l'essai reçoit donc un ciel peint à la place
+ * (`makeSkyDomePainted`), et tout le reste — matériaux standard, Lambert,
+ * Phong, Basic, sprites, points, ombres — passe par les matériaux WebGPU de
+ * three.js.
+ *
+ * `import('three/webgpu')` est **paresseux** : c'est un demi-mégaoctet de code
+ * GPU que 95 % des joueurs n'ouvriront jamais. Le build le range dans son propre
+ * morceau, chargé au moment du choix.
+ */
+export async function createCityRushRenderer({ mode, lite = false, antialias = true } = {}) {
+  const normalized = normalizeCityRushGraphicsMode(mode);
+  if (normalized === CITY_RUSH_GRAPHICS_WEBGPU && !lite) {
+    const { WebGPURenderer } = await import('three/webgpu');
+    // `forceWebGL: false` : on demande le vrai backend WebGPU. S'il n'y a pas de
+    // carte, le renderer lève à l'initialisation — d'où le repli de la page.
+    const renderer = new WebGPURenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
+    await renderer.init();
+    renderer.domElement.className = 'city-rush-canvas';
+    renderer.isCityRushWebGpu = true;
+    return renderer;
+  }
+  return new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
+}
+
 export const CITY_RUSH_GRAPHICS_STANDARD = 'standard';
 export const CITY_RUSH_GRAPHICS_CINEMA = 'cinema';
+/**
+ * L'essai **WEBGPU** : la même course, dessinée par `WebGPURenderer` (three.js
+ * compile alors la scène en WGSL au lieu de GLSL). C'est un essai assumé, pas un
+ * niveau de qualité :
+ *
+ *   - il ne s'ouvre que si le navigateur expose `navigator.gpu` **et** qu'une
+ *     carte est disponible (`requestAdapter`) ;
+ *   - le moteur peut reclamer le WebGL au dernier moment (contexte perdu,
+ *     compilation refusée) : la course ne reste jamais noire, elle retombe sur
+ *     STANDARD et l'écran de pause le dit ;
+ *   - il est **incompatible avec CINÉMA** : la chaîne de post-traitement est
+ *     écrite pour le renderer WebGL. Les deux choix sont exclusifs, et c'est le
+ *     dernier choisi qui gagne.
+ */
+export const CITY_RUSH_GRAPHICS_WEBGPU = 'webgpu';
 export const CITY_RUSH_GRAPHICS_MODES = Object.freeze([
   CITY_RUSH_GRAPHICS_STANDARD,
   CITY_RUSH_GRAPHICS_CINEMA,
+  CITY_RUSH_GRAPHICS_WEBGPU,
 ]);
+/** Cycles de l'entrée RENDU : le clic passe au suivant de la liste. */
+export function cityRushNextGraphicsMode(mode) {
+  const index = CITY_RUSH_GRAPHICS_MODES.indexOf(normalizeCityRushGraphicsMode(mode));
+  return CITY_RUSH_GRAPHICS_MODES[(index + 1) % CITY_RUSH_GRAPHICS_MODES.length];
+}
 /** Le rendu historique : la scène droit dans l'écran, sans post-traitement. */
 export const CITY_RUSH_DEFAULT_GRAPHICS = CITY_RUSH_GRAPHICS_STANDARD;
 /** Préférence de l'appareil, comme le son, la vue et la conduite : rien au compte. */
@@ -69,9 +121,14 @@ export const CITY_RUSH_GRAPHICS_PREF_KEY = 'letsplay_vice_city_rush_graphics_v1'
 
 /** Toute valeur inconnue (préférence corrompue, ancienne version) vaut `standard`. */
 export function normalizeCityRushGraphicsMode(mode) {
-  return mode === CITY_RUSH_GRAPHICS_CINEMA ? CITY_RUSH_GRAPHICS_CINEMA : CITY_RUSH_GRAPHICS_STANDARD;
+  return CITY_RUSH_GRAPHICS_MODES.includes(mode) ? mode : CITY_RUSH_GRAPHICS_STANDARD;
 }
 
+/**
+ * Le cycle historique de la touche **V** : STANDARD ⇄ CINÉMA. La touche ne passe
+ * pas par WEBGPU — c'est un essai, il se choisit à la souris, pas par accident
+ * sur une frappe au clavier.
+ */
 export function nextCityRushGraphicsMode(mode) {
   return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_CINEMA
     ? CITY_RUSH_GRAPHICS_STANDARD
@@ -79,7 +136,52 @@ export function nextCityRushGraphicsMode(mode) {
 }
 
 export function cityRushGraphicsModeLabel(mode) {
-  return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_CINEMA ? 'CINÉMA' : 'STANDARD';
+  const normalized = normalizeCityRushGraphicsMode(mode);
+  if (normalized === CITY_RUSH_GRAPHICS_CINEMA) return 'CINÉMA';
+  if (normalized === CITY_RUSH_GRAPHICS_WEBGPU) return 'WEBGPU · ESSAI';
+  return 'STANDARD';
+}
+
+/**
+ * Le navigateur peut-il ouvrir l'essai WebGPU ? Deux verrous, et pas un :
+ * `navigator.gpu` (l'API existe, derrière un drapeau ou non) et
+ * `requestAdapter` (une carte est réellement disponible — un navigateur peut
+ * exposer l'API sans adaptateur, par exemple dans une machine virtuelle).
+ * La seconde réponse est asynchrone : `cityRushWebGpuSupport` ne fait que le
+ * premier verrou, `cityRushWebGpuAvailable` interroge le second.
+ */
+export function cityRushWebGpuSupport(globalObject = typeof window === 'undefined' ? null : window) {
+  const nav = globalObject?.navigator;
+  return Boolean(nav && typeof nav === 'object' && nav.gpu && typeof nav.gpu.requestAdapter === 'function');
+}
+
+let webGpuAdapterProbe = null;
+/**
+ * La seconde moitié : une carte répond-elle ? Le résultat est mémorisé (une
+ * sonde par session), mais **un échec n'est jamais définitif** : un navigateur
+ * peut accorder l'adaptateur plus tard (drapeau activé, GPU réveillé). On
+ * renvoie donc `false` sans le graver en dur.
+ */
+export async function cityRushWebGpuAvailable(globalObject = typeof window === 'undefined' ? null : window) {
+  if (!cityRushWebGpuSupport(globalObject)) return false;
+  if (webGpuAdapterProbe === null) {
+    webGpuAdapterProbe = (async () => {
+      try {
+        const adapter = await globalObject.navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        return Boolean(adapter);
+      } catch {
+        return false;
+      }
+    })();
+  }
+  const available = await webGpuAdapterProbe;
+  if (!available) webGpuAdapterProbe = null; // l'essai suivant resonde
+  return available;
+}
+
+/** Pour les vérifications : oublie la sonde mémorisée. */
+export function resetCityRushWebGpuProbe() {
+  webGpuAdapterProbe = null;
 }
 
 /**
@@ -108,6 +210,16 @@ export function cityRushLiteDevice(globalObject = typeof window === 'undefined' 
  */
 export function cityRushCinemaAvailable({ mode, lite = false } = {}) {
   return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_CINEMA && !lite;
+}
+
+/**
+ * L'essai WebGPU peut-il tourner ici ? Même logique que le cinéma : jamais en
+ * qualité allégée (c'est le matériel qu'on ménage), et seulement si le
+ * navigateur expose l'API. La carte est sondée à part, en asynchrone, parce
+ * qu'elle ne répond pas dans la même image.
+ */
+export function cityRushWebGpuMaybe({ mode, lite = false, support = false } = {}) {
+  return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_WEBGPU && !lite && Boolean(support);
 }
 
 /**
