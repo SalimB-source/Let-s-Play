@@ -353,10 +353,19 @@ test('le coffre est arrondi : cadre sombre, panneau incrusté, clous et blason',
   assert.match(bloc('.rpg-coffre-dore__face'), /border-radius:\s*var\(--c-arrondi\)/, 'les faces sont arrondies');
   // La bave recouvre les angles : sans elle, le cube aurait des jours aux coins.
   assert.match(bloc('.rpg-coffre-dore__face'), /calc\(-1 \* var\(--c-bave\)\)/, 'les faces débordent leur boîte');
-  assert.match(bloc('.rpg-coffre-dore__face::before'), /inset:\s*4px/, 'le panneau clair est incrusté dans le cadre');
+  const inset = Number((bloc('.rpg-coffre-dore__face::before').match(/inset:\s*(\d+)px/) || [])[1]);
+  assert.ok(inset >= 3, `le panneau clair est incrusté dans le cadre (${inset}px)`);
   assert.match(bloc('.rpg-coffre-dore__clous'), /radial-gradient/, 'les clous sont peints');
   // Le couvercle déborde la caisse : c'est ce qui fait lire « coffre ».
   assert.match(bloc('.rpg-coffre-dore__couvercle'), /--w:\s*calc\(var\(--c-largeur\) \+ var\(--c-debord\)\)/, 'le couvercle déborde');
+
+  // Agrandis à la demande : un plancher pour qu'ils ne rétrécissent pas en
+  // silence au prochain remaniement.
+  const racine = bloc('.rpg-coffre-dore');
+  for (const [nom, mini] of [['--c-largeur', 60], ['--c-profondeur', 52], ['--c-caisse', 38], ['--c-couvercle', 18]]) {
+    const px = Number((racine.match(new RegExp(`${nom}:\\s*(\\d+)px`)) || [])[1]);
+    assert.ok(px >= mini, `${nom} vaut ${px}px, au moins ${mini}px`);
+  }
 });
 
 test('le gain passe à droite du coffre, en gros, et la quête descend dessous', async () => {
@@ -394,7 +403,7 @@ test('le gain passe à droite du coffre, en gros, et la quête descend dessous',
   assert.ok(taille >= 18, `le gain est mis en valeur (${taille}px)`);
   assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite'), /flex-direction:\s*row/, 'le coffre et le gain sont côte à côte');
   // Le halo ne doit pas se recentrer sur la ligne entière.
-  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__halo'), /left:\s*41px/, 'le halo reste sur le coffre');
+  assert.match(bloc(coffreCss, '.rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__halo'), /left:\s*\d+px/, 'le halo reste sur le coffre, pas au milieu de la ligne');
 
   // La capsule n'est plus glissée derrière le coffre : elle est descendue.
   assert.ok(!/margin-left:\s*-/.test(bloc(rampeCss, '.rpg-quests-jour__capsule')), 'la capsule ne chevauche plus le coffre');

@@ -209,7 +209,9 @@
    pour lui laisser sa largeur, et l'invitation à ouvrir prend la place du
    bouton « Réclamer ». */
 .rpg-quests-jour__ouvre {
+  flex: none;
   margin: 2px 0 0;
+  white-space: nowrap;
   color: #ffd97a;
   font: 800 11px/1.2 var(--font-gaming, inherit);
   letter-spacing: .02em;
