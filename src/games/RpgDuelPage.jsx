@@ -72,10 +72,11 @@ import {
   prochainEtage,
   RPG_STORY_TOURS,
   tourHistoireParId,
+  tourPrecedente,
 } from './rpgStoryTours.js';
 import { useRpgStory } from './useRpgStory.js';
 import { rpgIndicationsModes } from './rpgModeAccueil.js';
-import { enregistrerDerniereTour, lireDerniereTour, resumeConquete, tourCorrespondFiltre } from './rpgConqueteAccueil.js';
+import { enregistrerDerniereTour, lireDerniereTour, resumeConquete } from './rpgConqueteAccueil.js';
 import RpgStoryCampaign from './RpgStoryCampaign.jsx';
 import RpgStoryScene from './RpgStoryScene.jsx';
 import RpgStoryJournal from './RpgStoryJournal.jsx';
@@ -4639,8 +4640,11 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [confirmation, setConfirmation] = useState(null);
   // Mode Tours (Conquête) : galerie puis détail d'une tour sélectionnée.
   const [tourLibreOuverteId, setTourLibreOuverteId] = useState(null);
+  // La dernière tour jouée est mémorisée : à la prochaine connexion, le
+  // carrousel de la Conquête rouvre dessus. Les flèches gauche/droite changent
+  // la tour affichée ; seule l'ouverture d'une tour (ouvrirTourLibre) enregistre
+  // ce repère pour la session suivante.
   const [derniereTour, setDerniereTour] = useState(lireDerniereTour);
-  const [filtreTours, setFiltreTours] = useState('toutes');
   const ouvrirTourLibre = (id) => {
     if (!tourEstDebloquee(progressionHistoire, id)) return;
     enregistrerDerniereTour(id);
@@ -4648,8 +4652,15 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
     setTourLibreOuverteId(id);
   };
   const bilanConquete = screen === 'tours' ? resumeConquete(progressionHistoire, portefeuille) : null;
-  const toursFiltrees = bilanConquete?.tours.filter((tour) => tourCorrespondFiltre(tour, filtreTours)) ?? [];
-  const tourReprise = bilanConquete?.tours.find(({ tour, ouverte }) => ouverte && tour.id === derniereTour);
+  const toursConquete = bilanConquete?.tours ?? [];
+  // Sans tour mémorisée (première visite), le carrousel s'ouvre sur la première.
+  const indexTourAffichee = Math.max(0, toursConquete.findIndex(({ tour }) => tour.id === derniereTour));
+  const tourAffichee = toursConquete[indexTourAffichee] ?? null;
+  const naviguerTours = (delta) => {
+    if (toursConquete.length < 2) return;
+    const suivant = (indexTourAffichee + delta + toursConquete.length) % toursConquete.length;
+    setDerniereTour(toursConquete[suivant].tour.id);
+  };
   const [confirmerResetHistoire, setConfirmerResetHistoire] = useState(false);
   const [erreurResetHistoire, setErreurResetHistoire] = useState(false);
   const storyRef = useRef(null);
@@ -5324,23 +5335,29 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <span><b>{creditsLisible(bilanConquete.gains)}</b> crédits de progression*</span>
                   <small>* Premières victoires et butins encaissés, hors récompenses de rejeu.</small>
                 </div>
-                {tourReprise && (
-                  <button type="button" className="rpg-conquete-reprise" onClick={() => { play('select'); ouvrirTourLibre(tourReprise.tour.id); }}>
-                    <span><small>DERNIÈRE TOUR VISITÉE</small><strong>{tourReprise.tour.nom}</strong></span>
-                    <span>{tourReprise.terminee ? 'Revoir la tour' : 'Reprendre l’ascension'} →</span>
+                <div
+                  className="rpg-story__tours rpg-conquete-carrousel"
+                  role="group"
+                  aria-label="Les tours de Bab El — une tour à la fois"
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); play('select'); naviguerTours(-1); }
+                    else if (e.key === 'ArrowRight') { e.preventDefault(); play('select'); naviguerTours(1); }
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="rpg-conquete-carrousel__fleche"
+                    data-carrousel="precedente"
+                    aria-label="Tour précédente"
+                    onClick={() => { play('select'); naviguerTours(-1); }}
+                  >
+                    <span aria-hidden="true">←</span>
                   </button>
-                )}
-                <div className="rpg-conquete-filtres" role="group" aria-label="Filtrer les tours">
-                  {[['toutes', 'Toutes'], ['en-cours', 'En cours'], ['disponibles', 'Disponibles'], ['terminees', 'Terminées']].map(([id, libelle]) => (
-                    <button key={id} type="button" aria-pressed={filtreTours === id} onClick={() => setFiltreTours(id)}>{libelle}</button>
-                  ))}
-                </div>
-                {!toursFiltrees.length && <p className="rpg-conquete-vide" role="status">Aucune tour dans cette catégorie.</p>}
-                <div className="rpg-story__tours">
-                  {toursFiltrees.map(({ tour }) => {
+                  {tourAffichee && (() => {
+                    const tour = tourAffichee.tour;
                     const resume = resumeTourHistoire(tour.id, progressionHistoire);
                     const ouverte = tourEstDebloquee(progressionHistoire, tour.id);
-                    const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : null;
+                    const prerequis = tour.deblocage?.tour ? tourHistoireParId(tour.deblocage.tour) : tourPrecedente(tour.id);
                     // Ce que la tour rapporte — étages et butin du sommet — et
                     // ce qui est déjà en poche : les deux se lisent sur la carte.
                     const gains = gainsDeTour(tour.id, {
@@ -5391,7 +5408,32 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         </span>
                       </button>
                     );
-                  })}
+                  })()}
+                  <button
+                    type="button"
+                    className="rpg-conquete-carrousel__fleche"
+                    data-carrousel="suivante"
+                    aria-label="Tour suivante"
+                    onClick={() => { play('select'); naviguerTours(1); }}
+                  >
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <div className="rpg-conquete-carrousel__pagination">
+                  <span className="rpg-conquete-carrousel__compteur" role="status">
+                    TOUR {indexTourAffichee + 1} / {toursConquete.length}
+                  </span>
+                  <div className="rpg-conquete-carrousel__points" role="group" aria-label="Aller directement à une tour">
+                    {toursConquete.map(({ tour }, i) => (
+                      <button
+                        key={tour.id}
+                        type="button"
+                        aria-label={`Tour ${i + 1} : ${tour.nom}`}
+                        aria-current={i === indexTourAffichee ? 'true' : undefined}
+                        onClick={() => { play('select'); setDerniereTour(tour.id); }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </section>
             )}

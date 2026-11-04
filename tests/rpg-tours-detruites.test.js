@@ -57,23 +57,9 @@ test('la ruine 3D est bien la tour, brisée et fumante', () => {
       assert.ok(fumee.material.opacity <= 0.3, 'la fumée reste discrète');
       assert.ok(!fumee.material.depthWrite, 'la fumée ne masque pas la maquette');
 
-      // Quelques petites flammes, courtes, posées sur les gravats de la brèche.
+      // Plus aucune flamme : la ruine fume mais ne brûle plus.
       const flammes = ruin.group.children.filter((enfant) => enfant.name?.startsWith(`flamme-${tour.id}-`));
-      assert.ok(flammes.length >= 3 && flammes.length <= 8, `${tour.id} : quelques flammes, pas un brasier`);
-      assert.ok(flammes.length < 10, 'aucune nuée de flammes');
-      const hauteurs = [];
-      for (const flamme of flammes) {
-        assert.equal(flamme.children.length, 2, 'une langue orange et un cœur jaune');
-        const [dehors, coeur] = flamme.children;
-        assert.ok(dehors.material.transparent && dehors.material.blending === THREE.AdditiveBlending, 'les flammes s’ajoutent à la lumière');
-        assert.ok(coeur.material.color.getHex() > dehors.material.color.getHex(), 'le cœur est plus clair que la langue');
-        hauteurs.push(dehors.scale.y);
-      }
-      assert.ok(Math.max(...hauteurs) - Math.min(...hauteurs) > 0.02, 'les flammes n’ont pas toutes la même taille');
-      const avant = flammes.map((flamme) => flamme.children[0].scale.y);
-      ruin.update(0.25);
-      assert.ok(flammes.some((flamme, index) => flamme.children[0].scale.y !== avant[index]),
-        'les flammes dansent : elles s’étirent et s’affaissent');
+      assert.equal(flammes.length, 0, `${tour.id} : aucune flamme sur la ruine`);
       const positions = fumee.geometry.attributes.position.array.slice();
       ruin.update(0.4);
       assert.ok(!positions.every((valeur, index) => valeur === fumee.geometry.attributes.position.array[index]),
@@ -89,15 +75,17 @@ test('la ruine 3D est bien la tour, brisée et fumante', () => {
   }
 });
 
-test('la vue de tour passe son état détruit à la scène et à la peinture de repli', () => {
+test('la vue de tour passe son état détruit à la scène, sans peinture de repli', () => {
   const composant = lire('../src/games/RpgStoryTowerPreview.jsx');
   assert.match(composant, /export default function RpgStoryTowerPreview\(\{[^}]*detruite = false/,
     'la vue reçoit l’état « détruite »');
   assert.match(composant, /detruite,\n\s*onReady/, 'l’état est transmis au montage 3D');
   assert.match(composant, /\$\{detruite \? ' is-detruite' : ''\}/, 'la classe de ruine est posée sur la scène');
   assert.match(composant, /data-tower-detruite=\{detruite \? 'oui' : 'non'\}/, 'l’état est lisible dans le DOM');
-  assert.match(composant, /rpg-story-stage__fumee/, 'la peinture de repli reçoit ses volutes');
-  assert.match(composant, /rpg-story-stage__flammes/, 'la peinture de repli reçoit ses petites flammes');
+  assert.match(composant, /rpg-story-stage__canvas/, 'le rendu 3D est un canvas');
+  assert.doesNotMatch(composant, /rpg-story-stage__fallback/, 'plus d’image de repli : seul le rendu 3D demeure');
+  assert.doesNotMatch(composant, /rpg-story-stage__flammes/, 'plus de flammes de repli');
+  assert.doesNotMatch(composant, /rpg-story-stage__fumee/, 'plus de fumée de repli');
   assert.match(composant, /\[tour\.id, detail, detruite\]/, 'changer d’état remonte la scène');
 });
 
@@ -113,21 +101,18 @@ test('la page Conquête montre la ruine quand la tour est terminée', () => {
   assert.match(page, /detail detruite=\{termineeLibre\}/, 'la bannière de la tour ouverte passe aussi en ruine');
 });
 
-test('la feuille des tours décrit la ruine et sa fumée', () => {
+test('la feuille des tours décrit la ruine, sans repli ni flammes', () => {
   const css = lire('../src/games/rpg-story.css');
   assert.match(css, /\.rpg-story-stage\.is-detruite \{[\s\S]{0,400}background:/, 'la scène détruite a son fond');
-  assert.match(css, /\.is-detruite \.rpg-story-stage__fallback \{[\s\S]{0,200}filter:/, 'la peinture de repli est assombrie');
-  assert.match(css, /\.rpg-story-stage\.is-detruite:not\(\.is-ready\) \.rpg-story-stage__fumee \{ display: block; \}/,
-    'les volutes ne doublent pas la fumée 3D');
-  assert.match(css, /@keyframes rpg-story-fumee \{[\s\S]{0,400}translate3d/, 'la fumée monte et se dissipe');
-  assert.match(css, /background: radial-gradient\(closest-side, rgba\(150, 148, 145, \.28\)/, 'la fumée du repli est grise et faible');
-  assert.match(css, /\.rpg-story-stage\.is-detruite:not\(\.is-ready\) \.rpg-story-stage__flammes \{ display: block; \}/,
-    'les flammes du repli ne doublent pas celles de la 3D');
-  assert.match(css, /@keyframes rpg-story-flamme \{[\s\S]{0,300}scale\(/, 'les flammes du repli dansent');
   assert.match(css, /\.rpg-story-stage__badge\.rpg-story-stage__badge--ruine \{[\s\S]{0,400}display: inline-flex;/,
     'l’étiquette « tour détruite » reste visible sans 3D');
-  assert.match(css, /prefers-reduced-motion: reduce\) \{[\s\S]{0,800}\.rpg-story-stage__fumee > i \{\n\s*animation: none;/,
-    'le mouvement réduit fige la fumée au lieu de la supprimer');
-  assert.match(css, /\.rpg-story-stage__flammes > i \{ animation: none; opacity: \.8; transform: none; \}/,
-    'le mouvement réduit fige aussi les flammes');
+  // Plus de peinture de repli ni de flammes/fumée CSS : seul le rendu 3D demeure.
+  assert.doesNotMatch(css, /rpg-story-stage__fallback/, 'plus de peinture de repli');
+  assert.doesNotMatch(css, /rpg-story-stage__flammes/, 'plus de flammes de repli');
+  assert.doesNotMatch(css, /rpg-story-stage__fumee/, 'plus de fumée de repli');
+  assert.doesNotMatch(css, /@keyframes rpg-story-flamme/, 'plus d’animation de flammes');
+  assert.doesNotMatch(css, /@keyframes rpg-story-fumee/, 'plus d’animation de fumée de repli');
+  assert.match(css, /\.rpg-story-stage__canvas \{[\s\S]{0,200}opacity: 0;/, 'le canvas 3D attend d’être prêt');
+  assert.match(css, /\.rpg-story-stage\.is-ready \.rpg-story-stage__canvas \{ opacity: 1; \}/,
+    'le canvas 3D s’affiche une fois prêt');
 });

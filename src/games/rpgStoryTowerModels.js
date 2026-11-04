@@ -107,7 +107,7 @@ function windowGeometry() {
   return new THREE.ShapeGeometry(shape, 8);
 }
 
-function makeKit(theme, id) {
+export function makeKit(theme, id) {
   const root = new THREE.Group();
   root.name = `sablier-${id}`;
   root.userData.tourId = id;
@@ -223,7 +223,7 @@ function makeKit(theme, id) {
       cylinder(materials.gold, x + Math.sin(i * Math.PI / 4) * radius, bottom + height / 2, z + Math.cos(i * Math.PI / 4) * radius, 0.028, height * 0.85);
     }
   };
-  const ribbon = (mat, x, y, z, width, height, yaw = 0, ragged = false) => {
+  const ribbon = (mat, x, y, z, width, height, yaw = 0, ragged = false, parent = root) => {
     const geo = new THREE.PlaneGeometry(width, height, 4, 8);
     const positions = geo.attributes.position;
     for (let i = 0; i < positions.count; i += 1) {
@@ -232,7 +232,7 @@ function makeKit(theme, id) {
       if (ragged && t < 0.01) positions.setY(i, positions.getY(i) + (i % 3) * height * 0.12);
     }
     geo.computeVertexNormals();
-    mesh(geo, mat, [x, y, z], [1, 1, 1], [0, yaw, 0]);
+    mesh(geo, mat, [x, y, z], [1, 1, 1], [0, yaw, 0], parent);
   };
   const pedestal = () => {
     cylinder(materials.ground, 0, 0.08, 0, 2.3, 0.28, 0.96, 48);

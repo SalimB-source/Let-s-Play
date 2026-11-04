@@ -664,6 +664,14 @@ export function etagePrecedent(etageId) {
   return courant.tour.etages[courant.index - 1] ?? null;
 }
 
+/** La tour précédente dans l’ordre de la Conquête, ou null pour la première.
+ *  C’est elle qui ouvre la tour courante : l’ascension est séquentielle. */
+export function tourPrecedente(tourId) {
+  const index = RPG_STORY_TOURS.findIndex((tour) => tour.id === tourId);
+  if (index <= 0) return null;
+  return RPG_STORY_TOURS[index - 1] ?? null;
+}
+
 /** Les cartes d’un deck de campagne (l’identifiant inconnu rend null). */
 export function deckHistoire(deckId) {
   return RPG_STORY_DECKS[deckId] ?? null;

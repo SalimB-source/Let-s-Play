@@ -365,7 +365,7 @@ test('le pacte du sommet se lit dans l’état du duel : PV, mana, main et boucl
 
 test('la tour reste verrouillée tant que le Sablier renversé n’est pas terminé', () => {
   const vide = progressionHistoireVide();
-  assert.equal(tourEstDebloquee(vide, 'tour-du-sablier-renverse'), true, 'le Sablier est libre');
+  assert.equal(tourEstDebloquee(vide, 'tour-du-sablier-renverse'), false, 'le Sablier attend la fin de la tour du Corbeau');
   assert.equal(tourEstDebloquee(vide, 'tour-oubliee'), false, 'la tour secrète est fermée');
   assert.equal(etageEstDebloque(vide, 'oubliee-1'), false, 'aucun étage n’est jouable');
 

@@ -100,24 +100,16 @@
 .rpg-story-stage[data-tower-model="tour-de-la-necropole"] { --tower-glow: rgba(140, 110, 189, .28); }
 .rpg-story-stage[data-tower-model="tour-des-corsaires"] { --tower-glow: rgba(96, 198, 208, .3); }
 
-.rpg-story-stage__canvas,
-.rpg-story-stage__fallback {
+.rpg-story-stage__canvas {
   position: absolute;
   inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  opacity: 0;
 }
-
-.rpg-story-stage__fallback {
-  background-size: cover;
-  background-position: center;
-}
-
-.rpg-story-stage__canvas { opacity: 0; }
 .rpg-story-stage.is-ready .rpg-story-stage__canvas { opacity: 1; }
-.rpg-story-stage.is-ready .rpg-story-stage__fallback { display: none; }
 
 .rpg-story-stage__badge {
   position: absolute;
@@ -143,8 +135,8 @@
 /* ── La tour détruite : la brèche fume ───────────────────────────────────────
    Une tour dont tous les étages sont déblayés ne se présente plus debout. En
    3D, la maquette est réellement brisée et la fumée est un nuage de particules
-   (`rpgStoryTowerScene.js`) : ici on ne fait que la teinte et les volutes de
-   repli, celles qui s'affichent sur la peinture, sans WebGL2. */
+   (`rpgStoryTowerScene.js`), sans flammes. Ici on ne fait que la teinte de la
+   scène en ruine ; il n'y a plus de peinture de repli. */
 .rpg-story-stage.is-detruite {
   --tower-glow: rgba(120, 96, 74, .2);
   background:
@@ -152,94 +144,6 @@
     radial-gradient(ellipse at 50% 28%, rgba(84, 78, 82, .18), transparent 72%),
     linear-gradient(155deg, #191b20, #090a0f 78%);
 }
-.rpg-story-stage.is-detruite .rpg-story-stage__fallback {
-  filter: saturate(.45) brightness(.6) contrast(1.06);
-}
-.rpg-story-stage__fumee {
-  position: absolute;
-  inset: 0;
-  display: none;
-  overflow: hidden;
-  pointer-events: none;
-}
-.rpg-story-stage.is-detruite:not(.is-ready) .rpg-story-stage__fumee { display: block; }
-/* Une fumée grise, discrète : de quoi lire la ruine, pas de quoi l'ensevelir. */
-.rpg-story-stage__fumee > i {
-  position: absolute;
-  bottom: 8%;
-  left: 16%;
-  width: 40%;
-  height: 58%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(150, 148, 145, .28), rgba(112, 110, 108, .1) 58%, transparent 78%);
-  filter: blur(8px);
-  transform-origin: 50% 100%;
-  animation: rpg-story-fumee 8.5s ease-in-out infinite;
-}
-.rpg-story-stage__fumee > i:nth-child(2) {
-  left: 30%;
-  width: 34%;
-  height: 68%;
-  animation-duration: 10.4s;
-  animation-delay: -2.6s;
-}
-.rpg-story-stage__fumee > i:nth-child(3) {
-  left: 48%;
-  width: 30%;
-  height: 50%;
-  animation-duration: 9.3s;
-  animation-delay: -4.7s;
-}
-@keyframes rpg-story-fumee {
-  0% { opacity: 0; transform: translate3d(0, 16%, 0) scale(.55) rotate(-6deg); }
-  35% { opacity: .55; }
-  100% { opacity: 0; transform: translate3d(6%, -44%, 0) scale(1.3) rotate(8deg); }
-}
-
-/* Quelques petites flammes sur les gravats : trois langues courtes, jamais un
-   brasier. L'orange dehors, le cœur jaune par le dégradé. */
-.rpg-story-stage__flammes {
-  position: absolute;
-  inset: 0;
-  display: none;
-  overflow: hidden;
-  pointer-events: none;
-}
-.rpg-story-stage.is-detruite:not(.is-ready) .rpg-story-stage__flammes { display: block; }
-.rpg-story-stage__flammes > i {
-  position: absolute;
-  bottom: 36%;
-  left: 42%;
-  width: 7%;
-  height: 9%;
-  border-radius: 50% 50% 45% 45% / 62% 62% 38% 38%;
-  background: radial-gradient(ellipse at 50% 78%, #ffe6a8, #ffab4a 44%, rgba(255, 108, 38, .55) 74%, transparent 88%);
-  filter: blur(.6px);
-  transform-origin: 50% 100%;
-  animation: rpg-story-flamme 1.9s ease-in-out infinite;
-}
-.rpg-story-stage__flammes > i:nth-child(2) {
-  bottom: 34%;
-  left: 52%;
-  width: 5%;
-  height: 7%;
-  animation-duration: 2.4s;
-  animation-delay: -.7s;
-}
-.rpg-story-stage__flammes > i:nth-child(3) {
-  bottom: 38%;
-  left: 34%;
-  width: 4%;
-  height: 6%;
-  animation-duration: 2.1s;
-  animation-delay: -1.3s;
-}
-@keyframes rpg-story-flamme {
-  0%, 100% { opacity: .62; transform: scale(.9, .86) rotate(-3deg); }
-  35% { opacity: 1; transform: scale(1.04, 1.12) rotate(2deg); }
-  65% { opacity: .78; transform: scale(.96, .98) rotate(-1deg); }
-}
-
 /* L'étiquette de la ruine : la même pastille que « VUE 3D », en bas à gauche,
    visible même quand la 3D n'a pas démarré. */
 .rpg-story-stage__badge.rpg-story-stage__badge--ruine {
@@ -266,13 +170,6 @@
   .rpg-story-tower { transition: none; }
   .rpg-story-tower:hover,
   .rpg-story-tower:focus-visible { transform: none; }
-  /* La ruine reste lisible : les volutes se figent au lieu de tourner. */
-  .rpg-story-stage__fumee > i {
-    animation: none;
-    opacity: .6;
-    transform: translate3d(2%, -24%, 0) scale(.95);
-  }
-  .rpg-story-stage__flammes > i { animation: none; opacity: .8; transform: none; }
   .rpg-story-stage__badge--ruine > span { animation: none; }
 }
 
@@ -1666,6 +1563,73 @@
 .rpg-conquete-filtres button[aria-pressed="true"] { color: #241709; border-color: #f5d99b; background: #e3bd73; font-weight: 800; }
 .rpg-conquete-filtres button:focus-visible, .rpg-conquete-reprise:focus-visible { outline: 2px solid #ffe4a5; outline-offset: 2px; }
 .rpg-conquete-vide { color: #e8d8bc; }
+
+/* Conquête — carrousel : une seule tour, en grand, au centre. Les flèches
+   gauche/droite (et les touches ←/→) font défiler les tours ; le compteur et
+   les points situent la tour affichée. La grille `.rpg-story__tours` est
+   neutralisée ici : on n'affiche qu'une carte à la fois. */
+.rpg-story__tours.rpg-conquete-carrousel {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 14px;
+}
+.rpg-conquete-carrousel .rpg-story-tower {
+  flex: 0 1 660px;
+  width: 100%;
+  max-width: 660px;
+  height: auto;
+  border: 1px solid rgba(229, 191, 105, .32);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(12, 14, 24, .72);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+}
+.rpg-conquete-carrousel .rpg-story-tower__body { padding: 18px 22px 20px; gap: 9px; }
+.rpg-conquete-carrousel .rpg-story-tower__name { font-size: 26px; }
+.rpg-conquete-carrousel .rpg-story-tower__resume { font-size: 15px; }
+.rpg-conquete-carrousel .rpg-story-tower__cta { font-size: 13px; }
+.rpg-conquete-carrousel__fleche {
+  align-self: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfa85e;
+  border-radius: 50%;
+  background: linear-gradient(115deg, #342619, #171721);
+  color: #ffe5a7;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rpg-conquete-carrousel__fleche:hover,
+.rpg-conquete-carrousel__fleche:focus-visible { border-color: #ffe5a7; box-shadow: 0 0 18px #e0a73e44; outline: none; }
+.rpg-conquete-carrousel__pagination { display: flex; flex-direction: column; align-items: center; gap: 9px; margin: 16px 0 4px; }
+.rpg-conquete-carrousel__compteur { color: #e3bf76; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
+.rpg-conquete-carrousel__points { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; }
+.rpg-conquete-carrousel__points button {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid #72634b;
+  background: #191820;
+  cursor: pointer;
+}
+.rpg-conquete-carrousel__points button[aria-current="true"] { background: #e3bd73; border-color: #f5d99b; }
+.rpg-conquete-carrousel__points button:focus-visible { outline: 2px solid #ffe4a5; outline-offset: 2px; }
+@media (max-width: 640px) {
+  .rpg-story__tours.rpg-conquete-carrousel { gap: 8px; }
+  .rpg-conquete-carrousel__fleche { width: 42px; height: 42px; font-size: 20px; }
+  .rpg-conquete-carrousel .rpg-story-tower__name { font-size: 21px; }
+  .rpg-conquete-carrousel .rpg-story-tower__body { padding: 14px 16px 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-conquete-carrousel .rpg-story-tower { transition: none; }
+}
 .rpg-tour-prochain { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; padding: 15px; margin: 14px 0; border: 1px solid #cda861; border-radius: 10px; background: linear-gradient(120deg,rgba(85,58,25,.65),rgba(18,20,31,.95)); }
 .rpg-tour-prochain > div { display: grid; gap: 4px; color: #e7dbc4; font-size: 12px; }
 .rpg-tour-prochain strong { color: #fff2d3; font-size: 16px; }
