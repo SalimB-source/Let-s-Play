@@ -171,6 +171,19 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     particles: motes({ count: 90, color: '#ffffff', size: 0.038, opacity: 0.8, vx: 0.04, vy: -0.16, sway: 0.18, swayHz: 0.3, z: 1.1, zSpread: 0.8 }),
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
+  // La lice des clans : pierre froide, feu des braseros, cendres au vent.
+  // Les grandes plumes visibles sont animées par le calque 2D du duel afin
+  // d'apparaître aussi sur les tables partagées et sans WebGL.
+  'champ-de-bataille-viking': theme({
+    ambient: '#cedaeb', ambientIntensity: 0.55, key: '#c9d8ec', keyIntensity: 0.49,
+    keyDirection: [-0.7, 0.5, 1], relief: 1.5, roughness: 0.92,
+    lights: [
+      light({ color: '#ff9c4e', intensity: 2.1, distance: 3.6, x: -0.78, y: 0.72, z: 0.65, flicker: 0.22 }),
+      light({ color: '#ffb16c', intensity: 1.9, distance: 3.6, x: 0.79, y: -0.66, z: 0.65, flicker: 0.25 }),
+    ],
+    particles: motes({ count: 38, color: '#e2d2ba', size: 0.025, opacity: 0.4, vx: 0.16, vy: -0.04, sway: 0.2, swayHz: 0.24, z: 0.85, zSpread: 0.65 }),
+    overlay: { kind: 'ombre', color: '#182332', opacity: 0.14, speed: 0.008, scale: 1.7 },
+  }),
   // La cour de l'Empereur : l'encre, les aplats et l'or d'une peinture
   // japonaise. Le grand parvis de gravier clair occupe le milieu du cadre, que
   // gardent la véranda du trône et ses tuiles turquoise ; les deux lanternes de

@@ -2776,6 +2776,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .card-table--plateau-village-viking {
   background-color: #b5b0ad;
 }
+.card-table--plateau-champ-de-bataille-viking { background-color: #75736c; }
 .card-table--plateau-cour-de-l-empereur {
   background-color: #608280;
 }
@@ -2856,6 +2857,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-plateau-moitie--plateau-place-du-souk { background-color: #bd8059; }
 .rpg-plateau-moitie--plateau-ruines-de-tipaza { background-color: #9d9179; }
 .rpg-plateau-moitie--plateau-village-viking { background-color: #b5b0ad; }
+.rpg-plateau-moitie--plateau-champ-de-bataille-viking { background-color: #75736c; }
 .rpg-plateau-moitie--plateau-cour-de-l-empereur { background-color: #608280; }
 .rpg-plateau-moitie--plateau-desert-de-verre { background-color: #9aa48a; }
 .rpg-plateau-moitie--plateau-abysses-phosphorescentes { background-color: #adc1b8; }
@@ -2884,6 +2886,49 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .card-table--decoupee,
   .rpg-plateau-lisere { transition: none; }
+}
+
+/* Plumes de corbeau et de parure emportées par le vent sur la lice viking.
+   Chaque calque est découpé à la frontière mobile des territoires : aucune
+   plume ne dérive au-dessus du terrain de l'autre camp. Derrière les cartes,
+   jamais une cible pour les gestes, y compris quand WebGL est indisponible. */
+.rpg-plumes-vikings {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-plumes-vikings--joueur {
+  clip-path: inset(var(--rpg-frontiere, 50%) 0 0 0);
+}
+.rpg-plumes-vikings--adverse {
+  clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0);
+}
+.rpg-plumes-vikings__plume {
+  position: absolute;
+  top: var(--plume-y);
+  left: var(--plume-x);
+  width: var(--plume-taille);
+  height: auto;
+  color: #e3dfd2;
+  opacity: .65;
+  filter: drop-shadow(0 1px 2px #08111a);
+  animation: rpg-plume-viking-flotte var(--plume-duree) ease-in-out var(--plume-delai) infinite alternate;
+  will-change: transform;
+}
+.rpg-plumes-vikings__plume.is-sombre { color: #647183; opacity: .72; }
+.rpg-plumes-vikings__plume svg { display: block; width: 100%; height: auto; }
+@keyframes rpg-plume-viking-flotte {
+  0% { transform: translate3d(-12px, -14px, 0) rotate(-27deg) scale(.8); }
+  45% { transform: translate3d(24px, 16px, 0) rotate(21deg) scale(1); }
+  100% { transform: translate3d(68px, 65px, 0) rotate(112deg) scale(.78); }
+}
+.card-table[data-apercu-carte] .rpg-plumes-vikings { filter: blur(var(--rpg-plateau-flou, 3px)); }
+.rpg-battle.is-reduced .rpg-plumes-vikings__plume,
+.card-table[data-anim-reduite="true"] .rpg-plumes-vikings__plume { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-plumes-vikings__plume { animation: none; }
 }
 
 /* ── La vignette du plateau : deux bandes noires, en haut et en bas ──────────
