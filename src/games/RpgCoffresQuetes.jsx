@@ -18,6 +18,7 @@
  */
 import { creditsLisible } from './rpgCredits.js';
 import { legendeCoffre, vueDesCoffres } from './rpgCoffresQuetes.js';
+import { remplacementDisponible } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import './rpg-coffres-quetes.css';
 
@@ -60,16 +61,19 @@ export function CoffreSvg({ ouvert = false }) {
 }
 
 /** Un emplacement : le coffre, son état, sa jauge, son gain. */
-function SlotCoffre({ coffre, onOuvrir, large = false }) {
+function SlotCoffre({ coffre, onOuvrir, onRemplacer, peutRemplacer, large = false }) {
   const pret = coffre.etat === 'pret';
   const ouvert = coffre.etat === 'ouvert';
+  // Seules les trois quêtes du jour se changent : le Coffre du cycle et celui
+  // de la semaine ne sont pas des quêtes, ils récompensent l'ensemble.
+  const changeable = coffre.etat === 'encours' && Boolean(coffre.queteId);
   const libelle = coffre.etat === 'pret'
     ? `${coffre.nom} prêt : ${coffre.titre}. Ouvrir pour ${coffre.credits} crédits${coffre.paquets ? ` et ${coffre.paquets} paquet${coffre.paquets > 1 ? 's' : ''} de cartes` : ''}.`
     : `${coffre.nom} — ${coffre.titre} : ${coffre.texte} ${coffre.progres} sur ${coffre.objectif}. Récompense : ${coffre.credits} crédits${coffre.paquets ? ` et ${coffre.paquets} paquet${coffre.paquets > 1 ? 's' : ''} de cartes` : ''}.${ouvert ? ' Déjà ouvert.' : ''}`;
 
   return (
     <li
-      className={`rpg-coffres-quetes__slot is-${coffre.etat}${large ? ' rpg-coffres-quetes__slot--large' : ''}`}
+      className={`rpg-coffres-quetes__slot is-${coffre.etat}${large ? ' rpg-coffres-quetes__slot--large' : ''}${changeable ? ' has-remplacement' : ''}`}
       style={{ '--coffre-teinte': coffre.teinte, '--coffre-pct': `${coffre.pourcent}%` }}
       data-coffre={coffre.cle}
       data-coffre-etat={coffre.etat}
@@ -116,12 +120,43 @@ function SlotCoffre({ coffre, onOuvrir, large = false }) {
           <span className="rpg-coffres-quetes__jauge-remplie" style={{ width: `${coffre.pourcent}%` }} />
         </span>
       </button>
+
+      {/* Le bouton vit à côté du bouton principal, jamais dedans : un bouton
+          dans un bouton est invalide et les lecteurs d'écran s'y perdent. */}
+      {changeable && (
+        <button
+          type="button"
+          className="rpg-coffres-quetes__remplacer"
+          data-coffre-remplacer={coffre.queteId}
+          data-coffre-remplacer-etat={peutRemplacer ? 'disponible' : 'epuise'}
+          disabled={!peutRemplacer}
+          onClick={() => onRemplacer?.(coffre)}
+          title={peutRemplacer
+            ? 'Changer cette quête contre une autre du même palier — une seule fois par jour.'
+            : 'Vous avez déjà changé une quête aujourd’hui. Recharge à la prochaine fournée.'}
+          aria-label={peutRemplacer
+            ? `Changer la quête « ${coffre.titre} » contre une autre du même palier. Un seul changement par jour.`
+            : `Changement du jour déjà utilisé pour « ${coffre.titre} ».`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+            <path d="M20.5 3.2V9h-5.8" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
     </li>
   );
 }
 
-export default function RpgCoffresQuetes({ quetes, onOuvrirQuete, onOuvrirCycle, onOuvrirSemaine, onPlaySfx }) {
+export default function RpgCoffresQuetes({ quetes, onOuvrirQuete, onRemplacerQuete, onOuvrirCycle, onOuvrirSemaine, onPlaySfx }) {
   const vue = vueDesCoffres(quetes);
+  // Un seul changement par journée, partagé par les trois quêtes.
+  const peutRemplacer = remplacementDisponible(quetes);
+
+  const remplacer = (coffre) => {
+    const resultat = onRemplacerQuete?.(coffre.queteId);
+    onPlaySfx?.(resultat?.ok ? 'select' : 'erreur');
+  };
 
   const ouvrir = (coffre) => {
     if (coffre.etat !== 'pret') return;
@@ -138,7 +173,7 @@ export default function RpgCoffresQuetes({ quetes, onOuvrirQuete, onOuvrirCycle,
       </h3>
       <ul className="rpg-coffres-quetes__rail">
         {vue.slots.map((coffre) => (
-          <SlotCoffre key={coffre.cle} coffre={coffre} onOuvrir={ouvrir} />
+          <SlotCoffre key={coffre.cle} coffre={coffre} onOuvrir={ouvrir} onRemplacer={remplacer} peutRemplacer={peutRemplacer} />
         ))}
         <SlotCoffre coffre={vue.semaine} onOuvrir={ouvrir} large />
       </ul>

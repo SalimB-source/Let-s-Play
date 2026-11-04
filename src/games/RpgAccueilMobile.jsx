@@ -71,7 +71,7 @@ const MODES = Object.freeze([
 export default function RpgAccueilMobile({
   quetes, credits = 0, barreXp = null, nomCompte = null,
   progressionHistoire = null, portefeuille = null,
-  onContinueRecit, onChangeScreen, onOuvrirQuete, onOuvrirCycle, onOuvrirSemaine,
+  onContinueRecit, onChangeScreen, onOuvrirQuete, onRemplacerQuete, onOuvrirCycle, onOuvrirSemaine,
   onPlaySfx,
 }) {
   const [mode, setMode] = useState('conquete');
@@ -217,6 +217,7 @@ export default function RpgAccueilMobile({
       <RpgCoffresQuetes
         quetes={quetes}
         onOuvrirQuete={onOuvrirQuete}
+        onRemplacerQuete={onRemplacerQuete}
         onOuvrirCycle={onOuvrirCycle}
         onOuvrirSemaine={onOuvrirSemaine}
         onPlaySfx={onPlaySfx}

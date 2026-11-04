@@ -4589,7 +4589,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
   );
 }
 
-function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onReclamerCachet, onReclamerSemaine, onOuvrirPaquetCoffre = null, mobile = false, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onOuvrirPaquetCoffre = null, mobile = false, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
   const indicationsModes = rpgIndicationsModes(progressionHistoire, { hasGame, campagneEnCours });
   const [offreActive, setOffreActive] = useState(() => offreLancementActive());
   useEffect(() => {
@@ -5125,6 +5125,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
             onContinueRecit={onContinueRecit}
             onChangeScreen={onChangeScreen}
             onOuvrirQuete={ouvrirCoffreQuete}
+            onRemplacerQuete={onRemplacerQuete}
             onOuvrirCycle={ouvrirCoffreCycle}
             onOuvrirSemaine={ouvrirCoffreSemaine}
             onPlaySfx={play}
@@ -5233,6 +5234,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
             <RpgQuetesDuJour
               quetes={quetes}
               onReclamerQuete={onReclamerQuete}
+              onRemplacerQuete={onRemplacerQuete}
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
               onPlaySfx={play}
@@ -7086,7 +7088,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const {
     credits, aReclamer: soukAReclamer, quetes: quetesSouk, bourse: portefeuilleSouk,
     statutSync: statutSyncBourse, pousser: pousserBourse,
-    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, reclamerTutoriel,
+    noterEvenementDuel: noterEvenementDuelReel, reclamerUneQuete, remplacerUneQuete, reclamerTutoriel,
     reclamerLeCachet, reclamerLeCachetDeLaSemaine,
     acheterBooster, acheterCoffret, rangerCoffret, fermerOuverture, ouverture: ouvertureSouk,
     ouvrirPaquetCoffre,
@@ -9705,6 +9707,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           aReclamer={soukAReclamer}
           quetes={quetesSouk}
           onReclamerQuete={reclamerUneQuete}
+          onRemplacerQuete={remplacerUneQuete}
           onReclamerCachet={reclamerLeCachet}
           onReclamerSemaine={reclamerLeCachetDeLaSemaine}
           onOuvrirPaquetCoffre={ouvrirPaquetCoffre}

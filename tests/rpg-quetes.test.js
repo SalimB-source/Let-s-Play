@@ -24,6 +24,8 @@ import {
   reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
   reclamerQuete,
+  remplacementDisponible,
+  remplacerQuete,
   secondesAvantMinuit,
   serieComplete,
   vueDeLaQuete,
@@ -371,4 +373,102 @@ test('la vue d’une quête est la même pour tous les écrans', () => {
     assert.equal(vue.progres, 0, `${String(cassé)} se lit comme zéro`);
     assert.equal(vue.etat, 'encours');
   }
+});
+
+// ── Changer une quête, une fois par jour ─────────────────────────────────────
+
+test('changer une quête garde le palier, écarte le tirage du jour et remet la progression à zéro', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], { 'creatures-10': 4, 'duels-2': 1 });
+  const r = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' });
+  assert.equal(r.ok, true);
+  assert.equal(r.quete.palier, 'facile', 'on échange à difficulté égale');
+  assert.notEqual(r.quete.id, 'creatures-10');
+  assert.equal(r.etat.quetes.length, 3, 'la journée compte toujours trois quêtes');
+  assert.ok(!r.etat.quetes.includes('creatures-10'));
+  assert.ok(r.etat.quetes.includes(r.quete.id));
+  // Les deux autres quêtes ne bougent pas, progression comprise.
+  assert.ok(r.etat.quetes.includes('duels-2') && r.etat.quetes.includes('duels-3'));
+  assert.equal(r.etat.progres['duels-2'], 1);
+  // La nouvelle repart de zéro, et l'ancienne ne laisse pas de trace.
+  assert.equal(r.etat.progres[r.quete.id], 0);
+  assert.ok(!('creatures-10' in r.etat.progres));
+  assert.deepEqual(r.etat.remplacement, { de: 'creatures-10', vers: r.quete.id });
+  assert.equal(remplacementDisponible(r.etat), false);
+});
+
+test('le changement ne marche qu’une fois par jour, toutes quêtes confondues', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3']);
+  const premier = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' });
+  assert.equal(premier.ok, true);
+  // Même quête, ou une autre : le droit est partagé, pas un par quête.
+  for (const cible of ['creatures-10', 'duels-2', 'duels-3']) {
+    const refus = remplacerQuete({ etat: premier.etat, queteId: cible, graine: 'compte-42' });
+    assert.equal(refus.ok, false);
+    assert.equal(refus.raison, 'deja-utilise');
+    assert.deepEqual(refus.etat, premier.etat, 'un refus ne touche à rien');
+  }
+  assert.equal(remplacerQuete({ etat: avant, queteId: 'quete-inexistante' }).raison, 'quete-inconnue');
+});
+
+test('le même reroll donne la même quête sur tous les appareils du compte', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3']);
+  const a = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' });
+  const b = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' });
+  assert.equal(a.quete.id, b.quete.id, 'le tirage est semé, pas aléatoire');
+  // Vider le stockage ne relance pas le dé : la graine du compte suffit.
+  assert.equal(remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' }).quete.id, a.quete.id);
+});
+
+test('une quête déjà réclamée ne se change pas — pas de quatrième récompense', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], { 'creatures-10': 10 }, { reclamations: ['creatures-10'] });
+  const refus = remplacerQuete({ etat: avant, queteId: 'creatures-10' });
+  assert.equal(refus.ok, false);
+  assert.equal(refus.raison, 'deja-reclamee');
+  assert.equal(remplacementDisponible(refus.etat), true, 'le refus ne consomme pas le droit');
+});
+
+test('changer une quête ne rachète pas 24 heures', () => {
+  const debut = '2026-10-14T08:00:00.000Z';
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], {}, { debutLe: debut });
+  const r = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' });
+  assert.equal(r.etat.debutLe, debut, 'l’échéance de la fournée ne bouge pas');
+  assert.equal(r.etat.jour, JOUR);
+});
+
+test('une nouvelle fournée rend le droit de changer', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3']);
+  const use = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' }).etat;
+  assert.equal(remplacementDisponible(use), false);
+  const lendemain = ouvrirJournee({ etat: use, jour: '2026-10-15', graine: 'compte-42' });
+  assert.equal(lendemain.nouveau, true);
+  assert.equal(lendemain.etat.remplacement, null);
+  assert.equal(remplacementDisponible(lendemain.etat), true);
+});
+
+test('la fusion ne ressuscite pas la quête remplacée depuis l’autre appareil', () => {
+  const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], { 'creatures-10': 6 });
+  const local = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' }).etat;
+  // Le téléphone n'a pas encore vu le reroll et rapporte l'ancienne fournée.
+  const fusion = fusionnerQuetes(local, avant).etat;
+  assert.ok(!fusion.quetes.includes('creatures-10'), 'l’ancienne quête ne revient pas par l’union');
+  assert.ok(fusion.quetes.includes(local.remplacement.vers));
+  assert.equal(fusion.quetes.length, 3);
+  assert.deepEqual(fusion.remplacement, local.remplacement);
+  assert.equal(remplacementDisponible(fusion), false, 'le droit reste consommé après fusion');
+  // Dans l'autre sens non plus.
+  assert.ok(!fusionnerQuetes(avant, local).etat.quetes.includes('creatures-10'));
+});
+
+test('un remplacement incohérent est rejeté, et ne bloque pas le joueur', () => {
+  // Un état bricolé qui prétend avoir rerollé sans avoir changé la fournée.
+  const bricole = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], {}, {
+    remplacement: { de: 'creatures-10', vers: 'armes-3' },
+  });
+  assert.equal(normaliserEtatQuetes(bricole).remplacement, null);
+  assert.equal(remplacementDisponible(bricole), true);
+  // Une quête inconnue dans le remplacement est rejetée aussi.
+  const inconnu = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], {}, {
+    remplacement: { de: 'quete-fantome', vers: 'armes-3' },
+  });
+  assert.equal(normaliserEtatQuetes(inconnu).remplacement, null);
 });

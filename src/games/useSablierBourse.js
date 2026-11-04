@@ -64,6 +64,7 @@ import {
   reclamerCachetDeLaSemaine,
   reclamerCachetDuCycle,
   reclamerQuete,
+  remplacerQuete,
   sauverEtatQuetes,
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
@@ -476,6 +477,26 @@ export function useSablierBourse({
     );
     return resultat.credits;
   }, [verserXp]);
+
+  /**
+   * Change une quête du jour — une seule fois par journée, toutes quêtes
+   * confondues. Pas de crédit ni d'XP là-dedans : on échange un objectif
+   * contre un autre, on ne gagne rien. Rend le résultat du module tel quel
+   * pour que l'écran puisse dire pourquoi il refuse.
+   */
+  const remplacerUneQuete = useCallback((queteId) => {
+    const avant = etatRef.current;
+    const resultat = remplacerQuete({
+      etat: avant.quetes,
+      queteId,
+      graine: chargerGraine(compteId),
+      progression: progressionRef.current,
+    });
+    if (!resultat.ok) return resultat;
+    appliquer(avant.bourse, resultat.etat, avant.profil);
+    pousser();
+    return resultat;
+  }, [appliquer, pousser, compteId]);
 
   /**
    * Achète et ouvre un paquet (ou un coffret de dix) : les crédits sont
@@ -893,6 +914,7 @@ export function useSablierBourse({
     statutSync,
     noterEvenementDuel,
     reclamerUneQuete,
+    remplacerUneQuete,
     reclamerTutoriel,
     reclamerLeCachet,
     reclamerLeCachetDeLaSemaine,

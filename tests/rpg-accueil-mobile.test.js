@@ -202,3 +202,79 @@ test('au doigt, la page monte l’accueil mobile et un coffre prêt verse ses cr
     dom.window.close();
   }
 });
+
+test('accueil mobile : le bouton refresh change une quête, une seule fois par jour', async () => {
+  const dom = installerDom();
+  const vite = await createServer({
+    server: { middlewareMode: true },
+    ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },
+    appType: 'custom', logLevel: 'silent',
+  });
+  try {
+    const { default: RpgAccueilMobile } = await vite.ssrLoadModule('/src/games/RpgAccueilMobile.jsx');
+    const { progressionDeXp } = await vite.ssrLoadModule('/src/games/rpgProfil.js');
+    const { remplacerQuete } = await vite.ssrLoadModule('/src/games/rpgQuetes.js');
+
+    let etat = journeeQuetes();
+    const demandes = [];
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const rendre = async () => act(async () => {
+      root.render(React.createElement(RpgAccueilMobile, {
+        quetes: etat,
+        credits: 245,
+        barreXp: progressionDeXp(120),
+        nomCompte: 'Salim',
+        onRemplacerQuete: (queteId) => {
+          demandes.push(queteId);
+          const r = remplacerQuete({ etat, queteId, graine: 'compte-test' });
+          if (r.ok) etat = r.etat;
+          return r;
+        },
+      }));
+    });
+    await rendre();
+    await act(async () => { await wait(20); });
+
+    try {
+      const boutons = () => [...container.querySelectorAll('[data-coffre-remplacer]')];
+      // Deux seulement : la quête finie a son coffre prêt, et les coffres du
+      // cycle et de la semaine ne sont pas des quêtes.
+      assert.deepEqual(boutons().map((b) => b.dataset.coffreRemplacer), ['duels-2', 'duels-3']);
+      assert.ok(boutons().every((b) => !b.disabled));
+
+      // Le bouton est un frère du bouton principal, jamais son enfant.
+      for (const b of boutons()) {
+        assert.equal(b.closest('.rpg-coffres-quetes__bouton'), null, 'pas de bouton imbriqué');
+        assert.equal(b.parentElement.classList.contains('rpg-coffres-quetes__slot'), true);
+      }
+      // Le premier bouton du slot reste celui du coffre : l'ordre compte.
+      const slot = container.querySelector('[data-coffre="quete:duels-2"]');
+      assert.equal(slot.querySelector('button').dataset.coffreRemplacer, undefined);
+
+      await act(async () => { boutons()[0].click(); });
+      await rendre();
+      await act(async () => { await wait(20); });
+
+      assert.deepEqual(demandes, ['duels-2']);
+      assert.ok(!etat.quetes.includes('duels-2'), 'la quête a bien été changée');
+      assert.equal(etat.quetes.length, 3);
+      // Le droit est consommé pour toute la journée : les boutons restants
+      // sont inerte, mais toujours visibles.
+      assert.ok(boutons().length > 0, 'épuisé, le bouton reste visible');
+      assert.ok(boutons().every((b) => b.disabled));
+      assert.ok(boutons().every((b) => b.dataset.coffreRemplacerEtat === 'epuise'));
+
+      // Cliquer un bouton épuisé ne demande rien de plus.
+      await act(async () => { boutons()[0].click(); });
+      assert.deepEqual(demandes, ['duels-2']);
+    } finally {
+      await act(async () => root.unmount());
+      container.remove();
+    }
+  } finally {
+    await vite.close();
+    dom.window.close();
+  }
+});

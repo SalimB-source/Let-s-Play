@@ -23,9 +23,41 @@
   list-style: none;
 }
 .rpg-coffres-quetes__slot {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   display: flex;
+}
+/* La place du bouton est réservée dans le badge du haut, sinon la fraction
+   d'avancement passerait dessous. */
+.rpg-coffres-quetes__slot.has-remplacement .rpg-coffres-quetes__etat { padding-right: 22px; }
+
+/* ── Changer une quête, une fois par jour ──────────────────────────────────
+   Frère du bouton principal, jamais son enfant : un bouton imbriqué est
+   invalide. Épuisé, il reste visible mais inerte, pour que le joueur voie
+   que le droit existe et qu'il l'a consommé. */
+.rpg-coffres-quetes__remplacer {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(214, 189, 138, .42);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(58, 48, 34, .95), rgba(26, 21, 15, .95));
+  color: #e2c68a;
+  cursor: pointer;
+}
+.rpg-coffres-quetes__remplacer svg { width: 11px; height: 11px; }
+.rpg-coffres-quetes__remplacer:focus-visible { border-color: #ffe9ad; color: #fff3d0; outline: none; }
+.rpg-coffres-quetes__remplacer:disabled {
+  border-color: rgba(158, 152, 142, .26);
+  background: linear-gradient(180deg, rgba(40, 38, 34, .85), rgba(20, 19, 17, .85));
+  color: #6f6a62;
+  cursor: not-allowed;
 }
 .rpg-coffres-quetes__slot--large { flex: 1.25 1 0; }
 

@@ -377,3 +377,31 @@ test('les modes précèdent le diaporama dans le DOM et sur les petits écrans',
   assert.match(paysage, /rpg-mode-menu__modes-col\s*\{[^}]*grid-column:\s*1;[^}]*grid-row:\s*1;/s);
   assert.match(paysage, /rpg-mode-menu__hero\s*\{[^}]*grid-column:\s*2;[^}]*grid-row:\s*1;/s);
 });
+
+test('rampe bureau : changer une quête est proposé une fois par jour, hors de la jauge', () => {
+  const jsx = lire('../src/games/RpgQuetesDuJour.jsx');
+  const css = lire('../src/games/rpg-quetes-jour.css');
+
+  // Le droit vient du module, pas d'un compteur refait à la main dans l'écran.
+  assert.match(jsx, /remplacementDisponible\(quetes\)/);
+  assert.match(jsx, /onRemplacerQuete/);
+  // On ne le propose que sur une quête encore en cours : ni un coffre déjà
+  // payé, ni un coffre prêt qu'on serait tenté de jeter.
+  assert.match(jsx, /const changeable = etat === 'encours'/);
+  assert.match(jsx, /disabled=\{!peutRemplacer\}/);
+  assert.match(jsx, /data-jouer-remplacer=\{id\}/);
+
+  // Un `progressbar` ne doit pas contenir de commande : le bouton est posé
+  // après la jauge, en frère, et la place lui est réservée dans la piste.
+  const jauge = jsx.slice(jsx.indexOf('className="rpg-quests-jour__jauge"'), jsx.indexOf('data-jouer-remplacer'));
+  assert.match(jauge, /<\/div>/, 'la jauge est refermée avant le bouton');
+  assert.match(css, /\.has-remplacement \.rpg-quests-jour__jauge \{ padding-right: \d+px; \}/);
+  assert.match(css, /\.rpg-quests-jour__quete \{[^}]*position: relative;/);
+
+  // Épuisé, le bouton reste visible mais inerte — le joueur voit que le droit
+  // existe et qu'il l'a consommé.
+  const inerte = css.slice(css.indexOf('.rpg-quests-jour__remplacer:disabled'));
+  assert.match(inerte, /cursor: not-allowed/);
+  // Le glyphe est un SVG inline : les caractères non ASCII rendent à vide.
+  assert.match(jsx, /data-jouer-remplacer[\s\S]{0,900}<svg viewBox="0 0 24 24"/);
+});

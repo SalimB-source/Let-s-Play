@@ -15,7 +15,7 @@
 import { GAINS } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, PALIERS, cachetDeLaSemaineDisponible, cachetDisponible,
-  joursAvantLeCachetDeLaSemaine, quetesAReclamer, serieComplete, vueDeLaQuete,
+  joursAvantLeCachetDeLaSemaine, quetesAReclamer, remplacementDisponible, serieComplete, vueDeLaQuete,
 } from './rpgQuetes.js';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgCoffreDore from './RpgCoffreDore.jsx';
@@ -23,7 +23,7 @@ import { METAL_SEMAINE, libelleCoffre } from './rpgCoffreMetal.js';
 import './rpg-quetes-jour.css';
 
 /** Une quête du jour présentée en médaillon circulaire + capsule d'objectif. */
-function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
+function LigneQuete({ id, etatQuetes, onReclamer, onRemplacer, peutRemplacer, onPlaySfx }) {
   const vue = vueDeLaQuete(etatQuetes, id);
   if (!vue) return null;
   const { quete, progres, reste, pourcent, reclamee, terminee, etat } = vue;
@@ -32,10 +32,18 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
     const gagne = onReclamer?.(id);
     onPlaySfx?.(gagne ? 'bell' : 'erreur');
   };
+  // On ne propose le changement que sur une quête encore en cours : ni sur un
+  // coffre déjà ouvert (la récompense est payée), ni sur un coffre prêt (on ne
+  // jette pas un gain qui n'attend plus qu'un clic).
+  const changeable = etat === 'encours';
+  const remplacer = () => {
+    const resultat = onRemplacer?.(id);
+    onPlaySfx?.(resultat?.ok ? 'select' : 'erreur');
+  };
 
   return (
     <li
-      className={`rpg-quests-jour__quete is-${etat}`}
+      className={`rpg-quests-jour__quete is-${etat}${changeable ? ' has-remplacement' : ''}`}
       style={{ '--q-pct': `${pourcent}%` }}
       data-jouer-quete={id}
       data-jouer-quete-etat={etat}
@@ -54,6 +62,28 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
           <span className="rpg-quests-jour__jauge-remplie" style={{ width: `${pourcent}%` }} />
         </span>
       </div>
+
+      {changeable && (
+        <button
+          type="button"
+          className="rpg-quests-jour__remplacer"
+          data-jouer-remplacer={id}
+          data-jouer-remplacer-etat={peutRemplacer ? 'disponible' : 'epuise'}
+          disabled={!peutRemplacer}
+          onClick={remplacer}
+          title={peutRemplacer
+            ? `Changer cette quête contre une autre du même palier — une seule fois par jour.`
+            : 'Vous avez déjà changé une quête aujourd’hui. Recharge à la prochaine fournée.'}
+          aria-label={peutRemplacer
+            ? `Changer la quête « ${quete.titre} » contre une autre du même palier. Un seul changement par jour.`
+            : `Changement du jour déjà utilisé pour « ${quete.titre} ».`}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
+            <path d="M20.5 3.2V9h-5.8" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
 
       {/* Le coffre et son gain côte à côte : la récompense est le second
           point focal de la ligne, à droite, en gros. */}
@@ -98,10 +128,12 @@ function LigneQuete({ id, etatQuetes, onReclamer, onPlaySfx }) {
 
 export default function RpgQuetesDuJour({
   quetes,
-  onReclamerQuete, onReclamerCachet, onReclamerSemaine, onPlaySfx,
+  onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onPlaySfx,
 }) {
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
   const prises = liste.filter((id) => vueDeLaQuete(quetes, id)?.reclamee).length;
+  // Un seul changement par journée, partagé par les trois quêtes.
+  const peutRemplacer = remplacementDisponible(quetes);
   const cachetPris = Boolean(quetes?.cachet);
   const cachetPret = cachetDisponible(quetes);
   const semainePrete = cachetDeLaSemaineDisponible(quetes);
@@ -129,6 +161,8 @@ export default function RpgQuetesDuJour({
                 id={id}
                 etatQuetes={quetes}
                 onReclamer={onReclamerQuete}
+                onRemplacer={onRemplacerQuete}
+                peutRemplacer={peutRemplacer}
                 onPlaySfx={onPlaySfx}
               />
             ))}

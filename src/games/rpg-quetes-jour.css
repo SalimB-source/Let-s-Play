@@ -48,10 +48,55 @@
 }
 
 .rpg-quests-jour__quete {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+/* La place du bouton est réservée dans la jauge : sans ça, la piste passerait
+   dessous et le dernier chiffre de la fraction serait mangé. */
+.rpg-quests-jour__quete.has-remplacement .rpg-quests-jour__jauge { padding-right: 28px; }
+
+/* ── Changer une quête, une fois par jour ──────────────────────────────────
+   Petit, dans le coin haut droit : c'est une porte de sortie, pas l'action
+   principale de la ligne. Épuisé, il reste visible mais inerte — le joueur
+   voit que le droit existe et qu'il l'a consommé, plutôt que de se demander
+   où le bouton est passé. */
+.rpg-quests-jour__remplacer {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(214, 189, 138, .42);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(58, 48, 34, .92), rgba(26, 21, 15, .92));
+  color: #e2c68a;
+  cursor: pointer;
+  transition: color .16s, border-color .16s, transform .16s;
+}
+.rpg-quests-jour__remplacer svg { width: 14px; height: 14px; }
+.rpg-quests-jour__remplacer:hover:not(:disabled),
+.rpg-quests-jour__remplacer:focus-visible {
+  border-color: #ffe9ad;
+  color: #fff3d0;
+  transform: rotate(-38deg);
+  outline: none;
+}
+.rpg-quests-jour__remplacer:disabled {
+  border-color: rgba(158, 152, 142, .26);
+  background: linear-gradient(180deg, rgba(40, 38, 34, .8), rgba(20, 19, 17, .8));
+  color: #6f6a62;
+  cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-quests-jour__remplacer { transition: none; }
+  .rpg-quests-jour__remplacer:hover:not(:disabled),
+  .rpg-quests-jour__remplacer:focus-visible { transform: none; }
 }
 
 /* Fraction d'avancement centrée au-dessus du médaillon (façon « 28/45 ») */
