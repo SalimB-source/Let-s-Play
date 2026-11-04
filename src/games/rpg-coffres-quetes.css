@@ -60,7 +60,7 @@
   transform: translateY(-1px);
   outline: none;
 }
-.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__bouton { opacity: .62; }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__bouton { opacity: .85; }
 
 /* Le badge du haut : la fraction, « Ouvrir ! » ou la coche. */
 .rpg-coffres-quetes__etat {
@@ -81,7 +81,7 @@
   color: #2a1806;
   text-shadow: 0 1px 0 rgba(255, 248, 214, .5);
 }
-.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__etat { color: #9fd07a; }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__etat { color: #9a958c; }
 
 /* ── Le coffre ─────────────────────────────────────────────────────────── */
 .rpg-coffres-quetes__scene {
@@ -129,6 +129,39 @@
   transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
 }
 .rpg-coffre-svg.is-ouvert .rpg-coffre-svg__couvercle { transform: translateY(-5px) rotate(-16deg); }
+
+/* ── Le coffre encaissé, dans la rangée : vidé et grisé ──────────────────────
+   Même lecture que sur l'accueil bureau : couvercle grand ouvert, creux vide,
+   métal et gain en niveaux de gris. Le tout est scopé à la rangée pour ne pas
+   toucher à la cérémonie d'ouverture, qui partage `CoffreSvg` et doit garder
+   son coffre plein au moment où les pièces jaillissent.
+
+   Le viewBox est fixe : c'est le coffre qui rapetisse, ancré au sol, pour que
+   le couvercle levé tienne dans le cadre au lieu d'être rogné en haut. Le
+   couple échelle/descente est mesuré, pas deviné : à .74 et 3 px il reste
+   environ 3 unités viewBox de marge en haut comme en bas. */
+.rpg-coffre-svg__gueule { opacity: 0; }
+.rpg-coffre-svg__gueule > ellipse:first-child { fill: #1b1814; }
+.rpg-coffre-svg__gueule > ellipse:last-child { fill: #0a0908; }
+.rpg-coffre-svg__ensemble {
+  transform-box: view-box;
+  transform-origin: 32px 53px;
+  transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+}
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__ensemble { transform: translateY(3px) scale(.74); }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__couvercle { transform: rotate(-40deg); }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__gueule { opacity: 1; }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg {
+  filter: grayscale(1) brightness(.8) drop-shadow(0 3px 4px rgba(0, 0, 0, .5));
+}
+/* Plus rien ne brille : ni halo, ni pastille dorée, ni jauge verte. */
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__halo { opacity: 0; animation: none; }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__gain { color: #9a958c; filter: grayscale(1); }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__cartes {
+  border-color: rgba(158, 152, 142, .45);
+  background: linear-gradient(180deg, #4a4640, #26241f);
+  color: #b6b1a8;
+}
 
 /* La pastille « cartes » : ce coffre ajoute un paquet, on l'annonce avant. */
 .rpg-coffres-quetes__cartes {
@@ -180,7 +213,7 @@
   background: linear-gradient(90deg, #b9863c, #ffd97a);
   transition: width .3s ease;
 }
-.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__jauge-remplie { background: linear-gradient(90deg, #5c8f45, #9fd07a); }
+.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__jauge-remplie { background: linear-gradient(90deg, #5a5650, #8e8a82); }
 
 @keyframes rpg-coffre-bond {
   0%, 100% { transform: translateY(0) rotate(0deg); }

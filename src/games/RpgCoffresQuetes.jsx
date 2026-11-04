@@ -30,22 +30,30 @@ export function CoffreSvg({ ouvert = false }) {
   return (
     <svg className={`rpg-coffre-svg${ouvert ? ' is-ouvert' : ''}`} viewBox="0 0 64 58" aria-hidden="true" focusable="false">
       <ellipse className="rpg-coffre-svg__ombre" cx="32" cy="53" rx="23" ry="4" />
-      <g className="rpg-coffre-svg__corps">
-        <path className="rpg-coffre-svg__caisse" d="M7 27h50v19a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
-        <path className="rpg-coffre-svg__ombre-corps" d="M7 40h50v6a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
-        <rect className="rpg-coffre-svg__ferrure" x="13" y="27" width="5" height="24" />
-        <rect className="rpg-coffre-svg__ferrure" x="46" y="27" width="5" height="24" />
-      </g>
-      <g className="rpg-coffre-svg__couvercle">
-        <path className="rpg-coffre-svg__dessus" d="M7 27v-6a25 13 0 0 1 50 0v6Z" />
-        <path className="rpg-coffre-svg__reflet" d="M12 21a20 9 0 0 1 40 0v2H12Z" />
-        <rect className="rpg-coffre-svg__ferrure" x="13" y="15" width="5" height="12" />
-        <rect className="rpg-coffre-svg__ferrure" x="46" y="15" width="5" height="12" />
-      </g>
-      <g className="rpg-coffre-svg__serrure">
-        <rect x="26" y="24" width="12" height="13" rx="3" />
-        <circle cx="32" cy="30" r="2.1" />
-        <rect x="31.1" y="30" width="1.8" height="4.4" rx=".9" />
+      <g className="rpg-coffre-svg__ensemble">
+        <g className="rpg-coffre-svg__corps">
+          <path className="rpg-coffre-svg__caisse" d="M7 27h50v19a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
+          <path className="rpg-coffre-svg__ombre-corps" d="M7 40h50v6a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
+          <rect className="rpg-coffre-svg__ferrure" x="13" y="27" width="5" height="24" />
+          <rect className="rpg-coffre-svg__ferrure" x="46" y="27" width="5" height="24" />
+        </g>
+        {/* La gueule : le creux vide, révélé seulement une fois le coffre
+            encaissé. Dessinée avant le couvercle pour que, fermé, il la cache. */}
+        <g className="rpg-coffre-svg__gueule">
+          <ellipse cx="32" cy="27" rx="25" ry="5" />
+          <ellipse cx="32" cy="28.2" rx="20" ry="3.2" />
+        </g>
+        <g className="rpg-coffre-svg__couvercle">
+          <path className="rpg-coffre-svg__dessus" d="M7 27v-6a25 13 0 0 1 50 0v6Z" />
+          <path className="rpg-coffre-svg__reflet" d="M12 21a20 9 0 0 1 40 0v2H12Z" />
+          <rect className="rpg-coffre-svg__ferrure" x="13" y="15" width="5" height="12" />
+          <rect className="rpg-coffre-svg__ferrure" x="46" y="15" width="5" height="12" />
+        </g>
+        <g className="rpg-coffre-svg__serrure">
+          <rect x="26" y="24" width="12" height="13" rx="3" />
+          <circle cx="32" cy="30" r="2.1" />
+          <rect x="31.1" y="30" width="1.8" height="4.4" rx=".9" />
+        </g>
       </g>
     </svg>
   );

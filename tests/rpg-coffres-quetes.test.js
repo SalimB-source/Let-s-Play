@@ -101,3 +101,49 @@ test('coffreDeLaQuete retrouve le coffre d’une quête, et rend null pour une i
   assert.equal(coffre.queteId, 'duels-2');
   assert.equal(coffreDeLaQuete(etat(), 'quete-inexistante'), null);
 });
+
+test('sur mobile aussi, le coffre encaissé est ouvert, vidé et grisé', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync('src/games/rpg-coffres-quetes.css', 'utf8');
+  const jsx = fs.readFileSync('src/games/RpgCoffresQuetes.jsx', 'utf8');
+  const regle = (needle) => [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+    .filter((m) => m[1].includes(needle)).map((m) => m[2]).join(' ');
+  const ouvert = (needle) => regle(`.rpg-coffres-quetes__slot.is-ouvert .rpg-coffres-quetes__${needle}`);
+
+  // Le creux vide existe dans le SVG et n'apparaît qu'une fois encaissé.
+  assert.match(jsx, /rpg-coffre-svg__gueule/);
+  assert.match(regle('.rpg-coffre-svg__gueule'), /opacity:\s*0/, 'caché tant que le coffre est plein');
+  assert.match(regle('.is-ouvert .rpg-coffre-svg__gueule'), /opacity:\s*1/);
+
+  // Le métal et le gain passent en niveaux de gris, comme sur l'accueil bureau.
+  assert.match(regle('.is-ouvert .rpg-coffre-svg'), /grayscale\(1\)/);
+  assert.match(ouvert('gain'), /grayscale\(1\)/);
+  assert.match(ouvert('halo'), /opacity:\s*0/, 'plus de halo sur un coffre vidé');
+  // La jauge et la légende ne restent pas vertes.
+  assert.doesNotMatch(ouvert('jauge-remplie'), /#9fd07a/);
+  assert.doesNotMatch(ouvert('etat'), /#9fd07a/);
+
+  // Le couvercle s'ouvre franchement plus grand que dans la cérémonie.
+  const angle = (sel) => Math.abs(Number(regle(sel).match(/rotate\((-?\d+)deg\)/)[1]));
+  assert.ok(angle('.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__couvercle')
+    > angle('.rpg-coffre-svg.is-ouvert .rpg-coffre-svg__couvercle'), 'le coffre de la rangée bâille plus grand');
+
+  // Le viewBox est fixe : c'est le coffre qui rétrécit pour laisser passer le
+  // couvercle, sinon il serait rogné en haut.
+  assert.match(jsx, /viewBox="0 0 64 58"/);
+  const ensemble = regle('.rpg-coffres-quetes__slot.is-ouvert .rpg-coffre-svg__ensemble');
+  const k = Number(ensemble.match(/scale\(([\d.]+)\)/)[1]);
+  assert.ok(k > 0 && k < 1, 'le coffre vidé doit rétrécir pour tenir dans le cadre');
+  assert.match(ensemble, /translateY\(\d+px\)/, 'et descendre pour dégager le haut du cadre');
+
+  // La cérémonie d'ouverture partage CoffreSvg : elle garde son coffre plein,
+  // donc aucune des règles ci-dessus ne doit déborder sur elle.
+  for (const needle of ['__ensemble', '__gueule', '__couvercle']) {
+    const ciblees = [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)]
+      .filter((m) => m[1].includes(`.rpg-coffre-svg${needle}`) && /scale\(|opacity:\s*1|rotate\(-40/.test(m[2]));
+    for (const m of ciblees) {
+      assert.match(m[1], /\.rpg-coffres-quetes__slot\.is-ouvert/,
+        `la pose ouverte de ${needle} doit rester scopée à la rangée`);
+    }
+  }
+});

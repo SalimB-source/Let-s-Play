@@ -1,5 +1,5 @@
 import { ciblesDefenseur } from './rpgDefenseur.js';
-import { armureArme, defenseSansArmure, plafondSoinCreature } from './rpgArmure.js';
+import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
  * Le Sablier — duel de cartes tactique.
@@ -2801,7 +2801,6 @@ export function TableCard({
     : null;
   const gelee = !estSite && (entite.gelToursRestants ?? 0) > 0;
   const armure = armureArme(entite);
-  const defensePropre = defenseSansArmure(entite);
   const blessee = !estSite && entite.pv < plafondSoinCreature(entite, entite.pvMax ?? carte?.def ?? entite.pv);
   // La prisonnière de la cale (Abordage) : sa fiche, pour la mini-face qui
   // se glisse sous le coin du capteur — on voit QUI est détenu, pas
@@ -3137,8 +3136,9 @@ export function TableCard({
             <span
               className={`rpg-card__pt${blessee ? ' is-wounded' : ''}${classeDefense ? ` ${classeDefense}` : ''}`}
               data-stat-variation={classeDefense === 'is-buffed' ? 'buff' : classeDefense === 'is-debuffed' ? 'debuff' : undefined}
+              data-armure={armure ? armure.restant : undefined}
             >
-              <CardStatIcon type="defense" /><span className="rpg-stat-value">{armure ? <>{defensePropre}<span className="rpg-card__armure">+{armure.restant}</span></> : entite.pv}</span>
+              <CardStatIcon type="defense" /><span className="rpg-stat-value">{entite.pv}</span>
             </span>
           </footer>
         )}

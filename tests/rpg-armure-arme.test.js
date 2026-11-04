@@ -129,3 +129,24 @@ test('le Licou à défense négative reste un malus et non une armure', () => {
   equiper(duel, 'joueur', 'takouba-des-pistes', chien);
   assert.equal(chien.pv, 2, 'le retrait du malus rend la défense correspondante');
 });
+
+test('la carte en jeu affiche la DEF finale, sans « +N » d’armure accolé', async () => {
+  const duel = duelVide(); duel.tour = 'joueur';
+  const chien = poser(duel, 'joueur', 'chien-du-guet');
+  const propre = chien.pv;
+  equiper(duel, 'joueur', 'armure-de-cendres', chien);
+  const reserve = armureArme(chien);
+  assert.ok(reserve.restant > 0);
+  // `pv` porte bien la défense totale : c'est lui qu'il faut afficher.
+  assert.equal(chien.pv, propre + reserve.restant);
+  assert.equal(defenseSansArmure(chien), propre);
+
+  const fs = await import('node:fs');
+  const src = fs.readFileSync('src/games/RpgDuelPage.jsx', 'utf8');
+  assert.match(src, /<CardStatIcon type="defense" \/><span className="rpg-stat-value">\{entite\.pv\}<\/span>/,
+    'la pastille de défense doit lire la défense totale');
+  assert.doesNotMatch(src, /rpg-card__armure/, 'plus de « +N » accolé à la défense');
+  // L'information n'est pas perdue : elle reste au survol et au lecteur d'écran.
+  assert.match(src, /data-armure=\{armure \? armure\.restant : undefined\}/);
+  assert.match(src, /dont \$\{armure\.restant\} d’armure/);
+});

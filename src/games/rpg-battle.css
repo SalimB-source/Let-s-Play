@@ -15100,5 +15100,3 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-eclair-marteau--braise .rpg-eclair-marteau__flash { background: radial-gradient(closest-side, rgba(255,255,255,.95), rgba(255,180,94,.55) 38%, rgba(255,80,18,.22) 62%, rgba(255,80,18,0) 78%); }
 
 /* Défense de la créature et points d’armure encore disponibles. */
-.rpg-card__armure { color: #8edcff; font-size: .8em; margin-inline-start: 1px; }
-.rpg-card__pt.is-buffed .rpg-card__armure { color: #075985; }
