@@ -1058,6 +1058,99 @@ pas la beauté du halo. Pour juger le rendu, ouvrir le jeu dans un vrai
 navigateur (`npm run dev`), lancer une course, et basculer RENDU en pause sur une
 ville de nuit (New York, Tokyo) puis sur une ville de jour (Vice City).
 
+## Vice City Rush : les niveaux de détail du trafic
+
+Une berline de trafic n'est pas une voiture : c'est un **groupe de 10 à 16
+maillages** (caisse fusionnée par matériau, glaces, roues — jante et pneu
+chacune —, feux, gyrophares, décalcomanies, pare-buffles). Sur une image de
+course, dix véhicules visibles coûtent donc cent à cent soixante appels de
+dessin — pour des voitures qui, à deux cents mètres, font vingt pixels de haut.
+Le trafic est désormais dessiné à **trois niveaux** :
+
+| Niveau | Distance devant le joueur | Ce qui est dessiné | Appels par berline |
+|---|---|---|---|
+| `near` | moins de 70 m, ou derrière | tout : roues qui tournent, gyrophares, vitres, décalcos | 10 à 16 |
+| `mid` | 70 à 150 m (ou la brume, si plus court) | la caisse et ses feux, les gyrophares | 5 à 10 |
+| `far` | au-delà | la **silhouette** : une boîte de Lambert couleur de caisse, plus les gyrophares | 1 à 5 |
+
+**Pourquoi ces trois niveaux.** À 70 m, une berline fait encore quarante pixels
+de haut sur un téléphone couché : ses roues et ses gyrophares se lisent, on va la
+doubler ou la percuter dans deux secondes. À 150 m, les vitres ne sont plus que
+des plans transparents — un appel de dessin **et** un tri de transparence chacun
+—, les jantes des cercles de trois pixels, et les décalcomanies (logo du taxi,
+bandeau d'ambulance, plaque « POLICE ») des taches. La brume, elle, a déjà
+commencé (les `fogNear` des parcours vont de 40 à 160 m). Au-delà, on ne
+distingue plus que la masse et les feux : la silhouette prend le relais.
+
+**Ce qui ne disparaît jamais**, et c'est une décision de jeu, pas de rendu :
+
+- les **gyrophares** : c'est ce qui signale la police de loin, et ce que le
+  joueur surveille du coin de l'œil. Ils clignotent à tous les niveaux ;
+- la **voiture du joueur** et les **rivaux** : ils ne passent pas par ce module.
+  Le pilote est toujours en pleine définition, c'est lui qu'on regarde.
+
+**Ce qui se joue ne change pas.** Collision, voie, distance et vitesse sont
+calculées sur les données du véhicule, jamais sur son maillage : un niveau ne
+touche qu'à ce qui est dessiné. Une voiture hors champ (derrière le joueur ou
+au-delà de la portée du streaming) garde son `visible = false` : elle ne coûte
+rien du tout, et son niveau n'est même pas appliqué.
+
+**Deux règles de bord :**
+
+- une voiture **derrière** le joueur reste en `near` — la caméra la voit de dos
+  pendant qu'elle double, et à la limite arrière du streaming c'est encore gros
+  à l'écran ;
+- une voiture qui **arrive en face** (`approaching`, le contresens) ne passe pas
+  en `far` avant la brume : c'est celle qu'il faut repérer de loin pour
+  l'éviter, et sa caisse est la seule chose qui la distingue d'un point de
+  lumière. Trente mètres de marge au-delà de la brume, et seulement là, elle
+  devient une silhouette.
+
+**Le gain, mesuré** (`npm run check:city-rush-lod`, une image de course sur
+chaque parcours, renderer factice) : **7 % de maillages et 3,5 % de triangles en
+moins** sur l'ensemble des neuf parcours, dont **41 maillages par image** sur
+Vice City, New York et Tokyo (soit un quart du trafic à l'écran). Les parcours à
+deux voitures (Nordschleife, tōgé, campagne mexicaine) gagnent moins : leur
+trafic est si espacé qu'il est presque toujours en pleine définition — c'est
+normal, et c'est le bon comportement.
+
+### Où vit le code
+
+- `src/games/cityRushLod.js` — les trois niveaux, les seuils (70 m, 150 m,
+  marge de brume 30 m), la règle de choix (`cityRushLodLevel`,
+  `cityRushTrafficLod`) et son application (`applyCityRushVehicleLod`,
+  idempotente : rappeler le même niveau ne touche rien). Ni React, ni DOM, ni
+  three.js : le module ne manipule que les `userData` publiés par le constructeur
+  de véhicule ;
+- `src/games/cityRushCars.js` — `makeTrafficVehicle` publie ce dont le LOD a
+  besoin : `lodBody` (la caisse fusionnée), `lodProxy` (la silhouette), `lodDetail`
+  (roues et gyrophares), et les étiquettes de retrait `userData.lod`
+  (`glass`, `ghost`) et `userData.lodDrop` (`mid` sur les roues) ;
+- `src/games/ViceCityWorld.jsx` — la boucle applique le niveau au trafic et au
+  contresens, **seulement sur les voitures visibles** ; les roues ne tournent
+  qu'en `near` (au-delà, elles ne font plus que deux pixels) ; le `reset` de la
+  course rallume tout pour l'intro et lève un drapeau (`lodDirty`) pour que la
+  première image remette le gabarit d'aplomb.
+
+### Vérifications
+
+```bash
+npm run check:city-rush-lod
+```
+
+Le check joue une **vraie course** par parcours avec un renderer factice et
+compte ce que chaque image demande à dessiner, trafic en pleine définition puis
+avec les niveaux de détail : la même image doit demander strictement moins de
+maillages et de triangles sur les neuf parcours, la voiture la plus proche du
+joueur doit suivre la règle du module, et la course doit continuer de rouler.
+`tests/city-rush-lod.test.js` fige les règles pures (seuils, brume, contresens,
+gabarit des dix types de véhicule, extinction et retour en pleine définition,
+idempotence).
+
+Le rendu réel se juge dans un vrai navigateur (`npm run dev`) : traverser un
+embouteillage de nuit à Tokyo, puis regarder une berline de police passer de la
+caisse détaillée à sa silhouette dans la brume — sans que rien ne « saute ».
+
 ## Vice City Rush : les tours, ligne de départ et décor
 
 Le jeu (`/jeu/vice-city-rush`) est une course d'arcade à quatre voies dans cinq

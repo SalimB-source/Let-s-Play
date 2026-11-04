@@ -351,7 +351,15 @@ export function makeTrafficVehicle(type) {
     box(m.chrome, [0, 0.42, length * 0.47], [width * 0.98, 0.12, 0.12]);
     box(m.tail, [0, 0.64, length * 0.47 + 0.04], [width * 0.32, 0.025, 0.025]); // bandeau LED arrière
   }
-  group.add(b.build('traffic-body'));
+  // La caisse et ses détails **fixes** (glaces, décalcomanies, pare-buffles,
+  // feux éteints) sortent d'un seul `Batch`, fusionnés par matériau : c'est
+  // `lodBody`. Les roues, ajoutées à part, sont les seules à tourner ; les
+  // gyrophares sont déjà des maillages séparés (ils clignotent).
+  // `b.build()` rend un **groupe** (un maillage par matériau : caisse, glaces,
+  // feux, chrome) : c'est lui, la « caisse » du niveau lointain.
+  const lodBody = b.build('traffic-body');
+  group.add(lodBody);
+  lodBody.userData.lodKeep = true;
 
   const wheels = [];
   const wheelAxles = isTruck ? [-1.48, 0.92, 1.48] : [-length * 0.29, length * 0.29];
@@ -370,8 +378,36 @@ export function makeTrafficVehicle(type) {
     if (object.material === m.glass) {
       object.name = 'traffic-glazing';
       object.userData.isVehicleGlass = true;
+      // Les vitres sont les seules faces transparentes du véhicule : le niveau
+      // `mid` les retire (voir `cityRushLod.js`).
+      object.userData.lod = 'glass';
     }
   });
+  // Les niveaux de détail, publiés pour `cityRushLod.js` :
+  //   - `lodBody` : la caisse fusionnée, avec ses étiquettes de retrait —
+  //     `glass` sur les vitres, `ghost` sur les décalcomanies (les deux familles
+  //     transparentes, qui tombent dès le niveau `mid`) ;
+  //   - `lodDetail` : les roues (`lodDrop: 'mid'`) et les gyrophares (jamais
+  //     retirés : ils signalent la police de loin) ;
+  //   - `lodProxy` : la silhouette d'une seule boîte, peinte de la couleur de
+  //     la caisse, pour le niveau `far`.
+  for (const wheel of wheels) wheel.userData.lodDrop = 'mid';
+  for (const object of lodBody.children) {
+    if (object.material === m.glass) object.userData.lod = 'glass';
+    else if (object.material === m.decal) object.userData.lod = 'ghost';
+  }
+  const lodDetail = group.children.filter((child) => child !== lodBody);
+  // Silhouette : boîte de Lambert (bien moins chère qu'un matériau standard,
+  // et sans reflet), couleur de caisse du modèle. Elle n'est visible qu'au
+  // niveau `far`, et ne reçoit pas d'ombre : à 150 m, elle n'existe plus.
+  const proxyMaterial = new THREE.MeshLambertMaterial({ color: bodyColor });
+  const lodProxy = new THREE.Mesh(new THREE.BoxGeometry(width, isTruck ? 2.1 : policeSUV ? 1.5 : 1.25, length), proxyMaterial);
+  lodProxy.position.set(0, isTruck ? 1.05 : policeSUV ? 0.78 : 0.66, 0);
+  lodProxy.name = 'traffic-lod-proxy';
+  lodProxy.visible = false;
+  lodProxy.castShadow = false;
+  lodProxy.receiveShadow = false;
+  group.add(lodProxy);
   group.userData = {
     kind: 'traffic',
     trafficType: type,
@@ -380,6 +416,12 @@ export function makeTrafficVehicle(type) {
     isPolice: police,
     wheels,
     beacons,
+    // Ce que le niveau `far` éteint, et ce que le niveau `mid` garde ou non :
+    // tout est lu par `applyCityRushVehicleLod` (`cityRushLod.js`).
+    lodBody,
+    lodProxy,
+    lodDetail,
+    lodLevel: 'near',
     width,
     length,
   };

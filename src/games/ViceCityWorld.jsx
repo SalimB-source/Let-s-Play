@@ -297,6 +297,11 @@ import {
   createCityRushPostChain,
   normalizeCityRushGraphicsMode,
 } from './cityRushPost.js';
+import {
+  CITY_RUSH_LOD_NEAR,
+  applyCityRushVehicleLod,
+  cityRushTrafficLod,
+} from './cityRushLod.js';
 import { createBatch, makeCanvasTexture, neonText, seededRandom } from './cityRushBuilder';
 import { START_ZONE_HALF, buildCityLoop, createStageMaterials, finishLoopGeometry, makeRain, makeRoad, makeSkyDome, makeSkyline } from './cityRushStage';
 import { buildShutoExpressway, makeExpresswayRoad } from './shutoC1Stage';
@@ -4760,6 +4765,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.damageSmokeTimer = 0;
       animatePoliceDamageFire(traffic.mesh, 0, 0);
       traffic.distance = 82 + index * (sparseTraffic ? 180 : 68) + randomRange(-7, 7);
+      traffic.mesh.userData.trackDistance = traffic.distance;
       traffic.lane = forwardLanes[index % forwardLanes.length];
       traffic.currentX = laneX(traffic.lane);
       traffic.currentSpeed = traffic.baseSpeed;
@@ -4770,6 +4776,13 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
       traffic.impactTargetLane = null;
       traffic.mesh.position.set(trackWorldX(traffic.distance, traffic.currentX), trackRelativeY(traffic.distance), trackWorldZ(traffic.distance, traffic.currentX));
       traffic.mesh.visible = true;
+      // Reset : le trafic repart en pleine définition, la boucle choisira son
+      // niveau de détail à la première image. Le choix du niveau est mémorisé
+      // par véhicule : `lodDirty` signale que les pièces viennent d'être
+      // rallumées à la main, pour que la première image remette le gabarit
+      // d'aplomb au lieu de le croire déjà réglé.
+      applyCityRushVehicleLod(traffic.mesh, CITY_RUSH_LOD_NEAR);
+      traffic.mesh.userData.lodDirty = true;
       traffic.mesh.rotation.set(trackPitch(traffic.distance), trackYaw(traffic.distance), 0);
       traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.set(0, 0, 0); });
       traffic.mesh.userData.beacons.forEach((beacon) => { beacon.material.opacity = 1; });
@@ -10603,6 +10616,18 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         const gap = traffic.distance - distance;
         traffic.mesh.visible = gap > -CITY_RUSH_TRAFFIC_VIEW_BEHIND && gap < trafficViewAhead;
+        // Distance publiée avant la boucle d'initialisation, qui la laisse à
+        // zéro : une voiture du trafic doit toujours savoir où elle est.
+        traffic.mesh.userData.trackDistance = traffic.distance;
+        // Niveau de détail : une voiture lointaine n'a pas besoin de ses glaces,
+        // de ses jantes ni de ses décalcomanies. La règle et ses seuils vivent
+        // dans `cityRushLod.js` ; une voiture hors champ ne coûte rien du tout
+        // (`visible = false`, le niveau n'est même pas appliqué).
+        const trafficLod = traffic.mesh.visible
+          ? cityRushTrafficLod({ gap, fogFar: theme.fogFar })
+          : CITY_RUSH_LOD_NEAR;
+        traffic.mesh.userData.lodLevel = trafficLod;
+        if (traffic.mesh.visible) applyCityRushVehicleLod(traffic.mesh, trafficLod);
         traffic.mesh.position.set(trackWorldX(traffic.distance, traffic.currentX), trackRelativeY(traffic.distance), trackWorldZ(traffic.distance, traffic.currentX));
         // La voie est publiée à part : sur un circuit courbe, l'abscisse monde
         // mêle le décalage de la courbe et la voie, et un lecteur extérieur (le
@@ -10612,7 +10637,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         traffic.mesh.rotation.x = trackPitch(traffic.distance);
         traffic.mesh.rotation.y = lerp(traffic.mesh.rotation.y, trackYaw(traffic.distance) + clamp((traffic.currentX - priorTrafficX) * -2.8, -0.26, 0.26), Math.min(1, dt * 12));
         if (traffic.mesh.visible) {
-          traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += traffic.currentSpeed * dt * 0.95; });
+          // Roues : elles ne tournent qu'au niveau `near` (au-delà, elles ne
+          // font plus que deux pixels). Gyrophares : à tous les niveaux, c'est
+          // ce qui signale la police de loin.
+          if (trafficLod === CITY_RUSH_LOD_NEAR) {
+            traffic.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += traffic.currentSpeed * dt * 0.95; });
+          }
           traffic.mesh.userData.beacons.forEach((beacon, beaconIndex) => {
             const flashing = Math.floor(clockTime * 8 + traffic.phase + beaconIndex) % 2 === 0;
             beacon.material.opacity = flashing ? 1 : 0.18;
@@ -10708,6 +10738,12 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
         }
         if (!turning) checkOncomingImpacts(oncoming, priorOncomingDistance, priorActorDistancesForOncoming);
         oncoming.mesh.visible = gap > -30 && gap < oncomingViewAhead;
+        // Contresens : une voiture qui arrive garde sa caisse plus longtemps
+        // (`approaching`) — c'est elle qu'on doit repérer pour l'éviter.
+        const oncomingLod = oncoming.mesh.visible
+          ? cityRushTrafficLod({ gap, fogFar: theme.fogFar, approaching: !turning })
+          : CITY_RUSH_LOD_NEAR;
+        if (oncoming.mesh.visible) applyCityRushVehicleLod(oncoming.mesh, oncomingLod);
         oncoming.mesh.position.set(trackWorldX(oncoming.distance, oncoming.currentX), trackRelativeY(oncoming.distance), trackWorldZ(oncoming.distance, oncoming.currentX));
         oncoming.mesh.userData.lane = oncoming.lane;
         oncoming.mesh.userData.trackDistance = oncoming.distance;
@@ -10716,7 +10752,9 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
           + Math.PI * (1 - turnEase)
           + clamp((oncoming.currentX - priorOncomingX) * 2.8, -0.26, 0.26);
         if (oncoming.mesh.visible) {
-          oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += oncoming.currentSpeed * dt * 0.95; });
+          if (oncomingLod === CITY_RUSH_LOD_NEAR) {
+            oncoming.mesh.userData.wheels.forEach((wheel) => { wheel.rotation.x += oncoming.currentSpeed * dt * 0.95; });
+          }
           oncoming.mesh.userData.beacons.forEach((beacon, beaconIndex) => {
             const flashing = Math.floor(clockTime * 8 + oncoming.phase + beaconIndex) % 2 === 0;
             beacon.material.opacity = flashing ? 1 : 0.18;
@@ -10971,7 +11009,7 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
 
     // Décor : boucle repliée, portique animé, route, pluie, ciel, fumée.
     const lineGap = placeTrack();
-    road.scroll(worldTravel, distance);
+    if (worldTravel !== 0) road.scroll(worldTravel, distance);
     updateExpresswayEnvironment(dt);
     for (const prop of loop.dynamicProps) {
       if (prop.group.visible) prop.update(dt, clockTime);
@@ -11125,13 +11163,15 @@ export function createCityRushWorld(mount, city, getCallbacks, selectedCarId = C
     for (const patrol of patrolCars) consider(patrol.mesh, COCKPIT_SOLID_MARGIN);
     return ghosts || NO_COCKPIT_GHOSTS;
   }
-  function renderMainView(dt = 0) {
+  // `advance` : le pas de temps réel de l'image, transmis au post-traitement
+  // (les passes actuelles ne s'en servent pas — un effet daté le lirait).
+  function renderMainView(advance = 0) {
     const ghosts = cockpitGhostCars();
     for (const mesh of ghosts) mesh.visible = false;
     try {
       // Rendu standard : la scène droit dans l'écran. Rendu cinéma : la même
       // scène, puis le halo, puis l'ACES + sRGB de sortie (voir cityRushPost.js).
-      if (postChain) postChain.render(dt);
+      if (postChain) postChain.render(advance);
       else renderer.render(scene, camera);
     } finally {
       for (const mesh of ghosts) mesh.visible = true;
