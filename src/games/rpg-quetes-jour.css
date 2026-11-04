@@ -157,7 +157,7 @@
 }
 
 .rpg-quests-jour__cachet,
-.rpg-quests-jour__etape-souk {
+.rpg-quests-jour__semaine {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -175,63 +175,10 @@
   white-space: nowrap;
 }
 
-/* Bouton Bourse & Souk : sceau doré + solde + flèche */
+/* L'icône du marchand : la rampe ne la porte plus, mais l'onglet Souk de
+   la barre latérale oui, et c'est cette feuille qui la dimensionne. */
 .rpg-market { width: 1.15em; height: 1.15em; flex: none; }
 
-.rpg-quests-jour__souk {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 5px 14px 5px 7px;
-  border: 1px solid rgba(235, 196, 112, .42);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(42, 30, 15, .94), rgba(16, 14, 16, .94));
-  color: #ffe7af;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .52), inset 0 1px 0 rgba(255, 240, 196, .16);
-}
-.rpg-quests-jour__souk:hover,
-.rpg-quests-jour__souk:focus-visible {
-  border-color: rgba(255, 219, 138, .82);
-  background: linear-gradient(135deg, rgba(64, 45, 19, .96), rgba(24, 19, 16, .96));
-}
-.rpg-quests-jour__souk-sceau {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(255, 224, 150, .48);
-  background: radial-gradient(circle at 35% 30%, rgba(245, 196, 94, .42), rgba(54, 34, 12, .94));
-  color: #ffe8b0;
-  font-size: 16px;
-}
-.rpg-quests-jour__souk-texte {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  text-align: left;
-}
-.rpg-quests-jour__solde-mini {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  color: #fff2cc;
-  white-space: nowrap;
-}
-.rpg-quests-jour__solde-mini .rpg-credit { font-size: 13px; }
-.rpg-quests-jour__solde-mini strong {
-  font: 800 13.5px/1 var(--mono, monospace);
-  font-variant-numeric: tabular-nums;
-}
-.rpg-quests-jour__souk-lien {
-  color: rgba(242, 214, 152, .8);
-  font: 800 9px/1 var(--mono, monospace);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
 
 @media (max-width: 1080px) {
   .rpg-quests-jour__rail {

@@ -60,6 +60,17 @@ export const METAUX_COFFRE = Object.freeze({
     lueur: Object.freeze(['#f2f9ff', '#8fc4f0']),
     gemme: Object.freeze(['#d8f4ff', '#5fb8e8', '#1f6d9e']),
   }),
+  violet: Object.freeze({
+    id: 'violet',
+    nom: 'violet',
+    face: Object.freeze(['#d9c2ff', '#a878ec', '#7040c4', '#3d1f78']),
+    cote: Object.freeze(['#5a2fa8', '#2a1152']),
+    dessus: Object.freeze(['#efe4ff', '#bd93f5', '#7a49cc']),
+    bande: Object.freeze(['#f3ecff', '#b98cf0', '#4e2a92']),
+    reflet: '#fbf7ff',
+    lueur: Object.freeze(['#f0e2ff', '#b57bff']),
+    gemme: Object.freeze(['#ffd9f5', '#e879f9', '#86198f']),
+  }),
   or: Object.freeze({
     id: 'or',
     nom: 'or',
@@ -73,8 +84,18 @@ export const METAUX_COFFRE = Object.freeze({
   }),
 });
 
-/** L'ordre de lecture, du moins noble au plus noble. */
+/**
+ * L'échelle des gains, du moins noble au plus noble.
+ *
+ * Le violet n'y figure pas : ce n'est pas un cran de plus, c'est l'identité du
+ * Coffre de la semaine. Il se demande explicitement (`metal="violet"`), il ne
+ * se déduit pas d'un montant — sinon n'importe quelle quête à 80 ◈ le
+ * déclencherait et la semaine ne serait plus reconnaissable.
+ */
 export const ORDRE_METAUX = Object.freeze(['bronze', 'argent', 'or']);
+
+/** Le métal réservé au Coffre de la semaine. */
+export const METAL_SEMAINE = 'violet';
 
 /**
  * Le métal qui correspond à un gain.
@@ -100,6 +121,7 @@ const LIBELLES_COFFRE = Object.freeze({
   bronze: 'coffre de bronze',
   argent: "coffre d'argent",
   or: "coffre d'or",
+  violet: 'coffre violet',
 });
 
 /**
@@ -108,8 +130,8 @@ const LIBELLES_COFFRE = Object.freeze({
  * Le métal ne doit pas être une information purement visuelle : un joueur qui
  * ne voit pas les couleurs l'entend dans le libellé du bouton.
  */
-export function libelleCoffre(montant) {
-  return LIBELLES_COFFRE[metalPourGain(montant)];
+export function libelleCoffre(montant, metalForce = null) {
+  return LIBELLES_COFFRE[metalForce ?? metalPourGain(montant)];
 }
 
 /**

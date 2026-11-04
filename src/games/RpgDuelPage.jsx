@@ -5232,11 +5232,9 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 les jalons en médaillons alignés sous la vitrine et les modes. */}
             <RpgQuetesDuJour
               quetes={quetes}
-              credits={credits}
               onReclamerQuete={onReclamerQuete}
               onReclamerCachet={onReclamerCachet}
               onReclamerSemaine={onReclamerSemaine}
-              onOuvrirSouk={() => { onChangeScreen('souk'); }}
               onPlaySfx={play}
             />
           </main>

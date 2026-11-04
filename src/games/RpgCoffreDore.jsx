@@ -8,9 +8,16 @@
  * voit réellement un autre flanc — un SVG pivoté n'aurait montré qu'une carte
  * qui se penche.
  *
- * Le métal suit le gain (`rpgCoffreMetal.js`) : bronze, argent, or. La palette
- * est injectée en variables CSS pour que le dessin et le style lisent la même
+ * Le métal suit le gain (`rpgCoffreMetal.js`) : bronze, argent, or — et violet
+ * pour le Coffre de la semaine, qui se demande explicitement. La palette est
+ * injectée en variables CSS pour que le dessin et le style lisent la même
  * source.
+ *
+ * Le parti pris graphique : des angles francs mais des faces arrondies, un
+ * cadre sombre qui cerne un panneau clair bombé, des clous aux quatre coins et
+ * un large blason de serrure. Le couvercle déborde légèrement la caisse, comme
+ * sur un vrai coffre — c'est ce débord qui fait lire « coffre » plutôt que
+ * « boîte ».
  *
  * Trois états : `encours` (fermé, métal éteint), `pret` (couvercle entrouvert,
  * halo, butin qui luit), `ouvert` (grand ouvert, métal assombri).
@@ -154,6 +161,7 @@ export default function RpgCoffreDore({
                     <span className="rpg-coffre-dore__ferrure rpg-coffre-dore__ferrure--g" />
                     <span className="rpg-coffre-dore__ferrure rpg-coffre-dore__ferrure--d" />
                     <span className="rpg-coffre-dore__traverse" />
+                    <span className="rpg-coffre-dore__clous" />
                     <span className="rpg-coffre-dore__serrure">
                       <span className="rpg-coffre-dore__trou" />
                     </span>
@@ -190,6 +198,7 @@ export default function RpgCoffreDore({
                   <>
                     <span className="rpg-coffre-dore__ferrure rpg-coffre-dore__ferrure--g" />
                     <span className="rpg-coffre-dore__ferrure rpg-coffre-dore__ferrure--d" />
+                    <span className="rpg-coffre-dore__clous" />
                     <span className="rpg-coffre-dore__gemme" />
                   </>
                 )}

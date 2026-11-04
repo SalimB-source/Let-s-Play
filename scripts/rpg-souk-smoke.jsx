@@ -92,11 +92,9 @@ function Sonde({ surPret, sons, caisse }) {
         reçoit exactement les mêmes états et les mêmes gestes que le Souk. */}
     <RpgQuetesDuJour
       quetes={bourse.quetes}
-      credits={bourse.credits}
       onReclamerQuete={(id) => caisse.push(bourse.reclamerUneQuete(id))}
       onReclamerCachet={() => caisse.push(bourse.reclamerLeCachet())}
       onReclamerSemaine={() => caisse.push(bourse.reclamerLeCachetDeLaSemaine())}
-      onOuvrirSouk={() => { sons.push('vers-le-souk'); }}
       onPlaySfx={(nom) => { sons.push(nom); }}
     />
     <RpgSouk
@@ -312,10 +310,13 @@ export async function checkRpgSoukEcran(assert) {
       'aucune réclamée au premier jour');
     assert.equal(donnee('[data-jouer-cachet]', 'jouerCachet'), 'attente',
       'le Cachet du cycle y attend ses trois quêtes');
-    assert.equal(donnee('[data-jouer-solde]', 'jouerSolde'), donnee('[data-souk-solde]', 'soukSolde'),
-      'les deux écrans lisent le même solde');
     assert.ok(Number(donnee('[data-jouer-serie]', 'jouerSerie')) >= 1, 'le panneau compte la série');
-    assert.ok(noeud('[data-jouer-souk]'), 'et il mène au Souk');
+    // La rampe ne porte plus de raccourci vers le Souk : l'onglet latéral de la
+    // page dit déjà le solde et ouvre l'écran. On garde le garde-fou.
+    assert.equal(noeud('[data-jouer-souk]'), null, 'la rampe n’a plus de bouton Souk');
+    assert.equal(noeud('[data-jouer-solde]'), null, 'ni de solde miniature');
+    assert.equal(donnee('.rpg-quests-jour__semaine [data-coffre-metal]', 'coffreSemaine'), 'violet',
+      'le coffre de la semaine est violet, pas or');
     for (const quete of jour) {
       assert.equal(donnee(`[data-jouer-quete="${quete.id}"]`, 'jouerQueteEtat'), 'encours',
         `${quete.id} commence en cours dans le panneau aussi`);
@@ -326,9 +327,6 @@ export async function checkRpgSoukEcran(assert) {
       assert.ok(noeud(`[data-jouer-quete="${quete.id}"] [data-jouer-reste]`),
         'et le panneau dit ce qu’il reste');
     }
-    await act(async () => noeud('[data-jouer-souk]').click());
-    assert.ok(sons.includes('vers-le-souk') && sons.includes('menu'),
-      'le panneau mène au Souk, avec le son du menu');
     for (const quete of jour) {
       assert.equal(donnee(`[data-souk-quete="${quete.id}"]`, 'soukQueteEtat'), 'encours',
         `${quete.id} commence en cours`);

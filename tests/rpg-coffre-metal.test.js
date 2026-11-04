@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 import { GAINS } from '../src/games/rpgCredits.js';
 import { QUETES } from '../src/games/rpgQuetes.js';
 import {
-  METAUX_COFFRE, ORDRE_METAUX, SEUIL_ARGENT, SEUIL_OR,
+  METAUX_COFFRE, METAL_SEMAINE, ORDRE_METAUX, SEUIL_ARGENT, SEUIL_OR,
   libelleCoffre, metalPourGain, paletteCoffre, variablesCoffre,
 } from '../src/games/rpgCoffreMetal.js';
 
@@ -78,9 +78,16 @@ test('plus une quête paie, plus son métal est noble — jamais l’inverse', (
   }
 });
 
-test('le Cachet et la Semaine sont en or, et le métal se dit aussi en toutes lettres', () => {
+test('le Cachet est en or ; la Semaine prend le violet, qui n’est pas un cran de l’échelle', () => {
   assert.equal(metalPourGain(GAINS.cachetDuCycle), 'or');
+  // Le violet ne se déduit pas du montant : sinon toute quête à 80 ◈ le
+  // déclencherait et la semaine cesserait d'être reconnaissable.
   assert.equal(metalPourGain(GAINS.cachetDeLaSemaine), 'or');
+  assert.equal(METAL_SEMAINE, 'violet');
+  assert.ok(!ORDRE_METAUX.includes(METAL_SEMAINE), 'le violet reste hors de l’échelle des gains');
+  assert.ok(QUETES.every((q) => metalPourGain(q.recompense) !== 'violet'), 'aucune quête ne tire le violet');
+  assert.equal(libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE), 'coffre violet');
+  assert.ok(METAUX_COFFRE.violet.face.every((c) => /^#[0-9a-f]{6}$/i.test(c)));
   assert.equal(libelleCoffre(60), 'coffre de bronze');
   assert.equal(libelleCoffre(70), "coffre d'argent");
   assert.equal(libelleCoffre(100), "coffre d'or");
@@ -284,7 +291,70 @@ test('le métal forcé l’emporte sur le gain, et le CSS garde la chaîne 3D in
   }
   // La charnière est à l'arrière, pas au centre du couvercle.
   assert.ok(
-    blocs('__couvercle').some((b) => /transform-origin:\s*50%\s*100%\s*calc\(var\(--c-profondeur\)\s*\/\s*-2\)/.test(b)),
+    blocs('__couvercle').some((b) => /transform-origin:\s*50%\s*100%\s*calc\(var\(--d\)\s*\/\s*-2\)/.test(b)),
     'le couvercle bascule sur son arête arrière',
   );
+});
+
+test('la Semaine est violette dans la rampe, et le bouton Souk n’y est plus', async () => {
+  const fs = await import('node:fs');
+  const rampe = fs.readFileSync('src/games/RpgQuetesDuJour.jsx', 'utf8');
+  const css = fs.readFileSync('src/games/rpg-quetes-jour.css', 'utf8');
+
+  // Le coffre de la semaine impose son métal au lieu de le déduire du gain.
+  const semaine = rampe.slice(rampe.indexOf('sousTitre="Semaine"') - 420, rampe.indexOf('sousTitre="Semaine"'));
+  assert.match(semaine, /metal=\{METAL_SEMAINE\}/, 'le coffre de la semaine demande le violet');
+
+  // Le raccourci Souk a quitté la rampe : l'onglet latéral porte déjà le solde.
+  assert.ok(!rampe.includes('data-jouer-souk'), 'plus de bouton Souk dans la rampe');
+  assert.ok(!rampe.includes('rpg-quests-jour__souk'), 'ni son habillage');
+  assert.ok(!rampe.includes('data-jouer-solde'), 'ni le solde miniature');
+  assert.ok(!css.includes('rpg-quests-jour__souk'), 'le CSS mort est parti aussi');
+  assert.ok(!css.includes('rpg-quests-jour__etape-souk'), 'la colonne ne s’appelle plus « étape souk »');
+  assert.match(css, /\.rpg-quests-jour__semaine\b/, 'elle s’appelle la semaine');
+
+  // Le Souk reste accessible : on n'a pas supprimé l'entrée, seulement le doublon.
+  const page = fs.readFileSync('src/games/RpgDuelPage.jsx', 'utf8');
+  assert.match(page, /data-souk-onglet=\{credits\}/, 'l’onglet Souk de la barre latérale porte toujours le solde');
+});
+
+test('le coffre violet rend sa matière et son habillage complet', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'pret', montant: 80, metal: METAL_SEMAINE, sousTitre: 'Semaine' });
+    assert.equal(coffre.dataset.coffreMetal, 'violet');
+    for (const [nom, valeur] of Object.entries(variablesCoffre('violet'))) {
+      assert.equal(coffre.style.getPropertyValue(nom), valeur, `${nom} vient de la palette violette`);
+    }
+    assert.equal(coffre.querySelector('.rpg-coffre-dore__sous')?.textContent, 'Semaine');
+    // La matière violette ne ressemble à aucune des trois autres.
+    const autres = ORDRE_METAUX.map((m) => METAUX_COFFRE[m].face[1]);
+    assert.ok(!autres.includes(METAUX_COFFRE.violet.face[1]));
+  });
+
+  const css = await import('node:fs').then((fs) => fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8'));
+  assert.match(css, /\[data-coffre-metal='violet'\]/, 'le CSS accorde le halo et la plaquette au violet');
+});
+
+test('le coffre est arrondi : cadre sombre, panneau incrusté, clous et blason', async () => {
+  await avecCoffres(async ({ rendu }) => {
+    const coffre = await rendu({ etat: 'encours', montant: 100 });
+    // Les clous ne vivent que sur les deux grandes faces : sur la face avant
+    // du couvercle, haute de 15 px, ils se marcheraient dessus.
+    assert.equal(coffre.querySelectorAll('.rpg-coffre-dore__clous').length, 2);
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__face--avant .rpg-coffre-dore__serrure'), 'le blason est sur la face avant');
+    assert.ok(coffre.querySelector('.rpg-coffre-dore__face--dessus .rpg-coffre-dore__gemme'), 'la gemme est sur le dessus');
+  });
+
+  const css = await import('node:fs').then((fs) => fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8'));
+  const bloc = (sel) => {
+    const m = [...css.matchAll(/([^{}]*)\{([^}]*)\}/g)].filter((x) => x[1].includes(sel));
+    return m.map((x) => x[2]).join('\n');
+  };
+  assert.match(bloc('.rpg-coffre-dore__face'), /border-radius:\s*var\(--c-arrondi\)/, 'les faces sont arrondies');
+  // La bave recouvre les angles : sans elle, le cube aurait des jours aux coins.
+  assert.match(bloc('.rpg-coffre-dore__face'), /calc\(-1 \* var\(--c-bave\)\)/, 'les faces débordent leur boîte');
+  assert.match(bloc('.rpg-coffre-dore__face::before'), /inset:\s*4px/, 'le panneau clair est incrusté dans le cadre');
+  assert.match(bloc('.rpg-coffre-dore__clous'), /radial-gradient/, 'les clous sont peints');
+  // Le couvercle déborde la caisse : c'est ce qui fait lire « coffre ».
+  assert.match(bloc('.rpg-coffre-dore__couvercle'), /--w:\s*calc\(var\(--c-largeur\) \+ var\(--c-debord\)\)/, 'le couvercle déborde');
 });

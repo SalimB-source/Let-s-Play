@@ -14942,10 +14942,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-quests-jour__jalons { align-items: center; gap: 8px; }
   .rpg-mode-menu--jouer .rpg-quests-jour__compte,
   .rpg-mode-menu--jouer .rpg-quests-jour__serie { font-size: 9px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__souk { min-height: 36px; gap: 6px; padding: 3px 10px 3px 5px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__souk-sceau { width: 26px; height: 26px; font-size: 12px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__solde-mini strong { font-size: 11px; }
-  .rpg-mode-menu--jouer .rpg-quests-jour__souk-lien { font-size: 7.5px; }
 }
 
 /* Pendant le choix d'une cible, avertir avant de dépenser le sort. */
