@@ -36,6 +36,7 @@ import {
   resoudrePlateauxDuDuel,
 } from './rpgPlateaux.js';
 import { territoireDuDuel } from './rpgTerritoire.js';
+import RpgPlumesVikings from './RpgPlumesVikings.jsx';
 import { groupTerrainStacks } from './rpgTerrainStacks.js';
 import {
   RPG_MANA_ESSAI_CHAMP_MAX,
@@ -13375,6 +13376,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             masqué ou flouté, et un canvas animé ne vaut pas la peine d'être
             recomposé à chaque image derrière un voile sur mobile. */}
         <RpgTableScene3D plateau={plateau} enabled={decor3dVisible} paused={Boolean(carteGlissee || carteEnVol || bloqueurGlisse || apercuCarte || mulliganOuvert || choixManaEssaiOuvert || sacrificeDemande || navMenuOuvert)} />
+        {plateau.id === 'champ-de-bataille-viking' && <RpgPlumesVikings cote={plateauDecoupe ? 'joueur' : 'entier'} />}
+        {plateauDecoupe && plateauAdverse.id === 'champ-de-bataille-viking' && <RpgPlumesVikings cote="adverse" />}
         <nav className="rpg-duel-nav" aria-label="Navigation du duel">
           <strong>LE SABLIER</strong>
           {modePvp && (

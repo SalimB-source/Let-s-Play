@@ -40,6 +40,9 @@ export const RPG_PLATEAU_MUSIC_FILES = Object.freeze({
   // les deux prises vikings et la piste complète. Le lecteur en choisit une au
   // lancement de chaque duel enneigé.
   'village-viking': RPG_SNOW_MUSIC_FILES,
+  // La lice des clans possède sa propre chanson, sans modifier le tirage
+  // musical du Village Viking ni celui des Îles Célestes.
+  'champ-de-bataille-viking': `${RPG_PUBLIC_BASE}Last Valkyrie song.mp3`,
   // La Cour alterne le thème Bushido existant et la nouvelle piste des cerisiers.
   'cour-de-l-empereur': RPG_JAPANESE_MUSIC_FILES,
   'iles-celestes': RPG_SNOW_MUSIC_FILES,

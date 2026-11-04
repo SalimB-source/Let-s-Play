@@ -116,6 +116,16 @@ export const RPG_PLATEAUX = [
     fichier: 'plateau-village-viking.jpg',
     resume: 'Un village viking sous la neige, vu à vol d’oiseau : au centre, la grande place dégagée bordée d’une frise de runes gravées dans la pierre, entièrement nue au milieu pour poser les cartes. Tout autour, la grande halle du Jarl au toit de bardeaux enneigés et au fronton sculpté, les maisons longues en bois, les sapins sous la neige, les tas de bûches, les râteliers de boucliers ronds peints, les stèles runiques, les tonneaux, la corde lovée et deux braseros de fer enflammés.',
   },
+  // Un second terrain nordique, choisi dans le profil : les decks de Neige
+  // conservent le Village Viking comme terrain attitré.
+  {
+    id: 'champ-de-bataille-viking',
+    choixSeulement: true,
+    nom: 'Le Champ de bataille viking',
+    lieu: 'Au nord du fjord, la lice des clans sous le ciel de cendre',
+    fichier: 'plateau-champ-de-bataille-viking.jpg',
+    resume: 'Une lice viking vue parfaitement de dessus : une vaste arène de pierre claire, sobre et dégagée au centre pour lire les cartes. Sur les bords, des palissades, des boucliers ronds, des haches, des lances brisées, des bannières au corbeau et des braseros ardents. Des plumes claires et noires flottent doucement dans le vent, loin du cœur du champ de bataille.',
+  },
   {
     id: 'ruines-de-tipaza',
     nom: 'Les Ruines de Tipaza',
