@@ -124,7 +124,7 @@ export const RPG_PLATEAUX = [
     nom: 'Le Champ de bataille viking',
     lieu: 'Au nord du fjord, la lice des clans sous le ciel de cendre',
     fichier: 'plateau-champ-de-bataille-viking.jpg',
-    resume: 'Une lice viking vue parfaitement de dessus, sous un ciel froid : une vaste arène de pierre bleutée, sobre et dégagée pour lire les cartes, cerclée d’entrelacs nordiques. Au milieu, un Valknut — trois triangles entrelacés — est discrètement gravé dans la pierre. Sur les bords, des palissades, des boucliers ronds, des haches, des lances brisées, des bannières au corbeau et des plaques de neige. Des plumes claires et noires flottent doucement dans le vent, loin du cœur du champ de bataille. Aucun brasero ni flamme.',
+    resume: 'Une lice viking vue parfaitement de dessus, sous un ciel froid : une vaste arène de pierre bleutée, sobre et dégagée pour lire les cartes, cerclée d’entrelacs nordiques. Au milieu, un Valknut — trois triangles entrelacés — est discrètement gravé dans la pierre. Sur les bords, des palissades, des boucliers ronds, des haches, des lances brisées, des bannières au corbeau et des plaques de neige. Des plumes claires et noires flottent doucement dans le vent, avec quelques particules de feu le long des bords, loin du cœur du champ de bataille. Aucun brasero ni flamme.',
   },
   {
     id: 'ruines-de-tipaza',

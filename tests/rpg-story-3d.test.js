@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
+import { readFileSync } from 'node:fs';
 import { RPG_STORY_TOURS } from '../src/games/rpgStoryTours.js';
 import { createStoryTowerModel, disposeStoryTowerModel, RPG_STORY_TOWER_THEMES } from '../src/games/rpgStoryTowerModels.js';
 import { storyTowerFrame } from '../src/games/rpgStoryTowerScene.js';
@@ -18,6 +19,16 @@ const FEATURES = {
   'tour-du-sablier-renverse': ['sablier-geant', 'chambres-inversees', 'anneau-des-cinq-couleurs'],
   'tour-oubliee': ['fosse-sans-fond', 'chaines-rompues', 'cloche-felee', 'encre-du-registre'],
 };
+
+test('les maquettes gardent une orientation fixe sans rotation automatique', () => {
+  const scene = readFileSync(new URL('../src/games/rpgStoryTowerScene.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(scene, /\bSPIN\b|\bspin\s*\+=|model\.rotation\.y\s*\+=/,
+    'la boucle de rendu ne fait plus tourner les tours toute seule');
+  assert.match(scene, /model\.rotation\.y = BASE_YAW \+ pointerYaw/,
+    'seul le mouvement volontaire de la souris incline légèrement la tour');
+  assert.match(scene, /model\.rotation\.y = BASE_YAW;/,
+    'la tour revient à sa position fixe quand les animations sont réduites');
+});
 
 function resources(model) {
   const geometries = new Set(), materials = new Set(), textures = new Set();

@@ -92,7 +92,8 @@ const LOT_EQUIPEMENTS_SABLE = [
   'masque-du-guetteur', 'jitte-d-amayas', 'lame-des-ergs', 'takouba-de-tin-hinan',
   'sphere-de-rotation',
 ];
-const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id) && carte.set !== 'soldats-de-la-lune');
+const ARMES_PROTOTYPE = RPG_ARME_CARDS.filter((carte) => !LOT_EQUIPEMENTS_SABLE.includes(carte.id)
+  && !['soldats-de-la-lune', 'serment-du-soleil-rouge'].includes(carte.set));
 
 test('le prototype compte sept armes, une par élément (la Neige et le Sable en portent deux), avec leur peinture', () => {
   assert.equal(ARMES_PROTOTYPE.length, 7);
@@ -143,7 +144,7 @@ test('les decks du catalogue suivent leur quota d’armes et leur plafond de myt
   const armesParDeck = {
     'veilleurs-du-desert': ['sandales-de-tislit', 'licou-du-chien-de-sable', 'jitte-d-amayas', 'takouba-de-tin-hinan', 'harnais-du-mehari'],
     'cour-des-djinns': [],
-    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'lame-des-ergs', 'masque-du-guetteur'],
+    'sentiers-de-cendre': ['takouba-des-pistes', 'harnais-du-mehari', 'jitte-d-amayas', 'masque-du-guetteur'],
     'maree-des-abysses': ['baton-des-citernes'],
     'serment-des-neuf-hivers': ['lance-de-givre'],
     'serment-du-soleil-rouge': [],

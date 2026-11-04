@@ -8,7 +8,8 @@ import { createStoryTowerModel, disposeStoryTowerModel, RPG_STORY_TOWER_THEMES }
 import { createStoryTowerDecor } from './rpgStoryTowerDecor.js';
 
 const FPS = 24;
-const SPIN = 0.12;
+// Orientation stable : seule la souris peut légèrement faire pivoter la tour.
+const BASE_YAW = -0.15;
 
 /** Graine stable d'une tour : la même brèche, la même fumée à chaque visite. */
 function tourSeed(tourId) {
@@ -221,7 +222,7 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
   let renderer, model, shadow, motes, ruin, decor;
   let disposed = false, failed = false, ready = false, raf = 0;
   let visible = true, calm = false, previousTime = 0, lastPaint = 0;
-  let spin = -0.15, pointerTarget = 0, pointerYaw = 0;
+  let pointerTarget = 0, pointerYaw = 0;
   const cleanups = [];
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 80);
@@ -271,9 +272,8 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
       const delta = previousTime ? Math.min((timestamp - previousTime) / 1000, 0.12) : 0;
       previousTime = timestamp;
       lastPaint = timestamp;
-      spin += delta * SPIN;
       pointerYaw += (pointerTarget - pointerYaw) * Math.min(1, delta * 5);
-      model.rotation.y = spin + pointerYaw;
+      model.rotation.y = BASE_YAW + pointerYaw;
       if (motes) motes.rotation.y += delta * 0.016;
       ruin?.update(delta);
       if (!render()) return;
@@ -300,7 +300,7 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
     renderer.setClearColor(0x000000, 0);
     model = createStoryTowerModel(tourId);
     if (!model) throw new Error('Tour inconnue');
-    model.rotation.y = spin;
+    model.rotation.y = BASE_YAW;
     scene.add(model);
     const ambient = new THREE.HemisphereLight('#d9e5ff', theme.ground, 2.6);
     const key = new THREE.DirectionalLight('#ffe5bd', 3.3);
@@ -364,7 +364,7 @@ export function mountStoryTowerScene({ host, canvas, tourId, detail = false, det
     calm = motionQuery?.matches ?? false;
     const motionChanged = () => {
       calm = motionQuery.matches;
-      if (calm) { pointerYaw = pointerTarget = 0; model.rotation.y = spin; }
+      if (calm) { pointerYaw = pointerTarget = 0; model.rotation.y = BASE_YAW; }
       resume();
     };
     if (motionQuery?.addEventListener) listen(motionQuery, 'change', motionChanged);

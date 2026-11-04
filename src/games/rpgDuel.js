@@ -1501,9 +1501,10 @@ function appliquerMaledictions(duel) {
  *
  * Le calcul couvre les **deux** familles d'armes, parce qu'elles ne se posent
  * pas au même endroit : celle du prototype (`entite.arme`, une seule) et
- * l'arme-sort des magies (`entite.armes`, une liste — le Sabre maudit, Braise
- * et sable). Chacune a sa fiche : `bonus` pour la première, `effet.atk/def`
- * pour la seconde.
+ * l'arme-sort des magies (`entite.armes`, une liste — le Sabre maudit).
+ * Braise et sable est désormais une arme ordinaire à durabilité, dans
+ * `entite.arme`. Chacune a sa fiche : `bonus` pour la première famille,
+ * `effet.atk/def` pour les armes-sorts.
  *
  * Comme les Auras, chaque entité ne retient que l'écart qu'elle a déjà reçu,
  * arme par arme (`lienArmesBonus`) — l'imprimé reste posé une fois pour toutes
@@ -1533,8 +1534,8 @@ function appliquerLiensArmes(duel) {
           ? (arme.bonus ?? { atk: 0, def: 0 })
           : { atk: arme.effet?.atk ?? 0, def: arme.effet?.def ?? 0 };
         // Une arme du prototype renforce par `lien.bonus` ; une arme-sort
-        // (Braise et sable, Sabre maudit), qui se joue comme une magie, porte
-        // son renfort dans `lien.effet` — les deux disent la même chose.
+        // (Sabre maudit), qui se joue comme une magie, porte son renfort
+        // dans `lien.effet` — les deux disent la même chose.
         const renfort = lien.bonus ?? lien.effet;
         if (!renfort || (renfort.atk === undefined && renfort.def === undefined)) continue;
         const actif = lienSatisfait(arme, champ, entite.carteId);
@@ -1834,8 +1835,9 @@ function armeCarteDe(entite) {
  * LE COUP CRITIQUE CUMULABLE.
  *
  * Trois sources peuvent en donner un : la fiche imprimée d'une créature
- * (Kagutsuchi, 25 % ×4) et chaque arme-sort qui en accorde un (Sabre maudit
- * et Braise et sable, 25 % ×2). Elles s'**additionnent** — 25 % + 25 % = 50 %
+ * (Kagutsuchi, 25 % ×4), les armes-sorts (Sabre maudit) et les armes
+ * ordinaires (`donne.coupCritique`, dont Braise et sable). Elles
+ * s'**additionnent** — 25 % + 25 % = 50 %
  * — et le multiplicateur retenu est le plus fort (×4).
  *
  * Avant ce calcul, une arme **écrasait** la valeur imprimée : équiper

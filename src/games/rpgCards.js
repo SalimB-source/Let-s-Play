@@ -13,7 +13,7 @@
  */
 
 import { RPG_CORBEAU_CREATURES, RPG_CORBEAU_FIGURES, RPG_CORBEAU_MAGIES } from './rpgCorbeau.js';
-import { RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
+import { RPG_SOLEIL_ROUGE_ARMES, RPG_SOLEIL_ROUGE_CREATURES, RPG_SOLEIL_ROUGE_JETONS, RPG_SOLEIL_ROUGE_MAGIES } from './rpgSoleilRouge.js';
 import { RPG_TENEBRES_ARMES, RPG_TENEBRES_CREATURES, RPG_TENEBRES_JETONS, RPG_TENEBRES_MAGIES } from './rpgTenebres.js';
 import {
   RPG_LETTRES_DE_MARQUE_ARMES,
@@ -2363,6 +2363,7 @@ export const RPG_MAGIE_CARDS = [
  * une parade anti-sort qui suit l'arme — elle s'en va si l'arme est remplacée.
  */
 export const RPG_ARME_CARDS = [
+  ...RPG_SOLEIL_ROUGE_ARMES,
   ...RPG_TENEBRES_ARMES,
   ...RPG_LETTRES_DE_MARQUE_ARMES,
   {

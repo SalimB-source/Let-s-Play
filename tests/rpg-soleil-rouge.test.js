@@ -73,10 +73,10 @@ test('le deck Soleil rouge est valide et concentre sa signature culturelle', () 
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
   assert.equal(deck.cardIds.filter((id) => cardById(id).kind === 'terrain').length, 0);
   const signature = [
-    'ashigaru-des-braises', 'braisier-du-souk', 'daimyo-du-soleil-rouge',
-    'feux-de-kitsune', 'frappe-iaijutsu', 'hatamoto-des-cendres',
+    'ashigaru-des-braises', 'daimyo-du-soleil-rouge', 'djinn-des-braises-voilees',
+    'djinn-du-dernier-brasier', 'feux-de-kitsune', 'frappe-iaijutsu', 'hatamoto-des-cendres',
     'kagutsuchi-flamme-originelle', 'kenshi-de-la-forge', 'nuage-de-cendres',
-    'onna-musha-des-cendres', 'ronin-du-soleil-rouge', 'samourai-du-torii',
+    'ronin-du-soleil-rouge', 'samourai-du-torii',
     'tengu-du-mont-ardent', 'trait-de-braise', 'ghul-des-cendres', 'sabre-maudit',
   ];
   assert.deepEqual(
@@ -117,7 +117,8 @@ test('les créatures suivent Harakiri, sans anciens effets dispersés', () => {
   // l'Oni de la fournaise, désormais 4/5 avec dégâts à l'arrivée à la place,
   // et Kagutsuchi, 2/6 avec Coup critique au lieu de Harakiri.
   const sansHarakiri = ['orochi', 'ashigaru-des-braises', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle'];
-  for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((c) => !['magie', 'terrain'].includes(c.kind))) {
+  assert.equal(cardById('braise-et-sable').honneur, undefined, 'une arme ne porte pas Harakiri');
+  for (const carte of RPG_SOLEIL_ROUGE_CARDS.filter((c) => !['magie', 'terrain', 'arme'].includes(c.kind))) {
     assert.equal(carte.honneur, sansHarakiri.includes(carte.id) ? 0 : valeurs[carte.rarity], carte.id);
     if (sansHarakiri.includes(carte.id)) assert.doesNotMatch(carte.text, /Harakiri/);
     else assert.match(carte.text, /Harakiri/);

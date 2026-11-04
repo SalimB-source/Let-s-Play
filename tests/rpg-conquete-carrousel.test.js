@@ -4,6 +4,18 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
+import { readFileSync } from 'node:fs';
+
+const lire = (fichier) => readFileSync(new URL(fichier, import.meta.url), 'utf8');
+
+test('Conquête PC : le carrousel occupe la largeur disponible et centre sa tour', () => {
+  const css = lire('../src/games/rpg-story.css');
+  const bureau = css.slice(css.indexOf('Conquête sur PC : la tour et sa description sans défiler'), css.indexOf('Conquête dans une tour, sur PC'));
+  assert.match(bureau, /\.rpg-mode-menu--conquete-galerie \.rpg-free-tours\s*\{[^}]*width: 100%/s,
+    'la colonne du carrousel remplit le panneau à droite de la navigation');
+  assert.match(css, /\.rpg-story__tours\.rpg-conquete-carrousel\s*\{[^}]*justify-content: center/s,
+    'la tour est centrée dans la colonne et non alignée à gauche');
+});
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

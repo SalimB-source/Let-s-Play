@@ -51,9 +51,11 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.ok(RPG_CREATURE_CARDS.some((c) => c.id === 'volva-soigneuse'));
   assert.ok(RPG_DUEL_CARDS.some((c) => c.id === 'braise-et-sable'));
   assert.deepEqual([values('volva-soigneuse').cost, values('volva-soigneuse').atk, values('volva-soigneuse').def, values('volva-soigneuse').furie], [3, 2, 3, 2]);
-  assert.equal(values('braise-et-sable').effet.atk, 1);
-  assert.equal(values('braise-et-sable').effet.coupRapide, true);
-  assert.equal(values('braise-et-sable').effet.coupCritique, 0.25);
+  assert.equal(values('braise-et-sable').kind, 'arme');
+  assert.equal(values('braise-et-sable').bonus.atk, 1);
+  assert.equal(values('braise-et-sable').donne.coupRapide, true);
+  assert.equal(values('braise-et-sable').donne.coupCritique, 0.25);
+  assert.equal(values('braise-et-sable').durabilite, 1);
 });
 
 test('Tercio gagne +1/+0 au début de ses tours, jusqu’à +3/+0', () => {
