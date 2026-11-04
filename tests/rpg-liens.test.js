@@ -348,8 +348,9 @@ test('Braise et sable : +1/+0 seule, +2/+0 avec le Cavalier — Attaque ciblée 
   const atkNu = porteur.atk;
   donner(duel, 'joueur', 'braise-et-sable');
   manaPlein(duel, 'joueur');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'braise-et-sable', porteur.id).ok, true,
-    'l’arme-sort s’attache à l’allié');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'braise-et-sable', porteur.id).ok, true,
+    'la véritable arme s’attache à l’allié');
+  assert.equal(porteur.arme?.durabilite, 1, 'Endurance 1 est visible dès l’attachement');
   assert.equal(porteur.atk, atkNu + 1, 'sans ancre : +1/+0');
   assert.equal(porteur.coupRapide, true, 'Attaque ciblée est toujours donnée');
 
@@ -983,7 +984,7 @@ test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', (
   const braise = cardById('braise-et-sable');
   assert.deepEqual(kagutsuchi.coupCritique, { chance: 0.25, fois: 4 });
   assert.equal(sabre.effet.coupCritique, 0.25);
-  assert.equal(braise.effet.coupCritique, 0.25);
+  assert.equal(braise.donne.coupCritique, 0.25);
 
   const duel = duelVide();
   const k = poser(duel, 'joueur', 'kagutsuchi-flamme-originelle');
@@ -997,7 +998,7 @@ test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', (
 
   donner(duel, 'joueur', 'braise-et-sable');
   manaPlein(duel, 'joueur');
-  assert.equal(rpgLancerMagie(duel, 'joueur', 'braise-et-sable', k.id).ok, true);
+  assert.equal(rpgJouerArme(duel, 'joueur', 'braise-et-sable', k.id).ok, true);
   assert.deepEqual(k.coupCritique, { chance: 0.75, fois: 4 }, 'deux armes : 75 % ×4');
 
   // Une créature sans critique imprimé ne reçoit que celui de l'arme.

@@ -14,7 +14,7 @@ const carte = (definition) => {
   // La clé de données reste `honneur` (les parties en cours la lisent dans
   // les entities sauvegardées) : seul le NOM de l'effet a changé, il
   // s'affiche et se lit Harakiri.
-  const honneur = ['magie', 'terrain'].includes(definition.kind) ? 0 : (definition.honneur ?? RPG_HARAKIRI_PAR_RARETE[definition.rarity]);
+  const honneur = ['magie', 'terrain', 'arme'].includes(definition.kind) ? 0 : (definition.honneur ?? RPG_HARAKIRI_PAR_RARETE[definition.rarity]);
   const texte = definition.text === '—' ? '' : definition.text;
   return {
     ...definition,
@@ -176,7 +176,24 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
   }),
 ];
 
-/** Arme attachée : utilise le ciblage des magies, reste sur son porteur. */
+/** La lame hybride est une véritable arme : un seul emplacement par porteur,
+ * un compteur de durabilité comme les autres armes à Attaque ciblée. */
+export const RPG_SOLEIL_ROUGE_ARMES = [
+  carte({
+    id: 'braise-et-sable', name: 'Braise et sable',
+    kind: 'arme', cost: 3, rarity: 'rare',
+    colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
+    typeLine: 'Arme — Lame de braise et de sable',
+    bonus: { atk: 1, def: 0 }, donne: { coupRapide: true, coupCritique: 0.25 }, durabilite: 1,
+    // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
+    // une fois de plus. Attaque ciblée et coup critique restent intacts.
+    lien: { ancre: 'cavalier-des-deux-sabres', bonus: { atk: 2, def: 0 } },
+    text: 'Arme — +1/+0, Attaque ciblée, Coup critique (25 %). Endurance 1 : détruite après une attaque ou une défense. Avec Cavalier des deux sabres en jeu : +2/+0.',
+    flavor: 'Une moitié mord ; l’autre choisit où.',
+  }),
+];
+
+/** Le Sabre maudit reste une arme-sort ; les autres cartes sont des magies. */
 export const RPG_SOLEIL_ROUGE_MAGIES = [
   carte({
     id: 'sabre-maudit', name: 'Sabre maudit',
@@ -186,19 +203,6 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.25, volDeVie: true },
     text: 'Arme — Le porteur gagne +2/+1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
     flavor: 'La lame prend la force. La main en paie le prix.',
-  }),
-  carte({
-    id: 'braise-et-sable', name: 'Braise et sable',
-    kind: 'magie', cost: 3, rarity: 'rare',
-    colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
-    typeLine: 'Arme — Lame de braise et de sable',
-    cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 1, def: 0, coupRapide: true, coupCritique: 0.25 },
-    // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
-    // une fois de plus. Attaque ciblée et coup critique restent intacts.
-    lien: { ancre: 'cavalier-des-deux-sabres', effet: { atk: 2 } },
-    text: 'Arme — Le porteur gagne +1/+0, Attaque ciblée et Coup critique (25 %). L’arme tombe avec son porteur. Avec Cavalier des deux sabres en jeu : +2/+0 au lieu de +1/+0.',
-    flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
   carte({
     id: 'frappe-iaijutsu', name: 'Frappe d’iaijutsu',
@@ -239,4 +243,5 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
 export const RPG_SOLEIL_ROUGE_CARDS = [
   ...RPG_SOLEIL_ROUGE_CREATURES,
   ...RPG_SOLEIL_ROUGE_MAGIES,
+  ...RPG_SOLEIL_ROUGE_ARMES,
 ];

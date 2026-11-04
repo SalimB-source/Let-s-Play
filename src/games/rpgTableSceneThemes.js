@@ -172,8 +172,8 @@ export const RPG_TABLE_SCENE_THEMES = Object.freeze({
     overlay: { kind: 'ombre', color: '#1d2f45', opacity: 0.12, speed: 0.01, scale: 1.7 },
   }),
   // La lice des clans : pierre froide, lumière de ciel couvert et givre au vent.
-  // Sans braseros ni lueurs chaudes ; les grandes plumes restent animées par le
-  // calque 2D du duel, même sur les tables partagées et sans WebGL.
+  // Sans braseros ni flammes ; plumes et étincelles restent animées par leurs
+  // calques 2D, même sur les tables partagées et sans WebGL.
   'champ-de-bataille-viking': theme({
     ambient: '#dce9f5', ambientIntensity: 0.57, key: '#d2e5f7', keyIntensity: 0.47,
     keyDirection: [-0.7, 0.5, 1], relief: 1.5, roughness: 0.92,

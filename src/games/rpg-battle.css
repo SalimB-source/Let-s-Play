@@ -2931,6 +2931,48 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-plumes-vikings__plume { animation: none; }
 }
 
+/* Quelques étincelles chaudes au bord de la lice, sans brasero ni flamme.
+   Le calque fonctionne même sans décor 3D et suit la frontière du plateau
+   choisi ; il ne recouvre jamais les cartes ni le symbole central. */
+.rpg-braises-vikings {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.rpg-braises-vikings--joueur {
+  clip-path: inset(var(--rpg-frontiere, 50%) 0 0 0);
+}
+.rpg-braises-vikings--adverse {
+  clip-path: inset(0 0 calc(100% - var(--rpg-frontiere, 50%)) 0);
+}
+.rpg-braises-vikings__etincelle {
+  position: absolute;
+  top: var(--braise-y);
+  left: var(--braise-x);
+  width: var(--braise-taille);
+  height: var(--braise-taille);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff4ba 0 16%, #ffa638 48%, #e04915 80%, transparent 100%);
+  box-shadow: 0 0 7px 2px #ee631977;
+  opacity: .42;
+  animation: rpg-braise-viking-vole var(--braise-duree) ease-out var(--braise-delai) infinite;
+  will-change: transform, opacity;
+}
+@keyframes rpg-braise-viking-vole {
+  0% { transform: translate3d(0, 12px, 0) scale(.45); opacity: 0; }
+  22% { opacity: .8; }
+  65% { opacity: .55; }
+  100% { transform: translate3d(var(--braise-derive), -48px, 0) scale(.2); opacity: 0; }
+}
+.card-table[data-apercu-carte] .rpg-braises-vikings { filter: blur(var(--rpg-plateau-flou, 3px)); }
+.rpg-battle.is-reduced .rpg-braises-vikings__etincelle,
+.card-table[data-anim-reduite="true"] .rpg-braises-vikings__etincelle { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-braises-vikings__etincelle { animation: none; }
+}
+
 /* ── La vignette du plateau : deux bandes noires, en haut et en bas ──────────
    Le cadre se referme sur ses bords : un dégradé noir au ras du haut, un autre
    au ras du bas, et rien au milieu. Ce n'est pas le voile d'autrefois — celui
