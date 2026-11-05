@@ -579,3 +579,22 @@
   .rpg-coffre-dore__couvercle { animation: none !important; transition: none !important; }
   .rpg-coffre-dore.is-gerbe .rpg-coffre-dore__eclat { opacity: 0; }
 }
+
+/* Le palier historiquement nommé « bronze » reste le même dans les données,
+   mais sa caisse est désormais en planches de bois et sa serrure en or. */
+.rpg-coffre-dore[data-coffre-metal='bronze'] .rpg-coffre-dore__face::before {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(48, 23, 8, .48) 10px 11px, rgba(239, 180, 109, .14) 11px 12px),
+    repeating-linear-gradient(93deg, transparent 0 6px, rgba(48, 23, 8, .14) 7px 8px, transparent 9px 15px),
+    linear-gradient(165deg, var(--coffre-face-0), var(--coffre-face-1) 44%, var(--coffre-face-2));
+  box-shadow: inset 0 1px 0 rgba(255, 230, 177, .2), inset 0 -3px 5px rgba(0, 0, 0, .35);
+}
+.rpg-coffre-dore[data-coffre-metal='bronze'] .rpg-coffre-dore__face--dessus::before {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 10px, rgba(48, 23, 8, .4) 10px 11px, transparent 12px 14px),
+    linear-gradient(150deg, var(--coffre-dessus-0), var(--coffre-dessus-1) 45%, var(--coffre-dessus-2));
+}
+.rpg-coffre-dore[data-coffre-metal='bronze'] .rpg-coffre-dore__serrure {
+  background: linear-gradient(145deg, #fff2ad 0%, #edbf49 38%, #b77a13 72%, #714505 100%);
+  box-shadow: 0 0 0 1.5px #68420a, inset 0 1.5px 0 #fff6ca, 0 2px 4px rgba(0, 0, 0, .5);
+}

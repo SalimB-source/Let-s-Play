@@ -27,14 +27,15 @@ import './rpg-coffres-quetes.css';
  * et une serrure. Tout est vectoriel — aucune dépendance à une police emoji,
  * aucun asset à télécharger. La couleur vient de `--coffre-teinte`.
  */
-export function CoffreSvg({ ouvert = false }) {
+export function CoffreSvg({ ouvert = false, genre = null }) {
   return (
-    <svg className={`rpg-coffre-svg${ouvert ? ' is-ouvert' : ''}`} viewBox="0 0 64 58" aria-hidden="true" focusable="false">
+    <svg className={`rpg-coffre-svg${ouvert ? ' is-ouvert' : ''}`} viewBox="0 0 64 58" data-coffre-matiere={genre === 'bronze' ? 'bois' : undefined} aria-hidden="true" focusable="false">
       <ellipse className="rpg-coffre-svg__ombre" cx="32" cy="53" rx="23" ry="4" />
       <g className="rpg-coffre-svg__ensemble">
         <g className="rpg-coffre-svg__corps">
           <path className="rpg-coffre-svg__caisse" d="M7 27h50v19a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
           <path className="rpg-coffre-svg__ombre-corps" d="M7 40h50v6a5 5 0 0 1-5 5H12a5 5 0 0 1-5-5Z" />
+          {genre === 'bronze' && <path className="rpg-coffre-svg__veines" d="M9 33h46M9 40h46M23 30v3m18 0v7m-19 0v9" />}
           <rect className="rpg-coffre-svg__ferrure" x="13" y="27" width="5" height="24" />
           <rect className="rpg-coffre-svg__ferrure" x="46" y="27" width="5" height="24" />
         </g>
@@ -47,6 +48,7 @@ export function CoffreSvg({ ouvert = false }) {
         <g className="rpg-coffre-svg__couvercle">
           <path className="rpg-coffre-svg__dessus" d="M7 27v-6a25 13 0 0 1 50 0v6Z" />
           <path className="rpg-coffre-svg__reflet" d="M12 21a20 9 0 0 1 40 0v2H12Z" />
+          {genre === 'bronze' && <path className="rpg-coffre-svg__veines" d="M10 21h44M19 16c6-2 19-2 26 0" />}
           <rect className="rpg-coffre-svg__ferrure" x="13" y="15" width="5" height="12" />
           <rect className="rpg-coffre-svg__ferrure" x="46" y="15" width="5" height="12" />
         </g>
@@ -109,7 +111,7 @@ function SlotCoffre({ coffre, onOuvrir, onRemplacer, peutRemplacer, large = fals
         )}
 
         <span className="rpg-coffres-quetes__scene">
-          <CoffreSvg ouvert={ouvert} />
+          <CoffreSvg ouvert={ouvert} genre={coffre.genre} />
           {coffre.paquets > 0 && (
             <span className="rpg-coffres-quetes__cartes" aria-hidden="true" title={`${coffre.paquets} paquet(s) de cartes`}>
               {coffre.paquets}

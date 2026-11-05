@@ -78,7 +78,7 @@ export default function RpgCoffreOuverture({ coffre, paquetsObtenus = 0, onFerme
 
         <div className={`rpg-coffre-ouverture__scene${ouvert ? ' is-ouvert' : ''}`}>
           <span className="rpg-coffre-ouverture__eclair" aria-hidden="true" />
-          <CoffreSvg ouvert={ouvert} />
+          <CoffreSvg ouvert={ouvert} genre={coffre.genre} />
           <span className="rpg-coffre-ouverture__pieces" aria-hidden="true">
             {PIECES.map((piece) => (
               <span
