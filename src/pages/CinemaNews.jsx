@@ -10,6 +10,7 @@ import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { Arrow } from '../components/ReleasesCalendar';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import '../cinema-news.css';
@@ -103,7 +104,9 @@ export default function CinemaNews() {
   // 05.10.2026 — Les Misérables de Fred Cavayé et Marshals saison 2 —, celles
   // du week-end des 03-04.10.2026 — Verity vs Digger, Dexter Resurrection S2
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
-  const articles = useMemo(() => [
+  // Source brute, en français : `rawArticles` reçoit les cartes de toutes les
+  // éditions, puis `useLocalizedListings` les traduit pour la langue de lecture.
+  const rawArticles = useMemo(() => [
     ...news20261105.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261104.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261103.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
@@ -143,6 +146,9 @@ export default function CinemaNews() {
     { to: '/news/cinema/blade-reboot', image: 'cinema-blade.jpg', alt: 'Blade — affiche officielle du film de 1998 avec Wesley Snipes, franchise reprise par Marvel Studios', badge: 'BLADE · MARVEL', kicker: '10.09.2026 · MARVEL STUDIOS', title: 'BLADE A ENFIN SON RÉALISATEUR.', excerpt: 'Après plusieurs mois d’incertitude, le film Blade avec Mahershala Ali aurait enfin trouvé un nouveau réalisateur. Le tournage pourrait reprendre en 2027.', read: copy.read, sentiment: 'mixed' },
     { to: '/news/cinema/arcane-saison-2', image: 'cinema-arcane.jpg', alt: 'Arcane saison 2 — Jinx et Vi, affiche officielle Netflix / Riot Games', badge: 'ARCANE · SAISON 2', kicker: '08.09.2026 · NETFLIX', title: 'ARCANE S2 DERNIÈRE LIGNE DROITE.', excerpt: 'À quelques semaines de la sortie, Riot et Netflix dévoilent les nouvelles affiches d’Arcane saison 2, et confirment que ce sera la dernière.', read: copy.read, sentiment: 'positive' },
   ], [copy.read]);
+  // Cartes dans la langue de lecture : titre et chapô traduits quand ils
+  // existent (src/news/localized/), français sinon.
+  const articles = useLocalizedListings(rawArticles, lang);
 
   useEffect(() => {
     const ids = articles.map((a) => normalizeArticleId(a.to));

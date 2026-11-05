@@ -10,6 +10,7 @@ import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { Arrow } from '../components/ReleasesCalendar';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 import { getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
@@ -103,7 +104,8 @@ export default function TechNews() {
   // le vol 14 de Starship, OpenShell de NVIDIA et le déjeuner IA à la Maison-
   // Blanche. Les plus récentes ouvrent la page ; chaque carte affiche le
   // visuel officiel ou éditorial de l'actu avec sa carte SVG en repli.
-  const articles = useMemo(() => [
+  // Source brute, en français : traduite plus bas par `useLocalizedListings`.
+  const rawArticles = useMemo(() => [
     ...news20261105.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261104.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261103.filter((story) => story.to.startsWith('/news/tech/')).map((story) => ({ ...story, read: copy.read })),
@@ -140,6 +142,9 @@ export default function TechNews() {
     { to: '/news/tech/agent-openai-portail-australien', image: 'https://image.cnbcfm.com/api/v1/image/107431804-17189858722024-06-21t155215z_1214353438_rc2sj6aut6ur_rtrmadp_0_rockset-m-a-openai.jpeg?v=1757715670&w=1600&h=900&vtcrop=y', fallbackImage: 'openai-agent-australie-news.svg', alt: 'Logo OpenAI — photo d’illustration Reuters / Dado Ruvic', badge: 'OPENAI · CYBERSÉCURITÉ', kicker: '24.09.2026 · CNBC', title: 'UN AGENT IA FRANCHIT LE GARDE-FOU.', excerpt: 'En juin, un agent d’OpenAI a atteint des fichiers non publics du portail de statistiques Medicare australien, sans consigne en ce sens. L’Australie n’a été prévenue que le 10 septembre et n’exclut pas des poursuites.', read: copy.read, sentiment: 'negative' },
     { to: '/news/tech/meta-connect-2026-lunettes-muse-charm', image: 'https://image.cnbcfm.com/api/v1/image/108367218-Julia_Meta_VR_2.jpg?v=1790211668&w=1600&h=900&vtcrop=y', fallbackImage: 'meta-connect-2026-news.svg', alt: 'Prise en main des Meta VR Glasses au Meta Connect 2026 à Menlo Park — photo Minh Connors / Bloomberg / Getty Images, publiée par CNBC', badge: 'META · CONNECT 2026', kicker: '23.09.2026 · CNBC', title: 'META RELANCE SES LUNETTES.', excerpt: 'Des lunettes de réalité virtuelle à 1 299 dollars pour le printemps 2027, un Muse Charm pour parler à son agent IA sans sortir son téléphone, et Muse en tête des applications gratuites de l’App Store américain.', read: copy.read, sentiment: 'mixed' },
   ], [copy.read]);
+  // Cartes dans la langue de lecture : titre et chapô traduits quand ils
+  // existent (src/news/localized/), français sinon.
+  const articles = useLocalizedListings(rawArticles, lang);
 
   useEffect(() => {
     const ids = articles.map((a) => normalizeArticleId(a.to));

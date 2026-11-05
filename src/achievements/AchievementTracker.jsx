@@ -36,10 +36,8 @@ export default function AchievementTracker() {
     track('visit', { day: dayKey() });
   }, [track]);
 
-  // Langue utilisée (une par langue, le moteur ne compte pas les doublons).
-  // Le site étant publié en français, seul `fr` est enregistré : les succès
-  // « Polyglotte » et « Trilingue » restent au catalogue pour les joueurs qui
-  // les ont obtenus, mais ne peuvent plus être débloqués (voir catalog.js).
+  // Langue utilisée (une par langue, le moteur ne compte pas les doublons) :
+  // lire le site en FR, EN puis AR débloque « Polyglotte » puis « Trilingue ».
   useEffect(() => {
     track('language_used', { code: lang });
   }, [lang, track]);

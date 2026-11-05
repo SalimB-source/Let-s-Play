@@ -45,6 +45,43 @@
         }
       })();
     </script>
+    <!--
+      Langue et sens de lecture — posés avant le premier rendu, comme le thème.
+      Ordre de décision identique à `src/i18n/LanguageContext.jsx` :
+        1. le choix explicite du visiteur (`letsplay-lang`) ;
+        2. sinon la langue de son appareil (`navigator.languages`) ;
+        3. sinon le français.
+      Sans ce script, un visiteur arabophone verrait la page en français,
+      de gauche à droite, puis un saut vers l'arabe une fois React monté. Le
+      HTML reste écrit en français (`lang="fr"`) pour les robots et pour le cas
+      sans JavaScript : c'est ce script qui le corrige côté navigateur.
+    -->
+    <script>
+      (function () {
+        var CODES = ['fr', 'en', 'ar'];
+        function retenue(code) {
+          return typeof code === 'string' && CODES.indexOf(code) !== -1;
+        }
+        function choisir() {
+          try {
+            var memorisee = localStorage.getItem('letsplay-lang');
+            if (retenue(memorisee)) return memorisee;
+          } catch (e) { /* navigation privée : on ne lit pas */ }
+          var candidats = [];
+          if (navigator.languages && navigator.languages.length) candidats = navigator.languages;
+          else if (navigator.language) candidats = [navigator.language];
+          for (var i = 0; i < candidats.length; i++) {
+            var principale = String(candidats[i] || '').trim().toLowerCase().split(/[-_]/)[0];
+            if (retenue(principale)) return principale;
+          }
+          return 'fr';
+        }
+        var langue = choisir();
+        var racine = document.documentElement;
+        racine.setAttribute('lang', langue);
+        racine.setAttribute('dir', langue === 'ar' ? 'rtl' : 'ltr');
+      })();
+    </script>
     <link rel="icon" type="image/x-icon" sizes="16x16 32x32 48x48" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />

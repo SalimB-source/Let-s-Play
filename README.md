@@ -2985,35 +2985,104 @@ Deux points d'attention :
   `!important` et gardent donc leur rendu d'origine — leur habillage de
   dossier d'horreur est volontairement à part.
 
-## Langue : le site est en français
+## Langue : FR / EN / AR, détectée sur l'appareil
 
-Le sélecteur de langue (EN / FR / AR) a été **retiré de la barre de navigation** :
-le site est publié en français, sans réglage. `LanguageContext` n'a plus ni état
-ni `localStorage` — l'ancienne clé `letsplay-lang` est ignorée, y compris chez un
-visiteur qui avait choisi l'anglais ou l'arabe.
+Le sélecteur de langue est **de retour dans la barre de navigation** (FR / EN /
+AR, l'arabe en écriture de droite à gauche). Il fonctionne dans les deux sens :
+choisir une langue traduit l'interface et les articles, et le choix est
+mémorisé.
 
-Ce qui reste dans le dépôt, volontairement :
+### Quelle langue s'affiche à l'arrivée
 
-- **Les dictionnaires `en` et `ar`** (`src/i18n/translations.js`). `en` est le
-  filet de sécurité du français : une clé oubliée dans `fr` s'affiche en anglais
-  au lieu de faire planter la page (le bug ff6d390 avait laissé la page Actus
-  blanche pour cette raison). Voir `withBaseFallback` dans
-  `src/i18n/LanguageContext.jsx`.
-- **La direction du texte** (`dir`) et le câblage RTL : inertes en français,
-  déjà en place si une langue revient.
-- **La prop `lang` du provider** : une prise réservée aux scripts de
-  vérification, qui continuent de rendre chaque route en FR / EN / AR
-  (`npm run check:i18n`). Aucun écran ne s'en sert.
-- **Les scripts de vérification** ne posent plus la langue dans `localStorage`
-  (plus personne ne la lit) : ils la passent au provider.
+1. **Le choix explicite du visiteur**, s'il en a déjà fait un — mémorisé sous
+   la clé `letsplay-lang` dans `localStorage`, et prioritaire sur tout le
+   reste. C'est ce que fait le switch : il tranche définitivement.
+2. Sinon, **la langue de l'appareil** : `navigator.languages` est parcouru dans
+   l'ordre de préférence et le premier code dont la langue principale fait
+   partie du site l'emporte (`ar-DZ` vaut `ar`, `en-US` vaut `en`).
+3. Sinon, **le français** — langue de rédaction et de référence.
 
-Le suivi des succès continue d'enregistrer la langue utilisée, mais il ne voit
-plus que le français : les succès **« Polyglotte »** (2 langues) et
-**« Trilingue »** (3 langues) ne peuvent donc plus être débloqués par un nouveau
-visiteur. Ils restent au catalogue, délibérément — un joueur qui les a obtenus
-du temps des trois langues garde son grade, son XP et sa progression, et les
-retirer ferait baisser son niveau (voir « Succès débloqués par les actions du
-site »).
+La décision est prise **deux fois**, exprès : une fois par le petit script
+inline d'`index.html`, qui pose `lang` et `dir` sur `<html>` avant le premier
+paint (sinon un visiteur arabophone verrait la page en français puis un saut
+vers la droite), et une fois par `LanguageContext`, qui lit exactement les mêmes
+règles. Les deux implémentations doivent rester alignées : `matchDeviceLanguage`
+(`src/i18n/languages.js`) est la référence.
+
+### Comment l'interface est traduite
+
+- **Les dictionnaires vivent dans `src/i18n/translations.js`** (`en`, `fr`,
+  `ar`). Le français est **embarqué** dans le paquet de départ : un visiteur
+  francophone ne télécharge jamais les deux autres. L'anglais et l'arabe
+  arrivent **à la demande**, en chunk séparé (`dictionary.js`) — vérifiable
+  dans `dist/assets` après un build.
+- **`withBaseFallback`** complète une clé manquante du français par l'anglais,
+  plutôt que d'afficher la clé brute ou de faire tomber la page (le bug ff6d390
+  avait laissé la page Actus blanche pour cette raison).
+- Le sens de lecture est posé sur `<html dir>`, et les blocs qui en dépendent
+  ont leurs règles `[dir='rtl']` (`src/news-article.css`, `styles.css`).
+- `src/i18n/translations-fr-site.js` est **généré** (français sur la base
+  anglaise, `npm run i18n:fr-site`) : ne pas le modifier à la main.
+
+### Comment les articles sont traduits
+
+Le texte des articles est une **donnée**, pas de l'interface : aucun
+dictionnaire ne peut le traduire. Chaque traduction est donc un fichier, rangé
+à côté de l'original français :
+
+- `src/news/localized/<langue>/index.js` — les listings (titre, chapô, accroche,
+  catégorie, temps de lecture) de tous les articles traduits dans cette langue ;
+- `src/news/localized/<langue>/<slug>.js` — le corps de l'article, chargé à la
+  demande quand le visiteur ouvre la page.
+
+Les deux sont **générés** par le robot ; il ne faut pas les écrire à la main.
+Le contrat d'affichage : un article non traduit reste lisible **en français**,
+avec un bandeau « Version française » ; le repli se fait champ par champ, jamais
+par page vide.
+
+**À la publication** — le robot traduit chaque nouvel article en anglais et en
+arabe au moment où il le publie, avec la même clé IA que la rédaction
+(`scripts/news-bot/lib/translate.mjs`, une à deux requêtes par article). Un
+échec de traduction **ne bloque jamais la publication** : l'article paraît en
+français, avec le bandeau, et sera repris par la commande ci-dessous.
+
+```bash
+npm run news:translate                      # tout le stock, en et ar
+npm run news:translate -- --lang=en         # une seule langue
+npm run news:translate -- --limit=10        # les 10 plus récents
+npm run news:translate -- --slug=zelda-40th # un article précis
+npm run news:translate -- --force           # retraduit ce qui existe déjà
+npm run news:translate -- --dry-run         # liste ce qui manque, sans IA
+```
+
+Sans clé IA, la commande s'arrête en le disant, sans rien casser. Pour publier
+sans traduire (panne du fournisseur, budget), le robot accepte
+`NEWS_TRANSLATE=0` ou `npm run news:fetch -- --no-translate` : les articles
+sortent en français et le stock sera traduit plus tard par `news:translate`.
+
+### Succès « Polyglotte » et « Trilingue »
+
+Le suivi des succès enregistre de nouveau la langue réellement utilisée : les
+succès **« Polyglotte »** (2 langues) et **« Trilingue »** (3 langues) sont
+débloquables en changeant de langue sur le site. Ceux qui les avaient obtenus
+avant le retrait du sélecteur gardent leur grade, leur XP et leur progression.
+
+### Vérifier la langue
+
+```bash
+npm run check:i18n       # chaque route rendue en fr, en et ar
+npm run check:nav        # en-têtes et menus dans les trois langues
+npm run check:lang-boot  # langue et dir posés avant le premier rendu
+npm run check:localized  # traductions d'articles, repli français, recherche
+npx vite build           # l'anglais et l'arabe restent hors du paquet initial
+```
+
+`check:lang-boot` rejoue le script inline d'`index.html` dans jsdom et compare
+son verdict à `matchDeviceLanguage()` : si les deux décisions divergent un jour,
+le contrôle échoue. `check:localized` vérifie le contrat des articles traduits —
+corps chargés un par un, repli français sur un article non traduit, titre
+traduit dans la recherche.
+
 
 ## Contenu
 
@@ -4043,7 +4112,7 @@ Trois étages, un seul chemin :
 | `video_played` | `videosWatched`, `liveWatched` |
 | `comment_posted` | `commentsPosted` |
 | `search_performed` | `searchesPerformed`, `distinctSearches` |
-| `language_used` | `languagesUsed` — le site n'étant publié qu'en français, seul `fr` est enregistré : « Polyglotte » et « Trilingue » restent au catalogue mais ne se débloquent plus |
+| `language_used` | `languagesUsed` — une entrée par langue réellement lue (`fr`, `en`, `ar`) : changer de langue avec le sélecteur débloque « Polyglotte » puis « Trilingue » |
 | `account_created` / `signed_in` | `accountsCreated`, `sessions` |
 | `provider_linked` | `providersLinked` |
 | `profile_updated` | `profileUpdates` |

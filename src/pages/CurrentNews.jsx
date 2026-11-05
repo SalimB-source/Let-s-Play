@@ -26,6 +26,14 @@ import { dailyStories as dailyStories20261016 } from '../news/daily/2026-10-16';
 import { dailyStories as dailyStories20261017 } from '../news/daily/2026-10-17';
 import { incrementArticleView, getArticleViews, normalizeArticleId, formatViews } from '../lib/articleViews';
 import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
+// Langue de lecture : l'article est écrit en français puis traduit (voir
+// src/news/localized/). `useLocalizedStory` remplace le contenu par sa
+// traduction quand elle existe, et laisse le français sinon — avec un bandeau
+// qui le dit franchement.
+import { useLanguage } from '../i18n/LanguageContext';
+import { SITE_LANG, languageMeta } from '../i18n/languages.js';
+import { useLocalizedStory } from '../news/localized/useLocalizedArticle.js';
+import ArticleLanguageNotice from '../components/ArticleLanguageNotice';
 import SpoilerAlert from '../components/SpoilerAlert';
 import ArticleGallery from '../components/ArticleGallery';
 import { getArticleGallery } from '../articleGalleries';
@@ -1193,6 +1201,11 @@ stories['physint-un-budget-de-400-millions-de-dollars-pour-le-jeu-de'] = stories
 
 function Arrow(){ return <span aria-hidden="true">↗</span>; }
 
+// Remplace `{n}`, `{language}`… dans un libellé traduit.
+function fillText(template, values) {
+  return String(template || '').replace(/\{(\w+)\}/g, (match, key) => (values[key] ?? match));
+}
+
 export default function CurrentNews({ slug, slugPrefix }) {
   const routeSlug = useParams().slug;
   const allStories = { ...autoStories, ...stories };
@@ -1200,12 +1213,23 @@ export default function CurrentNews({ slug, slugPrefix }) {
   // reconstruire la clé d'article (« cinema/<slug> ») : l'articleId reste
   // identique à celui des cartes du hub correspondant (vues, réactions…).
   const key = slug || (routeSlug && slugPrefix ? `${slugPrefix}${routeSlug}` : routeSlug);
-  const story = key ? allStories[key] : stories['persona-6-switch-2'];
-  const footerSource = articleFooterSource(story);
+  const baseStory = key ? allStories[key] : stories['persona-6-switch-2'];
+  const { lang, t, setLang } = useLanguage();
+  // Version affichée : la traduction si elle existe, le français sinon. Les
+  // crochets évitent d'appeler le hook conditionnellement quand l'article
+  // n'existe pas (NotFound plus bas).
+  const localized = useLocalizedStory(baseStory ? { ...baseStory, to: `/news/${key}` } : null, lang);
+  const story = baseStory ? localized.story : null;
+  // La source du pied de page est validée sur l'article FRANÇAIS d'origine
+  // (`articleSources.js` ne retient que les domaines officiels) : une
+  // traduction ne peut donc pas changer la nature du lien affiché.
+  const footerSource = articleFooterSource(baseStory);
   if (!story) return <NotFound />;
   const articleId = `/news/${key}`;
+  // Libellés d'article : traduction de l'interface, jamais codés en dur.
+  const copy = t?.article || {};
   const sentimentId = inferSentimentForStory(story);
-  const meta = sentimentMeta(sentimentId);
+  const meta = { ...sentimentMeta(sentimentId), label: copy.sentiment?.[sentimentId] || sentimentMeta(sentimentId).label };
   const gallery = story.gallery || getArticleGallery(key);
   // Bandes-annonces et teasers officiels des actus cinéma : la liste vit dans
   // src/articleTrailers.js, comme les galeries de captures. Une actu sans
@@ -1232,13 +1256,18 @@ export default function CurrentNews({ slug, slugPrefix }) {
   }, [articleId]);
 
   return <>
-    <section className="article-hero wrap"><div className="section-label"><span>ACTUS À LA UNE</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? 'ACTU DU JOUR · LET’S PLAY' : 'RÉÉCRIT POUR LET’S PLAY'}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>{story.readTime || '4 MIN DE LECTURE'}</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {formatViews(views)} vues</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={imageUrl(story.thumbnail || story.image)} alt={story.imageAlt} onError={(event) => { if (story.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = imageUrl(story.fallbackImage); } }} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
+    <section className="article-hero wrap"><div className="section-label"><span>{copy.label}</span><span>{story.date} · {story.category}</span></div><div className="article-heading"><div><p className="eyebrow"><span className="live-dot" /> {story.auto ? copy.eyebrowAuto : copy.eyebrowRewritten}</p><h1>{story.title}<br/><em>{story.accent}</em></h1><p className="article-dek">{story.dek}</p><div className="article-byline"><span>LET’S PLAY</span><span>{story.readTime || copy.readTime}</span>{views != null && <span className="article-views-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true" width="14" height="14"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg> {fillText(copy.views, { n: formatViews(views) })}</span>}<span className={`article-sentiment-inline ${meta.color}`} title={meta.label}>{meta.emoji} {meta.label}</span></div></div><div className="article-cover hud-frame"><img src={imageUrl(story.thumbnail || story.image)} alt={story.imageAlt} onError={(event) => { if (story.fallbackImage && event.currentTarget.dataset.thumbFallback !== 'true') { event.currentTarget.dataset.thumbFallback = 'true'; event.currentTarget.src = imageUrl(story.fallbackImage); } }} /><div><small>{story.category}</small><strong>{story.cover}</strong></div><span className={`news-sentiment ${meta.color}`} style={{ top: 12, right: 12 }} aria-label={meta.label} title={meta.label}>{meta.emoji}</span>{views != null && <span className="news-views" style={{ left: 12, bottom: 12 }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" /><circle cx="12" cy="12" r="3.2" /></svg>{formatViews(views)}</span>}</div></div></section>
     <main className="article-layout wrap">
       <article className="article-body">
+        <ArticleLanguageNotice
+          translated={localized.translated}
+          state={localized.loading ? 'loading' : 'ready'}
+          onReadOriginal={() => setLang(SITE_LANG)}
+        />
         <p className="article-lead">{story.lead}</p>
         {story.intro ? <p>{story.intro}</p> : null}
         {trailer ? <ArticleTrailer {...trailer} /> : null}
-        {story.video ? <section className="article-video"><div className="section-label"><span><b>VIDÉO</b> / OFFICIELLE</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">Vidéo officielle : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">Voir sur YouTube</a></p></section> : null}
+        {story.video ? <section className="article-video"><div className="section-label"><span><b>{copy.video}</b> / {copy.official}</span><span>{story.category}</span></div><div className="article-video-frame"><iframe src={youTubeEmbedUrl(story.video)} title={story.videoTitle} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div><p className="article-source">{copy.officialVideo} : {story.videoTitle} · <a href={`https://www.youtube.com/watch?v=${story.video}`} target="_blank" rel="noreferrer">{copy.watchOnYouTube}</a></p></section> : null}
 
         <h2>{story.h2}</h2>
         <p>{story.p1}</p>
@@ -1281,12 +1310,12 @@ export default function CurrentNews({ slug, slugPrefix }) {
       </article>
 
       <aside className="article-aside">
-        <div className="aside-card aside-card-accent"><span className="aside-kicker">À LIRE AUSSI</span><strong>LES ACTUS À LA UNE</strong><p>Retrouvez les dernières annonces et analyses de la rédaction.</p><Link className="arrow-link" to="/news">RETOUR AUX ACTUS <Arrow/></Link></div>
+        <div className="aside-card aside-card-accent"><span className="aside-kicker">{copy.alsoRead}</span><strong>{copy.alsoReadTitle}</strong><p>{copy.alsoReadText}</p><Link className="arrow-link" to="/news">{copy.backToNews} <Arrow/></Link></div>
       </aside>
     </main>
     <ArticleEngagement articleId={`/news/${key}`} title={`${story.title} ${story.accent}`} />
     <Comments />
-    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> LA SUITE SUR LET’S PLAY</p><h2>RESTEZ DANS<br/><em>LE GAME.</em></h2></div><Link className="button button-yellow" to="/news">VOIR LES ACTUS <Arrow/></Link></section>
+    <section className="cta wrap"><div><p className="eyebrow"><span className="live-dot" /> {copy.ctaEyebrow}</p><h2>{copy.ctaTitleA}<br/><em>{copy.ctaTitleB}</em></h2></div><Link className="button button-yellow" to="/news">{copy.ctaButton} <Arrow/></Link></section>
   </>;
 }
 

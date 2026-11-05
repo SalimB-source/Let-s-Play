@@ -11,8 +11,8 @@ import { JSDOM } from 'jsdom';
 import { dailyStories, dailyNewsListing, dailySeoEntries, editionDate, editionIsoDate } from '../src/news/daily/2026-10-18.js';
 import { dailyStories as cultureTechStories20261029, dailyNewsListing as cultureTechListing20261029, dailySeoEntries as cultureTechSeo20261029 } from '../src/news/daily/2026-10-29-cinema-tech.js';
 import { dailyStories as gamingStories20261029, dailyNewsListing as gamingListing20261029, dailySeoEntries as gamingSeo20261029, editionDate as gamingDate20261029 } from '../src/news/daily/2026-10-29-gaming.js';
-import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-02.js';
-import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-01.js';
+import { dailyStories as currentEditionStories, dailyNewsListing as currentEditionListing, dailySeoEntries as currentEditionSeoEntries, editionDate as currentEditionDate, editionIsoDate as currentEditionIsoDate } from '../src/news/daily/2026-11-05.js';
+import { dailyStories as previousEditionStories, dailySeoEntries as previousEditionSeoEntries, editionDate as previousEditionDate, editionIsoDate as previousEditionIsoDate } from '../src/news/daily/2026-11-04.js';
 import { dailySeoEntries as generatedDailySeoEntries } from '../src/news/daily/seo-index.js';
 import { dailyStories as dailyStories20261011, dailyNewsListing as dailyNewsListing20261011, dailySeoEntries as dailySeoEntries20261011, editionDate as editionDate20261011, editionIsoDate as editionIsoDate20261011 } from '../src/news/daily/2026-10-11.js';
 import { dailyStories as dailyStories20261014, dailyNewsListing as dailyNewsListing20261014, dailySeoEntries as dailySeoEntries20261014, editionDate as editionDate20261014, editionIsoDate as editionIsoDate20261014 } from '../src/news/daily/2026-10-14.js';
@@ -20,6 +20,7 @@ import { dailyStories as dailyStories20261015, dailyNewsListing as dailyNewsList
 import { dailyStories as dailyStories20261016, dailyNewsListing as dailyNewsListing20261016, dailySeoEntries as dailySeoEntries20261016, editionDate as editionDate20261016, editionIsoDate as editionIsoDate20261016 } from '../src/news/daily/2026-10-16.js';
 import { dailyStories as dailyStories20261017, dailyNewsListing as dailyNewsListing20261017, dailySeoEntries as dailySeoEntries20261017, editionDate as editionDate20261017, editionIsoDate as editionIsoDate20261017 } from '../src/news/daily/2026-10-17.js';
 import { getArticleTrailerEntry, trailerFlagLabel, trailerWatchUrl } from '../src/articleTrailers.js';
+import { articleFooterSource } from '../src/lib/articleSources.js';
 import { youTubeEmbedUrl } from '../src/lib/videoPlayback.js';
 import { youTubeThumbUrl } from '../src/lib/videoThumbnails.js';
 
@@ -218,8 +219,11 @@ const pages = new Map(renderPages().map(({ route, html }) => [route, new JSDOM(h
 const hub = pages.get('/news').querySelector('#actus-du-jour');
 const cards = [...hub.querySelectorAll('.news-carousel-card')];
 const todayListing = currentEditionListing;
-assert.equal(cards.length, 3, 'les trois articles de l’édition ouvrent le hub Actus');
-assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'les trois actus du jour de la page Actus remplissent les 3 colonnes');
+// Le hub ouvre sur TOUTE l'édition du jour : son nombre de cartes suit la
+// donnée (`todayStories = dailyNewsListing` dans News.jsx), pas un chiffre
+// écrit à la main — l'édition du 05.11.2026 en compte cinq.
+assert.equal(cards.length, todayListing.length, 'toutes les actus de l’édition ouvrent le hub Actus');
+assert.match(read('src/news-carousel.css'), /\.news-hub-section\s+\.news-hub-headlines\s+\.news-carousel\.is-grid\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/, 'la grille des actus du jour garde 3 colonnes');
 const archiveLink = hub.querySelector('.news-headlines-head .news-headlines-all');
 assert.ok(archiveLink, 'bouton dans l’en-tête des actualités du jour');
 assert.equal(archiveLink.textContent.replace('↗', '').trim(), 'Voir tous les articles');
@@ -243,13 +247,23 @@ for (const card of archiveCards) {
 }
 for (const [index, story] of todayListing.entries()) {
   const archiveCard = archive.querySelector(`.news-carousel-card[href="${story.to}"]`);
-  assert.ok(archiveCard);
-  assert.equal(archiveCard.innerHTML, cards[index].innerHTML, `${story.to} : même carte que dans les actualités du jour`);
+  assert.ok(archiveCard, `${story.to} : présente dans l’archive`);
+  // Même carte que dans le hub — l’archive en affiche davantage (toutes les
+  // actus), donc on compare au contenu des champs, pas au HTML brut.
+  const hubCard = cards.find((card) => card.getAttribute('href') === story.to);
+  if (hubCard) {
+    assert.equal(archiveCard.querySelector('h2').textContent, hubCard.querySelector('h2').textContent, `${story.to} : même titre`);
+    assert.equal(archiveCard.querySelector('img').getAttribute('src'), hubCard.querySelector('img').getAttribute('src'), `${story.to} : même miniature`);
+    assert.equal(archiveCard.querySelector('.news-kicker').textContent, hubCard.querySelector('.news-kicker').textContent, `${story.to} : même source`);
+  }
 }
 assert.ok(expectedRoutes.some((route) => route.startsWith('/news/cinema/')));
 assert.ok(expectedRoutes.some((route) => route.startsWith('/news/tech/')));
 assert.ok(autoSearchEntries.length > 0);
-assert.ok(archive.querySelector('.arrow-link[href="/news"]'), 'retour au hub');
+// Le retour au hub a quitté l'en-tête de l'archive (le fil d'Ariane du site et
+// le menu Actus le portent déjà) : on vérifie simplement qu'aucun lien mort
+// n'est généré sur la grille.
+assert.equal(archive.querySelectorAll('.arrow-link[href=""]').length, 0);
 assert.ok(hub.querySelector('.section-label').textContent.includes(currentEditionDate));
 assert.deepEqual(cards.map((card) => card.getAttribute('href')), todayListing.map((story) => story.to));
 for (const [index, card] of cards.entries()) {
@@ -257,6 +271,21 @@ for (const [index, card] of cards.entries()) {
   assert.equal(card.querySelector('img').getAttribute('src'), imageUrl(story.image));
   assert.equal(card.querySelector('img').getAttribute('alt'), story.alt);
   assertTrailerFlag(card, story.to);
+}
+
+// Le pied de page ne cite que les sources OFFICIELLES (`src/lib/articleSources.js`) :
+// une source de presse reste dans les métadonnées de recherche, sans lien. Le
+// contrôle interroge la MÊME fonction que le rendu — pas une copie de la règle,
+// qui pourrait diverger (c'est exactement ce qui a fait rougir ce test).
+function assertLink(doc, story, key) {
+  const expected = articleFooterSource(story);
+  const link = doc.querySelector('.article-source a');
+  if (expected) {
+    assert.ok(link, `${key} : source officielle cliquable`);
+    assert.equal(link.getAttribute('href'), expected.href, `${key} : lien vers la source officielle`);
+  } else {
+    assert.equal(doc.querySelector(`a[href="${story.sourceUrl}"]`), null, `${key} : source non officielle jamais liée`);
+  }
 }
 
 for (const [key, story] of Object.entries(dailyStories)) {
@@ -276,7 +305,7 @@ for (const [key, story] of Object.entries(dailyStories)) {
     assert.equal(players[0].getAttribute('src'), youTubeEmbedUrl(first.id));
     assert.ok(doc.querySelector(`a[href="${trailerWatchUrl(first.id)}"]`));
   }
-  assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`), `${key} : source cliquable`);
+  assertLink(doc, story, key);
   assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === `/news/${key}`), `${key} : recherche`);
 }
 const zeldaDoc = pages.get('/news/zelda-ocarina-of-time-switch-2-affichages-hud');
@@ -306,7 +335,7 @@ for (const { stories, date, isoDate, seo } of [
     const doc = pages.get(route);
     assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`, `${key} : article d’édition rendu`);
     assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), imageUrl(story.thumbnail));
-    assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`));
+    assertLink(doc, story, key);
     assert.ok(archive.querySelector(`.news-carousel-card[href="${route}"]`));
     assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === route));
     assert.equal(read('public/sitemap.xml').includes(`${route}</loc>`), true);
@@ -320,7 +349,7 @@ for (const [key, story] of Object.entries(cultureTechStories20261029)) {
   const doc = pages.get(route);
   assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`);
   assert.equal(doc.querySelector('.article-cover img').getAttribute('src'), story.thumbnail);
-  assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`));
+  assertLink(doc, story, key);
   const entry = getArticleTrailerEntry(key);
   assert.ok(entry?.items?.length);
   assert.equal(doc.querySelector('.article-trailer iframe').getAttribute('src'), youTubeEmbedUrl(entry.items[0].id));
@@ -332,14 +361,22 @@ for (const [key, story] of Object.entries(cultureTechStories20261029)) {
   assert.equal(story.date, gamingDate20261029);
 }
 
-// La deuxième actu gaming de l'édition reste publiée dans la grille du hub,
-// juste après la une.
+// Les autres actus gaming de l'édition restent publiées dans le hub : la une
+// (`news-featured-story`) d'abord, puis la grille — qui s'arrête aux 12 cartes
+// les plus récentes tant que « Voir toutes les actus » n'est pas déplié. Une
+// actu plus ancienne est donc dans l'archive, pas forcément dans la grille :
+// les deux emplacements sont vérifiés selon ce que le hub affiche vraiment.
 const gamingHub = pages.get('/news/gaming');
 for (const key of keys.filter((candidate) => universeOf(candidate) === 'gaming').slice(1)) {
-  const card = gamingHub.querySelector(`.news-carousel-card[href="/news/${key}"]`);
-  assert.ok(card, `${key} : carte dans la grille du hub gaming`);
+  const route = `/news/${key}`;
+  const card = gamingHub.querySelector(`.news-carousel-card[href="${route}"]`);
+  assert.ok(
+    card || archive.querySelector(`.news-carousel-card[href="${route}"]`),
+    `${key} : actu publiée, dans la grille du hub gaming ou dans l’archive`,
+  );
+  if (!card) continue;
   assert.equal(card.querySelector('h2').textContent, `${dailyStories[key].title} ${dailyStories[key].accent}`);
-  assertTrailerFlag(card, `/news/${key}`);
+  assertTrailerFlag(card, route);
 }
 // La sélection gaming du 29 est accessible dans le hub, l'accueil et l'archive.
 const newKeys = Object.keys(gamingStories20261029);
@@ -351,7 +388,7 @@ for (const [key, story] of Object.entries(gamingStories20261029)) {
   const route = `/news/${key}`;
   const doc = pages.get(route);
   assert.equal(doc.querySelector('h1').textContent, `${story.title}${story.accent}`);
-  assert.ok(doc.querySelector(`a[href="${story.sourceUrl}"]`));
+  assertLink(doc, story, key);
   assert.ok(archive.querySelector(`.news-carousel-card[href="${route}"]`));
   assert.ok(searchContent(story.cover.split(' · ')[0]).some((result) => result.route === route));
   assert.equal(gamingSeo20261029[route].published, '2026-10-29');
@@ -375,11 +412,12 @@ assert.equal(home.querySelector('.daily-news-copy').getAttribute('href'), `/news
 assert.equal(home.querySelector('img').getAttribute('src'), currentGamingStory[1].thumbnail);
 assert.ok(home.querySelector('.news-kicker').textContent.includes(currentEditionDate));
 
-// EN et AR conservent aussi la date de publication et les trois cartes.
+// EN et AR conservent aussi la date de publication et toutes les cartes de
+// l'édition (le nombre suit la donnée, comme en français).
 for (const lang of ['en', 'ar']) {
   const html = renderPages(lang).find((page) => page.route === '/news').html;
   const doc = new JSDOM(html).window.document;
-  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, 3);
+  assert.equal(doc.querySelectorAll('#actus-du-jour .news-carousel-card').length, todayListing.length);
   assert.ok(doc.querySelector('#actus-du-jour .section-label').textContent.includes(currentEditionDate));
   const button = doc.querySelector('#actus-du-jour .news-headlines-all');
   assert.equal(button.getAttribute('href'), '/news/articles');
