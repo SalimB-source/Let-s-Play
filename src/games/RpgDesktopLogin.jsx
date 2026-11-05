@@ -87,6 +87,9 @@ function DesktopAccountBar() {
 }
 
 export function LoginForm({ onOffline, connexionObligatoire = false }) {
+  const [mode, setMode] = useState('signin');
+  const [gamertag, setGamertag] = useState('');
+  const [confirmation, setConfirmation] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -125,8 +128,12 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
     setInfo('');
 
     const mail = email.trim();
-    if (!mail || !password) {
-      setError('Renseigne ton e-mail et ton mot de passe.');
+    if (!mail || (mode !== 'forgot' && !password)) {
+      setError(mode === 'forgot' ? 'Renseigne ton e-mail.' : 'Renseigne ton e-mail et ton mot de passe.');
+      return;
+    }
+    if (mode === 'signup' && (!gamertag.trim() || password.length < 6 || password !== confirmation)) {
+      setError('Renseigne ton pseudo et confirme un mot de passe d’au moins 6 caractères.');
       return;
     }
     if (!supabase || !supabaseConfigStatus.configured) {
@@ -144,22 +151,43 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
 
     setBusy(true);
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: mail,
-        password,
-        options: {
+      let authError;
+      if (mode === 'signup') {
+        const tag = gamertag.trim();
+        const { data, error: signupError } = await supabase.auth.signUp({
+          email: mail, password,
+          options: {
+            data: { gamertag: tag, full_name: tag, fullName: tag, name: tag },
+            emailRedirectTo: SITE_CONNEXION_URL,
+            ...(captchaToken ? { captchaToken } : {}),
+          },
+        });
+        authError = signupError;
+        if (!authError) {
+          if (data?.session) setInfo('Compte créé — chargement de la table…');
+          else if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            setError('Ce compte existe déjà. Connecte-toi avec ton adresse e-mail.');
+          } else setInfo('Vérifie ta boîte mail pour confirmer ton compte, puis reviens te connecter ici.');
+        }
+      } else if (mode === 'forgot') {
+        const result = await supabase.auth.resetPasswordForEmail(mail, {
+          redirectTo: SITE_CONNEXION_URL,
           ...(captchaToken ? { captchaToken } : {}),
-        },
-      });
-      // Token single-use : on le jette après chaque tentative
+        });
+        authError = result.error;
+        if (!authError) setInfo('Si un compte existe pour cette adresse, vérifie ta boîte mail pour réinitialiser ton mot de passe.');
+      } else {
+        const result = await supabase.auth.signInWithPassword({
+          email: mail, password,
+          options: { ...(captchaToken ? { captchaToken } : {}) },
+        });
+        authError = result.error;
+        if (!authError) setInfo('Connexion réussie — chargement de la table…');
+      }
+      // Chaque tentative consomme le jeton, quel que soit le mode.
       setCaptchaToken('');
       setCaptchaResetSignal((v) => v + 1);
-      if (signInError) {
-        setError(describeAuthError(signInError, t, fallback));
-      } else {
-        setInfo('Connexion réussie — chargement de la table…');
-        // AuthContext mettra à jour la session → le gate disparaît
-      }
+      if (authError) setError(describeAuthError(authError, t, fallback));
     } catch (e) {
       setCaptchaToken('');
       setCaptchaResetSignal((v) => v + 1);
@@ -167,18 +195,26 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
     } finally {
       setBusy(false);
     }
-  }, [email, password, captchaToken, captchaRequiredForBuild, captchaActive]);
+  }, [mode, gamertag, confirmation, email, password, captchaToken, captchaRequiredForBuild, captchaActive]);
 
+  const changerMode = (suivant) => {
+    setMode(suivant);
+    setError('');
+    setInfo('');
+    setCaptchaToken('');
+    setCaptchaResetSignal((v) => v + 1);
+  };
   const nonConfigure = !supabaseConfigStatus.configured;
 
   return (
     <div className="rpg-desktop-login">
       <div className="rpg-desktop-login__carte">
-        <p className="rpg-desktop-login__surtitre">Let's Play · Le Sablier de Bab El</p>
-        <h1 className="rpg-desktop-login__titre">Connexion</h1>
+        <p className="rpg-desktop-login__surtitre">{connexionObligatoire ? 'Le Sablier de Bab El' : "Let's Play · Le Sablier de Bab El"}</p>
+        <h1 className="rpg-desktop-login__titre">{mode === 'signup' ? 'Créer un compte' : mode === 'forgot' ? 'Mot de passe oublié' : 'Connexion'}</h1>
         <p className="rpg-desktop-login__accroche">
-          Connecte-toi avec ton compte Let's Play pour retrouver tes decks, ta collection et ta progression.
-          Pas encore de compte ? Crée-le sur le site en un clic.
+          {connexionObligatoire
+            ? 'Utilise ton compte Let’s Play pour retrouver tes decks, ta collection et ta progression.'
+            : "Connecte-toi avec ton compte Let's Play pour retrouver tes decks, ta collection et ta progression. Pas encore de compte ? Crée-le sur le site en un clic."}
         </p>
 
         {nonConfigure && (
@@ -191,6 +227,10 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
         )}
 
         <form className="rpg-desktop-login__form" onSubmit={submit} noValidate>
+          {mode === 'signup' && <label className="rpg-desktop-login__label">
+            Pseudo
+            <input className="rpg-desktop-login__input" value={gamertag} onChange={(e) => setGamertag(e.target.value)} autoComplete="nickname" required disabled={busy} />
+          </label>}
           <label className="rpg-desktop-login__label">
             Adresse e-mail
             <span className="rpg-desktop-login__input-wrap">
@@ -207,7 +247,7 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
             </span>
           </label>
 
-          <label className="rpg-desktop-login__label">
+          {mode !== 'forgot' && <label className="rpg-desktop-login__label">
             Mot de passe
             <span className="rpg-desktop-login__input-wrap">
               <input
@@ -216,7 +256,7 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                autoComplete="current-password"
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                 required
                 minLength={6}
                 disabled={busy}
@@ -232,7 +272,11 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
                 <EyeIcon off={showPassword} />
               </button>
             </span>
-          </label>
+          </label>}
+          {mode === 'signup' && <label className="rpg-desktop-login__label">
+            Confirmer le mot de passe
+            <input className="rpg-desktop-login__input" type="password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} autoComplete="new-password" minLength={6} required disabled={busy} />
+          </label>}
 
           {captchaActive && (
             <SignupProtection
@@ -259,28 +303,28 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
               disabled={busy || (captchaRequiredForBuild && (!turnstileSiteKey || !captchaToken))}
             >
               {busy && <span className="rpg-desktop-login__spinner" aria-hidden="true" />}
-              {busy ? 'Connexion…' : 'Se connecter'}
+              {busy ? 'Patiente…' : mode === 'signup' ? 'Créer mon compte' : mode === 'forgot' ? 'Envoyer le lien' : 'Se connecter'}
               {!busy && <span aria-hidden="true"> →</span>}
             </button>
 
-            <button
+            {mode === 'signin' && <button
               type="button"
               className="rpg-desktop-login__btn rpg-desktop-login__btn--secondary"
-              onClick={() => ouvrirExterne(SITE_INSCRIPTION_URL)}
+              onClick={() => connexionObligatoire ? changerMode('signup') : ouvrirExterne(SITE_INSCRIPTION_URL)}
               disabled={busy}
             >
-              S’inscrire sur le site Let's Play
-              <span aria-hidden="true"> ↗</span>
-            </button>
+              {connexionObligatoire ? 'Créer un compte' : "S’inscrire sur le site Let's Play"}
+            </button>}
           </div>
 
           <div className="rpg-desktop-login__liens">
             <button
               type="button"
               className="rpg-desktop-login__lien"
-              onClick={() => ouvrirExterne(`${SITE_CONNEXION_URL}?mode=forgot`)}
+              disabled={busy}
+              onClick={() => connexionObligatoire ? changerMode(mode === 'signin' ? 'forgot' : 'signin') : ouvrirExterne(`${SITE_CONNEXION_URL}?mode=forgot`)}
             >
-              Mot de passe oublié ?
+              {connexionObligatoire && mode !== 'signin' ? 'Retour à la connexion' : 'Mot de passe oublié ?'}
             </button>
             {!connexionObligatoire && <button
               type="button"
@@ -292,14 +336,14 @@ export function LoginForm({ onOffline, connexionObligatoire = false }) {
           </div>
         </form>
 
-        <p className="rpg-desktop-login__pied">
+        {!connexionObligatoire && <p className="rpg-desktop-login__pied">
           Tes identifiants sont ceux du site Let's Play. En t’inscrivant tu quittes l’app et
           reviens te connecter ici une fois ton compte confirmé.
           {' · '}
           <a href={SITE_INSCRIPTION_URL} target="_blank" rel="noopener noreferrer">S’inscrire</a>
           {' · '}
           <a href={SITE_CONNEXION_URL} target="_blank" rel="noopener noreferrer">Aller sur le site</a>
-        </p>
+        </p>}
       </div>
     </div>
   );

@@ -1,4 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
+import { AuthContext } from '../auth/AuthContext';
+import { connexionSablierEnAttente } from '../games/rpgConnexionRoute';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useFriends } from '../friends/FriendsContext';
@@ -86,6 +88,7 @@ function RefreshIcon({ size = 14 }) {
 }
 
 export default function SocialDock() {
+  const auth = useContext(AuthContext);
   const friends = useFriends();
   const messages = useMessages();
   const calls = useCalls();
@@ -123,6 +126,7 @@ export default function SocialDock() {
   // Dans le Sablier, la fenêtre sociale passe au-dessus de la couche plein
   // écran du jeu : voir `estRouteSablier` ci-dessus et `social.css`.
   const onSablierRoute = estRouteSablier(location.pathname);
+  const connexionEnAttente = auth && connexionSablierEnAttente(location.pathname, auth);
 
   const {
     enabled: friendsEnabled, status: friendsStatus, error: friendsError,
@@ -214,7 +218,7 @@ export default function SocialDock() {
   // local (état « bureau »), on redirige vers la page au lieu de rouvrir le
   // pop-up plein écran.
   useEffect(() => {
-    if (!isMobile || !enabled || (!friendsOpen && !messagesOpen)) return;
+    if (connexionEnAttente || !isMobile || !enabled || (!friendsOpen && !messagesOpen)) return;
     if (onSocialRoute) {
       // Déjà sur la page : on ferme juste le pop-up.
       closeFriendsDock();
@@ -226,7 +230,7 @@ export default function SocialDock() {
     closeMessagesDock();
     backToInbox();
     navigate(target);
-  }, [isMobile, enabled, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
+  }, [connexionEnAttente, isMobile, enabled, friendsOpen, messagesOpen, onSocialRoute, activePeerId, closeFriendsDock, closeMessagesDock, backToInbox, navigate]);
 
   // Classes sur <body> : social.css y lit la place prise par le lanceur ou la
   // fenêtre pour décaler les notifications de succès. Sur mobile, rien ne
@@ -243,7 +247,7 @@ export default function SocialDock() {
   // (il ouvre la page `/messages`, qui démonte la partie en cours), et en
   // plein écran natif (APK) il reste de toute façon peint sous la coque du
   // jeu : invisible. Le jeu est son propre accès à la messagerie.
-  const dockVisible = !onSocialRoute && !(onSablierRoute && isMobile);
+  const dockVisible = !connexionEnAttente && !onSocialRoute && !(onSablierRoute && isMobile);
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
     const { classList } = document.body;
