@@ -15266,17 +15266,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-soon-badge { display: inline-block; margin-inline-start: .5em; color: #eee; font-size: .7em; }
 
-/* Affiches panoramiques : le décor, le paquet réduit et la règle de chaque
-   set sont réunis dans l'image ; la transcription reste accessible dans le DOM. */
+/* Les mots et le sachet sont peints sur l'affiche : ne jamais les rogner pour
+   remplir une vitrine d'un autre ratio. Un fond flou reprend ses couleurs dans
+   les bandes libres, y compris en portrait et en petit paysage. */
 .rpg-mode-menu__diapo--set { background: #14090e; overflow: hidden; }
+.rpg-mode-menu__promo-fond,
 .rpg-mode-menu__promo-affiche {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   object-position: center;
 }
+.rpg-mode-menu__promo-fond {
+  object-fit: cover;
+  filter: blur(20px) brightness(.38);
+  transform: scale(1.12);
+}
+.rpg-mode-menu__promo-affiche { object-fit: contain; }
 .rpg-mode-menu__hero[data-promo-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
   .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 270px; }

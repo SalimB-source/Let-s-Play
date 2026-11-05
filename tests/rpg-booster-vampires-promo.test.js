@@ -43,7 +43,11 @@ test('les six affiches plein cadre portent chacune une description accessible de
   assert.match(page, /promoAffichee && <p className="sr-only">\{promoAffichee\.description\}<\/p>/);
   assert.match(page, /data-promo-visible=\{promoAffichee \? 'true' : undefined\}/);
   assert.match(page, /promoAffichee \? 9000 : 6000/);
-  assert.match(css, /\.rpg-mode-menu__promo-affiche \{[^}]*width: 100%;[^}]*height: 100%;[^}]*object-fit: cover;/s);
+  assert.match(page, /className="rpg-mode-menu__promo-fond"[^>]*aria-hidden="true"/);
+  assert.match(css, /\.rpg-mode-menu__promo-affiche \{ object-fit: contain; \}/,
+    'aucun mot ni sachet n’est coupé par la vitrine, quel que soit son ratio');
+  assert.match(css, /\.rpg-mode-menu__promo-fond \{[^}]*object-fit: cover;[^}]*filter: blur\(/s,
+    'les bandes libres prennent les couleurs de l’affiche sans étirer son texte');
   assert.match(css, /\.rpg-mode-menu__hero\[data-promo-visible="true"\] \{ min-height: 270px/);
   assert.doesNotMatch(page, /rpg-mode-menu__vampires-texte|rpg-mode-menu__vampires-booster/);
 });

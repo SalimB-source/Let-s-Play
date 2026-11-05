@@ -4,10 +4,22 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { JSDOM } from 'jsdom';
 import { createServer } from 'vite';
-import { RPG_STORY_ALL_SCENES } from '../src/games/rpgStoryScenes.js';
+import { readFileSync } from 'node:fs';
+import { RPG_STORY_ACTES, RPG_STORY_ALL_SCENES } from '../src/games/rpgStoryScenes.js';
 import { recitHistoireVide } from '../src/games/rpgStoryFlow.js';
 
 const attendre = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test('la reliure garde une hauteur fixe par format, avec pages défilantes si les paliers débordent', () => {
+  const css = readFileSync(new URL('../src/games/rpg-story.css', import.meta.url), 'utf8');
+  const paliersParActe = RPG_STORY_ACTES.map((acte) => acte.etages.length);
+  assert.ok(paliersParActe.includes(3) && paliersParActe.includes(5),
+    'la règle couvre aussi bien les actes courts que ceux à cinq paliers');
+  assert.match(css, /\.rpg-campaign__pages \{[^}]*height: 440px;[^}]*min-height: 0;/s);
+  assert.match(css, /\.rpg-campaign__page \{[^}]*min-height: 0;[^}]*overflow-y: auto;/s);
+  assert.match(css, /@media \(max-width: 699px\)[\s\S]*?\.rpg-campaign__pages \{[^}]*grid-template-rows: auto minmax\(0, 1fr\);[^}]*height: 620px;/);
+  assert.doesNotMatch(css, /\.rpg-campaign__pages \{[^}]*height:\s*auto;/s);
+});
 
 test('un seul acte sur la page : le clic tourne la feuille avant de révéler l’acte choisi', async () => {
   const dom = new JSDOM('<!doctype html><html lang="fr"><body><div id="app"></div></body></html>', {
@@ -41,6 +53,7 @@ test('un seul acte sur la page : le clic tourne la feuille avant de révéler l�
     const tourne = () => document.querySelector('[data-campaign-livre]').classList.contains('is-tournee');
     assert.equal(document.querySelectorAll('.rpg-campaign__pages').length, 1);
     assert.equal(page(), 'acte-2');
+    assert.equal(document.querySelectorAll('[data-campaign-step]').length, 4);
     assert.ok(onglet('acte-1') && onglet('acte-2'), 'les deux onglets restent accessibles');
     assert.equal(onglet('acte-2').getAttribute('aria-pressed'), 'true');
 
@@ -50,6 +63,7 @@ test('un seul acte sur la page : le clic tourne la feuille avant de révéler l�
     assert.equal(onglet('acte-1').getAttribute('aria-pressed'), 'false');
     await act(async () => { await attendre(380); });
     assert.equal(page(), 'acte-1', 'l’acte demandé apparaît au milieu du tournage');
+    assert.equal(document.querySelectorAll('[data-campaign-step]').length, 5);
     assert.equal(document.querySelectorAll('.rpg-campaign__pages').length, 1);
     assert.equal(onglet('acte-1').getAttribute('aria-pressed'), 'true');
     await act(async () => { await attendre(370); });
