@@ -35,8 +35,10 @@ execFileSync(
 
 const {
   TRANSLATED_LANGS, loadArticleListings, loadArticleBody, countLocalized,
-  localizeListing, localizeStory, searchTextFor, searchContent,
+  localizeListing, localizeStory, searchTextFor, searchContent, renderArticle,
+  renderPage, PAGE_ROUTES,
 } = await import(pathToFileURL(path.join(outDir, 'localized-smoke.js')).href);
+const { JSDOM } = await import('jsdom');
 
 // ---------------------------------------------------------------- inventaire
 const langDir = (lang) => path.join(root, 'src', 'news', 'localized', lang);
@@ -47,6 +49,7 @@ function bodyFiles(lang) {
   const walk = (dir, prefix = '') => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       if (entry.name === 'index.js') continue;
+      if (prefix === '' && entry.name === 'media') continue; // bloc vidéo, pas un corps
       if (entry.isDirectory()) walk(path.join(dir, entry.name), `${prefix}${entry.name}/`);
       else if (entry.name.endsWith('.js')) found.push(`${prefix}${entry.name.replace(/\.js$/, '')}`);
     }
@@ -164,4 +167,102 @@ for (const lang of TRANSLATED_LANGS) {
 const frenchResults = searchContent('lightyear');
 assert.equal(searchTextFor(frenchResults[0], 'fr').title, frenchResults[0].title, 'fr : recherche inchangée');
 
-console.log(`OK — traductions d’articles : ${TRANSLATED_LANGS.join(', ')} · ${bodyCount} corps, repli français et recherche vérifiés.\n`);
+// ------------------------------------- la page article ne parle plus français
+//
+// Le vrai test : ce que le VISITEUR voit. On rend la page article en anglais et
+// en arabe, et on refuse tout mot-outil français (ou toute lettre accentuée
+// française) dans l'en-tête, le corps et le bloc de réactions. Les données
+// éditoriales (titres, textes) sont traduites ; les libellés d'interface
+// viennent du dictionnaire. Ce contrôle a été ajouté après avoir trouvé, sur un
+// article pourtant « traduit », du français resté dans la bande-annonce, le
+// bouton de source et le bloc de réactions.
+// `plus` est volontairement absent : c’est aussi un mot anglais (« plus hot
+// news »), il ferait échouer une page pourtant traduite.
+const FRENCH_WORDS = /\b(le|la|les|du|des|une|dans|pour|avec|sur|est|sont|qui|que|aux|cette|ces|nous|vous|après|avant|entre|comme|tout|être|fait|selon|également|déjà)\b|[àâçéèêëîïôûùœ]/i;
+
+async function untranslatedTexts(lang, key) {
+  const html = await renderArticle(lang, key);
+  const document = new JSDOM(html).window.document;
+  const found = new Set();
+  for (const selector of ['.article-hero', '.article-body', '.article-engagement']) {
+    const root = document.querySelector(selector);
+    if (!root) continue;
+    const walker = document.createTreeWalker(root, 4 /* SHOW_TEXT */);
+    while (walker.nextNode()) {
+      const text = walker.currentNode.textContent.replace(/\s+/g, ' ').trim();
+      const parent = walker.currentNode.parentElement;
+      if (text.length < 4 || !parent) continue;
+      // Le bandeau de langue cite volontairement le français (« Lire en
+      // français ») et les noms de marque restent tels quels.
+      if (parent.closest('[lang="fr"], script, style')) continue;
+      if (FRENCH_WORDS.test(text)) found.add(text.slice(0, 80));
+    }
+  }
+  return [...found];
+}
+
+for (const lang of TRANSLATED_LANGS) {
+  for (const key of ['lightyear-frontier-1-0-4-novembre-2026', 'cinema/godzilla-minus-zero-sortie-france-4-novembre-2026']) {
+    const leftovers = await untranslatedTexts(lang, key);
+    assert.deepEqual(
+      leftovers, [],
+      `${lang} / ${key} : plus aucun texte français dans la page article`,
+    );
+  }
+}
+
+// Un article NON traduit doit, lui, rester en français : c'est le contrat.
+const frenchFallback = await renderArticle('en', 'zelda-ocarina-of-time-switch-2-affichages-hud');
+assert.match(new JSDOM(frenchFallback).window.document.querySelector('.article-dek').textContent, /[àâçéèêëîïôûùœ]/i,
+  'en / article non traduit : le contenu reste en français (et le bandeau le dit)');
+
+
+// ------------------------------------- pages liste : le chrome suit la langue
+//
+// Deuxième garde-fou, né d'un vrai ratage : les traductions d'articles
+// existaient, mais les pages liste d'une nouvelle édition restaient en
+// français pour tout le chrome (pastille « PRÉSENTATION », libellés de
+// section, lien « Voir tous les reels »…). On rend chaque page liste en
+// anglais et en arabe dans le chromium de jsdom, on écarte les cartes
+// d'articles non traduits — leur français est le repli assumé — et on refuse
+// tout mot-outil français ailleurs.
+async function pageFrenchLeftovers(lang, route) {
+  const html = await renderPage(lang, route);
+  const document = new JSDOM(html).window.document;
+  const root = document.querySelector('main') || document.body;
+  const found = new Set();
+  const walker = document.createTreeWalker(root, 4 /* SHOW_TEXT */);
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const parent = node.parentElement;
+    if (!parent) continue;
+    // Cartes d'articles : le titre/chapô français d'un article non traduit est
+    // le comportement attendu. Les libellés de carte (badge, pastille) sont
+    // vérifiés séparément ci-dessous.
+    if (parent.closest('.news-carousel-card, a[href*="/news/"], [lang="fr"], script, style')) continue;
+    const text = node.textContent.replace(/\s+/g, ' ').trim();
+    if (text.length < 5) continue;
+    if (FRENCH_WORDS.test(text)) found.add(text.slice(0, 80));
+  }
+  return [...found];
+}
+
+for (const lang of TRANSLATED_LANGS) {
+  for (const route of PAGE_ROUTES) {
+    assert.deepEqual(
+      await pageFrenchLeftovers(lang, route),
+      [],
+      `${lang} ${route} : plus de chrome français sur la page`,
+    );
+  }
+  // La pastille de vidéo des cartes est du chrome : elle doit être traduite
+  // même quand l'article, lui, n'a pas de traduction.
+  const archive = new JSDOM(await renderPage(lang, '/news/articles')).window.document;
+  for (const flag of archive.querySelectorAll('.news-trailer-flag')) {
+    const label = flag.textContent.replace(/\s+/g, ' ').trim();
+    assert.ok(label.length > 0, `${lang} /news/articles : pastille de vidéo vide`);
+    assert.ok(!FRENCH_WORDS.test(label), `${lang} /news/articles : pastille de vidéo encore en français (« ${label} »)`);
+  }
+}
+
+console.log(`OK — traductions d’articles : ${TRANSLATED_LANGS.join(', ')} · ${bodyCount} corps, repli français, recherche, page article et pages liste sans français résiduel.\n`);

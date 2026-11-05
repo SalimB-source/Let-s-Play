@@ -36,7 +36,7 @@ const imageUrl = (image) => /^https?:\/\//i.test(image) ? image : `${base}${imag
 // Page des actus CINÉMA & SÉRIES — même présentation que la page gaming mais
 // pour les films, séries, streaming et pop culture audiovisuelle.
 export default function CinemaNews() {
-  const { lang } = useLanguage();
+  const { t, lang } = useLanguage();
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
@@ -164,12 +164,12 @@ export default function CinemaNews() {
     const sentimentId = getArticleSentiment(article);
     const meta = sentimentMeta(sentimentId);
     const views = viewsMap[normalizeArticleId(article.to)] ?? null;
-    const trailerFlag = trailerFlagLabel(article.to);
+    const trailerFlag = trailerFlagLabel(article.to, t?.media);
     return (
       <>
         <span className="news-feature-badge">{article.badge}</span>
         {trailerFlag ? (
-          <span className="news-trailer-flag" title={trailerFlagTitle(article.to)}>
+          <span className="news-trailer-flag" title={trailerFlagTitle(article.to, t?.media)}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
             {trailerFlag}
           </span>

@@ -33,7 +33,12 @@ export function officialSourceUrl(value) {
 
 // Do not reuse legacy source/sourceDetail text: it can mix an official
 // announcement with third-party press citations. Keep research metadata intact.
+//
+// Aucun libellé ici : le texte affiché appartient à l'interface, donc au
+// dictionnaire (`article.sourceOfficial`). Cette fonction ne rend que le lien
+// vérifié — c'est elle qui fait foi, et `check:daily-news` l'interroge telle
+// quelle pour savoir si un article doit afficher un lien.
 export function articleFooterSource(story) {
   const href = officialSourceUrl(story?.sourceUrl);
-  return href ? { href, label: 'Consulter la source officielle' } : null;
+  return href ? { href } : null;
 }

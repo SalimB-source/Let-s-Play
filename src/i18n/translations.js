@@ -7,7 +7,7 @@ export const translations = {
       label: 'LATEST NEWS', date: '', eyebrowAuto: 'TODAY’S STORY · LET’S PLAY', eyebrowRewritten: 'REWRITTEN FOR LET’S PLAY',
       views: '{n} views', readTime: '4 MIN READ', video: 'VIDEO', official: 'OFFICIAL', officialVideo: 'Official video', watchOnYouTube: 'Watch on YouTube',
       alsoRead: 'READ NEXT', alsoReadTitle: 'LATEST STORIES', alsoReadText: 'Catch up on the latest announcements and analysis from the newsroom.',
-      backToNews: 'BACK TO NEWS', ctaEyebrow: 'MORE ON LET’S PLAY', ctaTitleA: 'STAY IN', ctaTitleB: 'THE GAME.', ctaButton: 'VIEW THE NEWS',
+      backToNews: 'BACK TO NEWS', ctaEyebrow: 'MORE ON LET’S PLAY', ctaTitleA: 'STAY IN', ctaTitleB: 'THE GAME.', ctaButton: 'VIEW THE NEWS', sourceOfficial: 'Visit the official source',
       sentiment: { positive: 'Positive news', negative: 'Negative news', mixed: 'Mixed news' },
     },
     lang: {
@@ -239,6 +239,11 @@ export const translations = {
         communityTitle: 'COMMUNITY', communityText: 'Create a group, meet players who share your interests and start a conversation.',
         explore: 'Explore', joinUs: 'Join us',
       },
+      reels: {
+        label: 'REELS', meta: 'YOUTUBE SHORTS · LET’S PLAY', eyebrow: 'Short form', h2a: 'WATCH', h2b: 'ON REPEAT.',
+        seeAll: 'See every reel', posterAlt: 'Thumbnail for {name} — Let’s Play',
+      },
+
       partners: {
         label1: '03 / PARTNERS', label2: 'THEY PLAY WITH US',
         eyebrow: 'Collaborations & partnerships',
@@ -470,23 +475,32 @@ export const translations = {
       'E-Sport Dzair Cup Finals': { title: 'E-Sport Dzair Cup Finals', desc: 'The finals that shook Algiers — highlights and interviews.' },
       'Cinema: Dune Messiah Preview': { title: 'Cinema: Dune Messiah Preview', desc: 'What to expect from the next Dune chapter.' },
     },
+    engagement: {
+      kicker: 'YOUR TURN', titleA: 'AND YOU,', titleB: 'WHAT DO YOU THINK?',
+      intro: 'A quick reaction, then a real take in the comments. The Let’s Play team wants to follow what excites you — or makes you doubt.',
+      hype: 'I’m hyped', watch: 'I’m keeping an eye on it', wait: 'Waiting for reviews',
+      reactionOne: '{n} reaction', reactionMany: '{n} reactions', allReaders: 'all readers',
+      loading: 'Loading the trend…', unavailable: 'Trend unavailable', saving: 'Saving…',
+      counted: 'Your reaction is counted in the global trend.', trend: 'The trend gathers votes from every reader.',
+      signInToVote: 'SIGN IN TO VOTE', joinDiscussion: 'JOIN THE DISCUSSION',
+      errorLoad: 'Could not load the global trend. Try again in a moment.',
+      errorSave: 'Your reaction could not be saved. Please try again.',
+      reactAria: 'React to the article {title}',
+    },
+    media: {
+      noVideo: 'NO VIDEO', upcoming: 'COMING SOON', watchOnYouTube: 'Watch on YouTube',
+      chooseVideo: 'Choose another official video',
+      captures: 'SCREENS', visuals: 'VISUALS', creditSources: 'Image sources:',
+      zoom: 'Enlarge image {n} of {total}: {alt}', closeViewer: 'Close the viewer',
+      previous: 'Previous image', next: 'Next image',
+      galleryLabel: '{label} — image {n} of {total}',
+      kindTrailer: 'TRAILER', kindTeaser: 'TEASER', kindExtract: 'CLIP', kindBehind: 'BEHIND THE SCENES', kindReplay: 'REPLAY', kindPresentation: 'SHOWCASE',
+      badgeTrailer: 'OFFICIAL TRAILER', badgeTeaser: 'OFFICIAL TEASER', badgeExtract: 'OFFICIAL CLIP', badgeBehind: 'OFFICIAL BEHIND THE SCENES', badgeReplay: 'OFFICIAL REPLAY', badgePresentation: 'OFFICIAL SHOWCASE',
+    },
   },
 
 
   fr: {
-    article: {
-      label: 'ACTUS À LA UNE', date: '', eyebrowAuto: 'ACTU DU JOUR · LET’S PLAY', eyebrowRewritten: 'RÉÉCRIT POUR LET’S PLAY',
-      views: '{n} vues', readTime: '4 MIN DE LECTURE', video: 'VIDÉO', official: 'OFFICIELLE', officialVideo: 'Vidéo officielle', watchOnYouTube: 'Voir sur YouTube',
-      alsoRead: 'À LIRE AUSSI', alsoReadTitle: 'LES ACTUS À LA UNE', alsoReadText: 'Retrouvez les dernières annonces et analyses de la rédaction.',
-      backToNews: 'RETOUR AUX ACTUS', ctaEyebrow: 'LA SUITE SUR LET’S PLAY', ctaTitleA: 'RESTEZ DANS', ctaTitleB: 'LE GAME.', ctaButton: 'VOIR LES ACTUS',
-      sentiment: { positive: 'Actu positive', negative: 'Actu négative', mixed: 'Actu mitigée' },
-    },
-    lang: {
-      label: 'Langue', saved: 'Langue : {name}', device: 'Langue de l’appareil',
-      frenchOnly: 'Article en français', frenchOnlyNote: 'Cette actu n’est pas encore traduite en {language}. La version française fait foi.',
-      autoTranslated: 'Traduction automatique', autoTranslatedNote: 'Traduit du français vers {language}. En cas de doute, la version française fait foi.',
-      readInFrench: 'Lire en français', loading: 'Chargement de la traduction…', failed: 'Impossible de changer de langue pour le moment.',
-    },
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
       home: 'Accueil', news: 'News', editorialMenu: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
@@ -694,6 +708,11 @@ export const translations = {
         communityTitle: 'COMMUNAUTÉ', communityText: 'Créez un groupe, retrouvez des joueurs qui partagent vos envies et lancez la discussion.',
         explore: 'Explorer', joinUs: 'Rejoignez-nous',
       },
+      reels: {
+        label: 'REELS', meta: 'YOUTUBE SHORTS · LET’S PLAY', eyebrow: 'Format court', h2a: 'À VOIR', h2b: 'EN BOUCLE.',
+        seeAll: 'Voir tous les reels', posterAlt: 'Miniature de {name} — Let’s Play',
+      },
+
       partners: {
         label1: '03 / PARTENAIRES', label2: 'ILS JOUENT AVEC NOUS',
         eyebrow: 'Collaborations & partenariats',
@@ -923,14 +942,12 @@ export const translations = {
       'E-Sport Dzair Cup Finals': { title: 'Finales de la E-Sport Dzair Cup', desc: 'La finale qui a secoué Alger — temps forts et interviews.' },
       'Cinema: Dune Messiah Preview': { title: 'Cinéma : aperçu de Dune Messiah', desc: 'À quoi s’attendre pour le prochain chapitre de Dune.' },
     },
-  },
-
     article: {
       label: 'ACTUS À LA UNE', date: '', eyebrowAuto: 'ACTU DU JOUR · LET’S PLAY', eyebrowRewritten: 'RÉÉCRIT POUR LET’S PLAY',
       views: '{n} vues', readTime: '4 MIN DE LECTURE', video: 'VIDÉO', official: 'OFFICIELLE', officialVideo: 'Vidéo officielle', watchOnYouTube: 'Voir sur YouTube',
       alsoRead: 'À LIRE AUSSI', alsoReadTitle: 'LES ACTUS À LA UNE', alsoReadText: 'Retrouvez les dernières annonces et analyses de la rédaction.',
       backToNews: 'RETOUR AUX ACTUS', ctaEyebrow: 'LA SUITE SUR LET’S PLAY', ctaTitleA: 'RESTEZ DANS', ctaTitleB: 'LE GAME.', ctaButton: 'VOIR LES ACTUS',
-      sentiment: { positive: 'Actu positive', negative: 'Actu négative', mixed: 'Actu mitigée' },
+      sourceOfficial: 'Consulter la source officielle', sentiment: { positive: 'Actu positive', negative: 'Actu négative', mixed: 'Actu mitigée' },
     },
     lang: {
       label: 'Langue', saved: 'Langue : {name}', device: 'Langue de l’appareil',
@@ -938,12 +955,35 @@ export const translations = {
       autoTranslated: 'Traduction automatique', autoTranslatedNote: 'Traduit du français vers {language}. En cas de doute, la version française fait foi.',
       readInFrench: 'Lire en français', loading: 'Chargement de la traduction…', failed: 'Impossible de changer de langue pour le moment.',
     },
+    engagement: {
+      kicker: 'À VOUS DE JOUER', titleA: 'ET VOUS,', titleB: 'VOUS EN PENSEZ QUOI ?',
+      intro: 'Une réaction rapide, puis un vrai avis dans les commentaires. La rédaction Let’s Play veut suivre ce qui vous fait vibrer — ou douter.',
+      hype: 'Je suis hypé', watch: 'Je garde un œil', wait: 'J’attends les tests',
+      reactionOne: '{n} réaction', reactionMany: '{n} réactions', allReaders: 'tous les lecteurs',
+      loading: 'Chargement de la tendance…', unavailable: 'Tendance indisponible', saving: 'Enregistrement…',
+      counted: 'Votre réaction est comptabilisée dans la tendance globale.', trend: 'La tendance rassemble les votes de tous les lecteurs.',
+      signInToVote: 'CONNECTEZ-VOUS POUR VOTER', joinDiscussion: 'REJOINDRE LA DISCUSSION',
+      errorLoad: 'Impossible de charger la tendance globale. Réessayez dans quelques instants.',
+      errorSave: 'Votre réaction n’a pas pu être enregistrée. Veuillez réessayer.',
+      reactAria: 'Réagir à l’article {title}',
+    },
+    media: {
+      noVideo: 'PAS DE VIDÉO', upcoming: 'À VENIR', watchOnYouTube: 'Voir sur YouTube',
+      chooseVideo: 'Choisir une autre vidéo officielle',
+      captures: 'CAPTURES', visuals: 'VISUELS', creditSources: 'Sources des visuels :',
+      zoom: 'Agrandir le visuel {n} sur {total} : {alt}', closeViewer: 'Fermer la visionneuse',
+      previous: 'Visuel précédent', next: 'Visuel suivant',
+      galleryLabel: '{label} — visuel {n} sur {total}',
+      kindTrailer: 'BANDE-ANNONCE', kindTeaser: 'TEASER', kindExtract: 'EXTRAIT', kindBehind: 'COULISSES', kindReplay: 'REPLAY', kindPresentation: 'PRÉSENTATION',
+      badgeTrailer: 'BANDE-ANNONCE OFFICIELLE', badgeTeaser: 'TEASER OFFICIEL', badgeExtract: 'EXTRAIT OFFICIEL', badgeBehind: 'COULISSES OFFICIELLES', badgeReplay: 'REPLAY OFFICIEL', badgePresentation: 'PRÉSENTATION OFFICIELLE',
+    },
+  },
   ar: {
     article: {
       label: 'آخر الأخبار', date: '', eyebrowAuto: 'خبر اليوم · ليتس بلاي', eyebrowRewritten: 'أُعيدت كتابته لليتس بلاي',
       views: '{n} مشاهدة', readTime: 'قراءة 4 دقائق', video: 'فيديو', official: 'رسمي', officialVideo: 'فيديو رسمي', watchOnYouTube: 'شاهده على يوتيوب',
       alsoRead: 'اقرأ أيضاً', alsoReadTitle: 'أحدث الأخبار', alsoReadText: 'تابع آخر الإعلانات والتحليلات من غرفة التحرير.',
-      backToNews: 'العودة إلى الأخبار', ctaEyebrow: 'المزيد على ليتس بلاي', ctaTitleA: 'ابقَ في', ctaTitleB: 'اللعبة.', ctaButton: 'شاهد الأخبار',
+      backToNews: 'العودة إلى الأخبار', ctaEyebrow: 'المزيد على ليتس بلاي', ctaTitleA: 'ابقَ في', ctaTitleB: 'اللعبة.', ctaButton: 'شاهد الأخبار', sourceOfficial: 'زيارة المصدر الرسمي',
       sentiment: { positive: 'خبر إيجابي', negative: 'خبر سلبي', mixed: 'خبر متباين' },
     },
     lang: {
@@ -1158,6 +1198,11 @@ export const translations = {
         communityTitle: 'المجتمع', communityText: 'أنشئ مجموعة، والتقِ بلاعبين يشاركونك اهتماماتك وابدأ النقاش.',
         explore: 'استكشف', joinUs: 'انضم إلينا',
       },
+      reels: {
+        label: 'ريلز', meta: 'مقاطع يوتيوب القصيرة · Let’s Play', eyebrow: 'صيغة قصيرة', h2a: 'شاهد', h2b: 'على التكرار.',
+        seeAll: 'شاهد كل الريلز', posterAlt: 'مصغّرة {name} — Let’s Play',
+      },
+
       partners: {
         label1: '03 / الشركاء', label2: 'يلعبون معنا',
         eyebrow: 'تعاونات وشراكات',
@@ -1387,20 +1432,29 @@ export const translations = {
       'E-Sport Dzair Cup Finals': { title: 'نهائيات كأس E-Sport Dzair', desc: 'النهائي الذي هزّ الجزائر العاصمة — أبرز اللحظات والمقابلات.' },
       'Cinema: Dune Messiah Preview': { title: 'السينما: لمحة عن Dune Messiah', desc: 'ما الذي يمكن توقعه من الفصل القادم من Dune.' },
     },
+    engagement: {
+      kicker: 'دورك الآن', titleA: 'وأنت،', titleB: 'ما رأيك؟',
+      intro: 'تفاعل سريع، ثم رأي حقيقي في التعليقات. تريد هيئة تحرير Let’s Play أن تعرف ما يثير حماسك — أو شكوكك.',
+      hype: 'أنا متحمّس', watch: 'أتابع الأمر عن قرب', wait: 'أنتظر المراجعات',
+      reactionOne: '{n} تفاعل', reactionMany: '{n} تفاعلات', allReaders: 'كل القراء',
+      loading: 'جارٍ تحميل المؤشر…', unavailable: 'المؤشر غير متاح', saving: 'جارٍ الحفظ…',
+      counted: 'تم احتساب تفاعلك في المؤشر العام.', trend: 'يجمع المؤشر تصويتات جميع القراء.',
+      signInToVote: 'سجّل الدخول للتصويت', joinDiscussion: 'انضم إلى النقاش',
+      errorLoad: 'تعذّر تحميل المؤشر العام. أعد المحاولة بعد قليل.',
+      errorSave: 'لم يتم حفظ تفاعلك. يرجى المحاولة مرة أخرى.',
+      reactAria: 'تفاعل مع مقال {title}',
+    },
+    media: {
+      noVideo: 'لا فيديو', upcoming: 'قريباً', watchOnYouTube: 'شاهده على يوتيوب',
+      chooseVideo: 'اختر فيديو رسمياً آخر',
+      captures: 'لقطات', visuals: 'صور', creditSources: 'مصادر الصور:',
+      zoom: 'تكبير الصورة {n} من {total}: {alt}', closeViewer: 'إغلاق العارض',
+      previous: 'الصورة السابقة', next: 'الصورة التالية',
+      galleryLabel: '{label} — الصورة {n} من {total}',
+      kindTrailer: 'إعلان', kindTeaser: 'تشويق', kindExtract: 'مقطع', kindBehind: 'كواليس', kindReplay: 'إعادة', kindPresentation: 'عرض',
+      badgeTrailer: 'الإعلان الرسمي', badgeTeaser: 'تشويق رسمي', badgeExtract: 'مقطع رسمي', badgeBehind: 'كواليس رسمية', badgeReplay: 'إعادة رسمية', badgePresentation: 'عرض رسمي',
+    },
   },
-      article: {
-      label: 'آخر الأخبار', date: '', eyebrowAuto: 'خبر اليوم · ليتس بلاي', eyebrowRewritten: 'أُعيدت كتابته لليتس بلاي',
-      views: '{n} مشاهدة', readTime: 'قراءة 4 دقائق', video: 'فيديو', official: 'رسمي', officialVideo: 'فيديو رسمي', watchOnYouTube: 'شاهده على يوتيوب',
-      alsoRead: 'اقرأ أيضاً', alsoReadTitle: 'أحدث الأخبار', alsoReadText: 'تابع آخر الإعلانات والتحليلات من غرفة التحرير.',
-      backToNews: 'العودة إلى الأخبار', ctaEyebrow: 'المزيد على ليتس بلاي', ctaTitleA: 'ابقَ في', ctaTitleB: 'اللعبة.', ctaButton: 'شاهد الأخبار',
-      sentiment: { positive: 'خبر إيجابي', negative: 'خبر سلبي', mixed: 'خبر متباين' },
-    },
-    lang: {
-      label: 'اللغة', saved: 'اللغة: {name}', device: 'لغة الجهاز',
-      frenchOnly: 'المقال بالفرنسية', frenchOnlyNote: 'لم يُترجم هذا الخبر إلى {language} بعد. النسخة الفرنسية هي المرجع.',
-      autoTranslated: 'ترجمة آلية', autoTranslatedNote: 'تُرجم من الفرنسية إلى {language}. عند الشك، النسخة الفرنسية هي المرجع.',
-      readInFrench: 'اقرأ بالفرنسية', loading: 'جارٍ تحميل الترجمة…', failed: 'تعذّر تغيير اللغة الآن.',
-    },
 };
 
 // Les métadonnées des langues (libellé, nom, sens de lecture) vivent dans

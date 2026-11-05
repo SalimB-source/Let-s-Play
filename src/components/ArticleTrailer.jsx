@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import VideoThumb from './VideoThumb';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 import { trailerBadgeLabel, trailerKindLabel, trailerWatchUrl } from '../articleTrailers';
+import { useLanguage } from '../i18n/LanguageContext';
 
 /**
  * Bandes-annonces et teasers d'un article actu, intégrés au corps du texte.
@@ -29,6 +30,15 @@ import { trailerBadgeLabel, trailerKindLabel, trailerWatchUrl } from '../article
  * @param {string} [props.pending] texte affiché quand aucune vidéo officielle n'existe
  */
 export default function ArticleTrailer({ label, meta, items = [], credit, pending }) {
+  // Libellés d'interface traduits ; la nature de la vidéo (bande-annonce,
+  // teaser…) vient aussi du dictionnaire, avec la table historique en repli.
+  const { t: ui } = useLanguage();
+  const media = ui?.media || {};
+  const text = (key, fallback) => media[key] || fallback;
+  const KIND_KEYS = { trailer: 'kindTrailer', teaser: 'kindTeaser', extrait: 'kindExtract', coulisses: 'kindBehind', replay: 'kindReplay', presentation: 'kindPresentation' };
+  const BADGE_KEYS = { trailer: 'badgeTrailer', teaser: 'badgeTeaser', extrait: 'badgeExtract', coulisses: 'badgeBehind', replay: 'badgeReplay', presentation: 'badgePresentation' };
+  const kindFor = (kind) => text(KIND_KEYS[kind] || 'kindTrailer', trailerKindLabel(kind));
+  const badgeFor = (kind) => text(BADGE_KEYS[kind] || 'badgeTrailer', trailerBadgeLabel(kind));
   const [index, setIndex] = useState(0);
   const videos = items.filter((item) => item && item.id);
   const current = videos[Math.min(index, videos.length - 1)] || null;
@@ -40,7 +50,7 @@ export default function ArticleTrailer({ label, meta, items = [], credit, pendin
         {/* Sans vidéo, l'en-tête ne doit pas annoncer une bande-annonce :
             il dit l'absence, et la phrase du dessous l'explique. */}
         <div className="section-label">
-          <span><b>PAS DE VIDÉO</b> / {label || 'À VENIR'}</span>
+          <span><b>{text('noVideo', 'PAS DE VIDÉO')}</b> / {label || text('upcoming', 'À VENIR')}</span>
           {meta ? <span>{meta}</span> : null}
         </div>
         <p className="article-trailer-pending"><span className="live-dot" /> {pending}</p>
@@ -48,7 +58,7 @@ export default function ArticleTrailer({ label, meta, items = [], credit, pendin
     );
   }
 
-  const kind = trailerKindLabel(current.kind);
+  const kind = kindFor(current.kind);
 
   return (
     <figure className="article-trailer">
@@ -69,16 +79,16 @@ export default function ArticleTrailer({ label, meta, items = [], credit, pendin
       </div>
 
       <figcaption className="article-trailer-caption">
-        <span className="article-trailer-badge"><span className="live-dot" /> {trailerBadgeLabel(current.kind)}</span>
+        <span className="article-trailer-badge"><span className="live-dot" /> {badgeFor(current.kind)}</span>
         <strong className="article-trailer-title">{current.title}</strong>
         <em className="article-trailer-channel">{current.channel}</em>
-        <a className="arrow-link" href={trailerWatchUrl(current.id)} target="_blank" rel="noreferrer">Voir sur YouTube <span aria-hidden="true">↗</span></a>
+        <a className="arrow-link" href={trailerWatchUrl(current.id)} target="_blank" rel="noreferrer">{text('watchOnYouTube', 'Voir sur YouTube')} <span aria-hidden="true">↗</span></a>
       </figcaption>
 
       {current.note ? <p className="article-trailer-note">{current.note}</p> : null}
 
       {videos.length > 1 ? (
-        <div className="article-trailer-picker" role="group" aria-label="Choisir une autre vidéo officielle">
+        <div className="article-trailer-picker" role="group" aria-label={text('chooseVideo', 'Choisir une autre vidéo officielle')}>
           {videos.map((item, i) => (
             <button
               type="button"
@@ -90,11 +100,11 @@ export default function ArticleTrailer({ label, meta, items = [], credit, pendin
               <VideoThumb
                 id={item.id}
                 alt={`${item.title} — ${item.channel}`}
-                fallbackLabel={trailerKindLabel(item.kind)}
+                fallbackLabel={kindFor(item.kind)}
                 className="article-trailer-thumb"
               />
               <span className="article-trailer-choice-copy">
-                <b>{trailerKindLabel(item.kind)}</b>
+                <b>{kindFor(item.kind)}</b>
                 <small>{item.channel}</small>
               </span>
             </button>

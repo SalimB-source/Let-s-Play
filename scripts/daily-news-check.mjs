@@ -213,7 +213,7 @@ execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', [
   '--outDir', path.relative(root, outDir), '--emptyOutDir', '--logLevel', 'error',
 ], { cwd: root, stdio: 'inherit' });
 
-const { React, ArticleTrailer, renderPages, searchContent, searchIndex, autoSearchEntries, NewsArchiveFlow } = await import(path.join(outDir, 'daily-news-smoke.js'));
+const { React, ArticleTrailer, LanguageProvider, renderPages, searchContent, searchIndex, autoSearchEntries, NewsArchiveFlow } = await import(path.join(outDir, 'daily-news-smoke.js'));
 const pages = new Map(renderPages().map(({ route, html }) => [route, new JSDOM(html).window.document]));
 
 const hub = pages.get('/news').querySelector('#actus-du-jour');
@@ -432,10 +432,13 @@ globalThis.HTMLElement = dom.window.HTMLElement;
 Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { createRoot } = await import('react-dom/client');
+// `ArticleTrailer` lit le dictionnaire (libellés traduits) : on le monte sous
+// un fournisseur de langue, comme dans la page article.
+const withLang = (props) => React.createElement(LanguageProvider, { lang: 'fr' }, React.createElement(ArticleTrailer, props));
 const { act } = React;
 const renderer = createRoot(document.querySelector('#video'));
 const ramayana = getArticleTrailerEntry('cinema/ramayana-rise-of-a-legend-nouvelle-bande-annonce');
-await act(async () => renderer.render(React.createElement(ArticleTrailer, ramayana)));
+await act(async () => renderer.render(withLang(ramayana)));
 assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(ramayana.items[0].id));
 const choices = document.querySelectorAll('.article-trailer-choice');
 assert.equal(choices.length, 3);
@@ -451,7 +454,7 @@ await act(async () => renderer.unmount());
 // anglaise et japonaise du même teaser officiel).
 const legendsRoot = createRoot(document.querySelector('#video'));
 const legends = getArticleTrailerEntry('ghost-tsushima-legends-anime-2028');
-await act(async () => legendsRoot.render(React.createElement(ArticleTrailer, legends)));
+await act(async () => legendsRoot.render(withLang(legends)));
 assert.equal(document.querySelector('iframe').getAttribute('src'), youTubeEmbedUrl(legends.items[0].id));
 const legendsChoices = document.querySelectorAll('.article-trailer-choice');
 assert.equal(legendsChoices.length, 2);
@@ -466,7 +469,7 @@ await act(async () => legendsRoot.unmount());
 // Le sélecteur d'une actu sans vidéo officielle affiche la mention d'absence.
 const anthropic = getArticleTrailerEntry('tech/anthropic-claude-faux-indice-philadelphie');
 const anthropicRoot = createRoot(document.querySelector('#video'));
-await act(async () => anthropicRoot.render(React.createElement(ArticleTrailer, anthropic)));
+await act(async () => anthropicRoot.render(withLang(anthropic)));
 assert.equal(document.querySelectorAll('iframe').length, 0);
 assert.ok(document.querySelector('.article-trailer-pending').textContent.includes('Aucune vidéo officielle'));
 await act(async () => anthropicRoot.unmount());

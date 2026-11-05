@@ -1,42 +1,5 @@
 // Généré par scripts/generate-french-site-dictionary.mjs — ne pas éditer à la main.
 export const frenchSiteDictionary = {
-  "article": {
-    "label": "ACTUS À LA UNE",
-    "date": "",
-    "eyebrowAuto": "ACTU DU JOUR · LET’S PLAY",
-    "eyebrowRewritten": "RÉÉCRIT POUR LET’S PLAY",
-    "views": "{n} vues",
-    "readTime": "4 MIN DE LECTURE",
-    "video": "VIDÉO",
-    "official": "OFFICIELLE",
-    "officialVideo": "Vidéo officielle",
-    "watchOnYouTube": "Voir sur YouTube",
-    "alsoRead": "À LIRE AUSSI",
-    "alsoReadTitle": "LES ACTUS À LA UNE",
-    "alsoReadText": "Retrouvez les dernières annonces et analyses de la rédaction.",
-    "backToNews": "RETOUR AUX ACTUS",
-    "ctaEyebrow": "LA SUITE SUR LET’S PLAY",
-    "ctaTitleA": "RESTEZ DANS",
-    "ctaTitleB": "LE GAME.",
-    "ctaButton": "VOIR LES ACTUS",
-    "sentiment": {
-      "positive": "Actu positive",
-      "negative": "Actu négative",
-      "mixed": "Actu mitigée"
-    }
-  },
-  "lang": {
-    "label": "Langue",
-    "saved": "Langue : {name}",
-    "device": "Langue de l’appareil",
-    "frenchOnly": "Article en français",
-    "frenchOnlyNote": "Cette actu n’est pas encore traduite en {language}. La version française fait foi.",
-    "autoTranslated": "Traduction automatique",
-    "autoTranslatedNote": "Traduit du français vers {language}. En cas de doute, la version française fait foi.",
-    "readInFrench": "Lire en français",
-    "loading": "Chargement de la traduction…",
-    "failed": "Impossible de changer de langue pour le moment."
-  },
   "meta": {
     "title": "Let’s Play — Jouer le jeu"
   },
@@ -454,6 +417,15 @@ export const frenchSiteDictionary = {
       "communityText": "Créez un groupe, retrouvez des joueurs qui partagent vos envies et lancez la discussion.",
       "explore": "Explorer",
       "joinUs": "Rejoignez-nous"
+    },
+    "reels": {
+      "label": "REELS",
+      "meta": "YOUTUBE SHORTS · LET’S PLAY",
+      "eyebrow": "Format court",
+      "h2a": "À VOIR",
+      "h2b": "EN BOUCLE.",
+      "seeAll": "Voir tous les reels",
+      "posterAlt": "Miniature de {name} — Let’s Play"
     },
     "partners": {
       "label1": "03 / PARTENAIRES",
@@ -1162,5 +1134,91 @@ export const frenchSiteDictionary = {
       "title": "Cinéma : aperçu de Dune Messiah",
       "desc": "À quoi s’attendre pour le prochain chapitre de Dune."
     }
+  },
+  "article": {
+    "label": "ACTUS À LA UNE",
+    "date": "",
+    "eyebrowAuto": "ACTU DU JOUR · LET’S PLAY",
+    "eyebrowRewritten": "RÉÉCRIT POUR LET’S PLAY",
+    "views": "{n} vues",
+    "readTime": "4 MIN DE LECTURE",
+    "video": "VIDÉO",
+    "official": "OFFICIELLE",
+    "officialVideo": "Vidéo officielle",
+    "watchOnYouTube": "Voir sur YouTube",
+    "alsoRead": "À LIRE AUSSI",
+    "alsoReadTitle": "LES ACTUS À LA UNE",
+    "alsoReadText": "Retrouvez les dernières annonces et analyses de la rédaction.",
+    "backToNews": "RETOUR AUX ACTUS",
+    "ctaEyebrow": "LA SUITE SUR LET’S PLAY",
+    "ctaTitleA": "RESTEZ DANS",
+    "ctaTitleB": "LE GAME.",
+    "ctaButton": "VOIR LES ACTUS",
+    "sourceOfficial": "Consulter la source officielle",
+    "sentiment": {
+      "positive": "Actu positive",
+      "negative": "Actu négative",
+      "mixed": "Actu mitigée"
+    }
+  },
+  "lang": {
+    "label": "Langue",
+    "saved": "Langue : {name}",
+    "device": "Langue de l’appareil",
+    "frenchOnly": "Article en français",
+    "frenchOnlyNote": "Cette actu n’est pas encore traduite en {language}. La version française fait foi.",
+    "autoTranslated": "Traduction automatique",
+    "autoTranslatedNote": "Traduit du français vers {language}. En cas de doute, la version française fait foi.",
+    "readInFrench": "Lire en français",
+    "loading": "Chargement de la traduction…",
+    "failed": "Impossible de changer de langue pour le moment."
+  },
+  "engagement": {
+    "kicker": "À VOUS DE JOUER",
+    "titleA": "ET VOUS,",
+    "titleB": "VOUS EN PENSEZ QUOI ?",
+    "intro": "Une réaction rapide, puis un vrai avis dans les commentaires. La rédaction Let’s Play veut suivre ce qui vous fait vibrer — ou douter.",
+    "hype": "Je suis hypé",
+    "watch": "Je garde un œil",
+    "wait": "J’attends les tests",
+    "reactionOne": "{n} réaction",
+    "reactionMany": "{n} réactions",
+    "allReaders": "tous les lecteurs",
+    "loading": "Chargement de la tendance…",
+    "unavailable": "Tendance indisponible",
+    "saving": "Enregistrement…",
+    "counted": "Votre réaction est comptabilisée dans la tendance globale.",
+    "trend": "La tendance rassemble les votes de tous les lecteurs.",
+    "signInToVote": "CONNECTEZ-VOUS POUR VOTER",
+    "joinDiscussion": "REJOINDRE LA DISCUSSION",
+    "errorLoad": "Impossible de charger la tendance globale. Réessayez dans quelques instants.",
+    "errorSave": "Votre réaction n’a pas pu être enregistrée. Veuillez réessayer.",
+    "reactAria": "Réagir à l’article {title}"
+  },
+  "media": {
+    "noVideo": "PAS DE VIDÉO",
+    "upcoming": "À VENIR",
+    "watchOnYouTube": "Voir sur YouTube",
+    "chooseVideo": "Choisir une autre vidéo officielle",
+    "captures": "CAPTURES",
+    "visuals": "VISUELS",
+    "creditSources": "Sources des visuels :",
+    "zoom": "Agrandir le visuel {n} sur {total} : {alt}",
+    "closeViewer": "Fermer la visionneuse",
+    "previous": "Visuel précédent",
+    "next": "Visuel suivant",
+    "galleryLabel": "{label} — visuel {n} sur {total}",
+    "kindTrailer": "BANDE-ANNONCE",
+    "kindTeaser": "TEASER",
+    "kindExtract": "EXTRAIT",
+    "kindBehind": "COULISSES",
+    "kindReplay": "REPLAY",
+    "kindPresentation": "PRÉSENTATION",
+    "badgeTrailer": "BANDE-ANNONCE OFFICIELLE",
+    "badgeTeaser": "TEASER OFFICIEL",
+    "badgeExtract": "EXTRAIT OFFICIEL",
+    "badgeBehind": "COULISSES OFFICIELLES",
+    "badgeReplay": "REPLAY OFFICIEL",
+    "badgePresentation": "PRÉSENTATION OFFICIELLE"
   }
 };

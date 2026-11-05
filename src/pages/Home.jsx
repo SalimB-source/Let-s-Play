@@ -150,7 +150,7 @@ export default function Home() {
       h2a: 'FEATURED',
       h2b: 'EPISODES.',
       seeAll: 'See all episodes',
-      label2: 'ALGÉRIE TÉLÉCOM · OOREDOO · DJEZZY',
+      label2: 'ALGERIA TELECOM · OOREDOO · DJEZZY',
     },
     ar: {
       eyebrow: 'الحلقات المميزة',
@@ -398,13 +398,13 @@ export default function Home() {
       {/* REELS / SHORTS YOUTUBE — placés juste avant le direct : le format court
           garde le visiteur en mouvement entre les formats courts. */}
       <section className="reels-section wrap" id="reels" data-reveal>
-        <div className="section-label"><span>REELS</span><span>YOUTUBE SHORTS · LET’S PLAY</span></div>
+        <div className="section-label"><span>{t.home.reels.label}</span><span>{t.home.reels.meta}</span></div>
         <div className="reels-head">
           <div>
-            <p className="eyebrow"><span className="live-dot" /> Format court</p>
-            <h2>À VOIR<br /><em>EN BOUCLE.</em></h2>
+            <p className="eyebrow"><span className="live-dot" /> {t.home.reels.eyebrow}</p>
+            <h2>{t.home.reels.h2a}<br /><em>{t.home.reels.h2b}</em></h2>
           </div>
-          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">Voir tous les reels <Arrow /></a>
+          <a className="arrow-link" href="https://www.youtube.com/@letsplay.officiel/shorts" target="_blank" rel="noreferrer">{t.home.reels.seeAll} <Arrow /></a>
         </div>
         <div className="reels-grid">
           {reels.map((reel, index) => (
@@ -413,7 +413,7 @@ export default function Home() {
                 <ScrollAutoplayVideo
                   id={reel.id}
                   title={`${reel.label} — Let’s Play`}
-                  posterAlt={`Miniature de ${reel.label} — Let’s Play`}
+                  posterAlt={(t.home.reels.posterAlt || 'Miniature de {name} — Let’s Play').replace('{name}', reel.label)}
                 />
               ) : (
                 <iframe
