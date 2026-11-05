@@ -194,11 +194,17 @@ jobs:
             echo "(\`Android System WebView\`). Mettez-le à jour dans le Play Store, ainsi que Chrome."
             echo "La page de secours de l'application affiche la version du moteur et le message d'erreur."
           } > notes.md
+          # Copie au nom FIXE, à côté du nom versionné : les pages du site
+          # pointent vers …/releases/download/<tag>/<fichier>-latest.apk, un lien
+          # qui doit survivre aux changements de version. Le nom versionné reste
+          # publié pour l'archive (et pour qui veut une version précise).
+          LATEST="${{ matrix.fichier }}-latest.apk"
+          cp "$APK" "$LATEST"
           gh release delete "${{ matrix.release }}" --yes --cleanup-tag 2>/dev/null || true
           git push origin ":refs/tags/${{ matrix.release }}" 2>/dev/null || true
-          gh release create "${{ matrix.release }}" "$APK" \
+          gh release create "${{ matrix.release }}" "$APK" "$LATEST" \
             --title "${{ matrix.titre }} — $APK" --notes-file notes.md
-          echo "Release publiée : ${{ matrix.release }} ($APK)"
+          echo "Release publiée : ${{ matrix.release }} ($APK + $LATEST)"
 
       # Dépose aussi l'APK sur la branche (android/dist/lets-play-latest.apk)
       # via l'API Contents : pratique pour la récupérer en clonant le repo.
