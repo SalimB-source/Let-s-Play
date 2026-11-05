@@ -351,5 +351,45 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-04",
     "section": "Actualités tech"
+  },
+  "/news/zelda-ocarina-of-time-sortie-switch-2-5-novembre": {
+    "title": "OCARINA OF TIME LE JOUR DU RETOUR. — Let’s Play",
+    "description": "Le remake d’Ocarina of Time est annoncé pour ce 5 novembre, exclusivement sur Nintendo Switch 2. Nintendo en présente les principales nouveautés dans sa vidéo officielle.",
+    "image": "https://i.ytimg.com/vi/8v8eDMh1o3g/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/black-doves-saison-2-netflix-5-novembre": {
+    "title": "BLACK DOVES LES ESPIONS REVIENNENT. — Let’s Play",
+    "description": "Black Doves revient pour une saison 2 annoncée ce 5 novembre sur Netflix. Helen et Sam affrontent de nouvelles menaces dans la bande-annonce officielle.",
+    "image": "https://i.ytimg.com/vi/MOU2thjq6Z0/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/openai-pierre-acquisition-codex-5-novembre": {
+    "title": "CODEX LE PARI DES OUTILS GIT. — Let’s Play",
+    "description": "OpenAI annonce son intention d’acquérir Pierre Computer Company, derrière Code Storage et les bibliothèques Trees et Diffs. La transaction reste soumise à des conditions de clôture.",
+    "image": "https://images.ctfassets.net/kftzwdyauwt9/6G64B5haCxDuphl2iqwZ1N/4f8d319293f5e5e98b319e01b4fbdf59/scaling-git-at-openai-art-card.png?w=1200&q=85&fm=webp",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités tech"
+  },
+  "/news/god-of-war-laufey-report-20-mai-2027": {
+    "title": "GOD OF WAR LAUFEY FAYE ATTENDRA MAI. — Let’s Play",
+    "description": "Initialement prévu le 16 février, God of War Laufey est repoussé au 20 mai 2027 sur PS5. Santa Monica Studio veut consacrer ces trois mois supplémentaires aux dernières finitions.",
+    "image": "https://i.ytimg.com/vi/CQve7-PraCM/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités gaming"
+  },
+  "/news/gta-6-precommandes-estimations-sensor-tower-novembre": {
+    "title": "GTA VI DES PRÉCOMMANDES ESTIMÉES À 751 M$. — Let’s Play",
+    "description": "Selon des estimations de Sensor Tower relayées le 4 novembre par Frandroid, GTA 6 aurait dépassé 7 millions de précommandes, pour environ 751 millions de dollars. Rockstar n’a pas confirmé ces chiffres.",
+    "image": "https://i.ytimg.com/vi/QdBZY2fkU-0/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités gaming"
   }
 };

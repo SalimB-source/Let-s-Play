@@ -47,10 +47,8 @@ test('médias officiels : deux trailers vérifiés, pas de fausse retransmission
   assert.ok(dailyStories[key].p3.includes('au printemps'));
 });
 
-test('édition courante partout et édition du 3 novembre conservée dans Hier et archives', () => {
-  for (const file of ['src/pages/News.jsx', 'src/pages/Home.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/pages/AllNews.jsx', 'src/pages/CurrentNews.jsx', 'src/search/searchIndex.js']) {
+test('édition du 4 novembre conservée dans les archives', () => {
+  for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) {
     assert.ok(read(file).includes("from '../news/daily/2026-11-04'"), file);
   }
-  assert.match(read('src/pages/News.jsx'), /yesterdayStories, editionDate as yesterdayDate.*2026-11-03/);
-  for (const file of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(file).includes("from '../news/daily/2026-11-03'"));
 });

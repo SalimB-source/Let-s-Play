@@ -1,3 +1,5 @@
+import { articleFooterSource } from '../lib/articleSources';
+import { dailyStories as stories20261105 } from '../news/daily/2026-11-05';
 import { dailyStories as stories20261104 } from '../news/daily/2026-11-04';
 import { dailyStories as stories20261103 } from '../news/daily/2026-11-03';
 import { dailyStories as edition20261101 } from '../news/daily/2026-11-01';
@@ -41,6 +43,7 @@ const stories = {
   // communes aux articles, aux cartes des hubs, à la une de l'accueil, à la
   // recherche et au SEO. Chaque édition vit dans son fichier
   // (src/news/daily/<date>.js) ; l'import nu désigne l'édition du jour.
+  ...stories20261105,
   ...stories20261104,
   ...stories20261103,
   ...stories20261102,
@@ -1198,6 +1201,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
   // identique à celui des cartes du hub correspondant (vues, réactions…).
   const key = slug || (routeSlug && slugPrefix ? `${slugPrefix}${routeSlug}` : routeSlug);
   const story = key ? allStories[key] : stories['persona-6-switch-2'];
+  const footerSource = articleFooterSource(story);
   if (!story) return <NotFound />;
   const articleId = `/news/${key}`;
   const sentimentId = inferSentimentForStory(story);
@@ -1272,7 +1276,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
         {story.p4 ? <p>{story.p4}</p> : null}
 
         {story.takeText ? <div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div> : null}
-        {story.source ? <p className="article-source">{story.source} <a href={story.sourceUrl} target="_blank" rel="noreferrer">{story.sourceDetail}</a></p> : null}
+        {footerSource ? <p className="article-source"><a href={footerSource.href} target="_blank" rel="noreferrer">{footerSource.label}</a></p> : null}
         {story.credit ? <p className="article-source">{story.credit}</p> : null}
       </article>
 
