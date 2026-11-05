@@ -118,14 +118,15 @@ jobs:
             release: desktop-vice-city
             titre: "Vice City Rush pour PC"
             artefact: vice-city-pc-windows
+    # `LETSPLAY_JEU` vient de la matrice : il choisit le jeu pour toute la
+    # fabrication (bundle, identité de la fenêtre, nom des installeurs, Release).
+    # Les autres valeurs sont publiques (voir deploy.yml) : sans elles
+    # l'installeur se construit quand même, mais le compte et les duels en ligne
+    # y resteront indisponibles (jeu hors ligne intact). La site key Turnstile
+    # alimente le widget anti-robot de l'écran de connexion PC — sans elle, ce
+    # dernier reste bloqué sur captchaNotConfigured.
     env:
       LETSPLAY_JEU: ${{ matrix.jeu }}
-    # Mêmes valeurs publiques que le déploiement web (voir deploy.yml) : sans
-    # elles l'installeur se construit quand même, mais le compte et les duels
-    # en ligne y resteront indisponibles (jeu hors ligne intact). La site key
-    # Turnstile alimente le widget anti-robot de l'écran de connexion PC — sans
-    # elle, ce dernier reste bloqué sur captchaNotConfigured.
-    env:
       VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || vars.SUPABASE_URL || secrets.VITE_SUPABASE_URL || secrets.SUPABASE_URL }}
       VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY || vars.SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_PUBLISHABLE_KEY || secrets.SUPABASE_ANON_KEY }}
       VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY || secrets.VITE_TURNSTILE_SITE_KEY }}
