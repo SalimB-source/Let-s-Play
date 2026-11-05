@@ -1,4 +1,5 @@
-import { dailyNewsListing as news20261104, editionDate } from '../news/daily/2026-11-04';
+import { dailyNewsListing as news20261105, editionDate } from '../news/daily/2026-11-05';
+import { dailyNewsListing as news20261104 } from '../news/daily/2026-11-04';
 import { dailyNewsListing as news20261103 } from '../news/daily/2026-11-03';
 import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
@@ -103,6 +104,7 @@ export default function CinemaNews() {
   // du week-end des 03-04.10.2026 — Verity vs Digger, Dexter Resurrection S2
   // et Beware Boiúna —, puis celles du 26-29.09.2026.
   const articles = useMemo(() => [
+    ...news20261105.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261104.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261103.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),
     ...news20261102.filter((story) => story.to.startsWith('/news/cinema/')).map((story) => ({ ...story, read: copy.read })),

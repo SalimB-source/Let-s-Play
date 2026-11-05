@@ -76,6 +76,74 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"god-of-war-laufey-report-20-mai-2027": {
+  "label": "GOD OF WAR LAUFEY",
+  "meta": "PlayStation",
+  "items": [
+    {
+      "id": "CQve7-PraCM",
+      "kind": "trailer",
+      "title": "God of War Laufey - Pre-Orders Open Now | PS5 Games",
+      "channel": "PlayStation",
+      "verified": "05.11.2026",
+      "note": "Vidéo officielle de précommande publiée le 29 septembre 2026, utilisée en illustration. Ce n’est pas une vidéo du report ; les dates dans les images peuvent être anciennes. La description consultée indique désormais le 20 mai 2027."
+    }
+  ],
+  "credit": "Miniature et vidéo officielles : PlayStation. Vidéo d’archive utilisée en illustration, pas une nouvelle annonce."
+},
+"gta-6-precommandes-estimations-sensor-tower-novembre": {
+  "label": "GTA VI",
+  "meta": "Rockstar Games",
+  "items": [
+    {
+      "id": "QdBZY2fkU-0",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Trailer 1",
+      "channel": "Rockstar Games",
+      "verified": "05.11.2026",
+      "note": "Premier trailer officiel, publié le 4 décembre 2023, utilisé uniquement pour illustrer le jeu. Ce n’est pas une nouvelle vidéo et il ne confirme aucun chiffre de précommandes. Sa fenêtre de sortie initiale est obsolète."
+    }
+  ],
+  "credit": "Miniature et vidéo officielles : Rockstar Games. Vidéo d’archive utilisée en illustration, pas une nouvelle annonce."
+},
+  // Édition du 05.11.2026 : médias vérifiés et contexte de publication explicite.
+  "zelda-ocarina-of-time-sortie-switch-2-5-novembre": {
+  "label": "OCARINA OF TIME",
+  "meta": "Nintendo of America",
+  "items": [
+    {
+      "id": "8v8eDMh1o3g",
+      "kind": "trailer",
+      "title": "The Legend of Zelda: Ocarina of Time – Overview Trailer – Nintendo Switch 2",
+      "channel": "Nintendo of America",
+      "verified": "05.11.2026",
+      "note": "Présentation officielle publiée le 14 octobre 2026, utilisée pour illustrer la sortie annoncée le 5 novembre. Ce n’est pas une nouvelle vidéo publiée aujourd’hui."
+    }
+  ],
+  "credit": "Miniature et vidéo officielles : Nintendo of America, présentation du 14 octobre 2026. Carte Let’s Play de repli uniquement."
+},
+  "cinema/black-doves-saison-2-netflix-5-novembre": {
+  "label": "BLACK DOVES",
+  "meta": "Netflix",
+  "items": [
+    {
+      "id": "MOU2thjq6Z0",
+      "kind": "trailer",
+      "title": "Black Doves: Season 2 | Official Trailer | Netflix",
+      "channel": "Netflix",
+      "verified": "05.11.2026",
+      "note": "Bande-annonce officielle du 24 septembre 2026 annonçant le retour le 5 novembre. Elle contient des éléments d’intrigue et n’est pas une nouvelle vidéo du jour."
+    }
+  ],
+  "credit": "Miniature et bande-annonce officielles : Netflix, vidéo publiée le 24 septembre 2026. Carte éditoriale en repli uniquement."
+},
+  "tech/openai-pierre-acquisition-codex-5-novembre": {
+  "label": "CODEX",
+  "meta": "OPENAI · PIERRE",
+  "items": [],
+  "pending": "Aucune vidéo officielle spécifique à cette acquisition n’a été identifiée dans le communiqué consulté le 5 novembre. Le visuel illustre les travaux Git d’OpenAI ; ce n’est ni une vidéo ni une image de l’équipe de Pierre."
+},
+
   // Édition du 04.11.2026 : médias officiels et absence explicite de vidéo pour les Labs Apple.
   "lightyear-frontier-1-0-4-novembre-2026": {
   "label": "LIGHTYEAR FRONTIER",
