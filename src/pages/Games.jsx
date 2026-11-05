@@ -38,16 +38,16 @@ const HEAD = {
  * coque (`dansUneCoque`) — on est déjà dans l'application, et les liens en
  * sortiraient —, et absente pour un jeu qui n'a pas encore d'application.
  */
-function TelechargementsJeu({ liens, textes }) {
+function TelechargementsJeu({ liens, textes, jeu }) {
   return (
     <div className="game-downloads" aria-label={`${textes.titre} — ${textes.windows} / ${textes.android}`}>
-      <a className="game-download" href={liens.windows} rel="noopener" title={textes.aideWindows}>
+      <a className="game-download game-download--windows" href={liens.windows} rel="noopener" title={textes.aideWindows}>
         <span className="game-download__os" aria-hidden="true">⊞</span>
         <span className="game-download__nom">{textes.windows}<small>{textes.exe}</small></span>
       </a>
-      <a className="game-download" href={liens.apk} rel="noopener" title={textes.aideAndroid}>
+      <a className="game-download game-download--android" href={liens.apk} rel="noopener" title={textes.aideAndroid} aria-label={`${textes.telechargerApk} — ${jeu}`}>
         <span className="game-download__os" aria-hidden="true">▲</span>
-        <span className="game-download__nom">{textes.android}<small>{textes.apk}</small></span>
+        <span className="game-download__nom"><span className="game-download__android-court">{textes.android}<small>{textes.apk}</small></span><span className="game-download__android-mobile">{textes.telechargerApk}</span></span>
       </a>
     </div>
   );
@@ -97,7 +97,7 @@ export default function Games() {
               {/* Hors du lien : un <a> ne peut pas en contenir un autre, et un
                   clic sur « Windows » doit télécharger, pas ouvrir le jeu. */}
               {montreTelechargements && game.telechargements && (
-                <TelechargementsJeu liens={game.telechargements} textes={textes} />
+                <TelechargementsJeu liens={game.telechargements} textes={textes} jeu={game.title} />
               )}
             </article>
           );
