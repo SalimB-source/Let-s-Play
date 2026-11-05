@@ -94,6 +94,12 @@
       <tbody id="webgl"></tbody>
     </table>
 
+    <h2>WebGPU (essai de la conduite libre)</h2>
+    <table>
+      <thead><tr><th>Élément</th><th>Valeur</th></tr></thead>
+      <tbody id="webgpu"></tbody>
+    </table>
+
     <h2>Coque</h2>
     <table>
       <thead><tr><th>Élément</th><th>Valeur</th></tr></thead>
@@ -161,6 +167,41 @@
         };
       }
 
+      /**
+       * Sonde **WebGPU** : trois états distincts, et c'est tout l'intérêt.
+       *   - `navigator.gpu` absent → ce Chromium ne connaît pas l'API ;
+       *   - API présente mais `requestAdapter()` → null → l'API existe mais
+       *     aucune carte n'est accordée (liste noire, pilote, VM, ou
+       *     `--enable-unsafe-webgpu` manquant) ;
+       *   - un adaptateur → l'essai « WEBGPU · ESSAI » de la conduite libre
+       *     devrait s'ouvrir. On lit aussi son nom, ses limites, et si l'appareil
+       *     peut réellement être demandé.
+       */
+      async function sonderWebgpu() {
+        if (typeof navigator === 'undefined' || !navigator.gpu) {
+          return { etat: 'absent', detail: 'navigator.gpu n’existe pas dans ce Chromium.' };
+        }
+        try {
+          const adaptateur = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+          if (!adaptateur) {
+            return { etat: 'sans-carte', detail: 'L’API existe, mais aucune carte n’est accordée par le pilote.' };
+          }
+          const info = adaptateur.info || {};
+          const appareil = await adaptateur.requestDevice().catch(() => null);
+          return {
+            etat: 'pret',
+            detail: 'Un adaptateur a répondu : l’essai WebGPU peut s’ouvrir.',
+            nom: [info.vendor, info.architecture, info.device, info.description].filter(Boolean).join(' · ') || '(sans nom)',
+            limites: adaptateur.limits
+              ? `texture max ${adaptateur.limits.maxTextureDimension2D} · storage ${adaptateur.limits.maxStorageBufferBindingSize} o`
+              : null,
+            appareil: Boolean(appareil),
+          };
+        } catch (erreur) {
+          return { etat: 'erreur', detail: String(erreur?.message || erreur) };
+        }
+      }
+
       function renduTextuel(sonde, etat) {
         // La sonde locale a priorité : c'est le contexte dans lequel le jeu
         // dessinerait. L'info du processus principal sert de recoupement.
@@ -210,6 +251,21 @@
           ligne(tFonctions, f.fonction + (f.critique ? ' ★' : ''), f.etat, bon ? 'bon' : 'mauvais');
         }
 
+        const webgpu = await sonderWebgpu();
+        derniereSondeWebgpu = webgpu;
+        const tWebgpu = vider('webgpu');
+        const libelle = {
+          pret: 'prêt — l’essai peut s’ouvrir',
+          absent: 'absent — ce Chromium ne connaît pas WebGPU',
+          'sans-carte': 'API présente, aucune carte accordée',
+          erreur: 'erreur à la demande d’adaptateur',
+        }[webgpu.etat] || webgpu.etat;
+        ligne(tWebgpu, 'état', libelle, webgpu.etat === 'pret' ? 'bon' : 'mauvais');
+        ligne(tWebgpu, 'détail', webgpu.detail);
+        if (webgpu.nom) ligne(tWebgpu, 'adaptateur', webgpu.nom);
+        if (webgpu.limites) ligne(tWebgpu, 'limites', webgpu.limites);
+        if (webgpu.appareil !== undefined) ligne(tWebgpu, 'appareil demandé', webgpu.appareil ? 'oui' : 'non');
+
         const tWebgl = vider('webgl');
         ligne(tWebgl, 'contexte', sonde.disponible ? sonde.api : 'aucun');
         ligne(tWebgl, 'version', sonde.version);
@@ -232,6 +288,9 @@
           .join('\n') || '—';
       }
 
+      /** Dernière sonde WebGPU, pour le rapport copié. */
+      let derniereSondeWebgpu = null;
+
       function rapportTexte() {
         const lignes = ['Rapport graphique — Le Sablier de Bab El (coque PC)'];
         const etat = dernierEtat || {};
@@ -239,6 +298,9 @@
         lignes.push(`renderer: ${etat.renderer}`);
         lignes.push(`verdict: ${etat.rendu?.raison}`);
         for (const f of etat.fonctions?.lignes || []) lignes.push(`  ${f.fonction}${f.critique ? ' *' : ''}: ${f.etat}`);
+        // La ligne WebGPU part avec le rapport : c'est la première chose à
+        // regarder quand l'essai de la conduite libre affiche « · REPLI ».
+        if (derniereSondeWebgpu) lignes.push(`webgpu: ${derniereSondeWebgpu.etat} — ${derniereSondeWebgpu.nom || derniereSondeWebgpu.detail}`);
         lignes.push('commutateurs: ' + (etat.commutateurs || []).map(([n, v]) => `--${n}${v ? '=' + v : ''}`).join(' '));
         return lignes.join('\n');
       }

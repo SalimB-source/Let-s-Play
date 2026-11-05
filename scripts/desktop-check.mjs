@@ -52,6 +52,15 @@ const force = Object.fromEntries(gpuSwitches({ platform: 'win32', env: { LETSPLA
 assert.equal(force['use-angle'], 'gl', 'LETSPLAY_ANGLE doit prendre le dessus');
 ok('dérogation LETSPLAY_ANGLE respectée (diagnostic)');
 
+// WebGPU : le commutateur qui lève la liste noire doit être posé sur les trois
+// plateformes, et **jamais** en mode logiciel volontaire (là, on veut justement
+// comparer sans GPU).
+for (const plateforme of ['win32', 'darwin', 'linux']) {
+  const noms = gpuSwitches({ platform: plateforme }).map(([nom]) => nom);
+  assert.ok(noms.includes('enable-unsafe-webgpu'), `${plateforme} : enable-unsafe-webgpu absent — l'essai WebGPU serait refusé à tort`);
+}
+ok('enable-unsafe-webgpu posé sur win32/darwin/linux (essai WebGPU de la conduite libre)');
+
 const logiciel = Object.fromEntries(gpuSwitches({ platform: 'win32', env: { LETSPLAY_SOFTWARE_GL: '1' } }));
 assert.equal(logiciel['use-angle'], 'swiftshader');
 assert.ok(!('ignore-gpu-blocklist' in logiciel), 'mode logiciel : pas de forçage GPU');

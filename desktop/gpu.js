@@ -86,7 +86,22 @@ export function gpuSwitches({ platform = 'linux', env = {} } = {}) {
     : ANGLE_PAR_DEFAUT[platform] || '';
   if (angle) switches.push(['use-angle', angle]);
 
-  // 4. Repli logiciel **autorisé mais signalé** : si la carte est absente ou son
+  // 4. **WebGPU** — l'essai de la conduite libre. La ville ne s'en sert que si
+  //    le joueur le demande, et seulement sur une machine qui a répondu ; mais
+  //    le backend doit être autorisé à s'ouvrir, sinon `requestAdapter()` rend
+  //    toujours null et le bouton annonce « STANDARD · REPLI » à tort.
+  //
+  //    `enable-unsafe-webgpu` lève la liste noire WebGPU de Chromium — la même
+  //    logique que `ignore-gpu-blocklist` côté WebGL : un pilote un peu ancien
+  //    mais fonctionnel n'est plus refusé par précaution.
+  //
+  //    On ne force **pas** de backend ici : sous Windows, Chromium choisit seul
+  //    D3D12 ou Vulkan selon le pilote, et `use-angle` ne concerne que le WebGL
+  //    (deux couches distinctes). Sur un PC sans carte WebGPU, ce commutateur
+  //    est sans effet : le jeu continue en WebGL.
+  switches.push(['enable-unsafe-webgpu', '']);
+
+  // 5. Repli logiciel **autorisé mais signalé** : si la carte est absente ou son
   //    pilote refusé, SwiftShader prend le relais et le duel reste jouable au
   //    lieu d'afficher une table 3D vide. Le panneau de diagnostic nomme ce
   //    repli, donc un joueur lent sait immédiatement qu'il n'est pas sur le GPU.
