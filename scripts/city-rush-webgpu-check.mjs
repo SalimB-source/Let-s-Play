@@ -118,7 +118,7 @@ const { checkCityRushWebGpu } = smoke;
 
 try {
   await checkCityRushWebGpu(assert);
-  console.log('check:city-rush-webgpu (interface) ✓ — WebGPU par défaut, préférences, mobile, repli et mode école vérifiés avec un renderer simulé.');
+  console.log('check:city-rush-webgpu (interface) ✓ — WebGPU par défaut, préférences, mobile, repli, mode école, qualité et portrait vérifiés avec un renderer simulé.');
 } catch (error) {
   console.error('check:city-rush-webgpu ✗');
   console.error(error?.stack || error?.message || error);

@@ -23,7 +23,7 @@ test('road-code pedestrians and cyclists remain present but unarmed',()=>{
   assert.doesNotMatch(source,/const pistol|muzzleFlash|muzzleMaterial|pistolGrip/);
 });
 test('garage, activities, sound, cockpit, menu and driving dynamics are retained',()=>{
-  for(const feature of ['garageActionRef.current =','challengeActionRef.current =','toggleSound','toggleCamera','onClick={onExit}','viceCityFreeDriveSpeedStep(drivingSchoolVehicleTuning(','drivingSchoolYawRate(viceCityFreeDriveYawRate(']) assert.ok(source.includes(feature),feature);
+  for(const feature of ['garageActionRef.current =','challengeActionRef.current =','toggleSound','toggleCamera','onClick={exitFreeRoam}','viceCityFreeDriveSpeedStep(drivingSchoolVehicleTuning(','drivingSchoolYawRate(viceCityFreeDriveYawRate(']) assert.ok(source.includes(feature),feature);
   assert.ok(source.includes("['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'Space']"));
 });
 test('cyclist construction accepts the unarmed road-user model',async()=>{
