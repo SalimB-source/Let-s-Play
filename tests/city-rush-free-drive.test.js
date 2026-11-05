@@ -165,8 +165,14 @@ test('les voitures de conduite libre sont agrandies sans désynchroniser les hit
   assert.match(source, /function enlargeFreeRoamTrafficCar\(car\)/u);
   assert.match(source, /car\.userData\.width \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
   assert.match(source, /car\.userData\.length \*= VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE/u);
-  assert.equal((source.match(/enlargeFreeRoamTrafficCar\(makeTrafficVehicle\(/gu) || []).length, 4,
-    'voitures stationnées, trafic et acteurs des exercices partagent la même échelle');
+  // Quatre familles de véhicules : voitures garées, trafic de ville, trafic du
+  // viaduc et acteurs des exercices. Le trafic passe désormais par
+  // `makeCityRushTrafficCar` (qui fusionne le véhicule en qualité allégée) mais
+  // l'agrandissement, lui, reste le même pour tous : c'est l'invariant.
+  assert.equal((source.match(/enlargeFreeRoamTrafficCar\(/gu) || []).length, 5,
+    'la déclaration et les quatre familles de véhicules passent par la même échelle');
+  assert.match(source, /enlargeFreeRoamTrafficCar\(makeCityRushTrafficCar\(trafficType\.id, \{ batch: qualityLevel !== 'full' \}\)\)/u,
+    'le trafic de ville garde l’échelle et suit la qualité');
   assert.match(source, /function makeFreeRoamPlayerCar\(profile, options\)/u);
   assert.equal((source.match(/playerVehicle = makeFreeRoamPlayerCar\(profile,/gu) || []).length, 2,
     'la voiture initiale et la voiture temporaire du garage gardent la même taille');
@@ -201,7 +207,11 @@ test('visée 3D : le pitch incline les bras sans modifier le cap du personnage',
 test('le piéton a des articulations hiérarchisées aux épaules, coudes, hanches, genoux, chevilles et bassin', () => {
   const source = readFileSync(new URL('../src/games/ViceCityFreeRoam.jsx', import.meta.url), 'utf8');
   const start = source.indexOf('function makeFreeRoamPedestrian()');
-  const end = source.indexOf('function isTouchPortraitViewport()', start);
+  // Le piéton se termine à la fonction suivante : peu importe laquelle, pourvu
+  // qu'on ne lise pas tout le fichier. `isTouchPortraitViewport` a été retirée
+  // avec le verrou d'orientation ; on s'appuie donc sur la déclaration du
+  // composant, stable, plutôt que sur un utilitaire voisin.
+  const end = source.indexOf('export default function ViceCityFreeRoam', start);
   assert.ok(start >= 0 && end > start);
   const model = source.slice(start, end);
   for (const joint of ['pedestrian-pelvis-joint', 'shoulder-joint-', 'elbow-joint-',

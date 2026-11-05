@@ -204,6 +204,53 @@ export async function checkCityRushWebGpu(assert) {
     } finally { await unmount(); }
   }
 
+  // ── Qualité : le bouton descend d'un cran, le budget suit, et le choix est
+  //    retenu pour la prochaine visite. ────────────────────────────────────
+  {
+    window.localStorage.clear();
+    setGpu(window, null);
+    const { node, unmount } = await mountFreeRoam();
+    try {
+      await until(() => node.querySelector('.vice-free-roam-quality'), 'le bouton de qualité');
+      const qualityButton = () => node.querySelector('.vice-free-roam-quality');
+      const world = () => node.querySelector('.vice-free-roam-world');
+      // On part d'un niveau connu, quel que soit le profil de l'appareil.
+      const start = qualityButton().getAttribute('data-quality');
+      assert.ok(['full', 'lite', 'low'].includes(start), `niveau lisible (${start})`);
+      assert.equal(world().dataset.quality, start, 'le niveau affiché est celui appliqué à la scène');
+      const expected = { full: 'lite', lite: 'low', low: 'full' }[start];
+      await click(qualityButton());
+      await settle(200);
+      assert.equal(qualityButton().getAttribute('data-quality'), expected, 'un clic descend d’un cran (et boucle)');
+      assert.equal(window.localStorage.getItem('letsplay_vice_city_rush_quality_v1'), expected, 'le choix est mémorisé');
+      // Le budget de néons suit le niveau : c'est ce qui pilote la compilation
+      // des matériaux, donc le coût réel sur un téléphone.
+      const neon = Number(world().dataset.neonLights);
+      assert.ok(Number.isFinite(neon) && neon >= 0, `budget de néons appliqué (${neon})`);
+      assert.ok(neon <= 8);
+      // La ville reste jouable et le regroupement statique s'applique.
+      await until(() => world().dataset.batched, 'le regroupement statique');
+      assert.ok(Number(world().dataset.drawsBefore) > Number(world().dataset.draws), 'moins d’appels après regroupement');
+    } finally { await unmount(); }
+  }
+
+  // ── Portrait : la ville se monte sans écran de rotation, et le bouton plein
+  //    écran remplace l'ancienne injonction à tourner l'appareil. ───────────
+  {
+    window.localStorage.clear();
+    setGpu(window, null);
+    const { node, unmount } = await mountFreeRoam();
+    try {
+      await until(() => node.querySelector('.vice-free-roam-world canvas'), 'la ville en portrait');
+      assert.equal(node.querySelector('.vice-free-roam-rotate'), null, 'plus d’écran de rotation');
+      assert.equal(window.document.querySelector('.vice-free-roam-rotate'), null);
+      // Le plein écran n'est proposé que sur un écran tactile ; en jsdom la
+      // media query ne l'est pas, on vérifie donc surtout qu'aucun verrou n'est
+      // posé et que la page ne demande pas l'orientation.
+      assert.equal(node.querySelector('[data-orientation-lock]'), null);
+    } finally { await unmount(); }
+  }
+
   // Un pilote qui refuse à l'initialisation doit ouvrir WebGL, sans écran noir.
   {
     window.localStorage.clear();

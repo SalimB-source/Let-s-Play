@@ -1,4 +1,20 @@
-import { cityRushRenderBudget, createCityRushVisualClock } from './cityRushPerformance.js';
+import {
+  CITY_RUSH_QUALITY_LEVELS,
+  cityRushBatchStaticAsync,
+  cityRushBatchVehicle,
+  cityRushCanAutoDowngrade,
+  cityRushDeviceProfile,
+  cityRushNextLowerQuality,
+  cityRushQualityPreference,
+  cityRushRenderBudget,
+  cityRushResumeSnapshot,
+  cityRushResumeState,
+  cityRushSceneBudget,
+  cityRushTrafficFleetSize,
+  applyCityRushLightBudget,
+  createCityRushFrameWatch,
+  createCityRushVisualClock,
+} from './cityRushPerformance.js';
 import { narrowPassageBlocked, keepPassageMarking } from './roadCodeExercises.js';
 import { sidewalkSignalFor, indexTrafficSignalLenses } from './drivingSidewalkSignals.js';
 import { drivingTeachingEnabled } from './drivingLearning.js';
@@ -46,7 +62,6 @@ import {
   VICE_CITY_CHALLENGES, VICE_CITY_POINTS_OF_INTEREST, createViceCityChallenge,
   viceCityGpsRoute, viceCityStreetName, viceCityDistrictName, viceCityChallengeProgress,
 } from './viceCityFreeDriveFeatures.js';
-import { createRpgLandscapeSession } from './rpgLandscape.js';
 import {
   CITY_RUSH_COCKPIT_BODY_FOLLOW,
   CITY_RUSH_COCKPIT_FOV,
@@ -109,6 +124,26 @@ function enlargeFreeRoamTrafficCar(car) {
   return car;
 }
 
+/**
+ * Un véhicule du **trafic**, prêt à être dessiné.
+ *
+ * Sur un appareil modeste, le véhicule est d'abord fusionné
+ * (`cityRushBatchVehicle`) : les douze à seize maillages d'une voiture de ville
+ * deviennent un petit nombre d'appels de dessin, dessin pour la même image.
+ * Les roues et les gyrophares, eux, restent animables — ils sont retournés à
+ * part et remis dans le groupe par le fusionneur.
+ *
+ * Rien ne change dans les données : `userData` (largeur, longueur, roues,
+ * gyrophares) est celui du véhicule d'origine, et c'est lui que lit la
+ * simulation. Un véhicule fusionné se conduit donc exactement comme l'autre.
+ */
+function makeCityRushTrafficCar(type, { batch = false } = {}) {
+  const car = makeTrafficVehicle(type);
+  if (!batch) return car;
+  const batched = cityRushBatchVehicle(car);
+  return batched.batched ? batched.root : car;
+}
+
 function makeFreeRoamPlayerCar(profile, options) {
   const car = makeRacerCar(profile, options);
   car.scale.multiplyScalar(VICE_CITY_FREE_ROAM_PLAYER_CAR_SCALE);
@@ -136,6 +171,35 @@ function readFreeRoamGraphicsPreference() {
 
 function writeFreeRoamGraphicsPreference(mode) {
   try { window.localStorage.setItem(CITY_RUSH_GRAPHICS_PREF_KEY, normalizeCityRushGraphicsMode(mode)); } catch { /* stockage désactivé */ }
+}
+
+/**
+ * Le niveau de qualité retenu pour cette ville (`full`, `lite`, `low`). Il est
+ * séparé du choix de rendu : le rendu dit **quel** moteur dessine (WebGL,
+ * halo, WebGPU), la qualité dit **combien** on lui demande. Un téléphone peut
+ * vouloir WebGL en qualité basse, un ordinateur WebGPU en qualité complète.
+ */
+const FREE_ROAM_QUALITY_KEY = 'letsplay_vice_city_rush_quality_v1';
+/** Les trois niveaux, dits en français et expliqués dans l'infobulle. */
+const FREE_ROAM_QUALITY_LABELS = { full: 'COMPLET', lite: 'ALLÉGÉ', low: 'MINIMAL' };
+const FREE_ROAM_QUALITY_DETAILS = {
+  full: 'vue 660 m, ombres du soleil, 8 néons, trafic complet',
+  lite: 'vue 560 m, ombres du soleil, 4 néons, trafic réduit',
+  low: 'vue 420 m, ombres réduites, 2 néons, trafic minimum',
+};
+
+function readFreeRoamQualityPreference() {
+  try {
+    const saved = window.localStorage.getItem(FREE_ROAM_QUALITY_KEY);
+    return CITY_RUSH_QUALITY_LEVELS.includes(saved) ? saved : null;
+  } catch { return null; }
+}
+
+function writeFreeRoamQualityPreference(level) {
+  try {
+    if (CITY_RUSH_QUALITY_LEVELS.includes(level)) window.localStorage.setItem(FREE_ROAM_QUALITY_KEY, level);
+    else window.localStorage.removeItem(FREE_ROAM_QUALITY_KEY);
+  } catch { /* stockage désactivé */ }
 }
 
 function readFreeRoamProgress() {
@@ -860,7 +924,13 @@ function makeRoadSurfaceTexture(seed, base, amplitude, colorSpace = THREE.SRGBCo
   return texture;
 }
 
-function makeCity(scene, schoolMode = false, schoolExercise) {
+/**
+ * La ville, entière. `cityBudget` est le budget de scène du niveau de qualité
+ * (`cityRushSceneBudget`) : il ne décide que de ce qui **coûte**, jamais de ce
+ * qui change le jeu — les collisions, les rues, les feux et les bateaux sont
+ * identiques à tous les niveaux.
+ */
+function makeCity(scene, schoolMode = false, schoolExercise, cityBudget = cityRushSceneBudget('full')) {
   const leftTraffic = schoolMode && schoolExercise?.trafficSide === 'left';
   const asphaltTexture = makeRoadSurfaceTexture(6143, 220, 24);
   const asphaltRoughness = makeRoadSurfaceTexture(9271, 218, 62, THREE.NoColorSpace);
@@ -918,6 +988,7 @@ function makeCity(scene, schoolMode = false, schoolExercise) {
   const horizontalSidewalkTilePositions = [];
   const cornerSidewalkTilePositions = [];
   const parkedCarSpecs = [];
+  void cityBudget;
   const parkedCarBodies = [];
   const trafficIntersections = [];
   const trafficSignalSpecs = [];
@@ -1109,7 +1180,10 @@ function makeCity(scene, schoolMode = false, schoolExercise) {
       hullColor: spec.hullColor, cabinColor: spec.cabinColor,
     }),
   }));
-  canalBoats.forEach(({ boat }, index) => { boat.name = `vice-city-river-boat-${index + 1}`; });
+  canalBoats.forEach(({ boat }, index) => {
+    boat.name = `vice-city-river-boat-${index + 1}`;
+    boat.userData.dynamic = true;
+  });
   const canalWakeGeometry = new THREE.RingGeometry(0.68, 1, 28);
   const canalWakes = canalBoats.map(({ boat }, index) => {
     const material = new THREE.MeshBasicMaterial({
@@ -1119,6 +1193,8 @@ function makeCity(scene, schoolMode = false, schoolExercise) {
     const wake = new THREE.Mesh(canalWakeGeometry, material);
     wake.rotation.x = -Math.PI / 2;
     wake.position.set(boat.position.x, 0.012, boat.position.z);
+    // Le sillage suit le bateau et son opacité bat à chaque image.
+    wake.userData.dynamic = true;
     scene.add(wake);
     return wake;
   });
@@ -2582,8 +2658,11 @@ function makeCity(scene, schoolMode = false, schoolExercise) {
   }
   // Voitures stationnées : on réutilise les modèles dédiés du trafic du jeu
   // (taxi, police, ambulance, camion-poubelle et sportive), gyrophares éteints.
-  for (const spec of parkedCarSpecs) {
-    const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(spec.type));
+  // Leur nombre suit le budget : ce sont douze à quatorze maillages chacune,
+  // et sur un téléphone elles pèsent autant que six voitures de trafic.
+  const parkedLimit = Number.isFinite(cityBudget.parkedCarsLimit) ? cityBudget.parkedCarsLimit : Infinity;
+  for (const spec of parkedCarSpecs.slice(0, Math.max(0, parkedLimit))) {
+    const car = enlargeFreeRoamTrafficCar(makeCityRushTrafficCar(spec.type, { batch: cityBudget.quality !== 'full' }));
     const scaledSpec = {
       ...spec,
       width: spec.width * VICE_CITY_FREE_ROAM_TRAFFIC_CAR_SCALE,
@@ -2592,6 +2671,10 @@ function makeCity(scene, schoolMode = false, schoolExercise) {
     car.position.set(spec.x, roadElevation(spec.x, spec.z), spec.z);
     car.rotation.y = spec.yaw;
     car.userData.beacons?.forEach((beacon) => { beacon.material.opacity = 0; });
+    // Une voiture garée n'est pas un décor : le joueur peut la percuter (elle
+    // recule, pivote et se couche). Elle reste donc hors du regroupement
+    // statique, sinon elle se figerait dans le décor.
+    car.userData.dynamic = true;
     scene.add(car);
     parkedCarBodies.push({
       spec: scaledSpec, mesh: car, velocityX: 0, velocityZ: 0, angularVelocity: 0, touchingPlayer: false,
@@ -3274,12 +3357,6 @@ function makeFreeRoamPedestrian() {
 
   return { group: character, pelvis, arms, legs };
 }
-function isTouchPortraitViewport() {
-  if (typeof window === 'undefined') return false;
-  const touch = Boolean(window.LetsPlayAndroid)
-    || Boolean(window.matchMedia?.('(pointer: coarse)').matches);
-  return touch && window.innerHeight > window.innerWidth;
-}
 
 export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, schoolTarget, schoolExercise, schoolPriorityState, schoolFault, schoolNotice, schoolControls, schoolPaused = false, onTelemetry }) {
   const schoolTargetRef = useRef(schoolTarget);
@@ -3289,6 +3366,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   const telemetryRef = useRef(onTelemetry);
   telemetryRef.current = onTelemetry;
   const mountRef = useRef(null);
+  const rootRef = useRef(null);
   const hudRef = useRef(null);
   const turnSignalRef = useRef(null);
   const leftMirrorRef = useRef(null);
@@ -3302,8 +3380,19 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   const touchAxesRef = useRef({ x: 0, y: 0 });
   const joystickPointerRef = useRef(null);
   const joystickKnobRef = useRef(null);
-  const landscapeSessionRef = useRef(null);
-  const [portraitTouch, setPortraitTouch] = useState(isTouchPortraitViewport);
+  // Pose de la voiture d'un montage à l'autre : la ville se reconstruit quand on
+  // change de qualité ou de moteur, et la partie ne doit pas repartir de zéro.
+  const resumeRef = useRef(null);
+  // Plein écran à la demande : c'est ce que proposait jadis l'écran « tournez
+  // votre téléphone ». Le mode paysage reste accessible, mais il n'est plus
+  // imposé — le jeu se joue dans le sens où l'appareil se trouve.
+  const [expanded, setExpanded] = useState(false);
+  // Une seule question : l'appareil a-t-il un écran tactile ? C'est là que les
+  // commandes tactiles et le bouton plein écran ont un sens.
+  const [touchDevice, setTouchDevice] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(window.LetsPlayAndroid) || Boolean(window.matchMedia?.('(pointer: coarse)').matches);
+  });
   const [soundOn, setSoundOn] = useState(readFreeRoamSoundPreference);
   const [cockpitView, setCockpitView] = useState(readFreeRoamCameraPreference);
   // Rendu de la ville : standard (WebGL), cinéma (halo) ou essai WebGPU. La
@@ -3316,6 +3405,20 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   const graphicsModeRef = useRef(graphicsMode);
   const [graphicsLive, setGraphicsLive] = useState(null);
   const [liteDevice] = useState(cityRushLiteDevice);
+  // ── Niveau de qualité de la ville ────────────────────────────────────────
+  // `cityRushDeviceProfile` lit la mémoire et les cœurs annoncés une fois ;
+  // `quality` en est la conclusion, qu'une baisse automatique (ville qui rame)
+  // ou un choix du joueur peut changer. La préférence retenue est celle du
+  // joueur (`stored`), pas celle de l'appareil : un téléphone qui tient le
+  // rendu complet doit pouvoir le garder.
+  const [profile] = useState(() => cityRushDeviceProfile());
+  const [quality, setQuality] = useState(() => cityRushQualityPreference({
+    stored: readFreeRoamQualityPreference(),
+    profile: cityRushDeviceProfile(),
+  }));
+  const qualityRef = useRef(quality);
+  qualityRef.current = quality;
+  const autoDowngradesRef = useRef(0);
   const [webGpuReady, setWebGpuReady] = useState(false);
   const webGpuApi = cityRushWebGpuSupport();
   const webGpuSupported = webGpuApi && !schoolMode;
@@ -3335,6 +3438,8 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   // reconstruite une fois, proprement, avec le nouveau moteur.
   const [graphicsEpoch, setGraphicsEpoch] = useState(0);
   const [featurePanel, setFeaturePanel] = useState(null);
+  const featurePanelRef = useRef(featurePanel);
+  featurePanelRef.current = featurePanel;
   const [selectedFreeRoamCar, setSelectedFreeRoamCar] = useState(null);
   const [challengeHud, setChallengeHud] = useState(null);
   const [freeRoamProfile, setFreeRoamProfile] = useState(readFreeRoamProgress);
@@ -3358,6 +3463,23 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   cockpitViewRef.current = cockpitView;
   const driveCar = CITY_RUSH_CARS.find((car) => car.id === carId) || CITY_RUSH_CARS[0];
   const displayCar = selectedFreeRoamCar || driveCar;
+  // Demande le plein écran sur le conteneur du jeu (et le quitte). Un refus
+  // (iOS, WebView bridée) laisse simplement le jeu en fenêtre : aucune erreur,
+  // aucune partie interrompue.
+  // Quitter la ville (retour au menu) efface la reprise : on ne reprend pas une
+  // partie qu'on a quittée.
+  const exitFreeRoam = () => {
+    resumeRef.current = null;
+    onExitRef.current?.();
+  };
+  const toggleExpanded = () => {
+    const target = rootRef.current;
+    if (document.fullscreenElement) {
+      Promise.resolve(document.exitFullscreen?.()).catch(() => {});
+      return;
+    }
+    Promise.resolve(target?.requestFullscreen?.({ navigationUI: 'hide' })).catch(() => {});
+  };
   const activateAudio = () => {
     if (!soundOnRef.current) return;
     const audio = audioRef.current;
@@ -3405,6 +3527,47 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   };
   const graphicsRef = useRef(cycleGraphics);
   graphicsRef.current = cycleGraphics;
+  // Le niveau de qualité, dit en français et expliqué. Les trois libellés
+  // tiennent dans la colonne d'actions (112 px).
+  // Le profil de l'appareil n'est pas qu'un diagnostic : il explique pourquoi
+  // la ville a démarré dans tel ou tel niveau (« mémoire annoncée 3 Go »), ce
+  // qui évite de croire à un réglage arbitraire.
+  const deviceHint = profile?.reasons?.length ? `Appareil : ${profile.reasons.join(', ')}.` : '';
+  const qualityLabel = FREE_ROAM_QUALITY_LABELS[quality] || FREE_ROAM_QUALITY_LABELS.lite;
+  const qualityNextLabel = FREE_ROAM_QUALITY_LABELS[cityRushNextLowerQuality(quality) || 'full'];
+  const qualityDetail = FREE_ROAM_QUALITY_DETAILS[quality] || FREE_ROAM_QUALITY_DETAILS.lite;
+  // ── Qualité ───────────────────────────────────────────────────────────────
+  // Le bouton fait descendre d'un cran : COMPLET → ALLÉGÉ → MINIMAL, puis
+  // revient à COMPLET. Le choix est retenu pour la prochaine visite : un
+  // téléphone qui peine une fois peinera encore demain.
+  const cycleQuality = () => {
+    const current = qualityRef.current;
+    const next = cityRushNextLowerQuality(current) || CITY_RUSH_QUALITY_LEVELS[0];
+    qualityRef.current = next;
+    setQuality(next);
+    writeFreeRoamQualityPreference(next);
+    autoDowngradesRef.current += 1;
+    // La scène se reconstruit une fois, avec moins à dessiner.
+    setGraphicsEpoch((value) => value + 1);
+  };
+  const cycleQualityRef = useRef(cycleQuality);
+  cycleQualityRef.current = cycleQuality;
+  /** Abaissement automatique — une seule fois par session (voir `animate`). */
+  const applyAutoDowngrade = () => {
+    if (!cityRushCanAutoDowngrade({ downgrades: autoDowngradesRef.current })) return false;
+    const next = cityRushNextLowerQuality(qualityRef.current);
+    if (!next) return false;
+    autoDowngradesRef.current += 1;
+    qualityRef.current = next;
+    setQuality(next);
+    writeFreeRoamQualityPreference(next);
+    // On ne reconstruit pas ici : `autoDowngradeRef` est lu par la boucle, qui
+    // termine l'image en cours puis laisse React reconstruire la ville.
+    setGraphicsEpoch((value) => value + 1);
+    return true;
+  };
+  const autoDowngradeRef = useRef(applyAutoDowngrade);
+  autoDowngradeRef.current = applyAutoDowngrade;
   // Ce que le bouton annonce : le mode demandé, sauf quand le moteur a dû
   // renoncer — là, c'est la vérité qui s'affiche, suivie de « · REPLI ». Un
   // mode « cinéma » reste du cinéma même si le GPU ne dessine pas en WGSL.
@@ -3452,25 +3615,19 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     joystickKnobRef.current?.style.setProperty('--stick-y', '0px');
     joystickKnobRef.current?.style.setProperty('--wheel-angle', '0deg');
   };
-  const activateLandscape = () => {
-    Promise.resolve(landscapeSessionRef.current?.enter({ fullscreen: true })).catch(() => {});
-  };
+  // ── Orientation ──────────────────────────────────────────────────────────
+  // Vice City se joue dans les deux sens. Rien ici ne verrouille l'écran : le
+  // jeu démarre dans l'orientation du téléphone, suit chaque rotation et ne
+  // s'interrompt pas (aucun remontage de la scène — voir `graphicsEpoch`).
+  //
+  // Le paysage reste disponible : le bouton « AGRANDIR » demande le plein
+  // écran, et `rpgLandscape.js` n'est sollicité que là. Le Sablier, lui, garde
+  // son propre verrou (voir `PaysageSablier.jsx`) : ce composant n'y touche pas.
   useEffect(() => {
-    const session = createRpgLandscapeSession();
-    landscapeSessionRef.current = session;
-    Promise.resolve(session.enter({ fullscreen: false })).catch(() => {});
-    const updatePortrait = () => setPortraitTouch(isTouchPortraitViewport());
-    window.addEventListener('resize', updatePortrait);
-    window.addEventListener('orientationchange', updatePortrait);
-    window.screen?.orientation?.addEventListener?.('change', updatePortrait);
-    updatePortrait();
-    return () => {
-      window.removeEventListener('resize', updatePortrait);
-      window.removeEventListener('orientationchange', updatePortrait);
-      window.screen?.orientation?.removeEventListener?.('change', updatePortrait);
-      session.leave();
-      if (landscapeSessionRef.current === session) landscapeSessionRef.current = null;
-    };
+    const sync = () => setExpanded(Boolean(document.fullscreenElement));
+    document.addEventListener('fullscreenchange', sync);
+    sync();
+    return () => document.removeEventListener('fullscreenchange', sync);
   }, []);
   useEffect(() => {
     const audio = new CityRushAudio();
@@ -3508,7 +3665,16 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // d'effet (voir plus bas) : l'école d'exercice le reçoit, tout le reste
     // s'en passe.
     let renderer = null;
-    const renderBudget = cityRushRenderBudget({ lite: liteDevice, devicePixelRatio: window.devicePixelRatio });
+    // Le niveau retenu pour **cette** construction : il fige le budget et le
+    // parc de trafic. Un changement de qualité reconstruit la ville (comme un
+    // changement de moteur), parce que la scène, elle, ne rétrécit pas à chaud.
+    const qualityLevel = qualityRef.current;
+    const sceneBudget = cityRushSceneBudget(qualityLevel);
+    const renderBudget = cityRushRenderBudget({
+      quality: qualityLevel,
+      lite: liteDevice,
+      devicePixelRatio: window.devicePixelRatio,
+    });
     // Tout le montage de la ville vit dans `build`, appelé dès que le renderer
     // est ouvert — immédiatement en WebGL, après un `await` en WebGPU.
     const build = () => {
@@ -3518,9 +3684,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     const skyColor = new THREE.Color();
     const fogColor = new THREE.Color();
     scene.background = new THREE.Color(0x73c5f0);
-    scene.fog = new THREE.Fog(0x9bd8f4, 190, 680);
+    // La brume est un budget de rendu, pas un décor : elle coupe la ville au
+    // delà de `viewDistance` sur les appareils modestes. Le plan lointain de la
+    // caméra la suit, sinon le GPU dessine des immeubles invisibles.
+    scene.fog = new THREE.Fog(0x9bd8f4, sceneBudget.viewDistance * 0.29, sceneBudget.viewDistance);
     addViceCityClouds(scene);
-    const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
+    const camera = new THREE.PerspectiveCamera(66, 1, 0.1, sceneBudget.farPlane);
 
     renderer.setPixelRatio(renderBudget.pixelRatio);
     renderer.shadowMap.enabled = true;
@@ -3537,9 +3706,16 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     const hemisphere = new THREE.HemisphereLight(0xe7f0ff, 0x463d37, 2.0);
     scene.add(hemisphere);
     const sun = new THREE.DirectionalLight(0xffd3a1, 3.1);
-    sun.position.set(-100, 180, 70); sun.castShadow = true;
+    sun.position.set(-100, 180, 70);
+    // L'ombre du soleil est la plus grosse dépense fixe de la scène : une passe
+    // de profondeur de toute la ville, puis un échantillon par pixel et par
+    // matériau. Elle reste sur les trois niveaux (c'est elle qui donne le
+    // relief), mais sa carte et sa cadence suivent le budget.
+    sun.castShadow = sceneBudget.sunShadows !== false;
     sun.shadow.mapSize.set(renderBudget.shadowSize, renderBudget.shadowSize);
-    sun.shadow.camera.left = -170; sun.shadow.camera.right = 170; sun.shadow.camera.top = 170; sun.shadow.camera.bottom = -170;
+    const shadowExtent = qualityLevel === 'low' ? 120 : 170;
+    sun.shadow.camera.left = -shadowExtent; sun.shadow.camera.right = shadowExtent;
+    sun.shadow.camera.top = shadowExtent; sun.shadow.camera.bottom = -shadowExtent;
     scene.add(sun);
     const rainGeometry = new THREE.BufferGeometry();
     const rainCount = 110;
@@ -3548,8 +3724,18 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
     const rain = new THREE.LineSegments(rainGeometry, new THREE.LineBasicMaterial({ color: 0xa5dce8, transparent: true, opacity: 0.48 }));
     rain.visible = false;
+    // `dynamic` : le regroupement statique ne doit pas figer les gouttes.
+    rain.userData.dynamic = true;
     scene.add(rain);
-    const city = makeCity(scene, schoolMode, schoolExercise);
+    const city = makeCity(scene, schoolMode, schoolExercise, sceneBudget);
+    // Les néons : la ville en construit jusqu'à huit points lumineux, et
+    // `MeshStandardMaterial` recalcule un shader par nombre de lumières. Le
+    // budget n'en garde que ce que l'œil distingue de loin (l'éclat peint sur
+    // les façades, lui, ne bouge pas).
+    const neonBudget = applyCityRushLightBudget(city.neonPointLights, sceneBudget);
+    mount.dataset.quality = qualityLevel;
+    mount.dataset.neonLights = String(neonBudget.enabled);
+    mount.dataset.parkedCars = String(city.parkedCarBodies.length);
     if (schoolMode) addDrivingSchoolScenery(scene, city.roadElevation, schoolExercise);
     let schoolRoute = null;
     if (schoolExercise) {
@@ -3569,8 +3755,18 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     let engineProfile = profile.archetype;
     let playerVehicle = makeFreeRoamPlayerCar(profile, { player: true, daylight: true, number: CITY_RUSH_CARS.indexOf(profile) + 1 });
     let vehicle = playerVehicle;
+    // Les phares éclairent la route la nuit. Ce sont deux `SpotLight` : deux
+    // ombres potentielles, deux fois le coût d'éclairage par pixel de toute la
+    // ville. En qualité basse ils restent **allumés en apparence** (les cônes et
+    // les halos peints), mais sans lumière dynamique : de jour, personne ne voit
+    // la différence, et la nuit le bitume reste éclairé par les cônes.
+    const headlightLights = sceneBudget.headlightShadows !== false;
     const installFreeRoamHeadlights = (car) => {
       const lights = [];
+      if (!headlightLights) {
+        car.userData.freeRoamHeadlights = { lights, painted: true };
+        return car;
+      }
       for (const side of [-1, 1]) {
         const light = new THREE.SpotLight(0xffedc5, 0, 52, 0.47, 0.62, 2);
         light.position.set(side * 0.58, 0.76, -1.72);
@@ -3586,6 +3782,10 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     };
     installFreeRoamHeadlights(playerVehicle);
     playerVehicle.position.set(schoolExercise?.spawn.x ?? -138, schoolExercise ? city.surfaceHeight(schoolExercise.spawn.x, schoolExercise.spawn.z) : 0, schoolExercise?.spawn.z ?? 0);
+    // La voiture du joueur bouge à chaque image : elle reste hors du
+    // regroupement (elle a ses roues, sa planche de bord et ses phares).
+    playerVehicle.userData.dynamic = true;
+    playerVehicle.userData.playerCar = true;
     scene.add(playerVehicle);
     let playerCockpit = null;
     const ensurePlayerCockpit = () => {
@@ -3603,18 +3803,24 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       { axis: 'x', direction: 1 }, { axis: 'x', direction: -1 },
       { axis: 'z', direction: 1 }, { axis: 'z', direction: -1 },
     ];
-    const trafficCars = Array.from({ length: 16 }, (_, index) => {
-      const directionSpec = trafficDirections[Math.floor(index / 4)];
-      const withinDirection = index % 4;
+    // Le parc de trafic suit le budget : 16 voitures de ville, 12 en qualité
+    // basse. Les directions et les voies sont conservées — le parc est plus
+    // court, pas désordonné.
+    const trafficCarCount = cityRushTrafficFleetSize(sceneBudget.trafficCars, { floor: 4, ceiling: 16 });
+    const trafficCars = Array.from({ length: trafficCarCount }, (_, index) => {
+      const perDirection = Math.max(1, Math.ceil(trafficCarCount / 4));
+      const directionSpec = trafficDirections[Math.floor(index / perDirection) % trafficDirections.length];
+      const withinDirection = index % perDirection;
       const laneIndex = directionSpec.axis === 'z' ? (withinDirection < 2 ? -1 : 1) : 0;
       const crossAxis = directionSpec.axis === 'x'
         ? leftTrafficOffset('x', directionSpec.direction) * (schoolExercise?.trafficSide === 'right' ? -1 : 1)
         : laneIndex * BLOCK + leftTrafficOffset('z', directionSpec.direction) * (schoolExercise?.trafficSide === 'right' ? -1 : 1);
+      const progressSlots = [-220, -72, 78, 224];
       const progress = directionSpec.axis === 'x'
-        ? [-220, -72, 78, 224][withinDirection] * directionSpec.direction
+        ? progressSlots[withinDirection % progressSlots.length] * directionSpec.direction
         : (withinDirection % 2 === 0 ? -185 : 185) * directionSpec.direction;
       const trafficType = CITY_RUSH_TRAFFIC_TYPES[index % CITY_RUSH_TRAFFIC_TYPES.length];
-      const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(trafficType.id));
+      const car = enlargeFreeRoamTrafficCar(makeCityRushTrafficCar(trafficType.id, { batch: qualityLevel !== 'full' }));
       const yaw = directionSpec.axis === 'x'
         ? directionSpec.direction > 0 ? -Math.PI / 2 : Math.PI / 2
         : directionSpec.direction > 0 ? Math.PI : 0;
@@ -3623,6 +3829,10 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       car.position.set(trafficX, city.roadElevation(trafficX, trafficZ) + 0.02, trafficZ);
       car.rotation.y = yaw;
       car.rotation.x = city.surfacePitch(trafficX, trafficZ, yaw);
+      // Le trafic roule : ses voitures gardent leurs roues et leurs
+      // gyrophares animés, et restent hors du regroupement statique.
+      car.userData.dynamic = true;
+      car.userData.cityRushTraffic = true;
       scene.add(car);
       return {
         car,
@@ -3681,22 +3891,29 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       };
     };
     const highwayTrafficTypes = ['taxi', 'ambulance', 'white-lambo', 'garbage-truck'];
+    // Même logique sur le viaduc : 18 véhicules (9 par sens) en qualité
+    // complète, 9 (au moins 2 par sens) en qualité basse. Les trois voies et
+    // les deux sens restent représentés.
+    const highwayCarCount = cityRushTrafficFleetSize(sceneBudget.highwayTrafficCars, { floor: 4, ceiling: 18 });
     const highwayLaneOffsets = [4.5, 9.7, 15.0].map((offset) => schoolMode && schoolExercise?.trafficSide === 'left' ? -offset : offset);
     const highwayExitStarts = viceCityOuterHighwayAccessRamps().map((path) => path[0]);
-    for (let index = 0; index < 18; index += 1) {
-      const direction = index < 9 ? 1 : -1;
-      const indexInDirection = index % 9;
-      const lane = Math.floor(indexInDirection / 3);
+    for (let index = 0; index < highwayCarCount; index += 1) {
+      const half = Math.ceil(highwayCarCount / 2);
+      const direction = index < half ? 1 : -1;
+      const indexInDirection = index % half;
+      const lane = Math.floor(indexInDirection / Math.ceil(half / 3)) % 3;
       const spacingSlot = indexInDirection % 3;
       const progress = highwayTrafficLength * [0.12, 0.44, 0.76][spacingSlot];
       const laneOffset = highwayLaneOffsets[lane];
       const trafficType = highwayTrafficTypes[index % highwayTrafficTypes.length];
       const spec = CITY_RUSH_TRAFFIC_TYPES.find((candidate) => candidate.id === trafficType);
-      const car = enlargeFreeRoamTrafficCar(makeTrafficVehicle(trafficType));
+      const car = enlargeFreeRoamTrafficCar(makeCityRushTrafficCar(trafficType, { batch: qualityLevel !== 'full' }));
       const pose = sampleHighwayTrafficPosition(progress, direction, laneOffset);
       car.position.set(pose.x, city.surfaceHeight(pose.x, pose.z) + 0.02, pose.z);
       car.rotation.y = pose.yaw;
       car.rotation.x = city.surfacePitch(pose.x, pose.z, pose.yaw);
+      car.userData.dynamic = true;
+      car.userData.cityRushTraffic = true;
       scene.add(car);
       trafficCars.push({
         car,
@@ -3762,9 +3979,36 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         teachingLabel.name = 'blocked-exit-teaching-label'; teachingLabel.position.set(0, 3.5, 0); teachingLabel.scale.set(7, 1.75, 1);
         car.add(teachingLabel);
       }
+      // Les usagers prioritaires (voiture, piéton, cycliste) se déplacent : hors
+      // du regroupement statique, comme leur halo et leur étiquette.
+      car.userData.dynamic = true;
+      if (teachingLabel) teachingLabel.userData.dynamic = true;
+      if (pedestrianHalo) pedestrianHalo.userData.dynamic = true;
       car.name = `priority-exercise-${actor.id}`; scene.add(car); return { actor, car, person, cyclist, teachingLabel, pedestrianHalo };
     });
-    const state = { x: schoolExercise?.spawn.x ?? -138, z: schoolExercise?.spawn.z ?? (schoolMode ? 2.35 : 0), heading: schoolExercise?.spawn.heading ?? (schoolMode ? -Math.PI / 2 : Math.PI / 2), speed: 0, steer: 0, lateralSpeed: 0, time: 0, damage: 0, airHeight: 0, jumps: 0 };
+    // ── Reprise en place ────────────────────────────────────────────────────
+    // Changer de qualité (ou de moteur) reconstruit la ville : c'est une
+    // nouvelle scène et une nouvelle voiture. Sans mémoire, le joueur se
+    // retrouverait au point de départ au milieu d'une course — c'est
+    // exactement ce que « la rotation ne doit pas interrompre la partie »
+    // interdit. On garde donc la pose de la voiture et le temps de jeu, et on
+    // les restitue dans la ville reconstruite.
+    const resumedPose = cityRushResumeState({
+      x: schoolExercise?.spawn.x ?? -138,
+      z: schoolExercise?.spawn.z ?? (schoolMode ? 2.35 : 0),
+      heading: schoolExercise?.spawn.heading ?? (schoolMode ? -Math.PI / 2 : Math.PI / 2),
+    }, resumeRef.current);
+    const state = {
+      x: resumedPose.x, z: resumedPose.z, heading: resumedPose.heading,
+      speed: resumedPose.speed ?? 0, time: resumedPose.time ?? 0,
+      steer: 0, lateralSpeed: 0, damage: 0, airHeight: 0, jumps: 0,
+    };
+    if (resumedPose.resumed) {
+      playerVehicle.position.set(state.x, city.surfaceHeight(state.x, state.z), state.z);
+      playerVehicle.rotation.y = -state.heading;
+      camera.position.set(state.x - Math.sin(state.heading) * 5, city.surfaceHeight(state.x, state.z) + 2.7, state.z + Math.cos(state.heading) * 5);
+      camera.lookAt(state.x, city.surfaceHeight(state.x, state.z) + 1, state.z);
+    }
     if (schoolExercise) {
       playerVehicle.rotation.y = -state.heading;
       camera.position.set(state.x - Math.sin(state.heading) * 5, city.surfaceHeight(state.x, state.z) + 2.7, state.z + Math.cos(state.heading) * 5);
@@ -3855,6 +4099,9 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         material.color.copy(material.userData.originalNeonColor).multiplyScalar(neonLevel);
       });
       city.neonPointLights.forEach((light, index) => {
+        // Hors budget, la lumière est éteinte : inutile de lui recalculer une
+        // intensité à chaque image.
+        if (light.userData.cityRushBudgetOn === false) return;
         const flicker = 0.94 + Math.sin(state.time * (2.1 + index * 0.17) + index * 8.2) * 0.035;
         light.intensity = light.userData.neonBaseIntensity * night * flicker;
       });
@@ -4397,7 +4644,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     };
     const onDown = (event) => {
       if (schoolMode && schoolPausedRef.current) {
-        if (event.code === 'Escape') { event.preventDefault(); onExitRef.current?.(); }
+        if (event.code === 'Escape') { event.preventDefault(); exitFreeRoam(); }
         return;
       }
       if (event.code === 'KeyM') {
@@ -4547,6 +4794,8 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       installFreeRoamHeadlights(playerVehicle);
       playerVehicle.position.set(spawnX, city.surfaceHeight(spawnX, spawnZ), spawnZ);
       playerVehicle.rotation.y = -spawnHeading;
+      playerVehicle.userData.dynamic = true;
+      playerVehicle.userData.playerCar = true;
       scene.add(playerVehicle);
       vehicle = playerVehicle;
       state.x = spawnX;
@@ -4667,8 +4916,37 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         renderer.shadowMap.autoUpdate = shadowAutoUpdate;
       }
     };
+    // ── Regroupement statique de la ville ──────────────────────────────────
+    // La ville pose ~7 250 maillages pour 239 signatures de matériau : autant
+    // d'appels de dessin par image (plus la passe d'ombre). Le regroupement les
+    // fusionne par matériau — même image, ~1 600 appels — et se fait **entre
+    // deux images** pour ne pas figer l'écran au chargement.
+    let batching = null;
+    let tornDown = false;
+    const staticBatchDone = cityRushBatchStaticAsync(scene, {
+      yieldEvery: qualityLevel === 'low' ? 8 : 24,
+      onProgress: (ratio) => { mount.dataset.batchProgress = ratio.toFixed(2); },
+    }).then((result) => {
+      batching = result;
+      // Deux chiffres lisibles sur le montage : ce que la ville dessinait avant
+      // le regroupement, et ce qu'elle dessine après. C'est ce que vérifient les
+      // contrôles, et ce qu'un joueur peut lire dans l'inspecteur d'un
+      // téléphone pour trancher un problème de performance.
+      mount.dataset.batched = String(result.merged);
+      mount.dataset.drawsBefore = String(result.before);
+      mount.dataset.draws = String(result.after);
+      return result;
+    }).catch(() => null);
+    // Ce que la prochaine ville doit reprendre : la pose exacte, y compris en
+    // marche arrière (`speed` négatif) et le temps de jeu (chronomètres).
+    rememberPose = () => { resumeRef.current = cityRushResumeSnapshot(state); };
     let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
-    const resetAfterVisibilityChange = () => { last = performance.now(); blur(); };
+    // Surveillance des images : c'est ce qui décide d'un abaissement
+    // automatique. Elle ne lit **que** la phase de conduite — un chargement, un
+    // menu ou un panneau ouvert ne doivent pas condamner la qualité pour tout
+    // le reste de la partie.
+    const frameWatch = createCityRushFrameWatch({ thresholdMs: 34 });
+    const resetAfterVisibilityChange = () => { last = performance.now(); frameWatch.sample(0); blur(); };
     document.addEventListener('visibilitychange', resetAfterVisibilityChange);
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
@@ -4677,7 +4955,16 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         last = now; keys.clear(); touchKeysRef.current.clear(); touchAxesRef.current = { x: 0, y: 0 };
         return;
       }
-      const dt = Math.min(0.04, Math.max(0, (now - last) / 1000)); last = now; state.time += dt;
+      const frameMs = now - last;
+      const dt = Math.min(0.04, Math.max(0, frameMs / 1000)); last = now; state.time += dt;
+      // Abaissement automatique, une seule fois : le joueur garde la main, mais
+      // un téléphone qui rame franchement ne reste pas à 12 images/s sans rien
+      // dire. On ne le fait pas en école filée (la leçon a sa propre mesure) et
+      // pas pendant qu'un panneau couvre la scène.
+      if (!schoolMode && !featurePanelRef.current && !document.hidden && frameWatch.sample(frameMs)) {
+        frameWatch.snooze();
+        autoDowngradeRef.current();
+      }
       updateEnvironment(dt);
       updateTraffic(dt);
       for (const { actor, car, person, cyclist, teachingLabel, pedestrianHalo } of priorityCars) {
@@ -4912,6 +5199,31 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       mount.removeEventListener('pointerdown', activateAudio); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
       postChain?.dispose();
+      // Les objets d'origine ont été retirés de la scène par le regroupement :
+      // sans cette restitution, le parcours de libération ci-dessous ne verrait
+      // ni leurs géométries ni leurs matériaux, et la ville suivante hériterait
+      // de la mémoire de la précédente.
+      // Deux cas : le regroupement est terminé (on restitue, puis on laisse le
+      // parcours ci-dessous libérer), ou il est encore en vol (il faut alors
+      // l'empêcher d'ajouter quoi que ce soit à une scène déjà démontée et
+      // libérer ce qu'il retient).
+      const settleBatching = () => {
+        if (!batching) return;
+        batching.restore();
+        batching.disposeOriginals();
+        batching = null;
+      };
+      if (batching) {
+        settleBatching();
+      } else {
+        tornDown = true;
+        staticBatchDone.then((result) => {
+          // Restitution impossible : les objets d'origine ne sont plus dans la
+          // scène. Leurs géométries et matériaux sont libérés directement.
+          result?.restore?.();
+          result?.disposeOriginals?.();
+        }).catch(() => {});
+      }
       if (schoolSideMirrors) disposeDrivingSideMirrors(schoolSideMirrors);
       scene.traverse((object) => {
         object.geometry?.dispose?.();
@@ -4929,6 +5241,10 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // que le décor HTML ; la ville apparaît d'un coup, jamais à moitié.
     let cancelled = false;
     let teardown = () => {};
+    // Rempli par `build()` : la pose à reprendre au prochain montage. Déclaré
+    // ici pour que la fonction de nettoyage de l'effet puisse la lire (elle vit
+    // en dehors de `build`).
+    let rememberPose = () => {};
     const requestedMode = requestedGraphicsRef.current;
     const openRenderer = async () => {
       if (requestedMode === CITY_RUSH_GRAPHICS_WEBGPU) {
@@ -4985,12 +5301,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       });
     return () => {
       cancelled = true;
+      rememberPose();
       teardown();
     };
   }, [carId, schoolMode, schoolExercise, liteDevice, graphicsEpoch]);
 
   return (
-    <div className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
+    <div ref={rootRef} className={`vice-free-roam${schoolMode ? ' driving-school-world' : ''}`} data-school-steering={schoolControls?.steering ?? 'buttons'} role="application" aria-label={schoolExercise ? `Exercice : ${schoolExercise.title}` : "Conduite libre dans Vice City"}>
       <div className="vice-free-roam-world" ref={mountRef} onPointerDown={activateAudio} />
       {schoolMode && <div className="driving-side-mirrors" aria-label="Rétroviseurs latéraux en direct">
         <div className="driving-side-mirror" role="img" aria-label="Vue du rétroviseur gauche en direct">
@@ -5033,12 +5350,30 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
                 : (webGpuSupported ? 'Rendu standard · puis cinéma, puis essai WebGPU' : 'Rendu standard (WebGL) · essai WebGPU indisponible sur cet appareil')}>
           ◈ {graphicsLabel}
         </button>
+        {/* Qualité : ce qu'on demande au moteur (décor, ombres, néons, trafic).
+            Le libellé dit le niveau actif ; l'infobulle dit ce qui change. */}
+        <button type="button" className={`vice-free-roam-quality is-${quality}`} onClick={() => cycleQualityRef.current()}
+          data-quality={quality} aria-label={`Qualité graphique : ${qualityLabel}`}
+          title={`${qualityLabel} — ${qualityDetail}. Cliquer pour ${qualityNextLabel}.${deviceHint ? ` ${deviceHint}` : ''}`}>
+          ◆ {qualityLabel}
+        </button>
         <button type="button" className={`vice-free-roam-view${cockpitView ? ' is-on' : ''}`} onClick={toggleCamera}
           aria-pressed={cockpitView} aria-label={cockpitView ? 'Quitter la vue cockpit' : 'Activer la vue cockpit'}
           title={cockpitView ? 'Revenir à la caméra poursuite (C)' : 'Passer en mode cockpit (C)'}>
           ◉ COCKPIT
         </button>
-        <button type="button" className="vice-free-roam-menu" onClick={onExit}>↶ MENU</button>
+        <button type="button" className="vice-free-roam-menu" onClick={exitFreeRoam}>↶ MENU</button>
+        {/* Plus d'écran « tournez votre téléphone » : le jeu se joue debout
+            comme couché. Ce bouton ne change que la place disponible — paysage
+            en plein écran, pour ceux qui le préfèrent. */}
+        {touchDevice && (
+          <button type="button" className={`vice-free-roam-expand${expanded ? ' is-on' : ''}`}
+            onClick={toggleExpanded} aria-pressed={expanded}
+            aria-label={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}
+            title={expanded ? 'Quitter le plein écran' : 'Passer en plein écran'}>
+            <span aria-hidden="true">{expanded ? '⤡' : '⤢'}</span> {expanded ? 'RÉDUIRE' : 'PLEIN ÉCRAN'}
+          </button>
+        )}
       </header>
       {schoolMode && <div className="driving-turn-signal" ref={turnSignalRef} data-direction="none" data-lit="false" aria-label="Clignotants éteints">
         <span data-side="left" aria-hidden="true">◀</span><small>CLIGNOTANTS AUTO</small><span data-side="right" aria-hidden="true">▶</span>
@@ -5125,15 +5460,6 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
           <span aria-hidden="true">↟</span><small>SAUT</small>
         </button>}
       </div>
-      {portraitTouch && (
-        <div className="vice-free-roam-rotate" role="dialog" aria-modal="true" aria-label="Jeu en mode paysage">
-          <span aria-hidden="true">↻</span>
-          <h2>VICE CITY SE JOUE EN PAYSAGE</h2>
-          <p>Tournez votre téléphone pour continuer.</p>
-          <button type="button" onClick={activateLandscape}>ACTIVER LE PAYSAGE</button>
-          <small>Si la rotation automatique est refusée, tournez l’appareil manuellement.</small>
-        </div>
-      )}
       <div className="vice-free-roam-compass">VC <i>N</i><span>{schoolExercise ? `SECTION FERMÉE · CONDUITE À ${schoolExercise.trafficSide === 'right' ? 'DROITE · FRANCE' : 'GAUCHE'}` : 'OCEAN GRID · 06 × 06'}</span></div>
     </div>
   );
