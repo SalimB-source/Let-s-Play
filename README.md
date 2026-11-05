@@ -3070,10 +3070,18 @@ avant le retrait du sélecteur gardent leur grade, leur XP et leur progression.
 ### Vérifier la langue
 
 ```bash
-npm run check:i18n        # chaque route rendue en fr, en et ar
-npm run check:nav         # en-têtes et menus dans les trois langues
-npx vite build            # l'anglais et l'arabe restent hors du paquet initial
+npm run check:i18n       # chaque route rendue en fr, en et ar
+npm run check:nav        # en-têtes et menus dans les trois langues
+npm run check:lang-boot  # langue et dir posés avant le premier rendu
+npm run check:localized  # traductions d'articles, repli français, recherche
+npx vite build           # l'anglais et l'arabe restent hors du paquet initial
 ```
+
+`check:lang-boot` rejoue le script inline d'`index.html` dans jsdom et compare
+son verdict à `matchDeviceLanguage()` : si les deux décisions divergent un jour,
+le contrôle échoue. `check:localized` vérifie le contrat des articles traduits —
+corps chargés un par un, repli français sur un article non traduit, titre
+traduit dans la recherche.
 
 
 ## Contenu

@@ -90,6 +90,17 @@ export function getBodyTranslation(key, lang) {
   return bodiesByLang.get(lang)?.get(normalizeArticleKey(key)) || null;
 }
 
+/**
+ * Inventaire d'une langue, pour les contrôles : les articles dont les
+ * métadonnées de liste sont chargées et ceux dont le corps est chargé.
+ */
+export function countLocalized(lang) {
+  return {
+    listings: [...(listingsByLang.get(lang)?.keys() || [])],
+    bodies: bodiesByLang.get(lang) || new Map(),
+  };
+}
+
 /** Nombre d'articles traduits pour une langue (métadonnées de liste). */
 export function articleTranslationCount(lang) {
   return listingsByLang.get(lang)?.size || 0;
