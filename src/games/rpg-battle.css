@@ -15237,5 +15237,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 
 /* Défense de la créature et points d’armure encore disponibles. */
 
-.rpg-mode-carte.is-locked { cursor: not-allowed; opacity: .78; }
-.rpg-soon-badge { display: inline-block; margin-inline-start: .5em; color: #f4d583; font-size: .7em; }
+/* Le duel en ligne verrouillé est grisé, sans diminuer le contraste du texte. */
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked {
+  --mode-lueur: 125, 125, 125;
+  cursor: not-allowed;
+  border-color: #777;
+  box-shadow: none;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked:is(:hover, :focus-visible) {
+  border-color: #777 !important;
+  background: #222 !important;
+  box-shadow: none !important;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked .rpg-mode-carte__art,
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked:is(:hover, :focus-visible) .rpg-mode-carte__art {
+  filter: grayscale(1) brightness(.55);
+  transform: none;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked:is(:hover, :focus-visible)::before {
+  opacity: .18;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked .rpg-mode-carte__jouer,
+.rpg-mode-menu__hero-actions > .rpg-mode-carte.is-locked:is(:hover, :focus-visible) .rpg-mode-carte__jouer {
+  border-color: #929292;
+  background: #555;
+  color: #fff;
+  box-shadow: none;
+}
+.rpg-soon-badge { display: inline-block; margin-inline-start: .5em; color: #eee; font-size: .7em; }
