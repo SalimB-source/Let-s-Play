@@ -6,6 +6,14 @@
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech</loc><priority>0.9</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/gaming</loc><priority>0.9</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema</loc><priority>0.9</priority></url>
+  <!-- Édition du mercredi 04.11.2026. -->
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/lightyear-frontier-1-0-4-novembre-2026</loc><lastmod>2026-11-04</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/godzilla-minus-zero-sortie-france-4-novembre-2026</loc><lastmod>2026-11-04</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/siri-ai-developer-preview-labs-4-novembre-2026</loc><lastmod>2026-11-04</lastmod><priority>0.8</priority></url>
+  <!-- Édition du mardi 03.11.2026. -->
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/ps-plus-novembre-2026-disponibilite-3-novembre</loc><lastmod>2026-11-03</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/bass-x-machina-netflix-3-novembre-2026</loc><lastmod>2026-11-03</lastmod><priority>0.8</priority></url>
+  <url><loc>https://salimb-source.github.io/Let-s-Play/news/tech/stm32-summit-3-novembre-2026</loc><lastmod>2026-11-03</lastmod><priority>0.8</priority></url>
   <!-- Édition du lundi 02.11.2026. -->
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/game-pass-novembre-2026-gravhounds</loc><lastmod>2026-11-02</lastmod><priority>0.8</priority></url>
   <url><loc>https://salimb-source.github.io/Let-s-Play/news/cinema/hit-man-w9-2-novembre-2026</loc><lastmod>2026-11-02</lastmod><priority>0.8</priority></url>
