@@ -43,6 +43,10 @@ function ouvrirExterne(url) {
       window.letsPlayDesktop.ouvrirExterne(url);
       return;
     }
+    if (typeof window !== 'undefined' && window.LetsPlayAndroid?.ouvrirCompte) {
+      window.LetsPlayAndroid.ouvrirCompte(url);
+      return;
+    }
   } catch {}
   try {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -82,7 +86,7 @@ function DesktopAccountBar() {
   );
 }
 
-function LoginForm({ onOffline }) {
+export function LoginForm({ onOffline, connexionObligatoire = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -170,7 +174,7 @@ function LoginForm({ onOffline }) {
   return (
     <div className="rpg-desktop-login">
       <div className="rpg-desktop-login__carte">
-        <p className="rpg-desktop-login__surtitre">Let's Play · Le Sablier de Bab El · PC</p>
+        <p className="rpg-desktop-login__surtitre">Let's Play · Le Sablier de Bab El</p>
         <h1 className="rpg-desktop-login__titre">Connexion</h1>
         <p className="rpg-desktop-login__accroche">
           Connecte-toi avec ton compte Let's Play pour retrouver tes decks, ta collection et ta progression.
@@ -181,7 +185,7 @@ function LoginForm({ onOffline }) {
           <div className="rpg-desktop-login__offline" role="note">
             <p>
               L’authentification n’est pas configurée sur cette installation (clé Supabase manquante).
-              Le jeu reste jouable hors ligne, sans synchronisation.
+              {connexionObligatoire ? ' La connexion est nécessaire pour accéder au jeu.' : ' Le jeu reste jouable hors ligne, sans synchronisation.'}
             </p>
           </div>
         )}
@@ -278,13 +282,13 @@ function LoginForm({ onOffline }) {
             >
               Mot de passe oublié ?
             </button>
-            <button
+            {!connexionObligatoire && <button
               type="button"
               className="rpg-desktop-login__lien"
               onClick={onOffline}
             >
               Continuer sans compte (hors ligne) →
-            </button>
+            </button>}
           </div>
         </form>
 

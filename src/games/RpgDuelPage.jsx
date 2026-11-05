@@ -149,7 +149,7 @@ import RpgModeIcon from './RpgModeIcon.jsx';
 import { RpgMiseAJourCarte } from './RpgMiseAJour.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
-import RpgAccueilMobile from './RpgAccueilMobile.jsx';
+import { vueDesCoffres } from './rpgCoffresQuetes.js';
 import RpgCoffreOuverture from './RpgCoffreOuverture.jsx';
 import {
   GAINS,
@@ -4716,9 +4716,10 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   const [coffreOuvert, setCoffreOuvert] = useState(null);
   const ouvrirUnCoffre = (coffre, verser) => {
     const gagne = verser?.();
-    if (!gagne) { play('erreur'); return; }
+    if (!gagne) return false;
     const paquets = coffre.paquets > 0 ? (onOuvrirPaquetCoffre?.(coffre.paquets, coffre.nom) ?? 0) : 0;
     setCoffreOuvert({ coffre, paquets });
+    return true;
   };
   const ouvrirCoffreQuete = (coffre) => ouvrirUnCoffre(coffre, () => onReclamerQuete?.(coffre.queteId));
   const ouvrirCoffreCycle = (coffre) => ouvrirUnCoffre(coffre, () => onReclamerCachet?.());
@@ -5130,26 +5131,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
           </nav>
         </header>
 
-        {screen === 'jouer' && mobile ? (
-          /* Sur appareil tactile, l'accueil prend la mise en scène d'un jeu
-             mobile d'arène : bandeau du joueur, arène, gros bouton, coffres.
-             Le bureau garde sa vitrine et ses trois bannières, juste en dessous. */
-          <RpgAccueilMobile
-            quetes={quetes}
-            credits={credits}
-            barreXp={barreXp}
-            nomCompte={nomCompte}
-            progressionHistoire={progressionHistoire}
-            portefeuille={portefeuille}
-            onContinueRecit={onContinueRecit}
-            onChangeScreen={onChangeScreen}
-            onOuvrirQuete={ouvrirCoffreQuete}
-            onRemplacerQuete={onRemplacerQuete}
-            onOuvrirCycle={ouvrirCoffreCycle}
-            onOuvrirSemaine={ouvrirCoffreSemaine}
-            onPlaySfx={play}
-          />
-        ) : screen === 'jouer' ? (
+        {screen === 'jouer' ? (
           <main className="rpg-mode-menu__play">
             {/* Colonne gauche : les trois modes de jeu empilés l'un au-dessus
                 de l'autre en largeur, chacun illustré d'une miniature et doté
@@ -5265,10 +5247,14 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 les jalons en médaillons alignés sous la vitrine et les modes. */}
             <RpgQuetesDuJour
               quetes={quetes}
-              onReclamerQuete={onReclamerQuete}
+              onReclamerQuete={mobile ? (id) => {
+                const coffre = vueDesCoffres(quetes).slots.find((slot) => slot.queteId === id);
+                return coffre ? ouvrirCoffreQuete(coffre) : false;
+              } : onReclamerQuete}
               onRemplacerQuete={onRemplacerQuete}
-              onReclamerCachet={onReclamerCachet}
-              onReclamerSemaine={onReclamerSemaine}
+              onReclamerCachet={mobile ? () => ouvrirCoffreCycle(vueDesCoffres(quetes).slots.find((slot) => slot.cle === 'cycle')) : onReclamerCachet}
+              onReclamerSemaine={mobile ? () => ouvrirCoffreSemaine(vueDesCoffres(quetes).semaine) : onReclamerSemaine}
+              bonusPaquets={mobile}
               onPlaySfx={play}
             />
           </main>

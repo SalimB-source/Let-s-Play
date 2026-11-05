@@ -414,6 +414,21 @@ public class MainActivity extends Activity {
 
     /** Pont appelé par le site : `LetsPlayAndroid.setCallAudio`. */
     private final class CallAudioBridge {
+        /** Le compte s'ouvre dans le navigateur, hors de la coque dédiée au jeu. */
+        @JavascriptInterface
+        public void ouvrirCompte(String url) {
+            Uri uri = Uri.parse(url == null ? "" : url);
+            if (!"https".equals(uri.getScheme()) || !SITE_HOST.equals(uri.getHost())) return;
+            String chemin = uri.getPath();
+            if (!"/auth".equals(chemin) && !"/register".equals(chemin)) return;
+            runOnUiThread(() -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                } catch (ActivityNotFoundException ignored) {
+                }
+            });
+        }
+
         /**
          * Paysage pour **toute la section Sablier** (écran d'entrée, menu,
          * atelier, souk, histoire, duel). Le site l'appelle à l'ouverture de la

@@ -2197,3 +2197,36 @@
   padding: 0 clamp(24px, 5vw, 72px) clamp(24px, 4vw, 48px);
 }
 .rpg-mode-menu--histoire .rpg-mode-menu__footer { display: none; }
+
+/* Sur téléphone, garder la présentation PC (tour au-dessus du descriptif)
+   et laisser le contenu défiler plutôt que masquer ses informations. */
+@media (hover: none) and (pointer: coarse), (max-width: 700px) {
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel { flex: 0 0 auto; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower { height: auto; min-height: 0; flex-direction: column; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower__art {
+    flex: none; width: 100%; height: clamp(150px, 35vh, 300px); border-right: 0;
+  }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel .rpg-story-tower__body { height: auto; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-carrousel__fleche { width: 44px; height: 44px; }
+  .rpg-mode-menu--conquete-galerie .rpg-conquete-bilan small { display: inline; }
+}
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+  .rpg-mode-menu--tours .rpg-story-tour {
+    display: grid;
+    grid-template-columns: minmax(180px, 35%) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    grid-template-areas: 'entete etages' 'progres etages' 'gains etages' 'prochain etages';
+    align-content: start; gap: 6px 12px; overflow-y: auto;
+  }
+  .rpg-mode-menu--tours .rpg-story-tour__header { grid-area: entete; display: flex; flex-direction: column; align-items: stretch; }
+  .rpg-mode-menu--tours .rpg-story-tour__banner { height: 100px; }
+  .rpg-mode-menu--tours .rpg-story-tour__heading { padding: 5px 8px; }
+  .rpg-mode-menu--tours .rpg-story-tour__header p { display: block; }
+  .rpg-mode-menu--tours .rpg-story-tour__progress { grid-area: progres; }
+  .rpg-mode-menu--tours .rpg-story-tour__gains { grid-area: gains; }
+  .rpg-mode-menu--tours .rpg-tour-prochain { grid-area: prochain; display: block; }
+  .rpg-mode-menu--tours .rpg-story-tour__floors { grid-area: etages; }
+  .rpg-mode-menu--tours .rpg-story__back { position: static; min-height: 36px; align-self: flex-start; }
+  .rpg-mode-menu--tours .rpg-story-tour__floors > li { flex: 0 0 auto; }
+  .rpg-mode-menu--tours .rpg-story-floor { min-height: 44px; box-sizing: border-box; }
+}

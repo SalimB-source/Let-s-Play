@@ -65,8 +65,9 @@ function installerDom() {
    boucle) ; et à la prochaine connexion, le carrousel rouvre sur la dernière
    tour jouée (mémorisée par `enregistrerDerniereTour`). */
 
-test('Conquête : une tour à la fois, flèches en boucle, et retour sur la dernière tour jouée', async () => {
+for (const mobile of [false, true]) test(`Conquête ${mobile ? 'mobile' : 'PC'} : navigation et retour sur la dernière tour jouée`, async () => {
   const dom = installerDom();
+  if (mobile) dom.window.LetsPlayAndroid = true;
   const vite = await createServer({
     server: { middlewareMode: true },
     ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] },

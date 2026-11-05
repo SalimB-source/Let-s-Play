@@ -137,7 +137,7 @@ test('accueil mobile : les quêtes deviennent des coffres, et seul un coffre pr�
   }
 });
 
-test('au doigt, la page monte l’accueil mobile et un coffre prêt verse ses crédits', async () => {
+test('au doigt, la page utilise l’accueil PC et un coffre prêt verse ses crédits', async () => {
   const dom = installerDom();
   // `LetsPlayAndroid` est le drapeau natif : il force la coque tactile sans
   // dépendre d'un matchMedia que jsdom ne sait pas évaluer.
@@ -167,14 +167,16 @@ test('au doigt, la page monte l’accueil mobile et un coffre prêt verse ses cr
     await act(async () => { await wait(60); });
 
     try {
-      assert.ok(container.querySelector('.rpg-accueil-mobile'), 'au doigt, l’accueil est celui du jeu mobile');
-      assert.equal(container.querySelector('.rpg-mode-menu__play'), null, 'la vitrine du bureau n’est pas montée');
+      assert.equal(container.querySelector('.rpg-accueil-mobile'), null);
+      assert.ok(container.querySelector('.rpg-mode-menu__play'), 'la vitrine du bureau est présente');
+      assert.equal(container.querySelectorAll('.rpg-mode-menu__hero-actions > .rpg-mode-carte').length, 3);
+      assert.equal(container.querySelectorAll('.rpg-quests-jour__bonus').length, 2, 'les boosters des coffres sont annoncés');
 
-      const coffre = container.querySelector('[data-coffre="quete:creatures-10"]');
-      assert.equal(coffre?.dataset.coffreEtat, 'pret', 'la quête finie attend son tap');
+      const coffre = container.querySelector('[data-jouer-reclamer="creatures-10"]');
+      assert.ok(coffre, 'la quête finie attend son tap');
       const avant = JSON.parse(window.localStorage.getItem(RPG_BOURSE_STORAGE_KEY) ?? '{}').credits ?? 0;
 
-      await act(async () => { coffre.querySelector('button').click(); });
+      await act(async () => { coffre.click(); });
       await act(async () => { await wait(20); });
 
       const ceremonie = container.querySelector('[data-coffre-ouverture]');
@@ -189,7 +191,7 @@ test('au doigt, la page monte l’accueil mobile et un coffre prêt verse ses cr
       assert.ok(apres - avant >= 60, `les crédits sont en bourse dès le tap, avant la cérémonie (${apres - avant} ◈)`);
 
       // Le coffre est ouvert : il ne se paie pas deux fois.
-      assert.equal(container.querySelector('[data-coffre="quete:creatures-10"]').dataset.coffreEtat, 'ouvert');
+      assert.equal(container.querySelector('[data-jouer-quete="creatures-10"]').dataset.jouerQueteEtat, 'reclamee');
 
       await act(async () => { ceremonie.querySelector('[data-coffre-suite]').click(); });
       assert.equal(container.querySelector('[data-coffre-ouverture]'), null, '« Encaisser » referme la cérémonie');
@@ -277,4 +279,44 @@ test('accueil mobile : le bouton refresh change une quête, une seule fois par j
     await vite.close();
     dom.window.close();
   }
+});
+
+test('accueil PC au doigt : les coffres cycle et semaine gardent leurs boosters', async () => {
+  const dom = installerDom();
+  dom.window.LetsPlayAndroid = true;
+  const vite = await createServer({ server: { middlewareMode: true }, ssr: { external: ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime'] }, appType: 'custom', logLevel: 'silent' });
+  try {
+    const { RPG_STORY_STORAGE_KEY } = await vite.ssrLoadModule('/src/games/rpgStory.js');
+    const { RPG_STORY_TOURS } = await vite.ssrLoadModule('/src/games/rpgStoryTours.js');
+    const { RPG_PROFIL_STORAGE_KEY, xpTotalDuNiveau } = await vite.ssrLoadModule('/src/games/rpgProfil.js');
+    const { RPG_QUETES_STORAGE_KEY } = await vite.ssrLoadModule('/src/games/rpgQuetes.js');
+    const { default: RpgDuelPage } = await vite.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    window.localStorage.clear();
+    window.localStorage.setItem('letsplay_sablier_sound_v1', 'off');
+    window.localStorage.setItem(RPG_STORY_STORAGE_KEY, JSON.stringify({ version: 2, etagesVaincus: [RPG_STORY_TOURS[0].etages[0].id], recit: null }));
+    window.localStorage.setItem(RPG_PROFIL_STORAGE_KEY, JSON.stringify({ version: 1, xp: xpTotalDuNiveau(20), boostersOfferts: 19 }));
+    window.localStorage.setItem(RPG_QUETES_STORAGE_KEY, JSON.stringify(journeeQuetes({ reclamations: ['creatures-10', 'duels-2', 'duels-3'], serie: 7 })));
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => { root.render(React.createElement(RpgDuelPage, { rng: () => 0 })); await wait(80); });
+      const cycle = container.querySelector('[data-jouer-cachet-reclamer]');
+      assert.ok(cycle);
+      await act(async () => { cycle.click(); await wait(20); });
+      let ceremonie = container.querySelector('[data-coffre-ouverture]');
+      assert.equal(ceremonie?.dataset.coffreOuverture, 'royal');
+      assert.equal(ceremonie.dataset.coffreOuverturePaquets, '1');
+      await act(async () => { ceremonie.querySelector('[data-coffre-suite]').click(); });
+      assert.ok(container.querySelector('[data-souk-ceremonie]'), 'les cartes du cycle sont à retourner');
+      await act(async () => { container.querySelector('[data-souk-ceremonie-passer]')?.click(); });
+      await act(async () => { container.querySelector('[data-souk-ceremonie-ranger]')?.click(); await wait(20); });
+      const semaine = container.querySelector('[data-jouer-semaine-reclamer]');
+      assert.ok(semaine);
+      await act(async () => { semaine.click(); await wait(20); });
+      ceremonie = container.querySelector('[data-coffre-ouverture]');
+      assert.equal(ceremonie?.dataset.coffreOuverture, 'legende');
+      assert.equal(ceremonie.dataset.coffreOuverturePaquets, '2');
+    } finally { await act(async () => root.unmount()); container.remove(); }
+  } finally { await vite.close(); dom.window.close(); }
 });

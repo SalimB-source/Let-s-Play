@@ -80,3 +80,17 @@ test('Booster : les cartes gagnées s’affichent sur 5 colonnes', () => {
   assert.match(grille, /grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)\s*;/,
     'les 5 cartes d’un paquet s’alignent sur 5 colonnes');
 });
+
+
+test('Booster : les coffrets sont paginés et la cérémonie reste dans la fenêtre', () => {
+  const composant = fs.readFileSync(path.join(ROOT, 'src/games/RpgBoosterOuverture.jsx'), 'utf8');
+  assert.match(composant, /Math\.ceil\(cartes\.length \/ 5\)/);
+  assert.match(composant, /cartes\.slice\(pageCourante \* 5, pageCourante \* 5 \+ 5\)/);
+  assert.match(composant, /pageCourante \* 5 \+ index < revelees/);
+  assert.match(composant, /disabled=\{pageCourante === 0\}/);
+  assert.match(composant, /disabled=\{pageCourante >= nombrePages - 1\}/);
+  assert.match(composant, /setPage\(0\)/);
+  const ceremonie = blocRegle(soukCss, /(?:^|\n)\.rpg-souk__ceremonie\s*\{([^}]*)\}/);
+  assert.match(ceremonie, /overflow:\s*hidden/);
+  assert.match(soukCss, /grid-template-rows:\s*auto minmax\(0, 1fr\) auto/);
+});
