@@ -1,23 +1,18 @@
-import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-03';
+import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-04';
 import React from 'react';
 import '../news-view-toggle.css';
 import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-04';
-import { dailyNewsListing as todayCultureTechNews } from '../news/daily/2026-11-04';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-05';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { Arrow } from '../components/ReleasesCalendar';
 
-// Une actualité par univers, partagée avec les flux, la recherche et les articles.
-const todayStories = [
-  dailyNewsListing[0],
-  todayCultureTechNews.find((story) => story.to.startsWith('/news/cinema/')),
-  todayCultureTechNews.find((story) => story.to.startsWith('/news/tech/')),
-].filter(Boolean);
+// Toute l’édition du jour, y compris les compléments gaming.
+const todayStories = dailyNewsListing;
 
 // Page intermédiaire : elle ouvre sur les actus du jour, puis laisse choisir
 // son univers — les trois grandes cartes mènent aux hubs GAMING, CINÉMA /

@@ -1,3 +1,4 @@
+import { officialSourceUrl } from '../lib/articleSources';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { baseUrl as base } from '../data';
@@ -28,6 +29,10 @@ const pad = (value) => String(value).padStart(2, '0');
 // (règle « une seule vidéo à la fois »). S'y ajoutent la navigation au clavier
 // (flèches, Début / Fin) et le balayage au doigt sur téléphone.
 export default function ArticleGallery({ label, meta, items = [], credit, creditSources = [] }) {
+  const officialCreditSources = creditSources.flatMap(source => {
+    const href = officialSourceUrl(source.href);
+    return href ? [{ href, label: new URL(href).hostname }] : [];
+  });
   const total = items.length;
   const [openIndex, setOpenIndex] = useState(null);
   const isOpen = openIndex !== null;
@@ -116,12 +121,12 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
           </figure>
         ))}
       </div>
-      {credit || creditSources.length ? (
+      {credit || officialCreditSources.length ? (
         <figcaption className="article-gallery-credit">
           {credit}
-          {creditSources.length ? (
+          {officialCreditSources.length ? (
             <span className="article-gallery-sources">
-              {' '}Sources des visuels : {creditSources.map((source, index) => (
+              {' '}Sources des visuels : {officialCreditSources.map((source, index) => (
                 <React.Fragment key={source.href}>
                   {index ? ', ' : ''}<a href={source.href} target="_blank" rel="noreferrer">{source.label}</a>
                 </React.Fragment>

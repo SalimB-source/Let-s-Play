@@ -5,7 +5,17 @@ import SchoolDialog from './SchoolDialog';
 import { SCHOOL_CHAPTERS, schoolChapter, schoolCardStatus } from './drivingSchoolInterface.js';
 import { DRIVING_SKILLS, drivingSkillProgress, recommendDrivingExercise } from './drivingProgress.js';
 
-export default function DrivingSchoolHub({ lessons, progress, assistance, onAssistance, settings, onSettings, onStart, history, view, onViewChange, onFreeDrive }) {
+/**
+ * Sommes-nous dans une **coque** (exe PC Electron, APK Android) plutôt que dans
+ * un navigateur ? `desktop/preload.cjs` expose `letsPlayDesktop`, l'APK
+ * `LetsPlayAndroid`. Dans une coque, le jeu est le seul lieu : le logo et
+ * « Tous les jeux » n'ont plus de sens, ils sortiraient vers le site — et la
+ * coque refuse désormais cette navigation (`desktop/routes.js`). Autant ne pas
+ * montrer un lien qui ne mène nulle part.
+ */
+const dansUneCoque = () => typeof window !== 'undefined' && Boolean(window.letsPlayDesktop || window.LetsPlayAndroid);
+
+export default function DrivingSchoolHub({ lessons, progress, assistance, onAssistance, settings, onSettings, onStart, history, view, onViewChange, onFreeDrive, coque = dansUneCoque() }) {
   const [chapter, setChapter] = useState('all'), [mission, setMission] = useState(null);
   const heading = useRef(null);
   const recommendation = recommendDrivingExercise(progress, lessons);
@@ -14,7 +24,17 @@ export default function DrivingSchoolHub({ lessons, progress, assistance, onAssi
   const launch = (exercise, help = assistance) => { onAssistance(help); setMission(exercise); };
   function navigate(next, filter = 'all') { onViewChange(next); setChapter(filter); requestAnimationFrame(() => { heading.current?.focus({preventScroll:true}); heading.current?.scrollIntoView({block:'start',behavior:'smooth'}); }); }
   return <div className="school-hub">
-    <header className="school-hub-header"><a className="school-logo" href="/jeux"><span aria-hidden="true">↗</span><span>Let’s Drive<small>L’ATELIER DES BONS RÉFLEXES</small></span></a><span className="school-save-status">● Progression sur cet appareil</span><a href="/jeux" className="school-back">Tous les jeux ↗</a></header>
+    <header className="school-hub-header">
+      {/* Dans une coque, le logo et le retour ne sont pas des liens : le jeu
+          tient sa fenêtre, on n'en sort pas vers le site. */}
+      {coque ? (
+        <span className="school-logo"><span aria-hidden="true">◈</span><span>Let’s Drive<small>L’ATELIER DES BONS RÉFLEXES</small></span></span>
+      ) : (
+        <a className="school-logo" href="/jeux"><span aria-hidden="true">↗</span><span>Let’s Drive<small>L’ATELIER DES BONS RÉFLEXES</small></span></a>
+      )}
+      <span className="school-save-status">● Progression sur cet appareil</span>
+      {!coque && <a href="/jeux" className="school-back">Tous les jeux ↗</a>}
+    </header>
     <nav className="school-hub-nav" aria-label="Navigation auto-école">{[['home','Mon parcours'],['situations','Les situations'],['notebook','Mon carnet'],['free','Conduite libre']].map(([id,label])=><button key={id} type="button" aria-current={view===id?'page':undefined} onClick={()=>id==='free'?onFreeDrive?.():navigate(id)}>{label}{id==='notebook'&&<span>{confirmed}/6</span>}</button>)}</nav>
     <h1 ref={heading} tabIndex={-1} className="school-view-heading">{view==='home'?'Les bons réflexes commencent ici.':view==='situations'?'Une situation. Un nouveau réflexe.':'Chaque essai vous fait avancer.'}</h1>
     {view==='home'&&<>

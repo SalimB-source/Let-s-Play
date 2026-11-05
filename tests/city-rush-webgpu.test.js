@@ -13,6 +13,7 @@ import {
   CITY_RUSH_GRAPHICS_WEBGPU,
   cityRushCinemaAvailable,
   cityRushCinemaSettings,
+  cityRushDesktopShell,
   cityRushGraphicsModeLabel,
   cityRushLiteDevice,
   cityRushNextGraphicsMode,
@@ -109,6 +110,25 @@ test('la qualité allégée se reconnaît sans toucher au rendu', () => {
   // Un `matchMedia` qui lève (WebView bridée) ne doit pas empêcher de jouer.
   assert.equal(cityRushLiteDevice({ matchMedia: () => { throw new Error('non'); } }), false);
   assert.equal(cityRushLiteDevice(null), false);
+});
+
+test('la coque PC n’est pas un téléphone, même avec un écran tactile', () => {
+  // Electron sur un portable tactile : `pointer: coarse` est vrai, et pourtant
+  // c'est un Chromium de bureau avec un vrai pilote. Sans cette exception,
+  // l'essai WebGPU et le halo étaient refusés sur les meilleures machines.
+  const coqueTactile = { letsPlayDesktop: { isDesktop: true }, matchMedia: () => ({ matches: true }) };
+  assert.equal(cityRushDesktopShell(coqueTactile), true);
+  assert.equal(cityRushLiteDevice(coqueTactile), false, 'la coque PC garde le rendu complet');
+
+  // Un navigateur classique sur le même portable reste en qualité allégée.
+  assert.equal(cityRushLiteDevice({ matchMedia: () => ({ matches: true }) }), true);
+
+  // L'APK reste allégée, coque ou pas : `LetsPlayAndroid` parle en premier.
+  assert.equal(cityRushLiteDevice({ LetsPlayAndroid: true, letsPlayDesktop: { isDesktop: true }, matchMedia: () => ({ matches: true }) }), true);
+
+  // Et rien d'autre ne fait croire à une coque.
+  assert.equal(cityRushDesktopShell({}), false);
+  assert.equal(cityRushDesktopShell(null), false);
 });
 
 test('le halo ne tourne jamais en qualité allégée', () => {

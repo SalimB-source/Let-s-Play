@@ -4,7 +4,10 @@
 .school-interface button:focus-visible,.school-dialog button:focus-visible,.school-dialog summary:focus-visible,.school-dialog select:focus-visible,.school-interface a:focus-visible{outline:3px solid #b3740a;outline-offset:4px}
 .school-hub{max-width:1180px;margin:0 auto;padding:26px 28px 50px}
 .school-hub-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:8px 0 25px;border-bottom:1px solid #dce4d7}
-.school-logo{display:flex;align-items:center;gap:10px;color:#173d32;text-decoration:none;font-size:24px;font-weight:850;letter-spacing:-1px}.school-logo>span:first-child{display:grid;place-items:center;background:#234c3f;color:#f3ce63;border-radius:12px;width:44px;height:44px;font-size:28px}.school-logo small{display:block;font-size:8px;letter-spacing:1.3px;font-weight:750;margin-top:1px}
+.school-logo{display:flex;align-items:center;gap:10px;color:#173d32;text-decoration:none;font-size:24px;font-weight:850;letter-spacing:-1px}
+/* Dans une coque (exe PC, APK), le logo n'est plus un lien vers /jeux : on lui
+   retire tout indice de lien (soulignement au survol, curseur main). */
+span.school-logo{cursor:default}.school-logo>span:first-child{display:grid;place-items:center;background:#234c3f;color:#f3ce63;border-radius:12px;width:44px;height:44px;font-size:28px}.school-logo small{display:block;font-size:8px;letter-spacing:1.3px;font-weight:750;margin-top:1px}
 .school-save-status{font-size:11px;color:#57745c}.school-back{font-size:12px;color:#365744;text-decoration:none}
 .school-hub-nav{display:flex;justify-content:center;gap:8px;margin:28px auto 0;padding:5px;background:#e8eee2;border:1px solid #e0e7d9;border-radius:14px;width:fit-content;max-width:100%}.school-hub-nav button{display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;background:transparent;color:#536b5c;font-size:13px;font-weight:700;padding:12px 22px;min-height:44px}.school-hub-nav button[aria-current=page]{background:white;color:#183f33;box-shadow:0 2px 5px #224c3510}.school-hub-nav button>span{font-size:10px;border-radius:20px;background:#e9f0df;padding:3px 6px}
 .school-view-heading{font-size:clamp(29px,3.4vw,45px);line-height:1.12;letter-spacing:-1.5px;max-width:700px;margin:40px 0 26px;font-weight:800;scroll-margin-top:100px;outline:none}

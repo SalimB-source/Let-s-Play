@@ -108,7 +108,7 @@ export const gameReleases = [
   { slug: 'metro-2039', year: 2027, month: 2, day: 4, title: 'Metro 2039', platforms: 'PC · PS5 · XBOX SERIES', alt: 'Metro 2039 — FPS survival de 4A Games dans le métro' },
   { slug: 'muramasa-revenant-blades', year: 2027, month: 2, day: 4, title: 'Muramasa: Revenant Blades', platforms: 'PC · PS5 · SWITCH 2 · SWITCH', alt: 'Muramasa: Revenant Blades — remaster Vanillaware' },
   { slug: 'tomb-raider-legacy-of-atlantis', year: 2027, month: 2, day: 12, title: 'Tomb Raider: Legacy of Atlantis', platforms: 'PC · PS5 · XBOX SERIES · SWITCH 2', alt: 'Tomb Raider: Legacy of Atlantis — remake de Crystal Dynamics', awaitedRank: 14 },
-  { slug: 'god-of-war-laufey', year: 2027, month: 2, day: 16, title: 'God of War Laufey', platforms: 'PS5', alt: 'God of War Laufey — nouveau chapitre de Santa Monica Studio', awaitedRank: 15 },
+  { slug: 'god-of-war-laufey', year: 2027, month: 5, day: 20, title: 'God of War Laufey', platforms: 'PS5', alt: 'God of War Laufey — nouveau chapitre de Santa Monica Studio', awaitedRank: 15 },
   { slug: 'romancing-saga-3-destinies', year: 2027, month: 2, day: 16, title: 'Romancing SaGa 3: Destinies United', platforms: 'PC · PS5 · XBOX SERIES · SWITCH 2 · SWITCH', alt: 'Romancing SaGa 3: Destinies United — remake Square Enix' },
   { slug: 'persona-4-revival', year: 2027, month: 2, day: 18, title: 'Persona 4 Revival', platforms: 'PC · PS5 · XBOX SERIES', alt: 'Persona 4 Revival — remake du RPG d’Atlus' },
   { slug: 'fable', year: 2027, month: 2, day: 23, title: 'Fable', platforms: 'PC · PS5 · XBOX SERIES', image: 'releases/fable.jpg', alt: 'Fable — l’héroïne face au château d’Albion, key art Playground Games', awaitedRank: 16 },
