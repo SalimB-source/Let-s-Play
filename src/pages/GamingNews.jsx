@@ -9,6 +9,7 @@ import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { Arrow } from '../components/ReleasesCalendar';
 import { youTubeThumbUrl } from '../lib/videoThumbnails';
 // Les actus du jour générées par le robot ouvrent la liste (les plus récentes
@@ -114,7 +115,7 @@ export default function News(){
   const [showAll, setShowAll] = useState(false);
   const [viewsMap, setViewsMap] = useState({});
 
-  const articles = useMemo(() => [
+  const rawArticles = useMemo(() => [
     ...latestGamingStories,
     ...autoNewsListing,
     { to: '/news/ea-sports-fc-27-carriere-dynamique', image: 'ea-sports-fc-27-carriere-pitch-notes.jpg', alt: 'EA Sports FC 27 — fiche joueur du mode Carrière avec sa note globale et sa valeur marchande xTV (visuel officiel EA Sports FC)', badge: 'EA SPORTS FC 27 · CARRIÈRE', kicker: '22.09.2026 · ELECTRONIC ARTS', title: 'EA SPORTS FC 27 FAIT VIVRE SA CARRIÈRE.', excerpt: 'Valeur marchande recalculée chaque semaine avec TransferRoom, note globale dynamique, scénarios créés par la communauté et crises de vestiaire : la refonte du mode Carrière est le vrai chantier de l’édition 2027.', read: 'LIRE L’ARTICLE', sentiment: 'positive' },
@@ -140,6 +141,9 @@ export default function News(){
     { to: '/news/zelda-ocarina', image: 'zelda-ocarina-news.jpg', alt: t.news.zelda.coverAlt, badge: t.news.zelda.eyebrow, kicker: `${t.news.zelda.date} · ${t.news.platforms}`, title: `${t.news.zelda.title} ${t.news.zelda.titleAccent}`, excerpt: t.news.zelda.dek, read: t.news.zelda.back, sentiment: 'positive' },
     { to: '/news/onimusha-million', image: 'onimusha-million-news.jpg', alt: million.coverAlt || million.alt, badge: million.eyebrow || million.badge, kicker: `${million.date || million.kicker} · CAPCOM`, title: `${million.title} ${million.titleAccent || ''}`, excerpt: million.dek || million.excerpt, read: million.back || million.read, sentiment: 'positive' },
   ], [featured, million, t.news.featured, t.news.metroid, t.news.wardogs, t.news.zelda]);
+  // Cartes dans la langue de lecture : titre et chapô traduits quand ils
+  // existent (src/news/localized/), français sinon.
+  const articles = useLocalizedListings(rawArticles, lang);
 
   // Vues globales — récupérées une fois par liste affichée (Supabase ou fallback déterministe).
   useEffect(() => {

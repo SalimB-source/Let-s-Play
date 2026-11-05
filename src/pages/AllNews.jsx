@@ -8,6 +8,7 @@ import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { searchIndex } from '../search/searchIndex';
 import { autoSearchEntries, autoNewsListing } from '../lib/autoNews';
 import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-10-29-cinema-tech';
@@ -41,6 +42,16 @@ const COPY = {
 export default function AllNews() {
   const { lang } = useLanguage();
   const copy = COPY[lang] || COPY.fr;
+  // Archive traduite : chaque carte prend son titre et son chapô dans la langue
+  // de lecture quand la traduction existe.
+  const localizedArticles = useLocalizedListings(allNewsArticles.map((article) => ({
+    to: article.route,
+    image: article.image,
+    alt: article.title,
+    title: article.title,
+    excerpt: article.description,
+    ...newsListingByRoute.get(article.route),
+  })), lang);
 
   return (
     <div className="search-page news-archive wrap">
@@ -54,19 +65,9 @@ export default function AllNews() {
       </section>
 
       <div className="news-carousel is-grid" data-reveal>
-        {allNewsArticles.map((article) => {
-          const category = article.route.startsWith('/news/cinema/') ? copy.cinema : article.route.startsWith('/news/tech/') ? copy.tech : copy.gaming;
-          const story = {
-            to: article.route,
-            image: article.image,
-            alt: article.title,
-            title: article.title,
-            excerpt: article.description,
-            badge: category,
-            kicker: category,
-            ...newsListingByRoute.get(article.route),
-          };
-          return <NewsCard key={article.route} story={story} readLabel={copy.read} />;
+        {localizedArticles.map((story) => {
+          const category = story.to.startsWith('/news/cinema/') ? copy.cinema : story.to.startsWith('/news/tech/') ? copy.tech : copy.gaming;
+          return <NewsCard key={story.to} story={{ ...story, badge: story.badge || category, kicker: story.kicker || category }} readLabel={copy.read} />;
         })}
       </div>
     </div>

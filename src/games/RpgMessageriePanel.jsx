@@ -1,6 +1,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AuthContext } from '../auth/AuthContext.jsx';
-import { LanguageContext, SITE_LANG } from '../i18n/LanguageContext.jsx';
+import { LanguageContext } from '../i18n/LanguageContext.jsx';
+import { SITE_LANG } from '../i18n/languages.js';
 import { useFriends } from '../friends/FriendsContext.jsx';
 import { describeFriendsError, fill, friendsText } from '../friends/friendsCopy.js';
 import { useMessages } from '../messages/MessagesContext.jsx';

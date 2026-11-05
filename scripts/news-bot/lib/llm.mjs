@@ -72,7 +72,7 @@ function extractJson(text) {
   return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-async function callProvider(llm, userPrompt) {
+export async function callProvider(llm, userPrompt, systemPrompt = STYLE_GUIDE) {
   const { provider, key, model } = llm;
   let url;
   let headers;
@@ -80,19 +80,19 @@ async function callProvider(llm, userPrompt) {
   if (provider === 'anthropic') {
     url = PROVIDERS.anthropic.endpoint;
     headers = { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
-    body = { model, max_tokens: 4096, temperature: 0.6, system: STYLE_GUIDE, messages: [{ role: 'user', content: userPrompt }] };
+    body = { model, max_tokens: 4096, temperature: 0.6, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] };
   } else if (provider === 'openai' || provider === 'mistral') {
     url = PROVIDERS[provider].endpoint;
     headers = { 'content-type': 'application/json', authorization: `Bearer ${key}` };
     body = {
       model, temperature: 0.6, max_tokens: 4096, response_format: { type: 'json_object' },
-      messages: [{ role: 'system', content: STYLE_GUIDE }, { role: 'user', content: userPrompt }],
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
     };
   } else {
     url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(key)}`;
     headers = { 'content-type': 'application/json' };
     body = {
-      systemInstruction: { parts: [{ text: STYLE_GUIDE }] },
+      systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
       generationConfig: { temperature: 0.6, maxOutputTokens: 4096, responseMimeType: 'application/json' },
     };

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { trailerFlagLabel, trailerFlagTitle } from '../articleTrailers';
 import { getArticleSentiment, sentimentMeta } from '../lib/articleSentiment';
+import { useLanguage } from '../i18n/LanguageContext';
 import { Arrow } from './Arrow';
 
 // Les catalogues utilisent aussi bien des noms de fichiers que des URLs déjà
@@ -11,7 +12,10 @@ const imageUrl = (image) => (/^(?:https?:\/\/|\/)/i.test(image) ? image : `${bas
 
 /** Carte commune aux actualités du jour et à l’archive de tous les articles. */
 export default function NewsCard({ story, readLabel = story.read || 'Lire l’article' }) {
-  const sentiment = sentimentMeta(getArticleSentiment(story));
+  const { t } = useLanguage();
+  const meta = sentimentMeta(getArticleSentiment(story));
+  // Libellé du sentiment dans la langue de lecture (icône identique).
+  const sentiment = { ...meta, label: t?.article?.sentiment?.[meta.id] || meta.label };
   const trailerFlag = trailerFlagLabel(story.to);
 
   return (

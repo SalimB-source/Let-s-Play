@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import PartnersSection from '../components/PartnersSection';
 import { youTubeEmbedUrl } from '../lib/videoPlayback';
 import VideoThumb from '../components/VideoThumb';
@@ -67,8 +68,10 @@ export default function Home() {
   const [liveVideoId, setLiveVideoId] = useState(null);
   const isLive = Boolean(liveVideoId);
   const [featuredTrailer, setFeaturedTrailer] = useState(null);
+  // La une suit la langue de lecture comme les autres cartes (src/news/localized/).
+  const [localizedFeatured] = useLocalizedListings([featuredStory], lang);
   const featuredNews = {
-    ...featuredStory,
+    ...(localizedFeatured || featuredStory),
     video: featuredTrailer?.id,
     videoTitle: featuredTrailer?.title,
   };

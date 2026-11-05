@@ -22,6 +22,7 @@
     "check:comment-moderation": "node --test tests/comment-moderation.test.js tests/comment-moderation-db.test.js && node scripts/comment-report-check.mjs",
     "check:messages": "node --test tests/messages-liens.test.js && node scripts/messages-check.mjs",
     "check:newsbot": "node scripts/news-bot/check.mjs",
+    "news:translate": "node scripts/news-bot/translate-all.mjs",
     "check:daily-news": "node scripts/daily-news-check.mjs",
     "check:written-review": "node scripts/written-review-check.mjs",
     "check:light-news": "node scripts/light-news-check.mjs",
