@@ -33,6 +33,7 @@ import { inferSentimentForStory, sentimentMeta } from '../lib/articleSentiment';
 import { useLanguage } from '../i18n/LanguageContext';
 import { SITE_LANG, languageMeta } from '../i18n/languages.js';
 import { useLocalizedStory } from '../news/localized/useLocalizedArticle.js';
+import { getTrailerTranslation } from '../articleTrailers.js';
 import ArticleLanguageNotice from '../components/ArticleLanguageNotice';
 import SpoilerAlert from '../components/SpoilerAlert';
 import ArticleGallery from '../components/ArticleGallery';
@@ -1235,7 +1236,23 @@ export default function CurrentNews({ slug, slugPrefix }) {
   // src/articleTrailers.js, comme les galeries de captures. Une actu sans
   // vidéo officielle rend la mention « aucune bande-annonce » plutôt qu'un
   // bloc vide.
-  const trailer = story.trailer || getArticleTrailerEntry(key);
+  // Bande-annonce : les libellés d'interface viennent du dictionnaire, les
+  // phrases éditoriales (note, crédit, mention d'absence) de la traduction de
+  // l'article. Sans traduction, la version française reste affichée.
+  const rawTrailer = story.trailer || getArticleTrailerEntry(key);
+  const trailerCopy = rawTrailer && lang !== SITE_LANG ? getTrailerTranslation(key, lang) : null;
+  const trailer = rawTrailer && trailerCopy
+    ? {
+      ...rawTrailer,
+      ...trailerCopy,
+      // `items` porte la note sous le lecteur : on garde l'identifiant, le
+      // genre et la chaîne de l'original, et on ne remplace que le texte.
+      items: rawTrailer.items?.map((item, index) => ({
+        ...item,
+        ...(trailerCopy.items?.[index] || {}),
+      })),
+    }
+    : rawTrailer;
   const [views, setViews] = useState(null);
 
   useEffect(() => {
@@ -1305,7 +1322,7 @@ export default function CurrentNews({ slug, slugPrefix }) {
         {story.p4 ? <p>{story.p4}</p> : null}
 
         {story.takeText ? <div className="article-endnote"><span className="live-dot" /><strong>{story.take}</strong><span>{story.takeText}</span></div> : null}
-        {footerSource ? <p className="article-source"><a href={footerSource.href} target="_blank" rel="noreferrer">{footerSource.label}</a></p> : null}
+        {footerSource ? <p className="article-source"><a href={footerSource.href} target="_blank" rel="noreferrer">{copy.sourceOfficial || 'Consulter la source officielle'}</a></p> : null}
         {story.credit ? <p className="article-source">{story.credit}</p> : null}
       </article>
 

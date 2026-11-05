@@ -173,14 +173,23 @@ export function regenerateLocalizedIndex(root, lang) {
     const walk = (current, prefix = '') => {
       for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
         const full = path.join(current, entry.name);
-        if (entry.isDirectory()) { walk(full, `${prefix}${entry.name}/`); continue; }
+        // `media/` porte les phrases des blocs vidéo (note, crédit, mention
+        // d'absence), pas un article : aucun listing à en tirer.
+        if (entry.isDirectory()) {
+          if (prefix === '' && entry.name === 'media') continue;
+          walk(full, `${prefix}${entry.name}/`);
+          continue;
+        }
         if (!entry.name.endsWith('.js') || entry.name === 'index.js') continue;
         const slug = `${prefix}${entry.name.replace(/\.js$/, '')}`;
         try {
           const source = fs.readFileSync(full, 'utf8');
-          const match = source.match(/const fields = (\{[\s\S]*?\});\nexport default/);
+          const match = source.match(/const fields = (\{[\s\S]*?\});\s*\nexport default/);
           if (!match) continue;
           const fields = JSON.parse(match[1]);
+          // Un fichier de `media/` (protégé plus haut) ou d'un autre format ne
+          // décrit pas un article : on ne crée pas de listing fantôme.
+          if (typeof fields?.title !== 'string' || !fields.title.trim()) continue;
           const entryFields = {};
           for (const key of ['title', 'accent', 'dek', 'imageAlt', 'category', 'readTime']) {
             if (typeof fields[key] === 'string' && fields[key].trim()) entryFields[key] = fields[key];
@@ -207,9 +216,14 @@ export function countLocalized(root, lang) {
   const dir = path.join(root, 'src/news/localized', lang);
   if (!fs.existsSync(dir)) return 0;
   let count = 0;
-  const walk = (current) => {
+  const walk = (current, depth = 0) => {
     for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      if (entry.isDirectory()) { walk(path.join(current, entry.name)); continue; }
+      // `media/` n'est pas un article (voir regenerateLocalizedIndex).
+      if (entry.isDirectory()) {
+        if (depth === 0 && entry.name === 'media') continue;
+        walk(path.join(current, entry.name), depth + 1);
+        continue;
+      }
       if (entry.name.endsWith('.js') && entry.name !== 'index.js') count += 1;
     }
   };

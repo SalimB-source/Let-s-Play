@@ -32,6 +32,7 @@ import { dailyStories as dailyStories20261105 } from '../src/news/daily/2026-11-
 import { searchContent, searchIndex } from '../src/search/searchIndex';
 import { autoSearchEntries } from '../src/lib/autoNews';
 
+export { LanguageProvider } from '../src/i18n/LanguageContext';
 export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus

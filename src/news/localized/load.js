@@ -14,6 +14,7 @@
 
 import { SITE_LANG } from '../../i18n/languages.js';
 import { registerBody, registerListings, getBodyTranslation } from './index.js';
+import { registerTrailerTranslations } from '../../articleTrailers.js';
 
 export const TRANSLATED_LANGS = ['en', 'ar'];
 
@@ -23,10 +24,17 @@ const listingLoaders = {
   ar: () => import('./ar/index.js'),
 };
 
-// Corps d'article : tous les fichiers `./<lang>/**/*.js` sauf `index.js`.
+// Corps d'article : tous les fichiers `./<lang>/**/*.js` sauf `index.js` et le
+// sous-dossier `media/` (phrases des blocs vidéo, chargées avec l'index).
 const bodyModules = {
-  ...import.meta.glob('./en/**/*.js'),
-  ...import.meta.glob('./ar/**/*.js'),
+  ...import.meta.glob(['./en/**/*.js', '!./en/media/**', '!./en/index.js']),
+  ...import.meta.glob(['./ar/**/*.js', '!./ar/media/**', '!./ar/index.js']),
+};
+
+// Phrases éditoriales des blocs vidéo (note, crédit, mention d'absence).
+const mediaModules = {
+  ...import.meta.glob('./en/media/**/*.js'),
+  ...import.meta.glob('./ar/media/**/*.js'),
 };
 
 const listingPromises = new Map();
@@ -54,6 +62,21 @@ export function loadArticleListings(lang) {
   const promise = loader()
     .then((module) => {
       registerListings(lang, module.listings || module.default || {});
+      // Phrases éditoriales des blocs vidéo (un fichier par article) : elles
+      // partent en même temps que l'index, ce sont quelques lignes.
+      return Promise.all(
+        Object.entries(mediaModules)
+          .filter(([file]) => file.startsWith(`./${lang}/media/`))
+          .map(([, load]) => load()),
+      );
+    })
+    .then((media) => {
+      for (const module of media || []) {
+        const fields = module.default || {};
+        for (const [key, value] of Object.entries(fields)) {
+          registerTrailerTranslations(lang, { [key]: value });
+        }
+      }
       return true;
     })
     .catch((error) => {

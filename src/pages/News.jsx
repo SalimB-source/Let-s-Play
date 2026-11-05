@@ -90,12 +90,12 @@ export default function News() {
       cinema: {
         num: '02',
         kicker: 'CINEMA & SERIES',
-        title: 'CINÉMA &',
-        titleAccent: 'SÉRIES.',
+        title: 'CINEMA &',
+        titleAccent: 'SERIES.',
         desc: 'Blockbusters, franchises, trailers, casting news and streaming drops — the film & series side of pop culture, curated the Let\'s Play way.',
         btn: 'ENTER CINEMA NEWS',
-        badge: '🎬 CINÉMA / SÉRIES',
-        meta: 'FILMS · SÉRIES · STREAMING',
+        badge: '🎬 CINEMA / SERIES',
+        meta: 'FILMS · SERIES · STREAMING',
       },
       tech: {
         num: '03',

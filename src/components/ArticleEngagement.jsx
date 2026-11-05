@@ -2,11 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { useAuth } from '../auth/AuthContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import { fetchArticleReactions, saveArticleReaction } from '../lib/articleReactions';
+// Les libellés viennent du dictionnaire (`engagement.*`) : cette section vit
+// dans la page article, qui se lit en FR, EN et AR.
 const CHOICES = [
-  { id: 'hype', label: 'Je suis hypé', tone: 'cyan', icon: 'rocket' },
-  { id: 'watch', label: 'Je garde un œil', tone: 'yellow', icon: 'eye' },
-  { id: 'wait', label: 'J’attends les tests', tone: 'violet', icon: 'controller' },
+  { id: 'hype', key: 'hype', label: 'Je suis hypé', tone: 'cyan', icon: 'rocket' },
+  { id: 'watch', key: 'watch', label: 'Je garde un œil', tone: 'yellow', icon: 'eye' },
+  { id: 'wait', key: 'wait', label: 'J’attends les tests', tone: 'violet', icon: 'controller' },
 ];
 
 function ReactionIcon({ type }) {
@@ -21,6 +24,10 @@ function defaultVotes() {
 
 export default function ArticleEngagement({ articleId, title }) {
   const { session } = useAuth();
+  const { t } = useLanguage();
+  const copy = t?.engagement || {};
+  const text = (key, fallback) => copy[key] || fallback;
+  const fill = (template, values) => String(template || '').replace(/\{(\w+)\}/g, (m, k) => (values[k] ?? m));
   const userId = session?.user?.id;
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -77,7 +84,7 @@ export default function ArticleEngagement({ articleId, title }) {
       const data = await saveArticleReaction(articleId, mine === choice.id ? null : choice.id);
       if (version === generation.current) setResult({ key: currentKey, data });
     } catch {
-      if (version === generation.current) setError('Votre réaction n’a pas pu être enregistrée. Veuillez réessayer.');
+      if (version === generation.current) setError(text('errorSave', 'Votre réaction n’a pas pu être enregistrée. Veuillez réessayer.'));
     } finally {
       if (version === generation.current) {
         busy.current = false;
@@ -90,20 +97,20 @@ export default function ArticleEngagement({ articleId, title }) {
     <section className="article-engagement" aria-labelledby="article-engagement-title">
       <div className="article-engagement-heading">
         <div>
-          <span className="article-engagement-kicker"><span className="live-dot" /> À VOUS DE JOUER</span>
-          <h2 id="article-engagement-title">ET VOUS, <em>VOUS EN PENSEZ QUOI ?</em></h2>
-          <p>Une réaction rapide, puis un vrai avis dans les commentaires. La rédaction Let’s Play veut suivre ce qui vous fait vibrer — ou douter.</p>
+          <span className="article-engagement-kicker"><span className="live-dot" /> {text('kicker', 'À VOUS DE JOUER')}</span>
+          <h2 id="article-engagement-title">{text('titleA', 'ET VOUS,')} <em>{text('titleB', 'VOUS EN PENSEZ QUOI ?')}</em></h2>
+          <p>{text('intro', 'Une réaction rapide, puis un vrai avis dans les commentaires. La rédaction Let’s Play veut suivre ce qui vous fait vibrer — ou douter.')}</p>
         </div>
-        <span className="article-engagement-count">{state ? `${total} réaction${total > 1 ? 's' : ''} · tous les lecteurs` : error ? 'Tendance indisponible' : 'Chargement de la tendance…'}</span>
+        <span className="article-engagement-count">{state ? `${fill(total > 1 ? text('reactionMany', '{n} réactions') : text('reactionOne', '{n} réaction'), { n: total })} · ${text('allReaders', 'tous les lecteurs')}` : error ? text('unavailable', 'Tendance indisponible') : text('loading', 'Chargement de la tendance…')}</span>
       </div>
-      <div className="article-reaction-grid" role="group" aria-label={`Réagir à l’article ${title}`}>
+      <div className="article-reaction-grid" role="group" aria-label={fill(text('reactAria', 'Réagir à l’article {title}'), { title })}>
         {CHOICES.map((choice) => {
           const count = votes[choice.id] || 0;
           const percentage = total ? Math.round((count / total) * 100) : 0;
           return (
             <button key={choice.id} type="button" className={`article-reaction article-reaction-${choice.tone}${mine === choice.id ? ' is-selected' : ''}`} disabled={!userId || !state || saving} onClick={() => react(choice)} aria-pressed={mine === choice.id}>
               <span className="article-reaction-icon"><ReactionIcon type={choice.icon} /></span>
-              <span className="article-reaction-label">{choice.label}</span>
+              <span className="article-reaction-label">{text(choice.key, choice.label)}</span>
               <span className="article-reaction-meter" aria-hidden="true"><i style={{ width: `${percentage}%` }} /></span>
               <span className="article-reaction-meta">{state ? `${percentage}% · ${count}` : '—'}</span>
             </button>
@@ -111,10 +118,10 @@ export default function ArticleEngagement({ articleId, title }) {
         })}
       </div>
       <div className="article-engagement-footer">
-        <span>{saving ? 'Enregistrement…' : mine ? 'Votre réaction est comptabilisée dans la tendance globale.' : 'La tendance rassemble les votes de tous les lecteurs.'}</span>
-        {!userId && <Link className="arrow-link" to="/auth">CONNECTEZ-VOUS POUR VOTER</Link>}
+        <span>{saving ? text('saving', 'Enregistrement…') : mine ? text('counted', 'Votre réaction est comptabilisée dans la tendance globale.') : text('trend', 'La tendance rassemble les votes de tous les lecteurs.')}</span>
+        {!userId && <Link className="arrow-link" to="/auth">{text('signInToVote', 'CONNECTEZ-VOUS POUR VOTER')}</Link>}
         {error && <span role="alert">{error}</span>}
-        <Link className="arrow-link" to="#comments">REJOINDRE LA DISCUSSION <span aria-hidden="true">↗</span></Link>
+        <Link className="arrow-link" to="#comments">{text('joinDiscussion', 'REJOINDRE LA DISCUSSION')} <span aria-hidden="true">↗</span></Link>
       </div>
     </section>
   );

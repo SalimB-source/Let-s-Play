@@ -16,7 +16,8 @@ export default function NewsCard({ story, readLabel = story.read || 'Lire l’ar
   const meta = sentimentMeta(getArticleSentiment(story));
   // Libellé du sentiment dans la langue de lecture (icône identique).
   const sentiment = { ...meta, label: t?.article?.sentiment?.[meta.id] || meta.label };
-  const trailerFlag = trailerFlagLabel(story.to);
+  const media = t?.media;
+  const trailerFlag = trailerFlagLabel(story.to, media);
 
   return (
     <div className="news-grid-cell">
@@ -37,7 +38,7 @@ export default function NewsCard({ story, readLabel = story.read || 'Lire l’ar
           ) : null}
           <span className="news-feature-badge">{story.badge}</span>
           {trailerFlag ? (
-            <span className="news-trailer-flag" title={trailerFlagTitle(story.to)}>
+            <span className="news-trailer-flag" title={trailerFlagTitle(story.to, media)}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
               {trailerFlag}
             </span>

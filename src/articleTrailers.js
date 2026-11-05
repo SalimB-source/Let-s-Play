@@ -70,6 +70,41 @@ const KIND_HINTS = {
   presentation: 'Présentation officielle intégrée à l’article',
 };
 
+// Clés du dictionnaire (`t.media`) correspondant à chaque nature : les cartes
+// de hub et la pastille du lecteur lisent la langue de l’interface, pas le
+// français. Les valeurs ci-dessus restent le repli hors provider.
+const KIND_KEY_BADGES = {
+  trailer: 'badgeTrailer',
+  teaser: 'badgeTeaser',
+  extrait: 'badgeExtract',
+  coulisses: 'badgeBehind',
+  replay: 'badgeReplay',
+  presentation: 'badgePresentation',
+};
+const KIND_KEY_LABELS = {
+  trailer: 'kindTrailer',
+  teaser: 'kindTeaser',
+  extrait: 'kindExtract',
+  coulisses: 'kindBehind',
+  replay: 'kindReplay',
+  presentation: 'kindPresentation',
+};
+
+/** Clé de dictionnaire de la pastille (« badgeTrailer »…) pour une nature. */
+export function trailerBadgeKey(kind) {
+  return KIND_KEY_BADGES[kind] || KIND_KEY_BADGES.trailer;
+}
+
+/** Clé de dictionnaire du libellé court (« kindTrailer »…) pour une nature. */
+export function trailerKindKey(kind) {
+  return KIND_KEY_LABELS[kind] || KIND_KEY_LABELS.trailer;
+}
+
+/** Clé de dictionnaire de l’infobulle de la pastille du hub. */
+export function trailerHintKey(kind) {
+  return trailerBadgeKey(kind);
+}
+
 /** Lien public d'une vidéo YouTube (aucun embed codé en dur hors de lib/). */
 export function trailerWatchUrl(id) {
   return `https://www.youtube.com/watch?v=${id}`;
@@ -846,6 +881,29 @@ export function getArticleTrailerEntry(key) {
 }
 
 /**
+ * Traduction éditoriale d'une entrée vidéo — note sous le lecteur, crédit,
+ * texte d'absence de vidéo. Ces phrases sont rédigées en français dans ce
+ * registre ; elles sont traduites à part, par le même pipeline que les
+ * articles (`src/news/localized/<lang>/media/`), et rattachées ici par
+ * `registerTrailerTranslations()` au chargement de la langue.
+ */
+const trailerTranslations = new Map();
+
+/** Enregistre les traductions d'une langue (`{ 'cinema/slug': { credit, ... } }`). */
+export function registerTrailerTranslations(lang, map) {
+  if (!lang || !map || typeof map !== 'object') return;
+  const bucket = trailerTranslations.get(lang) || new Map();
+  for (const [key, value] of Object.entries(map)) bucket.set(articleKeyOf(key), value);
+  trailerTranslations.set(lang, bucket);
+}
+
+/** Traduction enregistrée pour une entrée, ou null. */
+export function getTrailerTranslation(key, lang) {
+  if (!key || !lang) return null;
+  return trailerTranslations.get(lang)?.get(articleKeyOf(key)) || null;
+}
+
+/**
  * Lecteur d'un article : `{ label, meta, items, credit }` ou null s'il n'y a
  * rien à projeter. C'est ce que rend `ArticleTrailer` dans le corps de
  * l'article.
@@ -880,9 +938,11 @@ const articleKeyOf = (routeOrKey) =>
  * @param {string} routeOrKey route de la carte (ex. `/news/cinema/blade-reboot`)
  *   ou identifiant d'article
  */
-export function trailerFlagLabel(routeOrKey) {
+export function trailerFlagLabel(routeOrKey, media) {
   const trailers = getArticleTrailers(articleKeyOf(routeOrKey));
-  return trailers ? trailerKindLabel(trailers.items[0].kind) : null;
+  if (!trailers) return null;
+  const key = trailerKindKey(trailers.items[0].kind);
+  return media?.[key] || trailerKindLabel(trailers.items[0].kind);
 }
 
 /**
@@ -891,9 +951,11 @@ export function trailerFlagLabel(routeOrKey) {
  *
  * @param {string} route route de la carte ou identifiant d'article
  */
-export function trailerFlagTitle(routeOrKey) {
+export function trailerFlagTitle(routeOrKey, media) {
   const trailers = getArticleTrailers(articleKeyOf(routeOrKey));
-  return trailers ? KIND_HINTS[trailers.items[0].kind] || KIND_HINTS.trailer : null;
+  if (!trailers) return null;
+  const kind = trailers.items[0].kind;
+  return media?.[trailerHintKey(kind)] || KIND_HINTS[kind] || KIND_HINTS.trailer;
 }
 
 /**

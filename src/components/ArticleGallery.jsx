@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { baseUrl as base } from '../data';
 import { pauseAllPlayback } from '../lib/videoPlayback';
+import { useLanguage } from '../i18n/LanguageContext';
 
 // Les visuels officiels publiés par les éditeurs (page de lancement SpaceX,
 // blog Microsoft, newsroom Meta, figures de brevets…) sont des URL absolues et
@@ -29,6 +30,12 @@ const pad = (value) => String(value).padStart(2, '0');
 // (règle « une seule vidéo à la fois »). S'y ajoutent la navigation au clavier
 // (flèches, Début / Fin) et le balayage au doigt sur téléphone.
 export default function ArticleGallery({ label, meta, items = [], credit, creditSources = [] }) {
+  // Libellés d'interface (en-tête, visionneuse, commandes) traduits : les
+  // légendes et crédits, eux, sont des DONNÉES éditoriales et restent tels quels.
+  const { t: ui } = useLanguage();
+  const media = ui?.media || {};
+  const text = (key, fallback) => media[key] || fallback;
+  const fill = (template, values) => String(template || '').replace(/\{(\w+)\}/g, (m, key) => (values[key] ?? m));
   const officialCreditSources = creditSources.flatMap(source => {
     const href = officialSourceUrl(source.href);
     return href ? [{ href, label: new URL(href).hostname }] : [];
@@ -97,7 +104,7 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
   return (
     <figure className="article-gallery">
       <div className="section-label">
-        <span><b>CAPTURES</b> / {label}</span>
+        <span><b>{text('captures', 'CAPTURES')}</b> / {label}</span>
         {meta ? <span>{meta}</span> : null}
       </div>
       <div className="article-gallery-grid">
@@ -108,7 +115,7 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
               className="article-gallery-open"
               onClick={openAt(i)}
               aria-haspopup="dialog"
-              aria-label={`Agrandir le visuel ${i + 1} sur ${total} : ${item.alt}`}
+              aria-label={fill(text('zoom', 'Agrandir le visuel {n} sur {total} : {alt}'), { n: i + 1, total, alt: item.alt })}
             >
               <img src={imageUrl(item.src)} alt={item.alt} loading="lazy" />
               <span className="article-gallery-zoom" aria-hidden="true">
@@ -126,7 +133,7 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
           {credit}
           {officialCreditSources.length ? (
             <span className="article-gallery-sources">
-              {' '}Sources des visuels : {officialCreditSources.map((source, index) => (
+              {' '}{text('creditSources', 'Sources des visuels :')} {officialCreditSources.map((source, index) => (
                 <React.Fragment key={source.href}>
                   {index ? ', ' : ''}<a href={source.href} target="_blank" rel="noreferrer">{source.label}</a>
                 </React.Fragment>
@@ -141,7 +148,7 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
           className="article-lightbox"
           role="dialog"
           aria-modal="true"
-          aria-label={`${label} — visuel ${openIndex + 1} sur ${total}`}
+          aria-label={fill(text('galleryLabel', '{label} — visuel {n} sur {total}'), { label, n: openIndex + 1, total })}
           onClick={close}
         >
           <div
@@ -152,17 +159,17 @@ export default function ArticleGallery({ label, meta, items = [], credit, credit
           >
             <div className="article-lightbox-head">
               <div>
-                <span className="article-lightbox-kicker">CAPTURES / {label}</span>
+                <span className="article-lightbox-kicker">{text('captures', 'CAPTURES')} / {label}</span>
                 {meta ? <strong>{meta}</strong> : null}
               </div>
-              <button type="button" ref={closeRef} className="article-lightbox-close" onClick={close} aria-label="Fermer la visionneuse">✕</button>
+              <button type="button" ref={closeRef} className="article-lightbox-close" onClick={close} aria-label={text('closeViewer', 'Fermer la visionneuse')}>✕</button>
             </div>
             <div className="article-lightbox-stage">
               <img src={imageUrl(current.full || current.src)} alt={current.alt} />
               {total > 1 ? (
                 <>
-                  <button type="button" className="article-lightbox-nav article-lightbox-prev" onClick={() => step(-1)} aria-label="Visuel précédent">‹</button>
-                  <button type="button" className="article-lightbox-nav article-lightbox-next" onClick={() => step(1)} aria-label="Visuel suivant">›</button>
+                  <button type="button" className="article-lightbox-nav article-lightbox-prev" onClick={() => step(-1)} aria-label={text('previous', 'Visuel précédent')}>‹</button>
+                  <button type="button" className="article-lightbox-nav article-lightbox-next" onClick={() => step(1)} aria-label={text('next', 'Visuel suivant')}>›</button>
                 </>
               ) : null}
             </div>
