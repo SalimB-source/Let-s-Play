@@ -97,3 +97,17 @@ export function resumeCarte(carte, limite = LIMITE_RESUME) {
 export function regleCarteLongue(carte, seuil = SEUIL_REGLE_LONGUE) {
   return texteBrut(carte).length > seuil;
 }
+
+/**
+ * La condition d'Embuscade à mettre en avant dans les aperçus.
+ * Le catalogue reste la seule source du texte ; la règle et la condition du
+ * moteur ne changent pas. Les cartes sans Embuscade conditionnelle n'ont pas
+ * d'encadré.
+ */
+export function conditionEmbuscadePourApercu(carte) {
+  if (!carte?.reactionTourAdverse || !carte?.conditionEmbuscade) return null;
+  const phrase = carte.text?.match(
+    /^Embuscade\s*—\s*Vous pouvez jouer (?:cette créature|ce héros) pendant le tour adverse seulement si ([^.]+)\./u,
+  );
+  return phrase?.[1]?.trim() ?? null;
+}

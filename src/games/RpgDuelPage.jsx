@@ -119,7 +119,7 @@ import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSo
 import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { regleCarteLongue, resumeCarte } from './rpgCardResume.js';
+import { conditionEmbuscadePourApercu, regleCarteLongue, resumeCarte } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
 import { effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
@@ -3542,6 +3542,9 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
   const description = estCreature ? lecture.texte : effet;
   const descriptionLignes = cardEffectLines(description);
+  // La pastille Embuscade conserve sa règle complète en bulle ; sa condition
+  // imprimée mérite aussi une lecture immédiate, dans chaque type d'aperçu.
+  const conditionEmbuscade = conditionEmbuscadePourApercu(carte);
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
@@ -3584,6 +3587,12 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           <span className="rpg-hover-card-preview__hint-souris">Survolez un mot-clé pour lire son effet</span>
           <span className="rpg-hover-card-preview__hint-tactile">Touchez un mot-clé pour lire son effet</span>
         </small>
+      )}
+      {conditionEmbuscade && (
+        <p className="rpg-hover-card-preview__embuscade" data-condition-embuscade={carte.conditionEmbuscade}>
+          <strong>Embuscade · tour adverse</strong>
+          <span>Jouable si {conditionEmbuscade}.</span>
+        </p>
       )}
       {descriptionLignes.length > 0 && (
         <div className="rpg-hover-card-preview__rules" aria-label="Effet">

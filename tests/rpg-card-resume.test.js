@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { LIMITE_RESUME, resumeCarte, simplifierRegleCarte, regleCarteLongue } from '../src/games/rpgCardResume.js';
-import { cardById } from '../src/games/rpgCards.js';
+import { LIMITE_RESUME, resumeCarte, simplifierRegleCarte, regleCarteLongue, conditionEmbuscadePourApercu } from '../src/games/rpgCardResume.js';
+import { cardById, RPG_DUEL_CARDS, cardHasPrintedType } from '../src/games/rpgCards.js';
 
 /**
  * L'aperçu d'une carte ne peut pas réciter trois lignes de règles.
@@ -38,4 +38,61 @@ test('la règle complète reste entière sur la carte', () => {
   assert.equal(regleCarteLongue(carte), true, 'l’aperçu sait qu’il doit ajouter le bloc défilant');
   assert.match(carte.text, /quand c’est un sort — ciblé ou de zone — qui l’atteint/u);
   assert.match(carte.text, /Compagnie — Tant qu’il est en jeu/u);
+});
+
+test('la condition colorée de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
+  const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
+    && cardHasPrintedType(carte, 'Vampire'));
+  assert.equal(vampires.length, 15);
+  for (const carte of vampires) {
+    const condition = conditionEmbuscadePourApercu(carte);
+    assert.ok(condition, `condition de ${carte.id} absente`);
+    assert.ok(carte.text.includes(`seulement si ${condition}.`), carte.id);
+  }
+  assert.equal(conditionEmbuscadePourApercu(cardById('chien-du-guet')), null);
+  assert.equal(conditionEmbuscadePourApercu(cardById('embuscade')), null,
+    'la Sorcellerie Embuscade n’est pas une créature jouable en réaction');
+});
+
+test('la condition est colorée et lisible dans les trois aperçus, sans teinter les autres cartes', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { build } = await import('vite');
+  const { default: React } = await import('react');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { JSDOM } = await import('jsdom');
+  const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*border-left:\s*3px solid #[\da-f]+;[^}]*background:\s*linear-gradient\([^}]*color:\s*#[\da-f]+;/is);
+
+  const env = process.env.NODE_ENV;
+  try {
+    await build({
+      logLevel: 'error',
+      build: {
+        ssr: 'src/games/RpgDuelPage.jsx',
+        outDir: 'node_modules/.cache/rpg-embuscade-preview',
+        emptyOutDir: true,
+      },
+    });
+  } finally {
+    if (env === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = env;
+  }
+  const { HoverCardPreview } = await import('../node_modules/.cache/rpg-embuscade-preview/RpgDuelPage.js');
+  const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
+    && cardHasPrintedType(carte, 'Vampire'));
+  for (const variante of ['', 'appui-long', 'catalogue']) {
+    for (const carte of vampires) {
+      const markup = renderToStaticMarkup(React.createElement(HoverCardPreview, { carte, variante }));
+      const dom = new JSDOM(markup);
+      const condition = dom.window.document.querySelector('.rpg-hover-card-preview__embuscade');
+      assert.equal(condition?.getAttribute('data-condition-embuscade'), carte.conditionEmbuscade,
+        `${carte.id} : ${variante || 'survol'}`);
+      assert.equal(condition?.querySelector('span')?.textContent, `Jouable si ${conditionEmbuscadePourApercu(carte)}.`);
+      dom.window.close();
+    }
+    const ordinaire = renderToStaticMarkup(React.createElement(HoverCardPreview, {
+      carte: cardById('chien-du-guet'), variante,
+    }));
+    assert.doesNotMatch(ordinaire, /rpg-hover-card-preview__embuscade/);
+  }
 });
