@@ -20,6 +20,8 @@ export function officialSourceUrl(value) {
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
     const host = url.hostname.toLowerCase();
+    // Exact partnership announcement supplied by the publisher; never allow all Facebook posts.
+    if (url.href === 'https://www.facebook.com/photo/?fbid=1787284180064227&set=pb.100063479863011.-2207520000') return url.href;
     if (host === 'www.youtube.com' || host === 'youtube.com') {
       const id = url.searchParams.get('v');
       return url.pathname === '/watch' && officialVideoIds.has(id)

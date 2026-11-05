@@ -156,6 +156,37 @@ export const dailyStories = {
     "credit": "Miniature et vidéo officielles : Rockstar Games. Vidéo d’archive utilisée en illustration, pas une nouvelle annonce.",
     "sentiment": "mixed",
     "keywords": "GTA VI DES PRÉCOMMANDES ESTIMÉES À 751 M$. 5 novembre 2026"
+  },
+  "algeria-game-awards-2027-lets-play-sponsor-platinum": {
+    "date": "05.11.2026",
+    "category": "GAMING · ÉVÉNEMENT ALGÉRIE",
+    "readTime": "2 MIN DE LECTURE",
+    "cover": "ALGERIA GAME AWARDS",
+    "title": "ALGERIA GAME AWARDS",
+    "accent": "LET’S PLAY PARTENAIRE.",
+    "dek": "Let’s Play est annoncé comme sponsor Platinum de la 6ᵉ édition des Algeria Game Awards. Le rendez-vous est fixé au 22 janvier 2027 dans la publication de Just Play it.",
+    "lead": "Un partenariat pour accompagner le jeu vidéo en Algérie : Just Play it annonce le soutien de Let’s Play à la sixième édition des Algeria Game Awards (AGA). L’affiche publiée présente notre marque comme « Platinum Sponsor », sous la mention « Presented by ».",
+    "intro": "Transparence : Let’s Play étant directement concerné par ce partenariat, cet article est une annonce de notre participation, et non une couverture indépendante de l’événement. Il s’appuie sur la publication Facebook transmise à la rédaction sous forme de capture.",
+    "h2": "UNE SIXIÈME ÉDITION LE 22 JANVIER",
+    "p1": "Dans son message en arabe, Just Play it annonce que cette sixième édition se tiendra avec le soutien de Let’s Play. Le post donne une date précise : le 22 janvier 2027. C’est le rendez-vous à retenir à ce stade pour cette nouvelle édition des AGA.",
+    "p2": "L’équipe dit vouloir faire passer l’événement à un nouveau niveau et proposer une expérience qui célèbre l’industrie du jeu vidéo ainsi que la communauté des joueurs en Algérie. Il s’agit de l’ambition exprimée dans la publication, pas encore d’un programme détaillé.",
+    "h2b": "UN SOUTIEN PLATINUM AFFICHÉ",
+    "p3": "Le visuel bleu et or met à l’honneur le logo Let’s Play dans un cadre doré et indique explicitement le niveau de partenariat Platinum. Le texte remercie également Let’s Play pour son soutien et se réjouit de cette collaboration.",
+    "p4": "La publication fournie ne précise ni le lieu, ni les horaires, ni les modalités d’accès ou de billetterie. Elle ne détaille pas non plus les catégories et les nominations. Nous communiquerons ces informations lorsqu’elles auront été annoncées par l’organisation, sans les déduire de cette seule affiche.",
+    "take": "À RETENIR",
+    "takeText": "La 6ᵉ édition des Algeria Game Awards est annoncée pour le 22 janvier 2027, avec Let’s Play comme sponsor Platinum. Le lieu et les modalités de participation ne sont pas précisés dans le post fourni.",
+    "sourceName": "JUST PLAY IT · ANNONCE DU PARTENARIAT",
+    "source": "Publication de Just Play it relative aux Algeria Game Awards, retranscrite depuis la capture fournie à la rédaction le 05.11.2026. La date exacte de publication n’est pas visible sur cette capture (mention relative « 17 h »).",
+    "sourceUrl": "https://www.facebook.com/photo/?fbid=1787284180064227&set=pb.100063479863011.-2207520000",
+    "sourceDetail": "Voir l’annonce du partenariat",
+    "image": "news/2026-11-05/algeria-game-awards-lets-play-platinum.jpg",
+    "thumbnail": "news/2026-11-05/algeria-game-awards-lets-play-platinum.jpg",
+    "fallbackImage": "news/2026-11-05/algeria-game-awards-lets-play-platinum.jpg",
+    "imageAlt": "Affiche Algeria Game Awards, 6ᵉ édition : Let’s Play présenté comme sponsor Platinum, sur fond bleu et or.",
+    "imageCredit": "VISUEL DU PARTENARIAT · JUST PLAY IT / AGA",
+    "credit": "Visuel : Just Play it / Algeria Game Awards, affiche du partenariat Let’s Play. Recadrage de la capture fournie pour retirer l’interface Facebook et les commentaires.",
+    "sentiment": "positive",
+    "keywords": "Algeria Game Awards AGA sixième édition 22 janvier 2027 Let’s Play sponsor Platinum Just Play it Algérie partenariat"
   }
 };
 

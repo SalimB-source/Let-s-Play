@@ -391,5 +391,13 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-05",
     "section": "Actualités gaming"
+  },
+  "/news/algeria-game-awards-2027-lets-play-sponsor-platinum": {
+    "title": "ALGERIA GAME AWARDS LET’S PLAY PARTENAIRE. — Let’s Play",
+    "description": "Let’s Play est annoncé comme sponsor Platinum de la 6ᵉ édition des Algeria Game Awards. Le rendez-vous est fixé au 22 janvier 2027 dans la publication de Just Play it.",
+    "image": "news/2026-11-05/algeria-game-awards-lets-play-platinum.jpg",
+    "type": "article",
+    "published": "2026-11-05",
+    "section": "Actualités gaming"
   }
 };

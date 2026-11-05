@@ -111,6 +111,12 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"algeria-game-awards-2027-lets-play-sponsor-platinum": {
+  "label": "ALGERIA GAME AWARDS",
+  "meta": "JUST PLAY IT · PARTENARIAT LET’S PLAY",
+  "items": [],
+  "pending": "La publication fournie contient une affiche et un texte, pas de vidéo. Aucun lecteur n’est ajouté à cette annonce."
+},
 "god-of-war-laufey-report-20-mai-2027": {
   "label": "GOD OF WAR LAUFEY",
   "meta": "PlayStation",
