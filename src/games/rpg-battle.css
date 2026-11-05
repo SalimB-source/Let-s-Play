@@ -15266,10 +15266,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-soon-badge { display: inline-block; margin-inline-start: .5em; color: #eee; font-size: .7em; }
 
-/* Nouvelle affiche panoramique : le décor, le paquet réduit et la description
-   d’Embuscade sont réunis dans une seule image, sans texte HTML superposé. */
-.rpg-mode-menu__diapo--vampires { background: #14090e; overflow: hidden; }
-.rpg-mode-menu__vampires-affiche {
+/* Affiches panoramiques : le décor, le paquet réduit et la règle de chaque
+   set sont réunis dans l'image ; la transcription reste accessible dans le DOM. */
+.rpg-mode-menu__diapo--set { background: #14090e; overflow: hidden; }
+.rpg-mode-menu__promo-affiche {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -15277,12 +15277,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   object-fit: cover;
   object-position: center;
 }
-.rpg-mode-menu__hero[data-vampires-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
+.rpg-mode-menu__hero[data-promo-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-vampires-visible="true"] { min-height: 270px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 270px; }
 }
 @media (max-height: 540px) and (orientation: landscape) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-vampires-visible="true"] { min-height: 205px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 205px; }
 }
 
 /* Même accueil que sur ordinateur, avec une zone accessible au doigt si le

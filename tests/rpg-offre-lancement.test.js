@@ -10,7 +10,7 @@ test('offre de lancement : 10 boosters, prix et fin le 30 décembre inclus à Al
   assert.equal(offreLancementActive(Date.parse('2026-12-31T00:00:00+01:00')), false);
   assert.equal(offreLancementActive(NaN), false);
 });
-test('l’offre apparaît dans le Souk et la quatrième diapo, sans faux achat', () => {
+test('l’offre apparaît dans le Souk et après les sets du diaporama, sans faux achat', () => {
   const lire = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
   const page = lire('../src/games/RpgDuelPage.jsx');
   const souk = lire('../src/games/RpgSouk.jsx');
