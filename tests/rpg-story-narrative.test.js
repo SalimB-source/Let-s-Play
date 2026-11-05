@@ -559,3 +559,19 @@ test('abonnerProgressionHistoire notifie les écouteurs lors de la sauvegarde et
   }
 }));
 
+
+test('les actes de la campagne se parcourent horizontalement avec une page tournée à chaque changement', () => {
+  const css = readFileSync(new URL('../src/games/rpg-story.css', import.meta.url), 'utf8');
+  const jsx = readFileSync(new URL('../src/games/RpgStoryCampaign.jsx', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-campaign__acts\s*\{[^}]*flex-direction:\s*row;[^}]*overflow-x:\s*auto;/s,
+    'la rangée d’onglets reste horizontale et défilable');
+  assert.match(css, /\.rpg-campaign__act-btn\s*\{[^}]*writing-mode:\s*horizontal-tb;/s,
+    'les numéros d’acte sont lisibles sans tourner la tête');
+  assert.match(css, /@keyframes rpg-campaign-feuille\s*\{[\s\S]*?rotateY\(-162deg\)/);
+  assert.match(css, /@media \(max-width: 699px\)[\s\S]*?\.rpg-campaign__feuille \{ width: 100%; \}/,
+    'la page tourne aussi sur téléphone');
+  assert.match(jsx, /key=\{acteAffiche\.id\} className="rpg-campaign__feuille"/,
+    'une nouvelle feuille redémarre l’animation même si les actes sont changés rapidement');
+  assert.match(css, /prefers-reduced-motion: reduce[\s\S]*?\.rpg-campaign__feuille \{ display: none; \}/,
+    'le mouvement réduit supprime le tournage de page');
+});

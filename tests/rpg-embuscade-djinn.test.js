@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
+import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, duelCardById, cardHasPrintedType } from '../src/games/rpgCards.js';
 import { pastillesPourCarte, effetsDetailles } from '../src/games/effetIcons.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgConditionEmbuscadeRemplie, rpgResonanceEnJeu, rpgBonusResonance } from '../src/games/rpgDuel.js';
-import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgConditionEmbuscadeRemplie, rpgResoudreEffetCreatureEnAttente, rpgSorcierResoudreAnnonce, rpgResonanceEnJeu, rpgBonusResonance } from '../src/games/rpgDuel.js';
+import { rpgPvpAppliquer, rpgPvpVue } from '../src/games/rpgPvp.js';
 function partie() { const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 }); for (const c of ['joueur','sorcier']) d[c].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40])); return d; }
 function poser(d,c,id) { d[c].main.push(id); const r=rpgJouerCreature(d,c,id); assert.ok(r.ok,r.raison); return r.entite; }
 test('tous les Vampires jouables possèdent la pastille Embuscade', () => {
@@ -214,4 +214,132 @@ test('un attaquant retiré du plateau ne satisfait plus les conditions de combat
   d.sorcier.creatures = d.sorcier.creatures.filter((entite) => entite.id !== attaquantId);
   assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', cardById('porte-etendard-de-leclipse')), false);
   assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', cardById('gardienne-du-croissant')), false);
+});
+
+test('PvP : les deux sièges attendent une réponse d’Embuscade en fin de tour, puis le passe clôt le tour', () => {
+  for (const [attaquant, defenseur] of [['sorcier', 'joueur'], ['joueur', 'sorcier']]) {
+    const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+    d.tour = attaquant;
+    d[defenseur].pv = 20;
+    d[defenseur].main.push('danseuse-des-ombres-de-dune');
+    const fin = rpgPvpAppliquer(d, attaquant, { type: 'fin-de-tour' });
+    assert.ok(fin.ok, `${attaquant}: ${fin.raison}`);
+    assert.equal(d.tour, attaquant, 'le tour attend la réponse');
+    assert.equal(d.finDeTour?.cote, attaquant);
+    assert.equal(rpgPvpAppliquer(d, attaquant, { type: 'passer-fin-de-tour' }).ok, false);
+    assert.ok(rpgPvpAppliquer(d, defenseur, {
+      type: 'jouer-carte', carteId: 'danseuse-des-ombres-de-dune', cibleDifferee: true,
+    }).ok);
+    assert.equal(d.tour, attaquant, 'la carte ne ferme pas la fenêtre');
+    assert.ok(rpgPvpAppliquer(d, defenseur, { type: 'passer-fin-de-tour' }).ok);
+    assert.equal(d.tour, defenseur);
+    assert.equal(d.finDeTour, null);
+    assert.equal(d.fenetreReponse, false);
+  }
+});
+
+test('l’arrivée ciblée attend la réponse du défenseur en PvP ; son bouclier pare ensuite l’effet', () => {
+  const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const allie = poser(d, 'joueur', 'chien-du-guet');
+  d.tour = 'sorcier'; d.sorcier.main.push('maitre-du-marteau'); d.joueur.main.push('gardienne-du-croissant');
+  const pose = rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'maitre-du-marteau', cibleId: allie.id });
+  assert.ok(pose.ok, pose.raison);
+  assert.equal(allie.pv, 2, 'la cible reste indemne jusqu’au passe');
+  assert.equal(d.effetCreatureEnAttente?.cibleId, allie.id);
+  assert.equal(rpgPvpAppliquer(d, 'sorcier', { type: 'fin-de-tour' }).ok, false);
+  assert.equal(rpgPvpAppliquer(d, 'sorcier', { type: 'passer-effet' }).ok, false);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'gardienne-du-croissant', cibleDifferee: true }).ok);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: allie.id }).ok);
+  assert.equal(allie.bouclier, 1);
+  assert.equal(allie.pv, 4);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'passer-effet' }).ok);
+  assert.equal(d.effetCreatureEnAttente, null);
+  assert.equal(allie.pv, 4);
+  assert.equal(allie.bouclier, 0, 'le bouclier bloque le marteau après la réponse');
+});
+
+test('une magie rapide peut répondre à l’arrivée ciblée, ou laisser sa cible disparaître', () => {
+  const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const allie = poser(d, 'joueur', 'chien-du-guet');
+  d.tour = 'sorcier'; d.sorcier.main.push('maitre-du-marteau'); d.joueur.main.push('parade-du-verre');
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'maitre-du-marteau', cibleId: allie.id }).ok);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'parade-du-verre', cibleId: allie.id }).ok);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'passer-effet' }).ok);
+  assert.equal(allie.pv, 2);
+  assert.equal(allie.bouclier, 0);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'passer-effet' }).ok, false);
+});
+
+test('l’annonce solo montre déjà la cible d’une créature et son arrivée attend une autre réponse', () => {
+  const d = partie(); const allie = poser(d, 'joueur', 'chien-du-guet');
+  d.tour = 'sorcier'; d.sorcier.main.push('maitre-du-marteau'); d.joueur.main.push('gardienne-du-croissant');
+  d.annonce = { cote: 'sorcier', carteId: 'maitre-du-marteau', cibleId: allie.id };
+  d.fenetreReponse = true;
+  assert.ok(rpgSorcierResoudreAnnonce(d).ok);
+  assert.equal(allie.pv, 2);
+  assert.ok(d.effetCreatureEnAttente);
+  assert.ok(rpgJouerCreature(d, 'joueur', 'gardienne-du-croissant', allie.id).ok);
+  assert.ok(rpgResoudreEffetCreatureEnAttente(d, 'joueur').ok);
+  assert.equal(allie.pv, 4);
+  assert.equal(allie.bouclier, 0);
+});
+
+test('PvP : choisir la cible après la pose ouvre aussi une réponse avant l’effet', () => {
+  const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const victime = poser(d, 'sorcier', 'chien-du-guet');
+  d.joueur.main.push('maitre-du-marteau'); d.sorcier.main.push('parade-du-verre');
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'maitre-du-marteau', cibleDifferee: true }).ok);
+  assert.ok(d.arriveeEnAttente);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: victime.id }).ok);
+  assert.equal(victime.pv, 2);
+  assert.equal(rpgPvpVue(d, 'sorcier').effetCreatureEnAttente.cote, 'sorcier');
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'jouer-carte', carteId: 'parade-du-verre', cibleId: victime.id }).ok);
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'passer-effet' }).ok);
+  assert.equal(victime.pv, 2);
+});
+
+test('une capacité de créature ciblée attend aussi ; si la cible disparaît, elle se dissipe sans rendre le mana', () => {
+  const carte = duelCardById('chien-du-guet');
+  const activation = carte.activation;
+  carte.activation = { cout: 1, couleur: 'neige', effet: { type: 'degats', amount: 1, cible: 'creature' } };
+  try {
+    const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+    const victime = poser(d, 'joueur', 'chien-du-guet');
+    const source = poser(d, 'sorcier', 'chien-du-guet');
+    d.tour = 'sorcier'; d.joueur.main.push('gardienne-du-croissant');
+    const mana = d.sorcier.mana.neige;
+    assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'activer', entiteId: source.id, cibleId: victime.id }).ok);
+    assert.equal(d.sorcier.mana.neige, mana - 1);
+    assert.equal(victime.pv, 2);
+    assert.ok(d.effetCreatureEnAttente);
+    d.joueur.creatures = d.joueur.creatures.filter((entite) => entite.id !== victime.id);
+    const res = rpgResoudreEffetCreatureEnAttente(d, 'joueur');
+    assert.ok(res.ok && res.dissipe);
+    assert.equal(d.effetCreatureEnAttente, null);
+    assert.equal(d.sorcier.mana.neige, mana - 1);
+  } finally {
+    carte.activation = activation;
+  }
+});
+
+test('une capacité ciblée PvP laisse jouer une Embuscade protectrice avant de blesser', () => {
+  const carte = duelCardById('chien-du-guet');
+  const activation = carte.activation;
+  carte.activation = { cout: 1, couleur: 'neige', effet: { type: 'degats', amount: 1, cible: 'creature' } };
+  try {
+    const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+    const victime = poser(d, 'joueur', 'chien-du-guet');
+    const source = poser(d, 'sorcier', 'chien-du-guet');
+    d.tour = 'sorcier'; d.joueur.main.push('gardienne-du-croissant');
+    assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'activer', entiteId: source.id, cibleId: victime.id }).ok);
+    assert.equal(victime.pv, 2);
+    assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'gardienne-du-croissant', cibleId: victime.id }).ok);
+    assert.equal(victime.bouclier, 1);
+    assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'passer-effet' }).ok);
+    assert.equal(victime.pv, 4, 'le Gardien a aussi renforcé la créature protégée');
+    assert.equal(victime.bouclier, 0, 'la capacité annoncée est absorbée par le bouclier');
+    assert.equal(d.effetCreatureEnAttente, null);
+  } finally {
+    carte.activation = activation;
+  }
 });

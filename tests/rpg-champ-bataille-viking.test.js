@@ -87,3 +87,14 @@ test('les particules de feu restent sur les bords et suivent leur moitié de pla
   assert.match(css, /@keyframes rpg-braise-viking-vole/);
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*?\.rpg-braises-vikings__etincelle \{ animation: none; \}/);
 });
+
+test('les étincelles vikings demeurent perceptibles par-dessus la peinture et le décor 3D', () => {
+  const braises = lire('../src/games/RpgBraisesVikings.jsx');
+  const css = lire('../src/games/rpg-battle.css');
+  const tailles = [...braises.matchAll(/\[\d+, \d+, (\d+), -?\d+, [\d.]+, -?\d+\]/g)].map(([, taille]) => Number(taille));
+  assert.ok(tailles.length >= 24 && tailles.every((taille) => taille >= 6), 'assez de braises lisibles sur un fond 4K');
+  assert.match(css, /\.rpg-braises-vikings\s*\{[^}]*z-index:\s*1;/s,
+    'les étincelles passent devant le canvas 3D et la vignette');
+  assert.match(css, /\.rpg-braises-vikings__etincelle\s*\{[^}]*box-shadow:[^}]*rgba\(255, 113, 38, \.9\)/s,
+    'un halo visible éclaire chaque braise sans ajout de flamme');
+});

@@ -5654,3 +5654,39 @@ test('priorité disparue avant les blessures : retour au partage automatique ent
   assert.equal(res.ok, true);
   assert.deepEqual(res.resume.repartitions[sahir.id], { [bloqueurs[1].id]: 1, [bloqueurs[2].id]: 1 });
 });
+
+test('les dégâts assignés à un bloqueur ou à une cible d’Attaque ciblée signalent une vibration de carte', () => {
+  const lancer = (rng, ciblee = false) => {
+    const duel = duelDeBase({ rng: () => rng });
+    donnerMana(duel, 'joueur', 20);
+    donnerMana(duel, 'sorcier', 20);
+    donner(duel, 'joueur', ciblee ? 'feriel' : 'chien-du-guet');
+    const attaquant = rpgJouerCreature(duel, 'joueur', ciblee ? 'feriel' : 'chien-du-guet').entite;
+    donner(duel, 'sorcier', 'dune-marchante');
+    const defenseur = rpgJouerCreature(duel, 'sorcier', 'dune-marchante').entite;
+    attaquant.ready = true;
+    defenseur.ready = true;
+    const combat = ciblee
+      ? rpgLancerAttaque(duel, 'joueur', [attaquant.id], {}, null, null, { [attaquant.id]: defenseur.id })
+      : rpgLancerAttaque(duel, 'joueur', [attaquant.id], { [attaquant.id]: [defenseur.id] });
+    assert.ok(combat.ok, combat.raison);
+    return { duel, defenseur };
+  };
+  const impacts = ({ duel, defenseur }) => (duel.combatAnimations ?? []).filter((animation) =>
+    animation.type === 'impact-combat' && animation.cible.entiteId === defenseur.id);
+  assert.equal(impacts(lancer(0.5)).length, 1, 'le bloqueur encaisse un impact');
+  assert.equal(impacts(lancer(0.5, true)).length, 1, 'l’Attaque ciblée réussie provoque un impact');
+  assert.equal(impacts(lancer(0.1, true)).length, 0, 'une Attaque ciblée ratée ne vibre pas');
+
+  const fatal = duelDeBase({ rng: () => 0.5 });
+  donnerMana(fatal, 'joueur', 20);
+  donnerMana(fatal, 'sorcier', 20);
+  donner(fatal, 'joueur', 'feriel');
+  donner(fatal, 'sorcier', 'fennec-des-decombres');
+  const archer = rpgJouerCreature(fatal, 'joueur', 'feriel').entite;
+  const fennec = rpgJouerCreature(fatal, 'sorcier', 'fennec-des-decombres').entite;
+  assert.ok(rpgLancerAttaque(fatal, 'joueur', [archer.id], {}, null, null, { [archer.id]: fennec.id }).ok);
+  assert.equal(fatal.sorcier.creatures.some((entite) => entite.id === fennec.id), false);
+  assert.ok(fatal.combatAnimations.some((animation) => animation.type === 'impact-combat'
+    && animation.cible.entiteId === fennec.id), 'le fantôme de la carte détruite reçoit aussi la vibration');
+});

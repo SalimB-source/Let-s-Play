@@ -550,3 +550,37 @@ test('scénario F9CA4C2B : deux mulligans [1] démarrent réellement le duel et 
 });
 
 
+
+test('expiration PvP : le défenseur passe l’effet ciblé, puis la fenêtre de fin de tour', async () => {
+  const monde = creerMonde();
+  const { code } = await duelEnCours(monde);
+  await jouerTour(monde, HOTE, code);
+  await jouerTour(monde, INVITE, code);
+  const ligne = monde.magasin.duels.get(code);
+  const d = ligne.etat;
+  d.joueur.manaChoixEnAttente = false;
+  d.sorcier.manaChoixEnAttente = false;
+  d.joueur.creatures.push({ id: 'source-test', carteId: 'maitre-du-marteau', atk: 3, pv: 3, pvMax: 3 });
+  d.sorcier.creatures.push({ id: 'cible-test', carteId: 'chien-du-guet', atk: 1, pv: 8, pvMax: 8 });
+  d.effetCreatureEnAttente = {
+    cote: 'joueur', carteId: 'maitre-du-marteau', entiteId: 'source-test', cibleId: 'cible-test', type: 'arrivee',
+  };
+  d.fenetreReponse = true;
+  const seq = ligne.seq;
+  monde.horloge.t += RPG_PVP_HORLOGES.live + 1000;
+  const apresEffet = await api(monde, HOTE, { action: 'etat', code });
+  assert.equal(apresEffet.seq, seq + 1);
+  assert.equal(apresEffet.etat.effetCreatureEnAttente, null);
+  assert.equal(apresEffet.etat.tour, 'joueur', 'passer l’effet ne ferme pas le tour');
+  assert.equal(monde.magasin.duels.get(code).etat.sorcier.creatures[0].pv, 5);
+  assert.equal(monde.magasin.duels.get(code).etat.retards.sorcier, 1);
+
+  const ligneSuivante = monde.magasin.duels.get(code);
+  ligneSuivante.etat.finDeTour = { cote: 'joueur' };
+  ligneSuivante.etat.fenetreReponse = true;
+  monde.horloge.t += RPG_PVP_HORLOGES.live + 1000;
+  const apresFin = await api(monde, HOTE, { action: 'etat', code });
+  assert.equal(apresFin.seq, seq + 2);
+  assert.equal(apresFin.etat.finDeTour, null);
+  assert.equal(apresFin.etat.tour, 'sorcier');
+});

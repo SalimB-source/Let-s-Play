@@ -55,10 +55,9 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
           </div>
         </div>
         <p className="rpg-campaign__pitch">Ils sont douze. La Liste n’en compte aucun.</p>
-        {/* Les actes forment un livre : chaque acte atteint est un onglet posé
-            sur la tranche, et le clic ouvre sa double page — le récit à
-            gauche, les paliers à droite. Les actes à venir n'ont pas encore
-            d'onglet : ils se révèlent en tournant la feuille. */}
+        {/* Les actes atteints forment des onglets horizontaux au-dessus du livre.
+            Chaque clic tourne une feuille et ouvre la double page de l'acte ;
+            les actes à venir se révèlent au fil de la campagne. */}
         <div className={`rpg-campaign__livre${feuilleTournee ? ' is-tournee' : ''}`} data-campaign-livre>
           <ol className="rpg-campaign__acts" aria-label="Actes atteints de la campagne">
             {actesAtteints.map((acte) => (
@@ -127,7 +126,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
                 </ol>
               </section>
             </div>
-            <span className="rpg-campaign__feuille" aria-hidden="true" />
+            <span key={acteAffiche.id} className="rpg-campaign__feuille" data-campaign-feuille={acteAffiche.id} aria-hidden="true" />
           </div>
         </div>
         <div className="rpg-campaign__actions">

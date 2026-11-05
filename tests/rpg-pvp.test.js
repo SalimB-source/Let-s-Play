@@ -335,6 +335,7 @@ test('combat PvP en deux temps : déclaration publique, blocage adverse et ident
   // Aller-retour JSON (comme entre deux invocations serverless) : l'ID suivant ne collisionne jamais.
   const recharge = JSON.parse(JSON.stringify(duel));
   rpgPvpAppliquer(recharge, 'joueur', { type: 'fin-de-tour' });
+  if (recharge.finDeTour) assert.ok(rpgPvpAppliquer(recharge, 'sorcier', { type: 'passer-fin-de-tour' }).ok);
   if (recharge.sorcier.manaChoixEnAttente) {
     rpgPvpAppliquer(recharge, 'sorcier', { type: 'choix-mana', couleur: recharge.sorcier.couleurs[0] });
   }
@@ -347,6 +348,7 @@ test('combat PvP en deux temps : déclaration publique, blocage adverse et ident
 
   // Retour au tour du joueur : sa créature est prête et l'adversaire a un bloqueur légal.
   rpgPvpAppliquer(recharge, 'sorcier', { type: 'fin-de-tour' });
+  if (recharge.finDeTour) assert.ok(rpgPvpAppliquer(recharge, 'joueur', { type: 'passer-fin-de-tour' }).ok);
   if (recharge.joueur.manaChoixEnAttente) {
     rpgPvpAppliquer(recharge, 'joueur', { type: 'choix-mana', couleur: recharge.joueur.couleurs[0] });
   }

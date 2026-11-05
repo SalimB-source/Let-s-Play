@@ -359,6 +359,21 @@ export function creerArbitre({
         gagnant_id: actif === 'joueur' ? duel.invite_id : duel.hote_id,
         fin_raison: 'temps',
       };
+    } else if (etat.effetCreatureEnAttente || etat.finDeTour) {
+      // En réponse à un effet ciblé ou à une Embuscade de fin de tour, le
+      // délai vaut « passer », jamais une seconde fermeture du tour actif.
+      // Si une Embuscade attend encore sa cible, son choix passe en premier.
+      const debut = etat.log.length;
+      const intention = { type: etat.arriveeEnAttente ? 'renoncer-arrivee'
+        : etat.effetCreatureEnAttente ? 'passer-effet' : 'passer-fin-de-tour' };
+      const resolu = rpgPvpAppliquer(etat, actif, intention).ok;
+      if (resolu) nommerNouvellesEntrees(etat, debut, actif, noms);
+      patch = {
+        etat,
+        seq: duel.seq + (resolu ? 1 : 0),
+        tour: etat.tour,
+        ...(await issue(duel, etat)),
+      };
     } else if (etat.phase === 'blocage') {
       const debut = etat.log.length;
       const resolu = rpgPvpAppliquer(etat, actif, { type: 'bloquer', blocages: {} }).ok;
