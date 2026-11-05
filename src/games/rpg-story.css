@@ -720,8 +720,9 @@
    fois le duel remporté. */
 .rpg-campaign__step-gain { color: #7a5c22; font: 600 9.5px/1.3 var(--mono, monospace); letter-spacing: .04em; }
 .rpg-campaign__step.is-termine .rpg-campaign__step-gain { color: #3f6b4f; }
-/* La feuille de droite se soulève et passe la pliure vers la gauche : la
-   nouvelle double page est déjà visible sous elle, sans bloquer les clics. */
+/* La feuille de droite se soulève et passe la pliure vers la gauche. Le
+   contenu n'est remplacé qu'à mi-tour, quand la feuille est sur sa tranche :
+   jamais deux actes visibles à la fois, ni l'acte suivant avant le geste. */
 .rpg-campaign__feuille {
   position: absolute;
   z-index: 4;
@@ -738,14 +739,20 @@
   pointer-events: none;
 }
 .rpg-campaign__livre.is-tournee .rpg-campaign__feuille { animation: rpg-campaign-feuille .66s cubic-bezier(.35, .02, .3, 1) both; }
-.rpg-campaign__livre.is-tournee .rpg-campaign__pages { animation: rpg-campaign-page .5s ease both; }
+.rpg-campaign__livre.is-tournee .rpg-campaign__pages { animation: rpg-campaign-page .7s linear both; }
 @keyframes rpg-campaign-feuille {
   0% { opacity: .92; transform: rotateY(0deg); }
   40% { opacity: 1; transform: rotateY(-75deg); }
   80% { opacity: 1; transform: rotateY(-162deg); }
   100% { opacity: 0; transform: rotateY(-175deg); }
 }
-@keyframes rpg-campaign-page { from { opacity: .66; } to { opacity: 1; } }
+@keyframes rpg-campaign-page {
+  0%, 40% { opacity: 1; }
+  47% { opacity: .55; }
+  50% { opacity: .16; }
+  58% { opacity: .65; }
+  75%, 100% { opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
   .rpg-campaign__livre.is-tournee .rpg-campaign__feuille,
   .rpg-campaign__livre.is-tournee .rpg-campaign__pages { animation: none; }

@@ -8,32 +8,46 @@ import { StoryPortrait, StoryStorageNotice } from './RpgStoryScene.jsx';
 export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, onContinue, onJournal, onRestart, sauvegardeOk, duelEnCours = false, campagneEnCours = false, children }) {
   const [confirmer, setConfirmer] = useState(null);
   const [acteApercuId, setActeApercuId] = useState(null);
-  // La feuille ne se tourne qu'au changement d'acte : au premier rendu, le
-  // livre est déjà ouvert sur son acte.
-  const [feuilleTournee, setFeuilleTournee] = useState(false);
-  const actePrecedent = useRef(null);
   const resume = resumeRecitHistoire(recit);
   const actes = resumeActesHistoire(recit);
   // La campagne se découvre : seuls les actes atteints figurent sur l'affiche.
   // Tant que la première scène n'est pas ouverte, c'est l'Acte I — celui qui
   // commence — et chaque acte suivant apparaît quand le récit y entre.
-  // Les actes à venir ne sont plus annoncés par leur titre : ils se révèlent.
   const actesAtteints = actes.slice(0, Math.max(1, actes.findIndex((acte) => acte.id === resume.acteId) + 1));
   const acteApercu = actesAtteints.some((acte) => acte.id === acteApercuId) ? acteApercuId : null;
-  const acteAffiche = acteHistoire(acteApercu ?? resume.acteId) ?? resume.acte;
+  const acteDemandeId = acteApercu ?? resume.acteId;
+  // Une seule double page est rendue à la fois. Le clic commence par tourner
+  // l'ancienne feuille ; le contenu et l'onglet actif ne changent qu'à la
+  // pliure, jamais avant. Un autre clic annule les minuteries précédentes.
+  const [acteAfficheId, setActeAfficheId] = useState(() => resume.acteId);
+  const acteAfficheRef = useRef(acteAfficheId);
+  const [pageTournee, setPageTournee] = useState(null);
+  const numeroTourRef = useRef(0);
+  useEffect(() => {
+    if (acteDemandeId === acteAfficheRef.current) {
+      setPageTournee(null);
+      return undefined;
+    }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      acteAfficheRef.current = acteDemandeId;
+      setActeAfficheId(acteDemandeId);
+      setPageTournee(null);
+      return undefined;
+    }
+    setPageTournee(++numeroTourRef.current);
+    const changer = window.setTimeout(() => {
+      acteAfficheRef.current = acteDemandeId;
+      setActeAfficheId(acteDemandeId);
+    }, 330);
+    const terminer = window.setTimeout(() => setPageTournee(null), 700);
+    return () => { window.clearTimeout(changer); window.clearTimeout(terminer); };
+  }, [acteDemandeId]);
+  const acteAffiche = acteHistoire(acteAfficheId) ?? resume.acte;
   const statutAffiche = actesAtteints.find((acte) => acte.id === acteAffiche.id)?.statut ?? 'a-venir';
   const libelleStatut = statutAffiche === 'termine' ? 'Terminé'
     : statutAffiche === 'en-cours' ? 'En cours' : 'À découvrir';
   const etapes = etapesRecitHistoire(recit, etagesVaincus, acteAffiche.id);
   const registres = registresDebloques(recit);
-  useEffect(() => {
-    if (actePrecedent.current === null) { actePrecedent.current = acteAffiche.id; return undefined; }
-    if (actePrecedent.current === acteAffiche.id) return undefined;
-    actePrecedent.current = acteAffiche.id;
-    setFeuilleTournee(true);
-    const minuteur = setTimeout(() => setFeuilleTournee(false), 720);
-    return () => clearTimeout(minuteur);
-  }, [acteAffiche.id]);
   const actions = { reprendre: onContinue, journal: onJournal, recommencer: onRestart };
   const demander = (action) => {
     if (action === 'recommencer' || (duelEnCours && !(action === 'reprendre' && campagneEnCours))) {
@@ -58,7 +72,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
         {/* Les actes atteints forment des onglets horizontaux au-dessus du livre.
             Chaque clic tourne une feuille et ouvre la double page de l'acte ;
             les actes à venir se révèlent au fil de la campagne. */}
-        <div className={`rpg-campaign__livre${feuilleTournee ? ' is-tournee' : ''}`} data-campaign-livre>
+        <div className={`rpg-campaign__livre${pageTournee !== null ? ' is-tournee' : ''}`} data-campaign-livre>
           <ol className="rpg-campaign__acts" aria-label="Actes atteints de la campagne">
             {actesAtteints.map((acte) => (
               <li
@@ -81,7 +95,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
             ))}
           </ol>
           <div className="rpg-campaign__volume">
-            <div className="rpg-campaign__pages" key={acteAffiche.id} data-campaign-page={acteAffiche.id}>
+            <div className="rpg-campaign__pages" data-campaign-page={acteAffiche.id}>
               <section className="rpg-campaign__page rpg-campaign__page--gauche"
                 aria-label={`Acte ${acteAffiche.romain} — ${acteAffiche.titre}`}>
                 <span className="rpg-campaign__page-eyebrow">
@@ -126,7 +140,7 @@ export default function RpgStoryCampaign({ recit, etagesVaincus = [], cardArt, o
                 </ol>
               </section>
             </div>
-            <span key={acteAffiche.id} className="rpg-campaign__feuille" data-campaign-feuille={acteAffiche.id} aria-hidden="true" />
+            <span key={pageTournee ?? 'repos'} className="rpg-campaign__feuille" data-campaign-feuille={pageTournee ?? undefined} aria-hidden="true" />
           </div>
         </div>
         <div className="rpg-campaign__actions">
