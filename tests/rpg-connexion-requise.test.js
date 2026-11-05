@@ -47,7 +47,7 @@ test('le cadre du site et le dock sont absents pendant la connexion du Sablier u
   }
   const layout = readFileSync(new URL('../src/components/Layout.jsx', import.meta.url), 'utf8');
   const dock = readFileSync(new URL('../src/social/SocialDock.jsx', import.meta.url), 'utf8');
-  assert.match(layout, /isDesktopApp \|\| connexionSablier/);
+  assert.match(layout, /isDesktopApp \|\| routeSablier/);
   assert.match(dock, /const dockVisible = !connexionEnAttente/);
   assert.match(dock, /if \(connexionEnAttente \|\| !isMobile/);
 });
@@ -84,4 +84,28 @@ test('connexion obligatoire : création et récupération restent dans le formul
       assert.equal(container.querySelectorAll('a').length, 0);
     } finally { await act(async () => root.unmount()); container.remove(); }
   } finally { await vite.close(); dom.window.close(); delete globalThis.window; delete globalThis.document; }
+});
+
+test('la navigation du site reste absente sur le Sablier après connexion', async () => {
+  const vite = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  try {
+    const { default: Layout } = await vite.ssrLoadModule('/src/components/Layout.jsx');
+    const { AuthContext } = await vite.ssrLoadModule('/src/auth/AuthContext.jsx');
+    const { LanguageProvider } = await vite.ssrLoadModule('/src/i18n/LanguageContext.jsx');
+    const { MemoryRouter } = await import('react-router-dom');
+    const render = (path, auth) => renderToStaticMarkup(React.createElement(MemoryRouter, { initialEntries: [path] },
+      React.createElement(LanguageProvider, { lang: 'fr' },
+        React.createElement(AuthContext.Provider, { value: auth },
+          React.createElement(Layout, null, React.createElement('div', { 'data-test-jeu': true }, 'Le jeu'))))));
+    const connecte = { loading: false, session: { user: { id: 'user-1' } }, user: { id: 'user-1', email: 'joueur@example.com' }, isDemo: false };
+    for (const path of ['/jeu/sablier-de-bab-el', '/jeu/sablier-de-bab-el/defi', '/jeu/sablier-de-bab-el/defi/ABC']) {
+      for (const auth of [connecte, { loading: true, session: null, user: null }, { loading: false, session: null, user: null }]) {
+        const html = render(path, auth);
+        assert.match(html, /data-test-jeu/);
+        assert.doesNotMatch(html, /class="nav(?:\s|"|$)|class="brand-logo"|class="footer wrap"/);
+      }
+    }
+    const site = render('/jeu/vice-city-rush', connecte);
+    assert.match(site, /class="brand-logo"/, 'le reste du site conserve sa navigation');
+  } finally { await vite.close(); }
 });

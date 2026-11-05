@@ -170,7 +170,8 @@ test('au doigt, la page utilise l’accueil PC et un coffre prêt verse ses cré
       assert.equal(container.querySelector('.rpg-accueil-mobile'), null);
       assert.ok(container.querySelector('.rpg-mode-menu__play'), 'la vitrine du bureau est présente');
       assert.equal(container.querySelectorAll('.rpg-mode-menu__hero-actions > .rpg-mode-carte').length, 3);
-      assert.equal(container.querySelectorAll('.rpg-quests-jour__bonus').length, 2, 'les boosters des coffres sont annoncés');
+      assert.equal(container.querySelectorAll('.rpg-quests-jour__bonus').length, 2, 'les boosters des jalons sont annoncés');
+      assert.equal(container.querySelectorAll('.rpg-quests-jour [data-coffre-dore]').length, 3, 'seules les trois quêtes utilisent des coffres');
 
       const coffre = container.querySelector('[data-jouer-reclamer="creatures-10"]');
       assert.ok(coffre, 'la quête finie attend son tap');
@@ -319,4 +320,14 @@ test('accueil PC au doigt : les coffres cycle et semaine gardent leurs boosters'
       assert.equal(ceremonie.dataset.coffreOuverturePaquets, '2');
     } finally { await act(async () => root.unmount()); container.remove(); }
   } finally { await vite.close(); dom.window.close(); }
+});
+
+test('accueil tactile : la rampe compacte reste sur un écran sans défilement vertical', async () => {
+  const { readFileSync } = await import('node:fs');
+  const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  const compact = css.slice(css.lastIndexOf('/* Accueil tactile : trois coffres compacts'));
+  assert.match(compact, /rpg-mode-menu__play:not\([^}]+overflow:\s*hidden/s);
+  assert.match(compact, /rpg-coffre-dore__scene\s*\{\s*zoom:\s*\.5/);
+  assert.match(compact, /orientation:\s*landscape/);
+  assert.match(compact, /rpg-quests-jour__jalon-bouton/);
 });

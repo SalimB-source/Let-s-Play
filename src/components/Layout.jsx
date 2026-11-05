@@ -4,7 +4,7 @@ import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle from './ThemeToggle';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
-import { connexionSablierEnAttente } from '../games/rpgConnexionRoute';
+import { estRouteConnexionSablier } from '../games/rpgConnexionRoute';
 import SEO from './SEO';
 // L'index de recherche (actus, tests, dossiers, sorties, quizz) pèse à lui
 // seul plus lourd que la barre : il n'est chargé qu'au premier geste de
@@ -36,8 +36,8 @@ export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, lang } = useLanguage();
-  const { user, isDemo, signOut, session, loading } = useAuth();
-  const connexionSablier = connexionSablierEnAttente(location.pathname, { loading, session });
+  const { user, isDemo, signOut } = useAuth();
+  const routeSablier = estRouteConnexionSablier(location.pathname);
   const { summary } = useAchievements();
   const track = useAchievementAction();
   const { progress: quizProgressState } = useQuizProgress();
@@ -258,14 +258,14 @@ export default function Layout({ children }) {
 
   // lock scroll quand palette ouverte
   useEffect(() => {
-    if (paletteOpen && !connexionSablier) {
+    if (paletteOpen && !routeSablier) {
       const prev = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       // focus input après ouverture
       setTimeout(() => paletteInputRef.current?.focus(), 30);
       return () => { document.body.style.overflow = prev; };
     }
-  }, [paletteOpen, connexionSablier]);
+  }, [paletteOpen, routeSablier]);
 
   const isActive = (path) => location.pathname === path
     || (path === '/communaute' && location.pathname === '/community');
@@ -325,7 +325,7 @@ export default function Layout({ children }) {
   // Cmd+K / Ctrl+K ouvre la palette plein centre
   useEffect(() => {
     const onKey = (e) => {
-      if (connexionSablier) return;
+      if (routeSablier) return;
       const k = e.key.toLowerCase() === 'k';
       const slash = e.key === '/';
       if ((e.metaKey || e.ctrlKey) && k) {
@@ -342,7 +342,7 @@ export default function Layout({ children }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [searchValue, paletteOpen, connexionSablier]);
+  }, [searchValue, paletteOpen, routeSablier]);
 
   const submitSearch = (event) => {
     event.preventDefault();
@@ -407,9 +407,9 @@ export default function Layout({ children }) {
   // fenêtre Electron (window.letsPlayDesktop) — on masque toute la chrome
   // Let's Play (nav, footer, actus) pour ne laisser que la table.
   const isDesktopApp = typeof window !== 'undefined' && Boolean(window.letsPlayDesktop);
-  // La connexion obligatoire du Sablier est un écran de jeu, pas une page
-  // de navigation du site, y compris pendant la restauration de session.
-  if (isDesktopApp || connexionSablier) {
+  // Le Sablier garde son propre écran avant et après connexion : aucun élément
+  // de navigation du site ne doit réapparaître quand la session est restaurée.
+  if (isDesktopApp || routeSablier) {
     return (
       <>
         <SEO />

@@ -304,14 +304,15 @@ test('le métal forcé l’emporte sur le gain, et le CSS garde la chaîne 3D in
   );
 });
 
-test('la Semaine est violette dans la rampe, et le bouton Souk n’y est plus', async () => {
+test('la Semaine reste accessible sans ajouter de coffre, et le bouton Souk n’y est plus', async () => {
   const fs = await import('node:fs');
   const rampe = fs.readFileSync('src/games/RpgQuetesDuJour.jsx', 'utf8');
   const css = fs.readFileSync('src/games/rpg-quetes-jour.css', 'utf8');
 
-  // Le coffre de la semaine impose son métal au lieu de le déduire du gain.
-  const semaine = rampe.slice(rampe.indexOf('sousTitre="Semaine"') - 420, rampe.indexOf('sousTitre="Semaine"'));
-  assert.match(semaine, /metal=\{METAL_SEMAINE\}/, 'le coffre de la semaine demande le violet');
+  // La récompense de la semaine est un jalon, pas un quatrième coffre.
+  assert.match(rampe, /className="rpg-quests-jour__semaine"/);
+  assert.match(rampe, /data-jouer-semaine-reclamer/);
+  assert.match(css, /\.rpg-quests-jour__jalon-bouton/);
 
   // Le raccourci Souk a quitté la rampe : l'onglet latéral porte déjà le solde.
   assert.ok(!rampe.includes('data-jouer-souk'), 'plus de bouton Souk dans la rampe');
@@ -491,12 +492,12 @@ test('la plaquette grisée l’emporte sur la variante « gain à droite »', as
   assert.ok(droite > 0 && ouvert > droite, 'l’état ouvert doit être écrit après la variante à droite');
 });
 
-test('le coffre de la semaine passe à l’état ouvert une fois encaissé', async () => {
+test('le jalon de la semaine indique son encaissement', async () => {
   // Il restait bloqué sur « en cours » : le drapeau `semaine` n'était pas lu.
   const fs = await import('node:fs');
   const src = fs.readFileSync('src/games/RpgQuetesDuJour.jsx', 'utf8');
   assert.match(src, /const semainePrise = Boolean\(quetes\?\.semaine\)/);
-  assert.match(src, /etat=\{semainePrise \? 'ouvert' : semainePrete \? 'pret' : 'encours'\}/);
+  assert.match(src, /semainePrise \? 'encaissée' : semainePrete \? 'Réclamer'/);
   // Et le drapeau lu est bien celui que pose l'encaissement.
   const quetes = fs.readFileSync('src/games/rpgQuetes.js', 'utf8');
   assert.match(quetes, /semaine:\s*true/);

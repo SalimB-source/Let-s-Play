@@ -317,8 +317,10 @@ export async function checkRpgSoukEcran(assert) {
     // page dit déjà le solde et ouvre l'écran. On garde le garde-fou.
     assert.equal(noeud('[data-jouer-souk]'), null, 'la rampe n’a plus de bouton Souk');
     assert.equal(noeud('[data-jouer-solde]'), null, 'ni de solde miniature');
-    assert.equal(donnee('.rpg-quests-jour__semaine [data-coffre-metal]', 'coffreSemaine'), 'violet',
-      'le coffre de la semaine est violet, pas or');
+    assert.equal(document.querySelectorAll('.rpg-quests-jour [data-coffre-dore]').length, 3,
+      'seules les trois quêtes ont un coffre');
+    assert.ok(noeud('.rpg-quests-jour__semaine .rpg-quests-jour__jalon-bouton'),
+      'la récompense de la semaine reste accessible sans quatrième coffre');
     for (const quete of jour) {
       assert.equal(donnee(`[data-jouer-quete="${quete.id}"]`, 'jouerQueteEtat'), 'encours',
         `${quete.id} commence en cours dans le panneau aussi`);

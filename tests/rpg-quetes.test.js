@@ -107,25 +107,25 @@ test('les quêtes du jour sont les mêmes pour un même couple (jour, graine)', 
 
 test('ouvrir une journée tire les quêtes, remet la progression à zéro et suit la série', () => {
   const vide = etatQuetesVide();
-  const premier = ouvrirJournee({ etat: vide, jour: JOUR, graine: 'g', progression: progression() });
+  const premier = ouvrirJournee({ etat: vide, jour: JOUR, horloge: new Date(2026, 9, 14, 12).getTime(), graine: 'g', progression: progression() });
   assert.equal(premier.nouveau, true);
   assert.equal(premier.etat.jour, JOUR);
   assert.equal(premier.etat.quetes.length, 3);
   assert.equal(premier.etat.serie, 1);
   assert.deepEqual(premier.etat.progres, Object.fromEntries(premier.etat.quetes.map((id) => [id, 0])));
 
-  const meme = ouvrirJournee({ etat: premier.etat, jour: JOUR, graine: 'g', progression: progression() });
+  const meme = ouvrirJournee({ etat: premier.etat, jour: JOUR, horloge: new Date(2026, 9, 14, 13).getTime(), graine: 'g', progression: progression() });
   assert.equal(meme.nouveau, false);
   assert.deepEqual(meme.etat, premier.etat, 'le même jour ne retouche rien');
 
-  const suite = ouvrirJournee({ etat: premier.etat, jour: '2026-10-15', graine: 'g', progression: progression() });
+  const suite = ouvrirJournee({ etat: premier.etat, jour: '2026-10-15', horloge: new Date(2026, 9, 15, 12).getTime(), graine: 'g', progression: progression() });
   assert.equal(suite.nouveau, true);
   assert.equal(suite.etat.serie, 2, 'deux jours de suite : la série continue');
 
-  const trou = ouvrirJournee({ etat: suite.etat, jour: '2026-10-18', graine: 'g', progression: progression() });
+  const trou = ouvrirJournee({ etat: suite.etat, jour: '2026-10-18', horloge: new Date(2026, 9, 18, 12).getTime(), graine: 'g', progression: progression() });
   assert.equal(trou.etat.serie, 1, 'un jour manqué repart la série à un');
 
-  const recule = ouvrirJournee({ etat: trou.etat, jour: '2026-10-10', graine: 'g', progression: progression() });
+  const recule = ouvrirJournee({ etat: trou.etat, jour: '2026-10-10', horloge: new Date(2026, 9, 10, 12).getTime(), graine: 'g', progression: progression() });
   assert.equal(recule.nouveau, false);
   assert.equal(recule.etat.jour, '2026-10-18', 'un jour antérieur est ignoré');
 });
@@ -257,7 +257,7 @@ test('la série ne se complète qu’au septième jour, et jamais deux fois', ()
   // vérifier une série — la forcer à la main ne prouverait que l'arithmétique.
   for (let index = 1; index <= 15; index += 1) {
     const jour = cleJour(new Date(2026, 2, index).getTime());
-    etat = ouvrirJournee({ etat, jour, graine: 'graine-de-serie' }).etat;
+    etat = ouvrirJournee({ etat, jour, horloge: new Date(2026, 2, index, 12).getTime(), graine: 'graine-de-serie' }).etat;
     assert.equal(etat.serie, index, `jour ${index} : la série suit`);
     if (!cachetDeLaSemaineDisponible(etat)) continue;
     payees.push(index);
@@ -439,7 +439,7 @@ test('une nouvelle fournée rend le droit de changer', () => {
   const avant = etatDuJour(['creatures-10', 'duels-2', 'duels-3']);
   const use = remplacerQuete({ etat: avant, queteId: 'creatures-10', graine: 'compte-42' }).etat;
   assert.equal(remplacementDisponible(use), false);
-  const lendemain = ouvrirJournee({ etat: use, jour: '2026-10-15', graine: 'compte-42' });
+  const lendemain = ouvrirJournee({ etat: use, jour: '2026-10-15', horloge: Date.now() + 86400000, graine: 'compte-42' });
   assert.equal(lendemain.nouveau, true);
   assert.equal(lendemain.etat.remplacement, null);
   assert.equal(remplacementDisponible(lendemain.etat), true);
@@ -471,4 +471,36 @@ test('un remplacement incohérent est rejeté, et ne bloque pas le joueur', () =
     remplacement: { de: 'quete-fantome', vers: 'armes-3' },
   });
   assert.equal(normaliserEtatQuetes(inconnu).remplacement, null);
+});
+
+test('les trois coffres expirent exactement après 24 heures, même terminés', () => {
+  const debut = new Date(2026, 9, 14, 18).getTime();
+  const etat = etatDuJour(['creatures-10', 'duels-2', 'duels-3'],
+    { 'creatures-10': 10, 'duels-2': 2, 'duels-3': 0 },
+    { jour: cleJour(debut), debutLe: new Date(debut).toISOString(), reclamations: ['duels-2'] });
+  const justeAvant = debut + 24 * 60 * 60 * 1000 - 1;
+  assert.deepEqual(ouvrirJournee({ etat, horloge: justeAvant, graine: 'g' }).etat.quetes, etat.quetes,
+    'le passage de minuit ne crée pas un deuxième groupe');
+  assert.equal(reclamerQuete(etat, 'creatures-10', justeAvant).ok, true);
+  const echeance = justeAvant + 1;
+  assert.equal(reclamerQuete(etat, 'creatures-10', echeance).raison, 'expiree');
+  assert.equal(vueDeLaQuete(etat, 'creatures-10', echeance).etat, 'expiree');
+  const nouvelle = ouvrirJournee({ etat, horloge: echeance, graine: 'g' });
+  assert.equal(nouvelle.nouveau, true);
+  assert.equal(nouvelle.etat.quetes.length, 3);
+  assert.deepEqual(nouvelle.retirees, etat.quetes);
+  assert.deepEqual(nouvelle.etat.reclamations, []);
+  assert.ok(Object.values(nouvelle.etat.progres).every((v) => v === 0));
+});
+
+test('fusion et chargement ne peuvent pas créer plus de trois coffres', () => {
+  const debut = new Date().toISOString();
+  const a = etatDuJour(['creatures-10', 'duels-2', 'duels-3'], {}, { debutLe: debut });
+  const b = etatDuJour(['armes-3', 'magies-6', 'etage-1'], {}, { debutLe: debut });
+  const resultat = fusionnerQuetes(a, b).etat;
+  assert.equal(resultat.quetes.length, 3);
+  assert.deepEqual(fusionnerQuetes(b, a).etat.quetes, resultat.quetes, 'la fusion converge dans les deux sens');
+  assert.equal(normaliserEtatQuetes({ ...a, quetes: [...a.quetes, ...b.quetes] }).quetes.length, 3);
+  const ancien = new Date(Date.parse(debut) - 3600000).toISOString();
+  assert.equal(fusionnerQuetes(a, { ...b, debutLe: ancien }).etat.debutLe, ancien, 'une synchronisation ne prolonge pas les 24 heures');
 });

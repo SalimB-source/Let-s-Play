@@ -66,6 +66,7 @@ import {
   reclamerQuete,
   remplacerQuete,
   sauverEtatQuetes,
+  tempsRestantMs,
 } from './rpgQuetes.js';
 import { appliquerEvenementDuel, compterReclamations } from './rpgEvenementsDuel.js';
 import { ouvrirBooster, ouvrirBoosterOffert, ouvrirCoffret, rayonsOuverts } from './rpgBoosters.js';
@@ -227,10 +228,8 @@ export function useSablierBourse({
     return fusion.etat;
   }, [compteId]);
 
-  // Le jour se referme tout seul : au retour sur l'onglet, la journée courante
-  // est réouverte (nouveau tirage, compteurs à zéro) — la série, elle, continue.
-  // Les quêtes non terminées échues après 24 h sont retirées au passage, et une
-  // minuterie le vérifie pendant que l'onglet reste ouvert.
+  // À l'échéance des 24 heures (ou au retour sur l'onglet), renouveler les
+  // trois coffres. La minuterie garde aussi l'étal calendaire à jour.
   useEffect(() => {
     const verifier = () => {
       if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
@@ -243,11 +242,14 @@ export function useSablierBourse({
     };
     document?.addEventListener?.('visibilitychange', verifier);
     const minuterie = typeof setInterval === 'function' ? setInterval(verifier, 60000) : null;
+    const reste = tempsRestantMs(etat.quetes);
+    const expiration = reste > 0 ? setTimeout(verifier, reste + 10) : null;
     return () => {
       document?.removeEventListener?.('visibilitychange', verifier);
       if (minuterie) clearInterval(minuterie);
+      if (expiration) clearTimeout(expiration);
     };
-  }, [progression, appliquer, pousser, compteId]);
+  }, [progression, appliquer, pousser, compteId, etat.quetes.debutLe]);
 
   // À la connexion (et à chaque retour de connexion), la fusion compte ↔ appareil.
   useEffect(() => {
@@ -283,7 +285,8 @@ export function useSablierBourse({
       const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(), distant: state });
       const bourseFusionnee = fusionnerPortefeuilles(chargerPortefeuille(), fusion.etat.bourse).portefeuille;
       const bourse = ouvrirEtalDuJour({ portefeuille: bourseFusionnee, graine: chargerGraine(compteId) }).portefeuille;
-      const quetes = fusionnerQuetes(chargerEtatQuetes(), fusion.etat.quetes).etat;
+      const quetesFusionnees = fusionnerQuetes(chargerEtatQuetes(), fusion.etat.quetes).etat;
+      const quetes = ouvrirJournee({ etat: quetesFusionnees, graine: chargerGraine(compteId), progression: progressionRef.current }).etat;
       // Le profil se fusionne chez lui : l'XP au maximum, donc un palier gagné
       // hors ligne ne redescend jamais au retour du compte.
       const profil = fusionnerProfils(chargerProfil(), fusion.etat.profil).profil;
