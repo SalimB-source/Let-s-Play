@@ -25,35 +25,35 @@ SANS = FONTS / 'DejaVuSans-Bold.ttf'
 # The wording follows the printed rules (Abordage, Furie, Harakiri, Butin, Tribut).
 SETS = {
     'pirates': {
-        'name': 'PIRATES', 'art': 'la-barbe-rousse', 'headline': ('LA MER', 'PREND TOUT.'),
+        'name': 'PIRATES', 'art': 'la-barbe-noire', 'headline': ('LA MER', 'PREND TOUT.'),
         'ability': 'ABORDAGE',
         'description': ("À l’arrivée, prenez en cale une", 'créature adverse de coût autorisé,', 'sans la détruire.'),
         'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (139, 213, 216), 'accent_light': (193, 239, 236),
     },
     'vikings': {
-        'name': 'VIKINGS', 'art': 'valkyrie-des-glaces', 'headline': ('LE NORD', 'RIPOSTE.'),
+        'name': 'VIKINGS', 'art': 'jarl-au-marteau-de-guerre', 'headline': ('LE NORD', 'RIPOSTE.'),
         'ability': 'FURIE',
         'description': ("Tant qu’elle est blessée, la créature", "gagne de l’attaque et frappe", 'plus fort.'),
         'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (145, 205, 235), 'accent_light': (207, 236, 248),
     },
     'samourais': {
-        'name': 'SAMOURAÏS', 'art': 'kagutsuchi-flamme-originelle', 'headline': ('LE FEU', 'SURVIT.'),
+        'name': 'SAMOURAÏS', 'art': 'onna-musha-des-cendres', 'headline': ('LE FEU', 'SURVIT.'),
         'ability': 'HARAKIRI',
         'description': ("Quand elle meurt, la créature blesse", 'un ennemi au hasard, ou le sorcier', "adverse s’il n’y en a aucun."),
         'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (247, 143, 109), 'accent_light': (255, 195, 149),
     },
     'sable': {
-        'name': 'SABLE', 'art': 'cavalier-amazigh-du-desert', 'headline': ('LES DUNES', 'S’ÉVEILLENT.'),
+        'name': 'SABLE', 'art': 'kusayla-roi-des-imazighen', 'headline': ('LES DUNES', 'S’ÉVEILLENT.'),
         'ability': 'BUTIN',
         'description': ('Quand elle touche le sorcier adverse,', 'piochez une carte, puis défaussez-en', 'une.'),
         'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (227, 181, 104), 'accent_light': (251, 220, 158),
     },
     'egyptiens': {
-        'name': 'ÉGYPTIENS', 'art': 'la-devoreuse', 'headline': ('LA BALANCE', 'VOUS JUGE.'),
+        'name': 'ÉGYPTIENS', 'art': 'seigneur-des-machoires', 'headline': ('LA BALANCE', 'VOUS JUGE.'),
         'ability': 'TRIBUT',
         'description': ('Quand elle touche le sorcier adverse,', 'il perd des PV et vous en gagnez', 'autant.'),
         'footer': '140 CRÉDITS   ·   RARE GARANTIE',

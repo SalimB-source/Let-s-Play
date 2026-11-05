@@ -680,7 +680,7 @@
 .rpg-souk__paquet:focus-visible .rpg-souk__paquet-ombre { width: calc(var(--pw) * .84); opacity: .76; }
 
 /* Un reflet holographique et doré qui glisse exactement sous le pointeur,
-   posé AU-DESSUS de l'illustration de Salem (`z-index: 3`). */
+   posé AU-DESSUS de l'illustration du paquet (`z-index: 3`). */
 .rpg-souk__paquet-face--avant::before {
   content: '';
   position: absolute;
@@ -946,9 +946,10 @@
 .rpg-souk__paquet:disabled .rpg-souk__paquet-prix { filter: grayscale(.35) brightness(.9); }
 .rpg-souk__paquet:disabled .rpg-souk__paquet-prix::after { animation: none; }
 
-/* Quand le paquet porte l'illustration de Salem, on cadre serré sur le buste,
-   le regard et l'orbe du héros pour qu'il occupe généreusement tout le sachet,
-   avec une légère parallaxe sous le pointeur. */
+/* Les nouvelles figures des sets gardent leur silhouette et leurs attributs
+   (marteau, sabres, cheval, dieu-crocodile) dans le sachet. Salem et Vampires
+   conservent leur cadrage rapproché ; la parallaxe reste sur tous les paquets. */
+.rpg-souk__rayon[data-souk-rayon^="set-"] { --paquet-art-scale: 1.16; }
 .rpg-souk__paquet-carte {
   position: absolute;
   inset: 0;
@@ -959,7 +960,7 @@
   object-position: 50% 50%;
   border-radius: calc(var(--pw) * .014);
   transform-origin: 51% 20%;
-  transform: translate3d(var(--art-x, 0px), var(--art-y, 0px), 0) scale(1.58);
+  transform: translate3d(var(--art-x, 0px), var(--art-y, 0px), 0) scale(var(--paquet-art-scale, 1.58));
   transition: transform .14s ease-out;
   pointer-events: none;
 }

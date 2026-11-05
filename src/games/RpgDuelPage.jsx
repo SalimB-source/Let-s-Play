@@ -5217,8 +5217,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 {RPG_PROMO_SLIDES.map((slide, index) => (
                   <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--set${diapoAffichee === RPG_PROMO_DEBUT + index ? ' is-active' : ''}`} key={slide.id}>
                     {/* Le fond prolonge les couleurs ; seule l'affiche au premier plan porte le texte lisible, sans recadrage. */}
-                    <img className="rpg-mode-menu__promo-fond" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v2`} alt="" aria-hidden="true" />
-                    <img className="rpg-mode-menu__promo-affiche" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v2`} alt="" />
+                    <img className="rpg-mode-menu__promo-fond" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" aria-hidden="true" />
+                    <img className="rpg-mode-menu__promo-affiche" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" />
                   </div>
                 ))}
                 {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === RPG_OFFRE_DIAPO ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}

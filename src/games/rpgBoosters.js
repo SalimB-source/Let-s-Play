@@ -72,7 +72,7 @@ export const RAYONS = Object.freeze([
     titre: 'Le paquet Pirates',
     couleur: [...RPG_ELEMENTS],
     prix: 140,
-    vitrine: 'la-barbe-rousse',
+    vitrine: 'la-barbe-noire',
     texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes des Lettres de Marque (Abordage et Cale). Une rare garantie.',
   },
   {
@@ -90,7 +90,7 @@ export const RAYONS = Object.freeze([
     titre: 'Le paquet Samouraïs',
     couleur: [...RPG_ELEMENTS],
     prix: 140,
-    vitrine: 'kagutsuchi-flamme-originelle',
+    vitrine: 'onna-musha-des-cendres',
     texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes du Serment du Soleil rouge (Harakiri et Résonance). Une rare garantie.',
   },
   {
@@ -99,7 +99,7 @@ export const RAYONS = Object.freeze([
     titre: 'Le paquet Sable',
     couleur: [...RPG_ELEMENTS],
     prix: 140,
-    vitrine: 'cavalier-amazigh-du-desert',
+    vitrine: 'kusayla-roi-des-imazighen',
     texte: 'Toutes les cartes du Souk, avec plus de chances de trouver des cartes de couleur Sable, même hybrides (Butin et équipements). Une rare garantie.',
   },
   {
@@ -108,7 +108,7 @@ export const RAYONS = Object.freeze([
     titre: 'Le paquet Égyptiens',
     couleur: [...RPG_ELEMENTS],
     prix: 140,
-    vitrine: 'la-devoreuse',
+    vitrine: 'seigneur-des-machoires',
     texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes de la Balance des Heures (Prix et Tribut). Une rare garantie.',
   },
 ]);
