@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { choisirCibleAutoIA } from '../src/games/rpgAI.js';
 import { RPG_SOLEIL_ROUGE_CARDS, RPG_SOLEIL_ROUGE_SET_ID } from '../src/games/rpgSoleilRouge.js';
-import { RPG_DECKS_ARCHETYPES, cardById, cardColors, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
+import { RPG_DECKS_ARCHETYPES, cardById, cardColors, cardHasPrintedType, cardReceivesResonance, cardArtId, rpgValiderDeck } from '../src/games/rpgCards.js';
 import { COLLECTION_DEPART, carteReveleePar } from '../src/games/rpgCollection.js';
 import { RPG_STORY_DECKS } from '../src/games/rpgStoryTours.js';
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
@@ -952,10 +952,12 @@ test('Susanoo exile aussi un porteur des nouvelles armes sans perdre son équipe
   assert.ok(!duel.sorcier.cimetiere.includes('oni-de-la-fournaise'));
 });
 
-test('Tojiro, le pourfendeur : 5/5 mythique à 6, Esquive et Contre-attaque', () => {
+test('Tojiro, le pourfendeur : samouraï vampire 5/5 mythique à 6, Esquive et Contre-attaque', () => {
   const carte = cardById('tojiro-le-pourfendeur');
   assert.equal(carte.rarity, 'mythique');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 5, 1]);
+  assert.equal(cardHasPrintedType(carte, 'Vampire'), true);
+  assert.equal(cardHasPrintedType(carte, 'Samouraï'), true);
   assert.equal(carte.esquive, true);
   assert.equal(carte.contreAttaque, true);
   assert.match(carte.text, /Contre-attaque — /);
