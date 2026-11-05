@@ -3349,5 +3349,21 @@ body:has(.mirage-game-shell.is-low-graphics)::after,
 body:has(.mirage-game-shell.is-low-graphics) .neon-backdrop { display: none; }
 
 /* Le mode temporairement verrouillé reste identifiable sans sembler jouable. */
-.mirage-mode-action.is-locked { opacity: .72; cursor: not-allowed; }
-.mirage-soon-badge { color: #f4d583; font-style: normal; font-size: .75em; }
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked {
+  cursor: not-allowed;
+  border-color: #777;
+  background: linear-gradient(125deg, #393939, #242424);
+  color: #f3f3f3;
+  box-shadow: none;
+}
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked::after { background: none; }
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked .mirage-mode-symbol,
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked .mirage-mode-copy > span,
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked .mirage-mode-copy small { color: #dedede; }
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked .mirage-mode-cta,
+.mirage-mode-picker.is-actions .mirage-mode-action.is-locked:hover .mirage-mode-cta {
+  background: #555;
+  color: #fff;
+  box-shadow: none;
+}
+.mirage-soon-badge { color: #eee; font-style: normal; font-size: .75em; }
