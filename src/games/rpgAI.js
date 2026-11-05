@@ -513,6 +513,16 @@ export function choisirCibleAutoIA(duel, cote, carte, options = {}) {
       .sort((a, b) => Number(paradeContreSort(a, carte)) - Number(paradeContreSort(b, carte))
         || (menace(b) + valeurEntite(b) * 0.2) - (menace(a) + valeurEntite(a) * 0.2))[0]?.id ?? null;
   }
+  if (carte?.arrivee?.type === 'exil-temporaire') {
+    return duel[cote].creatures
+      .filter((entite) => duelCardById(entite.carteId)?.kind !== 'site')
+      .sort((a, b) => Number(b.pv < b.pvMax) - Number(a.pv < a.pvMax))[0]?.id ?? null;
+  }
+  if (carte?.arrivee?.type === 'renvoi-ou-destruction') {
+    return duel[autre(cote)].creatures.filter((entite) => duelCardById(entite.carteId)?.kind !== 'site'
+      && !estProtegee(entite, cardColors(carte)))
+      .sort((a, b) => menace(b) - menace(a))[0]?.id ?? null;
+  }
   if (carte?.arrivee?.type === 'retour-main' || carte?.effet?.type === 'retour-main') {
     return meilleureCibleRenvoiIA(duel, cote, carte);
   }
@@ -1459,7 +1469,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
         const gain = tues.reduce((somme, entite) => somme + valeurEntite(entite), 0) + blessees.length * 1.2 + echo
           // Le gel de zone fige les survivantes réellement touchées en plus
           // de la blessure : un tour entier de leur attaque en moins. Quand
-          // il n'est qu'une chance (25 % pour la Brume du fjord, une sur deux
+          // il n'est qu'une chance (15 % pour la Brume du fjord, une sur deux
           // pour le Hurlement), il se paie à sa probabilité.
           + (effet.gel ? touchees.length * 1.2 : blessees.length * chanceGel * 1.2)
           - ripostes;
@@ -1825,6 +1835,21 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
     if (arrivee.type === 'pioche-defausse') {
       const net = Math.max(0, (arrivee.pioche ?? 0) - (arrivee.defausse ?? 0));
       score += 1 + net * 1.5 + (camp.main.length <= 3 ? 2 : 0);
+    }
+    if (arrivee.type === 'renvoi-ou-destruction') {
+      cibleId = choisirCibleAutoIA(duel, cote, carte);
+      const cible = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (cible) {
+        score += moteur.rpgCoutEntite(cible) <= arrivee.coutDestructionMax
+          ? 3 + valeurEntite(cible) : 1.5 + menace(cible) * 0.4;
+      }
+    }
+    if (arrivee.type === 'exil-temporaire') {
+      cibleId = choisirCibleAutoIA(duel, cote, carte);
+      const allie = camp.creatures.find((entite) => entite.id === cibleId);
+      // Un retrait temporaire coûte du tempo : il vaut surtout pour sauver
+      // une créature blessée ou rejouer sa capacité d'arrivée à la fin du tour.
+      if (allie) score += 0.5 + (allie.pv < allie.pvMax ? 1.5 : 0);
     }
     if (['retour-main', 'exil'].includes(arrivee.type)) {
       const cibleRenvoi = arrivee.type === 'exil' ? choisirCibleAutoIA(duel, cote, carte) : meilleureCibleRenvoiIA(duel, cote, carte);

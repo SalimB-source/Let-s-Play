@@ -33,6 +33,7 @@ test('Le Général gagne de la vie en attaquant', () => {
   assert.ok(rpgLancerAttaque(d, 'joueur', [general.id], {}).ok); assert.equal(d.joueur.pv, 12);
 });
 test('Le Général peut être joué pendant le tour adverse en PvP', () => {
-  const d = duel(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier'; d.joueur.main.push(id);
+  const d = duel(); poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
+  d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier'; d.joueur.main.push(id);
   assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: id }).ok);
 });

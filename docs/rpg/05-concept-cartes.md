@@ -277,7 +277,7 @@ d'arrivée de la Valkyrie des glaces).
 
 Le **vent froid** de la Valkyrie des glaces ne choisit pas son camp : 1 dégât
 à **toutes** les créatures de la table, les siennes comprises — elle encaisse
-son propre point de dégât et court la même chance de gel (25 %) que les
+son propre point de dégât et court la même chance de gel (15 %) que les
 autres. C'est le même drapeau `inclutAllies` que l'Ifrit al-Ahmar ; la
 brume de l'animation couvre donc les deux rangées (`rpg-mass-freeze--table`)
 et non la seule ligne adverse.
@@ -360,7 +360,7 @@ agressif du Sable.
   ne porte **pas de bouclier**, elle glisse dans la pente. À 1 PV, une attaque
   sur trois seulement est annulée — la mythique se joue en tempo, pas en mur.
 - **Attaque ciblée** — déclarée attaquante, elle peut frapper une créature
-  adverse de votre choix (25 % de chances de rater, 100 % contre le sorcier) :
+  adverse de votre choix (15 % de chances de rater, 100 % contre le sorcier) :
   ses **3 dégâts** passent **sans riposte** et son attaque s'arrête là. C'est la
   mécanique des archers du Soleil rouge, et son grand arc la rend naturelle.
 - **Rien à l'arrivée, aucune cible à désigner** : `arriveeCiblePortee` rend

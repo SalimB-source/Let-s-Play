@@ -100,7 +100,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 4, atk: 3, def: 3, rarity: 'rare',
     typeLine: 'Créature — Humaine · Guerrière · Samouraï',
     esquive: true,
-    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 15 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur elle ne porte pas du tout. Les capacités ne s’esquivent pas.',
     flavor: 'La naginata décrit un cercle ; personne n’en franchit le bord.',
   }),
   carte({
@@ -125,8 +125,8 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     cost: 6, atk: 2, def: 6, rarity: 'mythique',
     typeLine: 'Créature légendaire — Kami · Feu',
     coupRapide: true,
-    coupCritique: { chance: 0.25, fois: 4 },
-    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — En combat, 25 % de chances de frapper 4 fois la créature adverse.',
+    coupCritique: { chance: 0.15, fois: 4 },
+    text: 'Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Coup critique — En combat, 15 % de chances de frapper 4 fois la créature adverse.',
     flavor: 'Le feu avait un nom avant que les hommes apprennent à le contenir.',
   }),  // Trois samouraïs de plus : une recrue commune, un soutien rare et un
   // daimyō mythique. Leur type imprimé suffit à recevoir la Résonance samouraï.
@@ -160,7 +160,7 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     typeLine: 'Créature légendaire — Humain · Samouraï',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Les capacités ne s’esquivent pas.',
+    text: 'Esquive — 15 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({
@@ -184,11 +184,11 @@ export const RPG_SOLEIL_ROUGE_ARMES = [
     kind: 'arme', cost: 3, rarity: 'rare',
     colors: ['braise', 'sable'], colorCost: { braise: 1, sable: 1 },
     typeLine: 'Arme — Lame de braise et de sable',
-    bonus: { atk: 1, def: 0 }, donne: { coupRapide: true, coupCritique: 0.25 }, durabilite: 1,
+    bonus: { atk: 1, def: 0 }, donne: { coupRapide: true, coupCritique: 0.15 }, durabilite: 1,
     // Le Lien du deuxième sabre : le Cavalier en porte deux, la lame en mord
     // une fois de plus. Attaque ciblée et coup critique restent intacts.
     lien: { ancre: 'cavalier-des-deux-sabres', bonus: { atk: 2, def: 0 } },
-    text: 'Arme — +1/+0, Attaque ciblée, Coup critique (25 %). Endurance 1 : détruite après une attaque ou une défense. Avec Cavalier des deux sabres en jeu : +2/+0.',
+    text: 'Arme — +1/+0, Attaque ciblée, Coup critique (15 %). Endurance 1 : détruite après une attaque ou une défense. Avec Cavalier des deux sabres en jeu : +2/+0.',
     flavor: 'Une moitié mord ; l’autre choisit où.',
   }),
 ];
@@ -200,8 +200,8 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     kind: 'magie', cost: 4, rarity: 'rare',
     typeLine: 'Arme — Sabre maudit',
     cibles: ['creature-amie'],
-    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.25, volDeVie: true },
-    text: 'Arme — Le porteur gagne +2/+1, Coup critique (25 %) et Vol de vie. Le sabre tombe avec son porteur.',
+    effet: { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.15, volDeVie: true },
+    text: 'Arme — Le porteur gagne +2/+1, Coup critique (15 %) et Vol de vie. Le sabre tombe avec son porteur.',
     flavor: 'La lame prend la force. La main en paie le prix.',
   }),
   carte({
@@ -235,7 +235,7 @@ export const RPG_SOLEIL_ROUGE_MAGIES = [
     cibles: ['soi'],
     effet: { type: 'buff', atk: 2, def: 1, coupRapide: true, tours: 1 },
     lien: { ancre: 'daimyo-du-soleil-rouge', effet: { atk: 3, def: 1 } },
-    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (25 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
+    text: 'Vos créatures gagnent +2/+1 et Attaque ciblée (15 % de chances de rater contre une créature, 100 % de chances de toucher l’adversaire) jusqu’à la fin du tour. Avec Daimyō du Soleil rouge en jeu : +3/+1 au lieu de +2/+1.',
     flavor: 'Ce n’est pas l’acier qui prête serment, mais la main qui le reçoit.',
   }),
 ];

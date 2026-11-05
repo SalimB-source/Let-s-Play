@@ -78,7 +78,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Magies',
     cardIds: ['hurlement-du-blizzard', 'brume-du-fjord', 'poigne-de-givre'],
     title: 'Des dégâts qui peuvent geler',
-    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, puis chaque survivante tire sa chance : une sur deux est gelée par le Hurlement, mais la Brume ne gèle qu’avec 25 % de chances. Une créature gelée ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour ; les créatures tuées par les dégâts n’ont plus rien à geler.',
+    text: 'La Poigne de givre gèle toujours la créature qu’elle blesse. Le Hurlement du blizzard (2 dégâts) et la Brume du fjord (1 dégât) frappent toutes les créatures adverses, puis chaque survivante tire sa chance : une sur deux est gelée par le Hurlement, mais la Brume ne gèle qu’avec 15 % de chances. Une créature gelée ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour ; les créatures tuées par les dégâts n’ont plus rien à geler.',
   },
   {
     id: 'contresorts',
@@ -141,7 +141,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['fennec-des-decombres'],
     title: 'Rapidité et Esquive changent les échanges',
-    text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 25 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie — leur effet sur elle ne porte pas du tout. Les capacités de créatures, elles, ne s’esquivent toujours pas.',
+    text: 'Rapidité permet d’attaquer dès le tour où la créature arrive. Esquive donne 15 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie — leur effet sur elle ne porte pas du tout. Les capacités de créatures, elles, ne s’esquivent toujours pas.',
   },
   {
     id: 'contre-attaque',
@@ -232,7 +232,7 @@ export const RPG_CARD_LESSONS = Object.freeze([
     section: 'Capacités des créatures',
     cardIds: ['feriel', 'djinn-de-foudre'],
     title: 'Attaque ciblée vise avant les blessures de combat',
-    text: 'Quand vous sélectionnez une créature avec Attaque ciblée comme attaquant, vous devez désigner une créature adverse si elle en contrôle une : l’attaque ciblée lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 25 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Si aucune créature adverse n’est en jeu, elle attaque l’adversaire normalement avec 100 % de chances de toucher. La cible est choisie avant de confirmer l’attaque.',
+    text: 'Quand vous sélectionnez une créature avec Attaque ciblée comme attaquant, vous devez désigner une créature adverse si elle en contrôle une : l’attaque ciblée lui inflige la valeur d’attaque de votre créature, sans riposte, avant les blessures de combat (avec 15 % de chances de rater sa cible) — et l’attaque s’arrête sur cette frappe. Votre créature n’est alors ni bloquée, ni échangée, et le sorcier ne prend rien. Si aucune créature adverse n’est en jeu, elle attaque l’adversaire normalement avec 100 % de chances de toucher. La cible est choisie avant de confirmer l’attaque.',
   },
   {
     id: 'capacite-de-combat',

@@ -122,7 +122,7 @@ test('journal : la Valkyrie des glaces inflige 1 dégât à toutes et peut geler
     assert.equal(pose.ok, true);
     assert.equal(pose.arriveeEnAttente, undefined, 'la vague ne désigne rien, elle se résout avec la pose');
     assert.equal(chien.pv, pvAvant - 1, `${cote} : l’adverse encaisse 1 dégât`);
-    assert.ok(chien.gelToursRestants >= 1, 'avec rng=0 le gel à 25% prend');
+    assert.ok(chien.gelToursRestants >= 1, 'avec rng=0 le gel à 15% prend');
   }
 });
 

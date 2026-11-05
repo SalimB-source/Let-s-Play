@@ -126,21 +126,21 @@ test('la Cuirasse de sel donne +0/+3 et Esquive contre les attaques comme contre
   assert.equal(porteur.def, 5);
   assert.equal(porteur.esquive, true, 'l’arme donne le mot-clé, sans chiffre');
 
-  // Jet forcé à 24 %, sous le seuil de 25 % : l’attaque entière est esquivée.
-  rpgReglerHasard(duel, () => 0.24);
+  // Jet forcé à 14 %, sous le seuil de 15 % : l’attaque entière est esquivée.
+  rpgReglerHasard(duel, () => 0.14);
   const attaquant = poser(duel, 'sorcier', 'chien-du-guet');
   rendrePret(duel, attaquant);
   const res = rpgLancerAttaque(duel, 'sorcier', [attaquant.id], { [attaquant.id]: [porteur.id] });
   assert.equal(res.ok, true);
   assert.equal(porteur.pv, 5, 'l’attaque esquivée ne laisse aucun dégât sur 5 de défense');
 
-  // Le même seuil s’applique aux sorts : à 24 %, la magie est esquivée ;
-  // à 25 %, le jet échoue et ses 3 dégâts passent.
+  // Le même seuil s’applique aux sorts : à 14 %, la magie est esquivée ;
+  // à 15 %, le jet échoue et ses 3 dégâts passent.
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 5, 'la magie est esquivée à 24 %');
-  rpgReglerHasard(duel, () => 0.25);
+  assert.equal(porteur.pv, 5, 'la magie est esquivée à 14 %');
+  rpgReglerHasard(duel, () => 0.15);
   rpgBlesserCreature(duel, 'joueur', porteur.id, 3, 'braise', null, 'magie');
-  assert.equal(porteur.pv, 2, 'à 25 %, l’Esquive échoue et la magie retire ses 3 points');
+  assert.equal(porteur.pv, 2, 'à 15 %, l’Esquive échoue et la magie retire ses 3 points');
 });
 
 test('le Javelot du beffroi donne l’Attaque ciblée, que le remplacement retire', () => {
@@ -367,7 +367,7 @@ test('la Sphère de rotation donne +1/+2 et un Bouclier à son porteur', () => {
   assert.equal(armeById('sphere-de-rotation').donne.bouclier, 1);
 });
 
-test('la sphère de rotation renvoie la créature adverse en main avant les dégâts avec 25 % de chance', () => {
+test('la sphère de rotation renvoie la créature adverse en main avant les dégâts avec 15 % de chance', () => {
   const duel = duelVide();
   const porteur = poser(duel, 'joueur', 'chien-du-guet'); // 2/2 → 3/4 avec la sphère de rotation
   const bloqueur = poser(duel, 'sorcier', 'chien-du-guet'); // 2/2 en blocage
@@ -375,8 +375,8 @@ test('la sphère de rotation renvoie la créature adverse en main avant les dég
   rendrePret(duel, porteur);
   rendrePret(duel, bloqueur);
 
-  // Jet à 0.20 < 0.25 : le renvoi fonctionne AVANT les dégâts.
-  rpgReglerHasard(duel, () => 0.20);
+  // Jet à 0.14 < 0.15 : le renvoi fonctionne AVANT les dégâts.
+  rpgReglerHasard(duel, () => 0.14);
   const mainAvant = duel.sorcier.main.length;
   const pvAvant = porteur.pv;
   const res = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [bloqueur.id] });
@@ -385,14 +385,14 @@ test('la sphère de rotation renvoie la créature adverse en main avant les dég
   assert.equal(duel.sorcier.creatures.length, 0, 'la créature a quitté le battlefield');
   assert.equal(porteur.pv, pvAvant, 'le porteur n’a pas subi de dégâts (renvoi avant les dégâts)');
 
-  // Jet à 0.30 >= 0.25 : pas de renvoi, les dégâts de combat sont échangés normalement.
+  // Jet à 0.15 >= 0.15 : pas de renvoi, les dégâts de combat sont échangés normalement.
   const duel2 = duelVide();
   const porteur2 = poser(duel2, 'joueur', 'chien-du-guet'); // 2/2 → 3/4
   const bloqueur2 = poser(duel2, 'sorcier', 'dune-marchante'); // 2/4
   equiper(duel2, 'joueur', 'sphere-de-rotation', porteur2);
   rendrePret(duel2, porteur2);
   rendrePret(duel2, bloqueur2);
-  rpgReglerHasard(duel2, () => 0.30);
+  rpgReglerHasard(duel2, () => 0.15);
   const mainAvant2 = duel2.sorcier.main.length;
   const res2 = rpgLancerAttaque(duel2, 'joueur', [porteur2.id], { [porteur2.id]: [bloqueur2.id] });
   assert.equal(res2.ok, true);

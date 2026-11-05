@@ -56,7 +56,7 @@ meilleures raisons d'attaquer.
 | 8 | Jitte d'Amayas | rare | 4 | +2/+1 | Protection contre les Ténèbres |
 | 9 | Lame des ergs | rare | 4 | +3/+1 | Arme vivante : apporte son propre porteur |
 | 10 | Takouba de Tin Hinan | **mythique** | 4 | +3/+2 | Attaque ciblée + deux déclencheurs de combat |
-| 11 | sphère de rotation | rare | 3 | +1/+2 | Blessure au combat → 25 % renvoi avant dégâts (JoJo) |
+| 11 | sphère de rotation | rare | 3 | +1/+2 | Blessure au combat → 15 % renvoi avant dégâts (JoJo) |
 
 ---
 
@@ -93,7 +93,7 @@ difficile à tuer au combat — et donne enfin une cible d'équipement aux créa
 
 ### 3. Javelot du beffroi — commune — 2
 
-> **Arme — Javelot.** Le porteur gagne +2/+0 et **Attaque ciblée** : 25 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
+> **Arme — Javelot.** Le porteur gagne +2/+0 et **Attaque ciblée** : 15 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse.
 >
 > *« Il ne vise pas l'homme. Il vise la fenêtre derrière lui. »*
 
@@ -236,7 +236,7 @@ même traitement que les jetons de Tarek.
 
 ### 10. Takouba de Tin Hinan — mythique (1 par deck) — 4
 
-> **Arme — Takouba.** Le porteur gagne +3/+2 et **Attaque ciblée** (25 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
+> **Arme — Takouba.** Le porteur gagne +3/+2 et **Attaque ciblée** (15 % de chances de rater une créature adverse, 100 % de précision contre le sorcier adverse). **Quand le
 > porteur inflige des blessures de combat à une créature, piochez une carte.
 > Quand il en inflige au sorcier adverse, créez un jeton chien de sable 1/1.**
 >
@@ -348,15 +348,15 @@ qui se joue la table vide sans rien désigner.
 ### 11. sphère de rotation — rare — 3
 
 > **Arme — Boule d'acier.** Le porteur gagne +1/+2. Quand le porteur se bat
-> avec une créature adverse : 25 % de chances de la renvoyer dans la main de
+> avec une créature adverse : 15 % de chances de la renvoyer dans la main de
 > son propriétaire **avant d'assigner les dégâts de combat**.
 >
 > *« Une boule d'acier verte qui tourne rapidement sur elle-même dans le creux d'une main. »*
 
 `element: 'eau'`, `colors: ['eau', 'sable']`, `bonus: { atk: 1, def: 2 }` et
-`porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 }`.
+`porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.15 }`.
 
-Le moteur gère le tirage des 25 % via le hasard du duel (`hasardParDuel`)
+Le moteur gère le tirage des 15 % via le hasard du duel (`hasardParDuel`)
 **avant** d'appeler `appliquerDegatsDeCombatSimultanes`. La créature renvoyée
 ne subit ni n'inflige de dégâts durant ce combat. Une créature protégée contre
 la couleur Eau ou Sable échappe au renvoi.

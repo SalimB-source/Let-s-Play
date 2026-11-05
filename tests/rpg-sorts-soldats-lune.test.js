@@ -82,11 +82,11 @@ test('La lance réussit son attaque ciblée même avec le jet habituellement rat
   assert.ok(d.sorcier.cimetiere.includes('dune-marchante'));
 });
 
-test('La lance donne un coup critique à 25 % et le retire quand elle est remplacée', () => {
+test('La lance donne un coup critique à 15 % et le retire quand elle est remplacée', () => {
   const d = duel(); const chien = poser(d, 'joueur', 'chien-du-guet');
   d.joueur.main.push(ids[3], ids[2]);
   assert.ok(rpgJouerArme(d, 'joueur', ids[3], chien.id).ok);
-  assert.deepEqual(chien.coupCritique, { chance: 0.25, fois: 2 });
+  assert.deepEqual(chien.coupCritique, { chance: 0.15, fois: 2 });
   assert.ok(rpgJouerArme(d, 'joueur', ids[2], chien.id).ok);
   assert.equal(chien.coupCritique, null);
 });
@@ -94,10 +94,10 @@ test('La lance additionne son critique à celui du porteur sans réduire son mul
   const d = duel(); const porteur = poser(d, 'joueur', 'kagutsuchi-flamme-originelle');
   d.joueur.main.push(ids[3]);
   assert.ok(rpgJouerArme(d, 'joueur', ids[3], porteur.id).ok);
-  assert.deepEqual(porteur.coupCritique, { chance: 0.5, fois: 4 });
+  assert.deepEqual(porteur.coupCritique, { chance: 0.3, fois: 4 });
   d.joueur.main.push(ids[2]);
   assert.ok(rpgJouerArme(d, 'joueur', ids[2], porteur.id).ok);
-  assert.deepEqual(porteur.coupCritique, { chance: 0.25, fois: 4 });
+  assert.deepEqual(porteur.coupCritique, { chance: 0.15, fois: 4 });
 });
 test('Le sabre confère le Vol de vie pour son attaque puis le perd à sa destruction', () => {
   const d = duel(); const chien = poser(d, 'joueur', 'chien-du-guet');

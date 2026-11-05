@@ -27,7 +27,7 @@ test('Braise et sable est une arme du catalogue, pas une magie ni une créature 
   assert.equal(magieById(carte.id), null);
   assert.equal(carte.honneur, undefined);
   assert.deepEqual(carte.bonus, { atk: 1, def: 0 });
-  assert.deepEqual(carte.donne, { coupRapide: true, coupCritique: 0.25 });
+  assert.deepEqual(carte.donne, { coupRapide: true, coupCritique: 0.15 });
   assert.equal(carte.durabilite, 1);
   assert.match(carte.text, /Endurance 1/);
 });
@@ -41,7 +41,7 @@ test('une attaque use Braise et sable et retire son bonus et ses pouvoirs à zé
   assert.equal((porteur.armes ?? []).length, 0, 'la lame occupe le vrai emplacement d’arme');
   assert.equal(porteur.atk, 3);
   assert.equal(porteur.coupRapide, true);
-  assert.deepEqual(porteur.coupCritique, { chance: 0.25, fois: 2 });
+  assert.deepEqual(porteur.coupCritique, { chance: 0.15, fois: 2 });
   porteur.ready = true;
   assert.equal(rpgAttaquerSorcier(duel, 'joueur', porteur.id).ok, true);
   assert.equal(porteur.arme, null);

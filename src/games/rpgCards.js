@@ -446,16 +446,16 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    rapidite: true, reactionTourAdverse: true,
+    rapidite: true, reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
     combat: { type: 'degats-creature-combattue', amount: 1, quand: 'attaque-bloquee' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse est déjà blessée. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',
     flavor: 'La première étincelle précède toujours sa lame.',
   },
   {
     id: 'guetteuse-des-marees', name: 'Guetteuse des marées', element: 'eau',
     cost: 2, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Gardienne',
-    destruction: { type: 'exil-temporaire', cible: 'creature-amie' },
-    text: 'À sa destruction : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
+    arrivee: { type: 'exil-temporaire', cible: 'creature-amie', choisirCible: true },
+    text: 'À son arrivée : retirez une autre créature alliée de la partie. Elle revient en jeu à la fin du tour.',
     flavor: 'La marée reprend ce qu’elle protège.',
   },
   {
@@ -471,9 +471,9 @@ export const RPG_CREATURE_CARDS = [
     id: 'sentinelle-des-sables', name: 'Sentinelle des sables',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 3, def: 2, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true,
+    typeLine: 'Créature — Humain et Vampire', reactionAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaquant',
     arrivee: { type: 'degats', amount: 3, cible: 'creature', attaquanteSeulement: true },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse attaque. Quand elle arrive : elle inflige ses dégâts d’attaque à une créature attaquante ciblée.',
     flavor: 'Le désert attend que ses ennemis avancent.',
   },
   ...RPG_SOLEIL_ROUGE_CREATURES,
@@ -622,7 +622,7 @@ export const RPG_CREATURE_CARDS = [
     // L'éclaireuse ne pioche plus : sa valeur est dans son arc. Attaque
     // ciblée — elle désigne une créature adverse avant le combat.
     coupRapide: true,
-    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Attaque ciblée — Sélectionnée pour attaquer, Tislit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'Elle connaît chaque sentier entre les cèdres et les crêtes.',
   },
   {
@@ -652,13 +652,13 @@ export const RPG_CREATURE_CARDS = [
     // couvrir. Elle descend la montagne avant tout le monde — sa chèvre de
     // guerre ne connaît pas le mal d'invocation (Rapidité), son grand arc
     // ouvre le combat à son arrivée (Attaque ciblée), et la pente la rend
-    // insaisissable (Esquive, 25 %) : ce qu'elle ne pare pas, elle l'évite.
+    // insaisissable (Esquive, 15 %) : ce qu'elle ne pare pas, elle l'évite.
     // Le prix de cette vitesse est écrit dans sa défense : 1 PV, elle meurt
     // au premier échange qu'elle ne voit pas venir.
     rapidite: true,
     coupRapide: true,
     esquive: true,
-    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Rapidité — Peut attaquer le tour où elle arrive. Esquive — 15 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Attaque ciblée — Sélectionnée pour attaquer, Bouchra peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'La chèvre connaît chaque pierre du sentier ; la flèche n’a plus qu’à choisir où frapper.',
   },
   {
@@ -805,7 +805,7 @@ export const RPG_CREATURE_CARDS = [
     element: 'braise', cost: 3, atk: 3, def: 1, rarity: 'rare',
     typeLine: 'Créature — Djinn', art: 'djinn-de-la-fleche-ardente',
     rapidite: true, coupRapide: true, furtif: true, ephemere: true,
-    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 25 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour.',
+    text: 'Rapidité. Attaque ciblée — S’il attaque et qu’une créature adverse est en jeu, il doit en choisir une et lui inflige ses dégâts d’attaque sans riposte ; 15 % de chances de rater. Sinon, il peut attaquer le sorcier avec 100 % de chances de toucher. Furtivité — Détruit à la fin du tour.',
     flavor: 'Une flèche de feu, puis le silence.',
   },
   {
@@ -860,7 +860,7 @@ export const RPG_CREATURE_CARDS = [
     coupRapide: true,
     furtif: true,
     ephemere: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Furtivité — Détruit à la fin du tour.',
+    text: 'Rapidité. Attaque ciblée — Sélectionné pour attaquer, le Djinn peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Furtivité — Détruit à la fin du tour.',
     flavor: 'Il jaillit de l’orage sec avant que le tonnerre n’ait touché la dune.',
   },
   // ── Serment des Neuf Hivers : la Neige, ses valkyries, ses guerriers et ses drakkars ──
@@ -885,7 +885,7 @@ export const RPG_CREATURE_CARDS = [
     cost: 4, atk: 2, def: 5, rarity: 'inhabituelle',
     typeLine: 'Créature — Archère viking',
     coupRapide: true, gelCombatChance: 0.15,
-    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 25 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
+    text: 'Attaque ciblée — Si elle attaque et qu’une créature adverse est en jeu, elle doit en viser une : elle lui inflige ses dégâts sans riposte, avec 15 % de chances de rater. Sinon, elle peut attaquer le sorcier avec 100 % de chances de toucher. Avant les dégâts de combat : 15 % de chances de geler chaque créature adverse qu’elle combat.',
     flavor: 'Ses flèches portent le froid des longs hivers.',
   },
   {
@@ -1035,8 +1035,8 @@ export const RPG_CREATURE_CARDS = [
     // `inclutAllies` : le vent froid balaie la table entière, le camp de la
     // Valkyrie compris — mais `exclutSoi` l'épargne elle-même : son propre
     // souffle ne la blesse ni ne la gèle, contrairement à l'Ifrit al-Ahmar.
-    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25 },
-    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 25 % de chances de geler chacune d’elles.',
+    arrivee: { type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.15 },
+    text: 'Envol — Ne peut être bloquée que par une créature avec Envol. Bouclier — Le premier sort ou effet de créature adverse qui l’atteint est bloqué, puis son bouclier tombe. Quand elle arrive : elle inflige 1 dégât à toutes les autres créatures, elle non comprise, et a 15 % de chances de geler chacune d’elles.',
     flavor: 'Elle choisit qui monte, et qui reste dans la neige.',
   },
   {
@@ -1130,97 +1130,97 @@ export const RPG_CREATURE_CARDS = [
     id: 'garde-du-trone-givre', set: 'soldats-de-la-lune', name: 'Garde du trône givré',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, provocation: true, furie: 1,
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
+    typeLine: 'Créature — Viking et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'attaquant', provocation: true, furie: 1,
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire déclare une attaque. Provocation — Quand elle attaque, elle doit être bloquée si possible. Furie 1 — Tant qu’elle est blessée, elle gagne +1/+0.',
     flavor: 'Il ne cède pas le passage, même quand la glace se teinte de rouge.',
   },
   {
     id: 'general-du-croissant-noir', set: 'soldats-de-la-lune', name: 'Général du croissant noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 2, rarity: 'rare', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true, volDeVie: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    reactionTourAdverse: true, conditionEmbuscade: 'autre-vampire', volDeVie: true, resonance: 1, resonanceTribu: 'vampire',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si vous contrôlez un autre Vampire. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Il commande à voix basse ; les ombres transmettent ses ordres.',
   },
   {
     id: 'fleau-de-la-lune-noire', set: 'soldats-de-la-lune', name: 'Fléau de la lune noire',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
     cost: 8, atk: 7, def: 7, rarity: 'mythique',
-    typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true,
+    typeLine: 'Créature légendaire — Humain et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'trois-adversaires',
     volDeVie: true, overkill: true, resonance: 1, resonanceTribu: 'vampire',
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire contrôle au moins trois créatures. Vol de vie — Vous gagnez la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur. Overkill — Les dégâts qui dépassent la défense des bloqueurs atteignent le sorcier adverse. Résonance vampire — Tant qu’il est en jeu, tous les Vampires des deux camps, lui compris, gagnent +1/+1.',
     flavor: 'Quand le ciel devient noir, son armée ne laisse que des cendres.',
   },
   {
     id: 'eclipse-silencieuse', set: 'soldats-de-la-lune', name: 'Éclipse silencieuse',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 4, atk: 3, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true,
+    cost: 3, atk: 2, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    reactionTourAdverse: true, conditionEmbuscade: 'attaquant-force-2',
     arrivee: { type: 'debuff', cible: 'creature', atk: -2, def: 0, tours: 1 },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse de force 2 ou plus attaque. À son arrivée : une créature adverse ciblée gagne −2/+0 jusqu’à la fin du tour.',
     flavor: 'La lumière s’éteint avant que la lame ne frappe.',
   },
   {
     id: 'gardienne-du-croissant', set: 'soldats-de-la-lune', name: 'Gardien au croissant',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
-    cost: 4, atk: 4, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true,
+    cost: 4, atk: 3, def: 1, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    reactionTourAdverse: true, conditionEmbuscade: 'allie-cible',
     arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, bonusDef: 2 },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une de vos créatures est ciblée par un sort, un effet annoncé ou une Attaque ciblée adverse. À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier qui bloque le prochain sort ou effet de créature adverse qui l’atteint.',
     flavor: 'Son croissant veille sur ceux qui n’ont plus de soleil.',
   },
   {
     id: 'traqueur-des-nuits-sans-lune', set: 'soldats-de-la-lune', name: 'Traqueur des nuits sans lune',
     element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
-    cost: 4, atk: 3, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true,
-    arrivee: { type: 'retour-main', cible: 'creature', adverseSeulement: true },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : renvoyez une créature adverse ciblée dans la main de son propriétaire.',
+    cost: 4, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
+    reactionTourAdverse: true, conditionEmbuscade: 'deux-attaquants',
+    arrivee: { type: 'renvoi-ou-destruction', cible: 'creature', coutRenvoiMin: 4, coutDestructionMax: 3 },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire déclare au moins deux attaquants. À son arrivée : choisissez une créature adverse. Si elle coûte 4 ou plus, renvoyez-la dans la main de son propriétaire ; si elle coûte 3 ou moins, détruisez-la.',
     flavor: 'Nul ne voit le pas qui l’éloigne.',
   },
   {
     id: 'sanguinaire-des-dunes', set: 'soldats-de-la-lune', name: 'Sanguinaire des dunes',
     element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
     cost: 3, atk: 3, def: 2, rarity: 'mythique', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true,
+    reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
     arrivee: { type: 'degats', amount: 1, amountSiBlessee: 2, cible: 'toutes-creatures' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse est déjà blessée. À son arrivée : il inflige 1 dégât à chaque créature adverse, ou 2 dégâts à celles qui sont déjà blessées.',
     flavor: 'Dans le sable brûlant, la nuit a soif.',
   },
   {
     id: 'porte-etendard-de-leclipse', set: 'soldats-de-la-lune', name: 'Porte-étendard de l’éclipse',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    reactionTourAdverse: true,
+    reactionTourAdverse: true, conditionEmbuscade: 'vampire-attaque',
     arrivee: { type: 'buff', atk: 0, def: 2, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si un de vos Vampires est visé par une Attaque ciblée adverse ou bloque une attaque. À son arrivée : vos Vampires gagnent +0/+2 jusqu’à la fin du tour.',
     flavor: 'Sous son étendard, les ombres tiennent bon.',
   },
   {
     id: 'veilleuse-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Veilleuse de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 3, rarity: 'inhabituelle', typeLine: 'Créature — Viking et Vampire',
-    reactionTourAdverse: true,
+    reactionTourAdverse: true, conditionEmbuscade: 'attaquant-force-3',
     arrivee: { type: 'gel', cible: 'creature' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse de force 3 ou plus attaque. À son arrivée : gelez une créature adverse ciblée ; elle ne peut ni attaquer ni bloquer jusqu’à la fin de son prochain tour.',
     flavor: 'Sa veille fige le dernier souffle de la nuit.',
   },
   {
     id: 'archonte-du-sablier-noir', name: 'Archonte du sablier noir',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 5, atk: 4, def: 4, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true,
+    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'vampire-bloqueur',
     arrivee: { type: 'buff', atk: 2, def: 0, tours: 1, typeSeulement: 'Vampire', inclutSource: true },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si un de vos Vampires bloque une attaque. Quand l’Archonte arrive : vos Vampires gagnent +2/+0 jusqu’à la fin du tour.',
     flavor: 'Il mesure les siècles au nombre des royaumes engloutis.',
   },
   {
     id: 'danseuse-des-ombres-de-dune', name: 'Danseuse des ombres de dune',
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle',
-    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true,
+    typeLine: 'Créature — Humain et Vampire', reactionTourAdverse: true, conditionEmbuscade: 'vie-inferieure',
     rapidite: true, infiltration: true, volDeVie: true,
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si vos points de vie sont inférieurs à ceux de l’adversaire. Rapidité — Cette créature peut attaquer le tour où elle arrive. Infiltration — Elle ne peut pas être bloquée. Vol de vie — Chaque fois qu’elle inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur.',
     flavor: 'Ses pas ne laissent qu’une ombre dans le sable.',
   },
   {
@@ -1228,8 +1228,8 @@ export const RPG_CREATURE_CARDS = [
     element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
     cost: 4, atk: 3, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humain et Vampire',
-    contreAttaque: true, reactionTourAdverse: true, interceptionAttaque: true,
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse. À son arrivée, choisissez une Attaque ciblée adverse en cours : elle vise le Veilleur à la place. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
+    contreAttaque: true, reactionTourAdverse: true, conditionEmbuscade: 'attaque-ciblee', interceptionAttaque: true,
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une Attaque ciblée adverse vise une de vos créatures. À son arrivée, choisissez une Attaque ciblée adverse en cours : elle vise le Veilleur à la place. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
 ];
@@ -1430,9 +1430,9 @@ export const RPG_HERO_CARDS = [
     set: 'soldats-de-la-lune', element: 'sable', colors: ['sable', 'tenebres'],
     colorCost: { sable: 1, tenebres: 1 }, cost: 6, atk: 6, def: 6,
     rarity: 'mythique', kind: 'hero', typeLine: 'Créature légendaire — Humain et Vampire',
-    reactionTourAdverse: true, volDeVie: true, envol: true,
+    reactionTourAdverse: true, conditionEmbuscade: 'adversaire-force-4', volDeVie: true, envol: true,
     arrivee: { type: 'combat', cible: 'creature' },
-    text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
+    text: 'Embuscade — Vous pouvez jouer ce héros pendant le tour adverse seulement si l’adversaire contrôle une créature de force 4 ou plus. Envol — Il ne peut être bloqué que par une créature avec Envol. Vol de vie — Chaque fois qu’il inflige des dégâts, vous gagnez la moitié de ces dégâts en points de vie, arrondie à l’entier supérieur. Quand il arrive : il se bat contre une créature adverse ciblée ; chacun inflige à l’autre des dégâts égaux à son attaque.',
     flavor: 'Sous la lune noire, même le temps attend son duel.',
   },
   {
@@ -1454,7 +1454,7 @@ export const RPG_HERO_CARDS = [
     rapidite: true,
     contreAttaque: true,
     arrivee: { type: 'bouclier', amount: 1, cible: 'soi' },
-    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (25 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Attaque ciblée — Il peut viser une créature adverse en attaquant (15 % de chances de rater, 100 % de toucher le sorcier). Quand Salem arrive : il reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué, puis le bouclier tombe. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Salem lui inflige ses dégâts d’attaque ; quand c’est un sort ciblé ou de zone qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
     flavor: 'On ne monte pas un étage condamné sans redescendre.',
   },
   {
@@ -1498,7 +1498,7 @@ export const RPG_HERO_CARDS = [
     typeLine: 'Créature légendaire — Héros',
     rapidite: true,
     coupRapide: true,
-    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
+    text: 'Rapidité. Attaque ciblée — Sélectionnée pour attaquer, Fériel peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher si elle attaque l’adversaire) : elle lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, elle doit la viser ; sinon elle peut attaquer le sorcier.',
     flavor: 'Le verre se souvient du feu.',
   },
   {
@@ -1558,7 +1558,7 @@ export const RPG_HERO_CARDS = [
     contreAttaque: true,
     esquive: true,
     arrivee: { type: 'jetons', jeton: 'guepard', nombre: 1 },
-    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 25 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
+    text: 'Le guépard du roi — Quand Kusayla arrive : un guépard 2/1 avec Rapidité entre en jeu sans coût. Esquive — 15 % de chances d’esquiver une attaque, une Magie ou une Sorcellerie (les capacités ne s’esquivent pas). Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Kusayla lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. Il riposte même si le coup le détruit.',
     flavor: 'Il laissa l’envahisseur s’engager dans le défilé, puis referma les dunes sur lui — et son fauve courait déjà devant.',
   },
   {
@@ -1578,7 +1578,7 @@ export const RPG_HERO_CARDS = [
     // sa proie lui-même (Attaque ciblée).
     coupRapide: true,
     resonance: 2, resonanceDefense: 0, resonanceTribu: 'djinn', resonanceExclutSource: true,
-    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu.',
+    text: 'Bouclier d’Eau — Bloque le prochain sort adverse d’Eau, puis se brise. Attaque ciblée — Sélectionné pour attaquer, l’Ifrit peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Résonance djinn — Les autres Djinns des deux camps gagnent +2/+0 tant qu’il est en jeu.',
     flavor: 'Une ancienne histoire de feu, racontée sans fin au bord des dunes.',
   },
   // ── Serment des Neuf Hivers : les figures du Nord, jamais nommées « dieux » ──
@@ -1598,7 +1598,7 @@ export const RPG_HERO_CARDS = [
     coupRapide: true,
     tenacite: true,
     arrivee: { type: 'exil', cible: 'creature', coutMax: 4 },
-    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (25 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Attaque ciblée — Sélectionné pour attaquer, il peut frapper une créature adverse de votre choix (15 % de chances de rater, 100 % de chances de toucher s’il attaque l’adversaire) : il lui inflige ses dégâts d’attaque, sans riposte, et son attaque s’arrête là. Si une créature adverse est en jeu, il doit la viser ; sinon il peut attaquer le sorcier. Tenacité — Une fois par partie, quand il meurt (sauf exilé), il revient en jeu au début de votre prochain tour avec 1 point de défense. Quand il arrive : ses corbeaux emportent une créature de coût 4 ou moins — elle est exilée, retirée de la partie.',
     flavor: 'Il a donné un œil pour savoir, et ne l’a jamais regretté.',
   },
   {
@@ -1639,7 +1639,7 @@ export const RPG_HERO_CARDS = [
     art: 'dame-des-neuf-mondes',
     coupRapide: true,
     arrivee: { type: 'soin', amount: 8 },
-    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (25 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
+    text: 'Attaque ciblée — Lorsqu’elle attaque, elle peut frapper une créature adverse choisie sans riposte (15 % de chances de rater, 100 % de toucher le sorcier). Quand elle arrive : vous récupérez 8 points de vie.',
     flavor: 'Elle tient le fil de toutes les maisons à la fois.',
   },
   {
@@ -2070,8 +2070,8 @@ export const RPG_MAGIE_CARDS = [
     cost: 2,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.25 },
-    text: 'Sorcellerie — 1 dégât à toutes les créatures adverses, et chacune a 25 % de chances d’être gelée.',
+    effet: { type: 'degats', amount: 1, cible: 'toutes-creatures', gelChance: 0.15 },
+    text: 'Sorcellerie — 1 dégât à toutes les créatures adverses, et chacune a 15 % de chances d’être gelée.',
     flavor: 'La brume mord d’abord les chevilles ; le froid prend le reste.',
   },
   {
@@ -2084,11 +2084,11 @@ export const RPG_MAGIE_CARDS = [
     cost: 4,
     rarity: 'rare',
     cibles: ['toutes'],
-    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.25 },
+    effet: { type: 'degats', amount: 2, cible: 'toutes-creatures', gelChance: 0.15 },
     // Le Lien du Géant : le hurlement gagne un cran — 3 dégâts. La chance de
     // gel ne bouge pas : c'est le souffle qui grandit, pas le froid.
     lien: { ancre: 'geant-des-banquises', effet: { amount: 3 } },
-    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 25 % de chances d’être gelée. Avec Géant des banquises en jeu : 3 dégâts au lieu de 2.',
+    text: 'Sorcellerie — 2 dégâts à toutes les créatures adverses, chacune a 15 % de chances d’être gelée. Avec Géant des banquises en jeu : 3 dégâts au lieu de 2.',
     flavor: 'Le vent hurle si fort que la neige devient des lames.',
   },
   // ── Le lot du gel : magies rapides et sorcelleries du Serment ────────────
@@ -2465,7 +2465,7 @@ export const RPG_ARME_CARDS = [
     donne: { esquive: true },
     // Le Lien de Bouchra : la cuirasse couvre un cran de plus (+0/+4), rien
     // de plus — le texte ne dit que la différence. Le CUMUL d'Esquive
-    // (25 % + 25 % = 50 % sur la guerrière) est une règle générale du
+    // (15 % + 15 % = 30 % sur la guerrière) est une règle générale du
     // mot-clé, portée par la fiche de base et par `recalculerEsquive`.
     lien: { ancre: 'bouchra-guerriere-des-cretes', bonus: { atk: 0, def: 4 } },
     text: 'Arme — Le porteur gagne +0/+3 et Esquive. Avec Bouchra, guerrière des crêtes en jeu : +0/+4 au lieu de +0/+3.',
@@ -2585,12 +2585,12 @@ export const RPG_ARME_CARDS = [
     rarity: 'rare',
     bonus: { atk: 1, def: 2 },
     donne: { bouclier: 1 },
-    // Quand le porteur se bat avec une créature : 25 % de chances de la
+    // Quand le porteur se bat avec une créature : 15 % de chances de la
     // renvoyer dans la main de son propriétaire AVANT d'assigner les dégâts
     // de combat (référence JoJo). Le moteur gère ce déclenchement pré-dégâts
     // dans `rpgLancerAttaque` (avant `appliquerDegatsDeCombatSimultanes`).
-    porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.25 },
-    text: 'Arme — Le porteur gagne +1/+2 et un Bouclier. Quand il combat une créature : 25 % de chances de la renvoyer en main avant les dégâts.',
+    porteurAvantDegats: { type: 'retour-main', cible: 'creature', chance: 0.15 },
+    text: 'Arme — Le porteur gagne +1/+2 et un Bouclier. Quand il combat une créature : 15 % de chances de la renvoyer en main avant les dégâts.',
     flavor: 'Une boule d\'acier verte qui tourne rapidement sur elle-même dans le creux d\'une main.',
   },
   {
@@ -2605,8 +2605,8 @@ export const RPG_ARME_CARDS = [
     id: 'lance-de-la-lune-givree', set: 'soldats-de-la-lune', name: 'Lance de la lune givrée',
     element: 'neige', colors: ['neige', 'tenebres'], colorCost: { neige: 1, tenebres: 1 },
     kind: 'arme', typeLine: 'Arme — Lance', cost: 3, rarity: 'inhabituelle',
-    bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.25 }, coupRapideImmanquable: true,
-    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 25 % de chances de doubler ses dégâts contre une créature.',
+    bonus: { atk: 1, def: 1 }, donne: { coupRapide: true, coupCritique: 0.15 }, coupRapideImmanquable: true,
+    text: 'Arme — Le porteur gagne +1/+1 et Attaque ciblée (touche toujours). Coup critique : 15 % de chances de doubler ses dégâts contre une créature.',
     flavor: 'Sa pointe attend l’instant où le dernier souffle gèle.',
   },
 

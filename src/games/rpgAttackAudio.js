@@ -4,7 +4,7 @@
  * Le jeu n'a que deux frappes de créature :
  *
  *  - **l'Attaque ciblée** (le coup rapide) est un **tir à distance** : la
- *    créature désigne sa proie avant le combat, 25 % de chances de rater, et
+ *    créature désigne sa proie avant le combat, 15 % de chances de rater, et
  *    son attaque s'arrête sur la frappe. Le whoosh change selon l'issue :
  *    `fleche` (`arrow_flying_whoosh`) si elle touche, `fleche_ratee`
  *    (`arrow_whoosh_effect`) si elle manque — sans repli d'acier.

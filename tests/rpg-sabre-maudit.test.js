@@ -19,15 +19,15 @@ function armer(duel, porteur) {
   return rpgLancerMagie(duel, 'joueur', 'sabre-maudit', porteur.id);
 }
 
-test('Sabre maudit : +2/+1, Vol de vie et Coup critique x2 à 25 %', () => {
+test('Sabre maudit : +2/+1, Vol de vie et Coup critique x2 à 15 %', () => {
   const sabre = cardById('sabre-maudit');
   assert.equal(sabre.typeLine, 'Arme — Sabre maudit');
-  assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.25, volDeVie: true });
+  assert.deepEqual(sabre.effet, { type: 'arme', cible: 'creature-amie', atk: 2, def: 1, coupCritique: 0.15, volDeVie: true });
   assert.equal(sabre.effet.coupRapide, undefined);
   assert.match(sabre.text, /\+2\/\+1/);
   assert.match(sabre.text, /Coup critique/);
   assert.match(sabre.text, /Vol de vie/);
-  assert.match(sabre.text, /25 %/);
+  assert.match(sabre.text, /15 %/);
   const deck = RPG_DECKS_ARCHETYPES.find((d) => d.id === 'serment-du-soleil-rouge');
   assert.equal(rpgValiderDeck(deck.cardIds).ok, true);
 });
@@ -39,7 +39,7 @@ test('l’équipement applique les stats et le Coup critique au porteur', () => 
   assert.deepEqual([porteur.atk, porteur.def, porteur.pvMax, porteur.pv], [4, 5, 5, 5]);
   assert.equal(porteur.coupRapide, false, 'le sabre ne donne plus Attaque ciblée');
   assert.equal(porteur.volDeVie, true);
-  assert.deepEqual(porteur.coupCritique, { chance: 0.25, fois: 2 });
+  assert.deepEqual(porteur.coupCritique, { chance: 0.15, fois: 2 });
   assert.deepEqual(porteur.armes, ['sabre-maudit']);
 });
 
@@ -54,7 +54,7 @@ test('le Coup critique inflige bien le double des dégâts d’attaque à une cr
   porteur.ready = true;
   duel.joueur.pv -= 10;
   const vieAvant = duel.joueur.pv;
-  rpgReglerHasard(duel, () => 0); // garantit le jet critique à 25 %
+  rpgReglerHasard(duel, () => 0); // garantit le jet critique à 15 %
   const resultat = rpgLancerAttaque(duel, 'joueur', [porteur.id], { [porteur.id]: [cible.id] });
   assert.equal(resultat.ok, true);
   assert.equal(cible.pv, 2, 'la force 4 est doublée : 8 blessures');

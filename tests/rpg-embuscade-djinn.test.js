@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardHasPrintedType } from '../src/games/rpgCards.js';
 import { pastillesPourCarte, effetsDetailles } from '../src/games/effetIcons.js';
-import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgResonanceEnJeu, rpgBonusResonance } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgBlesserCreature, rpgConditionEmbuscadeRemplie, rpgResonanceEnJeu, rpgBonusResonance } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
 function partie() { const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.9 }); for (const c of ['joueur','sorcier']) d[c].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 40])); return d; }
 function poser(d,c,id) { d[c].main.push(id); const r=rpgJouerCreature(d,c,id); assert.ok(r.ok,r.raison); return r.entite; }
@@ -11,12 +11,26 @@ test('tous les Vampires jouables possèdent la pastille Embuscade', () => {
   assert.ok(vampires.length >= 14);
   for (const c of vampires) { assert.equal(c.reactionTourAdverse, true, c.id); assert.ok(pastillesPourCarte(c).some(p => p.label === 'Embuscade'), c.id); assert.match(c.text, /Embuscade/, c.id); }
 });
-test('Sentinelle, Danseuse et Archonte sont jouables en PvP pendant le tour adverse', () => {
-  for (const id of ['sentinelle-des-sables','danseuse-des-ombres-de-dune','archonte-du-sablier-noir']) {
+test('Sentinelle, Danseuse et Archonte respectent leurs conditions en PvP', () => {
+  for (const id of ['sentinelle-des-sables', 'danseuse-des-ombres-de-dune', 'archonte-du-sablier-noir']) {
     const d=partie(); d.pvp=true; d.mulliganFait={joueur:true,sorcier:true}; d.tour='sorcier'; d.phase='principale'; d.joueur.main.push(id);
+    assert.equal(rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:id,cibleDifferee:true}).ok, false, `${id} : sans condition`);
+    if (id === 'danseuse-des-ombres-de-dune') d.joueur.pv = 20;
+    else {
+      d.sorcier.main.push('chien-du-guet');
+      const ennemi = rpgJouerCreature(d, 'sorcier', 'chien-du-guet').entite;
+      ennemi.ready = true;
+      if (id === 'archonte-du-sablier-noir') {
+        d.tour = 'joueur'; d.joueur.main.push('danseuse-des-ombres-de-dune');
+        const vampire = rpgJouerCreature(d, 'joueur', 'danseuse-des-ombres-de-dune').entite;
+        d.tour = 'sorcier';
+        assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [ennemi.id] }).ok);
+        assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'preparer-blocage', blocages: { [ennemi.id]: [vampire.id] } }).ok);
+      } else assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [ennemi.id] }).ok);
+    }
     const r=rpgPvpAppliquer(d,'joueur',{type:'jouer-carte',carteId:id,cibleDifferee:true});
     assert.ok(r.ok, `${id}: ${r.raison}`); assert.ok(d.joueur.creatures.some(x=>x.carteId===id));
-    assert.ok(!d.arriveeEnAttente, 'aucune cible d’attaque disponible');
+    if (id === 'sentinelle-des-sables') assert.ok(d.arriveeEnAttente);
   }
 });
 test('Résonance Djinn : +2/+0 aux autres Djinns des deux camps, sans soins ni bonus aux autres types', () => {
@@ -57,4 +71,147 @@ test('Ghul des cendres est un Djinn et bénéficie de la Résonance sans perdre 
   assert.deepEqual([ghul.atk, ghul.def], [3, 1]);
   rpgBlesserCreature(d, 'joueur', ifrit.id, 99);
   assert.deepEqual([ghul.atk, ghul.def], [1, 1]);
+});
+
+const conditions = [
+  ['vampire-des-braises', 'adversaire-blesse'],
+  ['sentinelle-des-sables', 'attaquant'],
+  ['garde-du-trone-givre', 'attaquant'],
+  ['general-du-croissant-noir', 'autre-vampire'],
+  ['fleau-de-la-lune-noire', 'trois-adversaires'],
+  ['eclipse-silencieuse', 'attaquant-force-2'],
+  ['gardienne-du-croissant', 'allie-cible'],
+  ['traqueur-des-nuits-sans-lune', 'deux-attaquants'],
+  ['sanguinaire-des-dunes', 'adversaire-blesse'],
+  ['porte-etendard-de-leclipse', 'vampire-attaque'],
+  ['veilleuse-de-la-lune-givree', 'attaquant-force-3'],
+  ['archonte-du-sablier-noir', 'vampire-bloqueur'],
+  ['danseuse-des-ombres-de-dune', 'vie-inferieure'],
+  ['veilleur-du-dernier-crepuscule', 'attaque-ciblee'],
+  ['souverain-de-la-lune-noire', 'adversaire-force-4'],
+];
+
+function remplirCondition(d, condition) {
+  const ajouter = (cote, carteId) => {
+    d[cote].main.push(carteId);
+    const res = rpgJouerCreature(d, cote, carteId);
+    assert.ok(res.ok, res.raison);
+    return res.entite;
+  };
+  const combat = (n = 1, force = 2) => {
+    const attaquants = Array.from({ length: n }, () => ajouter('sorcier', 'dune-marchante'));
+    attaquants.forEach((attaquant) => { attaquant.atk = force; attaquant.ready = true; });
+    d.combatDeclare = { cote: 'sorcier', attaquants: attaquants.map((e) => e.id), ciblesAttaque: {} };
+    return attaquants;
+  };
+  const vampire = () => { d.tour = 'joueur'; const allie = ajouter('joueur', 'vampire-des-braises'); d.tour = 'sorcier'; return allie; };
+  switch (condition) {
+    case 'adversaire-blesse': {
+      const cible = ajouter('sorcier', 'dune-marchante');
+      rpgBlesserCreature(d, 'sorcier', cible.id, 1, 'eau', null, 'attaque');
+      break;
+    }
+    case 'attaquant': combat(); break;
+    case 'attaquant-force-2': combat(1, 2); break;
+    case 'attaquant-force-3': combat(1, 3); break;
+    case 'autre-vampire': vampire(); break;
+    case 'trois-adversaires': for (let i = 0; i < 3; i++) ajouter('sorcier', 'chien-du-guet'); break;
+    case 'allie-cible': {
+      d.tour = 'joueur'; const allie = ajouter('joueur', 'chien-du-guet'); d.tour = 'sorcier';
+      d.annonce = { cote: 'sorcier', carteId: 'trait-de-braise', cibleId: allie.id };
+      break;
+    }
+    case 'deux-attaquants': combat(2); break;
+    case 'vampire-attaque': {
+      const allie = vampire(); const [attaquant] = combat();
+      d.combatDeclare.ciblesAttaque[attaquant.id] = allie.id;
+      break;
+    }
+    case 'vampire-bloqueur': {
+      const allie = vampire(); const [attaquant] = combat();
+      d.combatDeclare.blocages = { [attaquant.id]: [allie.id] };
+      break;
+    }
+    case 'vie-inferieure': d.joueur.pv = 20; break;
+    case 'attaque-ciblee': {
+      d.tour = 'joueur'; const allie = ajouter('joueur', 'chien-du-guet'); d.tour = 'sorcier';
+      const [attaquant] = combat(); attaquant.coupRapide = true;
+      d.combatDeclare.ciblesAttaque[attaquant.id] = allie.id;
+      break;
+    }
+    case 'adversaire-force-4': { const ennemi = ajouter('sorcier', 'dune-marchante'); ennemi.atk = 4; break; }
+    default: assert.fail(condition);
+  }
+}
+
+test('les quinze Vampires refusent une Embuscade hors condition sans dépenser de mana, puis la jouent si elle est remplie', () => {
+  assert.equal(conditions.length, RPG_DUEL_CARDS.filter((c) => c.reactionTourAdverse && cardHasPrintedType(c, 'Vampire')).length);
+  for (const [id, condition] of conditions) {
+    const d = partie(); d.tour = 'sorcier'; d.fenetreReponse = true; d.pvp = true;
+    d.joueur.main.push(id);
+    const carte = cardById(id);
+    assert.equal(carte.conditionEmbuscade, condition, id);
+    const mana = JSON.stringify(d.joueur.mana);
+    assert.equal(rpgJouerCreature(d, 'joueur', id, null, { cibleDifferee: true }).raison, 'condition-embuscade', id);
+    assert.equal(JSON.stringify(d.joueur.mana), mana, id);
+    assert.ok(d.joueur.main.includes(id), id);
+    remplirCondition(d, condition);
+    assert.ok(rpgConditionEmbuscadeRemplie(d, 'joueur', carte), id);
+    const res = rpgJouerCreature(d, 'joueur', id, null, { cibleDifferee: true });
+    assert.ok(res.ok, `${id}: ${res.raison}`);
+  }
+});
+
+test('en PvP les blocages préparés sont validés avant de rendre l’Archonte jouable', () => {
+  const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  const vampire = poser(d, 'joueur', 'vampire-des-braises');
+  const chien = poser(d, 'joueur', 'chien-du-guet');
+  const attaquant = poser(d, 'sorcier', 'dune-marchante'); attaquant.ready = true;
+  d.tour = 'sorcier'; d.joueur.main.push('archonte-du-sablier-noir');
+  assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true, attaquants: [attaquant.id] }).ok);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'preparer-blocage', blocages: { [attaquant.id]: ['inconnu'] } }).ok, false);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'preparer-blocage', blocages: { [attaquant.id]: [vampire.id, vampire.id] } }).ok, false);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'preparer-blocage', blocages: { [attaquant.id]: [chien.id] } }).ok, true);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'archonte-du-sablier-noir' }).ok, false);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'preparer-blocage', blocages: { [attaquant.id]: [vampire.id] } }).ok);
+  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'archonte-du-sablier-noir' }).ok);
+});
+
+test('le Gardien peut répondre à une Attaque ciblée en PvP et à une magie annoncée en solo', () => {
+  for (const pvp of [true, false]) {
+    const d = partie(); d.pvp = pvp; d.tour = 'joueur';
+    const allie = poser(d, 'joueur', 'chien-du-guet');
+    const ennemi = poser(d, 'sorcier', 'chien-du-guet'); ennemi.ready = true;
+    d.tour = 'sorcier'; d.joueur.main.push('gardienne-du-croissant');
+    if (pvp) {
+      d.mulliganFait = { joueur: true, sorcier: true }; ennemi.coupRapide = true;
+      assert.ok(rpgPvpAppliquer(d, 'sorcier', { type: 'attaquer', declarer: true,
+        attaquants: [ennemi.id], ciblesAttaque: { [ennemi.id]: allie.id } }).ok);
+      assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'gardienne-du-croissant', cibleDifferee: true }).ok);
+      assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'resoudre-arrivee', cibleId: allie.id }).ok);
+    } else {
+      d.fenetreReponse = true;
+      d.annonce = { cote: 'sorcier', carteId: 'trait-de-braise', cibleId: allie.id };
+      assert.ok(rpgJouerCreature(d, 'joueur', 'gardienne-du-croissant', allie.id).ok);
+    }
+    assert.equal(allie.bouclier, 1);
+  }
+});
+
+test('les conditions d’Embuscade ne restreignent jamais la pose pendant son propre tour', () => {
+  for (const [id] of conditions) {
+    const d = partie(); d.joueur.main.push(id);
+    const res = rpgJouerCreature(d, 'joueur', id, null, { cibleDifferee: true });
+    assert.ok(res.ok, `${id}: ${res.raison}`);
+  }
+});
+
+test('un attaquant retiré du plateau ne satisfait plus les conditions de combat', () => {
+  const d = partie(); d.tour = 'sorcier'; d.pvp = true;
+  remplirCondition(d, 'vampire-attaque');
+  const [attaquantId] = d.combatDeclare.attaquants;
+  assert.ok(rpgConditionEmbuscadeRemplie(d, 'joueur', cardById('porte-etendard-de-leclipse')));
+  d.sorcier.creatures = d.sorcier.creatures.filter((entite) => entite.id !== attaquantId);
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', cardById('porte-etendard-de-leclipse')), false);
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', cardById('gardienne-du-croissant')), false);
 });

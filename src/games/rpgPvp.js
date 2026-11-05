@@ -36,6 +36,7 @@ import {
   rpgDefausserCarte,
   rpgDemarrerManaEssai,
   rpgDissiperDestructionsSansCible,
+  rpgConditionEmbuscadeRemplie,
   rpgEstProtegee,
   rpgFinDeTour,
   rpgJouerArme,
@@ -94,6 +95,7 @@ export const RPG_PVP_INTENTIONS = [
   'renoncer-magie-gratuite',
   'activer',
   'attaquer',
+  'preparer-blocage',
   'bloquer',
   'fin-de-tour',
   'conceder',
@@ -213,6 +215,7 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
   const actif = rpgPvpCoteActif(duel);
   const reaction = intention.type === 'jouer-carte' && duel.tour !== cote
     && cardById(intention.carteId)?.reactionTourAdverse && duel[cote].main.includes(intention.carteId)
+    && rpgConditionEmbuscadeRemplie(duel, cote, cardById(intention.carteId))
     && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
     && !duel.defausseEnAttente?.restant && !duel.boualemEnAttente && !duel.siteEnAttente;
   if (actif !== cote && !reaction) return { ok: false, raison: 'pas-votre-tour' };
@@ -514,6 +517,35 @@ function executerIntention(duel, cote, intention) {
         return res;
       }
       return { ok: false, raison: 'carte-injouable' };
+    }
+    case 'preparer-blocage': {
+      // Les choix de bloqueurs restent réversibles avant la résolution. Le
+      // serveur doit les connaître pour l'Embuscade de l'Archonte, sans
+      // accepter un faux blocage fabriqué pour contourner sa condition.
+      const combat = duel.combatDeclare;
+      if (duel.phase !== 'blocage' || combat?.cote !== rpgPvpAutreCote(cote)) {
+        return { ok: false, raison: 'aucun-combat' };
+      }
+      const blocages = intention.blocages ?? {};
+      if (!blocages || typeof blocages !== 'object' || Array.isArray(blocages)
+        || Object.keys(blocages).some((id) => !combat.attaquants.includes(id))) return { ok: false, raison: 'blocage' };
+      const utilises = new Set();
+      for (const [attaquantId, ids] of Object.entries(blocages)) {
+        if (!Array.isArray(ids)) return { ok: false, raison: 'blocage' };
+        const attaquant = duel[combat.cote].creatures.find((entite) => entite.id === attaquantId);
+        for (const bloqueurId of ids) {
+          const bloqueur = duel[cote].creatures.find((entite) => entite.id === bloqueurId);
+          if (!attaquant || !bloqueur || utilises.has(bloqueurId) || bloqueur.attaquee
+            || !creaturePeutBloquer(bloqueur)
+            || !rpgPeutBloquerAttaquant(bloqueur, attaquant, Boolean(combat.ciblesAttaque?.[attaquantId]))
+            || rpgEstProtegee(attaquant, cardColors(duelCardById(bloqueur.carteId)))) {
+            return { ok: false, raison: 'blocage' };
+          }
+          utilises.add(bloqueurId);
+        }
+      }
+      combat.blocages = structuredClone(blocages);
+      return { ok: true };
     }
     case 'resoudre-arrivee': {
       const res = rpgResoudreArriveeCiblee(duel, cote, intention.cibleId ?? null);

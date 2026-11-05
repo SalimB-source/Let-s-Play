@@ -44,9 +44,11 @@ test('Overkill et Vol de vie soignent la moitié des dégâts infligés', () => 
   assert.equal(d.joueur.pv, 14, '2 dégâts au bloqueur et 6 au sorcier rendent 4 PV');
 });
 test('Il peut répondre pendant le tour adverse en solo et en PvP', () => {
-  const d = duel(); d.tour = 'sorcier'; d.fenetreReponse = true; d.joueur.main.push(id);
+  const d = duel(); poser(d, 'sorcier', 'chien-du-guet'); poser(d, 'sorcier', 'chien-du-guet'); poser(d, 'sorcier', 'chien-du-guet');
+  d.tour = 'sorcier'; d.fenetreReponse = true; d.joueur.main.push(id);
   assert.ok(rpgPeutRepondre(d, 'joueur')); assert.ok(rpgJouerCreature(d, 'joueur', id).ok);
-  const p = duel(); p.pvp = true; p.mulliganFait = { joueur: true, sorcier: true }; p.tour = 'sorcier'; p.joueur.main.push(id);
+  const p = duel(); poser(p, 'sorcier', 'chien-du-guet'); poser(p, 'sorcier', 'chien-du-guet'); poser(p, 'sorcier', 'chien-du-guet');
+  p.pvp = true; p.mulliganFait = { joueur: true, sorcier: true }; p.tour = 'sorcier'; p.joueur.main.push(id);
   assert.ok(rpgPvpAppliquer(p, 'joueur', { type: 'jouer-carte', carteId: id }).ok);
 });
 test('Vol de vie fonctionne même si le Fléau meurt dans le combat', () => {

@@ -34,10 +34,10 @@ test('le Veilleur choisit une seule des attaques ciblées et subit la frappe', (
   assert.equal(d[attaque].creatures.some(e => e.id === b.id), false, 'sa Contre-attaque abat l’attaquant');
 });
 
-test('sans attaque ciblée, le Veilleur arrive sans choix', () => {
+test('sans attaque ciblée, le Veilleur ne peut pas jouer en Embuscade', () => {
   const { d, defenseur } = scene(); d.combatDeclare.ciblesAttaque = {};
   const pose = rpgJouerCreature(d, defenseur, 'veilleur-du-dernier-crepuscule', null, { cibleDifferee: true });
-  assert.equal(pose.ok, true); assert.ok(!d.arriveeEnAttente);
+  assert.equal(pose.ok, false); assert.equal(pose.raison, 'condition-embuscade');
 });
 
 test('interception arbitrée en PvP pour chacun des deux sièges', () => {
