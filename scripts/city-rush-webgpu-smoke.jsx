@@ -53,7 +53,7 @@ export function setGpu(globalWindow, gpu) {
   resetCityRushWebGpuProbe();
 }
 
-export async function mountFreeRoam() {
+export async function mountFreeRoam(props = {}) {
   const node = document.createElement('div');
   document.body.append(node);
   const root = createRoot(node);
@@ -63,7 +63,7 @@ export async function mountFreeRoam() {
   const onError = (event) => { seen.push(event?.error?.message || event?.message || String(event)); };
   window.addEventListener('error', onError);
   await act(async () => {
-    root.render(<ViceCityFreeRoam carId="vice-roadster" onExit={() => {}} />);
+    root.render(<ViceCityFreeRoam carId="vice-roadster" onExit={() => {}} {...props} />);
     await sleep(20);
   });
   if (seen.length) console.log('DEBUG erreurs React:', seen.slice(0, 2));
@@ -88,6 +88,7 @@ export async function checkCityRushWebGpu(assert) {
   // ── 1. Sans carte : l'entrée existe, l'essai n'est jamais tenté. ─────────
   {
     setGpu(window, null);
+    window.localStorage.setItem(CITY_RUSH_GRAPHICS_PREF_KEY, 'standard');
     const { node, unmount } = await mountFreeRoam();
     try {
       const button = graphicsButton(node);
@@ -136,11 +137,9 @@ export async function checkCityRushWebGpu(assert) {
       // qu'une fois `navigator.gpu.requestAdapter()` revenu.
       await settle(150);
       const button = graphicsButton(node);
-      await click(button); // cinéma
-      await click(graphicsButton(node)); // webgpu
-      assert.equal(squash(graphicsButton(node).textContent), '◈ WEBGPU · ESSAI');
+      assert.equal(squash(button.textContent), '◈ WEBGPU · ESSAI', 'WebGPU démarre par défaut');
       assert.equal(graphicsButton(node).getAttribute('data-graphics-mode'), 'webgpu');
-      assert.equal(stored(), 'webgpu', 'l’essai survit au rechargement');
+      assert.equal(stored(), null, 'le mode par défaut ne remplace pas une préférence explicite');
       assert.ok(opened.length >= 1, 'un renderer a été ouvert pour la ville');
       assert.ok(opened.includes('webgpu'), `le moteur WebGPU a été demandé (${opened.join(', ')})`);
       // L'ouverture est asynchrone : on attend que la scène soit montée.
@@ -176,4 +175,48 @@ export async function checkCityRushWebGpu(assert) {
       window.localStorage.clear();
     }
   }
+
+  // Premier choix sur écran tactile, avec les budgets mobiles conservés.
+  {
+    window.localStorage.clear();
+    setGpu(window, gpuApi);
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = (query) => ({ matches: query === '(pointer: coarse)', addEventListener() {}, removeEventListener() {} });
+    globalThis.__cityRushOpened.length = 0;
+    const { node, unmount } = await mountFreeRoam();
+    try {
+      await until(() => node.querySelector('.vice-free-roam-world').dataset.cockpitMirror, 'WebGPU tactile');
+      assert.equal(globalThis.__cityRushLastRenderer.isCityRushWebGpu, true);
+      assert.equal(node.querySelector('.vice-free-roam-world').dataset.cockpitMirror, 'painted');
+    } finally { await unmount(); window.matchMedia = originalMatchMedia; }
+  }
+
+  // Les rétroviseurs de l'école demandent la lecture synchrone WebGL.
+  {
+    window.localStorage.clear();
+    setGpu(window, gpuApi);
+    globalThis.__cityRushOpened.length = 0;
+    const { node, unmount } = await mountFreeRoam({ schoolMode: true });
+    try {
+      await until(() => node.querySelector('.vice-free-roam-world canvas'), 'école en WebGL');
+      assert.deepEqual(globalThis.__cityRushOpened, ['standard']);
+      assert.ok(node.querySelector('.driving-side-mirror canvas'));
+    } finally { await unmount(); }
+  }
+
+  // Un pilote qui refuse à l'initialisation doit ouvrir WebGL, sans écran noir.
+  {
+    window.localStorage.clear();
+    setGpu(window, gpuApi);
+    const factory = globalThis.__cityRushTestRenderer;
+    globalThis.__cityRushTestRenderer = (mode, options) => mode === 'webgpu'
+      ? Promise.reject(new Error('pilote refusé')) : factory(mode, options);
+    const { node, unmount } = await mountFreeRoam();
+    try {
+      await until(() => node.querySelector('.vice-free-roam-world canvas'), 'repli après refus GPU');
+      assert.equal(globalThis.__cityRushLastRenderer.isCityRushWebGpu, false);
+      assert.match(squash(graphicsButton(node).textContent), /STANDARD · REPLI/);
+    } finally { await unmount(); globalThis.__cityRushTestRenderer = factory; setGpu(window, null); }
+  }
+
 }

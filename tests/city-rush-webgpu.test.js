@@ -7,6 +7,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CITY_RUSH_DEFAULT_GRAPHICS,
   CITY_RUSH_GRAPHICS_CINEMA,
   CITY_RUSH_GRAPHICS_PREF_KEY,
   CITY_RUSH_GRAPHICS_STANDARD,
@@ -68,7 +69,8 @@ test('la préférence a sa propre clé, à côté du son et de la caméra', () =
   assert.notEqual(CITY_RUSH_GRAPHICS_PREF_KEY, 'letsplay_vice_city_rush_sound_v1');
 });
 
-test('l’essai WebGPU demande l’API, une carte, et jamais la qualité allégée', () => {
+test('WebGPU est prioritaire et demande une API ; l’école garde WebGL', () => {
+  assert.equal(CITY_RUSH_DEFAULT_GRAPHICS, CITY_RUSH_GRAPHICS_WEBGPU);
   const withGpu = { navigator: { gpu: { requestAdapter: async () => ({}) } } };
   const withoutGpu = { navigator: {} };
   assert.equal(cityRushWebGpuSupport(withGpu), true);
@@ -77,7 +79,8 @@ test('l’essai WebGPU demande l’API, une carte, et jamais la qualité allég�
   // `true` seulement pour le mode WebGPU, hors appareil allégé, avec l'API.
   assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_WEBGPU, support: true }), true);
   assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_WEBGPU, support: false }), false);
-  assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_WEBGPU, support: true, lite: true }), false);
+  assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_WEBGPU, support: true, lite: true }), true);
+  assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_WEBGPU, support: true, schoolMode: true }), false);
   assert.equal(cityRushWebGpuMaybe({ mode: CITY_RUSH_GRAPHICS_CINEMA, support: true }), false);
 });
 

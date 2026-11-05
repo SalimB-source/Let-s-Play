@@ -13,10 +13,8 @@
 //     projet qui importe `three/webgpu` — paresseusement, parce que c'est un
 //     demi-mégaoctet que la plupart des visiteurs n'ouvriront jamais.
 //
-// Ce qu'il ne fait pas : décider à la place du joueur. L'essai WebGPU n'est
-// jamais ouvert d'office ; il se choisit dans la barre de la ville, et si le
-// navigateur renonce au dernier moment, la conduite retombe sur WebGL en le
-// disant (`cityRushRendererFallback`).
+// WebGPU est le premier choix en conduite libre. Si indisponible, la ville
+// utilise WebGL ; une préférence explicite du joueur reste prioritaire.
 //
 // Le module ne connaît ni React ni le DOM de la page : il lit le navigateur
 // quand on lui passe (`globalObject`), ce qui le rend vérifiable en Node.
@@ -50,8 +48,8 @@ export const CITY_RUSH_GRAPHICS_MODES = Object.freeze([
   CITY_RUSH_GRAPHICS_WEBGPU,
 ]);
 
-/** Le rendu historique : la ville droit dans l'écran, sans post-traitement. */
-export const CITY_RUSH_DEFAULT_GRAPHICS = CITY_RUSH_GRAPHICS_STANDARD;
+/** Premier choix en conduite libre, en l'absence de préférence enregistrée. */
+export const CITY_RUSH_DEFAULT_GRAPHICS = CITY_RUSH_GRAPHICS_WEBGPU;
 /** Préférence de l'appareil, comme le son et la caméra : rien au compte. */
 export const CITY_RUSH_GRAPHICS_PREF_KEY = 'letsplay_vice_city_rush_graphics_v1';
 
@@ -91,9 +89,8 @@ export function cityRushGraphicsModeLabel(mode) {
 }
 
 /**
- * La qualité « allégée » : écran tactile, coque Android (`LetsPlayAndroid`) ou
- * WebView — les appareils qu'on ménage. Ils gardent le rendu standard : pas
- * d'essai GPU, pas de chaîne de post-traitement.
+ * La qualité « allégée » : écran tactile ou coque Android. Elle limite les
+ * effets, y compris avec WebGPU ; pas de chaîne de post-traitement cinéma.
  *
  * **La coque PC fait exception.** Electron embarqué sur un portable tactile
  * répond `pointer: coarse`, et l'APK comme l'exe sont des WebView : sans cette
@@ -168,18 +165,18 @@ export function resetCityRushWebGpuProbe() {
   webGpuAdapterProbe = null;
 }
 
-/** L'essai peut-il tourner ici ? Jamais en qualité allégée, et l'API doit exister. */
-export function cityRushWebGpuMaybe({ mode, lite = false, support = false } = {}) {
-  return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_WEBGPU && !lite && Boolean(support);
+/** WebGPU exige l'API ; l'école reste en WebGL pour ses rétroviseurs. */
+export function cityRushWebGpuMaybe({ mode, support = false, schoolMode = false } = {}) {
+  return normalizeCityRushGraphicsMode(mode) === CITY_RUSH_GRAPHICS_WEBGPU && !schoolMode && Boolean(support);
 }
 
 /**
- * L'usine de renderer de la ville. Elle cache une décision : WebGL pour tout le
- * monde, sauf l'essai **WEBGPU**.
+ * L'usine de renderer de la ville. WebGPU est chargé seulement lorsqu'il est
+ * demandé ; STANDARD et CINÉMA utilisent WebGL.
  *
  * `import('three/webgpu')` est **paresseux** : un demi-mégaoctet de code GPU
- * que la plupart des visiteurs n'ouvriront jamais. Le build le range dans son
- * propre morceau, chargé au moment du choix.
+ * que les appareils incompatibles n'ont pas besoin de télécharger. Le build le
+ * range dans son propre morceau, chargé au moment du choix.
  *
  * Le renderer rendu porte `isCityRushWebGpu` : la ville s'en sert pour deux
  * détails (type d'ombre, cible flottante du rétroviseur).
@@ -191,10 +188,17 @@ export async function createCityRushRenderer({ mode, lite = false, antialias = t
   const factory = typeof globalThis !== 'undefined' ? globalThis.__cityRushTestRenderer : null;
   if (typeof factory === 'function') return factory(normalizeCityRushGraphicsMode(mode), { lite, antialias });
   const normalized = normalizeCityRushGraphicsMode(mode);
-  if (normalized === CITY_RUSH_GRAPHICS_WEBGPU && !lite) {
+  if (normalized === CITY_RUSH_GRAPHICS_WEBGPU) {
     const { WebGPURenderer } = await import('three/webgpu');
     const renderer = new WebGPURenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
-    await renderer.init();
+    try {
+      await renderer.init();
+      // three.js peut utiliser WebGL en interne sans lever d'erreur.
+      if (!renderer.backend?.isWebGPUBackend) throw new Error('Backend WebGPU indisponible');
+    } catch (error) {
+      renderer.dispose();
+      throw error;
+    }
     renderer.isCityRushWebGpu = true;
     return renderer;
   }
