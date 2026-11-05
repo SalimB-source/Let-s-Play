@@ -35,6 +35,16 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
   rien d'autre). C'est ce qui permet à l'installeur de ne plus se reconstruire
   quand une carte change, et à la coque de se mettre à jour sans se disputer la
   version avec le site.
+- **Le jeu tient sa fenêtre : on n'en sort pas vers le site.** Un lien
+  « Tous les jeux » ou le logo de l'auto-école ramèneraient au hub du site dans
+  un navigateur ; dans une fenêtre qui s'appelle « Le Sablier de Bab El », c'est
+  une sortie de route. Deux verrous, plutôt qu'un : `desktop/routes.js`
+  (`estRouteDuJeu`) **refuse toute navigation** hors du jeu — hub, accueil,
+  autres jeux, origine étrangère, retour arrière, URL tapée après `Ctrl+L` ;
+  seuls le jeu, la page « hors ligne » et le serveur local du pack passent.
+  Et côté site, `DrivingSchoolHub` masque le logo-lien et « Tous les jeux »
+  quand `window.letsPlayDesktop` existe (l'APK, elle, garde le sien : c'est un
+  choix distinct, Android n'a pas les mêmes conventions de retour).
 - **Pas de croix « retour aux jeux ».** Dans un navigateur, la barre du Sablier
   porte une croix qui ramène à la liste des jeux du site. Dans la coque PC elle
   n'a plus de sens — elle sortait du jeu vers une page web — donc elle est
@@ -187,6 +197,37 @@ après, ils n'ont plus aucun effet) :
 | Rasterisation et transferts laissés au CPU | `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-native-gpu-memory-buffers` |
 | Choix du backend sous Windows | `--use-angle=d3d11` |
 | Pas de GPU du tout (le jeu reste jouable, lentement, au lieu d'une table vide) | `--enable-unsafe-swiftshader` |
+
+### WebGPU : l'essai de la conduite libre
+
+Depuis que la conduite libre porte un bouton **RENDU** (standard, cinéma, essai
+WebGPU), la coque a deux rôles :
+
+1. **autoriser l'API.** `desktop/gpu.js` pose `--enable-unsafe-webgpu`, qui lève
+   la liste noire WebGPU de Chromium — la même logique que
+   `--ignore-gpu-blocklist` pour le WebGL. Sans lui, un pilote un peu ancien
+   rend `requestAdapter()` → `null` et le jeu annonce « STANDARD · REPLI » à
+   tort. Aucun backend n'est forcé : Chromium choisit seul D3D12 ou Vulkan ;
+   `--use-angle` ne concerne que le WebGL (deux couches distinctes) ;
+2. **constater l'état.** Le diagnostic (menu **Carte graphique → État de la
+   carte graphique…**) porte une section **WebGPU** qui distingue trois
+   situations, et c'est ce qu'il faut lire avant de conclure :
+
+   | État affiché | Ce que ça veut dire |
+   | --- | --- |
+   | `prêt` | un adaptateur a répondu — l'essai « WEBGPU · ESSAI » s'ouvrira |
+   | `absent` | ce Chromium ne connaît pas `navigator.gpu` (trop ancien) |
+   | `API présente, aucune carte accordée` | l'API existe mais le pilote refuse : liste noire, VM, pilote trop vieux |
+
+   Le rapport copié (`Copier le rapport`) inclut la ligne `webgpu:`.
+
+**Une exception assumée, côté site** : `cityRushLiteDevice()` refusait l'essai
+sur tout appareil `pointer: coarse` — or Electron sur un portable tactile
+répond `coarse`, et l'APK comme l'exe sont des WebView. L'essai aurait donc été
+bloqué sur les deux machines les mieux équipées. Le module de rendu exempte
+désormais la coque PC (`window.letsPlayDesktop`, le drapeau que lit déjà le
+Sablier) : le halo CINÉMA y est monté lui aussi. L'APK, elle, reste en qualité
+allégée.
 
 **Vérifier quel GPU travaille** : menu **Carte graphique → État de la carte
 graphique…**. La fenêtre affiche le renderer réellement utilisé (ex. « ANGLE

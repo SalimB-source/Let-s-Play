@@ -94,15 +94,39 @@ export function cityRushGraphicsModeLabel(mode) {
  * La qualité « allégée » : écran tactile, coque Android (`LetsPlayAndroid`) ou
  * WebView — les appareils qu'on ménage. Ils gardent le rendu standard : pas
  * d'essai GPU, pas de chaîne de post-traitement.
+ *
+ * **La coque PC fait exception.** Electron embarqué sur un portable tactile
+ * répond `pointer: coarse`, et l'APK comme l'exe sont des WebView : sans cette
+ * exception, l'essai WebGPU aurait été refusé sur les deux machines les mieux
+ * équipées, pour un motif qui ne les concerne pas (ce n'est pas un téléphone,
+ * c'est un Chromium de bureau avec un vrai pilote et, depuis D3D12/Vulkan, une
+ * vraie carte WebGPU). Le halo CINÉMA reste monté sur PC, comme en navigateur.
+ *
+ * Ce que « coque PC » veut dire est décidé par `cityRushDesktopShell`, et non
+ * ici : ce module ne lit que le verdict, pour rester testable sans Electron.
  */
 export function cityRushLiteDevice(globalObject = typeof window === 'undefined' ? null : window) {
   if (!globalObject) return false;
   if (globalObject.LetsPlayAndroid) return true;
+  if (cityRushDesktopShell(globalObject)) return false;
   try {
     return Boolean(globalObject.matchMedia?.('(pointer: coarse)')?.matches);
   } catch {
     return false;
   }
+}
+
+/**
+ * Sommes-nous dans la **coque PC** (Electron) plutôt que dans un navigateur ou
+ * dans l'APK ? `desktop/preload.cjs` y expose `window.letsPlayDesktop`, et rien
+ * d'autre ne le fait : c'est le drapeau que lit déjà le Sablier de Bab El
+ * (`desktopMode` dans `RpgDuelPage.jsx`), donc celui qui fait foi.
+ *
+ * Un portable tactile ou une tablette Windows dans un navigateur classique
+ * n'est **pas** la coque : il reste en qualité allégée, comme avant.
+ */
+export function cityRushDesktopShell(globalObject = typeof window === 'undefined' ? null : window) {
+  return Boolean(globalObject?.letsPlayDesktop);
 }
 
 /**
