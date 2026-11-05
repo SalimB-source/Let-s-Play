@@ -16,13 +16,13 @@ test('only reviewed official HTTPS domains are shown in footers', () => {
 
 test('mixed legacy attribution text never leaks into official source footer', () => {
   const source = articleFooterSource({sourceUrl: 'https://www.remedygames.com/article/test', source: 'Remedy et ActuGaming', sourceDetail: 'Lire ActuGaming'});
-  assert.deepEqual(source, {href: 'https://www.remedygames.com/article/test', label: 'Consulter la source officielle'});
+  assert.deepEqual(source, {href: 'https://www.remedygames.com/article/test'});
   assert.equal(articleFooterSource(null), null);
 });
 
 test('article and gallery rendering apply the policy to old and future data', () => {
   const page = fs.readFileSync('src/pages/CurrentNews.jsx', 'utf8');
-  assert.ok(page.includes('articleFooterSource(story)'));
+  assert.ok(page.includes('articleFooterSource(baseStory)'));
   assert.ok(page.includes('href={footerSource.href}'));
   assert.ok(!page.includes('{story.source}'));
   assert.ok(!page.includes('{story.sourceDetail}'));
@@ -34,4 +34,11 @@ test('article and gallery rendering apply the policy to old and future data', ()
 test('official videos require an individually verified registry entry', () => {
   assert.equal(officialSourceUrl('https://www.youtube.com/watch?v=CQve7-PraCM'), 'https://www.youtube.com/watch?v=CQve7-PraCM');
   assert.equal(officialSourceUrl('https://www.youtube.com/@random'), null);
+});
+
+test('only the supplied AGA partnership post is allowed, never all of Facebook', () => {
+  const url = 'https://www.facebook.com/photo/?fbid=1787284180064227&set=pb.100063479863011.-2207520000';
+  assert.equal(officialSourceUrl(url), url);
+  assert.equal(officialSourceUrl('https://www.facebook.com/photo/?fbid=1234'), null);
+  assert.equal(officialSourceUrl('https://www.facebook.com/'), null);
 });

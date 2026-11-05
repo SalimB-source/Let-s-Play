@@ -9,15 +9,16 @@ const read = f => fs.readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 test('5 novembre : trois univers, sources, visuels de repli et SEO', () => {
   assert.equal(editionDate, '05.11.2026');
   assert.equal(editionIsoDate, '2026-11-05');
-  assert.equal(dailyNewsListing.length, 5);
-  assert.equal(gamingNews.length, 3);
+  assert.equal(dailyNewsListing.length, 6);
+  assert.equal(gamingNews.length, 4);
   assert.ok(dailyNewsListing.some(s => s.to.startsWith('/news/cinema/')));
   assert.ok(dailyNewsListing.some(s => s.to.startsWith('/news/tech/')));
-  assert.equal(new Set(dailyNewsListing.map(s => s.to)).size, 5);
+  assert.equal(new Set(dailyNewsListing.map(s => s.to)).size, 6);
   for (const [key, story] of Object.entries(dailyStories)) {
     assert.equal(story.date, editionDate);
     assert.equal(new URL(story.sourceUrl).protocol, 'https:');
-    assert.equal(new URL(story.image).protocol, 'https:');
+    if (story.image.startsWith('https://')) assert.equal(new URL(story.image).protocol, 'https:');
+    else assert.ok(fs.existsSync(new URL(`../public/${story.image}`, import.meta.url)));
     assert.ok(fs.existsSync(new URL(`../public/${story.fallbackImage}`, import.meta.url)));
     for (const f of ['dek', 'lead', 'intro', 'h2', 'p1', 'p2', 'h2b', 'p3', 'p4', 'takeText', 'imageAlt', 'credit']) assert.ok(story[f], `${key}: ${f}`);
     assert.deepEqual(seoIndex[`/news/${key}`], dailySeoEntries[`/news/${key}`]);
@@ -72,4 +73,16 @@ test('compléments Laufey et GTA : dates, réserves commerciales et vidéos d’
     assert.match(trailer.note, /Ce n’est pas une/);
   }
   assert.match(read('src/pages/News.jsx'), /const todayStories = dailyNewsListing;/);
+});
+
+test('AGA : partenariat transparent, date exacte et affiche sans données Facebook', () => {
+  const key = 'algeria-game-awards-2027-lets-play-sponsor-platinum';
+  const story = dailyStories[key];
+  assert.match(story.dek, /Platinum.*6ᵉ.*22 janvier 2027/);
+  assert.match(story.intro, /non une couverture indépendante/);
+  assert.match(story.source, /date exacte.*pas visible/);
+  assert.match(story.p4, /ni le lieu, ni les horaires/);
+  assert.equal(story.thumbnail, 'news/2026-11-05/algeria-game-awards-lets-play-platinum.jpg');
+  assert.equal(leadTrailer(key), null);
+  assert.match(getArticleTrailerEntry(key).pending, /pas de vidéo/);
 });
