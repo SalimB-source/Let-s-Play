@@ -5242,7 +5242,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7m7-7H5" /></svg>
               </button>
               <span className="sr-only" aria-live="polite" aria-atomic="true">{annonceDiapo}</span>
-              <p className="sr-only">Booster Vampires : cinq créatures Vampires, une rare garantie, disponible au Souk pour 140 crédits.</p>
+              <p className="sr-only">Booster Vampires : toutes les cartes du Souk, avec plus de chances de trouver des Vampires et une rare garantie, pour 140 crédits.</p>
               {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">

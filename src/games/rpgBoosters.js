@@ -1,48 +1,12 @@
 /**
  * Le comptoir du Souk — boosters, viviers et tirages.
  *
- * **Ce qu'un paquet a le droit de contenir** est la seule vraie question de ce
- * module. Depuis que les étages ne donnent plus de cartes mais les **révèlent**
- * (`rpgCollection.js`), la réponse tient en une phrase :
+ * Les deux boosters donnent accès au même catalogue jouable. Le paquet
+ * Vampires attribue un poids dix fois supérieur aux cartes de type Vampire
+ * à rareté égale, sans exclure les autres cartes ni changer les taux de
+ * rareté, la pitié, les remboursements ou le prix.
  *
- * > **Le Souk suit les marches que vous avez montées.** Une carte entre au
- * > vivier quand l'étage qui la révèle est **vaincu**, ou quand c'est **la
- * > marche suivante** — l'étage précédent de sa tour est déjà conquis.
- *
- * **Le Souk ouvre à la première victoire** : avant elle, le comptoir est fermé
- * (les quêtes ne proposent alors pas la quête du comptoir). Ensuite, le vivier
- * grandit à chaque marche — gagner `listes-1` ouvre les cartes de `listes-1` et
- * celles de `listes-2`, la marche suivante. Aucun paquet ne vend une carte du
- * Fjord avant que le joueur ait posé le pied dans le Fjord.
- *
- * **Un seul paquet, toutes les couleurs.** Le Souk ne vend plus un rayon par
- * élément : son vivier réunit **toutes les cartes ouvertes**, quelles que soient
- * leurs couleurs, et le tirage les mélange au hasard. Un paquet n'est jamais
- * monochrome : si les cinq cartes tombent sur la même couleur, la dernière
- * carte de la bande commune est échangée contre une carte d'une autre couleur
- * **de la même rareté** — le mélange se voit sans déplacer les taux.
- *
- * **La rare est garantie.** La quatrième carte est toujours une rare tant que
- * le vivier en garde une ; les mythiques, elles, ne peuvent sortir que de la
- * cinquième carte (8 % par paquet, et la pitié les assure au plus tard au
- * douzième). Un paquet contient donc au moins une rare, jamais « que des
- * communes ».
- *
- * La **garantie des trois nouvelles** tient la promesse de compléter : les
- * doublons des trois premières places s'échangent contre des cartes neuves au
- * moins aussi rares, et si les seules cartes neuves qui restent sont plus rares
- * que le doublon, **une seule** place est promue. Sans cette promotion, les
- * dernières mythiques ne pourraient sortir que de la cinquième carte, et
- * compléter la collection prendrait des mois de quêtes — mesuré, pas supposé.
- *
- * Le vivier garde **les communes et inhabituelles de la dotation** en plus des
- * cartes ouvertes : elles font le remplissage des paquets et paient des crédits
- * en doublon (`rpgCredits.js`). Sans elles, un paquet ne serait fait que de
- * rares, et les mythiques n'auraient plus rien de rare.
- *
- * Le tirage lui-même (`tirerCartes`) est **pur** : `rng` injectable, aucun
- * accès au stockage, aucune dépendance à React — `tests/rpg-boosters.test.js`
- * échantillonne dix mille ouvertures semées pour vérifier les taux.
+ * Le tirage est pur : le générateur de hasard est injectable pour les tests.
  */
 
 import { carteJouableSansTerrain, RPG_DUEL_CARDS, RPG_ELEMENTS, cardById, cardColors, cardCopyLimit, cardRarityInfo } from './rpgCards.js';
@@ -56,7 +20,7 @@ import {
   enregistrerOuverture,
   normaliserPortefeuille,
 } from './rpgCredits.js';
-import { tirerParmi } from './rpgHasard.js';
+import { choixPondere, tirerParmi } from './rpgHasard.js';
 
 /** Les taux, écrits noir sur blanc : le Souk les affiche, les tests les vérifient. */
 export const TAUX = Object.freeze({
@@ -78,10 +42,10 @@ export const TAUX = Object.freeze({
 export const COFFRET = Object.freeze({ taille: 10, remise: 0.1, mythiqueAssuree: true });
 
 /**
- * Le comptoir du Souk : **un seul paquet, un seul rayon**, toutes les couleurs
- * et toutes les cartes disponibles mêlées dans le même vivier. Le prix garde
+ * Les deux boosters partagent toutes les cartes disponibles ; le booster
+ * Vampires favorise les créatures de ce type à rareté égale. Le prix garde
  * la promesse du dossier 13 — une journée de jeu vaut deux paquets.
- * `vitrine` est l'illustration de la mythique montrée sur le sachet ; c'est
+ * `vitrine` est l'illustration montrée sur le sachet ; c'est
  * un appât, pas un droit de tirage.
  */
 export const RAYONS = Object.freeze([
@@ -101,7 +65,7 @@ export const RAYONS = Object.freeze([
     couleur: [...RPG_ELEMENTS],
     prix: 140,
     vitrine: 'vampire-des-braises',
-    texte: 'Cinq créatures Vampires, dont une rare garantie. Les Vampires restent aussi disponibles dans le paquet du Souk.',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver des Vampires. Une rare garantie.',
   },
 ]);
 
@@ -199,14 +163,6 @@ export function carteAuVivier(cardId) {
   return carteJouableSansTerrain(cardById(cardId));
 }
 
-/** Le paquet qui vend une carte : le premier rayon qui porte sa couleur principale. */
-function rayonDeCarte(carte) {
-  const couleur = cardColors(carte)[0];
-  // Repli : une carte sans couleur reconnue rejoint le premier paquet, jamais
-  // ne disparaît du comptoir (les futures cartes entrent donc toujours quelque part).
-  return RAYONS.find((rayon) => rayon.couleur.includes(couleur))?.id ?? RAYONS[0].id;
-}
-
 /**
  * Les cartes que la progression **ouvre** : celles dont l'étage révélateur est
  * vaincu, ou dont l'étage précédent l'est. C'est cette liste que l'écran de
@@ -242,24 +198,12 @@ export function couleursOuvertes(progression) {
   return couleurs;
 }
 
-/**
- * Le vivier du comptoir : **toutes les couleurs à la fois** — les cartes que la
- * ville a déjà ouvertes (un étage vaincu, ou la marche suivante), plus les
- * communes et inhabituelles de la dotation qui remplissent les paquets. Un
- * paquet peut donc contenir n'importe quelle carte ouverte, quelle que soit sa
- * couleur : c'est le mélange qui fait le paquet.
- */
+/** Les deux boosters partagent toutes les cartes jouables, sans condition de progression. */
 export function vivierRayon(rayonId) {
   const rayon = rayonActif(rayonId);
   if (!rayon) return [];
-  // Chaque carte jouable est vendue dans un seul paquet : les cartes sont
-  // réparties entre les rayons, sans condition de victoire.
-  return RPG_DUEL_CARDS
-    .filter((carte) => carteJouableSansTerrain(carte)
-      && (rayon.id === 'vampires'
-        ? /\bvampire\b/i.test(carte.typeLine ?? '')
-        : rayonDeCarte(carte) === rayon.id))
-    .map((carte) => carte.id);
+  // Les deux boosters partagent le catalogue ; seule la pondération diffère.
+  return RPG_DUEL_CARDS.filter(carteJouableSansTerrain).map((carte) => carte.id);
 }
 
 /**
@@ -335,7 +279,7 @@ export function rayonsOuverts(progression, collection = null) {
  * garantie stricte bloquait l'échange. On autorise alors un doublon si la
  * garantie reste tenue.
  */
-function diversifierCouleurs(cartes, bandes, possedees, rng) {
+function diversifierCouleurs(cartes, bandes, possedees, choisir) {
   if (!Array.isArray(cartes) || cartes.length < 2) return cartes;
   const couleurs = new Set();
   for (const id of cartes) {
@@ -371,14 +315,14 @@ function diversifierCouleurs(cartes, bandes, possedees, rng) {
       // On autorise le doublon si on ne passe pas sous la garantie.
       const garantie = Math.min(3, nouvellesActuelles);
       if (nouvellesActuelles - 1 < garantie) continue;
-      const remplacant = tirerParmi(candidates, rng);
+      const remplacant = choisir(candidates);
       if (remplacant) {
         cartes[place] = remplacant;
         return cartes;
       }
       continue;
     }
-    const remplacant = tirerParmi(actuelleNouvelle ? neuves : candidates, rng);
+    const remplacant = choisir(actuelleNouvelle ? neuves : candidates);
     if (remplacant) {
       cartes[place] = remplacant;
       return cartes;
@@ -393,7 +337,7 @@ function diversifierCouleurs(cartes, bandes, possedees, rng) {
  *
  * Trois temps : les bandes annoncées (places 1 à 3), la **rare garantie**
  * (place 4), puis la carte 5 — mythique si la pitié a parlé ou si le sort le
- * veut (8 %). La place 4 ne peut jamais être mythique tant qu'une rare reste au
+ * veut (1 %). La place 4 ne peut jamais être mythique tant qu'une rare reste au
  * vivier : un paquet contient donc toujours une rare. Puis la **garantie des
  * nouvelles** : tant que le joueur peut recevoir trois cartes neuves, un
  * doublon des trois premières places est échangé contre une carte neuve **au
@@ -412,13 +356,18 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
   const bandes = parRarete(vivier);
   const possedees = new Set(collection ?? collectionJoueur({ progression }));
   const tirees = [];
+  // À rareté égale, une carte Vampire pèse dix fois plus dans ce booster.
+  // Tous les autres poids restent positifs : aucune carte ne devient exclusive.
+  const choisir = rayonId === 'vampires'
+    ? (ids) => choixPondere(ids.map((id) => [id, /\bvampire\b/i.test(cardById(id)?.typeLine ?? '') ? 10 : 1]), rng)
+    : (ids) => tirerParmi(ids, rng);
 
   // Chaque place prend la première bande qui a encore une carte libre : un
   // vivier sans commune ne bloque jamais un paquet, il le rend plus généreux.
   const placer = (ordre) => {
     for (const bande of ordre) {
       const candidats = (bandes[bande] ?? []).filter((id) => !tirees.includes(id));
-      const id = tirerParmi(candidats, rng);
+      const id = choisir(candidats);
       if (id) {
         tirees.push(id);
         return id;
@@ -449,7 +398,7 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
     const candidates = ['inhabituelle', 'commune']
       .flatMap((bande) => (RANG_RARETE[bande] >= rang ? (bandes[bande] ?? []) : []))
       .filter((id) => !tirees.includes(id) && !possedees.has(id));
-    const remplacant = tirerParmi(candidates, rng);
+    const remplacant = choisir(candidates);
     if (remplacant) {
       tirees[place] = remplacant;
       continue;
@@ -458,7 +407,7 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
     // neuves ne doit jamais contourner les taux de rareté.
   }
 
-  diversifierCouleurs(tirees, bandes, possedees, rng);
+  diversifierCouleurs(tirees, bandes, possedees, choisir);
 
   return {
     ok: true,
