@@ -71,27 +71,56 @@ def write(draw, x, y, message, face, color):
 
 
 def make_pack(info):
-    """A small foil display pack featuring an actual card illustration."""
-    pack = Image.new('RGBA', (300, 550), (0, 0, 0, 0))
+    """Print a set onto the *real* Sablier foil pouch, not onto a flat card.
+
+    Keep the photographed gold heat seals, crimped edges, glossy black folds,
+    brand and ornate frame from the Vampires product image. Only the art inside
+    the frame and the foil nameplate are replaced, so the shape reads as a
+    sealed booster rather than a rectangular illustration.
+    """
+    original = Image.open(OUTPUT / 'booster-vampires.webp').convert('RGBA')
+    pack = original.crop((251, 146, 768, 1147)).resize((292, 566), Image.Resampling.LANCZOS)
+    # Hide the old illustration *and* its fire/armor bleeding past the frame.
+    # Leave the outer heat-sealed gold seams, zipper folds and black foil intact.
     d = ImageDraw.Draw(pack)
-    gold = (216, 178, 108)
-    d.rounded_rectangle((2, 2, 297, 547), radius=7, fill=(15, 13, 19), outline=gold, width=5)
-    d.rectangle((12, 33, 287, 515), fill=(9, 11, 18), outline=gold, width=3)
+    d.rectangle((2, 74, 289, 445), fill=(14, 12, 19))
+    d.line((10, 88, 10, 426), fill=(72, 40, 36), width=2)
+    d.line((281, 88, 281, 426), fill=(67, 52, 54), width=2)
     art = Image.open(CARDS / (info['art'] + '.jpg')).convert('RGB')
-    art = ImageOps.fit(art, (258, 364), method=Image.Resampling.LANCZOS, centering=(.5, .35))
-    pack.paste(art, (21, 79))
-    d.rectangle((19, 77, 281, 446), outline=gold, width=4)
-    # Black nameplate and gold bars echo the existing Vampires foil packaging.
-    d.rectangle((14, 448, 286, 514), fill=(11, 10, 15))
-    d.line((29, 455, 271, 455), fill=gold, width=2)
-    d.line((29, 508, 271, 508), fill=gold, width=2)
-    for y in (14, 20, 26, 521, 527, 533, 539):
-        d.line((9, y, 291, y), fill=(140, 115, 77, 140), width=2)
-    d.text((150, 51), 'LE SABLIER', anchor='mm', font=font(BOLD, 21), fill=(246, 218, 161))
-    size = 35
-    while d.textbbox((0, 0), info['name'], font=font(BOLD, size))[2] > 250:
+    art = ImageOps.fit(art, (236, 350), method=Image.Resampling.LANCZOS, centering=(.5, .34))
+    # Softly shade the print toward the bevel without covering the foil frame.
+    tint = Image.new('RGBA', art.size)
+    pixels = tint.load()
+    for y in range(art.height):
+        for x in range(art.width):
+            edge = max(0, 1 - min(x, art.width - x - 1, y, art.height - y - 1) / 28)
+            pixels[x, y] = (8, 6, 14, int(83 * edge + 13))
+    panel = Image.alpha_composite(art.convert('RGBA'), tint)
+    pack.alpha_composite(panel, (28, 84))
+    d = ImageDraw.Draw(pack)
+    # Reprint the ornamental foil frame on the pouch surface.
+    d.rectangle((24, 76, 268, 439), outline=(215, 177, 105), width=3)
+    d.rectangle((29, 81, 263, 434), outline=(128, 91, 52), width=1)
+    for x, direction in ((28, 1), (264, -1)):
+        for y, sign in ((80, 1), (435, -1)):
+            d.line((x, y + sign * 25, x, y, x + direction * 25, y),
+                   fill=(249, 206, 132), width=3)
+            d.arc((min(x, x + direction * 28), min(y, y + sign * 28),
+                   max(x, x + direction * 28), max(y, y + sign * 28)),
+                  0, 90, fill=(187, 137, 72), width=2)
+    # Fully remove VAMPIRES from the original label; retain the wrinkled
+    # metallic packet sides and the gold crimping above and below this plate.
+    for y in range(446, 520):
+        offset = abs(y - 482) / 37
+        shade = int(9 + offset * 7)
+        d.line((25, y, 266, y), fill=(shade + 4, shade + 1, shade + 7), width=1)
+    d.line((30, 449, 261, 449), fill=(218, 175, 99), width=2)
+    d.line((30, 516, 261, 516), fill=(135, 100, 56), width=2)
+    size = 34
+    while d.textbbox((0, 0), info['name'], font=font(BOLD, size))[2] > 222:
         size -= 1
-    d.text((150, 482), info['name'], anchor='mm', font=font(BOLD, size), fill=(250, 226, 173))
+    d.text((147, 485), info['name'], anchor='mm', font=font(BOLD, size),
+           fill=(244, 215, 155), stroke_width=1, stroke_fill=(98, 63, 32))
     return pack
 
 

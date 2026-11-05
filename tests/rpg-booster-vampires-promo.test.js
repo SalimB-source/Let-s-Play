@@ -41,6 +41,14 @@ test('les six affiches plein cadre portent chacune une description accessible de
   assert.doesNotMatch(page, /rpg-mode-menu__vampires-texte|rpg-mode-menu__vampires-booster/);
 });
 
+test('les cinq sets reprennent le vrai sachet scellé du booster Vampires', () => {
+  const rendu = lire('../tools/render-rpg-set-banners.py');
+  assert.match(rendu, /original = Image\.open\(OUTPUT \/ 'booster-vampires\.webp'\)/);
+  assert.match(rendu, /original\.crop\(\(251, 146, 768, 1147\)\)/);
+  assert.match(rendu, /Keep the photographed gold heat seals, crimped edges/);
+  assert.doesNotMatch(rendu, /rounded_rectangle/);
+});
+
 test('les flèches parcourent tous les sets avant l’offre, avec et sans elle', () => {
   const sansOffre = RPG_OFFRE_DIAPO;
   assert.equal(diapoSuivante(RPG_PROMO_DEBUT, 1, sansOffre), RPG_PROMO_DEBUT + 1);
