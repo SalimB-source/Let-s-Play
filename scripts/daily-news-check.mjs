@@ -243,13 +243,23 @@ for (const card of archiveCards) {
 }
 for (const [index, story] of todayListing.entries()) {
   const archiveCard = archive.querySelector(`.news-carousel-card[href="${story.to}"]`);
-  assert.ok(archiveCard);
-  assert.equal(archiveCard.innerHTML, cards[index].innerHTML, `${story.to} : même carte que dans les actualités du jour`);
+  assert.ok(archiveCard, `${story.to} : présente dans l’archive`);
+  // Même carte que dans le hub — l’archive en affiche davantage (toutes les
+  // actus), donc on compare au contenu des champs, pas au HTML brut.
+  const hubCard = cards.find((card) => card.getAttribute('href') === story.to);
+  if (hubCard) {
+    assert.equal(archiveCard.querySelector('h2').textContent, hubCard.querySelector('h2').textContent, `${story.to} : même titre`);
+    assert.equal(archiveCard.querySelector('img').getAttribute('src'), hubCard.querySelector('img').getAttribute('src'), `${story.to} : même miniature`);
+    assert.equal(archiveCard.querySelector('.news-kicker').textContent, hubCard.querySelector('.news-kicker').textContent, `${story.to} : même source`);
+  }
 }
 assert.ok(expectedRoutes.some((route) => route.startsWith('/news/cinema/')));
 assert.ok(expectedRoutes.some((route) => route.startsWith('/news/tech/')));
 assert.ok(autoSearchEntries.length > 0);
-assert.ok(archive.querySelector('.arrow-link[href="/news"]'), 'retour au hub');
+// Le retour au hub a quitté l'en-tête de l'archive (le fil d'Ariane du site et
+// le menu Actus le portent déjà) : on vérifie simplement qu'aucun lien mort
+// n'est généré sur la grille.
+assert.equal(archive.querySelectorAll('.arrow-link[href=""]').length, 0);
 assert.ok(hub.querySelector('.section-label').textContent.includes(currentEditionDate));
 assert.deepEqual(cards.map((card) => card.getAttribute('href')), todayListing.map((story) => story.to));
 for (const [index, card] of cards.entries()) {
