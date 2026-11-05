@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { diapoSuivante } from '../src/games/rpgDiaporama.js';
 import { RPG_OFFRE_DIAPO, RPG_PROMO_DEBUT, RPG_PROMO_SLIDES } from '../src/games/rpgPromoSlides.js';
-import { RAYONS } from '../src/games/rpgBoosters.js';
+import { RAYONS, carteFavoriseeRayon } from '../src/games/rpgBoosters.js';
+import { cardById } from '../src/games/rpgCards.js';
 
 const lire = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
@@ -58,6 +59,32 @@ test('les cinq sets reprennent le vrai sachet scellé du booster Vampires', () =
   assert.match(rendu, /original\.crop\(\(251, 146, 768, 1147\)\)/);
   assert.match(rendu, /Keep the photographed gold heat seals, crimped edges/);
   assert.doesNotMatch(rendu, /rounded_rectangle/);
+});
+
+test('les cinq nouveaux boosters montrent la même figure emblématique au Souk et sur leur affiche', () => {
+  const rendu = lire('../tools/render-rpg-set-banners.py');
+  const css = lire('../src/games/rpg-souk.css');
+  const page = lire('../src/games/RpgDuelPage.jsx');
+  const figures = {
+    pirates: 'la-barbe-noire',
+    vikings: 'jarl-au-marteau-de-guerre',
+    samourais: 'onna-musha-des-cendres',
+    sable: 'kusayla-roi-des-imazighen',
+    egyptiens: 'seigneur-des-machoires',
+  };
+  for (const [set, artId] of Object.entries(figures)) {
+    const rayonId = `set-${set}`;
+    assert.equal(RAYONS.find((rayon) => rayon.id === rayonId)?.vitrine, artId, rayonId);
+    assert.ok(carteFavoriseeRayon(rayonId, cardById(artId)), `${artId} appartient au thème du paquet`);
+    assert.ok(existsSync(new URL(`../public/cards/${artId}.jpg`, import.meta.url)), artId);
+    assert.match(rendu, new RegExp(`'${set}': \\{[^}]*'art': '${artId}'`), `${rayonId} reprend cette figure sur l'affiche`);
+  }
+  assert.match(css, /data-souk-rayon\^="set-"\] \{ --paquet-art-scale: 1\.16; \}/,
+    'les personnages restent visibles en entier sur les sachets du Souk');
+  assert.match(css, /scale\(var\(--paquet-art-scale, 1\.58\)\)/,
+    'Salem et Vampires gardent leur ancien cadrage');
+  assert.equal((page.match(/boosters-sets-v3/g) ?? []).length, 2,
+    'les nouvelles affiches sont datées sur le fond et au premier plan');
 });
 
 test('les flèches parcourent tous les sets avant l’offre, avec et sans elle', () => {
