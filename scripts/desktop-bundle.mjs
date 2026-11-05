@@ -45,6 +45,7 @@ import {
 } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resoudreJeu } from '../desktop/jeux.js';
 
 const RACINE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PAQUET = join(RACINE, 'desktop', 'dist-web');
@@ -52,6 +53,16 @@ const REGLES = join(RACINE, 'desktop', 'bundle-assets.json');
 
 const garderTout = process.argv.includes('--keep-all');
 const coqueSeule = process.argv.includes('--coque');
+
+// **Quel jeu** ce projet d'empaquetage sert : `--jeu=sablier` (défaut) ou
+// `LETSPLAY_JEU=vice-city`. Tout l'empaquetage suit : titre, appId, préfixe
+// des installeurs, icônes, et le `LETSPLAY_JEU` inscrit dans le paquet (c'est
+// lui que la coque lira au lancement, chez le joueur).
+const argJeu = process.argv.find((a) => a.startsWith('--jeu='));
+const { jeu: JEU, avertissement: AVERTISSEMENT_JEU } = resoudreJeu({
+  env: argJeu ? argJeu.slice('--jeu='.length) : (process.env.LETSPLAY_JEU || ''),
+});
+if (AVERTISSEMENT_JEU) console.warn(`[desktop] ${AVERTISSEMENT_JEU}`);
 
 /** Traduit un motif simple (`*`, `?`) en expression rationnelle ancrée. */
 function motifVersRegExp(motif) {
@@ -229,18 +240,35 @@ function construirePaquetWeb() {
 // quelques dizaines de Ko, et le jeu voyage à côté, dans resources/app.
 const SCENE = join(RACINE, 'desktop', 'pack');
 const FICHIERS_SCENE = [
-  'main.js', 'preload.cjs', 'gpu.js', 'local-server.js',
+  'main.js', 'preload.cjs', 'gpu.js', 'routes.js', 'jeux.js', 'local-server.js',
   'diagnostic.html', 'offline.html',
 ];
 rmSync(SCENE, { recursive: true, force: true });
 mkdirSync(join(SCENE, 'app-icons'), { recursive: true });
+// Les icônes du jeu : `app-icons` (Sablier) ou `app-icons-vice-city`. La scène
+// les reçoit toujours sous le nom `app-icons`, pour que `electron-builder.yml`
+// reste identique d'un jeu à l'autre.
+const DOSSIER_ICONES = join(RACINE, 'desktop', JEU.icones);
 for (const fichier of FICHIERS_SCENE) {
   copyFileSync(join(RACINE, 'desktop', fichier), join(SCENE, fichier));
 }
 // La config et les icônes voyagent avec le projet isolé.
-copyFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), join(SCENE, 'electron-builder.yml'));
+// La config d'empaquetage est **retouchée pour le jeu** : `appId`, nom du
+// produit, préfixe des installeurs et titre des raccourcis sont remplacés à la
+// lecture. Le fichier source reste unique, pour que les deux jeux ne
+// divergent pas ; seules ces quatre lignes changent d'un exécutable à l'autre.
+const BRUT_YML = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+const ymlJeu = BRUT_YML
+  .replace(/^appId:.*$/m, `appId: ${JEU.appId}`)
+  .replace(/^productName:.*$/m, `productName: ${JEU.titre}`)
+  .replace(/artifactName: [\w-]+-\$\{version\}-setup\.\$\{ext\}/g, `artifactName: ${JEU.prenom}-\${version}-setup.\${ext}`)
+  .replace(/artifactName: [\w-]+-\$\{version\}-portable\.\$\{ext\}/g, `artifactName: ${JEU.prenom}-\${version}-portable.\${ext}`)
+  .replace(/shortcutName: .*$/m, `shortcutName: ${JEU.titre}`)
+  // Builds Linux/macOS (jamais produits par la CI, mais utilisables en local).
+  .replace(/artifactName: [\w-]+-\$\{version\}\.\$\{ext\}/g, `artifactName: ${JEU.prenom}-\${version}.\${ext}`);
+writeFileSync(join(SCENE, 'electron-builder.yml'), ymlJeu);
 for (const icone of ['icon.ico', 'icon.png']) {
-  copyFileSync(join(RACINE, 'desktop', 'app-icons', icone), join(SCENE, 'app-icons', icone));
+  copyFileSync(join(DOSSIER_ICONES, icone), join(SCENE, 'app-icons', icone));
 }
 const paquetCoque = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
 
@@ -265,10 +293,15 @@ if (!electronVersion) {
   process.exit(1);
 }
 writeFileSync(join(SCENE, 'package.json'), `${JSON.stringify({
-  name: paquetCoque.name,
-  productName: paquetCoque.productName,
+  // Identité du **jeu**, pas de la coque : c'est ce que lit electron-builder
+  // pour le nom du produit, l'appId et le nom des installeurs.
+  name: JEU.id === 'sablier' ? paquetCoque.name : JEU.prenom,
+  // **Le jeu que sert ce paquet.** Lu par `main.js` au lancement, puisque
+  // l'installeur ne pose aucune variable d'environnement.
+  jeu: JEU.id,
+  productName: JEU.titre,
   version: paquetCoque.version,
-  description: paquetCoque.description,
+  description: JEU.description,
   main: 'main.js',
   type: 'module',
   private: true,
@@ -316,7 +349,7 @@ if (npmDedupe.status !== 0) {
 // d'embarquer le `node_modules` du dépôt entier (672 Mo d'asar dépliés, un
 // installeur de 497 Mo — vu en CI). En échange, un module oublié ne se
 // verrait qu'au lancement, chez le joueur : on refuse de produire l'exécutable.
-const ymlBuilder = readFileSync(join(RACINE, 'desktop', 'electron-builder.yml'), 'utf8');
+const ymlBuilder = BRUT_YML;
 if (!ymlBuilder.includes("'!node_modules/**'")) {
   console.error('[desktop] electron-builder.yml n’exclut plus node_modules en bloc.');
   console.error('          Rétablissez « - \'!node_modules/**\' » avant la liste des modules.');

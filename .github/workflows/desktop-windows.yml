@@ -99,6 +99,27 @@ jobs:
   installeur:
     needs: verifs
     runs-on: windows-latest
+    # **Un installeur par jeu**, comme les APK : une coque, deux applications.
+    # `LETSPLAY_JEU` sélectionne le jeu dans `desktop/jeux.js` — identité de la
+    # fenêtre, route verrouillée et flux de mise à jour en découlent. Chaque jeu
+    # a **sa** Release (`desktop`, `desktop-vice-city`), donc son `latest.yml` :
+    # un seul flux commun servirait le mauvais installeur à l'un des deux.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - jeu: sablier
+            fichier: le-sablier-de-bab-el
+            release: desktop
+            titre: "Le Sablier de Bab El pour PC"
+            artefact: sablier-pc-windows
+          - jeu: vice-city
+            fichier: vice-city-rush
+            release: desktop-vice-city
+            titre: "Vice City Rush pour PC"
+            artefact: vice-city-pc-windows
+    env:
+      LETSPLAY_JEU: ${{ matrix.jeu }}
     # Mêmes valeurs publiques que le déploiement web (voir deploy.yml) : sans
     # elles l'installeur se construit quand même, mais le compte et les duels
     # en ligne y resteront indisponibles (jeu hors ligne intact). La site key
@@ -210,9 +231,9 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./desktop/package.json').version")
-          test -s "desktop/release/le-sablier-de-bab-el-${VERSION}-setup.exe.blockmap"
+          test -s "desktop/release/${{ matrix.fichier }}-${VERSION}-setup.exe.blockmap"
           test -s desktop/release/latest.yml
-          node --input-type=module -e "import fs from 'node:fs'; const v=process.argv[1], y=fs.readFileSync('desktop/release/latest.yml','utf8'); if(!y.includes('version: ' + v) || !y.includes('le-sablier-de-bab-el-' + v + '-setup.exe')) throw new Error('latest.yml ne référence pas l\u2019installeur v' + v); console.log('latest.yml prêt pour v' + v);" "$VERSION"
+          node --input-type=module -e "import fs from 'node:fs'; const [v, f] = process.argv.slice(1), y=fs.readFileSync('desktop/release/latest.yml','utf8'); if(!y.includes('version: ' + v) || !y.includes(f + '-' + v + '-setup.exe')) throw new Error('latest.yml ne référence pas l\u2019installeur ' + f + ' v' + v); console.log('latest.yml prêt pour ' + f + ' v' + v);" "$VERSION" "${{ matrix.fichier }}"
 
       - name: Contenu de release/ (tailles réelles)
         shell: bash
@@ -241,7 +262,7 @@ jobs:
         shell: bash
         run: |
           {
-            echo "Rapport de build du $(date -u '+%F %T UTC') — commit \`${GITHUB_SHA::7}\`"
+            echo "Rapport de build du $(date -u '+%F %T UTC') — commit \`${GITHUB_SHA::7}\` — jeu : ${LETSPLAY_JEU:-sablier}"
             echo
             echo '```'
             du -sh desktop/dist-web desktop/release/win-unpacked 2>/dev/null
@@ -279,17 +300,20 @@ jobs:
       - name: Artefacts de run
         uses: actions/upload-artifact@v4
         with:
-          name: sablier-pc-windows
+          name: ${{ matrix.artefact }}
           path: |
-            desktop/release/le-sablier-de-bab-el-*-setup.exe
-            desktop/release/le-sablier-de-bab-el-*-setup.exe.blockmap
-            desktop/release/le-sablier-de-bab-el-*-portable.exe
+            desktop/release/${{ matrix.fichier }}-*-setup.exe
+            desktop/release/${{ matrix.fichier }}-*-setup.exe.blockmap
+            desktop/release/${{ matrix.fichier }}-*-portable.exe
             desktop/release/latest.yml
           retention-days: 30
           if-no-files-found: error
 
-      # Release permanente sur le tag « desktop » (main seulement) : le lien de
+      # Release permanente, une par jeu (main seulement) : le lien de
       # téléchargement des joueurs ne change jamais, le contenu est remplacé.
+      # Deux Releases = deux `latest.yml`, donc deux flux de mise à jour
+      # distincts — sinon `electron-updater` servirait l'installeur de l'autre
+      # jeu, avec le mauvais identifiant d'application au bout.
       - name: Publier la GitHub Release
         if: github.ref == 'refs/heads/main'
         shell: bash
@@ -298,22 +322,39 @@ jobs:
         run: |
           cd desktop/release
           VERSION=$(node -p "require('../../desktop/package.json').version")
-          # Copies au nom FIXE : l'écran d'entrée du site (/jeu/sablier-de-bab-el)
-          # pointe vers …/download/desktop/le-sablier-de-bab-el-setup.exe, un lien
-          # qui doit survivre aux changements de version. Les noms versionnés
-          # restent publiés à côté, pour archiver.
-          cp "le-sablier-de-bab-el-${VERSION}-setup.exe" le-sablier-de-bab-el-setup.exe
-          cp "le-sablier-de-bab-el-${VERSION}-portable.exe" le-sablier-de-bab-el-portable.exe
+          FICHIER="${{ matrix.fichier }}"
+          # Copies au nom FIXE : les écrans d'entrée du site pointent vers
+          # …/download/<release>/<fichier>-setup.exe, un lien qui doit survivre
+          # aux changements de version. Les noms versionnés restent publiés à
+          # côté, pour archiver.
+          cp "${FICHIER}-${VERSION}-setup.exe" "${FICHIER}-setup.exe"
+          cp "${FICHIER}-${VERSION}-portable.exe" "${FICHIER}-portable.exe"
           FICHIERS=$(ls *.exe *.blockmap latest*.yml)
           {
-            echo "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play."
-            echo ""
-            echo "**Installation** : télécharge \`le-sablier-de-bab-el-${VERSION}-setup.exe\`, lance-le,"
-            echo "puis ouvre le jeu depuis le menu Démarrer ou le raccourci du bureau."
-            echo "Le paquet sans installation (\`-portable.exe\`) se lance d'un double-clic, sans rien écrire ailleurs."
-            echo ""
-            echo "**Carte graphique** : le rendu 3D passe par la carte du PC (WebGL → ANGLE/D3D11)."
-            echo "Menu « Carte graphique → État de la carte graphique… » pour vérifier quel GPU travaille."
+            if [ "${{ matrix.jeu }}" = "vice-city" ]; then
+              echo "Version PC de **Vice City Rush**, la conduite libre de Let's Play."
+              echo ""
+              echo "**Installation** : télécharge \`vice-city-rush-${VERSION}-setup.exe\`, lance-le,"
+              echo "puis ouvre le jeu depuis le menu Démarrer ou le raccourci du bureau."
+              echo "Le paquet sans installation (\`-portable.exe\`) se lance d'un double-clic, sans rien écrire ailleurs."
+              echo ""
+              echo "**Ce que contient l'application** : uniquement le jeu — accueil du jeu,"
+              echo "choix de la voiture et conduite libre. Les liens vers le site sont neutralisés :"
+              echo "on ne sort pas de Vice City Rush."
+              echo ""
+              echo "**Rendu** : touche **V** pour passer de STANDARD à CINÉMA, puis à **WebGPU**"
+              echo "quand la carte et le pilote le permettent (Chrome/Edge 113+, GPU récent)."
+              echo "Le jeu bascule seul sur un rendu de repli si WebGPU manque."
+            else
+              echo "Version PC installable du Sablier de Bab El, le jeu de cartes de Let's Play."
+              echo ""
+              echo "**Installation** : télécharge \`le-sablier-de-bab-el-${VERSION}-setup.exe\`, lance-le,"
+              echo "puis ouvre le jeu depuis le menu Démarrer ou le raccourci du bureau."
+              echo "Le paquet sans installation (\`-portable.exe\`) se lance d'un double-clic, sans rien écrire ailleurs."
+              echo ""
+              echo "**Carte graphique** : le rendu 3D passe par la carte du PC (WebGL → ANGLE/D3D11)."
+              echo "Menu « Carte graphique → État de la carte graphique… » pour vérifier quel GPU travaille."
+            fi
             echo ""
             echo "**Hors connexion (option)** : cet installeur ouvre le site en ligne, il ne l'embarque pas."
             echo "Pour jouer sans Internet, télécharge le **pack hors ligne** ci-dessous, puis installe-le"
@@ -326,10 +367,12 @@ jobs:
             echo "- **Version** : ${VERSION}"
             echo "- **Commit** : ${GITHUB_SHA::7}"
           } > notes.md
-          gh release delete desktop --yes --cleanup-tag 2>/dev/null || true
-          git push origin :refs/tags/desktop 2>/dev/null || true
-          gh release create desktop $FICHIERS --title "Le Sablier de Bab El pour PC — v${VERSION}" --notes-file notes.md
-          echo "Release publiée : $FICHIERS"
+          TAG="${{ matrix.release }}"
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+          gh release create "$TAG" $FICHIERS \
+            --title "${{ matrix.titre }} — v${VERSION}" --notes-file notes.md
+          echo "Release publiée : $TAG ($FICHIERS)"
 
   # ---------------------------------------------------------------------------
   # Pack hors ligne — sur demande seulement

@@ -32,12 +32,38 @@ if (keystorePath == null && fallbackStoreFile.exists() && fallbackPropsFile.exis
 def versionCodeEnv = System.getenv('ANDROID_VERSION_CODE')
 def versionNameEnv = System.getenv('ANDROID_VERSION_NAME')
 
+// ── Identité de l'APK ───────────────────────────────────────────────────────
+// Une seule coque Android, **trois applications** (mêmes jeux que côté PC, voir
+// `desktop/jeux.js`). La CI choisit avec des variables d'environnement :
+//
+//   ANDROID_JEU=site       → « Let's Play »    (dz.letsplay.officiel)  le site entier
+//   ANDROID_JEU=sablier    → « Le Sablier »    (dz.letsplay.sablier)   le jeu de cartes seul
+//   ANDROID_JEU=vice-city  → « Vice City Rush »(dz.letsplay.vicecity)  la conduite seule
+//
+// Sans variable, on retrouve l'APK historique (le site entier) : un build local
+// ne change donc pas de comportement par surprise.
+def jeuDemande = (System.getenv('ANDROID_JEU') ?: 'site').trim().toLowerCase()
+def identites = [
+    'site'      : [nom: "Let's Play",        appId: 'dz.letsplay.officiel',  route: '',                      dossier: 'ic_launcher'],
+    'sablier'   : [nom: 'Le Sablier de Bab El', appId: 'dz.letsplay.sablier', route: '/jeu/sablier-de-bab-el', dossier: 'ic_launcher_sablier'],
+    'vice-city' : [nom: 'Vice City Rush',    appId: 'dz.letsplay.vicecity',  route: '/jeu/vice-city-rush',   dossier: 'ic_launcher_vice_city'],
+]
+if (!identites.containsKey(jeuDemande)) {
+    throw new GradleException("ANDROID_JEU=\"${jeuDemande}\" est inconnu (valeurs : ${identites.keySet().join(', ')}).")
+}
+def identite = identites[jeuDemande]
+
 android {
     namespace 'dz.letsplay.officiel'
     compileSdk 35
 
     defaultConfig {
-        applicationId 'dz.letsplay.officiel'
+        applicationId identite.appId
+        // Le nom affiché et l'icône du lanceur sont posés ici plutôt que dans
+        // les ressources : une seule coque, trois identités, sans dupliquer
+        // strings.xml ni les dossiers mipmap.
+        resValue 'string', 'app_name', identite.nom
+        manifestPlaceholders = [appIcon: '@mipmap/' + identite.dossier]
         minSdk 23          // Android 6.0+
         targetSdk 35
         // Plancher : la CI ne descend jamais en dessous. On l'incrémente à la
@@ -79,8 +105,43 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
+    // `MainActivity` est écrit **une fois**, avec des jetons dans ses constantes
+    // (`"__ROUTE_JEU__"`, `"__APP_ID__"`). On ne le modifie pas sur place — ce
+    // serait un fichier sale après chaque build — : une tâche le copie, avec ses
+    // jetons remplacés, dans un dossier de sources que Gradle compile à la place
+    // de `src/main/java`. L'APK produite ne contient donc plus aucun jeton, et
+    // le dépôt reste propre.
+    sourceSets {
+        main {
+            java.srcDirs = ["$buildDir/generated/java-jeu"]
+        }
+    }
+
     base {
-        archivesName = 'lets-play'
+        // Nom du fichier produit : `lets-play`, `le-sablier-de-bab-el`,
+        // `vice-city-rush` — la CI le renomme ensuite avec la version.
+        archivesName = identite.appId.split('\\.')[-1] == 'officiel' ? 'lets-play' : (jeuDemande == 'vice-city' ? 'vice-city-rush' : 'le-sablier-de-bab-el')
+    }
+}
+
+// ── Génération de MainActivity pour ce jeu ──────────────────────────────────
+// Recopie `android/app/src/main/java/` en remplaçant les deux jetons. Tout le
+// reste de l'arborescence (une seule classe aujourd'hui) est copié tel quel.
+def genererSourcesJeu = tasks.register('genererSourcesJeu', Copy) {
+    from 'src/main/java'
+    into "$buildDir/generated/java-jeu"
+    filter { ligne -> ligne
+        .replace('"__ROUTE_JEU__"', '"' + identite.route + '"')
+        .replace('"__APP_ID__"', '"' + identite.appId + '"')
+    }
+    inputs.property('route', identite.route)
+    inputs.property('appId', identite.appId)
+}
+tasks.configureEach { tache ->
+    if (tache.name.startsWith('pre') && tache.name.endsWith('Build')
+        || tache.name == 'compileDebugJavaWithJavac'
+        || tache.name == 'compileReleaseJavaWithJavac') {
+        tache.dependsOn(genererSourcesJeu)
     }
 }
 

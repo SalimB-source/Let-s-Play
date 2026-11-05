@@ -1,4 +1,4 @@
-# Android — l'APK Let's Play
+# Android — les APK des jeux
 
 Coque Android (WebView) du site **Let's Play**. L'application affiche le site
 en ligne : **chaque mise à jour du site est immédiatement visible dans l'app**,
@@ -8,8 +8,22 @@ l'URL Vercel ci-dessous** : le déploiement GitHub Pages seul n'affecte pas l'AP
 La WebView possède une session distincte du navigateur du téléphone : pour
 accéder à la messagerie, il faut se connecter dans l'application.
 
-- Nom affiché : **Let's Play**
-- Identifiant : `dz.letsplay.officiel`
+**Une coque, trois applications.** Le code Java est unique ; `build.gradle`
+choisit l'identité avec `ANDROID_JEU` et remplace deux jetons de `MainActivity`
+(`__ROUTE_JEU__`, `__APP_ID__`) au moment de compiler :
+
+| `ANDROID_JEU` | Nom affiché | Identifiant | Ouvre | Release |
+|---|---|---|---|---|
+| `site` (défaut) | Let's Play | `dz.letsplay.officiel` | tout le site | `apk` |
+| `sablier` | Le Sablier de Bab El | `dz.letsplay.sablier` | `/jeu/sablier-de-bab-el` | `apk-sablier` |
+| `vice-city` | Vice City Rush | `dz.letsplay.vicecity` | `/jeu/vice-city-rush` | `apk-vice-city` |
+
+Les deux APK de jeu **ne sortent pas du jeu** : `shouldOverrideUrlLoading`
+refuse toute autre page du site (le hub, l'accueil, un autre jeu) au lieu de
+l'afficher. Les identifiants sont distincts, donc les trois applications
+cohabitent sur un même téléphone, chacune avec son icône (`npm run android:icons`)
+et sa progression locale.
+
 - Version : dérivée par la CI (`versionCode` = max(plancher du fichier, nombre
   de commits), `versionName` = `1.0.<versionCode>`) — voir `app/build.gradle`
 - URL embarquée : <https://let-s-play-nu.vercel.app> (constante `SITE_HOST`

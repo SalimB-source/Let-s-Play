@@ -484,8 +484,12 @@ assert.match(bundleCoque, /version:\s*paquetCoque\.version/,
   'le projet empaqueté reprend la version de la coque');
 assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/,
   'la Release ne se publie que depuis `main`');
-assert.match(workflow, /gh release delete desktop/,
-  'la Release du tag `desktop` est remplacée à chaque build (stockage borné)');
+assert.match(workflow, /gh release delete "?\$TAG"?/,
+  'la Release du jeu est remplacée à chaque build (stockage borné)');
+assert.match(workflow, /TAG="?\$\{\{ matrix\.release \}\}"?/,
+  'chaque jeu publie sur **sa** Release (`desktop`, `desktop-vice-city`)');
+assert.match(workflow, /LETSPLAY_JEU: \$\{\{ matrix\.jeu \}\}/,
+  'le job construit bien un installeur par jeu, sélectionné par LETSPLAY_JEU');
 assert.match(workflow, /cancel-in-progress:\s*\$\{\{ github\.event_name == 'pull_request' \}\}/,
   'un build de `main` ne doit pas être annulé en pleine publication de la Release');
 ok('version dérivée (max fichier/commits/run), posée avant le pack, publiée sur `main` seulement');

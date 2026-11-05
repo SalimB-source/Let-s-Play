@@ -1,5 +1,10 @@
 /**
- * Coque PC du Sablier de Bab El — desktop/main.js
+ * Coque PC (Electron) — desktop/main.js
+ *
+ * Une seule coque, **plusieurs jeux** : `LETSPLAY_JEU` (voir `desktop/jeux.js`)
+ * décide lequel — « Le Sablier de Bab El » ou « Vice City Rush ». Tout ce qui
+ * suit est commun ; seuls le titre, la route, l'identifiant et la Release
+ * changent.
  * ================================================
  * Processus principal Electron. Trois choses, dans cet ordre :
  *
@@ -31,7 +36,8 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer, DIAGNOSTIC_INTRO } from './gpu.js';
-import { ROUTE_JEU, estRouteDuJeu } from './routes.js';
+import { estRouteDuJeu } from './routes.js';
+import { resoudreJeu } from './jeux.js';
 import { startLocalServer, DEFAULT_PORT, DEFAULT_REMOTE_ORIGIN } from './local-server.js';
 
 /**
@@ -59,18 +65,45 @@ try {
 }
 
 
+/**
+ * **Quel jeu cette application sert.** Une seule coque, deux exécutables : le
+ * projet d'empaquetage porte `LETSPLAY_JEU=sablier` ou `vice-city` (voir
+ * `desktop/jeux.js`). Tout le reste de ce fichier ne connaît plus que `JEU`.
+ *
+ * L'identité vient de la variable d'environnement, sinon du `package.json` de
+ * l'application (`jeu: "vice-city"`), que `scripts/desktop-bundle.mjs` inscrit
+ * dans la scène : chez le joueur, lancé depuis le raccourci Windows, il n'y a
+ * **aucune** variable d'environnement — le paquet doit donc se souvenir de ce
+ * qu'il est.
+ */
+function jeuDuPaquet() {
+  if (process.env.LETSPLAY_JEU) return process.env.LETSPLAY_JEU;
+  try {
+    return JSON.parse(readFileSync(join(import.meta.dirname, 'package.json'), 'utf8')).jeu || '';
+  } catch {
+    return '';
+  }
+}
+const { jeu: JEU, avertissement: AVERTISSEMENT_JEU } = resoudreJeu({ env: jeuDuPaquet() });
+if (AVERTISSEMENT_JEU) console.warn(`[desktop] ${AVERTISSEMENT_JEU}`);
+
 /** Identifiant Windows : regroupe les fenêtres dans la barre des tâches et
  * signe les notifications. Même famille que `dz.letsplay.officiel` (Android). */
-const APP_USER_MODEL_ID = 'dz.letsplay.sablier';
+const APP_USER_MODEL_ID = JEU.appId;
+
+/** Route du jeu dans l'app (identique au site, `src/main.jsx`). */
+const ROUTE_JEU = JEU.route;
 
 /** Titre de la fenêtre — le nom du jeu, pas celui du média. */
-const TITRE = 'Le Sablier de Bab El';
+const TITRE = JEU.titre;
 
 const MODE_FORCE = process.env.LETSPLAY_DESKTOP_MODE || '';
 
-/** La page de la Release `desktop` : l'installeur, le portable, et le pack
- * hors ligne. Un seul lien à donner aux joueurs, il ne change jamais. */
-const RELEASE_DESKTOP = 'https://github.com/SalimB-source/Let-s-Play/releases/tag/desktop';
+/** La page de la Release du jeu : l'installeur, le portable, et le pack hors
+ * ligne. Un seul lien à donner aux joueurs, il ne change jamais. **Une Release
+ * par jeu** (voir `desktop/jeux.js`) : deux `latest.yml` sur la même page se
+ * disputeraient le numéro de version, et l'un des deux jeux se croirait à jour. */
+const RELEASE_DESKTOP = `https://github.com/SalimB-source/Let-s-Play/releases/tag/${JEU.release}`;
 const REMOTE_ORIGIN = (process.env.LETSPLAY_REMOTE_ORIGIN || DEFAULT_REMOTE_ORIGIN).replace(/\/+$/, '');
 
 /** En développement, `app.getAppPath()` est `desktop/` ; une fois installé, le
@@ -129,8 +162,9 @@ let sitePlusRecentPropose = false;
  * La mise à jour de la coque, vue du jeu.
  * ------------------------------------
  * Le téléchargement et l'installation de l'installeur Windows se pilotent
- * désormais **depuis l'interface du Sablier** (pastille + panneau + carte des
- * Paramètres), pas depuis des dialogues natifs de l'OS. Le processus principal
+ * désormais **depuis l'interface du jeu** (pastille + panneau + carte des
+ * Paramètres ; `RpgMiseAJour`, commun aux jeux qui l'affichent), pas depuis des
+ * dialogues natifs de l'OS. Le processus principal
  * reste seul à parler à `electron-updater` ; il diffuse son état au rendu et
  * reçoit ses ordres par IPC. Les dialogues natifs ne servent plus que de
  * filet : tant que le jeu n'a pas réclamé la main (`majUiActive`), ou s'il
@@ -400,6 +434,24 @@ function configurerMiseAJour() {
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
 
+  // **Le tag de Release est celui du jeu**, pas celui du dépôt.
+  // `app-update.yml` (généré par electron-builder) ne porte que le dépôt : sans
+  // cette précision, les deux jeux liraient le même `latest.yml` — celui du
+  // Sablier — et Vice City Rush se croirait à jour, ou téléchargerait
+  // l'installeur de l'autre jeu. Une Release par jeu, donc un `latest.yml` par
+  // jeu.
+  //
+  // `setFeedURL` avec `releaseType` remplace le canal : il n'y a pas d'autre
+  // moyen de viser un tag précis en GitHub, et `setFeedURL` accepte `info` plus
+  // `provider` (l'absence d'`url` est volontaire).
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'SalimB-source',
+    repo: 'Let-s-Play',
+    releaseType: 'release',
+    channel: JEU.release,
+  });
+
   autoUpdater.on('checking-for-update', () => {
     verificationMajEnCours = true;
     diffuserMaj({ phase: 'verification', erreur: '' });
@@ -425,7 +477,7 @@ function configurerMiseAJour() {
       afficherDialogue({
         type: 'info',
         title: 'Mise à jour disponible',
-        message: `La version ${info.version} du Sablier de Bab El est disponible.`,
+        message: `La version ${info.version} de ${TITRE} est disponible.`,
         detail: 'Ouvrez le jeu pour la télécharger, ou téléchargez-la maintenant en arrière-plan.',
         buttons: ['Télécharger', 'Plus tard'],
         defaultId: 0,
@@ -458,7 +510,7 @@ function configurerMiseAJour() {
       afficherDialogue({
         type: 'info',
         title: 'Aucune mise à jour',
-        message: 'Le Sablier de Bab El est déjà à jour.',
+        message: `${TITRE} est déjà à jour.`,
         detail: `Version installée : ${app.getVersion()}`,
         buttons: ['OK'],
       });
@@ -736,7 +788,7 @@ async function installerPackZip(archive) {
   if (!app.isPackaged) {
     throw new Error('en développement, servez `desktop/dist-web` avec LETSPLAY_PAQUET.');
   }
-  const tampon = join(app.getPath('temp'), `sablier-pack-${Date.now()}`);
+  const tampon = join(app.getPath('temp'), `${JEU.id}-pack-${Date.now()}`);
   try {
     mkdirSync(tampon, { recursive: true });
     await executerCommande('powershell.exe', [
@@ -1065,6 +1117,6 @@ app.on('before-quit', async () => {
 process.on('uncaughtException', (erreur) => {
   console.error('[desktop] exception :', erreur);
   if (app.isReady() && !BrowserWindow.getAllWindows().length) {
-    dialog.showErrorBox('Le Sablier de Bab El a rencontré une erreur', String(erreur?.message || erreur));
+    dialog.showErrorBox(`${TITRE} a rencontré une erreur`, String(erreur?.message || erreur));
   }
 });

@@ -25,7 +25,13 @@
  * `npm run check:desktop`, sans lancer l'application.
  */
 
-/** Route du jeu dans l'app (identique au site, `src/main.jsx`). */
+/**
+ * Route du jeu du Sablier (identique au site, `src/main.jsx`).
+ *
+ * Conservée pour la compatibilité des tests et du diagnostic ; la coque lit
+ * désormais la route de **son** jeu dans `desktop/jeux.js`, puisque la même
+ * coque sert deux applications.
+ */
 export const ROUTE_JEU = '/jeu/sablier-de-bab-el';
 
 /**
