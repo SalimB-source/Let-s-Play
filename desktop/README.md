@@ -26,9 +26,18 @@ Pour construire **un** jeu : `npm run desktop:coque -- --jeu=vice-city`
 (ou `LETSPLAY_JEU=vice-city`), puis `npm run desktop:dist`. Sans indication,
 c'est le Sablier. Chaque jeu a **sa** Release : un flux de mise à jour commun
 servirait l'installeur de l'autre, avec le mauvais identifiant d'application.
+
+Le flux est **générique** (`https://github.com/…/releases/download/<tag>`), pas
+le fournisseur `github` d'`electron-updater`. Ce dernier demande d'abord à
+GitHub *quelle est la dernière Release publiée*, puis n'accepte que le
+`latest.yml` de ce tag — or un build en publie cinq (deux installeurs, trois
+APK) à quelques secondes d'intervalle : la vérification échouait dès que la
+dernière n'était pas celle du jeu. Avec une URL de Release, le tag est dans le
+chemin : `<url>/latest.yml` est celui du jeu, sans ambiguïté. Le fournisseur
+`github` reste en repli si la configuration manquait.
 - **Mise à jour proposée au lancement, et téléchargée DANS le jeu** :
-  `electron-updater` interroge la Release GitHub `desktop` **2 secondes après
-  l'ouverture** — le joueur est encore au menu, c'est le moment d'installer —,
+  `electron-updater` interroge la Release GitHub du jeu (`desktop` ou
+  `desktop-vice-city`) **2 secondes après l'ouverture** — le joueur est encore au menu, c'est le moment d'installer —,
   puis toutes les six heures, et depuis **Aide → Rechercher une mise à jour…**.
   Le résultat ne s'affiche plus dans un dialogue de l'OS : le processus
   principal diffuse son état au jeu (`desktop:maj`), qui le montre dans un

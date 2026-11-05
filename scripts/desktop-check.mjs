@@ -206,10 +206,20 @@ assert.match(builder, /provider:\s*github[\s\S]*owner:\s*SalimB-source[\s\S]*rep
   'electron-updater doit cibler la Release GitHub du dépôt');
 const desktopPackage = JSON.parse(readFileSync(join(RACINE, 'desktop', 'package.json'), 'utf8'));
 assert.ok(desktopPackage.dependencies?.['electron-updater'], 'electron-updater doit être une dépendance runtime');
+// Le flux de mise à jour doit viser la Release DU JEU, sans passer par « la
+// dernière Release publiée » : le dépôt en publie cinq par build, et le
+// fournisseur `github` ne retient que la plus récente — une vérification qui
+// échoue une fois sur deux. Voir le commentaire dans `main.js`.
+assert.match(principal, /provider: 'generic', url: urlRelease/,
+  'la mise à jour doit lire <url de la Release du jeu>/latest.yml (fournisseur générique)');
+assert.match(principal, /releases\/download\/\$\{JEU\.release\}/,
+  'l’URL du flux doit porter le tag du jeu');
+assert.match(principal, /provider: 'github'[\s\S]{0,120}channel: JEU\.release/,
+  'un repli sur le fournisseur GitHub reste nécessaire si le flux générique manque');
 assert.match(principal, /autoUpdater\.checkForUpdates\(\)/);
 assert.match(principal, /autoUpdater\.quitAndInstall\(\)/);
 assert.match(principal, /update-downloaded/);
-ok('electron-updater : fournisseur GitHub configuré, vérification et installation intégrées');
+ok('electron-updater : flux par Release de jeu, vérification et installation intégrées');
 
 // L'incident de la 1.0.2993 : `main.js` importait `electron-updater` en dur.
 // Un module manquant dans l'asar (`semver`) tuait le processus principal avant
