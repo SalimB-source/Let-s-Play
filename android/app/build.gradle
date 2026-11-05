@@ -62,7 +62,9 @@ android {
         // Le nom affiché et l'icône du lanceur sont posés ici plutôt que dans
         // les ressources : une seule coque, trois identités, sans dupliquer
         // strings.xml ni les dossiers mipmap.
-        resValue 'string', 'app_name', identite.nom
+        // L'apostrophe de « Let's Play » doit être échappée pour aapt, sinon le
+        // build échoue sur « Invalid unicode escape sequence in string ».
+        resValue 'string', 'app_name', identite.nom.replace("'", "\\'")
         manifestPlaceholders = [appIcon: '@mipmap/' + identite.dossier]
         minSdk 23          // Android 6.0+
         targetSdk 35
