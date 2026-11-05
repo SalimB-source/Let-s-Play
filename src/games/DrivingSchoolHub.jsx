@@ -15,6 +15,18 @@ import { DRIVING_SKILLS, drivingSkillProgress, recommendDrivingExercise } from '
  */
 const dansUneCoque = () => typeof window !== 'undefined' && Boolean(window.letsPlayDesktop || window.LetsPlayAndroid);
 
+/**
+ * Les deux applications dédiées à Vice City Rush, publiées par la CI sur leurs
+ * propres Releases (voir `.github/workflows/desktop-windows.yml` et
+ * `android-apk.yml`). Même logique que pour le Sablier : tag permanent, nom
+ * d'asset fixe, donc un lien qui ne casse pas au changement de version.
+ */
+export const VICE_CITY_SETUP_URL =
+  'https://github.com/SalimB-source/Let-s-Play/releases/download/desktop-vice-city/vice-city-rush-setup.exe';
+export const VICE_CITY_APK_URL =
+  'https://github.com/SalimB-source/Let-s-Play/releases/download/apk-vice-city/vice-city-rush-latest.apk';
+export const VICE_CITY_RELEASES_URL = 'https://github.com/SalimB-source/Let-s-Play/releases';
+
 export default function DrivingSchoolHub({ lessons, progress, assistance, onAssistance, settings, onSettings, onStart, history, view, onViewChange, onFreeDrive, coque = dansUneCoque() }) {
   const [chapter, setChapter] = useState('all'), [mission, setMission] = useState(null);
   const heading = useRef(null);
@@ -49,6 +61,13 @@ export default function DrivingSchoolHub({ lessons, progress, assistance, onAssi
     </>}
     {view==='notebook'&&<><DrivingProgressPanel progress={progress} lessons={lessons} onPractice={({exercise,assistance:help})=>launch(exercise,help)} />{history.length>0&&<section className="school-recent"><h2>Vos derniers essais</h2>{history.slice(0,5).map((entry,i)=><div key={i}><span>{entry.title}</span><strong>{entry.passed?'✓ Réussi':'À retravailler'} <small>{entry.score}/100</small></strong></div>)}</section>}</>}
     <footer className="school-hub-footer"><span>{lessons.length} situations · conduite à droite · sécurité avant rapidité</span><span>Simulation pédagogique non homologuée. Exercices FRANCE fondés sur le Code français.</span></footer>
+    {/* Emporter le jeu : masqué dans les coques (le jeu y est déjà), et discret
+        au point de ne pas distraire de l'auto-école. */}
+    {!coque&&<p className="school-hub-apps"><span>Emporter Vice City Rush :</span>{' '}
+      <a href={VICE_CITY_SETUP_URL} rel="noopener">Windows (.exe)</a>{' · '}
+      <a href={VICE_CITY_APK_URL} rel="noopener">Android (APK)</a>{' · '}
+      <a href={VICE_CITY_RELEASES_URL} rel="noopener">toutes les versions</a>
+    </p>}
     {mission&&<SchoolDialog title="Préparer la mission" onClose={()=>setMission(null)} className="school-mission"><SchoolSituationIllustration exercise={mission} /><span className="school-kicker">VOTRE MISSION · {schoolChapter(mission).title}</span><h2>{mission.title}</h2><p className="school-mission-summary">{mission.summary}</p><fieldset className="school-help-choice"><legend>Comment voulez-vous apprendre ?</legend><label className={assistance==='guided'?'is-selected':''}><input type="radio" name="mission-help" checked={assistance==='guided'} onChange={()=>onAssistance('guided')} /><span><b>Avec aide</b><small>Halos jaunes et consignes adaptées.</small></span></label><label className={assistance==='autonomous'?'is-selected':''}><input type="radio" name="mission-help" checked={assistance==='autonomous'} onChange={()=>onAssistance('autonomous')} /><span><b>Sans aide</b><small>Vous observez et prenez les décisions.</small></span></label></fieldset>
       <details className="school-mission-details"><summary>Commandes et confort</summary><div className="school-preferences"><label>Direction tactile<select value={settings.steering} onChange={e=>onSettings({...settings,steering:e.target.value})}><option value="buttons">Boutons gauche / droite</option><option value="wheel">Volant tactile</option></select></label><label>Taille des consignes<select value={settings.textSize} onChange={e=>onSettings({...settings,textSize:e.target.value})}><option value="standard">Standard</option><option value="large">Grande</option></select></label><p>PC : flèches ou WASD · C : cockpit · M : son · Échap : pause.<br/>Mobile : direction à gauche, pédales à droite. Frein maintenu à l’arrêt : marche arrière.</p></div></details>
       <details className="school-mission-details"><summary>Comprendre la règle</summary><p>{mission.theory}</p><p>Le GPS et les repères restent disponibles dans les deux niveaux. Les temps d’arrêt de validation sont pédagogiques, pas des durées légales.</p>{mission.source&&<a href={mission.source} target="_blank" rel="noreferrer">Consulter la référence française ↗</a>}</details>
