@@ -4,6 +4,7 @@ import {
 import { supabase } from '../lib/supabase.js';
 import { CLOUD_CHOCOBO_INDEX, LINK_EPONA_INDEX, LOBBY_CHARACTER_INDICES } from './mirageCharacters.js';
 import { LINK_BOOMERANG_SLOW_DURATION } from './mirageLinkPowers.js';
+import { isOnlineModeEnabled, ONLINE_MODE_DISABLED_REASON } from '../lib/onlineMode.js';
 
 const STORAGE_KEY = 'letsplay_mirage_online_rooms_v2';
 const GUEST_KEY = 'letsplay_mirage_guest_profile_v1';
@@ -25,7 +26,8 @@ let realtimeRef = null;
 const listeners = new Set();
 const roomEventListeners = new Set();
 
-export const roomsAvailable = () => true;
+export const roomsAvailable = () => isOnlineModeEnabled();
+export const ONLINE_ROOMS_DISABLED_REASON = ONLINE_MODE_DISABLED_REASON;
 
 /**
  * Effets reçus par la victime selon le personnage de l'attaquant : Cloud
@@ -253,6 +255,10 @@ function notifyAll(storeSnapshot) {
 }
 
 export function subscribeRoomUpdates(onUpdate, onRoomEvent) {
+  // Mode verrouillé : aucune souscription Realtime, présence ou Broadcast — arrêt total des canaux en ligne.
+  if (!isOnlineModeEnabled()) {
+    return () => {};
+  }
   if (typeof onUpdate === 'function') listeners.add(onUpdate);
   if (typeof onRoomEvent === 'function') roomEventListeners.add(onRoomEvent);
 
@@ -496,6 +502,15 @@ function resolvePlayer(player) {
 }
 
 export function localRoomAction(action, code = null, extras = {}, player = null) {
+  if (!isOnlineModeEnabled() && !String(action).startsWith('list')) {
+    // En mode verrouillé, toute action qui créerait/modifierait un salon est bloquée.
+    // 'list' reste lisible pour afficher l'état "Bientôt disponible" sans créer de salon.
+    throw new Error(ONLINE_MODE_DISABLED_REASON);
+  }
+  // Lecture aussi verrouillée pour éviter tout polling inutile — retour vide explicite.
+  if (!isOnlineModeEnabled() && String(action) === 'list') {
+    return { server_now: new Date().toISOString(), rooms: [], disabled: true, raison: ONLINE_MODE_DISABLED_REASON };
+  }
   const actor = resolvePlayer(player);
   const uid = actor.id;
   const uname = actor.name;
@@ -981,6 +996,12 @@ function isRpcSchemaOrFallbackError(error) {
 }
 
 export async function roomAction(action, code = null, extras = {}, player = null) {
+  if (!isOnlineModeEnabled()) {
+    if (String(action) === 'list') {
+      return { server_now: new Date().toISOString(), rooms: [], disabled: true, raison: ONLINE_MODE_DISABLED_REASON };
+    }
+    throw new Error(ONLINE_MODE_DISABLED_REASON);
+  }
   const actor = resolvePlayer(player);
   const vCode = code ? roomCode(code) : null;
 

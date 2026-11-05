@@ -3347,3 +3347,7 @@ img.mirage-powerup-icon {
 .mirage-game-shell.is-low-graphics .mirage-turbo-lines::after { display: none; }
 body:has(.mirage-game-shell.is-low-graphics)::after,
 body:has(.mirage-game-shell.is-low-graphics) .neon-backdrop { display: none; }
+
+/* Le mode temporairement verrouillé reste identifiable sans sembler jouable. */
+.mirage-mode-action.is-locked { opacity: .72; cursor: not-allowed; }
+.mirage-soon-badge { color: #f4d583; font-style: normal; font-size: .75em; }

@@ -7,7 +7,7 @@ import { chargerAcquis, chargerCollectionDistante } from './rpgCollection.js';
 import { chargerPortefeuille } from './rpgCredits.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerEtatQuetes } from './rpgQuetes.js';
-import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
+import { chargerEtatSablier, sauverEtatSablier, programmerSauvegardeSablier } from './rpgSablierRemote.js';
 import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 import {
   RPG_STORY_LEGACY_STORAGE_KEY,
@@ -119,7 +119,7 @@ export function useRpgStory() {
   const pousserHistoire = useCallback((histoire) => {
     if (!compteId) return;
     const fusion = fusionnerEtatsSablier({ local: etatLocalComplet(histoire) });
-    sauverEtatSablier(compteId, { ...fusion.etat, histoire });
+    programmerSauvegardeSablier(compteId, { ...fusion.etat, histoire });
   }, [compteId]);
 
   const modifier = useCallback((operation) => {

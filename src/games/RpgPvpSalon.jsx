@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LanguageContext } from '../i18n/LanguageContext';
+import { onlineModeText } from '../lib/onlineModeText.js';
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import './rpg-pvp.css';
 import { useAuth } from '../auth/AuthContext';
@@ -26,6 +28,7 @@ import {
   rejoindreDefi,
   sablierPvpDisponible,
 } from './rpgPvpApi.js';
+import { isOnlineModeEnabled, ONLINE_MODE_DISABLED_REASON } from '../lib/onlineMode.js';
 import {
   SALON_TEXTES,
   cheminSalon,
@@ -80,6 +83,7 @@ const FOND_EN_LIGNE = `linear-gradient(105deg, rgba(7, 6, 12, .93) 0%, rgba(7, 6
  * chaîne vers la page du site, verrouillée par `body.rpg-pvp-lock`).
  */
 function Cadre({ code = '', retour = null, compact = false, children }) {
+  const onlineText = onlineModeText(useContext(LanguageContext)?.lang);
   // La messagerie s’ouvre en voile AU-DESSUS du salon (`RpgMessageriePanel`) :
   // sur mobile, la fenêtre sociale du site naviguerait vers `/messages` et
   // démonterait le salon — défi en création, deck choisi et attente de
@@ -105,8 +109,8 @@ function Cadre({ code = '', retour = null, compact = false, children }) {
             <span className="rpg-pvp-page__code" title="Code du défi">{code}</span>
           ) : (
             <span className="rpg-pvp-page__statut">
-              <span className="rpg-pvp-page__point" aria-hidden="true" />
-              Duel en ligne
+              {isOnlineModeEnabled() && <span className="rpg-pvp-page__point" aria-hidden="true" />}
+              {onlineText.onlineDuel}
             </span>
           )}
         </span>
@@ -215,11 +219,13 @@ function AvecDecksDuSalon({ actif, children }) {
 }
 
 export default function RpgPvpSalon() {
+  const onlineText = onlineModeText(useContext(LanguageContext)?.lang);
   const { code: codeParam } = useParams();
   const navigate = useNavigate();
   const { user, loading: sessionEnChargement, isDemo } = useAuth();
   const { friends = [] } = useFriends() ?? {};
 
+  const onlineEnabled = isOnlineModeEnabled();
   const disponible = sablierPvpDisponible();
   const uid = user?.id ?? null;
   const [code, setCode] = useState(() => String(codeParam ?? '').toUpperCase());
@@ -259,6 +265,7 @@ export default function RpgPvpSalon() {
   }, [codeParam]);
 
   const charger = useCallback(async (silencieux = false) => {
+    if (!onlineEnabled) return { ok: false, raison: ONLINE_MODE_DISABLED_REASON };
     if (!code || !uid) return;
     if (!silencieux) setChargement(true);
     const reponse = await etatDefi(code);
@@ -272,12 +279,15 @@ export default function RpgPvpSalon() {
   }, [code, uid]);
 
   useEffect(() => {
+    if (!onlineEnabled) { setVue(null); return; }
     if (!code || !uid) { setVue(null); return; }
     charger();
-  }, [code, uid, charger]);
+  }, [code, uid, charger, onlineEnabled]);
 
   // Sondage : 2 s quand on attend un adversaire ou son tour, 10 s onglet caché.
+  // Désactivé quand le mode en ligne est verrouillé — aucun appel réseau, aucune boucle.
   useEffect(() => {
+    if (!onlineEnabled) return undefined;
     if (!code || !uid || !vue?.ok) return undefined;
     const utile = vue.statut === 'invitation' || vue.statut === 'en_cours';
     if (!utile) return undefined;
@@ -286,14 +296,15 @@ export default function RpgPvpSalon() {
       if (nbEnVolRef.current === 0) charger(true);
     }, cadenceSondage(cache));
     return () => clearInterval(timer);
-  }, [code, uid, vue?.ok, vue?.statut, charger]);
+  }, [code, uid, vue?.ok, vue?.statut, charger, onlineEnabled]);
 
   // Compte à rebours du tour (mode direct).
   useEffect(() => {
+    if (!onlineEnabled) return undefined;
     if (!vue?.echeance) return undefined;
     const timer = setInterval(() => setMaintenant(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [vue?.echeance]);
+  }, [vue?.echeance, onlineEnabled]);
 
   // Le cadre est plein écran : la page du site ne doit pas défiler derrière.
   useEffect(() => {
@@ -393,6 +404,33 @@ export default function RpgPvpSalon() {
 
   /* -------------------------------- rendu -------------------------------- */
 
+  // Mode en ligne verrouillé : afficher « Bientôt disponible » et empêcher tout lancement.
+  // Aucun appel réseau n'est émis (voir effets ci-dessus) et les routes directes
+  // /jeu/sablier-de-bab-el/defi/* affichent le même état explicite.
+  if (!onlineEnabled) {
+    return (
+      <Cadre code={code}>
+        <main className="rpg-pvp rpg-pvp--soon" role="main" aria-labelledby="pvp-soon-title">
+          <header className="rpg-pvp__header">
+            <p className="rpg-pvp__eyebrow">{onlineText.sablierTitle}</p>
+            <h1 id="pvp-soon-title">{onlineText.soon}</h1>
+            <p className="rpg-pvp__lead">
+              {onlineText.sablierIntro}
+            </p>
+          </header>
+          <div className="rpg-pvp__panneau" role="status" aria-live="polite">
+            <p className="rpg-pvp__note">
+              {onlineText.sablierDetails}
+            </p>
+            <div className="rpg-pvp__actions" style={{ justifyContent: 'center' }}>
+              <Link className="rpg-pvp__cta" to="/jeu/sablier-de-bab-el">{onlineText.backSablier}</Link>
+            </div>
+          </div>
+        </main>
+      </Cadre>
+    );
+  }
+
   if (ecran === 'connexion') {
     return (
       <Cadre>
@@ -458,8 +496,9 @@ export default function RpgPvpSalon() {
                 : erreur === 'deck-non-possede' ? 'Ce deck contient des cartes que tu ne possèdes pas encore.'
                   : erreur === 'pas-amis' ? 'Les défis nominatifs sont réservés aux amis — envoie plutôt un lien.'
                     : erreur === 'invitation-en-attente' ? 'Tu as déjà un défi en attente avec ce joueur.'
-                      : erreur === 'arbitre-indisponible' || erreur === 'reseau' || erreur === 'reponse' ? 'Le serveur d’arbitrage est momentanément injoignable. Réessaie dans un instant.'
-                        : `Action refusée : ${erreur}.`}
+                      : erreur === ONLINE_MODE_DISABLED_REASON ? 'Le mode en ligne est temporairement désactivé — Bientôt disponible. Réessayez après réactivation.'
+                        : erreur === 'arbitre-indisponible' || erreur === 'reseau' || erreur === 'reponse' ? 'Le serveur d’arbitrage est momentanément injoignable. Réessaie dans un instant.'
+                          : `Action refusée : ${erreur}.`}
           </p>
         )}
 

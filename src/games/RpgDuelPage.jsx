@@ -1,4 +1,7 @@
+import { LanguageContext } from '../i18n/LanguageContext';
+import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
+import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { armureArme, plafondSoinCreature } from './rpgArmure.js';
 import { convertirDeckSansTerrain } from './rpgCards.js';
 /**
@@ -4603,6 +4606,7 @@ function CarteIllustrationAlternative({ carte, niveau, portefeuille = null, onPl
 }
 
 function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectDeck, onChangeScreen, onStartGame, onStartManaEssai, onStartTutorial, onStartCardGuide, onResumeGame, hasGame, progressionHistoire, onStartEtage, onResetHistoire, onContinueRecit, onJournalRecit, onRestartRecit, sauvegardeHistoireOk, duelEnCours, campagneEnCours, decksMaison, collection, exemplaires = null, statutSync, onEnregistrerDeckMaison, onSupprimerDeckMaison, onHoverCard, onLeaveHoverCard, onOpenCardPreview, onPlaySfx, fullscreen, onToggleFullscreen, credits, aReclamer, quetes, onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onOuvrirPaquetCoffre = null, mobile = false, portefeuille, progression, ouverture, onOuvrirBooster, onOuvrirCoffret, onAcheterCarteDirecte, onAcheterIllustration = null, onBasculerIllustration = null, onRafraichirEtal, onFermerOuverture, profil = null, barreXp = null, paquetsDePalierEnAttente = 0, nomCompte = null, onRenommerProfil = null, onChoisirEmbleme = null, onChoisirAvatar = null, onChoisirPlateau = null, onChoisirCadre = null, onChoisirTitre = null, decor3dActif = true, onToggleDecor3d, animReduite = false, onToggleAnimReduite, vitessesAnimation = RPG_VITESSES_ANIMATION, vitesseAnimation = 1, onChoisirVitesseAnimation, sonActif = true, onToggleSound, volumeSfx = 1, onChangeVolumeSfx, onToggleSfxMute, volumeVoix = 1, onChangeVolumeVoix, onToggleVoiceMute, volumeMusique = 1, onChangeVolumeMusique, onToggleMusicMute, desktopMode = false, desktopAccount = null, onSignOut }) {
+  const onlineText = onlineModeText(useContext(LanguageContext)?.lang);
   const indicationsModes = rpgIndicationsModes(progressionHistoire, { hasGame, campagneEnCours });
   const [offreActive, setOffreActive] = useState(() => offreLancementActive());
   useEffect(() => {
@@ -5168,23 +5172,32 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </span>
                 </button>
                 <a
-                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne"
-                  aria-label="Jouer en duel en ligne"
+                  className={`rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne${!isOnlineModeEnabled() ? ' is-locked' : ''}`}
+                  aria-label={!isOnlineModeEnabled() ? `${onlineText.onlineDuel} — ${onlineText.soon}` : onlineText.playDuel}
                   aria-describedby="mode-ligne-description"
+                  aria-disabled={!isOnlineModeEnabled() ? 'true' : undefined}
                   style={{ '--art-pos': '50% 24%' }}
-                  href={`${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi`}
-                  onClick={() => play('select')}
+                  href={isOnlineModeEnabled() ? `${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi` : undefined}
+                  onClick={(e) => {
+                    if (!isOnlineModeEnabled()) {
+                      e.preventDefault();
+                      return;
+                    }
+                    play('select');
+                  }}
+                  tabIndex={!isOnlineModeEnabled() ? 0 : undefined}
+                  role={!isOnlineModeEnabled() ? 'button' : undefined}
                 >
                   <img className="rpg-mode-carte__art" src={cardArt('bouchra-guerriere-des-cretes')} alt="" aria-hidden="true" />
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
                     <span className="rpg-mode-carte__infos">
                       <strong>
-                        Duel en ligne
-                        <span className="rpg-menu-button__live" aria-hidden="true" />
+                        {onlineText.onlineDuel} {!isOnlineModeEnabled() && <span className="rpg-soon-badge">{onlineText.soon}</span>}
+                        {isOnlineModeEnabled() && <span className="rpg-menu-button__live" aria-hidden="true" />}
                       </strong>
-                      <span id="mode-ligne-description" className="rpg-mode-carte__description">Défiez un autre joueur</span>
+                      <span id="mode-ligne-description" className="rpg-mode-carte__description">{!isOnlineModeEnabled() ? onlineText.unavailable : 'Défiez un autre joueur'}</span>
                     </span>
-                    <span className="rpg-mode-carte__jouer" aria-hidden="true">Jouer <span>→</span></span>
+                    <span className="rpg-mode-carte__jouer" aria-hidden="true">{!isOnlineModeEnabled() ? onlineText.soon : 'Jouer'} <span>→</span></span>
                   </span>
                 </a>
                 <button
