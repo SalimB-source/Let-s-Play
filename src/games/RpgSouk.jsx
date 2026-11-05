@@ -796,6 +796,7 @@ export default function RpgSouk({
                   onPlaySfx={onPlaySfx}
                 />
                 <footer>
+                  {etat.rayon.id === 'vampires' && <p className="rpg-souk__vampires-info">Toutes les cartes · Vampires favorisés ×10 à rareté égale</p>}
                   {refus && (
                     <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>
                       {ferme ? refus : <>Il manque {manque} <RpgCreditIcon /></>}

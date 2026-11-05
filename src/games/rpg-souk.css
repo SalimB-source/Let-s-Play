@@ -1724,3 +1724,12 @@
 @media (max-width: 560px) {
   .rpg-souk__rayons[data-souk-rayons-nombre="2"] { grid-template-columns: minmax(0, 1fr); }
 }
+
+.rpg-souk__vampires-info {
+  flex: 1 1 100%;
+  margin: 0;
+  color: #ecd0bf;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.4;
+}
