@@ -35,6 +35,16 @@ portable sans installation, et — le point central — un rendu 3D qui passe pa
   rien d'autre). C'est ce qui permet à l'installeur de ne plus se reconstruire
   quand une carte change, et à la coque de se mettre à jour sans se disputer la
   version avec le site.
+- **Le jeu tient sa fenêtre : on n'en sort pas vers le site.** Un lien
+  « Tous les jeux » ou le logo de l'auto-école ramèneraient au hub du site dans
+  un navigateur ; dans une fenêtre qui s'appelle « Le Sablier de Bab El », c'est
+  une sortie de route. Deux verrous, plutôt qu'un : `desktop/routes.js`
+  (`estRouteDuJeu`) **refuse toute navigation** hors du jeu — hub, accueil,
+  autres jeux, origine étrangère, retour arrière, URL tapée après `Ctrl+L` ;
+  seuls le jeu, la page « hors ligne » et le serveur local du pack passent.
+  Et côté site, `DrivingSchoolHub` masque le logo-lien et « Tous les jeux »
+  quand `window.letsPlayDesktop` existe (l'APK, elle, garde le sien : c'est un
+  choix distinct, Android n'a pas les mêmes conventions de retour).
 - **Pas de croix « retour aux jeux ».** Dans un navigateur, la barre du Sablier
   porte une croix qui ramène à la liste des jeux du site. Dans la coque PC elle
   n'a plus de sens — elle sortait du jeu vers une page web — donc elle est

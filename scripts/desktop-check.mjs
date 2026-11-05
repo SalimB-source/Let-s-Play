@@ -23,6 +23,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer } from '../desktop/gpu.js';
+import { ROUTE_JEU, estRouteDuJeu } from '../desktop/routes.js';
 import { startLocalServer } from '../desktop/local-server.js';
 
 const RACINE = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -266,6 +267,34 @@ ok('icon.ico / icon.png présents et valides');
 // On détecte la configuration, et on n'échoue que si un import sans extension
 // vise effectivement ce radical — des fichiers homonymes jamais importés sans
 // extension (ou toujours avec) ne sont pas un danger.
+// ---------------------------------------------------------------------------
+// 4 bis) Le jeu tient sa fenêtre : on ne sort pas vers le site
+// ---------------------------------------------------------------------------
+console.log('4 bis. Verrou de navigation (le jeu tient sa fenêtre)');
+
+const SITE = 'https://let-s-play-nu.vercel.app';
+const jeu = (chemin) => estRouteDuJeu(`${SITE}${chemin}`, { origineSite: SITE });
+
+assert.equal(jeu(ROUTE_JEU), true, 'le jeu lui-même');
+assert.equal(jeu(`${ROUTE_JEU}/`), true, 'barre finale tolérée');
+assert.equal(jeu(`${ROUTE_JEU}?mode=local#fin`), true, 'requête et hachage tolérés');
+assert.equal(jeu('/jeux'), false, 'le hub du site est refusé (lien « Tous les jeux »)');
+assert.equal(jeu('/'), false, 'l’accueil du site est refusé');
+assert.equal(jeu('/jeu/vice-city-rush'), false, 'un autre jeu du site est refusé');
+assert.equal(jeu('/jeu/sablier-de-bab-el/autre'), false, 'une sous-page du jeu est refusée');
+assert.equal(estRouteDuJeu('https://exemple.test/jeu/sablier-de-bab-el', { origineSite: SITE }), false, 'une autre origine est refusée');
+assert.equal(estRouteDuJeu('file:///C:/app/offline.html', { origineSite: SITE }), true, 'la page hors ligne locale passe');
+assert.equal(estRouteDuJeu('about:blank', { origineSite: SITE }), false, 'about:blank est refusé');
+assert.equal(estRouteDuJeu('', { origineSite: SITE }), false, 'une URL vide est refusée');
+assert.equal(estRouteDuJeu(`${SITE}${ROUTE_JEU}`, {}), false, 'sans origine de site connue, rien ne passe');
+// Pack hors ligne : notre propre serveur local sert le jeu, il est accepté en entier.
+assert.equal(
+  estRouteDuJeu('http://127.0.0.1:4173/jeu/sablier-de-bab-el', { origineSite: SITE, origineLocale: 'http://127.0.0.1:4173/' }),
+  true,
+  'le serveur local du pack hors ligne passe',
+);
+ok('seul le jeu navigue : hub, accueil, autres jeux et origines étrangères refusés');
+
 console.log('5. Collisions de casse (piège Windows)');
 
 const EXT_MODULES = ['.js', '.jsx', '.ts', '.tsx'];

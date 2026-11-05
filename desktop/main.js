@@ -31,6 +31,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
 import { gpuSwitches, interpreterEtatGpu, qualifierRenderer, DIAGNOSTIC_INTRO } from './gpu.js';
+import { ROUTE_JEU, estRouteDuJeu } from './routes.js';
 import { startLocalServer, DEFAULT_PORT, DEFAULT_REMOTE_ORIGIN } from './local-server.js';
 
 /**
@@ -61,9 +62,6 @@ try {
 /** Identifiant Windows : regroupe les fenêtres dans la barre des tâches et
  * signe les notifications. Même famille que `dz.letsplay.officiel` (Android). */
 const APP_USER_MODEL_ID = 'dz.letsplay.sablier';
-
-/** Route du jeu dans l'app (identique au site, `src/main.jsx`). */
-const ROUTE_JEU = '/jeu/sablier-de-bab-el';
 
 /** Titre de la fenêtre — le nom du jeu, pas celui du média. */
 const TITRE = 'Le Sablier de Bab El';
@@ -276,9 +274,13 @@ function creerFenetre() {
     return { action: 'deny' };
   });
   fenetrePrincipale.webContents.on('will-navigate', (evenement, url) => {
-    if (estOrigineAutorisee(url)) return;
+    // Le jeu est un lieu clos : on ne navigue pas vers le reste du site.
+    // Une origine autorisée ne suffit plus — c'est le **jeu** qui autorise,
+    // pas le domaine (`estRouteDuJeu`). Un lien externe, lui, part au
+    // navigateur du PC, comme avant.
+    if (estRouteDuJeu(url, { origineSite: REMOTE_ORIGIN, origineLocale: urlLocale })) return;
     evenement.preventDefault();
-    if (/^https?:\/\//i.test(url)) shell.openExternal(url);
+    if (/^https?:\/\//i.test(url) && !estOrigineAutorisee(url)) shell.openExternal(url);
   });
 
   if (process.env.LETSPLAY_DEVTOOLS === '1') fenetrePrincipale.webContents.openDevTools({ mode: 'detach' });
