@@ -23,6 +23,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { CITY_RUSH_CARS, CITY_RUSH_TRAFFIC_TYPES } from './cityRushRules.js';
 import {
+  CITY_RUSH_DEFAULT_GRAPHICS,
   CITY_RUSH_GRAPHICS_CINEMA,
   CITY_RUSH_GRAPHICS_PREF_KEY,
   CITY_RUSH_GRAPHICS_STANDARD,
@@ -127,7 +128,10 @@ function writeFreeRoamSoundPreference(enabled) {
 
 /** Le rendu choisi pour la ville : `standard`, `cinema` ou `webgpu`. */
 function readFreeRoamGraphicsPreference() {
-  try { return normalizeCityRushGraphicsMode(window.localStorage.getItem(CITY_RUSH_GRAPHICS_PREF_KEY)); } catch { return normalizeCityRushGraphicsMode(null); }
+  try {
+    const saved = window.localStorage.getItem(CITY_RUSH_GRAPHICS_PREF_KEY);
+    return saved === null ? CITY_RUSH_DEFAULT_GRAPHICS : normalizeCityRushGraphicsMode(saved);
+  } catch { return CITY_RUSH_DEFAULT_GRAPHICS; }
 }
 
 function writeFreeRoamGraphicsPreference(mode) {
@@ -3314,7 +3318,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
   const [liteDevice] = useState(cityRushLiteDevice);
   const [webGpuReady, setWebGpuReady] = useState(false);
   const webGpuApi = cityRushWebGpuSupport();
-  const webGpuSupported = webGpuApi && !liteDevice;
+  const webGpuSupported = webGpuApi && !schoolMode;
   useEffect(() => {
     if (!webGpuSupported || webGpuReady) return undefined;
     let alive = true;
@@ -3323,14 +3327,10 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     cityRushWebGpuAvailable().then((available) => { if (alive) setWebGpuReady(available); });
     return () => { alive = false; };
   }, [webGpuSupported, webGpuReady]);
-  // Le rendu effectif demandé à la ville : l'essai n'est tenté que si la carte
-  // a répondu ; sinon on retombe sur le standard sans faire semblant.
-  const requestedGraphics = webGpuSupported && webGpuReady ? graphicsMode : normalizeCityRushGraphicsMode(graphicsMode === CITY_RUSH_GRAPHICS_WEBGPU ? null : graphicsMode);
-  // Lu par l'effet de montage, qui ne dépend pas du rendu : changer de rendu
-  // reconstruit la ville via `graphicsEpoch` (un renderer ne se remplace pas à
-  // chaud), sans que l'effet se relance à chaque réglage.
-  const requestedGraphicsRef = useRef(requestedGraphics);
-  requestedGraphicsRef.current = requestedGraphics;
+  // Le renderer attend la sonde avant son ouverture, sans reconstruire la ville
+  // en cours de partie quand la réponse de l'adaptateur arrive.
+  const requestedGraphicsRef = useRef(graphicsMode);
+  requestedGraphicsRef.current = graphicsMode;
   // Chaque demande explicite de rendu incrémente l'époque : la ville est
   // reconstruite une fois, proprement, avec le nouveau moteur.
   const [graphicsEpoch, setGraphicsEpoch] = useState(0);
@@ -4929,14 +4929,24 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // que le décor HTML ; la ville apparaît d'un coup, jamais à moitié.
     let cancelled = false;
     let teardown = () => {};
-    createCityRushRenderer({ mode: requestedGraphicsRef.current, lite: liteDevice, antialias: renderBudget.antialias })
-      .then((opened) => opened)
-      .catch(() => {
-        // Moteur refusé au dernier moment : on le dit, et la ville tourne en
-        // WebGL standard — jamais d'écran noir.
-        setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: CITY_RUSH_GRAPHICS_WEBGPU, reason: 'WebGPU refusé par le navigateur' });
+    const requestedMode = requestedGraphicsRef.current;
+    const openRenderer = async () => {
+      if (requestedMode === CITY_RUSH_GRAPHICS_WEBGPU) {
+        const available = !schoolMode && await cityRushWebGpuAvailable();
+        if (cancelled) return null;
+        if (available) {
+          try {
+            return await createCityRushRenderer({ mode: requestedMode, lite: liteDevice, antialias: renderBudget.antialias });
+          } catch {
+            if (cancelled) return null;
+          }
+        }
+        if (!cancelled) setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: requestedMode, reason: schoolMode ? 'Rétroviseurs de l’école disponibles en WebGL' : 'WebGPU indisponible sur cet appareil' });
         return createCityRushRenderer({ mode: CITY_RUSH_GRAPHICS_STANDARD, lite: liteDevice, antialias: renderBudget.antialias });
-      })
+      }
+      return createCityRushRenderer({ mode: requestedMode, lite: liteDevice, antialias: renderBudget.antialias });
+    };
+    openRenderer()
       .then((opened) => {
         if (!opened) return;
         renderer = opened;
@@ -4965,6 +4975,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
           // rejetée dans le vide : la ville le dit, et l'écran reste propre.
           console.error('Vice City : montage impossible', error);
           setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: requestedGraphicsRef.current, reason: 'montage impossible' });
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Vice City : ouverture du moteur impossible', error);
+          setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: requestedMode, reason: 'Moteur graphique indisponible' });
         }
       });
     return () => {

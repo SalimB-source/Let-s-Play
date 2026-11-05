@@ -118,7 +118,7 @@ const { checkCityRushWebGpu } = smoke;
 
 try {
   await checkCityRushWebGpu(assert);
-  console.log('check:city-rush-webgpu (interface) ✓ — la ville porte l’entrée RENDU et suit STANDARD → CINÉMA → WEBGPU → STANDARD ; sans carte elle n’essaie jamais l’essai ; avec une carte et l’API, choisir WEBGPU ouvre réellement le moteur WebGPU pour la scène de la ville ; le choix est mémorisé, et une préférence WebGPU retrouvée sur un appareil sans carte rend une ville en standard, jamais un écran noir.');
+  console.log('check:city-rush-webgpu (interface) ✓ — WebGPU par défaut, préférences, mobile, repli et mode école vérifiés avec un renderer simulé.');
 } catch (error) {
   console.error('check:city-rush-webgpu ✗');
   console.error(error?.stack || error?.message || error);
