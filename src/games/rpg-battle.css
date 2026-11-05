@@ -15275,3 +15275,27 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   object-position: center;
 }
 .rpg-mode-menu__hero[data-vampires-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
+
+/* Même accueil que sur ordinateur, avec une zone accessible au doigt si le
+   contenu dépasse la hauteur disponible (sans rogner les quêtes). */
+@media (hover: none) and (pointer: coarse), (max-width: 700px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    align-content: start;
+    grid-template-rows: auto auto auto;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__modes-col { height: auto; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions { grid-template-rows: repeat(3, minmax(64px, auto)); }
+  .rpg-mode-menu--jouer .rpg-quests-jour { max-height: none; overflow: visible; }
+  .rpg-quests-jour__bonus { display: block; color: #f2d48c; font-size: 10px; text-align: center; }
+}
+@media (max-width: 700px) and (orientation: portrait), (hover: none) and (pointer: coarse) and (orientation: portrait) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero { min-height: 150px; max-height: none; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__rail { grid-template-columns: minmax(0, 1fr); }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons { justify-content: center; }
+}
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { grid-template-rows: auto auto; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero { min-height: 205px; }
+}

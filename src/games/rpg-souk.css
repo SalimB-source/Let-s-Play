@@ -1733,3 +1733,43 @@
   font-size: 12px;
   line-height: 1.4;
 }
+
+/* La cérémonie tient dans la zone visible ; les coffrets se parcourent par
+   pages de cinq cartes au lieu d'allonger le panneau hors de l'écran. */
+.rpg-souk__ceremonie {
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+}
+.rpg-souk__ceremonie-corps {
+  box-sizing: border-box;
+  width: min(100%, 1120px);
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(4px, 1vh, 12px);
+  padding: clamp(8px, 1.5vh, 18px);
+}
+.rpg-souk__ouverture-scene { min-height: 0; container-type: size; }
+.rpg-souk__ceremonie-cartes {
+  height: 100%;
+  align-items: center;
+  justify-items: center;
+  gap: clamp(3px, .8vw, 12px);
+}
+.rpg-souk__ceremonie-cartes .rpg-souk__carte-place {
+  width: min(100%, calc((100dvh - 190px) * .72));
+  width: min(100%, 73cqh);
+}
+.rpg-souk__sachet-ancre { top: 50%; width: min(200px, 55cqh, 35vw); }
+.rpg-souk__ceremonie-pied { position: static; padding: 0; background: none; border: 0; gap: 6px; }
+.rpg-souk__ceremonie-pages { display: flex; align-items: center; gap: 6px; color: #f4dcaa; font: 700 12px/1 var(--mono, monospace); }
+.rpg-souk__ceremonie-pages .rpg-menu-button { min-width: 44px; min-height: 44px; padding: 6px; }
+@media (max-height: 600px) {
+  .rpg-souk__ceremonie-tete h2 { margin: 1px 0; font-size: clamp(15px, 4vh, 22px); }
+  .rpg-souk__ceremonie-tete p { font-size: 10px; line-height: 1.25; }
+  .rpg-souk__ceremonie-tete .rpg-souk__ceremonie-aide { margin-top: 2px; font-size: 9px; }
+  .rpg-souk__ceremonie-pied .rpg-menu-button { min-height: 38px; padding: 5px 8px; }
+  .rpg-souk__ceremonie-bilan { flex-basis: auto; font-size: 9px; }
+  .rpg-souk__carte-tampon { min-height: 0; max-width: 95%; padding: 2px 3px; font-size: 7px !important; letter-spacing: 0; bottom: 4px; }
+}

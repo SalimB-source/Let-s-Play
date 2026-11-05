@@ -97,6 +97,10 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
   const [phase, setPhase] = useState(() => une_a_une && !mouvementReduit ? 'scelle' : 'termine');
   const [revelees, setRevelees] = useState(() => phase === 'termine' ? cartes.length : 0);
   const [passee, setPassee] = useState(false);
+  const [page, setPage] = useState(0);
+  const nombrePages = Math.max(1, Math.ceil(cartes.length / 5));
+  const pageCourante = Math.min(page, nombrePages - 1);
+  const cartesPage = cartes.slice(pageCourante * 5, pageCourante * 5 + 5);
   const sceneRef = useRef(null);
   const paquetRef = useRef(null);
   const rayon = rayonParId(ouverture?.rayonId);
@@ -114,6 +118,8 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
         ? 'Le Coffret du Souk'
         : (rayon?.titre ?? 'Le paquet du Souk');
   const vitrine = cardById(rayon?.vitrine ?? 'salem');
+
+  useEffect(() => { setPage(0); }, [ouverture]);
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -244,12 +250,12 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
             </div>
           )}
           <ul className="rpg-souk__ceremonie-cartes" data-souk-ceremonie-revelees={revelees}>
-            {cartes.map((detail, index) => (
-              <li key={`${detail.id}-${index}`} className="rpg-souk__carte-place" style={{ '--rang': index }}>
+            {cartesPage.map((detail, index) => (
+              <li key={`${detail.id}-${pageCourante * 5 + index}`} className="rpg-souk__carte-place" style={{ '--rang': index }}>
                 <div className="rpg-souk__carte-flotte">
-                  <div className={`rpg-souk__carte-retourne${index < revelees ? ' is-revelee' : ''}`}>
-                    <CarteRevelee detail={detail} cardArt={cardArt} index={index} visible={index < revelees} />
-                    <div className="rpg-souk__carte-verso" data-souk-carte-dos={index >= revelees ? index : undefined} aria-hidden="true">
+                  <div className={`rpg-souk__carte-retourne${pageCourante * 5 + index < revelees ? ' is-revelee' : ''}`}>
+                    <CarteRevelee detail={detail} cardArt={cardArt} index={index} visible={pageCourante * 5 + index < revelees} />
+                    <div className="rpg-souk__carte-verso" data-souk-carte-dos={pageCourante * 5 + index >= revelees ? pageCourante * 5 + index : undefined} aria-hidden="true">
                       <span className="rpg-souk__carte-verso-cadre">
                         <span>LE SOUK</span><b><RuneSablier /></b><span>LET’S PLAY</span>
                       </span>
@@ -272,6 +278,13 @@ export default function RpgBoosterOuverture({ ouverture, cardArt, onFermer, onPl
             ) : phase === 'scelle' || phase === 'ouverture' ? 'Le sceau se brise…'
               : phase === 'sortie' ? 'Le Souk dévoile ses trésors…' : `${revelees} / ${cartes.length} retournées`}
           </p>
+          {nombrePages > 1 && (
+            <nav className="rpg-souk__ceremonie-pages" aria-label="Pages des cartes">
+              <button type="button" className="rpg-menu-button" onClick={() => setPage(pageCourante - 1)} disabled={pageCourante === 0} aria-label="Cartes précédentes">←</button>
+              <span role="status">{pageCourante + 1} / {nombrePages}</span>
+              <button type="button" className="rpg-menu-button" onClick={() => setPage(pageCourante + 1)} disabled={pageCourante >= nombrePages - 1} aria-label="Cartes suivantes">→</button>
+            </nav>
+          )}
           {!toutRevele && (
             <button type="button" className="rpg-menu-button" data-souk-ceremonie-passer onClick={toutReveler}>
               Passer

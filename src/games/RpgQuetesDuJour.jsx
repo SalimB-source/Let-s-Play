@@ -143,7 +143,7 @@ function LigneQuete({ id, etatQuetes, onReclamer, onRemplacer, peutRemplacer, on
 }
 
 export default function RpgQuetesDuJour({
-  quetes,
+  quetes, bonusPaquets = false,
   onReclamerQuete, onRemplacerQuete, onReclamerCachet, onReclamerSemaine, onPlaySfx,
 }) {
   const liste = Array.isArray(quetes?.quetes) ? quetes.quetes : [];
@@ -221,6 +221,7 @@ export default function RpgQuetesDuJour({
               aria-label={`Cachet du cycle — ${libelleCoffre(GAINS.cachetDuCycle)}, ${GAINS.cachetDuCycle} crédits${cachetPret ? ', à ouvrir' : ''}`}
               {...(cachetPret ? { 'data-jouer-cachet-reclamer': true } : {})}
             />
+            {bonusPaquets && <small className="rpg-quests-jour__bonus">+ 1 booster offert</small>}
           </div>
 
           {/* Jalon 5 : la série hebdomadaire et son coffre violet. */}
@@ -261,7 +262,7 @@ export default function RpgQuetesDuJour({
               aria-label={`Coffre de la semaine — ${libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE)}, ${GAINS.cachetDeLaSemaine} crédits${semainePrise ? ', déjà ouvert' : semainePrete ? ', à ouvrir' : ''}`}
               {...(semainePrete ? { 'data-jouer-semaine-reclamer': true } : {})}
             />
-
+            {bonusPaquets && <small className="rpg-quests-jour__bonus">+ 2 boosters offerts</small>}
           </div>
         </div>
       </div>
