@@ -570,8 +570,8 @@ test('les actes de la campagne se parcourent horizontalement avec une page tourn
   assert.match(css, /@keyframes rpg-campaign-feuille\s*\{[\s\S]*?rotateY\(-162deg\)/);
   assert.match(css, /@media \(max-width: 699px\)[\s\S]*?\.rpg-campaign__feuille \{ width: 100%; \}/,
     'la page tourne aussi sur téléphone');
-  assert.match(jsx, /key=\{acteAffiche\.id\} className="rpg-campaign__feuille"/,
-    'une nouvelle feuille redémarre l’animation même si les actes sont changés rapidement');
+  assert.match(jsx, /key=\{pageTournee \?\? 'repos'\} className="rpg-campaign__feuille"/,
+    'un nouvel ordre de tournage redémarre l’animation même si les actes sont changés rapidement');
   assert.match(css, /prefers-reduced-motion: reduce[\s\S]*?\.rpg-campaign__feuille \{ display: none; \}/,
     'le mouvement réduit supprime le tournage de page');
 });
