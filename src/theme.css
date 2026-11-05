@@ -1483,12 +1483,15 @@
 }
 [data-theme='light'] .menu-button .dash{color:#a5f3fc}
 [data-theme='light'] .menu-button .dash.open{color:var(--yellow)}
-/* Liens de la barre et du tiroir : le sélecteur `[data-theme='light']
-   .nav-links a` (généré par le balayage d'encre) impose le gris de la page ;
-   on le neutralise au même niveau de spécificité. */
-[data-theme='light'] .nav-links a,
-[data-theme='light'] .nav-links .nav-primary a,
-[data-theme='light'] .nav-links .nav-primary a:hover{color:rgba(255,255,255,.9)}
+/* Liens de la BARRE uniquement. Le sélecteur `[data-theme='light'] .nav-links a`
+   (généré par le balayage d'encre) impose le gris de la page ; on le neutralise
+   au même niveau de spécificité — mais sans toucher aux panneaux déroulants
+   posés dessus (menu du compte, menu « Actus »), qui sont des surfaces CLAIRES
+   en thème clair : y blanchir les liens donnait du blanc sur blanc. */
+[data-theme='light'] .nav-links .nav-primary > .nav-item > a,
+[data-theme='light'] .nav-links .nav-primary > .nav-item > a:hover,
+[data-theme='light'] .nav-links .nav-primary a.nav-messages-link,
+[data-theme='light'] .nav-links .nav-primary a.nav-profile-link{color:rgba(255,255,255,.9)}
 /* L'onglet courant : pastille jaune, encre sombre. `!important` nécessaire
    pour repasser devant la règle générale `!important` plus haut, qui impose le
    violet de la page claire. */
@@ -1524,6 +1527,24 @@
 }
 [data-theme='light'] .nav-links a.nav-account.connected,
 [data-theme='light'] .nav-links a.nav-logout{color:#fff}
+/* Le MENU DU COMPTE est lui aussi un panneau clair (blanc à 96 %) posé sur
+   l'île : ses liens et son bouton de déconnexion gardent donc une encre
+   sombre, sinon ils s'affichent blanc sur blanc. Déclaré APRÈS la règle
+   générale `[data-theme='light'] .nav-links a` (même spécificité) pour
+   l'emporter. */
+[data-theme='light'] .nav-profile-dropdown-links a{color:var(--muted)}
+[data-theme='light'] .nav-profile-dropdown-links a:hover{color:var(--ink)}
+[data-theme='light'] .nav-profile-dropdown-logout{
+  color:var(--danger);background-color:rgba(190,18,60,.07);border-color:rgba(190,18,60,.22);
+}
+[data-theme='light'] .nav-profile-dropdown-logout:hover{
+  color:#fff;background-color:var(--danger);border-color:var(--danger);
+}
+[data-theme='light'] .nav-profile-dropdown-meta strong{color:var(--ink)}
+[data-theme='light'] .nav-profile-dropdown-meta small{color:var(--muted)}
+[data-theme='light'] .nav-profile-dropdown-head{border-bottom-color:rgba(86,70,190,.10)}
+[data-theme='light'] .nav-profile-dropdown-progress{background-color:rgba(86,70,190,.10)}
+
 /* Le panneau déroulant est un vrai panneau clair, posé sur l'île : on lui
    rend ses encres de page. */
 [data-theme='light'] .nav-submenu{
