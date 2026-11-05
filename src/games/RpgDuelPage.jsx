@@ -259,6 +259,7 @@ import {
   rpgPeutPayer,
   rpgPoserTerrain,
   rpgResoudreArriveeCiblee,
+  rpgResoudreEffetCreatureEnAttente,
   rpgResoudreDestructionCiblee,
   rpgResoudreSiteCible,
   rpgResoudreContresortBoualem,
@@ -2248,7 +2249,7 @@ export function FantomeCarteDetruite({ effet, tableRef, onTermine = null }) {
         </span>
       )}
       <div
-        className={`rpg-card-destruction-fx${prise ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}`}
+        className={`rpg-card-destruction-fx${prise ? ' is-abordage' : ''} ${cardFrameClass(carteDetruite)} ${cardMotifClass(carteDetruite)}${effet.bruleeParBraise ? ' is-burning' : ''}${effet.impactCombat ? ' is-impact-combat' : ''}`}
         data-rpg-destroyed-id={effet.entityId}
         data-destruction-source={effet.bruleeParBraise ? 'braise' : undefined}
         aria-hidden="true"
@@ -2916,6 +2917,7 @@ export function TableCard({
         entreeEnCours ? 'fx-enter' : '',
         actionFx?.type === 'attack' ? 'fx-lunge' : '',
         actionFx?.type === 'hit' ? 'fx-hit' : '',
+        actionFx?.type === 'combat-impact' ? 'fx-combat-impact' : '',
         actionFx?.type === 'foudre' ? 'fx-foudre' : '', 
         actionFx?.type === 'glow' ? 'fx-glow' : '',
         actionFx?.type === 'block' ? 'fx-block' : '',
@@ -9911,7 +9913,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const tourDuJoueur = duel.tour === 'joueur' && !vainqueur;
   // Fin de tour : le camp qui a fini ne joue plus ; l'AUTRE a la main pour une magie rapide.
   const finTourJoueur = Boolean(duel.finDeTour?.cote === 'joueur' && !vainqueur);
-  const fenetreFinTour = Boolean(duel.finDeTour?.cote === 'sorcier' && !vainqueur);
+  const fenetreFinTour = Boolean(duel.finDeTour?.cote === 'sorcier' && !duel.effetCreatureEnAttente && !vainqueur);
   // Tant que le volet de mulligan est ouvert, la table attend : rien ne se
   // joue, rien ne s'engage, et le tour ne peut pas être rendu.
   const mulliganOuvert = Boolean(mulligan);
@@ -9924,9 +9926,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le contresort de Boualem gèle la table le temps de son choix : c'est le
   // seul geste attendu, comme pour une destruction ciblée.
   const monTour = tourDuJoueur && !finTourJoueur && !mulliganAttenteAdverse && !attenteBlocageAdverse
-    && !duel.boualemEnAttente;
+    && !duel.boualemEnAttente && !duel.effetCreatureEnAttente;
   const sorcierReflechit = Boolean(!vainqueur && !tutorielActif && duel.tour === 'sorcier'
-    && !duel.annonce && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
+    && !duel.annonce && !duel.effetCreatureEnAttente && !combatEntrant && !duel.finDeTour && !duel.magieGratuite
     && !duel.arriveeEnAttente && !duel.destructionsEnAttente?.length
     && !duel.boualemEnAttente
     && !duel.defausseEnAttente && !mulliganOuvert);
@@ -9981,6 +9983,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const nbDeckJoueur = duel.joueur.deckCount ?? duel.joueur.deck.length;
   // Fenêtre de réponse : pendant une attaque, ou quand le sorcier vient d'annoncer une carte.
   const fenetreSort = Boolean(duel.annonce && !vainqueur);
+  const fenetreEffetCreature = Boolean(duel.effetCreatureEnAttente?.cote === 'sorcier' && !vainqueur);
   const apercuAnnonceOuvert = Boolean(fenetreSort && annonceApercueFermeePour !== duel.annonce);
   const carteAnnoncee = fenetreSort ? cardById(duel.annonce.carteId) : null;
   const sorcierArtId = etageHistoire
@@ -10001,7 +10004,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         const porteur = duel.sorcier.creatures.find((entite) => entite.id === duel.annonce.cibleId);
         return porteur ? { nom: porteur.name, illustrationId: porteur.carteId } : { nom: 'Une créature du sorcier' };
       })()
-      : null;
+      : carteAnnoncee?.arrivee && duel.annonce.cibleId
+        ? (() => {
+          const cible = [...duel.joueur.creatures, ...duel.sorcier.creatures]
+            .find((entite) => entite.id === duel.annonce.cibleId);
+          return cible ? { nom: cible.name, illustrationId: cible.carteId } : null;
+        })()
+        : null;
   /* La lueur rouge de « visée » s'allume dès l'annonce : pendant la fenêtre de
      réponse, les créatures que la carte du sorcier désigne brillent déjà —
      c'est le moment décisif, celui où voir la cible dit s'il faut contrer.
@@ -10070,7 +10079,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Sans cible légale, l'effet se dissipe (l'effet ci-dessus s'en charge) : le
   // bandeau ne s'accroche pas à un choix impossible.
   const attenteDestructionVisible = attenteDestruction && idsCiblesDestruction.size > 0;
-  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur) || fenetreSort || fenetreFinTour);
+  const reponseActive = Boolean((combatEntrant && duel.fenetreReponse && !vainqueur)
+    || fenetreSort || fenetreFinTour || fenetreEffetCreature);
   const reponseApresBlocage = Boolean(reponseActive && combatEntrant?.coteAttaquant === 'joueur');
   const defausseOuverte = Boolean(duel.defausseEnAttente?.cote === 'joueur' && duel.defausseEnAttente.restant > 0);
   const selectionDefausseValide = Boolean(defausseOuverte
@@ -10459,7 +10469,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const site = duel.siteEnAttente?.cote === 'joueur';
     // Boualem : l'effet contré attend la victime désignée par son contrôleur.
     const boualem = duel.boualemEnAttente?.cote === 'joueur';
-    if (!destruction && !site && !boualem) return false;
+    const effet = duel.effetCreatureEnAttente?.cote === 'sorcier';
+    if (!destruction && !site && !boualem && !effet) return false;
     repriseSorcierRef.current = reprendre;
     force();
     return true;
@@ -10637,6 +10648,13 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const mouvementReduit = animationsReduites();
     const animationsCombatNouvelles = (duel.combatAnimations ?? [])
       .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
+    const idsEsquives = new Set(animationsCombatNouvelles
+      .filter((animation) => animation.type === 'esquive')
+      .map((animation) => animation.cible?.entiteId));
+    const impactsCombat = new Set(animationsCombatNouvelles
+      .filter((animation) => animation.type === 'impact-combat'
+        && !idsEsquives.has(animation.cible?.entiteId))
+      .map((animation) => animation.cible?.entiteId));
     if (!mouvementReduit) {
       for (const animation of animationsCombatNouvelles) {
         if (animation.type === 'esquive') {
@@ -10806,6 +10824,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         token,
         effectId: `${token}-${entite.entityId}`,
         bruleeParBraise: entitesBrulees.has(entite.entityId),
+        impactCombat: impactsCombat.has(entite.entityId),
         flammeJouee: feuVientDeSonner && entitesBrulees.has(entite.entityId),
         // Date de péremption : l'image d'une carte détruite n'est qu'un adieu.
         // Trois voies la retirent (fin d'animation, minuterie, ménage), la
@@ -11007,6 +11026,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     declencherImpactsBouclier(impactsBouclier);
     if (bouclierBrise) jouerSfx(RPG_WEAPON_BREAK_SFX);
     animerEntites(touches, 'hit', 620);
+    // La vibration de l'impact remplace le clignotement ordinaire sur les
+    // bloqueurs et les cibles d'Attaque ciblée encore présents sur la table.
+    if (!mouvementReduit) animerEntites([...impactsCombat].filter((id) => vivants.has(id)), 'combat-impact', 560);
     animerEntites(secoueesParFoudre, 'foudre', DUREE_ECLAIR_MARTEAU);
     animerEntites(renforcees, 'glow', 1100, statsAugmentees);
   };
@@ -11059,7 +11081,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `is-playable`), pas de clic, pas de glisser-déposer.
     if (carte.kind === 'magie' && !rpgSortACibleValide(duel, 'joueur', carte)) return false;
     if (!rpgConditionEmbuscadeRemplie(duel, 'joueur', carte)) return false;
-    const reactionAttaque = (reponseActive && carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier') || (carte.reactionTourAdverse && duel.tour === 'sorcier' && (reponseActive || (modePvp && !duel.arriveeEnAttente && !attenteDestructionVisible)));
+    const reactionAttaque = (reponseActive && carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier')
+      || (carte.reactionTourAdverse && (fenetreEffetCreature || (duel.tour === 'sorcier'
+        && (reponseActive || (modePvp && !duel.arriveeEnAttente && !attenteDestructionVisible)))));
     if (reponseApresBlocage && !carte.instant && !reactionAttaque) return false;
     if (carte.kind === 'terrain') return monTour && !reponseApresBlocage && !duel.joueur.terrainPose;
     // Une arme sans créature alliée à équiper reste éteinte dans la main —
@@ -12817,7 +12841,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setPoseEnCours(null);
     setActivationEnCours(null);
     if (modePvp) {
-      if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      // Le serveur accorde la priorité adverse avant la fermeture du tour si
+      // une Embuscade (ou une magie rapide) est réellement jouable.
+      if (rpgPeutRepondre(duel, 'sorcier')) rpgOuvrirFinDeTour(duel);
+      else if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
       void envoyerIntentionPvp({ type: 'fin-de-tour' });
       force();
       return;
@@ -12883,8 +12910,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     later(() => {
       transitionTourRef.current = false;
       if (terminerTourEtDetecterDegatsJoueur()) declencherImpactEcran('received');
+      if (modePvp) void envoyerIntentionPvp({ type: 'passer-fin-de-tour' });
       force();
     }, 600);
+  };
+
+  const passerEffetCreature = () => {
+    if (!duel.effetCreatureEnAttente || duel.arriveeEnAttente) return;
+    const res = rpgResoudreEffetCreatureEnAttente(duel, 'joueur');
+    if (!res.ok) { jouerSfx('erreur'); return; }
+    jouerSfx('pass');
+    if (modePvp) void envoyerIntentionPvp({ type: 'passer-effet' });
+    const reprendre = repriseSorcierRef.current;
+    repriseSorcierRef.current = null;
+    force();
+    if (!modePvp && reprendre) later(reprendre, delaiReflexionSorcier());
   };
 
   const finirTourSorcier = () => {
@@ -12976,7 +13016,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         animerModificationsChamp(champAvantActivation, [], debutJournalActivation);
         if (armesActivees) jouerSfx('apparition');
         force();
-        later(declarerAttaqueSorcier, delaiReflexionSorcier());
+        if (duel.effetCreatureEnAttente) repriseSorcierRef.current = declarerAttaqueSorcier;
+        else later(declarerAttaqueSorcier, delaiReflexionSorcier());
         return;
       }
       declarerAttaqueSorcier();
@@ -13060,7 +13101,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     animerModificationsChamp(champAvant, [], debutJournalDestructions,
       [res.renvoiEntityId]);
     force();
-    later(annoncerSuivantSorcier, delaiReflexionSorcier());
+    if (duel.effetCreatureEnAttente) repriseSorcierRef.current = annoncerSuivantSorcier;
+    else later(annoncerSuivantSorcier, delaiReflexionSorcier());
   };
 
   // Phase d'attaque du sorcier, une fois toutes ses cartes annoncées et résolues.
@@ -14526,19 +14568,33 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                 </button>
               </div>
             )}
+            {fenetreEffetCreature && (
+              <div className="rpg-annonce-sort__compact rpg-effet-creature" role="group"
+                aria-label={`Effet ciblé de ${cardById(duel.effetCreatureEnAttente.carteId)?.name ?? 'créature'} : jouez une réponse ou passez`}>
+                <span className="rpg-annonce-sort__compact-label">
+                  <span>Effet de créature ciblé</span>
+                  <b>{cardById(duel.effetCreatureEnAttente.carteId)?.name} → {duel.joueur.creatures.find((entite) => entite.id === duel.effetCreatureEnAttente.cibleId)?.name ?? 'votre créature'}</b>
+                </span>
+                <button type="button" className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
+                  aria-label="Laisser passer l’effet de créature ciblé" disabled={Boolean(duel.arriveeEnAttente)}
+                  onClick={passerEffetCreature}>
+                  <span aria-hidden="true">➜</span><span>Passer</span>
+                </button>
+              </div>
+            )}
             {/* Fin du tour du sorcier : même colonne d'actions que la réponse ci-dessus,
                 au-dessus de la main — et non en tête de table, où le bloc tombait. */}
             {fenetreFinTour && (
               <div className="rpg-annonce-sort__compact rpg-fin-tour" role="group"
-                aria-label="Fin du tour du sorcier : jouez une magie rapide ou passez">
+                aria-label="Fin du tour du sorcier : jouez une magie rapide ou une Embuscade, ou passez">
                 <span className="rpg-annonce-sort__compact-label">
                   <span>Fin du tour du sorcier</span>
-                  <b>Magie rapide ?</b>
+                  <b>Magie rapide ou Embuscade ?</b>
                 </span>
                 <button
                   type="button"
                   className="rpg-btn rpg-annonce-sort__pass rpg-annonce-sort__compact-pass"
-                  aria-label="Passer : ne pas jouer de magie rapide"
+                  aria-label="Passer : ne pas jouer de magie rapide ni d’Embuscade"
                   onClick={() => { jouerSfx('pass'); passerFinTourSorcier(); }}
                 >
                   <span aria-hidden="true">➜</span>
@@ -14639,7 +14695,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
 
         <div
-          className={`rpg-hand-dock${combatEntrant || fenetreSort || fenetreFinTour ? ' is-open' : ''}`}
+          className={`rpg-hand-dock${combatEntrant || fenetreSort || fenetreFinTour || fenetreEffetCreature ? ' is-open' : ''}`}
           aria-label="Votre main"
           inert={apercuAnnonceOuvert ? true : undefined}
           data-tutorial-target={cibleTutoriel('hand') ? 'hand' : undefined}

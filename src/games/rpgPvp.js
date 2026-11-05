@@ -39,6 +39,8 @@ import {
   rpgConditionEmbuscadeRemplie,
   rpgEstProtegee,
   rpgFinDeTour,
+  rpgOuvrirFinDeTour,
+  rpgPeutRepondre,
   rpgJouerArme,
   rpgJouerCreature,
   rpgLancerAttaque,
@@ -50,6 +52,7 @@ import {
   rpgPreparerDefausseFinDeTour,
   rpgReglerHasard,
   rpgResoudreArriveeCiblee,
+  rpgResoudreEffetCreatureEnAttente,
   rpgResoudreDestructionCiblee,
   rpgResoudreContresortBoualem,
   rpgSyncCompteurEntites,
@@ -88,6 +91,7 @@ export const RPG_PVP_INTENTIONS = [
   'jouer-carte',
   'resoudre-arrivee',
   'renoncer-arrivee',
+  'passer-effet',
   'resoudre-destruction',
   'resoudre-boualem',
   'preparer-defausse-fin-tour',
@@ -98,6 +102,7 @@ export const RPG_PVP_INTENTIONS = [
   'preparer-blocage',
   'bloquer',
   'fin-de-tour',
+  'passer-fin-de-tour',
   'conceder',
 ];
 
@@ -178,6 +183,7 @@ export function rpgPvpCoteActif(duel) {
   // de désigner sa nouvelle cible.
   if (duel.boualemEnAttente?.cote) return duel.boualemEnAttente.cote;
   if (duel.arriveeEnAttente?.cote) return duel.arriveeEnAttente.cote;
+  if (duel.effetCreatureEnAttente?.cote) return rpgPvpAutreCote(duel.effetCreatureEnAttente.cote);
   if (duel.defausseEnAttente?.cote && duel.defausseEnAttente.restant > 0) return duel.defausseEnAttente.cote;
   if (duel.phase === 'blocage') return rpgPvpAutreCote(duel.tour);
   if (duel.fenetreReponse) return rpgPvpAutreCote(duel.tour);
@@ -211,6 +217,14 @@ export function rpgPvpPeutAgir(duel, cote, intention = null) {
   }
   if (duel.arriveeEnAttente && !['resoudre-arrivee', 'renoncer-arrivee'].includes(intention.type)) {
     return { ok: false, raison: 'arrivee-en-attente' };
+  }
+  if (duel.effetCreatureEnAttente && !duel.arriveeEnAttente) {
+    const carte = cardById(intention.carteId);
+    if (cote !== rpgPvpAutreCote(duel.effetCreatureEnAttente.cote)
+      || (intention.type !== 'passer-effet'
+        && !(intention.type === 'jouer-carte' && (carte?.instant || carte?.reactionTourAdverse)))) {
+      return { ok: false, raison: 'effet-en-attente' };
+    }
   }
   const actif = rpgPvpCoteActif(duel);
   const reaction = intention.type === 'jouer-carte' && duel.tour !== cote
@@ -281,6 +295,9 @@ function retournerPartie(vue) {
     vue.boualemEnAttente = { ...vue.boualemEnAttente, cote: remplace(vue.boualemEnAttente.cote) };
   }
   if (vue.annonce?.cote) vue.annonce = { ...vue.annonce, cote: remplace(vue.annonce.cote) };
+  if (vue.effetCreatureEnAttente?.cote) {
+    vue.effetCreatureEnAttente = { ...vue.effetCreatureEnAttente, cote: remplace(vue.effetCreatureEnAttente.cote) };
+  }
   if (vue.combatDeclare?.cote) {
     vue.combatDeclare = { ...vue.combatDeclare, cote: remplace(vue.combatDeclare.cote) };
   }
@@ -518,6 +535,8 @@ function executerIntention(duel, cote, intention) {
       }
       return { ok: false, raison: 'carte-injouable' };
     }
+    case 'passer-effet':
+      return rpgResoudreEffetCreatureEnAttente(duel, cote);
     case 'preparer-blocage': {
       // Les choix de bloqueurs restent réversibles avant la résolution. Le
       // serveur doit les connaître pour l'Embuscade de l'Archonte, sans
@@ -610,11 +629,20 @@ function executerIntention(duel, cote, intention) {
     case 'bloquer':
       return resoudreBlocagePvp(duel, intention.blocages ?? {}, intention.repartitions ?? null);
     case 'fin-de-tour': {
-      if (duel.tour !== cote) return { ok: false, raison: 'pas-votre-tour' };
+      if (duel.tour !== cote || duel.finDeTour) return { ok: false, raison: 'pas-votre-tour' };
+      if (rpgPeutRepondre(duel, rpgPvpAutreCote(cote))) {
+        if (!rpgOuvrirFinDeTour(duel)) return { ok: false, raison: 'tour-non-close' };
+        return { ok: true, reponseEnAttente: true };
+      }
       const avant = duel.tour;
       rpgFinDeTour(duel);
-      // Le moteur refuse silencieusement (destruction en attente, choix de mana)
-      // en laissant le tour au même camp : on le dit au client.
+      if (duel.tour === avant) return { ok: false, raison: 'tour-non-close' };
+      return { ok: true };
+    }
+    case 'passer-fin-de-tour': {
+      if (duel.finDeTour?.cote !== rpgPvpAutreCote(cote)) return { ok: false, raison: 'aucune-fin-de-tour' };
+      const avant = duel.tour;
+      rpgFinDeTour(duel);
       if (duel.tour === avant) return { ok: false, raison: 'tour-non-close' };
       return { ok: true };
     }

@@ -565,6 +565,9 @@ export function rpgNouveauDuel({ joueurDeck = [], sorcierDeck = [], sorcierPuiss
     finDeTour: null,
     // Carte annoncée par le sorcier, pas encore résolue : le joueur peut répondre ou laisser passer.
     annonce: null,
+    // Effet ciblé d'une créature payé ou désigné, mais pas encore résolu :
+    // le contrôleur de la cible peut jouer une réponse ou passer.
+    effetCreatureEnAttente: null,
     // Défausse en attente (ex. Jörmungandr côté joueur) : { cote, restant, sourceCarteId }
     defausseEnAttente: null,
     // Récompense d'un Site qui attend le choix de sa créature alliée.
@@ -1105,11 +1108,25 @@ export function rpgPeutActiverCapacite(duel, cote, entiteId) {
   return rpgPeutPayer(duel[cote], coutActivation(activation));
 }
 
+/** Réserve l'effet ciblé jusqu'au choix « répondre ou passer » du défenseur.
+ * Une fenêtre inutile (aucune carte jouable) ne ralentit pas la partie. */
+function attendreEffetCreature(duel, cote, carteId, entiteId, cibleId, type) {
+  if (duel.effetCreatureEnAttente || !duel[autre(cote)].creatures.some((entite) => entite.id === cibleId)) return false;
+  duel.effetCreatureEnAttente = { cote, carteId, entiteId, cibleId, type };
+  if (!rpgPeutRepondre(duel, autre(cote))) {
+    duel.effetCreatureEnAttente = null;
+    return false;
+  }
+  duel.fenetreReponse = true;
+  duel.log.push(`${cardById(carteId)?.name ?? 'Une créature'} cible une créature adverse : réponse ou passage avant l’effet.`);
+  return true;
+}
+
 /** Active la capacité : le mana part d'abord — même si Boualem la contre —
  *  puis elle inflige ses blessures à la créature choisie, alliée ou adverse
  *  (« une créature au choix »). Les blessures ne sont ni une attaque ni une
  *  magie : Esquive n'y fait rien. */
-export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
+export function rpgActiverCapacite(duel, cote, entiteId, cibleId, { attendreReponse = false } = {}) {
   const camp = duel[cote];
   const entite = camp.creatures.find((candidate) => candidate.id === entiteId);
   const activation = entite ? duelCardById(entite.carteId)?.activation : null;
@@ -1127,6 +1144,24 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
   const cout = coutActivation(activation);
   if (!rpgPeutPayer(camp, cout)) return { ok: false, raison: 'mana' };
   payer(duel, cote, cout);
+  if (cibleCamp !== cote && (duel.pvp || attendreReponse)
+    && attendreEffetCreature(duel, cote, carte.id, entiteId, cibleId, 'activation')) {
+    return { ok: true, effetEnAttente: true, cibleId };
+  }
+  return resoudreActivationPayee(duel, cote, carte.id, entiteId, cibleId);
+}
+
+
+/** Résout une capacité déjà payée ; retirer sa source pendant la réponse ne
+ * contre pas l'effet, mais retirer sa cible le dissipe. */
+function resoudreActivationPayee(duel, cote, carteId, entiteId, cibleId) {
+  const carte = duelCardById(carteId);
+  const entite = duel[cote].creatures.find((candidate) => candidate.id === entiteId);
+  const activation = carte.activation;
+  const couleur = activation.couleur ?? carte.element;
+  const cibleCamp = ['joueur', 'sorcier'].find((camp) => duel[camp].creatures.some((candidate) => candidate.id === cibleId));
+  const cible = cibleCamp && duel[cibleCamp].creatures.find((candidate) => candidate.id === cibleId);
+  if (!cible) { duel.log.push(`La cible de ${carte.name} a disparu : l'effet se dissipe.`); return { ok: true, dissipe: true }; }
   presenterEffet(duel, cote, carte.id);
   // Boualem ne contre que l'effet qui le **cible vraiment** — la foudre l'a
   // bien pris pour cible : elle se paie, puis se dénoue.
@@ -1156,7 +1191,7 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
         sourceCarteId: carte.id,
         montant,
         couleur,
-        sourceNom: entite.name,
+        sourceNom: (entite?.name ?? carte.name),
       };
       duel.log.push(cibleCamp === 'joueur'
         ? `Boualem contre la capacité qui le ciblait : choisissez la créature de votre camp qui subira ${montant} blessure${montant > 1 ? 's' : ''}.`
@@ -1174,9 +1209,34 @@ export function rpgActiverCapacite(duel, cote, entiteId, cibleId) {
     if (!paradeZoneBloque(duel, cibleFinale, 'capacite', campFinal, cote))
       rpgBlesserCreature(duel, campFinal, cibleFinale.id, montant, couleur, null, 'capacite');
   }
-  duel.log.push(`${entite.name} inflige ${montant} blessures à ${cibleFinale.name}.`);
+  duel.log.push(`${(entite?.name ?? carte.name)} inflige ${montant} blessures à ${cibleFinale.name}.`);
   rpgActionsEtat(duel);
   return { ok: true, cibleId: cibleFinale.id };
+}
+
+/** Le défenseur passe : l'effet déjà annoncé et payé se résout sur la cible
+ * encore présente, après les réponses (bouclier, renvoi, Embuscade…). */
+export function rpgResoudreEffetCreatureEnAttente(duel, cote) {
+  const attente = duel.effetCreatureEnAttente;
+  if (!attente || autre(attente.cote) !== cote) return { ok: false, raison: 'aucun-effet' };
+  duel.effetCreatureEnAttente = null;
+  duel.fenetreReponse = Boolean(duel.finDeTour || duel.combatDeclare || duel.annonce);
+  if (attente.type === 'activation') {
+    return resoudreActivationPayee(duel, attente.cote, attente.carteId, attente.entiteId, attente.cibleId);
+  }
+  const carte = duelCardById(attente.carteId);
+  const cible = duel[autre(attente.cote)].creatures.find((entite) => entite.id === attente.cibleId);
+  if (!carte || !cible) {
+    duel.log.push(`La cible de ${carte?.name ?? 'la créature'} a disparu : l'effet se dissipe.`);
+    return { ok: true, dissipe: true };
+  }
+  appliquer(duel, attente.cote, carte.arrivee.attaquanteSeulement
+    ? { ...carte.arrivee, amount: duel[attente.cote].creatures.find((entite) => entite.id === attente.entiteId)?.atk ?? carte.atk }
+    : effetArriveePourCible(carte, cible.id), cible.id, attente.entiteId, cardColors(carte), 'capacite', carte.id);
+  journaliserArriveeAuSorcier(duel, carte, cible.id);
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+  return { ok: true, cible };
 }
 
 const autre = (cote) => (cote === 'joueur' ? 'sorcier' : 'joueur');
@@ -5279,6 +5339,8 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
     case 'attaquant-force-3': return attaquants.some((entite) => entite.atk >= 3);
     case 'allie-cible': return allies.some((entite) =>
       (duel.annonce?.cote === autre(cote) && duel.annonce.cibleId === entite.id)
+      || (duel.effetCreatureEnAttente?.cote === autre(cote)
+        && duel.effetCreatureEnAttente.cibleId === entite.id)
       || ciblesAttaque.includes(entite.id));
     case 'deux-attaquants': return attaquants.length >= 2;
     case 'vampire-attaque': return vampiresVises || vampiresBloqueurs;
@@ -5428,7 +5490,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null, attendreReponseEffet = false } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -5685,9 +5747,12 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     let cibleArrivee = null;
     if (carte.arrivee.cible === 'creature-amie') cibleArrivee = cibleId ?? entite.id;
     else if (carte.arrivee.cible && carte.arrivee.cible !== 'soi') cibleArrivee = cibleId;
-    appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
-      entite.id, cardColors(carte), 'capacite', carte.id);
-    journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
+    if (!((duel.pvp || attendreReponseEffet)
+      && attendreEffetCreature(duel, cote, carte.id, entite.id, cibleArrivee, 'arrivee'))) {
+      appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
+        entite.id, cardColors(carte), 'capacite', carte.id);
+      journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
+    }
   }
   // L'Abordage (set Lettres de Marque) : la prise se fait À L'ARRIVÉE — le
   // capteur tire sa prize dès qu'il accoste, pas en frappant (au combat, les
@@ -5848,11 +5913,15 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
     : null;
   duel.arriveeEnAttente = arriveeSuivante;
-  appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible.id), cible.id,
-    entite.id, cardColors(carte), 'capacite', carte.id);
+  const effetEnAttente = duel.pvp
+    && attendreEffetCreature(duel, cote, carte.id, entite.id, cible.id, 'arrivee');
+  if (!effetEnAttente) {
+    appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cible.id), cible.id,
+      entite.id, cardColors(carte), 'capacite', carte.id);
+  }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, cible };
+  return { ok: true, cible, effetEnAttente };
 }
 
 /**
@@ -7550,6 +7619,23 @@ export function rpgLancerAttaque(
       );
     }
   }
+  // Les cibles des frappes réellement assignées vibrent au moment du choc :
+  // bloqueurs et Attaques ciblées, mais jamais une frappe ratée, annulée ou
+  // de force nulle. Le journal survit à la mort de la carte et au réseau PvP.
+  const impacts = new Set([
+    ...frappesRapides.filter((frappe) => !frappe.annule && !frappe.rate && frappe.degats > 0)
+      .map((frappe) => frappe.cibleId),
+    ...coupsNormaux.filter((coup) => coup.cote === adv && coup.sourceCote === cote && coup.amount > 0)
+      .map((coup) => coup.entiteId),
+  ]);
+  if (!duel.brouillardCombat) {
+    for (const entiteId of impacts) {
+      if (duel[adv].creatures.some((entite) => entite.id === entiteId)
+        || etatsCiblesRapides.has(entiteId)) {
+        journaliserAnimationCombat(duel, { type: 'impact-combat', cible: { type: 'creature', cote: adv, entiteId } });
+      }
+    }
+  }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux, {
     onFurie: (entite, coteBlessure) => resume.furies.push({
       entiteId: entite.id,
@@ -7910,7 +7996,7 @@ export function rpgDefinirPhase(duel, phase) {
  *  n'est encore effacé — un Rempart de dunes « jusqu'à la fin du tour » protège
  *  donc toujours pendant cette fenêtre. `rpgFinDeTour` ferme ensuite le tour. */
 export function rpgOuvrirFinDeTour(duel) {
-  if (duel.siteEnAttente) return null;
+  if (duel.siteEnAttente || duel.effetCreatureEnAttente) return null;
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[duel.tour].manaChoixEnAttente) return null;
   if (duel.finDeTour) return duel.finDeTour;
   duel.phase = 'fin';
@@ -7966,6 +8052,8 @@ function detruireEphemeres(duel) {
  *  échos différés (Nuage de cendres) dont il est le lanceur retombent sur la
  *  table d'en face. Le tour s'ouvre ensuite en phase principale. */
 export function rpgFinDeTour(duel) {
+  // Une cible annoncée doit pouvoir recevoir sa réponse avant de changer de tour.
+  if (duel.effetCreatureEnAttente) return duel;
   // Bimini attend que son contrôleur désigne la créature consacrée.
   if (duel.siteEnAttente) return duel;
   // Un joueur multicolore doit investir son nouveau mana avant de pouvoir
@@ -8165,7 +8253,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)
-      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId)
+      ? rpgJouerCreature(duel, 'sorcier', annonce.carteId, annonce.cibleId, { attendreReponseEffet: true })
       : rpgLancerMagie(duel, 'sorcier', annonce.carteId, annonce.cibleId, annonce.cibleAllieeId ?? null);
   rpgActionsEtat(duel);
   return { ...res, carteId: annonce.carteId };
@@ -8250,9 +8338,10 @@ export function rpgSorcierActiverCapacitesIA(duel, rng = Math.random) {
   while (garde-- > 0) {
     const coup = choisirActivationIA(duel, 'sorcier', { ia: duel.sorcier.ia, rng });
     if (!coup) break;
-    const res = rpgActiverCapacite(duel, 'sorcier', coup.entiteId, coup.cibleId);
+    const res = rpgActiverCapacite(duel, 'sorcier', coup.entiteId, coup.cibleId, { attendreReponse: !duel.pvp });
     if (!res.ok) break;
     actives.push(res);
+    if (res.effetEnAttente) break;
   }
   return actives;
 }
