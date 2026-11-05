@@ -40,11 +40,11 @@ export const SEUIL_OR = 80;
 export const METAUX_COFFRE = Object.freeze({
   bronze: Object.freeze({
     id: 'bronze',
-    nom: 'bronze',
-    face: Object.freeze(['#f6cd9b', '#d9924e', '#a05f26', '#5f3411']),
-    cote: Object.freeze(['#8a4f1e', '#4a2809']),
-    dessus: Object.freeze(['#ffe0b4', '#e0a05a', '#a2612a']),
-    bande: Object.freeze(['#ffe6c2', '#c9803a', '#6b3c14']),
+    nom: 'bois',
+    face: Object.freeze(['#bf8a4b', '#955b2d', '#70401e', '#3d210f']),
+    cote: Object.freeze(['#754320', '#321b0e']),
+    dessus: Object.freeze(['#d5a064', '#9d612f', '#70401d']),
+    bande: Object.freeze(['#877253', '#514332', '#2b211a']),
     reflet: '#fff6e8',
     lueur: Object.freeze(['#fff0d2', '#ff9d3c']),
     gemme: Object.freeze(['#ffd08a', '#e07b2a', '#8a3f08']),
@@ -118,7 +118,7 @@ export function paletteCoffre(metal) {
 
 /** Les trois libellés, pour les lecteurs d'écran et les infobulles. */
 const LIBELLES_COFFRE = Object.freeze({
-  bronze: 'coffre de bronze',
+  bronze: 'coffre en bois à serrure dorée',
   argent: "coffre d'argent",
   or: "coffre d'or",
   violet: 'coffre violet',

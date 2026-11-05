@@ -410,3 +410,13 @@
   .rpg-coffre-svg__couvercle { transition: none; }
   .rpg-coffres-quetes__jauge-remplie { transition: none; }
 }
+
+/* Même bois et serrure dorée pendant la cérémonie et dans la rangée tactile. */
+.rpg-coffre-svg[data-coffre-matiere='bois'] .rpg-coffre-svg__caisse,
+.rpg-coffre-svg[data-coffre-matiere='bois'] .rpg-coffre-svg__dessus { fill: #955b2d; }
+.rpg-coffre-svg[data-coffre-matiere='bois'] .rpg-coffre-svg__veines {
+  fill: none; stroke: #4c2812; stroke-width: 1.2; stroke-linecap: round; opacity: .72;
+}
+.rpg-coffre-svg[data-coffre-matiere='bois'] .rpg-coffre-svg__serrure > rect:first-of-type {
+  fill: #e9ba46; stroke: #80530e; stroke-width: .8;
+}

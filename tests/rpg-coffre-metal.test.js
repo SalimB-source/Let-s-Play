@@ -88,7 +88,7 @@ test('le Cachet est en or ; la Semaine prend le violet, qui n’est pas un cran 
   assert.ok(QUETES.every((q) => metalPourGain(q.recompense) !== 'violet'), 'aucune quête ne tire le violet');
   assert.equal(libelleCoffre(GAINS.cachetDeLaSemaine, METAL_SEMAINE), 'coffre violet');
   assert.ok(METAUX_COFFRE.violet.face.every((c) => /^#[0-9a-f]{6}$/i.test(c)));
-  assert.equal(libelleCoffre(60), 'coffre de bronze');
+  assert.equal(libelleCoffre(60), 'coffre en bois à serrure dorée');
   assert.equal(libelleCoffre(70), "coffre d'argent");
   assert.equal(libelleCoffre(100), "coffre d'or");
 });
@@ -501,4 +501,20 @@ test('le jalon de la semaine indique son encaissement', async () => {
   // Et le drapeau lu est bien celui que pose l'encaissement.
   const quetes = fs.readFileSync('src/games/rpgQuetes.js', 'utf8');
   assert.match(quetes, /semaine:\s*true/);
+});
+
+
+test('le palier bronze garde ses règles mais devient du bois à serrure dorée', async () => {
+  const fs = await import('node:fs');
+  const css = fs.readFileSync('src/games/rpg-coffre-dore.css', 'utf8');
+  const svgCss = fs.readFileSync('src/games/rpg-coffres-quetes.css', 'utf8');
+  const dessin = fs.readFileSync('src/games/RpgCoffresQuetes.jsx', 'utf8');
+  const ceremonie = fs.readFileSync('src/games/RpgCoffreOuverture.jsx', 'utf8');
+  assert.equal(metalPourGain(60), 'bronze');
+  assert.equal(paletteCoffre('bronze').nom, 'bois');
+  assert.match(css, /data-coffre-metal='bronze'[^\n]*rpg-coffre-dore__face::before[\s\S]*?repeating-linear-gradient/);
+  assert.match(css, /data-coffre-metal='bronze'[^\n]*rpg-coffre-dore__serrure[\s\S]*?#edbf49/);
+  assert.match(dessin, /data-coffre-matiere=\{genre === 'bronze' \? 'bois'/);
+  assert.match(svgCss, /rpg-coffre-svg__veines/);
+  assert.match(ceremonie, /<CoffreSvg ouvert=\{ouvert\} genre=\{coffre.genre\}/);
 });

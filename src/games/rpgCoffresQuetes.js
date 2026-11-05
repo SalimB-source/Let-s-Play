@@ -34,7 +34,7 @@ import {
  * du coffre dans la feuille de style (une seule variable, pas cinq règles).
  */
 export const GENRES_COFFRES = Object.freeze({
-  bronze: Object.freeze({ id: 'bronze', nom: 'Coffre de bronze', teinte: '#c07a3c', paquets: 0 }),
+  bronze: Object.freeze({ id: 'bronze', nom: 'Coffre en bois', teinte: '#955b2d', paquets: 0 }),
   argent: Object.freeze({ id: 'argent', nom: "Coffre d'argent", teinte: '#b9c6d6', paquets: 0 }),
   or: Object.freeze({ id: 'or', nom: "Coffre d'or", teinte: '#f2c14e', paquets: 0 }),
   royal: Object.freeze({ id: 'royal', nom: 'Coffre du cycle', teinte: '#8fd3ff', paquets: 1 }),

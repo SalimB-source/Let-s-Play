@@ -13,7 +13,7 @@ const etat = (suite = {}) => ({
   version: 1, jour: '2026-11-04', quetes: TROIS,
   progres: { 'creatures-10': 0, 'duels-2': 0, 'duels-3': 0 },
   reclamations: [], cachet: false, semaine: false, serie: 1,
-  majLe: null, debutLe: '2026-11-04T08:00:00.000Z',
+  majLe: null, debutLe: new Date().toISOString(),
   ...suite,
 });
 
@@ -63,6 +63,7 @@ test('le Coffre du cycle attend les trois quêtes, et lui seul ajoute un paquet'
 });
 
 test('seuls les coffres du cycle et de la semaine donnent des cartes', () => {
+  assert.equal(GENRES_COFFRES.bronze.nom, 'Coffre en bois');
   assert.equal(paquetsDuCoffre('bronze'), 0);
   assert.equal(paquetsDuCoffre('argent'), 0);
   assert.equal(paquetsDuCoffre('or'), 0);
