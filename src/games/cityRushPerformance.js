@@ -550,13 +550,18 @@ export function cityRushBatchStatic(root, { minInstances = 2 } = {}) {
   const buckets = new Map();
   const removals = [];
   const originals = [];
-  let before = 0;
+  // `before` est le nombre **total** de maillages de la scène, et `after` le
+  // même compte une fois le regroupement fait : les deux chiffres parlent donc
+  // de la même population (appels de dessin par image). Compter d'un côté les
+  // seuls maillages éligibles et de l'autre tout ce qui reste donnait des
+  // rapports absurdes (« 113 → 1120 ») dès qu'une bonne part de la scène était
+  // exclue du regroupement.
+  let before = countVisibleMeshes(root);
   const visit = (object) => {
     if (object === root) return;
     if (object.userData?.dynamic) return false; // n'entre pas dans les véhicules
     if (object.userData?.noBatch) return false;
     if (object.isMesh && !object.isInstancedMesh) {
-      before += 1;
       const material = object.material;
       const batched = !Array.isArray(material)
         && material
@@ -583,7 +588,6 @@ export function cityRushBatchStatic(root, { minInstances = 2 } = {}) {
       return true;
     }
     if (object.isInstancedMesh || object.isSprite || object.isLine || object.isPoints) {
-      before += object.isMesh ? 1 : 0;
       return false;
     }
     return true;
@@ -636,10 +640,7 @@ export function cityRushBatchStatic(root, { minInstances = 2 } = {}) {
     }
   }
   if (merged > 0) root.add(group);
-  let after = before;
-  let count = 0;
-  root.traverse((object) => { if (object.isMesh) count += 1; });
-  after = count;
+  const after = countVisibleMeshes(root);
   return {
     group,
     merged,
@@ -653,6 +654,131 @@ export function cityRushBatchStatic(root, { minInstances = 2 } = {}) {
       removals.length = 0;
     },
   };
+}
+
+/**
+ * Compte les maillages **réellement dessinés** : invisibilité comprise, et en
+ * coupant les sous-arbres invisibles comme le fait la boucle de rendu. C'est le
+ * chiffre qui parle — compter des objets masqués donnait en école un « 1 120
+ * appels » alors que 199 maillages seulement partaient au dessin.
+ */
+export function countVisibleMeshes(root) {
+  if (!root) return 0;
+  let count = 0;
+  const stack = [root];
+  while (stack.length) {
+    const object = stack.pop();
+    if (!object.visible) continue;
+    if (object.isMesh) count += 1;
+    for (const child of object.children) stack.push(child);
+  }
+  return count;
+}
+
+/**
+ * Le **rognage à la zone d'exercice** (école de conduite).
+ *
+ * L'école encadre la leçon par quatre plans de clipping (`drivingExerciseZone`) :
+ * tout ce qui déborde de la zone est *jeté par le GPU*. Mesure sur un exercice
+ * réel, avant ce rognage : **8 maillages et 632 triangles** dans la zone,
+ * contre **1 741 maillages, 947 projeteurs d'ombre et 756 789 triangles**
+ * dehors — dessinés, transformés, éclairés, projetés en ombre, puis coupés par
+ * les plans. Sur un téléphone, ce travail est payé pour rien, et c'est ce qui
+ * restait lourd en école alors que la ville libre était devenue fluide.
+ *
+ * On jette donc ces objets **côté processeur** : la scène ne les parcourt plus,
+ * la passe d'ombre ne les voit plus, et l'image est identique (les plans les
+ * coupaient déjà). Une marge conserve tout objet qui *traverse* la limite — un
+ * long trottoir, la route, le sol de la ville restent entiers.
+ *
+ * Ne sont jamais touchés : les sous-arbres `dynamic` (voiture, piétons,
+ * trafic — le jeu continue de les simuler), les `InstancedMesh` (un seul appel
+ * de dessin chacun), les `Sprite`/`Line`/`Points`.
+ *
+ * Retour : `{ hidden, kept, restore }`.
+ */
+export function cityRushCullToZone(root, bounds, { margin = 14 } = {}) {
+  const result = { hidden: 0, kept: 0, restore() {} };
+  if (!root || !bounds || typeof root.traverse !== 'function') return result;
+  if (![bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ].every((value) => Number.isFinite(value))) return result;
+  const zone = new THREE.Box3(
+    new THREE.Vector3(bounds.minX - margin, -Infinity, bounds.minZ - margin),
+    new THREE.Vector3(bounds.maxX + margin, Infinity, bounds.maxZ + margin),
+  );
+  const hidden = [];
+  const box = new THREE.Box3();
+  root.updateWorldMatrix(true, true);
+  const visit = (object) => {
+    if (object.userData?.dynamic || object.userData?.noBatch) return false;
+    if (object.isInstancedMesh || object.isSprite || object.isLine || object.isPoints) return false;
+    if (object.isMesh) {
+      const geometry = object.geometry;
+      if (!geometry?.attributes?.position) return false;
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      if (!geometry.boundingBox) return false;
+      // Boîte du maillage **dans le monde** : un objet peut être petit mais
+      // posé loin, ou l'inverse.
+      box.copy(geometry.boundingBox).applyMatrix4(object.matrixWorld);
+      if (zone.intersectsBox(box)) { result.kept += 1; return true; }
+      hidden.push(object);
+      result.hidden += 1;
+      return true;
+    }
+    return true;
+  };
+  // Parcours manuel : un sous-arbre écarté ne doit pas être visité.
+  const stack = [...root.children];
+  while (stack.length) {
+    const object = stack.pop();
+    if (visit(object) === false) continue;
+    for (const child of object.children) stack.push(child);
+  }
+  // On **détache** plutôt que de masquer : un objet masqué reste dans la scène,
+  // donc dans le parcours de la boucle de rendu *et* dans les comptes du
+  // regroupement statique (qui, lui, ne fusionne que le visible). Détaché, il
+  // ne coûte plus rien du tout, et le regroupement retrouve son efficacité.
+  const removed = [];
+  for (const object of hidden) {
+    if (!object.parent) continue;
+    removed.push({ object, parent: object.parent });
+    object.parent.remove(object);
+  }
+  result.restore = () => {
+    for (const { object, parent } of removed) parent.add(object);
+    removed.length = 0;
+    hidden.length = 0;
+  };
+  return result;
+}
+
+/**
+ * La **visibilité par zone des objets qui bougent** (école de conduite).
+ *
+ * `cityRushCullToZone` écarte le décor, mais pas le trafic : ses voitures
+ * roulent d'un bout à l'autre de la ville, et le rognage ne peut pas les
+ * détacher une fois pour toutes. Or dans l'école, l'immense majorité roule
+ * **hors de la zone** : mesuré, une soixantaine de voitures de trafic et de
+ * stationnement représentaient près de 700 maillages et 500 projeteurs d'ombre
+ * pour un carré de conduite de quelques dizaines de mètres.
+ *
+ * La fonction rend un test `(x, z) => boolean`, à appeler chaque image sur les
+ * objets mobiles : `visible = test(x, z)`. Elle ne modifie **pas** la
+ * simulation — une voiture masquée continue d'avancer, ses feux continuent de
+ * cycler, et elle réapparaît si elle entre dans la zone. Un simple test de
+ * distance, ~100 fois par image : le coût est négligeable devant les maillages
+ * qu'il évite.
+ */
+export function cityRushZoneCuller(bounds, { margin = 40 } = {}) {
+  if (!bounds || ![bounds.minX, bounds.maxX, bounds.minZ, bounds.maxZ].every((value) => Number.isFinite(value))) {
+    return () => true;
+  }
+  const minX = bounds.minX - margin;
+  const maxX = bounds.maxX + margin;
+  const minZ = bounds.minZ - margin;
+  const maxZ = bounds.maxZ + margin;
+  return (x, z) => (Number.isFinite(x) && Number.isFinite(z)
+    ? x >= minX && x <= maxX && z >= minZ && z <= maxZ
+    : true); // une position inconnue ne masque rien : on ne perd pas un objet
 }
 
 /**
@@ -675,14 +801,13 @@ export async function cityRushBatchStaticAsync(root, {
   const inverse = new THREE.Matrix4().copy(root.matrixWorld || new THREE.Matrix4()).invert();
   const buckets = new Map();
   const originals = [];
-  let before = 0;
+  let before = countVisibleMeshes(root);
   const stack = [...root.children];
   while (stack.length) {
     const object = stack.pop();
     if (object.userData?.dynamic || object.userData?.noBatch) continue;
     if (object.isInstancedMesh || object.isSprite || object.isLine || object.isPoints) continue;
     if (object.isMesh) {
-      before += 1;
       const material = object.material;
       const batched = !Array.isArray(material)
         && material && !material.transparent && material.alphaTest === 0
@@ -739,8 +864,7 @@ export async function cityRushBatchStaticAsync(root, {
   }
   if (merged > 0) root.add(group);
   onProgress?.(1);
-  let after = 0;
-  root.traverse((object) => { if (object.isMesh) after += 1; });
+  const after = countVisibleMeshes(root);
   return {
     group,
     merged,

@@ -9,6 +9,9 @@ import {
   cityRushBatchStaticAsync,
   cityRushBatchVehicle,
   cityRushCanAutoDowngrade,
+  cityRushCullToZone,
+  cityRushZoneCuller,
+  countVisibleMeshes,
   cityRushDeviceProfile,
   cityRushNextLowerQuality,
   cityRushQualityPreference,
@@ -385,6 +388,14 @@ test('la ville applique le budget de scène, le regroupement et le parc de trafi
   assert.match(source, /const highwayCarCount = cityRushTrafficFleetSize\(sceneBudget\.highwayTrafficCars, \{ floor: 4, ceiling: 18 \}\)/);
   assert.match(source, /Array\.from\(\{ length: trafficCarCount \}/);
   assert.match(source, /index < highwayCarCount/);
+  // École : le décor hors zone est écarté avant le regroupement, et le trafic
+  // n'est affiché que dans la zone — sans cesser d'être simulé.
+  assert.match(source, /cityRushCullToZone\(scene, schoolExercise\.bounds\)/);
+  assert.match(source, /cityRushZoneCuller\(schoolExercise\.bounds\)/);
+  assert.match(source, /traffic\.car\.visible = zoneCuller\(traffic\.car\.position\.x, traffic\.car\.position\.z\)/);
+  assert.match(source, /zoneCull\?\.restore\(\);/, 'le décor écarté revient pour être libéré');
+  // Le compteur d'appels publié est le nombre **réellement dessiné**.
+  assert.match(source, /mount\.dataset\.draws = String\(countVisibleMeshes\(scene\)\)/);
   // Les voitures qui roulent ne sont jamais fusionnées dans le décor.
   const dynamicMarks = source.match(/userData\.dynamic = true/g) || [];
   assert.ok(dynamicMarks.length >= 6, 'voiture du joueur, trafic, voitures garées, bateaux, pluie');
@@ -398,4 +409,87 @@ test('la ville applique le budget de scène, le regroupement et le parc de trafi
   for (const dataset of ['quality', 'neonLights', 'parkedCars', 'drawsBefore', 'draws', 'batched']) {
     assert.match(source, new RegExp(`mount\\.dataset\\.${dataset} =`), `\`data-${dataset}\` doit être exposé`);
   }
+});
+
+
+// ── École : rognage à la zone ───────────────────────────────────────────────
+// L'école encadre la leçon par quatre plans de clipping. Sans rognage, le GPU
+// reçoit tout le décor de la ville pour n'en garder qu'un carré : mesuré sur un
+// exercice réel, 632 triangles visibles contre 756 789 dessinés puis jetés.
+function zoneScene() {
+  const scene = new THREE.Scene();
+  const material = new THREE.MeshStandardMaterial({ color: 0x556677 });
+  const near = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), material);
+  near.position.set(100, 0, -250); // dans la zone
+  scene.add(near);
+  const far = new THREE.Mesh(new THREE.BoxGeometry(4, 4, 4), material);
+  far.position.set(-300, 0, 250); // hors zone
+  scene.add(far);
+  // Un long ruban qui **traverse** la zone : il doit rester entier.
+  const ribbon = new THREE.Mesh(new THREE.BoxGeometry(900, 0.2, 6), material);
+  ribbon.position.set(0, 0, -250);
+  scene.add(ribbon);
+  const car = new THREE.Group();
+  car.userData.dynamic = true;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 4), material);
+  car.add(body);
+  scene.add(car);
+  const instanced = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, 4);
+  scene.add(instanced);
+  return { scene, near, far, ribbon, car, instanced };
+}
+
+test('le rognage de zone écarte le décor hors zone et le rend intact', () => {
+  const { scene, near, far, ribbon, car, instanced } = zoneScene();
+  const bounds = { minX: 89, maxX: 111, minZ: -292, maxZ: -215 };
+  const result = cityRushCullToZone(scene, bounds);
+  assert.ok(result.hidden >= 1, 'au moins l’objet lointain est écarté');
+  assert.equal(result.kept >= 2, true, 'ce qui est dans la zone reste');
+  assert.equal(far.parent, null, 'l’objet hors zone est détaché de la scène');
+  assert.equal(near.parent, scene, 'l’objet dans la zone reste');
+  assert.equal(ribbon.parent, scene, 'un ruban qui traverse la zone reste entier');
+  assert.equal(car.parent, scene, 'un sous-arbre dynamique n’est jamais écarté');
+  assert.equal(instanced.parent, scene, 'un InstancedMesh n’est jamais écarté');
+  // Réversible : la sortie de ville doit rendre le décor pour pouvoir le libérer.
+  result.restore();
+  assert.equal(far.parent, scene);
+});
+
+test('le rognage de zone ne fait rien sans zone valide', () => {
+  const { scene } = zoneScene();
+  for (const bounds of [null, undefined, {}, { minX: NaN, maxX: 1, minZ: 0, maxZ: 1 }]) {
+    const result = cityRushCullToZone(scene, bounds);
+    assert.equal(result.hidden, 0);
+  }
+  assert.equal(cityRushCullToZone(null, { minX: 0, maxX: 1, minZ: 0, maxZ: 1 }).hidden, 0);
+});
+
+test('la visibilité par zone des objets mobiles suit la position, sans fausse disparition', () => {
+  const test = cityRushZoneCuller({ minX: 0, maxX: 20, minZ: 0, maxZ: 20 }, { margin: 5 });
+  assert.equal(test(10, 10), true, 'dans la zone');
+  assert.equal(test(-4, 24), true, 'dans la marge : un objet qui frôle la limite reste visible');
+  assert.equal(test(100, 100), false, 'franchement dehors');
+  // Une position inconnue ne masque rien : mieux vaut un objet de trop qu'un
+  // objet qui disparaît sans raison.
+  assert.equal(test(NaN, 10), true);
+  assert.equal(test(undefined, undefined), true);
+  // Sans zone, tout est visible.
+  const always = cityRushZoneCuller(null);
+  assert.equal(always(1e6, -1e6), true);
+});
+
+test('le comptage des maillages ne compte que ce qui est dessiné', () => {
+  const scene = new THREE.Scene();
+  const material = new THREE.MeshBasicMaterial();
+  const visible = new THREE.Mesh(new THREE.BoxGeometry(), material);
+  scene.add(visible);
+  const hidden = new THREE.Mesh(new THREE.BoxGeometry(), material);
+  hidden.visible = false;
+  scene.add(hidden);
+  const hiddenGroup = new THREE.Group();
+  hiddenGroup.visible = false;
+  hiddenGroup.add(new THREE.Mesh(new THREE.BoxGeometry(), material));
+  scene.add(hiddenGroup);
+  assert.equal(countVisibleMeshes(scene), 1, 'un maillage masqué, ou dans un groupe masqué, ne compte pas');
+  assert.equal(countVisibleMeshes(null), 0);
 });

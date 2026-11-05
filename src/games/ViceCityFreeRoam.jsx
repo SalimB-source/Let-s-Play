@@ -1,6 +1,8 @@
 import {
   CITY_RUSH_QUALITY_LEVELS,
   cityRushBatchStaticAsync,
+  cityRushCullToZone,
+  countVisibleMeshes,
   cityRushBatchVehicle,
   cityRushCanAutoDowngrade,
   cityRushDeviceProfile,
@@ -11,6 +13,7 @@ import {
   cityRushResumeState,
   cityRushSceneBudget,
   cityRushTrafficFleetSize,
+  cityRushZoneCuller,
   applyCityRushLightBudget,
   createCityRushFrameWatch,
   createCityRushVisualClock,
@@ -4923,6 +4926,39 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // deux images** pour ne pas figer l'écran au chargement.
     let batching = null;
     let tornDown = false;
+    // ── École : ne dessiner que ce que la zone laisse voir ────────────────
+    // Les quatre plans de clipping de l'exercice jettent déjà tout le reste de
+    // la ville, mais **après** l'avoir transformé, éclairé et projeté en ombre :
+    // mesuré sur un exercice réel, 1 741 maillages et 756 789 triangles étaient
+    // ainsi payés pour rien, contre 632 triangles réellement visibles dans la
+    // zone. Le rognage les écarte côté processeur — même image, travail en
+    // moins. Il passe **avant** le regroupement, pour ne pas fusionner des
+    // objets qu'on s'apprête à cacher.
+    // En école, le regard ne porte pas à 560 m : la caméra suit une voiture dans
+    // un pâté de maisons. On resserre donc la brume et le plan lointain autour
+    // de la zone — c'est aussi ce qui permet au sol et aux routes, qui
+    // traversent la scène de part en part, de ne plus coûter toute leur
+    // géométrie à chaque image.
+    if (schoolMode && schoolExercise?.bounds) {
+      const b = schoolExercise.bounds;
+      const span = Math.max(b.maxX - b.minX, b.maxZ - b.minZ);
+      const schoolFar = clamp(span * 2.2, 170, sceneBudget.farPlane);
+      scene.fog = new THREE.Fog(0x9bd8f4, schoolFar * 0.25, schoolFar);
+      camera.far = schoolFar;
+      camera.updateProjectionMatrix();
+      mount.dataset.schoolFar = String(Math.round(schoolFar));
+    }
+    const zoneCull = schoolMode && schoolExercise?.bounds
+      ? cityRushCullToZone(scene, schoolExercise.bounds)
+      : null;
+    // Les objets qui bougent : test de zone à chaque image (voir plus bas).
+    const zoneCuller = schoolMode && schoolExercise?.bounds
+      ? cityRushZoneCuller(schoolExercise.bounds)
+      : null;
+    if (zoneCull) {
+      mount.dataset.culled = String(zoneCull.hidden);
+      mount.dataset.culledKept = String(zoneCull.kept);
+    }
     const staticBatchDone = cityRushBatchStaticAsync(scene, {
       yieldEvery: qualityLevel === 'low' ? 8 : 24,
       onProgress: (ratio) => { mount.dataset.batchProgress = ratio.toFixed(2); },
@@ -4940,7 +4976,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // Ce que la prochaine ville doit reprendre : la pose exacte, y compris en
     // marche arrière (`speed` négatif) et le temps de jeu (chronomètres).
     rememberPose = () => { resumeRef.current = cityRushResumeSnapshot(state); };
-    let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
+    let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0; let drawsAt = 0;
     // Surveillance des images : c'est ce qui décide d'un abaissement
     // automatique. Elle ne lit **que** la phase de conduite — un chargement, un
     // menu ou un panneau ouvert ne doivent pas condamner la qualité pour tout
@@ -4961,6 +4997,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       // un téléphone qui rame franchement ne reste pas à 12 images/s sans rien
       // dire. On ne le fait pas en école filée (la leçon a sa propre mesure) et
       // pas pendant qu'un panneau couvre la scène.
+      // Ce qui est réellement dessiné, une fois par seconde : en école, le
+      // rognage et la visibilité du trafic changent le compte d'image en image,
+      // et c'est le chiffre stable qu'un diagnostic sur téléphone doit lire.
+      if (now - drawsAt > 1000) {
+        drawsAt = now;
+        mount.dataset.draws = String(countVisibleMeshes(scene));
+      }
       if (!schoolMode && !featurePanelRef.current && !document.hidden && frameWatch.sample(frameMs)) {
         frameWatch.snooze();
         autoDowngradeRef.current();
@@ -4988,6 +5031,26 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       updatePoliceSiren();
       city.updateCanalBoats(dt, state.time);
       city.updateCanalWater(state.time);
+      // ── École : n'afficher que les objets mobiles présents dans la zone ────
+      // Le décor est écarté une fois pour toutes (`cityRushCullToZone`) ; le
+      // trafic, lui, roule. Une voiture hors zone reste simulée (elle avance,
+      // ses feux cyclent) mais n'est plus dessinée ni projetée en ombre — et
+      // elle réapparaît en entrant dans la zone.
+      if (zoneCuller) {
+        for (const traffic of trafficCars) {
+          traffic.car.visible = zoneCuller(traffic.car.position.x, traffic.car.position.z);
+        }
+        for (const body of city.parkedCarBodies) {
+          if (!body.mesh.userData.forcedHidden) body.mesh.visible = zoneCuller(body.spec.x, body.spec.z);
+        }
+        for (const actor of priorityCars) {
+          const { car, teachingLabel, pedestrianHalo } = actor;
+          const inside = zoneCuller(car.position.x, car.position.z);
+          car.visible = inside;
+          if (teachingLabel) teachingLabel.visible = teachingLabel.visible && inside;
+          if (pedestrianHalo) pedestrianHalo.visible = pedestrianHalo.visible && inside;
+        }
+      }
       const pressed = (code) => !(schoolMode && code === 'Space') && (keys.has(code) || touchKeysRef.current.has(code));
       const joystickInput = viceCityFreeDriveJoystickInput(touchAxesRef.current.x, 0);
       let throttle = false;
@@ -5224,6 +5287,9 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
           result?.disposeOriginals?.();
         }).catch(() => {});
       }
+      // Le décor écarté par le rognage de zone revient avant la libération :
+      // sans cela, ses géométries et matériaux ne seraient jamais libérés.
+      zoneCull?.restore();
       if (schoolSideMirrors) disposeDrivingSideMirrors(schoolSideMirrors);
       scene.traverse((object) => {
         object.geometry?.dispose?.();
