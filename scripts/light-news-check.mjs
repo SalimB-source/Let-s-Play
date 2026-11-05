@@ -144,6 +144,18 @@ const contrast = (a, b) => {
 const hex = (c) => '#' + [c.r, c.g, c.b]
   .map((v) => Math.round(v).toString(16).padStart(2, '0')).join('');
 
+/* Aplat de la pastille d'onglet actif, lu dans la feuille (voir paintedPill). */
+const PILL_RULE = (() => {
+  const parsed = postcss.parse(fs.readFileSync(path.join(root, 'src', 'styles.css'), 'utf8'));
+  let value = null;
+  parsed.walkRules((rule) => {
+    if (rule.selector.trim() === '.nav-pill-indicator') {
+      rule.walkDecls(/^background(-color)?$/, (decl) => { value = decl.value.trim(); });
+    }
+  });
+  return value;
+})();
+
 /* Couleur moyenne d'un dégradé : chaque arrêt est d'abord composé sur le fond
    de page, sinon un `rgba(124,58,237,.10)` compterait pour du violet plein. */
 const PAGE_BG = { r: 247, g: 248, b: 252, a: 1 };
@@ -172,6 +184,20 @@ const ownText = (el) => [...el.childNodes]
   .join(' ')
   .trim();
 
+/* L'onglet actif de l'île est peint par un indicateur séparé
+   (`.nav-pill-indicator`, jaune, en position absolue SOUS le lien — le lien
+   lui-même garde `background:transparent`). Sans ça, le contrôle mesurait
+   l'encre sombre sur le violet de l'île et signalait un faux défaut. */
+function paintedPill(win, el) {
+  const primary = el.closest('.nav-primary');
+  const pill = primary?.querySelector('.nav-pill-indicator');
+  if (!pill || !el.matches('.active')) return null;
+  // En SSR la pastille démarre à `opacity:0` et jsdom n'évalue pas la requête
+  // média qui l'affiche : on lit la règle de style, pas le rendu.
+  const color = parseColor(PILL_RULE) || parseColor(win.getComputedStyle(pill).backgroundColor);
+  return color && color.a > 0 ? color : null;
+}
+
 /* Fond réellement peint : on remonte la chaîne des ancêtres en compositant. */
 function backgroundOf(win, el) {
   const layers = [];
@@ -194,6 +220,17 @@ function backgroundOf(win, el) {
   return { color: base, from: 'aplat' };
 }
 
+/* Peint à l'écran ? Un enfant d'un panneau `display:none` n'est jamais rendu —
+   jsdom n'applique pas les requêtes média, donc le tiroir mobile existe dans le
+   DOM du format bureau sans jamais être visible. */
+function isPainted(el, getStyle) {
+  for (let node = el; node && node.nodeType === 1; node = node.parentElement) {
+    const s = getStyle(node);
+    if (s.display === 'none' || s.visibility === 'hidden' || s.opacity === '0') return false;
+  }
+  return true;
+}
+
 /* --------------------------------------------------------------- contrôle --- */
 const FAIL = [];
 const pages = renderPages('fr');
@@ -204,19 +241,32 @@ for (const { path: route, html } of pages) {
     { pretendToBeVisual: true },
   );
   const { document, getComputedStyle } = dom.window;
-  const main = document.querySelector('main') || document.body;
+  // La barre de navigation est un <nav> frère de <main> : balayer `main` seul
+  // laissait passer l'île violette du thème clair, où le sélecteur de langue
+  // tombait à 1,5:1. On mesure les deux zones.
+  const zones = [document.querySelector('.nav'), document.querySelector('main')].filter(Boolean);
   const seen = new Set();
 
-  for (const el of main.querySelectorAll('*')) {
+  for (const el of zones.flatMap((zone) => [...zone.querySelectorAll('*')])) {
     const cs = getComputedStyle(el);
+    // jsdom n'évalue pas les requêtes média : le tiroir mobile est rendu mais
+    // son contenu n'est jamais peint en 1280px — et un lien caché n'a pas de
+    // contraste à défendre. Le format téléphone est couvert par
+    // `check:phone-css` et `check:phone-layout`.
+    if (!isPainted(el, getComputedStyle)) continue;
     const label = `${el.tagName.toLowerCase()}${el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/).join('.') : ''}`;
     if (isMedia(el)) continue;
 
     // 1. encre
     const text = ownText(el);
+    // Libellés réservés aux lecteurs d'écran : invisibles, aucun contraste à
+    // défendre (et sur téléphone ils sont dépliés par une requête média que
+    // jsdom n'évalue pas — le format mobile a ses propres contrôles).
+    if (el.classList.contains('sr-only')) continue;
     const ink = parseColor(cs.color);
     if (text && ink && ink.a > 0) {
-      const bg = backgroundOf(dom.window, el);
+      const pill = paintedPill(dom.window, el.closest('.nav-primary a') || el);
+      const bg = pill ? { color: pill, from: 'pastille active' } : backgroundOf(dom.window, el);
       const ratio = contrast(over(ink, bg.color), bg.color);
       if (ratio < 3) {
         const key = `ink|${route}|${label}|${hex(ink)}|${hex(bg.color)}`;
@@ -247,6 +297,32 @@ for (const { path: route, html } of pages) {
         seen.add(key);
         FAIL.push(`${route}  HALO NÉON  text-shadow:${shadow}  ${label}`);
       }
+    }
+  }
+}
+
+// Contrôle ciblé du chrome de navigation : ce sont les commandes les plus
+// consultées du site, et elles vivent sur un fond qui change avec le thème
+// (verre sombre en sombre, violet de marque en clair). On exige le seuil AA
+// (4,5:1) pour la langue, le thème et le menu — pas seulement « pas noir ».
+{
+  const { document, getComputedStyle } = new JSDOM(
+    `<!doctype html><html data-theme="light"><head><style>${sheet}</style></head><body>${pages[0].html}</body></html>`,
+    { pretendToBeVisual: true },
+  ).window;
+  const nav = document.querySelector('.nav');
+  const island = parseColor(getComputedStyle(nav).backgroundColor) || PAGE_BG;
+  for (const selector of ['.lang-switch-button', '.theme-toggle', '.menu-button']) {
+    const el = document.querySelector(selector);
+    if (!el) continue;
+    const cs = getComputedStyle(el);
+    const ink = parseColor(cs.color);
+    if (!ink || ink.a === 0) continue;
+    const own = parseColor(cs.backgroundColor);
+    const base = own && own.a > 0 ? over(own, island) : island;
+    const ratio = contrast(over(ink, base), base);
+    if (ratio < 4.5) {
+      FAIL.push(`NAV ${selector}  ENCRE ${ratio.toFixed(2)}:1  ${hex(ink)} sur ${hex(base)} (île ${hex(island)})`);
     }
   }
 }

@@ -762,8 +762,10 @@
 }
 [data-theme='light'] .nav .nav-primary a.active,
 [data-theme='light'] .nav .nav-primary a.active:hover{color:var(--violet) !important}
-[data-theme='light'] .nav-account.nav-login:hover,
-[data-theme='light'] .nav-account.nav-register:hover{background:rgba(255,214,25,.16);color:var(--ink)}
+/* Survol des boutons de compte : le jaune ne vaut que sur les surfaces
+   claires hors barre. Dans l'île (violette dans les deux formats), le survol
+   reste clair — sinon « S'inscrire » jaune sur jaune. */
+[data-theme='light'] .nav-logout ~ .nav-account.nav-login:hover{background:rgba(255,214,25,.16);color:var(--ink)}
 
 /* Les liens d'accès au profil sont des actions explicites, pas des icônes :
    leur encre doit rester lisible sur les surfaces claires. */
@@ -799,8 +801,8 @@
   /* On mobile the active link has no dark pill background. Keeping the
      desktop white active ink here made the Profile label disappear on the
      light menu. */
-  [data-theme='light'] .nav .nav-primary a.active,
-  [data-theme='light'] .nav .nav-primary a.active:hover{
+  [data-theme='light'] .nav.open .nav-primary a.active,
+  [data-theme='light'] .nav.open .nav-primary a.active:hover{
     color:var(--ink) !important;
     background:transparent !important;
     box-shadow:none !important;
@@ -1315,15 +1317,16 @@
 [data-theme='light'] .search-result-card.is-finished,
 [data-theme='light'] .nav-search-result.is-finished{filter:grayscale(.75) brightness(.97)}
 
-/* Le sélecteur généré ci-dessus (`[data-theme='light'] .nav-links a`) l'emporte
-   sur la couleur propre des boutons de compte, qui sont dans `.nav-links` :
-   on rétablit explicitement l'encre sombre sur le jaune « S'inscrire ». */
-[data-theme='light'] .nav-links a.nav-account.nav-login{color:var(--ink)}
+/* Le sélecteur généré (`[data-theme='light'] .nav-links a`) l'emporte sur la
+   couleur propre des boutons de compte — d'autant qu'aucune requête média ne
+   s'applique sur téléphone, où le tiroir est VIOLET lui aussi. Encres claires,
+   donc, et le bouton « S'inscrire » garde son aplat jaune (encre sombre). */
+[data-theme='light'] .nav-links a.nav-account.nav-login,
+[data-theme='light'] .nav-links a.nav-account.nav-login:hover{color:#fff}
 [data-theme='light'] .nav-links a.nav-account.nav-register,
 [data-theme='light'] .nav-links a.nav-account.nav-register:hover{
-  color:var(--ink);background:var(--yellow);border-color:var(--yellow);
+  color:var(--ink);background-color:var(--yellow);border-color:var(--yellow);
 }
-[data-theme='light'] .nav-links a.nav-account.nav-login:hover{background:rgba(14,116,144,.08);color:var(--cyan)}
 
 /* La flèche « ↗ » des boutons jaunes tombait sous `.calendar-foot span`
    (`color:var(--dim)`) : quasi invisible sur l'aplat jaune, dans les DEUX
@@ -1365,19 +1368,60 @@
 .theme-toggle:hover{border-color:rgba(255,255,255,.14);color:#fff;background:rgba(255,255,255,.10);transform:translateY(-1px)}
 .theme-toggle-icon{flex:none;display:block}
 .theme-toggle-label{display:none}
-[data-theme='light'] .theme-toggle{
-  background:rgba(86,70,190,.06);border-color:rgba(86,70,190,.10);color:var(--muted);
+/* En thème clair, l’île de navigation reste VIOLETTE (voir §6) : les
+   commandes posées dessus gardent donc une encre claire. Les teintes « encre »
+   (var(--muted), var(--ink)) sont calibrées pour le fond clair de la page :
+   sur le violet, elles tombaient à 1,5:1 — la langue et le thème devenaient
+   quasi invisibles. On garde le même dessin qu’en thème sombre. */
+/* Les commandes de l'île claire (langue, thème, menu, liens, recherche,
+   compte) sont regroupées dans la section « 6bis » plus bas. */
+/* Même règle pour le reste du chrome posé sur l'île : bouton du menu, entrées
+   de navigation et pied de page du tiroir mobile. Les encres « clair »
+   (var(--ink), var(--cyan)… assombris pour la page) y étaient illisibles. */
+[data-theme='light'] .menu-button{
+  background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.92);
 }
-[data-theme='light'] .theme-toggle:hover{
-  background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.16);color:var(--ink);
+[data-theme='light'] .menu-button .dash{color:#a5f3fc}
+[data-theme='light'] .menu-button .dash.open{color:var(--yellow)}
+[data-theme='light'] .nav-links-inner .nav-primary a,
+[data-theme='light'] .nav .nav-primary a{
+  color:rgba(255,255,255,.9);
 }
-[data-theme='light'] .lang-switch-button{
-  background:rgba(86,70,190,.06);border-color:rgba(86,70,190,.10);color:var(--muted);
+[data-theme='light'] .nav .nav-primary a:hover{color:#fff}
+[data-theme='light'] .nav .nav-primary a.active{color:var(--yellow)}
+[data-theme='light'] .nav-link-num{color:#a5f3fc}
+[data-theme='light'] .nav-primary a:hover .nav-link-num,
+[data-theme='light'] .nav-primary a.active .nav-link-num{color:var(--yellow)}
+[data-theme='light'] .nav-link-desc{color:rgba(255,255,255,.62)}
+[data-theme='light'] .nav-link-arrow{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.18)}
+[data-theme='light'] .mobile-menu-footer,
+[data-theme='light'] .mobile-menu-footer a,
+[data-theme='light'] .mobile-menu-footer-label{color:rgba(255,255,255,.7)}
+[data-theme='light'] .mobile-menu-footer-dot{color:var(--yellow)}
+[data-theme='light'] .nav .nav-search{
+  background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22);
 }
-[data-theme='light'] .lang-switch-button:hover,
-[data-theme='light'] .lang-switch.is-open .lang-switch-button{
-  background:rgba(86,70,190,.10);border-color:rgba(86,70,190,.16);color:var(--ink);
+[data-theme='light'] .nav .nav-search input{color:#fff}
+[data-theme='light'] .nav .nav-search input::placeholder{color:rgba(255,255,255,.62)}
+[data-theme='light'] .nav .nav-search-icon{color:rgba(255,255,255,.6)}
+[data-theme='light'] .nav .nav-search-kbd{
+  color:rgba(255,255,255,.72);border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.10);
 }
+/* Le panneau déroulant, lui, est un vrai panneau clair : on rétablit ses
+   couleurs sombres par-dessus l'île. */
+[data-theme='light'] .nav-submenu{
+  background:rgba(255,255,255,.99);
+  border-color:var(--line);
+  box-shadow:0 22px 44px -18px rgba(28,24,72,.3);
+}
+[data-theme='light'] .nav-submenu-label{color:var(--ink)}
+[data-theme='light'] .nav-submenu-toggle{color:rgba(255,255,255,.7)}
+[data-theme='light'] .nav-submenu-toggle:hover,
+[data-theme='light'] .nav-item--menu.is-open .nav-submenu-toggle{color:#fff}
+/* Le globe et la coche restent dans les tons clairs sur le violet. */
+[data-theme='light'] .nav .lang-switch-globe,
+[data-theme='light'] .nav .lang-switch-option.active .lang-switch-code,
+[data-theme='light'] .nav .lang-switch-check{color:#a5f3fc}
 [data-theme='light'] .lang-switch-menu{
   background:rgba(255,255,255,.99);border-color:var(--line);box-shadow:0 22px 44px -18px rgba(28,24,72,.28);
 }
@@ -1388,12 +1432,112 @@
 [data-theme='light'] .lang-switch-code{color:var(--violet)}
 [data-theme='light'] .lang-switch-option.active .lang-switch-code,
 [data-theme='light'] .lang-switch-check{color:#0e7490}
-[data-theme='light'] .lang-switch-globe{color:#0e7490}
+/* Le globe vit dans le bouton, sur l’île violette — pas dans le panneau. */
+[data-theme='light'] .lang-switch-globe{color:#a5f3fc}
 @media (max-width:800px), (hover:none) and (pointer:coarse) and (max-device-width:600px), (hover:none) and (pointer:coarse) and (orientation:portrait){
   .theme-toggle{width:100%;height:48px;justify-content:space-between;padding:0 14px;border-radius:10px}
   .theme-toggle-label{display:inline}
   .lang-switch-button{height:48px;border-radius:10px}
 }
+
+
+/* ============ 6bis. L'ÎLE CLAIRE : SES COMMANDES ============ */
+/* L'île de navigation reste VIOLETTE en thème clair (§6), alors que la page,
+   elle, est blanche. Toutes les commandes posées dessus — sélecteur de langue,
+   bascule de thème et de menu, liens, recherche, boutons de compte — doivent
+   donc garder une encre CLAIRE : les teintes « encre » calibrées pour le fond
+   blanc (var(--ink), var(--muted), var(--cyan)…) y tombaient à 1,5:1, en
+   dessous de tout seuil lisible. Ce bloc le dit une fois pour toutes, hors de
+   toute requête média : la barre est violette aux deux formats, il n'y a rien
+   à distinguer.
+   Vérifié par `npm run check:light-news` (balayage de la barre + seuil AA). */
+[data-theme='light'] .lang-switch-button{
+  background-color:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.92);
+}
+[data-theme='light'] .lang-switch-button:hover,
+[data-theme='light'] .lang-switch.is-open .lang-switch-button{
+  background-color:rgba(255,255,255,.18);
+  border-color:rgba(255,255,255,.34);
+  color:#fff;
+}
+[data-theme='light'] .lang-switch-globe{color:#a5f3fc}
+[data-theme='light'] .nav .theme-toggle,
+[data-theme='light'] .nav-actions-grid .theme-toggle{
+  background-color:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.92);
+}
+[data-theme='light'] .nav .theme-toggle:hover,
+[data-theme='light'] .nav-actions-grid .theme-toggle:hover{
+  background-color:rgba(255,255,255,.18);
+  border-color:rgba(255,255,255,.34);
+  color:#fff;
+}
+[data-theme='light'] .menu-button,
+[data-theme='light'] .menu-button:not(.open){
+  background-color:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.92);
+}
+[data-theme='light'] .menu-button .dash{color:#a5f3fc}
+[data-theme='light'] .menu-button .dash.open{color:var(--yellow)}
+/* Liens de la barre et du tiroir : le sélecteur `[data-theme='light']
+   .nav-links a` (généré par le balayage d'encre) impose le gris de la page ;
+   on le neutralise au même niveau de spécificité. */
+[data-theme='light'] .nav-links a,
+[data-theme='light'] .nav-links .nav-primary a,
+[data-theme='light'] .nav-links .nav-primary a:hover{color:rgba(255,255,255,.9)}
+/* L'onglet courant : pastille jaune, encre sombre. `!important` nécessaire
+   pour repasser devant la règle générale `!important` plus haut, qui impose le
+   violet de la page claire. */
+[data-theme='light'] .nav-links .nav-primary a.active,
+[data-theme='light'] .nav-links .nav-primary a.active:hover{color:var(--ink) !important}
+[data-theme='light'] .nav-link-num{color:#a5f3fc}
+[data-theme='light'] .nav-primary a.active .nav-link-num,
+[data-theme='light'] .nav-primary a:hover .nav-link-num{color:var(--yellow)}
+[data-theme='light'] .nav-link-desc{color:rgba(255,255,255,.62)}
+[data-theme='light'] .nav-link-arrow{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.18)}
+[data-theme='light'] .nav .nav-search{
+  background-color:rgba(255,255,255,.10);border-color:rgba(255,255,255,.22);
+}
+[data-theme='light'] .nav .nav-search:focus-within{background-color:#fff}
+[data-theme='light'] .nav .nav-search input{color:#fff}
+[data-theme='light'] .nav .nav-search:focus-within input{color:var(--ink)}
+[data-theme='light'] .nav .nav-search input::placeholder{color:rgba(255,255,255,.62)}
+[data-theme='light'] .nav .nav-search-icon{color:rgba(255,255,255,.6)}
+[data-theme='light'] .nav .nav-search-kbd{
+  color:rgba(255,255,255,.72);border-color:rgba(255,255,255,.22);background-color:rgba(255,255,255,.10);
+}
+/* Boutons de compte : pilules claires, sauf « S'inscrire » qui garde l'aplat
+   jaune de la marque (encre sombre, lisible). */
+[data-theme='light'] .nav-links a.nav-account.nav-login,
+[data-theme='light'] .nav-links a.nav-account.nav-login:hover{
+  background-color:rgba(255,255,255,.12);
+  border-color:rgba(255,255,255,.30);
+  color:#fff;
+}
+[data-theme='light'] .nav-links a.nav-account.nav-register,
+[data-theme='light'] .nav-links a.nav-account.nav-register:hover{
+  background-color:var(--yellow);border-color:var(--yellow);color:var(--ink);
+}
+[data-theme='light'] .nav-links a.nav-account.connected,
+[data-theme='light'] .nav-links a.nav-logout{color:#fff}
+/* Le panneau déroulant est un vrai panneau clair, posé sur l'île : on lui
+   rend ses encres de page. */
+[data-theme='light'] .nav-submenu{
+  background-color:rgba(255,255,255,.99);
+  border-color:var(--line);
+  box-shadow:0 22px 44px -18px rgba(28,24,72,.3);
+}
+[data-theme='light'] .nav-submenu-label{color:var(--ink)}
+[data-theme='light'] .nav-submenu a{color:var(--muted)}
+[data-theme='light'] .nav-submenu a:hover,
+[data-theme='light'] .nav-submenu a.is-current{color:var(--ink)}
+[data-theme='light'] .nav-submenu-toggle{color:rgba(255,255,255,.7)}
+[data-theme='light'] .nav-submenu-toggle:hover,
+[data-theme='light'] .nav-item--menu.is-open .nav-submenu-toggle{color:#fff}
 
 /* ============ ARTICLE HUD — LIGHT MODE ============ */
 [data-theme='light'] .article-hero::before{opacity:.42}
