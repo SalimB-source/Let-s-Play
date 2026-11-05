@@ -434,23 +434,38 @@ function configurerMiseAJour() {
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
 
-  // **Le tag de Release est celui du jeu**, pas celui du dépôt.
-  // `app-update.yml` (généré par electron-builder) ne porte que le dépôt : sans
-  // cette précision, les deux jeux liraient le même `latest.yml` — celui du
-  // Sablier — et Vice City Rush se croirait à jour, ou téléchargerait
-  // l'installeur de l'autre jeu. Une Release par jeu, donc un `latest.yml` par
-  // jeu.
+  // **Chaque jeu lit SON `latest.yml`, et le sait à l'avance.**
   //
-  // `setFeedURL` avec `releaseType` remplace le canal : il n'y a pas d'autre
-  // moyen de viser un tag précis en GitHub, et `setFeedURL` accepte `info` plus
-  // `provider` (l'absence d'`url` est volontaire).
-  autoUpdater.setFeedURL({
-    provider: 'github',
-    owner: 'SalimB-source',
-    repo: 'Let-s-Play',
-    releaseType: 'release',
-    channel: JEU.release,
-  });
+  // Deux façons de viser une Release, et une seule est sûre ici :
+  //
+  //   - fournisseur `github` : il demande d'abord à GitHub quelle est la
+  //     *dernière Release publiée*, puis n'accepte que le `latest.yml` de ce
+  //     tag. Or le dépôt publie cinq Releases par build (deux PC, trois APK) à
+  //     quelques secondes d'intervalle : si la dernière n'est pas celle du jeu,
+  //     la vérification échoue. C'était le cas en pratique — les APK passent
+  //     après les installeurs ;
+  //   - fournisseur `generic` : il lit directement `<url>/latest.yml`, sans
+  //     aucune notion de « dernière Release ». Le tag est dans l'URL, donc
+  //     chaque jeu interroge le sien, à coup sûr.
+  //
+  // On prend donc `generic`, sur l'URL de téléchargement de la Release du jeu
+  // (celle que GitHub expose pour ses assets). Repli sur le fournisseur
+  // `github` si la configuration manquait : mieux vaut une vérification
+  // fragile que pas de mise à jour du tout.
+  const urlRelease = `https://github.com/SalimB-source/Let-s-Play/releases/download/${JEU.release}`;
+  try {
+    autoUpdater.setFeedURL({ provider: 'generic', url: urlRelease });
+    console.log(`[desktop:update] flux de mise à jour : ${urlRelease}/latest.yml`);
+  } catch (erreur) {
+    console.warn('[desktop:update] flux générique indisponible, repli sur GitHub :', erreur?.message);
+    autoUpdater.setFeedURL({
+      provider: 'github',
+      owner: 'SalimB-source',
+      repo: 'Let-s-Play',
+      releaseType: 'release',
+      channel: JEU.release,
+    });
+  }
 
   autoUpdater.on('checking-for-update', () => {
     verificationMajEnCours = true;
