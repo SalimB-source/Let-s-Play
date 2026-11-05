@@ -158,9 +158,11 @@ export const RPG_SOLEIL_ROUGE_CREATURES = [
     id: 'tojiro-le-pourfendeur', name: 'Tojiro, le pourfendeur',
     cost: 6, atk: 5, def: 5, rarity: 'mythique',
     typeLine: 'Créature légendaire — Humain · Samouraï · Vampire',
+    reactionTourAdverse: true,
+    conditionEmbuscade: 'djinn-adverse',
     esquive: true,
     contreAttaque: true,
-    text: 'Esquive — 15 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Les capacités ne s’esquivent pas.',
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si l’adversaire contrôle un Djinn. Esquive — 15 % de chance d’esquiver une attaque, une Magie ou une Sorcellerie : leur effet sur lui ne porte pas du tout. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, Tojiro lui inflige ses dégâts d’attaque ; quand c’est un sort — ciblé ou de zone — qui l’atteint, la riposte frappe le sorcier adverse. S’il esquive une attaque ou un sort, il contre-attaque quand même. Il riposte aussi si le coup le détruit. Les capacités ne s’esquivent pas.',
     flavor: 'Les deux lames ne dansent pas : elles répondent, coup pour coup, sans jamais reculer.',
   }),
   carte({

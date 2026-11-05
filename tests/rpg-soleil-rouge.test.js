@@ -36,6 +36,14 @@ function jouer(duel, cote, id, cibleId = null) {
   if (id === 'seigneur-des-machoires') Object.assign(resultat.entite, { tenaciteDisponible: false, tribut: 0 });
   return resultat.entite;
 }
+function jouerTojiroSurSonTour(duel, cote) {
+  // Ces tests préparent le camp adverse avant de simuler son attaque : Tojiro
+  // doit désormais être posé sur son propre tour, sauf Embuscade avec un Djinn.
+  const tour = duel.tour;
+  duel.tour = cote;
+  try { return jouer(duel, cote, 'tojiro-le-pourfendeur'); }
+  finally { duel.tour = tour; }
+}
 function sort(duel, id, cible) {
   duel.joueur.main.push(id);
   assert.equal(rpgLancerMagie(duel, 'joueur', id, cible).ok, true, id);
@@ -952,12 +960,15 @@ test('Susanoo exile aussi un porteur des nouvelles armes sans perdre son équipe
   assert.ok(!duel.sorcier.cimetiere.includes('oni-de-la-fournaise'));
 });
 
-test('Tojiro, le pourfendeur : samouraï vampire 5/5 mythique à 6, Esquive et Contre-attaque', () => {
+test('Tojiro, le pourfendeur : samouraï vampire 5/5 mythique à 6, Embuscade, Esquive et Contre-attaque', () => {
   const carte = cardById('tojiro-le-pourfendeur');
   assert.equal(carte.rarity, 'mythique');
   assert.deepEqual([carte.cost, carte.atk, carte.def, carte.honneur], [6, 5, 5, 1]);
   assert.equal(cardHasPrintedType(carte, 'Vampire'), true);
   assert.equal(cardHasPrintedType(carte, 'Samouraï'), true);
+  assert.equal(carte.reactionTourAdverse, true);
+  assert.equal(carte.conditionEmbuscade, 'djinn-adverse');
+  assert.match(carte.text, /^Embuscade — .*seulement si l’adversaire contrôle un Djinn\./);
   assert.equal(carte.esquive, true);
   assert.equal(carte.contreAttaque, true);
   assert.match(carte.text, /Contre-attaque — /);
@@ -972,7 +983,7 @@ test('Tojiro, le pourfendeur : samouraï vampire 5/5 mythique à 6, Esquive et C
 
 test('Contre-attaque : une attaque ciblée portée contre Tojiro lui est rendue — et reste rendue s’il esquive', () => {
   const duel = duelTest();
-  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  const tojiro = jouerTojiroSurSonTour(duel, 'sorcier');
   const djinn = jouer(duel, 'joueur', 'djinn-de-foudre');
   djinn.ready = true;
   assert.equal(rpgLancerAttaque(duel, 'joueur', [djinn.id], {}, null, null, { [djinn.id]: tojiro.id }).ok, true);
@@ -989,7 +1000,7 @@ test('Contre-attaque : une attaque ciblée portée contre Tojiro lui est rendue 
   // l'Esquive de Tojiro — un seul jet à 0,1 aurait fait RATER la frappe.
   let jets = [];
   const duelEsquive = duelTest(() => (jets.length ? jets.shift() : 0.5));
-  const tojiroEsquive = jouer(duelEsquive, 'sorcier', 'tojiro-le-pourfendeur');
+  const tojiroEsquive = jouerTojiroSurSonTour(duelEsquive, 'sorcier');
   const djinnEsquive = jouer(duelEsquive, 'joueur', 'djinn-de-foudre');
   djinnEsquive.ready = true;
   jets = [0.5, 0.1];
@@ -1001,7 +1012,7 @@ test('Contre-attaque : une attaque ciblée portée contre Tojiro lui est rendue 
 
 test('Contre-attaque : un sort qui cible Tojiro frappe son lanceur, même esquivé', () => {
   const duel = duelTest();
-  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  const tojiro = jouerTojiroSurSonTour(duel, 'sorcier');
   duel.joueur.main.push('frappe-iaijutsu');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'frappe-iaijutsu', tojiro.id).ok, true);
   assert.equal(tojiro.pv, 3, 'le sort inflige ses 2 dégâts');
@@ -1010,7 +1021,7 @@ test('Contre-attaque : un sort qui cible Tojiro frappe son lanceur, même esquiv
     'le signal visuel vise bien l’avatar du sorcier lanceur');
 
   const duelEsquive = duelTest(() => 0.05);
-  const tojiroEsquive = jouer(duelEsquive, 'sorcier', 'tojiro-le-pourfendeur');
+  const tojiroEsquive = jouerTojiroSurSonTour(duelEsquive, 'sorcier');
   duelEsquive.joueur.main.push('frappe-iaijutsu');
   rpgLancerMagie(duelEsquive, 'joueur', 'frappe-iaijutsu', tojiroEsquive.id);
   assert.equal(tojiroEsquive.pv, 5, 'le sort est esquivé');
@@ -1019,7 +1030,7 @@ test('Contre-attaque : un sort qui cible Tojiro frappe son lanceur, même esquiv
 
 test('Contre-attaque : une capacité qui cible Tojiro se paie sur la créature qui la porte', () => {
   const duel = duelTest();
-  const tojiro = jouer(duel, 'sorcier', 'tojiro-le-pourfendeur');
+  const tojiro = jouerTojiroSurSonTour(duel, 'sorcier');
   duel.joueur.main.push('tour-de-braise');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'tour-de-braise', tojiro.id).ok, true);
   assert.equal(tojiro.pv, 4, 'l’arrivée inflige son dégât');

@@ -43,7 +43,7 @@ test('la règle complète reste entière sur la carte', () => {
 test('la condition colorée de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
-  assert.equal(vampires.length, 15);
+  assert.equal(vampires.length, 16);
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);
