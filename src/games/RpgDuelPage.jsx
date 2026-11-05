@@ -5204,7 +5204,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               </div>
             </section>
 
-            {/* Les trois illustrations remplissent la vitrine sans déformation. */}
+            {/* Chaque visuel occupe la vitrine ; la typographie du booster est intégrée à sa nouvelle affiche. */}
             <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={offreActive && diapoAffichee === 4 ? 'true' : undefined} data-vampires-visible={diapoAffichee === 3 ? 'true' : undefined}>
               <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
                 {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
@@ -5213,7 +5213,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </div>
                 ))}
                 <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--vampires${diapoAffichee === 3 ? ' is-active' : ''}`}>
-                  <img src={`${import.meta.env.BASE_URL}sablier-promo/booster-vampires.webp`} alt="" />
+                  <img className="rpg-mode-menu__vampires-affiche" src={`${import.meta.env.BASE_URL}sablier-promo/booster-vampires-banniere.webp`} alt="" />
                 </div>
                 {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === 4 ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
               </div>
@@ -5224,7 +5224,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7m7-7H5" /></svg>
               </button>
               <span className="sr-only" aria-live="polite" aria-atomic="true">{annonceDiapo}</span>
-              <p className="sr-only">Booster Vampires : toutes les cartes du Souk, avec plus de chances de trouver des Vampires et une rare garantie, pour 140 crédits.</p>
+              {diapoAffichee === 3 && <p className="sr-only">Booster Vampires — La nuit riposte. Embuscade : jouez une créature pendant le tour adverse si sa condition est remplie. 140 crédits, rare garantie, plus de chances de trouver des Vampires parmi toutes les cartes du Souk.</p>}
               {offreActive && <p className="sr-only">Offre de lancement : 10 boosters pour 5 euros au lieu de 10 euros, jusqu’au 30 décembre 2026 inclus, heure d’Alger. Paiement bientôt disponible dans le Souk.</p>}
               {/* Effet visuel thématique : grains de sable qui tombent */}
               <div className="rpg-sand-fx" aria-hidden="true">
@@ -5232,7 +5232,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   <span key={i} className="rpg-sand-grain" style={{ '--delay': `${i * 0.21}s`, '--left': `${5 + Math.random() * 90}%`, '--duration': `${4 + Math.random() * 5}s`, '--size': `${1 + Math.random() * 2}px` }} />
                 ))}
               </div>
-              <div className="rpg-mode-menu__hero-copy">
+              <div className="rpg-mode-menu__hero-copy" aria-hidden={diapoAffichee === 3 || (offreActive && diapoAffichee === 4) ? 'true' : undefined}>
                 <span className="rpg-mode-menu__eyebrow">
                   <span className="rpg-eyebrow-dot" />
                   PORTES DE BAB EL · 30 CARTES · SANS TERRAIN
