@@ -11,7 +11,7 @@ test('la Valkyrie déclenche le vent froid et s’épargne de sa propre vague', 
   assert.match(page, /jouerSfx\('freeze_impact'\)/);
   assert.match(page, /effet.carteId === 'valkyrie-des-glaces' \? 'Valkyrie des glaces — vent froid'/);
   assert.deepEqual(cardById('valkyrie-des-glaces').arrivee, {
-    type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.25,
+    type: 'degats', amount: 1, cible: 'toutes-creatures', inclutAllies: true, exclutSoi: true, gelChance: 0.15,
   }, 'la vague couvre les alliés et les ennemis, sans blesser la Valkyrie qui la déclenche');
 });
 

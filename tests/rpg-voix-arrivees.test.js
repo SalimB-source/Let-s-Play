@@ -274,7 +274,11 @@ test('le moteur journalise toute entrée en jeu, voix ou non', () => {
 });
 
 test('Une voix de la Lune est journalisée à l’arrivée, même en réponse adverse', () => {
-  const duel = duelDeTest(); duel.tour = 'sorcier'; duel.fenetreReponse = true;
+  const duel = duelDeTest();
+  donner(duel, 'joueur', 'vampire-des-braises');
+  assert.ok(rpgJouerCreature(duel, 'joueur', 'vampire-des-braises').ok);
+  rpgConsommerArriveesCreature(duel);
+  duel.tour = 'sorcier'; duel.fenetreReponse = true;
   donner(duel, 'joueur', 'general-du-croissant-noir');
   const pose = rpgJouerCreature(duel, 'joueur', 'general-du-croissant-noir');
   assert.ok(pose.ok);

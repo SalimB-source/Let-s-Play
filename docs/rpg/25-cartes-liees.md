@@ -39,7 +39,7 @@ main, de la table, du catalogue et de l'atelier reste donc la seule vérité
 | **Arme** | Le bonus du Lien **remplace** le bonus imprimé (`+2/+0` → `+4/+2`). Il se lève à l'arrivée de l'ancre, **retombe** à sa mort, et ne descend jamais sous 1 PV. |
 | **Sort** | Les champs de `lien.effet` **remplacent** ceux de l'effet imprimé (`2` dégâts → `3`) ; le reste de l'effet est inchangé (cible, durée, mots-clés). |
 | **Déclencheur** | `lien.remplace` réécrit un déclencheur de l'arme, pas seulement ses chiffres : le Masque du guetteur pioche alors **sans défausser** (`defausse: 0`). La fiche imprimée n'est jamais mutée. |
-| **Arme-sort** | Une magie de type `arme` (Braise et sable, Sabre maudit) s'attache à l'**imprimé** puis vit son Lien en continu, comme une arme du prototype : le renfort retombe quand l'ancre s'en va, et il part avec l'arme si on la brise. Le registre `lienArmesBonus` retient la part de **chaque** arme séparément. |
+| **Arme-sort** | Une magie de type `arme` (Sabre maudit) s'attache à l'**imprimé** puis vit son Lien en continu, comme une arme du prototype (dont Braise et sable) : le renfort retombe quand l'ancre s'en va, et il part avec l'arme si on la brise. Le registre `lienArmesBonus` retient la part de **chaque** arme séparément. |
 | **Deux modes** | Un sort à cible double a deux montants : `amount` (une cible) et `secondAmount` (chacune des deux, 2 par défaut). Le Lien peut relever les deux, l'invite de ciblage annonce alors les chiffres du moteur au lieu des chiffres imprimés. |
 | **Lien de nom** | `nominal: true` : la paire n'ajoute **aucun** chiffre, parce qu'une autre règle la fait déjà exister. Le drapeau est **obligatoire** pour un Lien sans effet : un Lien de nom doit être un choix dit, jamais un bonus oublié (le test du catalogue le vérifie). |
 | **Lien de porteur** | `porteur: true` : l'ancre ne suffit pas à être **en jeu**, c'est **elle** qui doit tenir l'arme. Le Sabre maudit ne mord que la force entre les mains de la Flamme originelle — sur tout autre porteur, même avec Kagutsuchi sur la rangée, le `−2` reste. Et ce `−2` reste **mortel** : un 1/1 qui s'attache le sabre tombe sur-le-champ (la défense n'est pas planchée à l'attachement d'une arme). C'est le sens de la carte — le sabre est maudit, il coûte des porteurs. |
@@ -60,9 +60,9 @@ mécanique sur des cartes du catalogue.
 | **Serment de la forge** (magie, mythique) | 4 | +2/+1 · Attaque ciblée | **+3/+1** · Attaque ciblée | +1/+0 | Daimyō du Soleil rouge (Braise, mythique, 5) |
 | **Nuage de cendres** (magie, rare) | 5 | **2** dégâts à toutes + 1 d'écho | **3** dégâts à toutes + **1** d'écho | +1, écho inchangé | Susanoo (Braise, mythique, 6) |
 | **Brise-lame** (magie rapide, inhabituelle) | 3 | brise une arme adverse · pioche **1** | brise l'arme · pioche **2** | +1 carte | Orochi (Braise, mythique, 8) |
-| **Braise et sable** (arme-sort, rare) | 3 | +1/+0 · Attaque ciblée · critique 25 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
+| **Braise et sable** (arme, rare) | 3 | +1/+0 · Attaque ciblée · critique 15 % | **+2/+0**, le reste intact | +1 ATQ | Cavalier des deux sabres (Braise, mythique, 6) |
 | **Feux de kitsune** (magie, rare) | 5 | **4** dégâts à une créature, ou **2** à chacune de deux | **5** dégâts, ou **3** et **3** | +1 sur les deux modes | Oni de la fournaise (Braise, mythique, 5) |
-| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **25 % ×2** | **+2/+0** · critique **50 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
+| **Sabre maudit** (arme-sort, rare) | 4 | +2/**−2** · critique **15 % ×2** | **+2/+0** · critique **30 % ×4** | le poison tombe, le critique se cumule | Kagutsuchi, Flamme originelle (Braise, mythique, 6) — **Lien de porteur** |
 | **Frappe d'iaijutsu** (magie rapide, rare) | 1 | **2** dégâts à une créature | **3** dégâts | un cran, et la carte la plus jouable du set | Tojiro, le pourfendeur (Braise, mythique, 6) |
 | **Poigne de givre** (magie rapide, commune) | 2 | **2** dégâts + gel | **3** dégâts, gel inchangé | le gel ne s'achète pas au détail | Valkyrie des glaces (Neige, mythique, 6) |
 | **La Grande Pesée** (sorcellerie, rare) | 5 | −3 PV adverse / +3 / pioche 2 | **−4 / +4** | le même verbe : peser, c'est déjà manger | La Dévoreuse (Ténèbres, mythique, 6) |
@@ -77,7 +77,7 @@ mécanique sur des cartes du catalogue.
 | **Javelot du beffroi** (arme, commune) | 2 | porteur **+2/+0** et Attaque ciblée | **+3/+0** et Attaque ciblée | la riposte du Contre-attaquant mord plus fort | Le roi Kusayla (Sable, mythique, 5) |
 | **Cuirasse de sel** (arme, commune) | 2 | porteur **+0/+3** et Esquive | **+0/+4** au lieu de +0/+3 | un cran de défense, rien de plus — le cumul d'Esquive est une règle générale | Bouchra, guerrière des crêtes (Sable, mythique, 2) |
 | **Festin des vaillants** (sorcellerie, commune) | 3 | soigne **2** aux créatures et **2** au sorcier | **3** et **3** | le banquet du Premier Serment | Eirik du Premier Serment (Neige, mythique, 1) |
-| **Hurlement du blizzard** (sorcellerie, rare) | 4 | **2** dégâts à toutes les créatures adverses, gel 25 % | **3** dégâts, gel inchangé | le souffle grandit, pas le froid | Le Géant des banquises (Neige, mythique, 6) |
+| **Hurlement du blizzard** (sorcellerie, rare) | 4 | **2** dégâts à toutes les créatures adverses, gel 15 % | **3** dégâts, gel inchangé | le souffle grandit, pas le froid | Le Géant des banquises (Neige, mythique, 6) |
 | **Le Poids** (magie rapide, commune) | 3 | −**2** PV au sorcier, +2 pour vous | identique **+ −2/−2 à une créature ciblée** | le sort ne change pas, il frappe en plus | La Barbe Noire, la malédiction (Ténèbres, mythique, 5) |
 | **Haut-fond** (magie rapide, commune) | 1 | −**1/−2** jusqu'à la fin du tour | **−2/−3** | la marée monte d'un cran | Le Kraken (Eau, mythique, 8) |
 | **Le Routier** (sorcellerie, inhabituelle) | 3 | pioche **2**, défausse 1 | pioche **3**, défausse 1 | la carte marine porte plus loin | Bakunawa (Eau, mythique, 4) |
@@ -108,8 +108,8 @@ Les formes que prend ce cran :
   table qui s'allume sur la créature quand l'ancre est en jeu, et le sort
   refuse de partir s'il ne reste aucune proie légale ;
 - **le cumul d'un mot-clé à jet** : l'Esquive et le coup critique s'**additionnent**.
-  L'Esquive vaut **25 %** par source ; une créature qui l'imprime et porte la
-  Cuirasse de sel esquive donc à 50 %. Le calcul vit dans `recalculerEsquive`,
+  L'Esquive vaut **15 %** par source ; une créature qui l'imprime et porte la
+  Cuirasse de sel esquive donc à 30 %. Le calcul vit dans `recalculerEsquive`,
   le même patron que `recalculerCoupCritique` : il relit la fiche imprimée,
   les armes-sorts attachées et l'arme du prototype, et pose
   `entite.esquiveChance` que `tenterEsquive` jette réellement ;
@@ -210,7 +210,7 @@ donné à titre de proposition.
 | **Éclair du marteau** | 2 | 3 dégâts à une créature | **4 dégâts** | LE MAÎTRE DU MARTEAU (Neige, 7) |
 | **Frappe d'iaijutsu** | 1 | 2 dégâts à une créature | **3 dégâts** | Tojiro, le pourfendeur (Braise, 6) |
 | **Poigne de givre** | 2 | 2 dégâts + gel | **3 dégâts**, gel inchangé | Valkyrie des glaces (Neige, 6) |
-| **Hurlement du blizzard** | 4 | 2 dégâts à toutes + 25 % de gel | **3 dégâts** | Géant des banquises (Neige, 6) |
+| **Hurlement du blizzard** | 4 | 2 dégâts à toutes + 15 % de gel | **3 dégâts** | Géant des banquises (Neige, 6) |
 | **Tempête de sable** | 5 | 3 dégâts à toutes les créatures adverses | **4 dégâts** | Le Faucon du zénith (Sable, 5) |
 | **Feux de kitsune** | 5 | 4 dégâts, ou 2 à deux créatures | **5 dégâts / 3 et 3** | Kagutsuchi, Flamme originelle (Braise, 6) |
 | **Nuage de cendres** | 5 | 2 dégâts à toutes + 1 d'écho | **3 + 1 d'écho** | Ifrit al-Ahmar, seigneur des braises (Braise, 5) |

@@ -533,7 +533,7 @@ test('Hurlement du blizzard : 2 dégâts à toutes, 3 sous Le Géant des banquis
 
   const carte = cardById('hurlement-du-blizzard');
   assert.equal(carte.cost, 4, 'le Lien n’escompte jamais le coût');
-  assert.equal(carte.effet.gelChance, 0.25, 'la chance de gel ne bouge pas');
+  assert.equal(carte.effet.gelChance, 0.15, 'la chance de gel ne bouge pas');
   assert.deepEqual(carte.lien, { ancre: 'geant-des-banquises', effet: { amount: 3 } });
 });
 
@@ -575,18 +575,18 @@ test('Cuirasse de sel : +0/+3, +0/+4 sous Bouchra — et l’Esquive se cumule',
 
   const sans = monter(false);
   assert.deepEqual([sans.atk, sans.def], [2, 7], 'sans ancre : +0/+3 sur 2/4');
-  assert.equal(sans.esquiveChance, 0.25, 'une seule source : 25 %');
+  assert.equal(sans.esquiveChance, 0.15, 'une seule source : 15 %');
 
   const avec = monter(true);
   assert.deepEqual([avec.atk, avec.def], [2, 8], 'sous Bouchra : +0/+4');
 
   // LE point de la carte : Bouchra imprime Esquive ET porte la Cuirasse, les
-  // deux sources s'ADDITIONNENT — 25 % + 25 % = 50 %, jamais un seul jet.
+  // deux sources s'ADDITIONNENT — 15 % + 15 % = 30 %, jamais un seul jet.
   const duel = duelVide();
   const bouchra = poser(duel, 'joueur', 'bouchra-guerriere-des-cretes');
-  assert.equal(bouchra.esquiveChance, 0.25, 'Bouchra nue : 25 %, son Esquive imprimée');
+  assert.equal(bouchra.esquiveChance, 0.15, 'Bouchra nue : 15 %, son Esquive imprimée');
   equiper(duel, 'joueur', 'cuirasse-de-sel', bouchra);
-  assert.equal(bouchra.esquiveChance, 0.5, 'cuirassée : 50 %, les deux Esquives s’ajoutent');
+  assert.equal(bouchra.esquiveChance, 0.3, 'cuirassée : 30 %, les deux Esquives s’ajoutent');
   assert.deepEqual([bouchra.atk, bouchra.def], [2, 5], 'et +0/+4 en défense');
 
   const carte = cardById('cuirasse-de-sel');
@@ -977,36 +977,36 @@ test('Feux de kitsune : 4 sur une cible ou 2 et 2 ; 5 ou 3 et 3 avec l’Oni', (
   assert.equal(avecPartage.avantB - avecPartage.b.pv, 3, 'avec l’Oni, en deux cibles : 3 dégâts');
 });
 
-test('Coup critique : 25 % sur toutes les cartes, et les sources se cumulent', () => {
-  // Les trois cartes à critique du catalogue portent le même 25 %.
+test('Coup critique : 15 % sur toutes les cartes, et les sources se cumulent', () => {
+  // Les trois cartes à critique du catalogue portent le même 15 %.
   const kagutsuchi = cardById('kagutsuchi-flamme-originelle');
   const sabre = cardById('sabre-maudit');
   const braise = cardById('braise-et-sable');
-  assert.deepEqual(kagutsuchi.coupCritique, { chance: 0.25, fois: 4 });
-  assert.equal(sabre.effet.coupCritique, 0.25);
-  assert.equal(braise.donne.coupCritique, 0.25);
+  assert.deepEqual(kagutsuchi.coupCritique, { chance: 0.15, fois: 4 });
+  assert.equal(sabre.effet.coupCritique, 0.15);
+  assert.equal(braise.donne.coupCritique, 0.15);
 
   const duel = duelVide();
   const k = poser(duel, 'joueur', 'kagutsuchi-flamme-originelle');
-  assert.deepEqual(k.coupCritique, { chance: 0.25, fois: 4 }, 'seule : 25 % ×4');
+  assert.deepEqual(k.coupCritique, { chance: 0.15, fois: 4 }, 'seule : 15 % ×4');
 
   // Une arme-sort ADDITIONNE sa chance, sans écraser le multiplicateur ×4.
   donner(duel, 'joueur', 'sabre-maudit');
   manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', k.id).ok, true);
-  assert.deepEqual(k.coupCritique, { chance: 0.5, fois: 4 }, 'avec le Sabre : 50 % ×4');
+  assert.deepEqual(k.coupCritique, { chance: 0.3, fois: 4 }, 'avec le Sabre : 30 % ×4');
 
   donner(duel, 'joueur', 'braise-et-sable');
   manaPlein(duel, 'joueur');
   assert.equal(rpgJouerArme(duel, 'joueur', 'braise-et-sable', k.id).ok, true);
-  assert.deepEqual(k.coupCritique, { chance: 0.75, fois: 4 }, 'deux armes : 75 % ×4');
+  assert.deepEqual(k.coupCritique, { chance: 0.45, fois: 4 }, 'deux armes : 45 % ×4');
 
   // Une créature sans critique imprimé ne reçoit que celui de l'arme.
   const simple = poser(duel, 'joueur', 'ashigaru-des-braises');
   donner(duel, 'joueur', 'sabre-maudit');
   manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', simple.id).ok, true);
-  assert.deepEqual(simple.coupCritique, { chance: 0.25, fois: 2 });
+  assert.deepEqual(simple.coupCritique, { chance: 0.15, fois: 2 });
 });
 
 test('Le Sabre maudit accorde le même bonus à Kagutsuchi et aux autres créatures', () => {
@@ -1018,7 +1018,7 @@ test('Le Sabre maudit accorde le même bonus à Kagutsuchi et aux autres créatu
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', k.id).ok, true);
   assert.deepEqual([k.atk, k.def], [4, 7]);
   assert.equal(k.volDeVie, true);
-  assert.deepEqual(k.coupCritique, { chance: 0.5, fois: 4 });
+  assert.deepEqual(k.coupCritique, { chance: 0.3, fois: 4 });
   const fragile = poser(duel, 'joueur', 'ashigaru-des-braises');
   donner(duel, 'joueur', 'sabre-maudit'); manaPlein(duel, 'joueur');
   assert.equal(rpgLancerMagie(duel, 'joueur', 'sabre-maudit', fragile.id).ok, true);

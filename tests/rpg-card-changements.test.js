@@ -40,7 +40,7 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.equal(values('dame-des-neuf-mondes').coupRapide, true);
   assert.equal(values('pere-des-corbeaux').arrivee.coutMax, 4);
   assert.equal(values('serpent-du-monde').arrivee.pioche, 3);
-  assert.equal(values('hurlement-du-blizzard').effet.gelChance, 0.25);
+  assert.equal(values('hurlement-du-blizzard').effet.gelChance, 0.15);
   assert.equal(values('poigne-de-givre').cost, 2);
   assert.equal(values('verglas').effet.amount, 2);
   assert.equal(values('embuscade').effet.tours, 1);
@@ -54,7 +54,7 @@ test('fiches révisées et cartes ajoutées sont bien dans le catalogue', () => 
   assert.equal(values('braise-et-sable').kind, 'arme');
   assert.equal(values('braise-et-sable').bonus.atk, 1);
   assert.equal(values('braise-et-sable').donne.coupRapide, true);
-  assert.equal(values('braise-et-sable').donne.coupCritique, 0.25);
+  assert.equal(values('braise-et-sable').donne.coupCritique, 0.15);
   assert.equal(values('braise-et-sable').durabilite, 1);
 });
 

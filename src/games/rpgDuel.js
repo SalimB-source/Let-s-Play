@@ -79,18 +79,18 @@ export const RPG_PV_PLAFOND = null;
 export const RPG_MAIN_DEPART = 5;
 /**
  * Esquive : une créature qui l'imprime (ou dont l'arme la donne) échappe à
- * **30 % des attaques, Magies et Sorcelleries** — leur effet sur elle est
+ * **15 % des attaques, Magies et Sorcelleries par source** — leur effet sur elle est
  * annulé, pas diminué. Les capacités ne sont jamais esquivées. Le tirage vient
  * du hasard du duel (`hasardParDuel`), donc une même partie reste reproductible.
  */
-// L'Esquive obéit au même barème que le coup critique : 25 % par source, et
-// les sources s'additionnent (deux Esquives valent 50 %, voir `recalculerEsquive`).
-export const RPG_ESQUIVE_CHANCE = 0.25;
+// L'Esquive a 15 % de réussite par source ; les sources s'additionnent
+// (deux Esquives valent 30 %, voir `recalculerEsquive`).
+export const RPG_ESQUIVE_CHANCE = 0.15;
 export const RPG_COULEURS = RPG_ELEMENTS;
-// L'Attaque ciblée rate sa proie 25 % du temps — le même barème que le coup
-// critique et l'Esquive. Contre le sorcier, elle touche toujours (100 %).
-export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.25;
-export const RPG_COUP_CRITIQUE_CHANCE = 0.25;
+// L'Attaque ciblée a 15 % de chances de rater une créature.
+// Contre le sorcier, elle touche toujours.
+export const RPG_COUP_RAPIDE_ECHEC_CHANCE = 0.15;
+export const RPG_COUP_CRITIQUE_CHANCE = 0.15;
 export const RPG_COUP_CRITIQUE_FOIS = 4;
 
 /**
@@ -1835,9 +1835,9 @@ function armeCarteDe(entite) {
  * LE COUP CRITIQUE CUMULABLE.
  *
  * Trois sources peuvent en donner un : la fiche imprimée d'une créature
- * (Kagutsuchi, 25 % ×4), les armes-sorts (Sabre maudit) et les armes
+ * (Kagutsuchi, 15 % ×4), les armes-sorts (Sabre maudit) et les armes
  * ordinaires (`donne.coupCritique`, dont Braise et sable). Elles
- * s'**additionnent** — 25 % + 25 % = 50 %
+ * s'**additionnent** — 15 % + 15 % = 30 %
  * — et le multiplicateur retenu est le plus fort (×4).
  *
  * Avant ce calcul, une arme **écrasait** la valeur imprimée : équiper
@@ -1868,14 +1868,15 @@ function recalculerCoupCritique(entite) {
     entite.coupCritique = null;
     return;
   }
-  entite.coupCritique = { chance: Math.min(1, chance), fois };
+  // Évite 0,15 + 0,15 + 0,15 = 0,449999… au seuil du tirage.
+  entite.coupCritique = { chance: Math.min(1, Math.round(chance * 1e12) / 1e12), fois };
 }
 
 /**
- * L'ESQUIVE SE CUMULE — chaque source ajoute ses 25 %.
+ * L'ESQUIVE SE CUMULE — chaque source ajoute ses 15 %.
  *
  * Une créature qui imprime Esquive ET porte une arme qui la donne (la
- * Cuirasse de sel) esquive à 50 %, pas à 25 % : deux protections valent deux
+ * Cuirasse de sel) esquive à 30 %, pas à 15 % : deux protections valent deux
  * protections, comme deux coups critiques valent deux coups critiques. Le
  * plafond reste 100 %.
  *
@@ -3461,6 +3462,25 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
     }
   }
   switch (effet.type) {
+    case 'exil-temporaire': {
+      const allie = duel[cote].creatures.find((entite) => entite.id === cibleId && entite.id !== sauf);
+      if (allie) exilerPourFinDeTour(duel, cote, allie, sourceCarteId);
+      return;
+    }
+    case 'renvoi-ou-destruction': {
+      const victime = duel[adv].creatures.find((entite) => entite.id === cibleId);
+      if (!victime || estSite(victime) || rpgEstProtegee(victime, sourceElement)
+        || rpgEstProtegeeDesSorts(victime, sourceElement, sourceType)) return;
+      if (rpgCoutEntite(victime) >= effet.coutRenvoiMin) {
+        renvoyerEnMain(duel, adv, victime, sourceElement, sourceType);
+      } else if (rpgCoutEntite(victime) <= effet.coutDestructionMax) {
+        enterrer(duel, adv, victime, sourceElement, null, sauf ? { cote, id: sauf } : null);
+        duel.log.push(`${cardById(sourceCarteId)?.name ?? 'Le Traqueur'} détruit ${victime.name}.`);
+        rafraichirAuras(duel);
+        rpgActionsEtat(duel);
+      }
+      return;
+    }
     case 'destruction-cible': {
       const victime = duel[campCible].creatures.find((entite) => entite.id === cibleId);
       if (!victime || estSite(victime) || !cibleRespecteCoutMax({ effet }, victime)
@@ -3601,7 +3621,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       porteur.pv += effet.def ?? 0;
       porteur.def += effet.def ?? 0;
       if (effet.coupRapide) porteur.coupRapide = true;
-      // Le critique de l'arme s'ajoute à celui du porteur (25 % + 25 % = 50 %,
+      // Le critique de l'arme s'ajoute à celui du porteur (15 % + 15 % = 30 %,
       // multiplicateur le plus fort) au lieu de l'écraser.
       if (effet.coupCritique) recalculerCoupCritique(porteur);
       // Une arme-sort peut prêter l'Esquive (`donne.esquive`) : elle s'ajoute
@@ -5189,6 +5209,8 @@ export function arriveeCiblePortee(carte) {
     if (arrivee.cible === 'toutes-autres') return null; // la vague du Léviathan ne désigne rien
     return arrivee.cible === 'creature-amie' ? 'allie' : 'ennemi';
   }
+  if (arrivee.type === 'renvoi-ou-destruction') return 'ennemi';
+  if (arrivee.type === 'exil-temporaire' && arrivee.cible === 'creature-amie') return 'allie';
   if (arrivee.type === 'gel') return arrivee.cible === 'creature' ? 'ennemi' : null;
   if (arrivee.type === 'debuff' || arrivee.type === 'empeche-blocage') return 'ennemi';
   if (arrivee.type === 'donne') return 'allie';
@@ -5230,9 +5252,52 @@ function campsDePortee(cote, portee) {
   return [autre(cote)];
 }
 
-/** Reste-t-il, sur la table, une créature que cette arrivée peut désigner ? */
-/** `coutMax` (le Père des corbeaux) et `coutMin` (Susanoo) : la cible d'une
- *  arrivée doit respecter le seuil de coût déclaré — sans seuil, tout coût convient. */
+/** Une Embuscade exige son déclencheur seulement pendant le tour adverse. */
+export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
+  // La condition n'interdit jamais la pose pendant son propre tour.
+  if (!carte?.reactionTourAdverse || duel.tour === cote) return true;
+  const adversaires = duel[autre(cote)].creatures;
+  const allies = duel[cote].creatures;
+  const combat = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare : null;
+  const attaquants = (combat?.attaquants ?? [])
+    .map((id) => adversaires.find((entite) => entite.id === id)).filter(Boolean);
+  const attaquantsActifs = new Set(attaquants.map((entite) => entite.id));
+  const bloqueurs = Object.entries(combat?.blocages ?? {})
+    .filter(([attaquantId]) => attaquantsActifs.has(attaquantId)).flatMap(([, ids]) => ids);
+  const ciblesAttaque = Object.entries(combat?.ciblesAttaque ?? {})
+    .filter(([attaquantId]) => attaquantsActifs.has(attaquantId)).map(([, id]) => id);
+  const vampiresBloqueurs = allies.some((entite) => bloqueurs.includes(entite.id)
+    && cardHasPrintedType(entite.carteId, 'Vampire'));
+  const vampiresVises = allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire')
+    && ciblesAttaque.includes(entite.id));
+  switch (carte.conditionEmbuscade) {
+    case 'adversaire-blesse': return adversaires.some((entite) => entite.pv < entite.pvMax);
+    case 'attaquant': return attaquants.length > 0;
+    case 'autre-vampire': return allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire'));
+    case 'trois-adversaires': return adversaires.length >= 3;
+    case 'attaquant-force-2': return attaquants.some((entite) => entite.atk >= 2);
+    case 'attaquant-force-3': return attaquants.some((entite) => entite.atk >= 3);
+    case 'allie-cible': return allies.some((entite) =>
+      (duel.annonce?.cote === autre(cote) && duel.annonce.cibleId === entite.id)
+      || ciblesAttaque.includes(entite.id));
+    case 'deux-attaquants': return attaquants.length >= 2;
+    case 'vampire-attaque': return vampiresVises || vampiresBloqueurs;
+    case 'vampire-bloqueur': return vampiresBloqueurs;
+    case 'vie-inferieure': return duel[cote].pv < duel[autre(cote)].pv;
+    case 'attaque-ciblee': return allies.some((entite) => ciblesAttaque.includes(entite.id));
+    case 'adversaire-force-4': return adversaires.some((entite) => entite.atk >= 4);
+    default: return true;
+  }
+}
+
+/** Le Traqueur, en Embuscade, ne peut choisir qu'un des attaquants déclarés. */
+export function rpgCibleEmbuscadeLegale(duel, cote, carte, cible) {
+  return carte?.conditionEmbuscade !== 'deux-attaquants' || duel.tour === cote
+    || Boolean(cible && duel.combatDeclare?.cote === autre(cote)
+      && duel.combatDeclare.attaquants.includes(cible.id));
+}
+
+/** `coutMax` et `coutMin` bornent le coût de la cible d'une arrivée. */
 export function cibleRespecteCoutMax(carte, entite) {
   const cout = rpgCoutEntite(entite);
   // Un Grappin porté alourdit sa cible face aux seuils de coût, comme
@@ -5269,7 +5334,7 @@ export function effetArriveePourCible(carte, cibleId) {
  */
 function appliquerArriveeDeRetour(duel, cote, carte, entite) {
   if (!carte?.arrivee) return false;
-  const cible = rpgCibleAuto(duel, cote, carte);
+  const cible = rpgCibleAuto(duel, cote, carte, entite.id);
   appliquer(duel, cote, effetArriveePourCible(carte, cible), cible,
     entite.id, cardColors(carte), 'capacite', carte.id);
   journaliserArriveeAuSorcier(duel, carte, cible);
@@ -5302,8 +5367,10 @@ export function arriveeACibleLegale(duel, cote, carte, entiteId = null, attaquan
   if (entiteId && carte?.arrivee?.cibleSoi) return true;
   return campsDePortee(cote, portee)
     .some((camp) => duel[camp].creatures.some((entite) => entite.id !== entiteId
-      && !rpgEstProtegee(entite, cardColors(carte))
+      && (!['renvoi-ou-destruction', 'exil-temporaire'].includes(carte.arrivee?.type) || !estSite(entite))
+      && (carte.arrivee?.type === 'exil-temporaire' || !rpgEstProtegee(entite, cardColors(carte)))
       && cibleRespecteCoutMax(carte, entite)
+      && rpgCibleEmbuscadeLegale(duel, cote, carte, entite)
       && (!carte.arrivee?.attaquanteSeulement || (attaquants ?? (duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : [])).includes(entite.id))
       && cibleRespecteTypeImprime(carte, entite)));
 }
@@ -5371,6 +5438,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!carte) return { ok: false, raison: 'inconnue' };
   if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
   if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || duel.pvp)) return { ok: false, raison: 'timing' };
+  if (!rpgConditionEmbuscadeRemplie(duel, cote, carte)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   // Le champ d'essai n'a que cinq places, dessinées sur le plateau : la
@@ -5486,13 +5554,19 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (cibleId && !cible) return { ok: false, raison: 'cible' };
     if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) return { ok: false, raison: 'cible' };
   }
+  if (carte.arrivee?.type === 'renvoi-ou-destruction') {
+    const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId);
+    if (cibleId && (!cible || estSite(cible) || !rpgCibleEmbuscadeLegale(duel, cote, carte, cible)
+      || rpgEstProtegee(cible, cardColors(carte)))) return { ok: false, raison: 'cible' };
+    if (!cibleId && !cibleDifferee && arriveeACibleLegale(duel, cote, carte)) return { ok: false, raison: 'cible' };
+  }
   if (carte.arrivee?.type === 'retour-main' && cibleId) {
     const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId)
       ?? duel[cote].creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
-  if (['debuff', 'empeche-blocage', 'donne'].includes(carte.arrivee?.type)
+  if (['debuff', 'empeche-blocage', 'donne', 'exil-temporaire'].includes(carte.arrivee?.type)
     || (carte.arrivee?.type === 'bouclier' && carte.arrivee.choisirCible)
     || (carte.arrivee?.type === 'soin-creatures' && carte.arrivee.choisirCible)) {
     // Une arrivée qui marque une créature (le venin de la Vipère, la lune de
@@ -5501,9 +5575,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const portee = arriveeCiblePortee(carte);
     const creatures = campsDePortee(cote, portee).flatMap((camp) => duel[camp].creatures);
     const cible = creatures.find((entite) => entite.id === cibleId);
-    if (cibleId && !cible) return { ok: false, raison: 'cible' };
-    if (cible && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
-    if (!cibleId && !cibleDifferee && creatures.some((entite) => !rpgEstProtegee(entite, cardColors(carte)))) {
+    if (cibleId && (!cible || (carte.arrivee?.type === 'exil-temporaire' && estSite(cible)))) return { ok: false, raison: 'cible' };
+    if (cible && carte.arrivee?.type !== 'exil-temporaire' && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+    if (!cibleId && !cibleDifferee && creatures.some((entite) =>
+      carte.arrivee?.type === 'exil-temporaire' ? !estSite(entite) : !rpgEstProtegee(entite, cardColors(carte)))) {
       return { ok: false, raison: 'cible' };
     }
   }
@@ -5749,6 +5824,8 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
     .flatMap((camp) => duel[camp].creatures)
     .find((candidate) => candidate.id === cibleId);
   if (!cible) return { ok: false, raison: 'cible' };
+  if (!rpgCibleEmbuscadeLegale(duel, cote, carte, cible)) return { ok: false, raison: 'cible' };
+  if (['renvoi-ou-destruction', 'exil-temporaire'].includes(carte?.arrivee?.type) && estSite(cible)) return { ok: false, raison: 'cible' };
   if (carte?.arrivee?.attaquanteSeulement && !(attente.attaquants ?? []).includes(cible.id)) return { ok: false, raison: 'cible' };
   // « une AUTRE créature » : celle qui porte l'arrivée ne se désigne jamais
   // elle-même — l'exil du Susanoo, qui choisit pourtant dans les deux camps,
@@ -5765,7 +5842,7 @@ export function rpgResoudreArriveeCiblee(duel, cote, cibleId) {
   if (!cibleRespecteTypeImprime(carte, cible)) {
     return { ok: false, raison: 'cible' };
   }
-  if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
+  if (carte?.arrivee?.type !== 'exil-temporaire' && rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   // Marquer l'arrivée comme résolue et garder l'Abordage en attente s'il reste.
   const arriveeSuivante = hasAbordage
     ? { cote, entiteId: entite.id, carteId: attente.carteId, abordage: attente.abordage, arriveeResolue: true }
@@ -6249,7 +6326,17 @@ export function rpgAttaquerCreature(duel, cote, entiteId, cibleId) {
  *  le joueur choisir la cible des sorts qui la demandent. Le choix est
  *  tactique : un kill sur la meilleure valeur, la menace principale, ou le
  *  sorcier quand c'est le meilleur coup (surtout quand il est létal). */
-export function rpgCibleAuto(duel, cote, carte) {
+export function rpgCibleAuto(duel, cote, carte, sourceId = null) {
+  if (carte?.arrivee?.type === 'exil-temporaire') {
+    return duel[cote].creatures.find((entite) => entite.id !== sourceId && !estSite(entite))?.id ?? null;
+  }
+  if (carte?.arrivee?.type === 'renvoi-ou-destruction') {
+    const attaquants = duel.combatDeclare?.cote === autre(cote) && duel.tour !== cote
+      ? duel.combatDeclare.attaquants : null;
+    return duel[autre(cote)].creatures.find((entite) => !estSite(entite)
+      && (!attaquants || attaquants.includes(entite.id))
+      && !rpgEstProtegee(entite, cardColors(carte)))?.id ?? null;
+  }
   if (carte?.arrivee?.attaquanteSeulement) {
     const combat = duel.combatDeclare;
     if (combat?.cote !== autre(cote)) return null;
@@ -6802,7 +6889,7 @@ function declencherArmesAttaquants(duel, cote, bilans) {
     if (carte.porteurBlesseSorcier && bilan.sorcier > 0) effets.push(carte.porteurBlesseSorcier);
     for (const effet of effets) {
       // Retour-main avec chance sur chaque créature blessée (sphère de rotation :
-      // 25 % par créature touchée par le porteur). Les cibles sont des
+      // 15 % par créature touchée par le porteur). Les cibles sont des
       // entites capturées avant que les dégâts de combat ne les retire
       // éventuellement du battlefield : une créature tuée par ce même combat
       // peut encore être renvoyée en main au lieu d'aller au cimetière.
@@ -7435,7 +7522,7 @@ export function rpgLancerAttaque(
     if (!liste.some((c) => c.id === cible.id)) liste.push(cible);
     ciblesParAttaquant.set(coup.sourceId, liste);
   }
-  // Sphère de rotation : avant d'assigner les dégâts de combat, 25 % de
+  // Sphère de rotation : avant d'assigner les dégâts de combat, 15 % de
   // chances de renvoyer chaque créature adverse combattue dans la main de
   // son propriétaire. La créature renvoyée ne subit ni n'inflige de dégâts.
   const boulesRenvoies = new Set();
@@ -7445,7 +7532,7 @@ export function rpgLancerAttaque(
     const carte = armeById('sphere-de-rotation');
     const rng = hasardParDuel.get(duel) ?? Math.random;
     for (const cible of cibles) {
-      if (rng() >= 0.25) continue;
+      if (rng() >= (carte?.porteurAvantDegats?.chance ?? 0)) continue;
       renvoyerEnMain(duel, adv, cible, cardColors(carte), null);
       boulesRenvoies.add(cible.id);
       duel.log.push(`${attaquant.name} fait tournoyer sa sphère de rotation : ${cible.name} retourne en main avant les dégâts.`);
@@ -7839,7 +7926,8 @@ export function rpgOuvrirFinDeTour(duel) {
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
-    if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte);
+    if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte)
+      && rpgConditionEmbuscadeRemplie(duel, cote, carte);
     return Boolean(carte?.instant
       && rpgContreJouable(duel, cote, carte)
       && rpgSortACibleValide(duel, cote, carte)
