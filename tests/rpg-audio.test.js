@@ -29,7 +29,7 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
   assert.deepEqual([...RPG_SFX_NAMES].sort(), [
     'abordage', 'attackers_confirm', 'block_impact', 'card_countered', 'card_draw',
     'cold_wind', 'creature_return', 'defaite', 'degats', 'degats_sorcier', 'destruction_hit', 'flame_gust', 'fleche', 'fleche_ratee', 'freeze_impact', 'furie_loup_neige', 'furie_viking', 'furie_viking_femelle', 'hover', 'soin_vie', 'soin_vie_adverse',
-    'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire', 'weapon_break',
+    'gameplay_menu_open_up', 'navire_arrivee', 'page_turn', 'pirate_arrivee', 'pirate_dialogue', 'dwarf_dialogue', 'player_attack_hit', 'victoire', 'weapon_break',
     'foudre_marteau',
   ].sort(), 'le son du duel = les échantillons de la table, survol compris');
   for (const name of RPG_SFX_NAMES) {
@@ -37,6 +37,12 @@ test('le catalogue se résume au survol et aux échantillons fournis', () => {
     assert.ok(Array.isArray(sequence) && sequence.length > 0, `séquence manquante : ${name}`);
   }
   assert.equal(rpgSfx('silence-total'), null);
+});
+
+test('le bouton Jouer ouvre le menu avec le fichier fourni', () => {
+  assert.deepEqual(rpgSfx('gameplay_menu_open_up'), [{ kind: 'sample', at: 0, dur: 1.229, g: 1 }]);
+  assert.ok(existsSync(new URL('../src/games/assets/gameplay-menu-open-up.wav', import.meta.url)),
+    'GameplayMenuOpenUp.wav est livré dans les assets bundlés du Sablier');
 });
 
 test('la Furie utilise le cri viking fourni par le joueur', () => {

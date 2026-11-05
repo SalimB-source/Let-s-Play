@@ -5118,7 +5118,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               aria-current={screen === 'jouer' ? 'page' : undefined}
               aria-label="Jouer"
               onClick={() => {
-                play('select');
+                play('gameplay_menu_open_up');
                 onChangeScreen('jouer');
                 menuScrollRef.current?.scrollTo?.({ top: 0, behavior: 'auto' });
               }}

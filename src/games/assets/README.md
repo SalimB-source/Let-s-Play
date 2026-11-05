@@ -15,6 +15,13 @@ of the existing scoring combo. Muting stops the cry and music together.
 
 # Le Sablier — three maritime sound effects
 
+## Ouverture du menu de jeu: `gameplay-menu-open-up.wav`
+
+`gameplay-menu-open-up.wav` is the user-supplied `GameplayMenuOpenUp.wav`,
+copied byte-for-byte with no re-encoding (WAV PCM 16-bit, stereo, 44.1 kHz,
+1.229 seconds). It plays under the `gameplay_menu_open_up` SFX name when the
+main **Jouer** button opens the Sablier game menu.
+
 ## Abordage (boarding capture): `chain-rattle.wav`
 
 `chain-rattle.wav` is `ChainRattleMetalChainManyVariations_jxKTo_03.wav`

@@ -68,6 +68,8 @@ const ECHANTILLONS_FICHIERS = Object.freeze([
   // L'effleurement de survol : un extrait du vrai enregistrement de carte, pas
   // une sinusoïde (`tools/make-son-survol.py`).
   ['hover', new URL('./assets/hover.wav', import.meta.url), 'hoverAudio'],
+  // Ouverture du menu de jeu depuis le bouton « Jouer ».
+  ['gameplay_menu_open_up', new URL('./assets/gameplay-menu-open-up.wav', import.meta.url), 'gameplayMenuOpenUpAudio'],
   ['card_draw', new URL('./assets/card-draw.wav', import.meta.url), 'cardDrawAudio'],
   ['attackers_confirm', new URL('./assets/attackers-confirm.mp3', import.meta.url), 'attackersConfirmAudio'],
   ['player_attack_hit', new URL('./assets/player-attack-hit.wav', import.meta.url), 'playerAttackHitAudio'],
@@ -191,7 +193,8 @@ export const RPG_FREEZE_IMPACT_SFX = 'freeze_impact';
 const RPG_SFX_TABLE = {
   // Interface : le froissement d'une carte effleurée.
   hover: [{ kind: 'sample', at: 0, dur: 0.08, g: DOSE_SURVOL }],
-
+  // Ouverture du menu de jeu (`GameplayMenuOpenUp.wav`, 1,229 s).
+  gameplay_menu_open_up: [{ kind: 'sample', at: 0, dur: 1.229, g: 1 }],
   // Les échantillons fournis, dans `src/games/assets/`.
   card_draw: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],
   attackers_confirm: [{ kind: 'sample', at: 0, dur: 0.7, g: 1 }],

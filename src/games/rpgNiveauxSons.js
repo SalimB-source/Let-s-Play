@@ -117,6 +117,7 @@ export const RPG_NIVEAUX_ECHANTILLONS = Object.freeze({
   foudre_marteau: [-15.01, -0.08],
   fleche: [-15.07, -0.47],
   fleche_ratee: [-16.74, -0.64],
+  gameplay_menu_open_up: [-17.83, -1.0],
 });
 
 /**
