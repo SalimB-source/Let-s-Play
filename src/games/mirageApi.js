@@ -1,4 +1,6 @@
+import { createCoalescedSave } from '../lib/coalescedSave.js';
 import { supabase } from '../lib/supabase';
+import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 
 export const mirageApiEnabled = () => Boolean(supabase);
 
@@ -29,6 +31,7 @@ export async function saveMirageProgress(userId, progress) {
 
 /** Public top scores. Returns null until the optional SQL migration is applied. */
 export async function fetchMirageLeaderboard(limit = 10) {
+  if (!isOnlineModeEnabled()) return null;
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('get_mirage_rush_leaderboard', { p_limit: limit });
   return error ? null : (Array.isArray(data) ? data : []);
@@ -36,6 +39,7 @@ export async function fetchMirageLeaderboard(limit = 10) {
 
 /** Store a signed-in player's best verified-range run. */
 export async function submitMirageScore({ score, gems, duration }) {
+  if (!isOnlineModeEnabled()) return null;
   if (!supabase) return null;
   const { data, error } = await supabase.rpc('submit_mirage_rush_score', {
     p_score: score,
@@ -44,3 +48,6 @@ export async function submitMirageScore({ score, gems, duration }) {
   });
   return error ? null : data;
 }
+
+// Une seule requête en vol par compte ; les instantanés intermédiaires sont regroupés.
+export const scheduleMirageProgress = createCoalescedSave(saveMirageProgress);

@@ -594,7 +594,7 @@ export async function checkMirageFlow(assert) {
     const touchHint = phone.node.querySelector('.mirage-keys-hint');
     assert.ok(touchHint, 'l’aide de l’écran des maps est affichée sur téléphone');
     assert.equal(touchHint.getAttribute('aria-label'), 'Commandes tactiles', 'l’aide parle gestes, pas clavier');
-    assert.match(touchHint.textContent, /GLISSE ← → POUR ESQUIVER/,
+    assert.match(touchHint.textContent, /GLISSE ← → POUR CHANGER DE VOIE/,
       'la consigne du téléphone explique le glissement latéral');
     assert.match(touchHint.textContent, /TAPE POUR SAUTER/, 'la consigne du téléphone explique le saut');
     assert.equal(touchHint.querySelectorAll('kbd').length, 0,

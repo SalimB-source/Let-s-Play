@@ -13,6 +13,7 @@
 
 import { supabase } from '../lib/supabase';
 import { RPG_PVP_CHEMIN, rpgPvpLienDefi } from './rpgPvp.js';
+import { isOnlineModeEnabled, ONLINE_MODE_DISABLED_REASON } from '../lib/onlineMode.js';
 
 /** Route de l'arbitre (déployée par Vercel, exclue du repli SPA). */
 export const SABLIER_API = '/api/sablier-duel';
@@ -23,8 +24,7 @@ export const SABLIER_API_DISTANT = 'https://let-s-play-nu.vercel.app/api/sablier
 /**
  * Ordonne les routes possibles de l'arbitre :
  *   1. la route locale `/api/sablier-duel` (hors GitHub Pages statique) ;
- *   2. la fonction Edge Supabase (`.../functions/v1/sablier-duel`) du projet ;
- *   3. l'origine Vercel de production.
+ *   2. l'origine Vercel de production.
  */
 export function routesArbitre() {
   const routes = [];
@@ -32,14 +32,6 @@ export function routesArbitre() {
   const origine = typeof window !== 'undefined' ? (window.location?.origin || '') : '';
   if (!/\.github\.io$/i.test(hote)) {
     routes.push(SABLIER_API);
-  }
-  const urlSupabase = (
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL)
-    || supabase?.supabaseUrl
-    || ''
-  ).trim().replace(/\/$/, '');
-  if (urlSupabase) {
-    routes.push(`${urlSupabase}/functions/v1/sablier-duel`);
   }
   if (!origine || !SABLIER_API_DISTANT.startsWith(origine)) {
     routes.push(SABLIER_API_DISTANT);
@@ -51,10 +43,15 @@ export function routesArbitre() {
  * Le PvP est-il branchable ? Il faut un compte Supabase (pour le jeton) ; la
  * disponibilité réelle du serveur se découvre au premier appel
  * (`raison: 'arbitre-indisponible'` ou `'reseau'`).
+ * Quand le mode en ligne est verrouillé, le PvP est indisponible même si Supabase est configuré.
  */
 export function sablierPvpDisponible() {
+  if (!isOnlineModeEnabled()) return false;
   return Boolean(supabase);
 }
+
+// Ré-export pour les composants qui veulent tester le verrouillage sans dépendre du détail.
+export { isOnlineModeEnabled, ONLINE_MODE_DISABLED_REASON };
 
 /**
  * Intervalle de sondage pendant que c'est au tour de l'autre (ms).
@@ -89,6 +86,7 @@ async function jeton() {
 
 /** Un appel à l'arbitre. Rend toujours un objet : `{ ok: true }` ou `{ ok: false, raison }`. */
 async function appeler(corps) {
+  if (!isOnlineModeEnabled()) return { ok: false, raison: ONLINE_MODE_DISABLED_REASON, status: 503 };
   if (!supabase) return { ok: false, raison: 'hors-ligne' };
   const acces = await jeton();
   if (!acces) return { ok: false, raison: 'connexion' };

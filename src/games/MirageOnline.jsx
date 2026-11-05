@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LanguageContext } from '../i18n/LanguageContext';
+import { onlineModeText } from '../lib/onlineModeText.js';
+import React, { useContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import MirageCharacterPortrait from './MirageCharacterPortrait';
 import MirageScoreboard from './MirageScoreboard';
 import MirageRoomResults from './MirageRoomResults';
@@ -25,6 +27,7 @@ import {
   serverOffset,
   subscribeRoomUpdates,
 } from './mirageRooms';
+import { isOnlineModeEnabled, ONLINE_MODE_DISABLED_REASON } from '../lib/onlineMode.js';
 import { powerUpOdds, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, DUEL_DISTANCE } from './mirageRules';
 import { DesertGroove } from './arcadeAudio';
 import { buildRoomStandings } from './mirageStandings';
@@ -93,6 +96,7 @@ export default function MirageOnline({
   onRunFinish,
   onSelectMode,
 }) {
+  const onlineText = onlineModeText(useContext(LanguageContext)?.lang);
   const guestProfile = useMemo(() => getOrCreateGuestProfile(), []);
   const [customPseudo, setCustomPseudo] = useState(() => userName || guestProfile.name);
   const effectivePlayer = useMemo(() => {
@@ -157,12 +161,20 @@ export default function MirageOnline({
     };
   }, []);
 
+  const onlineEnabled = isOnlineModeEnabled();
   const handlePseudoChange = (value) => {
     setCustomPseudo(value);
     saveGuestName(value);
   };
 
   const fetchRoomsList = useCallback(async (silent = false) => {
+    if (!onlineEnabled) {
+      if (mounted.current) {
+        setAvailableRooms([]);
+        if (!silent) setLoadingRooms(false);
+      }
+      return;
+    }
     if (!silent) setLoadingRooms(true);
     try {
       const res = await roomAction('list', null, {}, effectivePlayer);
@@ -174,9 +186,10 @@ export default function MirageOnline({
     } finally {
       if (mounted.current && !silent) setLoadingRooms(false);
     }
-  }, [effectivePlayer]);
+  }, [effectivePlayer, onlineEnabled]);
 
   async function request(action, target = room?.code, args = {}) {
+    if (!onlineEnabled) throw new Error(ONLINE_MODE_DISABLED_REASON);
     const epoch = generation.current;
     const start = Date.now();
     const next = await roomAction(action, target, args, effectivePlayer);
@@ -216,6 +229,10 @@ export default function MirageOnline({
   }, [effectivePlayer.id, room?.code]);
 
   async function command(action, customTarget = undefined, customArgs = {}) {
+    if (!onlineEnabled) {
+      setError('Mode en ligne — Bientôt disponible.');
+      return null;
+    }
     generation.current += 1;
     commanding.current = true;
     setBusy(true);
@@ -276,7 +293,12 @@ export default function MirageOnline({
   }
 
   // Poll available rooms while in the lobby browser (!room)
+  // Aucun polling ni souscription quand le mode est verrouillé.
   useEffect(() => {
+    if (!onlineEnabled) {
+      setLoadingRooms(false);
+      return undefined;
+    }
     if (room?.code) return undefined;
     fetchRoomsList(false);
     const timer = setInterval(() => fetchRoomsList(true), 2200);
@@ -287,7 +309,7 @@ export default function MirageOnline({
       clearInterval(timer);
       unsub();
     };
-  }, [room?.code, fetchRoomsList]);
+  }, [room?.code, fetchRoomsList, onlineEnabled]);
 
   // Les aperçus 3D des personnages se figent pendant la course (GPU réservé au jeu).
   useEffect(() => {
@@ -297,6 +319,7 @@ export default function MirageOnline({
 
   // Poll active room state while inside a room
   useEffect(() => {
+    if (!onlineEnabled) return undefined;
     if (!room?.code) return undefined;
     let cancelled = false;
     let timer;
@@ -329,7 +352,7 @@ export default function MirageOnline({
       clearTimeout(timer);
       unsub();
     };
-  }, [room?.code, active, finished, handleRoomPickupEvent]);
+  }, [room?.code, active, finished, handleRoomPickupEvent, onlineEnabled]);
 
   // Race start countdown
   useEffect(() => {
@@ -674,7 +697,19 @@ export default function MirageOnline({
       </header>
 
       <div className="wrap mirage-online">
-        {!room && (
+        {!onlineEnabled && (
+          <section className="panel-frame mirage-soon-panel" role="status" aria-live="polite" aria-labelledby="mirage-soon-title" style={{ textAlign: 'center', padding: '32px 20px' }}>
+            <span className="mirage-panel-kicker">{onlineText.mirageTitle}</span>
+            <h2 id="mirage-soon-title" style={{ marginTop: 8 }}>{onlineText.soon}</h2>
+            <p style={{ margin: '12px auto', maxWidth: 520, lineHeight: 1.5 }}>
+              {onlineText.mirageIntro}
+            </p>
+            <button type="button" className="mirage-share-button" onClick={onBack} style={{ marginTop: 16 }}>
+              {onlineText.backSolo}
+            </button>
+          </section>
+        )}
+        {onlineEnabled && !room && (
           <>
             {/* Top accessibility bar: player pseudo + Créer room button */}
             <section className="panel-frame mirage-lobby-toolbar">

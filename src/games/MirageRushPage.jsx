@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LanguageContext } from '../i18n/LanguageContext';
+import { onlineModeText } from '../lib/onlineModeText.js';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { ecrireProgression, lireProgression } from '../lib/progressionScope';
@@ -18,7 +20,8 @@ import MirageDesertAtmosphere from './MirageDesertAtmosphere';
 import MirageGraphicsButton, { MirageGraphicsSwitch } from './MirageGraphicsToggle';
 import useMirageGraphics from './useMirageGraphics';
 import { DesertGroove } from './arcadeAudio';
-import { fetchMirageLeaderboard, fetchMirageProgress, mirageApiEnabled, saveMirageProgress, submitMirageScore } from './mirageApi';
+import { fetchMirageLeaderboard, fetchMirageProgress, mirageApiEnabled, scheduleMirageProgress, submitMirageScore } from './mirageApi';
+import { isOnlineModeEnabled } from '../lib/onlineMode.js';
 import { DUEL_DISTANCE, DIAMOND_SPEED_MULTIPLIERS, SPEED_BOOST_DURATION, POWER_UPS, POWER_UP_CHARGE_COST, POWER_UP_DIAMOND_COST, POWER_BOOST_DURATION, LASSO_SLOW_DURATION, PISTOL_STUN_DURATION, GEM_RESPAWN_DELAY, duelRivalsForTrack, laneCount } from './mirageRules';
 import { decodeChallenge, encodeChallenge } from './duelChallenge';
 import {
@@ -126,6 +129,7 @@ function frenchList(names) {
 }
 
 export default function MirageRushPage() {
+  const onlineText = onlineModeText(useContext(LanguageContext)?.lang);
   const { user, isDemo } = useAuth();
   const trackAchievement = useAchievementAction();
   const [searchParams] = useSearchParams();
@@ -248,7 +252,6 @@ export default function MirageRushPage() {
   // du pouce sur téléphone, touches du clavier sur ordinateur.
   const [isTouch, setIsTouch] = useState(false);
   const progressRef = useRef(progression);
-  const progressSaveQueueRef = useRef(Promise.resolve());
   const cupRunRef = useRef(null);
   const actionsRef = useRef(null);
   const audioRef = useRef(null);
@@ -327,10 +330,7 @@ export default function MirageRushPage() {
       // account row once. Queue it before future runs so an early save cannot
       // be overwritten by this initial snapshot. Failed reads never write.
       if (!loadError && !hasRemoteSnapshot) {
-        progressSaveQueueRef.current = progressSaveQueueRef.current
-          .catch(() => false)
-          .then(() => saveMirageProgress(ownerId, nextProgress))
-          .catch(() => false);
+        void scheduleMirageProgress(ownerId, nextProgress);
       }
     })();
 
@@ -341,10 +341,7 @@ export default function MirageRushPage() {
     const clean = saveProgress(nextProgress, undefined, progressionKey);
     if (connected && progressionReady) {
       const ownerId = user.id;
-      progressSaveQueueRef.current = progressSaveQueueRef.current
-        .catch(() => false)
-        .then(() => saveMirageProgress(ownerId, clean))
-        .catch(() => false);
+      void scheduleMirageProgress(ownerId, clean);
     }
     return clean;
   }, [connected, progressionKey, progressionReady, user?.id]);
@@ -633,7 +630,13 @@ export default function MirageRushPage() {
     setIntroStep('stage');
   }, [clearCup]);
 
+  const onlineEnabled = isOnlineModeEnabled();
   const openOnlineLobby = useCallback(() => {
+    if (!onlineEnabled) {
+      // Mode verrouillé : ne pas ouvrir le lobby, afficher Bientôt disponible.
+      setIntroStep('mode');
+      return;
+    }
     // Le lobby prend la place de la coquille de jeu : un plein écran demandé à
     // la main ne doit pas lui survivre (verrou de défilement compris).
     exitImmersive();
@@ -641,7 +644,7 @@ export default function MirageRushPage() {
     audioRef.current?.stop();
     setSettingsOpen(false);
     setOnlineOpen(true);
-  }, [exitImmersive]);
+  }, [exitImmersive, onlineEnabled]);
 
   const backToCoursePicker = () => {
     setPhase('intro');
@@ -690,6 +693,7 @@ export default function MirageRushPage() {
   const startStageCard = useCallback((nextStageId) => {
     if (connected && !progressionReady) return;
     if (selectedMode === 'online') {
+      if (!onlineEnabled) return;
       // En ligne, la carte choisit la map par défaut du salon puis l’ouvre.
       chooseStage(nextStageId);
       openOnlineLobby();
@@ -1543,16 +1547,26 @@ export default function MirageRushPage() {
                   <div className="mirage-mode-section">
                     <div className="mirage-picker-label"><span>01 / TON MODE</span><span>BOUTONS DE DÉPART</span></div>
                     <div className="mirage-mode-picker is-actions" role="group" aria-label="Choisir un mode Mirage">
-                      {modeChoices.map((mode) => <button
-                        type="button"
-                        key={mode.id}
-                        className="mirage-mode-action"
-                        onClick={() => chooseMode(mode.id)}
-                      >
-                        <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
-                        <span className="mirage-mode-copy"><strong>{mode.name}</strong><span>{mode.tagline}</span><small>{mode.info}</small></span>
-                        <span className="mirage-mode-cta" aria-hidden="true">{mode.cta} <b>↗</b></span>
-                      </button>)}
+                      {modeChoices.map((mode) => {
+                        const isOnline = mode.id === 'online';
+                        const locked = isOnline && !onlineEnabled;
+                        return (
+                          <button
+                            type="button"
+                            key={mode.id}
+                            className={`mirage-mode-action${locked ? ' is-locked' : ''}`}
+                            onClick={() => chooseMode(mode.id)}
+                            disabled={locked}
+                            aria-disabled={locked ? 'true' : undefined}
+                            aria-label={locked ? `${onlineText.online} — ${onlineText.soon}` : mode.name}
+                            title={locked ? onlineText.unavailable : undefined}
+                          >
+                            <span className="mirage-mode-symbol" aria-hidden="true">{mode.icon}</span>
+                            <span className="mirage-mode-copy"><strong>{locked ? onlineText.online : mode.name}{locked && <em className="mirage-soon-badge"> · {onlineText.soon}</em>}</strong><span>{locked ? onlineText.soon : mode.tagline}</span><small>{locked ? onlineText.afterTests : mode.info}</small></span>
+                            <span className="mirage-mode-cta" aria-hidden="true">{locked ? onlineText.soon : mode.cta} <b>↗</b></span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   <MirageGraphicsSwitch />

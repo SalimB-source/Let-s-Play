@@ -1,3 +1,4 @@
+import { createCoalescedSave } from '../lib/coalescedSave.js';
 /**
  * Copie serveur des decks maison et de la collection du Sablier.
  * --------------------------------------------------------------
@@ -76,3 +77,6 @@ export async function sauverEtatSablier(userId, state) {
     return null;
   }
 }
+
+// Réservé aux écritures de jeu en arrière-plan ; les fusions initiales restent immédiates et attendues.
+export const programmerSauvegardeSablier = createCoalescedSave(sauverEtatSablier);

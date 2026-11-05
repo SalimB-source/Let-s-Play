@@ -111,7 +111,7 @@ assert.doesNotMatch(battleCss, /rpg-mode-menu__messagerie \.rpg-mode-menu__ongle
   'l’onglet Messagerie garde son mot « Messagerie » même au plus petit format');
 assert.match(battleCss, /@media \(min-width: 701px\) and \(max-width: 1100px\) \{[\s\S]{0,700}?\.rpg-mode-menu__switch \{[\s\S]{0,500}?flex-wrap: wrap;/,
   'en paysage et sur petite tablette, la barre d’onglets passe à la ligne : le dernier onglet n’est plus coupé hors de l’écran');
-assert.match(battleCss, /@media \(max-width: 560px\) \{[\s\S]{0,800}?rpg-mode-menu__messagerie \.rpg-mode-menu__onglet-libelle \{\s*font-size: 8px;/,
+assert.match(battleCss, /@media \(max-width: 560px\)[^{]*\{[\s\S]{0,1000}?rpg-mode-menu__messagerie \.rpg-mode-menu__onglet-libelle \{\s*font-size: 8px;/,
   'sur un téléphone de 320 px, le mot « Messagerie » tient quand même sur l’onglet');
 assert.match(duelPage, /useMessages\(\)/, 'le menu lit la messagerie du site pour sa pastille');
 assert.match(duelPage, /useFriends\(\)/, 'le menu lit aussi les demandes d’amis pour sa pastille');
@@ -165,9 +165,9 @@ assert.match(panneau, /useContext\(AuthContext\)/, 'le panneau lit le compte san
 // lisent ces variables.
 assert.match(panneauCss, /\.rpg-messagerie \{[\s\S]{0,220}--ink: #eef0ff;/,
   'le panneau repose le thème sombre du site sur lui-même');
-assert.match(panneauCss, /\.rpg-messagerie--volet \{[\s\S]{0,140}z-index: 3100;/,
+assert.match(panneauCss, /\.rpg-messagerie--volet \{[\s\S]{0,140}z-index: 10070;/,
   'le voile passe au-dessus de tout le HUD de la table');
 const zHudMax = Math.max(...[...battleCss.matchAll(/z-index:\s*(\d+);/g)].map((m) => Number(m[1])));
-assert.ok(3100 > zHudMax, `le voile (3100) domine la table (z-index max ${zHudMax})`);
+assert.ok(10070 > zHudMax, `le voile (10070) domine la table (z-index max ${zHudMax})`);
 
 console.log('check:rpg-messagerie ✓ — dans le Sablier, la messagerie vit dans le jeu : son onglet au menu, son voile sur la table et sur le salon (la fenêtre sociale du site reste le parcours bureau, au-dessus du jeu et sous les appels).');

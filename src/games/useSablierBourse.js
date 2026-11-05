@@ -99,7 +99,7 @@ import { tirerParmi } from './rpgHasard.js';
 import { chargerAcquis, chargerCollectionDistante, collectionJoueur, possedeCarte } from './rpgCollection.js';
 import { chargerDecksMaison, chargerSupprimesMaison, fusionnerEtatsSablier } from './rpgDeckBuilder.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
-import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
+import { chargerEtatSablier, sauverEtatSablier, programmerSauvegardeSablier } from './rpgSablierRemote.js';
 import { useStatutSyncSablier } from './useStatutSyncSablier.js';
 
 /** L'état local complet, tel qu'il vit sur l'appareil — les deux moitiés. */
@@ -223,7 +223,7 @@ export function useSablierBourse({
   const pousser = useCallback(() => {
     if (!compteId) return null;
     const fusion = fusionnerEtatsSablier({ local: etatLocalComplet() });
-    sauverEtatSablier(compteId, fusion.etat);
+    programmerSauvegardeSablier(compteId, fusion.etat);
     return fusion.etat;
   }, [compteId]);
 

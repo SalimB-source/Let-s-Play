@@ -37,6 +37,18 @@ function indisponible(res) {
   res.end(JSON.stringify({ ok: false, raison: 'arbitre-indisponible' }));
 }
 
+/** Verrouillage réversible du mode en ligne : désactivé par défaut, actif seulement si ONLINE_MODE_ENABLED="true". */
+function modeEnLigneVerrouille(res) {
+  appliquerCors(res);
+  res.status(503).setHeader('content-type', 'application/json; charset=utf-8');
+  res.setHeader('cache-control', 'no-store');
+  res.end(JSON.stringify({ ok: false, raison: 'mode-en-ligne-bientot-disponible' }));
+}
+
+function isOnlineModeEnabledServer() {
+  return String(process.env.ONLINE_MODE_ENABLED ?? '').trim() === 'true';
+}
+
 /** Seuls les en-têtes utiles à l'arbitre (`authorization`, `content-type`) sont copiés. */
 function entetes(req) {
   const sortie = new Headers();
@@ -172,6 +184,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     res.status(204).end();
     return;
+  }
+
+  // Verrouillage réversible : désactivé par défaut, actif seulement si ONLINE_MODE_ENABLED="true".
+  // Le drapeau VITE n'est jamais une protection serveur : seul ce contrôle fait foi.
+  if (!isOnlineModeEnabledServer()) {
+    return modeEnLigneVerrouille(res);
   }
 
   try {

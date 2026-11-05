@@ -54,6 +54,21 @@ export async function checkRpgDuelNav(assert, { sonSeulement = false } = {}) {
     ));
     await settle();
 
+    // Un nouveau compte doit choisir son coffret avant de pouvoir lancer un duel.
+    const coffret = node.querySelector('[data-rpg-coffret-boite]');
+    if (coffret) {
+      await click(coffret);
+      const passer = node.querySelector('.rpg-coffret__passer');
+      if (passer) await click(passer);
+      for (let i = 0; i < 3; i += 1) {
+        await settle(500);
+        const suivant = node.querySelector('.rpg-coffret__suivant');
+        assert.ok(suivant && !suivant.disabled, 'la cérémonie du coffret avance');
+        await click(suivant);
+      }
+      await settle(500);
+    }
+
     // Paramètres doit être disponible depuis le menu, avant qu'aucune partie ne
     // soit lancée : l'écran et ses commandes ne dépendent pas du duel.
     assert.equal(node.querySelector('.rpg-battle')?.dataset.scene, 'menu', 'le test commence hors partie');
@@ -162,8 +177,9 @@ export async function checkRpgDuelNav(assert, { sonSeulement = false } = {}) {
     assert.deepEqual(commandesDirectes.slice(0, 4).map((bouton) => bouton.textContent.trim()),
       ['Menu', 'Deck', 'Catalogue', 'Paramètres'],
       'le panneau porte les trois modes du duel et l’onglet Paramètres');
-    assert.equal(commandesDirectes.length, 6,
-      'les boutons directs du panneau sont Menu, Deck, Catalogue, Paramètres, Messagerie et Plein écran');
+    assert.equal(commandesDirectes.length, 5,
+      'au doigt, le plein écran est obligatoire : Menu, Deck, Catalogue, Paramètres et Messagerie restent disponibles');
+    assert.equal(menu.querySelector('.rpg-duel-nav__fullscreen'), null, 'le plein écran tactile ne peut pas être quitté depuis le menu');
     // La messagerie du site fait partie du panneau : c’est par elle que les
     // défis du Sablier se lancent. Sans fournisseur de messagerie (ce
     // scénario), elle ouvre le voile du jeu ; avec un compte, le même

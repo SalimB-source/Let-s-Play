@@ -41,7 +41,7 @@ import { chargerPortefeuille, exemplairesDuPortefeuille, sauverPortefeuille } fr
 import { chargerEtatQuetes, sauverEtatQuetes } from './rpgQuetes.js';
 import { chargerProfil, sauverProfil } from './rpgProfil.js';
 import { chargerProgressionHistoire, sauverProgressionHistoire } from './rpgStory.js';
-import { chargerEtatSablier, sauverEtatSablier } from './rpgSablierRemote.js';
+import { chargerEtatSablier, sauverEtatSablier, programmerSauvegardeSablier } from './rpgSablierRemote.js';
 
 /**
  * L'état complet porté par le compte : casier local, apports du compte en
@@ -281,7 +281,7 @@ export function useDecksSablier() {
   // enregistrement de deck ne doit jamais effacer les crédits de son voisin.
   const pousser = useCallback((casier, collectionEffective) => {
     if (!compteId) return;
-    sauverEtatSablier(compteId, {
+    programmerSauvegardeSablier(compteId, {
       ...etatLocalActuel(acquisRef.current),
       decks: casier.decks,
       supprimes: casier.supprimes,

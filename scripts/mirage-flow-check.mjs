@@ -13,12 +13,16 @@ for (const id of ['desert', 'western', 'prairie', 'sardinia', 'alger', 'japan', 
 }
 assert.ok(thumbnailBytes < 330 * 1024, 'les dix miniatures restent sous 330 Kio au total');
 
-execFileSync('npx', ['vite', 'build', '--ssr', 'scripts/mirage-flow-smoke.jsx', '--outDir', 'node_modules/.cache/mirage-flow', '--emptyOutDir', '--logLevel', 'error'], { stdio: 'inherit' });
+// Ce scénario vérifie explicitement le parcours réactivé ; le verrouillage a son propre test UI.
+execFileSync('npx', ['vite', 'build', '--ssr', 'scripts/mirage-flow-smoke.jsx', '--outDir', 'node_modules/.cache/mirage-flow', '--emptyOutDir', '--logLevel', 'error'], { stdio: 'inherit', env: { ...process.env, VITE_ONLINE_MODE_ENABLED: 'true' } });
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/jeu' });
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 // btoa / atob / TextEncoder natifs de Node 22 suffisent (encodage du lien de défi).
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const { checkMirageFlow } = await import('../node_modules/.cache/mirage-flow/mirage-flow-smoke.js');
-try { await checkMirageFlow(assert); } finally { dom.window.close(); }
+// L'essai Link dure trois jours : figer la date évite un test périmé.
+const realNow = Date.now;
+Date.now = () => Date.parse('2026-10-04T12:00:00Z');
+try { await checkMirageFlow(assert); } finally { Date.now = realNow; dom.window.close(); }
 console.log('check:mirage-flow ✓ — Mirage Rush ouvre sur de vrais boutons RUÉE / DUEL / COUPE / EN LIGNE, puis affiche les 10 maps à l’écran suivant, où un clic sur une carte lance la partie (plus aucun bouton « LANCER ») ; le sélecteur de COUPE propose cinq boutons 3D sans détailler les parcours, met en avant jusqu’à 30 / 30 / 40 / 50 OR (10 OR par victoire) puis les 190 OR de la Steel Ball Run, sa prime de champion de 90 OR comprise, et démarre la coupe au clic ; la dernière coupe, dix cartes, s’ouvre après les quatre autres ; les maps finies en 1ᵉʳ et les coupes remportées portent un ✓ vert et se rejouent au clic ; un bouton Paramètres du choix de mode ouvre La communauté, Ton cavalier, Boutique et Informations ; Boutique propose Cloud et son chocobo en accès temporaire universel avec prix habituel de 280 OR, Link & Épona (épée de légende, bouclier hylien, jument baie) offerts pendant 3 jours avec prix habituel de 320 OR et ses trois techniques (bombe à 2 cases, boomerang, Triforce) dans les règles, en plus de Gyro à 200 OR ; ?mode=cup ouvre la coupe ; le lobby EN LIGNE garde ses 4 boutons de mode (COUPE ramène à la coupe) ; un défi garde sa seule map jouable, qui lance le duel ; piste du téléphone à trois voies, deux rivaux et coupe à trois cavaliers alignés ; sur écran tactile, les consignes parlent glissement, aucune touche de clavier et aucune croix directionnelle ni losange de manette, remplacés par la barre d’objets du PC.');

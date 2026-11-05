@@ -53,7 +53,7 @@ function StudioTrailer() {
           ref={videoRef}
           controls
           playsInline
-          preload="metadata"
+          preload="none"
           poster={`${base}videos/hicosoft-eulogy-poster.jpg`}
           aria-label="Extrait cinématique de Eulogy: Cries of War"
           onPlay={() => { setPlaying(true); setStarted(true); }}
