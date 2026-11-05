@@ -41,14 +41,17 @@ jobs:
             fichier: lets-play
             release: apk
             titre: "Let's Play — le site"
+            appId: dz.letsplay.officiel
           - jeu: sablier
             fichier: le-sablier-de-bab-el
             release: apk-sablier
             titre: "Le Sablier de Bab El — APK"
+            appId: dz.letsplay.sablier
           - jeu: vice-city
             fichier: vice-city-rush
             release: apk-vice-city
             titre: "Vice City Rush — APK"
+            appId: dz.letsplay.vicecity
     env:
       ANDROID_JEU: ${{ matrix.jeu }}
     steps:
@@ -129,6 +132,32 @@ jobs:
           grep -E "FAILURE|What went wrong|Caused by|error:|Error:|FAILED|Exception" build.log | head -30 | while IFS= read -r l; do
             echo "::error::${l:0:400}"
           done
+
+      # L'identité de l'APK est décidée par deux jetons remplacés à la
+      # compilation : une erreur de sélection donnerait une APK qui s'installe
+      # par-dessus la mauvaise application, ou qui ouvre le site entier au lieu
+      # du jeu. On relit donc l'APK produite, pas le code.
+      - name: Vérifier l'identité de l'APK
+        run: |
+          APK="android/app/build/outputs/apk/release/${{ matrix.fichier }}-release.apk"
+          test -s "$APK" || { echo "::error::APK absente : $APK"; exit 1; }
+          AAPT=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging "$APK")
+          echo "$BADGING" | grep -E "^package:|^application-label" || true
+          echo "$BADGING" | grep -q "package: name='${{ matrix.appId }}'" \
+            || { echo "::error::applicationId inattendu (attendu ${{ matrix.appId }})"; exit 1; }
+          # La route du jeu doit être inscrite dans le bytecode : c'est la preuve
+          # que le jeton __ROUTE_JEU__ a bien été remplacé par le bundle.
+          if [ "${{ matrix.jeu }}" != "site" ]; then
+            case "${{ matrix.jeu }}" in
+              sablier)   ROUTE="/jeu/sablier-de-bab-el" ;;
+              vice-city) ROUTE="/jeu/vice-city-rush" ;;
+            esac
+            unzip -p "$APK" 'classes*.dex' | strings | grep -qF "$ROUTE" \
+              || { echo "::error::la route $ROUTE est absente de l'APK"; exit 1; }
+            echo "Route verrouillée présente : $ROUTE"
+          fi
+          echo "Identité vérifiée : ${{ matrix.appId }}"
 
       - name: Renommer l'APK avec la version
         run: |
