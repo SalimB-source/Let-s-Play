@@ -1,3 +1,4 @@
+import { cityRushRenderBudget, createCityRushVisualClock } from './cityRushPerformance.js';
 import { narrowPassageBlocked, keepPassageMarking } from './roadCodeExercises.js';
 import { sidewalkSignalFor, indexTrafficSignalLenses } from './drivingSidewalkSignals.js';
 import { drivingTeachingEnabled } from './drivingLearning.js';
@@ -3507,6 +3508,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // d'effet (voir plus bas) : l'école d'exercice le reçoit, tout le reste
     // s'en passe.
     let renderer = null;
+    const renderBudget = cityRushRenderBudget({ lite: liteDevice, devicePixelRatio: window.devicePixelRatio });
     // Tout le montage de la ville vit dans `build`, appelé dès que le renderer
     // est ouvert — immédiatement en WebGL, après un `await` en WebGPU.
     const build = () => {
@@ -3520,8 +3522,11 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     addViceCityClouds(scene);
     const camera = new THREE.PerspectiveCamera(66, 1, 0.1, 900);
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
+    renderer.setPixelRatio(renderBudget.pixelRatio);
     renderer.shadowMap.enabled = true;
+    // La simulation reste à chaque image ; seules les ombres WebGL sont espacées.
+    const shadowTick = createCityRushVisualClock(renderBudget.shadowIntervalMs);
+    if (!renderer.isCityRushWebGpu) renderer.shadowMap.autoUpdate = false;
     // Le backend WebGPU de three.js ne connaît pas les ombres « douces » : on
     // lui donne le filtrage dur, sinon le réglage est ignoré sans le dire.
     renderer.shadowMap.type = renderer.isCityRushWebGpu ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
@@ -3533,7 +3538,7 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     scene.add(hemisphere);
     const sun = new THREE.DirectionalLight(0xffd3a1, 3.1);
     sun.position.set(-100, 180, 70); sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.mapSize.set(renderBudget.shadowSize, renderBudget.shadowSize);
     sun.shadow.camera.left = -170; sun.shadow.camera.right = 170; sun.shadow.camera.top = 170; sun.shadow.camera.bottom = -170;
     scene.add(sun);
     const rainGeometry = new THREE.BufferGeometry();
@@ -4616,17 +4621,16 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     const cockpitMirrorTurn = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.05, Math.PI, 0, 'YXZ'));
     let cockpitMirrorTarget = null;
     let cockpitMirrorCamera = null;
-    let cockpitMirrorFrame = 0;
+    const mirrorTick = createCityRushVisualClock(renderBudget.mirrorIntervalMs);
     let cockpitMirrorBroken = false;
     // En WebGPU, la cible de rendu flottante du rétroviseur (HalfFloatType) et
     // `setRenderTarget` ne se comportent pas comme en WebGL : plutôt qu'une
     // image cassée ou une exception par image, on garde le miroir peint fourni
     // par la planche de bord.
     if (renderer.isCityRushWebGpu) cockpitMirrorBroken = true;
-    const renderCockpitMirror = () => {
+    const renderCockpitMirror = (now) => {
       if (!cockpitActive || vehicle !== playerVehicle || !playerCockpit || cockpitMirrorBroken || typeof renderer.setRenderTarget !== 'function') return;
-      cockpitMirrorFrame += 1;
-      if (cockpitMirrorTarget && cockpitMirrorFrame % 2 === 1) return;
+      if (!mirrorTick(now)) return;
       const previousTarget = renderer.getRenderTarget?.() || null;
       const shadowAutoUpdate = renderer.shadowMap.autoUpdate;
       try {
@@ -4664,9 +4668,12 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
       }
     };
     let frame = 0; let last = performance.now(); let hudAt = 0; let minimapAt = 0;
+    const resetAfterVisibilityChange = () => { last = performance.now(); blur(); };
+    document.addEventListener('visibilitychange', resetAfterVisibilityChange);
     const animate = (now) => {
       frame = requestAnimationFrame(animate);
-      if (schoolMode && schoolPausedRef.current) {
+      // Pas de simulation ni de rendu en arrière-plan.
+      if (document.hidden || (schoolMode && schoolPausedRef.current)) {
         last = now; keys.clear(); touchKeysRef.current.clear(); touchAxesRef.current = { x: 0, y: 0 };
         return;
       }
@@ -4892,13 +4899,15 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
         const target = schoolTargetRef.current;
         placeDrivingGroundMarker(schoolMarker, target.x, target.z, target.radius ?? 4, city.surfaceHeight);
       }
+      if (!renderer.isCityRushWebGpu && shadowTick(now)) renderer.shadowMap.needsUpdate = true;
       if (postChain) postChain.render(dt); else renderer.render(scene, camera);
-      renderCockpitMirror();
+      renderCockpitMirror(now);
       if (schoolSideMirrors) renderDrivingSideMirrors(schoolSideMirrors, renderer, scene, playerVehicle, { left: leftMirrorRef.current, right: rightMirrorRef.current }, now);
     };
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame); observer.disconnect();
+      document.removeEventListener('visibilitychange', resetAfterVisibilityChange);
       window.removeEventListener('keydown', onDown); window.removeEventListener('keyup', onUp);
       mount.removeEventListener('pointerdown', activateAudio); window.removeEventListener('blur', blur);
       cockpitMirrorTarget?.dispose();
@@ -4920,13 +4929,13 @@ export default function ViceCityFreeRoam({ carId, onExit, schoolMode = false, sc
     // que le décor HTML ; la ville apparaît d'un coup, jamais à moitié.
     let cancelled = false;
     let teardown = () => {};
-    createCityRushRenderer({ mode: requestedGraphicsRef.current, lite: liteDevice, antialias: true })
+    createCityRushRenderer({ mode: requestedGraphicsRef.current, lite: liteDevice, antialias: renderBudget.antialias })
       .then((opened) => opened)
       .catch(() => {
         // Moteur refusé au dernier moment : on le dit, et la ville tourne en
         // WebGL standard — jamais d'écran noir.
         setGraphicsLive({ mode: CITY_RUSH_GRAPHICS_STANDARD, requested: CITY_RUSH_GRAPHICS_WEBGPU, reason: 'WebGPU refusé par le navigateur' });
-        return createCityRushRenderer({ mode: CITY_RUSH_GRAPHICS_STANDARD, lite: liteDevice, antialias: true });
+        return createCityRushRenderer({ mode: CITY_RUSH_GRAPHICS_STANDARD, lite: liteDevice, antialias: renderBudget.antialias });
       })
       .then((opened) => {
         if (!opened) return;
