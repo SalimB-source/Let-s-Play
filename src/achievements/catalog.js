@@ -641,13 +641,11 @@ export const ACHIEVEMENTS = [
       ar: { name: 'أسطورة الموقع', desc: 'زُر الموقع في 30 يومًا مختلفًا: شهر كامل من الوفاء.' },
     },
   },
-  /* Les deux succès de langue. Le site n'est plus publié qu'en français (le
-     sélecteur de langue a été retiré de la navigation) : le suivi n'enregistre
-     donc plus que `fr`, et ces deux succès ne peuvent plus être débloqués par
-     un nouveau visiteur. Ils restent au catalogue — un joueur qui les a obtenus
-     du temps des trois langues garde son grade, son XP et sa progression, et
-     les retirer ferait baisser son niveau. Les libellés sont conservés dans les
-     trois langues, comme les autres. */
+  /* Les deux succès de langue. Le sélecteur FR / EN / AR est de nouveau dans
+     la navigation : le suivi enregistre chaque langue réellement lue
+     (`language_used`), et ces deux succès se débloquent en changeant de langue.
+     Ils restent au catalogue pour les joueurs qui les avaient obtenus avant le
+     retrait : leur grade, leur XP et leur progression sont conservés. */
   {
     id: 'polyglot',
     icon: 'icons/achievements/polyglot.webp',
