@@ -3,12 +3,13 @@ import { dailyNewsListing as news20261104 } from '../news/daily/2026-11-04';
 import { dailyNewsListing as news20261103 } from '../news/daily/2026-11-03';
 import { dailyNewsListing as edition20261101 } from '../news/daily/2026-11-01';
 import { dailyNewsListing as news20261102 } from '../news/daily/2026-11-02';
-import React from 'react';
+import React, { useMemo } from 'react';
 import '../news-view-toggle.css';
 import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { searchIndex } from '../search/searchIndex';
 import { autoSearchEntries, autoNewsListing } from '../lib/autoNews';
 import { dailyNewsListing as cultureTechNews20261029 } from '../news/daily/2026-10-29-cinema-tech';
@@ -42,6 +43,19 @@ const COPY = {
 export default function AllNews() {
   const { lang } = useLanguage();
   const copy = COPY[lang] || COPY.fr;
+  // Archive : mêmes cartes que le hub (données éditoriales quand elles
+  // existent), puis titre et chapô dans la langue de lecture quand la
+  // traduction est disponible. `useMemo` garde la liste stable entre deux
+  // rendus — la grille ne se reconstruit pas à chaque frappe.
+  const listing = useMemo(() => allNewsArticles.map((article) => ({
+    to: article.route,
+    image: article.image,
+    alt: article.title,
+    title: article.title,
+    excerpt: article.description,
+    ...newsListingByRoute.get(article.route),
+  })), []);
+  const localizedArticles = useLocalizedListings(listing, lang);
 
   return (
     <div className="search-page news-archive wrap">
@@ -55,19 +69,10 @@ export default function AllNews() {
       </section>
 
       <div className="news-carousel is-grid" data-reveal>
-        {allNewsArticles.map((article) => {
-          const category = article.route.startsWith('/news/cinema/') ? copy.cinema : article.route.startsWith('/news/tech/') ? copy.tech : copy.gaming;
-          const story = {
-            to: article.route,
-            image: article.image,
-            alt: article.title,
-            title: article.title,
-            excerpt: article.description,
-            badge: category,
-            kicker: category,
-            ...newsListingByRoute.get(article.route),
-          };
-          return <NewsCard key={article.route} story={story} readLabel={copy.read} />;
+        {localizedArticles.map((story, index) => {
+          const route = allNewsArticles[index].route;
+          const category = route.startsWith('/news/cinema/') ? copy.cinema : route.startsWith('/news/tech/') ? copy.tech : copy.gaming;
+          return <NewsCard key={route} story={{ ...story, badge: story.badge || category, kicker: story.kicker || category }} readLabel={copy.read} />;
         })}
       </div>
     </div>

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import { searchContent } from '../search/searchIndex';
+import { useArticleListingsReady } from '../news/localized/useLocalizedArticle.js';
+import { searchTextFor } from '../news/localized/index.js';
 import { useAchievementAction } from '../achievements/AchievementContext';
 import { isQuizFinished } from '../quizzes/quizProgress';
 import { useQuizProgress } from '../quizzes/useQuizProgress';
@@ -22,7 +24,16 @@ export default function Search() {
   const [params, setParams] = useSearchParams();
   const query = params.get('q') || '';
   const [value, setValue] = useState(query);
-  const results = useMemo(() => searchContent(query), [query]);
+  const rawResults = useMemo(() => searchContent(query), [query]);
+  // Les cartes d'actu affichent leur titre et leur chapô dans la langue de
+  // lecture quand une traduction existe (voir src/news/localized/). Le reste de
+  // l'index — tests, dossiers, quizz — n'a pas de version traduite : il reste
+  // en français, ce qui vaut mieux qu'un résultat absent.
+  const listingsReady = useArticleListingsReady(lang);
+  const results = useMemo(
+    () => rawResults.map((item) => (item.type === 'news' ? searchTextFor(item, lang) : item)),
+    [rawResults, lang, listingsReady],
+  );
 
   useEffect(() => setValue(query), [query]);
 

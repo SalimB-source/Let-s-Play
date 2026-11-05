@@ -1,5 +1,5 @@
 // Rendu réel des éditions quotidiennes, via les routes publiques du site.
-// L'édition actuelle (02.11.2026) est importée par les pages du site ; les
+// L'édition actuelle (05.11.2026) est importée par les pages du site ; les
 // éditions précédentes le sont sous alias : le script de contrôle
 // (scripts/daily-news-check.mjs) rejoue chaque édition, de l'ouverture du hub
 // Actus jusqu'à la carte de tête de l'accueil, en passant par les archives.
@@ -26,6 +26,9 @@ import { dailyStories as dailyStories20261016 } from '../src/news/daily/2026-10-
 import { dailyStories as dailyStories20261017 } from '../src/news/daily/2026-10-17';
 import { dailyStories as dailyStories20261101 } from '../src/news/daily/2026-11-01';
 import { dailyStories as dailyStories20261102 } from '../src/news/daily/2026-11-02';
+import { dailyStories as dailyStories20261103 } from '../src/news/daily/2026-11-03';
+import { dailyStories as dailyStories20261104 } from '../src/news/daily/2026-11-04';
+import { dailyStories as dailyStories20261105 } from '../src/news/daily/2026-11-05';
 import { searchContent, searchIndex } from '../src/search/searchIndex';
 import { autoSearchEntries } from '../src/lib/autoNews';
 
@@ -34,6 +37,9 @@ export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
 // ancien — l'ordre de l'archive et des hubs en dépend.
 export const editionKeys = {
+  '2026-11-05': Object.keys(dailyStories20261105),
+  '2026-11-04': Object.keys(dailyStories20261104),
+  '2026-11-03': Object.keys(dailyStories20261103),
   '2026-11-02': Object.keys(dailyStories20261102),
   '2026-11-01': Object.keys(dailyStories20261101),
   '2026-10-29': [...Object.keys(gamingStories20261029), ...Object.keys(cultureTechStories20261029)],

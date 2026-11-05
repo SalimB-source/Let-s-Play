@@ -8,6 +8,7 @@ import { baseUrl as base } from '../data';
 import { dailyNewsListing, editionDate } from '../news/daily/2026-11-05';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
 import { Arrow } from '../components/ReleasesCalendar';
 
 // Toute l’édition du jour, y compris les compléments gaming.
@@ -18,6 +19,10 @@ const todayStories = dailyNewsListing;
 // SÉRIES et TECH.
 export default function News() {
   const { lang } = useLanguage();
+  // Les cartes suivent la langue de lecture : titre et chapô traduits quand ils
+  // existent, français sinon (voir src/news/localized/).
+  const localizedToday = useLocalizedListings(todayStories, lang);
+  const localizedYesterday = useLocalizedListings(yesterdayStories, lang);
 
   const todaySectionCopy = {
     en: {
@@ -209,7 +214,7 @@ export default function News() {
         </div>
 
         <div className="news-carousel is-grid">
-          {todayStories.map((story) => (
+          {localizedToday.map((story) => (
             <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />
           ))}
         </div>
@@ -220,7 +225,7 @@ export default function News() {
           <span>{yesterdayDate}</span>
         </div>
         <div className="news-carousel is-grid">
-          {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
+          {localizedYesterday.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
         </div>
       </section>
 
@@ -297,7 +302,7 @@ export default function News() {
           <span>01.11.2026</span>
         </div>
         <div className="news-carousel is-grid">
-          {yesterdayStories.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
+          {localizedYesterday.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
         </div>
       </section>
 

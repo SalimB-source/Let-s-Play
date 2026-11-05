@@ -27,6 +27,12 @@ import { detectLlm, writeWithLlm } from './lib/llm.mjs';
 import {
   slugify, formatParisDate, templateCompose, validateStory, fitHeadline, HEADLINE_BUDGET,
 } from './lib/story.mjs';
+// Traduction à la publication : chaque article paraît aussi en anglais et en
+// arabe (src/news/localized/). Sans clé IA, on ne traduit pas — le site affiche
+// alors l'article en français avec la mention « Version française ».
+import {
+  TRANSLATE_LANGS, translateStory, writeTranslations, regenerateLocalizedIndex, countLocalized,
+} from './lib/translate.mjs';
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -39,6 +45,10 @@ const option = (name) => {
 };
 
 const FIXTURES = flag('fixtures');
+// `--no-translate` (ou NEWS_TRANSLATE=0) coupe la traduction : publication
+// française seule, comme avant. Utile pour un run rapide ou quand le quota IA
+// est épuisé.
+const TRANSLATE = !flag('no-translate') && process.env.NEWS_TRANSLATE !== '0';
 const FORCE = flag('force') || !!process.env.NEWS_FORCE;
 const COUNT = Math.max(1, Math.min(6, Number(option('count') || process.env.NEWS_COUNT || BOT.count)));
 const ROOT = path.resolve(option('root') || (FIXTURES ? path.join(SCRIPT_DIR, 'demo-out') : path.resolve(SCRIPT_DIR, '../..')));
@@ -364,6 +374,41 @@ for (const { story } of articles) {
   console.log(`  ✔ /news/${story.slug} — ${story.title} ${story.accent}`);
 }
 
+// ------------------------------------------------- 4 bis. traductions FR → EN / AR
+// Chaque article reçoit ses versions anglaise et arabe au moment de sa
+// publication : c'était le manque d'origine — un nouvel article n'existait
+// qu'en français, quel que soit le réglage de langue du visiteur.
+//
+// Une traduction qui échoue ne bloque JAMAIS la publication : l'article reste
+// en ligne en français et `npm run news:translate` le rattrapera.
+const translated = { en: 0, ar: 0 };
+const translationFailures = [];
+if (TRANSLATE && articles.length && llm) {
+  for (const { story } of articles) {
+    const fieldsByLang = {};
+    for (const lang of TRANSLATE_LANGS) {
+      const result = await translateStory(story, lang, llm);
+      if (result.fields) {
+        fieldsByLang[lang] = result.fields;
+        translated[lang] += 1;
+      } else {
+        translationFailures.push(`${story.slug} → ${lang} : ${result.reason}`);
+      }
+    }
+    if (Object.keys(fieldsByLang).length) {
+      const written = writeTranslations(ROOT, story, fieldsByLang);
+      console.log(`  🌍 ${story.slug} — ${Object.keys(fieldsByLang).join(', ')} (${written.length} fichier(s))`);
+    }
+  }
+  for (const lang of TRANSLATE_LANGS) regenerateLocalizedIndex(ROOT, lang);
+  console.log(`Traductions : ${TRANSLATE_LANGS.map((lang) => `${lang}=${translated[lang]}`).join(' · ')} sur ${articles.length} article(s).`);
+} else if (TRANSLATE && articles.length) {
+  console.log('Traductions : clé IA absente — articles publiés en français seul (mention « Version française » côté site).');
+} else if (!TRANSLATE) {
+  console.log('Traductions : désactivées (--no-translate).');
+}
+for (const failure of translationFailures) console.warn(`  ⚠️ traduction non produite — ${failure}`);
+
 const archived = pruneArchive();
 const allStories = generateAutoIndex();
 
@@ -378,7 +423,12 @@ state.lastRun = new Date().toISOString();
 writeFileSafe(PATHS.state, `${JSON.stringify({ seen: [...state.seen], published: state.published, lastRun: state.lastRun }, null, 2)}\n`);
 
 const lines = articles.map(({ story, mode }) => `- [${story.title} ${story.accent}](/news/${story.slug}) — d’après ${story.source.replace(/^D’après /, '').replace(/, article.*/, '')} (${mode})`);
+if (articles.length && TRANSLATE && llm) {
+  lines.push('', `Traductions : ${TRANSLATE_LANGS.map((lang) => `${lang} ${translated[lang]}/${articles.length}`).join(' · ')}` +
+    (translationFailures.length ? ` — ${translationFailures.length} échec(s), relancer \`npm run news:translate\`` : ''));
+}
 writeFileSafe(PATHS.report, `${articles.length ? `🤖 Actus du jour · ${dateLabel} — ${articles.length} article(s)` : '🤖 Actus du jour — rien de nouveau'}\n\n${lines.join('\n')}${archived.length ? `\n\nArchivé (>${BOT.archiveDays} jours) : ${archived.join(', ')}` : ''}\n`);
 
 console.log(`\nTerminé : ${articles.length} article(s) généré(s), ${allStories.length} au total dans l’index, ${archived.length} archivé(s).`);
+console.log(`Traductions disponibles : ${TRANSLATE_LANGS.map((lang) => `${lang} ${countLocalized(ROOT, lang)}`).join(' · ')}.`);
 if (!articles.length) console.log('Rien de nouveau à publier — le workflow ne committra rien.');

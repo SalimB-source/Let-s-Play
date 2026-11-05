@@ -745,6 +745,72 @@ img{max-width:100%}
   color:#fff;
   transform:translateY(-1px);
 }
+/* ============ SÉLECTEUR DE LANGUE — pill island ============ */
+/* Même gabarit que le bouton de thème : deux pastilles voisines, même hauteur,
+   même bord, même survol. Le code de langue (« FR ») reste lisible en
+   permanence — c'est l'information utile en un coup d'œil. */
+.lang-switch{position:relative;flex:none}
+.lang-switch-button{
+  height:36px;min-width:36px;padding:0 11px 0 10px;
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  color:rgba(238,240,255,.88);
+  border-radius:999px;
+  backdrop-filter:blur(8px);
+  clip-path:none;
+  font:600 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  cursor:pointer;
+  transition:border-color .22s, background .22s, color .22s, transform .18s;
+}
+.lang-switch-button:hover,
+.lang-switch.is-open .lang-switch-button{
+  background:rgba(255,255,255,.10);
+  border-color:rgba(255,255,255,.14);
+  color:#fff;
+  transform:translateY(-1px);
+}
+.lang-switch-globe{display:inline-flex;color:var(--cyan)}
+.lang-switch-current{line-height:1}
+.lang-switch-caret{opacity:.7;transition:transform .22s}
+.lang-switch.is-open .lang-switch-caret{transform:rotate(180deg)}
+/* Chargement du dictionnaire EN / AR en cours : petit souffle, pas de saut. */
+.lang-switch-pending{
+  position:absolute;inset:-1px;border-radius:999px;
+  border:1px solid rgba(34,211,238,.55);
+  animation:lang-pending 1s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes lang-pending{0%,100%{opacity:.25}50%{opacity:.9}}
+.lang-switch-menu{
+  position:absolute;top:calc(100% + 10px);right:0;min-width:196px;z-index:1100;
+  display:flex;flex-direction:column;gap:2px;padding:6px;
+  background:rgba(11,13,30,.97);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  box-shadow:0 24px 48px -16px rgba(0,0,0,.7);
+}
+.lang-switch-menu[hidden]{display:none}
+[dir="rtl"] .lang-switch-menu{right:auto;left:0}
+.lang-switch-option{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:9px 10px;
+  background:transparent;border:0;border-radius:8px;
+  color:rgba(238,240,255,.72);cursor:pointer;text-align:start;
+  font-family:var(--body);font-size:13.5px;
+  transition:background .18s,color .18s;
+}
+.lang-switch-option:hover,
+.lang-switch-option:focus-visible{background:rgba(34,211,238,.10);color:#fff;outline:none}
+.lang-switch-option.active{color:#fff}
+.lang-switch-code{
+  font:600 10.5px var(--mono);letter-spacing:.1em;min-width:26px;
+  color:var(--yellow);
+}
+.lang-switch-option.active .lang-switch-code{color:var(--cyan)}
+.lang-switch-name{flex:1;min-width:0}
+.lang-switch-check{flex:none;color:var(--cyan)}
+
 /* Compte connecté — pill compacte dans l'île */
 .nav-actions-grid .nav-account.connected{
   display:inline-flex !important;
@@ -1820,11 +1886,20 @@ img{max-width:100%}
     gap:10px;
     width:100%;
   }
-  /* Le sélecteur de langue occupait la moitié de la première ligne à côté du
-     bouton de thème : parti, le thème prend toute la ligne (il est dessiné pour
-     ça : `justify-content:space-between`, libellé à droite) et les boutons de
-     compte se placent par paires en dessous. */
-  .nav-actions-grid .theme-toggle{grid-column:1 / -1}
+  /* Thème et langue partagent la première ligne (deux pastilles de même
+     hauteur, dessinées pour ça : libellé à droite) ; les boutons de compte se
+     placent par paires en dessous. */
+  .nav-actions-grid .theme-toggle{grid-column:1 / 2}
+  .nav-actions-grid .lang-switch{width:100%}
+  .nav-actions-grid .lang-switch-button{
+    width:100%;height:44px;justify-content:center;gap:9px;
+    border-radius:10px;padding:0 12px;
+  }
+  .nav-actions-grid .lang-switch-menu{
+    position:static;margin-top:10px;width:100%;min-width:0;
+    box-shadow:none;background:rgba(11,13,30,.98);
+  }
+  .nav-actions-grid .lang-switch-menu .lang-switch-option{height:44px}
   .nav-actions-grid .nav-logout{grid-column:1 / -1}
   .nav-account.nav-login,
   .nav-account.nav-register,

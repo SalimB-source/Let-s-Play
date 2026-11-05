@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
 import ThemeToggle from './ThemeToggle';
+import LanguageSwitcher from './LanguageSwitcher';
 import { useAuth } from '../auth/AuthContext';
 import SEO from './SEO';
 // L'index de recherche (actus, tests, dossiers, sorties, quizz) pèse à lui
@@ -655,6 +656,7 @@ export default function Layout({ children }) {
 
               <div className="nav-actions-grid">
                 <ThemeToggle />
+                <LanguageSwitcher variant="nav" />
                 {user ? (
                   <>
                     <div

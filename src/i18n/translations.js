@@ -3,6 +3,19 @@
 
 export const translations = {
   en: {
+    article: {
+      label: 'LATEST NEWS', date: '', eyebrowAuto: 'TODAY’S STORY · LET’S PLAY', eyebrowRewritten: 'REWRITTEN FOR LET’S PLAY',
+      views: '{n} views', readTime: '4 MIN READ', video: 'VIDEO', official: 'OFFICIAL', officialVideo: 'Official video', watchOnYouTube: 'Watch on YouTube',
+      alsoRead: 'READ NEXT', alsoReadTitle: 'LATEST STORIES', alsoReadText: 'Catch up on the latest announcements and analysis from the newsroom.',
+      backToNews: 'BACK TO NEWS', ctaEyebrow: 'MORE ON LET’S PLAY', ctaTitleA: 'STAY IN', ctaTitleB: 'THE GAME.', ctaButton: 'VIEW THE NEWS',
+      sentiment: { positive: 'Positive news', negative: 'Negative news', mixed: 'Mixed news' },
+    },
+    lang: {
+      label: 'Language', saved: 'Language: {name}', device: 'Device language',
+      frenchOnly: 'Article in French', frenchOnlyNote: 'This story has not been translated into {language} yet. The French version is authoritative.',
+      autoTranslated: 'Machine translation', autoTranslatedNote: 'Translated from French into {language}. If in doubt, the French version prevails.',
+      readInFrench: 'Read in French', loading: 'Loading translation…', failed: 'Could not change the language right now.',
+    },
     meta: {
       title: 'Let’s Play — Play the Game',
     },
@@ -459,7 +472,21 @@ export const translations = {
     },
   },
 
+
   fr: {
+    article: {
+      label: 'ACTUS À LA UNE', date: '', eyebrowAuto: 'ACTU DU JOUR · LET’S PLAY', eyebrowRewritten: 'RÉÉCRIT POUR LET’S PLAY',
+      views: '{n} vues', readTime: '4 MIN DE LECTURE', video: 'VIDÉO', official: 'OFFICIELLE', officialVideo: 'Vidéo officielle', watchOnYouTube: 'Voir sur YouTube',
+      alsoRead: 'À LIRE AUSSI', alsoReadTitle: 'LES ACTUS À LA UNE', alsoReadText: 'Retrouvez les dernières annonces et analyses de la rédaction.',
+      backToNews: 'RETOUR AUX ACTUS', ctaEyebrow: 'LA SUITE SUR LET’S PLAY', ctaTitleA: 'RESTEZ DANS', ctaTitleB: 'LE GAME.', ctaButton: 'VOIR LES ACTUS',
+      sentiment: { positive: 'Actu positive', negative: 'Actu négative', mixed: 'Actu mitigée' },
+    },
+    lang: {
+      label: 'Langue', saved: 'Langue : {name}', device: 'Langue de l’appareil',
+      frenchOnly: 'Article en français', frenchOnlyNote: 'Cette actu n’est pas encore traduite en {language}. La version française fait foi.',
+      autoTranslated: 'Traduction automatique', autoTranslatedNote: 'Traduit du français vers {language}. En cas de doute, la version française fait foi.',
+      readInFrench: 'Lire en français', loading: 'Chargement de la traduction…', failed: 'Impossible de changer de langue pour le moment.',
+    },
     meta: { title: 'Let’s Play — Jouer le jeu' },
     nav: {
       home: 'Accueil', news: 'News', editorialMenu: 'Actus', reviews: 'Tests', dossiers: 'Dossiers', community: 'Communauté', partners: 'Partenaires',
@@ -898,7 +925,33 @@ export const translations = {
     },
   },
 
+    article: {
+      label: 'ACTUS À LA UNE', date: '', eyebrowAuto: 'ACTU DU JOUR · LET’S PLAY', eyebrowRewritten: 'RÉÉCRIT POUR LET’S PLAY',
+      views: '{n} vues', readTime: '4 MIN DE LECTURE', video: 'VIDÉO', official: 'OFFICIELLE', officialVideo: 'Vidéo officielle', watchOnYouTube: 'Voir sur YouTube',
+      alsoRead: 'À LIRE AUSSI', alsoReadTitle: 'LES ACTUS À LA UNE', alsoReadText: 'Retrouvez les dernières annonces et analyses de la rédaction.',
+      backToNews: 'RETOUR AUX ACTUS', ctaEyebrow: 'LA SUITE SUR LET’S PLAY', ctaTitleA: 'RESTEZ DANS', ctaTitleB: 'LE GAME.', ctaButton: 'VOIR LES ACTUS',
+      sentiment: { positive: 'Actu positive', negative: 'Actu négative', mixed: 'Actu mitigée' },
+    },
+    lang: {
+      label: 'Langue', saved: 'Langue : {name}', device: 'Langue de l’appareil',
+      frenchOnly: 'Article en français', frenchOnlyNote: 'Cette actu n’est pas encore traduite en {language}. La version française fait foi.',
+      autoTranslated: 'Traduction automatique', autoTranslatedNote: 'Traduit du français vers {language}. En cas de doute, la version française fait foi.',
+      readInFrench: 'Lire en français', loading: 'Chargement de la traduction…', failed: 'Impossible de changer de langue pour le moment.',
+    },
   ar: {
+    article: {
+      label: 'آخر الأخبار', date: '', eyebrowAuto: 'خبر اليوم · ليتس بلاي', eyebrowRewritten: 'أُعيدت كتابته لليتس بلاي',
+      views: '{n} مشاهدة', readTime: 'قراءة 4 دقائق', video: 'فيديو', official: 'رسمي', officialVideo: 'فيديو رسمي', watchOnYouTube: 'شاهده على يوتيوب',
+      alsoRead: 'اقرأ أيضاً', alsoReadTitle: 'أحدث الأخبار', alsoReadText: 'تابع آخر الإعلانات والتحليلات من غرفة التحرير.',
+      backToNews: 'العودة إلى الأخبار', ctaEyebrow: 'المزيد على ليتس بلاي', ctaTitleA: 'ابقَ في', ctaTitleB: 'اللعبة.', ctaButton: 'شاهد الأخبار',
+      sentiment: { positive: 'خبر إيجابي', negative: 'خبر سلبي', mixed: 'خبر متباين' },
+    },
+    lang: {
+      label: 'اللغة', saved: 'اللغة: {name}', device: 'لغة الجهاز',
+      frenchOnly: 'المقال بالفرنسية', frenchOnlyNote: 'لم يُترجم هذا الخبر إلى {language} بعد. النسخة الفرنسية هي المرجع.',
+      autoTranslated: 'ترجمة آلية', autoTranslatedNote: 'تُرجم من الفرنسية إلى {language}. عند الشك، النسخة الفرنسية هي المرجع.',
+      readInFrench: 'اقرأ بالفرنسية', loading: 'جارٍ تحميل الترجمة…', failed: 'تعذّر تغيير اللغة الآن.',
+    },
     meta: { title: 'Let’s Play — العب اللعبة' },
     nav: {
       home: 'الرئيسية', news: 'الأخبار', editorialMenu: 'المحتوى', reviews: 'المراجعات', dossiers: 'الملفات', community: 'المجتمع', partners: 'الشركاء',
@@ -1335,16 +1388,23 @@ export const translations = {
       'Cinema: Dune Messiah Preview': { title: 'السينما: لمحة عن Dune Messiah', desc: 'ما الذي يمكن توقعه من الفصل القادم من Dune.' },
     },
   },
+      article: {
+      label: 'آخر الأخبار', date: '', eyebrowAuto: 'خبر اليوم · ليتس بلاي', eyebrowRewritten: 'أُعيدت كتابته لليتس بلاي',
+      views: '{n} مشاهدة', readTime: 'قراءة 4 دقائق', video: 'فيديو', official: 'رسمي', officialVideo: 'فيديو رسمي', watchOnYouTube: 'شاهده على يوتيوب',
+      alsoRead: 'اقرأ أيضاً', alsoReadTitle: 'أحدث الأخبار', alsoReadText: 'تابع آخر الإعلانات والتحليلات من غرفة التحرير.',
+      backToNews: 'العودة إلى الأخبار', ctaEyebrow: 'المزيد على ليتس بلاي', ctaTitleA: 'ابقَ في', ctaTitleB: 'اللعبة.', ctaButton: 'شاهد الأخبار',
+      sentiment: { positive: 'خبر إيجابي', negative: 'خبر سلبي', mixed: 'خبر متباين' },
+    },
+    lang: {
+      label: 'اللغة', saved: 'اللغة: {name}', device: 'لغة الجهاز',
+      frenchOnly: 'المقال بالفرنسية', frenchOnlyNote: 'لم يُترجم هذا الخبر إلى {language} بعد. النسخة الفرنسية هي المرجع.',
+      autoTranslated: 'ترجمة آلية', autoTranslatedNote: 'تُرجم من الفرنسية إلى {language}. عند الشك، النسخة الفرنسية هي المرجع.',
+      readInFrench: 'اقرأ بالفرنسية', loading: 'جارٍ تحميل الترجمة…', failed: 'تعذّر تغيير اللغة الآن.',
+    },
 };
 
-// Langues décrites par ce fichier, français d'abord. Le site n'est publié
-// qu'en français (`SITE_LANG`, LanguageContext) : la première entrée est la
-// seule proposée au visiteur. Les autres restent décrites — libellé et sens de
-// lecture — parce que leurs dictionnaires existent toujours : `en` sert de
-// filet de sécurité au français, et les scripts de vérification rendent encore
-// les routes dans les trois langues (`npm run check:i18n`).
-export const languages = [
-  { code: 'fr', label: 'FR', name: 'Français', dir: 'ltr' },
-  { code: 'en', label: 'EN', name: 'English', dir: 'ltr' },
-  { code: 'ar', label: 'AR', name: 'العربية', dir: 'rtl' },
-];
+// Les métadonnées des langues (libellé, nom, sens de lecture) vivent dans
+// `./languages.js`, SANS les dictionnaires : le contexte de langue et le
+// sélecteur en ont besoin même quand aucun dictionnaire n'est encore chargé.
+// On les réexporte ici pour les imports historiques (scripts de vérification).
+export { languages } from './languages.js';
