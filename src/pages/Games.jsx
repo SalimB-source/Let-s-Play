@@ -1,13 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../i18n/LanguageContext';
+import { RELEASES, dansUneCoque, useTextesTelechargement } from './gamesTelechargements.js';
 import '../games/games.css';
 
 // Chaque disque conserve la route et l'illustration du jeu correspondant.
+// `telechargements` : les applications publiées pour ce jeu (voir
+// `./gamesTelechargements.js`). Un jeu sans coque n'a rien ici — la rangée de
+// boutons disparaît alors, au lieu d'afficher des liens morts.
 const GAMES = [
   { id: 'mirage-rush', title: 'MIRAGE RUSH', thumb: 'mirage-rush-thumb.jpg', route: '/jeu/mirage-rush' },
-  { id: 'vice-city-rush', title: 'VICE CITY RUSH', thumb: 'vice-city-rush-keyart.jpg', route: '/jeu/vice-city-rush' },
-  { id: 'sablier-de-bab-el', title: 'LE SABLIER', thumb: 'sablier-de-bab-el-thumb.jpg', route: '/jeu/sablier-de-bab-el' },
+  {
+    id: 'vice-city-rush',
+    title: 'VICE CITY RUSH',
+    thumb: 'vice-city-rush-keyart.jpg',
+    route: '/jeu/vice-city-rush',
+    telechargements: RELEASES.viceCity,
+  },
+  {
+    id: 'sablier-de-bab-el',
+    title: 'LE SABLIER',
+    thumb: 'sablier-de-bab-el-thumb.jpg',
+    route: '/jeu/sablier-de-bab-el',
+    telechargements: RELEASES.sablier,
+  },
   { id: 'projet-03', title: 'PROJET 03', thumb: null, route: null },
 ];
 
@@ -17,9 +33,33 @@ const HEAD = {
   ar: { eyebrow: 'LET’S PLAY ARCADE', h2a: 'LET’S PLAY', h2b: 'ألعاب المنصة.', play: 'العب', soon: 'قريباً', playLabel: 'العب' },
 };
 
+/**
+ * Rangée de téléchargements d'un jeu : Windows et Android. Masquée dans une
+ * coque (`dansUneCoque`) — on est déjà dans l'application, et les liens en
+ * sortiraient —, et absente pour un jeu qui n'a pas encore d'application.
+ */
+function TelechargementsJeu({ liens, textes }) {
+  return (
+    <div className="game-downloads" aria-label={`${textes.titre} — ${textes.windows} / ${textes.android}`}>
+      <a className="game-download" href={liens.windows} rel="noopener" title={textes.aideWindows}>
+        <span className="game-download__os" aria-hidden="true">⊞</span>
+        <span className="game-download__nom">{textes.windows}<small>{textes.exe}</small></span>
+      </a>
+      <a className="game-download" href={liens.apk} rel="noopener" title={textes.aideAndroid}>
+        <span className="game-download__os" aria-hidden="true">▲</span>
+        <span className="game-download__nom">{textes.android}<small>{textes.apk}</small></span>
+      </a>
+    </div>
+  );
+}
+
 export default function Games() {
   const { lang } = useLanguage();
   const head = HEAD[lang] || HEAD.fr;
+  const textes = useTextesTelechargement();
+  // Dans l'exe ou l'APK, proposer de télécharger l'application qu'on utilise
+  // n'aurait aucun sens (et le lien sortirait de la coque).
+  const montreTelechargements = !dansUneCoque();
 
   return (
     <section className="games-page wrap" id="jeux">
@@ -54,6 +94,11 @@ export default function Games() {
               {game.route
                 ? <Link className="game-disc-link" to={game.route} aria-label={`${head.playLabel} ${game.title}`}>{contenu}</Link>
                 : <div className="game-disc-link">{contenu}</div>}
+              {/* Hors du lien : un <a> ne peut pas en contenir un autre, et un
+                  clic sur « Windows » doit télécharger, pas ouvrir le jeu. */}
+              {montreTelechargements && game.telechargements && (
+                <TelechargementsJeu liens={game.telechargements} textes={textes} />
+              )}
             </article>
           );
         })}

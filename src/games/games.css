@@ -20,6 +20,19 @@
 .game-disc-title { margin: 19px 0 0; font: 800 clamp(14px, 1.2vw, 17px)/1.2 var(--display); color: var(--ink); }
 .game-disc-status { margin-top: 8px; color: #b68a29; font: 800 10px/1.2 var(--mono); letter-spacing: .17em; }
 .game-entry.is-locked .game-disc-status { color: var(--muted); }
+/* Téléchargements sous chaque disque : deux pastilles discrètes. Elles ne
+   doivent pas déplacer les disques les uns par rapport aux autres, d'où la
+   hauteur fixe — les quatre colonnes gardent leur alignement, que le jeu ait une
+   application ou non. */
+.game-downloads { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; min-height: 28px; }
+.game-download { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid #d9d3c9; border-radius: 999px; color: var(--ink); font: 800 9px/1 var(--mono); letter-spacing: .1em; text-decoration: none; text-transform: uppercase; transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+.game-download__os { font-size: 11px; line-height: 1; color: #b68a29; }
+.game-download__nom small { margin-left: 2px; color: var(--muted); font-size: 8px; letter-spacing: .04em; text-transform: none; }
+.game-download:focus-visible { outline: 3px solid #f3c65b; outline-offset: 3px; }
+@media (hover: hover) and (pointer: fine) {
+  .game-download:hover { border-color: #b68a29; background: #f3c65b1a; transform: translateY(-1px); }
+}
+@media (prefers-reduced-motion: reduce) { .game-download { transition: none; } }
 .game-disc-link:focus-visible .game-disc { transform: rotateX(4deg) rotateY(0) rotateZ(0) translateY(-6px); box-shadow: 1px 2px 0 #b8b3ac, 3px 5px 0 #57565d, 8px 18px 22px -10px #000b, 0 0 25px #f3c65b4a; }
 @media (hover: hover) and (pointer: fine) {
   a.game-disc-link:hover .game-disc { transform: rotateX(4deg) rotateY(0) rotateZ(0) translateY(-6px); box-shadow: 1px 2px 0 #b8b3ac, 3px 5px 0 #57565d, 8px 18px 22px -10px #000b, 0 0 25px #f3c65b4a; }
