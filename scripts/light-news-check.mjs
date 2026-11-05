@@ -327,6 +327,50 @@ for (const { path: route, html } of pages) {
   }
 }
 
+// Menus déroulants posés sur la barre : le menu du compte et le menu
+// « Actus » sont des panneaux CLAIRS en thème clair, alors que la barre qui
+// les porte est violette. Les commandes de l'île ont leurs propres encres
+// (section 6bis) : un sélecteur trop large blanchissait les liens du panneau,
+// blanc sur blanc. On mesure ces deux panneaux directement, sans dépendre
+// d'une session (le menu du compte n'existe qu'une fois connecté).
+{
+  const { document, getComputedStyle } = new JSDOM(
+    `<!doctype html><html data-theme="light"><head><style>${sheet}</style></head><body>
+      <nav class="nav"><div class="nav-links"><div class="nav-links-inner"><div class="nav-actions"><div class="nav-actions-grid">
+        <div class="nav-profile-wrap"><div class="nav-profile-dropdown open" role="menu">
+          <div class="nav-profile-dropdown-head"><span class="nav-profile-dropdown-meta"><strong>SALIM</strong><small>ÉLITE · NIV. 9</small></span></div>
+          <div class="nav-profile-dropdown-progress"><span style="width:40%"></span></div>
+          <nav class="nav-profile-dropdown-links"><a href="/auth"><span>Mon profil</span> Profil <em>↗</em></a></nav>
+          <button type="button" class="nav-profile-dropdown-logout">Se déconnecter</button>
+        </div></div>
+      </div></div></div></div></nav>
+      <div class="nav-submenu"><a href="/reviews">Tests</a></div>
+    </body></html>`,
+    { pretendToBeVisual: true },
+  ).window;
+  const panels = [
+    ['.nav-profile-dropdown', ['.nav-profile-dropdown-links a', '.nav-profile-dropdown-logout', '.nav-profile-dropdown-meta strong', '.nav-profile-dropdown-meta small']],
+    ['.nav-submenu', ['.nav-submenu a']],
+  ];
+  for (const [panelSelector, selectors] of panels) {
+    const panel = document.querySelector(panelSelector);
+    if (!panel) continue;
+    const panelBg = parseColor(getComputedStyle(panel).backgroundColor) || PAGE_BG;
+    for (const selector of selectors) {
+      const el = document.querySelector(selector);
+      if (!el || !isPainted(el, getComputedStyle)) continue;
+      const ink = parseColor(getComputedStyle(el).color);
+      if (!ink || ink.a === 0) continue;
+      const own = parseColor(getComputedStyle(el).backgroundColor);
+      const base = own && own.a > 0 ? over(own, panelBg) : panelBg;
+      const ratio = contrast(over(ink, base), base);
+      if (ratio < 4.5) {
+        FAIL.push(`PANNEAU ${panelSelector} ${selector}  ENCRE ${ratio.toFixed(2)}:1  ${hex(ink)} sur ${hex(base)}`);
+      }
+    }
+  }
+}
+
 if (FAIL.length) {
   console.log(`\nThème clair — pages Actus : ${FAIL.length} problème(s)\n`);
   for (const line of FAIL) console.log('  ' + line);
