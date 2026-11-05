@@ -90,7 +90,45 @@ public class MainActivity extends Activity {
 
     /** Domaine servi dans la WebView — toute autre URL part vers une app externe. */
     private static final String SITE_HOST = "let-s-play-nu.vercel.app";
-    private static final String HOME_URL = "https://" + SITE_HOST + "/";
+
+    /**
+     * **Quel jeu cette APK installe.** Une seule coque, deux applications
+     * (comme côté PC, voir `desktop/jeux.js`) :
+     *
+     *   - cette APK « Let's Play » (`dz.letsplay.officiel`) ouvre **tout le
+     *     site** : accueil, articles, hub, et les jeux qu'on y choisit ;
+     *   - les APK dédiées (`dz.letsplay.sablier`, `dz.letsplay.vicecity`)
+     *     n'ouvrent **que leur jeu**, et n'en sortent pas : c'est
+     *     `ROUTE_JEU` qui décide, et `shouldOverrideUrlLoading` qui refuse le
+     *     reste. `ROUTE_JEU` vide = site entier, comportement historique.
+     *
+     * `build.gradle` remplace cette constante au moment du build (jetons
+     * `__ROUTE_JEU__` / `__APP_ID__`), pour que le code Java reste unique.
+     */
+    private static final String ROUTE_JEU = "__ROUTE_JEU__";
+    private static final String APP_ID = "__APP_ID__";
+
+    /** Vrai quand cette APK est dédiée à un jeu : on ne sort pas du jeu. */
+    private static boolean jeuDedie() {
+        return !ROUTE_JEU.isEmpty();
+    }
+
+    /**
+     * Vrai si l'URL est **celle du jeu** (ou de son sous-arbre), et elle seule.
+     * Accepte la barre finale et la requête ; refuse le hub, l'accueil du site,
+     * les articles et les autres jeux.
+     */
+    private static boolean estRouteDuJeu(Uri uri) {
+        if (uri == null) return false;
+        if (!"https".equals(uri.getScheme()) || !SITE_HOST.equals(uri.getHost())) return false;
+        String chemin = uri.getPath() == null ? "/" : uri.getPath();
+        while (chemin.length() > 1 && chemin.endsWith("/")) chemin = chemin.substring(0, chemin.length() - 1);
+        String route = ROUTE_JEU;
+        while (route.length() > 1 && route.endsWith("/")) route = route.substring(0, route.length() - 1);
+        return chemin.equals(route) || chemin.startsWith(route + "/");
+    }
+
+    private static final String HOME_URL = "https://" + SITE_HOST + (jeuDedie() ? ROUTE_JEU : "/");
 
     private WebView webView;
     private SwipeRefreshLayout refreshLayout;
@@ -181,6 +219,12 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
                 String host = uri.getHost() == null ? "" : uri.getHost();
+                // APK dédiée : **on ne sort pas du jeu**. Un lien vers le hub ou
+                // un autre jeu est ignoré (la page ne bouge pas) au lieu d'ouvrir
+                // le site dans la même fenêtre.
+                if (jeuDedie() && (host.equals(SITE_HOST) || host.endsWith("." + SITE_HOST))) {
+                    return !estRouteDuJeu(uri);
+                }
                 if (host.equals(SITE_HOST) || host.endsWith("." + SITE_HOST)) {
                     return false;                 // site de l'émission : on reste dans l'app
                 }

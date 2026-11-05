@@ -1,17 +1,31 @@
-# PC — l'installeur du Sablier de Bab El
+# PC — les installeurs des jeux
 
-Version **installable sur PC** du jeu de cartes de la maison, le pendant exact
-du dossier `android/` (l'APK). Une coque **Electron** ouvre le jeu dans une
+Version **installable sur PC** des jeux de la maison, le pendant exact du
+dossier `android/` (les APK). Une coque **Electron** ouvre le jeu dans une
 fenêtre dédiée, avec un installeur Windows classique (`setup.exe`), une version
 portable sans installation, et — le point central — un rendu 3D qui passe par la
 **carte graphique** du PC.
 
-- Nom affiché : **Le Sablier de Bab El**
-- Identifiant : `dz.letsplay.sablier`
+**Une coque, deux applications.** Le code est commun ; ce qui change est le jeu
+qu'elle sert, décrit une fois pour toutes dans `desktop/jeux.js` :
+
+| Jeu | Fenêtre | Identifiant | Route ouverte | Release | Installeur |
+|---|---|---|---|---|---|
+| Sablier | Le Sablier de Bab El | `dz.letsplay.sablier` | `/jeu/sablier-de-bab-el` | `desktop` | `le-sablier-de-bab-el-<version>-setup.exe` |
+| Vice City | Vice City Rush | `dz.letsplay.vicecity` | `/jeu/vice-city-rush` | `desktop-vice-city` | `vice-city-rush-<version>-setup.exe` |
+
+Chacune **reste dans son jeu** : les liens qui sortiraient vers le site (hub,
+autres jeux, accueil) sont neutralisés, et une seule route est autorisée. Le
+reste de ce document vaut pour les deux ; « le jeu » désigne celui du build.
+
 - Version : voir `package.json` (le champ `version` de ce dossier)
 - Cible : Windows 10/11 x64 (Linux et macOS possibles en local, non produits par la CI)
-- Sortie : `desktop/release/` (`le-sablier-de-bab-el-<version>-setup.exe`,
-  `le-sablier-de-bab-el-<version>-portable.exe`)
+- Sortie : `desktop/release/` (`<jeu>-<version>-setup.exe`, `<jeu>-<version>-portable.exe`)
+
+Pour construire **un** jeu : `npm run desktop:coque -- --jeu=vice-city`
+(ou `LETSPLAY_JEU=vice-city`), puis `npm run desktop:dist`. Sans indication,
+c'est le Sablier. Chaque jeu a **sa** Release : un flux de mise à jour commun
+servirait l'installeur de l'autre, avec le mauvais identifiant d'application.
 - **Mise à jour proposée au lancement, et téléchargée DANS le jeu** :
   `electron-updater` interroge la Release GitHub `desktop` **2 secondes après
   l'ouverture** — le joueur est encore au menu, c'est le moment d'installer —,
@@ -276,7 +290,15 @@ Sans installer : `npm run desktop:serve` sert `desktop/dist-web` sur
 pour vérifier un pack hors ligne avant de le publier. En développement, la
 coque démarre sur le site ; `LETSPLAY_PAQUET=desktop/dist-web` force le pack.
 
-Régénérer l'icône (sablier d'or, sans dépendance externe) : `npm run desktop:icon`.
+Régénérer les icônes, sans dépendance externe : `npm run desktop:icon`. Le
+script écrit **une icône par jeu** (`desktop/app-icons/` pour le sablier,
+`desktop/app-icons-vice-city/` pour Vice City — voir le champ `icones` de
+`desktop/jeux.js`), en trois formats : `icon.png` (512 px), `icon-1024.png`
+(visuels) et `icon.ico` (16 → 256 px, format Windows).
+
+Les dessins eux-mêmes vivent dans `desktop/icones.mjs`, module **sans effet de
+bord** : c'est ce qui permet à `npm run android:icons` de relire les mêmes PNG
+et d'écrire les `mipmap-*` des APK. Une icône par jeu, deux plateformes.
 
 ### Variables d'environnement
 
@@ -365,11 +387,12 @@ workflow à la main en cochant `pack_hors_ligne`. Il est alors publié sous un n
    (commutateurs GPU, serveur local, anti-évasion, isolation de la fenêtre,
    empaquetage, **fermeture complète des modules de `electron-updater`** lue
    dans le verrou, mode de démarrage, relance de mise à jour) ;
-2. `installeur` (windows-latest) : version dérivée, **coque seule**,
-   `electron-builder`, artefacts de run, puis — sur `main` seulement — GitHub
-   Release sur le tag `desktop` (lien de téléchargement permanent, remplacé à
-   chaque build). La Release contient `latest.yml` et les `.blockmap` nécessaires
-   à `electron-updater` ;
+2. `installeur` (windows-latest, **une fois par jeu** — matrice `sablier`,
+   `vice-city`, sélectionnée par `LETSPLAY_JEU`) : version dérivée, **coque
+   seule**, `electron-builder`, artefacts de run, puis — sur `main` seulement —
+   GitHub Release sur le tag du jeu (`desktop` ou `desktop-vice-city`, lien de
+   téléchargement permanent, remplacé à chaque build). Chaque Release contient
+   son `latest.yml` et ses `.blockmap`, donc son propre flux de mise à jour ;
 3. `pack-hors-ligne` (windows-latest, **sur demande**) : construit le site
    élagué et le publie en `.zip` sur la même Release.
 

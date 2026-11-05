@@ -30,6 +30,30 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    # **Trois APK** depuis une seule coque : le site entier (l'historique), plus
+    # une application dédiée par jeu, qui n'en sort pas (voir `MainActivity`,
+    # constantes `ROUTE_JEU`/`APP_ID` remplacées par `build.gradle`).
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - jeu: site
+            fichier: lets-play
+            release: apk
+            titre: "Let's Play — le site"
+            appId: dz.letsplay.officiel
+          - jeu: sablier
+            fichier: le-sablier-de-bab-el
+            release: apk-sablier
+            titre: "Le Sablier de Bab El — APK"
+            appId: dz.letsplay.sablier
+          - jeu: vice-city
+            fichier: vice-city-rush
+            release: apk-vice-city
+            titre: "Vice City Rush — APK"
+            appId: dz.letsplay.vicecity
+    env:
+      ANDROID_JEU: ${{ matrix.jeu }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -89,6 +113,12 @@ jobs:
           echo "ANDROID_VERSION_NAME=1.0.$CODE" >> "$GITHUB_ENV"
           echo "→ versionCode $CODE, versionName 1.0.$CODE (plancher $PLANCHER, $COMMITS commits)"
 
+      - name: Icônes des jeux
+        run: |
+          # Les mipmap des jeux dédiés sont relues depuis les PNG maîtres du PC.
+          # Régénérer ici garantit qu'ils correspondent au dessin du moment.
+          node scripts/android-icons.mjs
+
       - name: Construire l'APK signée
         run: |
           set -o pipefail
@@ -103,17 +133,43 @@ jobs:
             echo "::error::${l:0:400}"
           done
 
+      # L'identité de l'APK est décidée par deux jetons remplacés à la
+      # compilation : une erreur de sélection donnerait une APK qui s'installe
+      # par-dessus la mauvaise application, ou qui ouvre le site entier au lieu
+      # du jeu. On relit donc l'APK produite, pas le code.
+      - name: Vérifier l'identité de l'APK
+        run: |
+          APK="android/app/build/outputs/apk/release/${{ matrix.fichier }}-release.apk"
+          test -s "$APK" || { echo "::error::APK absente : $APK"; exit 1; }
+          AAPT=$(ls -d "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging "$APK")
+          echo "$BADGING" | grep -E "^package:|^application-label" || true
+          echo "$BADGING" | grep -q "package: name='${{ matrix.appId }}'" \
+            || { echo "::error::applicationId inattendu (attendu ${{ matrix.appId }})"; exit 1; }
+          # La route du jeu doit être inscrite dans le bytecode : c'est la preuve
+          # que le jeton __ROUTE_JEU__ a bien été remplacé par le bundle.
+          if [ "${{ matrix.jeu }}" != "site" ]; then
+            case "${{ matrix.jeu }}" in
+              sablier)   ROUTE="/jeu/sablier-de-bab-el" ;;
+              vice-city) ROUTE="/jeu/vice-city-rush" ;;
+            esac
+            unzip -p "$APK" 'classes*.dex' | strings | grep -qF "$ROUTE" \
+              || { echo "::error::la route $ROUTE est absente de l'APK"; exit 1; }
+            echo "Route verrouillée présente : $ROUTE"
+          fi
+          echo "Identité vérifiée : ${{ matrix.appId }}"
+
       - name: Renommer l'APK avec la version
         run: |
-          cp android/app/build/outputs/apk/release/lets-play-release.apk \
-             "lets-play-v${ANDROID_VERSION_NAME}.apk"
-          ls -la lets-play-v*.apk
+          cp "android/app/build/outputs/apk/release/${{ matrix.fichier }}-release.apk" \
+             "${{ matrix.fichier }}-v${ANDROID_VERSION_NAME}.apk"
+          ls -la ${{ matrix.fichier }}-v*.apk
 
       - name: Publier l'artefact
         uses: actions/upload-artifact@v4
         with:
-          name: lets-play-apk
-          path: lets-play-v*.apk
+          name: ${{ matrix.fichier }}-apk
+          path: ${{ matrix.fichier }}-v*.apk
           retention-days: 90
           if-no-files-found: error
 
@@ -123,7 +179,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          APK=$(ls lets-play-v*.apk)
+          APK=$(ls ${{ matrix.fichier }}-v*.apk)
           {
             echo "Build automatique de la coque Android du site."
             echo ""
@@ -138,15 +194,19 @@ jobs:
             echo "(\`Android System WebView\`). Mettez-le à jour dans le Play Store, ainsi que Chrome."
             echo "La page de secours de l'application affiche la version du moteur et le message d'erreur."
           } > notes.md
-          gh release delete apk --yes --cleanup-tag 2>/dev/null || true
-          git push origin :refs/tags/apk 2>/dev/null || true
-          gh release create apk "$APK" --title "APK Android — $APK" --notes-file notes.md
-          echo "Release publiée : $APK"
+          gh release delete "${{ matrix.release }}" --yes --cleanup-tag 2>/dev/null || true
+          git push origin ":refs/tags/${{ matrix.release }}" 2>/dev/null || true
+          gh release create "${{ matrix.release }}" "$APK" \
+            --title "${{ matrix.titre }} — $APK" --notes-file notes.md
+          echo "Release publiée : ${{ matrix.release }} ($APK)"
 
       # Dépose aussi l'APK sur la branche (android/dist/lets-play-latest.apk)
       # via l'API Contents : pratique pour la récupérer en clonant le repo.
       # (Les commits faits avec GITHUB_TOKEN ne déclenchent pas de workflows.)
+      # Seule l'APK du site est déposée sur la branche (chemin historique). Les
+      # deux APK de jeu vivent sur leur Release, comme les installeurs PC.
       - name: Déposer l'APK sur la branche
+        if: matrix.jeu == 'site'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -164,6 +164,7 @@
     "theme:ink-sweep": "node scripts/theme-ink-sweep.mjs --write",
     "check:rpg-story-browser": "node scripts/rpg-story-browser-check.mjs",
     "desktop:icon": "node desktop/make-icon.mjs",
+    "android:icons": "node scripts/android-icons.mjs",
     "desktop:web": "node scripts/desktop-bundle.mjs",
     "desktop:coque": "node scripts/desktop-bundle.mjs --coque",
     "desktop:serve": "node desktop/local-server.js",
