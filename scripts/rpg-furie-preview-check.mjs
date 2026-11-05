@@ -10,7 +10,7 @@
  * en `data-armes`), chaque geste de consultation le transmet, et l'aperçu
  * rapide, d'ordinaire texte seul, rend sa face à la créature en Furie.
  *
- * Les quatre porteurs humains sont livrés en photoréaliste fantaisiste :
+ * Les porteurs humains sont livrés en peinture dark fantasy :
  * la face intacte et son double ensanglanté partagent le format 4:5 de la
  * carte et, sauf la face de base du Berserk repeinte calme et sans sang,
  * une même révision de cache. Le Loup des neiges garde son huile :
@@ -51,10 +51,11 @@ function revisionDe(illustration) {
     `${illustration} porte sa révision dans CARD_ART_CACHE_VERSIONS`);
   return revision;
 }
-// Les quatre humains photoréalistes du catalogue. Le Guerrier au bouclier rond
-// les a quittés quand la Völva a pris sa place dans les cartes à Furie.
+// Les humains du catalogue dont les deux faces sont contrôlées au format 4:5.
+// Le Gardien du fjord charge désormais lui aussi en Furie, bouclier en avant.
 const CARTES_PHOTOREALISTES = [
   'berserk-des-trois-hivers',
+  'gardien-viking-du-fjord',
   'jarl-au-marteau-de-guerre',
   'maitre-du-marteau',
   'volva-soigneuse',
@@ -192,8 +193,8 @@ try {
 
 // ── 2. Chaque carte à Furie a sa peinture alternative ──────────────────────
 const cartesFurie = RPG_DUEL_CARDS.filter((carte) => carte.furie);
-assert.equal(cartesFurie.length, 8,
-  'quatre humains, le Loup, la Valkyrie au corbeau, le Berserk du crépuscule et la Valkyrie des neuf nuits portent la Furie');
+assert.equal(cartesFurie.length, 10,
+  'les dix porteurs du catalogue, dont le Gardien du fjord et le Jarl, ont chacun leur face de Furie');
 for (const carte of cartesFurie) {
   const artId = carte.art ?? carte.id;
   assert.ok(existsSync(new URL(`../public/cards/${artId}-furie.jpg`, import.meta.url)),
@@ -258,8 +259,8 @@ assert.match(page, /const furie = etatFurieDepuisHote\(event\.currentTarget\);[\
   'le survol retient l’entité survolée et sa Furie');
 assert.match(page, /const furieDeLaCarte = etatFurieDepuisHote\(hote\);[\s\S]*?setApercuAppuiFurie\(furieDeLaCarte\);/,
   'l’appui long transmet la Furie de la créature pressée');
-assert.match(page, /furie: etatFurieDepuisHote\(hote\),/,
-  'le clic droit transmet la Furie à la fiche');
+assert.match(page, /furie: arme \? null : etatFurieDepuisHote\(hote\),/,
+  'le clic droit transmet la Furie à la fiche (sauf sur une arme)');
 assert.equal([...page.matchAll(/statsFurie=\{apercuSurvol\.furie\}/g)].length, 2,
   'les deux rendus du survol (menu et duel) branchent la Furie');
 // Trois surfaces de duel se partagent désormais la page (menu, duel local et
@@ -289,4 +290,4 @@ assert.match(css, /@keyframes rpg-furie-vignette \{\s*from \{\s*opacity: \.55;[\
 assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*\.rpg-furie-vignette \{ animation: none; opacity: \.82; \}\s*\}/,
   'les mouvements réduits figent la vignette sans la faire disparaître');
 
-console.log('✓ Furie en jeu : les quatre humains photoréalistes, la Valkyrie au corbeau, le Loup, le Berserk du crépuscule, la Valkyrie des neuf nuits et l’Ifrit d’encre de la Tour oubliée ont leur double de bataille en 768×960, daté contre les caches ; tant que l’état est actif, la peinture furie pleine page et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');
+console.log('✓ Furie en jeu : Jarl, Gardien du fjord et autres porteurs ont leur double de bataille en 768×960, daté contre les caches ; la peinture furie et la vignette rouge animée paraissent sur la table comme dans la preview, avec +X/+0 seulement.');

@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { diapoSuivante } from '../src/games/rpgDiaporama.js';
 import { RPG_OFFRE_DIAPO, RPG_PROMO_DEBUT, RPG_PROMO_SLIDES } from '../src/games/rpgPromoSlides.js';
+import { RAYONS } from '../src/games/rpgBoosters.js';
 
 const lire = (path) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
-test('le diaporama et le comptoir gardent le booster Vampires, sans créer de faux rayons', () => {
+test('le diaporama présente les sets et le comptoir vend leurs boosters au même tarif', () => {
   const page = lire('../src/games/RpgDuelPage.jsx');
   const souk = lire('../src/games/RpgSouk.jsx');
   const css = lire('../src/games/rpg-souk.css');
@@ -15,7 +16,8 @@ test('le diaporama et le comptoir gardent le booster Vampires, sans créer de fa
   assert.match(page, /RPG_PROMO_SLIDES\.map\(\(slide, index\) =>/);
   assert.match(page, /diapoAffichee === RPG_OFFRE_DIAPO[^\n]*RpgOffreLancement/);
   assert.match(souk, /rayons\.map\(/);
-  assert.match(css, /data-souk-rayons-nombre="2"/);
+  assert.match(css, /\.rpg-souk__rayon--set-pirates/);
+  assert.match(souk, /Thème \{etat\.rayon\.nom\} favorisé ×10/);
 });
 
 test('les six affiches plein cadre portent chacune une description accessible de leur capacité', () => {
@@ -25,7 +27,12 @@ test('les six affiches plein cadre portent chacune une description accessible de
   assert.deepEqual(RPG_PROMO_SLIDES.map((slide) => slide.id),
     ['vampires', 'pirates', 'vikings', 'samourais', 'sable', 'egyptiens']);
   assert.equal(RPG_OFFRE_DIAPO, 9);
+  assert.equal(RAYONS.length, RPG_PROMO_SLIDES.length + 1, 'un paquet ordinaire et les six boosters des affiches');
   for (const [index, slide] of RPG_PROMO_SLIDES.entries()) {
+    const rayon = RAYONS.find((entree) => entree.id === (slide.id === 'vampires' ? 'vampires' : `set-${slide.id}`));
+    assert.ok(rayon, `${slide.id} est un paquet achetable`);
+    assert.equal(rayon.prix, 140);
+    assert.match(slide.description, /140 crédits/);
     const affiche = readFileSync(new URL(`../public/sablier-promo/${slide.affiche}`, import.meta.url));
     assert.equal(affiche.toString('ascii', 0, 4), 'RIFF', slide.id);
     assert.equal(affiche.toString('ascii', 8, 12), 'WEBP', slide.id);

@@ -1032,7 +1032,7 @@
 .rpg-souk__rayon-refus .rpg-credit { font-size: 1.4em; }
 .rpg-souk__journal-notes .rpg-credit { font-size: 1.15em; }
 
-/* ── Le comptoir : un seul paquet, toutes les couleurs ───────────────────── */
+/* ── Le comptoir : tous les boosters partagent le catalogue de cartes ───── */
 .rpg-souk__rayons {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1715,17 +1715,16 @@
   }
 }
 
-/* Deux boosters côte à côte ; sur téléphone ils restent dans le flux. */
-.rpg-souk__rayons[data-souk-rayons-nombre="2"] {
-  grid-template-columns: repeat(2, minmax(0, 480px));
-  justify-content: center;
-}
+/* Les sept sachets se rangent sur trois colonnes, puis deux et une selon
+   les media queries de l'étagère. Chaque thème teinte son foil, pas son vivier. */
 .rpg-souk__rayon--vampires { --foil-1: #8e2536; --foil-2: #230d17; --foil-ink: #ffe0bc; --foil-shine: rgba(255, 150, 130, .5); }
-@media (max-width: 560px) {
-  .rpg-souk__rayons[data-souk-rayons-nombre="2"] { grid-template-columns: minmax(0, 1fr); }
-}
+.rpg-souk__rayon--set-pirates { --foil-1: #256c73; --foil-2: #0b2531; --foil-ink: #d9f3ea; --foil-shine: rgba(117, 215, 216, .5); }
+.rpg-souk__rayon--set-vikings { --foil-1: #547e9d; --foil-2: #142536; --foil-ink: #e1f3ff; --foil-shine: rgba(166, 217, 247, .48); }
+.rpg-souk__rayon--set-samourais { --foil-1: #a03c28; --foil-2: #35121b; --foil-ink: #ffe5ce; --foil-shine: rgba(255, 142, 103, .48); }
+.rpg-souk__rayon--set-sable { --foil-1: #a67a38; --foil-2: #382512; --foil-ink: #fff0c8; --foil-shine: rgba(248, 198, 123, .5); }
+.rpg-souk__rayon--set-egyptiens { --foil-1: #705c9d; --foil-2: #24172f; --foil-ink: #f0ddff; --foil-shine: rgba(203, 171, 255, .48); }
 
-.rpg-souk__vampires-info {
+.rpg-souk__rayon-info {
   flex: 1 1 100%;
   margin: 0;
   color: #ecd0bf;
