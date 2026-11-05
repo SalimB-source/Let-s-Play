@@ -94,6 +94,15 @@ export const RAYONS = Object.freeze([
     vitrine: 'salem',
     texte: 'Toutes les couleurs de Bab El, mêlées dans un seul paquet — cinq cartes, une rare garantie, et les mythiques au compte-gouttes.',
   },
+  {
+    id: 'vampires',
+    nom: 'Vampires',
+    titre: 'Le paquet Vampires',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'vampire-des-braises',
+    texte: 'Cinq créatures Vampires, dont une rare garantie. Les Vampires restent aussi disponibles dans le paquet du Souk.',
+  },
 ]);
 
 /**
@@ -246,7 +255,10 @@ export function vivierRayon(rayonId) {
   // Chaque carte jouable est vendue dans un seul paquet : les cartes sont
   // réparties entre les rayons, sans condition de victoire.
   return RPG_DUEL_CARDS
-    .filter((carte) => carteJouableSansTerrain(carte) && rayonDeCarte(carte) === rayon.id)
+    .filter((carte) => carteJouableSansTerrain(carte)
+      && (rayon.id === 'vampires'
+        ? /\bvampire\b/i.test(carte.typeLine ?? '')
+        : rayonDeCarte(carte) === rayon.id))
     .map((carte) => carte.id);
 }
 

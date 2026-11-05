@@ -763,7 +763,7 @@ export default function RpgSouk({
           <h3 id="souk-rayons-titre">Les boosters</h3>
           <p data-souk-rayons={ouverts > 0 ? 'ouvert' : 'ferme'}>
             {ouverts > 0
-              ? 'Toutes les cartes du jeu, mélangées dans un seul paquet'
+              ? 'Le paquet du Souk et le booster Vampires : choisissez votre collection'
               : 'Le comptoir ouvrira à votre première victoire'}
           </p>
         </div>

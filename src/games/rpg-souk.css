@@ -1714,3 +1714,13 @@
     border-top: 1px solid #e8c27133;
   }
 }
+
+/* Deux boosters côte à côte ; sur téléphone ils restent dans le flux. */
+.rpg-souk__rayons[data-souk-rayons-nombre="2"] {
+  grid-template-columns: repeat(2, minmax(0, 480px));
+  justify-content: center;
+}
+.rpg-souk__rayon--vampires { --foil-1: #8e2536; --foil-2: #230d17; --foil-ink: #ffe0bc; --foil-shine: rgba(255, 150, 130, .5); }
+@media (max-width: 560px) {
+  .rpg-souk__rayons[data-souk-rayons-nombre="2"] { grid-template-columns: minmax(0, 1fr); }
+}
