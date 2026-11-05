@@ -27,7 +27,7 @@ import './rpg-souk.css';
 import { GAINS, creditsLisible, exemplairesDuPortefeuille } from './rpgCredits.js';
 import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
-  etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantMinuit, vueDeLaQuete,
+  etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantExpiration, vueDeLaQuete,
 } from './rpgQuetes.js';
 import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
@@ -74,12 +74,14 @@ function jourLisible(cle) {
  * Le compte à rebours du cycle, rafraîchi à la minute. Il ne passe pas par une
  * animation : c'est du texte, et il doit rester juste même sur un appareil lent.
  */
-function useResteDuCycle() {
-  const [secondes, setSecondes] = useState(() => secondesAvantMinuit());
+function useResteDuCycle(quetes) {
+  const [secondes, setSecondes] = useState(() => secondesAvantExpiration(quetes));
   useEffect(() => {
-    const battement = setInterval(() => setSecondes(secondesAvantMinuit()), 30000);
+    const actualiser = () => setSecondes(secondesAvantExpiration(quetes));
+    actualiser();
+    const battement = setInterval(actualiser, 30000);
     return () => clearInterval(battement);
-  }, []);
+  }, [quetes]);
   return secondes;
 }
 
@@ -609,7 +611,7 @@ export default function RpgSouk({
   onPlaySfx,
   cardArt,
 }) {
-  const restant = useResteDuCycle();
+  const restant = useResteDuCycle(quetes);
   const soldeRef = useRef(null);
   const cachetBtnRef = useRef(null);
   const semaineBtnRef = useRef(null);

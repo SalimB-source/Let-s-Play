@@ -268,3 +268,22 @@
 @media (prefers-reduced-motion: reduce) {
   .rpg-quests-jour__ouvre { animation: none; }
 }
+
+/* Les jalons restent réclamables sans ajouter deux coffres aux trois quêtes. */
+.rpg-quests-jour__jalon-bouton {
+  min-height: 38px;
+  padding: 5px 10px;
+  border: 1px solid #a08047;
+  border-radius: 9px;
+  background: #211a12;
+  color: #ffe2a1;
+  font: 700 11px/1.25 system-ui, sans-serif;
+  cursor: pointer;
+}
+.rpg-quests-jour__jalon-bouton:disabled { opacity: .7; cursor: default; }
+.rpg-quests-jour__jalon-bouton .rpg-credit { vertical-align: middle; }
+.rpg-quests-jour__semaine .rpg-quests-jour__jalon-bouton {
+  border-color: #a875ed;
+  color: #e6d4ff;
+  background: #241934;
+}

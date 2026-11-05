@@ -15299,3 +15299,49 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) { grid-template-rows: auto auto; }
   .rpg-mode-menu--jouer .rpg-mode-menu__hero { min-height: 205px; }
 }
+
+/* Accueil tactile : trois coffres compacts, jalons en boutons, sans défilement. */
+@media (hover: none) and (pointer: coarse), (max-width: 700px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__footer { display: none; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__content { grid-template-rows: auto minmax(0, 1fr); }
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    overflow: hidden; align-content: stretch; gap: 4px; padding: 5px 8px;
+    grid-template-rows: minmax(132px, 1fr) minmax(35px, .65fr) auto;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions { height: 100%; gap: 3px; grid-template-rows: repeat(3, minmax(44px, 1fr)); }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-actions > .rpg-mode-carte { min-height: 44px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero { min-height: 35px; height: 100%; max-height: none; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy { padding: 5px 9px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero-copy h2 { font-size: clamp(12px, 2.3vh, 18px); }
+  .rpg-mode-menu--jouer .rpg-quests-jour { padding: 0; gap: 2px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__rail { gap: 3px; padding: 0; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__liste { gap: 3px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__quete { gap: 2px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__corps .rpg-coffre-dore { width: auto; min-width: 44px; min-height: 44px; }
+  .rpg-mode-menu--jouer .rpg-coffre-dore__scene { zoom: .5; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__capsule { min-height: 25px; padding: 2px 5px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__quete-texte { font-size: 10px; line-height: 1.15; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons { justify-content: center; align-items: start; gap: 5px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalon-bouton { min-height: 36px; padding: 4px 6px; font-size: 10px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__bonus { font-size: 9px; }
+}
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 540px) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__content { grid-template-rows: minmax(0, 1fr); }
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full) {
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 1.1fr);
+    grid-template-rows: minmax(132px, 1fr) auto;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero { grid-column: 2; grid-row: 1; min-height: 0; }
+  .rpg-mode-menu--jouer .rpg-quests-jour { grid-column: 1 / -1; grid-row: 2; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__rail { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalons { display: grid; gap: 2px; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__cachet,
+  .rpg-mode-menu--jouer .rpg-quests-jour__semaine { gap: 0; }
+  .rpg-mode-menu--jouer .rpg-quests-jour__jalon-bouton { min-height: 28px; }
+}
+@media (hover: none) and (pointer: coarse), (max-width: 700px) {
+  .rpg-mode-menu--jouer .rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant {
+    margin-left: -5px; padding: 3px 5px; gap: 2px; font-size: 12px;
+  }
+  .rpg-mode-menu--jouer .rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 12px; height: 12px; }
+}

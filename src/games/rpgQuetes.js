@@ -150,25 +150,19 @@ export function tempsRestantMs(etat, horloge = Date.now()) {
   return Math.max(0, debut + QUETE_DUREE_MS - horloge);
 }
 
-/** Secondes avant l'expiration des quêtes non terminées. */
+/** Secondes avant l'expiration de la fournée. */
 export function secondesAvantExpiration(etat, horloge = Date.now()) {
   return Math.max(0, Math.round(tempsRestantMs(etat, horloge) / 1000));
 }
 
-/** Les quêtes non terminées et expirées — celles qui seront retirées. */
+/** Après 24 h, toute la fournée expire, même les gains non réclamés. */
 export function quetesExpirees(etat, horloge = Date.now()) {
   if (!estJourneeExpiree(etat, horloge)) return [];
   const base = normaliserEtatQuetes(etat);
-  return base.quetes.filter((id) => {
-    if (base.reclamations.includes(id)) return false;
-    const quete = QUETE_PAR_ID.get(id);
-    if (!quete) return false;
-    const progres = base.progres[id] ?? 0;
-    return progres < quete.objectif;
-  });
+  return base.quetes;
 }
 
-/** Retire les quêtes non terminées expirées (après 24 h). */
+/** Retire tous les coffres de la fournée expirée (après 24 h). */
 export function purgerQuetesExpirees(etat, horloge = Date.now()) {
   const base = normaliserEtatQuetes(etat);
   const expirees = quetesExpirees(base, horloge);
@@ -213,7 +207,7 @@ export function quetesDuJour(jour, graine = null, progression = null) {
 export function normaliserEtatQuetes(value) {
   const brut = value && typeof value === 'object' ? value : {};
   const jour = typeof brut.jour === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(brut.jour) ? brut.jour : null;
-  const quetes = (Array.isArray(brut.quetes) ? brut.quetes : []).filter((id) => QUETE_PAR_ID.has(id)).filter((id, index, liste) => liste.indexOf(id) === index);
+  const quetes = (Array.isArray(brut.quetes) ? brut.quetes : []).filter((id) => QUETE_PAR_ID.has(id)).filter((id, index, liste) => liste.indexOf(id) === index).slice(0, 3);
   const progres = {};
   const brutProgres = brut.progres && typeof brut.progres === 'object' ? brut.progres : {};
   for (const id of quetes) {
@@ -253,14 +247,10 @@ export function normaliserEtatQuetes(value) {
 }
 
 /**
- * Ouvre la journée : même jour, rien ne bouge ; jour nouveau, les trois quêtes
- * sont tirées, la progression remise à zéro et la série prolongée (ou repartie
- * à un). Un jour **antérieur** au jour connu est ignoré : le temps ne recule
- * pas, même si l'horloge de l'appareil recule.
- *
- * Après 24 h (`QUETE_DUREE_MS`), les quêtes non terminées sont retirées : une
- * fournée expirée force une nouvelle journée même si la clé calendaire n'a pas
- * changé.
+ * Ouvre une fournée de trois quêtes pour 24 heures, même si minuit passe entre
+ * temps. À l'échéance, tous les coffres et leurs gains non réclamés expirent et
+ * une nouvelle fournée prend leur place. Un jour antérieur est ignoré :
+ * reculer l'horloge ne rend aucune quête supplémentaire.
  *
  * Rend `{ etat, nouveau, quetes }` — `nouveau` permet à l'écran de féliciter
  * (ou non) le joueur pour sa nouvelle journée.
@@ -268,9 +258,9 @@ export function normaliserEtatQuetes(value) {
 export function ouvrirJournee({ etat, jour, graine = null, progression = null, horloge = Date.now() } = {}) {
   const base = normaliserEtatQuetes(etat);
   const cle = typeof jour === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(jour) ? jour : cleJour(horloge);
-  if (!cle || cle === base.jour || (base.jour && cle < base.jour)) {
-    // Même journée (ou horloge reculée) : seules les quêtes non terminées
-    // échues après 24 h sont retirées ; les terminées restent à réclamer.
+  if (!cle || (base.jour && cle < base.jour) || (base.jour && !estJourneeExpiree(base, horloge))) {
+    // Fournee toujours valable, ou horloge reculée : ne crée pas de doublon.
+    // Si l'horloge a reculé malgré une échéance passée, retirer les coffres.
     const retirees = quetesExpirees(base, horloge);
     if (!retirees.length) return { etat: base, nouveau: false, quetes: base.quetes, retirees: [] };
     const purge = purgerQuetesExpirees(base, horloge);
@@ -278,6 +268,7 @@ export function ouvrirJournee({ etat, jour, graine = null, progression = null, h
   }
   // Nouvelle journée calendaire : tirage frais, progression à zéro, série suivie.
   const quetes = quetesDuJour(cle, graine, progression);
+  const memeJour = cle === base.jour;
   const suite = base.jour && jourPrecedent(cle) === base.jour;
   const maintenantIso = new Date(horloge).toISOString();
   const maj = {
@@ -289,14 +280,14 @@ export function ouvrirJournee({ etat, jour, graine = null, progression = null, h
     cachet: false,
     // Le Cachet de la semaine se reprend à chaque journée : c'est `serie` qui
     // dit si elle est due, et elle ne recule jamais (D6).
-    semaine: false,
-    serie: suite ? base.serie + 1 : 1,
+    semaine: memeJour ? base.semaine : false,
+    serie: memeJour ? base.serie : suite ? base.serie + 1 : 1,
     majLe: maintenantIso,
     debutLe: maintenantIso,
     // Le droit de changer une quête se recharge avec la fournée.
     remplacement: null,
   };
-  return { etat: maj, nouveau: true, quetes, retirees: [] };
+  return { etat: maj, nouveau: true, quetes, retirees: base.quetes };
 }
 
 /** L'increment qu'un événement vaut pour une quête (0 : l'événement ne la concerne pas). */
@@ -374,7 +365,7 @@ export function vueDeLaQuete(etat, queteId, horloge = Date.now()) {
   const progres = Math.min(quete.objectif, Math.max(0, Math.floor(Number(base.progres[queteId]) || 0)));
   const reclamee = base.reclamations.includes(queteId);
   const terminee = progres >= quete.objectif;
-  const expiree = !reclamee && !terminee && quetesExpirees(base, horloge).includes(queteId);
+  const expiree = quetesExpirees(base, horloge).includes(queteId);
   return {
     quete,
     progres,
@@ -383,7 +374,7 @@ export function vueDeLaQuete(etat, queteId, horloge = Date.now()) {
     reclamee,
     terminee,
     expiree,
-    etat: reclamee ? 'reclamee' : terminee ? 'terminee' : expiree ? 'expiree' : 'encours',
+    etat: expiree ? 'expiree' : reclamee ? 'reclamee' : terminee ? 'terminee' : 'encours',
   };
 }
 
@@ -563,13 +554,24 @@ export function fusionnerQuetes(local, distant) {
   const jour = (ici.jour ?? '') >= (la.jour ?? '') ? ici.jour : la.jour;
   const plusRecent = jour === la.jour && jour !== ici.jour ? la : ici;
   const memeJour = Boolean(jour) && ici.jour === la.jour;
-  const remplacement = memeJour ? (ici.remplacement ?? la.remplacement) : plusRecent.remplacement;
+  // Si deux appareils ont chacun changé une quête hors ligne, choisir le même
+  // remplacement quel que soit le sens de la synchronisation.
+  const remplacement = memeJour
+    ? [ici.remplacement, la.remplacement].filter(Boolean).sort((a, b) => `${a.de}:${a.vers}`.localeCompare(`${b.de}:${b.vers}`))[0] ?? null
+    : plusRecent.remplacement;
   let quetes = memeJour ? [...new Set([...ici.quetes, ...la.quetes])] : plusRecent.quetes;
   if (remplacement) {
     // L'appareil qui n'avait pas encore rerollé rapporte l'ancienne quête dans
     // l'union : on la retire, et on s'assure que sa remplaçante est bien là.
     quetes = quetes.filter((id) => id !== remplacement.de);
     if (!quetes.includes(remplacement.vers)) quetes = [...quetes, remplacement.vers];
+  }
+  // Les deux appareils ne peuvent pas faire apparaître une quatrième quête.
+  // Le remplacement reconnu reste prioritaire dans les trois emplacements.
+  if (quetes.length > 3) {
+    const ordre = [...quetes].sort();
+    const prioritaires = remplacement ? [remplacement.vers, ...ordre.filter((id) => id !== remplacement.vers)] : ordre;
+    quetes = prioritaires.slice(0, 3);
   }
   const progres = {};
   for (const id of quetes) {
@@ -579,12 +581,13 @@ export function fusionnerQuetes(local, distant) {
     ? ici.reclamations.includes(id) || la.reclamations.includes(id)
     : plusRecent.reclamations.includes(id)));
   const debutLe = (() => {
+    if (!memeJour) return plusRecent.debutLe;
     const a = ici.debutLe ? Date.parse(ici.debutLe) : 0;
     const b = la.debutLe ? Date.parse(la.debutLe) : 0;
     if (!a && !b) return plusRecent.debutLe ?? null;
     if (!a) return la.debutLe;
     if (!b) return ici.debutLe;
-    return a >= b ? ici.debutLe : la.debutLe;
+    return a <= b ? ici.debutLe : la.debutLe;
   })();
   const fusion = {
     version: 1,
