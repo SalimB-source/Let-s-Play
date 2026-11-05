@@ -185,9 +185,9 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(noeud('[data-souk-quetes]')?.children?.length === 3, 'et trois cartes sont peintes');
     assert.equal(donnee('[data-souk-cachet]', 'soukCachet'), 'attente',
       'le Cachet attend ses trois quêtes');
-    // ── Le comptoir : un seul paquet fondu, ouvert, rien d'achetable sans solde
-    assert.equal(Number(donnee('[data-souk-rayons-nombre]', 'soukRayonsNombre')), 1,
-      'tous les boosters sont fondus en un seul paquet au comptoir');
+    // ── Le comptoir : deux boosters ouverts, rien d'achetable sans solde
+    assert.equal(Number(donnee('[data-souk-rayons-nombre]', 'soukRayonsNombre')), 2,
+      'le booster Vampires est proposé à côté du paquet du Souk');
     assert.equal(donnee('[data-souk-rayons]', 'soukRayons'), 'ouvert',
       'le comptoir est ouvert dès le départ');
     assert.equal(donnee('[data-souk-rayon="souk"]', 'soukRayonEtat'), 'sans-solde',
@@ -197,6 +197,8 @@ export async function checkRpgSoukEcran(assert) {
     assert.ok(noeud('[data-souk-rayon="souk"] [data-souk-rayon-refus] .rpg-credit'),
       'le refus est frappé de la pièce lui aussi');
     assert.ok(noeud('[data-souk-ouvrir="souk"]').disabled, 'le bouton Ouvrir est donc désactivé');
+    assert.ok(noeud('[data-souk-ouvrir="vampires"]').disabled, 'le booster Vampires exige lui aussi des crédits');
+    assert.match(noeud('[data-souk-ouvrir="vampires"]')?.getAttribute('aria-label') ?? '', /Vampires/);
     // Plus aucune fiche de détails sous le paquet : ni la description du
     // rayon, ni la ligne de taux, ni le compte des cartes manquantes — le
     // sachet dit déjà tout ce qu'il garantit, et seul le refus s'explique.

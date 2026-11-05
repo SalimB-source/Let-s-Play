@@ -16,6 +16,7 @@ import {
   rayonParId,
   rayonOuvert,
   tourIntroduction,
+  tirerCartes,
   vivierRayon,
 } from '../src/games/rpgBoosters.js';
 import {
@@ -43,12 +44,12 @@ const PAQUET_DE = Object.fromEntries(RAYONS.map((rayon) => [rayon.id, rayon]));
 
 // ── Un seul paquet ───────────────────────────────────────────────────────────
 
-test('un seul paquet en vente, toutes les couleurs et toutes les cartes, dès le départ', () => {
-  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk'], 'les boosters sont fondus en un seul paquet');
+test('le Souk et le booster Vampires sont en vente dès le départ', () => {
+  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk', 'vampires']);
   assert.deepEqual(PAQUET_DE.souk.couleur, RPG_ELEMENTS, 'le paquet unique couvre toutes les couleurs');
   for (const rayon of RAYONS) {
     assert.equal(rayon.prix, 140, 'une journée de jeu vaut deux paquets');
-    assert.equal(cardById(rayon.vitrine)?.rarity, 'mythique', `${rayon.id} montre une vraie mythique`);
+    assert.ok(cardById(rayon.vitrine), `${rayon.id} montre une carte existante`);
     assert.equal(rayonOuvert(rayon.id), true, 'aucune victoire requise');
     assert.equal(rayonOuvert(rayon.id, progression()), true, 'même sans aucune victoire');
     assert.equal(prixCoffret(rayon.id), 1260);
@@ -352,16 +353,13 @@ test('le coffret vend dix paquets avec la remise, et une mythique assurée', () 
 });
 
 test('dans un coffret, le doublon d’un paquet précédent se rembourse au barème', () => {
-  // `samourai-du-torii` : rare hors dotation possédée en un seul exemplaire.
-  // La graine 42 la fait sortir dans deux paquets du coffret — le second est
-  // le troisième exemplaire, il se rembourse au barème comme il le ferait
-  // dans un paquet acheté seul (doc 13, D4), et le stock reste au quota.
-  const cible = 'samourai-du-torii';
+  // Le booster Vampires a une seule rare : elle apparaît dans chaque paquet.
+  const cible = 'general-du-croissant-noir';
   const depart = { ...journalier(100000), cartes: [cible], exemplaires: { [cible]: 1 } };
-  const coffret = ouvrirCoffret({ portefeuille: depart, rayonId: 'souk', collection: [cible], rng: rngSeme(42) });
+  const coffret = ouvrirCoffret({ portefeuille: depart, rayonId: 'vampires', collection: [cible], rng: rngSeme(42) });
   assert.equal(coffret.ok, true);
   const details = coffret.paquets.flatMap((paquet) => paquet.details).filter((carte) => carte.id === cible);
-  assert.equal(details.length, 2, 'la rare tombe dans deux paquets du coffret');
+  assert.equal(details.length, 10, 'la rare tombe dans chaque paquet du coffret');
   assert.equal(details[0].remboursement, 0, 'le deuxième exemplaire se garde, il complète le playset');
   assert.equal(details[1].remboursement, BAREME_DOUBLON.rare, 'le troisième exemplaire se rembourse au barème rare');
   assert.equal(coffret.portefeuille.exemplaires[cible], 2, 'le stock reste bloqué au quota de deck');
@@ -393,4 +391,32 @@ test('chaque paquet acheté laisse une trace au journal, doublons compris', () =
     rayonId: 'braise', cartes: ['tarek'], horloge: '2026-03-01T10:00:00.000Z',
   });
   assert.equal(ancien.journal[0].rayonId, 'braise', 'l’ancienne ouverture reste lisible');
+});
+
+
+test('le booster Vampires tire cinq Vampires et conserve le vivier du Souk', () => {
+  const vivier = vivierRayon('vampires');
+  assert.ok(vivier.length >= 5);
+  assert.ok(vivier.every((id) => /\bvampire\b/i.test(cardById(id).typeLine)));
+  assert.ok(vivier.every((id) => vivierRayon('souk').includes(id)));
+  for (const pitie of [0, TAUX.pitie - 1]) {
+    const tirage = tirerCartes({ rayonId: 'vampires', collection: [], rng: () => 0.5, pitie });
+    assert.equal(tirage.ok, true);
+    assert.equal(tirage.cartes.length, 5);
+    assert.equal(new Set(tirage.cartes).size, 5);
+    assert.ok(tirage.cartes.every((id) => vivier.includes(id)));
+    assert.equal(cardById(tirage.cartes[3]).rarity, 'rare');
+    if (pitie) assert.equal(tirage.mythique, true);
+  }
+});
+
+test('achat du booster Vampires : débit, cartes et journal', () => {
+  const resultat = ouvrirBooster({ portefeuille: journalier(140), rayonId: 'vampires', collection: [], rng: () => 0.5 });
+  assert.equal(resultat.ok, true);
+  assert.equal(resultat.prix, 140);
+  assert.equal(resultat.portefeuille.credits, 0);
+  assert.equal(resultat.tirage.cartes.length, 5);
+  assert.ok(resultat.tirage.cartes.every((id) => vivierRayon('vampires').includes(id)));
+  assert.equal(resultat.portefeuille.journal[0].rayonId, 'vampires');
+  assert.equal(ouvrirBooster({ portefeuille: journalier(0), rayonId: 'vampires' }).raison, 'solde-insuffisant');
 });
