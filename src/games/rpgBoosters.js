@@ -1,8 +1,8 @@
 /**
  * Le comptoir du Souk — boosters, viviers et tirages.
  *
- * Les deux boosters donnent accès au même catalogue jouable. Le paquet
- * Vampires attribue un poids dix fois supérieur aux cartes de type Vampire
+ * Tous les boosters donnent accès au même catalogue jouable. Les paquets
+ * thématiques attribuent un poids dix fois supérieur aux cartes de leur thème
  * à rareté égale, sans exclure les autres cartes ni changer les taux de
  * rareté, la pitié, les remboursements ou le prix.
  *
@@ -42,11 +42,10 @@ export const TAUX = Object.freeze({
 export const COFFRET = Object.freeze({ taille: 10, remise: 0.1, mythiqueAssuree: true });
 
 /**
- * Les deux boosters partagent toutes les cartes disponibles ; le booster
- * Vampires favorise les créatures de ce type à rareté égale. Le prix garde
- * la promesse du dossier 13 — une journée de jeu vaut deux paquets.
- * `vitrine` est l'illustration montrée sur le sachet ; c'est
- * un appât, pas un droit de tirage.
+ * Tous les boosters partagent toutes les cartes disponibles ; seul le poids
+ * des cartes de leur thème change à rareté égale. Le prix garde la promesse
+ * du dossier 13 — une journée de jeu vaut deux paquets. `vitrine` est
+ * l'illustration du sachet, pas une carte garantie.
  */
 export const RAYONS = Object.freeze([
   {
@@ -67,7 +66,66 @@ export const RAYONS = Object.freeze([
     vitrine: 'vampire-des-braises',
     texte: 'Toutes les cartes du Souk, avec plus de chances de trouver des Vampires. Une rare garantie.',
   },
+  {
+    id: 'set-pirates',
+    nom: 'Pirates',
+    titre: 'Le paquet Pirates',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'la-barbe-rousse',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes des Lettres de Marque (Abordage et Cale). Une rare garantie.',
+  },
+  {
+    id: 'set-vikings',
+    nom: 'Vikings',
+    titre: 'Le paquet Vikings',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'jarl-au-marteau-de-guerre',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver des créatures de type Viking (dont celles avec Furie). Une rare garantie.',
+  },
+  {
+    id: 'set-samourais',
+    nom: 'Samouraïs',
+    titre: 'Le paquet Samouraïs',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'kagutsuchi-flamme-originelle',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes du Serment du Soleil rouge (Harakiri et Résonance). Une rare garantie.',
+  },
+  {
+    id: 'set-sable',
+    nom: 'Sable',
+    titre: 'Le paquet Sable',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'cavalier-amazigh-du-desert',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver des cartes de couleur Sable, même hybrides (Butin et équipements). Une rare garantie.',
+  },
+  {
+    id: 'set-egyptiens',
+    nom: 'Égyptiens',
+    titre: 'Le paquet Égyptiens',
+    couleur: [...RPG_ELEMENTS],
+    prix: 140,
+    vitrine: 'la-devoreuse',
+    texte: 'Toutes les cartes du Souk, avec plus de chances de trouver les cartes de la Balance des Heures (Prix et Tribut). Une rare garantie.',
+  },
 ]);
+
+/** Les thèmes pondérés ×10, sans restreindre le vivier commun. */
+const FAVEURS_RAYONS = Object.freeze({
+  vampires: (carte) => /\bvampire\b/i.test(carte.typeLine ?? ''),
+  'set-pirates': (carte) => carte.set === 'lettres-de-marque',
+  'set-vikings': (carte) => /\bviking\b/i.test(carte.typeLine ?? ''),
+  'set-samourais': (carte) => carte.set === 'serment-du-soleil-rouge',
+  'set-sable': (carte) => cardColors(carte).includes('sable'),
+  'set-egyptiens': (carte) => carte.set === 'balance-des-heures',
+});
+
+export function carteFavoriseeRayon(rayonId, carte) {
+  return Boolean(carte && FAVEURS_RAYONS[rayonId]?.(carte));
+}
 
 /**
  * Les rayons d'avant le mélange. Ils ne se vendent plus, mais le journal d'un
@@ -198,11 +256,11 @@ export function couleursOuvertes(progression) {
   return couleurs;
 }
 
-/** Les deux boosters partagent toutes les cartes jouables, sans condition de progression. */
+/** Tous les boosters partagent toutes les cartes jouables, sans condition de progression. */
 export function vivierRayon(rayonId) {
   const rayon = rayonActif(rayonId);
   if (!rayon) return [];
-  // Les deux boosters partagent le catalogue ; seule la pondération diffère.
+  // Tous les boosters partagent le catalogue ; seule la pondération diffère.
   return RPG_DUEL_CARDS.filter(carteJouableSansTerrain).map((carte) => carte.id);
 }
 
@@ -356,10 +414,10 @@ export function tirerCartes({ rayonId, progression = null, collection = null, rn
   const bandes = parRarete(vivier);
   const possedees = new Set(collection ?? collectionJoueur({ progression }));
   const tirees = [];
-  // À rareté égale, une carte Vampire pèse dix fois plus dans ce booster.
-  // Tous les autres poids restent positifs : aucune carte ne devient exclusive.
-  const choisir = rayonId === 'vampires'
-    ? (ids) => choixPondere(ids.map((id) => [id, /\bvampire\b/i.test(cardById(id)?.typeLine ?? '') ? 10 : 1]), rng)
+  // À rareté égale, le thème du rayon pèse dix fois plus. Les autres cartes
+  // gardent un poids positif, et toutes les garanties restent communes.
+  const choisir = FAVEURS_RAYONS[rayonId]
+    ? (ids) => choixPondere(ids.map((id) => [id, carteFavoriseeRayon(rayonId, cardById(id)) ? 10 : 1]), rng)
     : (ids) => tirerParmi(ids, rng);
 
   // Chaque place prend la première bande qui a encore une carte libre : un

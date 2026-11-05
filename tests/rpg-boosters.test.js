@@ -5,6 +5,7 @@ import {
   RAYONS,
   TAUX,
   carteAuVivier,
+  carteFavoriseeRayon,
   etageIntroduction,
   etatDeCarteRevelee,
   etatRayon,
@@ -44,8 +45,10 @@ const PAQUET_DE = Object.fromEntries(RAYONS.map((rayon) => [rayon.id, rayon]));
 
 // ── Un seul paquet ───────────────────────────────────────────────────────────
 
-test('le Souk et le booster Vampires sont en vente dès le départ', () => {
-  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk', 'vampires']);
+const SETS_BOOSTERS = ['vampires', 'set-pirates', 'set-vikings', 'set-samourais', 'set-sable', 'set-egyptiens'];
+
+test('le Souk et les six boosters thématiques sont en vente dès le départ', () => {
+  assert.deepEqual(RAYONS.map((rayon) => rayon.id), ['souk', ...SETS_BOOSTERS]);
   assert.deepEqual(PAQUET_DE.souk.couleur, RPG_ELEMENTS, 'le paquet unique couvre toutes les couleurs');
   for (const rayon of RAYONS) {
     assert.equal(rayon.prix, 140, 'une journée de jeu vaut deux paquets');
@@ -420,6 +423,50 @@ test('le booster Vampires partage tout le vivier et favorise les Vampires', () =
   assert.ok(special.avecVampire > souk.avecVampire, JSON.stringify({ souk, special }));
   const pitie = tirerCartes({ rayonId: 'vampires', collection: [], rng: rngSeme(99), pitie: TAUX.pitie - 1 });
   assert.equal(pitie.mythique, true);
+});
+
+test('chaque booster de set favorise son propre thème ×10 sans exclure les autres cartes', () => {
+  const exemples = [
+    ['set-pirates', 'la-barbe-rousse', 'jarl-au-marteau-de-guerre'],
+    ['set-vikings', 'jarl-au-marteau-de-guerre', 'la-barbe-rousse'],
+    ['set-samourais', 'kagutsuchi-flamme-originelle', 'la-devoreuse'],
+    ['set-sable', 'cavalier-amazigh-du-desert', 'la-devoreuse'],
+    ['set-egyptiens', 'la-devoreuse', 'jarl-au-marteau-de-guerre'],
+  ];
+  for (const [rayonId, exemple, autre] of exemples) {
+    assert.deepEqual(vivierRayon(rayonId), vivierRayon('souk'), `${rayonId} partage le catalogue complet`);
+    assert.equal(carteFavoriseeRayon(rayonId, cardById(exemple)), true, exemple);
+    assert.equal(carteFavoriseeRayon(rayonId, cardById(autre)), false, autre);
+    const compter = (id) => {
+      const rng = rngSeme(20261106);
+      let favorisees = 0;
+      for (let i = 0; i < 600; i += 1) {
+        const tirage = tirerCartes({ rayonId: id, collection: [], rng });
+        assert.equal(tirage.cartes.length, TAUX.cartes);
+        assert.equal(new Set(tirage.cartes).size, TAUX.cartes);
+        assert.equal(cardById(tirage.cartes[3]).rarity, 'rare');
+        favorisees += tirage.cartes.filter((carteId) => carteFavoriseeRayon(rayonId, cardById(carteId))).length;
+      }
+      return favorisees;
+    };
+    assert.ok(compter(rayonId) > compter('souk') * 1.8, `${rayonId} doit réellement favoriser son thème`);
+    const pitie = tirerCartes({ rayonId, collection: [], rng: rngSeme(99), pitie: TAUX.pitie - 1 });
+    assert.equal(pitie.mythique, true, `${rayonId} conserve la pitié mythique`);
+    const achat = ouvrirBooster({ portefeuille: journalier(140), rayonId, collection: [], rng: rngSeme(3) });
+    assert.equal(achat.ok, true);
+    assert.equal(achat.portefeuille.credits, 0);
+    assert.equal(achat.portefeuille.journal[0].rayonId, rayonId);
+    assert.equal(ouvrirBooster({ portefeuille: journalier(0), rayonId }).raison, 'solde-insuffisant');
+    assert.equal(prixCoffret(rayonId), prixCoffret('vampires'), 'même remise sur le coffret');
+    const coffret = ouvrirCoffret({ portefeuille: journalier(1260), rayonId, collection: [], rng: rngSeme(4) });
+    assert.equal(coffret.ok, true, `le coffret ${rayonId} est disponible`);
+    assert.equal(coffret.paquets.length, COFFRET.taille);
+    assert.equal(coffret.mythique, true);
+    assert.ok(coffret.portefeuille.journal.every((ligne) => ligne.rayonId === rayonId && ligne.coffret));
+  }
+  assert.equal(carteFavoriseeRayon('set-sable', cardById('la-barbe-rousse')), true,
+    'le Sable inclut aussi les cartes hybrides Sable + Eau');
+  assert.equal(carteFavoriseeRayon('souk', cardById('la-barbe-rousse')), false);
 });
 
 test('achat du booster Vampires : débit, cartes et journal', () => {

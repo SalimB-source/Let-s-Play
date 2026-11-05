@@ -5,8 +5,9 @@ Optional authoring tool (the generated WebP banners are checked in):
     python3 tools/render-rpg-set-banners.py
 
 Background paintings live in tools/rpg-set-backgrounds/ so the words embedded
-in the images can be changed without regenerating their scenery. The sets are
-previews of card themes, not additional boosters sold by the Souk.
+in the images can be changed without regenerating their scenery. Each booster
+is now sold in the Souk at the same price and with the same guarantees as
+Vampires; only its themed weighting differs.
 """
 from pathlib import Path
 
@@ -27,35 +28,35 @@ SETS = {
         'name': 'PIRATES', 'art': 'la-barbe-rousse', 'headline': ('LA MER', 'PREND TOUT.'),
         'ability': 'ABORDAGE',
         'description': ("À l’arrivée, prenez en cale une", 'créature adverse de coût autorisé,', 'sans la détruire.'),
-        'footer': 'LES LETTRES DE MARQUE   ·   SABLE + EAU',
+        'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (139, 213, 216), 'accent_light': (193, 239, 236),
     },
     'vikings': {
         'name': 'VIKINGS', 'art': 'valkyrie-des-glaces', 'headline': ('LE NORD', 'RIPOSTE.'),
         'ability': 'FURIE',
         'description': ("Tant qu’elle est blessée, la créature", "gagne de l’attaque et frappe", 'plus fort.'),
-        'footer': 'SERMENT DES NEUF HIVERS   ·   NEIGE',
+        'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (145, 205, 235), 'accent_light': (207, 236, 248),
     },
     'samourais': {
         'name': 'SAMOURAÏS', 'art': 'kagutsuchi-flamme-originelle', 'headline': ('LE FEU', 'SURVIT.'),
         'ability': 'HARAKIRI',
         'description': ("Quand elle meurt, la créature blesse", 'un ennemi au hasard, ou le sorcier', "adverse s’il n’y en a aucun."),
-        'footer': 'SERMENT DU SOLEIL ROUGE   ·   BRAISE',
+        'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (247, 143, 109), 'accent_light': (255, 195, 149),
     },
     'sable': {
         'name': 'SABLE', 'art': 'cavalier-amazigh-du-desert', 'headline': ('LES DUNES', 'S’ÉVEILLENT.'),
         'ability': 'BUTIN',
         'description': ('Quand elle touche le sorcier adverse,', 'piochez une carte, puis défaussez-en', 'une.'),
-        'footer': 'VEILLEURS DU DÉSERT   ·   SABLE',
+        'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (227, 181, 104), 'accent_light': (251, 220, 158),
     },
     'egyptiens': {
         'name': 'ÉGYPTIENS', 'art': 'la-devoreuse', 'headline': ('LA BALANCE', 'VOUS JUGE.'),
         'ability': 'TRIBUT',
         'description': ('Quand elle touche le sorcier adverse,', 'il perd des PV et vous en gagnez', 'autant.'),
-        'footer': 'BALANCE DES HEURES   ·   TÉNÈBRES',
+        'footer': '140 CRÉDITS   ·   RARE GARANTIE',
         'accent': (196, 170, 237), 'accent_light': (232, 205, 255),
     },
 }
@@ -150,7 +151,7 @@ def render(slug, info):
     backdrop.alpha_composite(pack, (x, y))
     d = ImageDraw.Draw(backdrop)
     light, accent = info['accent_light'], info['accent']
-    write(d, 506, 194, 'LE SABLIER  ·  SET ' + info['name'], font(SANS, 25), light)
+    write(d, 506, 194, 'LE SABLIER  ·  BOOSTER ' + info['name'], font(SANS, 25), light)
     for y, line in zip((261, 347), info['headline']):
         size = 83
         while d.textbbox((0, 0), line, font=font(BOLD, size))[2] > 650:

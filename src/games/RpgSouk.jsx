@@ -765,7 +765,7 @@ export default function RpgSouk({
           <h3 id="souk-rayons-titre">Les boosters</h3>
           <p data-souk-rayons={ouverts > 0 ? 'ouvert' : 'ferme'}>
             {ouverts > 0
-              ? 'Le paquet du Souk et le booster Vampires : choisissez votre collection'
+              ? 'Toutes les cartes dans chaque booster · les sets favorisent leur thème sans exclure les autres'
               : 'Le comptoir ouvrira à votre première victoire'}
           </p>
         </div>
@@ -798,7 +798,7 @@ export default function RpgSouk({
                   onPlaySfx={onPlaySfx}
                 />
                 <footer>
-                  {etat.rayon.id === 'vampires' && <p className="rpg-souk__vampires-info">Toutes les cartes · Vampires favorisés ×10 à rareté égale</p>}
+                  {etat.rayon.id !== 'souk' && <p className="rpg-souk__rayon-info">Toutes les cartes · Thème {etat.rayon.nom} favorisé ×10 à rareté égale</p>}
                   {refus && (
                     <p className="rpg-souk__rayon-refus" data-souk-rayon-refus>
                       {ferme ? refus : <>Il manque {manque} <RpgCreditIcon /></>}

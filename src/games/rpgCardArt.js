@@ -285,8 +285,11 @@ const CARD_ART_CACHE_VERSIONS = {
   'maitre-du-marteau-furie': 'neige-furie-souls-v1',
   'loup-des-neiges-furie': 'neige-furie-loup-v1',
   'valkyrie-au-corbeau-furie': 'neige-furie-valkyrie-v1',
-  'jarl-au-marteau-de-guerre': 'neige-souls-cendres-v1',
-  'jarl-au-marteau-de-guerre-furie': 'neige-furie-souls-v1',
+  // Le Jarl tient le même marteau sur ses deux faces ; blessé, il charge.
+  'jarl-au-marteau-de-guerre': 'neige-jarl-marteau-v2',
+  'jarl-au-marteau-de-guerre-furie': 'neige-jarl-charge-furie-v2',
+  // Le Gardien en Furie fonce sur l'ennemi, bouclier au corbeau en avant.
+  'gardien-viking-du-fjord-furie': 'neige-gardien-charge-furie-v1',
   'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
   // La Völva : sa face de Furie la montre sanglante, les yeux d'or, le bâton
   // en feu — la même ruine de fjord sous la tempête. Peinte après la passe
