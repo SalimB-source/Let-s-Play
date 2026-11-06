@@ -5205,7 +5205,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               </div>
             </section>
 
-            {/* Chaque visuel occupe la vitrine ; la typographie du booster est intégrée à sa nouvelle affiche. */}
+            {/* Les décors remplissent la vitrine ; paquets et textes restent dans des calques indépendants pour tous les ratios. */}
             <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={offreActive && diapoAffichee === RPG_OFFRE_DIAPO ? 'true' : undefined} data-promo-visible={promoAffichee ? 'true' : undefined}>
               <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`}>
                 {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
@@ -5214,10 +5214,17 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </div>
                 ))}
                 {RPG_PROMO_SLIDES.map((slide, index) => (
-                  <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--set${diapoAffichee === RPG_PROMO_DEBUT + index ? ' is-active' : ''}`} key={slide.id} aria-hidden="true">
-                    {/* Le fond prolonge les couleurs ; seule l'affiche au premier plan porte le texte lisible, sans recadrage. */}
-                    <img className="rpg-mode-menu__promo-fond" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" aria-hidden="true" />
-                    <img className="rpg-mode-menu__promo-affiche" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" />
+                  <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--set${diapoAffichee === RPG_PROMO_DEBUT + index ? ' is-active' : ''}`} key={slide.id} style={{ '--promo-accent': slide.accent }} aria-hidden="true">
+                    <img className="rpg-mode-menu__promo-fond" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.fond}`} alt="" />
+                    <div className="rpg-mode-menu__promo-layout">
+                      <img className="rpg-mode-menu__promo-paquet" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.paquet}`} alt="" />
+                      <div className="rpg-mode-menu__promo-texte">
+                        <span className="rpg-mode-menu__promo-kicker">LE SABLIER <span aria-hidden="true">·</span> {slide.annonce.toUpperCase()}</span>
+                        <h2>{slide.titre[0]} <em>{slide.titre[1]}</em></h2>
+                        <div className="rpg-mode-menu__promo-effet"><strong>{slide.capacite}</strong><p>{slide.texte}</p></div>
+                        <small className="rpg-mode-menu__promo-prix">140 CRÉDITS <span aria-hidden="true">·</span> RARE GARANTIE</small>
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === RPG_OFFRE_DIAPO ? ' is-active' : ''}`} aria-hidden={diapoAffichee !== RPG_OFFRE_DIAPO}><RpgOffreLancement variante="slide" actif={diapoAffichee === RPG_OFFRE_DIAPO} onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }} /></div>}

@@ -15266,30 +15266,48 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-soon-badge { display: inline-block; margin-inline-start: .5em; color: #eee; font-size: .7em; }
 
-/* Les mots et le sachet sont peints sur l'affiche : ne jamais les rogner pour
-   remplir une vitrine d'un autre ratio. Un fond flou reprend ses couleurs dans
-   les bandes libres, y compris en portrait et en petit paysage. */
-.rpg-mode-menu__diapo--set { background: #14090e; overflow: hidden; }
-.rpg-mode-menu__promo-fond,
-.rpg-mode-menu__promo-affiche {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-position: center;
+/* Six visuels de boosters fluides : seul le décor est recadré (cover). Le
+   véritable sachet et le texte restent entiers, à la bonne taille dans chaque
+   vitrine, quelle que soit sa proportion. Aucun mot n'est incrusté au fond. */
+.rpg-mode-menu__diapo--set { background: #10151b; overflow: hidden; }
+.rpg-mode-menu__promo-fond { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; filter: brightness(.68); }
+.rpg-mode-menu__diapo--set::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 8%, rgba(4, 8, 15, .16) 42%, rgba(4, 8, 15, .82) 100%); }
+.rpg-mode-menu__promo-layout {
+  position: absolute; z-index: 1; inset: 0;
+  display: grid; grid-template-columns: minmax(0, 40%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: center; gap: clamp(8px, 1.7vw, 24px);
+  box-sizing: border-box; padding: clamp(14px, 2vw, 32px) clamp(50px, 5vw, 74px);
 }
-.rpg-mode-menu__promo-fond {
-  object-fit: cover;
-  filter: blur(20px) brightness(.38);
-  transform: scale(1.12);
-}
-.rpg-mode-menu__promo-affiche { object-fit: contain; }
+.rpg-mode-menu__promo-paquet { display: block; width: 100%; height: 88%; max-height: 530px; object-fit: contain; filter: drop-shadow(0 12px 20px #000c); }
+.rpg-mode-menu__promo-texte { display: flex; flex-direction: column; justify-content: center; gap: clamp(5px, 1vh, 12px); min-width: 0; max-height: 100%; color: #fff1d9; text-shadow: 0 2px 8px #05060b; }
+.rpg-mode-menu__promo-kicker { color: var(--promo-accent); font: 800 clamp(9px, .9vw, 14px)/1.2 var(--sans, system-ui, sans-serif); letter-spacing: .06em; }
+.rpg-mode-menu__promo-texte h2 { margin: 0; font: 800 clamp(20px, 3vw, 52px)/.98 Georgia, serif; letter-spacing: -.045em; text-wrap: balance; }
+.rpg-mode-menu__promo-texte h2 em { display: block; margin-top: 2px; color: var(--promo-accent); font-style: normal; }
+.rpg-mode-menu__promo-effet { padding-top: clamp(5px, 1vh, 13px); border-top: 2px solid var(--promo-accent); }
+.rpg-mode-menu__promo-effet strong { color: var(--promo-accent); font: 700 clamp(15px, 1.7vw, 27px)/1.1 Georgia, serif; }
+.rpg-mode-menu__promo-effet p { margin: 5px 0 0; font: 400 clamp(11px, 1.2vw, 18px)/1.32 Georgia, serif; }
+.rpg-mode-menu__promo-prix { margin-top: clamp(3px, 1vh, 12px); color: #f6dfb7; font: 800 clamp(9px, .95vw, 14px)/1.25 var(--sans, system-ui, sans-serif); letter-spacing: .035em; }
 .rpg-mode-menu__hero[data-promo-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
   .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 270px; }
+  .rpg-mode-menu__promo-layout { grid-template-columns: minmax(0, 35%) minmax(0, 1fr); gap: 8px; padding: 10px 37px; }
+  .rpg-mode-menu__promo-kicker { font-size: 8px; letter-spacing: 0; }
+  .rpg-mode-menu__promo-texte { gap: 5px; }
+  .rpg-mode-menu__promo-texte h2 { font-size: clamp(18px, 4vw, 27px); }
+  .rpg-mode-menu__promo-effet strong { font-size: 15px; }
+  .rpg-mode-menu__promo-effet p { font-size: 10px; }
+  .rpg-mode-menu__promo-prix { font-size: 9px; }
 }
 @media (max-height: 540px) and (orientation: landscape) {
   .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 205px; }
+  .rpg-mode-menu__promo-layout { gap: 6px; padding: 7px 34px; }
+  .rpg-mode-menu__promo-texte { gap: 2px; }
+  .rpg-mode-menu__promo-texte h2 { font-size: clamp(15px, 3vw, 23px); }
+  .rpg-mode-menu__promo-effet { padding-top: 3px; border-width: 1px; }
+  .rpg-mode-menu__promo-effet strong { font-size: 13px; }
+  .rpg-mode-menu__promo-effet p { margin-top: 2px; font-size: 9px; }
+  .rpg-mode-menu__promo-prix { margin-top: 1px; font-size: 8px; }
 }
 
 /* Même accueil que sur ordinateur, avec une zone accessible au doigt si le

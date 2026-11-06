@@ -1,28 +1,23 @@
-"""Render the five Sablier set slides from their landscape art and card art.
+"""Prepare separate, responsive Sablier scenery and booster pouch images.
 
-Optional authoring tool (the generated WebP banners are checked in):
-    python3 -m pip install pillow
+Optional authoring tool (Pillow required; the generated WebPs are checked in):
     python3 tools/render-rpg-set-banners.py
 
-Background paintings live in tools/rpg-set-backgrounds/ so the words embedded
-in the images can be changed without regenerating their scenery. Each booster
-is now sold in the Souk at the same price and with the same guarantees as
-Vampires; only its themed weighting differs.
+The five original landscape paintings live in tools/rpg-set-backgrounds/.
+The Vampires background is maintained directly in public/sablier-promo/.
+Typography remains HTML rather than painted into these images.
 """
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 ROOT = Path(__file__).resolve().parents[1]
 SCENERY = ROOT / 'tools/rpg-set-backgrounds'
 CARDS = ROOT / 'public/cards'
 OUTPUT = ROOT / 'public/sablier-promo'
 FONTS = Path('/usr/share/fonts/truetype/dejavu')
-SERIF = FONTS / 'DejaVuSerif.ttf'
 BOLD = FONTS / 'DejaVuSerif-Bold.ttf'
-SANS = FONTS / 'DejaVuSans-Bold.ttf'
 
-# The wording follows the printed rules (Abordage, Furie, Harakiri, Butin, Tribut).
 SETS = {
     'pirates': {
         'name': 'PIRATES', 'art': 'la-barbe-noire', 'headline': ('LA MER', 'PREND TOUT.'),
@@ -64,11 +59,6 @@ SETS = {
 
 def font(path, size):
     return ImageFont.truetype(str(path), size)
-
-
-def write(draw, x, y, message, face, color):
-    draw.text((x + 2, y + 3), message, font=face, fill=(0, 0, 0, 218))
-    draw.text((x, y), message, font=face, fill=color)
 
 
 def make_pack(info):
@@ -125,55 +115,18 @@ def make_pack(info):
     return pack
 
 
-def render(slug, info):
-    backdrop = Image.open(SCENERY / (slug + '.webp')).convert('RGBA')
-    w, h = backdrop.size
-    if (w, h) != (1264, 848):
-        raise ValueError(f'{slug}: expected 1264x848 scenery')
-    shade = Image.new('RGBA', (w, h))
-    px = shade.load()
-    for y in range(h):
-        for x in range(w):
-            # A quick fade just after the foil pack, then a dark right side:
-            # the baked copy must stay legible over snow, stone and sea alike.
-            near = max(0, min(1, (x - 420) / 110))
-            far = max(0, min(1, (x - 530) / 700))
-            bottom = max(0, min(1, (y - 480) / 368))
-            px[x, y] = (7, 8, 16, min(235, int(105 * near + 115 * far + 18 * bottom)))
-    backdrop = Image.alpha_composite(backdrop, shade)
-    pack = make_pack(info)
-    x, y = 148, 148
-    shadow = Image.new('RGBA', backdrop.size)
-    mask = Image.new('L', backdrop.size)
-    mask.paste(225, (x + 9, y + 12, x + 9 + pack.width, y + 12 + pack.height))
-    shadow.putalpha(mask.filter(ImageFilter.GaussianBlur(29)))
-    backdrop = Image.alpha_composite(backdrop, shadow)
-    backdrop.alpha_composite(pack, (x, y))
-    d = ImageDraw.Draw(backdrop)
-    light, accent = info['accent_light'], info['accent']
-    write(d, 506, 194, 'LE SABLIER  ·  BOOSTER ' + info['name'], font(SANS, 25), light)
-    for y, line in zip((261, 347), info['headline']):
-        size = 83
-        while d.textbbox((0, 0), line, font=font(BOLD, size))[2] > 650:
-            size -= 1
-        write(d, 498, y, line, font(BOLD, size), (255, 239, 217) if y == 261 else accent)
-    d.line((505, 456, 1135, 456), fill=(*accent, 190), width=2)
-    d.ellipse((504, 451, 514, 461), fill=light)
-    write(d, 506, 478, info['ability'], font(BOLD, 43), light)
-    for y, line in zip((539, 582, 625), info['description']):
-        size = 36
-        while d.textbbox((0, 0), line, font=font(SERIF, size))[2] > 625:
-            size -= 1
-        write(d, 506, y, line, font(SERIF, size), (252, 240, 225))
-    footer_size = 24
-    while d.textbbox((0, 0), info['footer'], font=font(SANS, footer_size))[2] > 670:
-        footer_size -= 1
-    write(d, 506, 737, info['footer'], font(SANS, footer_size), light)
-    dest = OUTPUT / f'set-{slug}-banniere.webp'
-    backdrop.convert('RGB').save(dest, 'WEBP', quality=89, method=6)
-    print(f'{dest.relative_to(ROOT)} ({dest.stat().st_size:,} bytes)')
+def render_responsive_assets():
+    """Pack and scenery in separate layers: no baked text can be cropped in a slide."""
+    import shutil
+
+    vampire = Image.open(OUTPUT / 'booster-vampires.webp').convert('RGBA')
+    vampire.crop((251, 146, 768, 1147)).resize((292, 566), Image.Resampling.LANCZOS).save(
+        OUTPUT / 'paquet-vampires.webp', 'WEBP', quality=90, method=6,
+    )
+    for slug, info in SETS.items():
+        make_pack(info).save(OUTPUT / f'paquet-{slug}.webp', 'WEBP', quality=90, method=6)
+        shutil.copyfile(SCENERY / f'{slug}.webp', OUTPUT / f'fond-{slug}.webp')
 
 
 if __name__ == '__main__':
-    for slug, info in SETS.items():
-        render(slug, info)
+    render_responsive_assets()
