@@ -5217,7 +5217,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   /* Dimensionner le wrapper de la face : il garde sa largeur centrée sur
      petit écran sans modifier le gabarit de la carte. */
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__empile { width: min(100%, 320px, 56dvh); }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__empile { width: min(100%, 288px, 50dvh); }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__details { width: 100%; }
 }
 
@@ -14704,7 +14704,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     justify-content: safe center;
     gap: clamp(6px, 1.2dvh, 10px);
     box-sizing: border-box;
-    width: min(680px, 100%);
+    width: min(620px, 100%);
     height: 100%;
     min-height: 0;
     padding: 4px;
@@ -14724,9 +14724,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   }
   .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-hover-card-preview {
     width: 100%;
-    grid-template-columns: minmax(110px, min(280px, 40dvh)) minmax(0, 1fr);
+    grid-template-columns: minmax(110px, min(250px, 36dvh)) minmax(0, 1fr);
     align-items: center;
     gap: clamp(8px, 1.5vw, 14px);
+  }
+  /* Le wrapper portrait (50dvh) ne doit pas forcer la carte hors de la colonne paysage. */
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__empile { width: 100%; }
+  .rpg-card-peek--catalogue:not(:has(.rpg-vitrine)) .rpg-hover-card-preview {
+    width: min(790px, 100%);
+    grid-template-columns: minmax(110px, min(250px, 36dvh)) minmax(0, 1fr);
   }
   .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-hover-card-preview__details {
     align-self: center;
@@ -14759,6 +14765,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek--catalogue .rpg-vitrine__retour { grid-column: 2; min-width: 0; }
   .rpg-card-peek--catalogue .rpg-vitrine__bouton,
   .rpg-card-peek--catalogue .rpg-card-peek__close { min-height: 44px; }
+}
+
+/* La fiche ouverte garde ses textes et ses effets lisibles, mais occupe un
+   peu moins de place sur mobile ; le plateau, le survol et les commandes de
+   la vitrine ne changent pas. À 560 px, les règles font déjà 12 px. */
+@media (max-width: 720px), (orientation: landscape) and (max-height: 760px) {
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__details {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__rules {
+    font-size: clamp(12px, 1.6vw, 13px);
+    line-height: 1.35;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__embuscade {
+    padding: 7px 9px;
+    font-size: 12px;
+  }
 }
 
 /* Sur la fiche mobile, les repères ne doivent plus masquer la peinture :
