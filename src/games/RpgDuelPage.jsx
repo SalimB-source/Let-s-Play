@@ -147,6 +147,7 @@ import { coffretEnDeckMaison } from './rpgCoffretBienvenue.js';
 import RpgMarketIcon from './RpgMarketIcon.jsx';
 import RpgCreditIcon from './RpgCreditIcon.jsx';
 import RpgModeIcon from './RpgModeIcon.jsx';
+import RpgMobaBoard from './RpgMobaBoard.jsx';
 import { RpgMiseAJourCarte } from './RpgMiseAJour.jsx';
 import RpgCardCopyBadge from './RpgCardCopyBadge.jsx';
 import RpgQuetesDuJour from './RpgQuetesDuJour.jsx';
@@ -5162,32 +5163,29 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </span>
                 </button>
                 <a
-                  className={`rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne${!isOnlineModeEnabled() ? ' is-locked' : ''}`}
-                  aria-label={!isOnlineModeEnabled() ? `${onlineText.onlineDuel} — ${onlineText.soon}` : onlineText.playDuel}
+                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne"
+                  aria-label={!isOnlineModeEnabled() ? 'Jouer à MOBA — essai local' : onlineText.playDuel}
                   aria-describedby="mode-ligne-description"
-                  aria-disabled={!isOnlineModeEnabled() ? 'true' : undefined}
                   style={{ '--art-pos': '50% 24%' }}
-                  href={isOnlineModeEnabled() ? `${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi` : undefined}
+                  href={isOnlineModeEnabled() ? `${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi` : '#moba'}
                   onClick={(e) => {
+                    play('select');
                     if (!isOnlineModeEnabled()) {
                       e.preventDefault();
-                      return;
+                      onChangeScreen('moba');
                     }
-                    play('select');
                   }}
-                  tabIndex={!isOnlineModeEnabled() ? 0 : undefined}
-                  role={!isOnlineModeEnabled() ? 'button' : undefined}
                 >
                   <img className="rpg-mode-carte__art" src={cardArt('bouchra-guerriere-des-cretes')} alt="" aria-hidden="true" />
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
                     <span className="rpg-mode-carte__infos">
                       <strong>
-                        {onlineText.onlineDuel} {!isOnlineModeEnabled() && <span className="rpg-soon-badge">{onlineText.soon}</span>}
+                        {isOnlineModeEnabled() ? onlineText.onlineDuel : 'MOBA'} {!isOnlineModeEnabled() && <span className="rpg-soon-badge">Essai local</span>}
                         {isOnlineModeEnabled() && <span className="rpg-menu-button__live" aria-hidden="true" />}
                       </strong>
-                      <span id="mode-ligne-description" className="rpg-mode-carte__description">{!isOnlineModeEnabled() ? onlineText.unavailable : 'Défiez un autre joueur'}</span>
+                      <span id="mode-ligne-description" className="rpg-mode-carte__description">{!isOnlineModeEnabled() ? 'Deux joueurs · trois voies · cartes limitées' : 'Défiez un autre joueur'}</span>
                     </span>
-                    <span className="rpg-mode-carte__jouer" aria-hidden="true">{!isOnlineModeEnabled() ? onlineText.soon : 'Jouer'} <span>→</span></span>
+                    <span className="rpg-mode-carte__jouer" aria-hidden="true">Jouer <span>→</span></span>
                   </span>
                 </a>
                 <button
@@ -9695,6 +9693,12 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         )}
       </div>
     );
+  }
+
+  if (ecran === 'moba') {
+    return <div ref={shellRef} className={`rpg-battle rpg-battle--moba${pleinEcran ? ' is-immersive' : ''}`} data-scene="moba">
+      <RpgMobaBoard onQuitter={() => setEcran('jouer')} />
+    </div>;
   }
 
   if (ecran !== 'partie') {
