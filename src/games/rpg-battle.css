@@ -4921,8 +4921,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__hint-tactile { display: none; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
-/* Repli pour une ancienne carte dont la pastille Embuscade ne donne pas sa
-   condition ; les cartes complètes la portent dans leur pastille jaune. */
+/* La pastille explique l'Embuscade ; ce cadre violet donne seulement la
+   condition propre à la carte, en une phrase courte avec les repères en gras. */
 .rpg-hover-card-preview__embuscade {
   display: grid;
   gap: 3px;
@@ -4942,6 +4942,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .07em;
   text-transform: uppercase;
 }
+.rpg-hover-card-preview__embuscade b { color: #fff6fc; font-weight: 800; }
 /* La description écrite : ce que fait la carte — hors les phrases des
    mots-clés génériques, qui vivent dans leurs pastilles et leur bulle. */
 .rpg-hover-card-preview__rules {

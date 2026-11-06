@@ -170,3 +170,29 @@ export function conditionEmbuscadePourApercu(carte) {
   );
   return phrase?.[1]?.trim() ?? null;
 }
+
+/* Conditions courtes pour le cadre violet. Les morceaux d'index impair sont
+ * les mots clés mis en gras ; les clés suivent celles du moteur, pas le nom
+ * des cartes. La règle imprimée et le fonctionnement restent inchangés. */
+const CONDITIONS_EMBUSCADE_COURTES = {
+  'adversaire-blesse': ['une ', 'créature adverse blessée'],
+  attaquant: ['l’adversaire ', 'attaque'],
+  'djinn-adverse': ['il y a un ', 'Djinn', ' en face'],
+  'autre-vampire': ['vous avez un ', 'autre Vampire', ' en jeu'],
+  'trois-adversaires': ['l’adversaire a au moins ', '3 créatures'],
+  'attaquant-force-2': ['une créature adverse de ', 'force 2+', ' attaque'],
+  'attaquant-force-3': ['une créature adverse de ', 'force 3+', ' attaque'],
+  'allie-cible': ['une de vos créatures est ', 'visée', ' par un sort, un effet ou une ', 'Attaque ciblée'],
+  'deux-attaquants': ['l’adversaire attaque avec au moins ', '2 créatures'],
+  'vampire-attaque': ['un de vos ', 'Vampires', ' est visé par une ', 'Attaque ciblée', ' ou ', 'bloque', ' une attaque'],
+  'vampire-bloqueur': ['un de vos ', 'Vampires', ' ', 'bloque', ' une attaque'],
+  'vie-inferieure': ['vous avez ', 'moins de PV', ' que l’adversaire'],
+  'attaque-ciblee': ['une ', 'Attaque ciblée', ' adverse vise une de vos ', 'créatures'],
+  'adversaire-force-4': ['l’adversaire a une créature de ', 'force 4+'],
+};
+
+/** Texte du cadre ; le texte imprimé reste un repli pour un futur cas inconnu. */
+export function conditionEmbuscadeCourtePourApercu(carte) {
+  const condition = conditionEmbuscadePourApercu(carte);
+  return condition ? (CONDITIONS_EMBUSCADE_COURTES[carte.conditionEmbuscade] ?? [condition]) : null;
+}
