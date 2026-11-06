@@ -63,3 +63,22 @@ test('Fiche de carte : le centrage ne déborde pas sur la fiche d’appui long',
     'le panneau seul (appui long) ne reçoit pas les marges automatiques du duo',
   );
 });
+
+test('Fiche du catalogue mobile paysage : carte, infos et boutique tiennent sans étirement ni coupe', () => {
+  assert.match(battleCss, /@media \(hover: none\) and \(pointer: coarse\) and \(orientation: landscape\) and \(max-height: 760px\)/);
+  const mobile = (selecteur) => corpsDe(`\\s*${selecteur}`);
+  const duo = mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-card-peek__duo');
+  assert.match(duo, /display:\s*grid/);
+  assert.match(duo, /grid-template-columns:\s*minmax\(0, 1fr\) var\(--rpg-vitrine-mobile-w\)/);
+  assert.match(duo, /width:\s*min\(100%, calc\(620px \+ var\(--rpg-vitrine-mobile-w\) \+ 14px\)\)/,
+    'la colonne des règles n’occupe pas toute la largeur du téléphone');
+  assert.match(mobile('\\.rpg-card-peek--catalogue \\.rpg-card-peek__panel'), /align-content:\s*safe center/,
+    'les règles longues restent accessibles en défilement');
+  assert.match(mobile('\\.rpg-card-peek--catalogue \\.rpg-hover-card-preview__details'), /align-self:\s*center/,
+    'les informations courtes restent centrées contre la carte');
+  const art = mobile('\\.rpg-card-peek--catalogue \\.rpg-vitrine__art');
+  assert.match(art, /width:\s*min\(100%, 24dvh\)/,
+    'l’art alternatif garde son portrait 4:5 sans prendre toute la hauteur');
+  assert.match(corpsDe('\\.rpg-vitrine'), /overflow-y:\s*auto/,
+    'le CTA et le solde restent accessibles si la vitrine est trop haute');
+});
