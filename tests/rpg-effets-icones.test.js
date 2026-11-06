@@ -29,6 +29,15 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label));
 
+test('les pastilles d’effets sont un peu plus grandes et alignées en colonne', () => {
+  const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-pastilles\s*\{[^}]*flex-direction: column;[^}]*align-items: flex-start;/s);
+  assert.match(css, /\.rpg-pastille\s*\{[^}]*min-height: 28px;[^}]*font: 650 12px\//s);
+  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 15px;[^}]*height: 15px;/s);
+  assert.match(css, /\.rpg-card-icones\s*\{[^}]*flex-wrap: wrap;/s,
+    'les icônes des faces de cartes conservent leur disposition');
+});
+
 test('le sprite porte les 40 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // 38 avec Embuscade et le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
@@ -336,6 +345,15 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(mur.texte, cardById('mur-de-boucliers').text,
     'la portée collective et la durée restent écrites sur le sort');
 
+  const faucon = effetsDetailles(cardById('faucon-du-zenith'));
+  assert.equal(faucon.texte, '', 'Bouclier — passe dans sa pastille au lieu d’être réimprimé');
+  assert.match(faucon.pastilles.find((pastille) => pastille.cle === 'bouclier').description, /premier sort/u);
+  const ifrit = effetsDetailles(cardById('ifrit-al-ahmar'));
+  assert.equal(ifrit.texte, '', 'le Bouclier d’Eau rejoint sa pastille de Protection');
+  assert.match(ifrit.pastilles.find((pastille) => pastille.cle === 'protection').description, /sort adverse d’Eau/u);
+  const rais = effetsDetailles(cardById('rais-de-la-galiote'));
+  assert.doesNotMatch(rais.texte, /Abordage 1/u, 'l’Abordage chiffré rejoint sa pastille');
+  assert.match(rais.texte, /La cale s’ouvre/u, 'la règle supplémentaire reste imprimée');
 });
 
 test('la Protection élémentaire colore un bouclier par élément, le Sable gardant son encre', () => {

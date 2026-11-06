@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { LIMITE_RESUME, resumeCarte, simplifierRegleCarte, regleCarteLongue, conditionEmbuscadePourApercu } from '../src/games/rpgCardResume.js';
+import { LIMITE_RESUME, resumeCarte, simplifierRegleCarte, regleCarteLongue, conditionEmbuscadePourApercu, texteApercuSansDoublons } from '../src/games/rpgCardResume.js';
 import { cardById, RPG_DUEL_CARDS, cardHasPrintedType } from '../src/games/rpgCards.js';
+import { effetsDetailles } from '../src/games/effetIcons.js';
 
 /**
  * L'aperçu d'une carte ne peut pas réciter trois lignes de règles.
@@ -40,7 +41,34 @@ test('la règle complète reste entière sur la carte', () => {
   assert.match(carte.text, /Compagnie — Tant qu’il est en jeu/u);
 });
 
-test('la condition colorée de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
+test('les previews ne répètent pas la règle déjà décrite par une pastille jaune', () => {
+  const texte = (id) => texteApercuSansDoublons(effetsDetailles(cardById(id)));
+  assert.equal(texte('feriel'), '', 'les deux capacités sont intégralement dans les pastilles');
+  assert.equal(texte('faucon-du-zenith'), '', 'le Bouclier imprimé rejoint aussi sa pastille');
+  assert.equal(texte('ifrit-al-ahmar'), '', 'le Bouclier élémentaire ne se répète pas');
+  assert.equal(texte('reanimation'), '', 'la même Réanimation, écrite dans un autre ordre, ne se répète pas');
+  assert.equal(texte('nom-efface'), '', 'une phrase incluse dans la bulle Défausse disparaît');
+  assert.equal(texte('maitre-du-marteau'), 'Quand il arrive : son marteau frappe — 3 dégâts à une créature ou au sorcier adverse, au choix.',
+    'la Furie prêtant Envol et Overkill est déjà signalée par leurs pastilles');
+  assert.equal(texte('salem'), 'Quand Salem arrive : il reçoit un bouclier. Il riposte même si le coup le détruit.',
+    'le déclencheur et la précision non couverte restent, pas la règle du Bouclier');
+  assert.equal(texte('gardienne-du-croissant'),
+    'À son arrivée : une créature alliée ciblée gagne +0/+2 et reçoit un bouclier.',
+    'le bénéfice distinct et la cible restent, pas la mécanique du Bouclier');
+  assert.match(texte('vampire-des-braises'), /Quand elle bloque une créature/u,
+    'les blessures préalables sans pastille restent visibles');
+  assert.match(texte('lame-de-mer'), /^Cible : une créature\. Si sa défense.*Avec Le Seigneur des mâchoires en jeu : -4\/-4/u,
+    'le chiffre de base passe dans la pastille, mais l’exil et le Lien restent');
+  assert.equal(texte('ecueil'), 'Cible : une créature adverse.', 'le Contresort explique déjà l’annulation');
+  assert.match(texte('serment-de-la-forge'), /^Vos créatures gagnent aussi Attaque ciblée/u,
+    'le Renfort chiffré n’est pas écrit deux fois, le mot-clé supplémentaire reste');
+  assert.equal(texte('mur-de-boucliers'), 'Jusqu’à la fin du tour, ces effets s’appliquent à vos créatures.',
+    'la portée et la durée restent, les nombres et Overkill sont dans les deux pastilles');
+  assert.match(texte('le-grand-debarquement'), /créatures qui détient une créature en sa cale/u,
+    'la condition de portée reste visible sans répéter le Renfort et l’Overkill');
+});
+
+test('la condition d’Embuscade de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
   assert.equal(vampires.length, 16);
@@ -54,14 +82,11 @@ test('la condition colorée de chaque Vampire provient du texte imprimé et rest
     'la Sorcellerie Embuscade n’est pas une créature jouable en réaction');
 });
 
-test('la condition est colorée et lisible dans les trois aperçus, sans teinter les autres cartes', async () => {
-  const { readFileSync } = await import('node:fs');
+test('toutes les variantes de preview ne redisent pas les effets de leurs pastilles', async () => {
   const { build } = await import('vite');
   const { default: React } = await import('react');
   const { renderToStaticMarkup } = await import('react-dom/server');
   const { JSDOM } = await import('jsdom');
-  const css = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  assert.match(css, /\.rpg-hover-card-preview__embuscade\s*\{[^}]*border-left:\s*3px solid #[\da-f]+;[^}]*background:\s*linear-gradient\([^}]*color:\s*#[\da-f]+;/is);
 
   const env = process.env.NODE_ENV;
   try {
@@ -80,19 +105,35 @@ test('la condition est colorée et lisible dans les trois aperçus, sans teinter
   const { HoverCardPreview } = await import('../node_modules/.cache/rpg-embuscade-preview/RpgDuelPage.js');
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
-  for (const variante of ['', 'appui-long', 'catalogue']) {
+  for (const variante of ['', 'appui-long', 'catalogue', 'annonce', 'graveyard']) {
     for (const carte of vampires) {
       const markup = renderToStaticMarkup(React.createElement(HoverCardPreview, { carte, variante }));
       const dom = new JSDOM(markup);
-      const condition = dom.window.document.querySelector('.rpg-hover-card-preview__embuscade');
-      assert.equal(condition?.getAttribute('data-condition-embuscade'), carte.conditionEmbuscade,
-        `${carte.id} : ${variante || 'survol'}`);
-      assert.equal(condition?.querySelector('span')?.textContent, `Jouable si ${conditionEmbuscadePourApercu(carte)}.`);
+      const condition = conditionEmbuscadePourApercu(carte);
+      const pastille = dom.window.document.querySelector('.rpg-pastille[data-pastille="reactionTourAdverse"]');
+      assert.ok(pastille?.getAttribute('aria-label')?.includes(condition), `${carte.id} : ${variante || 'survol'}`);
+      assert.equal(dom.window.document.querySelector('.rpg-hover-card-preview__embuscade'), null,
+        'aucun second texte de condition sous la pastille');
       dom.window.close();
     }
     const ordinaire = renderToStaticMarkup(React.createElement(HoverCardPreview, {
       carte: cardById('chien-du-guet'), variante,
     }));
     assert.doesNotMatch(ordinaire, /rpg-hover-card-preview__embuscade/);
+    const rendre = (id) => new JSDOM(renderToStaticMarkup(React.createElement(HoverCardPreview, {
+      carte: cardById(id), variante,
+    }))).window.document;
+    const renaissance = rendre('reanimation');
+    assert.ok(renaissance.querySelector('[data-pastille="reanimation"]'));
+    assert.equal(renaissance.querySelector('.rpg-hover-card-preview__rules'), null, 'la Réanimation ne se réécrit pas sous sa pastille');
+    const salem = rendre('salem');
+    assert.match(salem.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /Quand Salem arrive/u);
+    assert.doesNotMatch(salem.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /le prochain sort/u);
+    const lame = rendre('lame-de-mer');
+    assert.ok(lame.querySelector('[data-pastille="debuff"]'));
+    assert.equal(lame.querySelector('.rpg-hover-card-preview__stats--modif'), null, 'les chiffres du malus sont sur la pastille');
+    const vampire = rendre('vampire-des-braises');
+    assert.match(vampire.querySelector('.rpg-hover-card-preview__rules')?.textContent ?? '', /avant les blessures de combat/u,
+      'un effet non expliqué par la pastille reste visible');
   }
 });

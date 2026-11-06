@@ -697,7 +697,9 @@ const LIBELLES_IMPRIMES = [
   ['honneur', 'Harakiri(?: \\d+)?'],
   ['butin', 'Butin'],
   ['tribut', 'Tribut(?: \\d+)?'],
-  ['abordage', 'Abordage'],
+  ['abordage', 'Abordage(?: \\d+)?'],
+  ['protection', 'Bouclier d[’\'](?:Eau|Neige|Braise|Sable|Ténèbres)(?: et de (?:Eau|Neige|Braise|Sable|Ténèbres))?'],
+  ['bouclier', 'Bouclier'],
   ['malediction', 'Malédiction'],
   ['cargaison', 'Cargaison(?: \\d+)?'],
   ['banniere', 'Bannière'],
@@ -777,10 +779,9 @@ export function definitionPastille(pastille) {
  * (`description`), et le texte de règle qui reste une fois les sections de
  * mots-clés passées aux pastilles.
  *
- * La `description` s’ouvre au survol de la puce (grille du catalogue, guide,
- * bulles du Souk) — elle n’est jamais écrite sous le mot : un aperçu de carte
- * montre la pastille fermée, puis la règle entière de la carte dans son bloc
- * « Effets » (`HoverCardPreview`, `effetIcons.jsx`).
+ * La `description` s’ouvre au survol ou au toucher de la pastille. Dans les
+ * previews (`HoverCardPreview`), seuls les déclencheurs et précisions non
+ * expliqués par ces bulles restent dans le bloc « Effets ».
  *
  * - « Attaque ciblée — Sélectionnée pour attaquer… » : la section court jusqu’à
  *   la fin de sa phrase (et des phrases qui la précisent, « Si vous ne

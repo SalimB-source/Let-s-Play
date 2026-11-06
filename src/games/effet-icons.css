@@ -63,28 +63,36 @@
   color: #b8b8b8;
 }
 
-/* ── Les pastilles : mots-clés passifs sous la ligne de type ────────────────── */
+/* ── Les pastilles : une colonne de mots-clés lisibles sous le type ──────────
+   Une pastille par ligne, toutes calées sur le même bord, dans les aperçus,
+   fiches et guide ; seules les petites icônes sur les faces restent en rangée. */
 .rpg-pastilles {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
 .rpg-pastille {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 2.5px 8px 2.5px 6px;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 10px 4px 8px;
   border: 1px solid rgba(237, 203, 139, .45);
   border-radius: 999px;
   background: rgba(5, 8, 11, .55);
   color: #ffeec2;
-  font: 650 11px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 650 12px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
   letter-spacing: .01em;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .rpg-pastille .rpg-effet-icone {
+  width: 15px;
+  height: 15px;
   color: #edcb8b;
 }
 
@@ -175,12 +183,12 @@
   content: "?" / "";
   display: inline-grid;
   place-items: center;
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   margin-right: -3px;
   border: 1px solid rgba(237, 203, 139, .5);
   border-radius: 50%;
-  font: 800 9px/1 var(--sans, system-ui, sans-serif);
+  font: 800 10px/1 var(--sans, system-ui, sans-serif);
   color: #edcb8b;
   background: rgba(237, 203, 139, .1);
   transition: inherit;
