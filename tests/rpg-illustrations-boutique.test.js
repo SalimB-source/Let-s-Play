@@ -192,7 +192,7 @@ test('l’ancien Tojiro s’achète puis remplace l’art en jeu, avec retour po
   assert.equal(ancienne.prix, 400);
   definirIllustrationsAffichees([]);
   const face = cardArt(id);
-  assert.match(face, /cards\/tojiro-le-pourfendeur\.jpg\?v=tojiro-souls-aura-flammes-v6$/);
+  assert.match(face, /cards\/tojiro-le-pourfendeur\.jpg\?v=tojiro-souls-aura-brasier-v9$/);
 
   const refus = acheterIllustration(bourse(ancienne.prix), {
     carteId: id, prix: ancienne.prix, possedee: false,

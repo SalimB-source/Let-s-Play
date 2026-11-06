@@ -2845,8 +2845,9 @@ function embraserTueur(duel, cote, carte, source) {
 /** Dégâts infligés à la créature que la carte combat, s’il y a lieu. */
 function degatsCreatureCombattue(carte, quand) {
   if (carte?.combat?.type !== 'degats-creature-combattue') return 0;
-  if (carte.combat.quand && carte.combat.quand !== quand
-    && !(carte.combat.quand === 'attaque' && quand === 'attaque-bloquee')) return 0;
+  const moments = Array.isArray(carte.combat.quand) ? carte.combat.quand : [carte.combat.quand];
+  if (carte.combat.quand && !moments.includes(quand)
+    && !(moments.includes('attaque') && quand === 'attaque-bloquee')) return 0;
   return Math.max(0, Number(carte.combat.amount) || 0);
 }
 

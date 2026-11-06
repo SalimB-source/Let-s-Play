@@ -99,9 +99,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
-  // Tojiro, samouraï à l'armure légère, fonce dans les airs vers le spectateur,
-  // katana levé et aura de flammes : révision dédiée au plein art.
-  'tojiro-le-pourfendeur': 'tojiro-souls-aura-flammes-v6',
+  // Tojiro refait de zéro : trois sabres en plein bond, cheveux blancs
+  // argentés et aura de flammes en spirale au-dessus des ruines.
+  'tojiro-le-pourfendeur': 'tojiro-souls-aura-brasier-v9',
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
@@ -291,10 +291,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le Gardien en Furie fonce sur l'ennemi, bouclier au corbeau en avant.
   'gardien-viking-du-fjord-furie': 'neige-gardien-charge-furie-v1',
   'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
-  // La Völva : sa face de Furie la montre sanglante, les yeux d'or, le bâton
-  // en feu — la même ruine de fjord sous la tempête. Peinte après la passe
-  // commune, elle porte donc sa propre révision.
-  'volva-soigneuse-furie': 'neige-furie-volva-v1',
+  // La Völva : sa Furie la montre les yeux d'or, fonçant vers l'ennemi dans
+  // les ruines enneigées, bâton enflammé à la main. Sa face calme ne change pas.
+  'volva-soigneuse-furie': 'neige-furie-volva-charge-v2',
   'garde-du-trone-givre-furie': 'garde-trone-furie-v1',
   // Le Berserk en Furie charge de face sans bouclier, hache levée.
   // La Valkyrie garde sa propre peinture de Furie.
