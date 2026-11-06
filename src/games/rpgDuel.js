@@ -4937,6 +4937,22 @@ function exilerEntite(duel, cote, entite, sourceCarteId = null) {
   return true;
 }
 
+/** Retrait sans mort des entités emportées par une voie MOBA conquise.
+ * Utilise le nettoyage de sortie de table existant, sans programmer de retour.
+ * L'adaptateur MOBA valide et désactive la voie avant cet appel. */
+export function rpgRetirerEntitesConquete(duel, idsParCote) {
+  for (const cote of ['joueur', 'sorcier']) {
+    const ids = new Set(idsParCote?.[cote] ?? []);
+    for (const entite of [...duel[cote].creatures]) {
+      if (ids.has(entite.id)) exilerEntite(duel, cote, entite);
+    }
+    duel[cote].bonusTemporaires = (duel[cote].bonusTemporaires ?? [])
+      .filter((entry) => !ids.has(entry.entiteId));
+  }
+  rafraichirAuras(duel);
+  rpgActionsEtat(duel);
+}
+
 // L'exil temporaire garde seulement l'identité de la carte : équipements et
 // modifications quittent la table, le retour est une nouvelle arrivée en jeu.
 function exilerPourFinDeTour(duel, cote, entite, sourceCarteId) {
@@ -6217,6 +6233,9 @@ const peutBloquerPourResolution = (entite) => entite && !estSite(entite) && !ent
  */
 export function rpgPeutBloquerAttaquant(bloqueur, attaquant, frappeRapide = false) {
   if (!bloqueur || !attaquant || estSite(bloqueur) || estSite(attaquant)) return false;
+  // Seul MOBA attribue une voie aux entités. Les blocages obligatoires et la
+  // provocation utilisent eux aussi ce prédicat, donc restent dans leur voie.
+  if ((bloqueur.mobaLane || attaquant.mobaLane) && bloqueur.mobaLane !== attaquant.mobaLane) return false;
   if (frappeRapide) return false;
   if (attaquant.infiltration) return false;
   return !attaquant.envol || Boolean(bloqueur.envol);
@@ -7009,7 +7028,7 @@ export function rpgLancerAttaque(
   repartitions = null,
   attaquantsBloques = null,
   ciblesAttaque = null,
-  { attaqueDeclaree = false, bannieresAppliquees = false, prioritesRepartition = null } = {},
+  { attaqueDeclaree = false, bannieresAppliquees = false, prioritesRepartition = null, resoudreDegatsDirects = null } = {},
 ) {
   const adv = autre(cote);
   if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel[cote]?.manaChoixEnAttente) {
@@ -7569,11 +7588,16 @@ export function rpgLancerAttaque(
     // Le Grand Voile blanc avale aussi les coups portés au sorcier.
     if (duel.brouillardCombat) continue;
     resume.frappeSorcier += coup.amount;
-    const blessureSorcier = rpgInfligerSorcier(duel, adv, coup.amount);
+    // Un mode de plateau peut router chaque coup direct vers une cible autre
+    // que le sorcier. Sans adaptateur, le chemin classique est inchangé.
+    const blessureSorcier = resoudreDegatsDirects
+      ? resoudreDegatsDirects(coup)
+      : rpgInfligerSorcier(duel, adv, coup.amount);
+    if (blessureSorcier?.terminerCombat) return { ok: true, resume };
     const sourceVol = duel[cote].creatures.find((entite) => entite.id === coup.attaquantId);
     if (sourceVol?.volDeVie) rpgGagnerVie(duel, cote, Math.ceil(blessureSorcier.recus / 2));
     if (coup.overkill) {
-      duel.log.push(`Overkill : ${coup.overkill} perce les bloqueurs — ${coup.amount} dégâts au sorcier.`);
+      duel.log.push(`Overkill : ${coup.overkill} perce les bloqueurs — ${coup.amount} dégâts ${resoudreDegatsDirects ? 'à la voie' : 'au sorcier'}.`);
     }
   }
 
@@ -7689,7 +7713,7 @@ export function rpgLancerAttaque(
   }
   duel.log.push(resume.paires.length || resume.coupsRapides.length
     ? `Combat : ${attaquants.length} attaquant(s), ${resume.paires.length} bloqué(s), ${resume.frappeSorcier} dégâts directs.`
-    : `${attaquants.length} créature(s) frappent le sorcier (${resume.frappeSorcier}).`);
+    : `${attaquants.length} créature(s) frappent ${resoudreDegatsDirects ? 'leur voie' : 'le sorcier'} (${resume.frappeSorcier}).`);
   if (duel.brouillardCombat) {
     duel.log.push('Le grand voile blanc absorbe les dégâts de combat.');
   }

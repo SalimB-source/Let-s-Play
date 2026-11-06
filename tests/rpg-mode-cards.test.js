@@ -78,11 +78,14 @@ test('trois bannières illustrées avec appel à jouer', () => {
     'les trois modes restent des enfants directs de la pile');
 });
 
-test('les trois modes à gauche sont « Mode histoire », « Duel en ligne » et « Conquête »', () => {
+test('la carte centrale ouvre l’essai MOBA local quand le mode en ligne est désactivé', () => {
   assert.equal((grilleModesSeulement.match(/className="rpg-mode-carte__jouer"/g) ?? []).length, 3, 'chaque mode possède un appel Jouer');
-  for (const label of ['Jouer au mode histoire', 'Jouer en duel en ligne', 'Jouer en Conquête']) {
+  for (const label of ['Jouer au mode histoire', 'Jouer à MOBA — essai local', 'Jouer en Conquête']) {
     assert.ok(grilleModesSeulement.includes(label), `commande accessible : ${label}`);
   }
+  assert.match(grilleModesSeulement, /isOnlineModeEnabled\(\) \? onlineText\.onlineDuel : 'MOBA'/);
+  assert.match(grilleModesSeulement, /onChangeScreen\('moba'\)/);
+  assert.match(grilleModesSeulement, /onlineText\.playDuel/);
   for (const id of ['mode-histoire-description', 'mode-ligne-description', 'mode-conquete-description']) {
     assert.ok(grilleModesSeulement.includes(`aria-describedby="${id}"`));
     assert.ok(grilleModesSeulement.includes(`id="${id}"`));
