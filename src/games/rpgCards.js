@@ -446,9 +446,9 @@ export const RPG_CREATURE_CARDS = [
   {
     id: 'vampire-des-braises', name: 'Vampire des braises', element: 'braise',
     cost: 3, atk: 2, def: 2, rarity: 'inhabituelle', typeLine: 'Créature — Humain et Vampire',
-    rapidite: true, reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
-    combat: { type: 'degats-creature-combattue', amount: 1, quand: 'attaque-bloquee' },
-    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse est déjà blessée. Rapidité — Elle peut attaquer le tour où elle arrive. Quand elle est bloquée : elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat.',
+    reactionTourAdverse: true, conditionEmbuscade: 'adversaire-blesse',
+    combat: { type: 'degats-creature-combattue', amount: 1, quand: ['attaque-bloquee', 'blocage'] },
+    text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une créature adverse est déjà blessée. Quand elle est bloquée, elle inflige 1 dégât à chaque créature qui la bloque avant les blessures de combat. Quand elle bloque une créature, elle lui inflige aussi 1 dégât avant les blessures de combat.',
     flavor: 'La première étincelle précède toujours sa lame.',
   },
   {
