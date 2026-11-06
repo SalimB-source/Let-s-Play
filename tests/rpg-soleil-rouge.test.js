@@ -401,8 +401,8 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       'kenshi-de-la-forge': 'braise-souls-cendres-v4',
       'serment-de-la-forge': 'braise-souls-cendres-v4',
       // Le dernier lot Souls : les magies et la Tour de braise. Tojiro,
-      // nouvelle composition aux trois lames, en garde dans la cour en feu.
-      'tojiro-le-pourfendeur': 'tojiro-souls-trois-lames-v7',
+      // garde à trois lames, anatomie corrigée et longs cheveux blancs.
+      'tojiro-le-pourfendeur': 'tojiro-souls-trois-lames-cheveux-blancs-v8',
       'feux-de-kitsune': 'braise-souls-cendres-v6',
       'braise-et-sable': 'arc-fleche-souls-lueur-v3',
       'sabre-maudit': 'armurerie-sangles-v1',
