@@ -603,7 +603,10 @@ au masque démoniaque, il fonce dans les airs vers le spectateur, katana levé
 pour frapper. Une aura de flammes entoure son corps et sa cape, sans Djinn
 visible. Son armure de samouraï est allégée, les bras sous les plaques usées
 (`tojiro-souls-aura-flammes-v6`). Son ancienne peinture nihonga au visage clair
-et aux talismans n'est plus livrée.
+et aux talismans est archivée à l'identique sous
+`public/cards/alt/tojiro-le-pourfendeur.jpg` : une apparence achetable dans la
+fiche du Catalogue pour **400 ◈** (carte mythique), puis affichable sur Tojiro
+à la place de la nouvelle illustration.
 La Montagne du Soleil rouge — terrain hors du lot des cartes jouées — reste en
 kaiga.
 

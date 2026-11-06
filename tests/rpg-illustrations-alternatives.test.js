@@ -96,6 +96,20 @@ test('le catalogue des illustrations alternatives : une entrée par carte, aucun
   for (const carteId of vues) assert.ok(ids.has(carteId), `${carteId} est une carte jouable`);
 });
 
+test('l’ancien Tojiro du jeu reste archivé comme illustration achetable, sans retoucher sa peinture', () => {
+  const id = 'tojiro-le-pourfendeur';
+  const entree = alternativeDeCarte(id);
+  assert.equal(entree?.source, 'boutique');
+  assert.equal(entree?.prix, 400, 'la peinture mythique se vend au prix habituel');
+  assert.equal(entree?.fichier, `cards/alt/${id}.jpg`);
+  assert.equal(alternativeDebloquee(entree, COURBE.niveauMax), false, 'aucun niveau ne la donne');
+  assert.equal(alternativeOuverte(entree, COURBE.niveauMax, []), false, 'il faut l’acheter');
+  assert.equal(alternativeOuverte(entree, 1, [id]), true);
+  assert.equal(createHash('sha256').update(readFileSync(cheminAlt(entree))).digest('hex'),
+    '2d6fc3db2f376bd93b71b89671d0bc5e3bd97fd73fc30598d0cddf405b823ff5',
+    'la peinture vendue est exactement celle qui était affichée dans le jeu');
+});
+
 test('l’échelle : une illustration tous les quatre niveaux, de 4 au plafond', () => {
   assert.equal(NIVEAUX_PAR_PALIER, 4, 'un palier tous les quatre niveaux');
   assert.equal(PAS_DES_ALTERNATIVES, NIVEAUX_PAR_PALIER, 'le pas reste le nombre de niveaux par palier');

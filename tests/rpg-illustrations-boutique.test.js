@@ -31,9 +31,11 @@ import {
   ALTERNATIVES_DE_BOUTIQUE,
   ALTERNATIVES_DE_L_ECHELLE,
   PRIX_ILLUSTRATION,
+  alternativeDeCarte,
   prixIllustration,
   rareteDeLaCarte,
 } from '../src/games/rpgCardArtAlternatives.js';
+import { cardArt, definirIllustrationsAffichees } from '../src/games/rpgCardArt.js';
 
 const bourse = (credits = 0) => ({ ...portefeuilleVide(), credits });
 const achetable = ALTERNATIVES_DE_BOUTIQUE[0];
@@ -180,6 +182,38 @@ test('les achats survivent à la fusion de deux appareils', () => {
   assert.equal(fusion.modifie, true);
   // Fusionner deux fois la même bourse ne change plus rien.
   assert.equal(fusionnerPortefeuilles(fusion.portefeuille, fusion.portefeuille).modifie, false);
+});
+
+test('l’ancien Tojiro s’achète puis remplace l’art en jeu, avec retour possible à la nouvelle face', () => {
+  const id = 'tojiro-le-pourfendeur';
+  const ancienne = alternativeDeCarte(id);
+  assert.equal(ancienne.source, 'boutique');
+  assert.ok(ALTERNATIVES_DE_BOUTIQUE.includes(ancienne));
+  assert.equal(ancienne.prix, 400);
+  definirIllustrationsAffichees([]);
+  const face = cardArt(id);
+  assert.match(face, /cards\/tojiro-le-pourfendeur\.jpg\?v=tojiro-souls-aura-flammes-v6$/);
+
+  const refus = acheterIllustration(bourse(ancienne.prix), {
+    carteId: id, prix: ancienne.prix, possedee: false,
+  });
+  assert.equal(refus.raison, 'carte-non-possédée');
+  const achat = acheterIllustration(bourse(ancienne.prix), {
+    carteId: id, prix: ancienne.prix, possedee: true,
+  });
+  assert.equal(achat.ok, true);
+  assert.equal(achat.portefeuille.credits, 0);
+  try {
+    definirIllustrationsAffichees(illustrationsAffichees(achat.portefeuille));
+    assert.equal(cardArt(id), '/cards/alt/tojiro-le-pourfendeur.jpg',
+      'la peinture achetée remplace la face sur la carte');
+    const retiree = basculerIllustrationAffichee(achat.portefeuille, id);
+    assert.equal(retiree.ok, true);
+    definirIllustrationsAffichees(illustrationsAffichees(retiree.portefeuille));
+    assert.equal(cardArt(id), face, 'le joueur peut retrouver la nouvelle illustration');
+  } finally {
+    definirIllustrationsAffichees([]);
+  }
 });
 
 test('la vitrine, le hook et cardArt se répondent', () => {
