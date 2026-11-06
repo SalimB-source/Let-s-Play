@@ -15290,7 +15290,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__promo-prix { margin-top: clamp(3px, 1vh, 12px); color: #f6dfb7; font: 800 clamp(9px, .95vw, 14px)/1.25 var(--sans, system-ui, sans-serif); letter-spacing: .035em; }
 .rpg-mode-menu__hero[data-promo-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 270px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"]) { min-height: 270px; }
   .rpg-mode-menu__promo-layout { grid-template-columns: minmax(0, 35%) minmax(0, 1fr); gap: 8px; padding: 10px 37px; }
   .rpg-mode-menu__promo-kicker { font-size: 8px; letter-spacing: 0; }
   .rpg-mode-menu__promo-texte { gap: 5px; }
@@ -15300,7 +15300,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__promo-prix { font-size: 9px; }
 }
 @media (max-height: 540px) and (orientation: landscape) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 205px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"]) { min-height: 205px; }
   .rpg-mode-menu__promo-layout { gap: 6px; padding: 7px 34px; }
   .rpg-mode-menu__promo-texte { gap: 2px; }
   .rpg-mode-menu__promo-texte h2 { font-size: clamp(15px, 3vw, 23px); }
@@ -15380,15 +15380,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 12px; height: 12px; }
 }
 
-/* Sur un petit écran la vitrine ordinaire est très basse. Quand l'offre est
-   affichée, on laisse défiler l'accueil pour garder le prix et le CTA tactiles. */
+/* Tous les slides occupent la même rangée de la vitrine. En petit format,
+   cette rangée peut grandir sans se superposer aux quêtes : l’accueil défile
+   si nécessaire, y compris pour garder le prix et le CTA de l’offre visibles. */
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full):has(.rpg-mode-menu__hero[data-offre-visible="true"]) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full):has(.rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"])) {
     overflow-y: auto;
     grid-template-rows: auto auto auto;
-  }
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-offre-visible="true"] {
-    min-height: 235px;
-    max-height: none;
   }
 }

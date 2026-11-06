@@ -58,7 +58,8 @@ test('les six slides ont un décor plein cadre et un sachet séparé aux bonnes 
     'le sachet entier tient dans sa colonne');
   assert.doesNotMatch(css, /\.rpg-mode-menu__promo-affiche \{ object-fit: contain; \}/,
     'plus de grande affiche au texte incrusté ni de bandes vides');
-  assert.match(css, /\.rpg-mode-menu__hero\[data-promo-visible="true"\] \{ min-height: 270px/);
+  assert.match(css, /\.rpg-mode-menu__hero:is\(\[data-promo-visible="true"\], \[data-offre-visible="true"\]\) \{ min-height: 270px/,
+    'les boosters et l’offre partagent la même hauteur en portrait');
 });
 
 test('les cinq sets reprennent le vrai sachet scellé du booster Vampires', () => {
