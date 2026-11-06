@@ -4644,7 +4644,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
   }, []);
   useEffect(() => {
     if (screen !== 'jouer' || animReduite || mouvementReduitSysteme) return undefined;
-    const timer = window.setTimeout(() => setDiapo(diapoSuivante(diapoAffichee, 1, nombreDiapos)), promoAffichee ? 9000 : 6000);
+    const timer = window.setTimeout(() => setDiapo(diapoSuivante(diapoAffichee, 1, nombreDiapos)), promoAffichee || (offreActive && diapoAffichee === RPG_OFFRE_DIAPO) ? 9000 : 6000);
     return () => window.clearTimeout(timer);
   }, [screen, animReduite, mouvementReduitSysteme, diapoAffichee, nombreDiapos, promoAffichee]);
   const naviguerDiapo = (direction) => {
@@ -5208,20 +5208,20 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
 
             {/* Chaque visuel occupe la vitrine ; la typographie du booster est intégrée à sa nouvelle affiche. */}
             <section className="rpg-mode-menu__hero" data-motion-reduced={animReduite ? 'true' : undefined} data-offre-visible={offreActive && diapoAffichee === RPG_OFFRE_DIAPO ? 'true' : undefined} data-promo-visible={promoAffichee ? 'true' : undefined}>
-              <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`} aria-hidden="true">
+              <div className={`rpg-mode-menu__diaporama${offreActive ? ' has-offre' : ''}`}>
                 {['masque-du-guetteur', 'ressac', 'brise-lame'].map((id, index) => (
-                  <div className={`rpg-mode-menu__diapo${diapoAffichee === index ? ' is-active' : ''}`} key={id}>
+                  <div className={`rpg-mode-menu__diapo${diapoAffichee === index ? ' is-active' : ''}`} key={id} aria-hidden="true">
                     <img className="rpg-mode-menu__hero-keyart" src={cardArt(id)} alt="" />
                   </div>
                 ))}
                 {RPG_PROMO_SLIDES.map((slide, index) => (
-                  <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--set${diapoAffichee === RPG_PROMO_DEBUT + index ? ' is-active' : ''}`} key={slide.id}>
+                  <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--set${diapoAffichee === RPG_PROMO_DEBUT + index ? ' is-active' : ''}`} key={slide.id} aria-hidden="true">
                     {/* Le fond prolonge les couleurs ; seule l'affiche au premier plan porte le texte lisible, sans recadrage. */}
                     <img className="rpg-mode-menu__promo-fond" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" aria-hidden="true" />
                     <img className="rpg-mode-menu__promo-affiche" src={`${import.meta.env.BASE_URL}sablier-promo/${slide.affiche}?v=boosters-sets-v3`} alt="" />
                   </div>
                 ))}
-                {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === RPG_OFFRE_DIAPO ? ' is-active' : ''}`}><RpgOffreLancement variante="slide" illustration={cardArt('salem')} /></div>}
+                {offreActive && <div className={`rpg-mode-menu__diapo rpg-mode-menu__diapo--offre${diapoAffichee === RPG_OFFRE_DIAPO ? ' is-active' : ''}`} aria-hidden={diapoAffichee !== RPG_OFFRE_DIAPO}><RpgOffreLancement variante="slide" actif={diapoAffichee === RPG_OFFRE_DIAPO} onOuvrirSouk={() => { play('menu'); onChangeScreen('souk'); }} /></div>}
               </div>
               <button type="button" className="rpg-mode-menu__diapo-fleche rpg-mode-menu__diapo-fleche--precedent" aria-label="Illustration précédente" onClick={() => naviguerDiapo(-1)}>
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5 8 12l7 7M8 12h11" /></svg>
