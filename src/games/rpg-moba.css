@@ -1,46 +1,65 @@
-.moba { min-height:100dvh; overflow:auto; padding:clamp(14px,2vw,28px); color:#f4ead7; background:radial-gradient(ellipse at top,#3b2d23,#100e10 65%); font-family:Georgia,serif; }
-.moba * { box-sizing:border-box; }
-.moba button { font:inherit; color:inherit; cursor:pointer; }
-.moba button:focus-visible { outline:3px solid #ffe19b; outline-offset:3px; }
-.moba button:disabled { cursor:not-allowed; opacity:.58; }
-.moba__header,.moba__status,.moba__lanehead,.moba__health { display:flex; justify-content:space-between; align-items:center; gap:10px; }
-.moba__header h1 { margin:2px 0; font-size:clamp(28px,3.6vw,46px); letter-spacing:.08em; }
-.moba__header h1 small { font-size:.34em; color:#d1a960; letter-spacing:.16em; text-transform:uppercase; }
-.moba__header span,.moba__overlay span { font:700 11px system-ui,sans-serif; letter-spacing:.22em; color:#d7ad6a; }
-.moba__header button,.moba__controls button,.moba__choice button,.moba__overlay button { border:1px solid #ac8955; background:#2b221b; border-radius:4px; padding:9px 15px; }
-.moba__notice,.moba__hint { color:#d6c6ad; font:14px/1.4 system-ui,sans-serif; }
-.moba__status { background:#191616e8; border:1px solid #735937; padding:10px 14px; font:14px system-ui,sans-serif; flex-wrap:wrap; }
-.moba__choice { margin-top:10px; display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-.moba__error { color:#ffc6a3; font:14px system-ui,sans-serif; }
-.moba__lanes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.moba__lane { min-width:0; padding:10px; background:linear-gradient(#211b1be8,#151318f2); border:1px solid #746046; border-radius:7px; }
-.moba__lane.is-conquered { border-color:#b78139; background:linear-gradient(140deg,#513617,#1c1412); animation:moba-conquest .7s ease-out; }
-.moba__lanehead { min-height:30px; color:#e0ba7c; text-transform:uppercase; letter-spacing:.08em; }
-.moba__lanehead span { font:11px system-ui,sans-serif; text-align:right; }
-.moba__side { padding:9px 0; border-top:1px solid #4c3e30; }
-.moba__health { font:12px system-ui,sans-serif; margin-bottom:8px; }
-.moba__health strong { color:#ffcfad; }
-.moba__health .is-damaged { animation:moba-hit .6s ease-out; }
-.moba__slots { display:grid; grid-template-columns:repeat(auto-fit,minmax(75px,1fr)); gap:6px; }
-.moba__slot { min-height:105px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; padding:5px; border:1px dashed #897354; border-radius:4px; background:#111018; text-align:center; font:11px system-ui,sans-serif!important; }
-.moba__slot:not(:disabled) { border:1px solid #ddb967; box-shadow:0 0 12px #d5a64244; }
-.moba__slot.is-attacking { border:2px solid #ff9b64; }
-.moba__slot.is-blocking,.moba__slot.is-target { border:2px solid #a7d7ef; }
-.moba__slot img { width:50px; height:57px; object-fit:cover; border-radius:2px; }
-.moba__slot span,.moba__card span { display:grid; gap:3px; }
-.moba__slot small,.moba__card small { color:#d0bea0; }
-.moba__controls { display:flex; flex-wrap:wrap; gap:8px; padding:15px 0; }
-.moba__controls button:last-child,.moba__overlay button:first-of-type { background:#886438; border-color:#e2bc76; }
-.moba__hand h2 { font-size:17px; margin:5px 0 9px; }.moba__hand h2 small { color:#bbaa8f; font-size:12px; }
-.moba__hand > div { display:flex; gap:8px; overflow-x:auto; padding:4px 3px 10px; }
-.moba__card { flex:0 0 120px; padding:5px; text-align:left; background:#171317; border:1px solid #7b6244; border-radius:4px; font:11px system-ui,sans-serif!important; }
-.moba__card.is-selected { outline:2px solid #f1c66d; }.moba__card img { width:100%; height:95px; object-fit:cover; margin-bottom:5px; }
-.moba__journal { color:#c8b89e; font:12px/1.4 system-ui,sans-serif; }.moba__journal p { margin:4px 0; }
-.moba__overlay { position:fixed; z-index:9999; inset:0; display:grid; place-items:center; padding:20px; background:#080708ee; text-align:center; }
-.moba__overlay > div { max-width:450px; padding:32px; background:#241c18; border:1px solid #b18c54; box-shadow:0 20px 70px #000; }.moba__overlay button { margin:6px; }
-@keyframes moba-hit { 0% { color:#fff; transform:scale(1.4); } 50% { color:#ff5b34; } }
-@keyframes moba-conquest { 0% { box-shadow:0 0 0 #f7ba4a; filter:brightness(2); } 50% { box-shadow:0 0 45px #f7ba4a; } }
-@media(max-width:650px) { .moba { padding:12px 8px; }.moba__lanes { gap:5px; }.moba__lane { padding:6px; }.moba__lanehead { flex-direction:column; align-items:flex-start; gap:2px; }.moba__slots { grid-template-columns:1fr; }.moba__slot { min-height:74px; }.moba__slot img { width:40px; height:40px; }.moba__health { flex-wrap:wrap; }.moba__card { flex-basis:100px; }.moba__card img { height:70px; } }
-@media(prefers-reduced-motion:reduce) { .moba * { animation:none!important; } }
-.rpg-battle--moba { overflow-y:auto!important; height:100dvh; }
-.moba__cardtext { display:block; max-height:6.5em; overflow:auto; line-height:1.3; color:#e2d4bd!important; }
+/* MOBA is a separate table, but uses the Sablier's own card paintings and board. */
+.rpg-battle--moba { height: 100dvh; overflow-y: auto !important; }
+.moba {
+  --moba-gold: #dfbc80;
+  --moba-line: rgba(212, 174, 111, .35);
+  min-height: 100dvh;
+  padding: 20px clamp(12px, 3.1vw, 48px) 32px;
+  color: #f2e8d5;
+  font-family: Georgia, 'Times New Roman', serif;
+  background: radial-gradient(ellipse at 50% -10%, #453328 0%, #171619 45%, #0c0c10 100%);
+}
+.moba * { box-sizing: border-box; }
+.moba button { color: inherit; font: inherit; cursor: pointer; }
+.moba button:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
+.moba button:disabled { cursor: not-allowed; }
+.moba__header, .moba__header-meta, .moba__scoreboard, .moba__player, .moba__status, .moba__health, .moba__controls, .moba__handhead { display: flex; align-items: center; }
+.moba__header { justify-content: space-between; gap: 15px; max-width: 1500px; margin: auto; padding-bottom: 14px; border-bottom: 1px solid var(--moba-line); }
+.moba__brand > span, .moba__trial, .moba__overlay span, .moba__handhead > div > span, .moba__phase small { color: #c6a876; font: 700 10px/1.4 system-ui, sans-serif; letter-spacing: .2em; }
+.moba__brand i { margin: 0 5px; font-style: normal; }
+.moba__brand h1 { margin: 4px 0 0; color: #f8e9ca; font-size: clamp(27px, 3vw, 43px); font-weight: 500; letter-spacing: .08em; line-height: 1; }
+.moba__brand h1 small { padding-left: 10px; color: #ba9b6d; font: 10px system-ui, sans-serif; letter-spacing: .19em; text-transform: uppercase; }
+.moba__header-meta { gap: 18px; }
+.moba__trial { padding: 7px 10px; border: 1px solid #68573f; background: #1a1919; }
+.moba__back, .moba__controls button, .moba__choice button, .moba__overlay button { min-height: 42px; border: 1px solid #776345; background: linear-gradient(#35302b, #1c1a19); padding: 10px 16px; transition: border-color .2s, filter .2s, transform .2s; }
+.moba__back:hover, .moba__controls button:not(:disabled):hover, .moba__choice button:hover, .moba__overlay button:hover { border-color: #e8c685; filter: brightness(1.16); }
+.moba__notice { max-width: 1500px; margin: 8px auto 14px; color: #b1a28d; font: 12px/1.5 system-ui, sans-serif; }
+.moba__scoreboard { position: relative; gap: 3%; max-width: 1500px; margin: auto; }
+.moba__player { flex: 1; min-width: 0; gap: 12px; padding: 10px 15px; border: 1px solid #65533b; background: linear-gradient(110deg, #2a2421, #151416 75%); }
+.moba__player:last-of-type { flex-direction: row-reverse; text-align: right; background: linear-gradient(250deg, #2a2421, #151416 75%); }
+.moba__player.is-active { border-color: #d8b270; box-shadow: inset 0 0 24px #b58b3c18; }
+.moba__player-emblem { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 40px; color: #f0d39a; border: 1px solid #9a7b4f; border-radius: 50%; background: #241d19; font-size: 20px; }
+.moba__player-name { display: grid; gap: 2px; }.moba__player-name small { color: #ae9874; font: 9px system-ui,sans-serif; letter-spacing: .16em; }.moba__player-name strong { font-size: 16px; font-weight: 500; }
+.moba__player-score { display: flex; align-items: center; gap: 5px; margin-left: auto; color: #a59479; font: 11px system-ui,sans-serif; }.moba__player:last-of-type .moba__player-score { margin: 0 auto 0 0; }
+.moba__mark { font-size: 14px; color: #564c3e; }.moba__mark.is-won { color: #f2ca79; text-shadow: 0 0 10px #e3a844; }
+.moba__score-center { position: absolute; left: 50%; top: 50%; display: grid; gap: 1px; justify-items: center; transform: translate(-50%, -50%); color: #dec490; text-shadow: 0 1px 4px #000; }.moba__score-center span { font-size: 18px; }.moba__score-center small { font: 8px system-ui,sans-serif; letter-spacing: .12em; }
+.moba__status { max-width: 1500px; margin: 12px auto 0; gap: 15px; justify-content: space-between; flex-wrap: wrap; font: 12px system-ui,sans-serif; color: #eadcc4; }.moba__status strong { font-weight: 600; }.moba__status strong > span { color: #a1835a; }
+.moba__mana { display: flex; flex-wrap: wrap; gap: 6px; }.moba__mana > span { padding: 4px 8px; border: 1px solid #5d554d; background: #17181b; text-transform: capitalize; }.moba__mana i { font-style: normal; }.moba__mana-neige i { color: #b3d9ee; }.moba__mana-sable i { color: #e1b75f; }.moba__mana-braise i { color: #eb815e; }
+.moba__choice { max-width: 1500px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center; margin: 10px auto 0; padding: 10px; border: 1px solid #a5804b; background: #2b241b; }.moba__choice strong { margin-right: 8px; font: 13px system-ui,sans-serif; }.moba__choice button { min-height: 36px; padding: 5px 12px; text-transform: capitalize; }
+.moba__directive { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; max-width: 1500px; min-height: 38px; margin: auto; color: #d7b77f; }.moba__hint { margin: 6px 0; font: 12px/1.4 system-ui,sans-serif; color: #d9cbb4; }.moba__error { margin: 6px 0; color: #ffc3a7; font: 12px/1.4 system-ui,sans-serif; }
+.moba__battlefield { max-width: 1500px; margin: auto; padding: clamp(8px, 1.1vw, 16px); border: 1px solid #967348; background: linear-gradient(#0d1015bb, #131014c9), var(--moba-table) center / cover; box-shadow: 0 16px 45px #0007, inset 0 0 65px #000c; }
+.moba__lanes { display: grid; grid-template-columns: 1fr .8fr 1fr; gap: clamp(5px, .8vw, 12px); }
+.moba__lane { min-width: 0; padding: 9px; border: 1px solid #bd9a654a; background: linear-gradient(180deg, #181920d9, #151519c9 48%, #211914de); }
+.moba__lane.is-conquered { border-color: #ae854f; background: linear-gradient(145deg, #5b402bbb, #171719e8); animation: moba-conquest .7s ease-out; }
+.moba__lanehead { display: flex; align-items: center; gap: 7px; min-height: 31px; padding-bottom: 8px; border-bottom: 1px solid #bd9a6533; color: #e3c592; text-transform: uppercase; }
+.moba__lane-number { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border: 1px solid #9b8059; color: #e4cba0; font-size: 11px; transform: rotate(45deg); }.moba__lane-number::first-letter { transform: rotate(-45deg); }
+.moba__lanehead strong { padding-left: 4px; font: 700 clamp(10px, 1vw, 13px) system-ui,sans-serif; letter-spacing: .08em; }.moba__lane-state { margin-left: auto; color: #b29a74; font: 9px system-ui,sans-serif; letter-spacing: .07em; text-align: right; }
+.moba__side { padding: 10px 0; }.moba__side + .moba__side { border-top: 1px solid #bd9a6533; }
+.moba__health { gap: 7px; margin-bottom: 8px; font: 11px system-ui,sans-serif; color: #dfceb5; }.moba__health > span { white-space: nowrap; }.moba__health strong { color: #fae0c4; font-size: 14px; white-space: nowrap; }.moba__health strong small { color: #ab9983; font-size: 10px; }.moba__health-bar { flex: 1; min-width: 12px; height: 6px; overflow: hidden; border: 1px solid #785448; background: #291d1b; }.moba__health-bar i { display: block; height: 100%; background: linear-gradient(90deg, #993d2a, #e09466); transition: width .4s ease; }.moba__health .is-damaged { animation: moba-hit .6s ease-out; }
+.moba__slots { display: flex; justify-content: center; gap: clamp(5px, .8vw, 12px); }
+.moba__slot { position: relative; display: grid; place-items: center; width: min(100%, 132px); aspect-ratio: 4 / 5; min-width: 0; overflow: hidden; border: 1px solid #a48a645c; padding: 0; background: #151518ba; text-align: center; }
+.moba__slot.is-empty { border-style: dashed; }.moba__slot:not(:disabled) { border-color: #eac77a; box-shadow: 0 0 15px #e2b45866, inset 0 0 18px #dfae4b20; }.moba__slot.is-attacking { border: 2px solid #f39a62; box-shadow: 0 0 16px #ff6c3c99; }.moba__slot.is-blocking, .moba__slot.is-target { border: 2px solid #9edcf3; box-shadow: 0 0 16px #68c3ed88; }
+.moba__slot > img { width: 100%; height: 100%; object-fit: cover; }.moba__slot.has-creature:disabled { opacity: 1; }.moba__slot-label { position: absolute; right: 0; bottom: 0; left: 0; display: grid; gap: 4px; padding: 15px 4px 5px; background: linear-gradient(transparent, #08090bea 35%); font: 10px/1.15 system-ui,sans-serif; }.moba__slot-label b { color: #fff4dd; }.moba__slot-label small { display: flex; justify-content: center; gap: 10px; color: #f9d69d; font-size: 11px; }.moba__slot-label em { font-style: normal; }
+.moba__slot-tag { position: absolute; top: 3px; left: 3px; padding: 3px 5px; background: #873b27ed; font: 700 8px system-ui,sans-serif; letter-spacing: .07em; }.moba__slot.is-blocking .moba__slot-tag { background: #315971ed; }.moba__empty-label { display: grid; gap: 6px; justify-items: center; color: #b09a77; font: 9px system-ui,sans-serif; letter-spacing: .08em; }.moba__empty-label i { color: #c9a96d; font: normal 26px Georgia,serif; }.moba__slot:not(:disabled) .moba__empty-label { color: #ffe0a0; }
+.moba__controls { max-width: 1500px; justify-content: space-between; gap: 12px; margin: 12px auto; padding: 12px 15px; border: 1px solid #62513b; background: linear-gradient(100deg, #24201e, #141417); }.moba__phase { display: flex; align-items: center; gap: 10px; }.moba__phase > span { color: #e0b771; font-size: 24px; }.moba__phase div { display: grid; gap: 2px; }.moba__phase strong { font-size: 15px; font-weight: 500; }.moba__buttons { display: flex; flex-wrap: wrap; gap: 8px; }.moba__controls button, .moba__overlay button { font: 600 12px system-ui,sans-serif; }.moba__controls button:disabled { opacity: .4; }.moba__primary { border-color: #ddb77a !important; background: linear-gradient(#ac8550, #775127) !important; color: #fff6e2 !important; }.moba__primary span { margin-left: 12px; }
+.moba__hand { max-width: 1500px; margin: auto; padding: 16px; border: 1px solid #62513b; background: linear-gradient(120deg, #22201f, #111217); }.moba__handhead { justify-content: space-between; gap: 15px; margin-bottom: 10px; }.moba__hand h2 { margin: 2px 0 0; font-size: 20px; font-weight: 500; }.moba__deck-count { color: #bfa57a; font: 10px system-ui,sans-serif; letter-spacing: .13em; }.moba__deck-count b { margin-left: 7px; color: #f7e3c1; font-size: 18px; }
+.moba__hand-cards { display: flex; gap: 10px; overflow-x: auto; padding: 5px 4px 12px; }.moba__card { flex: 0 0 140px; overflow: hidden; border: 1px solid #8b7452; padding: 0; background: #171619; text-align: left; font: 11px system-ui,sans-serif!important; }.moba__card:disabled { opacity: .65; }.moba__card.is-selected { outline: 2px solid #f0ca80; box-shadow: 0 0 20px #e4b66299; }.moba__card-art { position: relative; display: block; height: 130px; }.moba__card-art img { width: 100%; height: 100%; object-fit: cover; }.moba__card-art i { position: absolute; top: 5px; right: 5px; display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid #e0c598; border-radius: 50%; background: #231c17; font: normal 700 12px system-ui,sans-serif; }.moba__card-info { display: grid; gap: 4px; padding: 8px; }.moba__card-info b { min-height: 2.3em; color: #fff0d8; }.moba__card-info > small { color: #d3b781; }.moba__cardtext { max-height: 5.2em; overflow: auto; line-height: 1.3; color: #c9bcaa!important; }
+.moba__journal { max-width: 1500px; margin: 14px auto 0; color: #bdad96; font: 12px/1.5 system-ui,sans-serif; }.moba__journal summary { cursor: pointer; color: #ddbe89; }.moba__journal p { margin: 4px 0; }
+.moba__overlay { position: fixed; z-index: 9999; inset: 0; display: grid; place-items: center; overflow: auto; padding: 18px; background: #070708ed; text-align: center; }.moba__modal { width: min(100%, 460px); padding: 30px; border: 1px solid #ac8957; background: radial-gradient(ellipse at top, #403127, #1b191a 80%); box-shadow: 0 20px 70px #000; }.moba__modal h2 { margin: 12px 0; font-size: clamp(26px, 3vw, 38px); font-weight: 500; }.moba__modal p { color: #d4c5ae; font: 14px/1.5 system-ui,sans-serif; }.moba__modal > button { margin: 10px 4px 0; }.moba__mulligan { width: min(100%, 700px); }.moba__mulligan-cards { display: flex; justify-content: center; gap: 10px; overflow-x: auto; padding: 8px 5px; }.moba__mulligan-card { display: grid; gap: 5px; flex: 0 0 140px; border: 1px solid #866d4d; padding: 5px; background: #151416; font: 11px system-ui,sans-serif!important; }.moba__mulligan-card img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }.moba__mulligan-card small { color: #d2b47e; }.moba__mulligan-card.is-selected { outline: 2px solid #f0ca80; box-shadow: 0 0 18px #d4a65e99; }
+@keyframes moba-hit { 0% { color: #fff; transform: scale(1.4); } 50% { color: #ff704e; } }
+@keyframes moba-conquest { 0% { filter: brightness(2); } 50% { box-shadow: 0 0 45px #f7ba4a; } }
+@media(max-width: 650px) {
+  .moba { padding: 12px 8px 24px; }.moba__header { align-items: flex-start; }.moba__header-meta { gap: 6px; }.moba__trial { display: none; }.moba__back { padding: 8px; font-size: 11px; }.moba__brand h1 small { display: block; margin-top: 5px; padding: 0; }.moba__scoreboard { gap: 6px; }.moba__player { gap: 6px; padding: 8px; }.moba__player-emblem { width: 30px; height: 30px; flex-basis: 30px; font-size: 15px; }.moba__player-name strong { font-size: 13px; }.moba__player-name small, .moba__score-center small { display: none; }.moba__player-score { gap: 2px; font-size: 9px; }.moba__score-center { display: none; }.moba__battlefield { padding: 6px; }.moba__lane { padding: 5px; }.moba__lanehead { flex-wrap: wrap; gap: 4px; }.moba__lane-number { width: 19px; height: 19px; flex-basis: 19px; font-size: 9px; }.moba__lanehead strong { font-size: 9px; }.moba__lane-state { flex-basis: 100%; margin: 0; font-size: 8px; text-align: left; }.moba__health { flex-wrap: wrap; gap: 4px; font-size: 9px; }.moba__health-bar { order: 3; flex-basis: 100%; }.moba__health strong { margin-left: auto; font-size: 12px; }.moba__slots { flex-wrap: wrap; }.moba__slot { width: min(100%, 95px); }.moba__slot-label { font-size: 9px; }.moba__slot-label small { gap: 4px; font-size: 10px; }.moba__empty-label { font-size: 8px; letter-spacing: 0; }.moba__controls { align-items: flex-start; flex-direction: column; }.moba__buttons { width: 100%; }.moba__buttons button { flex: 1; }.moba__card { flex-basis: 120px; }.moba__card-art { height: 105px; }.moba__mulligan-card { flex-basis: 105px; }
+}
+@media(prefers-reduced-motion: reduce) { .moba * { animation: none!important; transition: none!important; } }
+@media(max-width: 650px) { .moba__mulligan-cards { justify-content: flex-start; } }
