@@ -85,6 +85,24 @@ test('Fiche du catalogue mobile : coût, couleur et ATQ/DEF discrets sans modifi
     'aucun sélecteur ne réduit les cartes du plateau ni les autres aperçus');
 });
 
+test('Fiche mobile : carte et description légèrement réduites, sans toucher aux autres aperçus', () => {
+  assert.match(corpsDe('\\s*\\.rpg-card-peek--catalogue \\.rpg-hover-card-preview__empile'),
+    /width:\s*min\(100%, 288px, 50dvh\)/,
+    'la carte portrait est plus petite mais garde son ratio');
+  const debut = battleCss.indexOf('/* La fiche ouverte garde ses textes');
+  const fin = battleCss.indexOf('/* Sur la fiche mobile, les repères', debut);
+  assert.ok(debut >= 0 && fin > debut);
+  const mobile = battleCss.slice(debut, fin);
+  assert.match(mobile, /@media \(max-width: 720px\), \(orientation: landscape\) and \(max-height: 760px\)/);
+  assert.match(mobile, /\.rpg-card-peek--catalogue \.rpg-hover-card-preview__details\s*\{[^}]*gap:\s*6px;[^}]*padding:\s*8px 10px/s);
+  assert.match(mobile, /\.rpg-card-peek--catalogue \.rpg-hover-card-preview__rules\s*\{[^}]*font-size:\s*clamp\(12px, 1\.6vw, 13px\);[^}]*line-height:\s*1\.35/s,
+    'le texte des effets ne descend pas sous 12 px');
+  assert.match(mobile, /\.rpg-card-peek--catalogue \.rpg-hover-card-preview__embuscade\s*\{[^}]*font-size:\s*12px/s);
+  assert.ok(mobile.split('\n').filter((ligne) => /^  \.rpg/.test(ligne))
+    .every((ligne) => ligne.includes('.rpg-card-peek--catalogue .rpg-hover-card-preview__')),
+  'aucun autre aperçu ou carte de jeu ne change');
+});
+
 test('Fiche du catalogue mobile paysage : carte et règles au-dessus d’une boutique compacte', () => {
   assert.match(battleCss, /@media \(orientation: landscape\) and \(max-height: 760px\)/,
     'le paysage du WebView est reconnu même s’il annonce un pointeur de souris');
@@ -92,12 +110,16 @@ test('Fiche du catalogue mobile paysage : carte et règles au-dessus d’une bou
   const duo = mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-card-peek__duo');
   assert.match(duo, /display:\s*flex;\s*flex-direction:\s*column/,
     'la boutique passe sous la carte, et non dans une troisième colonne étroite');
-  assert.match(duo, /width:\s*min\(680px, 100%\)/);
+  assert.match(duo, /width:\s*min\(620px, 100%\)/,
+    'la fiche est légèrement moins large, sans diminuer la zone de fermeture');
   assert.match(duo, /overflow-y:\s*auto/,
     'la fiche défile si les effets ou les actions dépassent');
   const apercu = mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-hover-card-preview');
-  assert.match(apercu, /grid-template-columns:\s*minmax\(110px, min\(280px, 40dvh\)\) minmax\(0, 1fr\)/,
-    'carte et règles restent côte à côte');
+  assert.match(apercu, /grid-template-columns:\s*minmax\(110px, min\(250px, 36dvh\)\) minmax\(0, 1fr\)/,
+    'carte un peu plus petite et règles toujours à côté');
+  assert.match(mobile('\\.rpg-card-peek--catalogue:not\\(:has\\(\\.rpg-vitrine\\)\\) \\.rpg-hover-card-preview'),
+    /grid-template-columns:\s*minmax\(110px, min\(250px, 36dvh\)\) minmax\(0, 1fr\)/,
+    'la fiche ouverte sans vitrine suit la même échelle');
   assert.match(mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-hover-card-preview__details'), /overflow-y:\s*auto/);
   const vitrine = mobile('\\.rpg-card-peek--catalogue \\.rpg-vitrine');
   assert.match(vitrine, /grid-template-columns:\s*min\(140px, 18dvh\) minmax\(0, 1fr\)/,
