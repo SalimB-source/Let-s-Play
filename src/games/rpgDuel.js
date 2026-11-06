@@ -5348,6 +5348,7 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
     case 'vie-inferieure': return duel[cote].pv < duel[autre(cote)].pv;
     case 'attaque-ciblee': return allies.some((entite) => ciblesAttaque.includes(entite.id));
     case 'adversaire-force-4': return adversaires.some((entite) => entite.atk >= 4);
+    case 'djinn-adverse': return adversaires.some((entite) => cardHasPrintedType(entite.carteId, 'Djinn'));
     default: return true;
   }
 }

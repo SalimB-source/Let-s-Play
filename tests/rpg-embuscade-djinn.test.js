@@ -89,6 +89,7 @@ const conditions = [
   ['danseuse-des-ombres-de-dune', 'vie-inferieure'],
   ['veilleur-du-dernier-crepuscule', 'attaque-ciblee'],
   ['souverain-de-la-lune-noire', 'adversaire-force-4'],
+  ['tojiro-le-pourfendeur', 'djinn-adverse'],
 ];
 
 function remplirCondition(d, condition) {
@@ -140,11 +141,12 @@ function remplirCondition(d, condition) {
       break;
     }
     case 'adversaire-force-4': { const ennemi = ajouter('sorcier', 'dune-marchante'); ennemi.atk = 4; break; }
+    case 'djinn-adverse': ajouter('sorcier', 'djinn-de-foudre'); break;
     default: assert.fail(condition);
   }
 }
 
-test('les quinze Vampires refusent une Embuscade hors condition sans dépenser de mana, puis la jouent si elle est remplie', () => {
+test('les seize Vampires refusent une Embuscade hors condition sans dépenser de mana, puis la jouent si elle est remplie', () => {
   assert.equal(conditions.length, RPG_DUEL_CARDS.filter((c) => c.reactionTourAdverse && cardHasPrintedType(c, 'Vampire')).length);
   for (const [id, condition] of conditions) {
     const d = partie(); d.tour = 'sorcier'; d.fenetreReponse = true; d.pvp = true;
@@ -160,6 +162,39 @@ test('les quinze Vampires refusent une Embuscade hors condition sans dépenser d
     const res = rpgJouerCreature(d, 'joueur', id, null, { cibleDifferee: true });
     assert.ok(res.ok, `${id}: ${res.raison}`);
   }
+});
+
+test('Tojiro ne peut tendre une Embuscade que si un Djinn adverse est sur le champ', () => {
+  const d = partie();
+  const carte = cardById('tojiro-le-pourfendeur');
+  poser(d, 'joueur', 'djinn-de-foudre');
+  d.tour = 'sorcier'; d.pvp = true; d.fenetreReponse = true;
+  d.joueur.main.push(carte.id);
+  poser(d, 'sorcier', 'chien-du-guet');
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', carte), false,
+    'un Djinn allié ou une créature adverse sans le type Djinn ne suffit pas');
+  assert.equal(rpgJouerCreature(d, 'joueur', carte.id).raison, 'condition-embuscade');
+
+  const ghul = poser(d, 'sorcier', 'ghul-des-cendres');
+  assert.ok(cardHasPrintedType(ghul.carteId, 'Djinn'), 'le Ghul porte bien le type Djinn');
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', carte), true);
+  d.sorcier.creatures = d.sorcier.creatures.filter((entite) => entite.id !== ghul.id);
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', carte), false,
+    'un Djinn parti du champ ne compte plus');
+  d.tour = 'joueur';
+  assert.equal(rpgConditionEmbuscadeRemplie(d, 'joueur', carte), true,
+    'la condition ne limite jamais la pose pendant son propre tour');
+});
+
+test('Tojiro peut être joué en réponse PvP dès qu’un Djinn adverse est en jeu', () => {
+  const d = partie(); d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true };
+  d.tour = 'sorcier'; d.phase = 'principale';
+  d.joueur.main.push('tojiro-le-pourfendeur');
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'tojiro-le-pourfendeur' }).ok, false);
+  poser(d, 'sorcier', 'djinn-de-foudre');
+  const reponse = rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: 'tojiro-le-pourfendeur' });
+  assert.ok(reponse.ok, reponse.raison);
+  assert.ok(d.joueur.creatures.some((entite) => entite.carteId === 'tojiro-le-pourfendeur'));
 });
 
 test('en PvP les blocages préparés sont validés avant de rendre l’Archonte jouable', () => {

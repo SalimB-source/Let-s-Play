@@ -10,8 +10,8 @@
  *
  * ## Deux sources, une seule table
  *
- * Le lot a grossi à chaque set repeint (soixante-dix-sept peintures) : deux par
- * palier de deux niveaux ne tenaient plus dans une courbe de soixante niveaux,
+ * Le lot a grossi à chaque set repeint : deux peintures par palier de deux
+ * niveaux ne tenaient plus dans une courbe de soixante niveaux,
  * et dix-sept peintures seraient tombées ensemble au dernier palier. L'échelle
  * se resserre donc, et le reste passe en boutique :
  *
@@ -245,6 +245,8 @@ const DEFINITIONS = [
   ['la-derniere-pesee', 'La Dernière Pesée'],
   ['tour-des-tenebres', 'La tour des ténèbres'],
   ['bouchra-guerriere-des-cretes', 'Bouchra sur les crêtes'],
+  // Tojiro : son illustration nihonga d'avant l'aura enflammée, vendue en boutique.
+  ['tojiro-le-pourfendeur', 'La lame aux talismans'],
 ];
 
 /**

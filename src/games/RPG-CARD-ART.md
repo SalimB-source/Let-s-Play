@@ -491,9 +491,9 @@ art 1024×1280 restent inchangés.
 
 Vingt-neuf cartes Braise sont revenues de la peinture kaiga à une **huile
 sombre et réaliste**, dans l'esprit des concept arts de *Elden Ring* et *Dark Souls*
-(dérogation demandée pour ce set ; les autres cartes du set gardent leur kaiga
-— dont **Tojiro, le pourfendeur**, rendu à sa peinture nihonga à la demande —
-et le reste du catalogue ne bouge pas).
+(dérogation demandée pour ce set ; Tojiro est d'abord resté en nihonga à la
+demande, puis a rejoint l'huile sombre lors de sa reprise ultérieure ; le reste
+du catalogue ne bouge pas).
 
 Recette commune : **cadrage vertical 4:5, figure de pied en cap, échelle
 monumentale**, palette de cendre et de suie avec une seule source chaude, huile
@@ -598,8 +598,17 @@ forge, Armure de cendres) et `-v5` (Tour de braise, Sabre maudit, Trait de
 braise, Nuage de cendres, Vent rouge). La Frappe d'iaijutsu et les Feux de
 kitsune, refaits une seconde fois, portent `-v6`.
 
-Restent en kaiga dans le set : Tojiro, rendu à sa peinture nihonga, et la
-Montagne du Soleil rouge — un terrain, hors du lot des cartes jouées.
+Tojiro rejoint à présent l'huile sombre des autres samouraïs : ninja-samouraï
+au masque démoniaque, il fonce dans les airs vers le spectateur, katana levé
+pour frapper. Une aura de flammes entoure son corps et sa cape, sans Djinn
+visible. Son armure de samouraï est allégée, les bras sous les plaques usées
+(`tojiro-souls-aura-flammes-v6`). Son ancienne peinture nihonga au visage clair
+et aux talismans est archivée à l'identique sous
+`public/cards/alt/tojiro-le-pourfendeur.jpg` : une apparence achetable dans la
+fiche du Catalogue pour **400 ◈** (carte mythique), puis affichable sur Tojiro
+à la place de la nouvelle illustration.
+La Montagne du Soleil rouge — terrain hors du lot des cartes jouées — reste en
+kaiga.
 
 Les idées et les sujets documentés du set sont conservés — mêmes créatures,
 mêmes scènes, même esprit ; seule la facture change. Susanoo et Kagutsuchi ont
@@ -1013,10 +1022,9 @@ une logique commune d'un set à l'autre.
 
 **Braise était déjà faite** : la dérogation Souls de dix-huit cartes de ce
 document (vingt-neuf au total avec les reprises) a couvert tout le set en 2025
-et 2026, sous les révisions `braise-souls-cendres-v2` à `-v6`. La seule carte
-du set qui n'est pas à l'huile est **Tojiro, le pourfendeur**, rendu à sa
-peinture nihonga à la demande ; la **Montagne du Soleil rouge** est un terrain,
-hors du lot des cartes jouées.
+et 2026, sous les révisions `braise-souls-cendres-v2` à `-v6` ; Tojiro a
+également rejoint l'huile sombre depuis (`tojiro-souls-aura-flammes-v6`).
+La **Montagne du Soleil rouge** est un terrain, hors du lot des cartes jouées.
 
 > **Ne pas se fier aux seuls noms de révision.** Un comptage rapide des marques
 > contenant `souls` donnait « Braise : 0/33 » — faux : plusieurs cartes portent
@@ -1716,14 +1724,13 @@ la Neige, bleu de nuit pour l'Eau, os et violet de nuit pour les Ténèbres.
 
 ### Les écarts restants, par gravité
 
-**1. Trois images hors facture (à reprendre).** Ce sont les seules cartes qui ne
-sont pas des peintures :
+**1. Deux images hors facture (à reprendre).** Tojiro a depuis été repeint en
+huile sombre ; restent à harmoniser :
 
 | Carte | Élément | Ce qui cloche |
 | --- | --- | --- |
 | `shabti` | Ténèbres | Statuette turquoise en rendu 3D lisse, clarté 9 %, fond violet |
 | `serpent-des-citernes` | Eau | Serpent vert émeraude et eau turquoise, clarté 33 % : le point le plus clair du set |
-| `tojiro-le-pourfendeur` | Braise | Kaiga plat, clarté 44 % — **dérogation voulue**, à ne pas repeindre |
 
 **2. Cinq cartes trop claires pour la palette** (clarté ≥ 34 % contre 6-28 % pour
 le reste) :
@@ -1752,10 +1759,10 @@ seulement que `la-barbe-noire` vit dans les Ténèbres avec une peinture du Sabl
 
 ### Ce qui a été décidé
 
-Rien n'a été repeint sur la foi de la seule planche : les cartes marquées d'une
-dérogation explicite (Tojiro, Petit Orochi, Samouraï du Daimyō) restent comme
-elles sont. Les trois images hors facture et les deux cartes trop sombres sont
-les seules candidates à une reprise, et elles attendent un arbitrage.
+La planche n'a pas provoqué de retouche automatique. L'exception de Tojiro a
+depuis été levée à la demande : il rejoint l'huile sombre. Petit Orochi et le
+Samouraï du Daimyō gardent leur dérogation ; les deux images hors facture et
+les deux cartes trop sombres restent des candidates à une reprise.
 
 ## Plus aucun cadre — la peinture d'un bord à l'autre (octobre 2026)
 

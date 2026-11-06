@@ -99,9 +99,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
-  // Le Pourfendeur repeint en peinture japonaise nihonga, même composition
-  // mais en pigments minéraux (octobre 2025) : révision dédiée pour le cache.
-  'tojiro-le-pourfendeur': 'tojiro-nihonga-compo-identique-v1',
+  // Tojiro, samouraï à l'armure légère, fonce dans les airs vers le spectateur,
+  // katana levé et aura de flammes : révision dédiée au plein art.
+  'tojiro-le-pourfendeur': 'tojiro-souls-aura-flammes-v6',
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
