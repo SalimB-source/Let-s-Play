@@ -9655,3 +9655,64 @@ qui prenaient Eirik pour un 2/2 sont réécrites : celles qui ont besoin d'un
 survivant lui donnent un **Berserk des trois hivers** (c'est justement la
 Compagnie qui le met à 2/2), celles qui testent la mort attendent désormais une
 riposte de 1.
+
+## Le Sablier : une sixième leçon — l'Embuscade, pendant le tour adverse
+
+Les cinq leçons d'« Apprendre à jouer » suivaient chacune un boîtier : un deck,
+une mécanique. Le mot-clé **Embuscade**, lui, n'appartient à aucun boîtier — il
+traverse les sets (quinze cartes, du Sable à la Neige, toujours mêlées de
+Ténèbres) et ses soldats s'ouvrent dans les boosters. La sixième leçon
+n'enseigne donc pas un deck mais un **geste** : jouer une créature pendant le
+tour du sorcier.
+
+**« L'Embuscade de la lune noire »** (`embuscade-de-la-lune-noire`, Sable +
+Ténèbres, avancé, ≈ 8 min, 18 étapes, 150 ◈) se joue en trois temps :
+
+- **votre tour** — la Danseuse des ombres de dune entre en jeu à 25 PV
+  partout, alors que sa condition (« vous avez moins de PV que l'adversaire »)
+  est fausse : la condition d'une Embuscade n'est jamais opposée à son propre
+  tour, `rpgConditionEmbuscadeRemplie` s'arrête sur `duel.tour === cote` ;
+- **son tour** — le Garde des dunes attaque avec un Chien du guet 2/2 et un
+  Faussoyeur des dunes 2/2 (`forceOpponentAttack`, scène posée par l'étape
+  d'attente). L'attaque déclarée ouvre la fenêtre : la Sentinelle des sables
+  s'allume, entre en jeu, et son arrivée inflige 3 dégâts à un **attaquant**
+  ciblé — le Chien meurt avant les blessures de combat. La fenêtre reste
+  ouverte, l'Éclipse silencieuse enchaîne et vide le Faussoyeur de son attaque
+  (−2/+0 jusqu'à la fin du tour) ;
+- **le combat** — la Sentinelle, arrivée chez l'adversaire, **bloque
+  immédiatement** (le mal d'invocation n'empêche que les attaques) et terrasse
+  l'assaillant à 0 de dégâts. Aucun PV perdu ; le bouton du combat se lit en
+  deux temps, « Déclarer les bloqueurs » puis « Résoudre le combat », et la
+  leçon le dit explicitement.
+
+La leçon prête aussi son **propre paquet** : `PAQUET_EMBUSCADE` est composé par
+`composerDeck` (identité Sable + Ténèbres, quatre Embuscades en signature, une
+seule mythique et deux finisseurs au plus pour rester à trois manas), porté par
+le nouveau champ `deckCards` et lu par la table via `paquetDeLaLecon(tutoriel)`.
+Le plateau et les couleurs continuent de venir de `deckId` (la Balance des
+Heures). La réserve est préparée à **dix manas, cinq Sable et cinq Ténèbres** —
+le plafond du mode : au début du tour suivant, la réserve se recharge sans
+demander la couleur du nouveau mana, et aucune fenêtre de choix ne coupe le
+scénario. Neuf manas sur dix paient les trois cartes de la leçon.
+
+Le guide « Cartes & effets » gagne la fiche de référence (`embuscade` dans
+`rpgCardLessons.js`) : les quatre fenêtres de réponse, la condition imprimée et
+son cadre violet dans l'aperçu, le mana gardé pour le tour adverse, le blocage
+immédiat — et l'homonyme à ne pas confondre, la Sorcellerie Neige nommée
+« Embuscade » (−2/−2 et blocage forcé), sans lien avec le mot-clé.
+
+### Vérifications
+
+```bash
+node --test tests/rpg-tutorial.test.js   # 10/10 — dont le paquet prêté et le scénario complet au moteur
+npm run check:rpg-tutorial               # le menu, le spotlight et les six leçons dans la vraie page
+```
+
+`scripts/rpg-tutorial-smoke.jsx` rejoue les six leçons dans jsdom ; il suit
+désormais le combat adverse en **deux clics** (les leçons Fondations et Neige
+étaient restées au clic unique d'avant la déclaration des bloqueurs). Deux
+réserves pré-existantes, hors de cette leçon : `check:rpg-tutorial-ui` casse sur
+`Cartes & effets` et le parcours jsdom s'arrête sur `checkRpgCardGuide` —
+l'entrée du guide des cartes a quitté le menu Jouer (`onStartCardGuide` est
+encore passé à `GameModeMenu`, qui ne l'emploie plus), l'écran `guide` reste
+donc joignable de nulle part.

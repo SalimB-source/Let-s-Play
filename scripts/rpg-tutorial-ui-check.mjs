@@ -17,10 +17,16 @@ assert.match(menu, /tutoriels\.map/u, 'le menu affiche une carte par leçon');
 assert.match(menu, /data-tutorial-start=\{tutoriel\.id\}/u, 'chaque leçon a son bouton de départ');
 assert.match(menu, /tutoriel\.reward/u, 'chaque carte annonce sa récompense');
 assert.match(menu, /crédits ◈/u, 'le menu précise que la récompense est en crédits');
-assert.match(tutorial, /id: 'maree-des-abysses'[\s\S]*?id: 'balance-des-heures'[\s\S]*?id: 'serment-du-soleil-rouge'[\s\S]*?id: 'serment-des-neuf-hivers'/u,
-  'les cinq archétypes sont présents dans l’ordre du menu');
+assert.match(tutorial, /id: 'maree-des-abysses'[\s\S]*?id: 'balance-des-heures'[\s\S]*?id: 'serment-du-soleil-rouge'[\s\S]*?id: 'serment-des-neuf-hivers'[\s\S]*?id: 'embuscade-de-la-lune-noire'/u,
+  'les cinq archétypes puis la leçon de mot-clé Embuscade sont présents dans l’ordre du menu');
 assert.match(tutorial, /scriptedAnnonce: \{ cardId: 'lame-de-mer'/u, 'la leçon Eau scénarise une annonce à contrer');
 assert.match(tutorial, /scriptedAnnonce: \{ cardId: 'feux-de-kitsune'/u, 'la leçon Ténèbres scénarise le sort de zone');
+assert.match(tutorial, /deckCards: PAQUET_EMBUSCADE/u,
+  'la leçon Embuscade prête son propre paquet, aucun boîtier n’alignant ses soldats');
+assert.match(tutorial, /waitFor: 'combat-adverse'[\s\S]*?forceOpponentAttack: true[\s\S]*?stageOpponent: \['chien-du-guet', 'faussoyeur-des-dunes'\]/u,
+  'la leçon Embuscade scénarise l’assaut adverse qui ouvre la fenêtre de réponse');
+assert.match(page, /paquetDeLaLecon\(tutoriel\)/u,
+  'la table joue le paquet de la leçon, pas seulement celui de l’archétype emprunté');
 
 assert.match(page, /<RpgTutorialOverlay[\s\S]*?tutorialName=\{tutorielCourant\?\.name/u,
   'l’encadré affiche le nom de la leçon choisie');
@@ -80,4 +86,4 @@ assert.match(cardGuide, /target\.scrollIntoView\(\{ behavior: mouvementReduit \?
 assert.match(cardGuideCss, /\.rpg-card-guide__header \.rpg-menu-button--resume\s*\{\s*width:\s*auto;\s*margin-top:\s*0;/u,
   'le bouton de reprise ne rétrécit pas la colonne de titre du guide');
 
-console.log('✓ Tutoriels du Sablier : choix de cinq leçons, spotlight, scènes préparées et récompenses en crédits');
+console.log('✓ Tutoriels du Sablier : choix de six leçons (cinq decks et l’Embuscade), spotlight, scènes préparées et récompenses en crédits');

@@ -25,7 +25,7 @@ export default function RpgTutorialMenu({ tutoriels, termines = [], credits = 0,
         <div className="rpg-tutoriels__heading">
           <span className="rpg-tutoriels__eyebrow">LE SABLIER · APPRENDRE À JOUER</span>
           <h1>Choisissez votre leçon</h1>
-          <p>Cinq parties guidées, cinq decks, cinq mécaniques. Chaque leçon terminée verse une récompense en crédits ◈ — une seule fois par leçon.</p>
+          <p>{tutoriels.length} parties guidées : une leçon par deck, et une leçon de mot-clé — l’Embuscade, qui se joue pendant le tour adverse. Chaque leçon terminée verse une récompense en crédits ◈ — une seule fois par leçon.</p>
         </div>
         <div className="rpg-tutoriels__purse" aria-label={`Bourse : ${credits} crédits`}>
           <span aria-hidden="true">◈</span>

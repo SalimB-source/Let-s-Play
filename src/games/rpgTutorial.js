@@ -4,7 +4,10 @@
  * Cinq leçons, une par archétype : les fondations du duel, la Marée des
  * abysses (Eau, magies et contres), la Balance des Heures (Ténèbres, effets de
  * créature), le Serment du Soleil rouge (Samouraïs, Résonance et Bannière) et
- * le Serment des Neuf Hivers (Neige, gel et Furie).
+ * le Serment des Neuf Hivers (Neige, gel et Furie). Une sixième leçon traverse
+ * les couleurs : **l'Embuscade**, le mot-clé qui joue une créature pendant le
+ * tour adverse. Aucun boîtier de l'étagère n'aligne ses soldats — ils s'ouvrent
+ * dans les boosters —, alors cette leçon prête son propre paquet (`deckCards`).
  *
  * Une leçon est une **partie d'entraînement scriptée** : une main connue, une
  * réserve de mana préparée, un adversaire passif et une suite d'étapes qui
@@ -23,13 +26,41 @@
  * 3. **Une récompense par leçon** : `reward` est versé par la bourse
  *    (`reclamerRecompenseTutoriel`) et retenu dans le portefeuille.
  */
-import { RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
+import { CATALOGUE_DU_COMPOSEUR, RPG_DECKS_ARCHETYPES, RPG_DECK_JOUEUR_BASE, cardById } from './rpgCards.js';
+import { composerDeck } from './rpgDeckComposer.js';
 import { rpgJouerCreature, rpgResoudreArriveeCiblee } from './rpgDuel.js';
 
 // Les leçons prêtent leur paquet : ce sont les **archétypes** du jeu, pas
 // l'étagère du joueur (vide depuis les coffrets de bienvenue).
 const deckParId = (id) => RPG_DECKS_ARCHETYPES.find((deck) => deck.id === id) ?? null;
 const cartesDuDeck = (id) => [...(deckParId(id)?.cardIds ?? RPG_DECK_JOUEUR_BASE)];
+
+/**
+ * Le paquet de la leçon **Embuscade** : les soldats de la lune noire.
+ *
+ * Le mot-clé traverse les sets (Sable, Braise, Neige, Eau — toujours mêlés de
+ * Ténèbres) et aucun boîtier de l'étagère ne les réunit : la leçon compose donc
+ * le sien, comme un deck d'atelier, avec les Embuscades en signature et le
+ * reste pris au meilleur du vivier Sable + Ténèbres. Les plafonds gardent un
+ * paquet lisible — peu de finisseurs, une seule mythique — parce qu'une leçon
+ * se joue avec des cartes à trois manas, pas avec des figures à six.
+ */
+const PAQUET_EMBUSCADE = Object.freeze(composerDeck({
+  identite: ['sable', 'tenebres'],
+  terrains: [],
+  creatures: 20,
+  magies: 8,
+  armes: 2,
+  mythiquesTotalMax: 1,
+  raresTotalMax: 4,
+  finisseursMax: 2,
+  signature: [
+    ['sentinelle-des-sables', 2],
+    ['danseuse-des-ombres-de-dune', 2],
+    ['eclipse-silencieuse', 2],
+    ['archonte-du-sablier-noir', 1],
+  ],
+}, CATALOGUE_DU_COMPOSEUR));
 
 /** La première leçon garde les alias historiques du tutoriel débutant. */
 const FONDATIONS = 'fondations-du-sablier';
@@ -1099,11 +1130,240 @@ export const RPG_TUTORIELS = Object.freeze([
       },
     ],
   },
+  {
+    id: 'embuscade-de-la-lune-noire',
+    name: 'L’Embuscade de la lune noire',
+    eyebrow: 'SABLE · TÉNÈBRES · EMBUSCADE',
+    level: 'Avancé',
+    duration: '≈ 8 min',
+    icon: '☾',
+    // Le plateau et les couleurs viennent d’un boîtier réel ; les cartes, elles,
+    // viennent du paquet composé par la leçon (`deckCards`).
+    deckId: 'balance-des-heures',
+    deckName: 'Les Soldats de la lune noire',
+    deckCards: PAQUET_EMBUSCADE,
+    element: 'tenebres',
+    reward: 150,
+    tagline: 'Le mot-clé Embuscade : jouer une créature pendant le tour adverse, à sa condition.',
+    description: 'Une leçon transversale, consacrée à un seul mot-clé : Embuscade. La Danseuse des ombres de dune se joue pendant votre tour même si sa condition est fausse, la Sentinelle des sables sort du sable au moment où l’adversaire attaque et frappe avant les blessures de combat, l’Éclipse silencieuse casse l’attaque d’un assaillant, et une créature arrivée en Embuscade bloque immédiatement. Quatre fenêtres de réponse, une condition par carte, et le mana qu’il faut garder pour le tour de l’autre.',
+    opponentDeckId: 'veilleurs-du-desert',
+    opponentName: 'Garde des dunes',
+    openingHand: ['danseuse-des-ombres-de-dune', 'sentinelle-des-sables', 'eclipse-silencieuse'],
+    playerDraws: ['archonte-du-sablier-noir'],
+    // Dix manas, déjà au plafond du mode : la réserve se recharge à chaque tour
+    // sans jamais demander la couleur du nouveau mana — la leçon ne s’arrête
+    // pas sur un choix qui n’a rien à lui apprendre.
+    playerMana: { sable: 5, tenebres: 5 },
+    opponentHand: ['tempete-de-sable'],
+    opponentDraws: [],
+    opponentMana: { sable: 1 },
+    opponentDeckFill: 'tempete-de-sable',
+    steps: [
+      {
+        id: 'bienvenue',
+        kind: 'info',
+        target: '[data-tutorial-target="opponent-health"]',
+        eyebrow: 'L’EMBUSCADE · OBJECTIF',
+        title: 'Frapper pendant son tour',
+        text: 'Jusqu’ici, chaque leçon jouait pendant votre tour. Celle-ci joue pendant le tour du sorcier : c’est le mot-clé **Embuscade**. Vous allez lire une condition, reconnaître la fenêtre qui vous rend la main, poser une créature au milieu de l’assaut adverse et bloquer avec elle. Votre réserve est préparée à dix manas, cinq Sable et cinq Ténèbres.',
+        nextLabel: 'Lire la main',
+        side: 'bottom',
+      },
+      {
+        id: 'main',
+        kind: 'info',
+        target: '[data-tutorial-target="hand"]',
+        eyebrow: 'ÉTAPE 1 · TROIS EMBUSCADES',
+        title: 'Le mot-clé s’imprime sur la carte',
+        text: 'Vos trois cartes portent toutes Embuscade : la pastille se lit sur la carte, et la règle s’ouvre sur « Vous pouvez jouer cette créature pendant le tour adverse seulement si… ». La Danseuse des ombres de dune demande moins de PV que l’adversaire ; la Sentinelle des sables demande une créature adverse qui attaque ; l’Éclipse silencieuse demande un attaquant de force 2 ou plus. Trois conditions, trois moments différents.',
+        nextLabel: 'Comprendre la fenêtre',
+        side: 'top',
+      },
+      {
+        id: 'fenetre',
+        kind: 'info',
+        target: '[data-tutorial-target="player-field"]',
+        eyebrow: 'RÈGLE · LA FENÊTRE DE RÉPONSE',
+        title: 'Quand le tour adverse vous rend la main',
+        text: 'Une Embuscade ne se joue pas n’importe quand chez l’adversaire : il faut une fenêtre ouverte. Elles sont quatre — une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, au contraire, une Embuscade est une créature ordinaire : la condition ne vous est jamais opposée.',
+        nextLabel: 'Jouer la Danseuse',
+        side: 'top',
+      },
+      {
+        id: 'danseuse',
+        kind: 'action',
+        target: '.rpg-hand__card[data-card-id="danseuse-des-ombres-de-dune"]',
+        eyebrow: 'ÉTAPE 2 · VOTRE TOUR',
+        title: 'La condition ne vaut que chez lui',
+        text: 'Vous êtes à 25 PV, le sorcier aussi : la condition de la Danseuse — « vous avez moins de PV que l’adversaire » — est fausse. Elle se joue quand même, parce que c’est votre tour. Touchez-la : trois manas, dont un Sable et un Ténèbres.',
+        on: 'creature-jouee',
+        cardId: 'danseuse-des-ombres-de-dune',
+        side: 'top',
+      },
+      {
+        id: 'danseuse-info',
+        kind: 'info',
+        target: '.card-row--equipe .rpg-card[data-card-id="danseuse-des-ombres-de-dune"]',
+        eyebrow: 'RÈGLE · UNE EMBUSCADE AU CALME',
+        title: 'Posée tôt, elle attend son heure',
+        text: 'Sur la table, la Danseuse garde sa pastille Embuscade : c’est une capacité de jeu, pas un état. Ce tour-ci elle est une 2/2 avec Rapidité, Infiltration et Vol de vie — sa Rapidité lui permettrait d’attaquer tout de suite, nous la gardons pour la défense. Retenez surtout le mana : votre réserve ne se recharge qu’au début de VOTRE tour, et une Embuscade se paie pendant le sien.',
+        nextLabel: 'Passer la main',
+        side: 'top',
+      },
+      {
+        id: 'fin-tour',
+        kind: 'action',
+        target: '[data-tutorial-target="end-turn"]',
+        eyebrow: 'ÉTAPE 3 · PASSER LA MAIN',
+        title: 'Gardez du mana pour son tour',
+        text: 'Il vous reste sept manas sur dix : c’est votre budget d’Embuscade. Touchez « Fin du tour ». Le sorcier va déclarer un assaut avec deux créatures — et c’est là que votre main s’allumera.',
+        on: 'fin-de-tour',
+        side: 'top',
+      },
+      {
+        id: 'attaque-adverse',
+        kind: 'waiting',
+        target: '[data-tutorial-target="enemy-field"]',
+        waitFor: 'combat-adverse',
+        forceOpponentAttack: true,
+        prepare: { stageOpponent: ['chien-du-guet', 'faussoyeur-des-dunes'] },
+        eyebrow: 'FENÊTRE OUVERTE · L’ASSAUT',
+        title: 'Deux chiens sortent des dunes',
+        text: 'Un Chien du guet 2/2 et un Faussoyeur des dunes 2/2 sont déclarés attaquants. L’attaque déclarée est une fenêtre : votre main s’ouvre pendant SON tour. Regardez la Sentinelle des sables — sa condition, « une créature adverse attaque », vient d’être remplie.',
+        side: 'bottom',
+      },
+      {
+        id: 'sentinelle',
+        kind: 'action',
+        target: '.rpg-hand__card[data-card-id="sentinelle-des-sables"]',
+        eyebrow: 'ÉTAPE 4 · L’EMBUSCADE SORT',
+        title: 'Jouez la Sentinelle des sables',
+        text: 'Touchez la Sentinelle des sables, trois manas dont un Sable et un Ténèbres. Sans attaque déclarée, elle serait restée éteinte ; condition remplie et fenêtre ouverte, elle entre en jeu pendant le tour adverse. Une Embuscade posée n’attaquera pas avant votre prochain tour — mais elle peut déjà bloquer.',
+        on: 'creature-jouee',
+        cardId: 'sentinelle-des-sables',
+        side: 'top',
+      },
+      {
+        id: 'sentinelle-cible',
+        kind: 'action',
+        target: '.card-row--ennemi .rpg-card[data-card-id="chien-du-guet"]',
+        eyebrow: 'ÉTAPE 5 · L’ARRIVÉE CIBLÉE',
+        title: 'Désignez l’attaquant',
+        text: 'Son arrivée inflige 3 dégâts à une créature attaquante ciblée : seule une créature déclarée attaquante est légale, c’est le mot « attaquante » de son texte. Touchez le Chien du guet — il n’a que 2 de défense.',
+        on: 'arrivee-designee',
+        cardId: 'sentinelle-des-sables',
+        side: 'bottom',
+      },
+      {
+        id: 'sentinelle-info',
+        kind: 'info',
+        target: '.card-row--equipe .rpg-card[data-card-id="sentinelle-des-sables"]',
+        eyebrow: 'RÈGLE · AVANT LES BLESSURES',
+        title: 'L’arrivée passe avant le combat',
+        text: 'Les 3 dégâts se résolvent tout de suite, avant la moindre blessure de combat : le Chien du guet est déjà mort, il ne frappera personne et ne déclenchera plus rien. C’est tout l’intérêt du mot-clé — modifier l’assaut pendant qu’il est encore déclaré. La fenêtre, elle, reste ouverte tant que le combat n’est pas résolu.',
+        nextLabel: 'Éteindre le second',
+        side: 'top',
+      },
+      {
+        id: 'eclipse',
+        kind: 'action',
+        target: '.rpg-hand__card[data-card-id="eclipse-silencieuse"]',
+        eyebrow: 'ÉTAPE 6 · SECONDE EMBUSCADE',
+        title: 'Enchaînez avec l’Éclipse',
+        text: 'Une fenêtre ouverte accepte plusieurs cartes. Touchez l’Éclipse silencieuse, trois manas. Sa condition est plus exigeante — « une créature adverse de force 2 ou plus attaque » — et le Faussoyeur des dunes, avec ses 2 d’attaque, la remplit encore.',
+        on: 'creature-jouee',
+        cardId: 'eclipse-silencieuse',
+        side: 'top',
+      },
+      {
+        id: 'eclipse-cible',
+        kind: 'action',
+        target: '.card-row--ennemi .rpg-card[data-card-id="faussoyeur-des-dunes"]',
+        eyebrow: 'ÉTAPE 7 · CASSER L’ATTAQUE',
+        title: 'Videz sa lame',
+        text: 'À son arrivée, l’Éclipse donne −2/+0 à une créature adverse jusqu’à la fin du tour. Touchez le Faussoyeur des dunes : il tombe à 0 d’attaque et n’infligera plus un seul dégât ce tour-ci. Sa défense, elle, ne bouge pas.',
+        on: 'arrivee-designee',
+        cardId: 'eclipse-silencieuse',
+        side: 'bottom',
+      },
+      {
+        id: 'eclipse-info',
+        kind: 'info',
+        target: '.card-row--ennemi .rpg-card[data-card-id="faussoyeur-des-dunes"]',
+        eyebrow: 'RÈGLE · JUSQU’À LA FIN DU TOUR',
+        title: 'Un malus qui s’efface',
+        text: 'Le −2/+0 dure un tour, puis remonte : un malus temporaire se joue au moment précis où il compte, jamais « pour plus tard ». Comptez aussi votre réserve — neuf manas dépensés sur dix. Une Embuscade coûte cher parce qu’elle se paie chez l’autre, et le mana ne revient qu’à votre tour.',
+        nextLabel: 'Bloquer avec la Sentinelle',
+        side: 'bottom',
+      },
+      {
+        id: 'blocage',
+        kind: 'action',
+        target: '.card-row--equipe .rpg-card[data-card-id="sentinelle-des-sables"]',
+        eyebrow: 'ÉTAPE 8 · BLOQUER EN EMBUSCADE',
+        title: 'La Sentinelle peut déjà bloquer',
+        text: 'Le mal d’invocation n’empêche que les attaques : une créature arrivée pendant le tour adverse bloque immédiatement. Touchez la Sentinelle des sables pour la désigner comme bloqueuse.',
+        on: 'bloqueur-selectionne',
+        side: 'top',
+      },
+      {
+        id: 'blocage-cible',
+        kind: 'action',
+        target: '.card-row--ennemi .rpg-card[data-card-id="faussoyeur-des-dunes"]',
+        eyebrow: 'ÉTAPE 9 · ASSIGNATION',
+        title: 'Opposez-la au Faussoyeur',
+        text: 'Touchez le Faussoyeur des dunes : la Sentinelle 3/2 l’arrête. Il frappe à 0, elle rend 3 — l’échange est gratuit, et aucun dégât ne passe jusqu’à vous.',
+        on: 'bloqueur-assigne',
+        side: 'bottom',
+      },
+      {
+        id: 'blocage-confirmer',
+        kind: 'action',
+        target: '[data-tutorial-target="resolve-combat"]',
+        eyebrow: 'ÉTAPE 10 · DEUX CLICS',
+        title: 'Déclarez, puis résolvez',
+        text: 'Le bouton du combat se lit en deux temps : « Déclarer les bloqueurs » fige vos assignations — et garde la fenêtre ouverte pour une dernière Magie Rapide ou une dernière Embuscade — puis « Résoudre le combat » inflige les blessures. Touchez-le deux fois.',
+        on: 'combat-adverse-resolu',
+        side: 'top',
+      },
+      {
+        id: 'blocage-bilan',
+        kind: 'info',
+        target: '[data-tutorial-target="player-field"]',
+        eyebrow: 'RÈGLE · RIEN N’EST PASSÉ',
+        title: 'Un assaut éteint sans un PV perdu',
+        text: 'Le Chien du guet est tombé sur l’arrivée de la Sentinelle, le Faussoyeur sous son blocage, vidé de ses dégâts par l’Éclipse. Vos 25 PV sont intacts et le sorcier a dépensé son tour : c’est le gain d’une Embuscade, qui se paie au moment où l’adversaire est engagé et plus après. La Danseuse, elle, n’a pas eu à bloquer — mais elle en aurait eu le droit.',
+        nextLabel: 'Terminer la leçon',
+        side: 'top',
+      },
+      {
+        id: 'termine',
+        kind: 'complete',
+        target: '[data-tutorial-target="player-field"]',
+        eyebrow: 'EMBUSCADE MAÎTRISÉE',
+        title: 'Le tour adverse est à vous',
+        text: 'Vous savez lire une condition d’Embuscade, reconnaître les quatre fenêtres de réponse, jouer pendant le tour adverse et bloquer avec une créature qui vient d’arriver. Dernière règle à emporter : une Embuscade posée chez l’adversaire n’attaquera qu’à votre prochain tour — sauf Rapidité, comme la Danseuse des ombres de dune.',
+        nextLabel: 'Terminer le tutoriel',
+        side: 'top',
+      },
+    ],
+  },
 ]);
 
 /** La leçon demandée, ou la première (les anciens appels sans identifiant). */
 export function tutorielParId(id) {
   return RPG_TUTORIELS.find((tutoriel) => tutoriel.id === id) ?? RPG_TUTORIELS[0];
+}
+
+/**
+ * Le paquet que la leçon prête au joueur : le sien quand elle en compose un —
+ * la leçon **Embuscade** aligne des cartes qu'aucun boîtier ne réunit — sinon
+ * celui de l'archétype emprunté. La table ne lit que cette liste : le plateau
+ * et les couleurs continuent de venir de `deckId`.
+ */
+export function paquetDeLaLecon(tutorielOuId = RPG_TUTORIELS[0]) {
+  const tutoriel = typeof tutorielOuId === 'string' ? tutorielParId(tutorielOuId) : (tutorielOuId ?? RPG_TUTORIELS[0]);
+  return tutoriel?.deckCards ?? cartesDuDeck(tutoriel?.deckId);
 }
 
 /** Toutes les cartes qu'une leçon manipule (mains, pioches, scènes, étapes). */
