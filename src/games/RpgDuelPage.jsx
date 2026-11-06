@@ -122,9 +122,9 @@ import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSo
 import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { conditionEmbuscadePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
+import { conditionEmbuscadeCourtePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
-import { effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
+import { definitionPastille, effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
 import RpgStoryTowerPreview from './RpgStoryTowerPreview.jsx';
@@ -3540,15 +3540,19 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
      les armes, sans masquer leur cible, leur durée ou leurs effets annexes. */
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie || arme.effet?.volDeVie);
-  const lecture = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
+  const conditionEmbuscade = conditionEmbuscadeCourtePourApercu(carte);
+  const lectureBrute = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
+  // La pastille explique la mécanique ; le cadre violet est le seul endroit
+  // où lire la condition propre à cette carte, sans répéter la même phrase.
+  const lecture = conditionEmbuscade ? {
+    ...lectureBrute,
+    pastilles: lectureBrute.pastilles.map((pastille) => pastille.cle === 'reactionTourAdverse'
+      ? { ...pastille, description: definitionPastille(pastille) }
+      : pastille),
+  } : lectureBrute;
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
   const description = texteApercuSansDoublons(lecture);
   const descriptionLignes = cardEffectLines(description);
-  // La condition est déjà dans la bulle Embuscade : ne la répéter que si la
-  // pastille ne l'explique pas (cas de données incomplètes).
-  const conditionEmbuscade = conditionEmbuscadePourApercu(carte);
-  const conditionDejaExpliquee = lecture.pastilles.some((pastille) =>
-    pastille.cle === 'reactionTourAdverse' && conditionEmbuscade && pastille.description?.includes(conditionEmbuscade));
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
@@ -3593,10 +3597,11 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           <span className="rpg-hover-card-preview__hint-tactile">Touchez un mot-clé pour lire son effet</span>
         </small>
       )}
-      {conditionEmbuscade && !conditionDejaExpliquee && (
+      {conditionEmbuscade && (
         <p className="rpg-hover-card-preview__embuscade" data-condition-embuscade={carte.conditionEmbuscade}>
-          <strong>Embuscade · tour adverse</strong>
-          <span>Jouable si {conditionEmbuscade}.</span>
+          <strong>Embuscade</strong>
+          <span>Condition : {conditionEmbuscade.map((morceau, index) => index % 2
+            ? <b key={index}>{morceau}</b> : morceau)}.</span>
         </p>
       )}
       {descriptionLignes.length > 0 && (

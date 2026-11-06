@@ -4921,8 +4921,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__hint-tactile { display: none; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
-/* Repli pour une ancienne carte dont la pastille Embuscade ne donne pas sa
-   condition ; les cartes complètes la portent dans leur pastille jaune. */
+/* La pastille explique l'Embuscade ; ce cadre violet donne seulement la
+   condition propre à la carte, en une phrase courte avec les repères en gras. */
 .rpg-hover-card-preview__embuscade {
   display: grid;
   gap: 3px;
@@ -4942,6 +4942,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   letter-spacing: .07em;
   text-transform: uppercase;
 }
+.rpg-hover-card-preview__embuscade b { color: #fff6fc; font-weight: 800; }
 /* La description écrite : ce que fait la carte — hors les phrases des
    mots-clés génériques, qui vivent dans leurs pastilles et leur bulle. */
 .rpg-hover-card-preview__rules {
@@ -14686,6 +14687,61 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-vitrine { width: clamp(140px, 22vw, 190px); }
 }
 
+/* Fiche du catalogue sur téléphone en paysage : le grand panneau d'infos et
+   la vitrine boutique écrasaient la carte (et la vitrine touchait le bord haut).
+   On borne la largeur du trio, centre ses trois parties et réduit la peinture
+   alternative par la hauteur disponible, sans rogner son portrait 4:5.
+   Chaque panneau défile si la règle ou les actions dépassent la hauteur. */
+@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 760px) {
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-card-peek__duo {
+    --rpg-vitrine-mobile-w: clamp(124px, 17vw, 168px);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--rpg-vitrine-mobile-w);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(8px, 1.2vw, 14px);
+    width: min(100%, calc(620px + var(--rpg-vitrine-mobile-w) + 14px));
+    height: 100%;
+    overflow: visible;
+  }
+  .rpg-card-peek--catalogue .rpg-card-peek__panel {
+    box-sizing: border-box;
+    width: 100%;
+    max-height: 100%;
+    min-height: 0;
+    align-content: safe center;
+    overflow-y: auto;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview {
+    width: 100%;
+    grid-template-columns: minmax(110px, min(260px, 44dvh)) minmax(0, 1fr);
+    gap: clamp(8px, 1vw, 12px);
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__details {
+    align-self: center;
+    max-height: calc(100dvh - 100px);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .rpg-card-peek--catalogue .rpg-vitrine {
+    box-sizing: border-box;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+    max-height: 100%;
+    padding: 7px;
+  }
+  .rpg-card-peek--catalogue .rpg-vitrine__art {
+    grid-row: auto;
+    justify-self: center;
+    width: min(100%, 24dvh);
+  }
+  .rpg-card-peek--catalogue .rpg-vitrine__achat,
+  .rpg-card-peek--catalogue .rpg-vitrine__pose,
+  .rpg-card-peek--catalogue .rpg-vitrine__retour { grid-column: auto; }
+  .rpg-card-peek--catalogue .rpg-card-peek__close { min-height: 44px; }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    MENU DU SABLIER — TÉLÉPHONE EN PAYSAGE : BARRE DE NAVIGATION À DROITE,
    ACCUEIL VERROUILLÉ SUR UN SEUL ÉCRAN (AUCUN DÉFILEMENT)
@@ -15290,7 +15346,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__promo-prix { margin-top: clamp(3px, 1vh, 12px); color: #f6dfb7; font: 800 clamp(9px, .95vw, 14px)/1.25 var(--sans, system-ui, sans-serif); letter-spacing: .035em; }
 .rpg-mode-menu__hero[data-promo-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 270px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"]) { min-height: 270px; }
   .rpg-mode-menu__promo-layout { grid-template-columns: minmax(0, 35%) minmax(0, 1fr); gap: 8px; padding: 10px 37px; }
   .rpg-mode-menu__promo-kicker { font-size: 8px; letter-spacing: 0; }
   .rpg-mode-menu__promo-texte { gap: 5px; }
@@ -15300,7 +15356,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu__promo-prix { font-size: 9px; }
 }
 @media (max-height: 540px) and (orientation: landscape) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-promo-visible="true"] { min-height: 205px; }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"]) { min-height: 205px; }
   .rpg-mode-menu__promo-layout { gap: 6px; padding: 7px 34px; }
   .rpg-mode-menu__promo-texte { gap: 2px; }
   .rpg-mode-menu__promo-texte h2 { font-size: clamp(15px, 3vw, 23px); }
@@ -15380,15 +15436,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-mode-menu--jouer .rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 12px; height: 12px; }
 }
 
-/* Sur un petit écran la vitrine ordinaire est très basse. Quand l'offre est
-   affichée, on laisse défiler l'accueil pour garder le prix et le CTA tactiles. */
+/* Tous les slides occupent la même rangée de la vitrine. En petit format,
+   cette rangée peut grandir sans se superposer aux quêtes : l’accueil défile
+   si nécessaire, y compris pour garder le prix et le CTA de l’offre visibles. */
 @media (max-width: 700px), (hover: none) and (pointer: coarse) {
-  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full):has(.rpg-mode-menu__hero[data-offre-visible="true"]) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full):has(.rpg-mode-menu__hero:is([data-promo-visible="true"], [data-offre-visible="true"])) {
     overflow-y: auto;
     grid-template-rows: auto auto auto;
-  }
-  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-offre-visible="true"] {
-    min-height: 235px;
-    max-height: none;
   }
 }
