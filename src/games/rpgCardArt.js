@@ -291,10 +291,9 @@ const CARD_ART_CACHE_VERSIONS = {
   // Le Gardien en Furie fonce sur l'ennemi, bouclier au corbeau en avant.
   'gardien-viking-du-fjord-furie': 'neige-gardien-charge-furie-v1',
   'guerrier-au-bouclier-rond-furie': 'neige-furie-souls-v1',
-  // La Völva : sa face de Furie la montre sanglante, les yeux d'or, le bâton
-  // en feu — la même ruine de fjord sous la tempête. Peinte après la passe
-  // commune, elle porte donc sa propre révision.
-  'volva-soigneuse-furie': 'neige-furie-volva-v1',
+  // La Völva : sa Furie la montre les yeux d'or, fonçant vers l'ennemi dans
+  // les ruines enneigées, bâton enflammé à la main. Sa face calme ne change pas.
+  'volva-soigneuse-furie': 'neige-furie-volva-charge-v2',
   'garde-du-trone-givre-furie': 'garde-trone-furie-v1',
   // Le Berserk en Furie charge de face sans bouclier, hache levée.
   // La Valkyrie garde sa propre peinture de Furie.

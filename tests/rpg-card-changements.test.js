@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { cardById, RPG_CREATURE_CARDS, RPG_HERO_CARDS, RPG_TOUR_CARDS, RPG_MAGIE_CARDS, RPG_DUEL_CARDS } from '../src/games/rpgCards.js';
 import {
@@ -130,12 +130,14 @@ test('la Völva seule sur la table se soigne elle-même, sans perdre son arrivé
 
 test('la Völva a sa peinture de Furie, livrée et révisée', () => {
   const carte = cardById('volva-soigneuse');
-  assert.equal(cardArtFurie(carte), '/cards/volva-soigneuse-furie.jpg?v=neige-furie-volva-v1');
+  assert.equal(cardArtFurie(carte), '/cards/volva-soigneuse-furie.jpg?v=neige-furie-volva-charge-v2');
   assert.equal(cardArt(carte), '/cards/volva-soigneuse.jpg?v=volva-soigneuse-souls-v1',
     'la face calme garde sa peinture');
-  assert.ok(existsSync(fileURLToPath(
-    new URL('../public/cards/volva-soigneuse-furie.jpg', import.meta.url),
-  )), 'volva-soigneuse-furie.jpg est livré avec le jeu');
+  const furie = fileURLToPath(new URL('../public/cards/volva-soigneuse-furie.jpg', import.meta.url));
+  const calme = fileURLToPath(new URL('../public/cards/volva-soigneuse.jpg', import.meta.url));
+  assert.ok(existsSync(furie), 'volva-soigneuse-furie.jpg est livré avec le jeu');
+  assert.notEqual(readFileSync(furie).equals(readFileSync(calme)), true,
+    'la charge en Furie a sa propre peinture, différente de la Völva calme');
 });
 
 test('la Furie de la Völva ne soigne plus personne : elle garde son +2 ATQ', () => {
