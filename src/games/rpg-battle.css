@@ -4903,9 +4903,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 400 10px/1.25 Georgia, serif;
 }
 .rpg-hover-card-preview--catalogue .rpg-hover-card-preview__weapon small { display: block; overflow: visible; }
-/* L'aperçu n'imprime plus la règle : ses mots-clés — seuls contenus de la
-   colonne d'infos, avec coût, armes et statistiques — portent chacun leur
-   « ? » et ouvrent leur description au survol (voir `effet-icons.css`). */
+/* Les effets expliqués par une pastille ne se répètent pas dans les règles
+   de l'aperçu ; le « ? » indique leur description au survol ou au toucher. */
 .rpg-hover-card-preview__hint {
   margin: -2px 0 0;
   color: rgba(255, 240, 200, .58);
@@ -4922,9 +4921,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__hint-tactile { display: none; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-tactile { display: inline; }
 .rpg-battle--touch .rpg-hover-card-preview__hint-souris { display: none; }
-/* La condition de pose des Vampires est lisible sans ouvrir la bulle du mot-clé.
-   Le violet rosé distingue l'Embuscade des effets ordinaires et reste contrasté
-   sur le fond sombre du survol, de l'appui long et de la fiche du catalogue. */
+/* Repli pour une ancienne carte dont la pastille Embuscade ne donne pas sa
+   condition ; les cartes complètes la portent dans leur pastille jaune. */
 .rpg-hover-card-preview__embuscade {
   display: grid;
   gap: 3px;

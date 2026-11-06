@@ -259,8 +259,8 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
  * À poser sous la ligne de type (fiche, aperçu, catalogue, guide). Chaque
  * pastille dit ce qu'elle fait au survol — le texte imprimé de la carte
  * d'abord, le glossaire à défaut (`effetsDetailles`). `pastilles` permet de
- * passer une lecture déjà faite. Les aperçus de carte n'impriment plus le
- * texte de règle : leurs pastilles sont la seule façon d'y lire un effet.
+ * passer une lecture déjà faite. Dans les aperçus, une règle déjà expliquée
+ * par sa pastille n'est pas réimprimée ; les précisions inédites le restent.
  */
 export function PastillesCarte({
   carte,

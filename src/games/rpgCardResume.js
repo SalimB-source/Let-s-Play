@@ -7,10 +7,10 @@
  * certaines cartes dépassaient l'encadré, qui coupait la fin sans aucun moyen
  * de la lire.
  *
- * Ces helpers ne font que **présenter** le texte : l'aperçu montre une phrase
- * « en bref » (mots-clés raccourcis, précisions entre parenthèses retirées,
- * coupure propre à la fin d'un mot), et garde la règle complète juste
- * dessous, dans un bloc qui défile (voir `rpg-battle.css`).
+ * Ces helpers ne font que **présenter** le texte : les mots-clés expliqués par
+ * une pastille jaune ne sont pas redits sous elle. Les cibles, durées, Liens et
+ * autres effets absents des pastilles restent lisibles (voir `rpg-battle.css`).
+ * Les anciens raccourcis « en bref » sont conservés pour leurs autres usages.
  *
  * Aucun texte de carte n'est modifié : le moteur, les icônes d'effet et les
  * fiches lisibles continuent de recevoir la règle d'origine.
@@ -86,6 +86,65 @@ export function raccourcirTexte(texte, limite = LIMITE_RESUME) {
   const morceau = (dernier > maximum * 0.55 ? debut.slice(0, dernier) : debut)
     .replace(/[\s,;:.–—-]+$/u, '');
   return `${morceau || debut.trimEnd()}…`;
+}
+
+/**
+ * Ne laisser dans une preview que les précisions que les pastilles ne disent
+ * pas déjà. La comparaison de mots est volontairement stricte : une portée,
+ * une cible, une durée ou un Lien différents restent imprimés.
+ * `lecture` est la lecture de `effetsDetailles` (sections explicites déjà
+ * transférées vers leurs pastilles), jamais le texte brut de la carte.
+ */
+export function texteApercuSansDoublons(lecture) {
+  const texte = lecture?.texte?.trim();
+  if (!texte) return '';
+  const pastilles = lecture.pastilles ?? [];
+  const mots = (phrase) => String(phrase).normalize('NFD').replace(/[\u0300-\u036f]/gu, '')
+    .toLowerCase().match(/[a-z0-9]+/gu) ?? [];
+  const empreinte = (phrase) => mots(phrase).sort().join(' ');
+  const expliqueDeja = (phrase) => {
+    const tokens = mots(phrase);
+    if (tokens.length < 4) return false;
+    const normalise = tokens.join(' ');
+    return pastilles.some(({ description }) => {
+      if (!description) return false;
+      const definition = mots(description).join(' ');
+      return definition.includes(normalise) || empreinte(phrase) === empreinte(description);
+    });
+  };
+
+  return texte.split(/\n+|(?<=[.!?])\s+/u).map((phrase) => {
+    if (expliqueDeja(phrase)) return '';
+    // Le Contresort décrit déjà l'annulation : ne laisser que les types de
+    // cartes qu'il peut contrer et, le cas échéant, la pioche supplémentaire.
+    if (pastilles.some((pastille) => pastille.cle === 'contresort' && pastille.description)) {
+      const contre = phrase.match(/^Magie Rapide — Contre(?:z)? (.+?)(?:, puis (piochez .+))?\.$/iu);
+      if (contre) return `Cible : ${contre[1]}.${contre[2] ? ` Puis ${contre[2]}.` : ''}`;
+    }
+    if (pastilles.some((pastille) => pastille.cle === 'debuff' && pastille.description)) {
+      const malus = phrase.match(/^.+ donne -\d+\/-\d+ à (une créature ciblée)\.$/iu);
+      if (malus) return `Cible : ${malus[1].replace(/ ciblée$/u, '')}.`;
+    }
+    // Quand le Renfort et l'Overkill ont chacun leur pastille, ne garder que
+    // leur portée et leur durée, absentes des deux explications.
+    if (['buff', 'overkill'].every((cle) => pastilles.some((pastille) => pastille.cle === cle && pastille.description))) {
+      const portee = phrase.match(/^(?:Jusqu’à la fin du tour, )?(.+?) gagn(?:e|ent) \+\d+\/\+\d+ et Overkill(?: jusqu’à la fin du tour)?\.$/iu)?.[1];
+      if (portee) return `Jusqu’à la fin du tour, ces effets s’appliquent à ${portee.toLowerCase()}.`;
+    }
+    if (pastilles.some((pastille) => pastille.cle === 'buff' && pastille.description)
+      && /gagnent \+\d+\/\+\d+ et /u.test(phrase)) {
+      return phrase.replace(/gagnent \+\d+\/\+\d+ et /u, 'gagnent aussi ');
+    }
+    // La cible et le déclencheur de ce Bouclier restent utiles, mais sa
+    // mécanique (« le prochain sort… ») est déjà dans la pastille jaune.
+    if (pastilles.some((pastille) => pastille.cle === 'bouclier' && pastille.description)) {
+      return phrase.replace(/(\breçoit un bouclier)\s*(?:—|:|qui bloque)\s*le prochain sort ou effet de créature adverse\b.*$/iu, '$1.');
+    }
+    // Les deux gains sont déjà identifiés comme « (furie) » sur les pastilles.
+    if (/^Tant que sa Furie est active, il gagne aussi Overkill et Envol\.$/u.test(phrase)
+      && ['envol', 'overkill'].every((cle) => pastilles.some((pastille) => pastille.cle === cle && pastille.label.includes('(furie)')))) return '';
+    return phrase;
+  }).filter(Boolean).join(' ');
 }
 
 /** La phrase courte à imprimer en tête d'une preview. Vide sans texte de règle. */

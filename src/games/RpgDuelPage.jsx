@@ -122,7 +122,7 @@ import { annonceSoins, regrouperSoins, RPG_SOIN_DUREE, sonDuSoin } from './rpgSo
 import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
-import { conditionEmbuscadePourApercu, regleCarteLongue, resumeCarte } from './rpgCardResume.js';
+import { conditionEmbuscadePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
 import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
 import { effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
@@ -3534,23 +3534,21 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   // appui long, fiche du catalogue, annonce — porte le socle de la famille, et
   // sa ligne de type prend la teinte de cette famille.
   const ligneFamille = classeLigneFamille(carte);
-  const effet = carte.text && carte.text !== '—' ? carte.text : null;
-  /* Les mots-clés passent en pastilles et portent seuls leur description au
-     survol (bulle, toucher, clavier). La description de la carte reste écrite
-     pour tout le reste : chez les créatures, `effetsDetailles` retire les
-     phrases des mots-clés génériques (Rapidité, Attaque ciblée, Envol…) — un
-     Fennec ou une Fériel n'impriment donc que leurs pastilles, un Faussoyeur
-     écrit encore « Quand le Faussoyeur arrive : … ». Les sorts, armes, sites
-     et terrains gardent leur texte : il dit ce que fait la carte. */
+  /* La règle originale reste sur la carte ; dans toutes les previews (survol,
+     appui long, annonce, catalogue…), seule la partie non expliquée par une
+     pastille jaune est répétée sous elle. Ceci vaut aussi pour les sorts et
+     les armes, sans masquer leur cible, leur durée ou leurs effets annexes. */
   const armesEquipees = estCreature ? armes.filter(Boolean) : [];
   const volDeVieAccorde = armesEquipees.some((arme) => arme.donne?.volDeVie || arme.effet?.volDeVie);
   const lecture = effetsDetailles(volDeVieAccorde ? { ...carte, volDeVie: true } : carte);
   const aMotsClesExplicables = lecture.pastilles.some((pastille) => pastille.description);
-  const description = estCreature ? lecture.texte : effet;
+  const description = texteApercuSansDoublons(lecture);
   const descriptionLignes = cardEffectLines(description);
-  // La pastille Embuscade conserve sa règle complète en bulle ; sa condition
-  // imprimée mérite aussi une lecture immédiate, dans chaque type d'aperçu.
+  // La condition est déjà dans la bulle Embuscade : ne la répéter que si la
+  // pastille ne l'explique pas (cas de données incomplètes).
   const conditionEmbuscade = conditionEmbuscadePourApercu(carte);
+  const conditionDejaExpliquee = lecture.pastilles.some((pastille) =>
+    pastille.cle === 'reactionTourAdverse' && conditionEmbuscade && pastille.description?.includes(conditionEmbuscade));
   const effetsEpuisesActifs = [...new Set(effetsEpuises ?? [])]
     .filter((cle) => cle === 'tenacite' || cle === 'bouclier');
   // L'aperçu ne reçoit pas l'entité, mais sa Furie déclenchée garantit les
@@ -3563,6 +3561,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   ].filter(Boolean);
   // La modification chiffrée que la carte inflige (-2/-2 pour la Lame de mer).
   const modifCarte = modificationStats(carte);
+  const statsDejaExpliquees = lecture.pastilles.some((pastille) => pastille.cle === 'buff' || pastille.cle === 'debuff');
   const cibleAnnoncee = variante === 'annonce' ? cible : null;
   const cibleLabel = cibleAnnoncee?.nom ? `, cible ${cibleAnnoncee.nom}` : '';
   // La fiche du catalogue : la carte ouverte d'un clic, en grand. Elle se lit
@@ -3594,7 +3593,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
           <span className="rpg-hover-card-preview__hint-tactile">Touchez un mot-clé pour lire son effet</span>
         </small>
       )}
-      {conditionEmbuscade && (
+      {conditionEmbuscade && !conditionDejaExpliquee && (
         <p className="rpg-hover-card-preview__embuscade" data-condition-embuscade={carte.conditionEmbuscade}>
           <strong>Embuscade · tour adverse</strong>
           <span>Jouable si {conditionEmbuscade}.</span>
@@ -3658,7 +3657,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
         </div>
       )}
       {carteEstArme(carte) && <p className="rpg-hover-card-preview__stats">Porteur : {signeBonus(bonusArme(carte)?.atk)} ⚔ <span>·</span> {signeBonus(bonusArme(carte)?.def)} 🛡</p>}
-      {modifCarte && !carteEstArme(carte) && (
+      {modifCarte && !carteEstArme(carte) && !statsDejaExpliquees && (
         <p className={`rpg-hover-card-preview__stats rpg-hover-card-preview__stats--modif${modifCarte.atk < 0 || modifCarte.def < 0 ? ' is-malus' : ' is-bonus'}`}>
           Statistiques : {signeStat(modifCarte.atk)} ⚔ <span>·</span> {signeStat(modifCarte.def)} 🛡
         </p>
@@ -3701,7 +3700,7 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       aria-hidden={variante === 'graveyard' ? 'true' : undefined}
       data-effets-epuises={effetsEpuisesActifs.length ? effetsEpuisesActifs.join(' ') : undefined}
       data-effets-inactifs={effetsInactifsActifs.length ? effetsInactifsActifs.join(' ') : undefined}
-      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${effet ? `, effet ${effet}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
+      aria-label={`Aperçu de ${carte.name} : ${cardFaceTypeLine(carte)}${estTerrain ? '' : `, coût ${cardCostLabel(carte)}`}${armesEquipees.length ? `, armes équipées ${armesEquipees.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, effets d’équipement ${effetsArmesEquipees.join(', ')}` : ''}${description ? `, effet ${description}` : ''}${mentionsEffetsEpuises.length ? `, ${mentionsEffetsEpuises.join(', ')}` : ''}${estEnFurie ? ', Furie déclenchée' : ''}${estCreature ? `, attaque ${attaqueAffichee}, défense ${defenseAffichee}` : ''}${modifCarte && !carteEstArme(carte) && !statsDejaExpliquees ? `, modifie les statistiques de ${signeStat(modifCarte.atk)} attaque et ${signeStat(modifCarte.def)} défense` : ''}${prisonniereCarte ? `, détient ${prisonniereCarte.name} en sa cale` : ''}${cibleLabel}`}
       style={{ ...style, ...(estEnFurie ? {} : cardFrameStyle(carte)) }}
     >
       {variante === 'annonce' ? (

@@ -336,6 +336,15 @@ test('chaque pastille dit ce qu’elle fait, et son explication quitte le texte 
   assert.equal(mur.texte, cardById('mur-de-boucliers').text,
     'la portée collective et la durée restent écrites sur le sort');
 
+  const faucon = effetsDetailles(cardById('faucon-du-zenith'));
+  assert.equal(faucon.texte, '', 'Bouclier — passe dans sa pastille au lieu d’être réimprimé');
+  assert.match(faucon.pastilles.find((pastille) => pastille.cle === 'bouclier').description, /premier sort/u);
+  const ifrit = effetsDetailles(cardById('ifrit-al-ahmar'));
+  assert.equal(ifrit.texte, '', 'le Bouclier d’Eau rejoint sa pastille de Protection');
+  assert.match(ifrit.pastilles.find((pastille) => pastille.cle === 'protection').description, /sort adverse d’Eau/u);
+  const rais = effetsDetailles(cardById('rais-de-la-galiote'));
+  assert.doesNotMatch(rais.texte, /Abordage 1/u, 'l’Abordage chiffré rejoint sa pastille');
+  assert.match(rais.texte, /La cale s’ouvre/u, 'la règle supplémentaire reste imprimée');
 });
 
 test('la Protection élémentaire colore un bouclier par élément, le Sable gardant son encre', () => {
