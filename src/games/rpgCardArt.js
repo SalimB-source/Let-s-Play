@@ -99,9 +99,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
-  // Tojiro en garde à trois lames : anatomie corrigée, bras levé, torse en
-  // torsion, jambes écartées, haori au vent et longs cheveux blancs argentés.
-  'tojiro-le-pourfendeur': 'tojiro-souls-trois-lames-cheveux-blancs-v8',
+  // Tojiro refait de zéro : trois sabres en plein bond, cheveux blancs
+  // argentés et aura de flammes en spirale au-dessus des ruines.
+  'tojiro-le-pourfendeur': 'tojiro-souls-aura-brasier-v9',
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
