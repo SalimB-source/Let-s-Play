@@ -47,7 +47,11 @@ ok('ignore-gpu-blocklist posé sur win32/darwin/linux, jamais de disable-gpu');
 
 const win = Object.fromEntries(gpuSwitches({ platform: 'win32' }));
 assert.equal(win['use-angle'], 'd3d11', 'Windows doit passer par Direct3D 11');
-ok('Windows traduit WebGL via ANGLE/D3D11');
+assert.ok('force_high_performance_gpu' in win,
+  'Windows doit demander à Chromium le GPU haute performance pour les PC hybrides');
+assert.ok(!('force_high_performance_gpu' in Object.fromEntries(gpuSwitches({ platform: 'linux' }))),
+  'le commutateur spécifique au choix Windows ne doit pas être posé sur Linux');
+ok('Windows traduit WebGL via ANGLE/D3D11 et demande le GPU haute performance');
 
 const force = Object.fromEntries(gpuSwitches({ platform: 'win32', env: { LETSPLAY_ANGLE: 'gl' } }));
 assert.equal(force['use-angle'], 'gl', 'LETSPLAY_ANGLE doit prendre le dessus');
