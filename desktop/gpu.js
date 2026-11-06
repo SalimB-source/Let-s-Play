@@ -16,9 +16,9 @@
  *      carte fonctionne parfaitement. → `ignore-gpu-blocklist`.
  *   2. **Le PC portable à deux GPU** (Intel/AMD intégré + NVIDIA/AMD dédié) :
  *      sans déclaration explicite, Windows peut exécuter le processus sur la
- *      puce intégrée. Les commutateurs seuls ne suffisent pas toujours ; le
- *      réglage système (« Processeur graphique haute performance ») ou le
- *      panneau du constructeur reste souverain. Le panneau de diagnostic de
+ *      puce intégrée. L'application demande le GPU haute performance à Chromium
+ *      (`force_high_performance_gpu`) ; le réglage Windows ou le panneau du
+ *      constructeur reste toutefois souverain. Le panneau de diagnostic de
  *      l'app (`app.getGPUInfo`) affiche le nom du GPU réellement utilisé :
  *      c'est la seule vérité à regarder.
  *   3. **Un `--disable-gpu` hérité** ou une session sans GPU (RDP, VM) :
@@ -78,6 +78,13 @@ export function gpuSwitches({ platform = 'linux', env = {} } = {}) {
   switches.push(['enable-gpu-rasterization', 'true']);
   switches.push(['enable-zero-copy', 'true']);
   switches.push(['enable-native-gpu-memory-buffers', 'true']);
+
+  // Windows peut choisir le GPU basse consommation d'un portable hybride.
+  // Demander explicitement le GPU haute performance à Chromium avant la
+  // création du processus GPU. C'est une préférence : si le pilote ou le
+  // réglage Graphiques de Windows l'emporte, le diagnostic indiquera le GPU
+  // réellement actif et l'utilisateur pourra choisir l'exe dans Windows.
+  if (platform === 'win32') switches.push(['force_high_performance_gpu', '']);
 
   // 3. Backend ANGLE : D3D11 sous Windows (chemin nominal de WebGL2), Metal sur
   //    macOS, choix d'ANGLE ailleurs. Dérogation possible pour le diagnostic.
@@ -182,11 +189,11 @@ export function qualifierRenderer(renderer = '') {
 
 /** Texte affiché en tête du panneau de diagnostic. */
 export const DIAGNOSTIC_INTRO = [
-  'Le Sablier de Bab El dessine sa table 3D en WebGL, traduit par ANGLE vers',
-  'l’API graphique du système. Si le renderer ci-dessous nomme votre carte',
-  '(NVIDIA / AMD / Intel Arc…), le GPU travaille. S’il indique SwiftShader ou',
+  'Vice City Rush et Le Sablier dessinent leur 3D en WebGL, traduit par ANGLE',
+  'vers l’API graphique du système. Sur Windows, l’application demande le GPU',
+  'haute performance. Si le renderer ci-dessous nomme votre carte (NVIDIA /',
+  'AMD / Intel Arc…), le GPU travaille. S’il indique SwiftShader ou',
   '« Microsoft Basic Render Driver », le jeu tourne sur le CPU : mettez à jour',
-  'le pilote graphique, ou, sur un portable à deux GPU, réglez Windows →',
-  'Système → Écran → Graphiques → « Processeur graphique haute performance »',
-  'pour Le Sablier de Bab El.',
+  'le pilote graphique, ou choisissez l’exe dans Windows → Système → Écran →',
+  'Graphiques → « Processeur graphique haute performance ».',
 ].join(' ');

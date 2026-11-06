@@ -206,19 +206,22 @@ Trois décisions portent tout l'édifice :
 
 ## La carte graphique
 
-Le duel dessine sa table en **WebGL** (Three.js 0.180, WebGL2). Sous Chromium,
-WebGL n'est jamais parlé au pilote directement : **ANGLE** le traduit vers
+Le Sablier dessine sa table et Vice City Rush sa ville en **WebGL** (Three.js
+0.180, WebGL2). Sous Chromium, WebGL n'est jamais parlé au pilote directement :
+**ANGLE** le traduit vers
 l'API native — Direct3D 11 sous Windows. C'est cette traduction qui décide si le
 jeu tourne sur le GPU ou retombe sur un rendu logiciel (SwiftShader) exécuté par
 le CPU. Trois situations font basculer un jeu WebGL dans le logiciel, et la
 coque traite les trois (`desktop/gpu.js`, posés **avant** `app.whenReady()` —
-après, ils n'ont plus aucun effet) :
+après, ils n'ont plus aucun effet). Sur un portable Windows à deux GPU, elle
+demande aussi explicitement le GPU haute performance :
 
 | Situation | Commutateur posé |
 |---|---|
 | Pilote sur la liste noire de Chromium (vieux pilotes, machines virtuelles) | `--ignore-gpu-blocklist` |
 | Rasterisation et transferts laissés au CPU | `--enable-gpu-rasterization`, `--enable-zero-copy`, `--enable-native-gpu-memory-buffers` |
 | Choix du backend sous Windows | `--use-angle=d3d11` |
+| PC portable hybride Windows : demander le GPU haute performance | `--force_high_performance_gpu` (préférence, le réglage Windows reste souverain) |
 | Pas de GPU du tout (le jeu reste jouable, lentement, au lieu d'une table vide) | `--enable-unsafe-swiftshader` |
 
 ### WebGPU : l'essai de la conduite libre
@@ -265,8 +268,8 @@ menu propose aussi le rapport brut `chrome://gpu`.
   Driver` → le CPU dessine. Mettez à jour le pilote graphique ; sur un portable
   à deux GPU (Intel/AMD intégré + NVIDIA/AMD dédié), réglez **Windows → Système
   → Écran → Graphiques → « Processeur graphique haute performance »** pour
-  l'application. Les commutateurs ne peuvent pas forcer Windows à choisir le GPU
-  dédié : c'est le réglage système qui tranche.
+  l'application. L'exe le demande déjà à Chromium ; ce réglage Windows reste
+  prioritaire si le pilote choisit malgré tout la puce intégrée.
 - Comparer : `LETSPLAY_SOFTWARE_GL=1` force volontairement le rendu logiciel. Si
   le jeu devient nettement plus lent avec, c'est la preuve que le GPU
   travaillait sans.

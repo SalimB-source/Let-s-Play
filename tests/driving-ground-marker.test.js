@@ -1,10 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import * as THREE from 'three';
 import { createDrivingGroundMarker, placeDrivingGroundMarker } from '../src/games/drivingGroundMarker.js';
+import { cityRushCullToZone } from '../src/games/cityRushPerformance.js';
+
+test('the live stop target survives zone culling before its first placement', () => {
+  const scene = new THREE.Scene();
+  const marker = createDrivingGroundMarker(0x47ffb0);
+  scene.add(marker);
+
+  // In the game the marker starts at (0, 0, 0), while the first exercise is
+  // around (100, -250). It must survive culling until the animation loop moves
+  // it to the current objective.
+  const cull = cityRushCullToZone(scene, { minX: 89, maxX: 111, minZ: -292, maxZ: -215 });
+  assert.equal(marker.userData.dynamic, true);
+  assert.equal(marker.parent, scene, 'the live marker must not be detached at the origin');
+  placeDrivingGroundMarker(marker, 97.65, -230, 4, () => 0);
+  assert.equal(marker.parent, scene, 'the target remains part of the rendered scene');
+  assert.equal(marker.position.x, 97.65);
+  assert.equal(marker.position.z, -230);
+  cull.restore();
+  marker.geometry.dispose();
+  marker.material.dispose();
+});
 
 test('exercise zones are flat ground rings with normal depth occlusion', () => {
   const marker = createDrivingGroundMarker(0x47ffb0);
   assert.equal(marker.geometry.type, 'RingGeometry');
+  assert.equal(marker.userData.dynamic, true);
   assert.equal(marker.material.depthTest, true);
   assert.equal(marker.material.depthWrite, true);
   assert.equal(marker.renderOrder, 0);

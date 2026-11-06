@@ -8,6 +8,11 @@ export function createDrivingGroundMarker(color) {
     color, depthTest: true, depthWrite: true, side: THREE.DoubleSide,
   }));
   marker.name = 'driving-exercise-ground-zone';
+  // The active stop target is repositioned on the first animation frame, after
+  // the school scene has already been culled to its exercise bounds. Without
+  // this flag, the zone culler sees this mesh at its default origin and
+  // detaches it permanently before it can be placed on the road.
+  marker.userData.dynamic = true;
   return marker;
 }
 
