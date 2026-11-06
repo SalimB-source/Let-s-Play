@@ -64,6 +64,27 @@ test('Fiche de carte : le centrage ne déborde pas sur la fiche d’appui long',
   );
 });
 
+test('Fiche du catalogue mobile : coût, couleur et ATQ/DEF discrets sans modifier les cartes en jeu', () => {
+  const debut = battleCss.indexOf('/* Sur la fiche mobile, les repères');
+  assert.ok(debut >= 0, 'la réduction des repères de la fiche existe');
+  const fin = battleCss.indexOf('/* ═', debut);
+  const mobile = battleCss.slice(debut, fin);
+  assert.match(mobile, /@media \(max-width: 720px\), \(orientation: landscape\) and \(max-height: 760px\)/,
+    'portrait et paysage mobile, y compris WebView annonçant une souris');
+  assert.match(mobile, /--rpg-card-marker-size:\s*clamp\(26px, min\(3\.4vw, 6dvh\), 34px\)/,
+    'coût et couleur partagent un diamètre réduit, même dans un paysage large');
+  assert.match(mobile, /font-size:\s*calc\(var\(--rpg-card-marker-size\) \* \.5\)/,
+    'le glyphe de couleur suit le diamètre de sa pastille');
+  assert.match(mobile, /grid-template-columns:\s*repeat\(2, max-content\)/,
+    'les deux plaques ne s’étirent plus jusqu’au milieu de la carte');
+  assert.match(mobile, /font-size:\s*clamp\(16px, min\(4\.5vw, 4\.4dvh\), 21px\)/,
+    'ATQ/DEF gardent une taille lisible mais contenue');
+  const selecteurs = mobile.split('\n').filter((ligne) => /^  \.rpg/.test(ligne));
+  assert.ok(selecteurs.length >= 7);
+  assert.ok(selecteurs.every((selecteur) => selecteur.includes('.rpg-card-peek--catalogue .rpg-hover-card-preview__face')),
+    'aucun sélecteur ne réduit les cartes du plateau ni les autres aperçus');
+});
+
 test('Fiche du catalogue mobile paysage : carte et règles au-dessus d’une boutique compacte', () => {
   assert.match(battleCss, /@media \(orientation: landscape\) and \(max-height: 760px\)/,
     'le paysage du WebView est reconnu même s’il annonce un pointeur de souris');

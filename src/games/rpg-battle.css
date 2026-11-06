@@ -14761,6 +14761,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-card-peek--catalogue .rpg-card-peek__close { min-height: 44px; }
 }
 
+/* Sur la fiche mobile, les repères ne doivent plus masquer la peinture :
+   diamètre réduit pour couleur/coût et plaques ATQ/DEF à leur largeur utile.
+   La réduction est propre à la fiche ouverte, pas aux cartes de la table. */
+@media (max-width: 720px), (orientation: landscape) and (max-height: 760px) {
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face {
+    --rpg-card-marker-size: clamp(26px, min(3.4vw, 6dvh), 34px);
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge {
+    border-width: 1.5px;
+    font-size: calc(var(--rpg-card-marker-size) * .5);
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-mana-cost,
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge__pip {
+    border-width: 1.5px;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card__foot {
+    grid-template-columns: repeat(2, max-content);
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card__stat--atk,
+  .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card__pt {
+    gap: 4px;
+    padding: 3px 6px;
+    border-radius: 6px;
+    font-size: clamp(16px, min(4.5vw, 4.4dvh), 21px);
+  }
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    MENU DU SABLIER — TÉLÉPHONE EN PAYSAGE : BARRE DE NAVIGATION À DROITE,
    ACCUEIL VERROUILLÉ SUR UN SEUL ÉCRAN (AUCUN DÉFILEMENT)
