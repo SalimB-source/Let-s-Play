@@ -64,21 +64,26 @@ test('Fiche de carte : le centrage ne déborde pas sur la fiche d’appui long',
   );
 });
 
-test('Fiche du catalogue mobile paysage : carte, infos et boutique tiennent sans étirement ni coupe', () => {
-  assert.match(battleCss, /@media \(hover: none\) and \(pointer: coarse\) and \(orientation: landscape\) and \(max-height: 760px\)/);
+test('Fiche du catalogue mobile paysage : carte et règles au-dessus d’une boutique compacte', () => {
+  assert.match(battleCss, /@media \(orientation: landscape\) and \(max-height: 760px\)/,
+    'le paysage du WebView est reconnu même s’il annonce un pointeur de souris');
   const mobile = (selecteur) => corpsDe(`\\s*${selecteur}`);
   const duo = mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-card-peek__duo');
-  assert.match(duo, /display:\s*grid/);
-  assert.match(duo, /grid-template-columns:\s*minmax\(0, 1fr\) var\(--rpg-vitrine-mobile-w\)/);
-  assert.match(duo, /width:\s*min\(100%, calc\(620px \+ var\(--rpg-vitrine-mobile-w\) \+ 14px\)\)/,
-    'la colonne des règles n’occupe pas toute la largeur du téléphone');
-  assert.match(mobile('\\.rpg-card-peek--catalogue \\.rpg-card-peek__panel'), /align-content:\s*safe center/,
-    'les règles longues restent accessibles en défilement');
-  assert.match(mobile('\\.rpg-card-peek--catalogue \\.rpg-hover-card-preview__details'), /align-self:\s*center/,
-    'les informations courtes restent centrées contre la carte');
-  const art = mobile('\\.rpg-card-peek--catalogue \\.rpg-vitrine__art');
-  assert.match(art, /width:\s*min\(100%, 24dvh\)/,
-    'l’art alternatif garde son portrait 4:5 sans prendre toute la hauteur');
-  assert.match(corpsDe('\\.rpg-vitrine'), /overflow-y:\s*auto/,
-    'le CTA et le solde restent accessibles si la vitrine est trop haute');
+  assert.match(duo, /display:\s*flex;\s*flex-direction:\s*column/,
+    'la boutique passe sous la carte, et non dans une troisième colonne étroite');
+  assert.match(duo, /width:\s*min\(680px, 100%\)/);
+  assert.match(duo, /overflow-y:\s*auto/,
+    'la fiche défile si les effets ou les actions dépassent');
+  const apercu = mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-hover-card-preview');
+  assert.match(apercu, /grid-template-columns:\s*minmax\(110px, min\(280px, 40dvh\)\) minmax\(0, 1fr\)/,
+    'carte et règles restent côte à côte');
+  assert.match(mobile('\\.rpg-card-peek--catalogue:has\\(\\.rpg-vitrine\\) \\.rpg-hover-card-preview__details'), /overflow-y:\s*auto/);
+  const vitrine = mobile('\\.rpg-card-peek--catalogue \\.rpg-vitrine');
+  assert.match(vitrine, /grid-template-columns:\s*min\(140px, 18dvh\) minmax\(0, 1fr\)/,
+    'le portrait alternatif miniature est à gauche de son action');
+  assert.match(mobile('\\.rpg-card-peek--catalogue \\.rpg-vitrine__art'), /grid-column:\s*1;\s*grid-row:\s*1 \/ span 5/);
+  assert.match(vitrine, /max-height:\s*none/,
+    'la vitrine peut grandir dans le volet défilant sans cacher ses commandes');
+  assert.match(battleCss, /\.rpg-card-peek__bar\s*\{[^}]*z-index:\s*1/s,
+    'Fermer reste hors de la zone qui défile');
 });
