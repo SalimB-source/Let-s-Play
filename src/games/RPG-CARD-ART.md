@@ -599,10 +599,10 @@ braise, Nuage de cendres, Vent rouge). La Frappe d'iaijutsu et les Feux de
 kitsune, refaits une seconde fois, portent `-v6`.
 
 Tojiro rejoint à présent l'huile sombre des autres samouraïs : ninja-samouraï
-au masque démoniaque, il fonce dans les airs vers le spectateur, katana levé
-pour frapper. Une aura de flammes entoure son corps et sa cape, sans Djinn
-visible. Son armure de samouraï est allégée, les bras sous les plaques usées
-(`tojiro-souls-aura-flammes-v6`). Son ancienne peinture nihonga au visage clair
+au masque démoniaque, il adopte une garde à trois lames, bras levé, torse en
+torsion et jambes largement écartées sous un haori emporté par le vent. Cette
+nouvelle composition a été peinte de zéro dans une cour de château en feu
+(`tojiro-souls-trois-lames-v7`). Son ancienne peinture nihonga au visage clair
 et aux talismans est archivée à l'identique sous
 `public/cards/alt/tojiro-le-pourfendeur.jpg` : une apparence achetable dans la
 fiche du Catalogue pour **400 ◈** (carte mythique), puis affichable sur Tojiro
@@ -1023,7 +1023,7 @@ une logique commune d'un set à l'autre.
 **Braise était déjà faite** : la dérogation Souls de dix-huit cartes de ce
 document (vingt-neuf au total avec les reprises) a couvert tout le set en 2025
 et 2026, sous les révisions `braise-souls-cendres-v2` à `-v6` ; Tojiro a
-également rejoint l'huile sombre depuis (`tojiro-souls-aura-flammes-v6`).
+également rejoint l'huile sombre depuis (`tojiro-souls-trois-lames-v7`).
 La **Montagne du Soleil rouge** est un terrain, hors du lot des cartes jouées.
 
 > **Ne pas se fier aux seuls noms de révision.** Un comptage rapide des marques
