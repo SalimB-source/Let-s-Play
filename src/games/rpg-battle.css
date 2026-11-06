@@ -14687,58 +14687,77 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-vitrine { width: clamp(140px, 22vw, 190px); }
 }
 
-/* Fiche du catalogue sur téléphone en paysage : le grand panneau d'infos et
-   la vitrine boutique écrasaient la carte (et la vitrine touchait le bord haut).
-   On borne la largeur du trio, centre ses trois parties et réduit la peinture
-   alternative par la hauteur disponible, sans rogner son portrait 4:5.
-   Chaque panneau défile si la règle ou les actions dépassent la hauteur. */
-@media (hover: none) and (pointer: coarse) and (orientation: landscape) and (max-height: 760px) {
+/* Téléphone/APK en paysage : une seule fiche en deux étages. Le haut rapproche
+   la carte et sa règle ; la boutique devient un bandeau compact en dessous,
+   avec sa peinture entière à gauche et son action à droite. Contrairement à
+   l'ancien trio de colonnes, ni l'étroit panneau de règles ni l'illustration
+   alternative ne prennent toute la hauteur. Le volet défile au besoin, tandis
+   que « Fermer la fiche » reste toujours accessible hors de ce défilement.
+   Le critère est la HAUTEUR, sans dépendre de hover/pointer : certains WebView
+   Android annoncent une souris malgré l'interface tactile. */
+@media (orientation: landscape) and (max-height: 760px) {
   .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-card-peek__duo {
-    --rpg-vitrine-mobile-w: clamp(124px, 17vw, 168px);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) var(--rpg-vitrine-mobile-w);
-    grid-template-rows: minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(8px, 1.2vw, 14px);
-    width: min(100%, calc(620px + var(--rpg-vitrine-mobile-w) + 14px));
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    justify-content: safe center;
+    gap: clamp(6px, 1.2dvh, 10px);
+    box-sizing: border-box;
+    width: min(680px, 100%);
     height: 100%;
+    min-height: 0;
+    padding: 4px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-card-peek__duo > .rpg-card-peek__panel,
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-card-peek__duo > .rpg-vitrine {
+    flex: none;
+    margin-block: 0;
+  }
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-card-peek__panel {
+    width: 100%;
+    max-height: none;
     overflow: visible;
   }
-  .rpg-card-peek--catalogue .rpg-card-peek__panel {
-    box-sizing: border-box;
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-hover-card-preview {
     width: 100%;
-    max-height: 100%;
-    min-height: 0;
-    align-content: safe center;
-    overflow-y: auto;
+    grid-template-columns: minmax(110px, min(280px, 40dvh)) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(8px, 1.5vw, 14px);
   }
-  .rpg-card-peek--catalogue .rpg-hover-card-preview {
-    width: 100%;
-    grid-template-columns: minmax(110px, min(260px, 44dvh)) minmax(0, 1fr);
-    gap: clamp(8px, 1vw, 12px);
-  }
-  .rpg-card-peek--catalogue .rpg-hover-card-preview__details {
+  .rpg-card-peek--catalogue:has(.rpg-vitrine) .rpg-hover-card-preview__details {
     align-self: center;
-    max-height: calc(100dvh - 100px);
+    max-height: min(45dvh, 360px);
     overflow-x: hidden;
     overflow-y: auto;
   }
   .rpg-card-peek--catalogue .rpg-vitrine {
     box-sizing: border-box;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: min(140px, 18dvh) minmax(0, 1fr);
+    grid-template-rows: none;
+    align-items: start;
+    gap: 4px 12px;
     width: 100%;
+    max-height: none;
     min-width: 0;
-    max-height: 100%;
-    padding: 7px;
+    padding: 8px 10px;
   }
   .rpg-card-peek--catalogue .rpg-vitrine__art {
-    grid-row: auto;
-    justify-self: center;
-    width: min(100%, 24dvh);
+    grid-column: 1;
+    grid-row: 1 / span 5;
+    align-self: center;
+    width: 100%;
   }
+  .rpg-card-peek--catalogue .rpg-vitrine__nom,
+  .rpg-card-peek--catalogue .rpg-vitrine__carte,
+  .rpg-card-peek--catalogue .rpg-vitrine__promesse,
   .rpg-card-peek--catalogue .rpg-vitrine__achat,
   .rpg-card-peek--catalogue .rpg-vitrine__pose,
-  .rpg-card-peek--catalogue .rpg-vitrine__retour { grid-column: auto; }
+  .rpg-card-peek--catalogue .rpg-vitrine__retour { grid-column: 2; min-width: 0; }
+  .rpg-card-peek--catalogue .rpg-vitrine__bouton,
   .rpg-card-peek--catalogue .rpg-card-peek__close { min-height: 44px; }
 }
 
