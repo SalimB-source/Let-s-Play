@@ -4,7 +4,11 @@
  * supported. Do not expose arbitrary decks or network actions through it.
  */
 import { duelCardById } from './rpgCards.js';
-import { rpgJouerCreature, rpgLancerAttaque, rpgLancerMagie, rpgNouveauDuel, rpgRetirerEntitesConquete } from './rpgDuel.js';
+import {
+  rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature,
+  rpgLancerAttaque, rpgLancerMagie, rpgMulligan, rpgNouveauDuel,
+  rpgPreparerDefausseFinDeTour, rpgRetirerEntitesConquete,
+} from './rpgDuel.js';
 import { RPG_MODE_MANA_ESSAI } from './rpgManaEssai.js';
 import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPlacer, mobaRetirer, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
 
@@ -30,6 +34,50 @@ export function rpgMobaNouveauDuel(options = {}) {
   const duel = rpgNouveauDuel({ ...options, modeMana: RPG_MODE_MANA_ESSAI, pvp: true });
   duel.moba = mobaNouveau();
   return duel;
+}
+
+/** Each seat chooses its own starting cards before the first turn begins. */
+export function rpgMobaMulligan(duel, side, indices = []) {
+  if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
+  if (!MOBA_SIDES.includes(side) || !Array.isArray(indices)
+    || indices.some((index) => !Number.isInteger(index) || index < 0 || index >= duel[side].main.length)
+    || new Set(indices).size !== indices.length) return fail('choix');
+  const expected = !duel.mulliganFait.joueur ? 'joueur' : !duel.mulliganFait.sorcier ? 'sorcier' : null;
+  if (side !== expected) return fail('pas-votre-tour');
+  const result = rpgMulligan(duel, side, indices);
+  if (!result.ok) return fail('mulligan');
+  if (side === 'sorcier') {
+    const start = rpgDemarrerManaEssai(duel);
+    if (!start.ok) return start;
+  }
+  return { ok: true, demarre: duel.manaEssaiDemarre };
+}
+
+/** The current player chooses their own excess cards rather than having the
+ * classic engine's automatic end-of-turn discard choose for them. */
+export function rpgMobaTerminerTour(duel, side) {
+  if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
+  if (!MOBA_SIDES.includes(side) || duel.tour !== side) return fail('pas-votre-tour');
+  if (!duel.manaEssaiDemarre || duel[side].manaChoixEnAttente
+    || !['principale', 'principale2'].includes(duel.phase)
+    || duel.fenetreReponse || duel.finDeTour || duel.combatDeclare || duel.arriveeEnAttente
+    || duel.effetCreatureEnAttente || duel.destructionsEnAttente?.length || duel.siteEnAttente
+    || (duel.defausseEnAttente && duel.defausseEnAttente.motif !== 'fin-de-tour')) return fail('timing');
+  const restant = rpgPreparerDefausseFinDeTour(duel, side);
+  if (restant) return { ok: true, defausse: restant };
+  const avant = duel.tour;
+  rpgFinDeTour(duel);
+  return duel.tour !== avant ? { ok: true, tour: duel.tour } : fail('timing');
+}
+
+export function rpgMobaDefausser(duel, side, index) {
+  if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
+  if (duel.tour !== side || duel.defausseEnAttente?.cote !== side
+    || duel.defausseEnAttente?.motif !== 'fin-de-tour') return fail('timing');
+  if (!Number.isInteger(index) || index < 0 || index >= duel[side].main.length) return fail('hors-main');
+  const result = rpgDefausserCarte(duel, side, index);
+  if (!result.ok) return result;
+  return { ok: true, restant: duel.defausseEnAttente?.restant ?? 0, carteId: result.carteId };
 }
 
 /** Check the engine's fixed slots and the lane record describe the same board.

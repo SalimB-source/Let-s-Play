@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan } from '../src/games/rpgDuel.js';
-import { rpgMobaNouveauDuel, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaLancerAttaque, rpgMobaLancerMagie, MOBA_DECK_ESSAI } from '../src/games/rpgMobaLocal.js';
+import { rpgMobaNouveauDuel, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaDefausser, MOBA_DECK_ESSAI } from '../src/games/rpgMobaLocal.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
 import { mobaInfliger, mobaVoie } from '../src/games/rpgMoba.js';
 
@@ -297,4 +297,52 @@ test('local engine can play through turns to conquer two lanes with printed stat
   assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 0);
   assert.equal(mobaVoie(duel.moba, 'center').hp.sorcier, 0);
   assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10);
+});
+
+test('each seat can choose a mulligan before the first turn, in order', () => {
+  const duel = rpgMobaNouveauDuel({ joueurDeck: MOBA_DECK_ESSAI, sorcierDeck: MOBA_DECK_ESSAI, rng: () => 0.5 });
+  const before = JSON.stringify(duel);
+  assert.equal(rpgMobaMulligan(duel, 'sorcier', []).raison, 'pas-votre-tour');
+  assert.equal(rpgMobaMulligan(duel, 'joueur', [999]).raison, 'choix');
+  assert.equal(rpgMobaMulligan(duel, 'joueur', [0, 0]).raison, 'choix');
+  assert.equal(JSON.stringify(duel), before);
+  const length = duel.joueur.main.length;
+  assert.deepEqual(rpgMobaMulligan(duel, 'joueur', [0, 1]), { ok: true, demarre: false });
+  assert.equal(duel.joueur.main.length, length);
+  assert.equal(rpgMobaMulligan(duel, 'joueur', []).raison, 'pas-votre-tour');
+  assert.deepEqual(rpgMobaMulligan(duel, 'sorcier', []), { ok: true, demarre: true });
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(duel.joueur.manaChoixEnAttente, true);
+});
+
+test('end-of-turn discard belongs to the active player and uses their choices', () => {
+  const duel = partie();
+  duel.joueur.manaChoixEnAttente = false;
+  duel.joueur.main.push('chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet', 'chien-du-guet');
+  const count = duel.joueur.main.length;
+  assert.ok(count > 6);
+  assert.equal(rpgMobaTerminerTour(duel, 'sorcier').raison, 'pas-votre-tour');
+  assert.equal(rpgMobaTerminerTour(duel, 'joueur').defausse, count - 6);
+  assert.equal(duel.tour, 'joueur');
+  assert.equal(rpgMobaDefausser(duel, 'sorcier', 0).raison, 'timing');
+  assert.equal(rpgMobaDefausser(duel, 'joueur', 999).raison, 'hors-main');
+  assert.equal(rpgMobaDefausser(duel, 'joueur').raison, 'hors-main');
+  assert.equal(duel.joueur.main.length, count);
+  while (duel.defausseEnAttente) assert.equal(rpgMobaDefausser(duel, 'joueur', 0).ok, true);
+  assert.equal(duel.joueur.main.length, 6);
+  assert.equal(duel.joueur.cimetiere.length, count - 6);
+  assert.deepEqual(rpgMobaTerminerTour(duel, 'joueur'), { ok: true, tour: 'sorcier' });
+  assert.equal(duel.tour, 'sorcier');
+  assert.equal(rpgMobaDefausser(duel, 'joueur', 0).raison, 'timing');
+});
+
+test('turn and mulligan actions are refused after MOBA victory', () => {
+  const duel = partie();
+  mobaInfliger(duel.moba, 'joueur', 'left', 10);
+  mobaInfliger(duel.moba, 'joueur', 'right', 10);
+  const before = JSON.stringify(duel);
+  assert.equal(rpgMobaTerminerTour(duel, 'joueur').raison, 'partie-terminee');
+  assert.equal(rpgMobaDefausser(duel, 'joueur', 0).raison, 'partie-terminee');
+  assert.equal(rpgMobaMulligan(duel, 'joueur', []).raison, 'partie-terminee');
+  assert.equal(JSON.stringify(duel), before);
 });
