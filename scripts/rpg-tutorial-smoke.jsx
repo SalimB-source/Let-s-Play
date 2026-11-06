@@ -27,6 +27,20 @@ async function avancerInfos(harnais, jusqua) {
   }
 }
 
+/**
+ * L'assaut adverse se referme en **deux clics** sur le même bouton : d'abord
+ * « Déclarer les bloqueurs » (les assignations sont figées, la fenêtre de
+ * réponse reste ouverte pour une dernière Magie Rapide ou une dernière
+ * Embuscade), puis « Résoudre le combat ».
+ */
+async function resoudreCombatAdverse(harnais, container) {
+  const bouton = () => container.querySelector('[data-tutorial-target="resolve-combat"]');
+  await harnais.click(bouton(), '« Déclarer les bloqueurs »');
+  await act(async () => { await wait(220); });
+  await harnais.click(bouton(), '« Résoudre le combat »');
+  await act(async () => { await wait(320); });
+}
+
 export async function checkRpgTutorial(assert) {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -129,8 +143,7 @@ export async function checkRpgTutorialCombat(assert) {
     assert.equal(harnais.step(), 'blocage-cible');
     await harnais.click(harnais.carteChamp('ennemi', 'chien-de-sable'), 'le Chien de sable attaquant');
     assert.equal(harnais.step(), 'blocage-confirmer');
-    await harnais.click(container.querySelector('[data-tutorial-target="resolve-combat"]'), 'Résoudre le combat');
-    await act(async () => { await wait(300); });
+    await resoudreCombatAdverse(harnais, container);
     assert.equal(harnais.step(), 'blocage-explique');
     await harnais.click(harnais.next(), 'le bilan du blocage');
     assert.equal(harnais.step(), 'termine');
@@ -420,8 +433,7 @@ export async function checkRpgTutorialAutresLecons(assert) {
     assert.equal(harnais.step(), 'blocage-neige-cible');
     await harnais.click(harnais.carteChamp('ennemi', 'guerrier-au-bouclier-rond'), 'le Guerrier adverse attaquant');
     assert.equal(harnais.step(), 'blocage-neige-confirmer');
-    await harnais.click(container.querySelector('[data-tutorial-target="resolve-combat"]'), 'Résoudre le combat Neige');
-    await act(async () => { await wait(300); });
+    await resoudreCombatAdverse(harnais, container);
     assert.equal(harnais.step(), 'furie');
     await harnais.click(harnais.next(), 'la règle de la Furie');
     assert.equal(harnais.step(), 'termine');
@@ -431,6 +443,114 @@ export async function checkRpgTutorialAutresLecons(assert) {
       container.querySelectorAll('.rpg-tutoriels__card.is-done').length,
       5,
       'les cinq leçons sont marquées terminées dans le menu',
+    );
+  } finally {
+    window.Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+    Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true, writable: true });
+    Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true, writable: true });
+    await act(async () => { harnais.root.unmount(); });
+    container.remove();
+  }
+}
+
+/**
+ * La sixième leçon : le mot-clé **Embuscade**. Elle est la seule à faire jouer
+ * le joueur pendant le tour adverse — hors annonce —, sur une attaque déclarée.
+ */
+export async function checkRpgTutorialEmbuscade(assert) {
+  const container = document.createElement('div');
+  document.body.appendChild(container);
+  const harnais = monter(container);
+  const originalGetBoundingClientRect = window.Element.prototype.getBoundingClientRect;
+  const originalInnerWidth = window.innerWidth;
+  const originalInnerHeight = window.innerHeight;
+  Object.defineProperty(window, 'innerWidth', { value: 1746, configurable: true, writable: true });
+  Object.defineProperty(window, 'innerHeight', { value: 859, configurable: true, writable: true });
+  window.Element.prototype.getBoundingClientRect = function mockRect() {
+    if (this.matches?.('[data-tutorial-target]')) {
+      return { left: 620, top: 680, right: 1120, bottom: 830, width: 500, height: 150 };
+    }
+    return originalGetBoundingClientRect.call(this);
+  };
+  const dansMain = (cardId) => harnais.card(cardId)?.getAttribute('data-jouable') === 'true';
+  try {
+    await act(async () => { harnais.root.render(<RpgDuelPage rng={() => 0.999} />); });
+    await harnais.click([...container.querySelectorAll('button')]
+      .find((bouton) => bouton.textContent.includes('Apprendre à jouer')), 'l’entrée « Apprendre à jouer »');
+    const entree = container.querySelector('[data-tutorial-start="embuscade-de-la-lune-noire"]');
+    assert.ok(entree, 'le menu propose la leçon Embuscade');
+    assert.ok(container.querySelector('[data-tutorial-id="embuscade-de-la-lune-noire"]')?.textContent.includes('150'),
+      'la leçon Embuscade annonce ses 150 crédits');
+    await harnais.click(entree, 'le départ de la leçon Embuscade');
+    await act(async () => { await wait(140); });
+    assert.equal(harnais.step(), 'bienvenue');
+
+    await avancerInfos(harnais, 'danseuse');
+    // À votre tour, la condition (« moins de PV que l’adversaire ») est fausse
+    // à 25 partout : la carte s’allume quand même.
+    assert.equal(dansMain('danseuse-des-ombres-de-dune'), true,
+      'une Embuscade est jouable pendant votre tour, condition ou non');
+    await harnais.click(harnais.card('danseuse-des-ombres-de-dune'), 'la Danseuse des ombres de dune');
+    await act(async () => { await wait(880); });
+    assert.equal(harnais.step(), 'danseuse-info');
+    assert.ok(harnais.carteChamp('equipe', 'danseuse-des-ombres-de-dune'), 'la Danseuse est posée');
+
+    await harnais.click(harnais.next(), 'la règle de l’Embuscade au calme');
+    assert.equal(harnais.step(), 'fin-tour');
+    await harnais.click(container.querySelector('[data-tutorial-target="end-turn"]'), 'la fin du tour');
+    for (let i = 0; i < 30 && harnais.step() !== 'sentinelle'; i += 1) {
+      await act(async () => { await wait(300); });
+    }
+    assert.equal(harnais.step(), 'sentinelle', 'l’assaut adverse ouvre la fenêtre et fait avancer la leçon');
+    assert.ok(harnais.carteChamp('ennemi', 'chien-du-guet') && harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'),
+      'les deux assaillants de la leçon sont déclarés');
+    assert.equal(dansMain('sentinelle-des-sables'), true,
+      'la Sentinelle s’allume pendant le tour adverse : sa condition est remplie');
+
+    await harnais.click(harnais.card('sentinelle-des-sables'), 'la Sentinelle des sables, en Embuscade');
+    await act(async () => { await wait(880); });
+    assert.equal(harnais.step(), 'sentinelle-cible', 'son arrivée ciblée attend l’attaquant à désigner');
+    assert.ok(harnais.carteChamp('equipe', 'sentinelle-des-sables'),
+      'la créature posée pendant le tour adverse est sur la table');
+    await harnais.click(harnais.carteChamp('ennemi', 'chien-du-guet'), 'le Chien du guet attaquant');
+    await act(async () => { await wait(340); });
+    assert.equal(harnais.step(), 'sentinelle-info');
+    assert.equal(harnais.carteChamp('ennemi', 'chien-du-guet'), null,
+      'les 3 dégâts de l’arrivée tombent avant les blessures de combat');
+
+    await harnais.click(harnais.next(), 'la règle de l’arrivée avant le combat');
+    assert.equal(harnais.step(), 'eclipse');
+    assert.equal(dansMain('eclipse-silencieuse'), true, 'la fenêtre reste ouverte pour une seconde Embuscade');
+    await harnais.click(harnais.card('eclipse-silencieuse'), 'l’Éclipse silencieuse');
+    await act(async () => { await wait(880); });
+    assert.equal(harnais.step(), 'eclipse-cible');
+    await harnais.click(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), 'le Faussoyeur des dunes');
+    await act(async () => { await wait(340); });
+    assert.equal(harnais.step(), 'eclipse-info');
+
+    await harnais.click(harnais.next(), 'la règle du malus temporaire');
+    assert.equal(harnais.step(), 'blocage');
+    await harnais.click(harnais.carteChamp('equipe', 'sentinelle-des-sables'), 'la Sentinelle, bloqueuse');
+    assert.equal(harnais.step(), 'blocage-cible', 'une créature arrivée en Embuscade bloque tout de suite');
+    await harnais.click(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), 'le Faussoyeur vidé de son attaque');
+    assert.equal(harnais.step(), 'blocage-confirmer');
+    await resoudreCombatAdverse(harnais, container);
+    assert.equal(harnais.step(), 'blocage-bilan');
+    assert.equal(harnais.carteChamp('ennemi', 'faussoyeur-des-dunes'), null, 'le blocage terrasse l’assaillant');
+    assert.equal(container.querySelector('.rpg-wizard-plate--joueur .rpg-wizard-plate__hp-value')?.textContent, '25',
+      'aucun dégât n’est passé jusqu’au joueur');
+
+    await harnais.click(harnais.next(), 'le bilan de l’assaut éteint');
+    assert.equal(harnais.step(), 'termine');
+    assert.ok(container.querySelector('.rpg-tutorial__reward')?.textContent.includes('150'));
+    await harnais.click(harnais.next(), 'Terminer la leçon Embuscade');
+    assert.equal(Boolean(harnais.tuto()), false, 'terminer la leçon referme l’overlay');
+    assert.equal(Boolean(container.querySelector('.rpg-table')), false,
+      'terminer la leçon quitte la table sans laisser la partie ouverte');
+    assert.equal(
+      container.querySelector('[data-tutorial-id="embuscade-de-la-lune-noire"]')?.classList.contains('is-done'),
+      true,
+      'la leçon Embuscade est marquée terminée dans le menu',
     );
   } finally {
     window.Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;

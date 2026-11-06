@@ -171,6 +171,7 @@ import {
 } from './rpgProfil.js';
 import {
   appliquerManaInitialTutoriel,
+  paquetDeLaLecon,
   preparerDuelTutoriel,
   preparerEtapeTutoriel,
   RPG_TUTORIELS,
@@ -8528,7 +8529,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
     duelRef.current = rpgNouveauDuel({
       joueurDeck: convertirDeckSansTerrain(deckEssai?.cardIds ?? (modeTutoriel
-        ? deckTutorielJoueur?.cardIds ?? RPG_TUTORIAL_PLAYER_DECK
+        ? paquetDeLaLecon(tutoriel) ?? RPG_TUTORIAL_PLAYER_DECK
         : joueurDeck ?? deckJoueurSelectionne?.cardIds ?? RPG_DECK_JOUEUR_BASE)),
       sorcierDeck: convertirDeckSansTerrain(adversaireEssai?.cardIds ?? (modeTutoriel
         ? deckTutorielAdverse?.cardIds ?? RPG_TUTORIAL_OPPONENT_DECK

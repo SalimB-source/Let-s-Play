@@ -30,15 +30,17 @@ try {
     checkRpgTutorialCombat,
     checkRpgTutorialEau,
     checkRpgTutorialAutresLecons,
+    checkRpgTutorialEmbuscade,
     checkRpgCardGuide,
   } = await import('../node_modules/.cache/rpg-tutorial/rpg-tutorial-smoke.js');
   await checkRpgTutorial(assert);
   await checkRpgTutorialCombat(assert);
   await checkRpgTutorialEau(assert);
   await checkRpgTutorialAutresLecons(assert);
+  await checkRpgTutorialEmbuscade(assert);
   await checkRpgCardGuide(assert);
 } finally {
   dom.window.close();
 }
 
-console.log('✓ Tutoriels du Sablier : choix des leçons, parcours complet des 5 leçons, fin de leçon sans laisser la partie ouverte, récompense unique et guide des cartes');
+console.log('✓ Tutoriels du Sablier : choix des leçons, parcours complet des 6 leçons (dont l’Embuscade pendant le tour adverse), fin de leçon sans laisser la partie ouverte, récompense unique et guide des cartes');

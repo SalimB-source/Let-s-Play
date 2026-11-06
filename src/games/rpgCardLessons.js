@@ -262,4 +262,11 @@ export const RPG_CARD_LESSONS = Object.freeze([
     title: 'Une arrivée peut offrir un sort gratuit',
     text: 'Quand le Kraken émerge, vous pouvez lancer depuis votre main une magie rapide ou une sorcellerie sans payer son coût de mana. Un éventuel Prix en PV reste dû, et un contresort — qui ne vit qu’en réponse — n’entre pas dans la faveur. La fenêtre se referme dès le sort lancé, ou à la fin du tour si vous y renoncez.',
   },
+  {
+    id: 'embuscade',
+    section: 'Capacités des créatures',
+    cardIds: ['sentinelle-des-sables', 'danseuse-des-ombres-de-dune', 'eclipse-silencieuse', 'embuscade'],
+    title: 'Embuscade : jouer pendant le tour adverse',
+    text: 'Embuscade autorise la créature à entrer en jeu pendant le tour adverse — mais seulement si sa condition imprimée est remplie (« seulement si l’adversaire attaque », « seulement si vous avez moins de PV que lui », « seulement si une créature adverse de force 2 ou plus attaque »…) et seulement dans une fenêtre de réponse : une carte annoncée, une attaque déclarée, un effet de créature qui désigne une cible, ou la fin du tour adverse. Hors fenêtre, la carte reste éteinte dans la main. Pendant VOTRE tour, la condition ne vous est jamais opposée : une Embuscade est alors une créature ordinaire, que la Danseuse des ombres de dune joue même à 25 PV partout. La pastille se lit sur la carte posée comme sur la fiche, où un cadre violet reprend la condition en clair. Deux règles suivent la pose : le mana ne se recharge qu’au début de votre tour, donc une Embuscade se paie avec la réserve gardée la veille ; et la créature arrivée chez l’adversaire peut bloquer immédiatement, mais n’attaquera qu’à votre prochain tour — sauf Rapidité. Attention à l’homonyme : la Sorcellerie Neige nommée « Embuscade » est un sort de zone (−2/−2 et blocage forcé), sans aucun lien avec le mot-clé.',
+  },
 ]);
