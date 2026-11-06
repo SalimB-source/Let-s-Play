@@ -99,9 +99,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
-  // Tojiro, samouraï démoniaque, atterrit en trombe face à un Djinn :
-  // reprise plus réaliste sous la pluie, révision dédiée au plein art.
-  'tojiro-le-pourfendeur': 'tojiro-souls-djinn-realiste-v4',
+  // Tojiro, samouraï démoniaque à l'armure légère, traverse le Djinn de son
+  // katana dans la cour sous la pluie : révision dédiée au plein art.
+  'tojiro-le-pourfendeur': 'tojiro-souls-djinn-pourfendu-v5',
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.
