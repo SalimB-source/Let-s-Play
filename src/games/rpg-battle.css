@@ -14053,7 +14053,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mode-menu__diaporama, .rpg-mode-menu__diapo { position: absolute; inset: 0; pointer-events: none; }
 .rpg-mode-menu__diapo { opacity: 0; transition: opacity .6s ease; }
 .rpg-mode-menu__diapo.is-active { opacity: 1; }
-.rpg-mode-menu__hero[data-offre-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; }
+/* Seul le slide actif reçoit les clics : son CTA ouvre l'onglet Souk. */
+.rpg-mode-menu__diapo--offre.is-active { pointer-events: auto; }
+.rpg-mode-menu__hero[data-offre-visible="true"] .rpg-mode-menu__hero-copy { opacity: 0; pointer-events: none; }
 .rpg-mode-menu__hero-copy { transition: opacity .6s ease; }
 .rpg-mode-menu__hero[data-motion-reduced="true"] .rpg-mode-menu__diapo,
 .rpg-mode-menu__hero[data-motion-reduced="true"] .rpg-mode-menu__hero-copy { transition: none; }
@@ -15360,4 +15362,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     margin-left: -5px; padding: 3px 5px; gap: 2px; font-size: 12px;
   }
   .rpg-mode-menu--jouer .rpg-coffre-dore.is-gain-droite .rpg-coffre-dore__montant svg { width: 12px; height: 12px; }
+}
+
+/* Sur un petit écran la vitrine ordinaire est très basse. Quand l'offre est
+   affichée, on laisse défiler l'accueil pour garder le prix et le CTA tactiles. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) {
+  .rpg-mode-menu--jouer .rpg-mode-menu__play:not(.rpg-mode-menu__play--full):has(.rpg-mode-menu__hero[data-offre-visible="true"]) {
+    overflow-y: auto;
+    grid-template-rows: auto auto auto;
+  }
+  .rpg-mode-menu--jouer .rpg-mode-menu__hero[data-offre-visible="true"] {
+    min-height: 235px;
+    max-height: none;
+  }
 }

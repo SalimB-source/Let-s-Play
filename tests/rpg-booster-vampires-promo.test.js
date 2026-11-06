@@ -43,7 +43,7 @@ test('les six affiches plein cadre portent chacune une description accessible de
   assert.match(page, /sablier-promo\/\$\{slide\.affiche\}/);
   assert.match(page, /promoAffichee && <p className="sr-only">\{promoAffichee\.description\}<\/p>/);
   assert.match(page, /data-promo-visible=\{promoAffichee \? 'true' : undefined\}/);
-  assert.match(page, /promoAffichee \? 9000 : 6000/);
+  assert.match(page, /promoAffichee \|\| \(offreActive && diapoAffichee === RPG_OFFRE_DIAPO\) \? 9000 : 6000/);
   assert.match(page, /className="rpg-mode-menu__promo-fond"[^>]*aria-hidden="true"/);
   assert.match(css, /\.rpg-mode-menu__promo-affiche \{ object-fit: contain; \}/,
     'aucun mot ni sachet n’est coupé par la vitrine, quel que soit son ratio');
