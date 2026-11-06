@@ -99,9 +99,9 @@ const CARD_ART_CACHE_VERSIONS = {
   'petit-orochi': 'petit-orochi-kaiga-couleurs-v1',
   'samourai-du-daimyo': 'samourai-du-daimyo-kaiga-couleurs-v1',
   'cavalier-des-deux-sabres': 'braise-souls-cendres-v4',
-  // Tojiro rejoint l'huile sombre : ninja-samouraï au masque démoniaque,
-  // bondissant du toit d'un château en feu. Révision dédiée au plein art.
-  'tojiro-le-pourfendeur': 'tojiro-souls-demon-volte-v2',
+  // Tojiro, samouraï démoniaque, atterrit en trombe face à un Djinn :
+  // illustration repeinte de zéro, révision dédiée au plein art.
+  'tojiro-le-pourfendeur': 'tojiro-souls-djinn-atterrissage-v3',
   'sabre-maudit': 'armurerie-sangles-v1',
   'montagne-du-soleil-rouge': 'montagne-kaiga-soleil-rouge-v1',
   // Soleil rouge uniquement : refonte kaiga / nihonga, personnages en action.

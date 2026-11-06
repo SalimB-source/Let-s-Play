@@ -400,9 +400,9 @@ test('les seize illustrations du set et leurs refontes ont une version de cache'
       'hatamoto-des-cendres': 'braise-souls-cendres-v4',
       'kenshi-de-la-forge': 'braise-souls-cendres-v4',
       'serment-de-la-forge': 'braise-souls-cendres-v4',
-      // Le dernier lot Souls : les magies et la Tour de braise. Tojiro rejoint
-      // les samouraïs sombres, masque démoniaque et bond au-dessus du château.
-      'tojiro-le-pourfendeur': 'tojiro-souls-demon-volte-v2',
+      // Le dernier lot Souls : les magies et la Tour de braise. Tojiro atterrit
+      // en trombe face au Djinn, masque démoniaque et katana levé.
+      'tojiro-le-pourfendeur': 'tojiro-souls-djinn-atterrissage-v3',
       'feux-de-kitsune': 'braise-souls-cendres-v6',
       'braise-et-sable': 'arc-fleche-souls-lueur-v3',
       'sabre-maudit': 'armurerie-sangles-v1',
