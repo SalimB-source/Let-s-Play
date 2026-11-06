@@ -29,6 +29,15 @@ const pastillesDe = (id) => pastillesPourCarte(cardById(id))
     ? `${pastille.label} ${pastille.valeur}`
     : pastille.label));
 
+test('les pastilles d’effets sont un peu plus grandes et alignées en colonne', () => {
+  const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
+  assert.match(css, /\.rpg-pastilles\s*\{[^}]*flex-direction: column;[^}]*align-items: flex-start;/s);
+  assert.match(css, /\.rpg-pastille\s*\{[^}]*min-height: 28px;[^}]*font: 650 12px\//s);
+  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 15px;[^}]*height: 15px;/s);
+  assert.match(css, /\.rpg-card-icones\s*\{[^}]*flex-wrap: wrap;/s,
+    'les icônes des faces de cartes conservent leur disposition');
+});
+
 test('le sprite porte les 40 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
   // 38 avec Embuscade et le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
