@@ -36,19 +36,22 @@ la famille de son symbole (`FAMILLE_PAR_SYMBOLE`), et à défaut sur la garde.
 Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
 12 px (une main mobile) à 40 px (une planche de revue) sans redessin :
 
-1. la **silhouette** entière en encre — c'est le contour sombre ;
+1. la **silhouette** entière en encre, doublée d'un trait d'encre (`CONTOUR`) —
+   le contour sombre qui détache la pierre de l'illustration ;
 2. l'**anneau** en creux — la marche du biseau ;
 3. le **champ** dans la teinte de la pierre ;
 4. la **moitié haute** du champ, éclaircie par la lueur ;
 5. la **moitié basse**, assombrie par l'encre ;
 6. le **filet** clair sur le champ — l'arête taillée ;
-7. le **pictogramme**, blanc, à 13 unités (diamant) ou 18 (hexagone).
+7. le **pictogramme**, blanc, à 12 unités (diamant) ou 19 (hexagone).
 
 Le biseau n'a pas la même épaisseur selon la forme (`BISEAU_PAR_FORME`) :
-l'**hexagone** ouvre largement son champ (anneau 82 %, champ 70 %) — c'est lui
-qui porte le plus de couleur —, tandis que le **diamant**, dont les quatre
-pointes rognent le centre, garde un champ resserré (78 % / 64 %) sans quoi son
-pictogramme déborderait sur le contour.
+l'**hexagone** ouvre son champ à 80 % (anneau 90 %), le **diamant** à 84 %
+(anneau 92 %) — ses quatre pointes rognent le centre, il lui faut donc un champ
+plus large pour que son pictogramme reste dedans. Le contour sombre, lui, ne
+vient plus de l'épaisseur de l'anneau mais du trait d'encre : la pierre garde un
+grand champ de couleur **et** une arête nette, y compris sur une illustration
+claire.
 
 L'hexagone remplit aussi son carré de plus près que le premier dessin : 28 de
 large sur 30 de haut. À 18 px sur une face de carte, une pierre étroite se lisait
