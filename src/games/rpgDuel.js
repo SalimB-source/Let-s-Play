@@ -4319,6 +4319,10 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       return;
     }
     case 'degats': {
+      // Remember the source lane before the wave: deaths and retaliation may
+      // remove the source before its separate damage to the opposing lane.
+      const voieSourceMoba = duel.moba && sourceType === 'capacite'
+        ? duel[cote].creatures.find((entite) => entite.id === sauf)?.mobaLane : null;
       if (effet.cible === 'toutes-creatures' && Number.isFinite(effet.amountSiBlessee)) {
         // Photographier les PV avant la vague : les blessures de cette même
         // arrivée ne rendent pas une créature éligible au montant augmenté.
@@ -4472,8 +4476,15 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       // `etSorcier` : le feu se propage jusqu'au sorcier adverse (le Braisier
       // du souk) — le même effet frappe la table, puis le visage.
       if (effet.etSorcier) {
-        rpgInfligerSorcier(duel, adv, effet.etSorcier);
+        if (duel.moba) {
+          if (typeof options?.resoudreDegatsSorcier === 'function') {
+            options.resoudreDegatsSorcier({ cote: adv, amount: effet.etSorcier, sourceCarteId });
+          } else if (voieSourceMoba) {
+            mobaPerdreVieAdverse(duel, cote, voieSourceMoba, effet.etSorcier);
+          }
+        } else rpgInfligerSorcier(duel, adv, effet.etSorcier);
       }
+      if (duel.moba?.winner) return;
       // Une zone qui atteint des Contre-attaques les réveille : les sorts
       // ciblés, eux, ripostent déjà via `riposterSurEffet` dans `appliquer`.
       if (estUneZone) {
@@ -5649,7 +5660,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, onEntitePlacee = null } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -5912,7 +5923,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     if (!((duel.pvp || attendreReponseEffet)
       && attendreEffetCreature(duel, cote, carte.id, entite.id, cibleArrivee, 'arrivee'))) {
       appliquer(duel, cote, carte.arrivee.attaquanteSeulement ? { ...carte.arrivee, amount: entite.atk } : effetArriveePourCible(carte, cibleArrivee), cibleArrivee,
-        entite.id, cardColors(carte), 'capacite', carte.id, null, { resoudreSoinSorcier });
+        entite.id, cardColors(carte), 'capacite', carte.id, null, { resoudreSoinSorcier, resoudreDegatsSorcier });
       journaliserArriveeAuSorcier(duel, carte, cibleArrivee);
     }
   }

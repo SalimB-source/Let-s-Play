@@ -18,6 +18,7 @@ import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from './rp
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA } from './rpgMobaAI.js';
 import './rpg-moba.css';
 
+const TAILLE_PAGE_MAIN = 6;
 const noms = { joueur: 'Vous', sorcier: 'IA' };
 const voies = { left: 'Voie gauche', center: 'Voie centrale', right: 'Voie droite' };
 const glyphes = { left: 'I', center: 'II', right: 'III' };
@@ -71,6 +72,8 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
   const [decksPersonnalises, setDecksPersonnalises] = useState({ joueur: null, sorcier: null });
   const [edition, setEdition] = useState(null);
   const [confirmerSortie, setConfirmerSortie] = useState(false);
+  const [pageMain, setPageMain] = useState(0);
+  const [pageJournal, setPageJournal] = useState(0);
   const mulliganSide = 'joueur';
   const [mulliganIndices, setMulliganIndices] = useState([]);
   const [erreur, setErreur] = useState('');
@@ -135,6 +138,15 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
   const recherche = duel.mobaRechercheEnAttente;
   const mainSide = defausse ? duel.defausseEnAttente.cote : (['blocage', 'fin', 'reponse-arrivee'].includes(etape) ? defenseur : actif);
   const campMain = duel[mainSide];
+  const nombrePagesMain = Math.max(1, Math.ceil(campMain.main.length / TAILLE_PAGE_MAIN));
+  const pageMainVisible = Math.min(pageMain, nombrePagesMain - 1);
+  const debutPageMain = pageMainVisible * TAILLE_PAGE_MAIN;
+  const lignesJournal = duel.log.slice(-12).reverse();
+  const pagesJournal = Math.max(1, Math.ceil(lignesJournal.length / 2));
+  const pageJournalVisible = Math.min(pageJournal, pagesJournal - 1);
+  useEffect(() => {
+    if (mainSide === 'joueur') setPageMain((page) => Math.min(page, nombrePagesMain - 1));
+  }, [mainSide, nombrePagesMain]);
   const getEntity = (side, id) => duel[side].creatures.find((e) => e.id === id);
   const scores = Object.fromEntries(['joueur', 'sorcier'].map((side) => [side, duel.moba.lanes.filter((lane) => lane.conqueredBy === side).length]));
   const deckPour = (side) => decksPersonnalises[side] ?? MOBA_DECKS.find((deck) => deck.id === (side === 'joueur' ? deckJoueur : deckSorcier));
@@ -276,6 +288,8 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     const result = rpgMobaJouerCreature(duel, actif, carte, lane, slot);
     if (!afficherResultat(result)) return;
     montrerDestructions(avantDestructions);
+    if (result.damageEvents?.length) setEvents(result.damageEvents);
+    if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier');
     setCarte(null);
     if (result.arriveeEnAttente) setEtape('arrivee');
   };
@@ -381,7 +395,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     onPlaySfx?.('attackers_confirm');
     setCarte(null); setEtape('blocage'); setCible(attaquants.find((id) => !ciblesRapides[id]) ?? null);
   };
-  const nouvellePartie = () => { setConfirmerSortie(false); setDuel(initialiser()); setCarte(null); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setBlocages({}); setCible(null); setEtape(initialiser === nouveau ? 'choix' : 'mulligan'); setMulliganIndices([]); setErreur(''); setIaBloquee(false); setPrixLane(null); setEvents([]); setSoinsVoies([]); setAnnonceSort(null); setSortFx({}); setCombatFx({}); setFantomes([]); };
+  const nouvellePartie = () => { setPageMain(0); setPageJournal(0); setConfirmerSortie(false); setDuel(initialiser()); setCarte(null); setAttaquants([]); setCiblesRapides({}); setCibleRapideEnCours(null); setBlocages({}); setCible(null); setEtape(initialiser === nouveau ? 'choix' : 'mulligan'); setMulliganIndices([]); setErreur(''); setIaBloquee(false); setPrixLane(null); setEvents([]); setSoinsVoies([]); setAnnonceSort(null); setSortFx({}); setCombatFx({}); setFantomes([]); };
   const iaAgit = !fini && !confirmerSortie && (recherche ? recherche.cote === 'sorcier' : defausse ? mainSide === 'sorcier' : ((['tour', 'arrivee'].includes(etape) && actif === 'sorcier')
     || (['blocage', 'fin', 'reponse-arrivee'].includes(etape) && defenseur === 'sorcier')));
   useEffect(() => {
@@ -405,7 +419,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
           else if (creature) {
             const avant = instantaneDestructions();
             const result = rpgMobaJouerCreature(duel, 'sorcier', creature.id, creature.lane, creature.slot);
-            if (afficherResultat(result)) { montrerDestructions(avant); if (result.arriveeEnAttente) setEtape('arrivee'); }
+            if (afficherResultat(result)) { montrerDestructions(avant); if (result.damageEvents?.length) setEvents(result.damageEvents); if (result.damageEvents?.some((event) => event.damage > 0)) onPlaySfx?.('degats_sorcier'); if (result.arriveeEnAttente) setEtape('arrivee'); }
           } else {
             const ids = duel.attaqueJouee !== 'sorcier' ? rpgMobaChoisirAttaquantsIA(duel) : [];
             if (ids.length) {
@@ -461,7 +475,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
             : etape === 'blocage' ? 'Défenseur : jouez une magie rapide ou choisissez un attaquant, puis ses bloqueurs dans la même voie.'
             : carte ? 'Choisissez une case illuminée pour invoquer votre créature.'
               : 'Jouez une carte, ou sélectionnez vos créatures prêtes pour attaquer.';
-  return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")` }}>
+  return <main className="moba" aria-label="MOBA, partie contre l’IA" style={{ '--moba-table': `url("${import.meta.env.BASE_URL}card-table.jpg")`, '--moba-terrain-haut': terrainPour('sorcier'), '--moba-terrain-bas': terrainPour('joueur'), '--moba-card-back': `url("${import.meta.env.BASE_URL}dos-de-carte.jpg")` }}>
     {rendu && <EffetsSprite />}
     <div inert={Boolean(etape === 'mulligan' || etape === 'choix' || fini || apercu || confirmerSortie || (recherche?.cote === 'joueur'))}>
     <header className="moba__header">
@@ -478,20 +492,20 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     </div>
     <div className="moba__scoreboard" aria-label="Score de conquête">
       {['joueur', 'sorcier'].map((side) => <div key={side} className={`moba__player moba__player--${side}${actif === side && etape === 'tour' ? ' is-active' : ''}`}>
-        <span className="moba__player-emblem" aria-hidden="true">{side === 'joueur' ? 'Ⅰ' : 'Ⅱ'}</span>
+        <span className="moba__player-emblem" aria-hidden="true"><img src={cardArt(side === 'joueur' ? 'tin-hinan' : (deckPour('sorcier').cardIds.find((id) => cardById(id)?.kind === 'creature') ?? 'ifrit-des-ergs'))} alt="" /></span>
         <span className="moba__player-name"><small>{side === actif && etape === 'tour' ? 'TOUR ACTIF' : 'DUELLISTE'}</small><strong>{noms[side]}</strong></span>
         <span className="moba__player-score" aria-label={`${scores[side]} voies conquises sur 2`}><Marque active={scores[side] > 0} /><Marque active={scores[side] > 1} /><small>{scores[side]} / 2</small></span>
       </div>)}
       <div className="moba__score-center"><span>◆</span><small>CONQUÊTE</small></div>
     </div>
+    <div className="moba__hidden-hand" aria-label={`Main adverse : ${duel.sorcier.main.length} cartes, faces cachées`}><div aria-hidden="true">{Array.from({ length: Math.min(duel.sorcier.main.length, 7) }, (_, index) => <span key={index} />)}</div><small>Main adverse · {duel.sorcier.main.length}</small></div>
     <div className="moba__ai-status" role="status">{iaBloquee ? <><span>{erreur} </span><button type="button" onClick={() => { setErreur(''); setIaBloquee(false); }}>Réessayer</button></> : iaAgit ? 'L’IA réfléchit…' : ''}</div>
     <div inert={iaAgit}>
     <div className="moba__status"><strong>{noms[actif]} <span>·</span> {etape === 'blocage' ? `défense de ${noms[defenseur]}` : ['fin', 'reponse-arrivee'].includes(etape) ? `réponse de ${noms[defenseur]}` : 'phase principale'}</strong><span className="moba__mana">{campMain.couleurs.map((c) => <span className={`moba__mana-${c}`} key={c}><i aria-hidden="true">◆</i> {c} <b>{campMain.mana[c] ?? 0}</b></span>)}</span></div>
     {camp.manaChoixEnAttente && !defausse && !fini && etape === 'tour' && <div className="moba__choice"><strong>Choisissez votre nouveau mana</strong>{camp.couleurs.map((color) => <button type="button" key={color} onClick={() => afficherResultat(rpgChoisirCouleurMana(duel, actif, color))}>◆ {color}</button>)}</div>}
     <div className="moba__directive" aria-live="polite"><span className="moba__directive-icon" aria-hidden="true">✧</span><div className="moba__directive-copy"><p className="moba__hint">{instruction}</p>{erreur && <p className="moba__error" role="alert">{erreur}</p>}</div>{(carte || cibleRapideEnCours) && !defausse && !fini && <button type="button" className="moba__cancel-choice" onClick={annulerChoix}>Annuler le choix</button>}</div>
-    <p className="moba__scroll-hint">↔ Faites défiler le plateau pour voir les trois voies</p>
     <div className="moba__field-scroll" role="region" aria-label="Plateau des trois voies" tabIndex={0}>
-    <div className="moba__battlefield" style={{ '--moba-terrain-haut': terrainPour('sorcier'), '--moba-terrain-bas': terrainPour('joueur') }}><div className="moba__lanes">
+    <div className="moba__battlefield"><div className="moba__lanes">
       {duel.moba.lanes.map((lane) => <section key={lane.id} className={`moba__lane${lane.active ? '' : ' is-conquered'}`} aria-label={voies[lane.id]}>
         <div className="moba__lanehead"><span className="moba__lane-number">{glyphes[lane.id]}</span><strong>{voies[lane.id]}</strong><span className="moba__lane-state">{lane.active ? 'EN JEU' : `CONQUISE · ${noms[lane.conqueredBy]}`}</span></div>
         {['sorcier', 'joueur'].map((side) => <div className={`moba__side moba__side--${side}`} key={side}>
@@ -552,7 +566,8 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     <div className="moba__controls"><div className="moba__phase"><span>✦</span><div><small>VOTRE STRATÉGIE</small><strong>{etape === 'arrivee' ? 'Choix de la cible' : etape === 'reponse-arrivee' ? 'Réponse à la capacité' : etape === 'fin' ? 'Réponse de fin de tour' : etape === 'blocage' ? 'Défense' : defausse ? 'Défausse' : duel.attaqueJouee === actif ? 'Après le combat' : 'Phase principale'}</strong></div></div><div className="moba__buttons">
       {etape === 'tour' ? <><button type="button" disabled={!attaquants.length || !!cibleRapideEnCours || fini || !!defausse || camp.manaChoixEnAttente || duel.attaqueJouee === actif} onClick={declarer}>Déclarer {attaquants.length || ''} attaque(s)</button><button type="button" className="moba__primary" disabled={fini || !!cibleRapideEnCours || !!defausse || camp.manaChoixEnAttente} onClick={finTour}>Fin du tour <span>→</span></button></> : etape === 'blocage' ? <button type="button" className="moba__primary" disabled={!!defausse} onClick={() => resoudre()}>Résoudre le combat →</button> : etape === 'fin' ? <button type="button" className="moba__primary" disabled={!!defausse} onClick={passerFinTour}>Passer et commencer mon tour →</button> : etape === 'reponse-arrivee' ? <button type="button" className="moba__primary" disabled={!!defausse} onClick={passerEffetCreature}>Passer et résoudre l’effet →</button> : null}
     </div></div>
-    {mainSide === 'joueur' && ['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMain.deck.length}</b></span></div><div className="moba__hand-cards">{campMain.main.map((id, index) => {
+    {mainSide === 'joueur' && ['tour', 'arrivee', 'blocage', 'fin', 'reponse-arrivee'].includes(etape) && <section className="moba__hand" aria-label="Votre main"><div className="moba__handhead"><div><span>VOTRE RÉSERVE</span><h2>Votre main</h2></div><span className="moba__deck-count">PIOCHE <b>{campMain.deck.length}</b></span>{nombrePagesMain > 1 && <div className="moba__hand-pages" aria-label="Pages de la main"><button type="button" aria-label="Page précédente de la main" disabled={pageMainVisible === 0} onClick={() => setPageMain(pageMainVisible - 1)}>‹</button><span>{pageMainVisible + 1} / {nombrePagesMain}</span><button type="button" aria-label="Page suivante de la main" disabled={pageMainVisible >= nombrePagesMain - 1} onClick={() => setPageMain(pageMainVisible + 1)}>›</button></div>}</div><div className="moba__hand-cards">{campMain.main.slice(debutPageMain, debutPageMain + TAILLE_PAGE_MAIN).map((id, pageIndex) => {
+      const index = debutPageMain + pageIndex;
       const card = cardById(id);
       const disabled = fini || (!defausse && (!!cibleRapideEnCours || etape === 'arrivee' || campMain.manaChoixEnAttente || (['blocage', 'fin', 'reponse-arrivee'].includes(etape) && !card.instant) || !rpgMobaPeutPayer(duel, mainSide, card)));
       const selected = carte === id && !defausse;
@@ -574,7 +589,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     })}</div></section>}
     </div>
     {mainSide !== 'joueur' && <div className="moba__opponent-hand" aria-label="Main de l’IA masquée"><span aria-hidden="true">◇</span><div><strong>Tour de l’adversaire</strong><small>Les cartes de l’IA restent cachées.</small></div></div>}
-    <details className="moba__journal"><summary>Journal du duel</summary>{duel.log.slice(-12).reverse().map((line, i) => <p key={i}>{line}</p>)}</details>
+    <details className="moba__journal"><summary>Journal du duel</summary>{lignesJournal.slice(pageJournalVisible * 2, pageJournalVisible * 2 + 2).map((line, i) => <p key={i}>{line}</p>)}{pagesJournal > 1 && <div className="moba__journal-pages" aria-label="Pages du journal"><button type="button" aria-label="Page précédente du journal" disabled={pageJournalVisible === 0} onClick={() => setPageJournal(pageJournalVisible - 1)}>‹</button><span>{pageJournalVisible + 1} / {pagesJournal}</span><button type="button" aria-label="Page suivante du journal" disabled={pageJournalVisible >= pagesJournal - 1} onClick={() => setPageJournal(pageJournalVisible + 1)}>›</button></div>}</details>
     </div>
     {apercu && rendu?.ApercuCarteAppuiLong && <rendu.ApercuCarteAppuiLong carte={cardById(apercu.carteId)} furieDeclenchee={Boolean(apercu.entity?.furieDeclenchee)} statsFurie={apercu.entity?.furieDeclenchee ? { atk: apercu.entity.atk, def: apercu.entity.pv } : null} onFermer={() => setApercu(null)} />}
     {etape === 'choix' && !edition && <div className="moba__overlay" role="dialog" aria-modal="true" aria-label="Choix des decks"><div className="moba__modal"><span>DUEL SOLO · PRÉPARATION</span><h2>Choisissez les decks</h2><p>Choisissez un deck préconstruit ou personnalisez-le avec les cartes adaptées au MOBA.</p><div className="moba__deck-choices">{['joueur', 'sorcier'].map((side) => <div className="moba__deck-choice" key={side}><label>{noms[side]}<select autoFocus={side === 'joueur'} value={side === 'joueur' ? deckJoueur : deckSorcier} onChange={(event) => choisirDeck(side, event.target.value)}>{MOBA_DECKS.map((deck) => <option key={deck.id} value={deck.id}>{deck.name}</option>)}</select></label><small>{decksPersonnalises[side] ? `Deck personnalisé · ${deckPour(side).elements.join(', ')}` : deckPour(side).description}</small><button type="button" onClick={() => setEdition(side)}>Personnaliser le deck {side === 'joueur' ? 'du joueur' : 'de l’IA'}</button></div>)}</div><button type="button" className="moba__primary" onClick={() => { setDuel(nouveau(deckPour('joueur'), deckPour('sorcier'))); setEtape('mulligan'); }}>Commencer →</button><button type="button" onClick={onQuitter}>Retour au menu</button></div></div>}

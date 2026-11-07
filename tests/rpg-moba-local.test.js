@@ -2910,3 +2910,184 @@ test('opposing Guetteur wins during an authoritative turn transition without hit
   assert.equal(duel.joueur.pv, wizard); assert.equal(duel.sorcier.deck.length, deck - 1);
   assert.equal(rpgMobaPlacementCoherent(duel), true);
 });
+
+test('Braisier damages enemy creatures across lanes, but only its own opposing lane', () => {
+  const duel = partieCombat();
+  const ally = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'center', 0).entite;
+  rpgFinDeTour(duel); duel.sorcier.mana.braise = 20;
+  const victim = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  const protectedOne = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'center', 0).entite;
+  protectedOne.bouclier = 1;
+  rpgFinDeTour(duel); duel.joueur.main = ['braisier-du-souk']; duel.joueur.mana.braise = 20;
+  const wizard = duel.sorcier.pv;
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 0);
+  assert.equal(result.ok, true); assert.equal(ally.pv, 1);
+  assert.equal(duel.sorcier.creatures.includes(victim), false);
+  assert.equal(mobaVoie(duel.moba, 'left').slots.sorcier[0], null);
+  assert.equal(duel.sorcier.creatures.includes(protectedOne), true); assert.equal(protectedOne.bouclier, 0);
+  assert.deepEqual(duel.moba.lanes.map((lane) => lane.hp.sorcier), [10, 10, 9]);
+  assert.equal(duel.sorcier.pv, wizard);
+  assert.deepEqual(result.damageEvents.map((event) => [event.laneId, event.targetSide, event.damage]), [['right', 'sorcier', 1]]);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Braisier can conquer a second lane on arrival and clean up without damaging legacy wizard HP', () => {
+  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 20;
+  const survivor = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'right', 0).entite;
+  survivor.pv = survivor.pvMax = 4;
+  rpgFinDeTour(duel); duel.joueur.main = ['braisier-du-souk']; duel.joueur.mana.braise = 20;
+  mobaInfliger(duel.moba, 'joueur', 'left', 10); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  const wizard = duel.sorcier.pv;
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 1);
+  assert.equal(result.ok, true); assert.equal(duel.moba.winner, 'joueur'); assert.equal(duel.fin.gagnant, 'joueur');
+  assert.equal(duel.sorcier.pv, wizard); assert.equal(mobaVoie(duel.moba, 'right').active, false);
+  assert.ok(duel.sorcier.exil.includes(survivor.carteId)); assert.ok(duel.joueur.exil.includes('braisier-du-souk'));
+  assert.equal(result.damageEvents[0].conquered, true);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'center', 0).raison, 'partie-terminee');
+});
+
+test('Braisier returning with Tenacité repeats its arrival in its original lane', () => {
+  const duel = partieCombat(); duel.joueur.main = ['braisier-du-souk', 'grand-hiver'];
+  duel.joueur.mana.braise = 20; duel.joueur.mana.neige = 20;
+  const braisier = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 0).entite;
+  assert.ok(braisier); braisier.tenaciteDisponible = true;
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
+  assert.equal(duel.joueur.retoursProgrammes[0].mobaLane, 'right');
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  duel.sorcier.mana.braise = 20; duel.sorcier.main = ['ashigaru-des-braises'];
+  const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  const wizard = duel.sorcier.pv;
+  assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
+  const returned = duel.joueur.creatures.find((e) => e.carteId === 'braisier-du-souk');
+  assert.ok(returned); assert.equal(returned.mobaLane, 'right');
+  assert.equal(duel.sorcier.creatures.includes(enemy), false);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 8);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 10);
+  assert.equal(duel.sorcier.pv, wizard); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Braisier is available in a validated custom deck and works for the AI side', () => {
+  const custom = { ...MOBA_DECKS[0], cardIds: [...MOBA_DECKS[0].cardIds] };
+  custom.cardIds[custom.cardIds.indexOf('viking-des-neiges')] = 'braisier-du-souk';
+  assert.equal(rpgMobaValiderDeck(custom).ok, true);
+  const duel = partieCombat(); assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  duel.sorcier.main = ['braisier-du-souk']; duel.sorcier.mana.braise = 10;
+  const wizard = duel.joueur.pv;
+  const result = rpgMobaJouerCreature(duel, 'sorcier', 'braisier-du-souk', 'center', 0);
+  assert.equal(result.ok, true); assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 9);
+  assert.equal(duel.joueur.pv, wizard); assert.equal(result.damageEvents[0].targetSide, 'joueur');
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Braisier remembers its lane when a Harakiri death effect removes it during the wave', () => {
+  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.mana.braise = 20;
+  duel.sorcier.main = ['ronin-du-soleil-rouge'];
+  const ronin = rpgMobaJouerCreature(duel, 'sorcier', 'ronin-du-soleil-rouge', 'left', 0).entite;
+  assert.ok(ronin); ronin.pv = 1;
+  rpgFinDeTour(duel); duel.joueur.main = ['braisier-du-souk']; duel.joueur.mana.braise = 20;
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 0);
+  assert.equal(result.ok, true);
+  assert.equal(duel.joueur.creatures.includes(result.entite), false);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 9);
+  assert.equal(duel.sorcier.pv, 25); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie des glaces damages and freezes both camps across lanes, respecting hostile shields', () => {
+  const duel = partieCombat(); duel.joueur.mana.sable = 20;
+  duel.joueur.main = ['gardienne-des-portes-de-sable', 'ashigaru-des-braises'];
+  const ally = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  const fragileAlly = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 1).entite;
+  ally.bouclier = 1;
+  rpgFinDeTour(duel); duel.sorcier.mana.sable = 20;
+  duel.sorcier.main = ['gardienne-des-portes-de-sable', 'gardienne-des-portes-de-sable'];
+  const guarded = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'center', 0).entite;
+  const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  guarded.bouclier = 1;
+  rpgFinDeTour(duel); duel.joueur.mana.neige = 20; duel.joueur.main = ['valkyrie-des-glaces'];
+  rpgReglerHasard(duel, () => 0);
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'valkyrie-des-glaces', 'center', 0);
+  assert.equal(result.ok, true); const valkyrie = result.entite;
+  assert.equal(valkyrie.pv, 5); assert.equal(valkyrie.bouclier, 1); assert.equal(valkyrie.gelToursRestants, 0);
+  assert.equal(ally.pv, 3); assert.equal(ally.bouclier, 1, 'friendly effects bypass but do not consume shields');
+  assert.ok(ally.gelToursRestants > 0); assert.equal(duel.joueur.creatures.includes(fragileAlly), false);
+  assert.equal(guarded.pv, 4); assert.equal(guarded.bouclier, 0); assert.equal(guarded.gelToursRestants, 0);
+  assert.equal(enemy.pv, 3); assert.ok(enemy.gelToursRestants > 0);
+  assert.deepEqual(duel.moba.lanes.map((lane) => [lane.hp.joueur, lane.hp.sorcier]), [[10,10],[10,10],[10,10]]);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie: a failed freeze roll preserves both camps’ ability to act', () => {
+  const duel = partieCombat(); duel.joueur.mana.sable = 20; duel.joueur.main = ['gardienne-des-portes-de-sable'];
+  const ally = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  rpgFinDeTour(duel); duel.sorcier.mana.sable = 20; duel.sorcier.main = ['gardienne-des-portes-de-sable'];
+  const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  rpgFinDeTour(duel); duel.joueur.mana.neige = 20; duel.joueur.main = ['valkyrie-des-glaces'];
+  rpgReglerHasard(duel, () => 0.99);
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'valkyrie-des-glaces', 'center', 0).ok, true);
+  assert.deepEqual([ally.pv, enemy.pv], [3, 3]);
+  assert.deepEqual([ally.gelToursRestants, enemy.gelToursRestants], [0, 0]);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie des glaces returns to the same lane with Tenacité and repeats the global wave', () => {
+  const duel = partieCombat(); duel.joueur.mana.neige = 20;
+  duel.joueur.main = ['valkyrie-des-glaces', 'grand-hiver'];
+  const valkyrie = rpgMobaJouerCreature(duel, 'joueur', 'valkyrie-des-glaces', 'right', 0).entite;
+  assert.ok(valkyrie); valkyrie.tenaciteDisponible = true; valkyrie.pv = 1;
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver').ok, true);
+  assert.equal(duel.joueur.retoursProgrammes[0].mobaLane, 'right');
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  duel.sorcier.mana.braise = 20; duel.sorcier.main = ['ashigaru-des-braises'];
+  const enemy = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
+  const returned = duel.joueur.creatures.find((e) => e.carteId === 'valkyrie-des-glaces');
+  assert.ok(returned); assert.equal(returned.mobaLane, 'right'); assert.equal(returned.pv, 1);
+  assert.equal(returned.tenaciteDisponible, false); assert.equal(duel.sorcier.creatures.includes(enemy), false);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie’s wave stops on a winning Harakiri before striking later creatures', () => {
+  const duel = partieCombat(); duel.joueur.mana.braise = 20;
+  duel.joueur.main = ['ronin-du-soleil-rouge', 'ashigaru-des-braises'];
+  const ronin = rpgMobaJouerCreature(duel, 'joueur', 'ronin-du-soleil-rouge', 'right', 0).entite;
+  const later = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  ronin.pv = 1;
+  mobaInfliger(duel.moba, 'joueur', 'center', 10); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  duel.joueur.mana.neige = 20; duel.joueur.main = ['valkyrie-des-glaces'];
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'valkyrie-des-glaces', 'left', 1);
+  assert.equal(result.ok, true); assert.equal(duel.moba.winner, 'joueur');
+  assert.equal(later.pv, 1); assert.equal(duel.joueur.creatures.includes(later), true);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie des glaces keeps Envol and her shield during lane combat', () => {
+  const duel = partieCombat(); duel.joueur.main = ['valkyrie-des-glaces']; duel.joueur.mana.neige = 20;
+  const valkyrie = rpgMobaJouerCreature(duel, 'joueur', 'valkyrie-des-glaces', 'left', 0).entite;
+  assert.ok(valkyrie);
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  duel.sorcier.main = ['ashigaru-des-braises', 'trait-de-braise']; duel.sorcier.mana.braise = 20;
+  const blocker = rpgMobaJouerCreature(duel, 'sorcier', 'ashigaru-des-braises', 'left', 0).entite;
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'trait-de-braise', valkyrie.id).ok, true);
+  assert.equal(valkyrie.pv, 5); assert.equal(valkyrie.bouclier, 0);
+  assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
+  assert.equal(rpgPeutBloquerAttaquant(blocker, valkyrie), false);
+  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [valkyrie.id], { [valkyrie.id]: [blocker.id] }).ok, false);
+  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [valkyrie.id], {}).ok, true);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 5);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Valkyrie des glaces is available in a validated custom deck and works for the opponent', () => {
+  const custom = { ...MOBA_DECKS[0], cardIds: [...MOBA_DECKS[0].cardIds] };
+  custom.cardIds[custom.cardIds.indexOf('viking-des-neiges')] = 'valkyrie-des-glaces';
+  assert.equal(rpgMobaValiderDeck(custom).ok, true);
+  const duel = partieCombat();
+  const enemy = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'left', 0).entite;
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  duel.sorcier.main = ['valkyrie-des-glaces']; duel.sorcier.mana.neige = 20;
+  const result = rpgMobaJouerCreature(duel, 'sorcier', 'valkyrie-des-glaces', 'center', 0);
+  assert.equal(result.ok, true); assert.equal(duel.joueur.creatures.includes(enemy), false);
+  assert.equal(result.entite.pv, 5); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
