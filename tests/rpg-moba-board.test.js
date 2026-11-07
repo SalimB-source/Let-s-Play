@@ -318,6 +318,9 @@ test('a human selects a targeted attacker and an enemy only in its own lane', as
     await act(async () => root.render(React.createElement(Board, props)));
     await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').startsWith('FÉRIEL')));
     assert.match(document.querySelector('.moba__hint').textContent, /attaque ciblée/);
+    await click(document.querySelector('.moba__cancel-choice'));
+    assert.equal(document.querySelector('.moba__slot.is-attacking'), null, 'cancel clears the uncommitted attacker');
+    await click([...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').startsWith('FÉRIEL')));
     const enemySlots = [...document.querySelectorAll('.moba__slot.has-creature')].filter((b) => b.getAttribute('aria-label').startsWith('Ashigaru'));
     assert.equal(enemySlots.length, 2);
     assert.equal(enemySlots.filter((b) => !b.disabled).length, 1, 'only same-lane target is selectable');
@@ -739,6 +742,13 @@ test('La Grande Pesée asks for a payment lane before a separate transfer lane',
     await click(document.querySelector('[aria-label="Payer 1 PV de Voie gauche de Vous"]'));
     assert.equal(duel.moba.lanes[0].hp.joueur, 10, 'choice does not charge before resolution');
     assert.match(document.querySelector('.moba__hint').textContent, /transf|perd des PV/);
+    await click(document.querySelector('.moba__cancel-choice'));
+    assert.equal(duel.joueur.mana.tenebres, 20, 'cancellation spends no mana');
+    assert.equal(duel.moba.lanes[0].hp.joueur, 10, 'cancellation spends no life');
+    assert.ok(duel.joueur.main.includes('la-grande-pesee'));
+    await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('La Grande Pesée')));
+    assert.match(document.querySelector('.moba__hint').textContent, /payer le prix/, 'payment choice was cleared');
+    await click(document.querySelector('[aria-label="Payer 1 PV de Voie gauche de Vous"]'));
     await click(document.querySelector('[aria-label="Transférer les PV de Voie droite"]'));
     assert.equal(duel.moba.lanes[0].hp.joueur, 9); assert.equal(duel.moba.lanes[2].hp.joueur, 8);
     assert.equal(duel.moba.lanes[2].hp.sorcier, 7); assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
@@ -806,6 +816,84 @@ test('Guetteur shows its Hour counters on the MOBA board', async () => {
     const slot = [...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').startsWith('Guetteur du beffroi'));
     assert.ok(slot); assert.match(slot.getAttribute('aria-label'), /2 Heures/); assert.match(slot.textContent, /2 Heures/);
     assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('board explains lane rules, identifies card location and confirms leaving an unsaved duel', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel, exited = 0;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => { exited += 1; }, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    assert.match(document.querySelector('.moba__rules').textContent, /ne provoque pas de fatigue/);
+    assert.match(document.querySelector('.moba__rules').textContent, /Attaque ciblée vise une créature de sa voie/);
+    assert.equal(document.querySelector('[role="region"][aria-label="Plateau des trois voies"]').getAttribute('tabindex'), '0');
+    duel.joueur.mana.braise = 10;
+    const entity = engine.rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', 'right', 0).entite;
+    assert.ok(entity);
+    await act(async () => root.render(React.createElement(Board, props)));
+    const card = [...document.querySelectorAll('.moba__slot.has-creature')].find((b) => b.getAttribute('aria-label').startsWith('Ashigaru'));
+    assert.match(card.getAttribute('aria-label'), /Vous, Voie droite/);
+    await click([...document.querySelectorAll('.moba__header button')].find((b) => b.textContent.includes('Quitter')));
+    const dialog = document.querySelector('[role="dialog"][aria-labelledby="moba-quitter-title"]');
+    assert.ok(dialog); assert.match(dialog.textContent, /ne sera pas sauvegardée/); assert.equal(exited, 0);
+    assert.ok(document.querySelector('.moba > div[inert]'), 'the board is inert behind the dialog');
+    assert.equal(document.activeElement.textContent, 'Continuer le duel');
+    await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })));
+    assert.equal(document.activeElement.textContent, 'Quitter sans sauvegarder', 'focus wraps inside the dialog');
+    await act(async () => document.activeElement.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    assert.equal(document.querySelector('[aria-labelledby="moba-quitter-title"]'), null); assert.equal(exited, 0);
+    assert.match(document.activeElement.textContent, /Quitter la partie/, 'focus returns to the triggering button');
+    await click([...document.querySelectorAll('.moba__header button')].find((b) => b.textContent.includes('Quitter')));
+    await click([...document.querySelectorAll('[aria-labelledby="moba-quitter-title"] button')].find((b) => b.textContent.includes('Quitter sans')));
+    assert.equal(exited, 1);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('exit confirmation pauses the AI without rendering its hidden hand', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    await click([...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes('Fin du tour')));
+    await click([...document.querySelectorAll('.moba__header button')].find((b) => b.textContent.includes('Quitter')));
+    const before = JSON.stringify(duel);
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 650)));
+    assert.equal(JSON.stringify(duel), before, 'AI must not play while confirmation is open');
+    assert.equal(document.querySelector('.moba__hand'), null);
+    assert.ok(document.querySelector('[aria-label="Main de l’IA masquée"]'));
+    await click([...document.querySelectorAll('[aria-labelledby="moba-quitter-title"] button')].find((b) => b.textContent.includes('Continuer')));
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 650)));
+    assert.notEqual(JSON.stringify(duel), before, 'AI resumes after the dialog closes');
   } finally {
     if (root) await act(async () => root.unmount());
     await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
