@@ -15,6 +15,7 @@ import { RPG_MODE_MANA_ESSAI, validerDeckManaEssai } from './rpgManaEssai.js';
 import { MOBA_SIDES, mobaInfliger, mobaNouveau, mobaPayerPrix, mobaPlacer, mobaRetirer, mobaSoigner, mobaValiderBlocages, mobaVoie } from './rpgMoba.js';
 
 const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
+const NOMS_VOIES = Object.freeze({ left: 'la voie gauche', center: 'la voie centrale', right: 'la voie droite' });
 // Audited for the experimental combat bridge and the supported arrival and
 // scheduled-return paths. Expand with tests as more abilities are adapted.
 const CARTES_COMBAT_AUDITEES = new Set([
@@ -50,11 +51,28 @@ export const MOBA_MAGIES_ESSAI = Object.freeze([
   'mur-de-boucliers', 'brume-du-fjord', 'hurlement-du-blizzard',
   'grand-voile-blanc', 'verglas', 'grand-hiver', 'tempete-de-foudre-et-de-givre', 'rempart-de-dunes',
 ]);
-// These effects have no lane choice: the engine resolves their printed global
-// or deck effect and the adapter reconciles every affected slot afterwards.
+// These effects have no lane choice. The board launches them directly; an
+// audited subset may still announce before resolving when responses are enabled.
 export const MOBA_MAGIES_IMMEDIATES = Object.freeze([
   'tempete-de-sable', 'brisure-de-verre', 'vent-rouge', 'rapport-du-greffier',
   'les-feuillets', 'la-derniere-pesee', 'ressac-de-la-lune-noire', 'nuage-de-cendres', 'serment-de-la-forge', 'nom-efface', 'le-routier', 'embuscade',
+]);
+// Sorts audités, uniquement en phase principale et sans réponse imbriquée.
+const MOBA_MAGIES_PIOCHE_REPONSE = Object.freeze(['rapport-du-greffier', 'les-feuillets']);
+export const MOBA_MAGIES_ZONE_TOTALE_REPONSE = Object.freeze([
+  'grand-hiver', 'tempete-de-foudre-et-de-givre', 'la-derniere-pesee', 'ressac-de-la-lune-noire',
+]);
+export const MOBA_MAGIES_ZONE_REPONSE = Object.freeze([
+  'tempete-de-sable', 'vent-rouge', 'brisure-de-verre',
+  'brume-du-fjord', 'hurlement-du-blizzard', 'verglas', 'nuage-de-cendres',
+  ...MOBA_MAGIES_ZONE_TOTALE_REPONSE,
+]);
+export const MOBA_SORTS_REPONSE = Object.freeze([
+  'poigne-de-givre', 'ressac', 'eclair-du-marteau', 'trait-de-braise',
+  'appat-de-la-meute', 'frappe-iaijutsu', 'courant-de-retour', 'haut-fond', 'lame-de-mer',
+  'effacement-des-faibles', 'le-jugement-des-colosses', 'parade-du-verre', 'voile-de-la-lune-noire',
+  'eau-de-la-source', 'festin-des-vaillants', 'le-poids', 'la-grande-pesee',
+  ...MOBA_MAGIES_PIOCHE_REPONSE, ...MOBA_MAGIES_ZONE_REPONSE,
 ]);
 export const MOBA_MAGIES_VOIES = Object.freeze(['eclair-du-marteau', 'trait-de-braise']);
 export const MOBA_MAGIES_TRANSFERT = Object.freeze(['le-poids', 'la-grande-pesee']);
@@ -168,14 +186,14 @@ export function rpgMobaResoudreRecherche(duel, side, cardId) {
 }
 
 /** Each seat chooses its own starting cards before the first turn begins. */
-export function rpgMobaMulligan(duel, side, indices = []) {
+export function rpgMobaMulligan(duel, side, indices = [], rng = Math.random) {
   if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
   if (!MOBA_SIDES.includes(side) || !Array.isArray(indices)
     || indices.some((index) => !Number.isInteger(index) || index < 0 || index >= duel[side].main.length)
     || new Set(indices).size !== indices.length) return fail('choix');
   const expected = !duel.mulliganFait.joueur ? 'joueur' : !duel.mulliganFait.sorcier ? 'sorcier' : null;
   if (side !== expected) return fail('pas-votre-tour');
-  const result = rpgMulligan(duel, side, indices);
+  const result = rpgMulligan(duel, side, indices, rng);
   if (!result.ok) return fail('mulligan');
   if (side === 'sorcier') {
     const start = rpgDemarrerManaEssai(duel);
@@ -371,6 +389,56 @@ export function rpgMobaPasserEffetCreature(duel, side) {
   return result;
 }
 
+/** Pass priority on a paid, announced spell. An illegal target normally
+ * fizzles it; Festin retains its independent, global creature healing. */
+export function rpgMobaPasserSort(duel, side) {
+  if (!duel?.moba || duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
+  if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
+  const attente = duel.mobaSortEnAttente;
+  if (!attente || side !== (attente.cote === 'joueur' ? 'sorcier' : 'joueur')
+    || attente.cote !== duel.tour || !MOBA_SORTS_REPONSE.includes(attente.carteId)
+    || !duel.fenetreReponse || duel.defausseEnAttente || duel.mobaRechercheEnAttente) return fail('aucun-sort');
+  const degatsVoie = attente.cibleId === 'sorcier';
+  const soinVoie = attente.cibleId === null && MOBA_MAGIES_SOINS.includes(attente.carteId);
+  const transfertVoie = attente.cibleId === null && MOBA_MAGIES_TRANSFERT.includes(attente.carteId);
+  const cibleVoie = degatsVoie || soinVoie || transfertVoie;
+  const voie = cibleVoie ? mobaVoie(duel.moba, attente.laneId) : null;
+  if (cibleVoie && ((degatsVoie && !MOBA_MAGIES_VOIES.includes(attente.carteId)) || !voie)) return fail('etat-incoherent');
+  const damageEvents = [];
+  const healingEvents = [];
+  // Festin's creature healing is global and independent of its lane heal.
+  // A closed lane loses its healing without redirecting or cancelling that part.
+  const voiePerdue = cibleVoie && !voie.active;
+  const result = voiePerdue && attente.carteId !== 'festin-des-vaillants' ? fail('cible') : rpgLancerMagie(duel, attente.cote, attente.carteId, attente.cibleId, null, {
+    resoudreSortMoba: true,
+    ...(transfertVoie ? { mobaLane: attente.laneId, surTransfertMoba: (event) => {
+      damageEvents.push({ ...event, laneId: attente.laneId, targetSide: side, cardId: attente.carteId, transfert: true });
+      healingEvents.push({ laneId: attente.laneId, side: attente.cote, cardId: attente.carteId, healing: event.healing });
+    } } : {}),
+    ...(degatsVoie ? { resoudreDegatsSorcier: ({ amount }) => infligerDansVoie(duel, attente.cote, attente.laneId, amount, damageEvents, { cardId: attente.carteId }) } : {}),
+    ...(soinVoie ? { resoudreSoinSorcier: ({ amount }) => {
+      const healing = mobaSoigner(duel.moba, attente.cote, attente.laneId, amount);
+      if (healing.ok) healingEvents.push({ laneId: attente.laneId, side: attente.cote, cardId: attente.carteId, ...healing });
+      return healing;
+    } } : {}),
+  });
+  // Only target illegality is a normal fizzle. Preserve the pending card on an
+  // unexpected timing or engine error instead of silently consuming it.
+  if (!result.ok && !['cible', 'protection'].includes(result.raison)) return result;
+  duel.mobaSortEnAttente = null;
+  duel.fenetreReponse = false;
+  if (result.ok && voiePerdue && attente.carteId === 'festin-des-vaillants') {
+    duel.log.push(`La voie de Festin des vaillants est conquise : seules les créatures alliées sont soignées.`);
+  }
+  if (!result.ok) {
+    duel[attente.cote].cimetiere.push(attente.carteId);
+    duel.log.push(`La cible de ${magieById(attente.carteId)?.name ?? 'la magie'} n'est plus légale : le sort se dissipe.`);
+    return { ok: true, dissipe: true };
+  }
+  synchroniserSorties(duel);
+  return cibleVoie ? { ...result, damageEvents, healingEvents } : result;
+}
+
 /** Apply a resolved hit and perform conquest cleanup immediately. */
 function infligerDansVoie(duel, side, laneId, amount, damageEvents, details = {}) {
   const damage = mobaInfliger(duel.moba, side, laneId, amount);
@@ -505,8 +573,9 @@ export function rpgMobaLancerAttaque(duel, side, attackerIds, blocks = {}, { dec
 }
 
 /** Audited global effects and single-creature spells only. The duel engine
- * validates protection, payment and resolves the printed text. */
-export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = null, prixLaneId = null) {
+ * validates protection, payment and resolves the printed text. The local UI
+ * opts in to the limited main-phase spell window; probes resolve immediately. */
+export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = null, prixLaneId = null, { ouvrirReponse = false } = {}) {
   if (duel?.mobaRechercheEnAttente) return fail('timing');
   if (!rpgMobaPlacementCoherent(duel)) return fail('etat-incoherent');
   if (duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) return fail('partie-terminee');
@@ -515,6 +584,7 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
     (duel.phase === 'blocage' && duel.combatDeclare?.cote === duel.tour)
     || (duel.phase === 'fin' && duel.finDeTour?.cote === duel.tour && duel.fenetreReponse)
     || (duel.effetCreatureEnAttente?.cote === duel.tour && [...MOBA_ARRIVEES_HOSTILES, ...MOBA_ARRIVEES_NEUTRES].includes(duel.effetCreatureEnAttente?.carteId) && duel.fenetreReponse)
+    || (duel.mobaSortEnAttente?.cote === duel.tour && duel.fenetreReponse)
   );
   if (duel.tour !== side && !reaction) return fail('pas-votre-tour');
   if (reaction && !magieById(cardId)?.instant) return fail('timing');
@@ -548,6 +618,16 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   const damageEvents = [];
   const healingEvents = [];
   const options = {
+    ...(ouvrirReponse && !reaction && !duel.fenetreReponse && MOBA_SORTS_REPONSE.includes(cardId)
+      && (MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId) || MOBA_MAGIES_ZONE_REPONSE.includes(cardId) ? cibleId === null && laneId === null
+        : soin || transfert ? cibleId === null && !!laneId
+        : cibleId === 'sorcier' ? MOBA_MAGIES_VOIES.includes(cardId)
+          : cibleId && MOBA_SIDES.some((cote) => duel[cote].creatures.some((entity) => entity.id === cibleId)))
+      ? { annoncerSortMoba: true,
+        ...(MOBA_MAGIES_PIOCHE_REPONSE.includes(cardId) ? { ciblePiocheMoba: cardId === 'rapport-du-greffier' ? side : (side === 'joueur' ? 'sorcier' : 'joueur') } : {}),
+        ...(MOBA_MAGIES_ZONE_REPONSE.includes(cardId) ? { cibleZoneMoba: MOBA_MAGIES_ZONE_TOTALE_REPONSE.includes(cardId) ? 'tous' : (side === 'joueur' ? 'sorcier' : 'joueur') } : {}),
+        ...(cibleId === 'sorcier' || soin || transfert
+          ? { laneMoba: laneId, nomVoieMoba: NOMS_VOIES[laneId], cibleVoieMoba: true, cibleVoieAllieeMoba: soin } : {}) } : {}),
     ...(transfert ? { mobaLane: laneId, surTransfertMoba: (event) => {
       damageEvents.push({ ...event, laneId, targetSide: side === 'joueur' ? 'sorcier' : 'joueur', cardId, transfert: true });
       healingEvents.push({ laneId, side, cardId, healing: event.healing });
@@ -572,6 +652,12 @@ export function rpgMobaLancerMagie(duel, side, cardId, cibleId = null, laneId = 
   };
   const result = rpgLancerMagie(duel, side, cardId, cibleId, null, options);
   if (!result.ok) return result;
+  if ((duel.moba.winner || duel.fin?.gagnant || duel.fin?.nul) && duel.mobaSortEnAttente) {
+    const attente = duel.mobaSortEnAttente;
+    duel[attente.cote].cimetiere.push(attente.carteId);
+    duel.mobaSortEnAttente = null;
+    duel.fenetreReponse = false;
+  }
   synchroniserSorties(duel);
   let combatTermine = false;
   if (reaction && duel.combatDeclare) {

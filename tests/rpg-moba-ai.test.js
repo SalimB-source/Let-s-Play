@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from '../src/games/rpgAI.js';
 import { mobaInfliger } from '../src/games/rpgMoba.js';
 import { rpgChoisirCouleurMana, rpgReglerHasard } from '../src/games/rpgDuel.js';
-import { MOBA_DECKS, rpgMobaCreerPartie, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
+import { MOBA_DECKS, rpgMobaCreerPartie, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA } from '../src/games/rpgMobaAI.js';
 
 const ok = (result) => assert.equal(result.ok, true, JSON.stringify(result));
@@ -14,7 +14,7 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
     edited.cardIds[edited.cardIds.indexOf(from)] = to;
   }
   const editedNew = { ...MOBA_DECKS[0], cardIds: [...MOBA_DECKS[0].cardIds] };
-  for (const [from, to] of [['ashigaru-des-braises', 'gardien-de-la-porte-ardente'], ['gardienne-des-portes-de-sable', 'rempart-des-sables-eternels'], ['loup-des-neiges', 'serpent-du-monde'], ['jarl-au-marteau-de-guerre', 'ifrit-al-ahmar'], ['berserk-des-trois-hivers', 'tin-hinan'], ['trait-de-braise', 'serment-de-la-forge'], ['verglas', 'embuscade'], ['poigne-de-givre', 'appat-de-la-meute'], ['mousse-des-galiotes', 'fennec-des-decombres'], ['gardienne-des-portes-de-sable', 'chien-du-guet']]) {
+  for (const [from, to] of [['ashigaru-des-braises', 'gardien-de-la-porte-ardente'], ['gardienne-des-portes-de-sable', 'rempart-des-sables-eternels'], ['loup-des-neiges', 'serpent-du-monde'], ['jarl-au-marteau-de-guerre', 'ifrit-al-ahmar'], ['berserk-des-trois-hivers', 'tin-hinan'], ['trait-de-braise', 'serment-de-la-forge'], ['verglas', 'embuscade'], ['grand-voile-blanc', 'rapport-du-greffier'], ['brume-du-fjord', 'tempete-de-sable'], ['poigne-de-givre', 'appat-de-la-meute'], ['mousse-des-galiotes', 'fennec-des-decombres'], ['gardienne-des-portes-de-sable', 'chien-du-guet']]) {
     editedNew.cardIds[editedNew.cardIds.indexOf(from)] = to;
   }
   const editedDiscard = { ...MOBA_DECKS[4], cardIds: [...MOBA_DECKS[4].cardIds] };
@@ -38,11 +38,23 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
   const editedCorbeaux = { ...MOBA_DECKS[4], cardIds: [...MOBA_DECKS[4].cardIds] };
   editedCorbeaux.cardIds[editedCorbeaux.cardIds.indexOf('jarl-au-marteau-de-guerre')] = 'maitre-des-corbeaux';
   const decks = [...MOBA_DECKS, edited, editedNew, editedDiscard, editedSearch, editedHarakiri, editedTransfer, editedTokens, editedMomie, editedHeures, editedCorbeaux];
+  let announcedSpells = 0;
+  let announcedLaneSpells = 0;
+  let announcedFriendlySpells = 0;
+  let announcedHeals = 0;
+  let announcedTransfers = 0;
+  let announcedFeasts = 0;
+  let announcedReports = 0;
+  let announcedWaves = 0;
+  let announcedFrostAshWaves = 0;
+  let announcedSymmetricWaves = 0;
+  let announcedSymmetricWipes = 0;
+  const announcedExtendedSpells = new Set();
   for (let index = 0; index < 45; index++) {
     let seed = index + 1;
     const rng = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
     const duel = rpgMobaCreerPartie(decks[index % decks.length], decks[(index + 2) % decks.length], { rng }).duel;
-    for (const side of ['joueur', 'sorcier']) ok(rpgMobaMulligan(duel, side, choisirMulliganIA(duel, side)));
+    for (const side of ['joueur', 'sorcier']) ok(rpgMobaMulligan(duel, side, choisirMulliganIA(duel, side), rng));
     let actions = 0;
     while (!duel.moba.winner && actions++ < 1000) {
       assert.equal(rpgMobaPlacementCoherent(duel), true);
@@ -55,10 +67,11 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
         assert.ok(cible, 'arrival must have a legal choice');
         ok(rpgMobaResoudreArrivee(duel, side, cible)); continue;
       }
-      if (duel.effetCreatureEnAttente || duel.combatDeclare || duel.finDeTour) {
+      if (duel.mobaSortEnAttente || duel.effetCreatureEnAttente || duel.combatDeclare || duel.finDeTour) {
         const reaction = rpgMobaChoisirMagieIA(duel, defense, true);
         if (reaction) { ok(rpgMobaLancerMagie(duel, defense, reaction.id, reaction.cible, reaction.lane, reaction.prixLane)); continue; }
       }
+      if (duel.mobaSortEnAttente) { ok(rpgMobaPasserSort(duel, defense)); continue; }
       if (duel.effetCreatureEnAttente) { ok(rpgMobaPasserEffetCreature(duel, defense)); continue; }
       if (duel.combatDeclare) {
         const ids = duel.combatDeclare.attaquants;
@@ -68,7 +81,25 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
       if (duel.finDeTour) { ok(rpgMobaPasserFinDeTour(duel, defense)); continue; }
       const creature = rpgMobaChoisirCreatureIA(duel, side);
       const magie = rpgMobaChoisirMagieIA(duel, side);
-      if (magie && (!creature || magie.score >= 35)) { ok(rpgMobaLancerMagie(duel, side, magie.id, magie.cible, magie.lane, magie.prixLane)); continue; }
+      if (magie && (!creature || magie.score >= 35)) {
+        const result = rpgMobaLancerMagie(duel, side, magie.id, magie.cible, magie.lane, magie.prixLane, { ouvrirReponse: true });
+        ok(result);
+        if (result.sortEnAttente) {
+          announcedSpells++;
+          if (magie.cible === 'sorcier') announcedLaneSpells++;
+          if (magie.id === 'eau-de-la-source') announcedHeals++;
+          if (magie.id === 'festin-des-vaillants') announcedFeasts++;
+          if (magie.id === 'rapport-du-greffier') announcedReports++;
+          if (['tempete-de-sable', 'vent-rouge', 'brisure-de-verre'].includes(magie.id)) announcedWaves++;
+          if (['brume-du-fjord', 'hurlement-du-blizzard', 'verglas', 'nuage-de-cendres'].includes(magie.id)) announcedFrostAshWaves++;
+          if (['grand-hiver', 'tempete-de-foudre-et-de-givre'].includes(magie.id)) announcedSymmetricWaves++;
+          if (['la-derniere-pesee', 'ressac-de-la-lune-noire'].includes(magie.id)) announcedSymmetricWipes++;
+          if (['le-poids', 'la-grande-pesee'].includes(magie.id)) announcedTransfers++;
+          if (duel.mobaSortEnAttente?.cibleCote === side) announcedFriendlySpells++;
+          if (['appat-de-la-meute', 'frappe-iaijutsu', 'courant-de-retour', 'haut-fond', 'lame-de-mer', 'effacement-des-faibles', 'le-jugement-des-colosses'].includes(magie.id)) announcedExtendedSpells.add(magie.id);
+        }
+        continue;
+      }
       if (creature) { ok(rpgMobaJouerCreature(duel, side, creature.id, creature.lane, creature.slot)); continue; }
       const attackers = duel.attaqueJouee !== side ? rpgMobaChoisirAttaquantsIA(duel, side) : [];
       if (attackers.length) { ok(rpgMobaDeclarerAttaque(duel, side, attackers, rpgMobaChoisirCiblesAttaqueIA(duel, side, attackers))); continue; }
@@ -76,6 +107,18 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
     }
     assert.ok(duel.moba.winner, `game ${index} did not end after ${actions} actions`);
   }
+  assert.ok(announcedSpells > 0, 'simulated games exercise the targeted spell window');
+  assert.ok(announcedLaneSpells > 0, 'simulated games exercise lane spell responses');
+  assert.ok(announcedFriendlySpells > 0, 'simulated games exercise friendly-target spell responses');
+  assert.ok(announcedHeals > 0, 'simulated games exercise the healing lane response');
+  assert.ok(announcedFeasts > 0, 'simulated games exercise the global healing response');
+  assert.ok(announcedReports > 0, 'simulated games exercise the deck draw response');
+  assert.ok(announcedWaves > 0, 'simulated games exercise the hostile wave response');
+  assert.ok(announcedFrostAshWaves > 0, 'simulated games exercise frost and ash wave responses');
+  assert.ok(announcedSymmetricWaves > 0, 'simulated games exercise symmetric wave responses');
+  assert.ok(announcedSymmetricWipes > 0, 'simulated games exercise symmetric wipe responses');
+  assert.ok(announcedTransfers > 0, 'simulated games exercise the transfer lane response');
+  assert.ok(announcedExtendedSpells.size > 0, 'simulated games exercise the extended spell window');
 });
 
 test('decision probes do not mutate the real game', () => {

@@ -710,6 +710,84 @@ export function calculerDeficitMana(camp, carte, slots) {
   return indicesDeficit.size > 0 ? indicesDeficit : null;
 }
 
+function VolumesDuel({ sonActif, volumeSfx, volumeVoix, volumeMusique, changerVolumeSfx, changerVolumeVoix, changerVolumeMusique }) {
+  return <>
+    <label className="rpg-duel-nav__volume">
+      <span className="rpg-duel-nav__volume-head">
+        <span>Sons du jeu</span>
+        <strong>{sonActif ? Math.round(volumeSfx * 100) : 0} %</strong>
+      </span>
+      <input
+        type="range"
+        className="rpg-duel-nav__slider rpg-duel-nav__slider--sfx"
+        min="0"
+        max="100"
+        step="1"
+        value={sonActif ? Math.round(volumeSfx * 100) : 0}
+        aria-label="Volume des sons du jeu"
+        onChange={(event) => changerVolumeSfx(Number(event.target.value) / 100)}
+      />
+    </label>
+    <label className="rpg-duel-nav__volume">
+      <span className="rpg-duel-nav__volume-head">
+        <span>Voix des personnages</span>
+        <strong>{sonActif ? Math.round(volumeVoix * 100) : 0} %</strong>
+      </span>
+      <input
+        type="range"
+        className="rpg-duel-nav__slider rpg-duel-nav__slider--voice"
+        min="0" max="100" step="1"
+        value={sonActif ? Math.round(volumeVoix * 100) : 0}
+        aria-label="Volume des voix des personnages"
+        onChange={(event) => changerVolumeVoix(Number(event.target.value) / 100)}
+      />
+    </label>
+    <label className="rpg-duel-nav__volume">
+      <span className="rpg-duel-nav__volume-head">
+        <span>Musiques</span>
+        <strong>{sonActif ? Math.round(volumeMusique * 100) : 0} %</strong>
+      </span>
+      <input
+        type="range"
+        className="rpg-duel-nav__slider rpg-duel-nav__slider--music"
+        min="0"
+        max="100"
+        step="1"
+        value={sonActif ? Math.round(volumeMusique * 100) : 0}
+        aria-label="Volume des musiques"
+        onChange={(event) => changerVolumeMusique(Number(event.target.value) / 100)}
+      />
+    </label>
+  </>;
+}
+
+
+/** The same public colour choice is shared by classic and solo MOBA. */
+function ChoixManaEssai({ camp, onChoisir }) {
+  return (
+    <div className="rpg-flux-choix" role="dialog" aria-modal="false" aria-labelledby="rpg-flux-choix-titre">
+      <div className="rpg-flux-choix__panel">
+        <h2 id="rpg-flux-choix-titre" className="rpg-flux-choix__titre">Choisis ton mana</h2>
+        <div className="rpg-flux-choix__options">
+          {camp.couleurs.map((couleur, index) => {
+            const acquis = camp.manaMax?.[couleur] ?? 0;
+            const enMain = (camp.main ?? []).filter((cid) => cardCostColors(cardById(cid)).includes(couleur)).length;
+            return <button key={couleur} type="button" autoFocus={index === 0}
+              className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
+              data-mana-acquis={acquis} data-mana-en-main={enMain} data-key-shortcut={String(index + 1)}
+              title={`Choisir ${couleurLabel(couleur)} (raccourci : ${index + 1})`}
+              onClick={() => onChoisir(couleur)}
+              aria-label={`Choisir le mana ${couleurLabel(couleur)} (${acquis} déjà acquis, ${enMain} carte${enMain > 1 ? 's' : ''} en main)`}>
+              <span aria-hidden="true"><ElementEmblem element={couleur} /></span>
+              <small className="rpg-flux-choix__count" aria-hidden="true" title={`${acquis} source(s) acquise(s)`}>{acquis}</small>
+            </button>;
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function FluxManaTrack({ camp, cote, carteApercu = null }) {
   const capacite = camp.manaMax ?? {};
   const maximum = Object.values(capacite).reduce((total, valeur) => total + valeur, 0);
@@ -952,13 +1030,13 @@ function PhaseGlyph({ phase }) {
 
 // `jouees` : les phases déjà passées que le tour ne rouvre pas — la phase
 // d'attaque d'un camp est unique (voir `duel.attaqueJouee`).
-function PhaseTrack({ current, jouees = [] }) {
+function PhaseTrack({ current, jouees = [], steps = RPG_PHASE_STEPS, ariaLabel = 'Phases du duel', currentSuffix = 'phase actuelle' }) {
   return (
-    <ol className="rpg-phase-track" aria-label="Phases du duel">
-      {RPG_PHASE_STEPS.map((step) => {
+    <ol className="rpg-phase-track" aria-label={ariaLabel}>
+      {steps.map((step) => {
         const active = current === step.id;
         const jouee = jouees.includes(step.id);
-        const title = active ? `${step.title} · phase actuelle` : jouee ? `${step.title} · jouée` : step.title;
+        const title = active ? `${step.title} · ${currentSuffix}` : jouee ? `${step.title} · jouée` : step.title;
         return (
           <li
             key={step.id}
@@ -2963,14 +3041,15 @@ export function TableCard({
       data-tutorial-target={tutorialTarget}
       disabled={moba?.disabled}
       title={moba?.title}
-      draggable={canDragBlocker}
+      draggable={moba?.draggable ?? canDragBlocker}
+      onPointerDown={moba?.onPointerDown}
       onClick={onClick}
       onMouseEnter={(event) => onHoverCard?.(carte, event, armes)}
       onMouseLeave={onLeaveHoverCard}
       onFocus={(event) => onHoverCard?.(carte, event, armes)}
       onBlur={onLeaveHoverCard}
-      onDragStart={commencerGlisserBloqueur}
-      onDragEnd={() => onEndBlockerDrag?.(entite.id)}
+      onDragStart={moba?.onDragStart ?? commencerGlisserBloqueur}
+      onDragEnd={moba?.onDragEnd ?? (() => onEndBlockerDrag?.(entite.id))}
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
@@ -3208,7 +3287,7 @@ export function TableCard({
   );
 }
 
-function BlockerArrows({ tableRef, assignments, attaque = false }) {
+function BlockerArrows({ tableRef, assignments, attaque = false, resolveTarget = null }) {
   const [layout, setLayout] = useState({ width: 0, height: 0, arrows: [] });
   const arrowCount = Object.values(assignments ?? {}).reduce((total, ids) => total + (ids?.length ?? 0), 0);
 
@@ -3227,7 +3306,7 @@ function BlockerArrows({ tableRef, assignments, attaque = false }) {
       if (!width || !height) return;
 
       const cards = [...table.querySelectorAll('[data-entity-id]')];
-      const findCard = (id) => id === '@sorcier' ? table.querySelector('.rpg-wizard-plate--ennemi') : id === '@joueur' ? table.querySelector('.rpg-wizard-plate--joueur') : cards.find((card) => card.dataset.entityId === id);
+      const findCard = (id) => resolveTarget?.(table, id) ?? (id === '@sorcier' ? table.querySelector('.rpg-wizard-plate--ennemi') : id === '@joueur' ? table.querySelector('.rpg-wizard-plate--joueur') : cards.find((card) => card.dataset.entityId === id));
       const arrows = [];
       const point = (rect) => ({
         x: rect.left + rect.width / 2 - tableRect.left + table.scrollLeft,
@@ -3309,6 +3388,10 @@ function BlockerArrows({ tableRef, assignments, attaque = false }) {
     if (observer && table) {
       observer.observe(table);
       table.querySelectorAll('[data-entity-id], .rpg-wizard-plate').forEach((card) => observer.observe(card));
+      if (resolveTarget) Object.keys(assignments ?? {}).forEach((id) => {
+        const target = resolveTarget(table, id);
+        if (target) observer.observe(target);
+      });
     }
     const frame = window.requestAnimationFrame?.(update);
 
@@ -3318,7 +3401,7 @@ function BlockerArrows({ tableRef, assignments, attaque = false }) {
       observer?.disconnect();
       if (frame !== undefined) window.cancelAnimationFrame?.(frame);
     };
-  }, [assignments, arrowCount, tableRef, attaque]);
+  }, [assignments, arrowCount, tableRef, attaque, resolveTarget]);
 
   if (!arrowCount) return null;
   return (
@@ -4255,6 +4338,33 @@ function AnnonceTour({ annonce }) {
   );
 }
 
+// One public combat event, shared with the MOBA's paginated journal.
+function CombatFeedEvent({ event }) {
+  const killers = event.killers ?? [];
+  return (
+    <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : event.type === 'prise' ? ' is-prise' : ' is-death'}`}>
+      <div className="rpg-combat-feed__participants">
+        {killers.length ? killers.slice(0, 2).map((killer) => (
+          <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
+            <img src={cardArt(killer.carteId)} alt="" />
+            <span>{killer.name}</span>
+          </span>
+        )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
+        <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
+        <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
+          <img src={cardArt(event.victim.carteId)} alt="" />
+          <span>{event.victim.name}</span>
+        </span>
+        {event.type === 'death'
+          ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
+          : event.type === 'prise'
+            ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
+            : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
+      </div>
+    </li>
+  );
+}
+
 /** Le journal visuel du duel — les échanges et morts récents, avec les cartes
  * impliquées —, dans l’esprit du journal de combat de MTG Arena, mais **replié
  * en onglet**. Il restait auparavant déplié en permanence dans l’angle
@@ -4324,31 +4434,7 @@ export function CombatFeed({ events = [] }) {
           <button type="button" className="rpg-combat-feed__close" onClick={() => setOuvert(false)} aria-label="Fermer le journal du duel">✕</button>
         </div>
         <ol className="rpg-combat-feed__list" aria-live="polite" aria-relevant="additions">
-          {recentes.map((event) => {
-            const killers = event.killers ?? [];
-            return (
-              <li className={`rpg-combat-feed__event${event.type === 'hit' ? ' is-hit' : event.type === 'prise' ? ' is-prise' : ' is-death'}`} key={event.id}>
-                <div className="rpg-combat-feed__participants">
-                  {killers.length ? killers.slice(0, 2).map((killer) => (
-                    <span className="rpg-combat-feed__card" key={killer.id} title={killer.name}>
-                      <img src={cardArt(killer.carteId)} alt="" />
-                      <span>{killer.name}</span>
-                    </span>
-                  )) : <span className="rpg-combat-feed__cause">Effet de jeu</span>}
-                  <span className="rpg-combat-feed__arrow" aria-hidden="true">➜</span>
-                  <span className="rpg-combat-feed__card rpg-combat-feed__card--victim" title={event.victim.name}>
-                    <img src={cardArt(event.victim.carteId)} alt="" />
-                    <span>{event.victim.name}</span>
-                  </span>
-                  {event.type === 'death'
-                    ? <span className="rpg-combat-feed__skull" aria-label="détruite">☠</span>
-                    : event.type === 'prise'
-                      ? <span className="rpg-combat-feed__skull" aria-label="prise en cale">⛓</span>
-                      : <span className="rpg-combat-feed__damage" aria-label={`${event.amount} dégâts`}>−{event.amount}</span>}
-                </div>
-              </li>
-            );
-          })}
+          {recentes.map((event) => <CombatFeedEvent key={event.id} event={event} />)}
         </ol>
       </div>
     </aside>
@@ -6632,7 +6718,7 @@ function libellePacteEtage(atouts) {
 }
 
 // The MOBA reuses the same card and detail rendering as the classic table.
-export const RPG_RENDU_MOBA = Object.freeze({ TableCard, ManaCost, CardElementBadge, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite });
+export const RPG_RENDU_MOBA = Object.freeze({ TableCard, ManaCost, CardElementBadge, CardStatIcon, CarteMulligan, ApercuCarteAppuiLong, SpellAnnouncement, FantomeCarteDetruite, FaceDownHand, CardPile, CimetiereCarousel, FluxManaTrack, FullscreenIcon, BlockerArrows, ChoixManaEssai, VolumesDuel, PhaseTrack, CombatFeedEvent });
 
 export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance = 2, rng = Math.random, variantesPlateaux = false, pvp = null } = {}) {
   const modePvp = Boolean(pvp);
@@ -7453,6 +7539,15 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const restantes = cartes.filter((entree) => entree.origine === 'tenacite' || !voixAvanceeConsommee(entree.carteId));
     restantes.slice(0, VOIX_ARRIVEE_MAX).forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
     return cartes.length;
+  };
+  // Le MOBA lit son propre journal, sans les annonces anticipées du duel classique.
+  const jouerArriveesMoba = ({ arrivees, navires, pirates, nains }) => {
+    arrivees.filter((entree) => rpgACarteUneVoix(entree.carteId)).slice(0, VOIX_ARRIVEE_MAX)
+      .forEach((entree, rang) => jouerVoixArrivee(entree.carteId, rang));
+    if (rpgArriveesSansVoix(navires).length) jouerSfx(RPG_NAVIRE_ARRIVEE_SFX);
+    const piratesSansVoix = rpgArriveesSansVoix(pirates);
+    if (piratesSansVoix.length) jouerArriveePirate(piratesSansVoix.length);
+    if (rpgArriveesSansVoix(nains).length) jouerSfx(RPG_DWARF_DIALOGUE_SFX);
   };
   // Les fiches hors duel permettent d'écouter la voix de la carte. Sur la
   // table, consulter une carte ne doit pas interrompre une arrivée en cours.
@@ -9705,7 +9800,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
 
   if (ecran === 'moba') {
     return <div ref={shellRef} className={`rpg-battle rpg-battle--moba${pleinEcran ? ' is-immersive' : ''}${rpgAnimationsReduites(animReduite) ? ' is-reduced' : ''}`} style={{ '--rpg-anim-scale': String(vitesseAnim) }} data-scene="moba">
-      <RpgMobaBoard onQuitter={() => setEcran('jouer')} rendu={RPG_RENDU_MOBA} onPlaySfx={jouerSfx} sonActif={sonActif} onToggleSound={basculerSon} />
+      <RpgMobaBoard onQuitter={() => setEcran('jouer')} rendu={RPG_RENDU_MOBA} onPlaySfx={jouerSfx} onArriveesAudio={jouerArriveesMoba} onPreloadVoice={prechargerVoixCarte}
+        sonActif={sonActif} onToggleSound={basculerSon} volumeSfx={volumeSfx} volumeVoix={volumeVoix} volumeMusique={volumeMusique}
+        onChangeVolumeSfx={changerVolumeSfx} onChangeVolumeVoix={changerVolumeVoix} onChangeVolumeMusique={changerVolumeMusique}
+        pleinEcran={pleinEcran} onToggleFullscreen={pleinEcranVerrouille ? null : basculerPleinEcran} />
     </div>;
   }
 
@@ -13685,52 +13783,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   </span>
                 </button>
               </div>
-              <label className="rpg-duel-nav__volume">
-                <span className="rpg-duel-nav__volume-head">
-                  <span>Sons du jeu</span>
-                  <strong>{sonActif ? Math.round(volumeSfx * 100) : 0} %</strong>
-                </span>
-                <input
-                  type="range"
-                  className="rpg-duel-nav__slider rpg-duel-nav__slider--sfx"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={sonActif ? Math.round(volumeSfx * 100) : 0}
-                  aria-label="Volume des sons du jeu"
-                  onChange={(event) => changerVolumeSfx(Number(event.target.value) / 100)}
-                />
-              </label>
-              <label className="rpg-duel-nav__volume">
-                <span className="rpg-duel-nav__volume-head">
-                  <span>Voix des personnages</span>
-                  <strong>{sonActif ? Math.round(volumeVoix * 100) : 0} %</strong>
-                </span>
-                <input
-                  type="range"
-                  className="rpg-duel-nav__slider rpg-duel-nav__slider--voice"
-                  min="0" max="100" step="1"
-                  value={sonActif ? Math.round(volumeVoix * 100) : 0}
-                  aria-label="Volume des voix des personnages"
-                  onChange={(event) => changerVolumeVoix(Number(event.target.value) / 100)}
-                />
-              </label>
-              <label className="rpg-duel-nav__volume">
-                <span className="rpg-duel-nav__volume-head">
-                  <span>Musiques</span>
-                  <strong>{sonActif ? Math.round(volumeMusique * 100) : 0} %</strong>
-                </span>
-                <input
-                  type="range"
-                  className="rpg-duel-nav__slider rpg-duel-nav__slider--music"
-                  min="0"
-                  max="100"
-                  step="1"
-                  value={sonActif ? Math.round(volumeMusique * 100) : 0}
-                  aria-label="Volume des musiques"
-                  onChange={(event) => changerVolumeMusique(Number(event.target.value) / 100)}
-                />
-              </label>
+              <VolumesDuel sonActif={sonActif} volumeSfx={volumeSfx} volumeVoix={volumeVoix} volumeMusique={volumeMusique}
+                changerVolumeSfx={changerVolumeSfx} changerVolumeVoix={changerVolumeVoix} changerVolumeMusique={changerVolumeMusique} />
               <button
                 type="button"
                 className={`rpg-duel-nav__sound${sonActif ? ' is-on' : ''}`}
@@ -15104,34 +15158,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         </div>
       )}
       {choixManaEssaiOuvert && !viewport.portrait && (
-        <div className="rpg-flux-choix" role="dialog" aria-modal="false" aria-labelledby="rpg-flux-choix-titre">
-          <div className="rpg-flux-choix__panel">
-            <h2 id="rpg-flux-choix-titre" className="rpg-flux-choix__titre">Choisis ton mana</h2>
-            <div className="rpg-flux-choix__options">
-              {duel.joueur.couleurs.map((couleur, index) => {
-                const acquis = duel.joueur.manaMax?.[couleur] ?? 0;
-                const enMain = (duel.joueur.main ?? []).filter((cid) => cardCostColors(cardById(cid)).includes(couleur)).length;
-                return (
-                  <button
-                    key={couleur}
-                    type="button"
-                    autoFocus={index === 0}
-                    className={`rpg-flux-choix__option rpg-flux-choix__option--${couleur}`}
-                    data-mana-acquis={acquis}
-                    data-mana-en-main={enMain}
-                    data-key-shortcut={String(index + 1)}
-                    title={`Choisir ${couleurLabel(couleur)} (raccourci : ${index + 1})`}
-                    onClick={() => choisirNouveauManaEssai(couleur)}
-                    aria-label={`Choisir le mana ${couleurLabel(couleur)} (${acquis} déjà acquis, ${enMain} carte${enMain > 1 ? 's' : ''} en main)`}
-                  >
-                    <span aria-hidden="true"><ElementEmblem element={couleur} /></span>
-                    <small className="rpg-flux-choix__count" aria-hidden="true" title={`${acquis} source(s) acquise(s)`}>{acquis}</small>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <ChoixManaEssai camp={duel.joueur} onChoisir={choisirNouveauManaEssai} />
       )}
       {recompenseTutoriel && (
         <div className="rpg-tutorial-reward-toast" role="status" aria-live="polite" key={recompenseTutoriel.token}>
