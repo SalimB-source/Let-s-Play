@@ -35,11 +35,12 @@ test('le slide présente Salem ouvrant un booster et conduit au Souk sans simule
   assert.match(page, /aria-hidden=\{diapoAffichee !== RPG_OFFRE_DIAPO\}/);
   assert.doesNotMatch(page, /rpg-mode-menu__diaporama[^\n]*aria-hidden="true"/, 'le CTA actif n’est pas masqué aux lecteurs d’écran');
   assert.match(css, /rpg-mode-menu__diapo--offre\.is-active \{ pointer-events: auto; \}/);
-  assert.match(css, /rpg-mode-menu__hero:is\(\[data-promo-visible="true"\], \[data-offre-visible="true"\]\) \{ min-height: 270px/, 'l’offre a la même hauteur que les boosters sur petit écran');
-  assert.match(css, /rpg-mode-menu__hero:is\(\[data-promo-visible="true"\], \[data-offre-visible="true"\]\) \{ min-height: 205px/, 'le petit paysage partage aussi une hauteur commune');
-  assert.doesNotMatch(css, /rpg-mode-menu__hero\[data-offre-visible="true"\] \{[^}]*min-height:/s, 'aucune taille particulière ne rétrécit le slide de l’offre');
-  assert.match(css, /\.rpg-mode-menu__play:not\(\.rpg-mode-menu__play--full\):has\(\.rpg-mode-menu__hero:is\(\[data-promo-visible="true"\], \[data-offre-visible="true"\]\)\) \{\s*overflow-y: auto;\s*grid-template-rows: auto auto auto;/,
-    'les deux slides occupent une rangée identique, sans recouvrir les quêtes');
+  assert.doesNotMatch(css, /rpg-mode-menu__hero:is\(\[data-promo-visible="true"\], \[data-offre-visible="true"\]\) \{ min-height:/,
+    'aucun slide ne change la hauteur de la vitrine');
+  assert.doesNotMatch(css, /rpg-mode-menu__play[^\n]*:has\(\.rpg-mode-menu__hero:is\(\[data-promo-visible=/,
+    'la grille et le défilement ne changent pas selon le slide');
+  assert.match(css, /container: vitrine-sablier \/ size/);
+  assert.match(css, /@container vitrine-sablier \(max-height: 190px\)/);
   assert.match(css, /data-offre-visible="true"\] \.rpg-mode-menu__hero-copy \{ opacity: 0/);
   assert.doesNotMatch(composant, /onOuvrirCoffret|disabled tabIndex/);
 });
