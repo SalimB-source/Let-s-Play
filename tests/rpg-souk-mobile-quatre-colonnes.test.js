@@ -8,7 +8,10 @@ const page = readFileSync(new URL('../src/games/RpgSouk.jsx', import.meta.url), 
 test('le Souk mobile présente quatre colonnes avec des sachets adaptés et des boutons tactiles', () => {
   const mobile = css.slice(css.lastIndexOf("/* Sur téléphone, toute l'étagère"));
   assert.match(mobile, /max-width:\s*700px/);
-  assert.match(mobile, /pointer:\s*coarse/);
+  // En paysage, la largeur de l'appareil peut dépasser 700 px : c'est sa
+  // hauteur, et non max-device-width, qui permet de reconnaître un téléphone.
+  assert.match(mobile, /@media\s*\(max-width:\s*700px\),\s*\(orientation:\s*landscape\)\s*and\s*\(max-height:\s*600px\)\s*and\s*\(pointer:\s*coarse\)/);
+  assert.doesNotMatch(mobile, /max-device-width/);
   assert.match(mobile, /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/);
   assert.match(mobile, /container-type:\s*inline-size/);
   assert.match(mobile, /--pw:\s*min\(21cqw,\s*90px\)/);

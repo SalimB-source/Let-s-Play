@@ -1777,7 +1777,7 @@
 /* Sur téléphone, toute l'étagère reste sur quatre colonnes, en portrait comme
    en paysage. Les sachets suivent la largeur réelle de la grille (qui peut
    être réduite par la navigation latérale), sans rogner les prix ni les CTA. */
-@media (max-width: 700px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
+@media (max-width: 700px), (orientation: landscape) and (max-height: 600px) and (pointer: coarse) {
   .rpg-souk__rayons {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
