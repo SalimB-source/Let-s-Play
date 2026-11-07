@@ -26,6 +26,7 @@ réactif de *Clair Obscur*.
 | [`22-tour-du-corbeau.md`](22-tour-du-corbeau.md) | La **Tour du Corbeau** : le set hybride **Neige + Ténèbres** — le Père des corbeaux retourné en Maître des corbeaux, six cartes signature, quatre étages et leur plateau |
 | [`24-coffrets-de-bienvenue.md`](24-coffrets-de-bienvenue.md) | Les **coffrets de bienvenue** : trois coffrets de couleurs différentes au tout premier lancement, une mythique et trois rares dans chacun, trente cartes jouables — et la cérémonie qui les ouvre **vague par vague** (le socle, les rares, la mythique) |
 | [`25-cartes-liees.md`](25-cartes-liees.md) | Les **cartes liées** : une carte n'est jamais morte, elle est seulement meilleure quand sa créature mythique est en jeu — sans jamais baisser son coût |
+| [`26-le-cavalier-sans-nom.md`](26-le-cavalier-sans-nom.md) | **Le cavalier sans nom** : créature mythique hybride **Eau + Ténèbres** — Envol, Tribut 2 et un Rebond borné à coût 4 qui pioche une carte, le noyé du registre effacé |
 
 ## La décision de conception
 

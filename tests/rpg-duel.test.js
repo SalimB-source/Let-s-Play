@@ -236,9 +236,9 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents comporte 111 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 117,
-    'le Rempart rejoint les créatures existantes');
+test('le set de permanents comporte 118 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 118,
+    'le cavalier sans nom rejoint les créatures existantes');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');
@@ -1296,6 +1296,9 @@ test('une arrivée qui pioche ou fouille le deck rend la pose non annulable', ()
     'scalde-des-runes',
     'valkyrie-au-corbeau',
     'jormungandr',
+    // Le Rebond du cavalier sans nom rapporte une carte : le paquet est
+    // consulté dès la pose, l'action n'est donc plus annulable.
+    'le-cavalier-sans-nom',
     'serpent-du-monde',
     'tiziri-du-djurdjura',
   ];

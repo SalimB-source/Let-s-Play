@@ -1232,6 +1232,23 @@ export const RPG_CREATURE_CARDS = [
     text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une Attaque ciblée adverse vise une de vos créatures. À son arrivée, choisissez une Attaque ciblée adverse en cours : elle vise le Veilleur à la place. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
+  {
+    // Le cavalier sans nom — la figure Eau + Ténèbres du registre effacé. Un
+    // noyé dont on a gratté le nom : l'Eau le renvoie (Rebond d'une créature de
+    // coût 4 ou moins, puis une carte piochée — la marée reprend et rapporte),
+    // les Ténèbres le paient (Tribut, le prix du sang). Il chevauche hors de la
+    // portée des lames (Envol). Le plafond de coût (`coutMax`) est honoré par
+    // `cibleRespecteCoutMax` (pose, désignation différée, IA) ; la pioche part
+    // même sans cible légale, comme le Courant de retour.
+    id: 'le-cavalier-sans-nom', name: 'Le cavalier sans nom',
+    element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
+    cost: 6, atk: 5, def: 5, rarity: 'mythique',
+    typeLine: 'Créature légendaire — Cavalier · Spectre',
+    envol: true, tribut: 2,
+    arrivee: { type: 'retour-main', cible: 'creature', coutMax: 4, pioche: 1 },
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Le cavalier sans nom arrive : renvoyez une créature adverse ciblée de coût 4 ou moins dans la main de son propriétaire, puis piochez une carte.',
+    flavor: 'Nul n’a gravé son nom sur la pierre ; la marée, elle, se souvient de chaque noyé.',
+  },
 ];
 
 /**

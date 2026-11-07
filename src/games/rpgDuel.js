@@ -5644,6 +5644,10 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const cible = duel[autre(cote)].creatures.find((entite) => entite.id === cibleId)
       ?? duel[cote].creatures.find((entite) => entite.id === cibleId);
     if (!cible) return { ok: false, raison: 'cible' };
+    // Le Rebond borné (le cavalier sans nom : coût 4 ou moins) refuse une cible
+    // hors seuil, comme l'exil du Père des corbeaux — `cibleRespecteCoutMax`
+    // ne mord que si la fiche porte un `coutMax`/`coutMin`.
+    if (!cibleRespecteCoutMax(carte, cible)) return { ok: false, raison: 'cible' };
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
   if (['debuff', 'empeche-blocage', 'donne', 'exil-temporaire'].includes(carte.arrivee?.type)

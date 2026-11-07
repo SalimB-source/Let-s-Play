@@ -704,7 +704,10 @@ function meilleureCibleRenvoiIA(duel, cote, carte) {
   const campCible = portee === 'creature-amie' ? duel[cote] : duel[autre(cote)];
   const couleurs = cardColors(carte);
   return campCible.creatures
-    .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte))
+    // Le Rebond borné (cavalier sans nom : coût 4 ou moins) ne désigne qu'une
+    // cible sous le seuil ; sans `coutMax` sur la fiche, le filtre laisse tout passer.
+    .filter((entite) => !estProtegee(entite, couleurs) && !horsDAtteinteDuSort(entite, carte)
+      && moteur.cibleRespecteCoutMax(carte, entite))
     .map((entite) => ({ entite, score: menace(entite) + valeurEntite(entite) * 0.2,
       bloque: carte?.kind === 'magie' && campCible === duel[autre(cote)] && paradeContreSort(entite, carte) }))
     .sort((a, b) => Number(a.bloque) - Number(b.bloque) || b.score - a.score)[0]?.entite.id ?? null;
