@@ -593,27 +593,32 @@
    imprimés et états vivants : bouclier, esquive…) en une colonne verticale
    chevillée au bord droit, à la place du coût (qui ne s'imprime plus sur une
    carte posée, voir `rpg-mobile.css`). La colonne part du coin haut droit puis
-   déborde du cadre de 42 % de sa largeur (`effet-icons.css`, « Les emblèmes
+   déborde du cadre de 36 % de sa largeur (`effet-icons.css`, « Les emblèmes
    montés sur le bord ») : la pierre est sur le bord, pas dans l'illustration.
    La main, elle, suit `.rpg-card-icones--main` dans `effet-icons.css`, puis les
    mesures serrées de `rpg-mobile.css` : cette feuille ne doit pas lui redonner
    20 px ensuite. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
-  top: 5%;
+  /* La pierre suit la largeur de la carte : 17 % d'elle, entre 16 et 30 px —
+     une carte de table fait 68 px au doigt et jusqu'à 198 px sur grand écran.
+     C'est le cadran qui décide, pas la feuille mobile : 16 px sur une carte de
+     68 px, 22 px sur une de 130, 30 px au plafond. */
+  --rpg-plaque-taille: clamp(16px, 17cqw, 30px);
+  top: 4%;
   right: 0;
   bottom: auto;
   left: auto;
-  width: var(--rpg-card-marker-size, 27cqw);
+  width: var(--rpg-plaque-taille);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 2.5cqw;
+  gap: clamp(2px, 1.5cqw, 5px);
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone {
   justify-content: center;
-  min-width: 20cqw;
-  min-height: 20cqw;
+  min-width: var(--rpg-plaque-taille);
+  min-height: var(--rpg-plaque-taille);
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 5) {
   display: none;
