@@ -29,7 +29,7 @@ import {
   JOURS_DE_LA_SERIE, cachetDeLaSemaineDisponible, cachetDisponible,
   etapesDeLaSerie, joursAvantLeCachetDeLaSemaine, secondesAvantExpiration, vueDeLaQuete,
 } from './rpgQuetes.js';
-import { COFFRET, TAUX, etatRayons, rayonParId } from './rpgBoosters.js';
+import { COFFRET, TAUX, etatRayons } from './rpgBoosters.js';
 import { cardById } from './rpgCards.js';
 import { SOUK_DIRECT_REGLES, vueCarteDeEtal } from './rpgSoukDirect.js';
 import RpgBoosterOuverture from './RpgBoosterOuverture.jsx';
@@ -655,8 +655,6 @@ export default function RpgSouk({
   // Les sept cartes de la série : les jours déjà passés portent leur cachet,
   // les autres attendent. La règle vit dans `rpgQuetes.js`.
   const joursDeLaSerie = etapesDeLaSerie(quetes);
-  const journal = Array.isArray(portefeuille?.journal) ? portefeuille.journal : [];
-  const jouees = portefeuille?.ouvertures ?? 0;
   const etal = portefeuille?.etal ?? { jour: quetes?.jour ?? null, cartes: [], achetees: [], rafraichissements: 0 };
   const offresDirect = Array.isArray(etal.cartes) ? etal.cartes : [];
   // Deux lectures distinctes, et c'est voulu : `collectionDirect` répond à
@@ -758,7 +756,7 @@ export default function RpgSouk({
       )}
 
       {/* Le Souk ouvre sur ce qu'on y achète : le paquet d'abord, les cartes du
-          jour juste après. Les quêtes, les Cachets et le journal suivent plus
+          jour juste après. Les quêtes et les Cachets suivent plus
           bas — on vient d'abord ici pour dépenser, pas pour cocher une liste. */}
       <section className="rpg-souk__section rpg-souk__section--rayons" aria-labelledby="souk-rayons-titre">
         <div className="rpg-souk__section-tete">
@@ -986,42 +984,6 @@ export default function RpgSouk({
             </li>
           ))}
         </ol>
-      </section>
-
-      <section className="rpg-souk__section" aria-labelledby="souk-journal-titre">
-        <div className="rpg-souk__section-tete">
-          <h3 id="souk-journal-titre">Les dernières ouvertures</h3>
-          <p data-souk-journal={journal.length}>
-            {jouees > 0 ? `${jouees} paquet${jouees > 1 ? 's' : ''} depuis le début` : 'aucun paquet ouvert'}
-          </p>
-        </div>
-        {journal.length ? (
-          <ul className="rpg-souk__journal">
-            {journal.map((entree) => {
-              const rayon = rayonParId(entree.rayonId);
-              return (
-                <li key={`${entree.le}-${entree.rayonId}-${entree.cartes.join('-')}`} data-souk-journal-ligne={entree.rayonId} data-souk-journal-mythe={entree.mythique}>
-                  <span className="rpg-souk__journal-rayon">{rayon?.nom ?? entree.rayonId}</span>
-                  <span className="rpg-souk__journal-date">{quandLisible(entree.le)}</span>
-                  <span className="rpg-souk__journal-cartes">
-                    {entree.cartes.map((id) => cardById(id)?.name ?? id).join(' · ')}
-                  </span>
-                  <span className="rpg-souk__journal-notes">
-                    {entree.coffret ? 'coffret' : 'paquet'}
-                    {entree.mythique ? ' · mythique' : ''}
-                    {entree.remboursement ? (
-                      <> {'·'} +{entree.remboursement} <RpgCreditIcon /></>
-                    ) : ''}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="rpg-souk__vide" data-souk-journal-vide>
-            Rien encore : le premier paquet ouvert s’inscrira ici, cartes comprises.
-          </p>
-        )}
       </section>
 
       {bursts.map((b) => {
