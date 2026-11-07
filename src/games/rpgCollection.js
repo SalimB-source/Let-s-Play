@@ -103,7 +103,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
-    'lettre-de-marque', 'le-routier'],
+    'lettre-de-marque', 'le-routier', 'le-cavalier-de-vapeur'],
   // Tour des Sables — le sommet du Sable/Braise, l'Eau se précise. Le roi
   // Kusayla y rejoint Tin Hinan et Yamina : la mémoire amazighe se révèle au
   // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
@@ -118,10 +118,10 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   'abysses-1': ['kraken', 'baton-des-citernes'],
   'abysses-2': ['leviathan', 'scalde-des-runes'],
   'abysses-3': ['bakunawa', 'valkyrie-au-corbeau', 'lance-de-givre'],
-  'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc'],
+  'abysses-4': ['jormungandr', 'boualem', 'brume-du-fjord', 'grand-voile-blanc', 'le-cavalier-du-ressac-gele'],
   // Tour du Fjord — le Serment au complet.
   'fjord-1': ['volva-soigneuse', 'eirik-du-premier-serment', 'jarl-au-marteau-de-guerre', 'hurlement-du-blizzard', 'berserk-des-trois-hivers', 'defi-du-jarl'],
-  'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige'],
+  'fjord-2': ['valkyrie-des-glaces', 'geant-des-banquises', 'verglas', 'embuscade', 'tour-de-neige', 'le-cavalier-des-dunes-gelees'],
   // Le Grand Hiver tombe avec les derniers hivers du Serment ; la Hache de la
   // banquise, commune, rejoint d'elle-même la dotation de départ.
   'fjord-3': ['drakkar-a-tete-de-dragon', 'pere-des-corbeaux', 'grand-hiver', 'tempete-de-foudre-et-de-givre'],
@@ -131,11 +131,11 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Les quatre figures cross-éléments (Faucon, Lionne, Dame, Seigneur) montent
   // avec leurs mythiques tenebres — elles sont du même set.
   'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
-  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin'],
-  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets'],
+  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
+  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
-  'necropole-4': ['sanguinaire-des-dunes', 'souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire'],
+  'necropole-4': ['sanguinaire-des-dunes', 'souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire', 'le-cavalier-sans-nom'],
   // Tour du Corbeau — le set hybride Neige + Ténèbres (doc 22). La neige
   // d'abord (le corbeau de givre), la nuit ensuite (la veilleuse), les deux
   // au sommet : la Valkyrie des neuf nuits et le Maître des corbeaux.

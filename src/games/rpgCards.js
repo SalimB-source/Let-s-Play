@@ -1232,6 +1232,92 @@ export const RPG_CREATURE_CARDS = [
     text: 'Embuscade — Vous pouvez jouer cette créature pendant le tour adverse seulement si une Attaque ciblée adverse vise une de vos créatures. À son arrivée, choisissez une Attaque ciblée adverse en cours : elle vise le Veilleur à la place. Contre-attaque — Quand une créature adverse le frappe avec Attaque ciblée ou le cible avec une capacité, le Veilleur lui inflige ses dégâts d’attaque. Quand un sort le cible ou le blesse en zone, il frappe le sorcier adverse, même s’il est détruit.',
     flavor: 'Le dernier rayon s’éteint ; sa garde ne finit jamais.',
   },
+  {
+    // Le cavalier sans nom — la figure Eau + Ténèbres du registre effacé. Un
+    // noyé dont on a gratté le nom : l'Eau le renvoie (Rebond d'une créature de
+    // coût 4 ou moins, puis une carte piochée — la marée reprend et rapporte),
+    // les Ténèbres le paient (Tribut, le prix du sang). Il chevauche hors de la
+    // portée des lames (Envol). Le plafond de coût (`coutMax`) est honoré par
+    // `cibleRespecteCoutMax` (pose, désignation différée, IA) ; la pioche part
+    // même sans cible légale, comme le Courant de retour.
+    id: 'le-cavalier-sans-nom', name: 'Le cavalier sans nom',
+    element: 'eau', colors: ['eau', 'tenebres'], colorCost: { eau: 1, tenebres: 1 },
+    cost: 6, atk: 5, def: 5, rarity: 'mythique',
+    typeLine: 'Créature légendaire — Cavalier · Spectre',
+    envol: true, tribut: 2,
+    arrivee: { type: 'retour-main', cible: 'creature', coutMax: 4, pioche: 1 },
+    text: 'Envol — Ne peut être bloqué que par une créature avec Envol. Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Le cavalier sans nom arrive : renvoyez une créature adverse ciblée de coût 4 ou moins dans la main de son propriétaire, puis piochez une carte.',
+    flavor: 'Nul n’a gravé son nom sur la pierre ; la marée, elle, se souvient de chaque noyé.',
+  },
+  // ── Les Cavaliers — le cycle des cinq montures (doc 27) ────────────────
+  //
+  // Un cavalier par binôme de couleurs, chacun dans la langue de ses deux
+  // éléments (`05-concept-cartes.md`, §11). Trois d'entre eux ouvrent une
+  // paire que le catalogue n'avait jamais peinte : Braise + Eau, Eau + Neige
+  // et Sable + Neige. Dans ces cinq cartes, chaque couleur du Sablier monte
+  // deux fois ; Le cavalier sans nom (Eau + Ténèbres) ajoute une diagonale.
+  {
+    // Braise + Eau — la vapeur : l'eau qui brûle puis repousse. La Braise
+    // cuit à l'arrivée, l'Eau rend à la main ce qui vient le bloquer.
+    id: 'le-cavalier-de-vapeur', name: 'Le cavalier de vapeur',
+    element: 'braise', colors: ['braise', 'eau'], colorCost: { braise: 1, eau: 1 },
+    cost: 4, atk: 3, def: 3, rarity: 'rare',
+    typeLine: 'Créature — Cavalier · Élémental',
+    arrivee: { type: 'degats', amount: 2, cible: 'creature' },
+    combat: { type: 'retour-main', quand: 'blocage', cible: 'creature-combattue' },
+    text: 'Quand Le cavalier de vapeur arrive : il inflige 2 dégâts à une créature adverse ciblée. Quand il bloque : après les blessures de combat, la créature qu’il bloque repart dans la main de son propriétaire.',
+    flavor: 'Il traverse les rangs dans un souffle blanc ; ce qu’il touche ne revient pas.',
+  },
+  {
+    // Eau + Neige — la mer qui prend. Le gel de zone du Géant des banquises,
+    // sans sa morsure : une mythique de contrôle qui fige la table entière.
+    id: 'le-cavalier-du-ressac-gele', name: 'Le cavalier du ressac gelé',
+    element: 'eau', colors: ['eau', 'neige'], colorCost: { eau: 1, neige: 1 },
+    cost: 6, atk: 4, def: 6, rarity: 'mythique',
+    typeLine: 'Créature légendaire — Cavalier · Élémental',
+    defenseur: true,
+    arrivee: { type: 'gel', cible: 'toutes-creatures' },
+    text: 'Défenseur. Quand Le cavalier du ressac gelé arrive : gelez toutes les créatures adverses ; elles ne peuvent ni attaquer ni bloquer jusqu’à la fin de leur prochain tour.',
+    flavor: 'La vague s’est figée debout, et lui seul continue d’avancer.',
+  },
+  {
+    // Sable + Neige — le sablier pris dans la glace. Les compteurs d'Heures
+    // du Sable paient un renfort durable de toute la rangée (Neige : le corps).
+    id: 'le-cavalier-des-dunes-gelees', name: 'Le cavalier des dunes gelées',
+    element: 'sable', colors: ['sable', 'neige'], colorCost: { sable: 1, neige: 1 },
+    cost: 4, atk: 2, def: 4, rarity: 'rare',
+    typeLine: 'Créature — Cavalier · Élémental',
+    arrivee: { type: 'heures', compteurs: 2, effetFinal: [
+      { type: 'buff', cible: 'creatures-alliees', atk: 1, def: 1, inclutSource: true },
+    ] },
+    text: 'Quand Le cavalier des dunes gelées arrive : mettez 2 compteurs d’Heures sur lui. Au début de chacun de vos tours, retirez-en un ; quand le dernier part, chacune de vos créatures, lui compris, gagne +1/+1.',
+    flavor: 'Sous sa monture, le sable a durci : il porte enfin le poids des heures.',
+  },
+  {
+    // Sable + Ténèbres — la mort qui déclenche (Ténèbres) sur une horloge de
+    // Sable : le mort revient, mais pas tout de suite. Le tuer n'achète que
+    // trois tours de répit, et le Tribut le fait payer à chaque fois.
+    id: 'le-cavalier-du-cimetiere', name: 'Le cavalier du cimetière',
+    element: 'sable', colors: ['sable', 'tenebres'], colorCost: { sable: 1, tenebres: 1 },
+    cost: 5, atk: 4, def: 4, rarity: 'rare',
+    typeLine: 'Créature — Cavalier · Spectre',
+    tribut: 2,
+    destruction: { type: 'retour-apres-tours', tours: 3 },
+    text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Le cavalier du cimetière meurt : il revient en jeu au début du troisième tour suivant, si une place est libre.',
+    flavor: 'La fosse ne le garde jamais : elle le renvoie, sellé.',
+  },
+  {
+    // Braise + Ténèbres — les dégâts bruts de la Braise, payés par la mort
+    // qui déclenche des Ténèbres. Une charge qu'il coûte cher de bloquer.
+    id: 'le-cavalier-du-bucher', name: 'Le cavalier du bûcher',
+    element: 'braise', colors: ['braise', 'tenebres'], colorCost: { braise: 1, tenebres: 1 },
+    cost: 5, atk: 4, def: 3, rarity: 'rare',
+    typeLine: 'Créature — Cavalier · Spectre',
+    rapidite: true,
+    destruction: { type: 'degats', amount: 2, cible: 'toutes-creatures' },
+    text: 'Rapidité — Peut attaquer le tour où il arrive. Quand Le cavalier du bûcher meurt : le bûcher s’embrase et inflige 2 dégâts à chaque créature adverse.',
+    flavor: 'On l’abat, et la nuit prend feu.',
+  },
 ];
 
 /**
