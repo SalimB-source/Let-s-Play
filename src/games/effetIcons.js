@@ -267,6 +267,16 @@ export const EFFET_LIBELLES = {
   'destruction-navire': 'Destruction de navire',
   'destruction-arme': 'Destruction d’arme',
   'mue-mondiale': 'Mue mondiale',
+  // Les effets qui n'avaient pas encore de nom lisible : la planche de revue
+  // les affichait par leur clé de code, ce qui n'est pas un libellé de carte.
+  'bouclier-lumiere': 'Bouclier de lumière',
+  compagnie: 'Compagnie',
+  'pioche-defausse': 'Pioche et défausse',
+  'soin-creatures': 'Soin des créatures',
+  lien: 'Lien',
+  'empeche-attaque': 'Attaque interdite',
+  jetons: 'Jetons',
+  'retour-apres-tours': 'Retour différé',
 };
 
 const capitaliser = (mot = '') => (mot ? mot.charAt(0).toUpperCase() + mot.slice(1) : mot);

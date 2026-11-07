@@ -1,17 +1,20 @@
 /* Les icônes d'effets : pastilles des fiches, badges des faces, interlignage.
-   Monochromes (stroke: currentColor) — l'icône prend la couleur du texte qui
-   l'accueille. Seule exception : la Protection élémentaire, dont le bouclier
-   prend la couleur de l'élément repoussé (sauf le Sable, qui garde l'or). */
+   Chaque effet se lit désormais sur une **pierre d'emblème** — forme et teinte
+   selon sa famille, pictogramme blanc (voir `effetPlaques.js`). Le dessin de la
+   pierre est dans le SVG ; la feuille ne s'occupe que de sa place, de son
+   ombre portée et des états (dépensé, en attente). */
 
-/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée. */
+/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée, avec
+   l'ombre courte qui la décolle du fond de la carte. */
 .rpg-effet-icone {
   flex: none;
   vertical-align: -0.16em;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .55));
 }
 
 .rpg-effet-icone--ligne {
-  margin-right: 5px;
-  color: #edcb8b;
+  margin-right: 6px;
+  vertical-align: -0.3em;
 }
 
 /* Une Protection contre plusieurs éléments aligne un bouclier par couleur. */
@@ -51,10 +54,11 @@
   color: #a9a9a9;
 }
 
+/* La pierre dépensée garde sa place, mais perd sa couleur : le filtre gris
+   ci-dessous éteint le dessin lui-même, sans pastille de fond (le badge n'en
+   a plus). */
 .rpg-card-icone.is-epuisee {
-  border-color: rgba(168, 168, 168, .42);
-  background: rgba(24, 24, 24, .82);
-  color: #a9a9a9;
+  background: none;
   opacity: .68;
   filter: grayscale(1);
 }
@@ -76,11 +80,11 @@
 .rpg-pastille {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   box-sizing: border-box;
   max-width: 100%;
   min-height: 28px;
-  padding: 4px 10px 4px 8px;
+  padding: 4px 11px 4px 7px;
   border: 1px solid rgba(237, 203, 139, .45);
   border-radius: 999px;
   background: rgba(5, 8, 11, .55);
@@ -91,9 +95,8 @@
 }
 
 .rpg-pastille .rpg-effet-icone {
-  width: 15px;
-  height: 15px;
-  color: #edcb8b;
+  width: 20px;
+  height: 20px;
 }
 
 /* ── Les badges : l'icône seule sur les faces de cartes ──────────────────────
@@ -112,22 +115,31 @@
   pointer-events: none;
 }
 
+/* La pierre EST le badge : plus de pastille ronde sous l'icône — le cercle
+   d'encre disparaît, l'emblème porte lui-même son contour sombre. Seul le
+   chiffre de l'effet (Furie 3, Abordage 2) garde une pastille, posée en
+   bas à droite de la pierre. */
 .rpg-card-icone {
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid rgba(237, 203, 139, .55);
-  border-radius: 999px;
-  background: rgba(5, 8, 11, .78);
+  align-items: flex-end;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
   color: #ffe9a0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
   line-height: 1;
 }
 
 .rpg-card-icone small {
+  margin: 0 0 -2px -6px;
+  padding: 1px 3px;
+  border: 1px solid rgba(237, 203, 139, .5);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .92);
   font: 800 9px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color: #fff3d6;
+  font-variant-numeric: tabular-nums;
+  color: #ffe9a0;
 }
 
 /* La main : en colonne verticale à droite sous le disque de coût, l'icône seule. */
@@ -268,8 +280,7 @@
 }
 
 .rpg-card-icone.is-inactif {
-  border-color: rgba(168, 168, 168, .42);
-  background: rgba(24, 24, 24, .82);
+  background: none;
   opacity: .68;
   filter: grayscale(1);
 }

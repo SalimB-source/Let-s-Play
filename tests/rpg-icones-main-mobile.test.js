@@ -67,17 +67,20 @@ test('au doigt, les icônes d’effets de la main restent des badges de 12 px', 
   const { colonne, badge, glyphe } = mesurerMain(true);
   assert.equal(colonne.width, '14px', 'la colonne ne prend plus les 22 px du disque de coût');
   assert.equal(colonne.gap, '2px', 'les badges se serrent sans se coller');
-  assert.equal(badge.minWidth, '12px', 'le badge ne revient pas à 20 px');
-  assert.equal(badge.minHeight, '12px', 'le badge reste rond, pas ovale');
-  assert.equal(badge.padding, '1px', 'le contour garde une respiration minimale');
-  assert.equal(badge.border, '1px', 'le liseré suit la taille du badge');
-  assert.equal(glyphe.width, '8px', 'le glyphe rentre dans le badge');
-  assert.equal(glyphe.height, '8px', 'le glyphe reste carré');
+  // La pierre d'emblème occupe tout le badge : plus de pastille ronde ni de
+  // liseré CSS (la pierre porte son propre contour), et un pictogramme de 14 px
+  // là où le glyphe monochrome n'en avait que 8.
+  assert.equal(badge.minWidth, '14px', 'la pierre ne revient pas aux 20 px du bureau');
+  assert.equal(badge.minHeight, '14px', 'la pierre reste carrée, pas ovale');
+  assert.equal(badge.padding, '0px', 'plus de respiration : la pierre est le badge');
+  assert.equal(badge.border, '0px', 'le contour est dessiné dans la pierre');
+  assert.equal(glyphe.width, '14px', 'le pictogramme remplit la pierre');
+  assert.equal(glyphe.height, '14px', 'le pictogramme reste carré');
 });
 
 test('sur bureau, les badges de la main gardent leur taille de lecture', () => {
   const { badge } = mesurerMain(false);
   assert.equal(badge.minWidth, '20px', 'le correctif mobile ne rétrécit pas le plateau PC');
   assert.equal(badge.minHeight, '20px', 'la hauteur suit');
-  assert.equal(badge.padding, '3px', 'le contour du bureau reste inchangé');
+  assert.equal(badge.padding, '0px', 'sur bureau aussi, la pierre est le badge');
 });

@@ -28,7 +28,24 @@ import {
   pastillesPourCarte,
   iconePourLigne,
 } from './effetIcons.js';
+import { pierreEffet, plaqueEffet, PLAQUE_COTE } from './effetPlaques.js';
 import './effet-icons.css';
+
+/**
+ * Les pierres déjà dessinées, une entrée par (effet, élément repoussé).
+ * Le balisage est une constante du module : entre deux rendus, rien ne change —
+ * une carte qui s'anime ne redessine donc pas ses emblèmes.
+ */
+const PIERRES_DESSINEES = new Map();
+function pierreDessinee(cle, protectionContre) {
+  const marque = `${cle}|${protectionContre ?? ''}`;
+  let pierre = PIERRES_DESSINEES.get(marque);
+  if (pierre === undefined) {
+    pierre = pierreEffet(cle, { protectionContre });
+    PIERRES_DESSINEES.set(marque, pierre);
+  }
+  return pierre;
+}
 
 /** Le sprite des 37 symboles, à monter une fois par écran (menu, duel, guide). */
 export function EffetsSprite() {
@@ -42,27 +59,35 @@ export function EffetsSprite() {
   );
 }
 
-/** Une icône du sprite : `<EffetIcone cle="butin" />` ou `cle="i-butin"`. */
-export function EffetIcone({ cle, size = 14, className = '', style = undefined, protectionContre = undefined }) {
+/**
+ * Une pierre d'effet : `<EffetIcone cle="butin" />` ou `cle="i-butin"`.
+ *
+ * Le symbole ne flotte plus sur le texte : il se pose sur sa **pierre** —
+ * forme et teinte selon la famille de l'effet (voir `effetPlaques.js`), avec
+ * le biseau, le liseré sombre et le pictogramme blanc des emblèmes de héros.
+ * Une Protection élémentaire teinte sa pierre de l'élément qu'elle repousse.
+ */
+export function EffetIcone({ cle, size = 18, className = '', style = undefined, protectionContre = undefined }) {
   if (!cle) return null;
-  const id = cle.startsWith('i-') ? cle : (EFFET_ICONE[cle] ?? 'i-degats');
+  const plaque = plaqueEffet(cle);
   return (
     <svg
       className={`rpg-effet-icone${className ? ` ${className}` : ''}`}
       width={size}
       height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      viewBox={`0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}`}
+      preserveAspectRatio="xMidYMid meet"
       style={style}
+      // Les attributs disent la famille à l'extérieur (tests, revue, CSS) : la
+      // pierre elle-même est dessinée dans le module, jamais devinée en CSS.
+      data-plaque={plaque.famille}
+      data-forme={plaque.forme}
+      data-pierre={plaque.pierre}
+      data-symbole={plaque.symbole}
       data-protection-contre={protectionContre}
       aria-hidden="true"
-    >
-      <use href={`#${id}`} />
-    </svg>
+      dangerouslySetInnerHTML={{ __html: pierreDessinee(cle, protectionContre) }}
+    />
   );
 }
 
@@ -71,7 +96,7 @@ export function EffetIcone({ cle, size = 14, className = '', style = undefined, 
  * qu'elle repousse ; une Protection double montre donc deux boucliers, un
  * par couleur. Le Sable n'a pas de teinte propre : son icône garde l'or.
  */
-function IconePastille({ pastille, size = 13 }) {
+function IconePastille({ pastille, size = 20 }) {
   const contres = pastille.cle === 'protection' ? (pastille.contres ?? []) : [];
   if (!contres.length) return <EffetIcone cle={pastille.cle} size={size} />;
   return (
@@ -247,7 +272,7 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
         }
       }}
     >
-      <IconePastille pastille={pastille} size={13} />
+      <IconePastille pastille={pastille} size={20} />
       <LibellePastille pastille={pastille} />
       {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={<LibellePastille pastille={pastille} />} description={explication} />}
     </span>
@@ -359,7 +384,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       data-protection-contre={pastilleBadge.contres?.length ? pastilleBadge.contres.join(' ') : undefined}
       style={styleProtectionPastille(pastilleBadge)}
     >
-      <IconePastille pastille={pastilleBadge} size={12} />
+      <IconePastille pastille={pastilleBadge} size={18} />
       {pastilleBadge.valeur != null && !pastilleBadge.valeurMasquee && <small>{pastilleBadge.valeur}</small>}
     </span>
   );
@@ -397,7 +422,7 @@ export function IconeLigneRegle({ carte, ligne, epuise = false }) {
               <EffetIcone
                 key={contre}
                 cle="protection"
-                size={14}
+                size={18}
                 className={classeIcone}
                 protectionContre={contre}
                 style={couleur ? { color: couleur } : undefined}
@@ -408,5 +433,5 @@ export function IconeLigneRegle({ carte, ligne, epuise = false }) {
       );
     }
   }
-  return <EffetIcone cle={cle} size={14} className={classeIcone} />;
+  return <EffetIcone cle={cle} size={18} className={classeIcone} />;
 }
