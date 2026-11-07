@@ -6,7 +6,7 @@ saturé, biseau clair en haut, ombre en bas, liseré sombre, pictogramme **blanc
 au centre. La référence de style est celle des emblèmes de héros des jeux
 d'auto-battler : le losange braise, l'hexagone ténèbres, l'hexagone or.
 
-![Les pierres d'effets : avant/après, faces de cartes, pastilles, toutes les pierres, échelle et états](assets/pierres-effets.png)
+![Les pierres d'effets : avant/après, faces de cartes, pastilles, toutes les pierres, échelle et états](assets/pierres-effets.svg)
 
 ## La grammaire
 
@@ -42,11 +42,15 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
 4. la **moitié haute** du champ, éclaircie par la lueur ;
 5. la **moitié basse**, assombrie par l'encre ;
 6. le **filet** clair sur le champ — l'arête taillée ;
-7. le **pictogramme**, blanc, à 12 unités (diamant) ou 19 (hexagone).
+7. le **pictogramme**, blanc, à 13 unités (diamant) ou 18 (hexagone).
+
+L'hexagone remplit son carré de plus près que le premier dessin : 28 de large
+sur 30 de haut. À 18 px sur une face de carte, une pierre étroite se lisait comme
+un pois à côté de son pictogramme — d'où l'ouverture jusqu'aux bords.
 
 Les formes pointues laissent moins de place au centre : le pictogramme y est plus
 petit, mais son **épaisseur apparente ne change pas** — `EPAISSEUR_SYMBOLE`
-compense la réduction (`1,75 × 24 / taille`), pour un trait effectif de
+compense la réduction (`2 × 24 / taille`), pour un trait effectif de
 2 unités de symbole partout.
 
 Rien n'est deviné en CSS : la pierre est dessinée dans le SVG, ce qui la rend
@@ -79,6 +83,7 @@ Une Protection double affiche deux pierres, une par couleur.
 
 ```bash
 node scripts/effets-pierres-preview.mjs      # public/preview-effets-pierres.html
+node scripts/effets-pierres-planche.mjs      # la planche SVG de cette page
 node --test tests/rpg-effets-pierres.test.js # la grammaire, les formes, la feuille
 ```
 

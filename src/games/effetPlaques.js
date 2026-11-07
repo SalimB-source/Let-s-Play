@@ -15,7 +15,7 @@
  *   tempo.
  *
  * Le dessin vit dans un carré de 32 unités : la pierre occupe les 32, le
- * pictogramme 13 (diamant) à 19 (hexagone) — les formes pointues laissent moins
+ * pictogramme 13 (diamant) à 18 (hexagone) — les formes pointues laissent moins
  * de place au centre, et le trait garde la même épaisseur apparente partout
  * (voir `EPAISSEUR_SYMBOLE`).
  *
@@ -36,7 +36,11 @@ export const PLAQUE_COTE = 32;
  */
 export const PLAQUE_FORMES = Object.freeze({
   diamant: Object.freeze([[16, 1.6], [30.4, 16], [16, 30.4], [1.6, 16]]),
-  hexagone: Object.freeze([[16, 1.6], [28.5, 8.8], [28.5, 23.2], [16, 30.4], [3.5, 23.2], [3.5, 8.8]]),
+  // L'hexagone remplit son carré de plus près que le premier dessin : à 18 px
+  // sur une face de carte, une pierre étroite se lisait comme un pois à côté
+  // de son pictogramme. Il garde ses pointes haute et basse, mais s'ouvre
+  // jusqu'aux bords (28 de large sur 30 de haut, contre 25 sur 28,8).
+  hexagone: Object.freeze([[16, 1], [30, 8.5], [30, 23.5], [16, 31], [2, 23.5], [2, 8.5]]),
 });
 
 /**
@@ -151,7 +155,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
-const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 13, hexagone: 19 });
+const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 13, hexagone: 18 });
 
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 export const EPAISSEUR_SYMBOLE = Object.freeze(
