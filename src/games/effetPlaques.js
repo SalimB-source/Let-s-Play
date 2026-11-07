@@ -15,7 +15,7 @@
  *   tempo.
  *
  * Le dessin vit dans un carré de 32 unités : la pierre occupe les 32, le
- * pictogramme 13 (diamant) à 18 (hexagone) — les formes pointues laissent moins
+ * pictogramme 12 (diamant) à 19 (hexagone) — les formes pointues laissent moins
  * de place au centre, et le trait garde la même épaisseur apparente partout
  * (voir `EPAISSEUR_SYMBOLE`).
  *
@@ -155,7 +155,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
-const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 13, hexagone: 18 });
+const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 12, hexagone: 19 });
 
 /**
  * L'épaisseur du biseau, forme par forme. L'hexagone ouvre largement son champ
@@ -164,9 +164,12 @@ const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 13, hexagone: 18 });
  * sans quoi le pictogramme déborderait sur son contour.
  */
 const BISEAU_PAR_FORME = Object.freeze({
-  diamant: Object.freeze({ anneau: 0.78, champ: 0.64 }),
-  hexagone: Object.freeze({ anneau: 0.82, champ: 0.7 }),
+  diamant: Object.freeze({ anneau: 0.92, champ: 0.84 }),
+  hexagone: Object.freeze({ anneau: 0.9, champ: 0.8 }),
 });
+
+/** Le contour d'encre ajouté autour de la silhouette, en unités de 32. */
+const CONTOUR = 1.4;
 
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 export const EPAISSEUR_SYMBOLE = Object.freeze(
@@ -251,7 +254,7 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
   const symbole = SYMBOLE_PAR_FORME[plaque.forme];
   const marge = arrondi((PLAQUE_COTE - symbole) / 2);
   return [
-    `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}"/>`,
+    `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
     `<polygon points="${pointsSvg(lumiere)}" fill="${pierre.lueur}" fill-opacity=".24"/>`,

@@ -36,11 +36,16 @@ const sortie = argument > -1
   : fileURLToPath(new URL('docs/rpg/assets/pierres-effets.svg', racine));
 
 const sprite = EFFETS_SPRITE.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
-const pierre = (cle, taille, protection) => plaqueSvg(cle, { size: taille, ...(protection ? { protectionContre: protection } : {}) })
+const pierre = (cle, taille) => plaqueSvg(cle, { size: taille })
   .replace(/^<svg[^>]*>/, '')
   .replace(/<\/svg>$/, '');
-/** Une pierre posée à (x, y). */
-const poser = (x, y, cle, taille) => `<g transform="translate(${x},${y})">${pierre(cle, taille)}</g>`;
+/**
+ * Une pierre posée à (x, y), à sa taille d'affichage. Le dessin vit dans un
+ * carré de 32 unités : sans le `viewBox` du svg imbriqué, toutes les pierres
+ * sortiraient à 32 px, quelle que soit la taille demandée.
+ */
+const poser = (x, y, cle, taille) =>
+  `<svg x="${x}" y="${y}" width="${taille}" height="${taille}" viewBox="0 0 32 32">${pierre(cle, taille)}</svg>`;
 const texte = (x, y, contenu, { size = 14, fill = '#efe4cf', weight = 400, anchor = 'start', ls = 0 } = {}) =>
   `<text x="${x}" y="${y}" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" letter-spacing="${ls}">${contenu}</text>`;
 
@@ -103,8 +108,10 @@ faces.forEach(([nom, badges], index) => {
   for (const [cle, valeur, enAttente] of badges) {
     parts.push(`<g${enAttente ? ' opacity="0.5" style="filter:grayscale(1)"' : ''}>${poser(bx, by, cle, 18)}</g>`);
     if (valeur != null) {
-      parts.push(`<rect x="${bx + 18}" y="${by + 11}" width="15" height="11" rx="5.5" fill="#0b0908" stroke="#edcb8b" stroke-opacity=".5"/>`);
-      parts.push(texte(bx + 25.5, by + 19.5, String(valeur), { size: 8, weight: 700, fill: '#ffe9a0', anchor: 'middle' }));
+      // Le chiffre mord sur le coin bas-droit de la pierre, comme la petite
+      // pastille du CSS (margin-left négatif) : il lui appartient.
+      parts.push(`<rect x="${bx + 13}" y="${by + 12}" width="15" height="11" rx="5.5" fill="#0b0908" stroke="#edcb8b" stroke-opacity=".5"/>`);
+      parts.push(texte(bx + 20.5, by + 20.5, String(valeur), { size: 8, weight: 700, fill: '#ffe9a0', anchor: 'middle' }));
     }
     bx += 34;
   }
