@@ -1773,3 +1773,40 @@
   .rpg-souk__ceremonie-bilan { flex-basis: auto; font-size: 9px; }
   .rpg-souk__carte-tampon { min-height: 0; max-width: 95%; padding: 2px 3px; font-size: 7px !important; letter-spacing: 0; bottom: 4px; }
 }
+
+/* Sur téléphone, toute l'étagère reste sur quatre colonnes, en portrait comme
+   en paysage. Les sachets suivent la largeur réelle de la grille (qui peut
+   être réduite par la navigation latérale), sans rogner les prix ni les CTA. */
+@media (max-width: 700px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
+  .rpg-souk__rayons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    container-type: inline-size;
+  }
+  .rpg-souk__rayon { min-width: 0; gap: 4px; padding: 4px 3px; border-radius: 9px; }
+  .rpg-souk__rayon .rpg-souk__paquet {
+    --pw: min(20vw, 90px);
+    --pw: min(21cqw, 90px);
+    --paquet-pad-top: 5px;
+    row-gap: 7px;
+    padding-bottom: 0;
+  }
+  .rpg-souk__rayon .rpg-souk__paquet-nom { font-size: clamp(5px, 2cqw, 10px); letter-spacing: 0; overflow-wrap: anywhere; }
+  .rpg-souk__rayon .rpg-souk__paquet-meta { gap: 1px; font-size: clamp(5px, 1.6cqw, 8px); letter-spacing: 0; line-height: 1.1; }
+  .rpg-souk__rayon .rpg-souk__paquet-meta em { padding: 1px 2px; }
+  .rpg-souk__rayon .rpg-souk__paquet-prix {
+    box-sizing: border-box; width: 100%; min-height: 44px; padding: 3px 1px;
+    flex-wrap: wrap; align-content: center; align-items: center; gap: 1px 3px;
+    white-space: normal; font-size: clamp(9px, 2.7vw, 12px); line-height: 1.05;
+  }
+  .rpg-souk__rayon .rpg-souk__prix-geste { letter-spacing: 0; }
+  .rpg-souk__rayon footer { min-width: 0; gap: 4px; margin: 0; }
+  .rpg-souk__rayon-info, .rpg-souk__rayon-refus {
+    min-width: 0; font-size: 9px; line-height: 1.2; letter-spacing: 0; overflow-wrap: anywhere;
+  }
+  .rpg-souk__rayon footer .rpg-souk__coffret {
+    min-width: 0; width: 100%; min-height: 44px; padding: 4px 2px;
+    font-size: 9px; line-height: 1.15; white-space: normal; overflow-wrap: anywhere;
+  }
+  .rpg-souk__rayon-remise { margin: 0; padding: 1px 2px; font-size: 8px; letter-spacing: 0; }
+}
