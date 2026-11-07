@@ -80,7 +80,7 @@ test('trois bannières illustrées avec appel à jouer', () => {
 
 test('la carte centrale ouvre l’essai MOBA local quand le mode en ligne est désactivé', () => {
   assert.equal((grilleModesSeulement.match(/className="rpg-mode-carte__jouer"/g) ?? []).length, 3, 'chaque mode possède un appel Jouer');
-  for (const label of ['Jouer au mode histoire', 'Jouer à MOBA — essai local', 'Jouer en Conquête']) {
+  for (const label of ['Jouer au mode histoire', 'Jouer à MOBA — contre l’IA', 'Jouer en Conquête']) {
     assert.ok(grilleModesSeulement.includes(label), `commande accessible : ${label}`);
   }
   assert.match(grilleModesSeulement, /isOnlineModeEnabled\(\) \? onlineText\.onlineDuel : 'MOBA'/);

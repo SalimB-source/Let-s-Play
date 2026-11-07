@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   mobaNouveau, mobaVoie, mobaEmplacementsLibres, mobaPlacer,
-  mobaRetirer, mobaValiderBlocages, mobaInfliger, mobaSoigner,
+  mobaRetirer, mobaValiderBlocages, mobaInfliger, mobaSoigner, mobaPayerPrix,
 } from '../src/games/rpgMoba.js';
 
 const place = (state, side, lane, slot, id) => assert.equal(mobaPlacer(state, side, lane, slot, id).ok, true);
@@ -102,4 +102,17 @@ test('a caller iterating active lanes can apply a global event without reopening
   for (const lane of state.lanes.filter((item) => item.active)) mobaInfliger(state, 'sorcier', lane.id, 2);
   assert.deepEqual(state.lanes.map((l) => l.hp.joueur), [8, 10, 8]);
   assert.deepEqual(state.lanes.map((l) => l.hp.sorcier), [10, 0, 10]);
+});
+
+test('a life cost can only be paid by an active friendly lane above the cost', () => {
+  const state = mobaNouveau();
+  mobaInfliger(state, 'sorcier', 'left', 8);
+  const before = JSON.stringify(state);
+  assert.equal(mobaPayerPrix(state, 'joueur', 'left', 2).raison, 'prix');
+  assert.equal(JSON.stringify(state), before);
+  assert.deepEqual(mobaPayerPrix(state, 'joueur', 'center', 2), { ok: true, paid: 2 });
+  assert.equal(mobaVoie(state, 'center').hp.joueur, 8);
+  assert.equal(mobaVoie(state, 'center').hp.sorcier, 10);
+  mobaInfliger(state, 'sorcier', 'right', 10);
+  assert.equal(mobaPayerPrix(state, 'joueur', 'right', 2).raison, 'voie-inactive');
 });
