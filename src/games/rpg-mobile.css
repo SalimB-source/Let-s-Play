@@ -1034,7 +1034,7 @@
    mulligan, aperçus, catalogue. La règle ci-dessus garde donc son sens pour le
    disque de neige du bouton de capacité activée (`.rpg-card__activation`), qui
    vit hors du titre de la carte et reste visible. */
-.rpg-battle .card-row .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__title .rpg-mana-cost { display: none; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-hand__stat,
 .rpg-battle--touch .rpg-card--img .rpg-card__stat--atk,
 .rpg-battle--touch .rpg-card--img .rpg-card__pt {
@@ -1495,30 +1495,30 @@
    Définir les unités sur les descendants : le conteneur est la carte elle-même,
    y compris lorsqu'elle est dans une pile. Aucun plancher en px ne doit faire
    grossir les repères relativement aux cartes d'une rangée encombrée. */
-.rpg-battle .card-row .rpg-card { container-type: inline-size; }
-.rpg-battle .card-row .rpg-card > * { --rpg-card-marker-size: 27cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge,
-.rpg-battle .card-row .rpg-card .rpg-mana-cost.is-compact {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card { container-type: inline-size; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card > * { --rpg-card-marker-size: 27cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge,
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-mana-cost.is-compact {
   font-size: 14cqw;
   border-width: 1.5cqw;
 }
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge__pip {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge__pip {
   border-width: 1.5cqw;
 }
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 2cqw; border: 0; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge--hybride { gap: 2cqw; border: 0; }
 /* Les pastilles de couleur des créatures posées (sable, braise, eau, neige)
    se font plus discrètes : 19cqw au lieu du repère commun de 27cqw, glyphe et
    liseré à l'échelle. Les losanges de compteurs d'une carte mono, rangés sous
    la pastille, remontent d'autant et restent centrés sur elle. La main, le
    mulligan, les aperçus et le catalogue gardent leurs pastilles. */
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge {
   width: 19cqw;
   font-size: 10cqw;
   border-width: 1.1cqw;
 }
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge__pip { border-width: 1.1cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card-element-badge--hybride { gap: 1.5cqw; border: 0; }
-.rpg-battle .card-row .rpg-card .rpg-card__compteurs:not(.rpg-card__compteurs--hybride) {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge__pip { border-width: 1.1cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge--hybride { gap: 1.5cqw; border: 0; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__compteurs:not(.rpg-card__compteurs--hybride) {
   top: calc(5% + 19cqw + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
 }
@@ -1526,25 +1526,25 @@
    empilées (19cqw chacune, 1.5cqw d'écart), pas sous le repère commun de
    27cqw. Spécificité égale à la règle ci-dessus, qui l'attraperait sinon
    comme un compteur de carte mono — celle-ci vient après, elle gagne. */
-.rpg-battle .card-row .rpg-card .rpg-card__compteurs.rpg-card__compteurs--cale {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__compteurs.rpg-card__compteurs--cale {
   top: calc(5% + 19cqw * 2 + 1.5cqw + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
 }
-.rpg-battle .card-row .rpg-card .rpg-card__stat--atk,
-.rpg-battle .card-row .rpg-card .rpg-card__pt {
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__stat--atk,
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__pt {
   min-width: 0;
   font-size: 14cqw;
   padding: 2cqw 3cqw;
   gap: 1cqw;
 }
-.rpg-battle .card-row .rpg-card .rpg-card__foot { gap: 2cqw; }
-.rpg-battle .card-row .rpg-card .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
-.rpg-battle .card-row .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card-icone { padding: 2cqw; gap: 2cqw; border-width: 1cqw; font-size: 12cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card-icone small { font-size: 9cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
-.rpg-battle .card-row .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
-.rpg-battle .card-row .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__foot { gap: 2cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone { padding: 2cqw; gap: 2cqw; border-width: 1cqw; font-size: 12cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone small { font-size: 9cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
 
 /* Les badges d'effets de la main : une carte mobile fait moins de 90 px. La
    colonne passe à 14 px, le badge à 12 px et son glyphe à 8 px — assez pour

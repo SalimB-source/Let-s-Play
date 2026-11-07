@@ -433,3 +433,228 @@
   .moba__controls { top: 75%; padding: 2px 4px; }
   .moba__controls .moba__phase { display: none; }
 }
+
+/* Les zones publiques et les réserves reprennent les composants du duel sans
+   occuper les cases des voies. Seul le carrousel en surimpression défile. */
+.moba .rpg-hidden-hand__card { width: clamp(24px, 3.5vw, 52px); height: clamp(30px, 7vh, 65px); margin-left: -12px; border-width: 2px; border-radius: 5px; }
+.moba .rpg-hidden-hand__cards { padding: 0 10px; }
+.moba .rpg-hidden-hand__count { font-size: 9px; }
+.moba__piles { position: absolute; z-index: 7; left: 1%; width: 17%; display: flex; align-items: flex-start; justify-content: center; gap: 4px; }
+.moba__piles--sorcier { top: 29%; }
+.moba__piles--joueur { top: 54%; }
+.moba .moba__piles .rpg-card-pile { gap: 1px; min-width: 0; padding: 3px 5px; font: 700 10px/1.1 system-ui, sans-serif; }
+.moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 32px; height: 43px; }
+.moba .moba__piles .rpg-card-pile small { font-size: 9px; }
+.moba__pile-fallback { border: 1px solid #8f754c; border-radius: 5px; padding: 4px; color: #f0dfbd; background: #15110eea; font: 10px/1.2 system-ui, sans-serif; }
+.moba__pile-fallback:disabled { opacity: .65; }
+.moba__flux { position: absolute; z-index: 7; left: 1%; width: 17%; pointer-events: none; }
+.moba__flux--sorcier { top: 26%; }
+.moba__flux--joueur { top: 75.5%; }
+.moba .moba__flux .rpg-flux-track { position: static; display: block; width: 100%; max-width: none; padding: 0; overflow: visible; border: 0; background: none; box-shadow: none; }
+.moba .moba__flux .rpg-flux-track__bar { padding: 3px 4px; gap: 3px; }
+.moba .moba__flux .rpg-flux-track__reserve { flex-basis: 34px; padding: 3px; font-size: 10px; }
+.moba .moba__flux .rpg-flux-track__slot { font-size: clamp(7px, 1vw, 15px); }
+.moba .moba__flux .rpg-flux-track__slot .rpg-emblem { width: 100%; height: 100%; }
+.moba__fullscreen { display: grid; place-items: center; }
+.moba__fullscreen .rpg-fullscreen-icon { width: 15px; height: 15px; }
+@media (max-width: 700px), (max-height: 500px) {
+  .moba .moba__piles .rpg-card-pile { padding: 2px 3px; font-size: 8px; }
+  .moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 20px; height: 26px; }
+  .moba .moba__piles .rpg-card-pile small { font-size: 7px; }
+  .moba .moba__flux .rpg-flux-track__bar { padding: 2px; gap: 2px; }
+  .moba .moba__flux .rpg-flux-track__reserve { flex-basis: 25px; padding: 2px; font-size: 8px; }
+  .moba__sound-label { display: none; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba .rpg-hidden-hand { top: 5%; }
+  .moba .rpg-hidden-hand__card { width: 24px; height: 4vh; }
+  .moba .rpg-hidden-hand__count { font-size: 8px; }
+  .moba__piles { top: 5%; width: 25%; }
+  .moba__piles--joueur { left: 2%; }
+  .moba__piles--sorcier { left: auto; right: 2%; }
+  .moba__flux { top: 15.5%; width: 36%; }
+  .moba__flux--joueur { left: 2%; }
+  .moba__flux--sorcier { left: auto; right: 2%; }
+  .moba__status { top: 18%; }
+  .moba__field-scroll { top: 23%; }
+  .moba__ai-status { top: 18%; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .moba__brand { display: none; }
+  .moba { --moba-plaque-h: clamp(38px, 12.8vh, 50px); }
+  .moba__flux--sorcier { top: calc(18% + var(--moba-plaque-h)); }
+  .moba__piles--sorcier { top: calc(18% + var(--moba-plaque-h) + 18px); }
+  .moba__piles--joueur { top: calc(75% - 85px); }
+  .moba .moba__piles .rpg-card-pile { display: flex; flex-direction: column; }
+  .moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 16px; height: 20px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__journal { top: 4px; left: 110px; }
+  .moba .moba__piles .rpg-card-pile__stack, .moba .moba__piles .rpg-card-pile__card { width: 17px; height: 21px; }
+}
+@media (max-width: 350px) and (orientation: portrait) {
+  .moba__journal:not([open]) { width: 28px; }
+  .moba__journal:not([open]) summary { font-size: 0; }
+  .moba__journal:not([open]) summary::after { content: '☰'; font: 12px/1 system-ui, sans-serif; }
+  .moba__journal[open] { width: min(290px, 90vw); }
+  .moba__quit span { display: none; }
+}
+@media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) {
+  .moba__scoreboard { top: 13%; }
+  .moba__flux { top: calc(13% + 40px); }
+  .moba__status, .moba__ai-status { top: 23.7%; }
+  .moba__field-scroll { top: 30.5%; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .moba__piles--joueur { top: calc(75% - var(--moba-plaque-h) - 30px); }
+  .moba .moba__piles .rpg-card-pile { display: grid; grid-template-columns: 16px auto; grid-template-rows: 1fr 1fr; column-gap: 2px; }
+  .moba .moba__piles .rpg-card-pile__stack { grid-row: 1 / 3; }
+  .moba .moba__piles .rpg-card-pile b, .moba .moba__piles .rpg-card-pile small { font: 700 7px/1 system-ui, sans-serif; }
+}
+
+.moba__search-item { position: relative; flex: 0 0 140px; min-width: 0; }
+.moba__search-item .moba__mulligan-card { width: 100%; }
+.moba .moba__search-item .moba__inspect { position: absolute; top: 4px; right: 4px; }
+@media (max-width: 650px) { .moba__search-item { flex-basis: 105px; } }
+/* La main conserve les proportions des marqueurs classiques même quand les
+   six faces rétrécissent : aucun minimum fixe ne déborde de la carte. */
+.rpg-battle--moba .moba .rpg-hand__card--img { container-type: inline-size; }
+.rpg-battle--moba .moba .rpg-hand__card--img > * { --rpg-card-marker-size: min(28px, 27cqw); }
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-card-icone { min-width: min(20px, 20cqw); min-height: min(20px, 20cqw); padding: 2cqw; }
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-effet-icone { width: min(12px, 14cqw); height: min(12px, 14cqw); }
+/* La fiche complète peut défiler, mais son titre et ses mots-clés ne doivent
+   pas être rognés lorsque la colonne est étroite en portrait. */
+.moba__preview-layer .rpg-hover-card-preview__details { grid-template-columns: minmax(0, 1fr); }
+.moba__preview-layer .rpg-hover-card-preview__name { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+@media (pointer: coarse) {
+  .moba__preview-layer .rpg-hover-card-preview__hint-souris { display: none; }
+  .moba__preview-layer .rpg-hover-card-preview__hint-tactile { display: inline; }
+}
+@media (max-width: 390px) and (orientation: portrait) {
+  .moba__preview-layer .rpg-card-peek .rpg-hover-card-preview { grid-template-columns: minmax(88px, 35%) minmax(0, 1fr); gap: 8px; padding: 6px; }
+}
+/* Une carte indisponible reste consultable : le wrapper reçoit les gestes,
+   tandis que son bouton désactivé ne peut toujours pas agir. */
+.moba .moba__real-slot .rpg-card:disabled,
+.moba .moba__hand-item .rpg-hand__card:disabled { pointer-events: none; }
+.moba__preview-layer .rpg-hover-card-preview__face { container-type: inline-size; }
+.moba__preview-layer .rpg-hover-card-preview__face > * { --rpg-card-marker-size: min(38px, 25cqw); }
+.moba__preview-layer .rpg-hover-card-preview__face .rpg-card__foot > span { min-width: 0; padding: 2cqw 3cqw; gap: 1cqw; }
+
+/* The original colour chooser floats over the fixed board, without creating
+   a scrolling panel; only its buttons intercept gestures. */
+.moba__mana-choice .rpg-flux-choix { position: absolute; }
+.moba__mana-choice .rpg-flux-choix__panel { overflow: visible; }
+@media (max-width: 700px) {
+  .moba__mana-choice .rpg-flux-choix { padding: 8px; }
+  .moba__mana-choice .rpg-flux-choix__panel { padding: 8px; }
+  .moba__mana-choice .rpg-flux-choix__options { gap: 6px; }
+  .moba__mana-choice .rpg-flux-choix__option { flex-basis: min(25vw, 18vh, 96px); padding: 8px; }
+}
+@media (max-width: 700px) {
+  .moba__mana-choice .rpg-flux-choix__option .rpg-emblem { width: min(12vw, 9vh, 64px); height: min(12vw, 9vh, 64px); }
+}
+
+/* Classic volume controls in a compact, keyboard-accessible overlay; the
+   battlefield itself never becomes a scroll container. */
+.moba__settings-overlay { overflow: hidden; padding: 8px; background: #08080cc9; }
+.moba__settings-modal { width: min(330px, 95vw); max-height: 100%; display: grid; gap: 10px; padding: 16px; text-align: left; }
+.moba__settings-modal h2 { margin: 0; font-size: 22px; }
+.moba__settings-modal .rpg-duel-nav__volume { gap: 5px; }
+.moba__settings-modal .rpg-duel-nav__slider { min-height: 24px; }
+.moba__settings-actions { display: flex; justify-content: space-between; gap: 8px; }
+.moba__settings-actions button { margin: 0; padding: 7px 10px; min-height: 36px; }
+@media (max-height: 400px) {
+  .moba__settings-modal { padding: 9px 12px; gap: 5px; }
+  .moba__settings-modal h2 { font-size: 17px; }
+  .moba__settings-modal .rpg-duel-nav__volume { gap: 2px; }
+  .moba__settings-modal .rpg-duel-nav__slider { min-height: 18px; }
+  .moba__settings-actions button { min-height: 28px; padding: 4px 7px; }
+}
+@media (max-width: 400px) and (orientation: portrait) {
+  .moba__header { max-width: none; padding: 3px; }
+  .moba__header-meta { gap: 3px; }
+  .moba__quit span { display: none; }
+}
+
+/* Drag remains an alternative to click; the long press is reserved for inspection. */
+.moba .moba__card[draggable="true"] { cursor: grab; touch-action: pan-x; }
+.moba .moba__slot[draggable="true"] { cursor: grab; touch-action: none; }
+.moba .moba__card[draggable="true"]:active, .moba .moba__slot[draggable="true"]:active { cursor: grabbing; }
+.moba .is-moba-drop > .moba__slot, .moba .is-moba-drop > .rpg-card { outline: 2px solid #f6d38b; outline-offset: 2px; }
+.moba .is-touch-drop-target > .moba__slot, .moba .is-touch-drop-target > .rpg-card { outline: 3px solid #ffe1a0; outline-offset: 2px; }
+.moba .moba__phase-track .rpg-phase-track { flex-direction: row; gap: 2px; }
+.moba .moba__phase-track .rpg-phase-step { padding: 0; border: 0; background: none; }
+.moba .moba__phase-track .rpg-phase-step__icon { width: 20px; height: 20px; }
+.moba .moba__phase-track .rpg-phase-step__icon svg { width: 13px; height: 13px; }
+.moba .moba__phase-track .rpg-phase-step__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+@media (max-width: 700px), (max-height: 500px) {
+  .moba .moba__phase-track .rpg-phase-step__icon { width: 14px; height: 14px; }
+  .moba .moba__phase-track .rpg-phase-step__icon svg { width: 10px; height: 10px; }
+}
+
+.moba .is-moba-drop > .moba__slot, .moba .is-moba-drop > .rpg-card { pointer-events: none; }
+/* Le résultat reste lisible en mouvement réduit, sans déplacement du texte. */
+.rpg-battle--moba.is-reduced .moba .rpg-card__miss,
+.rpg-battle--moba.is-reduced .moba .rpg-card__critique { animation: none; opacity: 1; transform: translate(-50%, 0); }
+.rpg-battle--moba.is-reduced .moba .rpg-card.fx-block,
+.rpg-battle--moba.is-reduced .moba .rpg-card.fx-unblock { animation: none; }
+.moba .moba__real-slot .rpg-card.is-moba-critique { overflow: visible; z-index: 8; }
+/* En portrait, garder les repères et les commandes sur une seule ligne pour
+   ne pas recouvrir la pioche ni les boutons de combat sur petit écran. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba .moba__controls { flex-direction: row; }
+  .moba .moba__phase-track { flex: 0 0 auto; }
+  .moba .moba__buttons { width: auto; flex: 1 1 auto; min-width: 0; }
+}
+
+/* The same combat-event cards as the classic duel, within the existing
+   paginated journal so a second floating tab cannot cover the board. */
+.moba__journal-tabs { display: flex; gap: 4px; margin: 5px 0; }
+.moba__journal-tabs button { min-height: 25px; padding: 3px 7px; border: 1px solid #756047; border-radius: 5px; background: #17130f; color: #e7d7b9; font: 600 10px system-ui, sans-serif; }
+.moba__journal-tabs button[aria-pressed="true"] { border-color: #efcd89; color: #ffe9b4; }
+.moba__journal .rpg-combat-feed__list { margin: 5px 0; }
+.moba__journal .rpg-combat-feed__event { list-style: none; }
+
+/* Classic result panel with lane-specific facts, and no claim of rewards. */
+.moba__end-overlay { position: fixed; z-index: 9999; inset: 0; }
+.moba__end-panel { box-sizing: border-box; max-height: calc(100% - 16px); overflow-y: auto; }
+.moba__end-panel.rpg-overlay--loss { max-height: 100%; }
+.moba__end-score { font-weight: 700; color: #f6d990 !important; }
+.moba__end-bilan ul, .moba__end-bilan ol { margin: 6px 0; padding-left: 22px; line-height: 1.35; }
+.moba__end-bilan > strong { display: block; margin: 6px 0 0; }
+.moba__end-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.moba__end-actions button { min-height: 42px; padding: 8px 16px; border: 1px solid #776345; background: linear-gradient(#35302b, #1c1a19); color: #f4e7cc; font: 600 12px system-ui, sans-serif; }
+@media (max-height: 500px) {
+  .moba__end-panel { gap: 6px; padding: 10px; }
+  .moba__end-panel h2 { font-size: 18px; }
+  .moba__end-panel p, .moba__end-bilan { font-size: 11px; }
+  .moba__end-bilan summary { padding: 5px 8px; }
+  .moba__end-actions button { min-height: 32px; padding: 5px 10px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__journal[open] { width: min(320px, calc(100vw - 118px)); }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__journal[open] { top: 34px; }
+}
+
+/* Leave room for the announced target above the pass button on small phones. */
+@media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) {
+  .moba__directive--sort { top: 68.5%; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__directive--sort .moba__directive-copy { flex: 1 1 0; }
+  .moba__directive--sort .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 9px !important; }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .moba__directive--sort .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 9px !important; }
+}
+
+/* Give long public spell announcements room beside the battlefield on short
+   landscape screens, without clipping text or covering the pass controls. */
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .moba__directive--sort { width: 20%; }
+}

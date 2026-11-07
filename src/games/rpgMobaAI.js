@@ -7,7 +7,7 @@ import {
   MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI,
   MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
   rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche,
-  rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaCiblesAttaque,
+  rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaCiblesAttaque, rpgMobaPasserSort,
 } from './rpgMobaLocal.js';
 
 /** Select from the AI's private candidates without exposing them in the UI. */
@@ -61,7 +61,12 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
   const allies = duel[side].creatures;
   const cards = [...new Set(duel[side].main)].map(cardById)
     .filter((c) => c?.kind === 'magie' && (!reaction || c.instant));
-  const initial = valeurPosition(duel, side);
+  let initial = valeurPosition(duel, side);
+  if (reaction && duel.mobaSortEnAttente) {
+    const baseline = copie(duel);
+    rpgMobaPasserSort(baseline, side);
+    initial = valeurPosition(baseline, side);
+  }
   let meilleur = null;
   for (const card of cards) {
     const id = card.id;
@@ -85,6 +90,7 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
       const simulation = copie(duel);
       const result = rpgMobaLancerMagie(simulation, side, id, cible, lane, prixLane);
       if (!result.ok) continue;
+      if (reaction && simulation.mobaSortEnAttente && !simulation.defausseEnAttente) rpgMobaPasserSort(simulation, side);
       let score = valeurPosition(simulation, side) - initial;
       // Account for the spell itself being consumed: only newly drawn cards
       // count. Milling alone has no inherent lethal value in no-fatigue MOBA.

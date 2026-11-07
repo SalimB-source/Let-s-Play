@@ -6813,7 +6813,10 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   const adv = autre(cote);
   const carte = magieById(carteId);
   if (!carte) return { ok: false, raison: 'inconnue' };
-  if (!camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
+  const attenteMoba = duel.moba && options?.resoudreSortMoba && duel.mobaSortEnAttente;
+  const dejaPayee = Boolean(attenteMoba && attenteMoba.cote === cote && attenteMoba.carteId === carteId
+    && attenteMoba.cibleId === cibleId && cibleAllieeId == null);
+  if (!dejaPayee && !camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
   // Magie rapide : le camp qui n'a pas la main peut la jouer pendant une
   // fenêtre de réponse (blocage, fin de tour), joueur comme sorcier.
   const fenetreEphémère = cote !== duel.tour
@@ -6825,8 +6828,10 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   // n'entre pas dans la faveur.
   const lancementGratuit = duel.magieGratuite?.cote === cote && carte.effet.type !== 'contresort';
   const prixMoba = Boolean(duel.moba && (carte.prixPv ?? 0) > 0);
-  if (prixMoba && typeof options?.payerPrixPv !== 'function') return { ok: false, raison: 'prix-voie' };
-  if (lancementGratuit) {
+  if (prixMoba && !dejaPayee && typeof options?.payerPrixPv !== 'function') return { ok: false, raison: 'prix-voie' };
+  if (dejaPayee) {
+    // Le coût a déjà été acquitté lors de l'annonce.
+  } else if (lancementGratuit) {
     if (!prixMoba && (carte.prixPv ?? 0) > 0 && camp.pv <= carte.prixPv) return { ok: false, raison: 'mana' };
   } else if (!rpgPeutPayer(camp, carte, { ignorerPrixPv: prixMoba })) return { ok: false, raison: 'mana' };
   if (carte.effet.type === 'contresort') return contrerAnnonce(duel, cote, carte);
@@ -6939,7 +6944,7 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     if (rpgEstProtegee(cible, cardColors(carte))) return { ok: false, raison: 'protection' };
   }
 
-  if (cote === 'joueur' && !duel.annonce && !duel.pvp) {
+  if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) {
       // Même contrecarré, le sort gratuit a été lancé : la faveur du Kraken
@@ -6949,7 +6954,9 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
     }
   }
 
-  if (lancementGratuit) {
+  if (dejaPayee) {
+    // La carte est déjà hors de la main et son coût est réglé.
+  } else if (lancementGratuit) {
     // La faveur du Kraken : pas de mana — seul le Prix en PV, s'il existe.
     if ((carte.prixPv ?? 0) > 0) {
       if (prixMoba) options.payerPrixPv(carte.prixPv);
@@ -6961,7 +6968,21 @@ export function rpgLancerMagie(duel, cote, carteId, cibleId = null, cibleAllieeI
   } else {
     payer(duel, cote, carte, options);
   }
-  camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (!dejaPayee) camp.main.splice(camp.main.indexOf(carteId), 1);
+  if (!dejaPayee && options?.annoncerSortMoba && duel.moba) {
+    const cibleVoie = cibleId === 'sorcier' || options.cibleVoieMoba;
+    const cibleCote = options.ciblePiocheMoba ?? options.cibleZoneMoba ?? (options.cibleVoieAllieeMoba || camp.creatures.some((entite) => entite.id === cibleId) ? cote : adv);
+    const cibleNom = cibleVoie ? options.nomVoieMoba : options.ciblePiocheMoba ? 'Pioche' : options.cibleZoneMoba ? 'Créatures' : duel[cibleCote].creatures.find((entite) => entite.id === cibleId)?.name ?? 'une créature';
+    duel.mobaSortEnAttente = {
+      cote, carteId, cibleId,
+      ...(cibleVoie ? { laneId: options.laneMoba, cibleCote } : { cibleNom, cibleCote }),
+    };
+    duel.fenetreReponse = true;
+    duel.log.push(options.ciblePiocheMoba || options.cibleZoneMoba
+      ? `${carte.name} concerne ${options.ciblePiocheMoba ? 'la pioche' : 'les créatures'} ${cibleCote === 'tous' ? 'des deux camps' : cibleCote === 'joueur' ? 'du joueur' : 'de l’IA'} : réponse ou passage avant sa résolution.`
+      : `${carte.name} cible ${cibleNom} : réponse ou passage avant sa résolution.`);
+    return { ok: true, sortEnAttente: true };
+  }
   // Le bouclier de la créature visée bloque le sort : la carte est payée et
   // part au cimetière, mais AUCUN effet ne se résout — pas même la pioche ou
   // le gel attachés au sort. La parade tombe en entier. On place ce test
