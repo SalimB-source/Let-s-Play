@@ -900,3 +900,131 @@ test('exit confirmation pauses the AI without rendering its hidden hand', async 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('Braisier can be played from the hand and shows its lane damage', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel; const sounds = [];
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('braisier-du-souk'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser, onPlaySfx: (sound) => sounds.push(sound) };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.mana.braise = 10; duel.joueur.main = ['braisier-du-souk'];
+    await act(async () => root.render(React.createElement(Board, props)));
+    await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Braisier du souk')));
+    await click([...document.querySelectorAll('.moba__slot.is-empty')].find((b) => b.getAttribute('aria-label').startsWith('Voie droite, Vous') && !b.disabled));
+    assert.equal(document.querySelector('[role="progressbar"][aria-label="Voie droite, IA"]').getAttribute('aria-valuenow'), '9');
+    assert.ok(sounds.includes('degats_sorcier')); assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('Valkyrie des glaces can be played and its global arrival updates the board', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('valkyrie-des-glaces'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['neige'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.mana.sable = 10; duel.joueur.mana.neige = 10;
+    duel.joueur.main = ['gardienne-des-portes-de-sable', 'valkyrie-des-glaces'];
+    assert.equal(engine.rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).ok, true);
+    await act(async () => root.render(React.createElement(Board, props)));
+    await click([...document.querySelectorAll('.moba__card')].find((b) => b.textContent.includes('Valkyrie des glaces')));
+    await click([...document.querySelectorAll('.moba__slot.is-empty')].find((b) => b.getAttribute('aria-label').startsWith('Voie droite, Vous') && !b.disabled));
+    const labels = [...document.querySelectorAll('.moba__slot.has-creature')].map((b) => b.getAttribute('aria-label'));
+    assert.ok(labels.some((label) => label.includes('Valkyrie des glaces') && label.includes('Voie droite')));
+    assert.ok(labels.some((label) => label.includes('Gardienne des portes de sable') && label.includes('défense 3 sur 4')));
+    assert.equal(engine.rpgMobaPlacementCoherent(duel), true);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('hand pagination preserves the real index when discarding a card on the next page', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    const click = async (button) => { assert.ok(button); assert.equal(button.disabled, false); await act(async () => button.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    await click(document.querySelector('.moba__mulligan .moba__primary'));
+    duel.joueur.main = [...Array(6).fill('ashigaru-des-braises'), 'trait-de-braise'];
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.equal(document.querySelectorAll('.moba__hand .moba__card').length, 6);
+    await click(document.querySelector('[aria-label="Page suivante de la main"]'));
+    duel.joueur.main.pop();
+    await act(async () => root.render(React.createElement(Board, props)));
+    duel.joueur.main.push('trait-de-braise');
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.equal(document.querySelector('[aria-label="Page précédente de la main"]').disabled, true, 'a vanished page does not reappear when drawing again');
+    await click([...document.querySelectorAll('.moba__controls button')].find((b) => b.textContent.includes('Fin du tour')));
+    assert.match(document.querySelector('.moba__hint').textContent, /défausser/);
+    await click(document.querySelector('[aria-label="Page suivante de la main"]'));
+    assert.equal(document.querySelectorAll('.moba__hand .moba__card').length, 1);
+    await click(document.querySelector('.moba__hand .moba__card'));
+    assert.deepEqual(duel.joueur.main, Array(6).fill('ashigaru-des-braises'));
+    assert.equal(duel.joueur.cimetiere.at(-1), 'trait-de-braise');
+    assert.equal(document.querySelector('.moba__hand-pages'), null, 'page clamps after the discard');
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('the journal exposes older events with buttons rather than a scrolling panel', async () => {
+  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const engine = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let duel;
+    const initialiser = () => { duel = engine.rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('ashigaru-des-braises'), sorcierDeck: Array(30).fill('ashigaru-des-braises'), joueurCouleurs: ['braise'], sorcierCouleurs: ['braise'], rng: () => .5 }); return duel; };
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    duel.log = ['Premier', 'Deuxième', 'Troisième', 'Quatrième'];
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.deepEqual([...document.querySelectorAll('.moba__journal p')].map((p) => p.textContent), ['Quatrième', 'Troisième']);
+    await act(async () => document.querySelector('[aria-label="Page suivante du journal"]').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })));
+    assert.deepEqual([...document.querySelectorAll('.moba__journal p')].map((p) => p.textContent), ['Deuxième', 'Premier']);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});

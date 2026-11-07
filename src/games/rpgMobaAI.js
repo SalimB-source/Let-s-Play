@@ -117,9 +117,28 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     .filter((c) => c && c.kind !== 'magie'
       && !(duel.attaqueJouee === side && (c.ephemere || c.furtif)))
     .sort((a, b) => b.cost - a.cost);
+  // The Braisier can win immediately on arrival, even when a more expensive
+  // summon or a crowded lane would otherwise rank first. Probe only legal
+  // lethal lanes on a clone; the real duel and its RNG remain untouched.
+  if (cards.some((card) => card.id === 'braisier-du-souk')
+    && duel.moba.lanes.some((lane) => lane.conqueredBy === side)) {
+    for (const lane of lanes.filter((candidate) => candidate.hp[enemy] === 1)) {
+      const slot = lane.slots[side].indexOf(null);
+      if (slot < 0) continue;
+      const simulation = copie(duel);
+      if (rpgMobaJouerCreature(simulation, side, 'braisier-du-souk', lane.id, slot).ok
+        && simulation.moba.winner === side) return { id: 'braisier-du-souk', lane: lane.id, slot };
+    }
+  }
   for (const card of cards) for (const lane of lanes) {
     const slot = lane.slots[side].indexOf(null);
-    if (slot >= 0 && rpgMobaJouerCreature(copie(duel), side, card.id, lane.id, slot).ok) return { id: card.id, lane: lane.id, slot };
+    if (slot < 0) continue;
+    const simulation = copie(duel);
+    if (!rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot).ok) continue;
+    // Her arrival hurts both camps. Avoid losing more board value than the
+    // summon gains, instead of blindly choosing the most expensive creature.
+    if (card.id === 'valkyrie-des-glaces' && valeurPosition(simulation, side) < valeurPosition(duel, side)) continue;
+    return { id: card.id, lane: lane.id, slot };
   }
   return null;
 }

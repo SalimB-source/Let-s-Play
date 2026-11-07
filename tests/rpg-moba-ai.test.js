@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { choisirCouleurManaIA, choisirDefausseIA, choisirMulliganIA } from '../src/games/rpgAI.js';
-import { rpgChoisirCouleurMana } from '../src/games/rpgDuel.js';
+import { mobaInfliger } from '../src/games/rpgMoba.js';
+import { rpgChoisirCouleurMana, rpgReglerHasard } from '../src/games/rpgDuel.js';
 import { MOBA_DECKS, rpgMobaCreerPartie, rpgMobaResoudreRecherche, rpgMobaMulligan, rpgMobaJouerCreature, rpgMobaResoudreArrivee, rpgMobaLancerMagie, rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaTerminerTour, rpgMobaDefausser, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPlacementCoherent } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirRechercheIA, rpgMobaChoisirCreatureIA, rpgMobaChoisirMagieIA, rpgMobaChoisirArriveeIA, rpgMobaChoisirAttaquantsIA, rpgMobaChoisirCiblesAttaqueIA, rpgMobaChoisirBlocagesIA } from '../src/games/rpgMobaAI.js';
 
@@ -32,6 +33,8 @@ test('AI decisions finish complete games with both seats, legal lane blocks and 
   for (const [from, to] of [['jarl-au-marteau-de-guerre', 'momie-de-lin'], ['grand-hiver', 'la-derniere-pesee']]) editedMomie.cardIds[editedMomie.cardIds.indexOf(from)] = to;
   const editedHeures = { ...MOBA_DECKS[0], cardIds: [...MOBA_DECKS[0].cardIds] };
   for (const [from, to] of [['ashigaru-des-braises', 'guetteur-du-beffroi'], ['mousse-des-galiotes', 'faussoyeur-des-dunes'], ['jarl-au-marteau-de-guerre', 'dune-marchante'], ['loup-des-neiges', 'scribe-de-la-liste']]) editedHeures.cardIds[editedHeures.cardIds.indexOf(from)] = to;
+  editedHeures.cardIds[editedHeures.cardIds.indexOf('ashigaru-des-braises')] = 'braisier-du-souk';
+  editedHeures.cardIds[editedHeures.cardIds.indexOf('jarl-au-marteau-de-guerre')] = 'valkyrie-des-glaces';
   const editedCorbeaux = { ...MOBA_DECKS[4], cardIds: [...MOBA_DECKS[4].cardIds] };
   editedCorbeaux.cardIds[editedCorbeaux.cardIds.indexOf('jarl-au-marteau-de-guerre')] = 'maitre-des-corbeaux';
   const decks = [...MOBA_DECKS, edited, editedNew, editedDiscard, editedSearch, editedHarakiri, editedTransfer, editedTokens, editedMomie, editedHeures, editedCorbeaux];
@@ -279,4 +282,50 @@ test('AI summons Tarek and can plan legal attacks with his rapid tokens', () => 
   ok(rpgMobaDeclarerAttaque(duel, 'joueur', attackers, rpgMobaChoisirCiblesAttaqueIA(duel, 'joueur', attackers)));
   ok(rpgMobaLancerAttaque(duel, 'joueur', attackers, {}, { declaree: true }));
   assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+
+test('AI chooses a winning Braisier arrival before a more expensive creature, without mutating the duel', () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
+  duel.joueur.mana.braise = 20; duel.joueur.mana.neige = 20;
+  duel.joueur.main = ['braisier-du-souk', 'jarl-au-marteau-de-guerre'];
+  mobaInfliger(duel.moba, 'joueur', 'left', 10);
+  mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  const before = JSON.stringify(duel);
+  const choice = rpgMobaChoisirCreatureIA(duel, 'joueur');
+  assert.deepEqual(choice, { id: 'braisier-du-souk', lane: 'right', slot: 0 });
+  assert.equal(JSON.stringify(duel), before);
+  ok(rpgMobaJouerCreature(duel, 'joueur', choice.id, choice.lane, choice.slot));
+  assert.equal(duel.moba.winner, 'joueur');
+});
+
+test('AI avoids a Valkyrie wave that would destroy more allied value than it gains', () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
+  duel.joueur.mana.braise = 20; duel.joueur.mana.neige = 20;
+  duel.joueur.main = Array(4).fill('ashigaru-des-braises');
+  for (const [lane, slot] of [['left', 0], ['left', 1], ['center', 0], ['right', 0]]) {
+    const placed = rpgMobaJouerCreature(duel, 'joueur', 'ashigaru-des-braises', lane, slot);
+    ok(placed); placed.entite.atk = 10;
+  }
+  duel.joueur.main = ['valkyrie-des-glaces', 'jarl-au-marteau-de-guerre'];
+  let randomCalls = 0; rpgReglerHasard(duel, () => { randomCalls += 1; return 0; });
+  const before = JSON.stringify(duel);
+  const choice = rpgMobaChoisirCreatureIA(duel, 'joueur');
+  assert.equal(choice?.id, 'jarl-au-marteau-de-guerre');
+  assert.equal(JSON.stringify(duel), before); assert.equal(randomCalls, 0, 'probing must not consume live RNG');
+  ok(rpgMobaJouerCreature(duel, 'joueur', choice.id, choice.lane, choice.slot));
+});
+
+test('AI can play Valkyrie when the global wave is favorable', () => {
+  const duel = rpgMobaCreerPartie(MOBA_DECKS[0], MOBA_DECKS[0], { rng: () => .5 }).duel;
+  ok(rpgMobaMulligan(duel, 'joueur', [])); ok(rpgMobaMulligan(duel, 'sorcier', []));
+  if (duel.joueur.manaChoixEnAttente) ok(rpgChoisirCouleurMana(duel, 'joueur', choisirCouleurManaIA(duel, 'joueur')));
+  duel.joueur.mana.neige = 20; duel.joueur.main = ['valkyrie-des-glaces'];
+  const before = JSON.stringify(duel); const choice = rpgMobaChoisirCreatureIA(duel, 'joueur');
+  assert.equal(choice?.id, 'valkyrie-des-glaces'); assert.equal(JSON.stringify(duel), before);
+  ok(rpgMobaJouerCreature(duel, 'joueur', choice.id, choice.lane, choice.slot));
 });

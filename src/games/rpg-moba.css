@@ -1,5 +1,5 @@
-/* MOBA is a separate table, but uses the Sablier's own card paintings and board. */
-.rpg-battle--moba { height: 100dvh; overflow-y: auto !important; }
+/* The solo MOBA reuses the Sablier's table and card paintings. */
+.rpg-battle--moba { height: 100dvh; overflow: hidden !important; }
 .moba {
   --moba-gold: #dfbc80;
   --moba-line: rgba(212, 174, 111, .35);
@@ -126,8 +126,7 @@
 .moba .moba__battlefield::before { top: 0; bottom: 50%; background-image: linear-gradient(#0d101570, #13101480), var(--moba-terrain-haut, var(--moba-table)); }
 .moba .moba__battlefield::after { top: 50%; bottom: 0; background-image: linear-gradient(#0d101570, #13101480), var(--moba-terrain-bas, var(--moba-table)); }
 
-/* L'annonce originale reste centrée dans la fenêtre, y compris lorsque la
-   table MOBA défile ; elle ne recouvre jamais le passage de l'appareil. */
+/* L'annonce originale reste centrée dans la fenêtre. */
 .moba .moba__spell-stack { position: fixed; z-index: 50; }
 .moba__health .is-healed { animation: moba-heal calc(.8s * var(--rpg-anim-scale, 1)) ease-out; }
 @keyframes moba-heal { 0% { color: #fff; text-shadow: 0 0 18px #9dffdc; } 100% { color: #fae0c4; text-shadow: none; } }
@@ -197,10 +196,9 @@
 .moba__error { margin-bottom: 0; }
 .moba__cancel-choice { min-height: 36px; padding: 7px 12px; border: 1px solid #a2855c; background: #241e19; color: #f6e3c4; font: 600 11px system-ui, sans-serif !important; }
 .moba__cancel-choice:hover { background: #4a3825; }
-.moba__field-scroll { max-width: 1500px; margin: auto; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #a38357 #191717; }
-.moba__field-scroll::-webkit-scrollbar, .moba__hand-cards::-webkit-scrollbar { height: 7px; }
-.moba__field-scroll::-webkit-scrollbar-thumb, .moba__hand-cards::-webkit-scrollbar-thumb { background: #a38357; border-radius: 4px; }
-.moba__scroll-hint { display: none; max-width: 1500px; margin: 0 auto 5px; color: #d5c19e; font: 11px/1.3 system-ui, sans-serif; }
+.moba__field-scroll { max-width: 1500px; margin: auto; overflow: visible; }
+.moba__hand-cards::-webkit-scrollbar { height: 7px; }
+.moba__hand-cards::-webkit-scrollbar-thumb { background: #a38357; border-radius: 4px; }
 .moba .moba__battlefield { padding: clamp(10px, 1.15vw, 18px); border: 1px solid #b18a55; box-shadow: inset 0 0 0 3px #1b1612, inset 0 0 70px #000a, 0 18px 45px #0008; }
 .moba__lanes { gap: clamp(8px, 1vw, 16px); }
 .moba .moba__lane { padding: 10px; border: 1px solid #c4a36b80; background: linear-gradient(180deg, #17191fbe, #161619b0 48%, #201915c0); box-shadow: inset 0 0 24px #0005; }
@@ -239,8 +237,6 @@
   .moba__scoreboard { gap: 7px; }
   .moba__directive { padding: 8px; }
   .moba__hint { font-size: 12px; }
-  .moba__scroll-hint { display: block; }
-  .moba .moba__battlefield { min-width: 570px; }
   .moba .moba__lane { padding: 8px; }
   .moba__lanehead { flex-wrap: nowrap; }
   .moba__lane-state { flex-basis: auto; margin-left: auto; text-align: right; }
@@ -281,4 +277,159 @@
   .moba .moba__real-slot,
   .moba .moba__ghost-slot,
   .moba .moba__plain-slot { flex: 0 0 var(--moba-card-size); width: var(--moba-card-size); }
+}
+
+/* The MOBA is the same full-screen Sablier table: only two fine lines divide
+   its five creature positions into 2 / 1 / 2 lanes. No scrolling battlefield. */
+.rpg-battle--moba { height: 100vh; height: 100dvh; overflow: hidden !important; }
+.moba {
+  position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 0;
+  padding: 0; overflow: hidden;
+  background: var(--moba-terrain-bas, var(--moba-table)) center / cover no-repeat;
+  --moba-card-size: min(10vw, 14vh, 132px);
+}
+.moba::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--moba-terrain-haut, var(--moba-table)) center / cover no-repeat;
+  clip-path: inset(0 0 50% 0);
+}
+.moba::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, #09090d77 0%, transparent 24%, transparent 70%, #09090d9c 100%);
+}
+.moba > div[inert] { position: absolute; inset: 0; }
+.moba__header { position: absolute; z-index: 25; top: 8px; right: 1%; max-width: none; margin: 0; padding: 5px 8px; border: 1px solid #92774e; border-radius: 9px; background: #100e0ce8; gap: 12px; }
+.moba__brand > span { display: block; font-size: 9px; white-space: nowrap; }
+.moba__brand h1 { margin: 0; font-size: 16px; }
+.moba__brand h1 small, .moba__trial { display: none; }
+.moba__header-meta { gap: 5px; }
+.moba__back { min-height: 30px; padding: 5px 9px; font: 600 11px system-ui, sans-serif !important; }
+.moba__intro { position: absolute; z-index: 26; top: 8px; left: 1%; margin: 0; }
+.moba__notice { display: none; }
+.moba__rules summary { padding: 6px 9px; border-radius: 6px; background: #100e0ce8; }
+.moba__rules > div { right: auto; left: 0; }
+.moba__scoreboard { position: absolute; z-index: 5; top: 18%; bottom: 25%; left: 1%; width: 17%; max-width: none; display: block; margin: 0; }
+.moba__player, .moba__player--sorcier { position: absolute; left: 0; right: 0; display: flex; flex-direction: row; gap: 8px; padding: 7px; text-align: left; border: 1px solid #b99a68; border-radius: 9px; background: linear-gradient(105deg, #17120fea, #242019d9); box-shadow: 0 4px 12px #0008; }
+.moba__player--sorcier { top: 0; }.moba__player--joueur { bottom: 0; }
+.moba__player-emblem { overflow: hidden; width: clamp(32px, 4vw, 55px); height: clamp(32px, 4vw, 55px); flex: 0 0 clamp(32px, 4vw, 55px); border: 1px solid #c4aa78; border-radius: 50%; }
+.moba__player-emblem img { width: 100%; height: 100%; object-fit: cover; }
+.moba__player-name { min-width: 0; }.moba__player-name small { font-size: 8px; }.moba__player-name strong { font-size: clamp(12px, 1.1vw, 16px); }
+.moba__player-score, .moba__player--sorcier .moba__player-score { margin: 0 0 0 auto; gap: 3px; }
+.moba__score-center { display: none; }
+.moba__hidden-hand { position: absolute; z-index: 3; top: 1%; left: 50%; transform: translateX(-50%); text-align: center; color: #f4e4c6; font: 10px system-ui, sans-serif; text-shadow: 0 1px 4px #000; }
+.moba__hidden-hand > div { display: flex; justify-content: center; height: clamp(28px, 7vh, 65px); }
+.moba__hidden-hand > div span { width: clamp(24px, 3.5vw, 52px); margin-left: -12px; border-radius: 5px; border: 1px solid #a48b66; background: var(--moba-card-back) center / cover; box-shadow: 0 3px 8px #0009; }
+.moba__hidden-hand > div span:first-child { margin-left: 0; }
+.moba__hidden-hand small { display: block; margin-top: 2px; }
+.moba__ai-status { position: absolute; z-index: 20; top: 43%; left: 1%; width: 17%; margin: 0; padding: 3px; background: #15110ed9; }
+.moba__status { position: absolute; z-index: 8; top: 20%; right: 1%; width: 17%; display: grid; gap: 6px; margin: 0; padding: 9px; border: 1px solid #a8895a; border-radius: 8px; background: #17130fea; box-shadow: 0 4px 12px #0007; }
+.moba__mana { gap: 3px; }.moba__mana > span { padding: 3px 5px; font-size: 10px; }
+.moba__directive { position: absolute; z-index: 8; top: 37%; right: 1%; width: 17%; min-height: 0; display: flex; gap: 5px; margin: 0; padding: 8px; border: 1px solid #8f754c; border-radius: 8px; background: #17130fe8; }
+.moba__directive-icon { display: none; }.moba__directive-copy { flex: 1 1 100%; }.moba__hint { font-size: clamp(10px, .85vw, 12px); line-height: 1.3; }
+.moba__cancel-choice { min-height: 28px; padding: 4px 7px; }
+.moba__choice { position: absolute; z-index: 20; right: 1%; top: 54%; width: 17%; margin: 0; padding: 6px; }
+.moba__choice strong { font-size: 11px; }.moba__choice button { min-height: 28px; padding: 4px 7px; }
+.moba__field-scroll { position: absolute; inset: 17% 20% 23%; max-width: none; margin: 0; overflow: visible; }
+.moba .moba__battlefield { position: absolute; inset: 0; width: 100%; min-width: 0; max-width: none; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.moba .moba__battlefield::before, .moba .moba__battlefield::after { display: none; }
+.moba__lanes { width: 100%; height: 100%; grid-template-columns: 2fr 1fr 2fr; gap: 0; }
+.moba .moba__lane, .moba .moba__lane.is-conquered { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 5px; border: 0; background: none; box-shadow: none; }
+.moba .moba__lane + .moba__lane { border-left: 1px solid #f4deb27a; }
+.moba .moba__lane.is-conquered { background: #16100c66; }
+.moba__lanehead { position: absolute; top: -16px; left: 0; right: 0; display: flex; justify-content: center; min-height: 0; padding: 0; border: 0; text-shadow: 0 1px 4px #000; }
+.moba__lane-number { display: none; }.moba__lanehead strong { padding: 0; color: #fff1d5; font-size: 10px; }.moba__lane-state { display: none; }
+.moba__lane.is-conquered .moba__lane-state { display: block; flex: initial; margin: 0; color: #ffe0a5; }
+.moba__side, .moba__side--joueur { position: relative; flex: 1 1 50%; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 3px 0; border: 0 !important; }
+.moba__frontline { display: none; }
+.moba__health { flex: none; gap: 4px; min-height: 0; margin: 0 0 4px; padding: 3px 5px; border-radius: 4px; background: #15120dc9; font-size: 10px; }
+.moba__health strong { font-size: 12px; }.moba__health strong small { font-size: 8px; }
+.moba__slots { flex-wrap: nowrap; align-items: center; min-height: 0; gap: clamp(2px, .6vw, 8px); }
+.moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); min-width: 0; padding-bottom: 18px; }
+.moba .moba__real-slot > .moba__inspect { bottom: 0; min-width: 20px; min-height: 20px; font-size: 13px; }
+.moba .moba__ghost-zone, .moba .moba__ghost-zone--empty { inset: 0 0 18px; }
+.moba__slot.is-empty { border: 1px dashed #e9ddc062; border-radius: 8px; background: #17191c35; box-shadow: none; }
+.moba__slot.is-empty:not(:disabled) { background: #bb9b5544; }
+.moba__empty-label { font-size: 8px; color: #f9e6bd; text-shadow: 0 1px 3px #000; }.moba__empty-label i { font-size: 18px; }
+.moba__lane-target { position: absolute; z-index: 6; top: 0; left: 0; right: 0; margin: 0; min-height: 27px; padding: 3px; font-size: 10px; }
+.moba__controls { position: absolute; z-index: 8; top: 55%; right: 1%; width: 17%; display: grid; gap: 5px; margin: 0; padding: 8px; border: 1px solid #a8895a; border-radius: 8px; background: #17130fea; }
+.moba__phase > span, .moba__phase small { display: none; }.moba__phase strong { font-size: 12px; }
+.moba__buttons { width: 100%; display: grid; gap: 4px; }.moba__buttons button { min-height: 32px; padding: 6px; font-size: 11px; }
+.moba__hand { position: absolute; z-index: 9; left: 17%; right: 18%; bottom: 0; height: 21%; max-width: none; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+.moba__handhead { position: absolute; left: 0; right: 0; top: -18px; display: flex; justify-content: center; gap: 12px; margin: 0; color: white; text-shadow: 0 1px 4px #000; }
+.moba__handhead > div:not(.moba__hand-pages), .moba__handhead h2 { display: none; }
+.moba__deck-count { color: #fff1d4; font-size: 9px; }.moba__deck-count b { font-size: 12px; }
+.moba__hand-pages { display: flex; align-items: center; gap: 4px; font: 11px system-ui, sans-serif; }
+.moba__hand-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }
+.moba__hand-pages button:disabled { opacity: .45; }
+.moba .moba__hand-cards { width: 100%; height: 100%; display: flex; justify-content: center; align-items: flex-end; gap: clamp(2px, .5vw, 7px); overflow: visible; padding: 4px 2px; }
+.moba .moba__hand-item { position: relative; flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; }
+.moba .moba__hand-item .moba__real-hand { width: 100%; }
+.moba .moba__hand-caption { position: absolute; right: 0; top: 0; z-index: 6; min-height: 0; }
+.moba .moba__hand-caption > span { display: none; }
+.moba .moba__hand-caption .moba__inspect { min-width: 20px; min-height: 20px; font-size: 13px; }
+.moba .moba__card:not(.moba__real-hand) { flex: 0 1 min(9vw, 15vh, 124px); min-width: 0; height: min(18vh, 150px); }
+.moba__card-art { height: 55%; }.moba__card-info { padding: 3px; }.moba__cardtext { display: none; }
+.moba__opponent-hand { position: absolute; left: 25%; bottom: 5%; padding: 6px; background: #17130fd9; }.moba__opponent-hand > span { display: none; }
+.moba__journal { position: absolute; z-index: 15; right: 1%; bottom: 3%; width: 16%; margin: 0; padding: 5px 8px; border-radius: 7px; background: #17130fea; }
+.moba__journal[open] { width: min(320px, 90vw); max-height: none; overflow: visible; }.moba__journal summary { min-height: 0; }
+.moba__journal-pages { display: flex; align-items: center; justify-content: center; gap: 8px; }.moba__journal-pages button { min-width: 26px; min-height: 24px; border: 1px solid #ae905c; border-radius: 4px; background: #17120eed; font: 18px/1 system-ui, sans-serif; }.moba__journal-pages button:disabled { opacity: .45; }
+@media (max-width: 700px) {
+  .moba { --moba-card-size: min(13vw, 15vh, 90px); }
+  .moba__header { top: 4px; right: 4px; padding: 3px 5px; gap: 5px; }.moba__brand > span { font-size: 7px; }.moba__brand h1 { font-size: 13px; }
+  .moba__back { min-height: 25px; padding: 3px 5px; font-size: 9px !important; }
+  .moba__intro { top: 4px; left: 4px; }.moba__rules summary { padding: 4px; font-size: 9px; }
+  .moba__player { padding: 4px; gap: 4px; }.moba__player-emblem { width: 28px; height: 28px; flex-basis: 28px; }.moba__player-name small { display: none; }.moba__player-name strong { font-size: 10px; }.moba__player-score { font-size: 8px; }
+  .moba__hidden-hand small { font-size: 8px; }
+  .moba__status, .moba__directive, .moba__controls { padding: 4px; font-size: 9px; }.moba__hint { font-size: 9px; }.moba__mana > span { font-size: 8px; padding: 2px; }
+  .moba__field-scroll { inset: 17% 19% 24%; }
+  .moba .moba__lane, .moba .moba__lane.is-conquered { padding: 0 2px; }
+  .moba__lanehead strong { font-size: 8px; }.moba__health { gap: 2px; padding: 2px; font-size: 8px; }.moba__health strong { font-size: 10px; }.moba__health strong small { display: none; }
+  .moba .moba__real-slot, .moba .moba__ghost-slot, .moba .moba__plain-slot { flex: 0 1 var(--moba-card-size); width: var(--moba-card-size); padding-bottom: 16px; }
+  .moba__empty-label { font-size: 7px; }.moba__empty-label i { font-size: 14px; }
+  .moba__controls { top: 61%; }.moba__phase strong { font-size: 9px; }.moba__buttons button { min-height: 25px; padding: 3px; font-size: 9px; }
+  .moba__hand { left: 18%; right: 18%; height: 19%; }.moba .moba__hand-item { flex-basis: min(10vw, 13vh, 88px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(10vw, 13vh, 88px); height: 16vh; }
+  .moba__journal { bottom: 2%; padding: 4px; font-size: 9px; }.moba__choice { width: 18%; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba { --moba-card-size: min(17vw, 11vh, 80px); }
+  .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
+  .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
+  .moba__scoreboard { top: 11%; bottom: auto; left: 2%; width: 96%; height: 33px; }
+  .moba__player { width: 36%; }.moba__player--sorcier { left: auto; right: 0; }.moba__player--joueur { left: 0; bottom: auto; top: 0; }
+  .moba__field-scroll { inset: 19% 2% 32%; }
+  .moba__status { top: 16%; left: 2%; right: auto; width: auto; padding: 2px 4px; display: flex; }
+  .moba__directive { top: 70%; left: 2%; right: 2%; width: auto; min-height: 28px; }
+  .moba__choice { top: 75%; right: 2%; width: 48%; }
+  .moba__controls { top: 76%; left: 2%; right: 2%; width: auto; display: flex; align-items: center; }.moba__buttons { display: flex; flex-wrap: nowrap; justify-content: flex-end; }.moba__buttons button { flex: initial; }
+  .moba__hand { left: 2%; right: 2%; height: 16%; }.moba .moba__hand-item { flex-basis: min(11vw, 11vh, 82px); }.moba .moba__card:not(.moba__real-hand) { flex-basis: min(11vw, 11vh, 82px); height: 14vh; }
+  .moba__journal { bottom: 17%; right: 2%; width: auto; }.moba__opponent-hand { bottom: 3%; left: 2%; }
+  .moba__ai-status { top: 15%; right: 2%; left: auto; width: auto; }
+}
+
+/* The classic hand has a desktop minimum width; inside the fixed MOBA dock the
+   six cards must instead shrink together to stay visible without scrolling. */
+.rpg-battle--moba .moba .moba__hand-item .rpg-hand__card {
+  flex: none; width: 100%; max-width: 100%; min-width: 0; min-height: 0;
+}
+.moba .moba__lane { min-height: 0; }
+.moba__choice { position: absolute; z-index: 70; top: 50%; left: 50%; right: auto; width: max-content; max-width: 90%; transform: translate(-50%, -50%); }
+@media (max-width: 700px) {
+  .moba__brand { display: none; }
+  .moba__back { white-space: nowrap; }
+  .moba__journal { top: 34px; bottom: auto; left: 4px; right: auto; width: auto; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__field-scroll { top: 21%; }
+  .moba__journal { top: 4px; left: 105px; }
+}
+
+@media (max-width: 700px) and (orientation: portrait) { .moba .moba__hand-item { flex-basis: min(15vw, 11vh, 82px); } .moba .moba__card:not(.moba__real-hand) { flex-basis: min(15vw, 11vh, 82px); } }
+@media (max-width: 700px), (max-height: 500px) {
+  .moba .moba__hand-caption .moba__inspect { min-width: 16px; min-height: 16px; font-size: 11px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__journal { top: 5%; left: 4px; }
+  .moba__directive { top: 69.5%; }
+  .moba__controls { top: 75%; padding: 2px 4px; }
+  .moba__controls .moba__phase { display: none; }
 }

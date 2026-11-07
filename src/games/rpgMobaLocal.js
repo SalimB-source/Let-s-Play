@@ -28,7 +28,7 @@ const CARTES_COMBAT_AUDITEES = new Set([
   'gardien-de-la-porte-ardente', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'ifrit-al-ahmar', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'yamina', 'dame-des-neuf-mondes', 'la-devoreuse', 'valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'kraken', 'fennec-des-decombres', 'chien-du-guet', 'le-renegat', 'tiziri-du-djurdjura', 'pilote-de-la-carreira',
   'chacal-du-seuil', 'veilleuse-au-corbeau-noir', 'berserk-du-crepuscule', 'seigneur-des-machoires', 'faucon-du-zenith', 'celui-qui-juge', 'pretre-de-la-bouche', 'ouvrier-du-natron', 'gardienne-de-la-balance',
   'orochi', 'momie-de-lin', 'daimyo-du-soleil-rouge', 'tarek',
-  'maitre-des-corbeaux', 'guetteur-du-beffroi', 'dune-marchante', 'faussoyeur-des-dunes', 'scribe-de-la-liste',
+  'braisier-du-souk', 'valkyrie-des-glaces', 'maitre-des-corbeaux', 'guetteur-du-beffroi', 'dune-marchante', 'faussoyeur-des-dunes', 'scribe-de-la-liste',
   'amani-des-ksour', 'susanoo', 'ronin-du-soleil-rouge', 'hatamoto-des-cendres', 'cavalier-des-deux-sabres', 'samourai-du-torii', 'onna-musha-des-cendres', 'tengu-du-mont-ardent', 'kenshi-de-la-forge',
   'tislit-des-aures', 'ureus-du-seuil', 'feriel', 'djinn-de-la-fleche-ardente', 'djinn-de-foudre', 'bouchra-guerriere-des-cretes', 'kagutsuchi-flamme-originelle', 'maitre-des-hieroglyphes', 'tercio-de-cuivre', 'archere-viking-du-givre',
 ]);
@@ -39,7 +39,7 @@ const fail = (raison) => ({ ok: false, raison });
 export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage']);
 export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'kraken']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
-const MOBA_ARRIVEES_GLOBALES = Object.freeze(['geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes']);
+const MOBA_ARRIVEES_GLOBALES = Object.freeze(['geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'braisier-du-souk', 'valkyrie-des-glaces']);
 // Keep the original starter list independent of additions to the editor pool.
 export const MOBA_CARTES_ESSAI = Object.freeze([
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges',
@@ -299,6 +299,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot) {
     Object.assign(duel, snapshot);
   };
   try {
+    const damageEvents = [];
     const result = rpgJouerCreature(duel, side, cardId, null, {
       emplacement: OFFSETS[laneId] + slot,
       onEntitePlacee: (entite) => {
@@ -307,6 +308,10 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot) {
       },
       ...(arriveeCiblee ? { cibleDifferee: true } : {}),
       ...(soinArrivee ? { resoudreSoinSorcier: ({ amount }) => mobaSoigner(duel.moba, side, laneId, amount) } : {}),
+      ...(cardId === 'braisier-du-souk' ? { resoudreDegatsSorcier: ({ amount }) => {
+        synchroniserSorties(duel);
+        return infligerDansVoie(duel, side, laneId, amount, damageEvents, { cardId });
+      } } : {}),
     });
     // The supported path reaches no payment or other mutation when refused;
     // keep the original object references intact for the local controller.
@@ -320,7 +325,7 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot) {
       restore();
       return fail('effet-non-pris-en-charge');
     }
-    return result;
+    return { ...result, damageEvents };
   } catch (error) {
     restore();
     throw error;
