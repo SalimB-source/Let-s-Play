@@ -5690,3 +5690,15 @@ test('les dégâts assignés à un bloqueur ou à une cible d’Attaque ciblée 
   assert.ok(fatal.combatAnimations.some((animation) => animation.type === 'impact-combat'
     && animation.cible.entiteId === fennec.id), 'le fantôme de la carte détruite reçoit aussi la vibration');
 });
+
+test('Embuscade effacée ne renforce pas les créatures limitées au plancher', () => {
+  const duel = duelDeBase();
+  donnerMana(duel, 'joueur', 8); donnerMana(duel, 'sorcier', 8);
+  donner(duel, 'sorcier', 'ashigaru-des-braises');
+  const creature = rpgJouerCreature(duel, 'sorcier', 'ashigaru-des-braises').entite;
+  const avant = [creature.atk, creature.pv, creature.pvMax];
+  donner(duel, 'joueur', 'embuscade');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'embuscade').ok, true);
+  rpgFinDeTour(duel);
+  assert.deepEqual([creature.atk, creature.pv, creature.pvMax], avant);
+});

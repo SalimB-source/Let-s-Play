@@ -15,7 +15,7 @@
 .moba button:disabled { cursor: not-allowed; }
 .moba__header, .moba__header-meta, .moba__scoreboard, .moba__player, .moba__status, .moba__health, .moba__controls, .moba__handhead { display: flex; align-items: center; }
 .moba__header { justify-content: space-between; gap: 15px; max-width: 1500px; margin: auto; padding-bottom: 14px; border-bottom: 1px solid var(--moba-line); }
-.moba__brand > span, .moba__trial, .moba__overlay span, .moba__handhead > div > span, .moba__phase small { color: #c6a876; font: 700 10px/1.4 system-ui, sans-serif; letter-spacing: .2em; }
+.moba__brand > span, .moba__trial, .moba__overlay > .moba__modal > span, .moba__handhead > div > span, .moba__phase small { color: #c6a876; font: 700 10px/1.4 system-ui, sans-serif; letter-spacing: .2em; }
 .moba__brand i { margin: 0 5px; font-style: normal; }
 .moba__brand h1 { margin: 4px 0 0; color: #f8e9ca; font-size: clamp(27px, 3vw, 43px); font-weight: 500; letter-spacing: .08em; line-height: 1; }
 .moba__brand h1 small { padding-left: 10px; color: #ba9b6d; font: 10px system-ui, sans-serif; letter-spacing: .19em; text-transform: uppercase; }
@@ -63,3 +63,99 @@
 }
 @media(prefers-reduced-motion: reduce) { .moba * { animation: none!important; transition: none!important; } }
 @media(max-width: 650px) { .moba__mulligan-cards { justify-content: flex-start; } }
+.moba__lane-target { display: block; width: 100%; margin: 0 0 8px; padding: 7px 4px; border: 1px solid #eac77a; background: #66502d; box-shadow: 0 0 12px #e2b45866; color: #fff1d0; font: 700 10px system-ui,sans-serif!important; letter-spacing: .05em; }
+.moba__lane-target:hover { background: #82643b; }
+.moba__mana-eau i { color: #75bbda; }
+.moba__mana-tenebres i { color: #b18bd6; }
+.moba__deck-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; text-align: left; }
+.moba__deck-choices label { display: grid; gap: 6px; color: #dbc49c; font: 700 11px system-ui,sans-serif; letter-spacing: .08em; }
+.moba__deck-choices select { width: 100%; min-width: 0; padding: 10px 8px; border: 1px solid #a28257; border-radius: 0; background: #171619; color: #f2e8d5; font: 14px system-ui,sans-serif; }
+.moba__deck-choices select:focus-visible { outline: 3px solid #ffe3a4; outline-offset: 3px; }
+@media(max-width: 420px) { .moba__deck-choices { grid-template-columns: 1fr; } }
+.moba__deck-choices small { color: #baad98; font: 12px/1.4 system-ui,sans-serif; letter-spacing: 0; }
+.moba__slot-states { color: #d4e8ef; font: 9px/1.2 system-ui,sans-serif; }
+.moba__deck-choice { display: grid; align-content: start; gap: 8px; }
+.moba__deck-choice button { padding: 8px; border: 1px solid #8e704b; background: #29211b; color: #efdbbb; font-size: 11px; }
+.moba__editor { width: min(100%, 900px); max-height: min(94vh, 1000px); display: flex; flex-direction: column; text-align: left; padding: 22px; }
+.moba__editor h2 { font-size: clamp(24px, 3vw, 32px); }
+.moba__editor p { margin: 4px 0 10px; }
+.moba__editor-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 8px 0; font: 13px system-ui,sans-serif; color: #e7d4b4; }
+.moba__editor-summary .is-valid { color: #a7d7a9; }.moba__editor-summary .is-invalid { color: #f0b1a1; }
+.moba__editor-filters { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin: 8px 0; }
+.moba__editor-filters label { display: grid; gap: 5px; color: #dbc49c; font: 12px system-ui,sans-serif; }
+.moba__editor-filters input, .moba__editor-filters select { min-width: 0; width: 100%; padding: 8px; border: 1px solid #a28257; background: #171619; color: #f2e8d5; font: 14px system-ui,sans-serif; }
+.moba__editor-list { flex: 1 1 auto; min-height: 130px; overflow-y: auto; border: 1px solid #554733; background: #100f10; }
+.moba__editor-card { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px; border-bottom: 1px solid #44392f; font: 12px/1.35 system-ui,sans-serif; }
+.moba__editor-card > img { width: 48px; height: 60px; object-fit: cover; }.moba__editor-card > div:nth-child(2) { display: grid; gap: 3px; }.moba__editor-card small { color: #c8b99f; }
+.moba__editor-count { display: flex; align-items: center; gap: 5px; white-space: nowrap; }.moba__editor-count button { width: 30px; height: 30px; padding: 0; border: 1px solid #a28257; background: #3c3022; color: #fff2d5; font-size: 18px!important; }.moba__editor-count button:disabled { opacity: .35; }.moba__editor-count span { min-width: 27px; text-align: center; }
+.moba__editor-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }.moba__editor-actions button:disabled { opacity: .4; }
+@media(max-width: 500px) { .moba__editor { max-height: 96vh; padding: 14px; }.moba__editor-filters { grid-template-columns: 1fr 1fr; }.moba__editor-card { grid-template-columns: 36px minmax(0, 1fr) auto; gap: 6px; }.moba__editor-card > img { width: 36px; height: 48px; }.moba__editor-card small:last-child { display: none; } }
+
+/* The local board hosts the classic duel's real full-art faces and badges. */
+.moba__sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.moba .moba__battlefield { background-image: linear-gradient(#0d10157a, #1310148c), var(--moba-table); }
+.moba .moba__lane { background: linear-gradient(180deg, #171820ae, #151519a3 48%, #211914b5); }
+.moba .moba__lane.is-conquered { background: linear-gradient(145deg, #5b402bda, #171719ef); }
+.moba .moba__real-slot { position: relative; flex: 0 1 132px; min-width: 0; width: 132px; padding-bottom: 24px; }
+.moba .moba__real-slot .rpg-card.moba__slot { display: flex; width: 100%; max-width: 100%; aspect-ratio: 4 / 5; border-radius: var(--rpg-card-radius, 10px); }
+.moba .moba__real-slot .rpg-card.moba__slot:disabled { filter: none; opacity: 1; }
+.moba .moba__real-slot .rpg-card.moba__slot.is-attacking { outline: 2px solid #f39a62; outline-offset: 2px; }
+.moba .moba__real-slot .rpg-card.moba__slot.is-blocking, .moba .moba__real-slot .rpg-card.moba__slot.is-target { outline: 2px solid #9edcf3; outline-offset: 2px; }
+.moba .moba__inspect { display: inline-grid; place-items: center; flex: none; min-width: 28px; min-height: 28px; padding: 0; border: 1px solid #a98a59; border-radius: 50%; background: #191815; color: #f4d8a1; font: 700 17px/1 system-ui,sans-serif; }
+.moba .moba__inspect:hover { background: #5c472c; }
+.moba .moba__real-slot > .moba__inspect { position: absolute; left: 50%; bottom: -3px; transform: translateX(-50%); }
+.moba .moba__hand-cards { align-items: flex-start; padding-top: 14px; }
+.moba .moba__hand-item { flex: 0 0 138px; min-width: 0; }
+.moba .moba__hand-item .moba__real-hand { display: flex; width: 100%; height: auto; aspect-ratio: 4 / 5; min-height: 0; padding: 0; overflow: hidden; transform: none; }
+.moba .moba__hand-item .moba__real-hand:hover:not(:disabled) { transform: translateY(-7px); }
+.moba .moba__hand-item .moba__real-hand.is-selected { transform: translateY(-7px); outline: 2px solid #f0ca80; }
+.moba .moba__hand-caption { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-height: 36px; color: #efdfc2; font: 600 11px/1.2 system-ui,sans-serif; }
+.moba .moba__hand-caption span { overflow: hidden; text-overflow: ellipsis; }
+@media(max-width: 650px) { .moba .moba__real-slot { flex-basis: 95px; width: 95px; }.moba .moba__hand-item { flex-basis: 115px; } }
+.moba .rpg-card-peek { z-index: 10020; }
+.moba .moba__mulligan-item { flex: 0 0 140px; min-width: 0; }
+.moba .moba__mulligan-item .rpg-mulligan__card { width: 100%; min-height: 0; padding: 0; border-width: var(--rpg-card-border-large, 6px); border-style: solid; }
+@media(max-width: 650px) { .moba .moba__mulligan-item { flex-basis: 105px; } }
+/* Like the duel table, each seat brings the real board associated with its deck. */
+.moba .moba__battlefield { position: relative; isolation: isolate; background: #121114; }
+.moba .moba__battlefield::before, .moba .moba__battlefield::after {
+  content: ''; position: absolute; z-index: -1; left: 0; right: 0;
+  background-position: center; background-size: cover; background-repeat: no-repeat;
+  pointer-events: none;
+}
+.moba .moba__battlefield::before { top: 0; bottom: 50%; background-image: linear-gradient(#0d101570, #13101480), var(--moba-terrain-haut, var(--moba-table)); }
+.moba .moba__battlefield::after { top: 50%; bottom: 0; background-image: linear-gradient(#0d101570, #13101480), var(--moba-terrain-bas, var(--moba-table)); }
+
+/* L'annonce originale reste centrée dans la fenêtre, y compris lorsque la
+   table MOBA défile ; elle ne recouvre jamais le passage de l'appareil. */
+.moba .moba__spell-stack { position: fixed; z-index: 50; }
+.moba__health .is-healed { animation: moba-heal calc(.8s * var(--rpg-anim-scale, 1)) ease-out; }
+@keyframes moba-heal { 0% { color: #fff; text-shadow: 0 0 18px #9dffdc; } 100% { color: #fae0c4; text-shadow: none; } }
+.rpg-battle--moba.is-reduced .moba *,
+.rpg-battle--moba.is-reduced .moba *::before,
+.rpg-battle--moba.is-reduced .moba *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .rpg-battle--moba .moba *,
+  .rpg-battle--moba .moba *::before,
+  .rpg-battle--moba .moba *::after { animation: none !important; transition: none !important; }
+}
+
+/* Le fantôme original se pose dans la case, sans bloquer sa prochaine action. */
+.moba .moba__ghost-zone { position: absolute; inset: 0 0 24px; pointer-events: none; }
+.moba .rpg-card-destruction-fx { animation-duration: calc(.72s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-card-destruction-fx.is-burning { animation-duration: calc(1s * var(--rpg-anim-scale, 1)); }
+.moba .moba__ghost-slot, .moba .moba__plain-slot { position: relative; flex: 0 1 132px; width: 132px; min-width: 0; }
+.moba .moba__ghost-slot > .moba__slot, .moba .moba__plain-slot > .moba__slot { width: 100%; }
+.moba .moba__ghost-zone--empty { inset: 0; }
+@media (max-width: 650px) { .moba .moba__ghost-slot, .moba .moba__plain-slot { flex-basis: 95px; width: 95px; } }
+.moba .rpg-card-destruction-fx::before { animation-duration: calc(.45s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-card-destruction-fx.is-burning > img,
+.moba .rpg-card-destruction-fx.is-burning::before,
+.moba .rpg-card-destruction-fx.is-burning::after { animation-duration: calc(.95s * var(--rpg-anim-scale, 1)); }
+.moba .rpg-card-destruction-fx.is-impact-combat > img { animation-duration: calc(.56s * var(--rpg-anim-scale, 1)); }
+
+.moba__ai-status { max-width: 1500px; margin: 0 auto; color: #e5c68d; font: 12px/1.4 system-ui, sans-serif; }
+.moba__ai-status:empty { display: none; }
+
+.moba__search-cards { justify-content: flex-start; }
+.moba__search-text { max-height: 6em; overflow-y: auto; line-height: 1.35; text-align: left; }

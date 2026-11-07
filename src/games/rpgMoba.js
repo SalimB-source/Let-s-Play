@@ -125,6 +125,18 @@ export function mobaInfliger(state, attackingSide, laneId, amount) {
   return result;
 }
 
+/** The classic Prix cannot reduce its payer below 1 HP. In MOBA it is
+ * explicitly paid by the chosen friendly active lane, not wizard HP. */
+export function mobaPayerPrix(state, side, laneId, amount) {
+  if (!state || state.winner) return fail('partie-terminee');
+  if (!validSide(side) || !validAmount(amount)) return fail('prix');
+  const lane = mobaVoie(state, laneId);
+  if (!lane?.active) return fail('voie-inactive');
+  if (lane.hp[side] <= amount) return fail('prix');
+  lane.hp[side] -= amount;
+  return { ok: true, paid: amount };
+}
+
 export function mobaSoigner(state, side, laneId, amount) {
   if (!state || state.winner) return fail('partie-terminee');
   if (!validSide(side) || !validAmount(amount)) return fail('soin');
