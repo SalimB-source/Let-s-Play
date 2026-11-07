@@ -99,10 +99,12 @@
   height: 20px;
 }
 
-/* ── Les badges : l'icône seule sur les faces de cartes ──────────────────────
-   Une rangée discrète en bas de l'illustration, au-dessus des statistiques :
-   fond sombre translucide pour rester lisible sur les quatre illustrations
-   d'élément, valeur en petit chiffre quand le mot-clé en porte une. */
+/* ── Les badges : la pierre seule sur les faces de cartes ────────────────────
+   Une rangée discrète en bas de l'illustration, au-dessus des statistiques
+   (catalogue, aperçus), valeur en petit chiffre quand le mot-clé en porte une.
+   Sur une carte en jeu — table, main — la rangée devient une colonne et passe
+   **à cheval sur le cadre** : voir « Les emblèmes montés sur le bord » plus
+   bas. */
 .rpg-card-icones {
   position: absolute;
   z-index: 6;
@@ -142,14 +144,15 @@
   color: #ffe9a0;
 }
 
-/* La main : en colonne verticale à droite sous le disque de coût, l'icône seule. */
+/* La main : en colonne verticale le long du bord droit, sous le disque de coût
+   — la colonne est chevillée au cadre, voir plus bas. */
 .rpg-card-icones--main {
   bottom: 34px;
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main {
   top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
-  right: 6%;
+  right: 0;
   bottom: auto;
   left: auto;
   width: var(--rpg-card-marker-size, 28px);
@@ -172,6 +175,39 @@
 
 .rpg-card-icones--colonne .rpg-card-icone small {
   display: none;
+}
+
+/* ── Les emblèmes montés sur le bord ─────────────────────────────────────────
+   Sur une carte en jeu, la pierre n'est plus posée *dans* l'illustration : elle
+   est chevillée au cadre, à cheval sur le bord, comme les emblèmes d'Arcane
+   Rush. La colonne s'aligne d'abord sur le bord droit (`right: 0`), puis glisse
+   vers l'extérieur de `--rpg-plaque-bord` pour cent de SA largeur : les pierres
+   y étant centrées, leur axe tombe à peine à l'intérieur du cadre et le quart
+   ou la moitié de chacune déborde sur la table.
+
+   Le glissement est en pourcentage, donc la même règle vaut partout — les 20 px
+   du bureau, les 14 px du doigt, les 18 px de la table — sans un calcul par
+   contexte : le centrage dans la colonne s'en charge (`translateX(50%)`
+   poserait l'axe exactement sur le bord, 38 % le garde à peine dedans). Ce que
+   la pierre gagne en débord, la carte le rend en rognage (`overflow-clip-margin`
+   de `.rpg-card--img` et `.rpg-hand__card--img`, dans `rpg-battle.css`).
+   `transform` crée un contexte d'empilement : la colonne garde son `z-index`
+   au-dessus de l'illustration ; la colonne reste inerte au pointeur, comme
+   avant, et les pierres gardent leurs `data-*` et leur `aria-label`. */
+.rpg-card-icones--colonne {
+  --rpg-plaque-bord: 38%;
+  transform: translateX(var(--rpg-plaque-bord));
+}
+
+/* La table sépare ses cartes de 7 à 14 px : le débord peut donc être franc. */
+.rpg-battle .rpg-card-icones--colonne {
+  --rpg-plaque-bord: 42%;
+}
+
+/* La main serre ses cartes (8 à 10 px d'interstice) : le débord y reste plus
+   discret que sur la table, sinon la pierre mordrait le cadre de la voisine. */
+.rpg-battle .rpg-card-icones--colonne.rpg-card-icones--main {
+  --rpg-plaque-bord: 34%;
 }
 
 /* Le catalogue : l'illustration finit plus bas, la rangée colle à son pied. */
