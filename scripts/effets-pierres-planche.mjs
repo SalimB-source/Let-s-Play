@@ -25,6 +25,7 @@ import {
   PLAQUE_FAMILLES,
   PLAQUE_FAMILLE_EFFET,
   PLAQUE_PIERRES,
+  plaqueEffet,
   plaqueSvg,
 } from '../src/games/effetPlaques.js';
 
@@ -66,7 +67,7 @@ for (const [cle, libelle] of exemples) {
   const largeur = 34 + libelle.length * 6.2;
   parts.push(`<rect x="${curseur}" y="${y + 30}" width="${largeur}" height="30" rx="15" fill="#05080b" fill-opacity=".8" stroke="#edcb8b" stroke-opacity=".45"/>`);
   // L'ancienne icône : le trait doré monochrome, tel qu'il s'imprimait avant.
-  parts.push(`<svg x="${curseur + 6}" y="${y + 38}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#edcb8b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><use href="#${plaqueSvg(cle).match(/data-symbole="([^"]+)"/)[1]}"/></svg>`);
+  parts.push(`<svg x="${curseur + 6}" y="${y + 38}" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#edcb8b" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><use href="#${plaqueEffet(cle).symbole}"/></svg>`);
   parts.push(texte(curseur + 27, y + 49.5, libelle, { size: 11.5, weight: 600, fill: '#ffeec2' }));
   curseur += largeur + 10;
 }
@@ -134,26 +135,48 @@ y += 210;
 parts.push(texte(48, y, 'TOUTES LES PIERRES', { size: 12, weight: 600, fill: '#edcb8b', ls: 1.6 }));
 parts.push(texte(300, y, 'rangées par famille, avec leur registre', { size: 12, fill: '#8d8171' }));
 y += 14;
+/**
+ * Un libellé sur deux lignes au plus, coupé entre deux mots — la planche ne
+ * tronque plus rien : « Protection contre les sorts » s'écrit en entier.
+ */
+function lignesDeLibelle(libelle, maxParLigne = 16) {
+  if (libelle.length <= maxParLigne) return [libelle];
+  const mots = libelle.split(' ');
+  const lignes = [''];
+  for (const mot of mots) {
+    const derniere = lignes[lignes.length - 1];
+    if (derniere && `${derniere} ${mot}`.length > maxParLigne) lignes.push(mot);
+    else lignes[lignes.length - 1] = derniere ? `${derniere} ${mot}` : mot;
+  }
+  return lignes.slice(0, 2);
+}
+
 for (const [famille, { forme, pierre: nomPierre, libelle }] of Object.entries(PLAQUE_FAMILLES)) {
   const cles = Object.keys(PLAQUE_FAMILLE_EFFET).filter((cle) => PLAQUE_FAMILLE_EFFET[cle] === famille);
-  const lignes = Math.ceil(cles.length / 12);
-  const hauteur = 30 + lignes * 70;
+  // Huit pierres par rangée au plus, puis deux rangées équilibrées : jamais une
+  // pierre esseulée en bas de bloc.
+  const colonnes = cles.length <= 8 ? cles.length : Math.ceil(cles.length / 2);
+  const lignes = Math.ceil(cles.length / colonnes);
+  const pas = (LARGEUR - 96 - 52) / 8;
+  const hauteur = 30 + lignes * 74 + 8;
   const teinte = PLAQUE_PIERRES[nomPierre];
   parts.push(`<rect x="48" y="${y}" width="${LARGEUR - 96}" height="${hauteur}" rx="12" fill="#090b0e" fill-opacity=".55" stroke="#edcb8b" stroke-opacity=".14"/>`);
   parts.push(`<rect x="64" y="${y + 16}" width="12" height="12" rx="3" fill="${teinte.fond}" stroke="${teinte.lueur}" stroke-opacity=".6"/>`);
   parts.push(texte(84, y + 26, libelle, { size: 14, weight: 700, fill: '#f0e6d3' }));
   parts.push(texte(LARGEUR - 64, y + 26, `${forme} · ${nomPierre} · ${cles.length} effets`, { size: 10.5, fill: '#8d8171', anchor: 'end' }));
   cles.forEach((cle, index) => {
-    const x = 66 + (index % 12) * 84;
-    const haut = y + 44 + Math.floor(index / 12) * 70;
+    const rangee = Math.floor(index / colonnes);
+    const dansRangee = index % colonnes;
+    // La dernière rangée d'une famille se décale pour rester centrée sous la
+    // première quand elle est moins remplie.
+    const dansLaRangee = Math.min(colonnes, cles.length - rangee * colonnes);
+    const decalage = ((colonnes - dansLaRangee) * pas) / 2;
+    const x = 66 + decalage + dansRangee * pas;
+    const haut = y + 44 + rangee * 74;
     parts.push(poser(x, haut, cle, 36));
-    const libelleCle = EFFET_LIBELLES[cle];
-    const affiche = !libelleCle ? cle : (libelleCle.length > 17 ? `${libelleCle.slice(0, 16)}…` : libelleCle);
-    parts.push(texte(x + 18, haut + 54, affiche, {
-      size: 8.8,
-      fill: libelleCle ? '#c9bda8' : '#7d7365',
-      anchor: 'middle',
-    }));
+    lignesDeLibelle(EFFET_LIBELLES[cle] ?? cle).forEach((ligne, i) => {
+      parts.push(texte(x + 18, haut + 52 + i * 10, ligne, { size: 8.8, fill: '#c9bda8', anchor: 'middle' }));
+    });
   });
   y += hauteur + 12;
 }

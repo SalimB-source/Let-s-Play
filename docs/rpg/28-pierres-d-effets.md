@@ -37,16 +37,22 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
 12 px (une main mobile) à 40 px (une planche de revue) sans redessin :
 
 1. la **silhouette** entière en encre — c'est le contour sombre ;
-2. l'**anneau** (76 %) en creux — la marche du biseau ;
-3. le **champ** (62 %) dans la teinte de la pierre ;
+2. l'**anneau** en creux — la marche du biseau ;
+3. le **champ** dans la teinte de la pierre ;
 4. la **moitié haute** du champ, éclaircie par la lueur ;
 5. la **moitié basse**, assombrie par l'encre ;
 6. le **filet** clair sur le champ — l'arête taillée ;
 7. le **pictogramme**, blanc, à 13 unités (diamant) ou 18 (hexagone).
 
-L'hexagone remplit son carré de plus près que le premier dessin : 28 de large
-sur 30 de haut. À 18 px sur une face de carte, une pierre étroite se lisait comme
-un pois à côté de son pictogramme — d'où l'ouverture jusqu'aux bords.
+Le biseau n'a pas la même épaisseur selon la forme (`BISEAU_PAR_FORME`) :
+l'**hexagone** ouvre largement son champ (anneau 82 %, champ 70 %) — c'est lui
+qui porte le plus de couleur —, tandis que le **diamant**, dont les quatre
+pointes rognent le centre, garde un champ resserré (78 % / 64 %) sans quoi son
+pictogramme déborderait sur le contour.
+
+L'hexagone remplit aussi son carré de plus près que le premier dessin : 28 de
+large sur 30 de haut. À 18 px sur une face de carte, une pierre étroite se lisait
+comme un pois à côté de son pictogramme — d'où l'ouverture jusqu'aux bords.
 
 Les formes pointues laissent moins de place au centre : le pictogramme y est plus
 petit, mais son **épaisseur apparente ne change pas** — `EPAISSEUR_SYMBOLE`

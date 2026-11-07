@@ -157,6 +157,17 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
 const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 13, hexagone: 18 });
 
+/**
+ * L'épaisseur du biseau, forme par forme. L'hexagone ouvre largement son champ
+ * (70 % de la silhouette) : c'est lui qui porte le plus de couleur. Le diamant,
+ * dont les quatre pointes rognent le centre, garde un champ plus resserré —
+ * sans quoi le pictogramme déborderait sur son contour.
+ */
+const BISEAU_PAR_FORME = Object.freeze({
+  diamant: Object.freeze({ anneau: 0.78, champ: 0.64 }),
+  hexagone: Object.freeze({ anneau: 0.82, champ: 0.7 }),
+});
+
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 export const EPAISSEUR_SYMBOLE = Object.freeze(
   Object.entries(SYMBOLE_PAR_FORME).reduce((table, [forme, taille]) => {
@@ -231,8 +242,9 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
   const plaque = plaqueEffet(cle);
   const silhouette = PLAQUE_FORMES[plaque.forme];
   const pierre = PLAQUE_PIERRES[plaque.pierre];
-  const anneau = reduire(silhouette, 0.76);
-  const champ = reduire(silhouette, 0.62);
+  const biseau = BISEAU_PAR_FORME[plaque.forme];
+  const anneau = reduire(silhouette, biseau.anneau);
+  const champ = reduire(silhouette, biseau.champ);
   const lumiere = moitie(champ, { cote: 'haut' });
   const ombre = moitie(champ, { cote: 'bas' });
   const teinte = protectionContre ? couleurProtection(protectionContre) : null;
@@ -245,7 +257,7 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
     `<polygon points="${pointsSvg(lumiere)}" fill="${pierre.lueur}" fill-opacity=".24"/>`,
     `<polygon points="${pointsSvg(ombre)}" fill="${pierre.encre}" fill-opacity=".32"/>`,
     teinte ? `<polygon points="${pointsSvg(champ)}" fill="${teinte}" fill-opacity=".5"/>` : '',
-    `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".45" stroke-width=".9"/>`,
+    `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".5" stroke-width=".8"/>`,
     `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="#ffffff" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
   ].filter(Boolean).join('');
 }
