@@ -324,13 +324,15 @@ function estBouclierDeLumiere(carte) {
 }
 
 /**
- * Les badges d'une face de carte : l'icône seule, en pastille ronde.
+ * Les badges d'une face de carte : la pierre d'emblème seule, chevillée au
+ * bord du cadre (`effet-icons.css`).
  * `entite` (sur la table) ajoute ses états vivants — infiltration accordée,
  * esquive courante, bouclier en place ou tombé — aux mots-clés imprimés de la
- * fiche.
+ * fiche ; `effetsEpuises` / `effetsInactifs` servent aux surfaces qui n'ont pas
+ * d'entité (l'aperçu) mais savent déjà quels mots sont éteints.
  */
 
-export function IconesCarte({ carte, entite = null, className = '' }) {
+export function IconesCarte({ carte, entite = null, className = '', effetsEpuises = null, effetsInactifs = null }) {
   const pastilles = pastillesPourCarte(carte);
   const ajouter = (cle, label, valeur = null, details = {}) => {
     if (!cle || pastilles.some((pastille) => pastille.cle === cle)) return;
@@ -366,8 +368,11 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
     }
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
   }
-  const epuises = new Set(effetsEpuisesPourEntite(carte, entite));
-  const inactifs = new Set(effetsFurieInactifs(carte, entite));
+  // L'aperçu n'a pas d'entité : la page lui transmet les listes qu'elle a déjà
+  // calculées pour ses pastilles, pour que la pierre soit éteinte au même
+  // moment que le mot qu'elle ouvre.
+  const epuises = new Set([...effetsEpuisesPourEntite(carte, entite), ...(effetsEpuises ?? [])]);
+  const inactifs = new Set([...effetsFurieInactifs(carte, entite), ...(effetsInactifs ?? [])]);
   const texteBadge = (pastille) => (
     `${pastilleTexte(pastille)}${epuises.has(pastille.cle)
       ? (pastille.cle === 'tenacite' ? ' (déjà utilisée)' : ' (tombé)')

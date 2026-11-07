@@ -151,11 +151,15 @@
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main {
+  /* Une carte de main fait 94 à 124 px : la pierre prend 24 px, un bon cinquième
+     de la carte — lisible à bout de bras (`--rpg-plaque-taille`, voir la
+     « taille de lecture » plus bas). */
+  --rpg-plaque-taille: 24px;
   top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
   right: 0;
   bottom: auto;
   left: auto;
-  width: var(--rpg-card-marker-size, 28px);
+  width: var(--rpg-plaque-taille);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -165,8 +169,17 @@
 
 .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone {
   justify-content: center;
-  min-width: 20px;
-  min-height: 20px;
+  min-width: var(--rpg-plaque-taille);
+  min-height: var(--rpg-plaque-taille);
+}
+
+/* La taille de lecture de la pierre sur une face : elle suit `--rpg-plaque-taille`
+   partout — 24 px dans la main, 18 px au doigt, 16 à 30 px sur la table, 32 px
+   dans l'aperçu. Le glyphe rendu garde son `width`/`height` d'attribut (18 px)
+   pour les surfaces de lecture ; ici, c'est la feuille qui décide. */
+.rpg-card-icones--colonne .rpg-effet-icone {
+  width: var(--rpg-plaque-taille, 20px);
+  height: var(--rpg-plaque-taille, 20px);
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone:nth-child(n + 4) {
@@ -185,29 +198,56 @@
    y étant centrées, leur axe tombe à peine à l'intérieur du cadre et le quart
    ou la moitié de chacune déborde sur la table.
 
-   Le glissement est en pourcentage, donc la même règle vaut partout — les 20 px
-   du bureau, les 14 px du doigt, les 18 px de la table — sans un calcul par
-   contexte : le centrage dans la colonne s'en charge (`translateX(50%)`
-   poserait l'axe exactement sur le bord, 38 % le garde à peine dedans). Ce que
-   la pierre gagne en débord, la carte le rend en rognage (`overflow-clip-margin`
-   de `.rpg-card--img` et `.rpg-hand__card--img`, dans `rpg-battle.css`).
+   Le glissement est en pourcentage, donc la même règle vaut partout — les 24 px
+   de la main, les 18 px du doigt, les 16 à 30 px de la table, les 32 px de
+   l'aperçu — sans un calcul par contexte : le centrage dans la colonne s'en
+   charge (`translateX(50%)` poserait l'axe exactement sur le bord, 36 % le
+   garde à peine dedans). Ce que la pierre gagne en débord, la carte le rend en
+   rognage (`overflow-clip-margin` de `.rpg-card--img`,
+   `.rpg-hand__card--img` et de la face d'aperçu, dans `rpg-battle.css`).
    `transform` crée un contexte d'empilement : la colonne garde son `z-index`
    au-dessus de l'illustration ; la colonne reste inerte au pointeur, comme
    avant, et les pierres gardent leurs `data-*` et leur `aria-label`. */
 .rpg-card-icones--colonne {
   --rpg-plaque-bord: 38%;
+  --rpg-plaque-taille: 20px;
+  right: 0;
+  left: auto;
+  bottom: auto;
+  width: var(--rpg-plaque-taille);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
   transform: translateX(var(--rpg-plaque-bord));
 }
 
 /* La table sépare ses cartes de 7 à 14 px : le débord peut donc être franc. */
 .rpg-battle .rpg-card-icones--colonne {
-  --rpg-plaque-bord: 42%;
+  --rpg-plaque-bord: 36%;
 }
 
 /* La main serre ses cartes (8 à 10 px d'interstice) : le débord y reste plus
    discret que sur la table, sinon la pierre mordrait le cadre de la voisine. */
 .rpg-battle .rpg-card-icones--colonne.rpg-card-icones--main {
-  --rpg-plaque-bord: 34%;
+  --rpg-plaque-bord: 30%;
+}
+
+/* L'aperçu de carte — survol, appui long, annonce, fiche — porte les mêmes
+   pierres, en grand : 32 px sur une face de 190 à 232 px, soit un sixième de la
+   carte. La face a de la place autour d'elle (18 px d'interstice, 11 px de
+   marge dans le volet), le débord y est donc franc : 45 %, presque la moitié de
+   la pierre sur le cadre de 6 px. La colonne descend sous le disque de coût,
+   qui occupe le coin haut droit de la face. */
+.rpg-card-icones--colonne.rpg-card-icones--apercu {
+  --rpg-plaque-taille: 32px;
+  --rpg-plaque-bord: 45%;
+  top: calc(5% + var(--rpg-card-marker-size, 38px) + 8px);
+  gap: 4px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--apercu .rpg-card-icone:nth-child(n + 5) {
+  display: none;
 }
 
 /* Le catalogue : l'illustration finit plus bas, la rangée colle à son pied. */

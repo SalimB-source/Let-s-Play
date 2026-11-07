@@ -3775,6 +3775,15 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
+      {/* Les effets de la carte, en pierres d'emblème sur le bord de la face —
+          comme sur la carte qu'on survole, pour que l'aperçu dise d'un coup
+          d'œil ce que la carte fait, avant même la liste des mots-clés. */}
+      <IconesCarte
+        carte={carte}
+        className="rpg-card-icones--colonne rpg-card-icones--apercu"
+        effetsEpuises={effetsEpuisesActifs}
+        effetsInactifs={effetsInactifsActifs}
+      />
       {estCreature && (
         <footer className="rpg-card__foot" aria-label={`Attaque ${attaqueAffichee}, défense ${defenseAffichee}`}>
           <span className="rpg-card__stat--atk"><CardStatIcon type="attack" attaqueCiblee={carte.coupRapide || armesEquipees.some((arme) => arme.donne?.coupRapide || arme.effet?.coupRapide)} /><span className="rpg-stat-value">{attaqueAffichee}</span></span>

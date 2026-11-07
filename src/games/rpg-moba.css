@@ -521,8 +521,15 @@
 .rpg-battle--moba .moba .rpg-hand__card--img { container-type: inline-size; }
 .rpg-battle--moba .moba .rpg-hand__card--img > * { --rpg-card-marker-size: min(28px, 27cqw); }
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
-.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-card-icone { min-width: min(20px, 20cqw); min-height: min(20px, 20cqw); padding: 2cqw; }
-.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-effet-icone { width: min(12px, 14cqw); height: min(12px, 14cqw); }
+/* La pierre de la main MOBA suit la carte comme le reste : 26 % de sa largeur,
+   plafonnée à 24 px (contre 12 px auparavant) — les cinq à six faces de la main
+   restent lisibles d'un coup d'œil. */
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main {
+  --rpg-plaque-taille: min(24px, 26cqw);
+  width: var(--rpg-plaque-taille);
+}
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-card-icone { min-width: var(--rpg-plaque-taille); min-height: var(--rpg-plaque-taille); padding: 1cqw; }
+.rpg-battle--moba .moba .rpg-hand__card--img .rpg-card-icones--main .rpg-effet-icone { width: var(--rpg-plaque-taille); height: var(--rpg-plaque-taille); }
 /* La fiche complète peut défiler, mais son titre et ses mots-clés ne doivent
    pas être rognés lorsque la colonne est étroite en portrait. */
 .moba__preview-layer .rpg-hover-card-preview__details { grid-template-columns: minmax(0, 1fr); }

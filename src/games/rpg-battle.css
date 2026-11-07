@@ -4750,14 +4750,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
+  /* Les pierres d'effets de l'aperçu sont chevillées au bord de la face et en
+     débordent de 45 % (`effet-icons.css`, « L'aperçu de carte ») : le rognage
+     s'ouvre de 18 px, `clip` sans zone de défilement, et l'illustration reprend
+     le rayon du cadre à son compte (règle suivante). */
   overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 18px;
   --rpg-frame-fill: transparent;
   border: var(--rpg-card-border-large, 6px) solid var(--rpg-frame-color, #f1f3f5);
   border-radius: var(--rpg-card-radius-sm, 8px);
   background: transparent;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
-.rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 /* La Furie déclenchée, dans la preview comme sur la table : la peinture
    alternative occupe toute la face, aucun anneau ne la rogne. */
 .rpg-hover-card-preview__face.is-furie {

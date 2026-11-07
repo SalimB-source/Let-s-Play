@@ -154,8 +154,10 @@ test('la feuille pose la pierre comme badge et laisse le glyphe respirer', () =>
     'la pierre se décolle du fond de la carte');
   assert.match(css, /\.rpg-card-icone\.is-epuisee\s*\{[^}]*filter: grayscale\(1\);/s,
     'une pierre dépensée s’éteint');
-  assert.match(cssMobile, /\.rpg-card-icone \.rpg-effet-icone\s*\{[^}]*width: 14px;[^}]*height: 14px;/s,
-    'dans une main mobile, la pierre occupe les 14 px de la colonne');
+  assert.match(cssMobile, /--rpg-plaque-taille: 18px;/,
+    'dans une main mobile, la pierre passe à 18 px — lisible sans coller l’écran');
+  assert.match(cssMobile, /\.rpg-card-icone \.rpg-effet-icone\s*\{[^}]*width: var\(--rpg-plaque-taille\);[^}]*height: var\(--rpg-plaque-taille\);/s,
+    'le glyphe suit la taille de la colonne, il ne la fixe plus');
   assert.match(jsx, /data-plaque=\{plaque\.famille\}/, 'le composant React expose la famille de la pierre');
   assert.match(jsx, /dangerouslySetInnerHTML=\{\{ __html: pierreDessinee\(cle, protectionContre\) \}\}/,
     'le composant React dessine la pierre du module, pas une copie');
