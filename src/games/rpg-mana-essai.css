@@ -588,16 +588,19 @@
   .rpg-card-tear-fx > b { animation: none !important; }
 }
 
-/* ── Table : les icônes d'effets en colonne à droite ──────────────────────────
+/* ── Table : les icônes d'effets le long du bord droit ───────────────────────
    Sur la table, chaque créature posée montre ses icônes d'effets (mots-clés
    imprimés et états vivants : bouclier, esquive…) en une colonne verticale
-   dans le coin haut droit, à la place du coût (qui ne s'imprime plus sur une
-   carte posée, voir `rpg-mobile.css`). La main, elle, suit
-   `.rpg-card-icones--main` dans `effet-icons.css`, puis les mesures serrées
-   de `rpg-mobile.css` : cette feuille ne doit pas lui redonner 20 px ensuite. */
+   chevillée au bord droit, à la place du coût (qui ne s'imprime plus sur une
+   carte posée, voir `rpg-mobile.css`). La colonne part du coin haut droit puis
+   déborde du cadre de 42 % de sa largeur (`effet-icons.css`, « Les emblèmes
+   montés sur le bord ») : la pierre est sur le bord, pas dans l'illustration.
+   La main, elle, suit `.rpg-card-icones--main` dans `effet-icons.css`, puis les
+   mesures serrées de `rpg-mobile.css` : cette feuille ne doit pas lui redonner
+   20 px ensuite. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
   top: 5%;
-  right: 6%;
+  right: 0;
   bottom: auto;
   left: auto;
   width: var(--rpg-card-marker-size, 27cqw);

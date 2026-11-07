@@ -997,7 +997,19 @@
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
   padding: 0;
+  /* Les pierres d'effets sont chevillées au bord droit de la carte et en
+     débordent à moitié (`effet-icons.css`, « Les emblèmes montés sur le
+     bord »). Le rognage s'ouvre donc de 14 px — `clip` et non `hidden`, comme
+     la pastille d'arme de `has-arme` : le débordement se voit sans jamais
+     ouvrir de zone de défilement. L'illustration reprend le rayon du cadre à
+     son compte (règle suivante), puisqu'il ne rogne plus ses coins. */
   overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 14px;
+}
+
+.rpg-card--img > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+  border-radius: inherit;
 }
 
 .rpg-card__img {
@@ -1512,8 +1524,20 @@
 .rpg-draft__row .rpg-hand__art { padding: 14px 0; font-size: 30px; }
 .rpg-draft__row .rpg-hand__text { -webkit-line-clamp: 7; font-size: 9px; }
 
-/* Cartes full art en main : illustration, couleur, coût, type et statistiques. */
-.rpg-hand__card--img { padding: 0; overflow: hidden; }
+/* Cartes full art en main : illustration, couleur, coût, type et statistiques.
+   Même ouverture de rognage que `.rpg-card--img` : la colonne de pierres déborde
+   du bord droit (14 px de marge, `clip` sans zone de défilement), et
+   l'illustration reprend le rayon du cadre à son compte. */
+.rpg-hand__card--img {
+  padding: 0;
+  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 14px;
+}
+
+.rpg-hand__card--img > .rpg-hand__img {
+  border-radius: inherit;
+}
 
 .rpg-hand__img {
   position: absolute;

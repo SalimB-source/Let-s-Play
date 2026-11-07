@@ -77,6 +77,16 @@ insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
 - **Interlignage** (`IconeLigneRegle`) : 18 px devant la ligne de règle, réservé
   aux surfaces de lecture.
 
+Sur une carte **en jeu**, la colonne d'emblèmes n'est pas posée *dans*
+l'illustration : elle est chevillée au bord droit, à cheval sur le cadre, comme
+les emblèmes d'Arcane Rush. La colonne s'aligne sur le bord (`right: 0`) puis
+glisse vers l'extérieur d'une part d'elle-même (`--rpg-plaque-bord` : 42 % sur
+la table, 34 % dans la main, 25 % au doigt), d'où une pierre dont l'axe reste
+juste à l'intérieur du cadre et dont la moitié déborde sur la table. La carte
+ouvre son rognage de 14 px pour laisser passer ce débord — `overflow: clip` avec
+une marge, jamais `hidden` : aucun débordement ne crée de zone de défilement —
+et l'illustration reprend le rayon du cadre à son compte.
+
 Les états existants suivent : une Ténacité dépensée, un Bouclier tombé ou un
 gain de Furie encore en attente gardent leur pierre à leur place, éteinte par
 `filter: grayscale(1)`.
