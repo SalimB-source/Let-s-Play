@@ -134,6 +134,8 @@
     "check:rpg-fin-tour-retourne": "node scripts/rpg-fin-tour-retourne-check.mjs",
     "check:rpg-mana-maree": "node scripts/rpg-mana-maree-check.mjs",
     "check:rpg-furie-icones": "node scripts/rpg-furie-icones-check.mjs",
+    "check:rpg-pierres": "node --test tests/rpg-effets-pierres.test.js tests/rpg-effets-icones.test.js tests/rpg-icones-main-mobile.test.js",
+    "preview:rpg-pierres": "node scripts/effets-pierres-preview.mjs",
     "check:rpg-furie-preview": "node scripts/rpg-furie-preview-check.mjs",
     "check:rpg-bouclier": "node scripts/rpg-bouclier-check.mjs",
     "check:rpg-table-droite": "node scripts/rpg-table-droite-check.mjs",

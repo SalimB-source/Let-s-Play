@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le Sablier — les pierres d'effets</title>
+<style>
+/* Les icônes d'effets : pastilles des fiches, badges des faces, interlignage.
+   Chaque effet se lit désormais sur une **pierre d'emblème** — forme et teinte
+   selon sa famille, pictogramme blanc (voir `effetPlaques.js`). Le dessin de la
+   pierre est dans le SVG ; la feuille ne s'occupe que de sa place, de son
+   ombre portée et des états (dépensé, en attente). */
+
+/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée, avec
+   l'ombre courte qui la décolle du fond de la carte. */
+.rpg-effet-icone {
+  flex: none;
+  vertical-align: -0.16em;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .55));
+}
+
+.rpg-effet-icone--ligne {
+  margin-right: 6px;
+  vertical-align: -0.3em;
+}
+
+/* Une Protection contre plusieurs éléments aligne un bouclier par couleur. */
+.rpg-protection-icones {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.rpg-protection-icones--ligne {
+  margin-right: 5px;
+  vertical-align: -0.16em;
+}
+
+.rpg-protection-icones--ligne .rpg-effet-icone--ligne {
+  margin-right: 0;
+}
+
+/* Un effet dépensé (Tenacité déjà déclenchée, Bouclier tombé) reste écrit,
+   mais entièrement gris : icône, mot-clé, explication et badge de face. */
+.rpg-effet-icone--ligne.is-epuisee {
+  color: #9b9b9b;
+  opacity: .65;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-epuisee {
+  border-color: rgba(168, 168, 168, .38);
+  background: rgba(28, 28, 28, .62);
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-epuisee .rpg-effet-icone {
+  color: #a9a9a9;
+}
+
+/* La pierre dépensée garde sa place, mais perd sa couleur : le filtre gris
+   ci-dessous éteint le dessin lui-même, sans pastille de fond (le badge n'en
+   a plus). */
+.rpg-card-icone.is-epuisee {
+  background: none;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-card-icone.is-epuisee small {
+  color: #b8b8b8;
+}
+
+/* ── Les pastilles : une colonne de mots-clés lisibles sous le type ──────────
+   Une pastille par ligne, toutes calées sur le même bord, dans les aperçus,
+   fiches et guide ; seules les petites icônes sur les faces restent en rangée. */
+.rpg-pastilles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.rpg-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 28px;
+  padding: 4px 10px 4px 8px;
+  border: 1px solid rgba(237, 203, 139, .45);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .55);
+  color: #ffeec2;
+  font: 650 12px/1.35 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: .01em;
+  white-space: normal;
+}
+
+.rpg-pastille .rpg-effet-icone {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Les badges : l'icône seule sur les faces de cartes ──────────────────────
+   Une rangée discrète en bas de l'illustration, au-dessus des statistiques :
+   fond sombre translucide pour rester lisible sur les quatre illustrations
+   d'élément, valeur en petit chiffre quand le mot-clé en porte une. */
+.rpg-card-icones {
+  position: absolute;
+  z-index: 6;
+  left: 6px;
+  bottom: 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: calc(100% - 12px);
+  pointer-events: none;
+}
+
+/* La pierre EST le badge : plus de pastille ronde sous l'icône — le cercle
+   d'encre disparaît, l'emblème porte lui-même son contour sombre. Seul le
+   chiffre de l'effet (Furie 3, Abordage 2) garde une pastille, posée en
+   bas à droite de la pierre. */
+.rpg-card-icone {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: #ffe9a0;
+  line-height: 1;
+}
+
+.rpg-card-icone small {
+  margin: 0 0 -2px -6px;
+  padding: 1px 3px;
+  border: 1px solid rgba(237, 203, 139, .5);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .92);
+  font: 800 9px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #ffe9a0;
+}
+
+/* La main : en colonne verticale à droite sous le disque de coût, l'icône seule. */
+.rpg-card-icones--main {
+  bottom: 34px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main {
+  top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
+  right: 6%;
+  bottom: auto;
+  left: auto;
+  width: var(--rpg-card-marker-size, 28px);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone {
+  justify-content: center;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone:nth-child(n + 4) {
+  display: none;
+}
+
+.rpg-card-icones--colonne .rpg-card-icone small {
+  display: none;
+}
+
+/* Le catalogue : l'illustration finit plus bas, la rangée colle à son pied. */
+.rpg-card-icones--catalogue {
+  bottom: 8px;
+}
+
+/* ── La pastille qui s'explique : survol, toucher ou clavier ouvrent la bulle ── */
+.rpg-pastille--explicable {
+  position: relative;
+  z-index: 5; /* au-dessus du bouton étiré des fiches du catalogue */
+  cursor: help;
+  transition: border-color .12s ease, background-color .12s ease;
+}
+
+/* L'indicateur de survol : un « ? » cerclé au bout du mot. Il vit en CSS, hors
+   du texte — le libellé lu par les tests et les lecteurs d'écran reste le mot
+   seul (la description complète est dans l'`aria-label` de la pastille). */
+.rpg-pastille--explicable::after {
+  content: "?";
+  content: "?" / "";
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-right: -3px;
+  border: 1px solid rgba(237, 203, 139, .5);
+  border-radius: 50%;
+  font: 800 10px/1 var(--sans, system-ui, sans-serif);
+  color: #edcb8b;
+  background: rgba(237, 203, 139, .1);
+  transition: inherit;
+}
+
+.rpg-pastille--explicable:hover,
+.rpg-pastille--explicable.is-ouverte,
+.rpg-pastille--explicable:focus-visible {
+  border-color: rgba(255, 222, 150, .95);
+  background: rgba(40, 28, 10, .82);
+  outline: none;
+}
+
+.rpg-pastille--explicable:hover::after,
+.rpg-pastille--explicable.is-ouverte::after,
+.rpg-pastille--explicable:focus-visible::after {
+  border-color: rgba(255, 222, 150, .95);
+  color: #ffeec2;
+}
+
+/* Une Protection élémentaire écrit aussi son nom dans la couleur repoussée,
+   et le cercle du badge suit le glyphe. Sans variable (le Sable), les encres
+   et bordures dorées ordinaires restent exactement celles des autres effets. */
+.rpg-pastille[data-pastille='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .45));
+  color: var(--rpg-protection-couleur, #ffeec2);
+}
+
+.rpg-pastille[data-pastille='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #edcb8b);
+}
+
+.rpg-card-icone[data-effet='protection'] {
+  border-color: var(--rpg-protection-couleur, rgba(237, 203, 139, .55));
+  color: var(--rpg-protection-couleur, #ffe9a0);
+}
+
+.rpg-card-icone[data-effet='protection'] .rpg-effet-icone {
+  color: var(--rpg-protection-couleur, #ffe9a0);
+}
+
+/* Le bouclier se distingue par une encre violette, cohérente avec son égide
+   animée sur le plateau. */
+.rpg-pastille[data-pastille='bouclier'],
+.rpg-card-icone[data-effet='bouclier'] {
+  border-color: rgba(186, 132, 255, .62);
+  color: #d5b3ff;
+}
+
+.rpg-pastille[data-pastille='bouclier'] .rpg-effet-icone,
+.rpg-card-icone[data-effet='bouclier'] .rpg-effet-icone {
+  color: #d5b3ff;
+}
+
+/* Une parade tombée garde son bouclier, mais gris : la règle violette
+   ci-dessus est plus spécifique que `.is-epuisee`, elle ne doit pas survivre
+   à la chute (le filtre gris du conteneur suffisait de loin, pas de près). */
+.rpg-pastille.is-epuisee[data-pastille='bouclier'] .rpg-effet-icone,
+.rpg-card-icone.is-epuisee[data-effet='bouclier'] .rpg-effet-icone {
+  color: #a9a9a9;
+}
+
+/* Un gain annoncé par Furie n'est pas un effet dépensé : il reste imprimé,
+   mais attend son activation dans une version neutre, sans l'or des mots-clés
+   réellement portés par la créature. */
+.rpg-pastille.is-inactif {
+  border-color: rgba(168, 168, 168, .38);
+  background: rgba(28, 28, 28, .62);
+  color: #a9a9a9;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+.rpg-pastille.is-inactif .rpg-effet-icone,
+.rpg-card-icone.is-inactif {
+  color: #a9a9a9;
+}
+
+.rpg-card-icone.is-inactif {
+  background: none;
+  opacity: .68;
+  filter: grayscale(1);
+}
+
+/* L'aperçu rapide du duel ne vole pas le survol aux cartes qu'il recouvre :
+   inerte à sa pose, il devient lisible après un temps de station (`is-interactif`)
+   — alors sa colonne d'infos, et chaque mot-clé explicable dedans, capte la
+   souris pour ouvrir sa bulle. Les volets de lecture posés sur un voile (appui
+   long, fiche du catalogue, annonce, effet activé) rendent leurs mots-clés
+   survolables d'emblée : la règle ne s'y imprime plus, le mot-clé est la seule
+   porte vers elle. */
+.rpg-hover-card-preview .rpg-pastille { pointer-events: none; }
+.rpg-hover-card-preview.is-interactif .rpg-hover-card-preview__details,
+.rpg-hover-card-preview.is-interactif .rpg-pastille--explicable,
+.rpg-card-peek .rpg-hover-card-preview .rpg-pastille--explicable,
+.rpg-annonce-sort .rpg-hover-card-preview .rpg-pastille--explicable,
+.rpg-auto-preview .rpg-hover-card-preview .rpg-pastille--explicable { pointer-events: auto; }
+
+.rpg-pastille-bulle {
+  position: fixed;
+  z-index: 5000;
+  display: block;
+  width: max-content;
+  max-width: min(290px, calc(100vw - 16px));
+  padding: 8px 11px 9px;
+  border: 1px solid rgba(237, 203, 139, .6);
+  border-radius: 8px;
+  background: rgba(10, 12, 15, .97);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .6);
+  color: #fff3d6;
+  font: 500 12.5px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-align: left;
+  text-shadow: none;
+  white-space: normal;
+  pointer-events: none;
+  animation: rpg-pastille-bulle-in .1s ease-out;
+}
+
+.rpg-pastille-bulle strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #edcb8b;
+  font: 750 11px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+@keyframes rpg-pastille-bulle-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
+.rpg-pastille-bulle.is-dessous { animation-name: rpg-pastille-bulle-in-bas; }
+@keyframes rpg-pastille-bulle-in-bas { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rpg-pastille-bulle { animation: none; }
+}
+
+</style>
+<style>
+  :root { color-scheme: dark; --sans: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px clamp(16px, 4vw, 56px) 72px;
+    background: radial-gradient(1200px 620px at 50% -10%, #2a2018 0%, #14100e 55%, #0b0908 100%);
+    color: #efe4cf;
+    font: 400 15px/1.6 var(--sans);
+  }
+  h1 { margin: 0 0 6px; font: 800 clamp(24px, 3.4vw, 38px)/1.1 var(--sans); letter-spacing: -.01em; }
+  .chapeau { max-width: 72ch; margin: 0 0 34px; color: #c9bda8; }
+  .chapeau b { color: #edcb8b; }
+  h2 { margin: 0; font: 750 17px/1.2 var(--sans); letter-spacing: .02em; }
+  section { margin-bottom: 44px; }
+  .titre-section { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .titre-section p { margin: 0; color: #a2957f; font-size: 13px; }
+
+  /* La face de carte factice : fond sombre, illustration de fortune, et la
+     rangée d'emblèmes à sa place réelle (bas de l'illustration). */
+  .face {
+    position: relative;
+    width: 260px;
+    aspect-ratio: 5 / 7;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(237, 203, 139, .35);
+    background:
+      radial-gradient(120% 80% at 50% 0%, #4a3a29 0%, #2a211a 45%, #14100e 100%),
+      #14100e;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, .55);
+  }
+  .face__coins { display: flex; gap: 16px; padding: 12px; }
+  .face__coins div { width: 26px; height: 34px; border-radius: 6px; background: #1d1712; border: 1px solid rgba(237, 203, 139, .28); }
+  .face__nom {
+    position: absolute; inset: auto 0 76px; text-align: center;
+    font: 800 14px/1.2 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: #f3e7cf;
+  }
+  .face .rpg-card-icones { bottom: 44px; }
+  .galerie-faces { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+
+  .pastilles-demo { display: flex; gap: 28px; flex-wrap: wrap; }
+  .fiche {
+    min-width: 240px; max-width: 320px; padding: 16px 18px; border-radius: 12px;
+    border: 1px solid rgba(237, 203, 139, .22); background: rgba(10, 12, 15, .72);
+  }
+  .fiche h3 { margin: 0 0 10px; font: 750 13px/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: #edcb8b; }
+
+  .famille {
+    padding: 16px 18px 6px; border-radius: 14px;
+    border: 1px solid rgba(237, 203, 139, .16); background: rgba(9, 11, 14, .6);
+  }
+  .famille header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .famille header p { margin: 0 0 0 auto; color: #93866f; font-size: 12px; }
+  .teinte { width: 14px; height: 14px; border-radius: 4px; }
+  .pierres { display: flex; flex-wrap: wrap; gap: 6px 4px; margin: 0 0 12px; padding: 0; list-style: none; }
+  .pierre { width: 92px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; text-align: center; }
+  .pierre b { font: 650 11.5px/1.25 var(--sans); color: #f0e6d3; }
+  .pierre i { font: 400 10px/1.2 ui-monospace, 'SFMono-Regular', Menlo, monospace; color: #8d8171; font-style: normal; }
+
+  .echelle { display: flex; gap: 22px; flex-wrap: wrap; align-items: flex-end; }
+  .taille { margin: 0; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: rgba(9, 11, 14, .6); }
+  .taille figcaption { margin-left: 4px; color: #93866f; font-size: 12px; }
+
+  .etats { display: flex; gap: 28px; flex-wrap: wrap; }
+  .etats > div { padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(237, 203, 139, .16); background: rgba(9, 11, 14, .6); }
+  .etats p { margin: 8px 0 0; color: #a2957f; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-embuscade" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-5a3 3 0 0 1 6 0v5"/><path d="M2 5l2 2M22 5l-2 2M12 1v2"/></symbol>
+  <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
+  <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
+  <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
+  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path d="M3 3 L21 21"/><path d="M21 3 L3 21"/><path d="M7 7 L5 5 M17 17 L19 19"/><path d="M17 7 L19 5 M7 17 L5 19"/><circle cx="12" cy="12" r="1.5"/></symbol>
+  <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
+  <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
+  <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
+  <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-defenseur" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/><path d="M12 6v2M12 14v2M7 11h2M15 11h2"/></symbol>
+  <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
+  <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
+  <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
+  <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
+  <symbol id="i-protection" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
+  <symbol id="i-aura" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/></symbol>
+  <symbol id="i-resonance" viewBox="0 0 24 24"><path d="M8 3v9a4 4 0 0 0 8 0V3"/><path d="M12 16v5"/><path d="M5 7a6 6 0 0 0 0 8"/><path d="M19 7a6 6 0 0 1 0 8"/></symbol>
+  <symbol id="i-honneur" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9 7 23l5-3 5 3-1.2-9.12"/></symbol>
+  <symbol id="i-pioche" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-soin" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-degats" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-contresort" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+  <symbol id="i-rebond" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
+  <symbol id="i-recyclage" viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8"/><path d="M21 15a9 9 0 0 1-14.9 3.4L3 16"/></symbol>
+  <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
+  <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-tribut" viewBox="0 0 24 24"><path d="M4 8h16M12 8v11M8 21h8"/><path d="M4 8 1.5 13.5h5L4 8zm16 0-2.5 5.5h5L20 8z"/><path d="M12 5.4c0 0-2-1.4-2-2.7A1.1 1.1 0 0 1 12 2a1.1 1.1 0 0 1 2 .7c0 1.3-2 2.7-2 2.7z"/></symbol>
+  <symbol id="i-transfert" viewBox="0 0 24 24"><path d="M3.5 8.5h13.5"/><path d="M13.5 5.5 17 8.5l-3.5 3"/><path d="M20.5 15.5H7"/><path d="M10.5 12.5 7 15.5l3.5 3"/></symbol>
+  <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
+  <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
+  <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
+  <symbol id="i-malediction" viewBox="0 0 24 24"><path d="M5 10a7 7 0 0 1 14 0v4l-2 1.5V19H7v-3.5L5 14z"/><circle cx="9.5" cy="10" r="1.4"/><circle cx="14.5" cy="10" r="1.4"/><path d="M9 19v-2M12 19v-2M15 19v-2"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><circle cx="12" cy="9.6" r="6.5"/><path d="M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4"/><circle cx="9.5" cy="9.4" r="1.5"/><circle cx="14.5" cy="9.4" r="1.5"/><path d="M3.1 20.9 8.6 15.4"/><path d="M2.29 20.09 3.91 21.71"/><path d="M7.79 14.59 9.41 16.21"/><path d="M15.4 15.4 20.9 20.9"/><path d="M16.21 14.59 14.59 16.21"/><path d="M21.71 20.09 20.09 21.71"/><path d="M3.1 3.1 8.6 8.6"/><path d="M3.91 2.29 2.29 3.91"/><path d="M9.41 7.79 7.79 9.41"/><path d="M15.4 8.6 20.9 3.1"/><path d="M14.59 7.79 16.21 9.41"/><path d="M20.09 2.29 21.71 3.91"/></symbol>
+  <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
+  <symbol id="i-furtif" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10l2.3-2 2.4 2 2.3-2 2.3 2 2.4-2 2.3 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10" r="1.2"/><circle cx="14.5" cy="10" r="1.2"/></symbol>
+  <symbol id="i-mana" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-recherche" viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="1.5"/><path d="M8 8h5M8 11.5h5"/><circle cx="17.5" cy="17" r="3.5"/><path d="m20 19.5 1.8 1.8"/></symbol>
+  <symbol id="i-lien" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+</svg>
+  <h1>Les pierres d'effets</h1>
+  <p class="chapeau">
+    Le pictogramme ne flotte plus sur le texte : il se pose sur une <b>pierre taillée</b> —
+    fond saturé, biseau clair en haut, ombre en bas, liseré sombre, symbole en blanc.
+    La <b>forme</b> dit la famille d'action (diamant : ce qui frappe et se déplace,
+    hexagone : ce qui tient et dure), la <b>pierre</b> dit le registre.
+  </p>
+
+  <section>
+    <div class="titre-section"><h2>Sur une face de carte</h2><p>la pierre est le badge — plus de pastille ronde, le chiffre garde la sienne</p></div>
+    <div class="galerie-faces">
+      <div class="face">
+        <div class="face__coins"><div></div><div></div></div>
+        <div class="face__nom">Jarl au marteau de guerre</div>
+        <span class="rpg-card-icones rpg-card-icones--catalogue">
+          
+          <span class="rpg-card-icone" data-effet="provocation">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-provocation" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-provocation" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone" data-effet="overkill">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-overkill" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-overkill" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone" data-effet="furie">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <small>2</small>
+          </span>
+        </span>
+      </div>
+      <div class="face">
+        <div class="face__coins"><div></div><div></div></div>
+        <div class="face__nom">Maître du marteau</div>
+        <span class="rpg-card-icones rpg-card-icones--catalogue">
+          
+          <span class="rpg-card-icone" data-effet="envol">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-envol" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-envol" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone" data-effet="overkill">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-overkill" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-overkill" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone" data-effet="furie">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <small>3</small>
+          </span>
+          <span class="rpg-card-icone" data-effet="tenacite">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-tenacite" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-tenacite" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+        </span>
+      </div>
+      <div class="face">
+        <div class="face__coins"><div></div><div></div></div>
+        <div class="face__nom">Maître du marteau — en attente</div>
+        <span class="rpg-card-icones rpg-card-icones--catalogue">
+          
+          <span class="rpg-card-icone is-inactif" data-effet="envol">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-envol" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-envol" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone is-inactif" data-effet="overkill">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-overkill" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-overkill" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            
+          </span>
+          <span class="rpg-card-icone" data-effet="furie">
+            <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <small>3</small>
+          </span>
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="titre-section"><h2>Les pastilles d'une fiche</h2><p>l'emblème ouvre le mot, le mot reste écrit</p></div>
+    <div class="pastilles-demo">
+      <div class="fiche"><h3>Jarl au marteau de guerre</h3><span class="rpg-pastilles">
+        <span class="rpg-pastille" data-pastille="provocation">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-provocation" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-provocation" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Provocation</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="overkill">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-overkill" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-overkill" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Overkill</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="furie">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Furie 2</span>
+        </span>
+        </span></div>
+      <div class="fiche"><h3>Salem</h3><span class="rpg-pastilles">
+        <span class="rpg-pastille" data-pastille="rapidite">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-rapidite" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rapidite" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Rapidité</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="coupRapide">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-coup-rapide" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-coup-rapide" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Attaque ciblée</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="contreAttaque">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-contre-attaque" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-contre-attaque" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Contre-attaque</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="bouclier">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier 1</span>
+        </span>
+        </span></div>
+      <div class="fiche"><h3>Lionne du Midi ardent</h3><span class="rpg-pastilles">
+        <span class="rpg-pastille" data-pastille="rapidite">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-rapidite" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rapidite" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Rapidité</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="protection">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier Eau et Neige</span>
+        </span>
+        </span></div>
+      <div class="fiche"><h3>Onna Musha des cendres</h3><span class="rpg-pastilles">
+        <span class="rpg-pastille" data-pastille="esquive">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-esquive" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-esquive" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Esquive</span>
+        </span>
+        <span class="rpg-pastille" data-pastille="honneur">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-honneur" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-honneur" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Harakiri 1</span>
+        </span>
+        </span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="titre-section"><h2>Toutes les pierres</h2><p>rangées par famille, avec leur clé de code</p></div>
+    
+      <section class="famille" data-famille="assaut">
+        <header>
+          <span class="teinte" style="background: #a8282d; box-shadow: inset 0 1px 0 #ff9c72"></span>
+          <h2>Assaut</h2>
+          <p>diamant · braise · 15 effets</p>
+        </header>
+        <ul class="pierres">
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Dégâts"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Dégâts</b>
+            <i>degats</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Affaiblissement"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Affaiblissement</b>
+            <i>debuff</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-coup-critique" role="img" aria-label="Coup critique"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-coup-critique" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Coup critique</b>
+            <i>coupCritique</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-coup-rapide" role="img" aria-label="Attaque ciblée"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-coup-rapide" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Attaque ciblée</b>
+            <i>coupRapide</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-traque" role="img" aria-label="Traque"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-traque" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Traque</b>
+            <i>traque</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-traque" role="img" aria-label="Traque"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-traque" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Traque</b>
+            <i>traquePirates</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-overkill" role="img" aria-label="Overkill"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-overkill" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Overkill</b>
+            <i>overkill</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" role="img" aria-label="Furie"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Furie</b>
+            <i>furie</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-honneur" role="img" aria-label="Harakiri"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-honneur" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Harakiri</b>
+            <i>honneur</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-abordage" role="img" aria-label="Abordage"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-abordage" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Abordage</b>
+            <i>abordage</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-abordage" role="img" aria-label="Prise"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-abordage" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Prise</b>
+            <i>prise</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Destruction"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Destruction</b>
+            <i>destruction-cible</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Destruction totale"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Destruction totale</b>
+            <i>destruction-totale</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Destruction de navire"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Destruction de navire</b>
+            <i>destruction-navire</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-degats" role="img" aria-label="Destruction d’arme"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-degats" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Destruction d’arme</b>
+            <i>destruction-arme</i>
+          </li>
+        </ul>
+      </section>
+      <section class="famille" data-famille="tempo">
+        <header>
+          <span class="teinte" style="background: #3a72ad; box-shadow: inset 0 1px 0 #a9dcff"></span>
+          <h2>Tempo</h2>
+          <p>diamant · azur · 7 effets</p>
+        </header>
+        <ul class="pierres">
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-rapidite" role="img" aria-label="Rapidité"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rapidite" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Rapidité</b>
+            <i>rapidite</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-envol" role="img" aria-label="Envol"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-envol" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Envol</b>
+            <i>envol</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-esquive" role="img" aria-label="Esquive"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-esquive" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Esquive</b>
+            <i>esquive</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-contre-attaque" role="img" aria-label="Contre-attaque"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-contre-attaque" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Contre-attaque</b>
+            <i>contreAttaque</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-embuscade" role="img" aria-label="Embuscade"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-embuscade" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Embuscade</b>
+            <i>reactionTourAdverse</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-rebond" role="img" aria-label="Rebond"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rebond" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Rebond</b>
+            <i>retour-main</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-rebond" role="img" aria-label="retour-apres-tours"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rebond" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>retour-apres-tours</b>
+            <i>retour-apres-tours</i>
+          </li>
+        </ul>
+      </section>
+      <section class="famille" data-famille="garde">
+        <header>
+          <span class="teinte" style="background: #c1922c; box-shadow: inset 0 1px 0 #ffe6a6"></span>
+          <h2>Garde</h2>
+          <p>hexagone · or · 13 effets</p>
+        </header>
+        <ul class="pierres">
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" role="img" aria-label="Bouclier"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Bouclier</b>
+            <i>protection</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" role="img" aria-label="Protection anti-magie"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Protection anti-magie</b>
+            <i>protectionSorts</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" role="img" aria-label="Protection contre les sorts"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Protection contre les sorts</b>
+            <i>protectionSortsContre</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" role="img" aria-label="Bouclier"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Bouclier</b>
+            <i>bouclier</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" role="img" aria-label="bouclier-lumiere"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>bouclier-lumiere</b>
+            <i>bouclier-lumiere</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-tenacite" role="img" aria-label="Tenacité"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-tenacite" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Tenacité</b>
+            <i>tenacite</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-defenseur" role="img" aria-label="Défenseur"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-defenseur" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Défenseur</b>
+            <i>defenseur</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-provocation" role="img" aria-label="Provocation"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-provocation" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Provocation</b>
+            <i>provocation</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-aura" role="img" aria-label="Aura"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-aura" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Aura</b>
+            <i>aura</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-aura" role="img" aria-label="Bannière"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-aura" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Bannière</b>
+            <i>banniere</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-aura" role="img" aria-label="Renfort"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-aura" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Renfort</b>
+            <i>buff</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-resonance" role="img" aria-label="Résonance"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-resonance" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Résonance</b>
+            <i>resonance</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-resonance" role="img" aria-label="compagnie"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-resonance" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>compagnie</b>
+            <i>compagnie</i>
+          </li>
+        </ul>
+      </section>
+      <section class="famille" data-famille="ombre">
+        <header>
+          <span class="teinte" style="background: #7a3cb2; box-shadow: inset 0 1px 0 #d9b4ff"></span>
+          <h2>Ombre</h2>
+          <p>hexagone · tenebres · 16 effets</p>
+        </header>
+        <ul class="pierres">
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-malediction" role="img" aria-label="Malédiction"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-malediction" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Malédiction</b>
+            <i>malediction</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-vol-de-vie" role="img" aria-label="Vol de vie"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-vol-de-vie" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Vol de vie</b>
+            <i>volDeVie</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-furtif" role="img" aria-label="Furtivité"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furtif" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Furtivité</b>
+            <i>furtif</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-infiltration" role="img" aria-label="Infiltration"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-infiltration" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Infiltration</b>
+            <i>infiltration</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-rebond" role="img" aria-label="Exil"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-rebond" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Exil</b>
+            <i>exil</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-reanimation" role="img" aria-label="Réanimation"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-reanimation" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Réanimation</b>
+            <i>reanimation</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-contresort" role="img" aria-label="Contresort"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-contresort" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Contresort</b>
+            <i>contresort</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-transfert" role="img" aria-label="Transfert"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-transfert" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Transfert</b>
+            <i>transfert</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-tribut" role="img" aria-label="Tribut"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-tribut" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Tribut</b>
+            <i>tribut</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-defausse" role="img" aria-label="Défausse"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-defausse" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Défausse</b>
+            <i>defausse</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-defausse" role="img" aria-label="Défausse adverse"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-defausse" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Défausse adverse</b>
+            <i>defausse-adverse</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-paquet" role="img" aria-label="Défausse de paquet"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-paquet" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Défausse de paquet</b>
+            <i>defaussePaquet</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-defausse" role="img" aria-label="Mue mondiale"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-defausse" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Mue mondiale</b>
+            <i>mue-mondiale</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-esquive" role="img" aria-label="Blocage interdit"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-esquive" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Blocage interdit</b>
+            <i>empeche-blocage</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-esquive" role="img" aria-label="empeche-attaque"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-esquive" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>empeche-attaque</b>
+            <i>empeche-attaque</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-cargaison" role="img" aria-label="Cale"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-cargaison" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Cale</b>
+            <i>cale</i>
+          </li>
+        </ul>
+      </section>
+      <section class="famille" data-famille="flux">
+        <header>
+          <span class="teinte" style="background: #1b8873; box-shadow: inset 0 1px 0 #8ff0d2"></span>
+          <h2>Flux</h2>
+          <p>hexagone · emeraude · 13 effets</p>
+        </header>
+        <ul class="pierres">
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" role="img" aria-label="Pioche"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Pioche</b>
+            <i>pioche</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" role="img" aria-label="pioche-defausse"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>pioche-defausse</b>
+            <i>pioche-defausse</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-recherche" role="img" aria-label="Recherche"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-recherche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Recherche</b>
+            <i>recherche</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-recherche" role="img" aria-label="Recherche"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-recherche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Recherche</b>
+            <i>recherche-deck</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-butin" role="img" aria-label="Butin"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-butin" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Butin</b>
+            <i>butin</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-cargaison" role="img" aria-label="Cargaison"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-cargaison" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Cargaison</b>
+            <i>cargaison</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-mana" role="img" aria-label="Mana"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-mana" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Mana</b>
+            <i>manaEngagement</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-soin" role="img" aria-label="Soin"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-soin" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Soin</b>
+            <i>soin</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-soin" role="img" aria-label="soin-creatures"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-soin" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>soin-creatures</b>
+            <i>soin-creatures</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-recyclage" role="img" aria-label="Recyclage"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-recyclage" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Recyclage</b>
+            <i>recyclage</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-heures" role="img" aria-label="Heures"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-heures" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>Heures</b>
+            <i>heures</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-aura" role="img" aria-label="jetons"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-aura" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>jetons</b>
+            <i>jetons</i>
+          </li>
+          <li class="pierre">
+            <svg class="rpg-effet-icone" width="40" height="40" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-lien" role="img" aria-label="lien"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-lien" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <b>lien</b>
+            <i>lien</i>
+          </li>
+        </ul>
+      </section>
+  </section>
+
+  <section>
+    <div class="titre-section"><h2>L'échelle</h2><p>12 px dans une main mobile, 18 px sur une face, 20 px dans une pastille</p></div>
+    <div class="echelle">
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="12" height="12" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="12" height="12" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="12" height="12" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>12 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="14" height="14" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="14" height="14" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="14" height="14" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>14 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="16" height="16" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="16" height="16" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="16" height="16" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>16 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="18" height="18" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>18 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>20 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="24" height="24" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="24" height="24" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="24" height="24" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>24 px</figcaption>
+        </figure>
+        <figure class="taille">
+          <svg class="rpg-effet-icone" width="32" height="32" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="assaut" data-forme="diamant" data-pierre="braise" data-symbole="i-furie" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#1b0609"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#5d1116"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#a8282d"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#ff9c72" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#1b0609" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#ff9c72" stroke-opacity=".45" stroke-width=".9"/><use href="#i-furie" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="32" height="32" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="rpg-effet-icone" width="32" height="32" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="flux" data-forme="hexagone" data-pierre="emeraude" data-symbole="i-pioche" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#03150f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#0a3a30"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#1b8873"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#8ff0d2" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#03150f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#8ff0d2" stroke-opacity=".45" stroke-width=".9"/><use href="#i-pioche" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <figcaption>32 px</figcaption>
+        </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="titre-section"><h2>Les états</h2><p>une pierre dépensée reste à sa place, éteinte</p></div>
+    <div class="etats">
+      <div>
+        <span class="rpg-pastilles">
+          
+        <span class="rpg-pastille" data-pastille="tenacite">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-tenacite" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-tenacite" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Ténacité</span>
+        </span>
+          
+        <span class="rpg-pastille is-epuisee" data-pastille="tenacite">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-tenacite" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-tenacite" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Ténacité</span>
+        </span>
+        </span>
+        <p>Ténacité prête, puis dépensée.</p>
+      </div>
+      <div>
+        <span class="rpg-pastilles">
+          
+        <span class="rpg-pastille" data-pastille="bouclier">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier</span>
+        </span>
+          
+        <span class="rpg-pastille is-epuisee" data-pastille="bouclier">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-bouclier" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-bouclier" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier</span>
+        </span>
+        </span>
+        <p>Parade en place, puis tombée.</p>
+      </div>
+      <div>
+        <span class="rpg-pastilles">
+          
+        <span class="rpg-pastille" data-pastille="envol">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-envol" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-envol" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Envol (furie)</span>
+        </span>
+          
+        <span class="rpg-pastille is-inactif" data-pastille="envol">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="tempo" data-forme="diamant" data-pierre="azur" data-symbole="i-envol" aria-hidden="true"><polygon points="16,1.6 30.4,16 16,30.4 1.6,16" fill="#05111d"/><polygon points="16,5.06 26.94,16 16,26.94 5.06,16" fill="#132c4a"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="#3a72ad"/><polygon points="16,7.07 24.93,16 24.93,16 7.07,16 7.07,16" fill="#a9dcff" fill-opacity=".24"/><polygon points="24.93,16 24.93,16 16,24.93 7.07,16 7.07,16" fill="#05111d" fill-opacity=".32"/><polygon points="16,7.07 24.93,16 16,24.93 7.07,16" fill="none" stroke="#a9dcff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-envol" x="9.5" y="9.5" width="13" height="13" fill="none" stroke="#ffffff" stroke-width="3.69" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Envol (furie)</span>
+        </span>
+        </span>
+        <p>Gain de Furie activé, puis encore en attente.</p>
+      </div>
+      <div>
+        <span class="rpg-pastilles">
+          
+        <span class="rpg-pastille" data-pastille="protection">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier Braise</span>
+        </span>
+          
+        <span class="rpg-pastille" data-pastille="protection">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="garde" data-forme="hexagone" data-pierre="or" data-symbole="i-protection" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#1c1204"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#5d3f13"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#c1922c"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#ffe6a6" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#1c1204" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#ffe6a6" stroke-opacity=".45" stroke-width=".9"/><use href="#i-protection" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Bouclier Neige</span>
+        </span>
+          
+        <span class="rpg-pastille" data-pastille="malediction">
+          <svg class="rpg-effet-icone" width="20" height="20" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" data-plaque="ombre" data-forme="hexagone" data-pierre="tenebres" data-symbole="i-malediction" aria-hidden="true"><polygon points="16,1.6 28.5,8.8 28.5,23.2 16,30.4 3.5,23.2 3.5,8.8" fill="#11061f"/><polygon points="16,5.06 25.5,10.53 25.5,21.47 16,26.94 6.5,21.47 6.5,10.53" fill="#331356"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="#7a3cb2"/><polygon points="16,7.07 23.75,11.54 23.75,16 8.25,16 8.25,11.54" fill="#d9b4ff" fill-opacity=".24"/><polygon points="23.75,16 23.75,20.46 16,24.93 8.25,20.46 8.25,16" fill="#11061f" fill-opacity=".32"/><polygon points="16,7.07 23.75,11.54 23.75,20.46 16,24.93 8.25,20.46 8.25,11.54" fill="none" stroke="#d9b4ff" stroke-opacity=".45" stroke-width=".9"/><use href="#i-malediction" x="6.5" y="6.5" width="19" height="19" fill="none" stroke="#ffffff" stroke-width="2.53" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Malédiction</span>
+        </span>
+        </span>
+        <p>La Protection élémentaire teinte sa pierre de l'élément repoussé.</p>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

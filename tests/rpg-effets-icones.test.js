@@ -33,7 +33,9 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
   const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-pastilles\s*\{[^}]*flex-direction: column;[^}]*align-items: flex-start;/s);
   assert.match(css, /\.rpg-pastille\s*\{[^}]*min-height: 28px;[^}]*font: 650 12px\//s);
-  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 15px;[^}]*height: 15px;/s);
+  // La pastille porte désormais une pierre d'emblème : 20 px, la taille où le
+  // pictogramme blanc reste lisible à côté de son libellé.
+  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 20px;[^}]*height: 20px;/s);
   assert.match(css, /\.rpg-card-icones\s*\{[^}]*flex-wrap: wrap;/s,
     'les icônes des faces de cartes conservent leur disposition');
 });

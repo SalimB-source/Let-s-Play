@@ -1540,16 +1540,17 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__foot { gap: 2cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-stat-icon { width: .85em; height: .85em; flex-basis: .85em; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone { padding: 2cqw; gap: 2cqw; border-width: 1cqw; font-size: 12cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone { padding: 0; gap: 1cqw; border: 0; font-size: 12cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone small { font-size: 9cqw; }
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone .rpg-effet-icone { width: 14cqw; height: 14cqw; }
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone .rpg-effet-icone { width: 16cqw; height: 16cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
 
 /* Les badges d'effets de la main : une carte mobile fait moins de 90 px. La
-   colonne passe à 14 px, le badge à 12 px et son glyphe à 8 px — assez pour
-   lire le mot-clé sans manger l'illustration. `rpg-mana-essai.css` ne doit plus
-   redonner les 20 px du bureau après ces règles (voir son commentaire). */
+   colonne passe à 14 px, et la pierre d'emblème l'occupe entièrement — 14 px,
+   sans pastille de fond (elle porte son propre contour). `rpg-mana-essai.css`
+   ne doit plus redonner les 20 px du bureau après ces règles (voir son
+   commentaire). */
 @media (max-width: 620px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
   .rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
     top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
@@ -1557,15 +1558,19 @@
     gap: 2px;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-    min-width: 12px;
-    min-height: 12px;
-    padding: 1px;
-    border-width: 1px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+    min-width: 14px;
+    min-height: 14px;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-    width: 8px;
-    height: 8px;
+    width: 14px;
+    height: 14px;
+    /* Une main de sept cartes porte une trentaine de pierres : le contour
+       sombre suffit à les détacher, l'ombre portée coûterait un filtre par
+       icône sur le GPU du téléphone. */
+    filter: none;
   }
 }
 
@@ -1575,15 +1580,16 @@
   gap: 2px;
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-  min-width: 12px;
-  min-height: 12px;
-  padding: 1px;
-  border-width: 1px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+  min-width: 14px;
+  min-height: 14px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-  width: 8px;
-  height: 8px;
+  width: 14px;
+  height: 14px;
+  filter: none;
 }
 
 /* ── Performance GPU, rail droit épuré & aperçu latéralisé anti-occultation ──
