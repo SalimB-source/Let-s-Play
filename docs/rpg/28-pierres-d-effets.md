@@ -6,6 +6,8 @@ saturé, biseau clair en haut, ombre en bas, liseré sombre, pictogramme **blanc
 au centre. La référence de style est celle des emblèmes de héros des jeux
 d'auto-battler : le losange braise, l'hexagone ténèbres, l'hexagone or.
 
+![Les pierres d'effets : avant/après, faces de cartes, pastilles, toutes les pierres, échelle et états](assets/pierres-effets.png)
+
 ## La grammaire
 
 Deux choses se lisent d'un coup d'œil, sans lire le mot :
