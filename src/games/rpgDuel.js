@@ -2930,6 +2930,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
   }
   for (const mort of mortes) {
     if (duel.moba?.winner) break;
+    declencherMortAlliee(duel, mort.cote, mort.entite);
     mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
@@ -5286,6 +5287,22 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
   duel.log.push(`${carte.name} : désignez la créature adverse qui subira ${amount} dégât${amount > 1 ? 's' : ''}.`);
 }
 
+/** Chaque Djinn encore en jeu réagit une fois à la mort d'une AUTRE créature
+ * de son camp, quelle que soit sa cause (combat, sacrifice, dégâts ou effet de
+ * fin de tour). Ni l'exil ni la capture ne passent par ce déclencheur. */
+function declencherMortAlliee(duel, cote, victime) {
+  for (const source of [...duel[cote].creatures]) {
+    if (source.id === victime.id || !(source.pv > 0)) continue;
+    const carte = duelCardById(source.carteId);
+    const effet = carte?.mortAlliee;
+    if (effet?.type !== 'degats-sorcier') continue;
+    const montant = Math.max(0, Number(effet.amount) || 0);
+    if (!montant) continue;
+    rpgInfligerSorcier(duel, autre(cote), montant);
+    duel.log.push(`${source.name} : la mort de ${victime.name} inflige ${montant} dégât${montant > 1 ? 's' : ''} à son adversaire.`);
+  }
+}
+
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
 function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenchements = null, tueur = null) {
   if (estSite(entite)) return false;
@@ -5307,6 +5324,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
   // le retour programmé se dissipera faute de carte à reprendre.
   programmerRetourTenacite(duel, cote, entite);
   const declencher = () => {
+    declencherMortAlliee(duel, cote, entite);
     declencherArme?.();
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {

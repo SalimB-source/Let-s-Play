@@ -15724,6 +15724,24 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-projectile-combat { display: none; animation: none; }
 }
 
+/* Le flocon SVG reste blanc et centré même sur les pierres Neige hybrides. */
+.rpg-battle .rpg-card-element-badge__glyphe:has(> .rpg-emblem--neige) {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.rpg-battle .rpg-card-element-badge__glyphe > .rpg-emblem--neige {
+  display: block;
+  width: 56%;
+  height: 56%;
+}
+.rpg-battle .rpg-mana-cost i > .rpg-emblem--neige {
+  display: block;
+  width: 80%;
+  height: 80%;
+}
+
 /* Sablier de la pastille Sable : grands contours blancs et sable plein,
    lisibles sans les détails ni les couleurs d’un emoji système. */
 .rpg-battle .rpg-card-element-badge__glyphe:has(> .rpg-card-hourglass) {

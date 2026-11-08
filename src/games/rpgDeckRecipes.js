@@ -106,6 +106,7 @@ export const RPG_RECETTES_DECKS = {
     signature: [
       ['feux-de-kitsune', 2], ['sabre-maudit', 1],
       ['ghul-des-cendres', 2], ['braisier-du-souk', 2],
+      ['djinn-des-cendres-vengeresses', 1],
       ['ashigaru-des-braises', 2], ['ronin-du-soleil-rouge', 2],
       ['samourai-du-torii', 1], ['anqa-des-braises', 1],
       ['hatamoto-des-cendres', 2],

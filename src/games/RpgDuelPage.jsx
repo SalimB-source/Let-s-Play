@@ -352,6 +352,13 @@ import {
 } from './RpgDeckBox.jsx';
 
 const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀', hybride: '🔥⏳' };
+// Sur les pierres de couleur et de coût, le flocon SVG suit la teinte blanche
+// voulue pour la Neige (contrairement à l’emoji ❄️, coloré par le système).
+function GlyphePierreElement({ element }) {
+  if (element === 'sable') return <CardHourglass />;
+  if (element === 'neige') return <ElementEmblem element="neige" />;
+  return ELEMENT_GLYPHS[element] ?? '◇';
+}
 /** Kagutsuchi est la seule créature dont le coup critique multiplie par
  *  quatre : son « ×4 » enflammé a droit à sa cinématique de table. */
 const KAGUTSUCHI_ID = 'kagutsuchi-flamme-originelle';
@@ -616,7 +623,7 @@ function ManaCost({ carte, compact = false, showElement = true }) {
     >
       <PlaqueForme forme="diamant" bases={basesCout} />
       <b>{carte.cost}</b>
-      {!hybrid && showElement && <i aria-hidden="true">{teinte === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[teinte] ?? '◇'}</i>}
+      {!hybrid && showElement && <i aria-hidden="true"><GlyphePierreElement element={teinte} /></i>}
     </span>
   );
 }
@@ -971,13 +978,13 @@ function CardElementBadge({ carte }) {
             className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur} is-plaque`}
           >
             <PlaqueForme forme="diamant" bases={[teintePlaque(couleur)]} />
-            <span className="rpg-card-element-badge__glyphe">{couleur === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[couleur] ?? '◇'}</span>
+            <span className="rpg-card-element-badge__glyphe"><GlyphePierreElement element={couleur} /></span>
           </i>
         ))
         : (
           <>
             <PlaqueForme forme="diamant" bases={[teintePlaque(teinte)]} />
-            <span className="rpg-card-element-badge__glyphe">{teinte === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[teinte] ?? '◇'}</span>
+            <span className="rpg-card-element-badge__glyphe"><GlyphePierreElement element={teinte} /></span>
           </>
         )}
     </span>
@@ -3212,7 +3219,7 @@ export function TableCard({
         >
           <span className="rpg-mana-cost rpg-mana-cost--neige is-compact" aria-hidden="true">
             <b>{activation.cout}</b>
-            <i>{ELEMENT_GLYPHS.neige ?? '◇'}</i>
+            <i><GlyphePierreElement element="neige" /></i>
           </span>
         </span>
       )}
@@ -3240,7 +3247,7 @@ export function TableCard({
         >
           <span className={`rpg-mana-cost rpg-mana-cost--${carte.manaEngagement.couleur} is-compact`} aria-hidden="true">
             <b>+{carte.manaEngagement.amount ?? 1}</b>
-            <i>{ELEMENT_GLYPHS[carte.manaEngagement.couleur] ?? '◇'}</i>
+            <i>{carte.manaEngagement.couleur === 'neige' ? <ElementEmblem element="neige" /> : ELEMENT_GLYPHS[carte.manaEngagement.couleur] ?? '◇'}</i>
           </span>
         </span>
       )}
