@@ -588,3 +588,20 @@ test('l’IA ne confie pas la Hache à un porteur qui mourrait de sa morsure', (
     'aucune cible : le Ghul ne survivrait pas au dégât de l’attachement');
   assert.equal(ghul.pv, 1, 'et personne n’a été blessé');
 });
+
+test('la rupture du Javelot laisse l’Attaque ciblée donnée par le Serment jusqu’à la fin du tour', () => {
+  const duel=duelVide();const porteur=poser(duel,'joueur','gardienne-des-portes-de-sable');equiper(duel,'joueur','javelot-du-beffroi',porteur);
+  donner(duel,'joueur','serment-de-la-forge');manaPlein(duel,'joueur');assert.equal(rpgLancerMagie(duel,'joueur','serment-de-la-forge').ok,true);porteur.ready=true;
+  assert.equal(rpgAttaquerSorcier(duel,'joueur',porteur.id).ok,true);assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,true);rpgFinDeTour(duel);assert.equal(porteur.coupRapide,false);
+});
+
+test('retirer le Khopesh conserve le Tribut temporaire de l’Offrande', () => {
+  const duel = duelVide();
+  const porteur = poser(duel, 'joueur', 'gardienne-des-portes-de-sable');
+  duel.joueur.mana.tenebres = 9; donner(duel, 'joueur', 'offrande-de-lin');
+  assert.equal(rpgLancerMagie(duel, 'joueur', 'offrande-de-lin').ok, true); assert.equal(porteur.tribut, 1);
+  duel.joueur.mana.tenebres = 9; donner(duel, 'joueur', 'khopesh-d-or');
+  assert.equal(rpgJouerArme(duel, 'joueur', 'khopesh-d-or', porteur.id).ok, true); assert.equal(porteur.tribut, 2);
+  equiper(duel, 'joueur', 'cuirasse-de-sel', porteur); assert.equal(porteur.tribut, 1);
+  rpgFinDeTour(duel); assert.equal(porteur.tribut, 0);
+});

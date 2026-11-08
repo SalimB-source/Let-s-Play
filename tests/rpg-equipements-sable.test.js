@@ -25,6 +25,7 @@ import {
   rpgPeutActiverArme,
   rpgPeutBloquerAttaquant,
   rpgLancerAttaque,
+  rpgAttaquerCreature,
   rpgReglerHasard,
   rpgBlesserCreature,
   rpgDefausserCarte,
@@ -428,4 +429,40 @@ test('chaque carte du lot se joue et s’attache sans casser la table', () => {
     assert.equal(duel.joueur.creatures.includes(porteur), true, `${id} laisse son porteur debout`);
     assert.equal(cardById(id).kind, 'arme');
   }
+});
+
+test('Sphère : renvoi avant les dégâts dans un duel direct, en attaque comme en défense', () => {
+  for(const cotePorteur of ['joueur','sorcier']) for(const jet of [0.14,0.15]) {
+    const duel=duelVide();const attaquant=poser(duel,'joueur','chien-du-guet');const defenseur=poser(duel,'sorcier','dune-marchante');const porteur=cotePorteur==='joueur'?attaquant:defenseur;const adverse=cotePorteur==='joueur'?defenseur:attaquant;equiper(duel,cotePorteur,'sphere-de-rotation',porteur);adverse.pv=adverse.pvMax=10;adverse.def=10;rendrePret(duel,attaquant);rpgReglerHasard(duel,()=>jet);const vie=porteur.pv;
+    const result=rpgAttaquerCreature(duel,'joueur',attaquant.id,defenseur.id);assert.equal(result.ok,true);const campAdverse=cotePorteur==='joueur'?'sorcier':'joueur';
+    if(jet<.15){assert.ok(!duel[campAdverse].creatures.includes(adverse));assert.ok(duel[campAdverse].main.includes(adverse.carteId));assert.equal(porteur.pv,vie);}else{assert.ok(duel[campAdverse].creatures.includes(adverse));assert.ok(porteur.pv<vie);}
+  }
+});
+
+test('Sphère : le bouclier adverse intercepte la capacité mais pas la protection limitée aux sorts', () => {
+  for(const bouclier of [true,false]) {
+    const duel=duelVide();const attaquant=poser(duel,'joueur','chien-du-guet');const defenseur=poser(duel,'sorcier','dune-marchante');equiper(duel,'joueur','sphere-de-rotation',attaquant);rendrePret(duel,attaquant);defenseur.protectionSorts=true;defenseur.bouclier=bouclier?1:0;rpgReglerHasard(duel,()=>.14);
+    assert.equal(rpgAttaquerCreature(duel,'joueur',attaquant.id,defenseur.id).ok,true);
+    if(bouclier){assert.ok(duel.sorcier.creatures.includes(defenseur));assert.equal(defenseur.bouclier,0);assert.equal(defenseur.pv,1);}else{assert.ok(!duel.sorcier.creatures.includes(defenseur));assert.ok(duel.sorcier.main.includes('dune-marchante'));}
+  }
+});
+
+test('Sphère : une créature qui se bat à son arrivée peut être renvoyée avant les blessures', () => {
+  const duel=duelVide();const porteur=poser(duel,'sorcier','chien-du-guet');equiper(duel,'sorcier','sphere-de-rotation',porteur);porteur.bouclier=0;donner(duel,'joueur','bakunawa');manaPlein(duel,'joueur');rpgReglerHasard(duel,()=>.14);
+  const vie=porteur.pv;const result=rpgJouerCreature(duel,'joueur','bakunawa',porteur.id);assert.equal(result.ok,true,JSON.stringify(result));assert.equal(porteur.pv,vie);assert.ok(!duel.joueur.creatures.some(e=>e.carteId==='bakunawa'));assert.ok(duel.joueur.main.includes('bakunawa'));assert.ok(!duel.joueur.cimetiere.includes('bakunawa'));
+});
+
+test('Sphère : un bouclier qui intercepte le renvoi ne supprime pas les blessures du bloqueur', () => {
+  const duel=duelVide();const porteur=poser(duel,'joueur','chien-du-guet');const bloqueur=poser(duel,'sorcier','dune-marchante');equiper(duel,'joueur','sphere-de-rotation',porteur);rendrePret(duel,porteur);rendrePret(duel,bloqueur);bloqueur.bouclier=1;rpgReglerHasard(duel,()=>.14);const pv=porteur.pv;
+  assert.equal(rpgLancerAttaque(duel,'joueur',[porteur.id],{[porteur.id]:[bloqueur.id]}).ok,true);assert.ok(duel.sorcier.creatures.includes(bloqueur));assert.equal(bloqueur.bouclier,0);assert.equal(bloqueur.pv,1);assert.equal(porteur.pv,pv-2);
+});
+
+test('Sphère : parade colorée limitée aux sorts conservée et arme du renvoyé au cimetière', () => {
+  const duel=duelVide();const porteur=poser(duel,'joueur','chien-du-guet');const cible=poser(duel,'sorcier','dune-marchante');equiper(duel,'joueur','sphere-de-rotation',porteur);equiper(duel,'sorcier','jitte-d-amayas',cible);cible.protection={contre:['eau','sable']};rendrePret(duel,porteur);rpgReglerHasard(duel,()=>.14);
+  const avant=porteur.arme.durabilite;assert.equal(rpgAttaquerCreature(duel,'joueur',porteur.id,cible.id).ok,true);assert.ok(duel.sorcier.main.includes(cible.carteId));assert.ok(duel.sorcier.cimetiere.includes('jitte-d-amayas'));assert.deepEqual(cible.protection,{contre:['eau','sable']});assert.equal(porteur.arme.durabilite,avant-1);
+});
+
+test('Sphère : le jeton renvoyé cesse d’exister sans entrer en main ou au cimetière', () => {
+  const duel=duelVide();const porteur=poser(duel,'joueur','chien-du-guet');const jeton=poser(duel,'sorcier','dune-marchante');jeton.jeton=true;equiper(duel,'joueur','sphere-de-rotation',porteur);rendrePret(duel,porteur);rpgReglerHasard(duel,()=>.14);
+  assert.equal(rpgAttaquerCreature(duel,'joueur',porteur.id,jeton.id).ok,true);assert.ok(!duel.sorcier.creatures.includes(jeton));assert.ok(!duel.sorcier.main.includes(jeton.carteId));assert.ok(!duel.sorcier.cimetiere.includes(jeton.carteId));
 });

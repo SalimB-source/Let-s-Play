@@ -1,19 +1,29 @@
 /** Small, lane-aware policy. All moves are still resolved by the MOBA adapter;
  * probes run on copies, never on the live duel. */
-import { cardById } from './rpgCards.js';
+import { cardById, lienSatisfait } from './rpgCards.js';
 import { choisirBloqueursIA } from './rpgAI.js';
 import { rpgPeutAttaquer, rpgReglerHasard } from './rpgDuel.js';
 import {
-  MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI,
-  MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
-  rpgMobaJouerCreature, rpgMobaLancerMagie, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche,
-  rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaCiblesAttaque, rpgMobaPasserSort,
+  MOBA_ARMES, MOBA_ARRIVEES_ALLIEES, MOBA_ARRIVEES_NEUTRES, MOBA_MAGIES_ALLIEES, MOBA_MAGIES_CIBLEES, MOBA_MAGIES_ESSAI,
+  MOBA_CONTRESORTS, MOBA_MAGIES_IMMEDIATES, MOBA_MAGIES_REANIMATION, MOBA_MAGIES_PRIX, MOBA_MAGIES_SOINS, MOBA_MAGIES_TRANSFERT, MOBA_MAGIES_VOIES,
+  rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaLancerMagie, rpgMobaCiblesDestruction, rpgMobaCiblesSite, rpgMobaResoudreDestruction, rpgMobaResoudreArrivee, rpgMobaCandidatsRecherche, rpgMobaCiblesPrise, rpgMobaCiblesOni,
+  rpgMobaDeclarerAttaque, rpgMobaLancerAttaque, rpgMobaCiblesAttaque, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPasserEffetCreature,
 } from './rpgMobaLocal.js';
 
 /** Select from the AI's private candidates without exposing them in the UI. */
 export function rpgMobaChoisirRechercheIA(duel, side = 'sorcier') {
   return rpgMobaCandidatsRecherche(duel, side)
     .sort((a, b) => (cardById(a)?.cost ?? 99) - (cardById(b)?.cost ?? 99))[0] ?? null;
+}
+
+/** Choose a legal Source recipient without changing the live game or its RNG. */
+export function rpgMobaChoisirSiteIA(duel, side = 'sorcier') {
+  const candidats = rpgMobaCiblesSite(duel, side).map((id) => duel[side].creatures.find((e) => e.id === id));
+  return candidats.sort((a, b) => {
+    const score = (e) => (e.atk ?? 0) + (e.pv ?? 0) + Math.max(0, (e.pvMax ?? 0) - (e.pv ?? 0))
+      + (e.tenaciteDisponible ? 0 : 2) + (e.bouclier ? 0 : 1);
+    return score(b) - score(a);
+  })[0]?.id ?? null;
 }
 
 // The live game's RNG is stored outside the serializable state. Give each
@@ -36,6 +46,9 @@ function valeurCreature(entity) {
   const gelee = (entity.gelToursRestants ?? 0) > 0 || (entity.empecheAttaqueToursRestants ?? 0) > 0;
   let valeur = 2 + force * (gelee ? 0.5 : 1.5) + vie * 0.9;
   if (entity.bouclier) valeur += 1.4;
+  // Dodge prevents attacks and spells, not abilities; keep it a modest
+  // bounded bonus rather than equating it with guaranteed protection.
+  if (entity.esquive) valeur += Math.min(1, Math.max(0, Number.isFinite(entity.esquiveChance) ? entity.esquiveChance : 0.15)) * 5;
   if (entity.envol || entity.infiltration) valeur += 1;
   return valeur * (ephemere ? 0.25 : 1);
 }
@@ -52,6 +65,49 @@ function valeurPosition(duel, side) {
   return score;
 }
 
+// A Ghul controlled by the human leaves a mandatory choice. Planning must
+// resolve it on copies before evaluating a spell/combat or passing priority;
+// model that controller choosing the best resulting position, never the live RNG.
+function resoudreDestructionsSurCopie(duel) {
+  for (let n = 0; n < 10 && duel.destructionsEnAttente?.length && !duel.moba.winner; n += 1) {
+    const side = duel.destructionsEnAttente[0].cote;
+    let meilleur = null;
+    for (const cible of rpgMobaCiblesDestruction(duel, side)) {
+      const essai = copie(duel);
+      if (!rpgMobaResoudreDestruction(essai, side, cible).ok) continue;
+      const score = valeurPosition(essai, side);
+      if (!meilleur || score > meilleur.score) meilleur = { cible, score };
+    }
+    if (!meilleur || !rpgMobaResoudreDestruction(duel, side, meilleur.cible).ok) break;
+  }
+}
+
+// Evaluate the announced creature and its automatic AI arrival on the probe;
+// the live response and later arrival choice are never mutated here.
+function resoudreMenaceCreature(duel, defender) {
+  if (!duel.mobaCreatureEnAttente || duel.defausseEnAttente || duel.mobaRechercheEnAttente) return;
+  const caster = duel.mobaCreatureEnAttente.cote;
+  const result = rpgMobaPasserCreature(duel, defender);
+  if (!result.ok) return;
+  resoudreDestructionsSurCopie(duel);
+  for (let i = 0; i < 3 && duel.arriveeEnAttente && !duel.mobaRechercheEnAttente && !duel.moba.winner; i += 1) {
+    const cible = rpgMobaChoisirArriveeIA(duel, caster);
+    if (!cible || !rpgMobaResoudreArrivee(duel, caster, cible).ok) break;
+    resoudreDestructionsSurCopie(duel);
+    if (duel.effetCreatureEnAttente && !duel.defausseEnAttente) rpgMobaPasserEffetCreature(duel, defender);
+    resoudreDestructionsSurCopie(duel);
+  }
+}
+
+// When a passed weapon announcement opens a human boarding choice, complete
+// that choice on the isolated probe before scoring the resulting position.
+function resoudrePriseGrappinSurCopie(duel) {
+  const attente = duel.arriveeEnAttente;
+  if (attente?.carteId !== 'grappin-d-abordage' || !Number.isFinite(attente.abordage)) return;
+  const cible = rpgMobaChoisirArriveeIA(duel, attente.cote);
+  if (cible) rpgMobaResoudreArrivee(duel, attente.cote, cible);
+}
+
 /** Compare legal audited spells on bounded copies, including symmetrical board
  * wipes. Effects still execute exactly once, on the authoritative adapter. */
 export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) {
@@ -60,11 +116,14 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
   const creatures = duel[enemy].creatures;
   const allies = duel[side].creatures;
   const cards = [...new Set(duel[side].main)].map(cardById)
-    .filter((c) => c?.kind === 'magie' && (!reaction || c.instant));
+    .filter((c) => (c?.kind === 'magie' || (!reaction && MOBA_ARMES.includes(c?.id))) && (!reaction || c.instant));
   let initial = valeurPosition(duel, side);
-  if (reaction && duel.mobaSortEnAttente) {
+  if (reaction && (duel.mobaSortEnAttente || duel.mobaCreatureEnAttente)) {
     const baseline = copie(duel);
-    rpgMobaPasserSort(baseline, side);
+    if (baseline.mobaSortEnAttente) rpgMobaPasserSort(baseline, side);
+    else resoudreMenaceCreature(baseline, side);
+    resoudrePriseGrappinSurCopie(baseline);
+    resoudreDestructionsSurCopie(baseline);
     initial = valeurPosition(baseline, side);
   }
   let meilleur = null;
@@ -73,24 +132,40 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
     // Temporary combat buffs have no value after the attack phase or at the
     // opponent's end step; don't burn them just because creatures exist.
     if (['mur-de-boucliers', 'serment-de-la-forge', 'offrande-de-lin'].includes(id) && (reaction || duel.attaqueJouee === side || !allies.some(rpgPeutAttaquer))) continue;
-    if (id === 'rempart-de-dunes' && !(reaction && duel.combatDeclare?.cote === enemy)) continue;
+    if (id === 'le-grand-debarquement' && (reaction || duel.attaqueJouee === side || !allies.some((e) => e.enCale && rpgPeutAttaquer(e)))) continue;
+    if (id === 'rempart-de-dunes' && !(reaction && (duel.combatDeclare?.cote === enemy || duel.mobaSortEnAttente?.cote === enemy))) continue;
     let targets = [];
-    if (MOBA_MAGIES_ALLIEES.includes(id)) targets = allies.map((e) => [e.id, null]);
+    if (MOBA_ARMES.includes(id)) {
+      targets = allies.map((e) => [e.id, null]);
+      if (id === 'lame-des-ergs') targets.push(...lanes.flatMap((lane) => lane.slots[side].flatMap((entry, slot) => entry === null ? [[null, lane.id, null, null, slot]] : [])));
+    }
+    else if (MOBA_MAGIES_REANIMATION.includes(id)) targets = lanes.flatMap((lane) => lane.slots[side].flatMap((entry, slot) => entry === null ? [[null, lane.id, null, null, slot]] : []));
+    else if (MOBA_MAGIES_ALLIEES.includes(id)) targets = allies.map((e) => [e.id, null]);
     else if (MOBA_MAGIES_CIBLEES.includes(id)) {
-      targets = creatures.map((e) => [e.id, null]);
+      targets = id === 'defi-du-jarl' ? creatures.flatMap((enemy) => allies.map((ally) => [enemy.id, null, null, ally.id])) : creatures.map((e) => [e.id, null]);
+      if (id === 'feux-de-kitsune') targets.push(...creatures.flatMap((a, i) => creatures.slice(i + 1).map((b) => [a.id, null, null, b.id])));
       if (MOBA_MAGIES_VOIES.includes(id)) targets.push(...lanes.map((l) => ['sorcier', l.id]));
     } else if (MOBA_MAGIES_PRIX.includes(id) && MOBA_MAGIES_TRANSFERT.includes(id)) {
       targets = lanes.flatMap((target) => lanes.map((payment) => [null, target.id, payment.id]));
     } else if (MOBA_MAGIES_SOINS.includes(id) || MOBA_MAGIES_PRIX.includes(id) || MOBA_MAGIES_TRANSFERT.includes(id)) {
-      targets = lanes.map((l) => [null, l.id]);
-    } else if (MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id)) {
+      targets = id === 'le-poids' && lienSatisfait(cardById(id), allies)
+        ? lanes.flatMap((l) => creatures.map((e) => [e.id, l.id]))
+        : lanes.map((l) => [null, l.id]);
+    } else if (MOBA_MAGIES_ESSAI.includes(id) || MOBA_MAGIES_IMMEDIATES.includes(id) || (MOBA_CONTRESORTS.includes(id) && reaction && (duel.mobaSortEnAttente || duel.mobaCreatureEnAttente))) {
       targets = [[null, null]];
     }
-    for (const [cible, lane, prixLane = null] of targets) {
+    for (const [cible, lane, prixLane = null, cibleSecondaire = null, emplacementReanimation = null] of targets) {
       const simulation = copie(duel);
-      const result = rpgMobaLancerMagie(simulation, side, id, cible, lane, prixLane);
+      const result = MOBA_ARMES.includes(id)
+        ? rpgMobaJouerArme(simulation, side, id, cible, { laneId: lane, slot: emplacementReanimation })
+        : rpgMobaLancerMagie(simulation, side, id, cible, lane, prixLane, { cibleSecondaireId: cibleSecondaire, emplacementReanimation });
       if (!result.ok) continue;
+      if (id === 'grappin-d-abordage') resoudrePriseGrappinSurCopie(simulation);
+      resoudreDestructionsSurCopie(simulation);
       if (reaction && simulation.mobaSortEnAttente && !simulation.defausseEnAttente) rpgMobaPasserSort(simulation, side);
+      else if (reaction && simulation.mobaCreatureEnAttente) resoudreMenaceCreature(simulation, side);
+      resoudrePriseGrappinSurCopie(simulation);
+      resoudreDestructionsSurCopie(simulation);
       let score = valeurPosition(simulation, side) - initial;
       // Account for the spell itself being consumed: only newly drawn cards
       // count. Milling alone has no inherent lethal value in no-fatigue MOBA.
@@ -99,6 +174,15 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
       const discardedEnemy = Math.max(0, duel[enemy].main.length - simulation[enemy].main.length)
         + (simulation.defausseEnAttente?.cote === enemy ? simulation.defausseEnAttente.restant : 0);
       score += discardedEnemy * 2;
+      // Sandals are most valuable when they enable a fresh creature to attack
+      // this turn. Do not value haste after combat or on an already-ready unit.
+      if (id === 'sandales-de-tislit' && duel.attaqueJouee !== side) {
+        const avant = allies.find((e) => e.id === cible);
+        const apres = simulation[side].creatures.find((e) => e.id === cible);
+        if (avant && apres && !rpgPeutAttaquer(avant) && rpgPeutAttaquer(apres)) score += Math.min(6, Math.max(0, apres.atk) * 1.5);
+      }
+      // Licou's delayed draw is only insurance while its bearer survives.
+      if (id === 'licou-du-chien-de-sable' && simulation[side].deck.length && simulation[side].creatures.some((e) => e.id === cible && e.arme?.carteId === id)) score += 1.25;
       if (id === 'appat-de-la-meute' && !reaction && duel.attaqueJouee !== side
         && allies.some((e) => e.mobaLane === creatures.find((c) => c.id === cible)?.mobaLane && rpgPeutAttaquer(e) && !e.infiltration && !e.coupRapide)) score += 3;
       // Fog helps only when it can prevent the opponent's declared combat.
@@ -106,8 +190,26 @@ export function rpgMobaChoisirMagieIA(duel, side = 'sorcier', reaction = false) 
         score += duel[enemy].creatures.filter((e) => duel.combatDeclare.attaquants.includes(e.id))
           .reduce((sum, e) => sum + Math.max(0, e.atk ?? 0) * 1.3, 0);
       }
+      if (id === 'lettre-de-marque' && !reaction && !duel[side].prochaineArriveeAbordage) {
+        // Prefer signing before a playable arrival when that arrival can
+        // actually take a prize. Probe bounded slots on the isolated state.
+        const prisesAvant = simulation[enemy].creatures.length;
+        const sommation = [...new Set(simulation[side].main)].map(cardById).filter((c) => c && ['creature', 'hero'].includes(c.kind));
+        const prisePossible = sommation.some((creature) => lanes.some((voie) => {
+          const slot = voie.slots[side].indexOf(null); if (slot < 0) return false;
+          const essai = copie(simulation);
+          const pose = rpgMobaJouerCreature(essai, side, creature.id, voie.id, slot);
+          if (!pose.ok) return false;
+          if (essai.arriveeEnAttente && Number.isFinite(essai.arriveeEnAttente.abordage)) {
+            const cible = rpgMobaChoisirArriveeIA(essai, side);
+            if (cible) rpgMobaResoudreArrivee(essai, side, cible);
+          }
+          return Boolean(pose.entite?.enCale) && essai[enemy].creatures.length < prisesAvant;
+        }));
+        if (prisePossible) score += 40;
+      }
       score -= 0.5 + (card.cost ?? 0) * 0.15;
-      if (score > 0.5 && (!meilleur || score > meilleur.score)) meilleur = { id, cible, lane, prixLane, score };
+      if (score > 0.5 && (!meilleur || score > meilleur.score)) meilleur = { id, cible, lane, prixLane, ...(cibleSecondaire ? { cibleSecondaire } : {}), ...(emplacementReanimation !== null ? (id === 'lame-des-ergs' ? { emplacementArme: emplacementReanimation } : { emplacementReanimation }) : {}), score };
     }
   }
   return meilleur;
@@ -120,7 +222,7 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     return score(b) - score(a);
   });
   const cards = [...new Set(duel[side].main)].map(cardById)
-    .filter((c) => c && c.kind !== 'magie'
+    .filter((c) => c && ['creature', 'hero', 'site'].includes(c.kind)
       && !(duel.attaqueJouee === side && (c.ephemere || c.furtif)))
     .sort((a, b) => b.cost - a.cost);
   // The Braisier can win immediately on arrival, even when a more expensive
@@ -140,10 +242,27 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
     const slot = lane.slots[side].indexOf(null);
     if (slot < 0) continue;
     const simulation = copie(duel);
-    if (!rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot).ok) continue;
+    const pose = rpgMobaJouerCreature(simulation, side, card.id, lane.id, slot);
+    if (!pose.ok) continue;
+    resoudreDestructionsSurCopie(simulation);
     // Her arrival hurts both camps. Avoid losing more board value than the
     // summon gains, instead of blindly choosing the most expensive creature.
     if (card.id === 'valkyrie-des-glaces' && valeurPosition(simulation, side) < valeurPosition(duel, side)) continue;
+    if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(card.id)) {
+      // Boarding may be pending first; resolve both bounded choices on the
+      // probe, with no mutations or RNG consumption in the live match.
+      for (let i = 0; i < 2 && simulation.arriveeEnAttente; i++) {
+        const cible = rpgMobaChoisirArriveeIA(simulation, side);
+        if (!cible || !rpgMobaResoudreArrivee(simulation, side, cible).ok) break;
+        resoudreDestructionsSurCopie(simulation);
+        if (simulation.effetCreatureEnAttente) rpgMobaPasserEffetCreature(simulation, enemy);
+      }
+      if (!simulation.arriveeEnAttente) {
+        const gain = valeurPosition(simulation, side) - valeurPosition(duel, side);
+        const perdue = !simulation[side].creatures.some((entity) => entity.id === pose.entite?.id);
+        if (gain < (perdue ? card.cost : 0)) continue;
+      }
+    }
     return { id: card.id, lane: lane.id, slot };
   }
   return null;
@@ -152,6 +271,31 @@ export function rpgMobaChoisirCreatureIA(duel, side = 'sorcier') {
 export function rpgMobaChoisirArriveeIA(duel, side = 'sorcier') {
   const attente = duel.arriveeEnAttente;
   if (!attente) return null;
+  if (Number.isFinite(attente.abordage)) {
+    const prises = rpgMobaCiblesPrise(duel, side);
+    return [...duel[autre(side)].creatures].filter((e) => prises.includes(e.id)).sort((a, b) => valeurCreature(b) - valeurCreature(a))[0]?.id ?? null;
+  }
+  if (attente.carteId === 'oni-de-la-fournaise') {
+    const candidates = rpgMobaCiblesOni(duel, side);
+    return duel[autre(side)].creatures.filter((e) => e.id !== attente.cibleOni && candidates.includes(e.id))
+      .sort((a, b) => ((b.pv <= 3 && !b.bouclier ? 8 : 0) + valeurCreature(b))
+        - ((a.pv <= 3 && !a.bouclier ? 8 : 0) + valeurCreature(a)))[0]?.id ?? null;
+  }
+  if (['bakunawa', 'cavalier-amazigh-du-desert'].includes(attente.carteId)) {
+    // Fight arrivals can kill either participant. Compare actual resolved
+    // positions on copies rather than just picking the biggest opposing card.
+    let best = null;
+    for (const enemy of duel[autre(side)].creatures) {
+      const simulation = copie(duel);
+      if (!rpgMobaResoudreArrivee(simulation, side, enemy.id).ok) continue;
+      resoudreDestructionsSurCopie(simulation);
+      if (simulation.effetCreatureEnAttente && !rpgMobaPasserEffetCreature(simulation, autre(side)).ok) continue;
+      resoudreDestructionsSurCopie(simulation);
+      const score = valeurPosition(simulation, side);
+      if (!best || score > best.score) best = { id: enemy.id, score };
+    }
+    return best?.id ?? null;
+  }
   const neutral = MOBA_ARRIVEES_NEUTRES.includes(attente.carteId);
   const cibleSide = MOBA_ARRIVEES_ALLIEES.includes(attente.carteId) ? side : autre(side);
   const candidates = [...duel[cibleSide].creatures].sort((a, b) => (b.atk + b.pv) - (a.atk + a.pv)).map((e) => e.id);
@@ -171,7 +315,11 @@ export function rpgMobaChoisirCiblesAttaqueIA(duel, side, ids) {
     const choix = rpgMobaCiblesAttaque(duel, side, id);
     const target = choix.cibles.map((cibleId) => duel[enemy].creatures.find((e) => e.id === cibleId))
       .filter(Boolean).sort((a, b) => {
-        const score = (e) => valeurCreature(e) + ((attacker.atk ?? 0) >= e.pv ? 5 : 0);
+        const score = (e) => {
+          const prey = cardById(e.carteId);
+          const traque = (prey?.abordage || e.butin || e.enCale) ? (cardById(attacker.carteId)?.traquePirates ?? 0) : 0;
+          return valeurCreature(e) + ((attacker.atk ?? 0) + traque >= e.pv ? 5 : 0);
+        };
         return score(b) - score(a);
       })[0];
     if (target) cibles[id] = target.id;
@@ -198,7 +346,17 @@ export function rpgMobaChoisirAttaquantsIA(duel, side = 'sorcier') {
     if (!rpgMobaDeclarerAttaque(simulation, side, ids, cibles).ok) continue;
     const blocs = rpgMobaChoisirBlocagesIA(simulation, side, ids);
     if (!rpgMobaLancerAttaque(simulation, side, ids, blocs, { declaree: true }).ok) continue;
+    resoudreDestructionsSurCopie(simulation);
     let score = valeurPosition(simulation, side) - initial;
+    // With an empty deck, passive walls can otherwise lock the AI forever:
+    // favour a real, incremental breach even when a sacrifice is necessary.
+    if (!duel[side].deck.length) {
+      for (const mur of duel[autre(side)].creatures.filter((e) => e.mur)) {
+        const apres = simulation[autre(side)].creatures.find((e) => e.id === mur.id);
+        const dommages = Math.max(0, mur.pv - (apres?.pv ?? 0));
+        score += dommages * 4;
+      }
+    }
     // Butin exchanges a card after a real lane hit; reward the draw modestly,
     // without peeking at its identity or consuming the live game's RNG.
     score += Math.max(0, duel[side].deck.length - simulation[side].deck.length) * 1.5;
@@ -227,6 +385,29 @@ export function rpgMobaChoisirBlocagesIA(duel, sideAttaque, ids) {
       [defense]: { ...duel[defense], pv: lane.hp[defense], bouclier: 0, creatures: duel[defense].creatures.filter((e) => e.mobaLane === lane.id) },
     };
     Object.assign(result, choisirBloqueursIA(scoped, sideAttaque, ids, duel.combatDeclare?.ciblesAttaque ?? {}));
+  }
+  // A dying Brûlot can win the defender's second lane outright. The classic
+  // block heuristic cannot see that lane death trigger. Try only bounded,
+  // same-lane changes to its existing assignments, and accept one solely if
+  // the real adapter validates it and the isolated combat actually wins.
+  if (!duel.combatDeclare || !duel.moba.lanes.some((lane) => lane.conqueredBy === defense)) return result;
+  const brulots = duel[defense].creatures.filter((entity) => entity.carteId === 'le-brulot'
+    && duel.moba.lanes.some((lane) => lane.id === entity.mobaLane && lane.active && lane.hp[sideAttaque] <= 2));
+  if (!brulots.length) return result;
+  const gagne = (blocks) => {
+    const simulation = copie(duel);
+    const resolved = rpgMobaLancerAttaque(simulation, sideAttaque, ids, blocks, { declaree: true });
+    return resolved.ok && simulation.moba.winner === defense;
+  };
+  if (gagne(result)) return result;
+  for (const brulot of brulots) {
+    for (const id of ids) {
+      const attaquant = duel[sideAttaque].creatures.find((entity) => entity.id === id);
+      if (attaquant?.mobaLane !== brulot.mobaLane || duel.combatDeclare.ciblesAttaque?.[id]) continue;
+      const proposition = Object.fromEntries(Object.entries(result).map(([key, blockers]) => [key, blockers.filter((blocker) => blocker !== brulot.id)]));
+      proposition[id] = [...(proposition[id] ?? []), brulot.id];
+      if (gagne(proposition)) return proposition;
+    }
   }
   return result;
 }

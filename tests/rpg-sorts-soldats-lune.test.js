@@ -122,3 +122,13 @@ test('Le sabre rend aussi les dégâts infligés en défendant, même si le port
   assert.ok(rpgLancerAttaque(d, 'sorcier', [attaquant.id], { [attaquant.id]: [chien.id] }).ok);
   assert.equal(d.joueur.pv, 12); assert.ok(!d.joueur.creatures.includes(chien));
 });
+
+test('Le critique de la lance ne s’applique pas au sorcier, contrairement à celui du Sabre maudit', () => {
+  for (const sabre of [false, true]) {
+    const d=duel();const chien=poser(d,'joueur','chien-du-guet');d.joueur.main.push(ids[3]);
+    if(sabre){d.joueur.main.push('sabre-maudit');assert.ok(rpgLancerMagie(d,'joueur','sabre-maudit',chien.id).ok);}
+    assert.ok(rpgJouerArme(d,'joueur',ids[3],chien.id).ok);chien.ready=true;rpgReglerHasard(d,()=>0);
+    const pv=d.sorcier.pv;assert.ok(rpgLancerAttaque(d,'joueur',[chien.id],{}).ok);
+    assert.equal(pv-d.sorcier.pv,sabre?10:3);
+  }
+});

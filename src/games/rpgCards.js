@@ -1535,7 +1535,7 @@ export const RPG_TOUR_CARDS = [
     doitBloquer: true,
     prioriteAttaqueRapide: true,
     defenseur: true,
-    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true },
+    arrivee: { type: 'bouclier', amount: 1, cible: 'creature-amie', choisirCible: true, cibleSoi: true },
     text: 'Mur — Ne peut ni attaquer ni être équipée ; doit bloquer si possible. Défenseur. Quand la Tour arrive : une créature alliée ciblée reçoit un bouclier — le prochain sort ou effet de créature adverse qui l’atteint, même de zone, est bloqué.',
     flavor: 'Le désert lui-même se dresse en rempart.',
   },

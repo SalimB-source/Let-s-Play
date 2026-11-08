@@ -856,7 +856,7 @@ export function FluxManaTrack({ camp, cote, carteApercu = null }) {
       data-mana-apercu-cout={totalApercu > 0 ? totalApercu : undefined}
       data-mana-deficit-cout={indicesDeficit ? indicesDeficit.size : undefined}
       role="status"
-      aria-label={`${cote === 'joueur' ? 'Votre mana' : 'Mana du sorcier'} : ${disponible} disponible sur ${maximum} acquis, maximum ${RPG_MANA_ESSAI_MAX}. ${Object.entries(capacite).filter(([, n]) => n > 0).map(([couleur, n]) => `${couleurLabel(couleur)} ${camp.mana[couleur] ?? 0} sur ${n}`).join(', ')}`}
+      aria-label={`${cote === 'joueur' ? 'Votre mana' : 'Mana du sorcier'} : ${disponible} disponible sur ${maximum} acquis, maximum ${RPG_MANA_ESSAI_MAX}. ${Object.entries(capacite).filter(([couleur, n]) => n > 0 || (camp.mana[couleur] ?? 0) > 0).map(([couleur, n]) => `${couleurLabel(couleur)} ${camp.mana[couleur] ?? 0} sur ${n}`).join(', ')}`}
     >
       <span className="rpg-flux-track__bar">
         <b className="rpg-flux-track__reserve" aria-hidden="true">{disponible}<span>/</span>{maximum}</b>
