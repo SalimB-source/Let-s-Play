@@ -296,3 +296,15 @@ test('le coût en main est positionné sous la couleur sur PC et mobile', () => 
     assert.equal(cout.left, '0px');
   }
 });
+
+
+test('pendant le vol main-plateau, les pastilles ne sont pas rognées', () => {
+  const enVol = CARTE_MAIN.replace('rpg-hand__card--img', 'rpg-hand__card--img rpg-card-flight is-flying');
+  for (const touch of [false, true]) {
+    const { carte, illustration, colonne, cout } = mesurer(touch, enVol);
+    assert.equal(carte.overflow, 'visible', 'aucun rognage pendant le vol');
+    assert.equal(illustration['border-radius'], carte['border-radius'], 'les coins de l’image restent arrondis');
+    assert.equal(colonne.transform, 'translateX(var(--rpg-plaque-bord))', 'les effets gardent leur chevauchement');
+    assert.equal(cout.transform, 'translateX(-36%)', 'le coût garde son chevauchement');
+  }
+});

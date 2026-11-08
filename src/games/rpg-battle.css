@@ -6833,13 +6833,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 1600;
   flex: none;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top left;
   transition: none !important;
   opacity: 1;
   box-shadow: 0 16px 38px rgba(0, 0, 0, .8), 0 0 22px rgba(255, 216, 121, .46);
   pointer-events: none;
   will-change: transform, filter;
+}
+/* La règle de vol doit aussi primer sur le rognage normal de la main.
+   L’illustration garde ses coins arrondis via .rpg-hand__img, mais les
+   pastilles chevauchant les deux bords restent entières pendant le trajet. */
+.rpg-battle .rpg-hand__card--img.rpg-card-flight {
+  overflow: visible;
 }
 .rpg-card-flight.is-flying { animation: rpg-card-flight-to-table .68s cubic-bezier(.18, .72, .3, 1) both; }
 /* Le vol d'une carte jouée, en trois temps. L'ÉLAN : elle se soulève de la
