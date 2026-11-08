@@ -285,13 +285,14 @@
 .moba {
   position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 0;
   padding: 0; overflow: hidden;
-  background: var(--moba-terrain-bas, var(--moba-table)) center / cover no-repeat;
+  /* One continuous map keeps the central river aligned with the middle lane
+     even on narrow screens; the side meadows remain visible on both sides. */
+  background: #263d31 var(--moba-map) center / 100% 100% no-repeat;
   --moba-card-size: min(10vw, 14vh, 132px);
 }
 .moba::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: var(--moba-terrain-haut, var(--moba-table)) center / cover no-repeat;
-  clip-path: inset(0 0 50% 0);
+  background: linear-gradient(#0a121022, #09100e33);
 }
 .moba::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
@@ -640,9 +641,9 @@
   .moba__journal[open] { top: 34px; }
 }
 
-/* Leave room for the announced target above the pass button on small phones. */
+/* Leave room for instructions and announced targets above controls on small phones. */
 @media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) {
-  .moba__directive--sort { top: 68.5%; }
+  .moba__directive { top: 68.5%; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   .moba__directive--sort .moba__directive-copy { flex: 1 1 0; }
@@ -657,4 +658,140 @@
    landscape screens, without clipping text or covering the pass controls. */
 @media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
   .moba__directive--sort { width: 20%; }
+  .moba__status:has(.moba__mana) { gap: 0; padding: 4px; }
+}
+
+/* Persistent, accessible reminder while the combat fog lasts. */
+.moba__fog { color: #c9eaf4; text-decoration: none; cursor: help; }
+.moba__boarding { color: #f2d092; text-decoration: none; cursor: help; }
+@media (max-width: 700px) and (max-height: 500px) and (orientation: landscape) {
+  .moba__fog span, .moba__boarding span { display: none; }
+}
+
+/* Keep reversible multi-step spell choices clear of the turn controls. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__directive:has(.moba__cancel-choice) .moba__directive-copy { flex: 1 1 0; }
+  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { flex: none; min-height: 24px; padding: 2px 4px; font-size: 9px !important; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .moba__directive:has(.moba__cancel-choice) .moba__cancel-choice { position: absolute; right: 0; bottom: 100%; min-height: 22px; padding: 2px 4px; font-size: 9px !important; }
+}
+
+/* A public announcement can contain two long creature names. Anchor its bottom
+   above the controls so it grows upward instead of covering the pass button. */
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__directive--sort { top: auto; bottom: 25.5%; }
+}
+@media (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .moba__directive--sort { top: auto; bottom: 40%; }
+}
+@media (min-width: 701px) and (max-width: 900px) and (max-height: 500px) and (orientation: landscape) {
+  .moba__directive--sort { bottom: 46%; }
+}
+
+/* Préparation et atelier : une hiérarchie dédiée, sans modifier la géométrie du plateau. */
+.moba__setup-overlay, .moba__editor-overlay { background: linear-gradient(135deg, #08090be8, #15100fea); }
+.moba__setup { width: min(100%, 820px); padding: clamp(20px, 3vw, 36px); border: 1px solid #a28356; background: radial-gradient(ellipse at 50% 0, #55412e 0, #241d1b 42%, #131315 100%); box-shadow: 0 25px 90px #000c, inset 0 0 0 4px #e9c5830b; }
+.moba__setup-kicker { display: flex; justify-content: center; align-items: center; gap: 12px; color: #d2b381; font: 700 10px system-ui,sans-serif; letter-spacing: .2em; }
+.moba__setup-kicker i { font-style: normal; color: #e0b86f; }
+.moba__setup h2 { margin: 12px 0 2px; font-size: clamp(27px, 3vw, 40px); }
+.moba__setup > p { margin: 0; color: #c7b9a3; }
+.moba__setup-rules { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin: 18px 0 0; color: #cbbba2; font: 11px system-ui,sans-serif; }
+.moba__setup-rules b { margin-right: 3px; color: #e6c589; font-size: 13px; }
+.moba__setup .moba__deck-choices { gap: 14px; margin: 20px 0; }
+.moba__setup .moba__deck-choice { position: relative; overflow: hidden; min-width: 0; border: 1px solid #776345; background: #121315; }
+.moba__deck-art { position: absolute; inset: 0; pointer-events: none; }
+.moba__deck-art img { width: 100%; height: 100%; object-fit: cover; opacity: .52; }
+.moba__deck-art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #121315f5 0%, #181717d9 63%, #12131591 100%); }
+.moba__deck-content { position: relative; display: grid; gap: 9px; padding: 18px; }
+.moba__deck-side { color: #c6a574; font: 700 10px system-ui,sans-serif; letter-spacing: .16em; }
+.moba__setup .moba__deck-choice label { color: #f3e4cc; font-size: 13px; letter-spacing: 0; }
+.moba__setup .moba__deck-choice select { background: #100f12ed; }
+.moba__setup .moba__deck-choice small { min-height: 2.8em; color: #d0c1ab; }
+.moba__deck-elements { display: flex; flex-wrap: wrap; gap: 5px; }
+.moba__deck-elements span { border: 1px solid #9a815666; border-radius: 20px; padding: 3px 8px; color: #e6d3b4; background: #302a23cc; font: 11px system-ui,sans-serif; text-transform: capitalize; }
+.moba__setup .moba__deck-choice button { width: 100%; margin-top: 2px; padding: 9px; }
+.moba__setup-actions { display: flex; justify-content: space-between; gap: 10px; }
+.moba__setup-actions button { margin: 0; }
+.moba__editor { width: min(100%, 1000px); max-height: calc(100dvh - 36px); border-color: #a28356; background: radial-gradient(ellipse at 70% -40%, #57412e, transparent 65%), #1a191a; }
+.moba__editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.moba__editor-heading > div > span { color: #c8a875; font: 700 10px system-ui,sans-serif; letter-spacing: .16em; }
+.moba__editor-heading h2 { margin: 6px 0; }
+.moba__editor-heading p { margin: 0; color: #c8baa7; font-size: 12px; }
+.moba__editor-crest { color: #bb9b69; font: 34px Georgia,serif; }
+.moba__editor-summary { align-items: center; padding: 10px 12px; border: 1px solid #806c4c66; background: #100f11a8; }
+.moba__editor-progress { display: flex; align-items: center; gap: 10px; }
+.moba__editor-progress strong { white-space: nowrap; }
+.moba__editor-meter { width: 74px; height: 4px; overflow: hidden; border-radius: 5px; background: #4c4034; }
+.moba__editor-meter i { display: block; height: 100%; background: #d9b475; }
+.moba__editor-filters { grid-template-columns: 2.2fr 1fr 1.25fr 1.1fr; }
+.moba__editor-filters input:focus-visible, .moba__editor-filters select:focus-visible, .moba__editor-toolbar input:focus-visible, .moba__editor-reset:focus-visible { outline: 2px solid #ffe0a2; outline-offset: 2px; }
+.moba__editor-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 4px 0 9px; color: #c7baa5; font: 12px system-ui,sans-serif; }
+.moba__editor-owned { display: flex; align-items: center; gap: 7px; cursor: pointer; color: #ead9bc; }
+.moba__editor-owned input { accent-color: #c6a16a; }
+.moba__editor-toolbar [role=status] { margin-left: auto; white-space: nowrap; }
+.moba__overlay .moba__editor-reset { min-height: 0; padding: 3px 0; border: 0; background: none; color: #e1c38d; text-decoration: underline; font-size: 11px; }
+.moba__editor-list { overscroll-behavior: contain; scrollbar-color: #947b56 #171619; }
+.moba__editor-card { border-left: 3px solid transparent; }
+.moba__editor-card.is-in-deck { border-left-color: #cfad70; background: #a17d3d12; }
+.moba__editor-card .moba__editor-meta { color: #dabf8f; }
+.moba__editor-empty { padding: 20px; text-align: center; }
+.moba__editor-actions { align-items: center; }
+.moba__editor-actions > span { margin-right: auto; color: #aa9b85; font: 11px system-ui,sans-serif; }
+/* Le contraste des repères et panneaux est renforcé, quelle que soit l'illustration de terrain. */
+.moba__lanehead strong { white-space: nowrap; padding: 3px 6px; border: 1px solid #c7a97766; border-radius: 3px; background: #15120edb; color: #f5e3be; text-shadow: 0 1px 2px #000; }
+.moba__status, .moba__directive, .moba__controls { box-shadow: 0 4px 14px #0007, inset 0 1px #ffffff12; }
+.moba__slot.is-empty { background-color: #0b10166b; }
+.moba__slot.is-empty:not(:disabled) { background-color: #a37e3338; }
+@media(max-width: 650px) {
+  .moba__setup { padding: 20px 16px; }
+  .moba__setup .moba__deck-choices { gap: 8px; margin: 14px 0; }
+  .moba__deck-content { padding: 12px; }
+  .moba__editor { padding: 12px; }
+  .moba__editor-filters { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .moba__editor-summary { gap: 5px 10px; margin: 7px 0; padding: 8px; font-size: 11px; }
+  .moba__editor-card small:last-child { display: block; }
+  .moba__editor-actions > span { display: none; }
+}
+@media(max-width: 420px) {
+  .moba__setup .moba__deck-choices { grid-template-columns: 1fr; }
+  .moba__setup .moba__deck-choice small { min-height: 0; }
+  .moba__deck-content { gap: 6px; }
+  .moba__setup-rules { margin-top: 10px; gap: 5px 12px; }
+  .moba__editor-toolbar [role=status] { margin-left: 0; }
+  .moba__editor-toolbar { gap: 4px 10px; }
+}
+@media(max-height: 500px) {
+  .moba__setup-overlay { display: block; }
+  .moba__setup { margin: auto; padding: 14px 18px; }
+  .moba__setup h2 { margin: 4px 0; font-size: 25px; }
+  .moba__setup-rules { margin-top: 6px; }
+  .moba__setup .moba__deck-choices { margin: 8px 0; }
+  .moba__deck-content { padding: 8px 12px; gap: 4px; }
+  .moba__setup .moba__deck-choice small { min-height: 0; }
+  .moba__editor { max-height: calc(100dvh - 20px); padding: 9px 14px; }
+  .moba__editor-heading h2 { font-size: 21px; margin: 2px 0; }
+  .moba__editor-heading p, .moba__editor-crest { display: none; }
+  .moba__editor-summary { margin: 4px 0; padding: 5px 8px; }
+  .moba__editor-filters { grid-template-columns: 2fr 1fr 1.25fr 1.1fr; gap: 6px; margin: 3px 0; }
+  .moba__editor-filters label { gap: 2px; font-size: 11px; }
+  .moba__editor-filters input, .moba__editor-filters select { padding: 5px; }
+  .moba__editor-toolbar { padding: 2px 0 4px; }
+  .moba__editor-list { min-height: 45px; }
+  .moba__editor-actions { margin-top: 5px; }
+  .moba__editor-actions button { min-height: 32px; padding: 5px 12px; }
+}
+@media(max-width: 420px) and (max-height: 700px) {
+  .moba__editor-heading h2 { font-size: 21px; margin: 3px 0; }
+  .moba__editor-heading p, .moba__editor-crest { display: none; }
+  .moba__editor-summary { padding: 5px 7px; }
+  .moba__editor-filters { margin: 3px 0; }
+  .moba__editor-filters label { gap: 2px; }
+  .moba__editor-filters input, .moba__editor-filters select { padding: 6px; }
+  .moba__editor-toolbar { padding: 2px 0 5px; }
+  .moba__editor-list { min-height: 65px; }
+  .moba__editor-actions { margin-top: 6px; }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  .moba__buttons button { min-height: 34px; padding: 5px 7px; }
 }

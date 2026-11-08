@@ -238,3 +238,10 @@ test('le Gardien viking du fjord protège ses alliés et soutient la Compagnie v
   assert.equal(attaquer(d, 'normal').raison, 'defenseur');
   assert.equal(attaquer(d, gardien.id).ok, true);
 });
+
+test('Tour des Ténèbres : la vague respecte le coût en jeu modifié par le Grappin', () => {
+  const d=rpgNouveauDuel({joueurDeck:[],sorcierDeck:[]});d.joueur.mana=Object.fromEntries(RPG_ELEMENTS.map(e=>[e,30]));
+  d.sorcier.creatures.push({id:'cher',carteId:'gardienne-des-portes-de-sable',name:'Gardienne armée',atk:1,pv:4,def:4,pvMax:4,coutBonusArme:1}, {id:'faible',carteId:'mousse-des-galiotes',name:'Mousse',atk:1,pv:1,def:1,pvMax:1});
+  d.joueur.main.push('tour-des-tenebres');assert.equal(rpgJouerCreature(d,'joueur','tour-des-tenebres').ok,true);
+  assert.ok(d.sorcier.creatures.some(e=>e.id==='cher'));assert.ok(!d.sorcier.creatures.some(e=>e.id==='faible'));
+});

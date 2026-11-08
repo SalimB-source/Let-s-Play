@@ -1,0 +1,65 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { JSDOM } from 'jsdom';
+import { createServer } from 'vite';
+import React, { act } from 'react';
+
+test('atelier MOBA : recherche, filtres combinés, tri et édition du deck', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { createRoot } = await import('react-dom/client');
+    const { default: Editor } = await server.ssrLoadModule('/src/games/RpgMobaDeckEditor.jsx');
+    const { MOBA_DECKS, MOBA_CARTES_AUTORISEES } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    let saved;
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Editor, { deck: MOBA_DECKS[0], joueur: 'Vous', onCancel: () => {}, onSave: (deck) => { saved = deck; } })));
+    const list = () => [...document.querySelectorAll('.moba__editor-card')];
+    const click = async (el) => { assert.ok(el); await act(async () => el.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))); };
+    const change = async (el, value) => { await act(async () => { el.value = value; el.dispatchEvent(new dom.window.Event('change', { bubbles: true })); }); };
+    const search = document.querySelector('input[type=search]');
+    const setSearch = async (value) => { await act(async () => { Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(search, value); search.dispatchEvent(new dom.window.Event('input', { bubbles: true })); }); };
+    const [element, type, sort] = document.querySelectorAll('.moba__editor-filters select');
+    assert.equal(list().length, MOBA_CARTES_AUTORISEES.length);
+    await setSearch('leviathan');
+    assert.ok(list().length > 0);
+    assert.ok(list().every((el) => /léviathan/i.test(el.textContent)));
+    await setSearch('une carte introuvable');
+    assert.equal(list().length, 0);
+    assert.match(document.querySelector('.moba__editor-empty').textContent, /Aucune carte/);
+    await setSearch('');
+    await change(type, 'arme');
+    assert.ok(list().length > 0);
+    assert.ok(list().some((el) => el.textContent.includes('Jitte d’Amayas')));
+    await change(element, 'neige');
+    assert.ok(list().length > 0);
+    assert.ok(list().every((el) => /neige/i.test(el.querySelector('.moba__editor-meta').textContent)));
+    await change(element, 'tous'); await change(type, 'magie');
+    assert.ok(list().length > 0);
+    await change(type, 'tous'); await change(sort, 'cout');
+    const costs = list().map((el) => Number(el.querySelector('.moba__editor-meta').textContent.match(/(\d+) mana/)[1]));
+    assert.deepEqual(costs, [...costs].sort((a, b) => a - b));
+    const owned = document.querySelector('.moba__editor-owned input');
+    await click(owned);
+    assert.ok(list().length < 30);
+    assert.ok(list().every((el) => el.classList.contains('is-in-deck')));
+    await click(document.querySelector('[aria-label="Retirer Viking des neiges"]'));
+    assert.match(document.querySelector('.moba__editor-summary').textContent, /29 \/ 30/);
+    assert.equal(document.querySelector('.moba__editor-actions .moba__primary').disabled, true);
+    await click(document.querySelector('.moba__editor-reset'));
+    assert.equal(list().length, MOBA_CARTES_AUTORISEES.length);
+    assert.equal(owned.checked, false);
+    assert.equal(sort.value, 'nom');
+    await click(document.querySelector('[aria-label="Ajouter Viking des neiges"]'));
+    await click(document.querySelector('.moba__editor-actions .moba__primary'));
+    assert.equal(saved.cardIds.length, 30);
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
