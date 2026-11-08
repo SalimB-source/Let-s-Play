@@ -16,8 +16,10 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
   déplace, l'`hexagone` pour ce qui tient et dure ;
 - **la couleur dit le type** — rouge pour l’assaut, bleu pour garde et tempo,
   violet pour ombre et ressources ;
-- **la silhouette blanche dit l’effet** — poing (Furie), éclair (Dégâts),
-  impact (Critique), croix (Soin), rocher fissuré (Ténacité), bourse (Butin).
+- **le pictogramme au trait dit l’effet** — casque à cornes (Furie), flamme
+  (Dégâts), cœur (Soin), ancre (Ténacité), caisse (Butin). Les symboles
+  retrouvent leur dessin d’origine, pas les silhouettes pleines.
+
 
 | Famille | Forme | Pierre | Effets |
 | --- | --- | --- | --- |
@@ -56,16 +58,21 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
    le contour sombre qui détache la pierre de l'illustration ;
 2. l'**anneau** en creux — la marche du biseau ;
 3. le **champ** dans la teinte de la pierre ;
-4. le **pictogramme plein**, blanc : 16 unités dans le diamant et 20 dans
-   l’hexagone. Les 40 symboles du sprite sont des silhouettes fermées, avec
-   `fill="currentColor"`, `stroke="none"` et des découpes franches en `evenodd`.
-   La couleur blanche est fixée sur le `<use>` de la pierre ; les usages dans
-   les lignes de règles héritent de leur couleur de texte.
+4. le **pictogramme au trait**, blanc : 16 unités dans le diamant et 20 dans
+   l’hexagone. Les 40 symboles du sprite retrouvent leurs contours d’origine.
+   Le trait apparent est affiné à **1,75 unité de pierre**, avec un halo sombre
+   discret de 1 unité supplémentaire : les détails restent ouverts.
 
-Le fond reste simplifié à trois couches. Le pictogramme ne dépend plus d’un
-trait épaissi par son contexte : les mêmes silhouettes servent sur le plateau,
-en main, au mulligan et dans les aperçus. IDs du sprite, infobulles, compteurs,
-états grisés et logique du jeu restent inchangés.
+Le fond reste simplifié à trois couches, avec les trois couleurs existantes.
+Les IDs du sprite, infobulles, compteurs, états grisés et règles ne changent pas.
+
+### Sablier de Sable
+
+Dans la pastille de couleur, l’emoji Sable est remplacé par `CardHourglass`,
+un SVG qui occupe 76 % de la pastille. Les montants et traverses sont dessinés
+avec un trait de 2,3 unités, les deux amas de sable sont pleins. Le dessin
+crème-blanc et son ombre sombre restent lisibles sur le fond doré, sans dépendre
+du rendu des emojis de l’OS. Les pastilles hybrides utilisent le même dessin.
 
 ## Une couleur par effet
 

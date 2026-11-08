@@ -15801,3 +15801,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-projectile-combat { display: none; animation: none; }
 }
+
+/* Sablier de la pastille Sable : grands contours blancs et sable plein,
+   lisibles sans les détails ni les couleurs d’un emoji système. */
+.rpg-battle .rpg-card-element-badge__glyphe:has(> .rpg-card-hourglass) {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #fff9df;
+}
+.rpg-card-hourglass {
+  display: block;
+  width: 76%;
+  height: 76%;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px #392508);
+}
