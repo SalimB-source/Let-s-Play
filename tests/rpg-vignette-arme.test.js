@@ -35,6 +35,10 @@ test('la vignette suit les armes réelles des deux camps et leur disparition', a
     assert.match(multi.querySelector('button.rpg-card').getAttribute('aria-label'), /Armure de cendres, Sabre maudit/i);
     const magie = rendre(entite({ armes: ['sabre-maudit'] }));
     assert.equal(magie.querySelector('.rpg-card__arme-vignette')?.dataset.armeVignette, 'sabre-maudit');
+    assert.ok(magie.querySelector('[data-compteur="durabilite"]'));
+    const usee = rendre(entite({ armes: ['sabre-maudit'], durabilitesArmes: [1] }));
+    assert.match(usee.querySelector('button.rpg-card').getAttribute('aria-label'), /1 compteur de durabilité/);
+    assert.equal(rendre(entite({ armes: [], durabilitesArmes: [] })).querySelector('[data-compteur="durabilite"]'), null);
     assert.equal(rendre(entite({ arme: { carteId: 'inconnue' } })).querySelector('.rpg-card__arme-vignette'), null);
   } finally { await vite.close(); }
 });
