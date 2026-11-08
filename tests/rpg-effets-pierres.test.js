@@ -28,6 +28,7 @@ import {
   HALO_SYMBOLE,
   moitie,
   pierreEffet,
+  plaqueNue,
   plaqueEffet,
   plaqueSvg,
   pointsSvg,
@@ -124,7 +125,7 @@ test('la pierre se dessine en couches : contour, anneau, champ, symbole blanc', 
   const pierre = pierreEffet('furie');
   // La pierre prend sa nuance propre, pas la couleur unique du registre.
   const pierres = teinteEffet('furie');
-  assert.match(pierre, new RegExp(`fill="${pierres.encre}"`), 'le contour sombre est peint');
+  assert.match(pierre, /fill="#d4b57a" stroke="#d4b57a" stroke-width="0.8"/, 'le contour est fin et doré comme les armes');
   assert.match(pierre, new RegExp(`fill="${pierres.creux}"`), 'l’anneau du biseau est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.fond}"`), 'le champ est peint');
   assert.match(pierre, /<use href="#i-furie"[^>]*stroke="#ffffff"/, 'le symbole est blanc');
@@ -190,5 +191,15 @@ test('tous les effets utilisent un hexagone, sans exception de famille', () => {
   for (const cle of Object.keys(EFFET_ICONE)) {
     assert.equal(plaqueEffet(cle).forme, 'hexagone', cle);
     assert.match(plaqueSvg(cle), /data-forme="hexagone"/);
+  }
+});
+
+
+test('effets et repères couleur/coût partagent le fin contour doré des armes', () => {
+  for (const cle of Object.keys(EFFET_ICONE)) {
+    assert.match(pierreEffet(cle), /^<polygon[^>]*fill="#d4b57a" stroke="#d4b57a" stroke-width="0.8"/);
+  }
+  for (const forme of ['diamant', 'hexagone']) {
+    assert.match(plaqueNue({ forme, bases: ['#a8282d'] }), /^<polygon[^>]*fill="#d4b57a" stroke="#d4b57a" stroke-width="0.8"/);
   }
 });

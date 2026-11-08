@@ -170,8 +170,9 @@ const BISEAU_PAR_FORME = Object.freeze({
   hexagone: Object.freeze({ anneau: 0.9, champ: 0.8 }),
 });
 
-/** Le contour d'encre ajouté autour de la silhouette, en unités de 32. */
-const CONTOUR = 1.4;
+/** Fin liseré doré, même teinte que le losange des armes. */
+const OR_CONTOUR = '#d4b57a';
+const CONTOUR = 0.8;
 
 /** Trait affiné à 1,75 unité de pierre : les détails restent ouverts sans
  * perdre le contraste blanc sur la pierre de couleur. */
@@ -342,8 +343,8 @@ export function plaqueEffet(cle) {
 /**
  * Le contenu d'une pierre, en balisage SVG (sans l'élément `<svg>`).
  *
- * Le fond est volontairement **simple** : la silhouette en encre donne le
- * liseré sombre, l'anneau en creux la marche du biseau, et le champ la couleur
+ * Le fond est volontairement **simple** : la silhouette dorée donne le
+ * fin liseré, l'anneau en creux la marche du biseau, et le champ la couleur
  * pleine. Rien d'autre — ni moitié éclaircie, ni ombre basse, ni filet
  * intérieur : à la taille d'une carte (18 à 40 px), ces trois couches se
  * mélangeaient en une tache et salissaient la couleur de l'effet. Une pierre,
@@ -365,7 +366,7 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
   const symbole = SYMBOLE_PAR_FORME[plaque.forme];
   const marge = arrondi((PLAQUE_COTE - symbole) / 2);
   return [
-    `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
+    `<polygon points="${pointsSvg(silhouette)}" fill="${OR_CONTOUR}" stroke="${OR_CONTOUR}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
     // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
@@ -376,7 +377,7 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
 }
 
 /**
- * Une plaque **nue** : la même pierre — silhouette d'encre, anneau, champ —
+ * Une plaque **nue** : la même pierre — silhouette dorée, anneau, champ —
  * mais sans pictogramme. C'est elle qui porte la pastille de couleur (hexagone) et
  * le losange de coût : les trois repères d'une carte se lisent donc dans la
  * même grammaire, à la même taille, et seule la silhouette dit ce qu'on
@@ -401,7 +402,7 @@ export function plaqueNue({ forme = 'hexagone', bases = [ELEMENT_TEINTES.braise]
       + `<polygon points="${pointsSvg(champ)}" fill="url(#${idDegrade})"/>`
     : `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`;
   return [
-    `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
+    `<polygon points="${pointsSvg(silhouette)}" fill="${OR_CONTOUR}" stroke="${OR_CONTOUR}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     champSvg,
   ].join('');
