@@ -1,17 +1,20 @@
 /* Les icônes d'effets : pastilles des fiches, badges des faces, interlignage.
-   Monochromes (stroke: currentColor) — l'icône prend la couleur du texte qui
-   l'accueille. Seule exception : la Protection élémentaire, dont le bouclier
-   prend la couleur de l'élément repoussé (sauf le Sable, qui garde l'or). */
+   Chaque effet se lit désormais sur une **pierre d'emblème** — forme et teinte
+   selon sa famille, pictogramme blanc (voir `effetPlaques.js`). Le dessin de la
+   pierre est dans le SVG ; la feuille ne s'occupe que de sa place, de son
+   ombre portée et des états (dépensé, en attente). */
 
-/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée. */
+/* L'icône dans le flux du texte : alignée sur la ligne, jamais déformée, avec
+   l'ombre courte qui la décolle du fond de la carte. */
 .rpg-effet-icone {
   flex: none;
   vertical-align: -0.16em;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .55));
 }
 
 .rpg-effet-icone--ligne {
-  margin-right: 5px;
-  color: #edcb8b;
+  margin-right: 6px;
+  vertical-align: -0.3em;
 }
 
 /* Une Protection contre plusieurs éléments aligne un bouclier par couleur. */
@@ -51,10 +54,11 @@
   color: #a9a9a9;
 }
 
+/* La pierre dépensée garde sa place, mais perd sa couleur : le filtre gris
+   ci-dessous éteint le dessin lui-même, sans pastille de fond (le badge n'en
+   a plus). */
 .rpg-card-icone.is-epuisee {
-  border-color: rgba(168, 168, 168, .42);
-  background: rgba(24, 24, 24, .82);
-  color: #a9a9a9;
+  background: none;
   opacity: .68;
   filter: grayscale(1);
 }
@@ -76,11 +80,11 @@
 .rpg-pastille {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   box-sizing: border-box;
   max-width: 100%;
   min-height: 28px;
-  padding: 4px 10px 4px 8px;
+  padding: 4px 11px 4px 7px;
   border: 1px solid rgba(237, 203, 139, .45);
   border-radius: 999px;
   background: rgba(5, 8, 11, .55);
@@ -91,15 +95,16 @@
 }
 
 .rpg-pastille .rpg-effet-icone {
-  width: 15px;
-  height: 15px;
-  color: #edcb8b;
+  width: 20px;
+  height: 20px;
 }
 
-/* ── Les badges : l'icône seule sur les faces de cartes ──────────────────────
-   Une rangée discrète en bas de l'illustration, au-dessus des statistiques :
-   fond sombre translucide pour rester lisible sur les quatre illustrations
-   d'élément, valeur en petit chiffre quand le mot-clé en porte une. */
+/* ── Les badges : la pierre seule sur les faces de cartes ────────────────────
+   Une rangée discrète en bas de l'illustration, au-dessus des statistiques
+   (catalogue, aperçus), valeur en petit chiffre quand le mot-clé en porte une.
+   Sur une carte en jeu — table, main — la rangée devient une colonne et passe
+   **à cheval sur le cadre** : voir « Les emblèmes montés sur le bord » plus
+   bas. */
 .rpg-card-icones {
   position: absolute;
   z-index: 6;
@@ -112,35 +117,45 @@
   pointer-events: none;
 }
 
+/* La pierre EST le badge : plus de pastille ronde sous l'icône — le cercle
+   d'encre disparaît, l'emblème porte lui-même son contour sombre. Seul le
+   chiffre de l'effet (Furie 3, Abordage 2) garde une pastille, posée en
+   bas à droite de la pierre. */
 .rpg-card-icone {
   display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border: 1px solid rgba(237, 203, 139, .55);
-  border-radius: 999px;
-  background: rgba(5, 8, 11, .78);
+  align-items: flex-end;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
   color: #ffe9a0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .45);
   line-height: 1;
 }
 
 .rpg-card-icone small {
+  margin: 0 0 -2px -6px;
+  padding: 1px 3px;
+  border: 1px solid rgba(237, 203, 139, .5);
+  border-radius: 999px;
+  background: rgba(5, 8, 11, .92);
   font: 800 9px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  color: #fff3d6;
+  font-variant-numeric: tabular-nums;
+  color: #ffe9a0;
 }
 
-/* La main : en colonne verticale à droite sous le disque de coût, l'icône seule. */
+/* La main : en colonne verticale le long du bord droit, sous le disque de coût
+   — la colonne est chevillée au cadre, voir plus bas. */
 .rpg-card-icones--main {
   bottom: 34px;
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main {
-  top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
-  right: 6%;
+  top: var(--rpg-card-element-marker-top, 5%);
+  right: 0;
   bottom: auto;
   left: auto;
-  width: var(--rpg-card-marker-size, 28px);
+  width: var(--rpg-plaque-taille, 20px);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -150,8 +165,17 @@
 
 .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone {
   justify-content: center;
-  min-width: 20px;
-  min-height: 20px;
+  min-width: var(--rpg-plaque-taille, 20px);
+  min-height: var(--rpg-plaque-taille, 20px);
+}
+
+/* La taille de lecture de la pierre sur une face : elle suit `--rpg-plaque-taille`
+   partout — 24 px dans la main, 18 px au doigt, 16 à 30 px sur la table, 32 px
+   dans l'aperçu. Le glyphe rendu garde son `width`/`height` d'attribut (18 px)
+   pour les surfaces de lecture ; ici, c'est la feuille qui décide. */
+.rpg-card-icones--colonne .rpg-effet-icone {
+  width: var(--rpg-plaque-taille, 20px);
+  height: var(--rpg-plaque-taille, 20px);
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone:nth-child(n + 4) {
@@ -159,6 +183,66 @@
 }
 
 .rpg-card-icones--colonne .rpg-card-icone small {
+  display: none;
+}
+
+/* ── Les emblèmes montés sur le bord ─────────────────────────────────────────
+   Sur une carte en jeu, la pierre n'est plus posée *dans* l'illustration : elle
+   est chevillée au cadre, à cheval sur le bord, comme les emblèmes d'Arcane
+   Rush. La colonne s'aligne d'abord sur le bord droit (`right: 0`), puis glisse
+   vers l'extérieur de `--rpg-plaque-bord` pour cent de SA largeur : les pierres
+   y étant centrées, leur axe tombe à peine à l'intérieur du cadre et le quart
+   ou la moitié de chacune déborde sur la table.
+
+   Le glissement est en pourcentage, donc la même règle vaut partout — les 24 px
+   de la main, les 18 px du doigt, les 16 à 30 px de la table, les 32 px de
+   l'aperçu — sans un calcul par contexte : le centrage dans la colonne s'en
+   charge (`translateX(50%)` poserait l'axe exactement sur le bord, 36 % le
+   garde à peine dedans). Ce que la pierre gagne en débord, la carte le rend en
+   rognage (`overflow-clip-margin` de `.rpg-card--img`,
+   `.rpg-hand__card--img` et de la face d'aperçu, dans `rpg-battle.css`).
+   `transform` crée un contexte d'empilement : la colonne garde son `z-index`
+   au-dessus de l'illustration ; la colonne reste inerte au pointeur, comme
+   avant, et les pierres gardent leurs `data-*` et leur `aria-label`. */
+.rpg-card-icones--colonne {
+  --rpg-plaque-bord: 38%;
+  right: 0;
+  left: auto;
+  bottom: auto;
+  width: var(--rpg-plaque-taille, 20px);
+  max-width: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  transform: translateX(var(--rpg-plaque-bord));
+}
+
+/* La table sépare ses cartes de 7 à 14 px : le débord peut donc être franc. */
+.rpg-battle .rpg-card-icones--colonne {
+  --rpg-plaque-bord: 36%;
+}
+
+/* La main serre ses cartes (8 à 10 px d'interstice) : le débord y reste plus
+   discret que sur la table, sinon la pierre mordrait le cadre de la voisine. */
+.rpg-battle .rpg-card-icones--colonne.rpg-card-icones--main {
+  --rpg-plaque-bord: 30%;
+}
+
+/* L'aperçu de carte — survol, appui long, annonce, fiche — porte les mêmes
+   pierres, en grand : 32 px sur une face de 190 à 232 px, soit un sixième de la
+   carte. La face a de la place autour d'elle (18 px d'interstice, 11 px de
+   marge dans le volet), le débord y est donc franc : 45 %, presque la moitié de
+   la pierre sur le cadre de 6 px. La colonne part du coin haut droit, libre
+   depuis que le disque de coût a rejoint la pastille de couleur en haut à
+   gauche (`rpg-battle.css`) : elle s'aligne sur la même ligne que les deux
+   repères. */
+.rpg-card-icones--colonne.rpg-card-icones--apercu {
+  --rpg-plaque-bord: 45%;
+  top: var(--rpg-card-element-marker-top, 5%);
+  gap: 4px;
+}
+
+.rpg-card-icones--colonne.rpg-card-icones--apercu .rpg-card-icone:nth-child(n + 5) {
   display: none;
 }
 
@@ -268,8 +352,7 @@
 }
 
 .rpg-card-icone.is-inactif {
-  border-color: rgba(168, 168, 168, .42);
-  background: rgba(24, 24, 24, .82);
+  background: none;
   opacity: .68;
   filter: grayscale(1);
 }
@@ -323,4 +406,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-pastille-bulle { animation: none; }
+}
+
+/* En main, la première pierre part du haut de la face, pas sous la couleur
+   (celle-ci est sur l’autre bord). Même ancrage au doigt et à la souris. */
+.rpg-battle .rpg-hand__card--img .rpg-card-icones--colonne.rpg-card-icones--main {
+  top: var(--rpg-card-element-marker-top, 5%);
+  bottom: auto;
 }

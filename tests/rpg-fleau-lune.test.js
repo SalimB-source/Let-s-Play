@@ -2,8 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { cardById, cardColors, cardHasPrintedType, cardCopyLimit, RPG_ELEMENTS } from '../src/games/rpgCards.js';
-import { rpgJouerCreature, rpgNouveauDuel, rpgPeutPayer, rpgPeutRepondre, rpgLancerAttaque, rpgBlesserCreature, rpgActionsEtat } from '../src/games/rpgDuel.js';
+import { rpgJouerCreature, rpgNouveauDuel, rpgPeutPayer, rpgLancerAttaque, rpgBlesserCreature, rpgActionsEtat } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
+import { sacrificesInvocation } from '../src/games/rpgInvocation.js';
 import { carteReveleePar } from '../src/games/rpgCollection.js';
 const id = 'fleau-de-la-lune-noire';
 function duel() {
@@ -11,10 +12,22 @@ function duel() {
   for (const camp of ['joueur', 'sorcier']) d[camp].mana = Object.fromEntries(RPG_ELEMENTS.map(c => [c, 20]));
   return d;
 }
-function poser(d, camp, carte) { d[camp].main.push(carte); const r = rpgJouerCreature(d, camp, carte); assert.ok(r.ok, r.raison); return r.entite; }
+function poser(d, camp, carte) {
+  const sacrificeIds = [];
+  for (let i = 0; i < sacrificesInvocation(cardById(carte), d); i++) {
+    d[camp].main.push('chien-du-guet');
+    const offrande = rpgJouerCreature(d, camp, 'chien-du-guet');
+    assert.ok(offrande.ok, offrande.raison);
+    sacrificeIds.push(offrande.entite.id);
+  }
+  d[camp].main.push(carte);
+  const r = rpgJouerCreature(d, camp, carte, null, { sacrificeIds });
+  assert.ok(r.ok, r.raison);
+  return r.entite;
+}
 test('Le Fléau est une créature mythique bicolore et illustrée coûtant huit', () => {
   const c = cardById(id); assert.deepEqual([c.cost, c.atk, c.def, c.rarity], [8, 7, 7, 'mythique']);
-  assert.deepEqual(cardColors(c), ['braise', 'tenebres']); assert.ok(c.reactionTourAdverse);
+  assert.deepEqual(cardColors(c), ['braise', 'tenebres']); assert.equal(c.reactionTourAdverse, undefined);
   assert.equal(cardCopyLimit(c), 1); assert.equal(carteReveleePar(id).etageId, 'necropole-4');
   assert.ok(cardHasPrintedType(c, 'Vampire')); assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));
 });
@@ -43,13 +56,11 @@ test('Overkill et Vol de vie soignent la moitié des dégâts infligés', () => 
   assert.equal(d.sorcier.pv, pvAdverse - 6);
   assert.equal(d.joueur.pv, 14, '2 dégâts au bloqueur et 6 au sorcier rendent 4 PV');
 });
-test('Il peut répondre pendant le tour adverse en solo et en PvP', () => {
-  const d = duel(); poser(d, 'sorcier', 'chien-du-guet'); poser(d, 'sorcier', 'chien-du-guet'); poser(d, 'sorcier', 'chien-du-guet');
-  d.tour = 'sorcier'; d.fenetreReponse = true; d.joueur.main.push(id);
-  assert.ok(rpgPeutRepondre(d, 'joueur')); assert.ok(rpgJouerCreature(d, 'joueur', id).ok);
+test('Il ne peut plus répondre pendant le tour adverse en PvP', () => {
   const p = duel(); poser(p, 'sorcier', 'chien-du-guet'); poser(p, 'sorcier', 'chien-du-guet'); poser(p, 'sorcier', 'chien-du-guet');
   p.pvp = true; p.mulliganFait = { joueur: true, sorcier: true }; p.tour = 'sorcier'; p.joueur.main.push(id);
-  assert.ok(rpgPvpAppliquer(p, 'joueur', { type: 'jouer-carte', carteId: id }).ok);
+  assert.equal(rpgPvpAppliquer(p, 'joueur', { type: 'jouer-carte', carteId: id }).ok, false);
+  assert.ok(p.joueur.main.includes(id));
 });
 test('Vol de vie fonctionne même si le Fléau meurt dans le combat', () => {
   const d = duel(); const fleau = poser(d, 'joueur', id); const chien = poser(d, 'sorcier', 'chien-du-guet');

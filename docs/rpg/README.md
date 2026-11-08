@@ -28,6 +28,7 @@ réactif de *Clair Obscur*.
 | [`25-cartes-liees.md`](25-cartes-liees.md) | Les **cartes liées** : une carte n'est jamais morte, elle est seulement meilleure quand sa créature mythique est en jeu — sans jamais baisser son coût |
 | [`26-le-cavalier-sans-nom.md`](26-le-cavalier-sans-nom.md) | **Le cavalier sans nom** : créature mythique hybride **Eau + Ténèbres** — Envol, Tribut 2 et un Rebond borné à coût 4 qui pioche une carte, le noyé du registre effacé |
 | [`27-les-cavaliers.md`](27-les-cavaliers.md) | **Les cinq Cavaliers** : cycle hybride des cinq couleurs, effets, révélations et intégration |
+| [`28-pierres-d-effets.md`](28-pierres-d-effets.md) | Les **pierres d'effets** : chaque mot-clé sur un emblème taillé — une forme par famille d'action, une pierre par registre, le pictogramme en blanc |
 
 ## La décision de conception
 

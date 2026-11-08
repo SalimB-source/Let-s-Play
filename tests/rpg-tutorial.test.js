@@ -270,8 +270,7 @@ test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis blo
   assert.equal(reserve(), 10, 'la réserve préparée est au plafond du mode');
   assert.equal(duel.joueur.manaChoixEnAttente, false, 'aucun choix de couleur ne coupe la leçon');
 
-  // À votre tour, la condition d’Embuscade n’est jamais opposée : les deux
-  // camps sont à 25 PV, la Danseuse se joue quand même.
+  // La Danseuse, désormais sans Embuscade, se joue seulement pendant votre tour.
   const danseuse = rpgJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune');
   assert.equal(danseuse.ok, true);
   assert.equal(danseuse.entite.ready, true, 'sa Rapidité la rend disponible tout de suite');
@@ -279,8 +278,7 @@ test('la leçon Embuscade joue deux créatures pendant le tour adverse, puis blo
 
   rpgFinDeTour(duel);
   assert.equal(duel.tour, 'sorcier');
-  assert.equal(rpgConditionEmbuscadeRemplie(duel, 'joueur', cardById('danseuse-des-ombres-de-dune')), false,
-    'chez l’adversaire, la même carte exigerait d’avoir moins de PV que lui');
+  assert.equal(cardById('danseuse-des-ombres-de-dune').reactionTourAdverse, undefined);
 
   // La scène de l’assaut s’installe pendant le tour du sorcier.
   preparerEtapeTutoriel(duel, tutoriel.steps.find((etape) => etape.id === 'attaque-adverse'));

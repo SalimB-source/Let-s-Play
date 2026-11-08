@@ -1,3 +1,4 @@
+import { invocationPossible } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -290,6 +291,7 @@ export function valeurEntite(entite) {
   if (carte.honneur) valeur += carte.honneur;
   // Butin (le Chien du guet) : chaque touche au sorcier rapporte une carte.
   if (carte.butin) valeur += 0.8;
+  if (carte.poison) valeur += 0.8; // morsure lente, seulement si elle touche une créature
   if (carte.combat) valeur += 2;
   // L'arme portée : bonus et mot-clé sont déjà dans les chiffres et les champs
   // de l'entité (envol, esquive lus plus haut) ; seul le déclenché s'ajoute.
@@ -2080,6 +2082,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
   // Le Tribut (set Ténèbres) : un contact qui vaut des PV à chaque frappe.
   if (carte.tribut) score += carte.tribut * 0.9;
   if (carte.destruction) score += 1;
+  if (carte.poison) score += duel[adv].creatures.length ? 1 : 0.3;
   if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;
   // L'Abordage (set Lettres de Marque) : la prize à l'arrivée — une créature
@@ -2154,7 +2157,7 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
-    if (!moteur.rpgPeutPayer(camp, carte)) continue;
+    if (!moteur.rpgPeutPayer(camp, carte) || !invocationPossible(duel, cote, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees);
     if (!evaluation || !(evaluation.score > 0)) continue;
     const effet = effetLie(carte, lienSatisfait(carte, camp.creatures)) ?? {};

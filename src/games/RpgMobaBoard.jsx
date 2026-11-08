@@ -1034,7 +1034,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     {cimetiere && <div className="moba__graveyard-layer" onKeyDown={(event) => {
       if (event.key === 'Escape') { event.stopPropagation(); fermerCimetiere(); }
       if (event.key === 'Tab') {
-        const boutons = [...event.currentTarget.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')];
+        const boutons = [...event.currentTarget.querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])')];
         const premier = boutons[0], dernier = boutons[boutons.length - 1];
         if (premier && event.shiftKey && document.activeElement === premier) { event.preventDefault(); dernier.focus(); }
         else if (dernier && !event.shiftKey && document.activeElement === dernier) { event.preventDefault(); premier.focus(); }
@@ -1045,7 +1045,7 @@ export default function RpgMobaBoard({ onQuitter, initialiser = nouveau, rendu =
     {apercu && rendu?.ApercuCarteAppuiLong && <div className="moba__preview-layer" onKeyDown={(event) => {
       if (event.key === 'Escape') { event.stopPropagation(); fermerApercu(); }
       if (event.key === 'Tab') {
-        const boutons = [...event.currentTarget.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])')];
+        const boutons = [...event.currentTarget.querySelectorAll('button:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])')];
         const premier = boutons[0], dernier = boutons[boutons.length - 1];
         if (premier && event.shiftKey && document.activeElement === premier) { event.preventDefault(); dernier.focus(); }
         else if (dernier && !event.shiftKey && document.activeElement === dernier) { event.preventDefault(); premier.focus(); }

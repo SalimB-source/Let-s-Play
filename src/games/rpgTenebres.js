@@ -39,7 +39,7 @@ export const RPG_TENEBRES_JETONS = [{
   flavor: 'Il fait le travail que les morts n’ont plus les mains pour faire.',
 }];
 
-// Tribut reste sur le petit collecteur et la finition ; les autres créatures
+// Tribut reste sur le petit collecteur, la Veuve et la finition ; les autres créatures
 // servent le combat, la défausse, la pioche ou le cimetière.
 export const RPG_TENEBRES_CREATURES = [
   carte({
@@ -177,6 +177,48 @@ export const RPG_TENEBRES_CREATURES = [
     text: 'Tribut 2 — Quand cette créature touche le sorcier adverse, il perd 2 PV et vous en gagnez 2. Quand Celui qui juge arrive en jeu : il détruit toutes les créatures qui coûtent 3 mana ou moins.',
     flavor: 'Il ne regarde pas le sable. Il regarde le poids.',
   }),
+  // Renforts mono-Ténèbres : une créature à chaque coût de 1 à 5.
+  // Les cinq grandes figures restent groupées à la fin de cette liste.
+  carte({
+    id: 'porteur-de-la-plume', name: 'Porteur de la plume',
+    cost: 1, atk: 1, def: 2, rarity: 'commune',
+    destruction: { type: 'soin', amount: 1 },
+    typeLine: 'Créature — Humain · Serviteur',
+    text: 'Quand le Porteur de la plume meurt, vous gagnez 1 PV.',
+    flavor: 'Il tient la plume droite jusqu’au dernier souffle.',
+  }),
+  carte({
+    id: 'scarabee-du-natron', name: 'Scarabée du natron',
+    cost: 2, atk: 1, def: 2, rarity: 'commune',
+    destruction: { type: 'jetons', jeton: 'shabti', nombre: 1 },
+    typeLine: 'Créature — Animal · Scarabée',
+    text: 'Quand le Scarabée du natron meurt, créez une créature-jeton « Shabti » 1/1.',
+    flavor: 'Sous la croûte de sel, le serviteur attend son tour.',
+  }),
+  carte({
+    id: 'veuve-des-urnes', name: 'Veuve des urnes',
+    cost: 3, atk: 2, def: 3, rarity: 'inhabituelle',
+    tribut: 1,
+    typeLine: 'Créature — Humaine · Veuve',
+    text: 'Tribut 1 — Quand elle touche le sorcier adverse, il perd 1 PV et vous en gagnez 1.',
+    flavor: 'Elle ne réclame que ce qu’on lui a promis.',
+  }),
+  carte({
+    id: 'gardien-des-sept-sceaux', name: 'Gardien des sept sceaux',
+    cost: 4, atk: 3, def: 4, rarity: 'commune',
+    defenseur: true,
+    typeLine: 'Créature — Humain · Gardien',
+    text: 'Défenseur.',
+    flavor: 'La porte n’a plus besoin de clé tant qu’il veille.',
+  }),
+  carte({
+    id: 'lecteur-du-dernier-nom', name: 'Lecteur du dernier nom',
+    cost: 5, atk: 3, def: 4, rarity: 'rare',
+    arrivee: { type: 'pioche-defausse', pioche: 2, defausse: 1 },
+    typeLine: 'Créature — Humain · Scribe',
+    text: 'Quand le Lecteur du dernier nom arrive : piochez deux cartes, puis défaussez-en une.',
+    flavor: 'Il ne lit qu’une fois chaque nom, mais l’écrit pour l’éternité.',
+  }),
   // ── Les grandes figures d’Égypte : nommées par leur attribut, jamais « dieux » ──
   carte({
     id: 'passeur-au-masque-de-chacal',
@@ -273,8 +315,8 @@ export const RPG_TENEBRES_CREATURES = [
   }),
 ];
 
-/** Les six grandes figures mythiques inspirées du panthéon égyptien. */
-export const RPG_TENEBRES_FIGURES = RPG_TENEBRES_CREATURES.slice(12);
+/** Les cinq grandes figures mythiques inspirées du panthéon égyptien. */
+export const RPG_TENEBRES_FIGURES = RPG_TENEBRES_CREATURES.slice(-5);
 
 export const RPG_TENEBRES_MAGIES = [
   carte({

@@ -1,3 +1,4 @@
+import { dailyStories as dailyStories20261108 } from '../src/news/daily/2026-11-08';
 // Rendu réel des éditions quotidiennes, via les routes publiques du site.
 // L'édition actuelle (05.11.2026) est importée par les pages du site ; les
 // éditions précédentes le sont sous alias : le script de contrôle
@@ -38,6 +39,7 @@ export { React, ArticleTrailer, searchContent, searchIndex, autoSearchEntries };
 // Toutes les clés d'article des éditions quotidiennes, du plus récent au plus
 // ancien — l'ordre de l'archive et des hubs en dépend.
 export const editionKeys = {
+  '2026-11-08': Object.keys(dailyStories20261108),
   '2026-11-05': Object.keys(dailyStories20261105),
   '2026-11-04': Object.keys(dailyStories20261104),
   '2026-11-03': Object.keys(dailyStories20261103),

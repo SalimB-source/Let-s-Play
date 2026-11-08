@@ -33,17 +33,18 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
   const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
   assert.match(css, /\.rpg-pastilles\s*\{[^}]*flex-direction: column;[^}]*align-items: flex-start;/s);
   assert.match(css, /\.rpg-pastille\s*\{[^}]*min-height: 28px;[^}]*font: 650 12px\//s);
-  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 15px;[^}]*height: 15px;/s);
+  // La pastille porte désormais une pierre d'emblème : 20 px, la taille où le
+  // pictogramme blanc reste lisible à côté de son libellé.
+  assert.match(css, /\.rpg-pastille \.rpg-effet-icone\s*\{[^}]*width: 20px;[^}]*height: 20px;/s);
   assert.match(css, /\.rpg-card-icones\s*\{[^}]*flex-wrap: wrap;/s,
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 40 symboles validés, un par effet', () => {
+test('le sprite porte les 42 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 38 avec Embuscade et le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
-  // Recherche de deck (`i-recherche`) et les deux maillons du Lien (`i-lien`) :
+  // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
   // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 40);
+  assert.equal(symboles.length, 42);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -54,63 +55,44 @@ test('le sprite porte les 40 symboles validés, un par effet', () => {
   assert.notEqual(EFFET_ICONE.transfert, EFFET_ICONE.tribut,
     'le Transfert a sa propre icône, distincte de la balance du Tribut');
   assert.equal(effetIcon('transfert').includes('<use href="#i-transfert"/>'), true);
-  const transfert = EFFETS_SPRITE.match(/<symbol id="i-transfert"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
-  assert.ok(transfert.includes('M3.5 8.5h13.5') && transfert.includes('M20.5 15.5H7'),
-    'le Transfert dessine deux flèches opposées : la vie passe d’un sorcier à l’autre');
-  assert.equal(effetIcon('furie').includes('<use href="#i-furie"/>'), true);
-  assert.equal(effetIcon('provocation').includes('<use href="#i-provocation"/>'), true);
-  const provocation = EFFETS_SPRITE.match(/<symbol id="i-provocation"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
-  assert.ok(provocation.includes('M6 9.6 18 4v16L6 14.4'),
-    'la Provocation est dessinée comme un mégaphone : pavillon évasé');
-  assert.ok(provocation.includes('M20 9a4.2 4.2 0 0 1 0 6'),
-    'et son arc sonore est dans le sprite');
-  const furie = EFFETS_SPRITE.match(/<symbol id="i-furie"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
-  assert.ok(furie.includes('M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4'),
-    'la Furie est dessinée comme un casque viking : corne gauche relevée');
-  assert.ok(furie.includes('M16.9 11.3c1.8-1 3.3-3.1 4-5.9'),
-    'la Furie est dessinée comme un casque viking : corne droite relevée');
-  assert.ok(furie.includes('M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4'),
-    'la coupole du casque viking est dans le sprite');
-  assert.ok(furie.includes('M10.9 15.2h2.2l-.4 4.2h-1.4z'),
-    'le nasal central du casque viking est dans le sprite');
-  assert.equal(furie.includes('M7 4c2.6 4.4 3.2 10.6 1.2 16'), false,
-    'l’ancien dessin de Furie a disparu');
-  // L'Abordage : un CRÂNE SIMPLE et deux OS qui forment un X derrière lui.
-  // Le crâne est une tête ronde (un cercle), deux orbites et une mâchoire
-  // courte ; pas de nez, pas de dents, pas d'os aux quatre coins.
-  const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1] ?? '';
-  assert.ok(abordage.includes('<circle cx="12" cy="9.6" r="6.5"/>'),
-    'le crâne de l’Abordage est une tête ronde et simple');
-  assert.equal((abordage.match(/<circle/g) ?? []).length, 3,
-    'deux orbites seulement avec la tête — rien de plus');
-  assert.ok(abordage.includes('<circle cx="9.5" cy="9.4" r="1.5"/>')
-    && abordage.includes('<circle cx="14.5" cy="9.4" r="1.5"/>'),
-  'les deux orbites du crâne sont là');
-  assert.ok(abordage.includes('M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4'),
-    'la mâchoire courte est dessinée sous la tête');
-  // Le X : quatre bras qui partent des coins ; chaque bout porte son petit
-  // renflement d'os, perpendiculaire à la tige.
-  assert.ok(abordage.includes('M3.1 20.9 8.6 15.4') && abordage.includes('M15.4 15.4 20.9 20.9'),
-    'les deux os croisés forment un X, du bas-gauche au haut-droit et retour');
-  assert.ok(abordage.includes('M3.1 3.1 8.6 8.6') && abordage.includes('M15.4 8.6 20.9 3.1'),
-    'les deux autres bras du X montent vers les coins hauts');
-  // 13 tracés : la mâchoire, les quatre tiges du X et les huit bouts d'os
-  // (un renflement perpendiculaire à chaque extrémité).
-  assert.equal((abordage.match(/<path/g) ?? []).length, 1 + 4 + 8,
-    'la mâchoire, les quatre bras du X et un bout d’os à chaque extrémité');
-  assert.equal((abordage.match(/<path d="M3\.1 20\.9/g) ?? []).length, 1,
-    'chaque bras n’a qu’une tige');
-  assert.equal(abordage.includes('m12 12.2'), false, 'plus de nez en goutte');
-  assert.equal(abordage.includes('m12 13.4'), false, 'l’ancien nez du crâne détaillé a disparu');
-  assert.equal(abordage.includes('M12 3v10.5'), false, 'l’ancre d’origine ne revient pas');
-  assert.equal(abordage.includes('M12 18.4v3.2'), false,
-    'la mâchoire dentelée du crâne précédent a disparu');
+  for (const id of symboles) {
+    const corps = EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
+    if (id !== 'i-abordage') {
+      assert.doesNotMatch(corps, /fill="currentColor" stroke="none"/, `${id} garde le dessin au trait`);
+    }
+  }
+  assert.match(EFFETS_SPRITE, /M7.1 11.3C5.3/, 'Furie retrouve son casque à cornes');
+  assert.match(EFFETS_SPRITE, /M20.84 4.61/, 'Soin retrouve son cœur au trait');
   assert.equal(EFFET_ICONE.prise, 'i-abordage',
     'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
+  const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1];
+  assert.ok(abordage, 'le crâne d’Abordage est dans le sprite');
+  assert.equal((abordage.match(/<path fill="currentColor" stroke="none"/g) ?? []).length, 2,
+    'le crâne et les sabres d’Abordage sont désormais deux silhouettes pleines');
+  assert.match(abordage, /fill-rule="evenodd"/, 'les fentes des yeux sont évidées dans la silhouette pleine');
+  assert.match(abordage, /M7\.5 9\.6[^"<>]*M16\.5 9\.6/, 'deux fentes inclinées et symétriques sont creusées dans le crâne');
+  assert.doesNotMatch(abordage, /<circle|<ellipse/, 'les yeux sont des fentes, pas des cercles');
+});
+
+test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
+  const corps = (id) => EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
+  assert.match(corps('i-provocation'), /M5 11V7a2 2/, 'un poing avec quatre doigts, pas un mégaphone');
+  assert.doesNotMatch(corps('i-provocation'), /18 4v16/, 'ancien mégaphone retiré');
+  assert.match(corps('i-rebond'), /M12 21V4M4\.5 11\.5 12 4l7\.5 7\.5/, 'flèche verticale vers le haut');
+  assert.match(corps('i-recherche'), /<circle cx="10\.5" cy="10\.5" r="6\.5"\/>/, 'loupe seule');
+  assert.doesNotMatch(corps('i-recherche'), /<rect/, 'plus de document derrière la loupe');
+  assert.equal(EFFET_ICONE.exil, 'i-exil');
+  assert.match(corps('i-exil'), /M19 7a9 9 0 1 0 2 5/, 'un vortex en spirale simple');
+  assert.equal((corps('i-exil').match(/<path /g) ?? []).length, 1, 'plus de petite flèche ni de trait supplémentaire');
+  assert.notEqual(EFFET_ICONE.exil, EFFET_ICONE['retour-main'], 'Exil ne reprend plus la flèche de Rebond');
+  assert.match(corps('i-honneur'), /M22 2 10\.5 11\.5l2 2L22 2z/, 'le couteau diagonal se termine sur une pointe aiguë');
+  assert.doesNotMatch(corps('i-honneur'), /<circle/, 'plus de médaille');
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
+  assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
+    'le Scorpion affiche Poison, sans l’ancien effet de mort');
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Overkill', 'Furie 2'],
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');

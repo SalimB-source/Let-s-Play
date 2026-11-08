@@ -10,15 +10,15 @@ import { build } from 'vite';
  *
  * Vérifie à la fois :
  * 1. Les contrats statiques et CSS historiques de l'atelier (stock, validation,
- *    cadres de 2 px, dégradé unique de `.rpg-atelier__carte-art::after`, astuce
+ *    sans filet, dégradé unique de `.rpg-atelier__carte-art::after`, astuce
  *    tactile).
  * 2. La nouvelle ergonomie inspirée du Deck Builder de MTG Arena :
  *    - Espace scindé plein écran en deux colonnes indépendantes (collection à
  *      gauche, colonne du deck à droite avec bouton « Enregistrer » ancré en bas) ;
  *    - Barre d'outils unique en haut avec recherche effaçable, 5 médaillons
  *      d'éléments circulaires (`ElementEmblem`), « Possédées » et « Filtres » ;
- *    - Vraies cartes lisibles dans la grille (titre, coût, illustration, type,
- *      gemme de rareté, texte d'effet résumé, ATQ/DÉF) surmontées de losanges
+ *    - Faces illustrées comme au catalogue (couleur, coût, effets, sort, stock),
+ *      ouvertes au clic ; ajout/retrait uniquement par boutons +/− et losanges
  *      d'exemplaires (`is-pris`, `is-dispo`, `is-manquant`) ;
  *    - Colonne de droite avec couverture miniature + nom éditable + compteur
  *      `N / 30 cartes` + mini-courbe de mana intégrée en tête, pile verticale de
@@ -58,10 +58,31 @@ test('contrats statiques et invariants CSS de RpgDeckAtelier', () => {
     'exactement deux points portent data-card-id (grille et pile du deck)',
   );
 
-  // Dégradé unique sur l'illustration de la carte.
+  assert.doesNotMatch(atelierSource, /onContextMenu=/, 'le clic droit ne retire jamais de carte, sur la grille ou la pile');
+  assert.match(atelierSource, /renderCatalogueFace\(carte, \{ exemplaires: possedee \? limite : 0, verrouillee: !possedee \}\)/);
+  assert.match(atelierSource, /onOpenCardPreview\?\.\(carte\)/, 'le clic sur la face ouvre la fiche');
+  const menu = lire('../src/games/RpgDuelPage.jsx');
+  assert.match(menu, /function CatalogueCardFace\(/);
+  assert.equal((menu.match(/<CatalogueCardFace carte=\{carte\}/g) ?? []).length, 2,
+    'le catalogue et l’atelier réutilisent la même face et ses pictogrammes');
+  assert.match(menu, /renderCatalogueFace=\{\(carte, etat\) => <CatalogueCardFace/);
+  assert.match(menu, /onOpenCardPreview=\{onOpenCardPreview\}/);
+  assert.match(menu, /className="rpg-deck-list__ouvrir"[^>]*onClick=\{\(\) => onOpenCardPreview\?\.\(carte\)\}/,
+    'les illustrations de la liste des decks ouvrent leur fiche au clic');
+  assert.doesNotMatch(menu, /onMouseEnter=\{\(event\) => onHoverCard\?\.\(carte, event\)\}/,
+    'la liste des decks ne déclenche plus d’aperçu agrandi au survol');
+  const cssCatalogue = lire('../src/games/rpg-battle.css');
+  const survolCarte = cssCatalogue.match(/\.rpg-card-catalogue__card:hover,\s*\.rpg-card-catalogue__card:focus-within\s*\{([^}]*)\}/)?.[1];
+  const survolZoom = cssCatalogue.match(/\.rpg-card-catalogue__card:hover \.rpg-card-catalogue__zoom,\s*\.rpg-card-catalogue__card:focus-within \.rpg-card-catalogue__zoom\s*\{([^}]*)\}/)?.[1];
+  assert.ok(survolCarte && survolZoom);
+  assert.doesNotMatch(`${survolCarte} ${survolZoom}`, /transform|scale|zoom:/,
+    'ni l’illustration ni le témoin de zoom ne grossissent au survol');
+  assert.doesNotMatch(cssCatalogue.match(/\.rpg-deck-list li:hover img\s*\{([^}]*)\}/)?.[1] ?? '', /transform|scale/);
+
+  // Dégradé unique sur l’illustration de la carte, comme au catalogue.
   const blocAfter = atelierCss.match(/\.rpg-atelier__carte-art::after\s*\{([^}]*)\}/);
   assert.ok(blocAfter, 'la vignette garde son pseudo-élément de pied');
-  assert.match(blocAfter[1], /linear-gradient\(0deg,\s*rgba\(5,\s*4,\s*7,\s*\.55\)/);
+  assert.match(blocAfter[1], /linear-gradient\(0deg,\s*rgba\(5,\s*4,\s*7,\s*\.36\)/);
   assert.equal((blocAfter[1].match(/linear-gradient\(/g) ?? []).length, 1);
   assert.doesNotMatch(
     blocAfter[1],
@@ -73,7 +94,7 @@ test('contrats statiques et invariants CSS de RpgDeckAtelier', () => {
   assert.match(atelierCss, /@media\s*\(pointer:\s*coarse\)\s*\{[\s\S]*?\.rpg-atelier__astuce\s*\{\s*display:\s*block;\s*\}/);
 });
 
-test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, cartes lisibles et CTA ancré', () => {
+test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, faces portrait et CTA ancré', () => {
   const cssNettoye = atelierCss.replace(/@media[^{]+\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
   const dom = new JSDOM(`<!doctype html><html><head><style>${cssNettoye}</style></head><body>
     <section class="rpg-atelier">
@@ -86,10 +107,8 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, cartes li
           <ul class="rpg-atelier__cartes">
             <li class="rpg-atelier__carte">
               <span class="rpg-atelier__losanges"><i class="rpg-atelier__losange is-pris"></i></span>
-              <button class="rpg-atelier__carte-ajout">
-                <span class="rpg-atelier__carte-art rpg-card--frame-sable"><img src="/x.jpg" alt="" /></span>
-                <span class="rpg-atelier__carte-corps"><span class="rpg-atelier__carte-regle">Effet</span></span>
-              </button>
+              <span class="rpg-atelier__carte-art rpg-card-catalogue__art rpg-card--frame-sable"><img src="/x.jpg" alt="" /></span>
+              <button class="rpg-atelier__carte-ajout">+</button>
             </li>
           </ul>
         </div>
@@ -121,8 +140,17 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, cartes li
   const pip = window.getComputedStyle(window.document.querySelector('.rpg-atelier__toggle--pip'));
   assert.equal(pip.borderRadius, '50%', 'les filtres d’éléments sont des médaillons circulaires');
 
+  const grille = window.getComputedStyle(window.document.querySelector('.rpg-atelier__cartes'));
+  assert.equal(grille.gridTemplateColumns, 'repeat(4, minmax(0, 1fr))', 'quatre colonnes dans le constructeur de deck');
+  assert.equal(grille.gap, '22px', 'plus d’espace entre les cartes du constructeur');
+  assert.equal(grille.padding, '18px 20px 30px', 'la grille garde une marge autour des illustrations');
+  const carte = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte'));
+  assert.equal(carte.width, '92%', 'chaque carte est légèrement plus petite sans perdre les quatre colonnes');
+  assert.equal(carte.justifySelf, 'center', 'les cartes restent centrées dans leur colonne');
+  assert.match(atelierCss, /@media \(max-width: 540px\)[\s\S]*?\.rpg-atelier__carte \{ width: 100%; \}/,
+    'les cartes conservent leur largeur lisible sur téléphone');
   const art = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte-art'));
-  assert.match(art.backgroundSize, /^100% 100%,/, 'background-size longhand préservé sur la vignette');
+  assert.equal(art.aspectRatio, '4 / 5', 'la face adopte le format portrait du catalogue');
 
   const astuce = window.getComputedStyle(window.document.querySelector('.rpg-atelier__astuce'));
   assert.equal(astuce.display, 'none', 'l’astuce tactile est masquée sur souris');
@@ -144,7 +172,7 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, cartes li
   assert.equal(btnDone.fontFamily, btnSec.fontFamily, 'même police monospace que les autres boutons du jeu');
 });
 
-test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes et pile MTGA triée par coût', async () => {
+test('rendu interactif : cartes consultables, ajout par +, clic droit sans retrait et pile triée', async () => {
   const previousEnv = process.env.NODE_ENV;
   await build({
     logLevel: 'error',
@@ -188,6 +216,8 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
     const { cardById, cardCost } = await import('../src/games/rpgCards.js');
 
     const collection = collectionJoueur();
+    const apercus = [];
+    const survols = [];
     const container = dom.window.document.getElementById('root');
     const root = createRoot(container);
 
@@ -197,6 +227,8 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
           nomInitial: 'Grimoire d’essai',
           collection,
           artUrl: (id) => `/cards/${id}.jpg`,
+          onOpenCardPreview: (carte) => apercus.push(carte.id),
+          onHoverCard: (carte) => survols.push(carte.id),
           onEnregistrer: () => ({ ok: true }),
           onAnnuler: () => {},
         }),
@@ -208,11 +240,14 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
     assert.equal(pips.length, 5);
     assert.ok(pips.every((btn) => btn.querySelector('svg.rpg-emblem')), 'chaque filtre couleur affiche son emblème SVG');
 
-    // 2. Chaque carte de la grille expose son texte d'effet lisible et ses losanges de quota.
+    // 2. La grille porte les faces portrait du catalogue et les losanges de quota.
     const carteChien = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
     assert.ok(carteChien, 'Chien du guet présent dans la grille');
-    assert.ok(carteChien.querySelector('.rpg-atelier__carte-regle')?.textContent.trim().length > 0,
-      'le texte d’effet est directement lisible sur la carte sans survol');
+    assert.ok(carteChien.querySelector('.rpg-card-catalogue__art img'), 'l’illustration remplit la face du catalogue');
+    assert.equal(carteChien.querySelector('.rpg-atelier__carte-regle'), null, 'la règle est dans la fiche ouverte au clic');
+    await act(async () => { carteChien.querySelector('.rpg-atelier__carte-ouvrir').click(); });
+    assert.deepEqual(apercus, ['chien-du-guet'], 'cliquer la carte ouvre sa fiche sans l’ajouter');
+    assert.equal(container.querySelectorAll('.rpg-atelier__pile .rpg-atelier__ligne').length, 0);
     assert.equal(carteChien.querySelectorAll('.rpg-atelier__losange.is-dispo').length, 2,
       'deux losanges disponibles avant ajout');
     assert.equal(carteChien.querySelectorAll('.rpg-atelier__losange.is-pris').length, 0);
@@ -222,6 +257,9 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
       'une mythique n’affiche qu’un seul losange de quota');
     assert.equal(carteMythiqueVerrouillee.querySelectorAll('.rpg-atelier__losange.is-manquant').length, 1,
       'une carte non possédée affiche son losange comme manquant');
+    assert.equal(carteMythiqueVerrouillee.querySelector('.rpg-atelier__carte-ajout').disabled, true);
+    await act(async () => { carteMythiqueVerrouillee.querySelector('.rpg-atelier__carte-ouvrir').click(); });
+    assert.deepEqual(apercus, ['chien-du-guet', 'kraken'], 'une carte verrouillée reste consultable');
 
     // 3. Ajout de plusieurs cartes de coûts différents : les losanges s'allument et la pile droite trie par coût croissant.
     const cartesSablePossedees = [...container.querySelectorAll('.rpg-atelier__carte:not(.is-locked)')];
@@ -242,6 +280,23 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
     const chienApres = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
     assert.equal(chienApres.querySelectorAll('.rpg-atelier__losange.is-pris').length, 2,
       'les deux losanges s’allument quand les deux exemplaires sont dans le deck');
+    const ligneChien = container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
+    await act(async () => {
+      ligneChien.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+    });
+    assert.deepEqual(survols, [], 'survoler une illustration dans la pile ne zoome plus la fiche');
+    await act(async () => { ligneChien.querySelector('.rpg-atelier__ligne-ouvrir').click(); });
+    assert.deepEqual(apercus, ['chien-du-guet', 'kraken', 'chien-du-guet'],
+      'la fiche de la pile reste accessible au clic');
+    await act(async () => {
+      chienApres.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, button: 2 }));
+      container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]').dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, button: 2 }));
+    });
+    assert.equal(container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__losange.is-pris') !== null, true);
+    assert.equal(container.querySelectorAll('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__losange.is-pris').length, 2,
+      'le clic droit sur la vignette ne retire aucun des deux exemplaires');
+    assert.equal(container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"] .rpg-atelier__ligne-qte').textContent, '2x',
+      'le clic droit sur la pile ne retire pas non plus de carte');
 
     // Vérification de la pile MTGA à droite : triée par coût croissant, avec badge "2x" et "1x".
     const lignes = [...container.querySelectorAll('.rpg-atelier__pile .rpg-atelier__ligne')];
@@ -272,6 +327,17 @@ test('rendu interactif : losanges d’exemplaires, texte lisible sur les cartes 
       clearBtn.click();
     });
     assert.equal(champSearch.value, '', 'cliquer ✕ efface instantanément la recherche');
+
+    await act(async () => {
+      container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"] .rpg-atelier__carte-retrait').click();
+    });
+    assert.equal(container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"] .rpg-atelier__ligne-qte').textContent, '1x',
+      'le bouton « − » de la grille retire explicitement un exemplaire');
+    await act(async () => {
+      container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"] .rpg-atelier__ligne-compte button').click();
+    });
+    assert.equal(container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]'), null,
+      'le bouton « − » de la pile retire le dernier exemplaire');
 
     await act(async () => {
       root.unmount();

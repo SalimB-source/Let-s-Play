@@ -6,9 +6,9 @@
  *
  *  - À gauche (~73 %), la collection filtrable sur une seule barre d'outils
  *    (recherche instantanée, médaillons d'éléments circulaires, « Possédées »,
- *    « Filtres ») et une grille de vraies cartes lisibles (titre, coût,
- *    illustration cadrée, type/rareté, résumé d'effet en clair, attaque/défense)
+ *    « Filtres ») et une grille de faces illustrées comme dans le catalogue,
  *    surmontées de losanges d'exemplaires (`◆` dans le deck, `◇` en stock).
+ *    La fiche s'ouvre au clic ; l'ajout et le retrait utilisent « + » et « − ».
  *  - À droite (~27 %), la colonne du deck : boîtier miniature + titre éditable
  *    + compteur `N / 30 cartes` + mini-courbe de mana intégrée en tête, pile
  *    verticale de barres horizontales triées par coût (`1x` · Nom · Coût) au
@@ -16,9 +16,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { resumeCarte } from './rpgCardResume.js';
 import {
-  CARD_RARITIES,
   RPG_DUEL_CARDS,
   RPG_ELEMENTS,
   cardById,
@@ -126,25 +124,6 @@ function Cout({ carte }) {
   );
 }
 
-/** Sceau discret sur l'illustration des sorts pour les distinguer au premier coup d'œil. */
-function SortSceau({ carte }) {
-  if (carte.kind !== 'instant' && carte.kind !== 'sorcery') return null;
-  const rapide = carte.kind === 'instant';
-  return (
-    <span
-      className={`rpg-atelier__sceau rpg-atelier__sceau--${rapide ? 'instant' : 'sorcery'}`}
-      title={rapide ? 'Magie rapide — jouable à tout moment' : 'Sorcellerie — jouable à votre phase principale'}
-      aria-hidden="true"
-    >
-      {rapide ? (
-        <svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h6L9.5 22 19 10.5h-6L13.5 2z" /></svg>
-      ) : (
-        <svg viewBox="0 0 24 24"><path d="M12 2.5 14.6 9l6.9.6-5.2 4.5 1.6 6.8L12 17.3 6.1 20.9l1.6-6.8-5.2-4.5L9.4 9 12 2.5z" /></svg>
-      )}
-    </span>
-  );
-}
-
 function trierCatalogue(liste, tri) {
   return [...liste].sort((a, b) => {
     if (tri === 'nom') return a.name.localeCompare(b.name, 'fr');
@@ -168,31 +147,6 @@ function memeRecette(a, b) {
   const triA = [...a].sort();
   const triB = [...b].sort();
   return triA.every((id, i) => id === triB[i]);
-}
-
-/** Ligne de type courte et lisible pour le bandeau intermédiaire d'une carte. */
-function typeCourtCarte(carte) {
-  const couleurs = cardColors(carte).map((c) => COULEUR_LABELS[c]).filter(Boolean).join('/');
-  const suffixe = couleurs ? ` · ${couleurs}` : '';
-  if (carte.kind === 'hero') return `Héros${suffixe}`;
-  if (carte.kind === 'creature') return `Créature${suffixe}`;
-  if (carte.kind === 'instant') return `Magie rapide${suffixe}`;
-  if (carte.kind === 'sorcery') return `Sorcellerie${suffixe}`;
-  if (carte.kind === 'weapon') return `Arme${suffixe}`;
-  return cardTypeLine(carte);
-}
-
-/** Texte d'effet lisible directement sur la carte dans la grille. */
-function texteLisibleCarte(carte) {
-  const court = resumeCarte(carte, 116);
-  if (court) return court;
-  if (carte.kind === 'weapon') {
-    const parties = [];
-    if (carte.atkBonus) parties.push(`+${carte.atkBonus} ATQ`);
-    if (carte.defBonus) parties.push(`+${carte.defBonus} DÉF`);
-    return parties.length ? `Équipement : confère ${parties.join(' et ')}.` : 'Équipement de combat.';
-  }
-  return 'Combattant sans capacité spéciale.';
 }
 
 /** Losanges d'exemplaires façon MTG Arena au-dessus de chaque carte. */
@@ -225,18 +179,14 @@ export function RpgDeckAtelier({
   collection = [],
   exemplaires = null,
   artUrl,
+  renderCatalogueFace = null,
+  onOpenCardPreview = null,
   onEnregistrer,
   onAnnuler,
   onSupprimer = null,
-  onHoverCard = null,
-  onLeaveHoverCard = null,
-  onInspecterCarte = null,
-  onQuitterCarte = null,
   surSfx = () => {},
 }) {
   const libelleDefaut = nomParDefaut ?? nomInitial ?? 'Deck maison';
-  const inspecter = onHoverCard ?? onInspecterCarte;
-  const quitterInspection = onLeaveHoverCard ?? onQuitterCarte;
 
   const idsDepart = useMemo(
     () => (deckInitial?.cardIds ? [...deckInitial.cardIds] : (cardIdsInitiaux ? [...cardIdsInitiaux] : [])),
@@ -273,12 +223,6 @@ export function RpgDeckAtelier({
   const [nommageOuvert, setNommageOuvert] = useState(false);
   const [nomPropose, setNomPropose] = useState('');
   const champNommageRef = useRef(null);
-
-  const appuiLongRef = useRef({ timer: null, consomme: false });
-
-  useEffect(() => () => {
-    clearTimeout(appuiLongRef.current.timer);
-  }, []);
 
   useEffect(() => {
     if (nommageOuvert) champNommageRef.current?.focus();
@@ -500,29 +444,6 @@ export function RpgDeckAtelier({
     onSupprimer(deckInitial.id);
   };
 
-  const debutToucher = (carte, event) => {
-    if (event.pointerType === 'mouse' || !inspecter) return;
-    const cible = event.currentTarget;
-    clearTimeout(appuiLongRef.current.timer);
-    appuiLongRef.current.consomme = false;
-    appuiLongRef.current.timer = setTimeout(() => {
-      appuiLongRef.current.consomme = true;
-      inspecter(carte, { currentTarget: cible });
-    }, 380);
-  };
-
-  const finToucher = () => {
-    clearTimeout(appuiLongRef.current.timer);
-  };
-
-  const cliquerCarteGrille = (carte) => {
-    if (appuiLongRef.current.consomme) {
-      appuiLongRef.current.consomme = false;
-      return;
-    }
-    ajouter(carte);
-  };
-
   const maxCourbe = Math.max(1, courbe.max);
   const resumeCourbe = courbe.paliers.map((palier) => `${palier.label} mana : ${palier.nombre}`).join(', ');
 
@@ -535,12 +456,6 @@ export function RpgDeckAtelier({
         className="rpg-atelier__ligne"
         data-card-id={carte.id}
         style={{ '--frame': cardFrameColor(carte) }}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          retirerUne(carte.id);
-        }}
-        onMouseEnter={inspecter ? (event) => inspecter(carte, event) : undefined}
-        onMouseLeave={quitterInspection ?? undefined}
       >
         {artUrl && (
           <img
@@ -550,6 +465,12 @@ export function RpgDeckAtelier({
             loading="lazy"
           />
         )}
+        <button
+          type="button"
+          className="rpg-atelier__ligne-ouvrir"
+          aria-label={`Voir ${carte.name}`}
+          onClick={() => onOpenCardPreview?.(carte)}
+        />
         <span className="rpg-atelier__ligne-qte" aria-hidden="true">{nombre}x</span>
         <span className="rpg-atelier__ligne-nom">
           <strong>{carte.name}</strong>
@@ -735,7 +656,7 @@ export function RpgDeckAtelier({
           )}
 
           <p className="rpg-atelier__astuce">
-            Touchez une carte pour l’ajouter · maintenez le doigt posé pour la lire en grand.
+            Touchez une carte pour la lire · utilisez « + » pour l’ajouter et « − » pour la retirer.
           </p>
 
           <ul className="rpg-atelier__cartes" aria-label="Cartes du catalogue">
@@ -750,11 +671,10 @@ export function RpgDeckAtelier({
                 ? (typeof origineInfo === 'string' ? origineInfo : (origineInfo.etage || origineInfo.tour || 'Histoire'))
                 : null;
               const auPlafond = possedee && limite > 0 && dansLeDeck >= limite;
-              const couleurRarete = CARD_RARITIES[carte.rarity]?.color ?? '#9d9d9d';
-              const libelleRarete = CARD_RARITIES[carte.rarity]?.label ?? carte.rarity;
 
               const classes = [
                 'rpg-atelier__carte',
+                'rpg-card-catalogue__card',
                 !possedee && 'is-locked',
                 dansLeDeck > 0 && 'is-picked',
                 auPlafond && 'is-full',
@@ -765,18 +685,7 @@ export function RpgDeckAtelier({
                   key={carte.id}
                   className={classes}
                   data-card-id={carte.id}
-                  style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte), '--rarete': couleurRarete }}
-                  onContextMenu={(event) => {
-                    if (dansLeDeck <= 0) return;
-                    event.preventDefault();
-                    retirerUne(carte.id);
-                  }}
-                  onMouseEnter={inspecter ? (event) => inspecter(carte, event) : undefined}
-                  onMouseLeave={quitterInspection ?? undefined}
-                  onPointerDown={(event) => debutToucher(carte, event)}
-                  onPointerUp={finToucher}
-                  onPointerCancel={finToucher}
-                  onPointerLeave={finToucher}
+                  style={{ '--frame': cardFrameColor(carte), '--rpg-frame-color': cardFrameColor(carte) }}
                 >
                   <LosangesExemplaires
                     quotaMax={quotaMax}
@@ -784,62 +693,26 @@ export function RpgDeckAtelier({
                     dansLeDeck={dansLeDeck}
                   />
 
+                  <span className={`rpg-atelier__carte-art rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
+                    {renderCatalogueFace
+                      ? renderCatalogueFace(carte, { exemplaires: possedee ? limite : 0, verrouillee: !possedee })
+                      : <><img src={artUrl?.(carte.id)} alt={`Illustration de ${carte.name}`} loading="lazy" /><Cout carte={carte} /></>}
+                    <button
+                      type="button"
+                      className="rpg-atelier__carte-ouvrir rpg-card-catalogue__ouvrir"
+                      aria-label={`Agrandir ${carte.name}${!possedee ? ', carte verrouillée' : ''}`}
+                      onClick={() => onOpenCardPreview?.(carte)}
+                    />
+                  </span>
                   <button
                     type="button"
                     className="rpg-atelier__carte-ajout"
                     disabled={!avis.ok}
-                    title={avis.ok
-                      ? `Ajouter ${carte.name} (${dansLeDeck}/${limite}) · clic droit pour retirer`
-                      : `${carte.name} — ${origine ? `Verrouillée · ${origine}` : avis.raison}`}
-                    aria-label={possedee
-                      ? `${carte.name}, coût ${cardCost(carte)}, ${dansLeDeck} sur ${limite} dans le deck`
-                      : `${carte.name}, verrouillée (${origine ?? 'hors collection'})`}
-                    onClick={() => cliquerCarteGrille(carte)}
+                    title={avis.ok ? `Ajouter un exemplaire de ${carte.name}` : `${carte.name} — ${origine ? `Verrouillée · ${origine}` : avis.raison}`}
+                    aria-label={`Ajouter un exemplaire de ${carte.name}`}
+                    onClick={() => ajouter(carte)}
                   >
-                    <span className="rpg-atelier__carte-entete">
-                      <span className="rpg-atelier__carte-nom">
-                        <strong>{carte.name}</strong>
-                      </span>
-                      <Cout carte={carte} />
-                    </span>
-
-                    <span className={`rpg-atelier__carte-art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}>
-                      {artUrl && <img src={artUrl(carte.id)} alt="" loading="lazy" />}
-                      <SortSceau carte={carte} />
-                      {!possedee && (
-                        <span className="rpg-atelier__carte-cadenas" aria-hidden="true">🔒</span>
-                      )}
-                      {dansLeDeck > 0 && (
-                        <span className="rpg-atelier__carte-count" aria-hidden="true">
-                          ×{dansLeDeck}
-                          <small>/{limite}</small>
-                        </span>
-                      )}
-                    </span>
-
-                    <span className="rpg-atelier__carte-meta">
-                      <span className="rpg-atelier__carte-famille">{typeCourtCarte(carte)}</span>
-                      <span className="rpg-atelier__rarete" title={libelleRarete} aria-hidden="true" />
-                    </span>
-
-                    <span className="rpg-atelier__carte-corps">
-                      <span className="rpg-atelier__carte-regle">{texteLisibleCarte(carte)}</span>
-                      <span className="rpg-atelier__carte-pied">
-                        {!possedee && origine ? (
-                          <span className="rpg-atelier__carte-origine">{origine}</span>
-                        ) : <span />}
-                        {(carte.kind === 'creature' || carte.kind === 'hero') && (
-                          <span className="rpg-atelier__carte-pt" aria-label={`Attaque ${carte.atk}, défense ${carte.def}`}>
-                            {carte.atk}/{carte.def}
-                          </span>
-                        )}
-                        {carte.kind === 'weapon' && (
-                          <span className="rpg-atelier__carte-pt">
-                            +{carte.atkBonus}/+{carte.defBonus}
-                          </span>
-                        )}
-                      </span>
-                    </span>
+                    +
                   </button>
 
                   {dansLeDeck > 0 && (
@@ -847,7 +720,7 @@ export function RpgDeckAtelier({
                       type="button"
                       className="rpg-atelier__carte-retrait"
                       aria-label={`Retirer un exemplaire de ${carte.name}`}
-                      title="Retirer un exemplaire (ou clic droit)"
+                      title="Retirer un exemplaire"
                       onClick={(event) => { event.stopPropagation(); retirerUne(carte.id); }}
                     >
                       −
@@ -1010,7 +883,7 @@ export function RpgDeckAtelier({
             {cardIds.length === 0 ? (
               <div className="rpg-atelier__vide rpg-atelier__vide--deck">
                 <strong>Votre deck est vide</strong>
-                <span>Cliquez sur une carte à gauche pour l’ajouter, ou faites un clic droit pour en retirer un exemplaire.</span>
+                <span>Cliquez sur une carte à gauche pour la lire, sur « + » pour l’ajouter ou sur « − » pour en retirer un exemplaire.</span>
               </div>
             ) : modeListeDeck === 'cout' ? (
               <ul className="rpg-atelier__pile" aria-label="Cartes du deck triées par coût">

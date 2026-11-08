@@ -996,8 +996,22 @@
 .rpg-card--img {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
+  /* La taille des trois repères est commune à toutes les faces : voir « Une
+     seule mesure pour les trois repères », plus bas. */
   padding: 0;
+  /* Les pierres d'effets sont chevillées au bord droit de la carte et en
+     débordent à moitié (`effet-icons.css`, « Les emblèmes montés sur le
+     bord »). Le rognage s'ouvre donc de 16 px — `clip` et non `hidden`, comme
+     la pastille d'arme de `has-arme` : le débordement se voit sans jamais
+     ouvrir de zone de défilement. L'illustration reprend le rayon du cadre à
+     son compte (règle suivante), puisqu'il ne rogne plus ses coins. */
   overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 24px;
+}
+
+.rpg-card--img > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
+  border-radius: inherit;
 }
 
 .rpg-card__img {
@@ -1512,8 +1526,20 @@
 .rpg-draft__row .rpg-hand__art { padding: 14px 0; font-size: 30px; }
 .rpg-draft__row .rpg-hand__text { -webkit-line-clamp: 7; font-size: 9px; }
 
-/* Cartes full art en main : illustration, couleur, coût, type et statistiques. */
-.rpg-hand__card--img { padding: 0; overflow: hidden; }
+/* Cartes full art en main : illustration, couleur, coût, type et statistiques.
+   Même ouverture de rognage que `.rpg-card--img` : la colonne de pierres déborde
+   du bord droit (14 px de marge, `clip` sans zone de défilement), et
+   l'illustration reprend le rayon du cadre à son compte. */
+.rpg-hand__card--img {
+  padding: 0;
+  overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 20px;
+}
+
+.rpg-hand__card--img > .rpg-hand__img {
+  border-radius: inherit;
+}
 
 .rpg-hand__img {
   position: absolute;
@@ -3475,7 +3501,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   max-width: none;
   overflow: visible;
   justify-content: center;
-  gap: clamp(3px, .65vw, 10px);
+  gap: clamp(8px, 1vw, 18px);
   padding-inline: clamp(8px, 1.5vw, 24px);
   pointer-events: none;
   mask-image: none;
@@ -4720,20 +4746,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  /* La face de l'aperçu rapide est une grande face, comme au catalogue : sa
-     pastille de couleur suit la même échelle (35–38 px, glyphe 19 px, liseré
-     2 px) au lieu du petit repère des cartes en jeu. */
+  /* La face de l'aperçu rapide est une grande face : la mesure commune des
+     repères y donne la plus grande pierre du jeu (plafond de 40 px). */
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
+  /* Les pierres d'effets de l'aperçu sont chevillées au bord de la face et en
+     débordent de 45 % (`effet-icons.css`, « L'aperçu de carte ») : le rognage
+     s'ouvre de 22 px, `clip` sans zone de défilement, et l'illustration reprend
+     le rayon du cadre à son compte (règle suivante). */
   overflow: hidden;
+  overflow: clip;
+  overflow-clip-margin: 22px;
   --rpg-frame-fill: transparent;
   border: var(--rpg-card-border-large, 6px) solid var(--rpg-frame-color, #f1f3f5);
   border-radius: var(--rpg-card-radius-sm, 8px);
   background: transparent;
   box-shadow: 0 3px 10px rgba(0, 0, 0, .25);
 }
-.rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.rpg-hover-card-preview__face > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
 /* La Furie déclenchée, dans la preview comme sur la table : la peinture
    alternative occupe toute la face, aucun anneau ne la rogne. */
 .rpg-hover-card-preview__face.is-furie {
@@ -5405,12 +5436,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mulligan__card .rpg-mana-cost {
   position: absolute;
   z-index: 4;
-  top: var(--rpg-card-element-marker-top, 5%);
-  right: var(--rpg-card-element-marker-left, 6%);
+  /* Comme sur l'aperçu : le coût se range **sous** l'hexagone de couleur, dans
+     le même coin. Le mulligan, l'aperçu et la table lisent donc leurs repères
+     dans le même ordre — ce que la carte est, puis ce qu'elle coûte. */
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px);
+  right: auto;
+  left: var(--rpg-card-element-marker-left, 6%);
   aspect-ratio: 1;
   padding: 0;
-  border-radius: 50%;
-  font-size: calc(var(--rpg-card-marker-size, 30px) * .48);
+  border-radius: 0;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .52);
   pointer-events: none;
 }
 .rpg-mulligan__card .rpg-mana-cost i {
@@ -6175,6 +6210,128 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 3px #000;
   pointer-events: none;
 }
+/* ── Une seule mesure pour les trois repères ────────────────────────────────
+   La table, la main, le mulligan, l'aperçu, le catalogue et l'atelier posaient
+   chacun leur taille : 24 px fixes ici, 13 % là, 32 px ailleurs. Une même carte
+   ne ressemblait donc pas à elle-même d'une surface à l'autre, et les grandes
+   faces (mulligan, aperçu) portaient les plus **petites** pastilles.
+   Désormais **une seule règle** : 21 % de la largeur de la carte, entre 18 et
+   40 px. L'hexagone de couleur, le losange de coût et les pierres d'effets font
+   exactement la même taille, et la même part de la carte, partout.
+   `cqw` se mesure sur le conteneur : la mesure vit donc sur les **enfants** de
+   la face, pas sur la face elle-même, et `container-type` ouvre le conteneur.
+   Une vignette minuscule (le cimetière) garde sa propre réduction. */
+.rpg-card--img,
+.rpg-hand__card--img,
+.rpg-mulligan__card,
+.rpg-hover-card-preview__face,
+.rpg-card-catalogue__art,
+.rpg-atelier__carte-art {
+  container-type: inline-size;
+}
+
+.rpg-card--img > *,
+.rpg-hand__card--img > *,
+.rpg-mulligan__card > *,
+.rpg-hover-card-preview__face > *,
+.rpg-card-catalogue__art > *,
+.rpg-atelier__carte-art > * {
+  --rpg-plaque-taille: clamp(24px, 26cqw, 52px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille, 24px) * 1.12);
+}
+
+/* ── La couleur, le coût : des pierres comme les effets ──────────────────────
+   Les trois repères d'une carte parlent la même langue. La pierre taillée des
+   effets porte désormais la **couleur** (hexagone) et le **coût** (losange) :
+   même biseau, même filet, même contour d'encre, et **la même taille** que les
+   pierres d'effets — `--rpg-plaque-taille`, posée par la face de la carte.
+   La silhouette seule dit ce qu'on lit ; plus de disque rond, plus de bordure
+   claire : c'est la pierre qui borde. */
+/* La pierre nue se pose **dans le flux** du repère et l'habille : le repère est
+   une grille d'une seule case, la pierre et son glyphe s'y superposent. Pas de
+   `position: absolute` : les coûts de la main vivent dans le flux du titre de
+   la carte, et une pierre en absolu y prendrait la taille de toute la carte. */
+.rpg-plaque-forme {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rpg-battle .rpg-card-element-badge.is-plaque > *,
+.rpg-battle .rpg-mana-cost.is-plaque > *,
+.rpg-battle .rpg-card-element-badge__pip.is-plaque > * {
+  grid-area: 1 / 1;
+}
+
+/* Le préfixe `.rpg-battle` n'est pas décoratif : les réglages de surface
+   (table, main, aperçu, catalogue) datent des pastilles rondes et fixent encore
+   un diamètre ou un corps de texte. À spécificité égale, c'est le dernier du
+   fichier qui gagne — et ces réglages viennent plus loin. Les trois repères
+   taillés doivent garder la même taille partout : on passe donc devant eux. */
+.rpg-battle .rpg-card-element-badge.is-plaque,
+.rpg-battle .rpg-mana-cost.is-plaque {
+  width: var(--rpg-plaque-taille, 24px);
+  height: var(--rpg-plaque-taille, 24px);
+  min-width: 0;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .52);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+}
+
+/* La main réduisait le disque de mana de 14 % : la pierre, elle, garde la
+   taille de la colonne d'effets qu'elle accompagne. */
+.rpg-battle .rpg-hand__card--img .rpg-mana-cost.is-plaque {
+  transform: none;
+}
+
+/* Une hybride empile ses hexagones : la boîte garde la largeur de la pierre et
+   laisse la colonne grandir vers le bas, sans fond ni cadre. */
+.rpg-battle .rpg-card-element-badge--hybride.is-plaque {
+  display: flex;
+  width: var(--rpg-plaque-taille, 24px);
+  height: auto;
+  aspect-ratio: auto;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rpg-battle .rpg-card-element-badge.is-plaque .rpg-card-element-badge__glyphe,
+.rpg-battle .rpg-mana-cost.is-plaque b,
+.rpg-battle .rpg-mana-cost.is-plaque i {
+  /* Le glyphe passe au-dessus de la pierre : la case de grille est partagée. */
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+
+/* Un coût hybride garde ses deux couleurs : le losange prend un dégradé
+   (`plaqueNue`, deux bases). Le chiffre, lui, reste au premier plan. */
+.rpg-battle .rpg-mana-cost.is-plaque {
+  font-weight: 900;
+}
+
+/* Une hybride empile ses couleurs : chaque pion devient un petit hexagone. */
+.rpg-battle .rpg-card-element-badge--hybride .rpg-card-element-badge__pip.is-plaque {
+  width: var(--rpg-plaque-taille, 24px);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .5);
+}
+
 .rpg-card-element-badge--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-card-element-badge--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); color: #281b05; text-shadow: 0 1px 1px rgba(255,255,255,.68); filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8)); }
@@ -6677,13 +6834,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   z-index: 1600;
   flex: none;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top left;
   transition: none !important;
   opacity: 1;
   box-shadow: 0 16px 38px rgba(0, 0, 0, .8), 0 0 22px rgba(255, 216, 121, .46);
   pointer-events: none;
   will-change: transform, filter;
+}
+/* La règle de vol doit aussi primer sur le rognage normal de la main.
+   L’illustration garde ses coins arrondis via .rpg-hand__img, mais les
+   pastilles chevauchant les deux bords restent entières pendant le trajet. */
+.rpg-battle .rpg-hand__card--img.rpg-card-flight {
+  overflow: visible;
 }
 .rpg-card-flight.is-flying { animation: rpg-card-flight-to-table .68s cubic-bezier(.18, .72, .3, 1) both; }
 /* Le vol d'une carte jouée, en trois temps. L'ÉLAN : elle se soulève de la
@@ -8391,9 +8554,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-deck-catalog--open .rpg-deck-list-family__heading strong { font-size: 11px; }
 .rpg-deck-catalog--open .rpg-deck-list-family__heading em { font-size: 11px; }
 .rpg-deck-catalog--open .rpg-deck-list-family__heading small { font-size: 9px; }
-.rpg-deck-catalog--open .rpg-deck-list li { grid-template-columns: 50px minmax(0, 1fr) auto; gap: 11px; padding: 7px 10px; }
+.rpg-deck-catalog--open .rpg-deck-list li { grid-template-columns: minmax(0, 1fr) auto; gap: 11px; padding: 7px 10px; }
+.rpg-deck-catalog--open .rpg-deck-list__ouvrir { grid-template-columns: 50px minmax(0, 1fr); gap: 11px; }
 .rpg-deck-catalog--open .rpg-deck-list img { width: 50px; height: 68px; }
-.rpg-deck-catalog--open .rpg-deck-list li > span { gap: 4px; }
+.rpg-deck-catalog--open .rpg-deck-list__ouvrir span { gap: 4px; }
 .rpg-deck-catalog--open .rpg-deck-list li strong { font-size: 11.5px; }
 .rpg-deck-catalog--open .rpg-deck-list li small { font-size: 9px; }
 .rpg-deck-catalog--open .rpg-deck-list li > b { font-size: 11.5px; }
@@ -8434,16 +8598,31 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-deck-list-family[data-famille='sorts'] .rpg-deck-list-family__heading strong { color: #cbb9f2; }
 .rpg-deck-list-family[data-famille='terrains'] .rpg-deck-list-family__heading strong { color: #a8d8c0; }
 .rpg-deck-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 12px; margin: 0; padding: 0; list-style: none; }
-.rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 6px; border-bottom: 1px solid rgba(240, 226, 204, .08); border-radius: 4px; transition: background-color .14s ease, box-shadow .14s ease; }
-/* Survoler une ligne convoque l'aperçu grand format de la carte : la ligne
-   s'allume pour montrer qu'elle est la source de cet aperçu. */
+.rpg-deck-list li { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 4px 6px; border-bottom: 1px solid rgba(240, 226, 204, .08); border-radius: 4px; transition: background-color .14s ease, box-shadow .14s ease; }
+/* La ligne s'allume au survol, sans agrandir son illustration : la fiche
+   s'ouvre volontairement au clic. */
 .rpg-deck-list li:hover { background: rgba(226, 187, 111, .1); box-shadow: inset 0 0 0 1px rgba(226, 187, 111, .22); }
 .rpg-deck-list li:hover strong { color: #ffe8b6; }
-.rpg-deck-list img { width: 30px; height: 40px; object-fit: cover; border: 1px solid rgba(220, 194, 144, .37); border-radius: 3px; transition: transform .14s ease, border-color .14s ease; }
-.rpg-deck-list li:hover img { transform: scale(1.06); border-color: rgba(233, 203, 143, .62); }
-.rpg-deck-list li > span { min-width: 0; display: grid; gap: 3px; }
+.rpg-deck-list img { width: 30px; height: 40px; object-fit: cover; border: 1px solid rgba(220, 194, 144, .37); border-radius: 3px; transition: border-color .14s ease; }
+.rpg-deck-list li:hover img { border-color: rgba(233, 203, 143, .62); }
+.rpg-deck-list__ouvrir {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rpg-deck-list__ouvrir:focus-visible { outline: 2px solid #e4bd6b; outline-offset: 2px; }
 /* Le nom et la ligne de type se lisent en capitales, comme les titres de
    familles : d'un coup d'œil, la liste est un inventaire, pas de la prose. */
+.rpg-deck-list__ouvrir span { min-width: 0; display: grid; gap: 3px; }
 .rpg-deck-list li strong { overflow: hidden; color: rgba(248, 239, 222, .92); font: 700 9px/1.2 Georgia, serif; letter-spacing: .04em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .rpg-deck-list li small { overflow: hidden; color: rgba(237, 220, 190, .68); font: 7px/1.2 var(--mono, monospace); letter-spacing: .05em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
 .rpg-deck-list li > b { color: #edcc82; font: 800 9px/1 var(--mono, monospace); }
@@ -8523,7 +8702,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 13px;
   background: linear-gradient(160deg, rgba(24, 20, 21, .98), rgba(13, 11, 16, .98));
   box-shadow: 0 12px 26px rgba(0, 0, 0, .3);
-  transition: transform .16s ease-out, border-color .16s ease-out, box-shadow .16s ease-out;
+  transition: border-color .16s ease-out, box-shadow .16s ease-out;
 }
 /* Une carte absente de la collection reste consultable : seule sa vignette est
    désaturée, son bouton d'ouverture et ses gestes d'aperçu restent actifs. */
@@ -8573,8 +8752,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   outline: 2px solid #e4bd6b;
   outline-offset: -2px;
 }
-/* L'amorce de zoom : le coin de l'illustration le dit, discret au repos, franc
-   au survol comme au focus. Aucun geste à deviner. */
+/* Le témoin de consultation reste fixe : il s'éclaire au survol sans
+   agrandir l'illustration ni lui-même. */
 .rpg-card-catalogue__zoom {
   position: absolute;
   z-index: 3;
@@ -8591,7 +8770,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   font: 700 13px/1 var(--mono, monospace);
   opacity: .55;
   pointer-events: none;
-  transition: opacity .16s ease-out, transform .16s ease-out;
+  transition: opacity .16s ease-out;
 }
 .rpg-card-catalogue__lock {
   position: absolute;
@@ -8616,12 +8795,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__card:focus-within {
   border-color: rgba(240, 213, 148, .46);
   box-shadow: 0 16px 32px rgba(0, 0, 0, .42);
-  transform: translateY(-2px);
 }
 .rpg-card-catalogue__card:hover .rpg-card-catalogue__zoom,
 .rpg-card-catalogue__card:focus-within .rpg-card-catalogue__zoom {
   opacity: 1;
-  transform: scale(1.08);
 }
 /* Pas de survol au doigt : l'amorce reste visible, elle dit que la carte
    s'ouvre — le geste, lui, est annoncé en tête du catalogue. */
@@ -8631,8 +8808,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (prefers-reduced-motion: reduce) {
   .rpg-card-catalogue__card,
   .rpg-card-catalogue__zoom { transition: none; }
-  .rpg-card-catalogue__card:hover,
-  .rpg-card-catalogue__card:focus-within { transform: none; }
 }
 .rpg-card-catalogue__art {
   position: relative;
@@ -8746,7 +8921,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-deck-catalog { grid-template-columns: minmax(0, 1fr); }
   /* Deux colonnes de vignettes dès que l'écran se resserre. */
   .rpg-deck-catalog--open .rpg-deck-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rpg-deck-catalog--open .rpg-deck-list li { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; }
+  .rpg-deck-catalog--open .rpg-deck-list li { gap: 8px; }
+  .rpg-deck-catalog--open .rpg-deck-list__ouvrir { grid-template-columns: 38px minmax(0, 1fr); gap: 8px; }
   .rpg-deck-catalog--open .rpg-deck-list img { width: 38px; height: 52px; }
   .rpg-deck-catalog--open .rpg-deck-list li strong { font-size: 10.5px; }
   .rpg-card-catalogue__grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr)); }
@@ -10535,9 +10711,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face .rpg-mana-cost {
   position: absolute;
   z-index: 4;
-  top: var(--rpg-card-element-marker-top, 5%);
-  right: var(--rpg-card-element-marker-left, 6%);
-  font-size: calc(var(--rpg-card-marker-size, 38px) * .48);
+  /* Le coût se range **sous la pastille de couleur**, dans le même coin haut
+     gauche : les deux repères de la carte — ce qu'elle est, ce qu'elle coûte —
+     se lisent d'un seul regard, et le coin haut droit reste libre pour la
+     colonne de pierres d'effets, qui y remonte comme sur les cartes en jeu.
+     Il prend la taille des pierres d'effets (`--rpg-plaque-taille`), pas celle
+     du repère : losange, hexagone et pierres font la même largeur. */
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 38px) + 6px);
+  left: var(--rpg-card-element-marker-left, 6%);
+  right: auto;
 }
 .rpg-hand__sceau,
 .rpg-hand__sort {
@@ -10629,7 +10811,8 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card.is-frozen {
   filter: saturate(0.72) brightness(1.06) contrast(1.02) hue-rotate(4deg);
   transition: filter 0.45s ease;
-  overflow: hidden;
+  /* Seul le calque de givre est rogné ; coût, couleurs et effets débordent. */
+  overflow: visible;
 }
 .rpg-card.is-frozen .rpg-card__img {
   filter: saturate(0.68) brightness(1.04) contrast(1.02) sepia(0.06) hue-rotate(165deg);
@@ -11272,7 +11455,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Les aperçus de cartes (`.rpg-hover-card-preview__face`) et les cartes
    révélées dans les boosters (`.rpg-souk__carte-art`) en sont volontairement
    exclus : leurs illustrations restent nettes, sans glow multicolore. L'aperçu
-   garde son inclinaison 3D au survol ; seule la couche de foil disparaît.
+   reste statique, sans inclinaison 3D ni reflet suivant le curseur.
    Les cartes posées sur la table (main, mulligan, créatures, terrains et dessus
    du paquet) restent elles aussi sans foil.
 
@@ -11314,64 +11497,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Les faces de table, les aperçus et les cartes révélées dans les boosters
    restent sans foil ; seules les fiches du guide gardent cette couche. */
 
-/* ── La face de l'aperçu en 3D ───────────────────────────────────────────────
-   Seule l'aperçu — survol, appui long, fiche du catalogue, annonce, mulligan —
-   penche avec le curseur ; toutes les autres cartes restent à plat, sinon la
-   table danserait sous le pointeur. L'inclinaison vient de deux variables que
-   la page écrit sur la face ; le retour au repos est la transition, qu'on
-   coupe le temps que le curseur suit (`is-suit-la-souris`), sans quoi la
-   carte traînerait derrière lui. La focale est posée dans le `transform`
-   lui-même : la face reste ainsi indépendante de la perspective du parent, qui
-   sert à l'aperçu annoncé et à la fiche. */
+/* Aperçus statiques : pas de perspective, de transition d’inclinaison ni
+   de calque lumineux. Pas de promotion GPU permanente pour cette face. */
 .rpg-hover-card-preview .rpg-hover-card-preview__face {
-  /* `--rpg-face-3d-s` annule l'agrandissement que la perspective applique au
-     côté le plus proche du pointeur : sans lui, la carte penchée dépasse sa
-     propre boîte et le volet lui en rognerait les bords. C'est l'équivalent
-     explicite de ce que la perspective fait déjà — la carte garde sa taille,
-     elle ne sort simplement plus de son cadre. */
-  transform:
-    perspective(var(--rpg-face-3d-focale, 880px))
-    rotateX(var(--rpg-face-3d-x, 0deg))
-    rotateY(var(--rpg-face-3d-y, 0deg))
-    scale(var(--rpg-face-3d-s, 1));
-  will-change: transform;
-  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
-}
-.rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
+  transform: none;
+  will-change: auto;
   transition: none;
-}
-
-/* ── Reflet lumineux réservé aux previews clic droit ─────────────────────────
-   Uniquement monté quand la fiche est ouverte par un clic droit : le point
-   chaud doré et son écharpe irisée glissent sous le curseur à la manière du
-   booster du Souk, sans toucher aux cartes posées ni aux aperçus de survol. */
-.rpg-hover-card-preview__lumiere {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      115% 95% at var(--rpg-lumiere-x, 50%) var(--rpg-lumiere-y, 30%),
-      rgba(255, 248, 222, .62) 0%,
-      rgba(255, 204, 114, .22) 36%,
-      transparent 68%
-    ),
-    linear-gradient(
-      calc(115deg + var(--rpg-lumiere-angle, 0deg)),
-      transparent 24%,
-      rgba(255, 220, 140, .24) 44%,
-      rgba(164, 228, 255, .18) 50%,
-      rgba(244, 182, 255, .16) 56%,
-      transparent 76%
-    );
-  opacity: 0;
-  mix-blend-mode: screen;
-  pointer-events: none;
-  transition: opacity .22s ease;
-}
-.rpg-hover-card-preview__face.is-suit-la-souris .rpg-hover-card-preview__lumiere {
-  opacity: var(--rpg-lumiere-opacite, 1);
 }
 
 /* La défausse est un choix confirmé : la carte retenue reste nettement
@@ -13125,9 +13256,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Cercle magique d'un sacrifice ──────────────────────────────────────────
-   Quand une créature est sacrifiée (plateau plein), un cercle de runes
+   Quand une créature paie une invocation, un cercle de runes
    s'allume à son emplacement : halo qui pulse, anneaux en rotation,
-   glyphes et étincelles. Couleurs arcane : violet profond sur or pâle.
+   glyphes et étincelles. Or chaud et traits de runes lumineux.
    Le calque reprend la place et l'inclinaison de la créature sacrifiée,
    ne capte aucun geste et ne recalcule aucune mise en page. */
 
@@ -13137,7 +13268,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: rotate(var(--rpg-fx-rotation, 0rad));
   transform-origin: center;
   pointer-events: none;
-  animation: rpg-cercle-magique-vie .9s ease-out both;
+  animation: rpg-cercle-magique-vie calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 /* Soleil central : halo lumineux qui bat puis s'efface. */
@@ -13151,65 +13282,41 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 50%;
   background: radial-gradient(circle,
     rgba(226, 212, 170, .9),
-    rgba(170, 110, 255, .55) 42%,
-    rgba(110, 40, 220, 0) 78%);
-  box-shadow: 0 0 26px rgba(170, 110, 255, .75), 0 0 52px rgba(110, 40, 220, .5);
-  animation: rpg-cercle-magique-soleil .9s ease-out both;
+    rgba(225, 175, 65, .55) 42%,
+    rgba(170, 112, 25, 0) 78%);
+  box-shadow: 0 0 26px rgba(225, 175, 65, .75), 0 0 52px rgba(170, 112, 25, .5);
+  animation: rpg-cercle-magique-soleil calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
-/* Anneaux de runes : deux cercles qui tournent en sens contraires. */
-.rpg-cercle-magique__anneau {
+/* Sceau géométrique : SVG carré, cercles concentriques, étoile à six
+   branches et hexagone. Les deux orbites tournent en sens contraires. */
+.rpg-invocation-sceau {
   position: absolute;
-  top: 50%;
   left: 50%;
-  border-radius: 50%;
-  translate: -50% -50%;
-  opacity: 0;
-}
-.rpg-cercle-magique__anneau--externe {
-  width: 140%;
-  height: 140%;
-  border: 2px solid rgba(170, 110, 255, .7);
-  box-shadow: 0 0 22px rgba(170, 110, 255, .55);
-  animation: rpg-cercle-magique-anneau-externe .9s ease-out both;
-}
-.rpg-cercle-magique__anneau--interne {
-  width: 100%;
-  height: 100%;
-  border: 2px solid rgba(226, 212, 170, .75);
-  box-shadow: 0 0 16px rgba(226, 212, 170, .5);
-  animation: rpg-cercle-magique-anneau-interne .9s ease-out both;
-}
-
-/* Glyphes disposés sur le cercle, chacun à son angle et à son retard. */
-.rpg-cercle-magique__glyphe {
-  position: absolute;
   top: 50%;
-  left: 50%;
-  width: 120%;
-  height: 120%;
+  width: 155%;
+  height: auto;
+  aspect-ratio: 1;
   translate: -50% -50%;
-  rotate: var(--r, 0deg);
-  border-top: 1.4px solid rgba(226, 212, 170, .5);
-  border-radius: 50%;
-  opacity: 0;
-  animation: rpg-cercle-magique-glyphe .9s ease-out both;
-  animation-delay: var(--d, 0ms);
+  overflow: visible;
+  stroke: #e8c878;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(225, 175, 65, .65));
 }
-
-/* Étincelles qui montent du cercle. */
-.rpg-cercle-magique__etincelle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 7px #fff, 0 0 14px rgba(226, 212, 170, .7);
-  opacity: 0;
-  animation: rpg-cercle-magique-etincelle var(--d, 700ms) ease-out both;
+.rpg-invocation-sceau__orbite {
+  transform-origin: 100px 100px;
+  animation: rpg-invocation-orbite calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) linear both;
+}
+.rpg-invocation-sceau__orbite--interne {
+  animation-direction: reverse;
+  stroke: #fff0b5;
+}
+.rpg-invocation-sceau__coeur { stroke: #fff5d4; stroke-width: 1.6; }
+@keyframes rpg-invocation-orbite {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes rpg-cercle-magique-vie {
@@ -13223,36 +13330,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   45% { scale: 1.05; opacity: .95; }
   100% { scale: 1.55; opacity: 0; }
 }
-@keyframes rpg-cercle-magique-anneau-externe {
-  0% { scale: .35; rotate: 0deg; opacity: 0; }
-  35% { opacity: .9; }
-  100% { scale: 1.6; rotate: 360deg; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-anneau-interne {
-  0% { scale: .35; rotate: 0deg; opacity: 0; }
-  25% { opacity: .95; }
-  100% { scale: 1.25; rotate: -360deg; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-glyphe {
-  0% { scale: .2; opacity: 0; }
-  55% { opacity: .85; }
-  100% { scale: .85; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-etincelle {
-  0% { translate: -50% -50%; scale: .2; opacity: 0; }
-  35% { opacity: 1; }
-  100% { translate: calc(-50% + var(--tx, 0px)) calc(-50% + var(--ty, 0px)); scale: .7; opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rpg-abordage-chaine { display: none; }
   .rpg-abordage-liens { display: none; }
   .rpg-card-destruction-fx.is-abordage { animation: none; opacity: 0; }
   .rpg-cercle-magique,
   .rpg-cercle-magique__soleil,
-  .rpg-cercle-magique__anneau,
-  .rpg-cercle-magique__glyphe,
-  .rpg-cercle-magique__etincelle { animation: none !important; }
+  .rpg-invocation-sceau__orbite { animation: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -15532,3 +15616,242 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-offre-lancement--slide .rpg-offre-lancement__prix strong { font-size: clamp(16px, 13cqh, 23px); }
   .rpg-offre-lancement--slide .rpg-offre-lancement__bouton { min-height: 36px; margin-top: 0; padding: 4px 8px; }
 }
+
+/* Repères de gauche : même chevauchement sur toutes les faces, en miroir
+   de la colonne d'effets. Ces seules coordonnées priment sur les anciens
+   placements propres au mobile, au MOBA et aux vignettes. */
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  :is(.rpg-card-element-badge, .rpg-mana-cost).is-plaque {
+  left: 0 !important;
+  right: auto !important;
+  transform: translateX(-36%) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  > .rpg-card-element-badge.is-plaque {
+  top: var(--rpg-card-element-marker-top, 5%) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  .rpg-mana-cost.is-plaque {
+  /* Le titre est display:contents : le coût doit être positionné lui-même
+     relativement à la face, sinon top est ignoré sur PC. */
+  position: absolute;
+  z-index: 4;
+  bottom: auto;
+  top: 0 !important;
+  transform: translate(-36%, -36%) !important;
+  width: var(--rpg-cout-taille, 26.88px) !important;
+  height: var(--rpg-cout-taille, 26.88px) !important;
+  font-size: calc(var(--rpg-cout-taille, 26.88px) * .52) !important;
+}
+/* Le coût chevauche le coin ; la couleur commence sous ses 64 % visibles.
+   Sans coût (terrain), la couleur garde son placement haut habituel. */
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card-element-badge.is-plaque {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + 6px) !important;
+  bottom: auto;
+}
+/* Le rognage conserve l'image dans son cadre, sans couper les pierres. */
+.rpg-battle :is(.rpg-mulligan__card, .rpg-card-catalogue__art, .rpg-atelier__carte-art) {
+  overflow: clip;
+  overflow-clip-margin: 22px;
+}
+.rpg-battle :is(.rpg-mulligan__card, .rpg-card-catalogue__art, .rpg-atelier__carte-art) > img {
+  border-radius: inherit;
+}
+
+/* Les anciens bandeaux ne doivent plus servir de référentiel au coût. */
+.rpg-battle .rpg-hand__card--img > .rpg-hand__title,
+.rpg-battle .rpg-card--img > .rpg-card__title {
+  display: contents;
+}
+/* Les compteurs restent sous la couleur, y compris sous les deux losanges
+   hybrides : ils ne prennent pas l'ancienne place du coût. */
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card__compteurs {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + var(--rpg-plaque-taille, 24px) + 12px + var(--rpg-card-counter-size) * .21) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(> .rpg-card-element-badge--hybride.is-plaque):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card__compteurs {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + 2 * var(--rpg-plaque-taille, 24px) + 14px + var(--rpg-card-counter-size) * .21) !important;
+}
+
+/* Les emblèmes doivent rester entiers : seul le dessin de la face arrondit
+   ses coins, ni le volet ni sa face ne masquent les repères débordants. */
+.rpg-battle .rpg-hover-card-preview,
+.rpg-battle .rpg-hover-card-preview__face {
+  overflow: visible;
+}
+
+/* Le panneau défilant de la fiche impose un clip horizontal, même quand la
+   face est en overflow:visible. Réserver le débord DANS la grille évite de
+   couper les pierres au bord du panneau, sans supprimer son défilement.
+   28 px couvrent 45 % de 52 px + le halo de la pierre. */
+.rpg-battle .rpg-hover-card-preview {
+  box-sizing: border-box;
+  padding: 28px;
+  column-gap: 32px;
+}
+
+/* Petits tirs pré-combat : couche de la table, jamais rognée par une carte. */
+.rpg-projectile-combat {
+  position: absolute;
+  z-index: 1700;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: rpg-projectile-trajet calc(.55s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .1, .65, 1) both;
+}
+.rpg-projectile-combat__tete {
+  display: block;
+  position: absolute;
+  width: 24px;
+  height: 12px;
+  top: -6px;
+  left: -12px;
+  transform: rotate(var(--tir-angle));
+  border-radius: 65% 45% 45% 65%;
+  background: linear-gradient(90deg, transparent, #f04412 35%, #ffbe32 70%, #fff4b0);
+  filter: drop-shadow(0 0 5px #ff6b16);
+}
+.rpg-projectile-combat--ciblee .rpg-projectile-combat__tete {
+  width: 30px;
+  height: 6px;
+  top: -3px;
+  background: linear-gradient(90deg, transparent, #9cddff 65%, #fff);
+  clip-path: polygon(0 25%, 75% 25%, 75% 0, 100% 50%, 75% 100%, 75% 75%, 0 75%);
+  filter: drop-shadow(0 0 4px #56bdff);
+}
+@keyframes rpg-projectile-trajet {
+  0% { transform: translate(0, 0) scale(.65); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--tir-dx), var(--tir-dy)) scale(1.1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-projectile-combat { display: none; animation: none; }
+}
+
+/* Le flocon SVG reste blanc et centré même sur les pierres Neige hybrides. */
+.rpg-battle .rpg-card-element-badge__glyphe:has(> .rpg-emblem--neige) {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+.rpg-battle .rpg-card-element-badge__glyphe > .rpg-emblem--neige {
+  display: block;
+  width: 56%;
+  height: 56%;
+}
+.rpg-battle .rpg-mana-cost i > .rpg-emblem--neige {
+  display: block;
+  width: 80%;
+  height: 80%;
+}
+
+/* Sablier de la pastille Sable : grands contours blancs et sable plein,
+   lisibles sans les détails ni les couleurs d’un emoji système. */
+.rpg-battle .rpg-card-element-badge__glyphe:has(> .rpg-card-hourglass) {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #fff9df;
+}
+.rpg-card-hourglass {
+  display: block;
+  width: 56%;
+  height: 56%;
+  overflow: visible;
+  filter: drop-shadow(0 1px 1px #392508);
+}
+
+/* Repères type/couleur plus discrets, sans réduire les pierres d’effets
+   ni leur surface de lecture. Même proportion sur chaque face de carte. */
+.rpg-battle .rpg-card-element-badge.is-plaque .rpg-card-element-badge__glyphe {
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .42);
+}
+.rpg-battle .rpg-sort-sceau > .rpg-sort-sigil {
+  width: 48%;
+  height: 48%;
+}
+
+/* Formes unifiées : les types de sorts sont des losanges, comme la couleur
+   et le coût. Le pictogramme et la teinte distinguent rapide et sorcellerie. */
+.rpg-sort-sceau--sorcellerie {
+  border-radius: 0;
+  border-color: transparent;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--rpg-sort-sceau-clair);
+}
+.rpg-sort-sceau--sorcellerie::before {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--rpg-sort-sceau-fond);
+}
+.rpg-sort-sceau--sorcellerie .rpg-sort-sigil { position: relative; }
+
+/* Même liseré doré que les pierres et le losange des armes. L’intérieur
+   des sceaux garde sa teinte de famille (jaune rapide, violet sorcellerie). */
+.rpg-sort-sceau--rapide,
+.rpg-sort-sceau--sorcellerie {
+  background: #d4b57a;
+}
+
+/* Catalogue : cartes flottantes, cinq colonnes, avec de la place pour les
+   pierres qui chevauchent les bords. Le padding garde aussi les débords dans
+   la zone du panneau défilant, y compris sur la première/dernière colonne. */
+.rpg-battle .rpg-card-catalogue__grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 40px 44px;
+  padding: 28px;
+  align-items: start;
+}
+.rpg-battle .rpg-card-catalogue__card,
+.rpg-battle .rpg-card-catalogue__card:is(.is-locked, :hover, :focus-within) {
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.rpg-battle .rpg-card-catalogue__art {
+  overflow: visible;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .38);
+}
+.rpg-battle .rpg-card-catalogue__art > img { border-radius: inherit; }
+.rpg-battle .rpg-card-catalogue__art .rpg-card-icones--colonne.rpg-card-icones--catalogue {
+  top: var(--rpg-card-element-marker-top, 5%);
+  bottom: auto;
+  right: 0;
+  left: auto;
+}
+.rpg-battle .rpg-card-catalogue__card.is-locked :is(.rpg-card-icones, .rpg-mana-cost) {
+  filter: grayscale(1);
+}
+@media (max-width: 820px) {
+  .rpg-battle .rpg-card-catalogue__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px;
+  }
+}
+@media (max-width: 560px) {
+  .rpg-battle .rpg-card-catalogue__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+    padding: 24px;
+  }
+}
+
+/* La vraie carte garde sa case, mais seule sa copie animée est visible
+   pendant le sacrifice : pas de réapparition sous les moitiés déchirées. */
+.rpg-card.is-sacrifice-animating { visibility: hidden; pointer-events: none; }
+.rpg-battle.is-reduced .rpg-cercle-magique,
+.rpg-battle.is-reduced .rpg-cercle-magique * { animation: none !important; }

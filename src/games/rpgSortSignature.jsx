@@ -15,7 +15,7 @@
  *   deux, liseré d'or pour l'une, d'améthyste pour l'autre, avec le sigle et le
  *   mot écrit.
  * - `SortSceau` — le même repère en jeton : le losange jaune de la Magie
- *   Rapide, son éclair au centre, le médaillon rond violet de la Sorcellerie —
+ *   Rapide, son éclair au centre, le losange violet de la Sorcellerie —
  *   pour les vignettes où un bandeau ne tiendrait pas (grille du catalogue,
  *   atelier, mulligan). Sa couleur dit la famille, jamais l'élément de la carte.
  *
@@ -55,7 +55,7 @@ export function SortSocle({ carte, variante = '' }) {
   );
 }
 
-/** Le jeton de la famille — losange jaune rapide ou médaillon rond violet. */
+/** Le jeton de la famille — losange jaune rapide ou losange violet. */
 export function SortSceau({ carte, className = '' }) {
   const famille = magieFamilleInfo(carte);
   if (!famille) return null;

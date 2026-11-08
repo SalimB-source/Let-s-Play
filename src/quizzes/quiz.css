@@ -914,24 +914,12 @@
    Même traitement pour le bandeau du quizz du jour, la bande d'accueil
    (`styles.css`), les résultats de recherche et la nav. */
 .quiz-card.is-finished,
-.quiz-daily.is-finished,
-.quiz-player-finished {
-  filter: grayscale(1) brightness(.78);
-  cursor: default;
-  pointer-events: none;
+.quiz-daily.is-finished {
+  /* Completed quizzes remain available to replay; completion is shown by the
+     checkmark, never by disabling or dimming the card. */
 }
-/* La carte reste lisible : on remonte un peu le contraste du texte et on garde
-   les liens utilisables (`pointer-events` rétablis sur les éléments cliquables
-   de l'écran « terminé », la carte grisée n'en a aucun). */
-.quiz-player-finished { pointer-events: auto; filter: grayscale(1) brightness(.9); }
-.quiz-card.is-finished:hover,
-.quiz-daily.is-finished:hover {
-  transform: none;
-  box-shadow: none;
-  border-color: var(--line);
-}
-.quiz-card.is-finished .quiz-card-copy h3 { color: var(--dim); }
-.quiz-card.is-finished .quiz-card-meta { color: var(--dim); }
+.quiz-player-finished { pointer-events: auto; }
+
 
 /* Le tampon sur la miniature : bandeau sombre + coche, lisible même sur une
    image claire une fois désaturée. */

@@ -63,21 +63,25 @@ function mesurerMain(touch) {
   return resultat;
 }
 
-test('au doigt, les icônes d’effets de la main restent des badges de 12 px', () => {
+test('au doigt, la main garde la mesure commune — le plancher de 18 px', () => {
   const { colonne, badge, glyphe } = mesurerMain(true);
-  assert.equal(colonne.width, '14px', 'la colonne ne prend plus les 22 px du disque de coût');
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 18px)', 'la colonne épouse la pierre');
   assert.equal(colonne.gap, '2px', 'les badges se serrent sans se coller');
-  assert.equal(badge.minWidth, '12px', 'le badge ne revient pas à 20 px');
-  assert.equal(badge.minHeight, '12px', 'le badge reste rond, pas ovale');
-  assert.equal(badge.padding, '1px', 'le contour garde une respiration minimale');
-  assert.equal(badge.border, '1px', 'le liseré suit la taille du badge');
-  assert.equal(glyphe.width, '8px', 'le glyphe rentre dans le badge');
-  assert.equal(glyphe.height, '8px', 'le glyphe reste carré');
+  // La pierre d'emblème occupe tout le badge : plus de pastille ronde ni de
+  // liseré CSS (la pierre porte son propre contour), et un pictogramme de 18 px
+  // — un cinquième d'une carte mobile de 83 px, lisible sans coller l'écran.
+  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille, 18px)', 'la pierre remplit le badge');
+  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille, 18px)', 'la pierre reste carrée, pas ovale');
+  assert.equal(badge.padding, '0px', 'plus de respiration : la pierre est le badge');
+  assert.equal(badge.border, '0px', 'le contour est dessiné dans la pierre');
+  assert.equal(glyphe.width, 'var(--rpg-plaque-taille, 18px)', 'le pictogramme remplit la pierre');
+  assert.equal(glyphe.height, 'var(--rpg-plaque-taille, 18px)', 'le pictogramme reste carré');
 });
 
-test('sur bureau, les badges de la main gardent leur taille de lecture', () => {
-  const { badge } = mesurerMain(false);
-  assert.equal(badge.minWidth, '20px', 'le correctif mobile ne rétrécit pas le plateau PC');
-  assert.equal(badge.minHeight, '20px', 'la hauteur suit');
-  assert.equal(badge.padding, '3px', 'le contour du bureau reste inchangé');
+test('sur bureau, les badges de la main prennent la mesure commune', () => {
+  const { colonne, badge } = mesurerMain(false);
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 20px)', 'la colonne épouse la pierre');
+  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille, 20px)', 'la pierre prend un cinquième de la carte');
+  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille, 20px)', 'la hauteur suit');
+  assert.equal(badge.padding, '0px', 'sur bureau aussi, la pierre est le badge');
 });

@@ -45,10 +45,8 @@ test('vidéos officielles datées et absence explicite de vidéo d’acquisition
   assert.ok(dailyStories[key].credit.includes('Visuel de contexte Git'));
 });
 
-test('accueil et hubs ouvrent sur le 5 novembre, Hier sur le 4 novembre', () => {
-  for (const f of ['src/pages/Home.jsx', 'src/pages/News.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(f).includes("from '../news/daily/2026-11-05'"), f);
-  assert.match(read('src/pages/News.jsx'), /yesterdayStories, editionDate as yesterdayDate.*2026-11-04/);
-  for (const f of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(f).includes("from '../news/daily/2026-11-04'"));
+test('édition du 5 novembre conservée dans les archives', () => {
+  for (const f of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(f).includes("from '../news/daily/2026-11-05'"));
 });
 
 test('compléments Laufey et GTA : dates, réserves commerciales et vidéos d’archive', () => {

@@ -99,7 +99,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // les premières cartes d'Eau.
   'souk-1': ['pourfendeur-des-djinns', 'vent-rouge', 'samourai-du-torii', 'djinn-des-braises-voilees', 'djinn-de-la-premiere-etincelle'],
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge', 'djinn-de-la-flamme-mourante', 'djinn-de-la-fleche-ardente'],
-  'souk-3': ['parade-du-verre', 'frappe-iaijutsu',
+  'souk-3': ['djinn-des-cendres-vengeresses', 'parade-du-verre', 'frappe-iaijutsu',
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',
@@ -109,7 +109,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // dernier étage de la tour. C'est la seule carte Sable + Ténèbres de la
   // campagne révélée avant la Nécropole (le roi de la nuit tombante).
   'sables-1': ['djinn-des-ailes-de-cendre', 'djinn-du-dernier-brasier', 'ifrit-des-ergs', 'maree-contraire', 'onna-musha-des-cendres', 'feux-de-kitsune', 'jitte-d-amayas', 'reanimation', 'sphere-de-rotation'],
-  'sables-2': ['memoire-de-l-armurerie', 'brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit',
+  'sables-2': ['memoire-de-l-armurerie', 'brisure-de-verre', 'courant-de-retour', 'tengu-du-mont-ardent', 'sabre-maudit', 'manticore-des-dunes',
     'negociant-des-ranscons', 'galion-de-la-flotte', 'le-grand-debarquement', 'grappin-d-abordage',
     'la-vengeance-de-la-reine-anne', 'le-tresor-de-lima'],
   'sables-3': ['rempart-des-sables-eternels', 'braise-et-sable', 'anqa-des-braises', 'tin-hinan', 'kusayla-roi-des-imazighen', 'yamina', 'oni-de-la-fournaise', 'kagutsuchi-flamme-originelle', 'serment-de-la-forge', 'cavalier-des-deux-sabres', 'orochi', 'susanoo', 'tojiro-le-pourfendeur', 'lame-des-ergs', 'takouba-de-tin-hinan', 'la-barbe-rousse', 'le-chasseur-d-ocracoke', 'source-de-bimini'],
@@ -130,9 +130,9 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Les communes ouvrent en bas, les rares au milieu, les mythiques au sommet.
   // Les quatre figures cross-éléments (Faucon, Lionne, Dame, Seigneur) montent
   // avec leurs mythiques tenebres — elles sont du même set.
-  'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
-  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
-  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
+  'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'porteur-de-la-plume', 'scarabee-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
+  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'veuve-des-urnes', 'gardien-des-sept-sceaux', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
+  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'lecteur-du-dernier-nom', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
   'necropole-4': ['sanguinaire-des-dunes', 'souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire', 'le-cavalier-sans-nom'],

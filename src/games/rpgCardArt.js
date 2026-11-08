@@ -61,6 +61,17 @@ const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
   'vampire-des-braises': 'vampire-braise-souffle-v2',
+  'novice-des-cendres': 'vampires-braise-novices-v1',
+  'chasseuse-de-braise': 'vampires-braise-novices-v1',
+  'messagere-des-cendres': 'messagere-vampire-v1',
+  'garde-du-voile': 'garde-vampire-v1',
+  'rodeuse-des-tombes': 'rodeuse-vampire-v1',
+  'sentinelle-du-brasier': 'sentinelle-vampire-v1',
+  'porteur-de-la-plume': 'tenebres-renforts-v1',
+  'scarabee-du-natron': 'tenebres-renforts-v1',
+  'veuve-des-urnes': 'tenebres-renforts-v1',
+  'gardien-des-sept-sceaux': 'tenebres-renforts-v1',
+  'lecteur-du-dernier-nom': 'tenebres-renforts-v1',
   'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',
@@ -131,6 +142,12 @@ const CARD_ART_CACHE_VERSIONS = {
   'faucon-du-zenith': 'faucon-deesse-solaire-v1',
   'dune-marchante': 'sable-souls-desore-v3',
   'fennec-des-decombres': 'fennec-esquive-pieges-v1',
+  // Petites bêtes du Sable : peintures dédiées, sans ancienne passe en cache.
+  'gerboise-des-ruines': 'sable-petites-betes-v1',
+  'scarabee-des-sceaux': 'sable-petites-betes-v1',
+  'scorpion-du-seuil': 'sable-petites-betes-v1',
+  // Manticore rare : illustration distincte des trois petites bêtes.
+  'manticore-des-dunes': 'sable-manticore-poison-v1',
   'tour-de-sable': 'tours-souls-2026-v1',
   'pourfendeur-des-djinns': 'pourfendeur-nuit-v2',
   'tislit-des-aures': 'sable-souls-desore-v3',

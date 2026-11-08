@@ -28,7 +28,46 @@ import {
   pastillesPourCarte,
   iconePourLigne,
 } from './effetIcons.js';
+import { pierreEffet, plaqueEffet, plaqueNue, PLAQUE_COTE, ELEMENT_TEINTES } from './effetPlaques.js';
+
+export { ELEMENT_TEINTES };
+
+/**
+ * La plaque **nue** d'un repère de carte : le même dessin que les pierres
+ * d'effets, sans pictogramme. La pastille de couleur la porte en **hexagone**,
+ * le disque de coût en **losange** — les trois repères d'une carte partagent
+ * ainsi la même taille et la même facture, seule la silhouette dit ce qu'on
+ * regarde (`effetPlaques.js`, `plaqueNue`).
+ */
+export function PlaqueForme({ forme = 'hexagone', bases = undefined, className = '' }) {
+  return (
+    <svg
+      className={`rpg-plaque-forme${className ? ` ${className}` : ''}`}
+      viewBox={`0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}`}
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+      focusable="false"
+      dangerouslySetInnerHTML={{ __html: plaqueNue({ forme, bases }) }}
+    />
+  );
+}
 import './effet-icons.css';
+
+/**
+ * Les pierres déjà dessinées, une entrée par (effet, élément repoussé).
+ * Le balisage est une constante du module : entre deux rendus, rien ne change —
+ * une carte qui s'anime ne redessine donc pas ses emblèmes.
+ */
+const PIERRES_DESSINEES = new Map();
+function pierreDessinee(cle, protectionContre) {
+  const marque = `${cle}|${protectionContre ?? ''}`;
+  let pierre = PIERRES_DESSINEES.get(marque);
+  if (pierre === undefined) {
+    pierre = pierreEffet(cle, { protectionContre });
+    PIERRES_DESSINEES.set(marque, pierre);
+  }
+  return pierre;
+}
 
 /** Le sprite des 37 symboles, à monter une fois par écran (menu, duel, guide). */
 export function EffetsSprite() {
@@ -42,27 +81,35 @@ export function EffetsSprite() {
   );
 }
 
-/** Une icône du sprite : `<EffetIcone cle="butin" />` ou `cle="i-butin"`. */
-export function EffetIcone({ cle, size = 14, className = '', style = undefined, protectionContre = undefined }) {
+/**
+ * Une pierre d'effet : `<EffetIcone cle="butin" />` ou `cle="i-butin"`.
+ *
+ * Le symbole ne flotte plus sur le texte : il se pose sur sa **pierre** —
+ * forme et teinte selon la famille de l'effet (voir `effetPlaques.js`), avec
+ * le biseau, le liseré sombre et le pictogramme blanc des emblèmes de héros.
+ * Une Protection élémentaire teinte sa pierre de l'élément qu'elle repousse.
+ */
+export function EffetIcone({ cle, size = 18, className = '', style = undefined, protectionContre = undefined }) {
   if (!cle) return null;
-  const id = cle.startsWith('i-') ? cle : (EFFET_ICONE[cle] ?? 'i-degats');
+  const plaque = plaqueEffet(cle);
   return (
     <svg
       className={`rpg-effet-icone${className ? ` ${className}` : ''}`}
       width={size}
       height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      viewBox={`0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}`}
+      preserveAspectRatio="xMidYMid meet"
       style={style}
+      // Les attributs disent la famille à l'extérieur (tests, revue, CSS) : la
+      // pierre elle-même est dessinée dans le module, jamais devinée en CSS.
+      data-plaque={plaque.famille}
+      data-forme={plaque.forme}
+      data-pierre={plaque.pierre}
+      data-symbole={plaque.symbole}
       data-protection-contre={protectionContre}
       aria-hidden="true"
-    >
-      <use href={`#${id}`} />
-    </svg>
+      dangerouslySetInnerHTML={{ __html: pierreDessinee(cle, protectionContre) }}
+    />
   );
 }
 
@@ -71,7 +118,7 @@ export function EffetIcone({ cle, size = 14, className = '', style = undefined, 
  * qu'elle repousse ; une Protection double montre donc deux boucliers, un
  * par couleur. Le Sable n'a pas de teinte propre : son icône garde l'or.
  */
-function IconePastille({ pastille, size = 13 }) {
+function IconePastille({ pastille, size = 20 }) {
   const contres = pastille.cle === 'protection' ? (pastille.contres ?? []) : [];
   if (!contres.length) return <EffetIcone cle={pastille.cle} size={size} />;
   return (
@@ -247,7 +294,7 @@ export function PastilleEffet({ pastille, epuise = false, inactif = false }) {
         }
       }}
     >
-      <IconePastille pastille={pastille} size={13} />
+      <IconePastille pastille={pastille} size={20} />
       <LibellePastille pastille={pastille} />
       {ouverte && <BulleEffet id={id} ancre={ancreRef.current} titre={<LibellePastille pastille={pastille} />} description={explication} />}
     </span>
@@ -299,13 +346,15 @@ function estBouclierDeLumiere(carte) {
 }
 
 /**
- * Les badges d'une face de carte : l'icône seule, en pastille ronde.
+ * Les badges d'une face de carte : la pierre d'emblème seule, chevillée au
+ * bord du cadre (`effet-icons.css`).
  * `entite` (sur la table) ajoute ses états vivants — infiltration accordée,
  * esquive courante, bouclier en place ou tombé — aux mots-clés imprimés de la
- * fiche.
+ * fiche ; `effetsEpuises` / `effetsInactifs` servent aux surfaces qui n'ont pas
+ * d'entité (l'aperçu) mais savent déjà quels mots sont éteints.
  */
 
-export function IconesCarte({ carte, entite = null, className = '' }) {
+export function IconesCarte({ carte, entite = null, className = '', effetsEpuises = null, effetsInactifs = null }) {
   const pastilles = pastillesPourCarte(carte);
   const ajouter = (cle, label, valeur = null, details = {}) => {
     if (!cle || pastilles.some((pastille) => pastille.cle === cle)) return;
@@ -340,9 +389,15 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       ajouter('protection', label, null, { contres });
     }
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
+    if (entite.poison?.toursRestants > 0) {
+      ajouter('poisonActif', 'Empoisonnée — perd 1 PV au début de son tour ; tours restants :', entite.poison.toursRestants);
+    }
   }
-  const epuises = new Set(effetsEpuisesPourEntite(carte, entite));
-  const inactifs = new Set(effetsFurieInactifs(carte, entite));
+  // L'aperçu n'a pas d'entité : la page lui transmet les listes qu'elle a déjà
+  // calculées pour ses pastilles, pour que la pierre soit éteinte au même
+  // moment que le mot qu'elle ouvre.
+  const epuises = new Set([...effetsEpuisesPourEntite(carte, entite), ...(effetsEpuises ?? [])]);
+  const inactifs = new Set([...effetsFurieInactifs(carte, entite), ...(effetsInactifs ?? [])]);
   const texteBadge = (pastille) => (
     `${pastilleTexte(pastille)}${epuises.has(pastille.cle)
       ? (pastille.cle === 'tenacite' ? ' (déjà utilisée)' : ' (tombé)')
@@ -359,7 +414,7 @@ export function IconesCarte({ carte, entite = null, className = '' }) {
       data-protection-contre={pastilleBadge.contres?.length ? pastilleBadge.contres.join(' ') : undefined}
       style={styleProtectionPastille(pastilleBadge)}
     >
-      <IconePastille pastille={pastilleBadge} size={12} />
+      <IconePastille pastille={pastilleBadge} size={18} />
       {pastilleBadge.valeur != null && !pastilleBadge.valeurMasquee && <small>{pastilleBadge.valeur}</small>}
     </span>
   );
@@ -397,7 +452,7 @@ export function IconeLigneRegle({ carte, ligne, epuise = false }) {
               <EffetIcone
                 key={contre}
                 cle="protection"
-                size={14}
+                size={18}
                 className={classeIcone}
                 protectionContre={contre}
                 style={couleur ? { color: couleur } : undefined}
@@ -408,5 +463,5 @@ export function IconeLigneRegle({ carte, ligne, epuise = false }) {
       );
     }
   }
-  return <EffetIcone cle={cle} size={14} className={classeIcone} />;
+  return <EffetIcone cle={cle} size={18} className={classeIcone} />;
 }

@@ -163,6 +163,14 @@ const PLEIN_ART_45 = [
   // Le roi Kusayla, la nouvelle figure amazighe du Sable, et le guépard qu'il
   // appelle à son arrivée (créature-jeton, peinte comme les autres).
   'kusayla-roi-des-imazighen', 'guepard',
+  // Les petites créatures du Sable et la rare Manticore : plein art 4:5.
+  'gerboise-des-ruines', 'scarabee-des-sceaux', 'scorpion-du-seuil', 'manticore-des-dunes',
+  // Six Vampires à bas coût : peintures dédiées 4:5.
+  'novice-des-cendres', 'chasseuse-de-braise', 'messagere-des-cendres',
+  'garde-du-voile', 'rodeuse-des-tombes', 'sentinelle-du-brasier',
+  // Cinq renforts de la Nécropole : plein art 4:5 sur toute la courbe Ténèbres.
+  'porteur-de-la-plume', 'scarabee-du-natron', 'veuve-des-urnes',
+  'gardien-des-sept-sceaux', 'lecteur-du-dernier-nom',
   // Bouchra et sa chèvre de guerre, peintes au format exact de la face.
   'bouchra-guerriere-des-cretes',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
@@ -236,9 +244,9 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents comporte 123 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 123,
-    'le cycle des cinq Cavaliers rejoint les créatures existantes');
+test('le set de permanents comporte 138 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 138,
+    'les cinq renforts Ténèbres rejoignent le catalogue existant');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');

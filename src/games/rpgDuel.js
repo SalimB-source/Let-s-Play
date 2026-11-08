@@ -1,3 +1,4 @@
+import { sacrificesInvocation, victimesInvocation, invocationPossible } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie } from './rpgMoba.js';
@@ -1870,6 +1871,9 @@ function creerEntiteCreature(carte) {
     // — les chiffres retirés par la morsure et le temps qu'il lui reste à
     // ronger. Elle s'efface avec l'interdit d'attaquer (voir `rpgFinDeTour`).
     venin: null,
+    // Poison du Scorpion : 1 PV au début des deux prochains tours du
+    // contrôleur. Une nouvelle blessure remet la durée à deux (sans empiler).
+    poison: null,
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
@@ -2078,7 +2082,7 @@ function compteursDurabiliteArme(carteArme) {
 }
 
 /** Une arme perd un compteur après chaque attaque ou défense de son porteur. */
-function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
+function userArmePrototype(duel, cote, entiteId, action) {
   const porteur = duel[cote]?.creatures.find((entite) => entite.id === entiteId);
   if (!porteur?.arme) return;
   const carteArme = armeById(porteur.arme.carteId);
@@ -2091,6 +2095,57 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
   if (restant === 0) {
     duel.log.push(`${carteArme.name} n’a plus de compteur : elle est détruite.`);
     retirerArme(duel, cote, porteur);
+  }
+}
+
+/** Les armes-sorts gardent leur stockage historique, avec un compteur par
+ * exemplaire (deux sabres identiques ne partagent jamais leur endurance). */
+function retirerArmeSort(duel, cote, porteur, index) {
+  const id = porteur.armes[index];
+  const occurrence = porteur.armes.slice(0, index).filter(armeId => armeId === id).length;
+  porteur.armes.splice(index, 1);
+  porteur.durabilitesArmes.splice(index, 1);
+  const effet = magieById(id)?.effet ?? {};
+  let vue = 0;
+  const indexArmure = (porteur.armuresMagiques ?? []).findIndex(a => a.carteId === id && vue++ === occurrence);
+  const armure = indexArmure < 0 ? null : porteur.armuresMagiques.splice(indexArmure, 1)[0];
+  const lien = !porteur.armes.includes(id) ? porteur.lienArmesBonus?.[id] : null;
+  if (lien) delete porteur.lienArmesBonus[id];
+  const defense = (Number(effet.def) || 0) + (lien?.def ?? 0);
+  const defenseRetiree = (armure?.restant ?? 0) + Math.min(0, defense);
+  porteur.atk = Math.max(0, porteur.atk - (Number(effet.atk) || 0) - (lien?.atk ?? 0));
+  porteur.pvMax = Math.max(1, porteur.pvMax - defense);
+  porteur.pv = Math.max(1, Math.min(porteur.pv - defenseRetiree, porteur.pvMax));
+  porteur.def = Math.max(1, Math.min(porteur.def - defenseRetiree, porteur.pv));
+  recalculerVolDeVie(porteur);
+  recalculerCoupCritique(porteur);
+  recalculerEsquive(porteur);
+  if (effet.coupRapide) {
+    porteur.coupRapide = Boolean(duelCardById(porteur.carteId)?.coupRapide)
+      || Boolean(armeCarteDe(porteur)?.donne?.coupRapide)
+      || (porteur.coupRapideTemporaire ?? 0) > 0
+      || porteur.armes.some(armeId => Boolean(magieById(armeId)?.effet?.coupRapide));
+  }
+  duel[cote].cimetiere.push(id);
+}
+
+function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
+  userArmePrototype(duel, cote, entiteId, action);
+  const porteur = duel[cote]?.creatures.find(e => e.id === entiteId);
+  if (!porteur?.armes?.length) return;
+  porteur.durabilitesArmes ??= [];
+  // Ordre inverse pour garder les index alignés lorsqu'une arme est détruite.
+  for (let i = porteur.armes.length - 1; i >= 0; i--) {
+    const carte = magieById(porteur.armes[i]);
+    if (carte?.effet?.type !== 'arme' || (carte.durabiliteAttaqueSeulement && action !== 'attaque')) continue;
+    const avant = porteur.durabilitesArmes[i] ?? compteursDurabiliteArme(carte);
+    const restant = Math.max(0, avant - 1);
+    porteur.durabilitesArmes[i] = restant;
+    duel.log.push(`${carte.name} perd un compteur de durabilité après une ${action} de ${porteur.name} (${restant} restant${restant === 1 ? '' : 's'}).`);
+    if (restant === 0) {
+      duel.log.push(`${carte.name} n’a plus de compteur : elle est détruite.`);
+      retirerArmeSort(duel, cote, porteur, i);
+    }
   }
 }
 
@@ -2521,6 +2576,7 @@ function declencherHarakiri(duel, cote, entite) {
   const adversaire = autre(cote);
   const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0);
   if (!cibles.length) {
+    if (!duel.moba) flammecheCreature(duel, cote, entite.id, { type: 'sorcier', cote: adversaire });
     if (duel.moba) {
       const frappe = mobaPerdreVieAdverse(duel, cote, entite.mobaLane, honneur);
       if (!frappe.ok) return;
@@ -2534,9 +2590,17 @@ function declencherHarakiri(duel, cote, entite) {
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
   const cible = cibles[index];
+  flammecheCreature(duel, cote, entite.id, { type: 'creature', cote: adversaire, entiteId: cible.id });
   duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
   if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
     rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
+}
+
+/** Projectile décoratif commun aux capacités de créature, sans règle ajoutée. */
+function flammecheCreature(duel, cote, entiteId, cible) {
+  if (!entiteId) return;
+  journaliserAnimationCombat(duel, { type: 'projectile-combat', variante: 'feu',
+    source: { type: 'creature', cote, entiteId }, cible });
 }
 
 /**
@@ -2744,6 +2808,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
   for (const [indexCoup, coup] of coups.entries()) {
     if (coup.rapide) coup.contreAttaqueAtteinte = false;
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
+    // Signal sérialisable : le projectile existe même si la protection ou
+    // l’esquive arrête ensuite le coup ; aucun effet sur les règles.
+    if (entite && coup.sourceId && coup.amount > 0
+      && (coup.rapide || (coup.avantCombat && normaliserCouleurs(coup.sourceElement).includes('braise')))) {
+      journaliserAnimationCombat(duel, {
+        type: 'projectile-combat', variante: coup.rapide ? 'ciblee' : 'feu',
+        source: { type: 'creature', cote: coup.sourceCote, entiteId: coup.sourceId },
+        cible: { type: 'creature', cote: coup.cote, entiteId: coup.entiteId },
+      });
+    }
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
     // de zone le contourne, les attaques et capacités passent.
@@ -2809,6 +2883,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
     const source = coup.sourceCote && coup.sourceId
       ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
       : null;
+    // Poison imprimé sur une créature (Scorpion du seuil) : seule une vraie
+    // blessure d'attaque l'inocule, y compris en bloquant. Une Esquive, un
+    // bouclier ou le Grand Voile ont déjà écarté ce coup avant ce point.
+    const poison = coup.sourceType === 'attaque' ? duelCardById(source?.carteId)?.poison : null;
+    if (poison?.degats > 0 && poison?.tours > 0) {
+      blessure.poison = {
+        degats: poison.degats, toursRestants: poison.tours,
+        sourceCarteId: source.carteId,
+      };
+    }
     if (source && !blessure.sources.some((candidate) => candidate.id === source.id)) {
       blessure.sources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
       if (coup.sourceType === 'attaque') {
@@ -2834,6 +2918,11 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
     absorberDegatsArmure(entite, recus);
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+    if (entite.pv > 0 && blessure.poison) {
+      // Une seconde piqûre renouvelle les deux tours, sans créer deux doses.
+      entite.poison = blessure.poison;
+      duel.log.push(`${entite.name} est empoisonnée pour ${entite.poison.toursRestants} tours.`);
+    }
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
     // fois, quels que soient le nombre d'attaquants et de bloqueurs. Tenacité
     // ne refuse plus la mort — elle programme seulement un retour au prochain
@@ -2907,6 +2996,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
   }
   for (const mort of mortes) {
     if (duel.moba?.winner) break;
+    declencherMortAlliee(duel, mort.cote, mort.entite);
     mort.declencherArme?.();
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
@@ -2997,6 +3087,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
       cote: autre(coteSource),
       entiteId: cible.id,
       amount,
+      avantCombat: true,
       sourceElement: cardColors(carteSource),
       sourceType: carteSource.combat.sourceType ?? 'capacite',
       ...source,
@@ -3011,6 +3102,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
         cote: autre(coteSource),
         entiteId: cible.id,
         amount: degatsArme,
+        avantCombat: true,
         sourceElement: cardColors(carteArme),
         sourceType: 'capacite', sourceCreature: false,
         ...source,
@@ -3857,7 +3949,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!porteur || rpgEstProtegee(porteur, sourceElement)
         || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
       porteur.armes ??= [];
+      // Initialiser aussi les anciens équipements chargés sans compteurs.
+      porteur.durabilitesArmes = porteur.armes.map((id, i) =>
+        porteur.durabilitesArmes?.[i] ?? compteursDurabiliteArme(magieById(id)));
       porteur.armes.push(sourceCarteId);
+      porteur.durabilitesArmes.push(compteursDurabiliteArme(magieById(sourceCarteId)));
       if ((Number(effet.def) || 0) > 0) {
         (porteur.armuresMagiques ??= []).push({ carteId: sourceCarteId, max: effet.def, restant: effet.def });
       }
@@ -4584,7 +4680,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
           || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null, cote);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null, cote, options?.projectileSource ?? null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
@@ -4949,6 +5045,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         porteur.armes = [];
+        porteur.durabilitesArmes = [];
         const armureMagiqueRestante = (porteur.armuresMagiques ?? []).reduce((total, armure) => total + (Number(armure.restant) || 0), 0);
         porteur.armuresMagiques = [];
         recalculerVolDeVie(porteur);
@@ -5091,6 +5188,7 @@ function detacherArmes(duel, cote, entite) {
   const armes = entite.armes ?? [];
   duel[cote].cimetiere.push(...armes);
   entite.armes = [];
+  entite.durabilitesArmes = [];
   if (armes.length) duel.log.push(`Les armes de ${entite.name} rejoignent le cimetière.`);
 }
 
@@ -5151,14 +5249,8 @@ function tenterRenvoiSphere(duel, cote, porteur, coteCible, cible) {
   return true;
 }
 
-/**
- * Sacrifice consenti du mode sans terrains : une créature du camp quitte le
- * plateau pour le cimetière afin de libérer l'un des cinq emplacements. C'est
- * une vraie destruction — armes détachées au cimetière, capacité de
- * destruction et Harakiri déclenchés. Une créature tenace meurt donc pour de
- * bon : seule sa renaissance (Tenacité) lui rendra une présence au tour
- * suivant.
- */
+/** Primitive de sacrifice pour les effets de jeu. La pose depuis la main
+ * ne passe pas ici : son prix est validé par rpgJouerCreature. */
 export function rpgSacrifierCreature(duel, cote, entiteId) {
   if (duel?.modeMana !== RPG_MODE_MANA_ESSAI) return { ok: false, raison: 'mode' };
   const camp = duel?.[cote];
@@ -5361,7 +5453,8 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
   if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
     const sourceRetour = duel.moba && effet?.type === 'retour-apres-tours' ? entite?.id ?? null : null;
     appliquer(duel, cote, effet, null, sourceRetour, cardColors(carte), 'capacite', carteId, null,
-      duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : null);
+      { ...(duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}),
+        projectileSource: { cote, id: entite?.id } });
     return;
   }
   const adv = autre(cote);
@@ -5370,16 +5463,33 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
     duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
   }
-  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId);
+  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId, null,
+    { projectileSource: { cote, id: entite?.id } });
   if (cote === 'sorcier') {
     const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
     resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
     return;
   }
   duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
-  duel.destructionsEnAttente.push({ cote, carteId });
+  duel.destructionsEnAttente.push({ cote, carteId, sourceEntiteId: entite?.id ?? null });
   const amount = effet.amount ?? 0;
   duel.log.push(`${carte.name} : désignez la créature adverse qui subira ${amount} dégât${amount > 1 ? 's' : ''}.`);
+}
+
+/** Chaque Djinn encore en jeu réagit une fois à la mort d'une AUTRE créature
+ * de son camp, quelle que soit sa cause (combat, sacrifice, dégâts ou effet de
+ * fin de tour). Ni l'exil ni la capture ne passent par ce déclencheur. */
+function declencherMortAlliee(duel, cote, victime) {
+  for (const source of [...duel[cote].creatures]) {
+    if (source.id === victime.id || !(source.pv > 0)) continue;
+    const carte = duelCardById(source.carteId);
+    const effet = carte?.mortAlliee;
+    if (effet?.type !== 'degats-sorcier') continue;
+    const montant = Math.max(0, Number(effet.amount) || 0);
+    if (!montant) continue;
+    rpgInfligerSorcier(duel, autre(cote), montant);
+    duel.log.push(`${source.name} : la mort de ${victime.name} inflige ${montant} dégât${montant > 1 ? 's' : ''} à son adversaire.`);
+  }
 }
 
 /** Sortie commune au cimetière : retrait, armes, capacité de destruction. */
@@ -5403,6 +5513,7 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
   // le retour programmé se dissipera faute de carte à reprendre.
   programmerRetourTenacite(duel, cote, entite);
   const declencher = () => {
+    declencherMortAlliee(duel, cote, entite);
     declencherArme?.();
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
@@ -5424,9 +5535,12 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
  * une réanimation ou un retour programmé doit lui aussi en prendre une. Hors
  * essai, le format historique garde son champ sans plafond.
  */
+// Réservation synchrone et transitoire : les capacités des victimes ne
+// doivent ni remplir la dernière place ni voler la case de l'invocation.
+const reservationsInvocation = new WeakMap();
 function placesLibresChamp(duel, cote) {
   if (duel.modeMana !== RPG_MODE_MANA_ESSAI) return Infinity;
-  return Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length);
+  return Math.max(0, RPG_MANA_ESSAI_CHAMP_MAX - duel[cote].creatures.length - (reservationsInvocation.has(duel[cote]) ? 1 : 0));
 }
 
 /**
@@ -5441,6 +5555,8 @@ function placerDansEmplacement(duel, cote, entite, prefere = null) {
   const prises = new Set(rpgEmplacementsChamp(duel[cote])
     .map((occupant, index) => (occupant && occupant !== entite ? index : null))
     .filter((index) => index !== null));
+  const reservee = reservationsInvocation.get(duel[cote]);
+  if (Number.isInteger(reservee)) prises.add(reservee);
   if (Number.isInteger(prefere) && prefere >= 0 && prefere < RPG_MANA_ESSAI_CHAMP_MAX && !prises.has(prefere)) {
     entite.emplacement = prefere;
     return;
@@ -5476,15 +5592,6 @@ export function rpgEmplacementsChamp(camp) {
     cases[libre] = entite;
   }
   return cases;
-}
-
-/** La créature qu'un camp sacrifie de lui-même : la plus frêle d'abord, la
- *  plus entamée ensuite — l'IA (et une pose sans désignation) garde toujours
- *  ses meilleures cartes quand le champ est plein. */
-function choisirSacrifice(camp) {
-  return camp.creatures.filter((entite) => !estSite(entite)).sort((a, b) =>
-    ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0))
-    || (a.pv ?? 0) - (b.pv ?? 0))[0] ?? null;
 }
 
 /**
@@ -5525,9 +5632,15 @@ export function rpgActionsEtat(duel) {
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise).
  *  `sourceCarteId` ne sert qu'au journal des blessures : la table y reconnaît
  *  le coup qui mérite sa propre cinématique (l'Éclair du marteau). */
-export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null, sourceCote = null) {
+export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null, sourceCote = null, projectileSource = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
+  const origineVisuelle = projectileSource ?? sourceCreature;
+  if (amount > 0 && sourceType === 'capacite' && origineVisuelle
+    && normaliserCouleurs(sourceElements ?? sourceElement).includes('braise')) {
+    flammecheCreature(duel, origineVisuelle.cote, origineVisuelle.id,
+      { type: 'creature', cote, entiteId });
+  }
   if (rpgEstProtegee(entite, sourceElement)) {
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
@@ -5854,11 +5967,10 @@ function cibleRespecteTypeImprime(carte, entite) {
  * arrivée qui ne désigne rien (ou qui n'a plus de cible légale) se résout, elle,
  * dans les deux cas avec la pose.
  *
- * `sacrificeId` — le **prix de la pose** quand le champ des cinq places est
- * plein (mode essai, `RPG_MANA_ESSAI_CHAMP_MAX`) : la créature désignée est
- * sacrifiée au moment de payer, puis la nouvelle entre en jeu. Sans
- * désignation, le moteur refuse la pose (`raison: 'champ-plein'`) sauf pour le
- * sorcier, qui sacrifie automatiquement sa créature la plus frêle.
+ * `sacrificeIds` — victimes du prix d'invocation : 1 pour un coût de 5–6,
+ * 2 à partir de 7, aucune en dessous. Le mana reste dû. L'IA sélectionne
+ * ses victimes ; en JcJ les deux camps doivent les désigner explicitement.
+ * `sacrificeId` est l'alias historique pour une seule victime.
  *
  * `emplacement` — la **case choisie par le joueur** (0 à 4, mode essai) : la
  * créature entre en jeu sur cette case plutôt que sur la première libre. Une
@@ -5880,7 +5992,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -5897,22 +6009,26 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (!rpgConditionEmbuscadeRemplie(duel, cote, carte)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
-  // Le champ d'essai n'a que cinq places, dessinées sur le plateau : la
-  // sixième créature exige qu'une autre soit sacrifiée. La validation tôt
-  // (avant paiement et contre) laisse au joueur le temps de choisir sa
-  // victime ; le sacrifice, lui, n'a lieu qu'au moment d'engager la pose —
-  // un contresort annule tout sans rien coûter.
-  const champPlein = duel.modeMana === RPG_MODE_MANA_ESSAI
-    && camp.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX;
-  let sacrifice = null;
-  if (champPlein) {
-    sacrifice = sacrificeId
-      ? camp.creatures.find((entite) => entite.id === sacrificeId) ?? null
-      : (cote === 'sorcier' ? choisirSacrifice(camp) : null);
-    if (!sacrifice || estSite(sacrifice)) {
-      return { ok: false, raison: sacrificeId ? 'sacrifice' : 'champ-plein' };
-    }
+  const nombreSacrifices = sacrificesInvocation(carte, duel);
+  const idsDemandes = sacrificeIds ?? (sacrificeId ? [sacrificeId] : null);
+  let sacrifices = [];
+  if (idsDemandes !== null) {
+    if (!Array.isArray(idsDemandes) || idsDemandes.length !== nombreSacrifices
+      || new Set(idsDemandes).size !== idsDemandes.length) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+    sacrifices = idsDemandes.map(id => camp.creatures.find(e => e.id === id));
+    if (sacrifices.some(e => !e || estSite(e))) return { ok: false, raison: 'sacrifice', nombreSacrifices };
+  } else if (nombreSacrifices) {
+    if (cote !== 'sorcier' || duel.pvp) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
+    const disponibles = victimesInvocation(camp).sort((a, b) =>
+      ((a.atk ?? 0) + (a.def ?? 0)) - ((b.atk ?? 0) + (b.def ?? 0)) || (a.pv ?? 0) - (b.pv ?? 0));
+    sacrifices = disponibles.slice(0, nombreSacrifices);
+    if (sacrifices.length !== nombreSacrifices) return { ok: false, raison: 'sacrifice-requis', nombreSacrifices };
   }
+  if (duel.modeMana === RPG_MODE_MANA_ESSAI
+    && camp.creatures.length - sacrifices.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+    return { ok: false, raison: 'champ-plein' };
+  }
+  const sacrifice = sacrifices[0] ?? null;
   // La case choisie se valide tôt, comme le sacrifice : hors du champ ou
   // déjà occupée (par une autre que la victime du sacrifice), la pose est
   // refusée avant paiement et sans rien changer à la table.
@@ -5925,7 +6041,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       return { ok: false, raison: 'emplacement' };
     }
     const occupant = rpgEmplacementsChamp(camp)[emplacementChoisi];
-    if (occupant && occupant.id !== sacrifice?.id) {
+    if (occupant && !sacrifices.some(e => e.id === occupant.id)) {
       return { ok: false, raison: 'emplacement' };
     }
   }
@@ -6057,7 +6173,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
     const contreIA = choisirContreIA(duel, carte);
     if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
   }
-  // Rien n'a été annulé : le sacrifice de la place libre a lieu maintenant,
+  // Rien n’a été annulé : les sacrifices d’invocation ont lieu maintenant,
   // juste avant le paiement — la créature entre ensuite sur le champ vidé.
   // Si le sorcier a contré la créature plus haut, on n'arrive jamais ici :
   // rien n'a été sacrifié. L'indice de la victime est retenu : la nouvelle
@@ -6067,8 +6183,15 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   if (sacrifice) {
     emplacementSacrifice = camp.creatures.findIndex((entite) => entite.id === sacrifice.id);
     caseSacrifice = rpgEmplacementsChamp(camp).findIndex((occupant) => occupant?.id === sacrifice.id);
-    duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${sacrifice.name} pour faire place à ${carte.name}.`);
-    sacrifierCreature(duel, cote, sacrifice);
+    if (duel.modeMana === RPG_MODE_MANA_ESSAI) reservationsInvocation.set(camp, emplacementChoisi ?? caseSacrifice);
+    try {
+      for (const victime of sacrifices) {
+        duel.log.push(`${cote === 'joueur' ? 'Vous sacrifiez' : 'Le sorcier sacrifie'} ${victime.name} pour invoquer ${carte.name}.`);
+        sacrifierCreature(duel, cote, victime);
+      }
+    } finally {
+      reservationsInvocation.delete(camp);
+    }
   }
   if (!dejaPayee) {
     payer(duel, cote, carte);
@@ -6120,7 +6243,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
         ...(prises ? { abordage: seuilAbordagePose } : {}) };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
     }
     if (attaques.length) {
       const choix = attaques.includes(cibleId) ? cibleId : attaques[0];
@@ -6154,7 +6277,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
       };
       rafraichirAuras(duel);
       rpgActionsEtat(duel);
-      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
+      return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
     }
     // Seuls les effets d'arrivée qui **désignent** une cible reçoivent un
     // `cibleId` : les autres (renfort de camp, pioche, création de jetons…)
@@ -6190,7 +6313,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
         duel.arriveeEnAttente = { cote, entiteId: entite.id, carteId, abordage: seuilAbordageArrivee };
         rafraichirAuras(duel);
         rpgActionsEtat(duel);
-        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
+        return { ok: true, entite, arriveeEnAttente: true, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
       }
       const cibleAbordage = (cibleId && !arriveeCiblePortee(carte))
         ? duel[autre(cote)].creatures.find((candidate) => candidate.id === cibleId)
@@ -6202,7 +6325,7 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, emplacement: entite.emplacement ?? null };
+  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
 }
 
 /**
@@ -6405,7 +6528,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   if (!cible) return { ok: false, raison: 'cible' };
   duel.destructionsEnAttente.shift();
   if (allie) exilerPourFinDeTour(duel, cote, cible, attente.carteId);
-  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId);
+  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId, null,
+    { projectileSource: { cote, id: attente.sourceEntiteId } });
   rpgActionsEtat(duel);
   return { ok: true, cible };
 }
@@ -8595,6 +8719,7 @@ export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
     if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte)
+      && invocationPossible(duel, cote, carte)
       && rpgConditionEmbuscadeRemplie(duel, cote, carte);
     const prixMoba = Boolean(duel.moba && (carte?.prixPv ?? 0) > 0);
     const prixPayable = !prixMoba || duel.moba.lanes.some((lane) => lane.active && lane.hp[cote] > carte.prixPv);
@@ -8631,6 +8756,22 @@ function detruireEphemeres(duel) {
       duel.log.push(`${entite.name} est détruit : la fin du tour le reprend.`);
       enterrer(duel, cote, entite);
     }
+  }
+}
+
+/** Le Poison frappe au début des deux prochains tours du propriétaire de la
+ *  victime. Il est attaché à l'entité : renvoi, exil et mort l'effacent ; une
+ *  nouvelle créature du même nom n'hérite jamais de l'ancienne morsure. */
+function resoudrePoisons(duel, cote) {
+  for (const entite of [...duel[cote].creatures]) {
+    const poison = entite.poison;
+    if (!(poison?.toursRestants > 0)) continue;
+    poison.toursRestants -= 1;
+    if (poison.toursRestants === 0) entite.poison = null;
+    duel.log.push(`Poison : ${entite.name} perd ${poison.degats} PV.`);
+    // Perte différée de PV, pas une nouvelle attaque : ni Esquive ni bouclier
+    // ni immunité élémentaire ne l'arrêtent une fois la piqûre reçue.
+    rpgBlesserCreature(duel, cote, entite.id, poison.degats, null, null, 'poison', poison.sourceCarteId);
   }
 }
 
@@ -8771,6 +8912,8 @@ export function rpgFinDeTour(duel) {
   }
   resoudreRetoursProgrammes(duel);
   if (duel.moba?.winner) return duel;
+  resoudrePoisons(duel, duel.tour); // deux débuts de tour de la victime
+  if (duel.moba?.winner) return duel;
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   if (duel.moba?.winner || duel.mobaDebutTourEnAttente) return duel;
   return terminerDebutTour(duel);
@@ -8843,6 +8986,7 @@ export function rpgSorcierAnnonceSuivante(duel, rng = Math.random) {
     // Bakunawa, le passage du Faiseur).
     const cibleId = coup.cibleId
       ?? (arriveeCiblePortee(carte) ? rpgCibleAuto(duel, 'sorcier', carte) : null);
+    if (!invocationPossible(duel, 'sorcier', carte)) { refuses.add(coup.carteId); continue; }
     if (!cibleId && arriveeCiblePortee(carte) && arriveeACibleLegale(duel, 'sorcier', carte)) {
       // La carte exige une cible, il en reste une sur la table, et rien n'a
       // pu être désigné : elle n'est pas jouable. On l'écarte.
@@ -8863,9 +9007,7 @@ export function rpgSorcierResoudreAnnonce(duel) {
   if (!annonce) return { ok: false, raison: 'aucune-annonce' };
   duel.annonce = null;
   duel.fenetreReponse = false;
-  // Champ d'essai plein : le moteur sacrifie d'office la créature la plus
-  // frêle du sorcier (`choisirSacrifice`, dans `rpgJouerCreature`) pour poser
-  // celle qu'il vient d'annoncer, comme le joueur le fait après confirmation.
+  // Le moteur choisit les victimes requises par le coût de la carte IA.
   const res = armeById(annonce.carteId)
     ? rpgJouerArme(duel, 'sorcier', annonce.carteId, annonce.cibleId)
     : duelCardById(annonce.carteId)

@@ -6,9 +6,9 @@ import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgAttaquerCreature
 import { resultatBlocage } from '../src/games/rpgAI.js';
 function duel() { const d=rpgNouveauDuel({joueurDeck:[],sorcierDeck:[],rng:()=>0.9}); for (const cote of ['joueur','sorcier']) d[cote].mana=Object.fromEntries(RPG_ELEMENTS.map(e=>[e,40])); return d; }
 function pose(d,c,id, cible=null, opts={}) { d[c].main.push(id); const r=rpgJouerCreature(d,c,id,cible,opts); assert.equal(r.ok,true,`${id}: ${r.raison}`); return r.entite; }
-test('Vampire des braises : 2/2 coût 3, Embuscade sans Rapidité et coup préalable dans les deux sens',()=>{
+test('Vampire des braises : 2/2 coût 3, sans Embuscade ni Rapidité et coup préalable dans les deux sens',()=>{
  const c=cardById('vampire-des-braises');
- assert.deepEqual([c.cost,c.atk,c.def,c.element,c.rapidite,c.reactionTourAdverse],[3,2,2,'braise',undefined,true]);
+ assert.deepEqual([c.cost,c.atk,c.def,c.element,c.rapidite,c.reactionTourAdverse],[3,2,2,'braise',undefined,undefined]);
  assert.ok(cardHasPrintedType(c,'Vampire'));
  assert.deepEqual(c.combat, { type: 'degats-creature-combattue', amount: 1, quand: ['attaque-bloquee', 'blocage'] });
  assert.doesNotMatch(c.text, /Rapidité/);

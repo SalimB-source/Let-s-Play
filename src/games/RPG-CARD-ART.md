@@ -71,6 +71,67 @@ jouables dans un deck.
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
 
+## Vampires de Braise et Ténèbres à bas coût
+
+- `novice-des-cendres.jpg` — un jeune Vampire à capuche, lanterne en main dans
+  un caravansérail en ruines : commune 1/1, coût 1, Vol de vie (Braise).
+- `chasseuse-de-braise.jpg` — une chasseuse vampire dans une tempête de cendres
+  près d'une porte fortifiée : inhabituelle 2/2, coût 2, Vol de vie (Braise).
+- `messagere-des-cendres.jpg` — une messagère vampire court sur un pont de pierre
+  dans une tempête d'étincelles : commune 1/1, coût 1, Rapidité (Braise).
+- `garde-du-voile.jpg` — un garde vampire tient la porte d'une crypte à la
+  lumière de la lune : commune 1/2, coût 1, Défenseur (Ténèbres).
+- `rodeuse-des-tombes.jpg` — une vampire armée d'une dague traverse les tombeaux
+  sous la lune : inhabituelle 2/1, coût 2, Infiltration (Ténèbres).
+- `sentinelle-du-brasier.jpg` — une ancienne gardienne vampire devant la forge
+  ruinée : inhabituelle 1/3, coût 2, Défenseur et Vol de vie (Braise).
+
+Leurs peintures sombres sont livrées en JPEG **768 × 960** plein art, sans
+chiffres ni pastilles dessinés. Leurs illustrations et leur type Vampire sont
+propres à chaque carte ; aucune n'a Embuscade.
+
+## Renforts de La Balance des Heures (Ténèbres)
+
+Cinq illustrations mono-Ténèbres supplémentaires, du coût 1 au coût 5,
+peintes en dark fantasy avec la pierre, le lin et l'ombre de la Nécropole.
+Toutes sont livrées en plein art JPEG **768 × 960**, sans texte ni cadre :
+
+- `porteur-de-la-plume.jpg` — un jeune serviteur porte une plume blanche dans
+  une salle à colonnes ; 1/2 commune (coût 1), soin de 1 PV à sa mort.
+- `scarabee-du-natron.jpg` — un scarabée sur une urne de natron dans une crypte ;
+  1/2 commune (coût 2), crée un Shabti à sa mort.
+- `veuve-des-urnes.jpg` — une veuve entre les urnes funéraires ; 2/3
+  inhabituelle (coût 3), Tribut 1.
+- `gardien-des-sept-sceaux.jpg` — un gardien protège une porte scellée ; 3/4
+  commune (coût 4), Défenseur.
+- `lecteur-du-dernier-nom.jpg` — un scribe relit un rouleau sans inscription
+  dans les archives de la Nécropole ; 3/4 rare (coût 5), pioche deux cartes
+  puis en défausse une à son arrivée.
+
+## Petites créatures du Sable (coût 2)
+
+Trois peintures dédiées, sombres et cinématographiques, livrées en JPEG plein art
+**768 × 960**, sans cadre ni interface :
+
+- `gerboise-des-ruines.jpg` — une gerboise bondit entre les pierres d'un village en ruines ; Rapidité (2/1).
+- `scarabee-des-sceaux.jpg` — un scarabée porte un éclat de sceau sous une voûte ensablée ; pioche à sa mort (1/2).
+- `scorpion-du-seuil.jpg` — un scorpion défend la dalle fissurée d'une porte ; son Poison ronge pendant deux tours la créature blessée (1/2).
+
+Leurs silhouettes restent distinctes sur une petite carte. Les règles, le coût et
+les statistiques sont rendus par l'interface, jamais par la peinture. Le Scorpion
+est désormais 1/2 : **Poison** inflige 1 PV au début de chacun des deux prochains
+tours de la créature blessée ; une nouvelle piqûre renouvelle ces deux tours
+sans cumuler les dégâts. Il n'inflige plus de dégâts à sa mort.
+
+## Manticore des dunes (Sable, coût 6)
+
+`public/cards/manticore-des-dunes.jpg` : peinture dédiée **768 × 960** montrant
+une grande manticore à crinière de lion et queue de scorpion devant une
+forteresse saharienne ruinée, au crépuscule. Rare **3/6** portant **Poison** :
+comme le Scorpion, elle inflige 1 PV au début des deux prochains tours de la
+créature blessée en combat. La règle et les chiffres ne sont pas peints sur
+l'illustration, mais rendus par la fiche et la pastille du jeu.
+
 ## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
 
 La carte ajoutée au set Sable après sa passe (`bouchra-guerriere-des-cretes`,
