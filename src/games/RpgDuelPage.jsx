@@ -5175,8 +5175,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                   </span>
                 </button>
                 <a
-                  className="rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne"
-                  aria-label={!isOnlineModeEnabled() ? 'Jouer à MOBA — contre l’IA' : onlineText.playDuel}
+                  className={`rpg-mode-carte rpg-menu-button rpg-menu-button--en-ligne${!isOnlineModeEnabled() ? ' rpg-mode-carte--moba' : ''}`}
+                  aria-label={!isOnlineModeEnabled() ? 'Jouer à MOBA — contre l’IA (BETA)' : onlineText.playDuel}
                   aria-describedby="mode-ligne-description"
                   style={{ '--art-pos': '50% 24%' }}
                   href={isOnlineModeEnabled() ? `${import.meta.env.BASE_URL}jeu/sablier-de-bab-el/defi` : '#moba'}
@@ -5188,7 +5188,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     }
                   }}
                 >
-                  <img className="rpg-mode-carte__art" src={cardArt('bouchra-guerriere-des-cretes')} alt="" aria-hidden="true" />
+                  <img className="rpg-mode-carte__art" src={isOnlineModeEnabled() ? cardArt('bouchra-guerriere-des-cretes') : `${import.meta.env.BASE_URL}sablier-moba/champ-des-trois-voies-aligne.webp`} alt="" aria-hidden="true" />
+                  {!isOnlineModeEnabled() && <span className="rpg-mode-carte__beta" aria-hidden="true">BETA</span>}
                   <span className="rpg-mode-carte__texte rpg-menu-button__text">
                     <span className="rpg-mode-carte__infos">
                       <strong>

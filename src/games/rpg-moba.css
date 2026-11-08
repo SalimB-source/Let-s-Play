@@ -392,7 +392,9 @@
   .moba__journal { bottom: 2%; padding: 4px; font-size: 9px; }.moba__choice { width: 18%; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
-  .moba { --moba-card-size: min(17vw, 11vh, 80px); }
+  /* En portrait, les cases occupent presque toute la largeur : étaler la
+     carte horizontalement pour garder les chemins sous les cases latérales. */
+  .moba { --moba-card-size: min(17vw, 11vh, 80px); background-size: 145% 100%; }
   .moba__header { max-width: 48%; }.moba__header-meta { flex-wrap: nowrap; }.moba__back span { white-space: nowrap; }
   .moba__hidden-hand { top: 5%; }.moba__hidden-hand > div { height: 4vh; }.moba__hidden-hand > div span { width: 24px; }
   .moba__scoreboard { top: 11%; bottom: auto; left: 2%; width: 96%; height: 33px; }
