@@ -195,7 +195,7 @@ test('la feuille pose la pierre comme badge et laisse le glyphe respirer', () =>
     'une pierre dépensée s’éteint');
   // Une seule mesure pour toutes les faces, posée par `rpg-battle.css`.
   const cssBattle = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
-  assert.match(cssBattle, /--rpg-plaque-taille: clamp\(18px, 21cqw, 40px\);/,
+  assert.match(cssBattle, /--rpg-plaque-taille: clamp\(24px, 26cqw, 52px\);/,
     'une seule mesure : 21 % de la carte, entre 18 et 40 px');
   assert.doesNotMatch(cssMobile, /--rpg-plaque-taille:\s*[\d.]+px/,
     'plus aucune taille fixe dans la feuille mobile');

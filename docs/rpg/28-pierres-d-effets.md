@@ -106,7 +106,7 @@ insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
 - **Badges de face** (`IconesCarte`) : la pierre **est** le badge — plus de
   pastille ronde ni de liseré CSS ; le chiffre de l'effet (« Furie 2 ») garde sa
   petite pastille sombre, posée en bas à droite de la pierre. La taille vient de
-  la carte (`--rpg-plaque-taille`) : `clamp(18px, 21cqw, 40px)` partout : table, main, mulligan, aperçu,
+  la carte (`--rpg-plaque-taille`) : `clamp(24px, 26cqw, 52px)` partout : table, main, mulligan, aperçu,
   catalogue et atelier. Couleur, coût et effets partagent cette mesure unique.
   Le coût du mulligan se place sous la couleur, comme dans l’aperçu.
 - **Interlignage** (`IconeLigneRegle`) : 18 px devant la ligne de règle, réservé
@@ -118,7 +118,7 @@ les emblèmes d'Arcane Rush. La colonne s'aligne sur le bord (`right: 0`) puis
 glisse vers l'extérieur d'une part d'elle-même (`--rpg-plaque-bord` : 36 % sur
 la table et le plateau, 30 % dans la main, 22 % au doigt), d'où une pierre dont l'axe reste
 juste à l'intérieur du cadre et dont la moitié déborde sur la table. La carte
-ouvre son rognage de 16 px (22 px dans l’aperçu) pour laisser passer ce débord — `overflow: clip` avec
+ouvre son rognage de 24 px (20 px en main) pour laisser passer ce débord — `overflow: clip` avec
 une marge, jamais `hidden` : aucun débordement ne crée de zone de défilement —
 et l'illustration reprend le rayon du cadre à son compte.
 
@@ -144,3 +144,8 @@ node --test tests/rpg-effets-pierres.test.js # la grammaire, les formes, la feui
 La page de revue assemble le balisage réel (sprite + `plaqueSvg`) et
 `effet-icons.css` : une face de carte, les pastilles de quatre fiches, toutes
 les pierres rangées par famille, l'échelle des tailles et les états.
+
+Les effets de la main commencent en haut de la face, sur le bord droit.
+Le coût reste visible sur le plateau. L’aperçu et sa face utilisent
+`overflow: visible` : les pierres ne sont plus rognées par le volet ;
+l’illustration conserve ses propres coins arrondis.
