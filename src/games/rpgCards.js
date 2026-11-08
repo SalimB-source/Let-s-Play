@@ -494,8 +494,8 @@ export const RPG_CREATURE_CARDS = [
     id: 'sentinelle-du-brasier', name: 'Sentinelle du brasier',
     element: 'braise', cost: 2, atk: 1, def: 3, rarity: 'inhabituelle',
     typeLine: 'Créature — Humaine et Vampire', art: 'sentinelle-du-brasier',
-    volDeVie: true,
-    text: 'Vol de vie — Son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur.',
+    defenseur: true, volDeVie: true,
+    text: 'Défenseur. Vol de vie.',
     flavor: 'Son feu protège aussi ceux qu’elle ne connaît pas.',
   },
   {

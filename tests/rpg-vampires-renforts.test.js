@@ -10,10 +10,10 @@ import { rpgJouerCreature, rpgLancerAttaque, rpgNouveauDuel, rpgPeutAttaquer, rp
 import { pastillesPourCarte } from '../src/games/effetIcons.js';
 
 const renforts = [
-  ['messagere-des-cendres', 'braise', 1, 1, 1, 'commune', 'rapidite'],
-  ['garde-du-voile', 'tenebres', 1, 1, 2, 'commune', 'defenseur'],
-  ['rodeuse-des-tombes', 'tenebres', 2, 2, 1, 'inhabituelle', 'infiltration'],
-  ['sentinelle-du-brasier', 'braise', 2, 1, 3, 'inhabituelle', 'volDeVie'],
+  ['messagere-des-cendres', 'braise', 1, 1, 1, 'commune', ['rapidite']],
+  ['garde-du-voile', 'tenebres', 1, 1, 2, 'commune', ['defenseur']],
+  ['rodeuse-des-tombes', 'tenebres', 2, 2, 1, 'inhabituelle', ['infiltration']],
+  ['sentinelle-du-brasier', 'braise', 2, 1, 3, 'inhabituelle', ['volDeVie', 'defenseur']],
 ];
 
 function duel() {
@@ -32,16 +32,16 @@ function poser(d, cote, id) {
 
 test('quatre Vampires illustrés renforcent les coûts 1 et 2, sans Embuscade', () => {
   assert.equal(RPG_CREATURE_CARDS.length, 133);
-  for (const [id, element, cost, atk, def, rarity, capacite] of renforts) {
+  for (const [id, element, cost, atk, def, rarity, capacites] of renforts) {
     const carte = cardById(id);
     assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.rarity],
       [element, cost, atk, def, rarity], id);
     assert.ok(cardHasPrintedType(carte, 'Vampire'), id);
-    assert.equal(carte[capacite], true, id);
+    for (const capacite of capacites) assert.equal(carte[capacite], true, `${id}: ${capacite}`);
     assert.equal(carte.reactionTourAdverse, undefined, id);
     assert.equal(carte.conditionEmbuscade, undefined, id);
     assert.doesNotMatch(carte.text, /Embuscade/u, id);
-    assert.deepEqual(pastillesPourCarte(carte).map((pastille) => pastille.cle), [capacite], id);
+    assert.deepEqual(pastillesPourCarte(carte).map((pastille) => pastille.cle), capacites, id);
     assert.equal(carte.art, id);
     assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)), id);
     assert.match(cardArt(id), /vampire-v1$/);
@@ -64,17 +64,23 @@ test('la Messagère attaque à son arrivée ; la Rôdeuse ne peut pas être bloq
   assert.equal(d.sorcier.pv, 24);
 });
 
-test('le Garde détourne une Attaque ciblée et la Sentinelle rend 1 PV à chaque coup', () => {
-  const d = duel();
-  const garde = poser(d, 'joueur', 'garde-du-voile');
-  const autre = poser(d, 'joueur', 'novice-des-cendres');
-  const assaillant = poser(d, 'sorcier', 'chien-du-guet');
-  assaillant.ready = true;
-  assaillant.coupRapide = true;
-  assert.equal(rpgLancerAttaque(d, 'sorcier', [assaillant.id], null, null, null,
-    { [assaillant.id]: autre.id }).raison, 'defenseur');
-  assert.ok(d.joueur.creatures.some((entite) => entite.id === garde.id));
+test('le Garde et la Sentinelle protègent les autres créatures des Attaques ciblées', () => {
+  for (const id of ['garde-du-voile', 'sentinelle-du-brasier']) {
+    const d = duel();
+    const defenseur = poser(d, 'joueur', id);
+    const autre = poser(d, 'joueur', 'novice-des-cendres');
+    const assaillant = poser(d, 'sorcier', 'chien-du-guet');
+    assaillant.ready = true;
+    assaillant.coupRapide = true;
+    assert.equal(defenseur.defenseur, true, id);
+    assert.equal(rpgLancerAttaque(d, 'sorcier', [assaillant.id], null, null, null,
+      { [assaillant.id]: autre.id }).raison, 'defenseur', id);
+    assert.equal(rpgLancerAttaque(d, 'sorcier', [assaillant.id], null, null, null,
+      { [assaillant.id]: defenseur.id }).ok, true, id);
+  }
+});
 
+test('la Sentinelle conserve son Vol de vie', () => {
   const soin = duel();
   soin.joueur.pv = 10;
   const sentinelle = poser(soin, 'joueur', 'sentinelle-du-brasier');

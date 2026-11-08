@@ -84,7 +84,7 @@ lisible même en vignette, cadre et statistiques superposés par l'interface.
 - `rodeuse-des-tombes.jpg` — une vampire armée d'une dague traverse les tombeaux
   sous la lune : inhabituelle 2/1, coût 2, Infiltration (Ténèbres).
 - `sentinelle-du-brasier.jpg` — une ancienne gardienne vampire devant la forge
-  ruinée : inhabituelle 1/3, coût 2, Vol de vie (Braise).
+  ruinée : inhabituelle 1/3, coût 2, Défenseur et Vol de vie (Braise).
 
 Leurs peintures sombres sont livrées en JPEG **768 × 960** plein art, sans
 chiffres ni pastilles dessinés. Leurs illustrations et leur type Vampire sont
