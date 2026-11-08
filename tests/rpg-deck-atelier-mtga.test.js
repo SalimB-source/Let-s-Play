@@ -144,6 +144,11 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, faces por
   assert.equal(grille.gridTemplateColumns, 'repeat(4, minmax(0, 1fr))', 'quatre colonnes dans le constructeur de deck');
   assert.equal(grille.gap, '22px', 'plus d’espace entre les cartes du constructeur');
   assert.equal(grille.padding, '18px 20px 30px', 'la grille garde une marge autour des illustrations');
+  const carte = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte'));
+  assert.equal(carte.width, '92%', 'chaque carte est légèrement plus petite sans perdre les quatre colonnes');
+  assert.equal(carte.justifySelf, 'center', 'les cartes restent centrées dans leur colonne');
+  assert.match(atelierCss, /@media \(max-width: 540px\)[\s\S]*?\.rpg-atelier__carte \{ width: 100%; \}/,
+    'les cartes conservent leur largeur lisible sur téléphone');
   const art = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte-art'));
   assert.equal(art.aspectRatio, '4 / 5', 'la face adopte le format portrait du catalogue');
 
