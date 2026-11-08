@@ -1,4 +1,3 @@
-import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-05';
 import React from 'react';
 import '../news-view-toggle.css';
 import '../news-carousel.css';
@@ -22,7 +21,6 @@ export default function News() {
   // Les cartes suivent la langue de lecture : titre et chapô traduits quand ils
   // existent, français sinon (voir src/news/localized/).
   const localizedToday = useLocalizedListings(todayStories, lang);
-  const localizedYesterday = useLocalizedListings(yesterdayStories, lang);
 
   const todaySectionCopy = {
     en: {
@@ -219,15 +217,6 @@ export default function News() {
           ))}
         </div>
       </section>
-      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Previous edition' : lang === 'ar' ? 'النسخة السابقة' : 'Édition précédente'}>
-        <div className="section-label">
-          <span>{lang === 'en' ? 'PREVIOUS EDITION' : lang === 'ar' ? 'النسخة السابقة' : 'ÉDITION PRÉCÉDENTE'}</span>
-          <span>{yesterdayDate}</span>
-        </div>
-        <div className="news-carousel is-grid">
-          {localizedYesterday.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
-        </div>
-      </section>
 
 
       {/* Bandeau du hub (« 02 / NEWS HUB ») : il introduit les trois univers
@@ -296,15 +285,6 @@ export default function News() {
         </Link>
       </div>
 
-      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Previous edition' : lang === 'ar' ? 'النسخة السابقة' : 'Édition précédente'} data-reveal>
-        <div className="section-label">
-          <span>{lang === 'en' ? 'PREVIOUS EDITION' : lang === 'ar' ? 'النسخة السابقة' : 'ÉDITION PRÉCÉDENTE'}</span>
-          <span>01.11.2026</span>
-        </div>
-        <div className="news-carousel is-grid">
-          {localizedYesterday.map((story) => <NewsCard key={story.to} story={story} readLabel={todaySectionCopy.read} />)}
-        </div>
-      </section>
 
       <section className="cta wrap">
         <div>
