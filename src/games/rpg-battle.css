@@ -1007,7 +1007,7 @@
      son compte (règle suivante), puisqu'il ne rogne plus ses coins. */
   overflow: hidden;
   overflow: clip;
-  overflow-clip-margin: 16px;
+  overflow-clip-margin: 24px;
 }
 
 .rpg-card--img > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
@@ -1534,7 +1534,7 @@
   padding: 0;
   overflow: hidden;
   overflow: clip;
-  overflow-clip-margin: 14px;
+  overflow-clip-margin: 20px;
 }
 
 .rpg-hand__card--img > .rpg-hand__img {
@@ -6236,7 +6236,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face > *,
 .rpg-card-catalogue__art > *,
 .rpg-atelier__carte-art > * {
-  --rpg-plaque-taille: clamp(18px, 21cqw, 40px);
+  --rpg-plaque-taille: clamp(24px, 26cqw, 52px);
 }
 
 /* ── La couleur, le coût : des pierres comme les effets ──────────────────────
@@ -15733,4 +15733,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(> .rpg-card-element-badge--hybride.is-plaque)
   .rpg-mana-cost.is-plaque {
   top: calc(var(--rpg-card-element-marker-top, 5%) + 2 * var(--rpg-plaque-taille, 24px) + 8px) !important;
+}
+
+/* Les emblèmes doivent rester entiers : seul le dessin de la face arrondit
+   ses coins, ni le volet ni sa face ne masquent les repères débordants. */
+.rpg-battle .rpg-hover-card-preview,
+.rpg-battle .rpg-hover-card-preview__face {
+  overflow: visible;
 }

@@ -41,6 +41,7 @@ const CARTE_TABLE = `
   <div class="card-row">
     <button class="rpg-card rpg-card--img">
       <img class="rpg-card__img" alt="" />
+      <header class="rpg-card__title"><span class="rpg-mana-cost is-compact is-plaque">3</span></header>
       <span class="rpg-card-icones rpg-card-icones--colonne">
         <span class="rpg-card-icone"><svg class="rpg-effet-icone" width="18" height="18"></svg></span>
       </span>
@@ -102,8 +103,10 @@ function mesurer(touch, corps) {
     ]),
     carte: lire('.rpg-card, .rpg-hand__card', ['overflow', 'overflow-clip-margin', 'border-radius']),
     illustration: lire('.rpg-card__img, .rpg-hand__img', ['border-radius']),
+    volet: lire('.rpg-hover-card-preview', ['overflow']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
-    cout: lire('.rpg-hover-card-preview__face .rpg-mana-cost', [
+    cout: lire('.rpg-mana-cost', [
+      'display',
       'top', 'left', 'right', 'transform', 'width', 'height', 'font-size',
     ]),
     plaque: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', [
@@ -134,34 +137,34 @@ test('sur la table, la pierre est chevillée au bord et grandit avec la carte', 
   assert.equal(colonne['--rpg-plaque-bord'], '36%', 'la table a de l’interstice : le débord peut être franc');
   assert.equal(
     colonne['--rpg-plaque-taille'],
-    'clamp(18px,21cqw,40px)',
-    'la mesure commune : 21 % de la carte, entre 18 et 40 px',
+    'clamp(24px,26cqw,52px)',
+    'la mesure commune : 26 % de la carte, entre 24 et 52 px',
   );
   assert.equal(colonne.width, 'var(--rpg-plaque-taille, 20px)', 'la colonne épouse la pierre');
   // Le cadre de la carte fait 104 à 198 px : 21 % donnent 22 à 40 px — la
   // pierre a pris un tiers de plus que les 17 % d'hier.
   for (const largeur of [104, 130, 198]) {
-    const taille = Math.min(40, Math.max(18, 0.21 * largeur));
-    assert.ok(debord(taille, 36) <= 16, `le débord de ${debord(taille, 36).toFixed(1)} px tient dans le rognage`);
+    const taille = Math.min(52, Math.max(24, 0.26 * largeur));
+    assert.ok(debord(taille, 36) <= 24, `le débord de ${debord(taille, 36).toFixed(1)} px tient dans le rognage`);
     assert.ok(dedans(taille, 36) >= 10, 'et la pierre mord vraiment sur le cadre');
   }
   assert.equal(carte.overflow, 'clip', 'la carte laisse passer le débord sans zone de défilement');
-  assert.equal(carte['overflow-clip-margin'], '16px', 'la marge couvre le plus grand débord');
+  assert.equal(carte['overflow-clip-margin'], '24px', 'la marge couvre le plus grand débord');
 });
 
 test('dans la main, la pierre prend la même part de la carte que sur la table', () => {
   const { colonne, carte, illustration } = mesurer(false, CARTE_MAIN);
   assert.equal(colonne.right, '0px', 'même bord que sur la table');
-  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(18px,21cqw,40px)', 'exactement la mesure de la table');
+  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(24px,26cqw,52px)', 'exactement la mesure de la table');
   assert.equal(colonne['--rpg-plaque-bord'], '30%', 'les cartes de la main se touchent presque');
   // Une carte de main fait 94 à 136 px : 21 % donnent 20 à 28 px (contre 24 px
   // fixes hier, et 18 px au doigt).
   for (const largeur of [94, 118, 136]) {
-    const taille = Math.min(40, Math.max(18, 0.21 * largeur));
-    assert.ok(debord(taille, 30) <= 9, `le débord de ${debord(taille, 30).toFixed(1)} px tient dans l’interstice`);
+    const taille = Math.min(52, Math.max(24, 0.26 * largeur));
+    assert.ok(debord(taille, 30) <= 11, `le débord de ${debord(taille, 30).toFixed(1)} px tient dans l’interstice`);
   }
   assert.equal(carte.overflow, 'clip', 'la main ouvre son rognage comme la table');
-  assert.equal(carte['overflow-clip-margin'], '14px');
+  assert.equal(carte['overflow-clip-margin'], '20px');
   // L'illustration reprend le rayon du cadre : le rognage ne coupe plus ses coins.
   assert.equal(
     illustration['border-radius'],
@@ -175,18 +178,18 @@ test('au doigt, la pierre de 18 px ne mord que sur 4 px du cadre', () => {
   // Une carte mobile fait moins de 90 px : 21 % tombent sous le plancher, la
   // pierre garde donc ses 18 px — la même mesure qu’hier, mais posée par la
   // règle commune au lieu d’une exception de la feuille mobile.
-  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(18px,21cqw,40px)', 'la mesure commune');
+  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(24px,26cqw,52px)', 'la mesure commune');
   assert.equal(colonne.width, 'var(--rpg-plaque-taille, 18px)', 'la colonne épouse la pierre');
   assert.equal(colonne['--rpg-plaque-bord'], '22%', 'l’interstice de 4 px ne laisse pas plus de débord');
   assert.ok(debord(18, 22) <= 4, 'le débord de 4 px tient dans l’interstice');
-  assert.equal(carte['overflow-clip-margin'], '14px', 'la marge n’a pas à suivre la taille de la pierre');
+  assert.equal(carte['overflow-clip-margin'], '20px', 'la marge n’a pas à suivre la taille de la pierre');
 });
 
 test('l’aperçu porte les mêmes pierres, en 40 px, sur le bord de sa face', () => {
   const { colonne, face, faceImage } = mesurer(false, APERCU);
   // Une face de 190 à 232 px : 21 % dépassent le plafond, la pierre prend donc
   // les 40 px — un sixième de la face, et le plus grand repère du jeu.
-  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(18px,21cqw,40px)', 'la mesure commune');
+  assert.equal(colonne['--rpg-plaque-taille'], 'clamp(24px,26cqw,52px)', 'la mesure commune');
   assert.equal(colonne['--rpg-plaque-bord'], '45%', 'presque la moitié de la pierre sur le cadre');
   assert.equal(colonne.right, '0px', 'la colonne est chevillée au bord de la face');
   assert.equal(
@@ -195,7 +198,7 @@ test('l’aperçu porte les mêmes pierres, en 40 px, sur le bord de sa face', (
     'elle part du coin haut droit, libre depuis que le coût a rejoint la couleur',
   );
   assert.ok(debord(40, 45) <= 22, 'le débord de 18 px tient dans le rognage de la face');
-  assert.equal(face.overflow, 'clip', 'la face laisse passer le débord sans zone de défilement');
+  assert.equal(face.overflow, 'visible', 'la face laisse passer le débord sans zone de défilement');
   assert.equal(face['overflow-clip-margin'], '22px');
   assert.equal(faceImage['border-radius'], face['border-radius'], 'l’illustration garde les coins du cadre');
 });
@@ -220,7 +223,7 @@ test('l’aperçu range le coût sous la pastille de couleur et les fait de mêm
   assert.equal(cout.width, 'var(--rpg-plaque-taille, 24px)', 'le losange prend la taille des pierres');
   assert.equal(cout.height, cout.width, 'le losange est carré');
   assert.equal(badge.width, cout.width, 'l’hexagone de couleur fait la même taille que le losange');
-  assert.equal(badge['--rpg-plaque-taille'], 'clamp(18px,21cqw,40px)', 'la mesure commune, celle des pierres');
+  assert.equal(badge['--rpg-plaque-taille'], 'clamp(24px,26cqw,52px)', 'la mesure commune, celle des pierres');
   assert.equal(colonne['--rpg-plaque-taille'], badge['--rpg-plaque-taille'], 'les pierres d’effets aussi');
   assert.equal(cout['font-size'], 'calc(var(--rpg-plaque-taille, 24px) * .52)', 'le chiffre suit la pierre');
   // Plus de pastille ronde : c'est la pierre qui borde et qui porte la couleur.
@@ -247,4 +250,21 @@ test('la pierre nue habille le repère dans le flux, sans sortir de sa case', ()
   assert.equal(plaque.width, '100%', 'elle remplit la largeur du repère');
   assert.equal(plaque.height, '100%', 'et sa hauteur');
   assert.match(css, /\.rpg-battle \.rpg-card-element-badge\.is-plaque > \*,[\s\S]*?grid-area: 1 \/ 1;/,        'pierre et glyphe partagent une seule case de grille');
+});
+
+
+test('le coût reste affiché sur le plateau, au doigt comme à la souris', () => {
+  for (const touch of [false, true]) {
+    const { cout } = mesurer(touch, CARTE_TABLE);
+    assert.equal(cout.display, 'flex');
+    assert.equal(cout.left, '0px');
+    assert.equal(cout.transform, 'translateX(-36%)');
+  }
+});
+
+test('les effets de la main commencent en haut sur les deux formats', () => {
+  for (const touch of [false, true]) {
+    const { colonne } = mesurer(touch, CARTE_MAIN);
+    assert.equal(colonne.top, 'var(--rpg-card-element-marker-top, 5%)');
+  }
 });

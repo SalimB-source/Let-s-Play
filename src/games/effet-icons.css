@@ -151,7 +151,7 @@
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main {
-  top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
+  top: var(--rpg-card-element-marker-top, 5%);
   right: 0;
   bottom: auto;
   left: auto;
@@ -406,4 +406,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rpg-pastille-bulle { animation: none; }
+}
+
+/* En main, la première pierre part du haut de la face, pas sous la couleur
+   (celle-ci est sur l’autre bord). Même ancrage au doigt et à la souris. */
+.rpg-battle .rpg-hand__card--img .rpg-card-icones--colonne.rpg-card-icones--main {
+  top: var(--rpg-card-element-marker-top, 5%);
+  bottom: auto;
 }
