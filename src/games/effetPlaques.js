@@ -157,7 +157,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
-const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 12, hexagone: 20 });
+const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 16, hexagone: 20 });
 
 /**
  * L'épaisseur du biseau, forme par forme. L'hexagone ouvre largement son champ
@@ -371,8 +371,8 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
     // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
     // quand la pierre est claire, et le fait lire d'un coup d'œil à 16 px.
-    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
-    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="#ffffff" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" color="${pierre.encre}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
+    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" color="#ffffff" fill="none" stroke="#ffffff" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
   ].filter(Boolean).join('');
 }
 
