@@ -104,15 +104,28 @@ test('le pictogramme garde la même épaisseur apparente sur toutes les formes',
   }
 });
 
-test('exactement trois couleurs fixes selon le type d’effet', () => {
+test('les trois couleurs des familles restent fixes, sauf le Poison vert foncé', () => {
   const attendues = { assaut: 'braise', tempo: 'azur', garde: 'azur', ombre: 'tenebres', flux: 'tenebres' };
   const fonds = new Set();
   for (const cle of Object.keys(EFFET_ICONE)) {
-    const famille = plaqueEffet(cle).famille;
-    assert.deepEqual(teinteEffet(cle), PLAQUE_PIERRES[attendues[famille]], cle);
+    const plaque = plaqueEffet(cle);
+    const registre = plaque.symbole === 'i-poison' ? 'venin' : attendues[plaque.famille];
+    assert.deepEqual(teinteEffet(cle), PLAQUE_PIERRES[registre], cle);
     fonds.add(teinteEffet(cle).fond);
   }
-  assert.equal(fonds.size, 3);
+  assert.equal(fonds.size, 4);
+});
+
+test('Poison et Empoisonnée ont la même pierre vert foncé, sans recolorer Ombre ou Flux', () => {
+  for (const cle of ['poison', 'poisonActif', 'i-poison']) {
+    assert.equal(plaqueEffet(cle).famille, 'ombre');
+    assert.equal(plaqueEffet(cle).pierre, 'venin');
+    assert.equal(teinteEffet(cle).fond, '#155b38');
+    assert.match(pierreEffet(cle), /<polygon[^>]*fill="#155b38"/);
+    assert.match(plaqueSvg(cle), /data-plaque="ombre"[^>]*data-pierre="venin"/);
+  }
+  assert.equal(teinteEffet('malediction').fond, PLAQUE_PIERRES.tenebres.fond);
+  assert.equal(teinteEffet('butin').fond, PLAQUE_PIERRES.tenebres.fond);
 });
 
 /** Une clé dont la pierre prend la forme demandée. */

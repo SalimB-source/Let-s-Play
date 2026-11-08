@@ -56,6 +56,8 @@ export const PLAQUE_PIERRES = Object.freeze({
   or: Object.freeze({ encre: '#1c1204', creux: '#5d3f13', fond: '#c1922c', lueur: '#ffe6a6' }),
   tenebres: Object.freeze({ encre: '#11061f', creux: '#331356', fond: '#7a3cb2', lueur: '#d9b4ff' }),
   emeraude: Object.freeze({ encre: '#03150f', creux: '#0a3a30', fond: '#1b8873', lueur: '#8ff0d2' }),
+  // Un vert profond, distinct de l'émeraude bleutée des ressources.
+  venin: Object.freeze({ encre: '#04140d', creux: '#0a3020', fond: '#155b38', lueur: '#79b992' }),
   azur: Object.freeze({ encre: '#05111d', creux: '#132c4a', fond: '#3a72ad', lueur: '#a9dcff' }),
 });
 
@@ -263,9 +265,12 @@ export function decaler(hex, degres, lumiere = 0) {
   return versHex({ h: h + degres, s, l: l + lumiere / 100 });
 }
 
-/** Trois couleurs fixes, selon le type d'effet (sans variation par clé). */
+/** Couleurs fixes des familles ; Poison seul possède une pierre vert foncé. */
 export function teinteEffet(cle) {
-  const { famille } = plaqueEffet(cle);
+  const { famille, pierre } = plaqueEffet(cle);
+  // Poison garde sa famille « Ombre », mais pas sa pierre violette : l'icône
+  // imprimée et le marqueur de la victime prennent tous deux le vert venin.
+  if (pierre === 'venin') return PLAQUE_PIERRES.venin;
   const registre = { assaut: 'braise', tempo: 'azur', garde: 'azur',
     ombre: 'tenebres', flux: 'tenebres' }[famille];
   return PLAQUE_PIERRES[registre] ?? PLAQUE_PIERRES.braise;
@@ -338,7 +343,9 @@ export function plaqueEffet(cle) {
     : cle;
   const famille = PLAQUE_FAMILLE_EFFET[cleReperee] ?? FAMILLE_PAR_SYMBOLE[symbole] ?? 'garde';
   const { forme, pierre } = PLAQUE_FAMILLES[famille];
-  return { cle: cleReperee, symbole, famille, forme, pierre };
+  // La teinte propre au Poison s'applique aussi à son état actif et à l'icône
+  // appelée directement par son id de sprite, sans recolorer les autres Ombres.
+  return { cle: cleReperee, symbole, famille, forme, pierre: symbole === 'i-poison' ? 'venin' : pierre };
 }
 
 /**
