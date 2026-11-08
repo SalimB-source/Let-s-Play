@@ -97,8 +97,9 @@ insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
   pastille ronde ni de liseré CSS ; le chiffre de l'effet (« Furie 2 ») garde sa
   petite pastille sombre, posée en bas à droite de la pierre. La taille vient de
   la carte (`--rpg-plaque-taille`) : `clamp(24px, 26cqw, 52px)` partout : table, main, mulligan, aperçu,
-  catalogue et atelier. Couleur, coût et effets partagent cette mesure unique.
-  Le coût du mulligan se place sous la couleur, comme dans l’aperçu.
+  catalogue et atelier. Couleur et effets partagent cette mesure unique ; le
+  coût utilise une taille 12 % plus grande. Le coût se place dans le coin haut
+  gauche et la couleur juste en dessous, également dans le mulligan et l’aperçu.
 - **Interlignage** (`IconeLigneRegle`) : 18 px devant la ligne de règle, réservé
   aux surfaces de lecture.
 
@@ -161,3 +162,18 @@ uniquement pour son contraste, à l’intérieur de la pastille.
 Les pictogrammes d’effets sont réduits à 16 unités (20 → 18 → 16), centrés
 dans les mêmes hexagones. Le trait apparent, le contour doré et les tailles
 des pastilles restent inchangés.
+
+
+## Coût dans le coin supérieur gauche
+
+Le losange de coût chevauche le coin haut gauche (`top: 0`, `left: 0`,
+translation de −36 % sur les deux axes). Il grandit de **12 %**, chiffre
+compris, sans agrandir les pastilles de couleur ni les hexagones d’effets.
+La couleur passe sous la partie visible du coût, avec un écart de 6 px.
+Une carte hybride conserve ses deux couleurs empilées sous le coût ; les
+compteurs de durabilité et de cale sont décalés sous cet ensemble.
+Sans coût (terrain), la couleur conserve son emplacement haut habituel.
+
+La règle est commune au plateau, à la main, au mulligan, aux aperçus,
+au catalogue et à l’atelier, sur PC et tactile. Le débord maximal du coût
+agrandi reste inférieur à la marge de 22 px des grandes faces.

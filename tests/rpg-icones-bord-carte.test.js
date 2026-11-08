@@ -118,6 +118,7 @@ function mesurer(touch, corps) {
     chiffreCout: lire('.rpg-mana-cost > b', ['grid-area']),
     plaqueCout: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', ['position']),
     badge: lire('.rpg-hover-card-preview__face .rpg-card-element-badge', [
+      'top',
       'transform', 'width', 'height', 'border', 'border-radius', 'background', '--rpg-plaque-taille',
     ]),
     faceImage: lire('.rpg-hover-card-preview__face > img', ['border-radius']),
@@ -207,29 +208,26 @@ test('l’aperçu porte les mêmes pierres, en 40 px, sur le bord de sa face', (
   assert.equal(faceImage['border-radius'], face['border-radius'], 'l’illustration garde les coins du cadre');
 });
 
-test('l’aperçu range le coût sous la pastille de couleur et les fait de même taille', () => {
+test('l’aperçu place le coût agrandi dans le coin, et la couleur en dessous', () => {
   const { cout, badge, colonne } = mesurer(false, APERCU);
   assert.equal(cout.right, 'auto', 'le coût quitte le coin haut droit');
   assert.equal(cout.left, '0px', 'il s’aligne sur le bord gauche');
-  assert.equal(cout.transform, 'translateX(-36%)', 'le coût chevauche le bord');
-  assert.equal(badge.transform, cout.transform, 'la couleur chevauche le même bord');
-  // Le coût se pose sous l'hexagone de couleur, à 6 px de lui — un peu moins
-  // qu'hier : la pierre de couleur a perdu son anneau clair, elle est plus
-  // serrée dans le coin.
+  assert.equal(cout.transform, 'translate(-36%, -36%)', 'le coût chevauche le bord');
+  assert.equal(badge.transform, 'translateX(-36%)', 'la couleur reste sur le bord gauche');
+  assert.equal(badge.top, 'calc(var(--rpg-cout-taille, 26.88px) * .64 + 6px)');
+  // Le coût chevauche maintenant le coin, et la couleur se range en dessous.
   assert.equal(
     cout.top,
-    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px)',
-    'il se pose sous la pastille de couleur',
+    '0px',
+    'il se pose dans le coin haut gauche',
   );
-  // Les trois repères d'une face — hexagone de couleur, losange de coût,
-  // pierres d'effets — lisent la même mesure : ils font exactement la même
-  // taille, et cette taille est celle de la carte (32 px sur une face d'aperçu).
-  assert.equal(cout.width, 'var(--rpg-plaque-taille, 24px)', 'le losange prend la taille des pierres');
+  // Seul le coût grandit ; couleurs et effets gardent leur mesure commune.
+  assert.equal(cout.width, 'var(--rpg-cout-taille, 26.88px)', 'le coût gagne 12 %');
   assert.equal(cout.height, cout.width, 'le losange est carré');
-  assert.equal(badge.width, cout.width, 'l’hexagone de couleur fait la même taille que le losange');
+  assert.equal(badge.width, 'var(--rpg-plaque-taille, 24px)', 'la couleur ne grandit pas');
   assert.equal(badge['--rpg-plaque-taille'], 'clamp(24px,26cqw,52px)', 'la mesure commune, celle des pierres');
   assert.equal(colonne['--rpg-plaque-taille'], badge['--rpg-plaque-taille'], 'les pierres d’effets aussi');
-  assert.equal(cout['font-size'], 'calc(var(--rpg-plaque-taille, 24px) * .52)', 'le chiffre suit la pierre');
+  assert.equal(cout['font-size'], 'calc(var(--rpg-cout-taille, 26.88px) * .52)', 'le chiffre suit la pierre');
   // Plus de pastille ronde : c'est la pierre qui borde et qui porte la couleur.
   assert.match(badge.border, /^0px( none)?/, 'la couleur n’a plus de bordure claire');
   assert.equal(badge['border-radius'], '0px', 'ni de rayon : elle est taillée');
@@ -266,7 +264,7 @@ test('le coût reste affiché sur le plateau, au doigt comme à la souris', () =
     assert.equal(chiffreCout['grid-area'], fondCout['grid-area'], 'le chiffre se superpose au losange');
     assert.equal(cout.position, 'absolute', 'top déplace réellement le coût sous la couleur');
     assert.equal(cout.left, '0px');
-    assert.equal(cout.transform, 'translateX(-36%)');
+    assert.equal(cout.transform, 'translate(-36%, -36%)');
   }
 });
 
@@ -288,11 +286,11 @@ test('l’aperçu réserve le débord à l’intérieur du panneau défilant', (
 });
 
 
-test('le coût en main est positionné sous la couleur sur PC et mobile', () => {
+test('le coût en main occupe le coin haut gauche sur PC et mobile', () => {
   for (const touch of [false, true]) {
     const { cout } = mesurer(touch, CARTE_MAIN);
     assert.equal(cout.position, 'absolute');
-    assert.equal(cout.top, 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px)');
+    assert.equal(cout.top, '0px');
     assert.equal(cout.left, '0px');
   }
 });
@@ -305,6 +303,6 @@ test('pendant le vol main-plateau, les pastilles ne sont pas rognées', () => {
     assert.equal(carte.overflow, 'visible', 'aucun rognage pendant le vol');
     assert.equal(illustration['border-radius'], carte['border-radius'], 'les coins de l’image restent arrondis');
     assert.equal(colonne.transform, 'translateX(var(--rpg-plaque-bord))', 'les effets gardent leur chevauchement');
-    assert.equal(cout.transform, 'translateX(-36%)', 'le coût garde son chevauchement');
+    assert.equal(cout.transform, 'translate(-36%, -36%)', 'le coût garde son chevauchement');
   }
 });
