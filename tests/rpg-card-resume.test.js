@@ -45,6 +45,7 @@ test('la règle complète reste entière sur la carte', () => {
 test('les previews ne répètent pas la règle déjà décrite par une pastille jaune', () => {
   const texte = (id) => texteApercuSansDoublons(effetsDetailles(cardById(id)));
   assert.equal(texte('feriel'), '', 'les deux capacités sont intégralement dans les pastilles');
+  assert.equal(texte('sentinelle-du-brasier'), '', 'Défenseur et Vol de vie sont déjà expliqués dans les pastilles');
   assert.equal(texte('faucon-du-zenith'), '', 'le Bouclier imprimé rejoint aussi sa pastille');
   assert.equal(texte('ifrit-al-ahmar'), '', 'le Bouclier élémentaire ne se répète pas');
   assert.equal(texte('reanimation'), '', 'la même Réanimation, écrite dans un autre ordre, ne se répète pas');
@@ -71,7 +72,7 @@ test('les previews ne répètent pas la règle déjà décrite par une pastille 
 
 test('les conditions d’Embuscade ont une version courte avec des mots clés à mettre en gras', () => {
   const embuscades = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse && carte.conditionEmbuscade);
-  assert.equal(embuscades.length, 16);
+  assert.equal(embuscades.length, 9, "seules les neuf cartes encore dotées d’Embuscade sont concernées");
   for (const carte of embuscades) {
     const morceaux = conditionEmbuscadeCourtePourApercu(carte);
     assert.ok(morceaux?.length >= 2, carte.id);
@@ -91,7 +92,7 @@ test('les conditions d’Embuscade ont une version courte avec des mots clés à
 test('la condition d’Embuscade de chaque Vampire provient du texte imprimé et reste limitée au tour adverse', () => {
   const vampires = RPG_DUEL_CARDS.filter((carte) => carte.reactionTourAdverse
     && cardHasPrintedType(carte, 'Vampire'));
-  assert.equal(vampires.length, 16);
+  assert.equal(vampires.length, 9, "les sept Vampires privés d’Embuscade ne sont plus concernés");
   for (const carte of vampires) {
     const condition = conditionEmbuscadePourApercu(carte);
     assert.ok(condition, `condition de ${carte.id} absente`);

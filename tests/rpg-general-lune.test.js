@@ -5,17 +5,30 @@ import { cardById, cardColors, cardHasPrintedType, RPG_ELEMENTS } from '../src/g
 import { carteReveleePar } from '../src/games/rpgCollection.js';
 import { rpgJouerCreature, rpgNouveauDuel, rpgLancerAttaque, rpgBlesserCreature, rpgActionsEtat } from '../src/games/rpgDuel.js';
 import { rpgPvpAppliquer } from '../src/games/rpgPvp.js';
+import { sacrificesInvocation } from '../src/games/rpgInvocation.js';
 const id = 'general-du-croissant-noir';
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
   for (const camp of ['joueur', 'sorcier']) d[camp].mana = Object.fromEntries(RPG_ELEMENTS.map(e => [e, 20]));
   return d;
 }
-function poser(d, camp, carte) { d[camp].main.push(carte); const r = rpgJouerCreature(d, camp, carte); assert.ok(r.ok, r.raison); return r.entite; }
+function poser(d, camp, carte) {
+  const sacrificeIds = [];
+  for (let i = 0; i < sacrificesInvocation(cardById(carte), d); i++) {
+    d[camp].main.push('chien-du-guet');
+    const offrande = rpgJouerCreature(d, camp, 'chien-du-guet');
+    assert.ok(offrande.ok, offrande.raison);
+    sacrificeIds.push(offrande.entite.id);
+  }
+  d[camp].main.push(carte);
+  const r = rpgJouerCreature(d, camp, carte, null, { sacrificeIds });
+  assert.ok(r.ok, r.raison);
+  return r.entite;
+}
 test('Le Général est un Vampire 3/2 coût 4, illustré et disponible au Souk', () => {
   const c = cardById(id); assert.deepEqual([c.cost, c.atk, c.def], [4, 3, 2]);
   assert.deepEqual(cardColors(c), ['sable', 'tenebres']); assert.ok(cardHasPrintedType(c, 'Vampire'));
-  assert.ok(c.volDeVie && c.reactionTourAdverse && c.resonance === 1 && c.resonanceTribu === 'vampire');
+  assert.ok(c.volDeVie && !c.reactionTourAdverse && c.resonance === 1 && c.resonanceTribu === 'vampire');
   assert.equal(carteReveleePar(id).etageId, 'necropole-3');
   assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));
 });
@@ -32,8 +45,9 @@ test('Le Général gagne de la vie en attaquant', () => {
   const d = duel(); const general = poser(d, 'joueur', id); general.ready = true; d.joueur.pv = 10;
   assert.ok(rpgLancerAttaque(d, 'joueur', [general.id], {}).ok); assert.equal(d.joueur.pv, 12);
 });
-test('Le Général peut être joué pendant le tour adverse en PvP', () => {
+test('Le Général ne peut plus être joué pendant le tour adverse en PvP', () => {
   const d = duel(); poser(d, 'joueur', 'danseuse-des-ombres-de-dune');
   d.pvp = true; d.mulliganFait = { joueur: true, sorcier: true }; d.tour = 'sorcier'; d.joueur.main.push(id);
-  assert.ok(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: id }).ok);
+  assert.equal(rpgPvpAppliquer(d, 'joueur', { type: 'jouer-carte', carteId: id }).ok, false);
+  assert.ok(d.joueur.main.includes(id));
 });

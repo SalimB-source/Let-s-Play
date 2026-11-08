@@ -40,11 +40,11 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 41 symboles validés, un par effet', () => {
+test('le sprite porte les 42 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // Poisson ajoute sa goutte au sprite : chaque symbole est référencé par
-  // `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 41);
+  // Exil a désormais son propre vortex, distinct de la flèche du Rebond :
+  // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
+  assert.equal(symboles.length, 42);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -63,6 +63,23 @@ test('le sprite porte les 41 symboles validés, un par effet', () => {
   assert.match(EFFETS_SPRITE, /M20.84 4.61/, 'Soin retrouve son cœur au trait');
   assert.equal(EFFET_ICONE.prise, 'i-abordage',
     'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
+  const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1];
+  assert.ok(abordage, 'le crâne d’Abordage est dans le sprite');
+  assert.doesNotMatch(abordage, /<circle cx="(?:9\.5|14\.5)"/, 'le crâne n’a plus ses yeux');
+});
+
+test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
+  const corps = (id) => EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
+  assert.match(corps('i-provocation'), /M5 11V7a2 2/, 'un poing avec quatre doigts, pas un mégaphone');
+  assert.doesNotMatch(corps('i-provocation'), /18 4v16/, 'ancien mégaphone retiré');
+  assert.match(corps('i-rebond'), /M12 21V4M4\.5 11\.5 12 4l7\.5 7\.5/, 'flèche verticale vers le haut');
+  assert.match(corps('i-recherche'), /<circle cx="10\.5" cy="10\.5" r="6\.5"\/>/, 'loupe seule');
+  assert.doesNotMatch(corps('i-recherche'), /<rect/, 'plus de document derrière la loupe');
+  assert.equal(EFFET_ICONE.exil, 'i-exil');
+  assert.match(corps('i-exil'), /M19 6c-3-3-8-3/, 'spirale du vortex');
+  assert.notEqual(EFFET_ICONE.exil, EFFET_ICONE['retour-main'], 'Exil ne reprend plus la flèche de Rebond');
+  assert.match(corps('i-honneur'), /M20 3 11 12l2 2 9-9/, 'lame diagonale du couteau Harakiri');
+  assert.doesNotMatch(corps('i-honneur'), /<circle/, 'plus de médaille');
 });
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {

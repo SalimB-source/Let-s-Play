@@ -5,6 +5,12 @@ import { cardById, cardColorCost, cardColors, cardHasPrintedType, RPG_ELEMENTS }
 import { rpgJouerCreature, rpgNouveauDuel, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgLancerAttaque, rpgFinDeTour, rpgBlesserCreature } from '../src/games/rpgDuel.js';
 
 const ids = ['archonte-du-sablier-noir', 'danseuse-des-ombres-de-dune', 'veilleur-du-dernier-crepuscule'];
+function jouerArchonte(d) {
+  d.joueur.main.push('chien-du-guet');
+  const offrande = rpgJouerCreature(d, 'joueur', 'chien-du-guet').entite;
+  d.joueur.main.push('archonte-du-sablier-noir');
+  return rpgJouerCreature(d, 'joueur', 'archonte-du-sablier-noir', null, { sacrificeId: offrande.id });
+}
 function duel() {
   const d = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5 });
   for (const cote of ['joueur', 'sorcier']) d[cote].mana = Object.fromEntries(RPG_ELEMENTS.map(c => [c, 20]));
@@ -17,8 +23,9 @@ test('Les trois vampires sont jouables, bicolores et illustrés', () => {
     assert.deepEqual(cardColorCost(c), { sable: 1, tenebres: 1 });
     assert.ok(cardHasPrintedType(c, 'humain') && cardHasPrintedType(c, 'vampire'));
     assert.ok(existsSync(new URL(`../public/cards/${id}.jpg`, import.meta.url)));
-    const d = duel(); d.joueur.main.push(id);
-    assert.ok(rpgJouerCreature(d, 'joueur', id).ok);
+    const d = duel();
+    if (id === 'archonte-du-sablier-noir') assert.ok(jouerArchonte(d).ok);
+    else { d.joueur.main.push(id); assert.ok(rpgJouerCreature(d, 'joueur', id).ok); }
   }
 });
 test('La Danseuse attaque immédiatement et ne peut pas être bloquée', () => {
@@ -29,11 +36,11 @@ test('La Danseuse attaque immédiatement et ne peut pas être bloquée', () => {
   assert.equal(rpgPeutBloquerAttaquant(chien, danseuse), false);
 });
 test('L’Archonte renforce les Vampires alliés, lui compris, jusqu’à la fin du tour', () => {
-  const d = duel(); d.joueur.main.push(ids[0], ids[1], 'chien-du-guet'); d.sorcier.main.push('sentinelle-des-sables');
+  const d = duel(); d.joueur.main.push(ids[1], 'chien-du-guet'); d.sorcier.main.push('sentinelle-des-sables');
   const danseuse = rpgJouerCreature(d, 'joueur', ids[1]).entite;
   const chien = rpgJouerCreature(d, 'joueur', 'chien-du-guet').entite;
   d.tour = 'sorcier'; const ennemi = rpgJouerCreature(d, 'sorcier', 'sentinelle-des-sables').entite; d.tour = 'joueur';
-  const archonte = rpgJouerCreature(d, 'joueur', ids[0]).entite;
+  const archonte = jouerArchonte(d).entite;
   assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [4, 6, 2, 3]);
   rpgFinDeTour(d);
   assert.deepEqual([danseuse.atk, archonte.atk, chien.atk, ennemi.atk], [2, 4, 2, 3]);
@@ -45,13 +52,14 @@ test('La Danseuse rend la moitié des dégâts qu’elle inflige en points de vi
   assert.ok(rpgLancerAttaque(d, 'joueur', [danseuse.id], {}).ok);
   assert.equal(d.joueur.pv, 11);
 });
-test('Le Veilleur est 3/3 avec Contre-attaque et Embuscade', () => {
+test('Le Veilleur est 3/3 avec Contre-attaque, sans Embuscade', () => {
   const carte = cardById(ids[2]);
   assert.deepEqual([carte.cost, carte.atk, carte.def], [4, 3, 3]);
   const d = duel(); d.joueur.main.push(ids[2]);
   const veilleur = rpgJouerCreature(d, 'joueur', ids[2]).entite;
   assert.equal(veilleur.contreAttaque, true);
-  assert.equal(carte.reactionTourAdverse, true);
+  assert.equal(carte.reactionTourAdverse, undefined);
+  assert.equal(carte.interceptionAttaque, undefined);
   assert.deepEqual([veilleur.atk, veilleur.pv], [3, 3]);
 });
 

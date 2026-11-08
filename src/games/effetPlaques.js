@@ -56,6 +56,8 @@ export const PLAQUE_PIERRES = Object.freeze({
   or: Object.freeze({ encre: '#1c1204', creux: '#5d3f13', fond: '#c1922c', lueur: '#ffe6a6' }),
   tenebres: Object.freeze({ encre: '#11061f', creux: '#331356', fond: '#7a3cb2', lueur: '#d9b4ff' }),
   emeraude: Object.freeze({ encre: '#03150f', creux: '#0a3a30', fond: '#1b8873', lueur: '#8ff0d2' }),
+  // Un vert profond, distinct de l'émeraude bleutée des ressources.
+  venin: Object.freeze({ encre: '#04140d', creux: '#0a3020', fond: '#155b38', lueur: '#79b992' }),
   azur: Object.freeze({ encre: '#05111d', creux: '#132c4a', fond: '#3a72ad', lueur: '#a9dcff' }),
 });
 
@@ -155,6 +157,23 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
   'i-contre-attaque': 'tempo',
   'i-embuscade': 'tempo',
   'i-rebond': 'tempo',
+  'i-exil': 'ombre',
+});
+
+/** Exceptions de couleur par pictogramme : les alias d'un même effet (Bouclier
+ * de lumière, Recherche de deck, retour différé…) partagent leur teinte.
+ * La famille et les couleurs des autres pierres restent inchangées. */
+const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
+  'i-poison': 'venin',
+  'i-rapidite': 'braise',
+  'i-contre-attaque': 'braise',
+  'i-provocation': 'braise',
+  'i-rebond': 'braise',
+  'i-vol-de-vie': 'braise',
+  'i-exil': 'braise',
+  'i-bouclier': 'tenebres',
+  'i-embuscade': 'tenebres',
+  'i-recherche': 'azur',
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
@@ -263,9 +282,10 @@ export function decaler(hex, degres, lumiere = 0) {
   return versHex({ h: h + degres, s, l: l + lumiere / 100 });
 }
 
-/** Trois couleurs fixes, selon le type d'effet (sans variation par clé). */
+/** Couleurs fixes des familles, avec les exceptions de couleur demandées. */
 export function teinteEffet(cle) {
-  const { famille } = plaqueEffet(cle);
+  const { famille, pierre, symbole } = plaqueEffet(cle);
+  if (PIERRE_SPECIALE_PAR_SYMBOLE[symbole]) return PLAQUE_PIERRES[pierre];
   const registre = { assaut: 'braise', tempo: 'azur', garde: 'azur',
     ombre: 'tenebres', flux: 'tenebres' }[famille];
   return PLAQUE_PIERRES[registre] ?? PLAQUE_PIERRES.braise;
@@ -338,7 +358,9 @@ export function plaqueEffet(cle) {
     : cle;
   const famille = PLAQUE_FAMILLE_EFFET[cleReperee] ?? FAMILLE_PAR_SYMBOLE[symbole] ?? 'garde';
   const { forme, pierre } = PLAQUE_FAMILLES[famille];
-  return { cle: cleReperee, symbole, famille, forme, pierre };
+  // Le même symbole prend la même pierre sur la fiche, la face et dans le
+  // journal, même lorsqu'on l'appelle par son id de sprite.
+  return { cle: cleReperee, symbole, famille, forme, pierre: PIERRE_SPECIALE_PAR_SYMBOLE[symbole] ?? pierre };
 }
 
 /**

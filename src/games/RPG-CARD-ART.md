@@ -71,6 +71,25 @@ jouables dans un deck.
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
 
+## Vampires de Braise et Ténèbres à bas coût
+
+- `novice-des-cendres.jpg` — un jeune Vampire à capuche, lanterne en main dans
+  un caravansérail en ruines : commune 1/1, coût 1, Vol de vie (Braise).
+- `chasseuse-de-braise.jpg` — une chasseuse vampire dans une tempête de cendres
+  près d'une porte fortifiée : inhabituelle 2/2, coût 2, Vol de vie (Braise).
+- `messagere-des-cendres.jpg` — une messagère vampire court sur un pont de pierre
+  dans une tempête d'étincelles : commune 1/1, coût 1, Rapidité (Braise).
+- `garde-du-voile.jpg` — un garde vampire tient la porte d'une crypte à la
+  lumière de la lune : commune 1/2, coût 1, Défenseur (Ténèbres).
+- `rodeuse-des-tombes.jpg` — une vampire armée d'une dague traverse les tombeaux
+  sous la lune : inhabituelle 2/1, coût 2, Infiltration (Ténèbres).
+- `sentinelle-du-brasier.jpg` — une ancienne gardienne vampire devant la forge
+  ruinée : inhabituelle 1/3, coût 2, Défenseur et Vol de vie (Braise).
+
+Leurs peintures sombres sont livrées en JPEG **768 × 960** plein art, sans
+chiffres ni pastilles dessinés. Leurs illustrations et leur type Vampire sont
+propres à chaque carte ; aucune n'a Embuscade.
+
 ## Petites créatures du Sable (coût 2)
 
 Trois peintures dédiées, sombres et cinématographiques, livrées en JPEG plein art
