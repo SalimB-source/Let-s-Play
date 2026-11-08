@@ -962,6 +962,24 @@
   position: relative;
   z-index: 1;
 }
+/* La vignette de la pile ne convoque plus d'aperçu au survol : la fiche reste
+   accessible au clic ou au clavier, sans intercepter les commandes −/+. */
+.rpg-atelier__ligne > .rpg-atelier__ligne-ouvrir {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.rpg-atelier__ligne > .rpg-atelier__ligne-ouvrir:focus-visible {
+  outline: 2px solid #e4bd6b;
+  outline-offset: -2px;
+}
+.rpg-atelier__ligne > .rpg-atelier__ligne-compte { z-index: 3; }
 
 /* Capuchon gauche `1x` / `2x` / `3x` / `4x` façon MTG Arena. */
 .rpg-atelier__ligne-qte {

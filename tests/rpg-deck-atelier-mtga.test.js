@@ -67,6 +67,17 @@ test('contrats statiques et invariants CSS de RpgDeckAtelier', () => {
     'le catalogue et l’atelier réutilisent la même face et ses pictogrammes');
   assert.match(menu, /renderCatalogueFace=\{\(carte, etat\) => <CatalogueCardFace/);
   assert.match(menu, /onOpenCardPreview=\{onOpenCardPreview\}/);
+  assert.match(menu, /className="rpg-deck-list__ouvrir"[^>]*onClick=\{\(\) => onOpenCardPreview\?\.\(carte\)\}/,
+    'les illustrations de la liste des decks ouvrent leur fiche au clic');
+  assert.doesNotMatch(menu, /onMouseEnter=\{\(event\) => onHoverCard\?\.\(carte, event\)\}/,
+    'la liste des decks ne déclenche plus d’aperçu agrandi au survol');
+  const cssCatalogue = lire('../src/games/rpg-battle.css');
+  const survolCarte = cssCatalogue.match(/\.rpg-card-catalogue__card:hover,\s*\.rpg-card-catalogue__card:focus-within\s*\{([^}]*)\}/)?.[1];
+  const survolZoom = cssCatalogue.match(/\.rpg-card-catalogue__card:hover \.rpg-card-catalogue__zoom,\s*\.rpg-card-catalogue__card:focus-within \.rpg-card-catalogue__zoom\s*\{([^}]*)\}/)?.[1];
+  assert.ok(survolCarte && survolZoom);
+  assert.doesNotMatch(`${survolCarte} ${survolZoom}`, /transform|scale|zoom:/,
+    'ni l’illustration ni le témoin de zoom ne grossissent au survol');
+  assert.doesNotMatch(cssCatalogue.match(/\.rpg-deck-list li:hover img\s*\{([^}]*)\}/)?.[1] ?? '', /transform|scale/);
 
   // Dégradé unique sur l’illustration de la carte, comme au catalogue.
   const blocAfter = atelierCss.match(/\.rpg-atelier__carte-art::after\s*\{([^}]*)\}/);
@@ -197,6 +208,7 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
 
     const collection = collectionJoueur();
     const apercus = [];
+    const survols = [];
     const container = dom.window.document.getElementById('root');
     const root = createRoot(container);
 
@@ -207,6 +219,7 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
           collection,
           artUrl: (id) => `/cards/${id}.jpg`,
           onOpenCardPreview: (carte) => apercus.push(carte.id),
+          onHoverCard: (carte) => survols.push(carte.id),
           onEnregistrer: () => ({ ok: true }),
           onAnnuler: () => {},
         }),
@@ -258,6 +271,14 @@ test('rendu interactif : cartes consultables, ajout par +, clic droit sans retra
     const chienApres = container.querySelector('.rpg-atelier__carte[data-card-id="chien-du-guet"]');
     assert.equal(chienApres.querySelectorAll('.rpg-atelier__losange.is-pris').length, 2,
       'les deux losanges s’allument quand les deux exemplaires sont dans le deck');
+    const ligneChien = container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]');
+    await act(async () => {
+      ligneChien.dispatchEvent(new dom.window.MouseEvent('mouseover', { bubbles: true }));
+    });
+    assert.deepEqual(survols, [], 'survoler une illustration dans la pile ne zoome plus la fiche');
+    await act(async () => { ligneChien.querySelector('.rpg-atelier__ligne-ouvrir').click(); });
+    assert.deepEqual(apercus, ['chien-du-guet', 'kraken', 'chien-du-guet'],
+      'la fiche de la pile reste accessible au clic');
     await act(async () => {
       chienApres.dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, button: 2 }));
       container.querySelector('.rpg-atelier__ligne[data-card-id="chien-du-guet"]').dispatchEvent(new dom.window.MouseEvent('contextmenu', { bubbles: true, button: 2 }));
