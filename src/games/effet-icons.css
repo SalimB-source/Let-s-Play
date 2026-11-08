@@ -237,12 +237,14 @@
    pierres, en grand : 32 px sur une face de 190 à 232 px, soit un sixième de la
    carte. La face a de la place autour d'elle (18 px d'interstice, 11 px de
    marge dans le volet), le débord y est donc franc : 45 %, presque la moitié de
-   la pierre sur le cadre de 6 px. La colonne descend sous le disque de coût,
-   qui occupe le coin haut droit de la face. */
+   la pierre sur le cadre de 6 px. La colonne part du coin haut droit, libre
+   depuis que le disque de coût a rejoint la pastille de couleur en haut à
+   gauche (`rpg-battle.css`) : elle s'aligne sur la même ligne que les deux
+   repères. */
 .rpg-card-icones--colonne.rpg-card-icones--apercu {
   --rpg-plaque-taille: 32px;
   --rpg-plaque-bord: 45%;
-  top: calc(5% + var(--rpg-card-marker-size, 38px) + 8px);
+  top: var(--rpg-card-element-marker-top, 5%);
   gap: 4px;
 }
 
