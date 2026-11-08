@@ -157,6 +157,23 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
   'i-contre-attaque': 'tempo',
   'i-embuscade': 'tempo',
   'i-rebond': 'tempo',
+  'i-exil': 'ombre',
+});
+
+/** Exceptions de couleur par pictogramme : les alias d'un même effet (Bouclier
+ * de lumière, Recherche de deck, retour différé…) partagent leur teinte.
+ * La famille et les couleurs des autres pierres restent inchangées. */
+const PIERRE_SPECIALE_PAR_SYMBOLE = Object.freeze({
+  'i-poison': 'venin',
+  'i-rapidite': 'braise',
+  'i-contre-attaque': 'braise',
+  'i-provocation': 'braise',
+  'i-rebond': 'braise',
+  'i-vol-de-vie': 'braise',
+  'i-exil': 'braise',
+  'i-bouclier': 'tenebres',
+  'i-embuscade': 'tenebres',
+  'i-recherche': 'azur',
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
@@ -265,12 +282,10 @@ export function decaler(hex, degres, lumiere = 0) {
   return versHex({ h: h + degres, s, l: l + lumiere / 100 });
 }
 
-/** Couleurs fixes des familles ; Poison seul possède une pierre vert foncé. */
+/** Couleurs fixes des familles, avec les exceptions de couleur demandées. */
 export function teinteEffet(cle) {
-  const { famille, pierre } = plaqueEffet(cle);
-  // Poison garde sa famille « Ombre », mais pas sa pierre violette : l'icône
-  // imprimée et le marqueur de la victime prennent tous deux le vert venin.
-  if (pierre === 'venin') return PLAQUE_PIERRES.venin;
+  const { famille, pierre, symbole } = plaqueEffet(cle);
+  if (PIERRE_SPECIALE_PAR_SYMBOLE[symbole]) return PLAQUE_PIERRES[pierre];
   const registre = { assaut: 'braise', tempo: 'azur', garde: 'azur',
     ombre: 'tenebres', flux: 'tenebres' }[famille];
   return PLAQUE_PIERRES[registre] ?? PLAQUE_PIERRES.braise;
@@ -343,9 +358,9 @@ export function plaqueEffet(cle) {
     : cle;
   const famille = PLAQUE_FAMILLE_EFFET[cleReperee] ?? FAMILLE_PAR_SYMBOLE[symbole] ?? 'garde';
   const { forme, pierre } = PLAQUE_FAMILLES[famille];
-  // La teinte propre au Poison s'applique aussi à son état actif et à l'icône
-  // appelée directement par son id de sprite, sans recolorer les autres Ombres.
-  return { cle: cleReperee, symbole, famille, forme, pierre: symbole === 'i-poison' ? 'venin' : pierre };
+  // Le même symbole prend la même pierre sur la fiche, la face et dans le
+  // journal, même lorsqu'on l'appelle par son id de sprite.
+  return { cle: cleReperee, symbole, famille, forme, pierre: PIERRE_SPECIALE_PAR_SYMBOLE[symbole] ?? pierre };
 }
 
 /**

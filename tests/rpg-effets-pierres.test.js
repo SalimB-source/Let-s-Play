@@ -104,16 +104,46 @@ test('le pictogramme garde la même épaisseur apparente sur toutes les formes',
   }
 });
 
-test('les trois couleurs des familles restent fixes, sauf le Poison vert foncé', () => {
+test('les couleurs demandées suivent le symbole sans recolorer les autres effets de leur famille', () => {
   const attendues = { assaut: 'braise', tempo: 'azur', garde: 'azur', ombre: 'tenebres', flux: 'tenebres' };
+  const exceptions = {
+    'i-poison': 'venin',
+    'i-rapidite': 'braise', 'i-contre-attaque': 'braise', 'i-provocation': 'braise',
+    'i-rebond': 'braise', 'i-vol-de-vie': 'braise', 'i-exil': 'braise',
+    'i-bouclier': 'tenebres', 'i-embuscade': 'tenebres',
+    'i-recherche': 'azur',
+  };
   const fonds = new Set();
   for (const cle of Object.keys(EFFET_ICONE)) {
     const plaque = plaqueEffet(cle);
-    const registre = plaque.symbole === 'i-poison' ? 'venin' : attendues[plaque.famille];
+    const registre = exceptions[plaque.symbole] ?? attendues[plaque.famille];
     assert.deepEqual(teinteEffet(cle), PLAQUE_PIERRES[registre], cle);
+    if (exceptions[plaque.symbole]) {
+      assert.equal(plaque.pierre, registre, `${cle} signale aussi sa pierre dans le DOM`);
+      assert.match(pierreEffet(cle), new RegExp(`<polygon[^>]*fill="${PLAQUE_PIERRES[registre].fond}"`),
+        `${cle} : couleur visible du champ de la pierre`);
+    }
     fonds.add(teinteEffet(cle).fond);
   }
   assert.equal(fonds.size, 4);
+});
+
+test('les alias de Bouclier, Recherche, Rebond et Poison conservent leur couleur', () => {
+  for (const [cles, pierre] of [
+    [['bouclier', 'bouclier-lumiere', 'i-bouclier'], 'tenebres'],
+    [['recherche', 'recherche-deck', 'i-recherche'], 'azur'],
+    [['retour-main', 'retour-apres-tours', 'i-rebond'], 'braise'],
+    [['poison', 'poisonActif', 'i-poison'], 'venin'],
+  ]) {
+    for (const cle of cles) {
+      assert.equal(plaqueEffet(cle).pierre, pierre, cle);
+      assert.match(plaqueSvg(cle), new RegExp(`data-pierre="${pierre}"`), cle);
+    }
+  }
+  assert.equal(teinteEffet('protection').fond, PLAQUE_PIERRES.azur.fond,
+    'Protection ne devient pas violette avec Bouclier');
+  assert.equal(teinteEffet('envol').fond, PLAQUE_PIERRES.azur.fond,
+    'Envol reste bleu malgré la Rapidité rouge');
 });
 
 test('Poison et Empoisonnée ont la même pierre vert foncé, sans recolorer Ombre ou Flux', () => {
