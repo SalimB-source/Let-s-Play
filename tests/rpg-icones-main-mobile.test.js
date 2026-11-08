@@ -63,7 +63,7 @@ function mesurerMain(touch) {
   return resultat;
 }
 
-test('au doigt, les pierres d’effets de la main restent lisibles : 18 px', () => {
+test('au doigt, la main garde la mesure commune — le plancher de 18 px', () => {
   const { colonne, badge, glyphe } = mesurerMain(true);
   assert.equal(colonne.width, 'var(--rpg-plaque-taille, 18px)', 'la colonne épouse la pierre');
   assert.equal(colonne.gap, '2px', 'les badges se serrent sans se coller');
@@ -78,7 +78,7 @@ test('au doigt, les pierres d’effets de la main restent lisibles : 18 px', () 
   assert.equal(glyphe.height, 'var(--rpg-plaque-taille, 18px)', 'le pictogramme reste carré');
 });
 
-test('sur bureau, les badges de la main passent à 24 px', () => {
+test('sur bureau, les badges de la main prennent la mesure commune', () => {
   const { colonne, badge } = mesurerMain(false);
   assert.equal(colonne.width, 'var(--rpg-plaque-taille, 20px)', 'la colonne épouse la pierre');
   assert.equal(badge.minWidth, 'var(--rpg-plaque-taille, 20px)', 'la pierre prend un cinquième de la carte');
