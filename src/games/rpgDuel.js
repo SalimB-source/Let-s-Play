@@ -2689,6 +2689,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
   for (const [indexCoup, coup] of coups.entries()) {
     if (coup.rapide) coup.contreAttaqueAtteinte = false;
     const entite = duel[coup.cote].creatures.find((candidate) => candidate.id === coup.entiteId);
+    // Signal sérialisable : le projectile existe même si la protection ou
+    // l’esquive arrête ensuite le coup ; aucun effet sur les règles.
+    if (entite && coup.sourceId && coup.amount > 0
+      && (coup.rapide || (coup.avantCombat && normaliserCouleurs(coup.sourceElement).includes('braise')))) {
+      journaliserAnimationCombat(duel, {
+        type: 'projectile-combat', variante: coup.rapide ? 'ciblee' : 'feu',
+        source: { type: 'creature', cote: coup.sourceCote, entiteId: coup.sourceId },
+        cible: { type: 'creature', cote: coup.cote, entiteId: coup.entiteId },
+      });
+    }
     if (!entite || rpgEstProtegee(entite, coup.sourceElement)) continue;
     // Le Serpent du monde : protégé contre les magies — la vague d'un sort
     // de zone le contourne, les attaques et capacités passent.
@@ -2925,6 +2935,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
       cote: autre(coteSource),
       entiteId: cible.id,
       amount,
+      avantCombat: true,
       sourceElement: cardColors(carteSource),
       sourceType: carteSource.combat.sourceType ?? 'capacite',
       ...source,
@@ -2939,6 +2950,7 @@ function ajouterDegatsCapaciteAvantCombat(coups, coteSource, carteSource, cible,
         cote: autre(coteSource),
         entiteId: cible.id,
         amount: degatsArme,
+        avantCombat: true,
         sourceElement: cardColors(carteArme),
         sourceType: 'capacite', sourceCreature: false,
         ...source,
