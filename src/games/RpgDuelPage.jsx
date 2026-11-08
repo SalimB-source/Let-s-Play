@@ -991,6 +991,24 @@ function CardElementBadge({ carte }) {
   );
 }
 
+// Même vignette illustrée dans le catalogue et dans la collection de l'atelier.
+// Les boutons de lecture/ajout restent propres à chaque écran ; les repères de
+// couleur, de coût, de sort et d'effets ne divergent pas entre les deux.
+function CatalogueCardFace({ carte, exemplaires, verrouillee }) {
+  return (
+    <>
+      <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
+      <CardElementBadge carte={carte} />
+      <ManaCost carte={carte} showElement={false} />
+      <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--catalogue" />
+      <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
+      <RpgCardCopyBadge nombre={exemplaires} className="rpg-card-catalogue__copies" />
+      {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
+      <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
+    </>
+  );
+}
+
 function CombatActionIcon({ type }) {
   const confirmation = type === 'confirm';
   return (
@@ -5575,6 +5593,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               collection={collection}
               exemplaires={exemplaires}
               artUrl={cardArt}
+              renderCatalogueFace={(carte, etat) => <CatalogueCardFace carte={carte} exemplaires={etat.exemplaires} verrouillee={etat.verrouillee} />}
+              onOpenCardPreview={onOpenCardPreview}
               onEnregistrer={enregistrerAtelier}
               onAnnuler={() => setAtelier(null)}
               onSupprimer={(id) => { onSupprimerDeckMaison(id); setAtelier(null); setConfirmation({ supprime: true }); }}
@@ -6100,14 +6120,7 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                         className={`rpg-card-catalogue__art ${cardFrameClass(carte)} ${cardMotifClass(carte)}`}
                         style={cardFrameStyle(carte)}
                       >
-                        <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
-                        <CardElementBadge carte={carte} />
-                        <ManaCost carte={carte} showElement={false} />
-                        <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--catalogue" />
-                        <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
-                        <RpgCardCopyBadge nombre={exemplaires} className="rpg-card-catalogue__copies" />
-                        {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
-                        <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
+                        <CatalogueCardFace carte={carte} exemplaires={exemplaires} verrouillee={verrouillee} />
                       </div>
                     </article>
                   );
@@ -9326,10 +9339,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // la table nue, un bouton, une rangée vide —, il n'ouvre rien et se contente
   // d'étouffer le menu du navigateur, comme avant.
   //
-  // Une carte qui a déjà un sens pour son clic droit garde le sien à elle : le
-  // clic droit de l'atelier retire un exemplaire du deck
-  // (`RpgDeckAtelier.jsx`), et l'atelier ne laisse pas son geste remonter
-  // jusqu'ici.
+  // Dans l’atelier aussi, le clic droit consulte la fiche ; seuls les boutons
+  // « − » retirent un exemplaire du deck.
   const surMenuContextuel = (event) => {
     event.preventDefault();
     const cible = cibleApercuClicDroit(event.target);
