@@ -59,7 +59,7 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
    le contour sombre qui détache la pierre de l'illustration ;
 2. l'**anneau** en creux — la marche du biseau ;
 3. le **champ** dans la teinte de la pierre ;
-4. le **pictogramme au trait**, blanc : 20 unités dans l’hexagone de tous les effets. Les 40 symboles du sprite retrouvent leurs contours d’origine.
+4. le **pictogramme au trait**, blanc : 18 unités dans l’hexagone de tous les effets. Les 40 symboles du sprite retrouvent leurs contours d’origine.
    Le trait apparent est affiné à **1,75 unité de pierre**, avec un halo sombre
    discret de 1 unité supplémentaire : les détails restent ouverts.
 
@@ -157,3 +157,7 @@ Les hexagones d’effets et les losanges de couleur/coût portent un liseré fin
 Les sceaux de type utilisent le même or. Les fonds rouge/bleu/violet et les
 pictogrammes blancs sont conservés ; le halo sombre du pictogramme reste
 uniquement pour son contraste, à l’intérieur de la pastille.
+
+Les pictogrammes d’effets sont réduits de 10 % (20 → 18 unités), centrés
+dans les mêmes hexagones. Le trait apparent, le contour doré et les tailles
+des pastilles restent inchangés.
