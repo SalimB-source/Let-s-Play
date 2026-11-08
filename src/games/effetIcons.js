@@ -1,6 +1,7 @@
 /**
  * Le sprite des icônes d’effets du duel — les symboles validés
- * (`preview-effets-icone.html`), monochromes, dessin au trait 24×24, sans aplats.
+ * (`preview-effets-icone.html`), monochromes, dessin au trait 24×24 ;
+ * Abordage est une silhouette pleine pour rester lisible sur sa petite pierre.
  *
  * Deux usages :
  * 1. Injecter `EFFETS_SPRITE` une fois dans le DOM (idéalement dans le `<body>`
@@ -39,13 +40,13 @@ export const EFFETS_SPRITE = `
   <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
   <symbol id="i-aura" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/></symbol>
   <symbol id="i-resonance" viewBox="0 0 24 24"><path d="M8 3v9a4 4 0 0 0 8 0V3"/><path d="M12 16v5"/><path d="M5 7a6 6 0 0 0 0 8"/><path d="M19 7a6 6 0 0 1 0 8"/></symbol>
-  <symbol id="i-honneur" viewBox="0 0 24 24"><path d="M20 3 11 12l2 2 9-9-2-2z"/><path d="m8 10 6 6M10 14l-6 6 1 1 6-6M3 20l2 2"/></symbol>
+  <symbol id="i-honneur" viewBox="0 0 24 24"><path d="M22 2 10.5 11.5l2 2L22 2z"/><path d="m8.5 10.5 5 5M10 14l-6 6 1 1 6-6M3 20l2 2"/></symbol>
   <symbol id="i-pioche" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></symbol>
   <symbol id="i-soin" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
   <symbol id="i-degats" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
   <symbol id="i-contresort" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
   <symbol id="i-rebond" viewBox="0 0 24 24"><path d="M12 21V4M4.5 11.5 12 4l7.5 7.5"/></symbol>
-  <symbol id="i-exil" viewBox="0 0 24 24"><path d="M19 6c-3-3-8-3-11 0-4 3-4 9 0 12 3 3 8 3 11 0 3-3 3-8 0-10-2-3-6-3-8-1-3 2-3 6-1 8 2 2 5 2 7 0 2-2 1-4 0-5-1-1-3-1-4 0-1 1-1 2 0 3"/><path d="m19 6 2-1m-2 1-1-2"/></symbol>
+  <symbol id="i-exil" viewBox="0 0 24 24"><path d="M19 7a9 9 0 1 0 2 5c0-4-3-7-7-7a6 6 0 0 0-6 6 4 4 0 0 0 4 4 3 3 0 0 0 3-3"/></symbol>
   <symbol id="i-recyclage" viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8"/><path d="M21 15a9 9 0 0 1-14.9 3.4L3 16"/></symbol>
   <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
   <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
@@ -55,7 +56,7 @@ export const EFFETS_SPRITE = `
   <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
   <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
   <symbol id="i-malediction" viewBox="0 0 24 24"><path d="M5 10a7 7 0 0 1 14 0v4l-2 1.5V19H7v-3.5L5 14z"/><circle cx="9.5" cy="10" r="1.4"/><circle cx="14.5" cy="10" r="1.4"/><path d="M9 19v-2M12 19v-2M15 19v-2"/></symbol>
-  <symbol id="i-abordage" viewBox="0 0 24 24"><circle cx="12" cy="9.6" r="6.5"/><path d="M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4"/><path d="M3.1 20.9 8.6 15.4"/><path d="M2.29 20.09 3.91 21.71"/><path d="M7.79 14.59 9.41 16.21"/><path d="M15.4 15.4 20.9 20.9"/><path d="M16.21 14.59 14.59 16.21"/><path d="M21.71 20.09 20.09 21.71"/><path d="M3.1 3.1 8.6 8.6"/><path d="M3.91 2.29 2.29 3.91"/><path d="M9.41 7.79 7.79 9.41"/><path d="M15.4 8.6 20.9 3.1"/><path d="M14.59 7.79 16.21 9.41"/><path d="M20.09 2.29 21.71 3.91"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" d="M2 2.5 9.2 9.7 8 10.9 2 5V2.5Zm20 0V5l-6 5.9-1.2-1.2L22 2.5ZM2 21.5V19l6-5.9 1.2 1.2L2 21.5Zm20 0-7.2-7.2 1.2-1.2L22 19v2.5Z"/><path fill="currentColor" stroke="none" d="M12 3a6.5 6.5 0 0 0-6.5 6.5c0 2.8 1.4 5 3.6 6.2v2.1c0 1.2.9 2.2 2 2.2h1.8c1.1 0 2-1 2-2.2v-2.1c2.2-1.2 3.6-3.4 3.6-6.2A6.5 6.5 0 0 0 12 3Z"/></symbol>
   <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
   <symbol id="i-furtif" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10l2.3-2 2.4 2 2.3-2 2.3 2 2.4-2 2.3 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10" r="1.2"/><circle cx="14.5" cy="10" r="1.2"/></symbol>
   <symbol id="i-mana" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>

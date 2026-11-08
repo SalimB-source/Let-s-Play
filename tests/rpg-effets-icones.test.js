@@ -57,7 +57,9 @@ test('le sprite porte les 42 symboles validés, un par effet', () => {
   assert.equal(effetIcon('transfert').includes('<use href="#i-transfert"/>'), true);
   for (const id of symboles) {
     const corps = EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
-    assert.doesNotMatch(corps, /fill="currentColor" stroke="none"/, 'retour au dessin au trait');
+    if (id !== 'i-abordage') {
+      assert.doesNotMatch(corps, /fill="currentColor" stroke="none"/, `${id} garde le dessin au trait`);
+    }
   }
   assert.match(EFFETS_SPRITE, /M7.1 11.3C5.3/, 'Furie retrouve son casque à cornes');
   assert.match(EFFETS_SPRITE, /M20.84 4.61/, 'Soin retrouve son cœur au trait');
@@ -65,7 +67,9 @@ test('le sprite porte les 42 symboles validés, un par effet', () => {
     'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
   const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1];
   assert.ok(abordage, 'le crâne d’Abordage est dans le sprite');
-  assert.doesNotMatch(abordage, /<circle cx="(?:9\.5|14\.5)"/, 'le crâne n’a plus ses yeux');
+  assert.equal((abordage.match(/<path fill="currentColor" stroke="none"/g) ?? []).length, 2,
+    'le crâne et les sabres d’Abordage sont désormais deux silhouettes pleines');
+  assert.doesNotMatch(abordage, /<circle|<ellipse/, 'le crâne plein n’a toujours pas d’yeux');
 });
 
 test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
@@ -76,9 +80,10 @@ test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pi
   assert.match(corps('i-recherche'), /<circle cx="10\.5" cy="10\.5" r="6\.5"\/>/, 'loupe seule');
   assert.doesNotMatch(corps('i-recherche'), /<rect/, 'plus de document derrière la loupe');
   assert.equal(EFFET_ICONE.exil, 'i-exil');
-  assert.match(corps('i-exil'), /M19 6c-3-3-8-3/, 'spirale du vortex');
+  assert.match(corps('i-exil'), /M19 7a9 9 0 1 0 2 5/, 'un vortex en spirale simple');
+  assert.equal((corps('i-exil').match(/<path /g) ?? []).length, 1, 'plus de petite flèche ni de trait supplémentaire');
   assert.notEqual(EFFET_ICONE.exil, EFFET_ICONE['retour-main'], 'Exil ne reprend plus la flèche de Rebond');
-  assert.match(corps('i-honneur'), /M20 3 11 12l2 2 9-9/, 'lame diagonale du couteau Harakiri');
+  assert.match(corps('i-honneur'), /M22 2 10\.5 11\.5l2 2L22 2z/, 'le couteau diagonal se termine sur une pointe aiguë');
   assert.doesNotMatch(corps('i-honneur'), /<circle/, 'plus de médaille');
 });
 

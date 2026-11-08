@@ -68,14 +68,14 @@ test('la cinquième couleur existe partout où l’élément se nomme', () => {
 
 test('les fiches de base sont en Ténèbres, les 5 grandes figures couvrent les éléments, et les limites de copies tiennent', () => {
   const fiches = [...RPG_TENEBRES_CREATURES, ...RPG_TENEBRES_MAGIES, ...RPG_TENEBRES_ARMES, ...RPG_TENEBRES_JETONS];
-  assert.equal(RPG_TENEBRES_CREATURES.length, 17);
+  assert.equal(RPG_TENEBRES_CREATURES.length, 22, 'cinq renforts mono-Ténèbres complètent le set');
   assert.equal(RPG_TENEBRES_FIGURES.length, 5);
   assert.equal(RPG_TENEBRES_MAGIES.length, 9);
   assert.equal(RPG_TENEBRES_ARMES.length, 1);
   assert.equal(RPG_TENEBRES_JETONS.length, 1);
   assert.equal(RPG_TENEBRES_JETONS[0].id, 'shabti');
   const baseFiches = [
-    ...RPG_TENEBRES_CREATURES.slice(0, 12),
+    ...RPG_TENEBRES_CREATURES.slice(0, -RPG_TENEBRES_FIGURES.length),
     ...RPG_TENEBRES_MAGIES,
     ...RPG_TENEBRES_ARMES,
     ...RPG_TENEBRES_JETONS,
@@ -457,8 +457,8 @@ test('moteur : deux « Nom effacé » cumulent leurs défausses pour le joueur',
 
 test('Ténèbres : Tribut reste minoritaire et les quatre rôles révisés sont distincts', () => {
   const creatures = RPG_TENEBRES_CREATURES.filter((c) => c.element === 'tenebres');
-  assert.equal(creatures.length, 13);
-  assert.deepEqual(creatures.filter((c) => c.tribut).map((c) => c.id), ['chacal-du-seuil', 'celui-qui-juge']);
+  assert.equal(creatures.length, 18);
+  assert.deepEqual(creatures.filter((c) => c.tribut).map((c) => c.id), ['chacal-du-seuil', 'celui-qui-juge', 'veuve-des-urnes']);
   for (const id of ['ureus-du-seuil', 'celle-qui-pese', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes']) {
     const carte = cardById(id);
     assert.equal(carte.tribut, undefined);

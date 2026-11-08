@@ -9,6 +9,15 @@ sixième — est rejoint depuis par le **deck de collection** de l'étagère
 (§10.3 et « Le deck du catalogue » plus bas). Le format classique avec
 terrains (le Portail scellé) reste en phase 2.
 
+**Extension du catalogue** — cinq créatures mono-Ténèbres complètent désormais
+les coûts de 1 à 5 : Porteur de la plume (1/2, soin à la mort), Scarabée du
+natron (1/2, Shabti à la mort), Veuve des urnes (2/3, Tribut 1), Gardien des
+sept sceaux (3/4, Défenseur) et Lecteur du dernier nom (3/4, pioche 2 puis
+défausse 1). Elles se découvrent aux étages 1 à 3 de la Nécropole et sont
+vendues au Souk ; elles ne sont pas offertes dans la dotation initiale.
+La liste de trente cartes plus bas documente le deck d'essai d'origine,
+non l'inventaire complet du set après cette extension.
+
 ## 1. Le parti pris : l'Égypte pharaonique
 
 Comme le Nord pour la Neige ou le Japon pour le Soleil rouge, chaque couleur du
