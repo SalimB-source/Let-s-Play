@@ -12,8 +12,8 @@ d'auto-battler : le losange braise, l'hexagone ténèbres, l'hexagone or.
 
 Deux choses se lisent d'un coup d'œil, sans lire le mot :
 
-- **la forme dit la famille d'action** — le `diamant` pour ce qui frappe et se
-  déplace, l'`hexagone` pour ce qui tient et dure ;
+- **la forme dit le rôle du repère** — hexagone pour tous les effets,
+  losange pour couleur, type et coût ;
 - **la couleur dit le type** — rouge pour l’assaut, bleu pour garde et tempo,
   violet pour ombre et ressources ;
 - **le pictogramme au trait dit l’effet** — casque à cornes (Furie), flamme
@@ -23,8 +23,8 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
 
 | Famille | Forme | Pierre | Effets |
 | --- | --- | --- | --- |
-| **Assaut** | diamant | braise | Dégâts, Affaiblissement, Coup critique, Attaque ciblée, Traque, Overkill, Furie, Harakiri, Abordage, Prise, les quatre Destructions |
-| **Tempo** | diamant | azur | Rapidité, Envol, Esquive, Contre-attaque, Embuscade, Rebond |
+| **Assaut** | hexagone | braise | Dégâts, Affaiblissement, Coup critique, Attaque ciblée, Traque, Overkill, Furie, Harakiri, Abordage, Prise, les quatre Destructions |
+| **Tempo** | hexagone | azur | Rapidité, Envol, Esquive, Contre-attaque, Embuscade, Rebond |
 | **Garde** | hexagone | bleu | Protection (et ses variantes de sorts), Bouclier, Ténacité, Défenseur, Provocation, Aura, Bannière, Renfort, Résonance, Compagnie |
 | **Ombre** | hexagone | ténèbres | Malédiction, Vol de vie, Furtivité, Infiltration, Exil, Réanimation, Contresort, Transfert, Tribut, Défausses, Blocages interdits, Cale |
 | **Flux** | hexagone | violet | Pioche, Recherche, Butin, Cargaison, Mana, Soin, Recyclage, Heures, Jetons, Lien |
@@ -34,9 +34,10 @@ taille** (`--rpg-plaque-taille`, posée par la face de la carte) :
 
 | Repère | Silhouette | Dessin |
 | --- | --- | --- |
-| Couleur de la carte | **hexagone** | `plaqueNue` — la pierre taillée sans pictogramme |
+| Couleur de la carte | **diamant** | `plaqueNue` — la pierre taillée sans pictogramme |
 | Coût de la carte | **diamant** | `plaqueNue`, deux couleurs ⇒ champ en dégradé |
-| Effet | diamant ou hexagone de sa famille | `pierreEffet`, pictogramme blanc |
+| Type de sort | **diamant** | sceau jaune (rapide) ou violet (sorcellerie) |
+| Effet | **hexagone**, toutes familles | `pierreEffet`, pictogramme blanc |
 
 La silhouette seule dit ce qu'on regarde : plus de disque rond ni de liseré CSS
 autour de la couleur et du coût. La pierre nue se pose **dans le flux** du repère
@@ -58,8 +59,7 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
    le contour sombre qui détache la pierre de l'illustration ;
 2. l'**anneau** en creux — la marche du biseau ;
 3. le **champ** dans la teinte de la pierre ;
-4. le **pictogramme au trait**, blanc : 16 unités dans le diamant et 20 dans
-   l’hexagone. Les 40 symboles du sprite retrouvent leurs contours d’origine.
+4. le **pictogramme au trait**, blanc : 20 unités dans l’hexagone de tous les effets. Les 40 symboles du sprite retrouvent leurs contours d’origine.
    Le trait apparent est affiné à **1,75 unité de pierre**, avec un halo sombre
    discret de 1 unité supplémentaire : les détails restent ouverts.
 

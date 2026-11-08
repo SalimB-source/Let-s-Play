@@ -89,7 +89,7 @@ test('les silhouettes sont closes, centrées et symétriques', () => {
 });
 
 test('le pictogramme garde la même épaisseur apparente sur toutes les formes', () => {
-  for (const [forme] of Object.entries(PLAQUE_FORMES)) {
+  for (const forme of new Set(Object.values(PLAQUE_FAMILLES).map((f) => f.forme))) {
     const epaisseur = EPAISSEUR_SYMBOLE[forme];
     assert.ok(epaisseur > 1.5 && epaisseur < 5, `${forme} : trait plausible`);
     const symbole = Number(pierreEffet(plaqueCleDeForme(forme)).match(/width="([\d.]+)" height="[\d.]+"/)?.[1]);
@@ -183,4 +183,12 @@ test('la feuille pose la pierre comme badge et laisse le glyphe respirer', () =>
   assert.match(jsx, /data-plaque=\{plaque\.famille\}/, 'le composant React expose la famille de la pierre');
   assert.match(jsx, /dangerouslySetInnerHTML=\{\{ __html: pierreDessinee\(cle, protectionContre\) \}\}/,
     'le composant React dessine la pierre du module, pas une copie');
+});
+
+
+test('tous les effets utilisent un hexagone, sans exception de famille', () => {
+  for (const cle of Object.keys(EFFET_ICONE)) {
+    assert.equal(plaqueEffet(cle).forme, 'hexagone', cle);
+    assert.match(plaqueSvg(cle), /data-forme="hexagone"/);
+  }
 });
