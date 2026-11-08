@@ -547,11 +547,11 @@
 .rpg-card-tear-fx__half > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .rpg-card-tear-fx__half--gauche {
   clip-path: polygon(0 0, 56% 0, 47% 14%, 55% 29%, 46% 44%, 54% 59%, 47% 73%, 55% 88%, 50% 100%, 0 100%);
-  animation: rpg-tear-left .82s ease-in both;
+  animation: rpg-tear-left calc(var(--rpg-sacrifice-dechirement, 820ms) * var(--rpg-anim-scale, 1)) ease-in calc(var(--rpg-sacrifice-retard, 400ms) * var(--rpg-anim-scale, 1)) both;
 }
 .rpg-card-tear-fx__half--droite {
   clip-path: polygon(56% 0, 100% 0, 100% 100%, 50% 100%, 55% 88%, 47% 73%, 54% 59%, 46% 44%, 55% 29%, 47% 14%);
-  animation: rpg-tear-right .82s ease-in both;
+  animation: rpg-tear-right calc(var(--rpg-sacrifice-dechirement, 820ms) * var(--rpg-anim-scale, 1)) ease-in calc(var(--rpg-sacrifice-retard, 400ms) * var(--rpg-anim-scale, 1)) both;
 }
 .rpg-card-tear-fx > b {
   position: absolute;
@@ -568,7 +568,7 @@
   font: 800 7px/1.1 Georgia, serif;
   text-overflow: ellipsis;
   white-space: nowrap;
-  animation: rpg-tear-name .82s ease-in both;
+  animation: rpg-tear-name calc(var(--rpg-sacrifice-dechirement, 820ms) * var(--rpg-anim-scale, 1)) ease-in calc(var(--rpg-sacrifice-retard, 400ms) * var(--rpg-anim-scale, 1)) both;
 }
 @keyframes rpg-tear-left {
   0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
@@ -996,3 +996,6 @@
 }
 /* Les cartes posées se lisent à 105 % de la main ; leurs cases les suivent de
    près, comme sur PC (144 px de case pour 140 de main). */
+
+.rpg-battle.is-reduced .rpg-card-tear-fx__half,
+.rpg-battle.is-reduced .rpg-card-tear-fx > b { animation: none !important; }

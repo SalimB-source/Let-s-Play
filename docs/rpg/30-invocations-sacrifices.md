@@ -48,3 +48,19 @@ La gouttière commune aux cartes et aux emplacements passe de 16–26 à 20–30
 sur PC. Au doigt, elle passe de `max(8px, .16 carte)` à
 `max(10px, .19 carte)`. La grille de cases hérite toujours de la même gouttière
 que les cartes, sans changer leur taille.
+
+## Animation d’invocation
+
+Toutes les victimes choisies portent simultanément un cercle doré, avec deux
+anneaux tournant en sens contraires. Le cercle s’allume d’abord ; la déchirure
+commence après 400 ms et dure 820 ms. Le cercle et ses derniers glyphes
+s’éteignent à 1 400 ms. La nouvelle créature ne se pose qu’après la fin de
+**tous** les cercles et une pause de 180 ms ; sa voix commence alors, pas
+pendant le sacrifice. Ces durées suivent le réglage de vitesse du jeu.
+
+La vraie carte est masquée pendant sa copie animée, en conservant sa case.
+Un minuteur de secours, plus long que la séquence complète, évite un blocage
+si `animationend` n’est pas émis. Un identifiant de séquence empêche un ancien
+minuteur de terminer une nouvelle invocation. En mouvement réduit, la rotation
+est désactivée et l’attente est ramenée à 80 ms. Aucun suivi du curseur ni boucle
+de mesures géométriques n’est ajouté.

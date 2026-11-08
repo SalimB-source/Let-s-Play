@@ -1,3 +1,4 @@
+import { SACRIFICE_ANIMATION } from './rpgSacrificeAnimation.js';
 import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
@@ -2067,8 +2068,7 @@ export function LigneCharge({ effet }) {
 /**
  * Cercle magique d'un sacrifice : une créature rendue au sable.
  *
- * Quand le plateau est plein et qu'une créature est sacrifiée pour faire
- * place à la nouvelle, un cercle de runes s'allume à son emplacement :
+ * Chaque victime d’une invocation porte un cercle de runes dorées :
  * halo qui pulse, anneaux qui tournent en sens contraires, glyphes qui
  * apparaissent et étincelles qui montent. Le calque reprend la place et
  * l'inclinaison de la créature sacrifiée, ne capte aucun geste et ne
@@ -2088,6 +2088,7 @@ export function CercleMagique({ effet, onTermine = null }) {
         width: `${effet.width}px`,
         height: `${effet.height}px`,
         '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+        '--rpg-sacrifice-duree': `${SACRIFICE_ANIMATION.cercle}ms`,
       }}
       onAnimationEnd={(event) => {
         if (event.target !== event.currentTarget || event.pseudoElement) return;
@@ -2856,6 +2857,7 @@ export function TableCard({
   blocking,
   canTarget,
   sacrificeTarget = false,
+  sacrificeEnAnimation = false,
   spellTarget = false,
   sortBloqueParBouclier = false,
   coupRapideCible = false,
@@ -3010,6 +3012,7 @@ export function TableCard({
         entite.furieDeclenchee ? 'is-furie' : '',
         canTarget ? 'is-ciblable' : '',
         sacrificeTarget ? 'is-sacrifice-target' : '',
+        sacrificeEnAnimation ? 'is-sacrifice-animating' : '',
         spellTarget ? 'is-spell-target' : '',
         coupRapideCible ? 'is-coup-rapide-cible' : '',
         canDragBlocker ? 'is-blocker-draggable' : '',
@@ -11539,7 +11542,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
-        res.sacrificeId ? [res.sacrificeId] : []);
+        res.sacrificeIds ?? (res.sacrificeId ? [res.sacrificeId] : []));
       // Une arrivée qui désigne encore sa cible ne sonne pas ici : sa flamme
       // (ou son tonnerre) appartient au geste qui blesse, et part au clic qui
       // désigne la victime (`resoudreCible`, `rpgArriveeAudio.js`). La Tour de
@@ -11599,30 +11602,42 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       jouerSfx('select');
       return;
     }
-    const instantane = prendreInstantaneChamp().find((carte) => carte.entityId === entite.id);
+    const champ = prendreInstantaneChamp();
+    const token = ++sequenceAnimationRef.current;
+    const victimes = choisis.map(id => champ.find(carte => carte.entityId === id)).filter(Boolean)
+      .map(carte => ({ ...carte, effectId: `invocation-${token}-${carte.entityId}` }));
     setSacrificeEnCours(null);
     setSacrificesChoisis([]);
-    sacrificeEnCoursRef.current = { carteId, sacrificeIds: choisis };
-    if (instantane) {
-      const token = ++sequenceAnimationRef.current;
-      setSacrificeFx({ ...instantane, token, effectId: `dechirement-${token}-${entite.id}` });
-    }
-    // Le sacrifice déchire une carte : il n'a jamais eu de feu à lui. Le
-    // souffle restait allumé pour toute créature sacrifiée, quelle que soit sa
-    // couleur — c'est le bruit de la carte détruite qui reste.
+    sacrificeEnCoursRef.current = { carteId, sacrificeIds: choisis, token,
+      attendus: victimes.map(v => v.effectId), termines: new Set(), finPlanifiee: false };
+    setSacrificeFx({ victimes, token });
     jouerSfx('destruction');
-    // La remplaçante ne touchera le plateau qu'après la déchirure (860 ms) :
-    // sa voix part maintenant, avec le geste qui la destine à cette case.
-    annoncerVoixArrivee(carteId);
-    const duree = animationsReduites() ? 60 : 860;
-    later(() => {
-      const enCours = sacrificeEnCoursRef.current;
-      sacrificeEnCoursRef.current = null;
-      setSacrificeFx(null);
-      if (enCours) finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
-      force();
-    }, duree);
+    // Le cercle dure plus longtemps que la déchirure. La pose attend sa fin,
+    // puis une courte pause. Filet pour mouvement réduit / animationend absent.
+    const duree = animationsReduites() ? SACRIFICE_ANIMATION.reduit
+      : dureeAnimation(SACRIFICE_ANIMATION.cercle + SACRIFICE_ANIMATION.pause + SACRIFICE_ANIMATION.secours);
+    later(() => terminerPoseSacrifice(token), duree);
     force();
+  };
+
+  const terminerPoseSacrifice = (token) => {
+    const enCours = sacrificeEnCoursRef.current;
+    if (!enCours || enCours.token !== token) return;
+    sacrificeEnCoursRef.current = null;
+    setSacrificeFx(null);
+    // La voix de la nouvelle créature ne commence pas pendant le sacrifice.
+    annoncerVoixArrivee(enCours.carteId);
+    finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+    force();
+  };
+  const terminerCercleSacrifice = (effectId) => {
+    const enCours = sacrificeEnCoursRef.current;
+    if (!enCours || !enCours.attendus.includes(effectId) || enCours.finPlanifiee) return;
+    enCours.termines.add(effectId);
+    if (enCours.termines.size !== enCours.attendus.length) return;
+    enCours.finPlanifiee = true;
+    const token = enCours.token;
+    later(() => terminerPoseSacrifice(token), dureeAnimation(SACRIFICE_ANIMATION.pause));
   };
 
   const equiperArme = (carteId, cibleId) => {
@@ -14044,6 +14059,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
+                      sacrificeEnAnimation={Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
                       sacrificeTarget={Boolean(sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
@@ -14202,48 +14218,52 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
             posée à sa place (`dechirerEtPoser` enchaîne les deux temps). */}
-        {sacrificeFx && (
+        {sacrificeFx?.victimes.map((victime) => (
           <div
-            key={sacrificeFx.effectId}
-            className={`rpg-card-tear-fx ${cardFrameClass(cardById(sacrificeFx.cardId))} ${cardMotifClass(cardById(sacrificeFx.cardId))}`}
-            data-rpg-tear-id={sacrificeFx.entityId}
+            key={victime.effectId}
+            className={`rpg-card-tear-fx ${cardFrameClass(cardById(victime.cardId))} ${cardMotifClass(cardById(victime.cardId))}`}
+            data-rpg-tear-id={victime.entityId}
             data-sacrifice-fx="dechirement"
             role="status"
-            aria-label={`${sacrificeFx.name} se déchire : sacrifice en cours.`}
+            aria-label={`${victime.name} se déchire : sacrifice en cours.`}
             style={{
-              ...cardFrameStyle(cardById(sacrificeFx.cardId)),
-              left: `${sacrificeFx.left}px`,
-              top: `${sacrificeFx.top}px`,
-              width: `${sacrificeFx.width}px`,
-              height: `${sacrificeFx.height}px`,
-              '--rpg-fx-rotation': `${sacrificeFx.angle}rad`,
+              ...cardFrameStyle(cardById(victime.cardId)),
+              left: `${victime.left}px`,
+              top: `${victime.top}px`,
+              width: `${victime.width}px`,
+              height: `${victime.height}px`,
+              '--rpg-fx-rotation': `${victime.angle}rad`,
+              '--rpg-sacrifice-retard': `${SACRIFICE_ANIMATION.retardDechirement}ms`,
+              '--rpg-sacrifice-dechirement': `${SACRIFICE_ANIMATION.dechirement}ms`,
             }}
           >
             <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--gauche" aria-hidden="true">
-              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+              <img src={cardArt(victime.cardId)} alt="" />
             </span>
             <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--droite" aria-hidden="true">
-              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+              <img src={cardArt(victime.cardId)} alt="" />
             </span>
-            <b aria-hidden="true">{sacrificeFx.name}</b>
+            <b aria-hidden="true">{victime.name}</b>
           </div>
-        )}
+        ))}
 
         {/* Cercle magique du sacrifice : runes et halo au pied de la créature
             sacrifiée, le temps de la déchirure. */}
-        {sacrificeFx && (
+        {sacrificeFx?.victimes.map((victime) => (
           <CercleMagique
+            key={victime.effectId}
+            onTermine={terminerCercleSacrifice}
             effet={{
-              entityId: sacrificeFx.entityId,
-              effectId: sacrificeFx.effectId,
-              left: sacrificeFx.left,
-              top: sacrificeFx.top,
-              width: sacrificeFx.width,
-              height: sacrificeFx.height,
-              angle: sacrificeFx.angle,
+              entityId: victime.entityId,
+              effectId: victime.effectId,
+              left: victime.left,
+              top: victime.top,
+              width: victime.width,
+              height: victime.height,
+              angle: victime.angle,
             }}
           />
-        )}
+        ))}
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
           <FluxManaTrack
