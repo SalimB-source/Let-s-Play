@@ -1,11 +1,11 @@
-import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-04';
+import { dailyNewsListing as yesterdayStories, editionDate as yesterdayDate } from '../news/daily/2026-11-05';
 import React from 'react';
 import '../news-view-toggle.css';
 import '../news-carousel.css';
 import '../news-article.css';
 import { Link } from 'react-router-dom';
 import { baseUrl as base } from '../data';
-import { dailyNewsListing, editionDate } from '../news/daily/2026-11-05';
+import { dailyNewsListing, editionDate } from '../news/daily/2026-11-08';
 import NewsCard from '../components/NewsCard';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useLocalizedListings } from '../news/localized/useLocalizedArticle.js';
@@ -219,9 +219,9 @@ export default function News() {
           ))}
         </div>
       </section>
-      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'}>
+      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Previous edition' : lang === 'ar' ? 'النسخة السابقة' : 'Édition précédente'}>
         <div className="section-label">
-          <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
+          <span>{lang === 'en' ? 'PREVIOUS EDITION' : lang === 'ar' ? 'النسخة السابقة' : 'ÉDITION PRÉCÉDENTE'}</span>
           <span>{yesterdayDate}</span>
         </div>
         <div className="news-carousel is-grid">
@@ -296,9 +296,9 @@ export default function News() {
         </Link>
       </div>
 
-      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Yesterday’s news' : lang === 'ar' ? 'أخبار الأمس' : 'Actualités d’hier'} data-reveal>
+      <section id="actus-hier" className="featured-dossiers featured-dossiers--news news-hub-headlines wrap" aria-label={lang === 'en' ? 'Previous edition' : lang === 'ar' ? 'النسخة السابقة' : 'Édition précédente'} data-reveal>
         <div className="section-label">
-          <span>{lang === 'en' ? 'YESTERDAY’S NEWS' : lang === 'ar' ? 'أخبار الأمس' : 'LES ACTUS D’HIER'}</span>
+          <span>{lang === 'en' ? 'PREVIOUS EDITION' : lang === 'ar' ? 'النسخة السابقة' : 'ÉDITION PRÉCÉDENTE'}</span>
           <span>01.11.2026</span>
         </div>
         <div className="news-carousel is-grid">

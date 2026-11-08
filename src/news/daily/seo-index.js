@@ -399,5 +399,37 @@ export const dailySeoEntries = {
     "type": "article",
     "published": "2026-11-05",
     "section": "Actualités gaming"
+  },
+  "/news/gta-6-nouvelles-images-voitures-galerie-lancement": {
+    "title": "GTA VI VICE CITY EN PLEIN CADRE. — Let’s Play",
+    "description": "Rockstar ouvre la galerie de lancement de GTA VI : de nouvelles captures de Vice City et de Leonida, alors que les voitures du jeu attirent tous les regards. Rendez-vous le 19 novembre sur PS5 et Xbox Series X|S.",
+    "image": "https://media-rockstargames-com.akamaized.net/tina-uploads/posts/39ak81277255o9/72074994d6364ad0de8872aa971fc47653f644ab.jpg",
+    "type": "article",
+    "published": "2026-11-08",
+    "section": "Actualités gaming"
+  },
+  "/news/xbox-cloud-gaming-telephone-manette-preview": {
+    "title": "XBOX CLOUD GAMING LE MOBILE AUX COMMANDES. — Let’s Play",
+    "description": "Xbox teste le téléphone comme manette sur les Smart TV compatibles et une connexion Wi-Fi directe pour le Nano Controller. Deux previews, pas un déploiement universel.",
+    "image": "https://xboxwire.thesourcemediaassets.com/sites/2/2026/11/XBOX-Wire-DtC-Phone-Controller-110426-5428ff0def107f49971d-1024x576.jpg",
+    "type": "article",
+    "published": "2026-11-08",
+    "section": "Actualités gaming"
+  },
+  "/news/cinema/journal-degonfle-christmas-getaway-disney-trailer": {
+    "title": "GREG HEFFLEY NOËL SOUS LES TROPIQUES. — Let’s Play",
+    "description": "Disney dévoile la bande-annonce de Diary of a Wimpy Kid Christmas: The Getaway. Les Heffley échangent le stress des fêtes contre un séjour sur une île, dès le 4 décembre sur Disney+.",
+    "image": "https://i.ytimg.com/vi/O8JuMijNEAU/maxresdefault.jpg",
+    "type": "article",
+    "published": "2026-11-08",
+    "section": "Actualités cinéma"
+  },
+  "/news/tech/dropbox-tigris-dbx-agent-cloud-acquisition": {
+    "title": "DROPBOX LE STOCKAGE À L’ÈRE IA. — Let’s Play",
+    "description": "Dropbox prévoit d’acquérir Tigris et présente DBX Agent Cloud, une offre de stockage pour les applications et agents IA. Le groupe déploie aussi de nouvelles fonctions sur les fichiers existants.",
+    "image": "https://aem.dropbox.com/cms/content/dam/dropbox/blog/files/dropbox-glyph-blue.png",
+    "type": "article",
+    "published": "2026-11-08",
+    "section": "Actualités tech"
   }
 };
