@@ -5,7 +5,8 @@
    - Espace plein écran divisé en deux colonnes indépendantes sur ordinateur :
      1) À gauche (~73 %), barre de filtres compacte (recherche + 5 médaillons
         d'éléments circulaires + « Possédées » + « Filtres ») et grille de
-        vraies cartes lisibles surmontées de losanges d'exemplaires (`◆`/`◇`).
+        faces illustrées du catalogue, avec losanges d'exemplaires (`◆`/`◇`)
+        et boutons explicites d'ajout/retrait.
      2) À droite (~27 %), colonne du deck bordée d'une braise dorée : en-tête
         compact (couverture + titre éditable + compteur N/30 + mini-courbe de
         mana intégrée), pile verticale de barres horizontales triées par coût
@@ -350,8 +351,9 @@
   font: 500 11px/1.4 var(--mono, monospace);
 }
 
-/* ═══ LA GRILLE DE VRAIES CARTES LISIBLES + LOSANGES D'EXEMPLAIRES ═══ */
-
+/* Même grille de faces illustrées que le catalogue : l'image et ses repères
+   occupent la carte entière. Seuls les losanges et les commandes +/− sont
+   spécifiques à la composition du deck. */
 .rpg-atelier__cartes {
   list-style: none;
   margin: 0;
@@ -359,8 +361,8 @@
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 184px), 1fr));
-  gap: 16px 13px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr));
+  gap: 13px;
   align-content: start;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -369,24 +371,53 @@
 
 .rpg-atelier__carte {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  display: block;
   min-width: 0;
-  border-radius: 12px;
-  transition: transform .15s ease, filter .15s ease;
+  overflow: hidden;
 }
-.rpg-atelier__carte:hover {
-  transform: translateY(-3px);
+.rpg-atelier__carte-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  --rpg-card-marker-size: 24px;
+  border-width: 0;
+  border-radius: 12px 12px 7px 7px;
+  background: #171218;
 }
+.rpg-atelier__carte-art > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rpg-atelier__carte-art::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(5, 4, 7, .36), transparent 56%);
+  pointer-events: none;
+}
+.rpg-atelier__carte-ouvrir { inset: 0; }
 
-/* Rangée de losanges façon MTG Arena au-dessus de chaque carte (`◆ ◆ ◇ ◇`). */
+/* Les losanges de stock se lisent au centre du bord supérieur, entre la
+   couleur et le coût, sans ajouter de bandeau au-dessus de la peinture. */
 .rpg-atelier__losanges {
+  position: absolute;
+  z-index: 6;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 11px;
+  min-height: 18px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(8, 6, 10, .72);
   pointer-events: none;
 }
 .rpg-atelier__losange {
@@ -395,327 +426,61 @@
   height: 7.5px;
   transform: rotate(45deg);
   border-radius: 1.5px;
-  transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease;
 }
 .rpg-atelier__losange.is-pris {
-  background-color: #f8c654;
+  background: #f8c654;
   border: 1px solid #fff0b8;
   box-shadow: 0 0 7px rgba(248, 198, 84, .85);
 }
 .rpg-atelier__losange.is-dispo {
-  background-color: rgba(235, 194, 106, .12);
+  background: rgba(235, 194, 106, .12);
   border: 1.5px solid rgba(235, 194, 106, .72);
 }
 .rpg-atelier__losange.is-manquant {
-  background-color: rgba(26, 25, 36, .75);
+  background: rgba(26, 25, 36, .75);
   border: 1px solid rgba(145, 140, 160, .28);
 }
 
-/* La carte miniature complète et lisible. */
-.rpg-atelier__carte-ajout {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  width: 100%;
-  padding: 5px;
-  border: 1.5px solid color-mix(in srgb, var(--frame, #d6b26a) 54%, rgba(255, 240, 212, .2));
-  border-radius: 11px;
-  background-color: #171622;
-  background-image: linear-gradient(180deg, rgba(35, 33, 49, .96) 0%, rgba(20, 19, 29, .98) 100%);
-  color: var(--encre);
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, .48), inset 0 1px 0 rgba(255, 255, 255, .07);
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.rpg-atelier__carte:hover .rpg-atelier__carte-ajout {
-  border-color: color-mix(in srgb, var(--frame, #f0d994) 76%, #fff3d1);
-  box-shadow: 0 12px 26px rgba(0, 0, 0, .62), 0 0 0 1px rgba(240, 217, 148, .35);
-}
-.rpg-atelier__carte.is-picked .rpg-atelier__carte-ajout {
-  border-color: #f3c86a;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .56), 0 0 0 1px rgba(243, 200, 106, .55);
-}
-.rpg-atelier__carte-ajout:focus-visible {
-  outline: 2px solid var(--or);
-  outline-offset: 2px;
-}
-.rpg-atelier__carte-ajout:disabled {
-  cursor: not-allowed;
-}
-
-/* Bandeau supérieur de la carte : Titre à gauche + Coût à droite. */
-.rpg-atelier__carte-entete {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 5px;
-  min-height: 25px;
-  padding: 3px 6px 4px;
-  margin-bottom: 4px;
-  border-radius: 6px;
-  background-color: rgba(11, 10, 16, .75);
-  border: 1px solid rgba(255, 244, 220, .09);
-}
-.rpg-atelier__carte-nom {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.rpg-atelier__carte-nom strong {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #fff6e5;
-  font: 700 12px/1.25 Georgia, serif;
-  letter-spacing: .01em;
-}
-
-/* Illustration cadrée en 16/11 (invariant cadre + filet conservé). */
-.rpg-atelier__carte-art {
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 11;
-  overflow: hidden;
-  --rpg-card-marker-size: 26px;
-  border-radius: 7px;
-  background-color: #171218;
-  border: var(--rpg-card-border, 4px) solid transparent;
-  background-image:
-    linear-gradient(#171218, #171218),
-    var(--rpg-frame-motif, none),
-    var(--rpg-frame-gradient, linear-gradient(var(--rpg-atelier-cadre, var(--frame, #f1f3f5)), var(--rpg-atelier-cadre, var(--frame, #f1f3f5))));
-  background-origin: padding-box, border-box, border-box;
-  background-clip: padding-box, border-box, border-box;
-  background-size: 100% 100%, var(--rpg-frame-motif-size, 8px 8px), var(--rpg-frame-material-size, 100% 100%);
-  background-repeat: no-repeat, repeat, no-repeat;
-  background-position: 0 0, 0 0, 0% 0;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, .4);
-  transition: box-shadow .14s ease;
-}
-.rpg-atelier__carte:hover .rpg-atelier__carte-art {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .45), 0 0 0 1px rgba(240, 217, 148, .38);
-}
-.rpg-atelier__carte-art img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  object-position: center 22%;
-  transition: transform .25s ease, filter .2s ease;
-}
-.rpg-atelier__carte:hover .rpg-atelier__carte-art img {
-  transform: scale(1.04);
-}
-/* Invariant testé : unique dégradé sombre en pied de l'illustration. */
-.rpg-atelier__carte-art::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background: linear-gradient(0deg, rgba(5, 4, 7, .55), transparent 56%);
-  pointer-events: none;
-}
-
-/* Sceau de sort (magie rapide / sorcellerie) sur l'illustration. */
-.rpg-atelier__sceau {
-  position: absolute;
-  left: 5px;
-  bottom: 5px;
-  z-index: 2;
-  width: 22px;
-  height: 22px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 50%;
-  background-color: rgba(11, 10, 17, .86);
-  border: 1px solid rgba(240, 217, 148, .48);
-  color: var(--or);
-}
-.rpg-atelier__sceau svg {
-  width: 12px;
-  height: 12px;
-  fill: currentColor;
-}
-.rpg-atelier__sceau--instant { color: #7fd4ff; border-color: rgba(127, 212, 255, .55); }
-.rpg-atelier__sceau--sorcery { color: #f6c667; border-color: rgba(246, 198, 103, .55); }
-
-/* Pastille ×N/M posée sur l'illustration quand la carte est dans le deck. */
-.rpg-atelier__carte-count {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 1px;
-  padding: 2px 7px;
-  border-radius: 999px;
-  background-color: rgba(20, 15, 6, .92);
-  border: 1px solid #f7ca65;
-  color: #ffe29a;
-  font: 800 11.5px/1.1 var(--mono, monospace);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, .65);
-}
-.rpg-atelier__carte-count small {
-  color: rgba(255, 232, 182, .75);
-  font-size: 9.5px;
-}
-
-/* Cadenas des cartes non possédées. */
-.rpg-atelier__carte-cadenas {
-  position: absolute;
-  top: 5px;
-  left: 5px;
-  z-index: 2;
-  display: inline-grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: rgba(8, 7, 13, .88);
-  border: 1px solid rgba(235, 194, 106, .38);
-  font-size: 12px;
-  line-height: 1;
-}
-
-/* Bandeau intermédiaire : Type + gemme de rareté. */
-.rpg-atelier__carte-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 4px 6px;
-  margin-top: 4px;
-  border-radius: 5px;
-  background-color: rgba(12, 11, 18, .7);
-  border: 1px solid rgba(255, 255, 255, .05);
-}
-.rpg-atelier__carte-famille {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #cabd9f;
-  font: 700 9.5px/1.2 var(--mono, monospace);
-  letter-spacing: .02em;
-}
-.rpg-atelier__rarete {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  transform: rotate(45deg);
-  border-radius: 1.5px;
-  background-color: var(--rarete, #b0b0b0);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--rarete, #b0b0b0) 65%, transparent);
-}
-
-/* Encadré de texte d'effet lisible + plaque ATQ/DÉF en bas à droite. */
-.rpg-atelier__carte-corps {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 5px;
-  flex: 1 1 auto;
-  min-height: 64px;
-  margin-top: 4px;
-  padding: 6px 7px 5px;
-  border-radius: 6px;
-  background-color: rgba(11, 11, 17, .82);
-  border: 1px solid rgba(235, 194, 106, .11);
-}
-.rpg-atelier__carte-regle {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  color: #ece1cb;
-  font: 500 11px/1.38 Georgia, serif;
-}
-.rpg-atelier__carte-pied {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  min-height: 18px;
-  margin-top: auto;
-}
-.rpg-atelier__carte-origine {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #b7aa8f;
-  font: 600 9.5px/1.2 var(--mono, monospace);
-}
-.rpg-atelier__carte-pt {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 7px;
-  border: 1px solid rgba(240, 217, 148, .52);
-  border-radius: 6px;
-  background-color: #12101a;
-  color: #fff6e4;
-  font: 800 11.5px/1.1 var(--mono, monospace);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, .55);
-}
-
-/* Bouton rapide « − » en coin haut-gauche quand au moins un exemplaire est posé. */
+/* Le clic sur l'art ouvre la fiche, même si l'exemplaire est verrouillé ou le
+   quota atteint. L'ajout et le retrait ont leurs propres boutons : jamais de
+   modification du deck au clic droit. */
+.rpg-atelier__carte-ajout,
 .rpg-atelier__carte-retrait {
   position: absolute;
-  top: 22px;
-  left: -4px;
-  z-index: 3;
-  width: 24px;
-  height: 24px;
+  z-index: 7;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
   padding: 0;
-  border: 1px solid rgba(240, 217, 148, .65);
+  border: 1px solid rgba(240, 217, 148, .75);
   border-radius: 50%;
-  background-color: rgba(18, 14, 22, .95);
-  color: var(--or);
-  font: 800 14px/1 var(--mono, monospace);
-  cursor: pointer;
-  opacity: 0;
+  background: rgba(18, 14, 22, .95);
+  color: #ffe9a0;
+  font: 800 18px/1 var(--mono, monospace);
   box-shadow: 0 4px 10px rgba(0, 0, 0, .6);
-  transition: opacity .14s ease, background-color .14s ease, transform .14s ease;
+  cursor: pointer;
 }
-.rpg-atelier__carte:hover .rpg-atelier__carte-retrait,
-.rpg-atelier__carte-retrait:focus-visible {
-  opacity: 1;
-}
+.rpg-atelier__carte-retrait { right: 43px; }
+.rpg-atelier__carte-ajout:hover:not(:disabled),
 .rpg-atelier__carte-retrait:hover {
-  background-color: rgba(224, 92, 67, .88);
-  border-color: #ffd5c8;
+  background: #a36224;
   color: #fff;
-  transform: scale(1.08);
 }
-
-/* États verrouillé / plafond atteint (invariants conservés). */
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-ajout {
-  border-color: rgba(130, 122, 108, .35);
-  background-image: linear-gradient(180deg, rgba(24, 23, 31, .92), rgba(16, 15, 22, .95));
+.rpg-atelier__carte-ajout:focus-visible,
+.rpg-atelier__carte-retrait:focus-visible,
+.rpg-atelier__carte-ouvrir:focus-visible {
+  outline: 2px solid #e4bd6b;
+  outline-offset: -2px;
 }
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-art img {
-  filter: grayscale(.85) brightness(.55);
+.rpg-atelier__carte-ajout:disabled {
+  opacity: .5;
+  cursor: not-allowed;
 }
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-nom strong {
-  color: #bfb49b;
-}
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-regle {
-  color: rgba(205, 196, 178, .68);
-}
-.rpg-atelier__carte.is-locked .rpg-atelier__carte-art {
-  --rpg-atelier-cadre: rgba(120, 110, 95, .8);
-  --rpg-frame-gradient: linear-gradient(var(--rpg-atelier-cadre), var(--rpg-atelier-cadre));
-}
-
-.rpg-atelier__carte.is-full:not(.is-locked) .rpg-atelier__carte-art img {
-  filter: brightness(.45) saturate(.6);
-}
-.rpg-atelier__carte.is-full:not(.is-locked) .rpg-atelier__carte-nom strong {
-  color: #dfd2b4;
+.rpg-atelier__carte .rpg-card-catalogue__zoom {
+  bottom: 47px;
 }
 
 /* ── Médaillons de coût et pips élémentaires ─────────────────────────────── */

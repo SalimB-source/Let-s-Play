@@ -69,7 +69,9 @@ test('le sprite porte les 42 symboles validés, un par effet', () => {
   assert.ok(abordage, 'le crâne d’Abordage est dans le sprite');
   assert.equal((abordage.match(/<path fill="currentColor" stroke="none"/g) ?? []).length, 2,
     'le crâne et les sabres d’Abordage sont désormais deux silhouettes pleines');
-  assert.doesNotMatch(abordage, /<circle|<ellipse/, 'le crâne plein n’a toujours pas d’yeux');
+  assert.match(abordage, /fill-rule="evenodd"/, 'les fentes des yeux sont évidées dans la silhouette pleine');
+  assert.match(abordage, /M7\.5 9\.6[^"<>]*M16\.5 9\.6/, 'deux fentes inclinées et symétriques sont creusées dans le crâne');
+  assert.doesNotMatch(abordage, /<circle|<ellipse/, 'les yeux sont des fentes, pas des cercles');
 });
 
 test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
