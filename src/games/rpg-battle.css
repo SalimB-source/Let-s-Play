@@ -10565,9 +10565,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face .rpg-mana-cost {
   position: absolute;
   z-index: 4;
-  top: var(--rpg-card-element-marker-top, 5%);
-  right: var(--rpg-card-element-marker-left, 6%);
-  font-size: calc(var(--rpg-card-marker-size, 38px) * .48);
+  /* Le coût se range **sous la pastille de couleur**, dans le même coin haut
+     gauche : les deux repères de la carte — ce qu'elle est, ce qu'elle coûte —
+     se lisent d'un seul regard, et le coin haut droit reste libre pour la
+     colonne de pierres d'effets, qui y remonte comme sur les cartes en jeu.
+     Il grandit d'un cran au passage (1,15 fois le repère, chiffre à .58) : sur
+     une face de 190 à 232 px, le coût est le premier nombre qu'on cherche. */
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 38px) + 8px);
+  left: var(--rpg-card-element-marker-left, 6%);
+  right: auto;
+  width: calc(var(--rpg-card-marker-size, 38px) * 1.15);
+  height: calc(var(--rpg-card-marker-size, 38px) * 1.15);
+  min-width: 0;
+  font-size: calc(var(--rpg-card-marker-size, 38px) * .58);
 }
 .rpg-hand__sceau,
 .rpg-hand__sort {

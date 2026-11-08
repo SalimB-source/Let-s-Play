@@ -61,6 +61,8 @@ const APERCU = `
     <div class="rpg-hover-card-preview__empile">
       <div class="rpg-hover-card-preview__face">
         <img alt="" />
+        <span class="rpg-card-element-badge"></span>
+        <span class="rpg-mana-cost"><b>3</b></span>
         <span class="rpg-card-icones rpg-card-icones--colonne rpg-card-icones--apercu">
           <span class="rpg-card-icone"><svg class="rpg-effet-icone" width="18" height="18"></svg></span>
         </span>
@@ -94,6 +96,7 @@ function mesurer(touch, corps) {
     carte: lire('.rpg-card, .rpg-hand__card', ['overflow', 'overflow-clip-margin', 'border-radius']),
     illustration: lire('.rpg-card__img, .rpg-hand__img', ['border-radius']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
+    cout: lire('.rpg-hover-card-preview__face .rpg-mana-cost', ['top', 'left', 'right', 'width', 'font-size']),
     faceImage: lire('.rpg-hover-card-preview__face > img', ['border-radius']),
     catalogue: lire('.rpg-card-icones--catalogue', [
       'right', 'left', 'bottom', '--rpg-plaque-bord', '--rpg-plaque-taille',
@@ -163,13 +166,30 @@ test('l’aperçu porte les mêmes pierres, en 32 px, sur le bord de sa face', (
   assert.equal(colonne.right, '0px', 'la colonne est chevillée au bord de la face');
   assert.equal(
     colonne.top,
-    'calc(5% + var(--rpg-card-marker-size, 38px) + 8px)',
-    'elle descend sous le disque de coût, qui occupe le coin haut droit',
+    'var(--rpg-card-element-marker-top, 5%)',
+    'elle part du coin haut droit, libre depuis que le coût a rejoint la couleur',
   );
   assert.ok(debord(32, 45) <= 18, 'le débord de 14,4 px tient dans le rognage de la face');
   assert.equal(face.overflow, 'clip', 'la face laisse passer le débord sans zone de défilement');
   assert.equal(face['overflow-clip-margin'], '18px');
   assert.equal(faceImage['border-radius'], face['border-radius'], 'l’illustration garde les coins du cadre');
+});
+
+test('l’aperçu range le coût sous la pastille de couleur et l’agrandit', () => {
+  const { cout } = mesurer(false, APERCU);
+  assert.equal(cout.right, 'auto', 'le coût quitte le coin haut droit');
+  assert.equal(cout.left, 'var(--rpg-card-element-marker-left, 6%)', 'il s’aligne sur la colonne de gauche');
+  assert.equal(
+    cout.top,
+    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 38px) + 8px)',
+    'il se pose sous la pastille de couleur, à 8 px d’elle',
+  );
+  assert.equal(
+    cout.width,
+    'calc(var(--rpg-card-marker-size, 38px) * 1.15)',
+    'il grandit d’un cran (44 px sur une face de 38 px de repère)',
+  );
+  assert.equal(cout['font-size'], 'calc(var(--rpg-card-marker-size, 38px) * .58)', 'le chiffre suit');
 });
 
 test('les rangées hors du jeu gardent leur place dans l’illustration', () => {
