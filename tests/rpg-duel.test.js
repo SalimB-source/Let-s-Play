@@ -163,8 +163,8 @@ const PLEIN_ART_45 = [
   // Le roi Kusayla, la nouvelle figure amazighe du Sable, et le guépard qu'il
   // appelle à son arrivée (créature-jeton, peinte comme les autres).
   'kusayla-roi-des-imazighen', 'guepard',
-  // Trois petites créatures du Sable : chacune possède sa peinture 4:5.
-  'gerboise-des-ruines', 'scarabee-des-sceaux', 'scorpion-du-seuil',
+  // Les petites créatures du Sable et la rare Manticore : plein art 4:5.
+  'gerboise-des-ruines', 'scarabee-des-sceaux', 'scorpion-du-seuil', 'manticore-des-dunes',
   // Bouchra et sa chèvre de guerre, peintes au format exact de la face.
   'bouchra-guerriere-des-cretes',
   // La révision Neige : l’huile intacte du Loup et les nouveaux pleins arts
@@ -238,9 +238,9 @@ test('le Cavalier amazigh est une rare Sable incluse dans le deck et le catalogu
     new Set(['creature', 'hero', 'magie', 'arme', 'site']));
 });
 
-test('le set de permanents comporte 126 fiches façon TCG', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 126,
-    'les trois petites créatures du Sable rejoignent le catalogue existant');
+test('le set de permanents comporte 127 fiches façon TCG', () => {
+  assert.equal(RPG_CREATURE_CARDS.length, 127,
+    'les trois petites créatures et la Manticore rejoignent le catalogue existant');
   for (const carte of RPG_CREATURE_CARDS) {
     assert.ok(carte.id && carte.name, 'chaque carte a un identifiant et un nom');
     assert.ok(Number.isFinite(carte.cost) && carte.cost >= 0, 'chaque carte a un coût');

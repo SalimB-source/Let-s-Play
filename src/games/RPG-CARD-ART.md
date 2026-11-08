@@ -86,6 +86,15 @@ est désormais 1/2 : **Poison** inflige 1 PV au début de chacun des deux procha
 tours de la créature blessée ; une nouvelle piqûre renouvelle ces deux tours
 sans cumuler les dégâts. Il n'inflige plus de dégâts à sa mort.
 
+## Manticore des dunes (Sable, coût 6)
+
+`public/cards/manticore-des-dunes.jpg` : peinture dédiée **768 × 960** montrant
+une grande manticore à crinière de lion et queue de scorpion devant une
+forteresse saharienne ruinée, au crépuscule. Rare **3/6** portant **Poison** :
+comme le Scorpion, elle inflige 1 PV au début des deux prochains tours de la
+créature blessée en combat. La règle et les chiffres ne sont pas peints sur
+l'illustration, mais rendus par la fiche et la pastille du jeu.
+
 ## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
 
 La carte ajoutée au set Sable après sa passe (`bouchra-guerriere-des-cretes`,

@@ -135,6 +135,8 @@ const CARD_ART_CACHE_VERSIONS = {
   'gerboise-des-ruines': 'sable-petites-betes-v1',
   'scarabee-des-sceaux': 'sable-petites-betes-v1',
   'scorpion-du-seuil': 'sable-petites-betes-v1',
+  // Manticore rare : illustration distincte des trois petites bêtes.
+  'manticore-des-dunes': 'sable-manticore-poison-v1',
   'tour-de-sable': 'tours-souls-2026-v1',
   'pourfendeur-des-djinns': 'pourfendeur-nuit-v2',
   'tislit-des-aures': 'sable-souls-desore-v3',

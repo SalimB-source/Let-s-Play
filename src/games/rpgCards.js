@@ -518,6 +518,14 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'La piqûre est brève ; le désert prend son temps.',
   },
   {
+    id: 'manticore-des-dunes', name: 'Manticore des dunes',
+    element: 'sable', cost: 6, atk: 3, def: 6, rarity: 'rare',
+    typeLine: 'Créature — Manticore', art: 'manticore-des-dunes',
+    poison: { degats: 1, tours: 2 },
+    text: 'Poison — Quand la Manticore blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
+    flavor: 'Sous la pierre, son dard attend que le sable cesse de bouger.',
+  },
+  {
     id: 'chien-du-guet',
     name: 'Chien du guet',
     element: 'sable',
