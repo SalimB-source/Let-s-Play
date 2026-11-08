@@ -15813,8 +15813,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-card-hourglass {
   display: block;
-  width: 76%;
-  height: 76%;
+  width: 56%;
+  height: 56%;
   overflow: visible;
   filter: drop-shadow(0 1px 1px #392508);
+}
+
+/* Repères type/couleur plus discrets, sans réduire les pierres d’effets
+   ni leur surface de lecture. Même proportion sur chaque face de carte. */
+.rpg-battle .rpg-card-element-badge.is-plaque .rpg-card-element-badge__glyphe {
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .42);
+}
+.rpg-battle .rpg-sort-sceau > .rpg-sort-sigil {
+  width: 48%;
+  height: 48%;
 }

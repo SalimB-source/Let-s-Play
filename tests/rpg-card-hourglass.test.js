@@ -13,6 +13,6 @@ test('Sable affiche un sablier vectoriel contrasté sur les pastilles simples et
   assert.match(page, /couleur === 'sable' \? <CardHourglass \/>/);
   assert.match(page, /teinte === 'sable' \? <CardHourglass \/>/);
   const css = lire('rpg-battle.css');
-  assert.match(css, /\.rpg-card-hourglass \{[^}]*width: 76%;[^}]*height: 76%;/);
+  assert.match(css, /\.rpg-card-hourglass \{[^}]*width: 56%;[^}]*height: 56%;/);
   assert.match(css, /color: #fff9df;/);
 });

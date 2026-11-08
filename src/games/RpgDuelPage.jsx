@@ -7853,30 +7853,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const timerGelMasseRef = useRef(null);
   const [animationsPioche, setAnimationsPioche] = useState([]);
   const instantanePiocheRef = useRef(null);
-  const [presentationsCartes, setPresentationsCartes] = useState([]);
   const presentationDuelRef = useRef(null);
   const transitionTourRef = useRef(false);
-  // Une pioche adverse n'entre jamais dans la file d'aperçus de ce joueur.
+  // Ne plus ouvrir d’aperçu automatique quand une capacité s’active.
+  // Vider le journal sans toucher aux annonces de sorts ni aux aperçus manuels.
   useEffect(() => {
     const duelCourant = duelRef.current;
     if (presentationDuelRef.current !== duelCourant || ecran !== 'partie') {
       presentationDuelRef.current = duelCourant;
       transitionTourRef.current = false;
-      if (presentationsCartes.length) setPresentationsCartes([]);
-      if (duelCourant) rpgConsommerPresentations(duelCourant);
-      return;
     }
-    if (!duelCourant) return;
-    const nouvelles = rpgConsommerPresentations(duelCourant)
-      .filter((event) => event.type === 'effet');
-    if (nouvelles.length) setPresentationsCartes((file) => [...file, ...nouvelles]);
+    if (duelCourant) rpgConsommerPresentations(duelCourant);
   });
-  const presentationCarte = presentationsCartes[0];
-  useEffect(() => {
-    if (!presentationCarte) return undefined;
-    const timer = window.setTimeout(() => setPresentationsCartes((file) => file.slice(1)), 1000);
-    return () => window.clearTimeout(timer);
-  }, [presentationCarte]);
 
   // ── Soins : chaque gain de vie se voit et s'entend ────────────────────────
   // Le moteur note chaque gain de vie réel (`rpgConsommerSoins`) — magie,
@@ -15015,16 +15003,6 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         </div>
 
-        {presentationCarte && (
-          <div className="rpg-auto-preview" aria-live="polite">
-            <HoverCardPreview
-              carte={cardById(presentationCarte.carteId)}
-              variante="fiche"
-              surface="EFFET ACTIVÉ"
-              style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
-            />
-          </div>
-        )}
         {apercuSurvol && !mulligan && !apercuAnnonceOuvert && (
           <HoverCardPreview
             carte={cardById(apercuSurvol.carteId)}
