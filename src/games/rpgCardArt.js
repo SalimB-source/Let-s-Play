@@ -131,6 +131,10 @@ const CARD_ART_CACHE_VERSIONS = {
   'faucon-du-zenith': 'faucon-deesse-solaire-v1',
   'dune-marchante': 'sable-souls-desore-v3',
   'fennec-des-decombres': 'fennec-esquive-pieges-v1',
+  // Petites bêtes du Sable : peintures dédiées, sans ancienne passe en cache.
+  'gerboise-des-ruines': 'sable-petites-betes-v1',
+  'scarabee-des-sceaux': 'sable-petites-betes-v1',
+  'scorpion-du-seuil': 'sable-petites-betes-v1',
   'tour-de-sable': 'tours-souls-2026-v1',
   'pourfendeur-des-djinns': 'pourfendeur-nuit-v2',
   'tislit-des-aures': 'sable-souls-desore-v3',

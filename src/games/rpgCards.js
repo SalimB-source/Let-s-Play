@@ -491,6 +491,32 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true, butin: true, text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
+  // Trois petites bêtes du désert : une menace rapide, une carte à récupérer
+  // et un venin ciblé. Chacune coûte deux manas de Sable et possède son art.
+  {
+    id: 'gerboise-des-ruines', name: 'Gerboise des ruines',
+    element: 'sable', cost: 2, atk: 2, def: 1, rarity: 'commune',
+    typeLine: 'Créature — Gerboise', art: 'gerboise-des-ruines',
+    rapidite: true,
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive.',
+    flavor: 'Entre deux pierres, elle a déjà pris trois longueurs d’avance.',
+  },
+  {
+    id: 'scarabee-des-sceaux', name: 'Scarabée des sceaux',
+    element: 'sable', cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Scarabée', art: 'scarabee-des-sceaux',
+    destruction: { type: 'pioche', amount: 1 },
+    text: 'Quand le Scarabée meurt : piochez une carte.',
+    flavor: 'Il emporte la trace de ceux que le désert a effacés.',
+  },
+  {
+    id: 'scorpion-du-seuil', name: 'Scorpion du seuil',
+    element: 'sable', cost: 2, atk: 2, def: 1, rarity: 'inhabituelle',
+    typeLine: 'Créature — Scorpion', art: 'scorpion-du-seuil',
+    destruction: { type: 'degats', amount: 1, cible: 'creature' },
+    text: 'Quand le Scorpion meurt : infligez 1 dégât à une créature adverse ciblée.',
+    flavor: 'Même écrasé, il trouve encore la peau sous la sandale.',
+  },
   {
     id: 'chien-du-guet',
     name: 'Chien du guet',
