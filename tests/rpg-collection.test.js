@@ -64,7 +64,7 @@ function stockageEnMemoire(donnees = new Map()) {
 // ── La dotation de départ ────────────────────────────────────────────────────
 
 test('la dotation de départ tient la règle : communes et inhabituelles, jamais de rare', () => {
-  assert.equal(COLLECTION_DEPART.length, 69, 'la dotation comprend aussi les trois petites bêtes Sable communes ou inhabituelles, sans la rare Manticore');
+  assert.equal(COLLECTION_DEPART.length, 71, 'la dotation comprend les deux nouveaux Vampires commun et inhabituel, sans la rare Manticore');
   for (const id of COLLECTION_DEPART) {
     const carte = cardById(id);
     assert.ok(carte, `${id} existe au catalogue`);

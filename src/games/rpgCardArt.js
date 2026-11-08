@@ -61,6 +61,8 @@ const SANS_TEINTE = 'sans-teinte-v1';
 
 const CARD_ART_CACHE_VERSIONS = {
   'vampire-des-braises': 'vampire-braise-souffle-v2',
+  'novice-des-cendres': 'vampires-braise-novices-v1',
+  'chasseuse-de-braise': 'vampires-braise-novices-v1',
   'sanguinaire-des-dunes': 'sanguinaire-aura-feu-v1',
   'guetteuse-des-marees': 'guetteuse-v1',
   'memoire-de-l-armurerie': 'armurerie-epique-v2',

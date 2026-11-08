@@ -63,6 +63,9 @@ test('le sprite porte les 42 symboles validés, un par effet', () => {
   assert.match(EFFETS_SPRITE, /M20.84 4.61/, 'Soin retrouve son cœur au trait');
   assert.equal(EFFET_ICONE.prise, 'i-abordage',
     'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
+  const abordage = EFFETS_SPRITE.match(/<symbol id="i-abordage"[^>]*>(.*?)<\/symbol>/)?.[1];
+  assert.ok(abordage, 'le crâne d’Abordage est dans le sprite');
+  assert.doesNotMatch(abordage, /<circle cx="(?:9\.5|14\.5)"/, 'le crâne n’a plus ses yeux');
 });
 
 test('Provocation, Rebond, Recherche, Exil et Harakiri portent leurs nouveaux pictogrammes', () => {
