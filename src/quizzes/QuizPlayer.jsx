@@ -200,7 +200,8 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
   // figé au lancement de la partie (`replayRun`) : la fin de CETTE partie
   // marque le niveau comme terminé, l'écran de résultat doit pourtant dire si
   // elle rapportait encore quelque chose.
-  const levelAlreadyCompleted = quizLevelCompleted(achievementState, quiz.slug, level);
+  const levelAlreadyCompleted = quizLevelCompleted(achievementState, quiz.slug, level)
+    || isLevelCompleted(progress, quiz.slug, level);
   const [replayRun, setReplayRun] = useState(levelAlreadyCompleted);
   const [justUnlocked, setJustUnlocked] = useState(null);
   const [pendingLevel, setPendingLevel] = useState(null);
@@ -641,7 +642,7 @@ export default function QuizPlayer({ quiz, daily = false, level = 'easy', onLeve
     // Quizz TERMINÉ (les trois niveaux faits) : plus de sélecteur ni de
     // nouvelle partie — l'écran rappelle ce qui a été joué (les trois niveaux
     // cochés, le record de l'appareil) et renvoie vers les autres quizz.
-    if (quizFinished) {
+    if (false && quizFinished) {
       const best = readLocalBest(quiz.slug);
       return (
         <div className="quiz-player">

@@ -124,7 +124,7 @@ export default function QuizzesPage() {
       {daily && (
         <section className="wrap">
           {dailyFinished ? (
-            <div className="quiz-daily hud-frame is-finished">
+            <Link className="quiz-daily hud-frame is-finished" to={daily.route}>
               <div className="quiz-daily-copy">
                 <p className="eyebrow">{copy.dailyEyebrow}</p>
                 <h2>{quizLabel(daily.labels, lang)?.title}</h2>
@@ -141,7 +141,7 @@ export default function QuizzesPage() {
                 <VideoThumb id={daily.videoId} lead={daily.image} alt={quizLabel(daily.labels, lang)?.title} quality="hq" />
                 <span className="quiz-finished-flag">✓ {copy.finished}</span>
               </span>
-            </div>
+            </Link>
           ) : (
             <Link className="quiz-daily hud-frame" to={daily.route}>
               <div className="quiz-daily-copy">
@@ -237,14 +237,12 @@ export default function QuizzesPage() {
                       </span>
                     )}
                     {copy.questionsCount.replace('{n}', String(quizQuestionsCount(quiz)))}
-                    {!finished && <Arrow />}
+                    <Arrow />
                   </span>
                 </span>
               </>
             );
-            return finished
-              ? <div className="quiz-card is-finished" key={quiz.slug} aria-label={`${title} — ${copy.finished}`}>{body}</div>
-              : <Link className="quiz-card" to={quiz.route} key={quiz.slug}>{body}</Link>;
+            return <Link className={`quiz-card${finished ? ' is-finished' : ''}`} to={quiz.route} key={quiz.slug}>{body}</Link>;
           })}
         </div>
         {shownQuizzes.length === 0 && <p className="quiz-filter-empty">{copy.filterEmpty}</p>}
