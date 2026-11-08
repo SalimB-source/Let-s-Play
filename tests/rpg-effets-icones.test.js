@@ -40,12 +40,11 @@ test('les pastilles d’effets sont un peu plus grandes et alignées en colonne'
     'les icônes des faces de cartes conservent leur disposition');
 });
 
-test('le sprite porte les 40 symboles validés, un par effet', () => {
+test('le sprite porte les 41 symboles validés, un par effet', () => {
   const symboles = [...EFFETS_SPRITE.matchAll(/<symbol id="(i-[a-z-]+)"/g)].map((m) => m[1]);
-  // 38 avec Embuscade et le Furtif (`i-furtif`), l'engagement de mana (`i-mana`), la
-  // Recherche de deck (`i-recherche`) et les deux maillons du Lien (`i-lien`) :
-  // chaque symbole est référencé par `EFFET_ICONE`, aucun n'est orphelin.
-  assert.equal(symboles.length, 40);
+  // Poisson ajoute sa goutte au sprite : chaque symbole est référencé par
+  // `EFFET_ICONE`, aucun n'est orphelin.
+  assert.equal(symboles.length, 41);
   assert.deepEqual(symboles.filter((icone) => !new Set(Object.values(EFFET_ICONE)).has(icone)), [],
     'aucun symbole orphelin dans le sprite');
   for (const icone of new Set(Object.values(EFFET_ICONE))) {
@@ -68,6 +67,8 @@ test('le sprite porte les 40 symboles validés, un par effet', () => {
 
 test('les pastilles lisent les mots-clés imprimés des fiches', () => {
   assert.deepEqual(pastillesDe('fennec-des-decombres'), ['Rapidité', 'Butin']);
+  assert.deepEqual(pastillesDe('scorpion-du-seuil'), ['Poison'],
+    'le Scorpion affiche Poison, sans l’ancien effet de mort');
   assert.deepEqual(pastillesDe('jarl-au-marteau-de-guerre'), ['Provocation', 'Overkill', 'Furie 2']);
   assert.deepEqual(pastillesDe('berserk-des-trois-hivers'), ['Provocation', 'Overkill', 'Furie 2'],
     'les pastilles du Berserk affichent Provocation et sa nouvelle Furie 2');

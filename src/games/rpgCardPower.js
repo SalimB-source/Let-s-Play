@@ -371,6 +371,9 @@ export function valeurCarte(carte) {
   // Butin (le set Sable) : chaque contact avec le sorcier adverse fait
   // piocher puis défausser — une carte qui creuse, jouée à chaque attaque.
   if (carte.butin) valeur += 1.2;
+  // Poison : deux pertes de PV si la piqûre touche une créature qui survit ;
+  // moins qu'un effet garanti à l'arrivée, mais mieux qu'une simple 1/2.
+  if (carte.poison) valeur += 1.2;
   // Tribut (set Ténèbres) : chaque contact avec le sorcier adverse transfère
   // des PV — pesé au même rythme que le Butin, un peu en dessous.
   if (carte.tribut) valeur += 0.9 * carte.tribut;

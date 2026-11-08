@@ -78,10 +78,13 @@ Trois peintures dédiées, sombres et cinématographiques, livrées en JPEG plei
 
 - `gerboise-des-ruines.jpg` — une gerboise bondit entre les pierres d'un village en ruines ; Rapidité (2/1).
 - `scarabee-des-sceaux.jpg` — un scarabée porte un éclat de sceau sous une voûte ensablée ; pioche à sa mort (1/2).
-- `scorpion-du-seuil.jpg` — un scorpion défend la dalle fissurée d'une porte ; pique une créature adverse à sa mort (2/1).
+- `scorpion-du-seuil.jpg` — un scorpion défend la dalle fissurée d'une porte ; son Poison ronge pendant deux tours la créature blessée (1/2).
 
 Leurs silhouettes restent distinctes sur une petite carte. Les règles, le coût et
-les statistiques sont rendus par l'interface, jamais par la peinture.
+les statistiques sont rendus par l'interface, jamais par la peinture. Le Scorpion
+est désormais 1/2 : **Poison** inflige 1 PV au début de chacun des deux prochains
+tours de la créature blessée ; une nouvelle piqûre renouvelle ces deux tours
+sans cumuler les dégâts. Il n'inflige plus de dégâts à sa mort.
 
 ## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
 

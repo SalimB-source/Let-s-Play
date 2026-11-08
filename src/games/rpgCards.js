@@ -492,7 +492,7 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
   // Trois petites bêtes du désert : une menace rapide, une carte à récupérer
-  // et un venin ciblé. Chacune coûte deux manas de Sable et possède son art.
+  // et un poison qui persiste. Chacune coûte deux manas de Sable et possède son art.
   {
     id: 'gerboise-des-ruines', name: 'Gerboise des ruines',
     element: 'sable', cost: 2, atk: 2, def: 1, rarity: 'commune',
@@ -511,11 +511,11 @@ export const RPG_CREATURE_CARDS = [
   },
   {
     id: 'scorpion-du-seuil', name: 'Scorpion du seuil',
-    element: 'sable', cost: 2, atk: 2, def: 1, rarity: 'inhabituelle',
+    element: 'sable', cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
     typeLine: 'Créature — Scorpion', art: 'scorpion-du-seuil',
-    destruction: { type: 'degats', amount: 1, cible: 'creature' },
-    text: 'Quand le Scorpion meurt : infligez 1 dégât à une créature adverse ciblée.',
-    flavor: 'Même écrasé, il trouve encore la peau sous la sandale.',
+    poison: { degats: 1, tours: 2 },
+    text: 'Poison — Quand le Scorpion blesse une créature, elle perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
+    flavor: 'La piqûre est brève ; le désert prend son temps.',
   },
   {
     id: 'chien-du-guet',

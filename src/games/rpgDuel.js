@@ -1835,6 +1835,9 @@ function creerEntiteCreature(carte) {
     // — les chiffres retirés par la morsure et le temps qu'il lui reste à
     // ronger. Elle s'efface avec l'interdit d'attaquer (voir `rpgFinDeTour`).
     venin: null,
+    // Poison du Scorpion : 1 PV au début des deux prochains tours du
+    // contrôleur. Une nouvelle blessure remet la durée à deux (sans empiler).
+    poison: null,
     // Compte à rebours du Guetteur du beffroi : `{ restants, effet }`, décompté
     // au début de chaque tour du contrôleur (`resoudreHeures`).
     heures: null,
@@ -2815,6 +2818,16 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
     const source = coup.sourceCote && coup.sourceId
       ? duel[coup.sourceCote]?.creatures.find((candidate) => candidate.id === coup.sourceId)
       : null;
+    // Poison imprimé sur une créature (Scorpion du seuil) : seule une vraie
+    // blessure d'attaque l'inocule, y compris en bloquant. Une Esquive, un
+    // bouclier ou le Grand Voile ont déjà écarté ce coup avant ce point.
+    const poison = coup.sourceType === 'attaque' ? duelCardById(source?.carteId)?.poison : null;
+    if (poison?.degats > 0 && poison?.tours > 0) {
+      blessure.poison = {
+        degats: poison.degats, toursRestants: poison.tours,
+        sourceCarteId: source.carteId,
+      };
+    }
     if (source && !blessure.sources.some((candidate) => candidate.id === source.id)) {
       blessure.sources.push({ id: source.id, name: source.name, carteId: source.carteId, cote: coup.sourceCote });
       if (coup.sourceType === 'attaque') {
@@ -2840,6 +2853,11 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
     absorberDegatsArmure(entite, recus);
     entite.pv -= recus;
     entite.def = Math.min(entite.def, Math.max(0, entite.pv));
+    if (entite.pv > 0 && blessure.poison) {
+      // Une seconde piqûre renouvelle les deux tours, sans créer deux doses.
+      entite.poison = blessure.poison;
+      duel.log.push(`${entite.name} est empoisonnée pour ${entite.poison.toursRestants} tours.`);
+    }
     // Les coups ont déjà été cumulés : une créature à 0 PV meurt une seule
     // fois, quels que soient le nombre d'attaquants et de bloqueurs. Tenacité
     // ne refuse plus la mort — elle programme seulement un retour au prochain
@@ -8385,6 +8403,22 @@ function detruireEphemeres(duel) {
   }
 }
 
+/** Le Poison frappe au début des deux prochains tours du propriétaire de la
+ *  victime. Il est attaché à l'entité : renvoi, exil et mort l'effacent ; une
+ *  nouvelle créature du même nom n'hérite jamais de l'ancienne morsure. */
+function resoudrePoisons(duel, cote) {
+  for (const entite of [...duel[cote].creatures]) {
+    const poison = entite.poison;
+    if (!(poison?.toursRestants > 0)) continue;
+    poison.toursRestants -= 1;
+    if (poison.toursRestants === 0) entite.poison = null;
+    duel.log.push(`Poison : ${entite.name} perd ${poison.degats} PV.`);
+    // Perte différée de PV, pas une nouvelle attaque : ni Esquive ni bouclier
+    // ni immunité élémentaire ne l'arrêtent une fois la piqûre reçue.
+    rpgBlesserCreature(duel, cote, entite.id, poison.degats, null, null, 'poison', poison.sourceCarteId);
+  }
+}
+
 /** Fin du tour : le tour qui se ferme efface les renforts « jusqu'à la fin du
  *  tour », puis l'autre camp commence — DÉBUT DE TOUR : revenu de sable,
  *  pioche 1, ses créatures deviennent prêtes (le mal d'invocation tombe) et les
@@ -8516,6 +8550,8 @@ export function rpgFinDeTour(duel) {
     entite.attaquee = false;
   }
   resoudreRetoursProgrammes(duel);
+  if (duel.moba?.winner) return duel;
+  resoudrePoisons(duel, duel.tour); // deux débuts de tour de la victime
   if (duel.moba?.winner) return duel;
   resoudreHeures(duel);             // les compteurs d'Heures du beffroi
   if (duel.moba?.winner) return duel;
