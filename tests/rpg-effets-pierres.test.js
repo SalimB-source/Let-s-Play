@@ -205,12 +205,12 @@ test('effets et repères couleur/coût partagent le fin contour doré des armes'
 });
 
 
-test('le pictogramme est réduit de 10 % sans réduire son hexagone', () => {
+test('le pictogramme tient dans 16 unités sans réduire son hexagone', () => {
   for (const cle of Object.keys(EFFET_ICONE)) {
     const pierre = pierreEffet(cle);
     assert.match(pierre, /^<polygon points="16,1 30,8.5 30,23.5 16,31 2,23.5 2,8.5"/,
       `${cle} : silhouette inchangée`);
-    const symboles = [...pierre.matchAll(/<use[^>]*x="7" y="7" width="18" height="18"/g)];
+    const symboles = [...pierre.matchAll(/<use[^>]*x="8" y="8" width="16" height="16"/g)];
     assert.equal(symboles.length, 2, `${cle} : symbole et halo réduits et centrés ensemble`);
   }
 });
