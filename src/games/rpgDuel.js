@@ -2042,7 +2042,7 @@ function compteursDurabiliteArme(carteArme) {
 }
 
 /** Une arme perd un compteur après chaque attaque ou défense de son porteur. */
-function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
+function userArmePrototype(duel, cote, entiteId, action) {
   const porteur = duel[cote]?.creatures.find((entite) => entite.id === entiteId);
   if (!porteur?.arme) return;
   const carteArme = armeById(porteur.arme.carteId);
@@ -2055,6 +2055,57 @@ function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
   if (restant === 0) {
     duel.log.push(`${carteArme.name} n’a plus de compteur : elle est détruite.`);
     retirerArme(duel, cote, porteur);
+  }
+}
+
+/** Les armes-sorts gardent leur stockage historique, avec un compteur par
+ * exemplaire (deux sabres identiques ne partagent jamais leur endurance). */
+function retirerArmeSort(duel, cote, porteur, index) {
+  const id = porteur.armes[index];
+  const occurrence = porteur.armes.slice(0, index).filter(armeId => armeId === id).length;
+  porteur.armes.splice(index, 1);
+  porteur.durabilitesArmes.splice(index, 1);
+  const effet = magieById(id)?.effet ?? {};
+  let vue = 0;
+  const indexArmure = (porteur.armuresMagiques ?? []).findIndex(a => a.carteId === id && vue++ === occurrence);
+  const armure = indexArmure < 0 ? null : porteur.armuresMagiques.splice(indexArmure, 1)[0];
+  const lien = !porteur.armes.includes(id) ? porteur.lienArmesBonus?.[id] : null;
+  if (lien) delete porteur.lienArmesBonus[id];
+  const defense = (Number(effet.def) || 0) + (lien?.def ?? 0);
+  const defenseRetiree = (armure?.restant ?? 0) + Math.min(0, defense);
+  porteur.atk = Math.max(0, porteur.atk - (Number(effet.atk) || 0) - (lien?.atk ?? 0));
+  porteur.pvMax = Math.max(1, porteur.pvMax - defense);
+  porteur.pv = Math.max(1, Math.min(porteur.pv - defenseRetiree, porteur.pvMax));
+  porteur.def = Math.max(1, Math.min(porteur.def - defenseRetiree, porteur.pv));
+  recalculerVolDeVie(porteur);
+  recalculerCoupCritique(porteur);
+  recalculerEsquive(porteur);
+  if (effet.coupRapide) {
+    porteur.coupRapide = Boolean(duelCardById(porteur.carteId)?.coupRapide)
+      || Boolean(armeCarteDe(porteur)?.donne?.coupRapide)
+      || (porteur.coupRapideTemporaire ?? 0) > 0
+      || porteur.armes.some(armeId => Boolean(magieById(armeId)?.effet?.coupRapide));
+  }
+  duel[cote].cimetiere.push(id);
+}
+
+function retirerUnCompteurDurabiliteArme(duel, cote, entiteId, action) {
+  userArmePrototype(duel, cote, entiteId, action);
+  const porteur = duel[cote]?.creatures.find(e => e.id === entiteId);
+  if (!porteur?.armes?.length) return;
+  porteur.durabilitesArmes ??= [];
+  // Ordre inverse pour garder les index alignés lorsqu'une arme est détruite.
+  for (let i = porteur.armes.length - 1; i >= 0; i--) {
+    const carte = magieById(porteur.armes[i]);
+    if (carte?.effet?.type !== 'arme' || (carte.durabiliteAttaqueSeulement && action !== 'attaque')) continue;
+    const avant = porteur.durabilitesArmes[i] ?? compteursDurabiliteArme(carte);
+    const restant = Math.max(0, avant - 1);
+    porteur.durabilitesArmes[i] = restant;
+    duel.log.push(`${carte.name} perd un compteur de durabilité après une ${action} de ${porteur.name} (${restant} restant${restant === 1 ? '' : 's'}).`);
+    if (restant === 0) {
+      duel.log.push(`${carte.name} n’a plus de compteur : elle est détruite.`);
+      retirerArmeSort(duel, cote, porteur, i);
+    }
   }
 }
 
@@ -3746,7 +3797,11 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       if (!porteur || rpgEstProtegee(porteur, sourceElement)
         || rpgEstProtegeeDesSorts(porteur, sourceElement, sourceType)) return;
       porteur.armes ??= [];
+      // Initialiser aussi les anciens équipements chargés sans compteurs.
+      porteur.durabilitesArmes = porteur.armes.map((id, i) =>
+        porteur.durabilitesArmes?.[i] ?? compteursDurabiliteArme(magieById(id)));
       porteur.armes.push(sourceCarteId);
+      porteur.durabilitesArmes.push(compteursDurabiliteArme(magieById(sourceCarteId)));
       if ((Number(effet.def) || 0) > 0) {
         (porteur.armuresMagiques ??= []).push({ carteId: sourceCarteId, max: effet.def, restant: effet.def });
       }
@@ -4819,6 +4874,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
           }
         }
         porteur.armes = [];
+        porteur.durabilitesArmes = [];
         const armureMagiqueRestante = (porteur.armuresMagiques ?? []).reduce((total, armure) => total + (Number(armure.restant) || 0), 0);
         porteur.armuresMagiques = [];
         recalculerVolDeVie(porteur);
@@ -4961,6 +5017,7 @@ function detacherArmes(duel, cote, entite) {
   const armes = entite.armes ?? [];
   duel[cote].cimetiere.push(...armes);
   entite.armes = [];
+  entite.durabilitesArmes = [];
   if (armes.length) duel.log.push(`Les armes de ${entite.name} rejoignent le cimetière.`);
 }
 
