@@ -351,18 +351,17 @@
   font: 500 11px/1.4 var(--mono, monospace);
 }
 
-/* Même grille de faces illustrées que le catalogue : l'image et ses repères
-   occupent la carte entière. Seuls les losanges et les commandes +/− sont
-   spécifiques à la composition du deck. */
+/* Faces illustrées comme au catalogue, mais quatre colonnes aérées dans le
+   constructeur de deck. Les paliers étroits gardent leurs colonnes adaptatives. */
 .rpg-atelier__cartes {
   list-style: none;
   margin: 0;
-  padding: 14px 16px 26px;
+  padding: 18px 20px 30px;
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 205px), 1fr));
-  gap: 13px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
   align-content: start;
   overflow-y: auto;
   scrollbar-width: thin;
