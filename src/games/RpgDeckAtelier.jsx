@@ -184,15 +184,9 @@ export function RpgDeckAtelier({
   onEnregistrer,
   onAnnuler,
   onSupprimer = null,
-  onHoverCard = null,
-  onLeaveHoverCard = null,
-  onInspecterCarte = null,
-  onQuitterCarte = null,
   surSfx = () => {},
 }) {
   const libelleDefaut = nomParDefaut ?? nomInitial ?? 'Deck maison';
-  const inspecter = onHoverCard ?? onInspecterCarte;
-  const quitterInspection = onLeaveHoverCard ?? onQuitterCarte;
 
   const idsDepart = useMemo(
     () => (deckInitial?.cardIds ? [...deckInitial.cardIds] : (cardIdsInitiaux ? [...cardIdsInitiaux] : [])),
@@ -462,8 +456,6 @@ export function RpgDeckAtelier({
         className="rpg-atelier__ligne"
         data-card-id={carte.id}
         style={{ '--frame': cardFrameColor(carte) }}
-        onMouseEnter={inspecter ? (event) => inspecter(carte, event) : undefined}
-        onMouseLeave={quitterInspection ?? undefined}
       >
         {artUrl && (
           <img
@@ -473,6 +465,12 @@ export function RpgDeckAtelier({
             loading="lazy"
           />
         )}
+        <button
+          type="button"
+          className="rpg-atelier__ligne-ouvrir"
+          aria-label={`Voir ${carte.name}`}
+          onClick={() => onOpenCardPreview?.(carte)}
+        />
         <span className="rpg-atelier__ligne-qte" aria-hidden="true">{nombre}x</span>
         <span className="rpg-atelier__ligne-nom">
           <strong>{carte.name}</strong>
