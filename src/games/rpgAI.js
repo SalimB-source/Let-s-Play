@@ -1,3 +1,4 @@
+import { invocationPossible } from './rpgInvocation.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { plafondSoinCreature, defenseSansArmure, armureRestante } from './rpgArmure.js';
 /**
@@ -2156,7 +2157,7 @@ function candidatsCartesIA(duel, cote, options = {}) {
     // Hors de son tour (blocage, fin de tour) : seules les magies rapides, et
     // jamais un contre — il n'y a rien à contrer.
     if (options.seulementInstants && (!carte.instant || carte.effet?.type === 'contresort')) continue;
-    if (!moteur.rpgPeutPayer(camp, carte)) continue;
+    if (!moteur.rpgPeutPayer(camp, carte) || !invocationPossible(duel, cote, carte)) continue;
     const evaluation = scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees);
     if (!evaluation || !(evaluation.score > 0)) continue;
     const effet = effetLie(carte, lienSatisfait(carte, camp.creatures)) ?? {};

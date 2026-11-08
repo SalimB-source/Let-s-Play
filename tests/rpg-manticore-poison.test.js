@@ -21,8 +21,11 @@ function duel() {
 }
 
 function poser(d, cote, id) {
+  // Depuis la règle des sacrifices, invoquer une créature de coût 6 demande
+  // aussi une victime alliée, en plus du mana. La Gerboise sert d'offrande.
+  const sacrificeId = id === ID ? poser(d, cote, 'gerboise-des-ruines').id : null;
   d[cote].main.push(id);
-  const resultat = rpgJouerCreature(d, cote, id);
+  const resultat = rpgJouerCreature(d, cote, id, null, sacrificeId ? { sacrificeId } : {});
   assert.equal(resultat.ok, true, `${id} entre en jeu : ${resultat.raison}`);
   return resultat.entite;
 }
