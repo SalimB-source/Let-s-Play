@@ -52,6 +52,8 @@ const CARTE_MAIN = `
   <div class="rpg-hand">
     <button class="rpg-hand__card rpg-hand__card--img">
       <img class="rpg-hand__img" alt="" />
+      <span class="rpg-card-element-badge is-plaque"></span>
+      <span class="rpg-hand__title"><span class="rpg-mana-cost is-plaque">3</span></span>
       <span class="rpg-card-icones rpg-card-icones--colonne rpg-card-icones--main">
         <span class="rpg-card-icone"><svg class="rpg-effet-icone" width="18" height="18"></svg></span>
       </span>
@@ -106,7 +108,7 @@ function mesurer(touch, corps) {
     volet: lire('.rpg-hover-card-preview', ['overflow', 'padding-left', 'padding-right', 'column-gap', 'box-sizing']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
     cout: lire('.rpg-mana-cost', [
-      'display',
+      'display', 'position',
       'top', 'left', 'right', 'transform', 'width', 'height', 'font-size',
     ]),
     plaque: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', [
@@ -257,6 +259,7 @@ test('le coût reste affiché sur le plateau, au doigt comme à la souris', () =
   for (const touch of [false, true]) {
     const { cout } = mesurer(touch, CARTE_TABLE);
     assert.equal(cout.display, 'flex');
+    assert.equal(cout.position, 'absolute', 'top déplace réellement le coût sous la couleur');
     assert.equal(cout.left, '0px');
     assert.equal(cout.transform, 'translateX(-36%)');
   }
@@ -277,4 +280,14 @@ test('l’aperçu réserve le débord à l’intérieur du panneau défilant', (
   assert.ok(parseFloat(volet['padding-right']) >= debordMax);
   assert.ok(parseFloat(volet['column-gap']) >= debordMax);
   assert.equal(volet['box-sizing'], 'border-box');
+});
+
+
+test('le coût en main est positionné sous la couleur sur PC et mobile', () => {
+  for (const touch of [false, true]) {
+    const { cout } = mesurer(touch, CARTE_MAIN);
+    assert.equal(cout.position, 'absolute');
+    assert.equal(cout.top, 'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px)');
+    assert.equal(cout.left, '0px');
+  }
 });

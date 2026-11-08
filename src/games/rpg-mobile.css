@@ -1203,7 +1203,7 @@
    la place ne manque. `justify-content: center` centre la main dans sa
    colonne. */
 .rpg-battle--touch .rpg-hand-dock .rpg-hand {
-  --rpg-hand-gap: 6px;
+  --rpg-hand-gap: 12px;
   --hand-count: 1;
   display: flex;
   flex-flow: row nowrap;
@@ -1336,7 +1336,7 @@
     max-width: none;
     overflow: visible;
     justify-content: center;
-    gap: clamp(3px, .65vw, 10px);
+    gap: clamp(8px, 1vw, 16px);
     padding-inline: clamp(8px, 1.5vw, 24px);
     pointer-events: none;
     mask-image: none;

@@ -3501,7 +3501,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   max-width: none;
   overflow: visible;
   justify-content: center;
-  gap: clamp(3px, .65vw, 10px);
+  gap: clamp(8px, 1vw, 18px);
   padding-inline: clamp(8px, 1.5vw, 24px);
   pointer-events: none;
   mask-image: none;
@@ -15713,6 +15713,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
   .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
   .rpg-mana-cost.is-plaque {
+  /* Le titre est display:contents : le coût doit être positionné lui-même
+     relativement à la face, sinon top est ignoré sur PC. */
+  position: absolute;
+  z-index: 4;
+  bottom: auto;
   top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px) !important;
 }
 /* Le rognage conserve l'image dans son cadre, sans couper les pierres. */
