@@ -3488,143 +3488,8 @@ function useLumiereCartes(actif = true) {
   }, [actif]);
 }
 
-export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null, lienActif = false, lumiereSouris = null }) {
-  const faceRef = useRef(null);
-  const carteId = carte?.id ?? null;
-  const avecLumiere = Boolean(lumiereSouris);
-  const pointDepartRef = useRef(lumiereSouris);
-  pointDepartRef.current = lumiereSouris;
-
-  // L'aperçu est la seule carte qui suit le curseur : sa face s'incline vers
-  // lui, et revient au repos par inertie dès qu'il s'en éloigne.
-  //
-  // L'écoute est portée par la fenêtre, pas par le panneau : l'aperçu est posé
-  // en `pointer-events: none` pour ne pas voler le survol à la carte qu'il
-  // commente. Sur une fiche ouverte au clic droit (`avecLumiere`), le reflet
-  // lumineux suit en plus le curseur sur et autour de la carte.
-  //
-  // Rien au doigt : là il n'y a pas de curseur à suivre, et le volet se referme
-  // d'un toucher — incliner une fiche qu'on referme n'aurait pas de sens.
-  useEffect(() => {
-    const face = faceRef.current;
-    if (!face || variante === 'graveyard') return undefined;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return undefined;
-    if (!avecLumiere && !window.matchMedia?.('(hover: hover) and (pointer: fine)')?.matches) return undefined;
-    const MAX = avecLumiere ? 11 : 9;
-    const MARGE = 28;
-    let frame = 0;
-    let point = null;
-    let pose = false;
-    const borne = (valeur) => Math.max(-1, Math.min(1, valeur));
-    const focale = Number.parseFloat(
-      window.getComputedStyle(face).getPropertyValue('--rpg-face-3d-focale'),
-    ) || 880;
-    /* La perspective agrandit le côté qui vient vers le pointeur : penchée, la
-       carte déborde de sa propre boîte, et le volet — qui masque ce qui dépasse —
-       lui rognerait les bords. On annule exactement cette agrandissement par un
-       facteur d'échelle calculé sur la taille réelle de la face. La carte garde
-       donc son gabarit et ne sort plus de son cadre. */
-    const facteurCadre = (pointCourant) => {
-      const tx = (pointCourant.inclineX * Math.PI) / 180;
-      const ty = (pointCourant.inclineY * Math.PI) / 180;
-      const z = (pointCourant.demiA * Math.abs(Math.sin(ty))) + (pointCourant.demiB * Math.abs(Math.sin(tx)));
-      const k = focale / Math.max(focale - z, 1);
-      return Math.min(1, 1 / (Math.cos(ty) * k), 1 / (Math.cos(tx) * k)) * 0.995;
-    };
-    const appliquer = () => {
-      frame = 0;
-      if (!point) return;
-      face.style.setProperty('--rpg-face-3d-x', `${point.inclineX.toFixed(2)}deg`);
-      face.style.setProperty('--rpg-face-3d-y', `${point.inclineY.toFixed(2)}deg`);
-      face.style.setProperty('--rpg-face-3d-s', `${facteurCadre(point).toFixed(4)}`);
-      if (avecLumiere) {
-        face.style.setProperty('--rpg-lumiere-x', `${point.gx.toFixed(1)}%`);
-        face.style.setProperty('--rpg-lumiere-y', `${point.gy.toFixed(1)}%`);
-        face.style.setProperty('--rpg-lumiere-angle', `${point.angle.toFixed(1)}deg`);
-        face.style.setProperty('--rpg-lumiere-opacite', `${point.opacite.toFixed(3)}`);
-      }
-      face.classList.add('is-suit-la-souris');
-      pose = true;
-    };
-    const figer = () => {
-      if (frame) { window.cancelAnimationFrame(frame); frame = 0; }
-      point = null;
-      if (!pose) return;
-      pose = false;
-      face.classList.remove('is-suit-la-souris');
-      face.style.setProperty('--rpg-face-3d-x', '0deg');
-      face.style.setProperty('--rpg-face-3d-y', '0deg');
-      face.style.setProperty('--rpg-face-3d-s', '1');
-      if (avecLumiere) {
-        face.style.removeProperty('--rpg-lumiere-opacite');
-      }
-    };
-    const mesurerPoint = (clientX, clientY) => {
-      const boite = face.getBoundingClientRect();
-      if (!boite.width || !boite.height) return;
-      const dx = clientX - boite.left;
-      const dy = clientY - boite.top;
-      if (!avecLumiere) {
-        const surLaFace = dx >= -MARGE && dx <= boite.width + MARGE
-          && dy >= -MARGE && dy <= boite.height + MARGE;
-        if (!surLaFace) { figer(); return; }
-        const nx = borne(((dy / boite.height) - 0.5) * 2);
-        const ny = borne(((dx / boite.width) - 0.5) * -2);
-        point = {
-          inclineX: nx * MAX,
-          inclineY: ny * MAX,
-          demiA: boite.width / 2,
-          demiB: boite.height / 2,
-          gx: 50,
-          gy: 30,
-          angle: 0,
-          opacite: 0,
-        };
-      } else {
-        const horsX = dx < 0 ? -dx : (dx > boite.width ? dx - boite.width : 0);
-        const horsY = dy < 0 ? -dy : (dy > boite.height ? dy - boite.height : 0);
-        const distance = Math.hypot(horsX, horsY);
-        const rayon = Math.max(boite.width, boite.height) * 1.45;
-        if (distance > rayon) { figer(); return; }
-        const intensite = distance <= MARGE
-          ? 1
-          : Math.max(0.28, 1 - (distance - MARGE) / rayon);
-        const nx = borne(((dy / boite.height) - 0.5) * 2) * intensite;
-        const ny = borne(((dx / boite.width) - 0.5) * -2) * intensite;
-        point = {
-          inclineX: nx * MAX,
-          inclineY: ny * MAX,
-          demiA: boite.width / 2,
-          demiB: boite.height / 2,
-          gx: Math.max(-12, Math.min(112, (dx / boite.width) * 100)),
-          gy: Math.max(-12, Math.min(112, (dy / boite.height) * 100)),
-          angle: borne(((dx / boite.width) - 0.5) * 2) * 26,
-          opacite: intensite,
-        };
-      }
-      if (!frame) frame = window.requestAnimationFrame(appliquer);
-    };
-    const suivre = (event) => {
-      if (event.pointerType === 'touch') return;
-      mesurerPoint(event.clientX, event.clientY);
-    };
-    window.addEventListener('pointermove', suivre, { passive: true });
-    if (avecLumiere) window.addEventListener('mousemove', suivre, { passive: true });
-    const depart = pointDepartRef.current;
-    if (avecLumiere && depart && typeof depart === 'object' && (depart.x > 0 || depart.y > 0)) {
-      frame = window.requestAnimationFrame(() => {
-        frame = 0;
-        mesurerPoint(depart.x, depart.y);
-      });
-    }
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('pointermove', suivre);
-      if (avecLumiere) window.removeEventListener('mousemove', suivre);
-      figer();
-    };
-  }, [carteId, avecLumiere, variante]);
-
+export function HoverCardPreview({ carte, style = null, variante = '', cible = null, controls = null, panelRef = null, armes = [], furieDeclenchee = false, statsFurie = null, effetsEpuises = [], surface = null, interactif = false, onPointerEnter = null, onPointerLeave = null, prisonniere = null, lienActif = false }) {
+  // Aperçu statique : aucun suivi du curseur ni boucle de mesure 3D.
   if (!carte) return null;
   const estCreature = carte.kind === 'creature' || carte.kind === 'hero';
   const estTerrain = carte.kind === 'terrain';
@@ -3782,7 +3647,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
   const face = (
     <div className="rpg-hover-card-preview__empile">
     <div
-      ref={faceRef}
       className={`rpg-hover-card-preview__face ${estEnFurie ? 'is-furie' : cardFrameClass(carte)} ${cardMotifClass(carte)}`}
       style={estEnFurie ? undefined : cardFrameStyle(carte)}
       data-furie-declenchee={estEnFurie ? 'true' : undefined}
@@ -3790,7 +3654,6 @@ export function HoverCardPreview({ carte, style = null, variante = '', cible = n
     >
       <img src={estEnFurie ? cardArtFurie(carte) : cardArt(carte)} alt="" />
       {estEnFurie && <VignetteFurie />}
-      {avecLumiere && <span className="rpg-hover-card-preview__lumiere" data-preview-lumiere="" aria-hidden="true" />}
       <CardElementBadge carte={carte} />
       <ManaCost carte={carte} showElement={false} />
       <SortSceau carte={carte} className="rpg-hover-card-preview__sceau rpg-hover-card-preview__sort" />
@@ -4087,7 +3950,7 @@ function ApercuCarteCatalogue({
       <div className="rpg-card-peek__backdrop" aria-hidden="true" />
       <div className="rpg-card-peek__duo">
         <div className="rpg-card-peek__panel">
-          <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} lumiereSouris={clicDroit} />
+          <HoverCardPreview carte={carte} variante="catalogue" armes={armes} furieDeclenchee={furieDeclenchee} statsFurie={statsFurie} effetsEpuises={effetsEpuises} prisonniere={prisonniere} surface={surface} />
         </div>
         {avecVitrine ? (
           <VitrineIllustration
@@ -6737,7 +6600,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // écran-là : le joueur repart d'où il a lancé le mode Histoire (Jouer, le
   // plus souvent), pas d'un menu qu'il n'a pas demandé.
   const seuilHistoireVenuDe = useRef('jouer');
-  useLumiereCartes(ecran !== 'partie');
+  // Seul le guide porte encore du foil : pas de suivi global dans les menus
+  // et catalogues lorsque leurs aperçus statiques sont ouverts.
+  useLumiereCartes(ecran === 'guide');
   const authContext = useContext(AuthContext);
   const authUser = authContext?.user ?? null;
   const desktopMode = typeof window !== 'undefined' && Boolean(window.letsPlayDesktop);

@@ -11440,7 +11440,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
    Les aperçus de cartes (`.rpg-hover-card-preview__face`) et les cartes
    révélées dans les boosters (`.rpg-souk__carte-art`) en sont volontairement
    exclus : leurs illustrations restent nettes, sans glow multicolore. L'aperçu
-   garde son inclinaison 3D au survol ; seule la couche de foil disparaît.
+   reste statique, sans inclinaison 3D ni reflet suivant le curseur.
    Les cartes posées sur la table (main, mulligan, créatures, terrains et dessus
    du paquet) restent elles aussi sans foil.
 
@@ -11482,64 +11482,12 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 /* Les faces de table, les aperçus et les cartes révélées dans les boosters
    restent sans foil ; seules les fiches du guide gardent cette couche. */
 
-/* ── La face de l'aperçu en 3D ───────────────────────────────────────────────
-   Seule l'aperçu — survol, appui long, fiche du catalogue, annonce, mulligan —
-   penche avec le curseur ; toutes les autres cartes restent à plat, sinon la
-   table danserait sous le pointeur. L'inclinaison vient de deux variables que
-   la page écrit sur la face ; le retour au repos est la transition, qu'on
-   coupe le temps que le curseur suit (`is-suit-la-souris`), sans quoi la
-   carte traînerait derrière lui. La focale est posée dans le `transform`
-   lui-même : la face reste ainsi indépendante de la perspective du parent, qui
-   sert à l'aperçu annoncé et à la fiche. */
+/* Aperçus statiques : pas de perspective, de transition d’inclinaison ni
+   de calque lumineux. Pas de promotion GPU permanente pour cette face. */
 .rpg-hover-card-preview .rpg-hover-card-preview__face {
-  /* `--rpg-face-3d-s` annule l'agrandissement que la perspective applique au
-     côté le plus proche du pointeur : sans lui, la carte penchée dépasse sa
-     propre boîte et le volet lui en rognerait les bords. C'est l'équivalent
-     explicite de ce que la perspective fait déjà — la carte garde sa taille,
-     elle ne sort simplement plus de son cadre. */
-  transform:
-    perspective(var(--rpg-face-3d-focale, 880px))
-    rotateX(var(--rpg-face-3d-x, 0deg))
-    rotateY(var(--rpg-face-3d-y, 0deg))
-    scale(var(--rpg-face-3d-s, 1));
-  will-change: transform;
-  transition: transform .55s cubic-bezier(.22, 1, .36, 1);
-}
-.rpg-hover-card-preview .rpg-hover-card-preview__face.is-suit-la-souris {
+  transform: none;
+  will-change: auto;
   transition: none;
-}
-
-/* ── Reflet lumineux réservé aux previews clic droit ─────────────────────────
-   Uniquement monté quand la fiche est ouverte par un clic droit : le point
-   chaud doré et son écharpe irisée glissent sous le curseur à la manière du
-   booster du Souk, sans toucher aux cartes posées ni aux aperçus de survol. */
-.rpg-hover-card-preview__lumiere {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  background:
-    radial-gradient(
-      115% 95% at var(--rpg-lumiere-x, 50%) var(--rpg-lumiere-y, 30%),
-      rgba(255, 248, 222, .62) 0%,
-      rgba(255, 204, 114, .22) 36%,
-      transparent 68%
-    ),
-    linear-gradient(
-      calc(115deg + var(--rpg-lumiere-angle, 0deg)),
-      transparent 24%,
-      rgba(255, 220, 140, .24) 44%,
-      rgba(164, 228, 255, .18) 50%,
-      rgba(244, 182, 255, .16) 56%,
-      transparent 76%
-    );
-  opacity: 0;
-  mix-blend-mode: screen;
-  pointer-events: none;
-  transition: opacity .22s ease;
-}
-.rpg-hover-card-preview__face.is-suit-la-souris .rpg-hover-card-preview__lumiere {
-  opacity: var(--rpg-lumiere-opacite, 1);
 }
 
 /* La défausse est un choix confirmé : la carte retenue reste nettement

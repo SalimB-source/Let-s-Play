@@ -9,29 +9,16 @@ import { build } from 'vite';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const duelPageJsx = fs.readFileSync(path.join(ROOT, 'src/games/RpgDuelPage.jsx'), 'utf8');
 const battleCss = fs.readFileSync(path.join(ROOT, 'src/games/rpg-battle.css'), 'utf8');
-const soukCss = fs.readFileSync(path.join(ROOT, 'src/games/rpg-souk.css'), 'utf8');
-const atelierCss = fs.readFileSync(path.join(ROOT, 'src/games/rpg-deck-atelier.css'), 'utf8');
 
-test('Reflet lumineux souris : défini uniquement pour .rpg-hover-card-preview__lumiere (preview clic droit)', () => {
-  const matchLumiere = battleCss.match(/\.rpg-hover-card-preview__lumiere\s*\{([^}]*)\}/);
-  assert.ok(matchLumiere, '.rpg-hover-card-preview__lumiere est défini dans rpg-battle.css');
-  const corps = matchLumiere[1];
-  assert.match(corps, /radial-gradient\([\s\S]*var\(--rpg-lumiere-x/,
-    'le point lumineux suit horizontalement la souris (--rpg-lumiere-x)');
-  assert.match(corps, /var\(--rpg-lumiere-y/,
-    'le point lumineux suit verticalement la souris (--rpg-lumiere-y)');
-  assert.match(corps, /linear-gradient\([\s\S]*var\(--rpg-lumiere-angle/,
-    'l’écharpe irisée pivote avec la souris (--rpg-lumiere-angle)');
-  assert.match(corps, /mix-blend-mode:\s*screen\s*;/,
-    'le reflet s’additionne en lumière screen sur l’illustration');
-
-  assert.doesNotMatch(soukCss, /--rpg-lumiere-/, 'les cartes posées au Souk n’utilisent pas le calque de preview clic droit');
-  assert.doesNotMatch(atelierCss, /--rpg-lumiere-/, 'les cartes de l’atelier n’utilisent pas le calque de preview clic droit');
-  assert.match(duelPageJsx, /surMenuContextuel[\s\S]{0,1200}?clicDroit:\s*\{/,
-    'seul surMenuContextuel (clic droit) active clicDroit sur l’aperçu');
+test('les aperçus ne mesurent plus le curseur et ne rendent plus de lumière', () => {
+  const debut = duelPageJsx.indexOf('export function HoverCardPreview');
+  const apercu = duelPageJsx.slice(debut, duelPageJsx.indexOf('function ApercuCarteAppuiLong', debut));
+  assert.doesNotMatch(apercu, /requestAnimationFrame|addEventListener|--rpg-face-3d|data-preview-lumiere|getBoundingClientRect/);
+  assert.doesNotMatch(battleCss, /--rpg-face-3d|\.rpg-hover-card-preview__lumiere/);
+  assert.match(battleCss, /\.rpg-hover-card-preview \.rpg-hover-card-preview__face\s*\{\s*transform: none;\s*will-change: auto;\s*transition: none;/);
 });
 
-test('Rendu React + JSDOM : le reflet qui suit la souris n’apparaît QUE sur les previews clic droit', async () => {
+test('Rendu React + JSDOM : les aperçus restent statiques, y compris au clic droit', async () => {
   const prevEnv = process.env.NODE_ENV;
   await build({
     logLevel: 'error',
@@ -102,110 +89,45 @@ test('Rendu React + JSDOM : le reflet qui suit la souris n’apparaît QUE sur l
   const React = await import('react');
   const { act } = React;
   const { createRoot } = await import('react-dom/client');
-  const { default: RpgDuelPage, HoverCardPreview } = await import('../node_modules/.cache/rpg-preview-lumiere/RpgDuelPage.js');
+  const { HoverCardPreview } = await import('../node_modules/.cache/rpg-preview-lumiere/RpgDuelPage.js');
   const { cardById } = await import('../src/games/rpgCards.js');
 
   const host = dom.window.document.getElementById('root');
   const root = createRoot(host);
 
   try {
-    // 1. HoverCardPreview seul (aperçu de survol / appui long / annonce) : AUCUN reflet lumineux
-    await act(async () => {
-      root.render(React.createElement(HoverCardPreview, { carte: cardById('salem'), variante: 'appui-long' }));
-    });
-    assert.equal(host.querySelector('[data-preview-lumiere]'), null,
-      'l’aperçu d’appui long ne porte pas le reflet lumineux');
-
-    // 2. Montage complet de la page Le Sablier : comparaison clic gauche Catalogue vs clic droit Catalogue & Souk
-    await act(async () => {
-      root.render(React.createElement(RpgDuelPage, { rng: () => 0.999 }));
-      await new Promise((r) => setTimeout(r, 40));
-    });
-
-    const btnCatalogue = [...host.querySelectorAll('.rpg-mode-menu__switch button')]
-      .find((b) => b.getAttribute('aria-label') === 'Catalogue');
-    assert.ok(btnCatalogue, 'onglet Catalogue trouvé');
-    await act(async () => {
-      btnCatalogue.click();
-      await new Promise((r) => setTimeout(r, 40));
-    });
-
-    const boutonOuvrirCatalogue = host.querySelector('.rpg-card-catalogue__ouvrir');
-    assert.ok(boutonOuvrirCatalogue, 'carte du Catalogue présente');
-
-    // 2a. Clic gauche au Catalogue -> ouvre la fiche SANS le reflet lumineux
-    await act(async () => {
-      boutonOuvrirCatalogue.click();
-    });
-    const ficheClicGauche = host.querySelector('.rpg-card-peek');
-    assert.ok(ficheClicGauche, 'le clic gauche au Catalogue ouvre la fiche');
-    assert.equal(ficheClicGauche.getAttribute('data-clic-droit'), null,
-      'la fiche ouverte au clic gauche n’est pas marquée clic droit');
-    assert.equal(ficheClicGauche.querySelector('[data-preview-lumiere]'), null,
-      'la fiche ouverte au clic gauche n’affiche PAS le reflet lumineux');
-
-    await act(async () => {
-      ficheClicGauche.querySelector('.rpg-card-peek__close').click();
-    });
-    assert.equal(host.querySelector('.rpg-card-peek'), null, 'la fiche se referme');
-
-    // 2b. Clic droit au Catalogue -> ouvre la fiche AVEC reflet lumineux
-    const carteCatalogue = host.querySelector('.rpg-card-catalogue__card[data-card-id]');
-    await act(async () => {
-      carteCatalogue.dispatchEvent(new dom.window.MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2, clientX: 500, clientY: 320,
-      }));
-    });
-    assert.ok(host.querySelector('.rpg-card-peek[data-clic-droit="true"] [data-preview-lumiere]'),
-      'le clic droit au Catalogue active le reflet lumineux');
-    await act(async () => {
-      host.querySelector('.rpg-card-peek__close').click();
-    });
-
-    // 2c. Clic droit au Souk (sur une carte à l’unité) -> ouvre la fiche AVEC reflet lumineux qui suit la souris
-    const btnSouk = host.querySelector('[data-souk-onglet]');
-    assert.ok(btnSouk, 'onglet Souk trouvé');
-    await act(async () => {
-      btnSouk.click();
-    });
-
-    const carteDirecteSouk = host.querySelector('.rpg-souk__direct-carte[data-card-id]');
-    assert.ok(carteDirecteSouk, 'carte à l’unité au Souk présente');
-
-    await act(async () => {
-      carteDirecteSouk.dispatchEvent(new dom.window.MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2, clientX: 460, clientY: 320,
-      }));
-    });
-
-    const ficheClicDroit = host.querySelector('.rpg-card-peek');
-    assert.ok(ficheClicDroit, 'le clic droit sur une carte du Souk ouvre sa preview');
-    assert.equal(ficheClicDroit.getAttribute('data-clic-droit'), 'true',
-      'la preview ouverte au clic droit porte data-clic-droit="true"');
-    const calqueLumiere = ficheClicDroit.querySelector('[data-preview-lumiere]');
-    assert.ok(calqueLumiere,
-      'la preview ouverte au clic droit monte le calque .rpg-hover-card-preview__lumiere');
-
-    const face = ficheClicDroit.querySelector('.rpg-hover-card-preview__face');
-    face.getBoundingClientRect = () => ({
-      left: 400, top: 200, width: 280, height: 350, right: 680, bottom: 550,
-    });
-
-    await act(async () => {
-      dom.window.dispatchEvent(new dom.window.MouseEvent('mousemove', {
-        bubbles: true, clientX: 610, clientY: 270,
-      }));
-      await new Promise((r) => setTimeout(r, 25));
-    });
-
-    assert.ok(face.classList.contains('is-suit-la-souris'),
-      'la face de la preview clic droit suit la souris');
-    assert.equal(face.style.getPropertyValue('--rpg-lumiere-x'), '75.0%',
-      'la coordonnée horizontale de la lumière suit la position de la souris sur la carte');
-    assert.equal(face.style.getPropertyValue('--rpg-lumiere-y'), '20.0%',
-      'la coordonnée verticale de la lumière suit la position de la souris sur la carte');
-    assert.notEqual(face.style.getPropertyValue('--rpg-lumiere-angle'), '',
-      'l’angle du faisceau irisé pivote avec la souris');
+    for (const variante of ['', 'appui-long', 'catalogue', 'annonce', 'graveyard']) {
+      await act(async () => {
+        root.render(React.createElement(HoverCardPreview, {
+          carte: cardById('braisier-du-souk'), variante,
+          lumiereSouris: { x: 500, y: 320 },
+        }));
+      });
+      const face = host.querySelector('.rpg-hover-card-preview__face');
+      if (!variante) {
+        assert.ok(host.querySelector('.rpg-hover-card-preview--texte-seul'));
+        assert.equal(face, null, 'le survol rapide reste textuel');
+        continue;
+      }
+      assert.ok(face, `${variante} : illustration conservée`);
+      assert.equal(host.querySelector('[data-preview-lumiere]'), null);
+      let mesures = 0;
+      face.getBoundingClientRect = () => {
+        mesures++;
+        return { left: 400, top: 200, width: 280, height: 350 };
+      };
+      await act(async () => {
+        for (const type of ['pointermove', 'mousemove']) {
+          dom.window.dispatchEvent(new dom.window.MouseEvent(type, { clientX: 610, clientY: 270 }));
+        }
+        await new Promise(r => setTimeout(r, 25));
+      });
+      assert.equal(mesures, 0, `${variante} : aucune mesure au mouvement du curseur`);
+      assert.equal(face.classList.contains('is-suit-la-souris'), false);
+      for (const variable of ['--rpg-lumiere-x', '--rpg-lumiere-y', '--rpg-lumiere-angle', '--rpg-face-3d-x', '--rpg-face-3d-y']) {
+        assert.equal(face.style.getPropertyValue(variable), '');
+      }
+    }
   } finally {
     await act(async () => { root.unmount(); });
     dom.window.close();
