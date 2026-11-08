@@ -140,6 +140,10 @@ test('styles calculés JSDOM : layout scindé MTGA, médaillons ronds, faces por
   const pip = window.getComputedStyle(window.document.querySelector('.rpg-atelier__toggle--pip'));
   assert.equal(pip.borderRadius, '50%', 'les filtres d’éléments sont des médaillons circulaires');
 
+  const grille = window.getComputedStyle(window.document.querySelector('.rpg-atelier__cartes'));
+  assert.equal(grille.gridTemplateColumns, 'repeat(4, minmax(0, 1fr))', 'quatre colonnes dans le constructeur de deck');
+  assert.equal(grille.gap, '22px', 'plus d’espace entre les cartes du constructeur');
+  assert.equal(grille.padding, '18px 20px 30px', 'la grille garde une marge autour des illustrations');
   const art = window.getComputedStyle(window.document.querySelector('.rpg-atelier__carte-art'));
   assert.equal(art.aspectRatio, '4 / 5', 'la face adopte le format portrait du catalogue');
 
