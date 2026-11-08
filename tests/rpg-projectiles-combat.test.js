@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque } from '../src/games/rpgDuel.js';
+import { rpgNouveauDuel, rpgJouerCreature, rpgLancerAttaque, rpgBlesserCreature, rpgResoudreDestructionCiblee } from '../src/games/rpgDuel.js';
 import { RPG_ELEMENTS } from '../src/games/rpgCards.js';
 import { projectilesCombat } from '../src/games/rpgProjectilesCombat.js';
 
@@ -73,4 +73,63 @@ test('une attaque ciblée ratée ne montre pas un projectile qui touche', () => 
   assert.equal(res.ok, true);
   assert.equal(res.resume.coupsRapides[0].rate, true);
   assert.equal((duel.combatAnimations ?? []).filter(a => a.type === 'projectile-combat').length, 0);
+});
+
+function poseSupplement(duel, cote, id) {
+  duel[cote].main.push(id);
+  const res = rpgJouerCreature(duel, cote, id);
+  assert.equal(res.ok, true, res.raison);
+  return res.entite;
+}
+
+for (const cote of ['joueur', 'sorcier']) {
+  test(`Harakiri part de la créature morte (${cote})`, () => {
+    const { duel, source, cible } = scenario('ronin-du-soleil-rouge', cote);
+    rpgBlesserCreature(duel, cote, source.id, 99);
+    const [tir] = (duel.combatAnimations ?? []).filter(a => a.type === 'projectile-combat');
+    assert.equal(tir.source.entiteId, source.id);
+    assert.equal(tir.cible.entiteId, cible.id);
+    assert.equal(tir.variante, 'feu');
+    assert.equal(cible.pv, 3);
+  });
+  test(`Ghul : la source reste identifiée après la mort (${cote})`, () => {
+    const { duel, source, cible } = scenario('ghul-des-cendres', cote);
+    rpgBlesserCreature(duel, cote, source.id, 99);
+    if (cote === 'joueur') {
+      assert.equal(duel.destructionsEnAttente[0].sourceEntiteId, source.id);
+      assert.equal(rpgResoudreDestructionCiblee(duel, cote, cible.id).ok, true);
+    }
+    const tirs = (duel.combatAnimations ?? []).filter(a => a.type === 'projectile-combat');
+    assert.equal(tirs.length, 1);
+    assert.equal(tirs[0].source.entiteId, source.id);
+    assert.equal(tirs[0].cible.entiteId, cible.id);
+    assert.equal(cible.pv, 3);
+  });
+  test(`Braisier du souk : un tir par victime à l’arrivée (${cote})`, () => {
+    const { duel, adv, cible } = scenario('chien-du-guet', cote);
+    const autre = poseSupplement(duel, adv, 'dune-marchante');
+    const source = poseSupplement(duel, cote, 'braisier-du-souk');
+    const tirs = (duel.combatAnimations ?? []).filter(a => a.type === 'projectile-combat');
+    assert.deepEqual(new Set(tirs.map(a => a.cible.entiteId)), new Set([cible.id, autre.id]));
+    assert.ok(tirs.every(a => a.source.entiteId === source.id && a.variante === 'feu'));
+    assert.equal(cible.pv, 3);
+    assert.equal(autre.pv, 3);
+  });
+}
+test('Harakiri sans créature adverse vise le sorcier', () => {
+  const { duel, source } = scenario('ronin-du-soleil-rouge');
+  duel.sorcier.creatures = [];
+  const pv = duel.sorcier.pv;
+  rpgBlesserCreature(duel, 'joueur', source.id, 99);
+  const [tir] = duel.combatAnimations.filter(a => a.type === 'projectile-combat');
+  assert.deepEqual(tir.cible, { type: 'sorcier', cote: 'sorcier' });
+  assert.equal(duel.sorcier.pv, pv - 1);
+});
+test('géométrie : source disparue conservée et sorcier destinataire', () => {
+  const avant = [{ entityId: 'cible', left: 100, top: 0, width: 20, height: 40 }];
+  avant.avatarRects = { sorcier: { left: 20, top: 10, width: 60, height: 60 } };
+  const cache = [{ entityId: 'mort', left: 0, top: 100, width: 20, height: 40 }];
+  const tir = { id: 1, type: 'projectile-combat', variante: 'feu', source: { entiteId: 'mort' }, cible: { entiteId: 'cible' } };
+  assert.equal(projectilesCombat([tir], avant, cache)[0].dx, 100);
+  assert.equal(projectilesCombat([{ ...tir, cible: { type: 'sorcier', cote: 'sorcier' } }], avant, cache)[0].dx, 40);
 });

@@ -7843,7 +7843,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
   const [projectilesVisibles, setProjectilesVisibles] = useState([]);
-  useEffect(() => { setProjectilesVisibles([]); }, [ecran]);
+  const positionsProjectilesRef = useRef({ duel: null, positions: new Map() });
+  useEffect(() => {
+    setProjectilesVisibles([]);
+    positionsProjectilesRef.current = { duel: null, positions: new Map() };
+  }, [ecran]);
   const [gelMasseFx, setGelMasseFx] = useState(null);
   const sequenceGelMasseRef = useRef(0);
   const timerGelMasseRef = useRef(null);
@@ -8754,6 +8758,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     setCarteEnVol(null);
     setImpactEcran(null);
     setProjectilesVisibles([]);
+    positionsProjectilesRef.current.positions.clear();
     setGelMasseFx(null);
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
     timerGelMasseRef.current = null;
@@ -10529,6 +10534,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     timerImpactRef.current = null;
     setImpactEcran(null);
     setProjectilesVisibles([]);
+    positionsProjectilesRef.current.positions.clear();
     const token = ++sequenceVolRef.current;
     actionVolRef.current = { token, resoudre: resoudreAction };
     jouerSfx('whoosh');
@@ -10650,20 +10656,21 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   };
 
   const prendreInstantaneChamp = () => {
+    const etat = duelRef.current ?? duel;
     const table = tableRef.current;
     const tableRect = table?.getBoundingClientRect() ?? { left: 0, top: 0 };
     const elements = new Map([...(table?.querySelectorAll('[data-entity-id], [data-terrain-id]') ?? [])]
       .map((element) => [element.dataset.entityId ?? element.dataset.terrainId, element]));
     const cartesEnJeu = [
-      ...duel.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'joueur' })),
-      ...duel.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'sorcier' })),
-      ...duel.joueur.terrains.map((terrain) => ({
+      ...etat.joueur.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'joueur' })),
+      ...etat.sorcier.creatures.map((entite) => ({ ...entite, isTerrain: false, camp: 'sorcier' })),
+      ...etat.joueur.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
         camp: 'joueur',
       })),
-      ...duel.sorcier.terrains.map((terrain) => ({
+      ...etat.sorcier.terrains.map((terrain) => ({
         ...terrain,
         name: cardById(terrain.carteId)?.name ?? terrain.carteId,
         isTerrain: true,
@@ -10724,7 +10731,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         height: rect.height,
       }];
     }));
-    instantane.combatAnimationIds = new Set((duel.combatAnimations ?? []).map((animation) => animation.id));
+    for (const position of instantane) positionsProjectilesRef.current.positions.set(position.entityId, position);
+    // Garder les dernières positions pour les capacités de mort différées.
+    const historique = positionsProjectilesRef.current.positions;
+    while (historique.size > 128) historique.delete(historique.keys().next().value);
+    instantane.combatAnimationIds = new Set((etat.combatAnimations ?? []).map((animation) => animation.id));
     instantane.avatarRects = avatarRects;
     return instantane;
   };
@@ -10797,17 +10808,24 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const mouvementReduit = animationsReduites();
     const animationsCombatNouvelles = (duel.combatAnimations ?? [])
       .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
-    if (!mouvementReduit) {
-      const tirs = projectilesCombat(animationsCombatNouvelles, avant);
-      if (tirs.length) {
-        // IDs séquentiels du journal : PvP et actions locales partagent le même chemin.
+    if (!mouvementReduit && animationsCombatNouvelles.some((a) => a.type === 'projectile-combat')) {
+      // Attendre le rendu pour mesurer une source qui vient d’arriver. Les
+      // victimes et les morts gardent leur emplacement d’avant l’action.
+      const duelProjectile = duel;
+      const mesure = window.setTimeout(() => {
+        if (duelRef.current !== duelProjectile) return;
+        const actuelles = prendreInstantaneChamp();
+        const historique = [...positionsProjectilesRef.current.positions.values()];
+        const tirs = projectilesCombat(animationsCombatNouvelles, avant, [...actuelles, ...historique]);
+        if (!tirs.length || animationsReduites()) return;
         setProjectilesVisibles((courant) => [...courant, ...tirs].slice(-32));
         const ids = new Set(tirs.map((tir) => tir.id));
         const timer = window.setTimeout(() => {
           setProjectilesVisibles((courant) => courant.filter((tir) => !ids.has(tir.id)));
         }, dureeAnimation(650));
         timersRef.current.push(timer);
-      }
+      }, 0);
+      timersRef.current.push(mesure);
     }
     const idsEsquives = new Set(animationsCombatNouvelles
       .filter((animation) => animation.type === 'esquive')
