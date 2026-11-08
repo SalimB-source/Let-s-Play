@@ -104,14 +104,14 @@ function mesurer(touch, corps) {
     illustration: lire('.rpg-card__img, .rpg-hand__img', ['border-radius']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
     cout: lire('.rpg-hover-card-preview__face .rpg-mana-cost', [
-      'top', 'left', 'right', 'width', 'height', 'font-size',
+      'top', 'left', 'right', 'transform', 'width', 'height', 'font-size',
     ]),
     plaque: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', [
       'position', 'width', 'height', 'grid-area',
     ]),
     plaqueCout: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', ['position']),
     badge: lire('.rpg-hover-card-preview__face .rpg-card-element-badge', [
-      'width', 'height', 'border', 'border-radius', 'background', '--rpg-plaque-taille',
+      'transform', 'width', 'height', 'border', 'border-radius', 'background', '--rpg-plaque-taille',
     ]),
     faceImage: lire('.rpg-hover-card-preview__face > img', ['border-radius']),
     catalogue: lire('.rpg-card-icones--catalogue', [
@@ -203,13 +203,15 @@ test('l’aperçu porte les mêmes pierres, en 40 px, sur le bord de sa face', (
 test('l’aperçu range le coût sous la pastille de couleur et les fait de même taille', () => {
   const { cout, badge, colonne } = mesurer(false, APERCU);
   assert.equal(cout.right, 'auto', 'le coût quitte le coin haut droit');
-  assert.equal(cout.left, 'var(--rpg-card-element-marker-left, 6%)', 'il s’aligne sur la colonne de gauche');
+  assert.equal(cout.left, '0px', 'il s’aligne sur le bord gauche');
+  assert.equal(cout.transform, 'translateX(-36%)', 'le coût chevauche le bord');
+  assert.equal(badge.transform, cout.transform, 'la couleur chevauche le même bord');
   // Le coût se pose sous l'hexagone de couleur, à 6 px de lui — un peu moins
   // qu'hier : la pierre de couleur a perdu son anneau clair, elle est plus
   // serrée dans le coin.
   assert.equal(
     cout.top,
-    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 38px) + 6px)',
+    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px)',
     'il se pose sous la pastille de couleur',
   );
   // Les trois repères d'une face — hexagone de couleur, losange de coût,

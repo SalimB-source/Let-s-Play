@@ -15694,3 +15694,43 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   .rpg-offre-lancement--slide .rpg-offre-lancement__prix strong { font-size: clamp(16px, 13cqh, 23px); }
   .rpg-offre-lancement--slide .rpg-offre-lancement__bouton { min-height: 36px; margin-top: 0; padding: 4px 8px; }
 }
+
+/* Repères de gauche : même chevauchement sur toutes les faces, en miroir
+   de la colonne d'effets. Ces seules coordonnées priment sur les anciens
+   placements propres au mobile, au MOBA et aux vignettes. */
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  :is(.rpg-card-element-badge, .rpg-mana-cost).is-plaque {
+  left: 0 !important;
+  right: auto !important;
+  transform: translateX(-36%) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  > .rpg-card-element-badge.is-plaque {
+  top: var(--rpg-card-element-marker-top, 5%) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art)
+  .rpg-mana-cost.is-plaque {
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px) !important;
+}
+/* Le rognage conserve l'image dans son cadre, sans couper les pierres. */
+.rpg-battle :is(.rpg-mulligan__card, .rpg-card-catalogue__art, .rpg-atelier__carte-art) {
+  overflow: clip;
+  overflow-clip-margin: 22px;
+}
+.rpg-battle :is(.rpg-mulligan__card, .rpg-card-catalogue__art, .rpg-atelier__carte-art) > img {
+  border-radius: inherit;
+}
+
+/* Les anciens bandeaux ne doivent plus servir de référentiel au coût. */
+.rpg-battle .rpg-hand__card--img > .rpg-hand__title,
+.rpg-battle .rpg-card--img > .rpg-card__title {
+  display: contents;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(> .rpg-card-element-badge--hybride.is-plaque)
+  .rpg-mana-cost.is-plaque {
+  top: calc(var(--rpg-card-element-marker-top, 5%) + 2 * var(--rpg-plaque-taille, 24px) + 8px) !important;
+}
