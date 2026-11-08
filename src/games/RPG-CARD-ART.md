@@ -71,6 +71,30 @@ jouables dans un deck.
 Une créature-jeton suit les règles communes de l'illustration : sujet unique et
 lisible même en vignette, cadre et statistiques superposés par l'interface.
 
+## Petites créatures du Sable (coût 2)
+
+Trois peintures dédiées, sombres et cinématographiques, livrées en JPEG plein art
+**768 × 960**, sans cadre ni interface :
+
+- `gerboise-des-ruines.jpg` — une gerboise bondit entre les pierres d'un village en ruines ; Rapidité (2/1).
+- `scarabee-des-sceaux.jpg` — un scarabée porte un éclat de sceau sous une voûte ensablée ; pioche à sa mort (1/2).
+- `scorpion-du-seuil.jpg` — un scorpion défend la dalle fissurée d'une porte ; son Poison ronge pendant deux tours la créature blessée (1/2).
+
+Leurs silhouettes restent distinctes sur une petite carte. Les règles, le coût et
+les statistiques sont rendus par l'interface, jamais par la peinture. Le Scorpion
+est désormais 1/2 : **Poison** inflige 1 PV au début de chacun des deux prochains
+tours de la créature blessée ; une nouvelle piqûre renouvelle ces deux tours
+sans cumuler les dégâts. Il n'inflige plus de dégâts à sa mort.
+
+## Manticore des dunes (Sable, coût 6)
+
+`public/cards/manticore-des-dunes.jpg` : peinture dédiée **768 × 960** montrant
+une grande manticore à crinière de lion et queue de scorpion devant une
+forteresse saharienne ruinée, au crépuscule. Rare **3/6** portant **Poison** :
+comme le Scorpion, elle inflige 1 PV au début des deux prochains tours de la
+créature blessée en combat. La règle et les chiffres ne sont pas peints sur
+l'illustration, mais rendus par la fiche et la pastille du jeu.
+
 ## Bouchra, la guerrière des crêtes (Sable, octobre 2026)
 
 La carte ajoutée au set Sable après sa passe (`bouchra-guerriere-des-cretes`,

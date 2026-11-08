@@ -291,6 +291,7 @@ export function valeurEntite(entite) {
   if (carte.honneur) valeur += carte.honneur;
   // Butin (le Chien du guet) : chaque touche au sorcier rapporte une carte.
   if (carte.butin) valeur += 0.8;
+  if (carte.poison) valeur += 0.8; // morsure lente, seulement si elle touche une créature
   if (carte.combat) valeur += 2;
   // L'arme portée : bonus et mot-clé sont déjà dans les chiffres et les champs
   // de l'entité (envol, esquive lus plus haut) ; seul le déclenché s'ajoute.
@@ -2081,6 +2082,7 @@ function scoreCarte(duel, cote, carte, profil, rng, ciblesCondamnees = null) {
   // Le Tribut (set Ténèbres) : un contact qui vaut des PV à chaque frappe.
   if (carte.tribut) score += carte.tribut * 0.9;
   if (carte.destruction) score += 1;
+  if (carte.poison) score += duel[adv].creatures.length ? 1 : 0.3;
   if (carte.honneur) score += carte.honneur * (duel[adv].creatures.length ? 0.8 : 0.3);
   if (carte.combat) score += 2;
   // L'Abordage (set Lettres de Marque) : la prize à l'arrivée — une créature

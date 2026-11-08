@@ -389,6 +389,9 @@ export function IconesCarte({ carte, entite = null, className = '', effetsEpuise
       ajouter('protection', label, null, { contres });
     }
     if (entite.tenaciteDisponible) ajouter('tenacite', 'Tenacité');
+    if (entite.poison?.toursRestants > 0) {
+      ajouter('poisonActif', 'Empoisonnée — perd 1 PV au début de son tour ; tours restants :', entite.poison.toursRestants);
+    }
   }
   // L'aperçu n'a pas d'entité : la page lui transmet les listes qu'elle a déjà
   // calculées pour ses pastilles, pour que la pierre soit éteinte au même

@@ -491,6 +491,40 @@ export const RPG_CREATURE_CARDS = [
     rapidite: true, butin: true, text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive. Butin — Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
     flavor: 'Les éclats sifflent ; le Fennec a déjà choisi son prochain pas.',
   },
+  // Trois petites bêtes du désert : une menace rapide, une carte à récupérer
+  // et un poison qui persiste. Chacune coûte deux manas de Sable et possède son art.
+  {
+    id: 'gerboise-des-ruines', name: 'Gerboise des ruines',
+    element: 'sable', cost: 2, atk: 2, def: 1, rarity: 'commune',
+    typeLine: 'Créature — Gerboise', art: 'gerboise-des-ruines',
+    rapidite: true,
+    text: 'Rapidité — Cette créature peut attaquer le tour où elle arrive.',
+    flavor: 'Entre deux pierres, elle a déjà pris trois longueurs d’avance.',
+  },
+  {
+    id: 'scarabee-des-sceaux', name: 'Scarabée des sceaux',
+    element: 'sable', cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Scarabée', art: 'scarabee-des-sceaux',
+    destruction: { type: 'pioche', amount: 1 },
+    text: 'Quand le Scarabée meurt : piochez une carte.',
+    flavor: 'Il emporte la trace de ceux que le désert a effacés.',
+  },
+  {
+    id: 'scorpion-du-seuil', name: 'Scorpion du seuil',
+    element: 'sable', cost: 2, atk: 1, def: 2, rarity: 'inhabituelle',
+    typeLine: 'Créature — Scorpion', art: 'scorpion-du-seuil',
+    poison: { degats: 1, tours: 2 },
+    text: 'Poison — Quand le Scorpion blesse une créature, elle perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
+    flavor: 'La piqûre est brève ; le désert prend son temps.',
+  },
+  {
+    id: 'manticore-des-dunes', name: 'Manticore des dunes',
+    element: 'sable', cost: 6, atk: 3, def: 6, rarity: 'rare',
+    typeLine: 'Créature — Manticore', art: 'manticore-des-dunes',
+    poison: { degats: 1, tours: 2 },
+    text: 'Poison — Quand la Manticore blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours ; une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
+    flavor: 'Sous la pierre, son dard attend que le sable cesse de bouger.',
+  },
   {
     id: 'chien-du-guet',
     name: 'Chien du guet',

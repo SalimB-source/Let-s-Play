@@ -20,6 +20,7 @@ import { estLigneDeLien } from './rpgLienTexte.js';
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-embuscade" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-5a3 3 0 0 1 6 0v5"/><path d="M2 5l2 2M22 5l-2 2M12 1v2"/></symbol>
+  <symbol id="i-poison" viewBox="0 0 24 24"><path d="M12 2c-2 4-7 8-7 13a7 7 0 0 0 14 0c0-5-5-9-7-13z"/><path d="M9 12l2 3 1-2 1 2 2-3"/></symbol>
   <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
   <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
   <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
@@ -93,6 +94,8 @@ export function couleurProtection(contre) {
 export const EFFET_ICONE = {
   reactionTourAdverse: 'i-embuscade',
   butin: 'i-butin',
+  poison: 'i-poison',
+  poisonActif: 'i-poison',
   abordage: 'i-abordage',
   malediction: 'i-malediction',
   cargaison: 'i-cargaison',
@@ -181,7 +184,7 @@ export const MOTS_CLES_PASTILLES = [
   'reactionTourAdverse', 'envol', 'infiltration', 'volDeVie', 'rapidite', 'coupRapide', 'coupCritique', 'traquePirates', 'provocation', 'defenseur', 'overkill', 'furie', 'esquive',
   'contreAttaque',
   'tenacite', 'resonance', 'protection', 'protectionSorts', 'protectionSortsContre', 'bouclier', 'aura', 'honneur', 'butin',
-  'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement',
+  'abordage', 'malediction', 'cargaison', 'furtif', 'manaEngagement', 'poison',
 ];
 
 /** Les pastilles d’une carte, en HTML — `carte` = fiche `rpgCards.js`. */
@@ -210,6 +213,7 @@ export function pastillesCarte(carte, { size = 15, classe = 'rpg-chip' } = {}) {
 export const EFFET_LIBELLES = {
   reactionTourAdverse: 'Embuscade',
   butin: 'Butin',
+  poison: 'Poison',
   abordage: 'Abordage',
   malediction: 'Malédiction',
   cargaison: 'Cargaison',
@@ -365,6 +369,7 @@ export function pastillesPourCarte(carte) {
     ajouter('honneur', 'Harakiri', Number(carte.honneur) || null, { valeurMasquee: true });
   }
   if (carte.butin) ajouter('butin', 'Butin');
+  if (carte.poison) ajouter('poison', 'Poison');
   if (carte.tribut) ajouter('tribut', 'Tribut', Number(carte.tribut) || null);
   // La Malédiction (La Barbe Noire) : -2/-0 à toutes les créatures adverses
   // tant que la source reste en jeu — sans adjacence, contrairement à l'Aura.
@@ -488,6 +493,7 @@ const MOTIFS_LIGNE = [
   ['reactionTourAdverse', /\bembuscade\b/iu],
   ['traque', /\btraque\b/iu],
   ['butin', /\bbutin\b/iu],
+  ['poison', /\bpoison\b/iu],
   ['abordage', /\babordage\b/iu],
   ['malediction', /\bmalédiction\b/iu],
   ['cargaison', /\bcargaison\b/iu],
@@ -661,6 +667,7 @@ export const EFFET_DEFINITIONS = {
   banniere: 'Tant qu’elle est en jeu, les créatures de sa tribu gagnent un bonus.',
   honneur: (n) => `Quand cette créature meurt, elle inflige ${n ?? 'X'} dégât${n > 1 ? 's' : ''} à une créature adverse choisie au hasard, ou au sorcier adverse s’il n’y en a aucune.`,
   butin: 'Quand cette créature touche le sorcier adverse, piochez une carte puis défaussez-en une.',
+  poison: 'Quand cette créature blesse une créature, la victime perd 1 PV au début de chacun de ses deux prochains tours. Une nouvelle blessure renouvelle la durée sans cumuler les dégâts.',
   abordage: (n) => `Quand cette créature arrive en jeu, la créature adverse ciblée de coût ${n ?? 'N'} ou moins est prise en sa cale — détenue face visible, une seule place — au lieu d’être détruite : elle ne déclenche rien. Son propriétaire peut la racheter en main au prix imprimé ; si le capteur meurt, elle revient en jeu avec l’attaque et la défense qu’elle avait à la prise, sans effet d’arrivée — renvoyé ou exilé, il la rend en main.`,
   malediction: () => 'Tant qu’elle est en jeu, TOUTES les créatures du camp adverse perdent 2 points d’attaque (et aucun de défense). Aucune adjacence : une créature qui arrive après elle est maudite aussi. Le malus se lève si la dernière source quitte la table, et deux sources cumulent leurs malédictions.',
   cargaison: (n) => `Quand cette créature meurt ou est prise en cale, son propriétaire pioche ${n ?? 'N'} carte${n > 1 ? 's' : ''} : le convoi est assuré.`,
@@ -706,6 +713,7 @@ const LIBELLES_IMPRIMES = [
   ['compagnie', 'Compagnie(?: viking| samouraï)?'],
   ['honneur', 'Harakiri(?: \\d+)?'],
   ['butin', 'Butin'],
+  ['poison', 'Poison'],
   ['tribut', 'Tribut(?: \\d+)?'],
   ['abordage', 'Abordage(?: \\d+)?'],
   ['protection', 'Bouclier d[’\'](?:Eau|Neige|Braise|Sable|Ténèbres)(?: et de (?:Eau|Neige|Braise|Sable|Ténèbres))?'],
