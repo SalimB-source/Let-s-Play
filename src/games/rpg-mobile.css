@@ -1027,9 +1027,11 @@
   border-radius: 50%;
   font-size: 11px;
 }
-/* Le coût reste visible sur les cartes posées, comme sur les autres faces. */
+/* Garder la grille : pierre et chiffre occupent la même case, pas deux
+   éléments flex côte à côte. Le coût reste visible sur toutes les faces. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__title .rpg-mana-cost {
-  display: flex;
+  display: grid;
+  place-items: center;
 }
 .rpg-battle--touch .rpg-hand__card--img .rpg-hand__stat,
 .rpg-battle--touch .rpg-card--img .rpg-card__stat--atk,

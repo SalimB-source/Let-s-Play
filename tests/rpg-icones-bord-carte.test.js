@@ -41,7 +41,7 @@ const CARTE_TABLE = `
   <div class="card-row">
     <button class="rpg-card rpg-card--img">
       <img class="rpg-card__img" alt="" />
-      <header class="rpg-card__title"><span class="rpg-mana-cost is-compact is-plaque">3</span></header>
+      <header class="rpg-card__title"><span class="rpg-mana-cost is-compact is-plaque"><span class="rpg-plaque-forme"><svg></svg></span><b>3</b></span></header>
       <span class="rpg-card-icones rpg-card-icones--colonne">
         <span class="rpg-card-icone"><svg class="rpg-effet-icone" width="18" height="18"></svg></span>
       </span>
@@ -108,12 +108,14 @@ function mesurer(touch, corps) {
     volet: lire('.rpg-hover-card-preview', ['overflow', 'padding-left', 'padding-right', 'column-gap', 'box-sizing']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
     cout: lire('.rpg-mana-cost', [
-      'display', 'position',
+      'display', 'position', 'place-items',
       'top', 'left', 'right', 'transform', 'width', 'height', 'font-size',
     ]),
     plaque: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', [
       'position', 'width', 'height', 'grid-area',
     ]),
+    fondCout: lire('.rpg-mana-cost > .rpg-plaque-forme', ['grid-area']),
+    chiffreCout: lire('.rpg-mana-cost > b', ['grid-area']),
     plaqueCout: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', ['position']),
     badge: lire('.rpg-hover-card-preview__face .rpg-card-element-badge', [
       'transform', 'width', 'height', 'border', 'border-radius', 'background', '--rpg-plaque-taille',
@@ -257,8 +259,11 @@ test('la pierre nue habille le repère dans le flux, sans sortir de sa case', ()
 
 test('le coût reste affiché sur le plateau, au doigt comme à la souris', () => {
   for (const touch of [false, true]) {
-    const { cout } = mesurer(touch, CARTE_TABLE);
-    assert.equal(cout.display, 'flex');
+    const { cout, fondCout, chiffreCout } = mesurer(touch, CARTE_TABLE);
+    assert.equal(cout.display, 'grid', 'le coût n’aligne pas le chiffre à côté de la pierre');
+    assert.equal(cout['place-items'], 'center');
+    assert.equal(fondCout['grid-area'], '1 / 1');
+    assert.equal(chiffreCout['grid-area'], fondCout['grid-area'], 'le chiffre se superpose au losange');
     assert.equal(cout.position, 'absolute', 'top déplace réellement le coût sous la couleur');
     assert.equal(cout.left, '0px');
     assert.equal(cout.transform, 'translateX(-36%)');
