@@ -157,7 +157,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
-const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 16, hexagone: 18 });
+const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 16, hexagone: 16 });
 
 /**
  * L'épaisseur du biseau, forme par forme. L'hexagone ouvre largement son champ

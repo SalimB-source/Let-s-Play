@@ -15852,3 +15852,47 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-sort-sceau--sorcellerie {
   background: #d4b57a;
 }
+
+/* Catalogue : cartes flottantes, cinq colonnes, avec de la place pour les
+   pierres qui chevauchent les bords. Le padding garde aussi les débords dans
+   la zone du panneau défilant, y compris sur la première/dernière colonne. */
+.rpg-battle .rpg-card-catalogue__grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 40px 44px;
+  padding: 28px;
+  align-items: start;
+}
+.rpg-battle .rpg-card-catalogue__card,
+.rpg-battle .rpg-card-catalogue__card:is(.is-locked, :hover, :focus-within) {
+  overflow: visible;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.rpg-battle .rpg-card-catalogue__art {
+  overflow: visible;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, .38);
+}
+.rpg-battle .rpg-card-catalogue__art > img { border-radius: inherit; }
+.rpg-battle .rpg-card-catalogue__art .rpg-card-icones--colonne.rpg-card-icones--catalogue {
+  top: var(--rpg-card-element-marker-top, 5%);
+  bottom: auto;
+  right: 0;
+  left: auto;
+}
+.rpg-battle .rpg-card-catalogue__card.is-locked :is(.rpg-card-icones, .rpg-mana-cost) {
+  filter: grayscale(1);
+}
+@media (max-width: 820px) {
+  .rpg-battle .rpg-card-catalogue__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 36px;
+  }
+}
+@media (max-width: 560px) {
+  .rpg-battle .rpg-card-catalogue__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px;
+    padding: 24px;
+  }
+}
