@@ -6193,8 +6193,6 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
               <div className="rpg-card-catalogue__grid">
                 {cartesCatalogue.map((carte) => {
                   const estTerrain = carte.kind === 'terrain';
-                  const estCreature = ['creature', 'hero'].includes(carte.kind);
-                  const degradeCout = estTerrain ? null : cardHybridGradient(carte);
                   const famille = carteFamille(carte);
                   const verrouillee = !possedeCarte(collection, carte.id);
                   const exemplaires = nombreExemplaires(collection, carte.id);
@@ -6214,8 +6212,8 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                     >
                       {/* Toute la fiche est un bouton étiré : le clic — souris ou
                           doigt — ouvre la carte en grand, illustration et effets,
-                          sans rien jouer. La grille reste épurée (nom, type,
-                          couleur et ATQ/DÉF) ; les effets se lisent sur la fiche. */}
+                          sans rien jouer. La grille ne montre que les cartes
+                          flottantes et leurs repères ; le texte reste sur la fiche. */}
                       <button
                         type="button"
                         className="rpg-card-catalogue__ouvrir"
@@ -6229,35 +6227,12 @@ function GameModeMenu({ bloqueAccueil = false, screen, selectedDeckId, onSelectD
                       >
                         <img src={cardArt(carte)} alt={`Illustration de ${carte.name}`} loading="lazy" />
                         <CardElementBadge carte={carte} />
-                        {!estTerrain && <span
-                          className={`rpg-card-catalogue__cost${degradeCout ? ' rpg-card-catalogue__cost--hybride' : ''}`}
-                          style={degradeCout ? { '--rpg-hybrid-cost-bg': degradeCout } : undefined}
-                          aria-label={`Coût ${cardCostLabel(carte)}`}
-                        >{carte.cost}</span>}
+                        <ManaCost carte={carte} showElement={false} />
+                        <IconesCarte carte={carte} className="rpg-card-icones--colonne rpg-card-icones--catalogue" />
                         <SortSceau carte={carte} className="rpg-card-catalogue__sort" />
                         <RpgCardCopyBadge nombre={exemplaires} className="rpg-card-catalogue__copies" />
                         {verrouillee && <span className="rpg-card-catalogue__lock" aria-hidden="true">🔒</span>}
                         <span className="rpg-card-catalogue__zoom" aria-hidden="true">⤢</span>
-                      </div>
-                      <div className="rpg-card-catalogue__details">
-                        <div className="rpg-card-catalogue__title">
-                          <h3>{carte.name}</h3>
-                        </div>
-                        <p className={`rpg-card-catalogue__type${classeLigneFamille(carte)}`}>{cardFaceTypeLine(carte)}</p>
-                        <div className="rpg-card-catalogue__meta">
-                          <span className={estTerrain ? 'is-terrain' : cardColors(carte).length > 1 ? 'is-hybrid' : ''}>
-                            {cardColorLine(carte)}
-                          </span>
-                          {estCreature && <b>⚔ {carte.atk} · 🛡 {carte.def}</b>}
-                          {carteEstArme(carte) && <b>⚔ {signeBonus(bonusArme(carte)?.atk)} · 🛡 {signeBonus(bonusArme(carte)?.def)}</b>}
-                        </div>
-                        <CarteIllustrationAlternative
-                          carte={carte}
-                          niveau={niveauOnglet}
-                          portefeuille={portefeuille}
-                          onPlaySfx={play}
-                          onOuvrirFiche={onOpenCardPreview}
-                        />
                       </div>
                     </article>
                   );
