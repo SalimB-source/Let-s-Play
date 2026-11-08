@@ -1,3 +1,4 @@
+import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
@@ -613,7 +614,7 @@ function ManaCost({ carte, compact = false, showElement = true }) {
     >
       <PlaqueForme forme="diamant" bases={basesCout} />
       <b>{carte.cost}</b>
-      {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[teinte] ?? '◇'}</i>}
+      {!hybrid && showElement && <i aria-hidden="true">{teinte === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[teinte] ?? '◇'}</i>}
     </span>
   );
 }
@@ -968,13 +969,13 @@ function CardElementBadge({ carte }) {
             className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur} is-plaque`}
           >
             <PlaqueForme forme="hexagone" bases={[teintePlaque(couleur)]} />
-            <span className="rpg-card-element-badge__glyphe">{ELEMENT_GLYPHS[couleur] ?? '◇'}</span>
+            <span className="rpg-card-element-badge__glyphe">{couleur === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[couleur] ?? '◇'}</span>
           </i>
         ))
         : (
           <>
             <PlaqueForme forme="hexagone" bases={[teintePlaque(teinte)]} />
-            <span className="rpg-card-element-badge__glyphe">{ELEMENT_GLYPHS[teinte] ?? '◇'}</span>
+            <span className="rpg-card-element-badge__glyphe">{teinte === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[teinte] ?? '◇'}</span>
           </>
         )}
     </span>

@@ -173,14 +173,13 @@ const BISEAU_PAR_FORME = Object.freeze({
 /** Le contour d'encre ajouté autour de la silhouette, en unités de 32. */
 const CONTOUR = 1.4;
 
-/** Le trait du pictogramme, en unités de pierre (32 pour le carré) : 2,2 sur
- * 32 donne 1,1 px de trait sur la pierre de 16 px du doigt, 2,1 px sur celle de
- * 32 px de l'aperçu — lisible aux deux bouts sans empâter le dessin. */
-const EPAISSEUR_CIBLE = 2.2;
+/** Trait affiné à 1,75 unité de pierre : les détails restent ouverts sans
+ * perdre le contraste blanc sur la pierre de couleur. */
+const EPAISSEUR_CIBLE = 1.75;
 
-/** Le halo d'encre qui double le pictogramme : 1,6 unité de pierre de plus,
+/** Le halo d'encre qui double le pictogramme : 1 unité de pierre de plus,
  * pour que le blanc se détache aussi des pierres claires (or, sable, azur). */
-const CONTOUR_SYMBOLE = 1.6;
+const CONTOUR_SYMBOLE = 1;
 
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */

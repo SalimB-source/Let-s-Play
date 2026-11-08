@@ -1,7 +1,6 @@
 /**
  * Le sprite des icônes d’effets du duel — les symboles validés
- * (`preview-effets-icone.html`), monochromes, dessin 24×24. Les silhouettes
- * pleines utilisent explicitement `fill="currentColor"` et `stroke="none"`.
+ * (`preview-effets-icone.html`), monochromes, dessin au trait 24×24, sans aplats.
  *
  * Deux usages :
  * 1. Injecter `EFFETS_SPRITE` une fois dans le DOM (idéalement dans le `<body>`
@@ -20,46 +19,46 @@ import { estLigneDeLien } from './rpgLienTexte.js';
 /** Les symboles, à injecter une seule fois par page. */
 export const EFFETS_SPRITE = `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-embuscade" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 11 12 1l10 10v11h-7v-8H9v8H2Z"/></symbol>
-  <symbol id="i-butin" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6 2h12l-3 5H9ZM8 9h8c2 3 6 5 6 9 0 4-4 5-10 5S2 22 2 18c0-4 4-6 6-9Zm4 3-3 4 3 4 3-4Z"/></symbol>
-  <symbol id="i-furie" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5 12V7a2 2 0 0 1 4 0V5a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v2a2 2 0 0 1 4 0v6l-4 7H8l-5-7V11a2 2 0 0 1 2 1Z"/></symbol>
-  <symbol id="i-esquive" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M16 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6ZM12 8l5 2 4-1 1 3-6 2-2 4 5 3-2 3-8-5 2-6-4 2-1-3ZM1 7h8v3H1ZM2 17h5v3H2Z"/></symbol>
-  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 2l8 3-3 3 15 12-2 2L8 7 5 10ZM22 2l-3 8-3-3-4 4-3-3 4-4-3-3Z"/></symbol>
-  <symbol id="i-envol" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 13 8 6 1 3l2 8 7 8h4l7-8 2-8-7 3Z"/></symbol>
-  <symbol id="i-rapidite" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 2 3 14h7l-1 8 12-13h-9l3-7Z"/></symbol>
-  <symbol id="i-coup-rapide" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M1 6h9v3H1ZM3 12h5v3H3ZM16 2 9 13h6l-2 9 10-13h-7Z"/></symbol>
-  <symbol id="i-traque" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10 1h4v8h-4ZM3 13l7 4-2 4-7-4ZM21 13l2 4-7 4-2-4ZM12 10a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></symbol>
-  <symbol id="i-coup-critique" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1 15 9 23 12 15 15 12 23 9 15 1 12 9 9Z"/></symbol>
-  <symbol id="i-defenseur" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 4 12 1l10 3v8c0 5-6 9-10 11C8 21 2 17 2 12Zm8 2v6H6v4h12v-4h-4V6Z"/></symbol>
-  <symbol id="i-provocation" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 9h5L21 2v20L7 15H2ZM8 17h5v6H8Z"/></symbol>
-  <symbol id="i-tenacite" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6 3 13 1 10 8l5 4-3 5 5 6H4L1 14ZM16 2l5 5 2 12-4 4-3-6 3-6-5-4Z"/></symbol>
-  <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 6C3-4-4 9 12 23 28 9 21-4 12 6Zm0 2c-6 7-4 10 0 10s6-3 0-10Z"/></symbol>
-  <symbol id="i-infiltration" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M1 12C7 2 17 2 23 12c-6 10-16 10-22 0Zm11-5a5 5 0 1 0 0 10 5 5 0 0 0 0-10ZM1 1l22 20-2 2L0 3Z"/></symbol>
-  <symbol id="i-protection" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M3 4 12 1 21 4v6l-5-2v5h4c-1 4-4 7-8 10-6-4-9-8-9-13Z"/></symbol>
-  <symbol id="i-bouclier" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 3 9 1l7 2v7c0 5-4 9-7 11-4-3-7-6-7-11ZM18 5l4 1v8c0 4-3 7-7 9l-2-2c4-3 6-7 6-11Z"/></symbol>
-  <symbol id="i-aura" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1 15 6l6-1-1 6 4 4-6 2-2 6-5-4-6 2 1-6-5-4 6-2Zm0 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></symbol>
-  <symbol id="i-resonance" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5 2h4v9a3 3 0 0 0 6 0V2h4v9c0 4-2 6-5 7v5h-4v-5c-3-1-5-3-5-7Z"/></symbol>
-  <symbol id="i-honneur" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1a8 8 0 1 1 0 16 8 8 0 0 1 0-16ZM5 16l5 3-3 5-2-3-4 1ZM19 16l4 6-4-1-2 3-3-5Z"/></symbol>
-  <symbol id="i-pioche" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 1h14v4H6v14H2ZM9 8h14v16H9Z"/></symbol>
-  <symbol id="i-soin" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M8 2h8v6h6v8h-6v6H8v-6H2V8h6Z"/></symbol>
-  <symbol id="i-degats" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M14 2 3 13h8l-2 9 12-13h-8Z"/></symbol>
-  <symbol id="i-contresort" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22Zm0 4a7 7 0 0 1 6 11L8 6a7 7 0 0 1 4-1Zm-6 3 10 10A7 7 0 0 1 6 8Z"/></symbol>
-  <symbol id="i-rebond" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10 1 1 9l9 8v-6h5c3 0 4 2 4 5v6h4v-6c0-6-3-9-8-9h-5Z"/></symbol>
-  <symbol id="i-recyclage" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M20 2v9h-9l3-3a6 6 0 0 0-9 4H1A10 10 0 0 1 17 5ZM4 22v-9h9l-3 3a6 6 0 0 0 9-4h4A10 10 0 0 1 7 19Z"/></symbol>
-  <symbol id="i-reanimation" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1 1 12h7v7h8v-7h7ZM2 21h20v3H2Z"/></symbol>
-  <symbol id="i-heures" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1a11 11 0 1 0 0 22 11 11 0 0 0 0-22Zm-2 4h4v6l5 3-2 3-7-4Z"/></symbol>
-  <symbol id="i-tribut" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M10 1h4v5h8v3h-8v11h5v3H5v-3h5V9H2V6h8ZM4 10 0 17h8ZM20 10l-4 7h8Z"/></symbol>
-  <symbol id="i-transfert" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M16 1l8 6-8 6V9H2V5h14ZM8 11v4h14v4H8v4l-8-6Z"/></symbol>
-  <symbol id="i-overkill" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 2v6H1v8h11v6l10-10ZM21 1h3v6h-3ZM21 17h3v6h-3Z"/></symbol>
-  <symbol id="i-defausse" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 1h12v16H2ZM17 7h4v8h3l-5 7-5-7h3ZM2 20h10v3H2Z"/></symbol>
-  <symbol id="i-paquet" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M2 2h15v11H2ZM4 16h9v5H4ZM18 13h3v6h3l-5 5-5-5h4Z"/></symbol>
-  <symbol id="i-malediction" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M3 11a9 9 0 0 1 18 0v5l-3 2v5H6v-5l-3-2Zm3-3v5h4v-3Zm12 0-4 2v3h4Z"/></symbol>
-  <symbol id="i-abordage" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M5 8a7 7 0 1 1 14 0v5l-4 2H9l-4-2Zm3-2v4h3V6Zm5 0v4h3V6ZM1 17l2-3 20 7-1 3ZM23 17l-1-3L1 21l1 3Z"/></symbol>
-  <symbol id="i-cargaison" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M6 7a6 6 0 0 1 12 0h5v16H1V7Zm3 0h6a3 3 0 0 0-6 0Zm1 4v7h4v-7Z"/></symbol>
-  <symbol id="i-furtif" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M3 10a9 9 0 0 1 18 0v13l-4-3-5 3-5-3-4 3Zm4-3v6h3V7Zm7 0v6h3V7Z"/></symbol>
-  <symbol id="i-mana" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M12 1 15 8 12 12 9 8ZM2 13l7-1 3 4-5 4ZM22 13l-5 7-5-4 3-4Z"/></symbol>
-  <symbol id="i-recherche" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M1 1h14v4H5v14h6v4H1ZM15 7a7 7 0 1 0 4 13l4 4 2-3-4-4a7 7 0 0 0-6-10Zm0 4a3 3 0 1 1 0 6 3 3 0 0 1 0-6Z"/></symbol>
-  <symbol id="i-lien" viewBox="0 0 24 24"><path fill="currentColor" stroke="none" fill-rule="evenodd" d="M9 1H5a5 5 0 0 0-5 5v7a5 5 0 0 0 5 5h4v-4H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4ZM15 6h4a5 5 0 0 1 5 5v7a5 5 0 0 1-5 5h-4v-4h4a1 1 0 0 0 1-1v-7a1 1 0 0 0-1-1h-4ZM6 10h12v4H6Z"/></symbol>
+  <symbol id="i-embuscade" viewBox="0 0 24 24"><path d="M3 20h18M5 20V9l7-5 7 5v11"/><path d="M9 20v-5a3 3 0 0 1 6 0v5"/><path d="M2 5l2 2M22 5l-2 2M12 1v2"/></symbol>
+  <symbol id="i-butin" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22.08V12"/></symbol>
+  <symbol id="i-furie" viewBox="0 0 24 24"><path d="M7.1 11.3C5.3 10.3 3.8 8.2 3.1 5.4c1.6 1.9 3.1 3.2 4.8 4"/><path d="M16.9 11.3c1.8-1 3.3-3.1 4-5.9C19.3 7.3 17.8 8.6 16.1 9.4"/><path d="M6.7 15.2v-2.7c0-3 2.4-5.4 5.3-5.4s5.3 2.4 5.3 5.4v2.7"/><path d="M5.4 15.2h13.2"/><path d="M12 7.1v8.1"/><path d="M10.9 15.2h2.2l-.4 4.2h-1.4z"/><path d="M7 15.2v3M17 15.2v3"/></symbol>
+  <symbol id="i-esquive" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2"/><path d="M12.59 19.41A2 2 0 1 0 14 16H2"/><path d="M17.73 7.73A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
+  <symbol id="i-contre-attaque" viewBox="0 0 24 24"><path d="M3 3 L21 21"/><path d="M21 3 L3 21"/><path d="M7 7 L5 5 M17 17 L19 19"/><path d="M17 7 L19 5 M7 17 L5 19"/><circle cx="12" cy="12" r="1.5"/></symbol>
+  <symbol id="i-envol" viewBox="0 0 24 24"><path d="M2 10.5c3.2.4 5.8 2.2 7.2 5.2h5.6c1.4-3 4-4.8 7.2-5.2"/><path d="M12 15.7c-.6 2-.6 3.6 0 5.3"/></symbol>
+  <symbol id="i-rapidite" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+  <symbol id="i-coup-rapide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/></symbol>
+  <symbol id="i-traque" viewBox="0 0 24 24"><path d="M2 12C4.5 7.2 8.2 4.6 12 4.5c3.8.1 7.5 2.7 10 7.5-2.5 4.8-6.2 7.4-10 7.5-3.8-.1-7.5-2.7-10-7.5Z"/><circle cx="12" cy="12" r="3.4"/><path d="M12 8.6v1.8M12 13.6v1.8M8.6 12h1.8M13.6 12h1.8"/></symbol>
+  <symbol id="i-coup-critique" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/><path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"/><path d="M8 8l8 8M16 8l-8 8"/></symbol>
+  <symbol id="i-defenseur" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="11" r="3"/><path d="M12 6v2M12 14v2M7 11h2M15 11h2"/></symbol>
+  <symbol id="i-provocation" viewBox="0 0 24 24"><path d="M3 10v4l3 .4V9.6z"/><path d="M6 9.6 18 4v16L6 14.4"/><path d="M8.2 14.7v4.3h3v-5"/><path d="M20 9a4.2 4.2 0 0 1 0 6"/></symbol>
+  <symbol id="i-tenacite" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.5"/><path d="M12 22V7.5"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></symbol>
+  <symbol id="i-vol-de-vie" viewBox="0 0 24 24"><path d="M12 21s-8-4.8-8-10a4.6 4.6 0 0 1 8-3.1A4.6 4.6 0 0 1 20 11c0 5.2-8 10-8 10z"/><path d="M12 9s-2.2 2.5-2.2 4a2.2 2.2 0 0 0 4.4 0c0-1.5-2.2-4-2.2-4z"/></symbol>
+  <symbol id="i-infiltration" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M1 1l22 22"/></symbol>
+  <symbol id="i-protection" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+  <symbol id="i-bouclier" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M12 8.5v5M9.5 11h5"/></symbol>
+  <symbol id="i-aura" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.93 4.93l1.77 1.77M17.3 17.3l1.77 1.77M2 12h2.5M19.5 12H22M4.93 19.07l1.77-1.77M17.3 6.7l1.77-1.77"/></symbol>
+  <symbol id="i-resonance" viewBox="0 0 24 24"><path d="M8 3v9a4 4 0 0 0 8 0V3"/><path d="M12 16v5"/><path d="M5 7a6 6 0 0 0 0 8"/><path d="M19 7a6 6 0 0 1 0 8"/></symbol>
+  <symbol id="i-honneur" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.2 13.9 7 23l5-3 5 3-1.2-9.12"/></symbol>
+  <symbol id="i-pioche" viewBox="0 0 24 24"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M5 16H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-soin" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></symbol>
+  <symbol id="i-degats" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-contresort" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></symbol>
+  <symbol id="i-rebond" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></symbol>
+  <symbol id="i-recyclage" viewBox="0 0 24 24"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L21 8"/><path d="M21 15a9 9 0 0 1-14.9 3.4L3 16"/></symbol>
+  <symbol id="i-reanimation" viewBox="0 0 24 24"><path d="M12 20V4"/><path d="M6 10l6-6 6 6"/><path d="M4 22h16"/></symbol>
+  <symbol id="i-heures" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-tribut" viewBox="0 0 24 24"><path d="M4 8h16M12 8v11M8 21h8"/><path d="M4 8 1.5 13.5h5L4 8zm16 0-2.5 5.5h5L20 8z"/><path d="M12 5.4c0 0-2-1.4-2-2.7A1.1 1.1 0 0 1 12 2a1.1 1.1 0 0 1 2 .7c0 1.3-2 2.7-2 2.7z"/></symbol>
+  <symbol id="i-transfert" viewBox="0 0 24 24"><path d="M3.5 8.5h13.5"/><path d="M13.5 5.5 17 8.5l-3.5 3"/><path d="M20.5 15.5H7"/><path d="M10.5 12.5 7 15.5l3.5 3"/></symbol>
+  <symbol id="i-overkill" viewBox="0 0 24 24"><path d="M2.5 12h12"/><path d="M10.5 7.5 15 12l-4.5 4.5"/><path d="M18.5 3.5V9"/><path d="M18.5 15v5.5"/><path d="M15 12h6.5"/></symbol>
+  <symbol id="i-defausse" viewBox="0 0 24 24"><rect x="4" y="3" width="10" height="14" rx="1.5"/><path d="M17 8v8m0 0-3-3m3 3 3-3"/><path d="M7 19h10"/></symbol>
+  <symbol id="i-paquet" viewBox="0 0 24 24"><rect x="5" y="3" width="12" height="9" rx="1.5"/><path d="M8 6.5h6M8 9h4"/><path d="M19 13v6m0 0-2.5-2.5M19 19l2.5-2.5"/></symbol>
+  <symbol id="i-malediction" viewBox="0 0 24 24"><path d="M5 10a7 7 0 0 1 14 0v4l-2 1.5V19H7v-3.5L5 14z"/><circle cx="9.5" cy="10" r="1.4"/><circle cx="14.5" cy="10" r="1.4"/><path d="M9 19v-2M12 19v-2M15 19v-2"/></symbol>
+  <symbol id="i-abordage" viewBox="0 0 24 24"><circle cx="12" cy="9.6" r="6.5"/><path d="M9.4 15.9v2.4c0 .9.7 1.6 1.6 1.6h2c.9 0 1.6-.7 1.6-1.6v-2.4"/><circle cx="9.5" cy="9.4" r="1.5"/><circle cx="14.5" cy="9.4" r="1.5"/><path d="M3.1 20.9 8.6 15.4"/><path d="M2.29 20.09 3.91 21.71"/><path d="M7.79 14.59 9.41 16.21"/><path d="M15.4 15.4 20.9 20.9"/><path d="M16.21 14.59 14.59 16.21"/><path d="M21.71 20.09 20.09 21.71"/><path d="M3.1 3.1 8.6 8.6"/><path d="M3.91 2.29 2.29 3.91"/><path d="M9.41 7.79 7.79 9.41"/><path d="M15.4 8.6 20.9 3.1"/><path d="M14.59 7.79 16.21 9.41"/><path d="M20.09 2.29 21.71 3.91"/></symbol>
+  <symbol id="i-cargaison" viewBox="0 0 24 24"><path d="M6.5 9V7.5a5.5 5.5 0 0 1 11 0V9"/><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M9 9v11M15 9v11"/><path d="M12 13v3"/></symbol>
+  <symbol id="i-furtif" viewBox="0 0 24 24"><path d="M12 3a7 7 0 0 0-7 7v10l2.3-2 2.4 2 2.3-2 2.3 2 2.4-2 2.3 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10" r="1.2"/><circle cx="14.5" cy="10" r="1.2"/></symbol>
+  <symbol id="i-mana" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></symbol>
+  <symbol id="i-recherche" viewBox="0 0 24 24"><rect x="4" y="4" width="13" height="16" rx="1.5"/><path d="M8 8h5M8 11.5h5"/><circle cx="17.5" cy="17" r="3.5"/><path d="m20 19.5 1.8 1.8"/></symbol>
+  <symbol id="i-lien" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
 </svg>`.trim();
 
 /**

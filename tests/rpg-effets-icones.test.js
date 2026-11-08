@@ -56,16 +56,12 @@ test('le sprite porte les 40 symboles validés, un par effet', () => {
   assert.notEqual(EFFET_ICONE.transfert, EFFET_ICONE.tribut,
     'le Transfert a sa propre icône, distincte de la balance du Tribut');
   assert.equal(effetIcon('transfert').includes('<use href="#i-transfert"/>'), true);
-  // Chaque symbole est une silhouette pleine, sans traits qui s'épaississent
-  // différemment suivant son contexte (pastille, règle écrite, aperçu).
   for (const id of symboles) {
     const corps = EFFETS_SPRITE.match(new RegExp(`<symbol id="${id}"[^>]*>(.*?)</symbol>`))?.[1];
-    assert.match(corps, /fill="currentColor" stroke="none" fill-rule="evenodd"/);
-    assert.equal((corps.match(/<path/g) ?? []).length, 1, id);
+    assert.doesNotMatch(corps, /fill="currentColor" stroke="none"/, 'retour au dessin au trait');
   }
-  assert.match(EFFETS_SPRITE, /id="i-soin"[^>]*><path[^>]*d="M8 2h8v6h6/);
-  assert.match(EFFETS_SPRITE, /id="i-furie"[^>]*><path[^>]*d="M5 12V7/);
-  assert.match(EFFETS_SPRITE, /id="i-tenacite"[^>]*><path[^>]*d="M6 3 13 1/);
+  assert.match(EFFETS_SPRITE, /M7.1 11.3C5.3/, 'Furie retrouve son casque à cornes');
+  assert.match(EFFETS_SPRITE, /M20.84 4.61/, 'Soin retrouve son cœur au trait');
   assert.equal(EFFET_ICONE.prise, 'i-abordage',
     'la Prise garde le crâne du pirate : la cale et l’Abordage sont la même prise');
 });

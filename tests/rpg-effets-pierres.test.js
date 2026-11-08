@@ -95,11 +95,11 @@ test('le pictogramme garde la même épaisseur apparente sur toutes les formes',
     const symbole = Number(pierreEffet(plaqueCleDeForme(forme)).match(/width="([\d.]+)" height="[\d.]+"/)?.[1]);
     assert.ok(symbole > 0, `${forme} : le symbole a une taille`);
     // trait effectif = épaisseur × taille / 24 : identique d'une forme à l'autre.
-    assert.ok(Math.abs((epaisseur * symbole) / 24 - 2.2) < 0.02, `${forme} : trait effectif de 2,2 unités de pierre`);
+    assert.ok(Math.abs((epaisseur * symbole) / 24 - 1.75) < 0.02, `${forme} : trait effectif de 1,75 unités de pierre`);
     // Le halo d'encre double le trait : il rend le pictogramme lisible sur les
     // pierres claires (or, sable, azur) et tient à 16 px.
     const halo = HALO_SYMBOLE[forme];
-    assert.ok(Math.abs((halo * symbole) / 24 - 3.8) < 0.02, `${forme} : halo de 1,6 unité autour du trait`);
+    assert.ok(Math.abs((halo * symbole) / 24 - 2.75) < 0.02, `${forme} : halo de 1 unité autour du trait`);
   }
 });
 
