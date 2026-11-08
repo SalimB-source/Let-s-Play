@@ -24,3 +24,19 @@ Tests ciblés :
 ```sh
 node --test tests/rpg-projectiles-combat.test.js tests/rpg-attaque-rapide-liberation.test.js tests/rpg-vampire-braise-brulot.test.js
 ```
+
+## Arrivée et mort des créatures
+
+La flammèche couvre aussi Harakiri (y compris vers l’avatar du sorcier quand
+aucune créature n’est disponible), les dégâts de capacités de créatures de
+Braise à l’arrivée et à la mort. Les vagues d’arrivée comme celle du Braisier
+du souk émettent un tir par créature atteinte. Les sorts restent exclus de
+cette animation de source créature.
+
+Pour les capacités de mort ciblées comme le Ghul des cendres, l’attente
+sérialisée conserve `sourceEntiteId`. L’interface mémorise les dernières
+positions des entités (cache borné à 128, vidé au changement d’écran ou à la
+relance de partie) : le choix de cible peut donc arriver après la disparition
+de la source. Les nouvelles sources d’arrivée sont mesurées après le rendu ;
+les victimes gardent leur position d’avant la résolution. Ce cache est local
+et ne transporte aucune coordonnée dans l’état réseau du duel.

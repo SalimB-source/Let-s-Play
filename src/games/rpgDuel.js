@@ -2477,6 +2477,7 @@ function declencherHarakiri(duel, cote, entite) {
   const adversaire = autre(cote);
   const cibles = duel[adversaire].creatures.filter((cible) => cible.pv > 0);
   if (!cibles.length) {
+    if (!duel.moba) flammecheCreature(duel, cote, entite.id, { type: 'sorcier', cote: adversaire });
     if (duel.moba) {
       const frappe = mobaPerdreVieAdverse(duel, cote, entite.mobaLane, honneur);
       if (!frappe.ok) return;
@@ -2490,9 +2491,17 @@ function declencherHarakiri(duel, cote, entite) {
   const rng = hasardParDuel.get(duel) ?? Math.random;
   const index = Math.min(cibles.length - 1, Math.max(0, Math.floor(rng() * cibles.length)));
   const cible = cibles[index];
+  flammecheCreature(duel, cote, entite.id, { type: 'creature', cote: adversaire, entiteId: cible.id });
   duel.log.push(`Harakiri${honneur > 1 ? ` ${honneur}` : ''} : ${entite.name} inflige ${honneur} dégât${honneur > 1 ? 's' : ''} à ${cible.name}, choisie au hasard.`);
   if (!rpgEstProtegee(cible, cardColors(carte)) && !paradeZoneBloque(duel, cible, 'capacite', adversaire, cote))
     rpgBlesserCreature(duel, adversaire, cible.id, honneur, cardColors(carte), null, 'capacite');
+}
+
+/** Projectile décoratif commun aux capacités de créature, sans règle ajoutée. */
+function flammecheCreature(duel, cote, entiteId, cible) {
+  if (!entiteId) return;
+  journaliserAnimationCombat(duel, { type: 'projectile-combat', variante: 'feu',
+    source: { type: 'creature', cote, entiteId }, cible });
 }
 
 /**
@@ -4452,7 +4461,7 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         if (rpgEstProtegee(cible, sourceElement) || rpgEstProtegeeDesSorts(cible, sourceElement, sourceType)
           || paradeZoneBloque(duel, cible, sourceType, campCible, cote, sourceElement)) continue;
         const dernierEtat = { ...cible };
-        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null);
+        const blessure = rpgBlesserCreature(duel, campCible, cible.id, amountParCible, sourceElement, null, sourceType, sourceCarteId, sourceType === 'capacite' && sauf ? { cote, id: sauf } : null, options?.projectileSource ?? null);
         // La protection de couleur ou le Serpent du monde écartent la vague :
         // la créature n'est pas atteinte et ne riposte pas.
         if (!blessure.ok || blessure.protegee || blessure.bouclierLumiere) continue;
@@ -5184,7 +5193,8 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
   if (!(effet?.type === 'degats' && effet.cible === 'creature')) {
     const sourceRetour = duel.moba && effet?.type === 'retour-apres-tours' ? entite?.id ?? null : null;
     appliquer(duel, cote, effet, null, sourceRetour, cardColors(carte), 'capacite', carteId, null,
-      duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : null);
+      { ...(duel.moba && entite?.mobaLane ? { mobaLane: entite.mobaLane } : {}),
+        projectileSource: { cote, id: entite?.id } });
     return;
   }
   const adv = autre(cote);
@@ -5193,14 +5203,15 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
     duel.log.push(`${carte.name} se dissipe : aucune créature adverse à frapper.`);
     return;
   }
-  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId);
+  const resoudre = (cibleId) => appliquer(duel, cote, effet, cibleId, null, cardColors(carte), 'capacite', carteId, null,
+    { projectileSource: { cote, id: entite?.id } });
   if (cote === 'sorcier') {
     const choix = choisirCibleAutoIA(duel, cote, { ...carte, arrivee: effet });
     resoudre(legales.some((entite) => entite.id === choix) ? choix : legales[0].id);
     return;
   }
   duel.destructionsEnAttente = duel.destructionsEnAttente ?? [];
-  duel.destructionsEnAttente.push({ cote, carteId });
+  duel.destructionsEnAttente.push({ cote, carteId, sourceEntiteId: entite?.id ?? null });
   const amount = effet.amount ?? 0;
   duel.log.push(`${carte.name} : désignez la créature adverse qui subira ${amount} dégât${amount > 1 ? 's' : ''}.`);
 }
@@ -5346,9 +5357,15 @@ export function rpgActionsEtat(duel) {
 /** Dégâts sur une créature : à 0 défense, elle meurt (capacité comprise).
  *  `sourceCarteId` ne sert qu'au journal des blessures : la table y reconnaît
  *  le coup qui mérite sa propre cinématique (l'Éclair du marteau). */
-export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null) {
+export function rpgBlesserCreature(duel, cote, entiteId, amount, sourceElement = null, sourceElements = null, sourceType = null, sourceCarteId = null, sourceCreature = null, projectileSource = null) {
   const entite = duel[cote].creatures.find((e) => e.id === entiteId);
   if (!entite) return { ok: false, raison: 'absente' };
+  const origineVisuelle = projectileSource ?? sourceCreature;
+  if (amount > 0 && sourceType === 'capacite' && origineVisuelle
+    && normaliserCouleurs(sourceElements ?? sourceElement).includes('braise')) {
+    flammecheCreature(duel, origineVisuelle.cote, origineVisuelle.id,
+      { type: 'creature', cote, entiteId });
+  }
   if (rpgEstProtegee(entite, sourceElement)) {
     return { ok: true, recus: 0, absorbes: 0, protegee: true };
   }
@@ -6164,7 +6181,8 @@ export function rpgResoudreDestructionCiblee(duel, cote, cibleId) {
   if (!cible) return { ok: false, raison: 'cible' };
   duel.destructionsEnAttente.shift();
   if (allie) exilerPourFinDeTour(duel, cote, cible, attente.carteId);
-  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId);
+  else appliquer(duel, cote, carte.destruction, cible.id, null, cardColors(carte), 'capacite', attente.carteId, null,
+    { projectileSource: { cote, id: attente.sourceEntiteId } });
   rpgActionsEtat(duel);
   return { ok: true, cible };
 }

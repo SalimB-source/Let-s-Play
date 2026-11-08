@@ -69,7 +69,7 @@ Les IDs du sprite, infobulles, compteurs, états grisés et règles ne changent 
 ### Sablier de Sable
 
 Dans la pastille de couleur, l’emoji Sable est remplacé par `CardHourglass`,
-un SVG qui occupe 76 % de la pastille. Les montants et traverses sont dessinés
+un SVG qui occupe 56 % de la pastille. Les montants et traverses sont dessinés
 avec un trait de 2,3 unités, les deux amas de sable sont pleins. Le dessin
 crème-blanc et son ombre sombre restent lisibles sur le fond doré, sans dépendre
 du rendu des emojis de l’OS. Les pastilles hybrides utilisent le même dessin.
@@ -143,3 +143,8 @@ l’illustration conserve ses propres coins arrondis.
 Le volet d’aperçu réserve 28 px sur ses côtés et un interstice de 32 px :
 les pierres restent à l’intérieur de la zone défilante du panneau parent,
 même quand sa face est en débord visible (52 × 45 % + halo < 28 px).
+
+Les symboles de couleur sont volontairement plus discrets : le sablier SVG
+occupe 56 % de sa pastille, les autres glyphes utilisent un corps de 42 %.
+Le sigle SVG d’un sceau de type de sort occupe 48 % du sceau. La taille des
+pierres d’effets et celle du coût ne changent pas.
