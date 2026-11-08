@@ -99,7 +99,7 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // les premières cartes d'Eau.
   'souk-1': ['pourfendeur-des-djinns', 'vent-rouge', 'samourai-du-torii', 'djinn-des-braises-voilees', 'djinn-de-la-premiere-etincelle'],
   'souk-2': ['salem', 'vipere-de-verre', 'kenshi-de-la-forge', 'djinn-de-la-flamme-mourante', 'djinn-de-la-fleche-ardente'],
-  'souk-3': ['parade-du-verre', 'frappe-iaijutsu',
+  'souk-3': ['djinn-des-cendres-vengeresses', 'parade-du-verre', 'frappe-iaijutsu',
     'mousse-des-galiotes', 'rais-de-la-galiote', 'le-brulot', 'haut-fond'],
   'souk-4': ['ifrit-al-ahmar', 'feriel', 'daimyo-du-soleil-rouge',
     'pilote-de-la-carreira', 'tercio-de-cuivre', 'cotre-de-course', 'le-renegat',

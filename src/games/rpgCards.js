@@ -863,6 +863,15 @@ export const RPG_CREATURE_CARDS = [
     flavor: 'Dans sa dernière étincelle, une vérité subsiste.',
   },
   {
+    id: 'djinn-des-cendres-vengeresses',
+    name: 'Djinn des cendres vengeresses',
+    element: 'braise', cost: 4, atk: 3, def: 3, rarity: 'rare',
+    typeLine: 'Créature — Djinn', art: 'djinn-des-cendres-vengeresses',
+    mortAlliee: { type: 'degats-sorcier', amount: 1 },
+    text: 'À chaque fois qu’une autre de vos créatures meurt, le Djinn inflige 1 dégât au sorcier adverse.',
+    flavor: 'Chaque cendre de ses compagnons devient une étincelle de vengeance.',
+  },
+  {
     id: 'djinn-du-dernier-brasier',
     name: 'Djinn du dernier brasier',
     element: 'braise', cost: 4, atk: 4, def: 3, rarity: 'rare',
@@ -3066,7 +3075,7 @@ export const RPG_DECKS_ARCHETYPES = [
     boxArt: 'anqa-des-braises',
     archetype: 'Djinns et sorcellerie',
     affrontement: 'Affrontez les djinns de Braise.',
-    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Nuage de cendres revient en écho et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Harakiri et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
+    description: 'Deck mono-Braise autour des djinns et des ghuls : le Ghul frappe à sa mort, le Djinn des cendres vengeresses riposte à chaque mort alliée et Anqa — son unique mythique — renaît après quatre tours. Ashigaru, rōnin et Shogun promu ajoutent Harakiri et Résonance ; les autres figures mythiques s’obtiennent dans les boosters.',
     cardIds: RPG_DECK_SORCIER_BASE,
   },
   {
