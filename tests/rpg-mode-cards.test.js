@@ -60,7 +60,7 @@ test('trois bannières illustrées avec appel à jouer', () => {
     'trois bannières de mode exactement (Mode histoire, Duel en ligne, Conquête)');
   assert.equal((grilleModesSeulement.match(/className="rpg-mode-carte__art"/g) ?? []).length, 3,
     'chaque mode porte sa miniature illustrée');
-  for (const carteId of ['salem', 'bouchra-guerriere-des-cretes', 'tour-des-tenebres']) {
+  for (const carteId of ['salem', 'tour-des-tenebres']) {
     assert.match(grilleModesSeulement, new RegExp(`src=\\{cardArt\\('${carteId}'\\)\\}`),
       `le mode utilise la carte « ${carteId} » du jeu comme miniature`);
   }
@@ -76,6 +76,16 @@ test('trois bannières illustrées avec appel à jouer', () => {
     'la miniature de carte couvre proprement la bannière horizontale');
   assert.doesNotMatch(actions, /rpg-mode-menu__secondary-actions/,
     'les trois modes restent des enfants directs de la pile');
+});
+
+test('la vignette MOBA présente la carte et le badge BETA, sans changer le mode en ligne', () => {
+  assert.match(grilleModesSeulement, /src=\{isOnlineModeEnabled\(\) \? cardArt\('bouchra-guerriere-des-cretes'\) : `\$\{import\.meta\.env\.BASE_URL\}sablier-moba\/champ-des-trois-voies-aligne\.webp`\}/);
+  assert.match(grilleModesSeulement, /!isOnlineModeEnabled\(\) && <span className="rpg-mode-carte__beta" aria-hidden="true">BETA<\/span>/);
+  assert.match(grilleModesSeulement, /Jouer à MOBA — contre l’IA \(BETA\)/);
+  assert.match(battleCss, /\.rpg-mode-carte__beta\s*\{[^}]*position:\s*absolute;[^}]*top:\s*6px;[^}]*left:\s*7px;/s);
+  assert.match(battleCss, /\.rpg-mode-carte--moba \.rpg-mode-carte__texte\s*\{[^}]*padding-left:\s*60px;/s);
+  const image = readFileSync(new URL('../public/sablier-moba/champ-des-trois-voies-aligne.webp', import.meta.url));
+  assert.equal(image.toString('ascii', 8, 12), 'WEBP');
 });
 
 test('la carte centrale ouvre l’essai MOBA local quand le mode en ligne est désactivé', () => {

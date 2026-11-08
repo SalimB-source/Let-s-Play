@@ -7,11 +7,12 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 
 test('le terrain MOBA continu garde ses trois voies et ses commandes', async () => {
-  const image = await readFile(new URL('../public/sablier-moba/champ-des-trois-voies.webp', import.meta.url));
+  const image = await readFile(new URL('../public/sablier-moba/champ-des-trois-voies-aligne.webp', import.meta.url));
   assert.equal(image.toString('ascii', 0, 4), 'RIFF');
   assert.equal(image.toString('ascii', 8, 12), 'WEBP');
   const css = await readFile(new URL('../src/games/rpg-moba.css', import.meta.url), 'utf8');
   assert.match(css, /var\(--moba-map\) center \/ 100% 100% no-repeat/);
+  assert.match(css, /@media \(max-width: 700px\) and \(orientation: portrait\)\s*\{[^}]*\.moba\s*\{[^}]*background-size:\s*145% 100%/s);
   const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
   const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
   const oldWindow = globalThis.window, oldDocument = globalThis.document;
@@ -22,7 +23,7 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
     const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
     root = createRoot(document.getElementById('root'));
     await act(async () => root.render(React.createElement(Board, { onQuitter: () => {} })));
-    assert.match(document.querySelector('.moba').style.getPropertyValue('--moba-map'), /sablier-moba\/champ-des-trois-voies\.webp/);
+    assert.match(document.querySelector('.moba').style.getPropertyValue('--moba-map'), /sablier-moba\/champ-des-trois-voies-aligne\.webp/);
     const lanes = [...document.querySelectorAll('.moba__lane')];
     assert.deepEqual(lanes.map((lane) => lane.getAttribute('aria-label')), ['Voie gauche', 'Voie centrale', 'Voie droite']);
     assert.deepEqual(lanes.map((lane) => lane.querySelectorAll('[data-moba-position]').length), [4, 2, 4]);

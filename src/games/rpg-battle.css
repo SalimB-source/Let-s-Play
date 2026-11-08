@@ -15326,6 +15326,25 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-align: left;
   padding: clamp(7px, 1vh, 12px) clamp(9px, 1vw, 16px);
 }
+/* Badge séparé de l'appel à jouer : il reste visible en haut à gauche,
+   y compris lorsque les bannières se resserrent en paysage sur mobile. */
+.rpg-mode-carte__beta {
+  position: absolute;
+  top: 6px;
+  left: 7px;
+  z-index: 3;
+  padding: 4px 6px;
+  border: 1px solid #eacb84;
+  border-radius: 3px;
+  background: #261a0eed;
+  color: #ffe7a8;
+  font: 800 9px/1 system-ui, sans-serif;
+  letter-spacing: .1em;
+  pointer-events: none;
+}
+.rpg-mode-menu__hero-actions > .rpg-mode-carte--moba .rpg-mode-carte__texte {
+  padding-left: 60px;
+}
 .rpg-mode-carte__jouer {
   display: inline-flex;
   flex: none;
