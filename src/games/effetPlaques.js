@@ -64,8 +64,8 @@ export const PLAQUE_PIERRES = Object.freeze({
  * ajouter une ligne ici — jamais toucher au dessin des pierres.
  */
 export const PLAQUE_FAMILLES = Object.freeze({
-  assaut: Object.freeze({ forme: 'diamant', pierre: 'braise', libelle: 'Assaut' }),
-  tempo: Object.freeze({ forme: 'diamant', pierre: 'azur', libelle: 'Tempo' }),
+  assaut: Object.freeze({ forme: 'hexagone', pierre: 'braise', libelle: 'Assaut' }),
+  tempo: Object.freeze({ forme: 'hexagone', pierre: 'azur', libelle: 'Tempo' }),
   garde: Object.freeze({ forme: 'hexagone', pierre: 'or', libelle: 'Garde' }),
   ombre: Object.freeze({ forme: 'hexagone', pierre: 'tenebres', libelle: 'Ombre' }),
   flux: Object.freeze({ forme: 'hexagone', pierre: 'emeraude', libelle: 'Flux' }),

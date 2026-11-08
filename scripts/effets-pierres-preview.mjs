@@ -171,8 +171,7 @@ ${EFFETS_SPRITE}
   <p class="chapeau">
     Le pictogramme ne flotte plus sur le texte : il se pose sur une <b>pierre taillée</b> —
     fond saturé, biseau clair en haut, ombre en bas, liseré sombre, symbole en blanc.
-    La <b>forme</b> dit la famille d'action (diamant : ce qui frappe et se déplace,
-    hexagone : ce qui tient et dure), la <b>pierre</b> dit le registre.
+    Les <b>effets</b> sont tous dans un hexagone ; couleur, type et coût utilisent un losange.
   </p>
 
   <section>

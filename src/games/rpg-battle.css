@@ -15828,3 +15828,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   width: 48%;
   height: 48%;
 }
+
+/* Formes unifiées : les types de sorts sont des losanges, comme la couleur
+   et le coût. Le pictogramme et la teinte distinguent rapide et sorcellerie. */
+.rpg-sort-sceau--sorcellerie {
+  border-radius: 0;
+  border-color: transparent;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--rpg-sort-sceau-clair);
+}
+.rpg-sort-sceau--sorcellerie::before {
+  content: '';
+  position: absolute;
+  inset: 4%;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  background: var(--rpg-sort-sceau-fond);
+}
+.rpg-sort-sceau--sorcellerie .rpg-sort-sigil { position: relative; }

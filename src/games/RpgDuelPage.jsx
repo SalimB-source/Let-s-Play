@@ -955,7 +955,7 @@ function CardElementBadge({ carte }) {
   const hybrid = colors.length > 1 || colors[0] === 'hybride';
   const teinte = colors[0] ?? carte.element;
   const teintePlaque = (couleur) => ELEMENT_TEINTES[couleur] ?? ELEMENT_TEINTES.braise;
-  // La couleur s'imprime désormais sur un **hexagone** — la même pierre taillée
+  // La couleur s’imprime sur un **losange**, comme le coût — une pierre taillée
   // que les effets, à la même taille qu'eux (`plaqueNue`).
   return (
     <span
@@ -968,13 +968,13 @@ function CardElementBadge({ carte }) {
             key={couleur}
             className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur} is-plaque`}
           >
-            <PlaqueForme forme="hexagone" bases={[teintePlaque(couleur)]} />
+            <PlaqueForme forme="diamant" bases={[teintePlaque(couleur)]} />
             <span className="rpg-card-element-badge__glyphe">{couleur === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[couleur] ?? '◇'}</span>
           </i>
         ))
         : (
           <>
-            <PlaqueForme forme="hexagone" bases={[teintePlaque(teinte)]} />
+            <PlaqueForme forme="diamant" bases={[teintePlaque(teinte)]} />
             <span className="rpg-card-element-badge__glyphe">{teinte === 'sable' ? <CardHourglass /> : ELEMENT_GLYPHS[teinte] ?? '◇'}</span>
           </>
         )}

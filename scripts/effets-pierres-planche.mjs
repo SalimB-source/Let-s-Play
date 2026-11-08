@@ -101,7 +101,7 @@ for (const [cle, libelle] of exemples) {
 /* ── Sur une face de carte ─────────────────────────────────────────────────── */
 y += 92;
 parts.push(texte(48, y, 'SUR UNE FACE DE CARTE', { size: 12, weight: 600, fill: '#edcb8b', ls: 1.6 }));
-parts.push(texte(300, y, 'hexagone = couleur, losange = coût, pierres d’effets : la même taille, la même facture', { size: 12, fill: '#8d8171' }));
+parts.push(texte(300, y, 'hexagone = effets, losange = couleur / type / coût, repères : la même taille, la même facture', { size: 12, fill: '#8d8171' }));
 const faces = [
   ['Jarl au marteau de guerre', [['provocation'], ['overkill'], ['furie', 2]]],
   ['Maître du marteau', [['envol'], ['overkill'], ['furie', 3], ['tenacite']]],
@@ -122,7 +122,7 @@ faces.forEach(([nom, badges], index) => {
   // Les deux repères taillés du coin haut gauche : l'hexagone de couleur, puis
   // le losange de coût juste en dessous — même taille que les pierres d'effets.
   const [element, teinteFace] = ELEMENTS_PAR_FACE[index];
-  parts.push(poserNue(x + 12, haut + 10, 'hexagone', [teinteFace], 22));
+  parts.push(poserNue(x + 12, haut + 10, 'diamant', [teinteFace], 22));
   parts.push(texte(x + 23, haut + 25, ELEMENT_GLYPHS[element] ?? '◇', { size: 11, anchor: 'middle', fill: '#ffffff' }));
   parts.push(poserNue(x + 12, haut + 36, 'diamant', [teinteFace], 22));
   parts.push(texte(x + 23, haut + 51, '3', { size: 11, weight: 800, anchor: 'middle', fill: '#ffffff' }));
