@@ -103,7 +103,7 @@ function mesurer(touch, corps) {
     ]),
     carte: lire('.rpg-card, .rpg-hand__card', ['overflow', 'overflow-clip-margin', 'border-radius']),
     illustration: lire('.rpg-card__img, .rpg-hand__img', ['border-radius']),
-    volet: lire('.rpg-hover-card-preview', ['overflow']),
+    volet: lire('.rpg-hover-card-preview', ['overflow', 'padding-left', 'padding-right', 'column-gap', 'box-sizing']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
     cout: lire('.rpg-mana-cost', [
       'display',
@@ -267,4 +267,14 @@ test('les effets de la main commencent en haut sur les deux formats', () => {
     const { colonne } = mesurer(touch, CARTE_MAIN);
     assert.equal(colonne.top, 'var(--rpg-card-element-marker-top, 5%)');
   }
+});
+
+
+test('l’aperçu réserve le débord à l’intérieur du panneau défilant', () => {
+  const { volet } = mesurer(false, APERCU);
+  const debordMax = 52 * .45 + 2;
+  assert.ok(parseFloat(volet['padding-left']) >= debordMax);
+  assert.ok(parseFloat(volet['padding-right']) >= debordMax);
+  assert.ok(parseFloat(volet['column-gap']) >= debordMax);
+  assert.equal(volet['box-sizing'], 'border-box');
 });

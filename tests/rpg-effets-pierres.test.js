@@ -103,32 +103,15 @@ test('le pictogramme garde la même épaisseur apparente sur toutes les formes',
   }
 });
 
-test('chaque pierre a sa nuance : deux effets d’une même famille ne se confondent pas', () => {
-  const fonds = new Map();
+test('exactement trois couleurs fixes selon le type d’effet', () => {
+  const attendues = { assaut: 'braise', tempo: 'azur', garde: 'azur', ombre: 'tenebres', flux: 'tenebres' };
+  const fonds = new Set();
   for (const cle of Object.keys(EFFET_ICONE)) {
-    const fond = teinteEffet(cle).fond;
-    assert.match(fond, /^#[0-9a-f]{6}$/, `${cle} : le champ est une couleur pleine`);
-    assert.equal(fonds.has(fond), false, `${cle} partage la couleur de ${fonds.get(fond)}`);
-    fonds.set(fond, cle);
+    const famille = plaqueEffet(cle).famille;
+    assert.deepEqual(teinteEffet(cle), PLAQUE_PIERRES[attendues[famille]], cle);
+    fonds.add(teinteEffet(cle).fond);
   }
-  assert.ok(fonds.size >= 60, `chaque effet a sa couleur (${fonds.size} teintes)`);
-  // La nuance reste dans le registre : chaque famille s'étale autour de sa
-  // pierre, du plus sombre au plus clair, sans sortir de sa teinte.
-  const parFamille = new Map();
-  for (const [cle, famille] of Object.entries(PLAQUE_FAMILLE_EFFET)) {
-    parFamille.set(famille, [...(parFamille.get(famille) ?? []), cle]);
-  }
-  for (const [famille, cles] of parFamille) {
-    const plaque = PLAQUE_FAMILLES[famille];
-    const teintes = cles.map((cle) => teinteEffet(cle));
-    if (teintes.length < 2) continue;
-    const lumieres = teintes.map((t) => parseInt(t.fond.slice(1, 3), 16) + parseInt(t.fond.slice(3, 5), 16) + parseInt(t.fond.slice(5, 7), 16));
-    assert.ok(Math.max(...lumieres) - Math.min(...lumieres) >= 12,
-      `${famille} : les ${teintes.length} pierres s'étalent en luminosité`);
-    assert.equal(new Set(teintes.map((t) => t.fond)).size, teintes.length, `${famille} : aucune teinte en double`);
-    assert.match(teintes[0].fond, /^#[0-9a-f]{6}$/);
-    assert.ok(plaque.pierre, `${famille} garde sa pierre de registre`);
-  }
+  assert.equal(fonds.size, 3);
 });
 
 /** Une clé dont la pierre prend la forme demandée. */
@@ -155,15 +138,11 @@ test('la pierre se dessine en couches : contour, anneau, champ, symbole blanc', 
   assert.doesNotMatch(pierre, /stroke-opacity="\.5" stroke-width="\.8"/, 'plus de filet intérieur');
 });
 
-test('la Protection élémentaire teinte sa pierre, le Sable garde la sienne', () => {
-  const braise = pierreEffet('protection', { protectionContre: 'braise' });
-  assert.match(braise, new RegExp(`fill="${couleurProtection('braise')}" fill-opacity=".55"`),
-    'la pierre prend la couleur de l’élément repoussé');
-  const sable = pierreEffet('protection', { protectionContre: 'sable' });
-  assert.doesNotMatch(sable, new RegExp(`fill="${couleurProtection('braise')}"`));
-  assert.equal((sable.match(/<polygon/g) ?? []).length, 3, 'sans teinte, la pierre garde ses trois couches');
-  assert.equal((braise.match(/<polygon/g) ?? []).length, 4, 'la teinte ajoute une couche');
-  assert.equal(plaqueEffet('protection').famille, 'garde', 'une Protection est une garde');
+test('la Protection reste bleue quel que soit l’élément repoussé', () => {
+  for (const element of ['braise', 'eau', 'sable', 'neige', 'tenebres']) {
+    assert.equal(pierreEffet('protection', { protectionContre: element }), pierreEffet('protection'));
+  }
+  assert.equal(teinteEffet('protection').fond, PLAQUE_PIERRES.azur.fond);
 });
 
 test('le balisage complet porte sa famille, sa forme et sa pierre', () => {

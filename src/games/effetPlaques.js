@@ -24,7 +24,7 @@
  * `scripts/effets-pierres-preview.mjs` les assemble sans navigateur.
  */
 
-import { EFFET_ICONE, couleurProtection } from './effetIcons.js';
+import { EFFET_ICONE } from './effetIcons.js';
 
 /** Le côté du carré de dessin, en unités de `viewBox`. */
 export const PLAQUE_COTE = 32;
@@ -262,27 +262,12 @@ export function decaler(hex, degres, lumiere = 0) {
   return versHex({ h: h + degres, s, l: l + lumiere / 100 });
 }
 
-/**
- * La nuance d'une clé : la palette de son registre, pivotée autour de l'ancre.
- * L'écart est réparti sur la famille entière (`-26° … +26°`), la lumière suit
- * le même sens, et la parité de la place ajoute un demi-cran : deux clés
- * voisines ne tombent jamais sur la même couleur.
- */
+/** Trois couleurs fixes, selon le type d'effet (sans variation par clé). */
 export function teinteEffet(cle) {
-  const plaque = plaqueEffet(cle);
-  const cles = CLES_PAR_FAMILLE[plaque.famille] ?? [];
-  const total = Math.max(1, cles.length);
-  const index = Math.max(0, cles.indexOf(plaque.cle ?? cle));
-  const ecart = total === 1 ? 0 : (index - (total - 1) / 2) / ((total - 1) / 2);
-  const rotation = Math.round(ecart * 26 * 10) / 10;
-  const lumiere = Math.round(ecart * 5 * 10) / 10 + (index % 2 ? 1.5 : -1.5);
-  const base = PLAQUE_PIERRES[plaque.pierre];
-  return Object.freeze({
-    encre: decaler(base.encre, rotation * 0.4, lumiere * 0.4),
-    creux: decaler(base.creux, rotation * 0.8, lumiere * 0.8),
-    fond: decaler(base.fond, rotation, lumiere),
-    lueur: decaler(base.lueur, rotation, lumiere + 3),
-  });
+  const { famille } = plaqueEffet(cle);
+  const registre = { assaut: 'braise', tempo: 'azur', garde: 'azur',
+    ombre: 'tenebres', flux: 'tenebres' }[famille];
+  return PLAQUE_PIERRES[registre] ?? PLAQUE_PIERRES.braise;
 }
 
 /**
@@ -372,20 +357,18 @@ export function plaqueEffet(cle) {
 export function pierreEffet(cle, { protectionContre = null } = {}) {
   const plaque = plaqueEffet(cle);
   const silhouette = PLAQUE_FORMES[plaque.forme];
-  // La nuance de la clé, pas celle du registre : deux effets d'une même forme
-  // se distinguent par leur couleur autant que par leur pictogramme.
+  // Trois couleurs de type ; le pictogramme distingue les effets du même type.
   const pierre = teinteEffet(cle);
   const biseau = BISEAU_PAR_FORME[plaque.forme];
   const anneau = reduire(silhouette, biseau.anneau);
   const champ = reduire(silhouette, biseau.champ);
-  const teinte = protectionContre ? couleurProtection(protectionContre) : null;
+
   const symbole = SYMBOLE_PAR_FORME[plaque.forme];
   const marge = arrondi((PLAQUE_COTE - symbole) / 2);
   return [
     `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
-    teinte ? `<polygon points="${pointsSvg(champ)}" fill="${teinte}" fill-opacity=".55"/>` : '',
     // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
     // quand la pierre est claire, et le fait lire d'un coup d'œil à 16 px.
     `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
