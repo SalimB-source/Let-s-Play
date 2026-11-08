@@ -193,11 +193,12 @@ for (const [famille, { forme, pierre: nomPierre, libelle }] of Object.entries(PL
   const lignes = Math.ceil(cles.length / colonnes);
   const pas = (LARGEUR - 96 - 52) / 8;
   const hauteur = 30 + lignes * 74 + 8;
-  const teinte = PLAQUE_PIERRES[nomPierre];
+  const couleur = { assaut: 'rouge', tempo: 'bleu', garde: 'bleu', ombre: 'violet', flux: 'violet' }[famille];
+  const teinte = PLAQUE_PIERRES[{ rouge: 'braise', bleu: 'azur', violet: 'tenebres' }[couleur]];
   parts.push(`<rect x="48" y="${y}" width="${LARGEUR - 96}" height="${hauteur}" rx="12" fill="#090b0e" fill-opacity=".55" stroke="#edcb8b" stroke-opacity=".14"/>`);
   parts.push(`<rect x="64" y="${y + 16}" width="12" height="12" rx="3" fill="${teinte.fond}" stroke="${teinte.lueur}" stroke-opacity=".6"/>`);
   parts.push(texte(84, y + 26, libelle, { size: 14, weight: 700, fill: '#f0e6d3' }));
-  parts.push(texte(LARGEUR - 64, y + 26, `${forme} · ${nomPierre} · ${cles.length} effets`, { size: 10.5, fill: '#8d8171', anchor: 'end' }));
+  parts.push(texte(LARGEUR - 64, y + 26, `${forme} · ${couleur} · ${cles.length} effets`, { size: 10.5, fill: '#8d8171', anchor: 'end' }));
   cles.forEach((cle, index) => {
     const rangee = Math.floor(index / colonnes);
     const dansRangee = index % colonnes;

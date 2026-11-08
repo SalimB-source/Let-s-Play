@@ -2,7 +2,7 @@
 
 Les mots-clés du Sablier ne s'impriment plus en trait doré posé à même le texte :
 chaque effet porte une **pierre taillée**, un petit emblème de héros — fond
-saturé, biseau clair en haut, ombre en bas, liseré sombre, pictogramme **blanc**
+saturé, anneau en creux, liseré sombre, pictogramme plein **blanc**
 au centre. La référence de style est celle des emblèmes de héros des jeux
 d'auto-battler : le losange braise, l'hexagone ténèbres, l'hexagone or.
 
@@ -14,18 +14,18 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
 
 - **la forme dit la famille d'action** — le `diamant` pour ce qui frappe et se
   déplace, l'`hexagone` pour ce qui tient et dure ;
-- **la pierre dit le registre** — braise pour le combat, azur pour le tempo, or
-  pour la garde, ténèbres pour ce qui ronge, émeraude pour les ressources ;
-- **la nuance dit l'effet** — deux effets d'une même famille ne partagent jamais
-  leur couleur (voir « Une couleur par effet »).
+- **la couleur dit le type** — rouge pour l’assaut, bleu pour garde et tempo,
+  violet pour ombre et ressources ;
+- **la silhouette blanche dit l’effet** — poing (Furie), éclair (Dégâts),
+  impact (Critique), croix (Soin), rocher fissuré (Ténacité), bourse (Butin).
 
 | Famille | Forme | Pierre | Effets |
 | --- | --- | --- | --- |
 | **Assaut** | diamant | braise | Dégâts, Affaiblissement, Coup critique, Attaque ciblée, Traque, Overkill, Furie, Harakiri, Abordage, Prise, les quatre Destructions |
 | **Tempo** | diamant | azur | Rapidité, Envol, Esquive, Contre-attaque, Embuscade, Rebond |
-| **Garde** | hexagone | or | Protection (et ses variantes de sorts), Bouclier, Ténacité, Défenseur, Provocation, Aura, Bannière, Renfort, Résonance, Compagnie |
+| **Garde** | hexagone | bleu | Protection (et ses variantes de sorts), Bouclier, Ténacité, Défenseur, Provocation, Aura, Bannière, Renfort, Résonance, Compagnie |
 | **Ombre** | hexagone | ténèbres | Malédiction, Vol de vie, Furtivité, Infiltration, Exil, Réanimation, Contresort, Transfert, Tribut, Défausses, Blocages interdits, Cale |
-| **Flux** | hexagone | émeraude | Pioche, Recherche, Butin, Cargaison, Mana, Soin, Recyclage, Heures, Jetons, Lien |
+| **Flux** | hexagone | violet | Pioche, Recherche, Butin, Cargaison, Mana, Soin, Recyclage, Heures, Jetons, Lien |
 
 Trois repères de carte parlent désormais la même langue taillée, à la **même
 taille** (`--rpg-plaque-taille`, posée par la face de la carte) :
@@ -56,30 +56,16 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
    le contour sombre qui détache la pierre de l'illustration ;
 2. l'**anneau** en creux — la marche du biseau ;
 3. le **champ** dans la teinte de la pierre ;
-4. la **moitié haute** du champ, éclaircie par la lueur ;
-5. la **moitié basse**, assombrie par l'encre ;
-6. le **filet** clair sur le champ — l'arête taillée ;
-7. le **halo d'encre** du pictogramme (`HALO_SYMBOLE`) — un trait sombre qui
-   détache le blanc du champ quand la pierre est claire (or, sable, azur) ;
-8. le **pictogramme**, blanc, à 12 unités (diamant) ou 20 (hexagone).
+4. le **pictogramme plein**, blanc : 16 unités dans le diamant et 20 dans
+   l’hexagone. Les 40 symboles du sprite sont des silhouettes fermées, avec
+   `fill="currentColor"`, `stroke="none"` et des découpes franches en `evenodd`.
+   La couleur blanche est fixée sur le `<use>` de la pierre ; les usages dans
+   les lignes de règles héritent de leur couleur de texte.
 
-Le biseau n'a pas la même épaisseur selon la forme (`BISEAU_PAR_FORME`) :
-l'**hexagone** ouvre son champ à 80 % (anneau 90 %), le **diamant** à 84 %
-(anneau 92 %) — ses quatre pointes rognent le centre, il lui faut donc un champ
-plus large pour que son pictogramme reste dedans. Le contour sombre, lui, ne
-vient plus de l'épaisseur de l'anneau mais du trait d'encre : la pierre garde un
-grand champ de couleur **et** une arête nette, y compris sur une illustration
-claire.
-
-L'hexagone remplit aussi son carré de plus près que le premier dessin : 28 de
-large sur 30 de haut. À 18 px sur une face de carte, une pierre étroite se lisait
-comme un pois à côté de son pictogramme — d'où l'ouverture jusqu'aux bords.
-
-Les formes pointues laissent moins de place au centre : le pictogramme y est plus
-petit, mais son **épaisseur apparente ne change pas** — `EPAISSEUR_SYMBOLE`
-compense la réduction (`2,2 × 24 / taille`), pour un trait effectif de 2,2 unités
-de pierre partout : 1,1 px sur une pierre de 16 px (carte au doigt), 2,1 px sur
-celle de 32 px de l'aperçu. Le halo suit la même règle (`+ 1,6` unité).
+Le fond reste simplifié à trois couches. Le pictogramme ne dépend plus d’un
+trait épaissi par son contexte : les mêmes silhouettes servent sur le plateau,
+en main, au mulligan et dans les aperçus. IDs du sprite, infobulles, compteurs,
+états grisés et logique du jeu restent inchangés.
 
 ## Une couleur par effet
 
