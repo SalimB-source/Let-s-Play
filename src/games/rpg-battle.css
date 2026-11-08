@@ -6237,6 +6237,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card-catalogue__art > *,
 .rpg-atelier__carte-art > * {
   --rpg-plaque-taille: clamp(24px, 26cqw, 52px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille, 24px) * 1.12);
 }
 
 /* ── La couleur, le coût : des pierres comme les effets ──────────────────────
@@ -15625,7 +15626,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   position: absolute;
   z-index: 4;
   bottom: auto;
-  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px) !important;
+  top: 0 !important;
+  transform: translate(-36%, -36%) !important;
+  width: var(--rpg-cout-taille, 26.88px) !important;
+  height: var(--rpg-cout-taille, 26.88px) !important;
+  font-size: calc(var(--rpg-cout-taille, 26.88px) * .52) !important;
+}
+/* Le coût chevauche le coin ; la couleur commence sous ses 64 % visibles.
+   Sans coût (terrain), la couleur garde son placement haut habituel. */
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card-element-badge.is-plaque {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + 6px) !important;
+  bottom: auto;
 }
 /* Le rognage conserve l'image dans son cadre, sans couper les pierres. */
 .rpg-battle :is(.rpg-mulligan__card, .rpg-card-catalogue__art, .rpg-atelier__carte-art) {
@@ -15641,10 +15654,17 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle .rpg-card--img > .rpg-card__title {
   display: contents;
 }
+/* Les compteurs restent sous la couleur, y compris sous les deux losanges
+   hybrides : ils ne prennent pas l'ancienne place du coût. */
 .rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
-  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(> .rpg-card-element-badge--hybride.is-plaque)
-  .rpg-mana-cost.is-plaque {
-  top: calc(var(--rpg-card-element-marker-top, 5%) + 2 * var(--rpg-plaque-taille, 24px) + 8px) !important;
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card__compteurs {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + var(--rpg-plaque-taille, 24px) + 12px + var(--rpg-card-counter-size) * .21) !important;
+}
+.rpg-battle :is(.rpg-card--img, .rpg-hand__card--img, .rpg-mulligan__card,
+  .rpg-hover-card-preview__face, .rpg-card-catalogue__art, .rpg-atelier__carte-art):has(> .rpg-card-element-badge--hybride.is-plaque):has(.rpg-mana-cost.is-plaque)
+  > .rpg-card__compteurs {
+  top: calc(var(--rpg-cout-taille, 26.88px) * .64 + 2 * var(--rpg-plaque-taille, 24px) + 14px + var(--rpg-card-counter-size) * .21) !important;
 }
 
 /* Les emblèmes doivent rester entiers : seul le dessin de la face arrondit
