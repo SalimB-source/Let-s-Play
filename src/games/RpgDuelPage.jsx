@@ -1,4 +1,4 @@
-import { SACRIFICE_ANIMATION } from './rpgSacrificeAnimation.js';
+import { SACRIFICE_ANIMATION, instantaneSansSacrificesAnimes } from './rpgSacrificeAnimation.js';
 import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
@@ -2095,30 +2095,29 @@ export function CercleMagique({ effet, onTermine = null }) {
         onTermine?.(effet.effectId);
       }}
     >
-      {/* Halo central qui pulse. */}
       <span className="rpg-cercle-magique__soleil" />
-      {/* Anneaux de runes qui tournent en sens contraires. */}
-      <span className="rpg-cercle-magique__anneau rpg-cercle-magique__anneau--externe" />
-      <span className="rpg-cercle-magique__anneau rpg-cercle-magique__anneau--interne" />
-      {/* Glyphes disposés sur le cercle, chacun à son angle et son retard. */}
-      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '0deg', '--d': '120ms' }} />
-      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '72deg', '--d': '240ms' }} />
-      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '144deg', '--d': '360ms' }} />
-      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '216deg', '--d': '480ms' }} />
-      <span className="rpg-cercle-magique__glyphe" style={{ '--r': '288deg', '--d': '600ms' }} />
-      {/* Étincelles qui s'élèvent du cercle. */}
-      { [0, 1, 2, 3, 4].map((i) => (
-        <span
-          key={i}
-          className="rpg-cercle-magique__etincelle"
-          style={{
-            '--i': i,
-            '--d': `${700 + i * 110}ms`,
-            '--tx': `${(i % 2 === 0 ? -1 : 1) * (14 + i * 6)}px`,
-            '--ty': `-${26 + i * 10}px`,
-          }}
-        />
-      ))}
+      <svg className="rpg-invocation-sceau" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+        <g className="rpg-invocation-sceau__orbite rpg-invocation-sceau__orbite--externe">
+          <circle cx="100" cy="100" r="94" />
+          <circle cx="100" cy="100" r="85" />
+          {Array.from({ length: 24 }, (_, i) => (
+            <g key={i} transform={`rotate(${i * 15} 100 100)`}>
+              <path d={i % 3 === 0 ? 'M100 6 L100 15 M96 10 L100 6 L104 10 L100 14 Z' : 'M100 8 L100 13'} />
+            </g>
+          ))}
+        </g>
+        <g className="rpg-invocation-sceau__orbite rpg-invocation-sceau__orbite--interne">
+          <circle cx="100" cy="100" r="71" />
+          <polygon points="100,29 161.5,135.5 38.5,135.5" />
+          <polygon points="100,171 38.5,64.5 161.5,64.5" />
+          <polygon points="100,51 142.4,75.5 142.4,124.5 100,149 57.6,124.5 57.6,75.5" />
+        </g>
+        <g className="rpg-invocation-sceau__coeur">
+          <circle cx="100" cy="100" r="27" />
+          <polygon points="100,78 122,100 100,122 78,100" />
+          <path d="M100 88 V112 M88 100 H112" />
+        </g>
+      </svg>
     </div>
   );
 }
@@ -10574,7 +10573,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     return instantane;
   };
 
-  const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = []) => {
+  const animerModificationsChamp = (avant, attaquantsIds = [], debutJournalDestructions = null, entitesRenvoyees = [], entitesDejaAnimees = []) => {
     // En PvP le nouvel état vient d'être posé dans la ref, avant le rendu React.
     const duel = duelRef.current;
     if (!duel) return;
@@ -10597,7 +10596,10 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       : 0;
     const blessuresNouvelles = rpgBlessuresDepuis(duel, positionBlessures);
     journalBlessuresRef.current = { duel, position: rpgNombreBlessures(duel) };
+    // Les sacrifices ont déjà joué leur sceau : ce ne sont ni des renvois,
+    // ni des exils, et ils ne doivent pas recevoir un deuxième effet de sortie.
     if (!avant?.length) return;
+    avant = instantaneSansSacrificesAnimes(avant, entitesDejaAnimees);
     const vivants = new Map([
       ...duel.joueur.creatures,
       ...duel.sorcier.creatures,
@@ -11541,7 +11543,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       else conserverAnnulation(etatAvantAction);
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
-      animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
+      animerModificationsChamp(champAvantAction, [], debutJournalDestructions, [],
         res.sacrificeIds ?? (res.sacrificeId ? [res.sacrificeId] : []));
       // Une arrivée qui désigne encore sa cible ne sonne pas ici : sa flamme
       // (ou son tonnerre) appartient au geste qui blesse, et part au clic qui

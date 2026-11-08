@@ -51,10 +51,11 @@ que les cartes, sans changer leur taille.
 
 ## Animation d’invocation
 
-Toutes les victimes choisies portent simultanément un cercle doré, avec deux
-anneaux tournant en sens contraires. Le cercle s’allume d’abord ; la déchirure
-commence après 400 ms et dure 820 ms. Le cercle et ses derniers glyphes
-s’éteignent à 1 400 ms. La nouvelle créature ne se pose qu’après la fin de
+Toutes les victimes choisies portent simultanément un sceau SVG doré, avec cercles concentriques, triangles entrelacés
+formant une étoile à six branches, hexagone, losange central et 24 repères
+géométriques. Les deux orbites tournent en sens contraires. Le cercle s’allume d’abord ; la déchirure
+commence après 400 ms et dure 820 ms. Le sceau
+s’éteint à 1 400 ms. La nouvelle créature ne se pose qu’après la fin de
 **tous** les cercles et une pause de 180 ms ; sa voix commence alors, pas
 pendant le sacrifice. Ces durées suivent le réglage de vitesse du jeu.
 
@@ -64,3 +65,9 @@ si `animationend` n’est pas émis. Un identifiant de séquence empêche un anc
 minuteur de terminer une nouvelle invocation. En mouvement réduit, la rotation
 est désactivée et l’attente est ramenée à 80 ms. Aucun suivi du curseur ni boucle
 de mesures géométriques n’est ajouté.
+
+Les victimes déjà animées utilisent une liste d’exclusion dédiée, distincte
+**des renvois en main** : aucun tourbillon de renvoi/exil ni deuxième fantôme
+ne se superpose à leur sacrifice. Les vrais renvois, exils et effets de mort
+sur les autres cartes restent animés. Le filtrage conserve les métadonnées
+de l’instantané (projectiles déjà joués et rectangles des avatars).
