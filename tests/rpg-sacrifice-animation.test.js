@@ -5,7 +5,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createServer } from 'vite';
 import { JSDOM } from 'jsdom';
-import { SACRIFICE_ANIMATION as temps } from '../src/games/rpgSacrificeAnimation.js';
+import { SACRIFICE_ANIMATION as temps, instantaneSansSacrificesAnimes } from '../src/games/rpgSacrificeAnimation.js';
 const lire = f => readFileSync(new URL(`../src/games/${f}`, import.meta.url), 'utf8');
 
 test('la déchirure et les derniers glyphes finissent avant la pose, à chaque vitesse', () => {
@@ -48,7 +48,10 @@ test('deux victimes portent chacune leur cercle ; la carte réelle est masquée 
     const dom = new JSDOM(html);
     const doc = dom.window.document;
     assert.equal(doc.querySelectorAll('[data-rpg-sacrifice-id]').length, 2);
-    assert.equal(doc.querySelectorAll('.rpg-cercle-magique__anneau').length, 4);
+    assert.equal(doc.querySelectorAll('.rpg-invocation-sceau__orbite').length, 4);
+    assert.equal(doc.querySelectorAll('svg.rpg-invocation-sceau polygon').length, 8);
+    assert.equal(doc.querySelectorAll('svg.rpg-invocation-sceau circle').length, 8);
+    assert.equal(doc.querySelector('.rpg-invocation-sceau').getAttribute('viewBox'), '0 0 200 200');
     assert.ok(doc.querySelector('.rpg-card.is-sacrifice-animating'));
     assert.match(doc.querySelector('.rpg-cercle-magique').getAttribute('style'), /--rpg-sacrifice-duree:1400ms/);
     dom.window.close();
@@ -57,8 +60,33 @@ test('deux victimes portent chacune leur cercle ; la carte réelle est masquée 
   const cercle = css.slice(css.indexOf('.rpg-cercle-magique {'), css.indexOf('/* ═════', css.indexOf('.rpg-cercle-magique {')));
   assert.match(cercle, /rgba\(225, 175, 65,/);
   assert.doesNotMatch(cercle, /170, 110, 255|110, 40, 220/);
-  assert.match(cercle, /rotate: 360deg/);
-  assert.match(cercle, /rotate: -360deg/);
+  assert.match(cercle, /transform: rotate\(360deg\)/);
+  assert.match(cercle, /animation-direction: reverse/);
   assert.match(css, /\.rpg-card\.is-sacrifice-animating \{ visibility: hidden; pointer-events: none; \}/);
   assert.match(css, /\.rpg-battle\.is-reduced \.rpg-cercle-magique/);
+});
+
+
+test('les sacrifices déjà animés sont exclus des sorties, sans toucher aux vrais renvois/exils', () => {
+  const avant = ['sacrifice1', 'sacrifice2', 'renvoi', 'exil', 'mort'].map(entityId => ({ entityId }));
+  const apres = instantaneSansSacrificesAnimes(avant, ['sacrifice1', 'sacrifice2']);
+  assert.deepEqual(apres.map(e => e.entityId), ['renvoi', 'exil', 'mort']);
+  assert.equal(avant.length, 5, 'aucune mutation de l’instantané');
+  assert.deepEqual(instantaneSansSacrificesAnimes(avant), avant);
+  const page = lire('RpgDuelPage.jsx');
+  assert.match(page, /animerModificationsChamp\(champAvantAction, \[\], debutJournalDestructions, \[\],\s*res.sacrificeIds/);
+  const animation = page.slice(page.indexOf('  const animerModificationsChamp ='), page.indexOf('  const animerModificationsChamp =') + 33000);
+  assert.ok(animation.indexOf('instantaneSansSacrificesAnimes(avant, entitesDejaAnimees)') < animation.indexOf('const renvoyees ='));
+  assert.match(page, /animerModificationsChamp\(champAvantAction, \[\], debutJournalDestructions,\s*\[res.renvoiEntityId\]/);
+});
+
+
+test('le filtrage préserve le journal des projectiles et les coordonnées des avatars', () => {
+  const avant = [{ entityId: 'victime' }];
+  avant.combatAnimationIds = new Set(['projectile-deja-joue']);
+  avant.avatarRects = { sorcier: { x: 80, y: 20, width: 30, height: 30 } };
+  const apres = instantaneSansSacrificesAnimes(avant, ['victime']);
+  assert.equal(apres.length, 0);
+  assert.equal(apres.combatAnimationIds, avant.combatAnimationIds);
+  assert.equal(apres.avatarRects, avant.avatarRects);
 });

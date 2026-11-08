@@ -13273,62 +13273,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   animation: rpg-cercle-magique-soleil calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
-/* Anneaux de runes : deux cercles qui tournent en sens contraires. */
-.rpg-cercle-magique__anneau {
+/* Sceau géométrique : SVG carré, cercles concentriques, étoile à six
+   branches et hexagone. Les deux orbites tournent en sens contraires. */
+.rpg-invocation-sceau {
   position: absolute;
-  top: 50%;
   left: 50%;
-  border-radius: 50%;
-  translate: -50% -50%;
-  opacity: 0;
-}
-.rpg-cercle-magique__anneau--externe {
-  width: 140%;
-  height: auto;
-  aspect-ratio: 1;
-  border: 2px solid rgba(225, 175, 65, .7);
-  box-shadow: 0 0 22px rgba(225, 175, 65, .55);
-  animation: rpg-cercle-magique-anneau-externe calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
-}
-.rpg-cercle-magique__anneau--interne {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1;
-  border: 2px solid rgba(226, 212, 170, .75);
-  box-shadow: 0 0 16px rgba(226, 212, 170, .5);
-  animation: rpg-cercle-magique-anneau-interne calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
-}
-
-/* Glyphes disposés sur le cercle, chacun à son angle et à son retard. */
-.rpg-cercle-magique__glyphe {
-  position: absolute;
   top: 50%;
-  left: 50%;
-  width: 120%;
+  width: 155%;
   height: auto;
   aspect-ratio: 1;
   translate: -50% -50%;
-  rotate: var(--r, 0deg);
-  border-top: 1.4px solid rgba(226, 212, 170, .5);
-  border-radius: 50%;
-  opacity: 0;
-  animation: rpg-cercle-magique-glyphe calc((var(--rpg-sacrifice-duree, 1400ms) - 600ms) * var(--rpg-anim-scale, 1)) ease-out both;
-  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
+  overflow: visible;
+  stroke: #e8c878;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 4px rgba(225, 175, 65, .65));
 }
-
-/* Étincelles qui montent du cercle. */
-.rpg-cercle-magique__etincelle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 7px #fff, 0 0 14px rgba(226, 212, 170, .7);
-  opacity: 0;
-  animation: rpg-cercle-magique-etincelle calc(var(--d, 700ms) * var(--rpg-anim-scale, 1)) ease-out both;
+.rpg-invocation-sceau__orbite {
+  transform-origin: 100px 100px;
+  animation: rpg-invocation-orbite calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) linear both;
+}
+.rpg-invocation-sceau__orbite--interne {
+  animation-direction: reverse;
+  stroke: #fff0b5;
+}
+.rpg-invocation-sceau__coeur { stroke: #fff5d4; stroke-width: 1.6; }
+@keyframes rpg-invocation-orbite {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 @keyframes rpg-cercle-magique-vie {
@@ -13342,36 +13315,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   45% { scale: 1.05; opacity: .95; }
   100% { scale: 1.55; opacity: 0; }
 }
-@keyframes rpg-cercle-magique-anneau-externe {
-  0% { scale: .35; rotate: 0deg; opacity: 0; }
-  35% { opacity: .9; }
-  100% { scale: 1.6; rotate: 360deg; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-anneau-interne {
-  0% { scale: .35; rotate: 0deg; opacity: 0; }
-  25% { opacity: .95; }
-  100% { scale: 1.25; rotate: -360deg; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-glyphe {
-  0% { scale: .2; opacity: 0; }
-  55% { opacity: .85; }
-  100% { scale: .85; opacity: 0; }
-}
-@keyframes rpg-cercle-magique-etincelle {
-  0% { translate: -50% -50%; scale: .2; opacity: 0; }
-  35% { opacity: 1; }
-  100% { translate: calc(-50% + var(--tx, 0px)) calc(-50% + var(--ty, 0px)); scale: .7; opacity: 0; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rpg-abordage-chaine { display: none; }
   .rpg-abordage-liens { display: none; }
   .rpg-card-destruction-fx.is-abordage { animation: none; opacity: 0; }
   .rpg-cercle-magique,
   .rpg-cercle-magique__soleil,
-  .rpg-cercle-magique__anneau,
-  .rpg-cercle-magique__glyphe,
-  .rpg-cercle-magique__etincelle { animation: none !important; }
+  .rpg-invocation-sceau__orbite { animation: none !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
