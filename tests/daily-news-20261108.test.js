@@ -45,11 +45,12 @@ test('dates originales, limites de previews et acquisition prévue explicites', 
   assert.match(dailyStories[key].p4, /pas une critique/);
 });
 
-test('édition du 8 dans tous les flux, édition précédente étiquetée sans faux Hier', () => {
+test('édition du 8 dans tous les flux, sans section édition précédente', () => {
   for (const f of ['src/pages/Home.jsx', 'src/pages/News.jsx', 'src/pages/GamingNews.jsx', 'src/pages/CinemaNews.jsx', 'src/pages/TechNews.jsx', 'src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(f).includes("from '../news/daily/2026-11-08'"), f);
   const news = read('src/pages/News.jsx');
-  assert.match(news, /yesterdayDate.*2026-11-05/);
-  assert.ok(news.includes('ÉDITION PRÉCÉDENTE'));
+  assert.ok(!news.includes('actus-hier'));
+  assert.ok(!news.includes('localizedYesterday'));
+  assert.ok(!news.includes('ÉDITION PRÉCÉDENTE'));
   assert.ok(!news.includes('LES ACTUS D’HIER'));
   for (const f of ['src/pages/CurrentNews.jsx', 'src/pages/AllNews.jsx', 'src/search/searchIndex.js']) assert.ok(read(f).includes("from '../news/daily/2026-11-05'"));
 });
