@@ -151,15 +151,11 @@
 }
 
 .rpg-card-icones--colonne.rpg-card-icones--main {
-  /* Une carte de main fait 94 à 124 px : la pierre prend 24 px, un bon cinquième
-     de la carte — lisible à bout de bras (`--rpg-plaque-taille`, voir la
-     « taille de lecture » plus bas). */
-  --rpg-plaque-taille: 24px;
   top: calc(5% + var(--rpg-card-marker-size, 28px) + 4px);
   right: 0;
   bottom: auto;
   left: auto;
-  width: var(--rpg-plaque-taille);
+  width: var(--rpg-plaque-taille, 20px);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -169,8 +165,8 @@
 
 .rpg-card-icones--colonne.rpg-card-icones--main .rpg-card-icone {
   justify-content: center;
-  min-width: var(--rpg-plaque-taille);
-  min-height: var(--rpg-plaque-taille);
+  min-width: var(--rpg-plaque-taille, 20px);
+  min-height: var(--rpg-plaque-taille, 20px);
 }
 
 /* La taille de lecture de la pierre sur une face : elle suit `--rpg-plaque-taille`
@@ -210,11 +206,10 @@
    avant, et les pierres gardent leurs `data-*` et leur `aria-label`. */
 .rpg-card-icones--colonne {
   --rpg-plaque-bord: 38%;
-  --rpg-plaque-taille: 20px;
   right: 0;
   left: auto;
   bottom: auto;
-  width: var(--rpg-plaque-taille);
+  width: var(--rpg-plaque-taille, 20px);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -242,7 +237,6 @@
    gauche (`rpg-battle.css`) : elle s'aligne sur la même ligne que les deux
    repères. */
 .rpg-card-icones--colonne.rpg-card-icones--apercu {
-  --rpg-plaque-taille: 32px;
   --rpg-plaque-bord: 45%;
   top: var(--rpg-card-element-marker-top, 5%);
   gap: 4px;

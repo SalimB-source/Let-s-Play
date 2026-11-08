@@ -22,12 +22,18 @@ import { fileURLToPath } from 'node:url';
 import { EFFETS_SPRITE, EFFET_LIBELLES, pastillesPourCarte } from '../src/games/effetIcons.js';
 import { cardById } from '../src/games/rpgCards.js';
 import {
+  PLAQUE_COTE,
   PLAQUE_FAMILLES,
   PLAQUE_FAMILLE_EFFET,
   PLAQUE_PIERRES,
   plaqueEffet,
+  plaqueNue,
   plaqueSvg,
+  teinteEffet,
 } from '../src/games/effetPlaques.js';
+
+/** Les pictogrammes d'élément, comme dans `RpgDuelPage.jsx`. */
+const ELEMENT_GLYPHS = { braise: '🔥', eau: '💧', sable: '⏳', neige: '❄️', tenebres: '💀' };
 
 const racine = new URL('../', import.meta.url);
 const argument = process.argv.indexOf('--out');
@@ -45,7 +51,14 @@ const pierre = (cle, taille) => plaqueSvg(cle, { size: taille })
  * sortiraient à 32 px, quelle que soit la taille demandée.
  */
 const poser = (x, y, cle, taille) =>
-  `<svg x="${x}" y="${y}" width="${taille}" height="${taille}" viewBox="0 0 32 32">${pierre(cle, taille)}</svg>`;
+  `<svg x="${x}" y="${y}" width="${taille}" height="${taille}" viewBox="0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}">${pierre(cle, taille)}</svg>`;
+/**
+ * Une pierre **nue** — l'hexagone de couleur, le losange de coût — posée à sa
+ * taille d'affichage. C'est le même dessin que les repères réels
+ * (`plaqueNue`), pour que la planche ne mente pas sur la facture des badges.
+ */
+const poserNue = (x, y, forme, bases, taille) =>
+  `<svg x="${x}" y="${y}" width="${taille}" height="${taille}" viewBox="0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}">${plaqueNue({ forme, bases })}</svg>`;
 const texte = (x, y, contenu, { size = 14, fill = '#efe4cf', weight = 400, anchor = 'start', ls = 0 } = {}) =>
   `<text x="${x}" y="${y}" font-family="Inter, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" letter-spacing="${ls}">${contenu}</text>`;
 
@@ -88,11 +101,16 @@ for (const [cle, libelle] of exemples) {
 /* ── Sur une face de carte ─────────────────────────────────────────────────── */
 y += 92;
 parts.push(texte(48, y, 'SUR UNE FACE DE CARTE', { size: 12, weight: 600, fill: '#edcb8b', ls: 1.6 }));
-parts.push(texte(300, y, 'la pierre est le badge : plus de pastille ronde, seul le chiffre garde la sienne', { size: 12, fill: '#8d8171' }));
+parts.push(texte(300, y, 'hexagone = couleur, losange = coût, pierres d’effets : la même taille, la même facture', { size: 12, fill: '#8d8171' }));
 const faces = [
   ['Jarl au marteau de guerre', [['provocation'], ['overkill'], ['furie', 2]]],
   ['Maître du marteau', [['envol'], ['overkill'], ['furie', 3], ['tenacite']]],
   ['Maître — gains en attente', [['envol', null, true], ['overkill', null, true], ['furie', 3]]],
+];
+const ELEMENTS_PAR_FACE = [
+  ['braise', '#a8282d'],
+  ['sable', '#c1922c'],
+  ['tenebres', '#6b3fa0'],
 ];
 faces.forEach(([nom, badges], index) => {
   const x = 48 + index * 248;
@@ -101,19 +119,28 @@ faces.forEach(([nom, badges], index) => {
   const hauteur = 158;
   parts.push(`<defs><linearGradient id="face-${index}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a3a29"/><stop offset=".55" stop-color="#2a211a"/><stop offset="1" stop-color="#14100e"/></linearGradient></defs>`);
   parts.push(`<rect x="${x}" y="${haut}" width="${largeur}" height="${hauteur}" rx="12" fill="url(#face-${index})" stroke="#edcb8b" stroke-opacity=".32"/>`);
-  parts.push(`<rect x="${x + 12}" y="${haut + 12}" width="22" height="28" rx="5" fill="#1d1712" stroke="#edcb8b" stroke-opacity=".22"/>`);
+  // Les deux repères taillés du coin haut gauche : l'hexagone de couleur, puis
+  // le losange de coût juste en dessous — même taille que les pierres d'effets.
+  const [element, teinteFace] = ELEMENTS_PAR_FACE[index];
+  parts.push(poserNue(x + 12, haut + 10, 'hexagone', [teinteFace], 22));
+  parts.push(texte(x + 23, haut + 25, ELEMENT_GLYPHS[element] ?? '◇', { size: 11, anchor: 'middle', fill: '#ffffff' }));
+  parts.push(poserNue(x + 12, haut + 36, 'diamant', [teinteFace], 22));
+  parts.push(texte(x + 23, haut + 51, '3', { size: 11, weight: 800, anchor: 'middle', fill: '#ffffff' }));
   parts.push(texte(x + largeur / 2, haut + hauteur - 58, nom.toUpperCase(), { size: 9.5, weight: 700, fill: '#f3e7cf', anchor: 'middle', ls: .6 }));
-  let bx = x + 14;
-  const by = haut + hauteur - 44;
+  // La colonne d'emblèmes est chevillée au bord **droit**, à cheval sur le cadre
+  // (36 % de la pierre dehors), comme sur une carte en jeu.
+  const bx = x + largeur - 22 * 0.64;
+  let by = haut + 8;
   for (const [cle, valeur, enAttente] of badges) {
-    parts.push(`<g${enAttente ? ' opacity="0.5" style="filter:grayscale(1)"' : ''}>${poser(bx, by, cle, 18)}</g>`);
+    // Même mesure que l'hexagone et le losange du coin : 22 px.
+    parts.push(`<g${enAttente ? ' opacity="0.5" style="filter:grayscale(1)"' : ''}>${poser(bx, by, cle, 22)}</g>`);
     if (valeur != null) {
       // Le chiffre mord sur le coin bas-droit de la pierre, comme la petite
       // pastille du CSS (margin-left négatif) : il lui appartient.
-      parts.push(`<rect x="${bx + 13}" y="${by + 12}" width="15" height="11" rx="5.5" fill="#0b0908" stroke="#edcb8b" stroke-opacity=".5"/>`);
-      parts.push(texte(bx + 20.5, by + 20.5, String(valeur), { size: 8, weight: 700, fill: '#ffe9a0', anchor: 'middle' }));
+      parts.push(`<rect x="${bx + 13}" y="${by + 13}" width="16" height="12" rx="6" fill="#0b0908" stroke="#edcb8b" stroke-opacity=".5"/>`);
+      parts.push(texte(bx + 21, by + 22, String(valeur), { size: 8.5, weight: 700, fill: '#ffe9a0', anchor: 'middle' }));
     }
-    bx += 34;
+    by += 28;
   }
 });
 

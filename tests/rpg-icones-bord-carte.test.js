@@ -61,8 +61,14 @@ const APERCU = `
     <div class="rpg-hover-card-preview__empile">
       <div class="rpg-hover-card-preview__face">
         <img alt="" />
-        <span class="rpg-card-element-badge"></span>
-        <span class="rpg-mana-cost"><b>3</b></span>
+        <span class="rpg-card-element-badge is-plaque">
+          <svg class="rpg-plaque-forme" viewBox="0 0 32 32"></svg>
+          <span class="rpg-card-element-badge__glyphe">✦</span>
+        </span>
+        <span class="rpg-mana-cost is-plaque">
+          <svg class="rpg-plaque-forme" viewBox="0 0 32 32"></svg>
+          <b>3</b>
+        </span>
         <span class="rpg-card-icones rpg-card-icones--colonne rpg-card-icones--apercu">
           <span class="rpg-card-icone"><svg class="rpg-effet-icone" width="18" height="18"></svg></span>
         </span>
@@ -96,7 +102,16 @@ function mesurer(touch, corps) {
     carte: lire('.rpg-card, .rpg-hand__card', ['overflow', 'overflow-clip-margin', 'border-radius']),
     illustration: lire('.rpg-card__img, .rpg-hand__img', ['border-radius']),
     face: lire('.rpg-hover-card-preview__face', ['overflow', 'overflow-clip-margin', 'border-radius']),
-    cout: lire('.rpg-hover-card-preview__face .rpg-mana-cost', ['top', 'left', 'right', 'width', 'font-size']),
+    cout: lire('.rpg-hover-card-preview__face .rpg-mana-cost', [
+      'top', 'left', 'right', 'width', 'height', 'font-size',
+    ]),
+    plaque: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', [
+      'position', 'width', 'height', 'grid-area',
+    ]),
+    plaqueCout: lire('.rpg-hover-card-preview__face .rpg-plaque-forme', ['position']),
+    badge: lire('.rpg-hover-card-preview__face .rpg-card-element-badge', [
+      'width', 'height', 'border', 'border-radius', 'background', '--rpg-plaque-taille',
+    ]),
     faceImage: lire('.rpg-hover-card-preview__face > img', ['border-radius']),
     catalogue: lire('.rpg-card-icones--catalogue', [
       'right', 'left', 'bottom', '--rpg-plaque-bord', '--rpg-plaque-taille',
@@ -121,7 +136,7 @@ test('sur la table, la pierre est chevillée au bord et grandit avec la carte', 
     'clamp(16px,17cqw,30px)',
     'la pierre suit la carte : 16 px sur une carte de 68 px, 30 px au plafond',
   );
-  assert.equal(colonne.width, 'var(--rpg-plaque-taille)', 'la colonne épouse la pierre');
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 20px)', 'la colonne épouse la pierre');
   // Le cadre de la carte fait 104 à 198 px : 17 % donnent 18 à 30 px, contre
   // 18 px fixes auparavant — la pierre est deux fois plus grande sur les
   // grandes cartes.
@@ -153,7 +168,7 @@ test('dans la main, la pierre fait 24 px et déborde plus discrètement', () => 
 test('au doigt, la pierre de 18 px ne mord que sur 4 px du cadre', () => {
   const { colonne, carte } = mesurer(true, CARTE_MAIN);
   assert.equal(colonne['--rpg-plaque-taille'], '18px', 'une carte mobile fait moins de 90 px');
-  assert.equal(colonne.width, 'var(--rpg-plaque-taille)', 'la colonne épouse la pierre');
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 18px)', 'la colonne épouse la pierre');
   assert.equal(colonne['--rpg-plaque-bord'], '22%', 'l’interstice de 4 px ne laisse pas plus de débord');
   assert.ok(debord(18, 22) <= 4, 'le débord de 4 px tient dans l’interstice');
   assert.equal(carte['overflow-clip-margin'], '14px', 'la marge n’a pas à suivre la taille de la pierre');
@@ -175,21 +190,31 @@ test('l’aperçu porte les mêmes pierres, en 32 px, sur le bord de sa face', (
   assert.equal(faceImage['border-radius'], face['border-radius'], 'l’illustration garde les coins du cadre');
 });
 
-test('l’aperçu range le coût sous la pastille de couleur et l’agrandit', () => {
-  const { cout } = mesurer(false, APERCU);
+test('l’aperçu range le coût sous la pastille de couleur et les fait de même taille', () => {
+  const { cout, badge, colonne } = mesurer(false, APERCU);
   assert.equal(cout.right, 'auto', 'le coût quitte le coin haut droit');
   assert.equal(cout.left, 'var(--rpg-card-element-marker-left, 6%)', 'il s’aligne sur la colonne de gauche');
+  // Le coût se pose sous l'hexagone de couleur, à 6 px de lui — un peu moins
+  // qu'hier : la pierre de couleur a perdu son anneau clair, elle est plus
+  // serrée dans le coin.
   assert.equal(
     cout.top,
-    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 38px) + 8px)',
-    'il se pose sous la pastille de couleur, à 8 px d’elle',
+    'calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 38px) + 6px)',
+    'il se pose sous la pastille de couleur',
   );
-  assert.equal(
-    cout.width,
-    'calc(var(--rpg-card-marker-size, 38px) * 1.15)',
-    'il grandit d’un cran (44 px sur une face de 38 px de repère)',
-  );
-  assert.equal(cout['font-size'], 'calc(var(--rpg-card-marker-size, 38px) * .58)', 'le chiffre suit');
+  // Les trois repères d'une face — hexagone de couleur, losange de coût,
+  // pierres d'effets — lisent la même mesure : ils font exactement la même
+  // taille, et cette taille est celle de la carte (32 px sur une face d'aperçu).
+  assert.equal(cout.width, 'var(--rpg-plaque-taille, 24px)', 'le losange prend la taille des pierres');
+  assert.equal(cout.height, cout.width, 'le losange est carré');
+  assert.equal(badge.width, cout.width, 'l’hexagone de couleur fait la même taille que le losange');
+  assert.equal(badge['--rpg-plaque-taille'], '32px', 'la face d’aperçu pose la mesure — celle des pierres');
+  assert.equal(colonne['--rpg-plaque-taille'], badge['--rpg-plaque-taille'], 'les pierres d’effets aussi');
+  assert.equal(cout['font-size'], 'calc(var(--rpg-plaque-taille, 24px) * .52)', 'le chiffre suit la pierre');
+  // Plus de pastille ronde : c'est la pierre qui borde et qui porte la couleur.
+  assert.match(badge.border, /^0px( none)?/, 'la couleur n’a plus de bordure claire');
+  assert.equal(badge['border-radius'], '0px', 'ni de rayon : elle est taillée');
+  assert.equal(badge.background, 'none', 'la pierre fournit le fond, pas la feuille');
 });
 
 test('les rangées hors du jeu gardent leur place dans l’illustration', () => {
@@ -200,4 +225,14 @@ test('les rangées hors du jeu gardent leur place dans l’illustration', () => 
   // une rangée qui n'est pas une colonne n'emprunte ni le bord ni le débord.
   assert.equal(catalogue['--rpg-plaque-bord'], '', 'hors colonne, aucun débord n’est défini');
   assert.equal(catalogue['--rpg-plaque-taille'], '', 'hors colonne, la taille d’attribut du glyphe suffit');
+});
+
+test('la pierre nue habille le repère dans le flux, sans sortir de sa case', () => {
+  const { plaque } = mesurer(false, APERCU);
+  // Un `position: absolute` serait un piège : le coût de la main vit dans le flux
+  // du titre, et la pierre prendrait alors la taille de toute la carte.
+  assert.equal(plaque.position, 'static', 'la pierre reste dans le flux du repère');
+  assert.equal(plaque.width, '100%', 'elle remplit la largeur du repère');
+  assert.equal(plaque.height, '100%', 'et sa hauteur');
+  assert.match(css, /\.rpg-battle \.rpg-card-element-badge\.is-plaque > \*,[\s\S]*?grid-area: 1 \/ 1;/,        'pierre et glyphe partagent une seule case de grille');
 });

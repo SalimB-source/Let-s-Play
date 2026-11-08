@@ -28,7 +28,29 @@ import {
   pastillesPourCarte,
   iconePourLigne,
 } from './effetIcons.js';
-import { pierreEffet, plaqueEffet, PLAQUE_COTE } from './effetPlaques.js';
+import { pierreEffet, plaqueEffet, plaqueNue, PLAQUE_COTE, ELEMENT_TEINTES } from './effetPlaques.js';
+
+export { ELEMENT_TEINTES };
+
+/**
+ * La plaque **nue** d'un repère de carte : le même dessin que les pierres
+ * d'effets, sans pictogramme. La pastille de couleur la porte en **hexagone**,
+ * le disque de coût en **losange** — les trois repères d'une carte partagent
+ * ainsi la même taille et la même facture, seule la silhouette dit ce qu'on
+ * regarde (`effetPlaques.js`, `plaqueNue`).
+ */
+export function PlaqueForme({ forme = 'hexagone', bases = undefined, className = '' }) {
+  return (
+    <svg
+      className={`rpg-plaque-forme${className ? ` ${className}` : ''}`}
+      viewBox={`0 0 ${PLAQUE_COTE} ${PLAQUE_COTE}`}
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+      focusable="false"
+      dangerouslySetInnerHTML={{ __html: plaqueNue({ forme, bases }) }}
+    />
+  );
+}
 import './effet-icons.css';
 
 /**

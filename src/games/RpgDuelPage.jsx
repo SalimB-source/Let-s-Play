@@ -123,7 +123,7 @@ import RpgDeckCreation from './RpgDeckCreation.jsx';
 import RpgCardGuide from './RpgCardGuide.jsx';
 import RpgCardRules from './RpgCardRules.jsx';
 import { conditionEmbuscadeCourtePourApercu, regleCarteLongue, resumeCarte, texteApercuSansDoublons } from './rpgCardResume.js';
-import { EffetsSprite, IconesCarte, PastillesCarte } from './effetIcons.jsx';
+import { EffetsSprite, IconesCarte, PastillesCarte, PlaqueForme, ELEMENT_TEINTES } from './effetIcons.jsx';
 import { definitionPastille, effetsEpuisesPourEntite, effetsFurieInactifs, effetsDetailles } from './effetIcons.js';
 import RpgTutorialOverlay from './RpgTutorialOverlay.jsx';
 import RpgTutorialMenu from './RpgTutorialMenu.jsx';
@@ -600,12 +600,17 @@ function ManaCost({ carte, compact = false, showElement = true }) {
   const colors = cardCostColors(carte);
   const hybrid = colors.length > 1 || colors[0] === 'hybride';
   const teinte = colors[0] ?? carte.element;
+  // Le coût s'imprime sur un **losange** : même pierre taillée que les effets et
+  // que l'hexagone de couleur, à la même taille — la silhouette dit seule ce
+  // qu'on regarde. Un coût hybride reçoit un dégradé de ses deux couleurs.
+  const basesCout = (hybrid ? colors : [teinte]).map((couleur) => ELEMENT_TEINTES[couleur] ?? ELEMENT_TEINTES.braise);
   return (
     <span
-      className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : teinte}${compact ? ' is-compact' : ''}`}
+      className={`rpg-mana-cost rpg-mana-cost--${hybrid ? 'hybride' : teinte}${compact ? ' is-compact' : ''} is-plaque`}
       style={hybrid ? { '--rpg-hybrid-cost-bg': cardHybridGradient({ colors }) } : undefined}
       aria-label={`Coût : ${cardCostLabel(carte)}`}
     >
+      <PlaqueForme forme="diamant" bases={basesCout} />
       <b>{carte.cost}</b>
       {!hybrid && showElement && <i aria-hidden="true">{ELEMENT_GLYPHS[teinte] ?? '◇'}</i>}
     </span>
@@ -947,18 +952,30 @@ function CardElementBadge({ carte }) {
   const colors = cardCostColors(carte);
   const hybrid = colors.length > 1 || colors[0] === 'hybride';
   const teinte = colors[0] ?? carte.element;
+  const teintePlaque = (couleur) => ELEMENT_TEINTES[couleur] ?? ELEMENT_TEINTES.braise;
+  // La couleur s'imprime désormais sur un **hexagone** — la même pierre taillée
+  // que les effets, à la même taille qu'eux (`plaqueNue`).
   return (
     <span
-      className={`rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : teinte}`}
+      className={`rpg-card-element-badge rpg-card-element-badge--${hybrid ? 'hybride' : teinte} is-plaque`}
       aria-hidden="true"
     >
       {hybrid
         ? colors.map((couleur) => (
-          <i key={couleur} className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur}`}>
-            {ELEMENT_GLYPHS[couleur] ?? '◇'}
+          <i
+            key={couleur}
+            className={`rpg-card-element-badge__pip rpg-card-element-badge__pip--${couleur} is-plaque`}
+          >
+            <PlaqueForme forme="hexagone" bases={[teintePlaque(couleur)]} />
+            <span className="rpg-card-element-badge__glyphe">{ELEMENT_GLYPHS[couleur] ?? '◇'}</span>
           </i>
         ))
-        : ELEMENT_GLYPHS[teinte] ?? '◇'}
+        : (
+          <>
+            <PlaqueForme forme="hexagone" bases={[teintePlaque(teinte)]} />
+            <span className="rpg-card-element-badge__glyphe">{ELEMENT_GLYPHS[teinte] ?? '◇'}</span>
+          </>
+        )}
     </span>
   );
 }

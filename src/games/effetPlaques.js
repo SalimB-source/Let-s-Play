@@ -155,7 +155,7 @@ const FAMILLE_PAR_SYMBOLE = Object.freeze({
 });
 
 /** La taille du symbole dans le carré de 32 : les pointes laissent moins de place. */
-const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 12, hexagone: 19 });
+const SYMBOLE_PAR_FORME = Object.freeze({ diamant: 12, hexagone: 20 });
 
 /**
  * L'épaisseur du biseau, forme par forme. L'hexagone ouvre largement son champ
@@ -171,15 +171,139 @@ const BISEAU_PAR_FORME = Object.freeze({
 /** Le contour d'encre ajouté autour de la silhouette, en unités de 32. */
 const CONTOUR = 1.4;
 
+/** Le trait du pictogramme, en unités de pierre (32 pour le carré) : 2,2 sur
+ * 32 donne 1,1 px de trait sur la pierre de 16 px du doigt, 2,1 px sur celle de
+ * 32 px de l'aperçu — lisible aux deux bouts sans empâter le dessin. */
+const EPAISSEUR_CIBLE = 2.2;
+
+/** Le halo d'encre qui double le pictogramme : 1,6 unité de pierre de plus,
+ * pour que le blanc se détache aussi des pierres claires (or, sable, azur). */
+const CONTOUR_SYMBOLE = 1.6;
+
+/** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 /** L'épaisseur de trait qui garde le même poids apparent, quelle que soit la forme. */
 export const EPAISSEUR_SYMBOLE = Object.freeze(
   Object.entries(SYMBOLE_PAR_FORME).reduce((table, [forme, taille]) => {
     // Les symboles sont tracés sur 24 unités ; réduits à `taille`, un trait de
-    // 1,75 unités de symbole ne pèse plus que 1,75 × taille / 24 à l'écran.
-    table[forme] = Math.round((2 * 24 / taille) * 100) / 100;
+    // 1,75 unités de symbole ne pèse plus que 1,75 × taille / 24 à l'écran —
+    // d'où la compensation pour viser `EPAISSEUR_CIBLE` sur la pierre.
+    table[forme] = Math.round((EPAISSEUR_CIBLE * 24 / taille) * 100) / 100;
     return table;
   }, {}),
 );
+
+/** Le halo sombre du pictogramme, forme par forme — même poids apparent : le
+ * trait blanc, plus `CONTOUR_SYMBOLE` unités de pierre de chaque côté. */
+export const HALO_SYMBOLE = Object.freeze(
+  Object.entries(EPAISSEUR_SYMBOLE).reduce((table, [forme]) => {
+    table[forme] = Math.round(((EPAISSEUR_CIBLE + CONTOUR_SYMBOLE) * 24 / SYMBOLE_PAR_FORME[forme]) * 100) / 100;
+    return table;
+  }, {}),
+);
+
+/* ── Une nuance par effet ────────────────────────────────────────────────────
+   Le registre donne l'ancre (braise, or, ténèbres, émeraude, azur), mais deux
+   effets d'une même famille ne doivent pas se confondre : quinze Assauts tous
+   du même rouge ne se reconnaissaient qu'en lisant le pictogramme. Chaque clé
+   reçoit donc **sa** nuance, déduite de sa place dans sa famille : la teinte
+   pivote de part et d'autre de l'ancre, la lumière monte ou descend d'un cran,
+   et la parité décale encore l'un des deux — deux effets voisins diffèrent
+   toujours sur les deux axes à la fois. La famille reste lisible (on reste dans
+   les rouges, les ors, les verts), chaque effet devient identifiable. */
+
+/** `#rrggbb` → `{ h, s, l }` (h en degrés, s et l en 0–1). */
+function versHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255;
+  const v = ((n >> 8) & 255) / 255;
+  const b = (n & 255) / 255;
+  const max = Math.max(r, v, b);
+  const min = Math.min(r, v, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h;
+  if (max === r) h = ((v - b) / d + (v < b ? 6 : 0)) / 6;
+  else if (max === v) h = ((b - r) / d + 2) / 6;
+  else h = ((r - v) / d + 4) / 6;
+  return { h: h * 360, s, l };
+}
+
+const borne = (valeur, min, max) => Math.min(max, Math.max(min, valeur));
+
+/** `{ h, s, l }` → `#rrggbb`. */
+function versHex({ h, s, l }) {
+  const teinte = ((h % 360) + 360) % 360 / 360;
+  const saturation = borne(s, 0, 1);
+  const lumiere = borne(l, 0, 1);
+  if (saturation === 0) {
+    const gris = Math.round(lumiere * 255).toString(16).padStart(2, '0');
+    return `#${gris}${gris}${gris}`;
+  }
+  const q = lumiere < 0.5 ? lumiere * (1 + saturation) : lumiere + saturation - lumiere * saturation;
+  const p = 2 * lumiere - q;
+  const canal = (t) => {
+    const u = ((t % 1) + 1) % 1;
+    if (u < 1 / 6) return p + (q - p) * 6 * u;
+    if (u < 1 / 2) return q;
+    if (u < 2 / 3) return p + (q - p) * (2 / 3 - u) * 6;
+    return p;
+  };
+  const octet = (valeur) => Math.round(borne(valeur, 0, 1) * 255).toString(16).padStart(2, '0');
+  return `#${octet(canal(teinte + 1 / 3))}${octet(canal(teinte))}${octet(canal(teinte - 1 / 3))}`;
+}
+
+/** Décale une couleur en teinte (degrés) et en lumière (points de %). */
+export function decaler(hex, degres, lumiere = 0) {
+  const { h, s, l } = versHsl(hex);
+  return versHex({ h: h + degres, s, l: l + lumiere / 100 });
+}
+
+/**
+ * La nuance d'une clé : la palette de son registre, pivotée autour de l'ancre.
+ * L'écart est réparti sur la famille entière (`-26° … +26°`), la lumière suit
+ * le même sens, et la parité de la place ajoute un demi-cran : deux clés
+ * voisines ne tombent jamais sur la même couleur.
+ */
+export function teinteEffet(cle) {
+  const plaque = plaqueEffet(cle);
+  const cles = CLES_PAR_FAMILLE[plaque.famille] ?? [];
+  const total = Math.max(1, cles.length);
+  const index = Math.max(0, cles.indexOf(plaque.cle ?? cle));
+  const ecart = total === 1 ? 0 : (index - (total - 1) / 2) / ((total - 1) / 2);
+  const rotation = Math.round(ecart * 26 * 10) / 10;
+  const lumiere = Math.round(ecart * 5 * 10) / 10 + (index % 2 ? 1.5 : -1.5);
+  const base = PLAQUE_PIERRES[plaque.pierre];
+  return Object.freeze({
+    encre: decaler(base.encre, rotation * 0.4, lumiere * 0.4),
+    creux: decaler(base.creux, rotation * 0.8, lumiere * 0.8),
+    fond: decaler(base.fond, rotation, lumiere),
+    lueur: decaler(base.lueur, rotation, lumiere + 3),
+  });
+}
+
+/**
+ * Les teintes des éléments — la pastille de couleur et le disque de coût
+ * prennent la même pierre que les effets, en hexagone et en losange.
+ */
+export const ELEMENT_TEINTES = Object.freeze({
+  braise: '#a8282d',
+  eau: '#2f6fae',
+  sable: '#c1922c',
+  neige: '#4f9fc4',
+  tenebres: '#6b3fa0',
+});
+
+/** La palette d'une plaque nue, à partir d'une couleur de base. */
+export function palettePlaque(base) {
+  return Object.freeze({
+    encre: decaler(base, 0, -34),
+    creux: decaler(base, 0, -18),
+    fond: base,
+    lueur: decaler(base, 0, 22),
+  });
+}
 
 const arrondi = (nombre) => Math.round(nombre * 100) / 100;
 
@@ -244,7 +368,9 @@ export function plaqueEffet(cle) {
 export function pierreEffet(cle, { protectionContre = null } = {}) {
   const plaque = plaqueEffet(cle);
   const silhouette = PLAQUE_FORMES[plaque.forme];
-  const pierre = PLAQUE_PIERRES[plaque.pierre];
+  // La nuance de la clé, pas celle du registre : deux effets d'une même forme
+  // se distinguent par leur couleur autant que par leur pictogramme.
+  const pierre = teinteEffet(cle);
   const biseau = BISEAU_PAR_FORME[plaque.forme];
   const anneau = reduire(silhouette, biseau.anneau);
   const champ = reduire(silhouette, biseau.champ);
@@ -261,8 +387,48 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
     `<polygon points="${pointsSvg(ombre)}" fill="${pierre.encre}" fill-opacity=".32"/>`,
     teinte ? `<polygon points="${pointsSvg(champ)}" fill="${teinte}" fill-opacity=".5"/>` : '',
     `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".5" stroke-width=".8"/>`,
+    // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
+    // quand la pierre est claire, et le fait lire d'un coup d'œil à 16 px.
+    `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
     `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="#ffffff" stroke-width="${EPAISSEUR_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
   ].filter(Boolean).join('');
+}
+
+/**
+ * Une plaque **nue** : la même pierre taillée — silhouette d'encre, anneau,
+ * champ, biseau clair, ombre basse, filet — mais sans pictogramme. C'est elle
+ * qui porte la pastille de couleur (hexagone) et le disque de coût (losange) :
+ * le coût, la couleur et les effets se lisent donc dans la même grammaire, à
+ * la même taille, et seule la silhouette dit ce qu'on regarde.
+ *
+ * `bases` : une couleur, ou deux pour un coût hybride — le champ reçoit alors
+ * un dégradé diagonal d'une couleur à l'autre.
+ */
+export function plaqueNue({ forme = 'hexagone', bases = [ELEMENT_TEINTES.braise] } = {}) {
+  const silhouette = PLAQUE_FORMES[forme];
+  const biseau = BISEAU_PAR_FORME[forme];
+  const anneau = reduire(silhouette, biseau.anneau);
+  const champ = reduire(silhouette, biseau.champ);
+  const lumiere = moitie(champ, { cote: 'haut' });
+  const ombre = moitie(champ, { cote: 'bas' });
+  const couleurs = (bases.length ? bases : [ELEMENT_TEINTES.braise]).slice(0, 2);
+  const pierre = palettePlaque(couleurs[0]);
+  const idDegrade = `plaque-${couleurs.join('').replace(/#/g, '')}`;
+  const champSvg = couleurs.length > 1
+    ? `<defs><linearGradient id="${idDegrade}" x1="0" y1="1" x2="1" y2="0">`
+      + `<stop offset="0" stop-color="${couleurs[0]}"/>`
+      + `<stop offset="1" stop-color="${couleurs[1]}"/>`
+      + '</linearGradient></defs>'
+      + `<polygon points="${pointsSvg(champ)}" fill="url(#${idDegrade})"/>`
+    : `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`;
+  return [
+    `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
+    `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
+    champSvg,
+    `<polygon points="${pointsSvg(lumiere)}" fill="${pierre.lueur}" fill-opacity=".24"/>`,
+    `<polygon points="${pointsSvg(ombre)}" fill="${pierre.encre}" fill-opacity=".32"/>`,
+    `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".5" stroke-width=".8"/>`,
+  ].join('');
 }
 
 /**
