@@ -15741,3 +15741,13 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-battle .rpg-hover-card-preview__face {
   overflow: visible;
 }
+
+/* Le panneau défilant de la fiche impose un clip horizontal, même quand la
+   face est en overflow:visible. Réserver le débord DANS la grille évite de
+   couper les pierres au bord du panneau, sans supprimer son défilement.
+   28 px couvrent 45 % de 52 px + le halo de la pierre. */
+.rpg-battle .rpg-hover-card-preview {
+  box-sizing: border-box;
+  padding: 28px;
+  column-gap: 32px;
+}

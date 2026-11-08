@@ -83,17 +83,14 @@ celle de 32 px de l'aperçu. Le halo suit la même règle (`+ 1,6` unité).
 
 ## Une couleur par effet
 
-Le registre donne l'ancre ; la **nuance** donne la reconnaissance. `teinteEffet`
-fait tourner chaque clé autour de la pierre de sa famille : ±26° de teinte, ±5 %
-de luminosité, plus 1,5 % d'écart de parité — soit **64 couleurs distinctes**
-pour 64 effets, vérifiées par les tests. Un joueur reconnaît donc l'effet à sa
-seule pastille, sans lire le pictogramme, et la famille reste lisible : les
-quinze Assauts vont du rouge sombre au rouge clair, jamais au bleu.
+Les effets utilisent exactement **trois couleurs fixes** selon leur type :
+- **rouge** : Assaut (attaque, dégâts) ;
+- **bleu** : Garde et Tempo (défense, mouvement) ;
+- **violet** : Ombre et Flux (altérations, ressources).
 
-Les trois couches visibles (`encre`, `creux`, `fond`) donnent un contour, un
-anneau et un champ de couleur franc. Aucun éclaircissement supérieur, ombre
-basse ou filet intérieur ne charge le fond. La palette conserve `lueur`, mais
-le dessin ne l’utilise plus.
+Il n’y a plus de variation par clé ni de recoloration de Protection selon
+l’élément repoussé. Cet élément reste indiqué dans le DOM et les infobulles.
+Les couleurs élémentaires du coût et de la pastille de couleur ne changent pas.
 
 Rien n'est deviné en CSS : la pierre est dessinée dans le SVG, ce qui la rend
 insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
@@ -149,3 +146,7 @@ Les effets de la main commencent en haut de la face, sur le bord droit.
 Le coût reste visible sur le plateau. L’aperçu et sa face utilisent
 `overflow: visible` : les pierres ne sont plus rognées par le volet ;
 l’illustration conserve ses propres coins arrondis.
+
+Le volet d’aperçu réserve 28 px sur ses côtés et un interstice de 32 px :
+les pierres restent à l’intérieur de la zone défilante du panneau parent,
+même quand sa face est en débord visible (52 × 45 % + halo < 28 px).
