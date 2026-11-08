@@ -111,6 +111,50 @@ export function trailerWatchUrl(id) {
 }
 
 export const articleTrailers = {
+"gta-6-nouvelles-images-voitures-galerie-lancement": {
+  "label": "GRAND THEFT AUTO VI",
+  "meta": "ROCKSTAR GAMES · TRAILER D’ARCHIVE",
+  "items": [
+    {
+      "id": "rz1B4B2yBZY",
+      "kind": "trailer",
+      "title": "Grand Theft Auto VI Launch Trailer",
+      "channel": "Rockstar Games",
+      "verified": "08.11.2026",
+      "note": "Trailer officiel publié le 15 octobre 2026, utilisé en contexte de la nouvelle galerie de captures du 5 novembre. Ce n’est pas une nouvelle vidéo du 8 novembre ni une vidéo des répliques réelles. Capturé dans le jeu sur PS5 selon Rockstar."
+    }
+  ],
+  "credit": "Vidéo officielle : Rockstar Games, 15 octobre 2026."
+},
+"xbox-cloud-gaming-telephone-manette-preview": {
+  "label": "XBOX CLOUD GAMING",
+  "meta": "XBOX WIRE",
+  "items": [],
+  "credit": "Visuel officiel Xbox Wire : aperçu des commandes sur téléphone pour Xbox Cloud Gaming.",
+  "pending": "Aucune vidéo officielle dédiée à ces deux previews n’a été vérifiée. Le visuel officiel Xbox Wire illustre le fonctionnement annoncé."
+},
+"cinema/journal-degonfle-christmas-getaway-disney-trailer": {
+  "label": "GREG HEFFLEY",
+  "meta": "DISNEY",
+  "items": [
+    {
+      "id": "O8JuMijNEAU",
+      "kind": "trailer",
+      "title": "Diary of a Wimpy Kid Christmas: The Getaway | Streaming December 4 on Disney+",
+      "channel": "Disney",
+      "verified": "08.11.2026",
+      "note": "Bande-annonce officielle publiée le 4 novembre 2026. Diffusion annoncée le 4 décembre ; contient des éléments du film. Ce n’est pas une vidéo nouvellement publiée le 8 novembre."
+    }
+  ],
+  "credit": "Miniature et bande-annonce officielles : Disney, vidéo publiée le 4 novembre 2026."
+},
+"tech/dropbox-tigris-dbx-agent-cloud-acquisition": {
+  "label": "DROPBOX",
+  "meta": "DROPBOX",
+  "items": [],
+  "credit": "Logo officiel Dropbox, repris du blog de l’entreprise. Visuel de marque, pas une image de Tigris ni une capture de DBX Agent Cloud.",
+  "pending": "Aucune vidéo officielle dédiée à cette annonce n’a été vérifiée. Le logo officiel Dropbox est utilisé comme visuel de marque, pas comme démonstration du produit."
+},
 "algeria-game-awards-2027-lets-play-sponsor-platinum": {
   "label": "ALGERIA GAME AWARDS",
   "meta": "JUST PLAY IT · PARTENARIAT LET’S PLAY",
