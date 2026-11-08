@@ -15845,3 +15845,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: var(--rpg-sort-sceau-fond);
 }
 .rpg-sort-sceau--sorcellerie .rpg-sort-sigil { position: relative; }
+
+/* Même liseré doré que les pierres et le losange des armes. L’intérieur
+   des sceaux garde sa teinte de famille (jaune rapide, violet sorcellerie). */
+.rpg-sort-sceau--rapide,
+.rpg-sort-sceau--sorcellerie {
+  background: #d4b57a;
+}

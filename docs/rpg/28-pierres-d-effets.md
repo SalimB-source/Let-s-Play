@@ -148,3 +148,12 @@ Les symboles de couleur sont volontairement plus discrets : le sablier SVG
 occupe 56 % de sa pastille, les autres glyphes utilisent un corps de 42 %.
 Le sigle SVG d’un sceau de type de sort occupe 48 % du sceau. La taille des
 pierres d’effets et celle du coût ne changent pas.
+
+## Liseré doré
+
+Les hexagones d’effets et les losanges de couleur/coût portent un liseré fin
+`#d4b57a`, repris du losange des armes. Le trait SVG extérieur passe de 1,4
+à 0,8 unité ; la silhouette dorée remplace l’ancienne silhouette noire.
+Les sceaux de type utilisent le même or. Les fonds rouge/bleu/violet et les
+pictogrammes blancs sont conservés ; le halo sombre du pictogramme reste
+uniquement pour son contraste, à l’intérieur de la pastille.
