@@ -1,3 +1,4 @@
+import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
 import { onlineModeText } from '../lib/onlineModeText.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
@@ -7840,6 +7841,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const timerFlipRef = useRef(null);
   const [carteEnVol, setCarteEnVol] = useState(null);
   const [impactEcran, setImpactEcran] = useState(null);
+  const [projectilesVisibles, setProjectilesVisibles] = useState([]);
+  useEffect(() => { setProjectilesVisibles([]); }, [ecran]);
   const [gelMasseFx, setGelMasseFx] = useState(null);
   const sequenceGelMasseRef = useRef(0);
   const timerGelMasseRef = useRef(null);
@@ -8749,6 +8752,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     tourPrecedentFlipRef.current = duelRef.current?.tour ?? null;
     setCarteEnVol(null);
     setImpactEcran(null);
+    setProjectilesVisibles([]);
     setGelMasseFx(null);
     if (timerGelMasseRef.current) window.clearTimeout(timerGelMasseRef.current);
     timerGelMasseRef.current = null;
@@ -10523,6 +10527,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     if (timerImpactRef.current) window.clearTimeout(timerImpactRef.current);
     timerImpactRef.current = null;
     setImpactEcran(null);
+    setProjectilesVisibles([]);
     const token = ++sequenceVolRef.current;
     actionVolRef.current = { token, resoudre: resoudreAction };
     jouerSfx('whoosh');
@@ -10791,6 +10796,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const mouvementReduit = animationsReduites();
     const animationsCombatNouvelles = (duel.combatAnimations ?? [])
       .filter((animation) => !avant.combatAnimationIds?.has(animation.id));
+    if (!mouvementReduit) {
+      const tirs = projectilesCombat(animationsCombatNouvelles, avant);
+      if (tirs.length) {
+        // IDs séquentiels du journal : PvP et actions locales partagent le même chemin.
+        setProjectilesVisibles((courant) => [...courant, ...tirs].slice(-32));
+        const ids = new Set(tirs.map((tir) => tir.id));
+        const timer = window.setTimeout(() => {
+          setProjectilesVisibles((courant) => courant.filter((tir) => !ids.has(tir.id)));
+        }, dureeAnimation(650));
+        timersRef.current.push(timer);
+      }
+    }
     const idsEsquives = new Set(animationsCombatNouvelles
       .filter((animation) => animation.type === 'esquive')
       .map((animation) => animation.cible?.entiteId));
@@ -14308,6 +14325,14 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
             effet={effet}
             onTermine={(effectId) => setBalancesTenebres((current) => current.filter((autre) => autre.effectId !== effectId))}
           />
+        ))}
+
+        {projectilesVisibles.map((tir) => (
+          <span key={tir.id} className={`rpg-projectile-combat rpg-projectile-combat--${tir.variante}`}
+            aria-hidden="true" style={{ left: tir.x, top: tir.y,
+              '--tir-dx': `${tir.dx}px`, '--tir-dy': `${tir.dy}px`, '--tir-angle': `${tir.angle}deg` }}>
+            <span className="rpg-projectile-combat__tete" />
+          </span>
         ))}
 
         {/* Ténèbres : le fil de sable du Tribut, de la créature à la plaque qui paye. */}

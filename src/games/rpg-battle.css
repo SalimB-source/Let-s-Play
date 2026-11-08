@@ -15762,3 +15762,42 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   padding: 28px;
   column-gap: 32px;
 }
+
+/* Petits tirs pré-combat : couche de la table, jamais rognée par une carte. */
+.rpg-projectile-combat {
+  position: absolute;
+  z-index: 1700;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: rpg-projectile-trajet calc(.55s * var(--rpg-anim-scale, 1)) cubic-bezier(.3, .1, .65, 1) both;
+}
+.rpg-projectile-combat__tete {
+  display: block;
+  position: absolute;
+  width: 24px;
+  height: 12px;
+  top: -6px;
+  left: -12px;
+  transform: rotate(var(--tir-angle));
+  border-radius: 65% 45% 45% 65%;
+  background: linear-gradient(90deg, transparent, #f04412 35%, #ffbe32 70%, #fff4b0);
+  filter: drop-shadow(0 0 5px #ff6b16);
+}
+.rpg-projectile-combat--ciblee .rpg-projectile-combat__tete {
+  width: 30px;
+  height: 6px;
+  top: -3px;
+  background: linear-gradient(90deg, transparent, #9cddff 65%, #fff);
+  clip-path: polygon(0 25%, 75% 25%, 75% 0, 100% 50%, 75% 100%, 75% 75%, 0 75%);
+  filter: drop-shadow(0 0 4px #56bdff);
+}
+@keyframes rpg-projectile-trajet {
+  0% { transform: translate(0, 0) scale(.65); opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--tir-dx), var(--tir-dy)) scale(1.1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rpg-projectile-combat { display: none; animation: none; }
+}
