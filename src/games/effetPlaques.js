@@ -3,8 +3,8 @@
  * du Sablier vient se poser.
  *
  * La grammaire est celle des emblèmes de héros : plus de trait doré posé à
- * même le texte, mais une **pierre taillée** — fond saturé, biseau clair en
- * haut, ombre en bas, liseré sombre, et le symbole en blanc pur au centre.
+ * même le texte, mais une **pierre taillée** — fond saturé, anneau en creux,
+ * liseré sombre, et le symbole en blanc pur au centre.
  * Deux choses s'y lisent d'un coup d'œil, sans lire le mot :
  *
  * - **la forme dit la famille d'action** — le `diamant` pour ce qui frappe et
@@ -44,7 +44,9 @@ export const PLAQUE_FORMES = Object.freeze({
 });
 
 /**
- * Les pierres : `encre` borde, `fond` remplit, `lueur` éclaire le biseau haut.
+ * Les pierres : `encre` borde, `creux` fait l'anneau, `fond` remplit. `lueur`
+ * garde la teinte claire de la famille — les repères taillés ne s'en servent
+ * plus depuis que le champ est franc, mais la palette reste complète.
  * Les valeurs sont volontairement sombres sur les bords — la carte du Sablier
  * est elle-même sombre, une pierre doit s'y détacher sans briller comme un
  * néon.
@@ -356,11 +358,13 @@ export function plaqueEffet(cle) {
 /**
  * Le contenu d'une pierre, en balisage SVG (sans l'élément `<svg>`).
  *
- * L'ordre des couches fait tout le relief : la silhouette entière en encre
- * donne le liseré sombre, la réduction à 84 % le champ, la moitié haute la
- * lumière du biseau, la moitié basse l'ombre portée, et le trait de la
- * réduction le filet clair qui fait « taillé ». Le symbole vient en dernier,
- * blanc, au-dessus de tout.
+ * Le fond est volontairement **simple** : la silhouette en encre donne le
+ * liseré sombre, l'anneau en creux la marche du biseau, et le champ la couleur
+ * pleine. Rien d'autre — ni moitié éclaircie, ni ombre basse, ni filet
+ * intérieur : à la taille d'une carte (18 à 40 px), ces trois couches se
+ * mélangeaient en une tache et salissaient la couleur de l'effet. Une pierre,
+ * c'est une silhouette, un ourlet et un champ franc. Le pictogramme vient en
+ * dernier, blanc, au-dessus de tout.
  *
  * `protectionContre` teinte la pierre de l'élément repoussé (le Sable, sans
  * teinte, garde la pierre de sa famille).
@@ -374,8 +378,6 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
   const biseau = BISEAU_PAR_FORME[plaque.forme];
   const anneau = reduire(silhouette, biseau.anneau);
   const champ = reduire(silhouette, biseau.champ);
-  const lumiere = moitie(champ, { cote: 'haut' });
-  const ombre = moitie(champ, { cote: 'bas' });
   const teinte = protectionContre ? couleurProtection(protectionContre) : null;
   const symbole = SYMBOLE_PAR_FORME[plaque.forme];
   const marge = arrondi((PLAQUE_COTE - symbole) / 2);
@@ -383,10 +385,7 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
     `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     `<polygon points="${pointsSvg(champ)}" fill="${pierre.fond}"/>`,
-    `<polygon points="${pointsSvg(lumiere)}" fill="${pierre.lueur}" fill-opacity=".24"/>`,
-    `<polygon points="${pointsSvg(ombre)}" fill="${pierre.encre}" fill-opacity=".32"/>`,
-    teinte ? `<polygon points="${pointsSvg(champ)}" fill="${teinte}" fill-opacity=".5"/>` : '',
-    `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".5" stroke-width=".8"/>`,
+    teinte ? `<polygon points="${pointsSvg(champ)}" fill="${teinte}" fill-opacity=".55"/>` : '',
     // Le halo d'encre passe avant le blanc : il sépare le pictogramme du champ
     // quand la pierre est claire, et le fait lire d'un coup d'œil à 16 px.
     `<use href="#${plaque.symbole}" x="${marge}" y="${marge}" width="${symbole}" height="${symbole}" fill="none" stroke="${pierre.encre}" stroke-opacity=".55" stroke-width="${HALO_SYMBOLE[plaque.forme]}" stroke-linecap="round" stroke-linejoin="round"/>`,
@@ -395,11 +394,11 @@ export function pierreEffet(cle, { protectionContre = null } = {}) {
 }
 
 /**
- * Une plaque **nue** : la même pierre taillée — silhouette d'encre, anneau,
- * champ, biseau clair, ombre basse, filet — mais sans pictogramme. C'est elle
- * qui porte la pastille de couleur (hexagone) et le disque de coût (losange) :
- * le coût, la couleur et les effets se lisent donc dans la même grammaire, à
- * la même taille, et seule la silhouette dit ce qu'on regarde.
+ * Une plaque **nue** : la même pierre — silhouette d'encre, anneau, champ —
+ * mais sans pictogramme. C'est elle qui porte la pastille de couleur (hexagone) et
+ * le losange de coût : les trois repères d'une carte se lisent donc dans la
+ * même grammaire, à la même taille, et seule la silhouette dit ce qu'on
+ * regarde.
  *
  * `bases` : une couleur, ou deux pour un coût hybride — le champ reçoit alors
  * un dégradé diagonal d'une couleur à l'autre.
@@ -409,8 +408,6 @@ export function plaqueNue({ forme = 'hexagone', bases = [ELEMENT_TEINTES.braise]
   const biseau = BISEAU_PAR_FORME[forme];
   const anneau = reduire(silhouette, biseau.anneau);
   const champ = reduire(silhouette, biseau.champ);
-  const lumiere = moitie(champ, { cote: 'haut' });
-  const ombre = moitie(champ, { cote: 'bas' });
   const couleurs = (bases.length ? bases : [ELEMENT_TEINTES.braise]).slice(0, 2);
   const pierre = palettePlaque(couleurs[0]);
   const idDegrade = `plaque-${couleurs.join('').replace(/#/g, '')}`;
@@ -425,9 +422,6 @@ export function plaqueNue({ forme = 'hexagone', bases = [ELEMENT_TEINTES.braise]
     `<polygon points="${pointsSvg(silhouette)}" fill="${pierre.encre}" stroke="${pierre.encre}" stroke-width="${CONTOUR}" stroke-linejoin="round"/>`,
     `<polygon points="${pointsSvg(anneau)}" fill="${pierre.creux}"/>`,
     champSvg,
-    `<polygon points="${pointsSvg(lumiere)}" fill="${pierre.lueur}" fill-opacity=".24"/>`,
-    `<polygon points="${pointsSvg(ombre)}" fill="${pierre.encre}" fill-opacity=".32"/>`,
-    `<polygon points="${pointsSvg(champ)}" fill="none" stroke="${pierre.lueur}" stroke-opacity=".5" stroke-width=".8"/>`,
   ].join('');
 }
 

@@ -479,7 +479,6 @@
   aspect-ratio: 16 / 11;
   overflow: hidden;
   --rpg-card-marker-size: 26px;
-  --rpg-plaque-taille: 22px;
   border-radius: 7px;
   background-color: #171218;
   border: var(--rpg-card-border, 4px) solid transparent;

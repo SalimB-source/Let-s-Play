@@ -90,9 +90,10 @@ pour 64 effets, vérifiées par les tests. Un joueur reconnaît donc l'effet à 
 seule pastille, sans lire le pictogramme, et la famille reste lisible : les
 quinze Assauts vont du rouge sombre au rouge clair, jamais au bleu.
 
-Les quatre couches de la pierre (`encre`, `creux`, `fond`, `lueur`) reçoivent la
-même rotation, à des dosages différents : le champ tourne franchement, le creux
-et la lueur suivent, l'encre reste presque noire.
+Les trois couches visibles (`encre`, `creux`, `fond`) donnent un contour, un
+anneau et un champ de couleur franc. Aucun éclaircissement supérieur, ombre
+basse ou filet intérieur ne charge le fond. La palette conserve `lueur`, mais
+le dessin ne l’utilise plus.
 
 Rien n'est deviné en CSS : la pierre est dessinée dans le SVG, ce qui la rend
 insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
@@ -105,8 +106,9 @@ insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
 - **Badges de face** (`IconesCarte`) : la pierre **est** le badge — plus de
   pastille ronde ni de liseré CSS ; le chiffre de l'effet (« Furie 2 ») garde sa
   petite pastille sombre, posée en bas à droite de la pierre. La taille vient de
-  la carte (`--rpg-plaque-taille`) : `clamp(16px, 17cqw, 30px)` sur la table,
-  24 px dans la main, 18 px au doigt, 32 px dans l'aperçu, 22 px à l'atelier.
+  la carte (`--rpg-plaque-taille`) : `clamp(18px, 21cqw, 40px)` partout : table, main, mulligan, aperçu,
+  catalogue et atelier. Couleur, coût et effets partagent cette mesure unique.
+  Le coût du mulligan se place sous la couleur, comme dans l’aperçu.
 - **Interlignage** (`IconeLigneRegle`) : 18 px devant la ligne de règle, réservé
   aux surfaces de lecture.
 
@@ -116,7 +118,7 @@ les emblèmes d'Arcane Rush. La colonne s'aligne sur le bord (`right: 0`) puis
 glisse vers l'extérieur d'une part d'elle-même (`--rpg-plaque-bord` : 36 % sur
 la table et le plateau, 30 % dans la main, 22 % au doigt), d'où une pierre dont l'axe reste
 juste à l'intérieur du cadre et dont la moitié déborde sur la table. La carte
-ouvre son rognage de 14 px pour laisser passer ce débord — `overflow: clip` avec
+ouvre son rognage de 16 px (22 px dans l’aperçu) pour laisser passer ce débord — `overflow: clip` avec
 une marge, jamais `hidden` : aucun débordement ne crée de zone de défilement —
 et l'illustration reprend le rayon du cadre à son compte.
 

@@ -522,10 +522,7 @@
 /* `cqw` se mesure sur le conteneur : la mesure doit donc vivre sur les enfants
    de la carte, pas sur la carte elle-même. Les trois repères taillés héritent
    de la même valeur depuis chaque face. */
-.rpg-battle--moba .moba .rpg-hand__card--img > * {
-  --rpg-card-marker-size: min(28px, 27cqw);
-  --rpg-plaque-taille: min(24px, 26cqw);
-}
+.rpg-battle--moba .moba .rpg-hand__card--img > * { --rpg-card-marker-size: min(28px, 27cqw); }
 .rpg-battle--moba .moba .rpg-hand__card--img .rpg-hand__stat { min-width: 0; font-size: min(13px, 14cqw); padding: 2cqw 3cqw; gap: 1cqw; }
 /* La pierre de la main MOBA suit la carte comme le reste : 26 % de sa largeur,
    plafonnée à 24 px (contre 12 px auparavant) — les cinq à six faces de la main

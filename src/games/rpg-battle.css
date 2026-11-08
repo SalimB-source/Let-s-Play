@@ -996,20 +996,18 @@
 .rpg-card--img {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  /* La taille des trois repères de la carte — pierres d'effets, hexagone de
-     couleur, losange de coût : 17 % de la carte, entre 16 et 30 px. Une seule
-     valeur, lue par `effet-icons.css` et par les deux pastilles. */
-  --rpg-plaque-taille: clamp(16px, 17cqw, 30px);
+  /* La taille des trois repères est commune à toutes les faces : voir « Une
+     seule mesure pour les trois repères », plus bas. */
   padding: 0;
   /* Les pierres d'effets sont chevillées au bord droit de la carte et en
      débordent à moitié (`effet-icons.css`, « Les emblèmes montés sur le
-     bord »). Le rognage s'ouvre donc de 14 px — `clip` et non `hidden`, comme
+     bord »). Le rognage s'ouvre donc de 16 px — `clip` et non `hidden`, comme
      la pastille d'arme de `has-arme` : le débordement se voit sans jamais
      ouvrir de zone de défilement. L'illustration reprend le rayon du cadre à
      son compte (règle suivante), puisqu'il ne rogne plus ses coins. */
   overflow: hidden;
   overflow: clip;
-  overflow-clip-margin: 14px;
+  overflow-clip-margin: 16px;
 }
 
 .rpg-card--img > :is(.rpg-card__img, .rpg-card__blood, .rpg-card__frost) {
@@ -1533,7 +1531,6 @@
    du bord droit (14 px de marge, `clip` sans zone de défilement), et
    l'illustration reprend le rayon du cadre à son compte. */
 .rpg-hand__card--img {
-  --rpg-plaque-taille: 24px;
   padding: 0;
   overflow: hidden;
   overflow: clip;
@@ -3241,7 +3238,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-graveyard-carousel__empty { color: #bdb3a4; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard { position: relative; inset: auto; display: block; width: 100%; max-height: none; overflow: visible; padding: 0; border: 0; background: transparent; box-shadow: none; pointer-events: none; animation: none; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__empile { width: 100%; }
-.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face { --rpg-card-marker-size: 16px; --rpg-plaque-taille: 14px; border-width: 2px; border-radius: 5px; }
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face { --rpg-card-marker-size: 16px; border-width: 2px; border-radius: 5px; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__details { display: none; }
 @media (max-width: 600px) {
   .rpg-graveyard-carousel__content { width: 96vw; height: 90dvh; padding: 12px; gap: 9px; }
@@ -4749,20 +4746,18 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  --rpg-plaque-taille: 32px;
-  /* La face de l'aperçu rapide est une grande face, comme au catalogue : la
-     pierre y passe à 32 px — l'hexagone de couleur, le losange de coût et les
-     pierres d'effets de la même taille, un sixième de la face. */
+  /* La face de l'aperçu rapide est une grande face : la mesure commune des
+     repères y donne la plus grande pierre du jeu (plafond de 40 px). */
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
   /* Les pierres d'effets de l'aperçu sont chevillées au bord de la face et en
      débordent de 45 % (`effet-icons.css`, « L'aperçu de carte ») : le rognage
-     s'ouvre de 18 px, `clip` sans zone de défilement, et l'illustration reprend
+     s'ouvre de 22 px, `clip` sans zone de défilement, et l'illustration reprend
      le rayon du cadre à son compte (règle suivante). */
   overflow: hidden;
   overflow: clip;
-  overflow-clip-margin: 18px;
+  overflow-clip-margin: 22px;
   --rpg-frame-fill: transparent;
   border: var(--rpg-card-border-large, 6px) solid var(--rpg-frame-color, #f1f3f5);
   border-radius: var(--rpg-card-radius-sm, 8px);
@@ -5441,12 +5436,16 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-mulligan__card .rpg-mana-cost {
   position: absolute;
   z-index: 4;
-  top: var(--rpg-card-element-marker-top, 5%);
-  right: var(--rpg-card-element-marker-left, 6%);
+  /* Comme sur l'aperçu : le coût se range **sous** l'hexagone de couleur, dans
+     le même coin. Le mulligan, l'aperçu et la table lisent donc leurs repères
+     dans le même ordre — ce que la carte est, puis ce qu'elle coûte. */
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 24px) + 6px);
+  right: auto;
+  left: var(--rpg-card-element-marker-left, 6%);
   aspect-ratio: 1;
   padding: 0;
-  border-radius: 50%;
-  font-size: calc(var(--rpg-card-marker-size, 30px) * .48);
+  border-radius: 0;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .52);
   pointer-events: none;
 }
 .rpg-mulligan__card .rpg-mana-cost i {
@@ -6211,6 +6210,35 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 3px #000;
   pointer-events: none;
 }
+/* ── Une seule mesure pour les trois repères ────────────────────────────────
+   La table, la main, le mulligan, l'aperçu, le catalogue et l'atelier posaient
+   chacun leur taille : 24 px fixes ici, 13 % là, 32 px ailleurs. Une même carte
+   ne ressemblait donc pas à elle-même d'une surface à l'autre, et les grandes
+   faces (mulligan, aperçu) portaient les plus **petites** pastilles.
+   Désormais **une seule règle** : 21 % de la largeur de la carte, entre 18 et
+   40 px. L'hexagone de couleur, le losange de coût et les pierres d'effets font
+   exactement la même taille, et la même part de la carte, partout.
+   `cqw` se mesure sur le conteneur : la mesure vit donc sur les **enfants** de
+   la face, pas sur la face elle-même, et `container-type` ouvre le conteneur.
+   Une vignette minuscule (le cimetière) garde sa propre réduction. */
+.rpg-card--img,
+.rpg-hand__card--img,
+.rpg-mulligan__card,
+.rpg-hover-card-preview__face,
+.rpg-card-catalogue__art,
+.rpg-atelier__carte-art {
+  container-type: inline-size;
+}
+
+.rpg-card--img > *,
+.rpg-hand__card--img > *,
+.rpg-mulligan__card > *,
+.rpg-hover-card-preview__face > *,
+.rpg-card-catalogue__art > *,
+.rpg-atelier__carte-art > * {
+  --rpg-plaque-taille: clamp(18px, 21cqw, 40px);
+}
+
 /* ── La couleur, le coût : des pierres comme les effets ──────────────────────
    Les trois repères d'une carte parlent la même langue. La pierre taillée des
    effets porte désormais la **couleur** (hexagone) et le **coût** (losange) :
@@ -10499,20 +10527,14 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card--img { --rpg-card-marker-size: 26px; }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img { --rpg-card-marker-size: 30px; }
 .rpg-hand__card--img { --rpg-card-marker-size: 28px; }
-/* Chaque face pose, à côté du repère rond, la mesure des pierres taillées : la
-   même part de la carte que sur la table (≈ 86 % du repère), pour que
-   l'hexagone, le losange et les pierres d'effets gardent leurs proportions. */
-.rpg-mulligan__card {
-  --rpg-card-marker-size: clamp(16px, 15cqw, 30px);
-  --rpg-plaque-taille: clamp(14px, 13cqw, 26px);
-}
+.rpg-mulligan__card { --rpg-card-marker-size: clamp(16px, 15cqw, 30px); }
 .rpg-hover-card-preview__face,
-.rpg-card-catalogue__art { --rpg-card-marker-size: 38px; --rpg-plaque-taille: 32px; }
+.rpg-card-catalogue__art { --rpg-card-marker-size: 38px; }
 @media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img { --rpg-card-marker-size: 20px; }
-  .rpg-hand__card--img { --rpg-card-marker-size: 22px; --rpg-plaque-taille: 18px; }
+  .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
   .rpg-hover-card-preview__face,
-  .rpg-card-catalogue__art { --rpg-card-marker-size: 35px; --rpg-plaque-taille: 30px; }
+  .rpg-card-catalogue__art { --rpg-card-marker-size: 35px; }
 }
 
 
@@ -14931,9 +14953,6 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 720px), (orientation: landscape) and (max-height: 760px) {
   .rpg-card-peek--catalogue .rpg-hover-card-preview__face {
     --rpg-card-marker-size: clamp(26px, min(3.4vw, 6dvh), 34px);
-    /* Les trois repères taillés suivent la même réduction que le repère rond :
-       l'hexagone, le losange et les pierres d'effets restent de la même taille. */
-    --rpg-plaque-taille: clamp(22px, min(2.9vw, 5.1dvh), 29px);
   }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge {
     border-width: 1.5px;

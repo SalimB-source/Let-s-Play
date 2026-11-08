@@ -137,30 +137,32 @@ function plaqueCleDeForme(forme) {
     .find((cle) => PLAQUE_FAMILLES[PLAQUE_FAMILLE_EFFET[cle]].forme === forme);
 }
 
-test('la pierre se dessine en couches : contour, anneau, champ, biseau, symbole blanc', () => {
+test('la pierre se dessine en couches : contour, anneau, champ, symbole blanc', () => {
   const pierre = pierreEffet('furie');
   // La pierre prend sa nuance propre, pas la couleur unique du registre.
   const pierres = teinteEffet('furie');
   assert.match(pierre, new RegExp(`fill="${pierres.encre}"`), 'le contour sombre est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.creux}"`), 'l’anneau du biseau est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.fond}"`), 'le champ est peint');
-  assert.match(pierre, new RegExp(`fill="${pierres.lueur}" fill-opacity`), 'la lumière du dessus est peinte');
   assert.match(pierre, /<use href="#i-furie"[^>]*stroke="#ffffff"/, 'le symbole est blanc');
   assert.match(pierre, new RegExp(`<use href="#i-furie"[^>]*stroke="${pierres.encre}"`),
     'un halo d’encre double le pictogramme');
   assert.match(pierre, /stroke-linecap="round" stroke-linejoin="round"/, 'le symbole garde ses bouts ronds');
   assert.equal(pierre.includes('currentColor'), false, 'la pierre ne dépend plus de l’encre du texte');
-  // contour, anneau, champ, lumière, ombre et filet clair : six polygones.
-  assert.equal((pierre.match(/<polygon/g) ?? []).length, 6, 'six couches de pierre pour une furie');
+  // Le fond est volontairement simple : contour, anneau, champ — trois
+  // polygones, sans moitié éclaircie, ombre basse ni filet intérieur.
+  assert.equal((pierre.match(/<polygon/g) ?? []).length, 3, 'trois couches de pierre pour une furie');
+  assert.doesNotMatch(pierre, /stroke-opacity="\.5" stroke-width="\.8"/, 'plus de filet intérieur');
 });
 
 test('la Protection élémentaire teinte sa pierre, le Sable garde la sienne', () => {
   const braise = pierreEffet('protection', { protectionContre: 'braise' });
-  assert.match(braise, new RegExp(`fill="${couleurProtection('braise')}" fill-opacity=".5"`),
+  assert.match(braise, new RegExp(`fill="${couleurProtection('braise')}" fill-opacity=".55"`),
     'la pierre prend la couleur de l’élément repoussé');
   const sable = pierreEffet('protection', { protectionContre: 'sable' });
   assert.doesNotMatch(sable, new RegExp(`fill="${couleurProtection('braise')}"`));
-  assert.equal((sable.match(/<polygon/g) ?? []).length, 6, 'sans teinte, la pierre garde ses six couches');
+  assert.equal((sable.match(/<polygon/g) ?? []).length, 3, 'sans teinte, la pierre garde ses trois couches');
+  assert.equal((braise.match(/<polygon/g) ?? []).length, 4, 'la teinte ajoute une couche');
   assert.equal(plaqueEffet('protection').famille, 'garde', 'une Protection est une garde');
 });
 
@@ -191,8 +193,12 @@ test('la feuille pose la pierre comme badge et laisse le glyphe respirer', () =>
     'la pierre se décolle du fond de la carte');
   assert.match(css, /\.rpg-card-icone\.is-epuisee\s*\{[^}]*filter: grayscale\(1\);/s,
     'une pierre dépensée s’éteint');
-  assert.match(cssMobile, /--rpg-plaque-taille: 18px;/,
-    'dans une main mobile, la pierre passe à 18 px — lisible sans coller l’écran');
+  // Une seule mesure pour toutes les faces, posée par `rpg-battle.css`.
+  const cssBattle = readFileSync(new URL('../src/games/rpg-battle.css', import.meta.url), 'utf8');
+  assert.match(cssBattle, /--rpg-plaque-taille: clamp\(18px, 21cqw, 40px\);/,
+    'une seule mesure : 21 % de la carte, entre 18 et 40 px');
+  assert.doesNotMatch(cssMobile, /--rpg-plaque-taille:\s*[\d.]+px/,
+    'plus aucune taille fixe dans la feuille mobile');
   assert.match(cssMobile, /\.rpg-card-icone \.rpg-effet-icone\s*\{[^}]*width: var\(--rpg-plaque-taille, 18px\);[^}]*height: var\(--rpg-plaque-taille, 18px\);/s,
     'le glyphe suit la taille de la colonne, il ne la fixe plus');
   assert.match(jsx, /data-plaque=\{plaque\.famille\}/, 'le composant React expose la famille de la pierre');

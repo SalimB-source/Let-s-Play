@@ -1460,7 +1460,7 @@
    reste, mais le disque de coût ne s'imprime plus (voir plus haut) : la
    pastille de couleur y est le seul repère rond, en 27cqw proportionnels. */
 .rpg-battle--touch .rpg-card--img,
-.rpg-battle--touch .rpg-hand__card--img { --rpg-card-marker-size: 22px; --rpg-plaque-taille: 18px; }
+.rpg-battle--touch .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge {
   /* L'hexagone de couleur fait exactement la taille des pierres d'effets : la
      mesure vient de la carte, pas de la surface. */
