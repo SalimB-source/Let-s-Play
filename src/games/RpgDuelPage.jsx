@@ -1,3 +1,5 @@
+import { SACRIFICE_ANIMATION } from './rpgSacrificeAnimation.js';
+import { sacrificesInvocation, invocationPossible } from './rpgInvocation.js';
 import { CardHourglass } from './CardHourglass.jsx';
 import { projectilesCombat } from './rpgProjectilesCombat.js';
 import { LanguageContext } from '../i18n/LanguageContext';
@@ -2066,8 +2068,7 @@ export function LigneCharge({ effet }) {
 /**
  * Cercle magique d'un sacrifice : une créature rendue au sable.
  *
- * Quand le plateau est plein et qu'une créature est sacrifiée pour faire
- * place à la nouvelle, un cercle de runes s'allume à son emplacement :
+ * Chaque victime d’une invocation porte un cercle de runes dorées :
  * halo qui pulse, anneaux qui tournent en sens contraires, glyphes qui
  * apparaissent et étincelles qui montent. Le calque reprend la place et
  * l'inclinaison de la créature sacrifiée, ne capte aucun geste et ne
@@ -2087,6 +2088,7 @@ export function CercleMagique({ effet, onTermine = null }) {
         width: `${effet.width}px`,
         height: `${effet.height}px`,
         '--rpg-fx-rotation': `${effet.angle ?? 0}rad`,
+        '--rpg-sacrifice-duree': `${SACRIFICE_ANIMATION.cercle}ms`,
       }}
       onAnimationEnd={(event) => {
         if (event.target !== event.currentTarget || event.pseudoElement) return;
@@ -2855,6 +2857,7 @@ export function TableCard({
   blocking,
   canTarget,
   sacrificeTarget = false,
+  sacrificeEnAnimation = false,
   spellTarget = false,
   sortBloqueParBouclier = false,
   coupRapideCible = false,
@@ -3009,6 +3012,7 @@ export function TableCard({
         entite.furieDeclenchee ? 'is-furie' : '',
         canTarget ? 'is-ciblable' : '',
         sacrificeTarget ? 'is-sacrifice-target' : '',
+        sacrificeEnAnimation ? 'is-sacrifice-animating' : '',
         spellTarget ? 'is-spell-target' : '',
         coupRapideCible ? 'is-coup-rapide-cible' : '',
         canDragBlocker ? 'is-blocker-draggable' : '',
@@ -3074,7 +3078,7 @@ export function TableCard({
       onDragOver={survolerCibleBlocage}
       onDragLeave={quitterCibleBlocage}
       onDrop={deposerBloqueur}
-      aria-label={moba?.ariaLabel ?? `${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonanceDefense ?? carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 15 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${entite.defenseur || entite.prioriteAttaqueRapide ? ', Défenseur : les Attaques ciblées adverses doivent le viser en priorité si possible' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${cartesArmes.length ? `, armes équipées : ${cartesArmes.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${carte?.furtif ? ', Furtivité : détruite à la fin du tour où elle arrive en jeu' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? `, esquive : ${Math.round((entite.esquiveChance ?? 0.15) * 100)} % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité` : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${durabiliteArme ? `, son arme porte ${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', cliquer pour sacrifier cette créature et libérer son emplacement' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
+      aria-label={moba?.ariaLabel ?? `${nom}, ${cardFaceTypeLine(carte)}, couleur ${carte?.element ?? 'inconnue'}, coût ${carte?.cost ?? 0}${estSite ? ', site indestructible occupant un emplacement du champ' : `, attaque ${entite.atk}, défense ${entite.pv}${armure ? `, dont ${armure.restant} d’armure` : ''}${annonceVariationsStats}`}${carte?.honneur ? `, Harakiri : à sa mort, inflige ${carte.honneur} dégât${carte.honneur > 1 ? 's' : ''} à une créature adverse au hasard, ou au sorcier adverse s’il n’y en a aucune` : ''}${carte?.resonance ? `, résonance ${resonanceGroupLabel(cardResonanceGroup(carte)).toLowerCase()} : ${carte.resonanceExclutSource ? 'seules les autres ' : 'toutes les '}créatures de type ${resonanceGroupLabel(cardResonanceGroup(carte))} des deux camps gagnent +${carte.resonance}/+${carte.resonanceDefense ?? carte.resonance}` : ''}${carte?.banniere ? `, bannière : chaque fois qu’un Samouraï du camp de la source attaque, il gagne +${carte.banniere.atk}/+${carte.banniere.def}` : ''}${carte?.aura?.type === 'buff-tribu' ? `, aura : les créatures adjacentes de type ${resonanceGroupLabel(carte.aura.tribu)} de votre camp gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-autres' ? `, aura : vos créatures adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : carte?.aura?.type === 'buff-element' ? `, aura : vos créatures ${ELEMENT_LABELS[carte.aura.element] ?? carte.aura.element} adjacentes gagnent +${carte.aura.atk}/+${carte.aura.def}` : ''}${(entite.butin ?? carte?.butin) ? ', Butin : toucher le sorcier adverse fait piocher puis défausser une carte' : ''}${carte?.malediction ? `, malédiction : toutes les créatures adverses gagnent -${carte.malediction.atk ?? 0}/-${carte.malediction.def ?? 0} tant qu'elle est en jeu` : ''}${carte?.insaisissable ? ', le dédoublement : ne peut pas être prise en cale' : ''}${entite.enCale ? `, cale : détient ${entite.enCale.name} — la cale s’ouvre quand ${entite.name} quitte la table` : ''}${entite.coupRapide ? `, Attaque ciblée : peut frapper une créature adverse avant le combat ${armeCarte?.coupRapideImmanquable ? 'avec 100 % de chances de réussir' : 'avec 15 % de chances de rater'} et arrêter là son attaque ; elle ne peut attaquer le sorcier que si aucune créature adverse n’est en jeu (100 %)` : ''}${entite.defenseur || entite.prioriteAttaqueRapide ? ', Défenseur : les Attaques ciblées adverses doivent le viser en priorité si possible' : ''}${entite.provocation ? ', Provocation : quand elle attaque, elle doit être bloquée par au moins une créature si possible' : ''}${entite.nePeutPasAttaquer ? ', ne peut pas attaquer' : ''}${cartesArmes.length ? `, armes équipées : ${cartesArmes.map((arme) => arme.name).join(', ')}` : ''}${effetsArmesEquipees.length ? `, ${effetsArmesEquipees.join(', ')}` : ''}${carte?.furtif ? ', Furtivité : détruite à la fin du tour où elle arrive en jeu' : ''}${entite.rapidite ? ', rapidité, peut attaquer le tour où elle arrive' : ''}${entite.envol ? ', envol, ne peut être bloquée que par une créature avec envol' : ''}${entite.volDeVie ? ', vol de vie, son contrôleur gagne la moitié des dégâts qu’elle inflige en points de vie, arrondie à l’entier supérieur' : ''}${entite.infiltration ? ', infiltration, ne peut pas être bloquée' : ''}${entite.tenaciteDisponible ? ', tenacité : une fois par partie, quand elle meurt (sauf exilée), elle revient en jeu au prochain tour de son camp avec 1 de défense' : effetsEpuises.includes('tenacite') ? ', tenacité déjà utilisée' : ''}${activation ? `, capacité activée : payer ${activation.cout} mana de glace, inflige ${activation.effet?.amount ?? 0} blessures à une créature au choix` : ''}${protectionActive ? `, bouclier de ${protectionLabel} : bloque le prochain sort adverse de cette couleur` : ''}${entite.esquive ? `, esquive : ${Math.round((entite.esquiveChance ?? 0.15) * 100)} % de chance d’esquiver une attaque, une Magie ou une Sorcellerie, mais pas une capacité` : ''}${entite.contreAttaque ? ', contre-attaque : quand une créature adverse la frappe avec Attaque ciblée ou la cible avec une capacité, elle lui inflige ses dégâts d’attaque ; quand un sort la cible, elle frappe le sorcier adverse — même si elle a esquivé' : ''}${entite.attaquee ? `, engagée, elle se dégagera au début du prochain tour ${cote === 'ennemi' ? 'du sorcier' : 'du joueur'}` : ''}${gelee ? ', gelée : ne peut ni attaquer ni bloquer, aucune blessure infligée pendant ce combat' : ''}${entite.empecheAttaqueToursRestants > 0 ? ', venin : ne peut pas attaquer jusqu’à la fin de son prochain tour' : ''}${blessee ? ', blessée' : ''}${malInvocation ? ', mal d’invocation' : ''}${entite.heures?.restants ? `, ${entite.heures.restants} compteur${entite.heures.restants > 1 ? 's' : ''} d’Heures sur ${estSite ? 'le site' : 'la créature'}` : ''}${durabiliteArme ? `, son arme porte ${durabiliteArme} compteur${durabiliteArme > 1 ? 's' : ''} de durabilité` : ''}${entite.arme?.compteurs ? `, ${entite.arme.compteurs} compteur${entite.arme.compteurs > 1 ? 's' : ''} de sable sur son arme` : ''}${entite.bouclier ? ', bouclier : bloque le prochain sort ou effet de créature adverse qui l’atteint' : ''}${effetsEpuises.includes('bouclier') ? ', bouclier tombé' : ''}${blocking ? ', bloqueur assigné, flèche jaune vers son attaquant' : ''}${canDragBlocker ? ', bloqueur disponible, glisser sur une créature attaquante' : ''}${selectedBlocker ? ', bloqueur sélectionné, cliquez une créature attaquante pour lui assigner le blocage' : ''}${sortBloqueParBouclier ? ', ce bouclier bloquera le sort sélectionné puis se brisera' : ''}${spellTarget ? ', ciblée par le sort annoncé, lueur rouge' : ''}${coupRapideCible ? ', ciblée par une Attaque ciblée, lueur rouge' : ''}${sacrificeTarget ? ', sélectionner cette créature comme sacrifice d’invocation' : ''}${soin ? `, vient de regagner ${soin.montant} PV` : ''}${miss ? ', attaque ratée (MISS)' : ''}`}
       aria-pressed={Boolean(selected || selectedBlocker)}
     >
       <img
@@ -8070,9 +8074,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   // Le lot du Sable : un mode d'arme qui désigne une proie (le Trait de sable
   // de la Jitte) se joue en deux clics — le bouton, puis la créature adverse.
   const [cibleArmeEnCours, setCibleArmeEnCours] = useState(null);
-  // Le champ d'essai plein (cinq créatures) : la carte à poser attend le choix
-  // de la créature à sacrifier — Échap ou « Renoncer » rend la carte à la main.
+  // Invocation : la carte attend le choix d’une ou deux victimes — Échap ou « Renoncer » rend la carte à la main.
   const [sacrificeEnCours, setSacrificeEnCours] = useState(null);
+  const [sacrificesChoisis, setSacrificesChoisis] = useState([]);
   // La créature cliquée attend sa CASE : `{ carteId, handIndex }` tant que le
   // joueur n'a pas cliqué une des cases libres de sa rangée (les boutons de
   // `CreatureSlots`). Rien n'est encore payé — recliquer la carte ou Échap
@@ -8095,6 +8099,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (event.key !== 'Escape') return;
       setActivationEnCours(null);
       setSacrificeEnCours(null);
+      setSacrificesChoisis([]);
       setPoseEnCours(null);
       setNavMenuOuvert(false);
       setNavParametresOuvert(false);
@@ -8118,8 +8123,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const [terrainManaChoix, setTerrainManaChoix] = useState(null);
   const [confirmationSort, setConfirmationSort] = useState(null);
   const [carteDefausseSelectionnee, setCarteDefausseSelectionnee] = useState(null);
-  // Sacrifice du mode sans terrains : `sacrificeDemande` = la fenêtre « plateau
-  // plein » (Sacrifier / Annuler), `sacrificeEnCours` (plus haut) = la carte
+  // Invocation : `sacrificeDemande` = la confirmation du prix en sacrifices, `sacrificeEnCours` (plus haut) = la carte
   // dont on désigne la victime sur la table, `sacrificeFx` = la carte en
   // train de se déchirer à sa place.
   const [sacrificeDemande, setSacrificeDemande] = useState(null);
@@ -10072,7 +10076,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const indicateurTour = vainqueur
     ? 'DUEL TERMINÉ'
     : sacrificeDemande
-      ? 'PLATEAU PLEIN · SACRIFICE ?'
+      ? 'INVOCATION · SACRIFICE'
     : sacrificeEnCours
       ? 'À VOUS · SACRIFICE'
     : sacrificeFx
@@ -11090,6 +11094,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // `is-playable`), pas de clic, pas de glisser-déposer.
     if (carte.kind === 'magie' && !rpgSortACibleValide(duel, 'joueur', carte)) return false;
     if (!rpgConditionEmbuscadeRemplie(duel, 'joueur', carte)) return false;
+    if (!invocationPossible(duel, 'joueur', carte)) return false;
     const reactionAttaque = (reponseActive && carte.reactionAttaque && combatEntrant?.coteAttaquant === 'sorcier')
       || (carte.reactionTourAdverse && (fenetreEffetCreature || (duel.tour === 'sorcier'
         && (reponseActive || (modePvp && !duel.arriveeEnAttente && !attenteDestructionVisible)))));
@@ -11495,10 +11500,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
    * referme l'attente (`resoudreCible`). Une arrivée qui ne désigne rien —
    * pioche, jetons, dégâts de zone — se résout avec la pose, comme avant.
    */
-  const finaliserPoseCreature = (carteId, sacrificeId = null, emplacement = null) => {
+  const finaliserPoseCreature = (carteId, sacrificeIds = null, emplacement = null) => {
     const carte = cardById(carteId);
     carteCibleeHandIndexRef.current = null;
     setSacrificeEnCours(null);
+    setSacrificesChoisis([]);
     setPoseEnCours(null);
     const etatAvantAction = JSON.stringify(duel);
     const champAvantAction = prendreInstantaneChamp();
@@ -11507,7 +11513,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     const res = rpgJouerCreature(duel, 'joueur', carteId, null, {
       cibleDifferee: true,
       attaquants: combatEntrant?.coteAttaquant === 'sorcier' ? combatEntrant.attaquants : [],
-      sacrificeId,
+      sacrificeIds,
       emplacement: Number.isInteger(emplacement) ? emplacement : null,
     });
     if (modePvp && res.ok) {
@@ -11515,7 +11521,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         type: 'jouer-carte',
         carteId,
         cibleDifferee: true,
-        sacrificeId: sacrificeId ?? null,
+        sacrificeIds: sacrificeIds ?? null,
         emplacement: Number.isInteger(emplacement) ? emplacement : null,
       });
     }
@@ -11536,7 +11542,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       // La créature sacrifiée a déjà eu son animation de déchirement : pas de
       // second fantôme de destruction pour elle.
       animerModificationsChamp(champAvantAction, [], debutJournalDestructions,
-        res.sacrificeId ? [res.sacrificeId] : []);
+        res.sacrificeIds ?? (res.sacrificeId ? [res.sacrificeId] : []));
       // Une arrivée qui désigne encore sa cible ne sonne pas ici : sa flamme
       // (ou son tonnerre) appartient au geste qui blesse, et part au clic qui
       // désigne la victime (`resoudreCible`, `rpgArriveeAudio.js`). La Tour de
@@ -11566,17 +11572,18 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     }
   };
 
-  /** Fenêtre « plateau plein » : le joueur vient d'essayer de jouer une
-   * sixième créature. « Annuler » rend la main sans rien payer ; « Sacrifier »
+  /** Confirmation du prix d’invocation (une ou deux victimes). « Annuler » rend la main sans rien payer ; « Sacrifier »
    * ouvre la désignation de la créature à déchirer sur la table. */
   const annulerSacrifice = () => {
     setSacrificeDemande(null);
     setSacrificeEnCours(null);
+    setSacrificesChoisis([]);
     jouerSfx('annuler');
     force();
   };
   const confirmerSacrifice = () => {
     if (!sacrificeDemande) return;
+    setSacrificesChoisis([]);
     setSacrificeEnCours(sacrificeDemande.carteId);
     setSacrificeDemande(null);
     jouerSfx('select');
@@ -11588,29 +11595,49 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
   const dechirerEtPoser = (entite) => {
     const carteId = sacrificeEnCours;
     if (!carteId || sacrificeEnCoursRef.current) return;
-    const instantane = prendreInstantaneChamp().find((carte) => carte.entityId === entite.id);
-    setSacrificeEnCours(null);
-    sacrificeEnCoursRef.current = { carteId, sacrificeId: entite.id };
-    if (instantane) {
-      const token = ++sequenceAnimationRef.current;
-      setSacrificeFx({ ...instantane, token, effectId: `dechirement-${token}-${entite.id}` });
+    const choisis = sacrificesChoisis.includes(entite.id)
+      ? sacrificesChoisis.filter(id => id !== entite.id) : [...sacrificesChoisis, entite.id];
+    setSacrificesChoisis(choisis);
+    if (choisis.length < sacrificesInvocation(cardById(carteId), duel)) {
+      jouerSfx('select');
+      return;
     }
-    // Le sacrifice déchire une carte : il n'a jamais eu de feu à lui. Le
-    // souffle restait allumé pour toute créature sacrifiée, quelle que soit sa
-    // couleur — c'est le bruit de la carte détruite qui reste.
+    const champ = prendreInstantaneChamp();
+    const token = ++sequenceAnimationRef.current;
+    const victimes = choisis.map(id => champ.find(carte => carte.entityId === id)).filter(Boolean)
+      .map(carte => ({ ...carte, effectId: `invocation-${token}-${carte.entityId}` }));
+    setSacrificeEnCours(null);
+    setSacrificesChoisis([]);
+    sacrificeEnCoursRef.current = { carteId, sacrificeIds: choisis, token,
+      attendus: victimes.map(v => v.effectId), termines: new Set(), finPlanifiee: false };
+    setSacrificeFx({ victimes, token });
     jouerSfx('destruction');
-    // La remplaçante ne touchera le plateau qu'après la déchirure (860 ms) :
-    // sa voix part maintenant, avec le geste qui la destine à cette case.
-    annoncerVoixArrivee(carteId);
-    const duree = animationsReduites() ? 60 : 860;
-    later(() => {
-      const enCours = sacrificeEnCoursRef.current;
-      sacrificeEnCoursRef.current = null;
-      setSacrificeFx(null);
-      if (enCours) finaliserPoseCreature(enCours.carteId, enCours.sacrificeId);
-      force();
-    }, duree);
+    // Le cercle dure plus longtemps que la déchirure. La pose attend sa fin,
+    // puis une courte pause. Filet pour mouvement réduit / animationend absent.
+    const duree = animationsReduites() ? SACRIFICE_ANIMATION.reduit
+      : dureeAnimation(SACRIFICE_ANIMATION.cercle + SACRIFICE_ANIMATION.pause + SACRIFICE_ANIMATION.secours);
+    later(() => terminerPoseSacrifice(token), duree);
     force();
+  };
+
+  const terminerPoseSacrifice = (token) => {
+    const enCours = sacrificeEnCoursRef.current;
+    if (!enCours || enCours.token !== token) return;
+    sacrificeEnCoursRef.current = null;
+    setSacrificeFx(null);
+    // La voix de la nouvelle créature ne commence pas pendant le sacrifice.
+    annoncerVoixArrivee(enCours.carteId);
+    finaliserPoseCreature(enCours.carteId, enCours.sacrificeIds);
+    force();
+  };
+  const terminerCercleSacrifice = (effectId) => {
+    const enCours = sacrificeEnCoursRef.current;
+    if (!enCours || !enCours.attendus.includes(effectId) || enCours.finPlanifiee) return;
+    enCours.termines.add(effectId);
+    if (enCours.termines.size !== enCours.attendus.length) return;
+    enCours.finPlanifiee = true;
+    const token = enCours.token;
+    later(() => terminerPoseSacrifice(token), dureeAnimation(SACRIFICE_ANIMATION.pause));
   };
 
   const equiperArme = (carteId, cibleId) => {
@@ -11759,10 +11786,11 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
     // carte arrivée au bout de son animation — on n'en relance donc pas une
     // seconde, la pose se termine ici.
     if (!monTour && !peutRepondre) return;
-    // Champ d'essai plein : avant de poser, le joueur choisit la créature à
-    // sacrifier — la carte reste en main, la table s'allume, et le clic sur la
+    // Le coût de la carte exige une ou deux victimes avant la pose — la carte reste en main, la table s'allume, et le clic sur la
     // victime termine la pose (`finaliserPoseCreature`, avec son sacrifice).
-    if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+    if (sacrificesInvocation(carte, duel) > 0) {
+      if (!invocationPossible(duel, 'joueur', carte)) { jouerSfx('erreur'); return; }
+      setSacrificesChoisis([]);
       setSacrificeEnCours(carteId);
       jouerSfx('select');
       force();
@@ -11820,13 +11848,8 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         return;
       }
     }
-    // Sixième créature du mode sans terrains : le plateau est plein (5/5).
-    // Avant tout vol et tout paiement, une fenêtre demande si l'on veut
-    // sacrifier une créature — « Annuler » ne coûte rien, « Sacrifier »
-    // ouvre la désignation sur la table (voir `dechirerEtPoser`).
-    if (duel.modeMana === RPG_MODE_MANA_ESSAI
-      && (carte.kind === 'creature' || carte.kind === 'hero' || carte.kind === 'site')
-      && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX
+    // Prix d’invocation : confirmation avant animation et sans paiement.
+    if (sacrificesInvocation(carte, duel) > 0
       && !sacrificeDemande && !sacrificeEnCours && !sacrificeEnCoursRef.current) {
       setSacrificeDemande({ carteId, handIndex: index });
       jouerSfx('select');
@@ -11841,10 +11864,9 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       carteCibleeHandIndexRef.current = index;
       poserCarte(carteId);
     } else {
-      // Champ d'essai plein : la carte reste en main tant que la créature à
-      // sacrifier n'est pas choisie — le vol n'a lieu qu'une fois la place faite
-      // (le clic sur la victime relance la pose avec son sacrifice).
-      if (duel.modeMana === RPG_MODE_MANA_ESSAI && duel.joueur.creatures.length >= RPG_MANA_ESSAI_CHAMP_MAX) {
+      // Une invocation exige le choix complet de ses victimes avant le vol.
+      if (sacrificesInvocation(carte, duel) > 0) {
+        setSacrificesChoisis([]);
         setSacrificeEnCours(carteId);
         jouerSfx('select');
         force();
@@ -12237,9 +12259,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       if (!modePvp) reprendreSorcier();
       jouerSfx('select'); force(); return;
     }
-    // Désignation du sacrifice (champ d'essai plein) : ce clic désigne la
-    // créature qui fait la place — sa carte se déchire sur la table, puis la
-    // pose se termine contre le sacrifice choisi (`dechirerEtPoser`).
+    // Choix des victimes d’invocation : aucune ne meurt avant la sélection complète.
     if (sacrificeEnCours) {
       if (cardById(entite.carteId)?.kind === 'site') {
         jouerSfx('erreur');
@@ -13341,7 +13361,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
       ? {
         cle: `sacrifice:${sacrificeEnCours}`,
         classe: 'rpg-sacrifice-prompt',
-        texte: `Champ plein — choisissez une créature à sacrifier pour poser ${cardById(sacrificeEnCours)?.name ?? 'cette carte'}`,
+        texte: `Invocation — choisissez ${sacrificesInvocation(cardById(sacrificeEnCours), duel)} sacrifice(s) pour ${cardById(sacrificeEnCours)?.name ?? 'cette carte'} (${sacrificesChoisis.length} choisi(s)). Recliquez pour désélectionner.`,
       }
       : poseEnCours
         ? {
@@ -14019,7 +14039,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                       lienActif={lienActifSurTable(entite, 'joueur')}
                       caseEssai={casesJoueur?.get(entite.id) ?? null}
                       active={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
-                      selected={attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
+                      selected={sacrificesChoisis.includes(entite.id) || attaquants.includes(entite.id) || Boolean(reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id))}
                       declaredAttacker={Boolean((phase && attaquants.includes(entite.id)) || (reponseApresBlocage && combatEntrant?.attaquants.includes(entite.id)))}
                       spellTarget={Boolean(sortJoue?.cible.targetIds.includes(entite.id)) || idsVisesParAnnonce.has(entite.id) || idsCiblesBoualem.has(entite.id) || idsCiblesDestruction.has(entite.id)}
                       blocking={bloqueursSelectionnes.has(entite.id)}
@@ -14039,6 +14059,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                           && cibleRespecteCoutMax(carteCiblee, entite)
                           && !(carteCiblee?.effet?.type === 'destruction-cible' && cardById(entite.carteId)?.kind === 'site'))
                         || (activationEnCours && !rpgEstProtegee(entite, 'neige')))}
+                      sacrificeEnAnimation={Boolean(sacrificeFx?.victimes.some(v => v.entityId === entite.id))}
                       sacrificeTarget={Boolean(sacrificeEnCours && cardById(entite.carteId)?.kind !== 'site')}
                       activationDispo={Boolean(monTour && !phase && !cibleEnCours && !cibleAttaqueEnCours
                         && !combatEntrant && !reponseActive
@@ -14197,48 +14218,52 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
         {/* Déchirement du sacrifice : la carte désignée se fend en deux
             moitiés à son emplacement, AVANT que la nouvelle créature ne soit
             posée à sa place (`dechirerEtPoser` enchaîne les deux temps). */}
-        {sacrificeFx && (
+        {sacrificeFx?.victimes.map((victime) => (
           <div
-            key={sacrificeFx.effectId}
-            className={`rpg-card-tear-fx ${cardFrameClass(cardById(sacrificeFx.cardId))} ${cardMotifClass(cardById(sacrificeFx.cardId))}`}
-            data-rpg-tear-id={sacrificeFx.entityId}
+            key={victime.effectId}
+            className={`rpg-card-tear-fx ${cardFrameClass(cardById(victime.cardId))} ${cardMotifClass(cardById(victime.cardId))}`}
+            data-rpg-tear-id={victime.entityId}
             data-sacrifice-fx="dechirement"
             role="status"
-            aria-label={`${sacrificeFx.name} se déchire : sacrifice en cours.`}
+            aria-label={`${victime.name} se déchire : sacrifice en cours.`}
             style={{
-              ...cardFrameStyle(cardById(sacrificeFx.cardId)),
-              left: `${sacrificeFx.left}px`,
-              top: `${sacrificeFx.top}px`,
-              width: `${sacrificeFx.width}px`,
-              height: `${sacrificeFx.height}px`,
-              '--rpg-fx-rotation': `${sacrificeFx.angle}rad`,
+              ...cardFrameStyle(cardById(victime.cardId)),
+              left: `${victime.left}px`,
+              top: `${victime.top}px`,
+              width: `${victime.width}px`,
+              height: `${victime.height}px`,
+              '--rpg-fx-rotation': `${victime.angle}rad`,
+              '--rpg-sacrifice-retard': `${SACRIFICE_ANIMATION.retardDechirement}ms`,
+              '--rpg-sacrifice-dechirement': `${SACRIFICE_ANIMATION.dechirement}ms`,
             }}
           >
             <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--gauche" aria-hidden="true">
-              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+              <img src={cardArt(victime.cardId)} alt="" />
             </span>
             <span className="rpg-card-tear-fx__half rpg-card-tear-fx__half--droite" aria-hidden="true">
-              <img src={cardArt(sacrificeFx.cardId)} alt="" />
+              <img src={cardArt(victime.cardId)} alt="" />
             </span>
-            <b aria-hidden="true">{sacrificeFx.name}</b>
+            <b aria-hidden="true">{victime.name}</b>
           </div>
-        )}
+        ))}
 
         {/* Cercle magique du sacrifice : runes et halo au pied de la créature
             sacrifiée, le temps de la déchirure. */}
-        {sacrificeFx && (
+        {sacrificeFx?.victimes.map((victime) => (
           <CercleMagique
+            key={victime.effectId}
+            onTermine={terminerCercleSacrifice}
             effet={{
-              entityId: sacrificeFx.entityId,
-              effectId: sacrificeFx.effectId,
-              left: sacrificeFx.left,
-              top: sacrificeFx.top,
-              width: sacrificeFx.width,
-              height: sacrificeFx.height,
-              angle: sacrificeFx.angle,
+              entityId: victime.entityId,
+              effectId: victime.effectId,
+              left: victime.left,
+              top: victime.top,
+              width: victime.width,
+              height: victime.height,
+              angle: victime.angle,
             }}
           />
-        )}
+        ))}
 
         {duel.modeMana === RPG_MODE_MANA_ESSAI ? (
           <FluxManaTrack
@@ -14460,6 +14485,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                     className="rpg-btn rpg-btn--ghost rpg-btn--sacrifice-cancel"
                     onClick={() => {
                       setSacrificeEnCours(null);
+                      setSacrificesChoisis([]);
                       jouerSfx('annuler');
                       force();
                     }}
@@ -14796,7 +14822,7 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
                   data-mythique-jouable={mythiqueJouable ? 'true' : undefined}
                   data-lien-actif={lienActifMain ? 'true' : undefined}
                   data-pose-en-cours={poseEnCours?.carteId === carteId && groupe.indices.includes(poseEnCours.handIndex) ? 'true' : undefined}
-                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
+                  aria-label={`${carte.name}${exemplaires > 1 ? ` — pile de ${exemplaires} exemplaires identiques` : ''} — ${cardFaceTypeLine(carte)} — couleur ${cardColorLabel(carte)}${estTerrain ? '' : ` — coût ${cardCostLabel(carte)}`}${carte.text ? ` — ${carte.text}` : ''}${sacrificesInvocation(carte, duel) ? ` — invocation : ${sacrificesInvocation(carte, duel)} sacrifice(s), en plus du mana` : ''} — cliquer pour ${defausseOuverte ? 'défausser cette carte' : carte.kind === 'magie' ? 'demander le lancement du sort' : cartePrendUneCase(carte) && duel.modeMana === RPG_MODE_MANA_ESSAI ? 'choisir son emplacement sur le champ' : 'la jouer'}${defausseOuverte ? '' : jouable ? ', paiement automatique (ou glisser-déposer sur une case)' : ', indisponible pour le moment'}`}
                 >
                   <img className="rpg-hand__img" src={cardArt(carte)} alt="" aria-hidden="true" />
                   <CardElementBadge carte={carte} />
@@ -15014,16 +15040,16 @@ export default function RpgDuelPage({ joueurDeck, sorcierDeck, sorcierPuissance 
           </div>
         )}
       </div>
-      {sacrificeDemande && !viewport.portrait && (
+      {sacrificeDemande && (
         <div className="rpg-sacrifice-choix" role="dialog" aria-modal="true" aria-labelledby="rpg-sacrifice-titre" aria-describedby="rpg-sacrifice-texte">
           <div className="rpg-sacrifice-choix__panel">
-            <p className="rpg-sacrifice-choix__eyebrow">Plateau plein · {duel.joueur.creatures.length}/{RPG_MANA_ESSAI_CHAMP_MAX} créatures</p>
-            <h2 id="rpg-sacrifice-titre">Sacrifier une créature ?</h2>
+            <p className="rpg-sacrifice-choix__eyebrow">Invocation · coût {cardById(sacrificeDemande.carteId)?.cost}</p>
+            <h2 id="rpg-sacrifice-titre">Sacrifices d’invocation</h2>
             <p id="rpg-sacrifice-texte">
-              Vos {RPG_MANA_ESSAI_CHAMP_MAX} emplacements sont occupés. Pour poser{' '}
-              <strong>{cardById(sacrificeDemande.carteId)?.name ?? 'cette créature'}</strong>, une de vos
-              créatures doit être sacrifiée : vous choisirez laquelle sur la table, et sa carte se
-              déchirera avant que la nouvelle ne prenne sa place.
+              Pour invoquer <strong>{cardById(sacrificeDemande.carteId)?.name ?? 'cette créature'}</strong>,
+              choisissez {sacrificesInvocation(cardById(sacrificeDemande.carteId), duel)} créature(s)
+              à sacrifier sur la table. Le mana reste à payer. Rien n’est sacrifié
+              avant la validation de toutes les victimes ; vous pouvez annuler.
             </p>
             <div className="rpg-sacrifice-choix__actions">
               <button

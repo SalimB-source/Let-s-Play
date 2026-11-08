@@ -257,8 +257,13 @@ test('carte chère jouable à huit manas (dont son pip Eau), pas avant', () => {
     rpgChoisirCouleurMana(duel, 'joueur', 'sable');
     assert.equal(rpgPeutPayer(duel.joueur, cher), tour === 8, `tour ${tour}`);
   }
+  const manaInvocation = { ...duel.joueur.mana };
+  duel.joueur.mana.sable = 20;
+  duel.joueur.main.push('chien-du-guet', 'chien-du-guet');
+  const victimes = [rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite, rpgJouerCreature(duel, 'joueur', 'chien-du-guet').entite];
+  duel.joueur.mana = manaInvocation;
   duel.joueur.main.push(cher.id);
-  assert.equal(rpgJouerCreature(duel, 'joueur', cher.id).ok, true);
+  assert.equal(rpgJouerCreature(duel, 'joueur', cher.id, null, { sacrificeIds: victimes.map(e => e.id) }).ok, true);
   assert.equal(Object.values(duel.joueur.mana).reduce((a, b) => a + b, 0), 0);
 });
 
@@ -292,7 +297,7 @@ test('paquet vide : fatigue croissante seulement pour la pioche de tour de l’e
   assert.equal(classique.sorcier.pv, 25);
 });
 
-test('plateau plein : cinq créatures au plus, la sixième exige un sacrifice qui libère sa place', () => {
+test('plateau plein : cinq créatures au plus, la sixième de faible coût ne peut pas remplacer une créature', () => {
   assert.equal(RPG_MANA_ESSAI_CHAMP_MAX, 5);
   const duel = nouveau(mono);
   mulligans(duel);
@@ -311,14 +316,9 @@ test('plateau plein : cinq créatures au plus, la sixième exige un sacrifice qu
   assert.equal(duel.joueur.mana.sable, manaAvant, 'le refus ne paie aucun mana');
   assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: 'absente' }).raison, 'sacrifice');
   const sacrifiee = duel.joueur.creatures[2];
-  const posee = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: sacrifiee.id });
-  assert.equal(posee.ok, true);
-  assert.equal(posee.sacrificeId, sacrifiee.id);
-  assert.equal(duel.joueur.creatures.length, 5, 'le plateau reste à cinq créatures');
-  assert.equal(duel.joueur.creatures[2].id, posee.entite.id, 'la nouvelle créature prend l’emplacement libéré');
-  assert.ok(duel.joueur.cimetiere.includes(sacrifiee.carteId), 'la créature sacrifiée rejoint le cimetière');
-  assert.equal(rpgSacrifierCreature(duel, 'joueur', duel.joueur.creatures[0].id).ok, true);
-  assert.equal(duel.joueur.creatures.length, 4);
+  const etat = JSON.stringify(duel);
+  assert.equal(rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: sacrifiee.id }).ok, false);
+  assert.equal(JSON.stringify(duel), etat, 'aucun remplacement volontaire pour une carte de coût inférieur à 5');
 
   const classique = rpgNouveauDuel({ joueurDeck: Array(12).fill('chien-du-guet'), sorcierDeck: [], rng });
   assert.equal(classique.joueur.main.length, 5, 'le mode classique garde sa main de départ de cinq cartes');
@@ -399,11 +399,12 @@ test('le joueur choisit la case de sa créature : case libre honorée, case occu
   rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 2 });
   rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { emplacement: 4 });
   assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
+  duel.joueur.main.push('faucon-du-zenith');
   const victime = rpgEmplacementsChamp(duel.joueur)[2];
   assert.equal(
-    rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: victime.id, emplacement: 4 }).raison,
+    rpgJouerCreature(duel, 'joueur', 'faucon-du-zenith', null, { sacrificeId: victime.id, emplacement: 4 }).raison,
     'emplacement', 'sacrifier la case 3 ne libère pas la case 5');
-  const remplace = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: victime.id, emplacement: 2 });
+  const remplace = rpgJouerCreature(duel, 'joueur', 'faucon-du-zenith', null, { sacrificeId: victime.id, emplacement: 2 });
   assert.equal(remplace.ok, true);
   assert.equal(remplace.entite.emplacement, 2, 'la nouvelle créature prend la case libérée désignée');
 
@@ -481,75 +482,18 @@ test('IA : choix de couleur d’après les pips en main et mulligan sans recherc
   assert.equal(duel.sorcier.manaMax.eau, 1);
 });
 
-test('champ limité à cinq créatures : la sixième exige un sacrifice choisi, le classique reste libre', () => {
+test('un champ plein interdit aussi à l’IA le remplacement par une petite créature', () => {
   const duel = nouveau(mono);
-  mulligans(duel);
-  rpgDemarrerManaEssai(duel);
-  duel.sorcier.main = [];
-  const payerSable = () => {
-    duel.joueur.mana = { braise: 0, eau: 0, sable: 5, neige: 0 };
-    duel.joueur.manaChoixEnAttente = false;
-  };
-  for (let place = 0; place < RPG_MANA_ESSAI_CHAMP_MAX; place += 1) {
-    payerSable();
-    duel.joueur.main.push('tislit-des-aures');
-    assert.equal(rpgJouerCreature(duel, 'joueur', 'tislit-des-aures').ok, true, `place ${place + 1}`);
-    assert.equal(duel.joueur.creatures.length, place + 1);
+  duel.joueur.main = [];
+  for (let i = 0; i < 5; i++) {
+    duel.sorcier.mana = { sable: 20 };
+    duel.sorcier.main = ['chien-du-guet'];
+    assert.equal(rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').ok, true);
   }
-  payerSable();
-  duel.joueur.main.push('fennec-des-decombres');
-  const refuse = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres');
-  assert.equal(refuse.ok, false, 'la sixième créature attend le sacrifice');
-  assert.equal(refuse.raison, 'champ-plein');
-  assert.equal(duel.joueur.main.includes('fennec-des-decombres'), true, 'la carte reste en main');
-  assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
-
-  const victime = duel.joueur.creatures[1];
-  const cimetiereAvant = duel.joueur.cimetiere.length;
-  const pose = rpgJouerCreature(duel, 'joueur', 'fennec-des-decombres', null, { sacrificeId: victime.id });
-  assert.equal(pose.ok, true);
-  assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX, 'une place libérée, une autre occupée');
-  assert.equal(duel.joueur.creatures.some((entite) => entite.id === victime.id), false, 'la victime a quitté la table');
-  assert.equal(duel.joueur.cimetiere.length, cimetiereAvant + 1, 'la victime rejoint le cimetière');
-  assert.ok(duel.log.some((ligne) => ligne.includes('sacrifiée')), 'le sacrifice est raconté');
-
-  payerSable();
-  duel.joueur.main.push('chien-du-guet');
-  const mauvaiseVictime = rpgJouerCreature(duel, 'joueur', 'chien-du-guet', null, { sacrificeId: 'id-inconnu' });
-  assert.equal(mauvaiseVictime.ok, false);
-  assert.equal(mauvaiseVictime.raison, 'sacrifice', 'un sacrifice hors du camp est refusé sans rien changer');
-  assert.equal(duel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
-  assert.equal(duel.joueur.main.includes('chien-du-guet'), true);
-
-  // Le sorcier, lui, choisit seul : sa créature la plus frêle fait la place.
-  const sorcier = nouveau(mono, tri);
-  sorcier.joueur.main = [];
-  for (let place = 0; place < RPG_MANA_ESSAI_CHAMP_MAX; place += 1) {
-    sorcier.sorcier.mana = { braise: 0, eau: 0, sable: 5, neige: 0 };
-    sorcier.sorcier.main.push('tislit-des-aures');
-    assert.equal(rpgJouerCreature(sorcier, 'sorcier', 'tislit-des-aures').ok, true);
-  }
-  const avant = [...sorcier.sorcier.creatures];
-  const teteDAttaque = { ...avant[0], atk: 9, def: 9, pv: 9 };
-  sorcier.sorcier.creatures = [teteDAttaque, ...avant.slice(1)];
-  sorcier.sorcier.mana = { braise: 0, eau: 0, sable: 5, neige: 0 };
-  sorcier.sorcier.main.push('fennec-des-decombres');
-  const auto = rpgJouerCreature(sorcier, 'sorcier', 'fennec-des-decombres');
-  assert.equal(auto.ok, true, 'le sorcier pose sa sixième créature sans intervention');
-  assert.equal(sorcier.sorcier.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
-  assert.equal(sorcier.sorcier.creatures.some((entite) => entite.id === teteDAttaque.id), true,
-    'la créature la plus forte est gardée');
-  assert.equal(sorcier.sorcier.creatures.filter((entite) => entite.carteId === 'tislit-des-aures').length, 4,
-    'une seule tislit a cédé sa place');
-
-  // Le format historique n'a pas de plafond : six créatures cohabitent.
-  const classique = rpgNouveauDuel({ joueurDeck: Array(6).fill('tislit-des-aures'), sorcierDeck: [], rng });
-  classique.joueur.main = Array(6).fill('tislit-des-aures');
-  for (let place = 0; place < 6; place += 1) {
-    classique.joueur.mana = { braise: 0, eau: 0, sable: 10, neige: 0 };
-    assert.equal(rpgJouerCreature(classique, 'joueur', 'tislit-des-aures').ok, true, `classique ${place + 1}`);
-  }
-  assert.equal(classique.joueur.creatures.length, 6, 'le duel classique garde son champ illimité');
+  duel.sorcier.main = ['chien-du-guet'];
+  const etat = JSON.stringify(duel);
+  assert.equal(rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').raison, 'champ-plein');
+  assert.equal(JSON.stringify(duel), etat);
 });
 
 test('les créatures venues d’un effet prennent aussi une des cinq cases', () => {
@@ -564,7 +508,7 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
   const poser = (carteId) => {
     payerSable();
     duel.joueur.main = [carteId];
-    const res = rpgJouerCreature(duel, 'joueur', carteId);
+    const res = rpgJouerCreature(duel, 'joueur', carteId, null, { sacrificeIds: carteId === 'tarek' ? [duel.joueur.creatures[0].id] : null });
     assert.equal(res.ok, true, `${carteId} se pose`);
     return res;
   };
@@ -572,6 +516,7 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
 
   // Tarek arrive sur un champ vide : ses deux chiens de sable trouvent chacun
   // une case (Tarek occupe la première, les chiens les deux suivantes).
+  poser('chien-du-guet');
   poser('tarek');
   assert.equal(duel.joueur.creatures.length, 3);
   assert.equal(jetons(), 2, 'les deux jetons entrent quand deux cases restent');
@@ -585,9 +530,9 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
     duelPartiel.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
     duelPartiel.joueur.manaChoixEnAttente = false;
     duelPartiel.joueur.main = [carteId];
-    assert.equal(rpgJouerCreature(duelPartiel, 'joueur', carteId).ok, true);
+    assert.equal(rpgJouerCreature(duelPartiel, 'joueur', carteId, null, { sacrificeIds: carteId === 'tarek' ? [duelPartiel.joueur.creatures[0].id] : null }).ok, true);
   };
-  for (let place = 0; place < 3; place += 1) poserPartiel('tislit-des-aures');
+  for (let place = 0; place < 4; place += 1) poserPartiel('tislit-des-aures');
   poserPartiel('tarek');
   assert.equal(duelPartiel.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
   assert.equal(duelPartiel.joueur.creatures.filter((entite) => entite.carteId === 'chien-de-sable').length, 1,
@@ -604,9 +549,9 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
     duelPlein.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
     duelPlein.joueur.manaChoixEnAttente = false;
     duelPlein.joueur.main = [carteId];
-    assert.equal(rpgJouerCreature(duelPlein, 'joueur', carteId).ok, true);
+    assert.equal(rpgJouerCreature(duelPlein, 'joueur', carteId, null, { sacrificeIds: carteId === 'tarek' ? [duelPlein.joueur.creatures[0].id] : null }).ok, true);
   };
-  for (let place = 0; place < 4; place += 1) poserPlein('tislit-des-aures');
+  for (let place = 0; place < 5; place += 1) poserPlein('tislit-des-aures');
   poserPlein('tarek');
   assert.equal(duelPlein.joueur.creatures.length, RPG_MANA_ESSAI_CHAMP_MAX);
   assert.equal(duelPlein.joueur.creatures.some((entite) => entite.carteId === 'chien-de-sable'), false,
@@ -625,7 +570,7 @@ test('les créatures venues d’un effet prennent aussi une des cinq cases', () 
   assert.ok(duelPlein.log.some((ligne) => ligne.includes('aucune place libre')));
 
   // Une case libérée : la même magie ramène la créature dans la case.
-  assert.equal(rpgSacrifierCreature(duelPlein, 'joueur', duelPlein.joueur.creatures[0].id).ok, true);
+  assert.equal(rpgSacrifierCreature(duelPlein, 'joueur', duelPlein.joueur.creatures.find(e => e.carteId === 'tislit-des-aures').id).ok, true);
   duelPlein.joueur.main = ['reanimation'];
   duelPlein.joueur.mana = { braise: 0, eau: 0, sable: 20, neige: 0 };
   assert.equal(rpgLancerMagie(duelPlein, 'joueur', 'reanimation').ok, true);

@@ -13241,9 +13241,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 
 /* ── Cercle magique d'un sacrifice ──────────────────────────────────────────
-   Quand une créature est sacrifiée (plateau plein), un cercle de runes
+   Quand une créature paie une invocation, un cercle de runes
    s'allume à son emplacement : halo qui pulse, anneaux en rotation,
-   glyphes et étincelles. Couleurs arcane : violet profond sur or pâle.
+   glyphes et étincelles. Or chaud et traits de runes lumineux.
    Le calque reprend la place et l'inclinaison de la créature sacrifiée,
    ne capte aucun geste et ne recalcule aucune mise en page. */
 
@@ -13253,7 +13253,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   transform: rotate(var(--rpg-fx-rotation, 0rad));
   transform-origin: center;
   pointer-events: none;
-  animation: rpg-cercle-magique-vie .9s ease-out both;
+  animation: rpg-cercle-magique-vie calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 /* Soleil central : halo lumineux qui bat puis s'efface. */
@@ -13267,10 +13267,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   border-radius: 50%;
   background: radial-gradient(circle,
     rgba(226, 212, 170, .9),
-    rgba(170, 110, 255, .55) 42%,
-    rgba(110, 40, 220, 0) 78%);
-  box-shadow: 0 0 26px rgba(170, 110, 255, .75), 0 0 52px rgba(110, 40, 220, .5);
-  animation: rpg-cercle-magique-soleil .9s ease-out both;
+    rgba(225, 175, 65, .55) 42%,
+    rgba(170, 112, 25, 0) 78%);
+  box-shadow: 0 0 26px rgba(225, 175, 65, .75), 0 0 52px rgba(170, 112, 25, .5);
+  animation: rpg-cercle-magique-soleil calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 /* Anneaux de runes : deux cercles qui tournent en sens contraires. */
@@ -13284,17 +13284,19 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 }
 .rpg-cercle-magique__anneau--externe {
   width: 140%;
-  height: 140%;
-  border: 2px solid rgba(170, 110, 255, .7);
-  box-shadow: 0 0 22px rgba(170, 110, 255, .55);
-  animation: rpg-cercle-magique-anneau-externe .9s ease-out both;
+  height: auto;
+  aspect-ratio: 1;
+  border: 2px solid rgba(225, 175, 65, .7);
+  box-shadow: 0 0 22px rgba(225, 175, 65, .55);
+  animation: rpg-cercle-magique-anneau-externe calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 .rpg-cercle-magique__anneau--interne {
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: 1;
   border: 2px solid rgba(226, 212, 170, .75);
   box-shadow: 0 0 16px rgba(226, 212, 170, .5);
-  animation: rpg-cercle-magique-anneau-interne .9s ease-out both;
+  animation: rpg-cercle-magique-anneau-interne calc(var(--rpg-sacrifice-duree, 1400ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 /* Glyphes disposés sur le cercle, chacun à son angle et à son retard. */
@@ -13303,14 +13305,15 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   top: 50%;
   left: 50%;
   width: 120%;
-  height: 120%;
+  height: auto;
+  aspect-ratio: 1;
   translate: -50% -50%;
   rotate: var(--r, 0deg);
   border-top: 1.4px solid rgba(226, 212, 170, .5);
   border-radius: 50%;
   opacity: 0;
-  animation: rpg-cercle-magique-glyphe .9s ease-out both;
-  animation-delay: var(--d, 0ms);
+  animation: rpg-cercle-magique-glyphe calc((var(--rpg-sacrifice-duree, 1400ms) - 600ms) * var(--rpg-anim-scale, 1)) ease-out both;
+  animation-delay: calc(var(--d, 0ms) * var(--rpg-anim-scale, 1));
 }
 
 /* Étincelles qui montent du cercle. */
@@ -13325,7 +13328,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   background: #fff;
   box-shadow: 0 0 7px #fff, 0 0 14px rgba(226, 212, 170, .7);
   opacity: 0;
-  animation: rpg-cercle-magique-etincelle var(--d, 700ms) ease-out both;
+  animation: rpg-cercle-magique-etincelle calc(var(--d, 700ms) * var(--rpg-anim-scale, 1)) ease-out both;
 }
 
 @keyframes rpg-cercle-magique-vie {
@@ -15844,3 +15847,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
     padding: 24px;
   }
 }
+
+/* La vraie carte garde sa case, mais seule sa copie animée est visible
+   pendant le sacrifice : pas de réapparition sous les moitiés déchirées. */
+.rpg-card.is-sacrifice-animating { visibility: hidden; pointer-events: none; }
+.rpg-battle.is-reduced .rpg-cercle-magique,
+.rpg-battle.is-reduced .rpg-cercle-magique * { animation: none !important; }
