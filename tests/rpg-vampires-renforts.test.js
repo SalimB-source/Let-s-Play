@@ -31,7 +31,7 @@ function poser(d, cote, id) {
 }
 
 test('quatre Vampires illustrés renforcent les coûts 1 et 2, sans Embuscade', () => {
-  assert.equal(RPG_CREATURE_CARDS.length, 133);
+  assert.equal(RPG_CREATURE_CARDS.length, 138);
   for (const [id, element, cost, atk, def, rarity, capacites] of renforts) {
     const carte = cardById(id);
     assert.deepEqual([carte.element, carte.cost, carte.atk, carte.def, carte.rarity],

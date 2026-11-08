@@ -90,6 +90,24 @@ Leurs peintures sombres sont livrées en JPEG **768 × 960** plein art, sans
 chiffres ni pastilles dessinés. Leurs illustrations et leur type Vampire sont
 propres à chaque carte ; aucune n'a Embuscade.
 
+## Renforts de La Balance des Heures (Ténèbres)
+
+Cinq illustrations mono-Ténèbres supplémentaires, du coût 1 au coût 5,
+peintes en dark fantasy avec la pierre, le lin et l'ombre de la Nécropole.
+Toutes sont livrées en plein art JPEG **768 × 960**, sans texte ni cadre :
+
+- `porteur-de-la-plume.jpg` — un jeune serviteur porte une plume blanche dans
+  une salle à colonnes ; 1/2 commune (coût 1), soin de 1 PV à sa mort.
+- `scarabee-du-natron.jpg` — un scarabée sur une urne de natron dans une crypte ;
+  1/2 commune (coût 2), crée un Shabti à sa mort.
+- `veuve-des-urnes.jpg` — une veuve entre les urnes funéraires ; 2/3
+  inhabituelle (coût 3), Tribut 1.
+- `gardien-des-sept-sceaux.jpg` — un gardien protège une porte scellée ; 3/4
+  commune (coût 4), Défenseur.
+- `lecteur-du-dernier-nom.jpg` — un scribe relit un rouleau sans inscription
+  dans les archives de la Nécropole ; 3/4 rare (coût 5), pioche deux cartes
+  puis en défausse une à son arrivée.
+
 ## Petites créatures du Sable (coût 2)
 
 Trois peintures dédiées, sombres et cinématographiques, livrées en JPEG plein art

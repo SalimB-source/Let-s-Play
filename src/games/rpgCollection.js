@@ -130,9 +130,9 @@ export const RPG_REVELATIONS_PAR_ETAGE = {
   // Les communes ouvrent en bas, les rares au milieu, les mythiques au sommet.
   // Les quatre figures cross-éléments (Faucon, Lionne, Dame, Seigneur) montent
   // avec leurs mythiques tenebres — elles sont du même set.
-  'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
-  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
-  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
+  'necropole-1': ['chacal-du-seuil', 'ouvrier-du-natron', 'porteur-de-la-plume', 'scarabee-du-natron', 'papyrus', 'gardienne-de-la-balance', 'scribe-des-feuillets'],
+  'necropole-2': ['pretre-de-la-bouche', 'ureus-du-seuil', 'momie-de-lin', 'ibis-des-comptes', 'veuve-des-urnes', 'gardien-des-sept-sceaux', 'nom-efface', 'offrande-de-lin', 'effacement-des-faibles'],
+  'necropole-3': ['general-du-croissant-noir', 'khopesh-d-or', 'le-poids', 'celle-qui-pese', 'lecteur-du-dernier-nom', 'les-feuillets', 'le-jugement-des-colosses', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher'],
   // La Barbe Noire, devenue carte 100 % Ténèbres, se révèle au sommet de la
   // Nécropole avec les mythiques des Ténèbres — plus aux Sables.
   'necropole-4': ['sanguinaire-des-dunes', 'souverain-de-la-lune-noire', 'fleau-de-la-lune-noire', 'la-devoreuse', 'celui-qui-juge', 'passeur-au-masque-de-chacal', 'maitre-des-hieroglyphes', 'la-derniere-pesee', 'la-grande-pesee', 'faucon-du-zenith', 'lionne-du-midi-ardent', 'dame-aux-ailes-d-or', 'seigneur-des-machoires', 'tour-des-tenebres', 'la-barbe-noire', 'le-cavalier-sans-nom'],
