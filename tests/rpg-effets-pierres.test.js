@@ -25,12 +25,14 @@ import {
   PLAQUE_FORMES,
   PLAQUE_PIERRES,
   EPAISSEUR_SYMBOLE,
+  HALO_SYMBOLE,
   moitie,
   pierreEffet,
   plaqueEffet,
   plaqueSvg,
   pointsSvg,
   reduire,
+  teinteEffet,
 } from '../src/games/effetPlaques.js';
 
 const css = readFileSync(new URL('../src/games/effet-icons.css', import.meta.url), 'utf8');
@@ -93,7 +95,39 @@ test('le pictogramme garde la même épaisseur apparente sur toutes les formes',
     const symbole = Number(pierreEffet(plaqueCleDeForme(forme)).match(/width="([\d.]+)" height="[\d.]+"/)?.[1]);
     assert.ok(symbole > 0, `${forme} : le symbole a une taille`);
     // trait effectif = épaisseur × taille / 24 : identique d'une forme à l'autre.
-    assert.ok(Math.abs((epaisseur * symbole) / 24 - 2) < 0.02, `${forme} : trait effectif de 2 unités de symbole`);
+    assert.ok(Math.abs((epaisseur * symbole) / 24 - 2.2) < 0.02, `${forme} : trait effectif de 2,2 unités de pierre`);
+    // Le halo d'encre double le trait : il rend le pictogramme lisible sur les
+    // pierres claires (or, sable, azur) et tient à 16 px.
+    const halo = HALO_SYMBOLE[forme];
+    assert.ok(Math.abs((halo * symbole) / 24 - 3.8) < 0.02, `${forme} : halo de 1,6 unité autour du trait`);
+  }
+});
+
+test('chaque pierre a sa nuance : deux effets d’une même famille ne se confondent pas', () => {
+  const fonds = new Map();
+  for (const cle of Object.keys(EFFET_ICONE)) {
+    const fond = teinteEffet(cle).fond;
+    assert.match(fond, /^#[0-9a-f]{6}$/, `${cle} : le champ est une couleur pleine`);
+    assert.equal(fonds.has(fond), false, `${cle} partage la couleur de ${fonds.get(fond)}`);
+    fonds.set(fond, cle);
+  }
+  assert.ok(fonds.size >= 60, `chaque effet a sa couleur (${fonds.size} teintes)`);
+  // La nuance reste dans le registre : chaque famille s'étale autour de sa
+  // pierre, du plus sombre au plus clair, sans sortir de sa teinte.
+  const parFamille = new Map();
+  for (const [cle, famille] of Object.entries(PLAQUE_FAMILLE_EFFET)) {
+    parFamille.set(famille, [...(parFamille.get(famille) ?? []), cle]);
+  }
+  for (const [famille, cles] of parFamille) {
+    const plaque = PLAQUE_FAMILLES[famille];
+    const teintes = cles.map((cle) => teinteEffet(cle));
+    if (teintes.length < 2) continue;
+    const lumieres = teintes.map((t) => parseInt(t.fond.slice(1, 3), 16) + parseInt(t.fond.slice(3, 5), 16) + parseInt(t.fond.slice(5, 7), 16));
+    assert.ok(Math.max(...lumieres) - Math.min(...lumieres) >= 12,
+      `${famille} : les ${teintes.length} pierres s'étalent en luminosité`);
+    assert.equal(new Set(teintes.map((t) => t.fond)).size, teintes.length, `${famille} : aucune teinte en double`);
+    assert.match(teintes[0].fond, /^#[0-9a-f]{6}$/);
+    assert.ok(plaque.pierre, `${famille} garde sa pierre de registre`);
   }
 });
 
@@ -105,12 +139,15 @@ function plaqueCleDeForme(forme) {
 
 test('la pierre se dessine en couches : contour, anneau, champ, biseau, symbole blanc', () => {
   const pierre = pierreEffet('furie');
-  const pierres = PLAQUE_PIERRES[PLAQUE_FAMILLES.assaut.pierre];
+  // La pierre prend sa nuance propre, pas la couleur unique du registre.
+  const pierres = teinteEffet('furie');
   assert.match(pierre, new RegExp(`fill="${pierres.encre}"`), 'le contour sombre est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.creux}"`), 'l’anneau du biseau est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.fond}"`), 'le champ est peint');
   assert.match(pierre, new RegExp(`fill="${pierres.lueur}" fill-opacity`), 'la lumière du dessus est peinte');
   assert.match(pierre, /<use href="#i-furie"[^>]*stroke="#ffffff"/, 'le symbole est blanc');
+  assert.match(pierre, new RegExp(`<use href="#i-furie"[^>]*stroke="${pierres.encre}"`),
+    'un halo d’encre double le pictogramme');
   assert.match(pierre, /stroke-linecap="round" stroke-linejoin="round"/, 'le symbole garde ses bouts ronds');
   assert.equal(pierre.includes('currentColor'), false, 'la pierre ne dépend plus de l’encre du texte');
   // contour, anneau, champ, lumière, ombre et filet clair : six polygones.
@@ -156,7 +193,7 @@ test('la feuille pose la pierre comme badge et laisse le glyphe respirer', () =>
     'une pierre dépensée s’éteint');
   assert.match(cssMobile, /--rpg-plaque-taille: 18px;/,
     'dans une main mobile, la pierre passe à 18 px — lisible sans coller l’écran');
-  assert.match(cssMobile, /\.rpg-card-icone \.rpg-effet-icone\s*\{[^}]*width: var\(--rpg-plaque-taille\);[^}]*height: var\(--rpg-plaque-taille\);/s,
+  assert.match(cssMobile, /\.rpg-card-icone \.rpg-effet-icone\s*\{[^}]*width: var\(--rpg-plaque-taille, 18px\);[^}]*height: var\(--rpg-plaque-taille, 18px\);/s,
     'le glyphe suit la taille de la colonne, il ne la fixe plus');
   assert.match(jsx, /data-plaque=\{plaque\.famille\}/, 'le composant React expose la famille de la pierre');
   assert.match(jsx, /dangerouslySetInnerHTML=\{\{ __html: pierreDessinee\(cle, protectionContre\) \}\}/,

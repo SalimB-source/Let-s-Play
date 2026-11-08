@@ -599,16 +599,13 @@
    mesures serrées de `rpg-mobile.css` : cette feuille ne doit pas lui redonner
    20 px ensuite. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones.rpg-card-icones--colonne {
-  /* La pierre suit la largeur de la carte : 17 % d'elle, entre 16 et 30 px —
-     une carte de table fait 68 px au doigt et jusqu'à 198 px sur grand écran.
-     C'est le cadran qui décide, pas la feuille mobile : 16 px sur une carte de
-     68 px, 22 px sur une de 130, 30 px au plafond. */
-  --rpg-plaque-taille: clamp(16px, 17cqw, 30px);
+  /* La pierre, l'hexagone de couleur et le losange de coût partagent la taille
+     posée par la carte (`.rpg-card--img`, dans `rpg-battle.css`). */
   top: 4%;
   right: 0;
   bottom: auto;
   left: auto;
-  width: var(--rpg-plaque-taille);
+  width: var(--rpg-plaque-taille, 20px);
   max-width: none;
   flex-direction: column;
   flex-wrap: nowrap;
@@ -617,8 +614,8 @@
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone {
   justify-content: center;
-  min-width: var(--rpg-plaque-taille);
-  min-height: var(--rpg-plaque-taille);
+  min-width: var(--rpg-plaque-taille, 20px);
+  min-height: var(--rpg-plaque-taille, 20px);
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones--colonne .rpg-card-icone:nth-child(n + 5) {
   display: none;

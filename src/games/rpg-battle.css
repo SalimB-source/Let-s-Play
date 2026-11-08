@@ -996,6 +996,10 @@
 .rpg-card--img {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
+  /* La taille des trois repères de la carte — pierres d'effets, hexagone de
+     couleur, losange de coût : 17 % de la carte, entre 16 et 30 px. Une seule
+     valeur, lue par `effet-icons.css` et par les deux pastilles. */
+  --rpg-plaque-taille: clamp(16px, 17cqw, 30px);
   padding: 0;
   /* Les pierres d'effets sont chevillées au bord droit de la carte et en
      débordent à moitié (`effet-icons.css`, « Les emblèmes montés sur le
@@ -1529,6 +1533,7 @@
    du bord droit (14 px de marge, `clip` sans zone de défilement), et
    l'illustration reprend le rayon du cadre à son compte. */
 .rpg-hand__card--img {
+  --rpg-plaque-taille: 24px;
   padding: 0;
   overflow: hidden;
   overflow: clip;
@@ -3236,7 +3241,7 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-graveyard-carousel__empty { color: #bdb3a4; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard { position: relative; inset: auto; display: block; width: 100%; max-height: none; overflow: visible; padding: 0; border: 0; background: transparent; box-shadow: none; pointer-events: none; animation: none; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__empile { width: 100%; }
-.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face { --rpg-card-marker-size: 16px; border-width: 2px; border-radius: 5px; }
+.rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__face { --rpg-card-marker-size: 16px; --rpg-plaque-taille: 14px; border-width: 2px; border-radius: 5px; }
 .rpg-card-peek--catalogue.rpg-graveyard-carousel .rpg-graveyard-carousel__item .rpg-hover-card-preview--graveyard .rpg-hover-card-preview__details { display: none; }
 @media (max-width: 600px) {
   .rpg-graveyard-carousel__content { width: 96vw; height: 90dvh; padding: 12px; gap: 9px; }
@@ -4744,9 +4749,10 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-hover-card-preview__face {
   --rpg-card-element-marker-top: 5%;
   --rpg-card-element-marker-left: 6%;
-  /* La face de l'aperçu rapide est une grande face, comme au catalogue : sa
-     pastille de couleur suit la même échelle (35–38 px, glyphe 19 px, liseré
-     2 px) au lieu du petit repère des cartes en jeu. */
+  --rpg-plaque-taille: 32px;
+  /* La face de l'aperçu rapide est une grande face, comme au catalogue : la
+     pierre y passe à 32 px — l'hexagone de couleur, le losange de coût et les
+     pierres d'effets de la même taille, un sixième de la face. */
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 5;
@@ -6205,6 +6211,98 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
   text-shadow: 0 1px 3px #000;
   pointer-events: none;
 }
+/* ── La couleur, le coût : des pierres comme les effets ──────────────────────
+   Les trois repères d'une carte parlent la même langue. La pierre taillée des
+   effets porte désormais la **couleur** (hexagone) et le **coût** (losange) :
+   même biseau, même filet, même contour d'encre, et **la même taille** que les
+   pierres d'effets — `--rpg-plaque-taille`, posée par la face de la carte.
+   La silhouette seule dit ce qu'on lit ; plus de disque rond, plus de bordure
+   claire : c'est la pierre qui borde. */
+/* La pierre nue se pose **dans le flux** du repère et l'habille : le repère est
+   une grille d'une seule case, la pierre et son glyphe s'y superposent. Pas de
+   `position: absolute` : les coûts de la main vivent dans le flux du titre de
+   la carte, et une pierre en absolu y prendrait la taille de toute la carte. */
+.rpg-plaque-forme {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.rpg-battle .rpg-card-element-badge.is-plaque > *,
+.rpg-battle .rpg-mana-cost.is-plaque > *,
+.rpg-battle .rpg-card-element-badge__pip.is-plaque > * {
+  grid-area: 1 / 1;
+}
+
+/* Le préfixe `.rpg-battle` n'est pas décoratif : les réglages de surface
+   (table, main, aperçu, catalogue) datent des pastilles rondes et fixent encore
+   un diamètre ou un corps de texte. À spécificité égale, c'est le dernier du
+   fichier qui gagne — et ces réglages viennent plus loin. Les trois repères
+   taillés doivent garder la même taille partout : on passe donc devant eux. */
+.rpg-battle .rpg-card-element-badge.is-plaque,
+.rpg-battle .rpg-mana-cost.is-plaque {
+  width: var(--rpg-plaque-taille, 24px);
+  height: var(--rpg-plaque-taille, 24px);
+  min-width: 0;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .52);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .5));
+}
+
+/* La main réduisait le disque de mana de 14 % : la pierre, elle, garde la
+   taille de la colonne d'effets qu'elle accompagne. */
+.rpg-battle .rpg-hand__card--img .rpg-mana-cost.is-plaque {
+  transform: none;
+}
+
+/* Une hybride empile ses hexagones : la boîte garde la largeur de la pierre et
+   laisse la colonne grandir vers le bas, sans fond ni cadre. */
+.rpg-battle .rpg-card-element-badge--hybride.is-plaque {
+  display: flex;
+  width: var(--rpg-plaque-taille, 24px);
+  height: auto;
+  aspect-ratio: auto;
+  flex-direction: column;
+  gap: 2px;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.rpg-battle .rpg-card-element-badge.is-plaque .rpg-card-element-badge__glyphe,
+.rpg-battle .rpg-mana-cost.is-plaque b,
+.rpg-battle .rpg-mana-cost.is-plaque i {
+  /* Le glyphe passe au-dessus de la pierre : la case de grille est partagée. */
+  position: relative;
+  z-index: 1;
+  line-height: 1;
+}
+
+/* Un coût hybride garde ses deux couleurs : le losange prend un dégradé
+   (`plaqueNue`, deux bases). Le chiffre, lui, reste au premier plan. */
+.rpg-battle .rpg-mana-cost.is-plaque {
+  font-weight: 900;
+}
+
+/* Une hybride empile ses couleurs : chaque pion devient un petit hexagone. */
+.rpg-battle .rpg-card-element-badge--hybride .rpg-card-element-badge__pip.is-plaque {
+  width: var(--rpg-plaque-taille, 24px);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: #fff;
+  font-size: calc(var(--rpg-plaque-taille, 24px) * .5);
+}
+
 .rpg-card-element-badge--braise { background: radial-gradient(circle at 34% 24%, #f09675, #8e2e1d 72%); }
 .rpg-card-element-badge--eau { background: radial-gradient(circle at 34% 24%, #a5dcf5, #285e91 72%); }
 .rpg-card-element-badge--sable { background: radial-gradient(circle at 34% 24%, #f8e69d, #795613 72%); color: #281b05; text-shadow: 0 1px 1px rgba(255,255,255,.68); filter: drop-shadow(0 0 2px rgba(255, 215, 98, .8)); }
@@ -10401,14 +10499,20 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 .rpg-card--img { --rpg-card-marker-size: 26px; }
 .rpg-battle:not(.rpg-battle--touch) .rpg-card--img { --rpg-card-marker-size: 30px; }
 .rpg-hand__card--img { --rpg-card-marker-size: 28px; }
-.rpg-mulligan__card { --rpg-card-marker-size: clamp(16px, 15cqw, 30px); }
+/* Chaque face pose, à côté du repère rond, la mesure des pierres taillées : la
+   même part de la carte que sur la table (≈ 86 % du repère), pour que
+   l'hexagone, le losange et les pierres d'effets gardent leurs proportions. */
+.rpg-mulligan__card {
+  --rpg-card-marker-size: clamp(16px, 15cqw, 30px);
+  --rpg-plaque-taille: clamp(14px, 13cqw, 26px);
+}
 .rpg-hover-card-preview__face,
-.rpg-card-catalogue__art { --rpg-card-marker-size: 38px; }
+.rpg-card-catalogue__art { --rpg-card-marker-size: 38px; --rpg-plaque-taille: 32px; }
 @media (max-width: 620px), (hover:none) and (pointer:coarse) and (max-device-width:600px) {
   .rpg-card--img { --rpg-card-marker-size: 20px; }
-  .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
+  .rpg-hand__card--img { --rpg-card-marker-size: 22px; --rpg-plaque-taille: 18px; }
   .rpg-hover-card-preview__face,
-  .rpg-card-catalogue__art { --rpg-card-marker-size: 35px; }
+  .rpg-card-catalogue__art { --rpg-card-marker-size: 35px; --rpg-plaque-taille: 30px; }
 }
 
 
@@ -10569,15 +10673,11 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
      gauche : les deux repères de la carte — ce qu'elle est, ce qu'elle coûte —
      se lisent d'un seul regard, et le coin haut droit reste libre pour la
      colonne de pierres d'effets, qui y remonte comme sur les cartes en jeu.
-     Il grandit d'un cran au passage (1,15 fois le repère, chiffre à .58) : sur
-     une face de 190 à 232 px, le coût est le premier nombre qu'on cherche. */
-  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-card-marker-size, 38px) + 8px);
+     Il prend la taille des pierres d'effets (`--rpg-plaque-taille`), pas celle
+     du repère : losange, hexagone et pierres font la même largeur. */
+  top: calc(var(--rpg-card-element-marker-top, 5%) + var(--rpg-plaque-taille, 38px) + 6px);
   left: var(--rpg-card-element-marker-left, 6%);
   right: auto;
-  width: calc(var(--rpg-card-marker-size, 38px) * 1.15);
-  height: calc(var(--rpg-card-marker-size, 38px) * 1.15);
-  min-width: 0;
-  font-size: calc(var(--rpg-card-marker-size, 38px) * .58);
 }
 .rpg-hand__sceau,
 .rpg-hand__sort {
@@ -14831,6 +14931,9 @@ body.game-immersive-lock { overflow: hidden; overscroll-behavior: none; }
 @media (max-width: 720px), (orientation: landscape) and (max-height: 760px) {
   .rpg-card-peek--catalogue .rpg-hover-card-preview__face {
     --rpg-card-marker-size: clamp(26px, min(3.4vw, 6dvh), 34px);
+    /* Les trois repères taillés suivent la même réduction que le repère rond :
+       l'hexagone, le losange et les pierres d'effets restent de la même taille. */
+    --rpg-plaque-taille: clamp(22px, min(2.9vw, 5.1dvh), 29px);
   }
   .rpg-card-peek--catalogue .rpg-hover-card-preview__face .rpg-card-element-badge {
     border-width: 1.5px;

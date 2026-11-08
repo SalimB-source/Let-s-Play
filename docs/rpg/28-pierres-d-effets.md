@@ -15,7 +15,9 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
 - **la forme dit la famille d'action** — le `diamant` pour ce qui frappe et se
   déplace, l'`hexagone` pour ce qui tient et dure ;
 - **la pierre dit le registre** — braise pour le combat, azur pour le tempo, or
-  pour la garde, ténèbres pour ce qui ronge, émeraude pour les ressources.
+  pour la garde, ténèbres pour ce qui ronge, émeraude pour les ressources ;
+- **la nuance dit l'effet** — deux effets d'une même famille ne partagent jamais
+  leur couleur (voir « Une couleur par effet »).
 
 | Famille | Forme | Pierre | Effets |
 | --- | --- | --- | --- |
@@ -24,6 +26,20 @@ Deux choses se lisent d'un coup d'œil, sans lire le mot :
 | **Garde** | hexagone | or | Protection (et ses variantes de sorts), Bouclier, Ténacité, Défenseur, Provocation, Aura, Bannière, Renfort, Résonance, Compagnie |
 | **Ombre** | hexagone | ténèbres | Malédiction, Vol de vie, Furtivité, Infiltration, Exil, Réanimation, Contresort, Transfert, Tribut, Défausses, Blocages interdits, Cale |
 | **Flux** | hexagone | émeraude | Pioche, Recherche, Butin, Cargaison, Mana, Soin, Recyclage, Heures, Jetons, Lien |
+
+Trois repères de carte parlent désormais la même langue taillée, à la **même
+taille** (`--rpg-plaque-taille`, posée par la face de la carte) :
+
+| Repère | Silhouette | Dessin |
+| --- | --- | --- |
+| Couleur de la carte | **hexagone** | `plaqueNue` — la pierre taillée sans pictogramme |
+| Coût de la carte | **diamant** | `plaqueNue`, deux couleurs ⇒ champ en dégradé |
+| Effet | diamant ou hexagone de sa famille | `pierreEffet`, pictogramme blanc |
+
+La silhouette seule dit ce qu'on regarde : plus de disque rond ni de liseré CSS
+autour de la couleur et du coût. La pierre nue se pose **dans le flux** du repère
+(une grille d'une seule case, `grid-area: 1 / 1`) : un `position: absolute` ferait
+prendre au coût de la main la taille de toute la carte.
 
 Le registre complet vit dans **`src/games/effetPlaques.js`** : les silhouettes
 (`PLAQUE_FORMES`), les pierres (`PLAQUE_PIERRES`) et la table des familles
@@ -43,7 +59,9 @@ Tout tient dans un carré de **32 unités**, pour que la même pierre serve de
 4. la **moitié haute** du champ, éclaircie par la lueur ;
 5. la **moitié basse**, assombrie par l'encre ;
 6. le **filet** clair sur le champ — l'arête taillée ;
-7. le **pictogramme**, blanc, à 12 unités (diamant) ou 19 (hexagone).
+7. le **halo d'encre** du pictogramme (`HALO_SYMBOLE`) — un trait sombre qui
+   détache le blanc du champ quand la pierre est claire (or, sable, azur) ;
+8. le **pictogramme**, blanc, à 12 unités (diamant) ou 20 (hexagone).
 
 Le biseau n'a pas la même épaisseur selon la forme (`BISEAU_PAR_FORME`) :
 l'**hexagone** ouvre son champ à 80 % (anneau 90 %), le **diamant** à 84 %
@@ -59,8 +77,22 @@ comme un pois à côté de son pictogramme — d'où l'ouverture jusqu'aux bords
 
 Les formes pointues laissent moins de place au centre : le pictogramme y est plus
 petit, mais son **épaisseur apparente ne change pas** — `EPAISSEUR_SYMBOLE`
-compense la réduction (`2 × 24 / taille`), pour un trait effectif de
-2 unités de symbole partout.
+compense la réduction (`2,2 × 24 / taille`), pour un trait effectif de 2,2 unités
+de pierre partout : 1,1 px sur une pierre de 16 px (carte au doigt), 2,1 px sur
+celle de 32 px de l'aperçu. Le halo suit la même règle (`+ 1,6` unité).
+
+## Une couleur par effet
+
+Le registre donne l'ancre ; la **nuance** donne la reconnaissance. `teinteEffet`
+fait tourner chaque clé autour de la pierre de sa famille : ±26° de teinte, ±5 %
+de luminosité, plus 1,5 % d'écart de parité — soit **64 couleurs distinctes**
+pour 64 effets, vérifiées par les tests. Un joueur reconnaît donc l'effet à sa
+seule pastille, sans lire le pictogramme, et la famille reste lisible : les
+quinze Assauts vont du rouge sombre au rouge clair, jamais au bleu.
+
+Les quatre couches de la pierre (`encre`, `creux`, `fond`, `lueur`) reçoivent la
+même rotation, à des dosages différents : le champ tourne franchement, le creux
+et la lueur suivent, l'encre reste presque noire.
 
 Rien n'est deviné en CSS : la pierre est dessinée dans le SVG, ce qui la rend
 insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
@@ -72,16 +104,17 @@ insensible aux couleurs de texte qui l'entourent et vérifiable hors navigateur
   Elle fait **20 px** dans la pilule.
 - **Badges de face** (`IconesCarte`) : la pierre **est** le badge — plus de
   pastille ronde ni de liseré CSS ; le chiffre de l'effet (« Furie 2 ») garde sa
-  petite pastille sombre, posée en bas à droite de la pierre. 18 px sur bureau,
-  14 px au doigt, 16 cqw sur les cartes de la rangée.
+  petite pastille sombre, posée en bas à droite de la pierre. La taille vient de
+  la carte (`--rpg-plaque-taille`) : `clamp(16px, 17cqw, 30px)` sur la table,
+  24 px dans la main, 18 px au doigt, 32 px dans l'aperçu, 22 px à l'atelier.
 - **Interlignage** (`IconeLigneRegle`) : 18 px devant la ligne de règle, réservé
   aux surfaces de lecture.
 
 Sur une carte **en jeu**, la colonne d'emblèmes n'est pas posée *dans*
 l'illustration : elle est chevillée au bord droit, à cheval sur le cadre, comme
 les emblèmes d'Arcane Rush. La colonne s'aligne sur le bord (`right: 0`) puis
-glisse vers l'extérieur d'une part d'elle-même (`--rpg-plaque-bord` : 42 % sur
-la table, 34 % dans la main, 25 % au doigt), d'où une pierre dont l'axe reste
+glisse vers l'extérieur d'une part d'elle-même (`--rpg-plaque-bord` : 36 % sur
+la table et le plateau, 30 % dans la main, 22 % au doigt), d'où une pierre dont l'axe reste
 juste à l'intérieur du cadre et dont la moitié déborde sur la table. La carte
 ouvre son rognage de 14 px pour laisser passer ce débord — `overflow: clip` avec
 une marge, jamais `hidden` : aucun débordement ne crée de zone de défilement —

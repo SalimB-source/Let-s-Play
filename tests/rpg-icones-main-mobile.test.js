@@ -65,23 +65,23 @@ function mesurerMain(touch) {
 
 test('au doigt, les pierres d’effets de la main restent lisibles : 18 px', () => {
   const { colonne, badge, glyphe } = mesurerMain(true);
-  assert.equal(colonne.width, 'var(--rpg-plaque-taille)', 'la colonne épouse la pierre');
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 18px)', 'la colonne épouse la pierre');
   assert.equal(colonne.gap, '2px', 'les badges se serrent sans se coller');
   // La pierre d'emblème occupe tout le badge : plus de pastille ronde ni de
   // liseré CSS (la pierre porte son propre contour), et un pictogramme de 18 px
   // — un cinquième d'une carte mobile de 83 px, lisible sans coller l'écran.
-  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille)', 'la pierre remplit le badge');
-  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille)', 'la pierre reste carrée, pas ovale');
+  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille, 18px)', 'la pierre remplit le badge');
+  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille, 18px)', 'la pierre reste carrée, pas ovale');
   assert.equal(badge.padding, '0px', 'plus de respiration : la pierre est le badge');
   assert.equal(badge.border, '0px', 'le contour est dessiné dans la pierre');
-  assert.equal(glyphe.width, 'var(--rpg-plaque-taille)', 'le pictogramme remplit la pierre');
-  assert.equal(glyphe.height, 'var(--rpg-plaque-taille)', 'le pictogramme reste carré');
+  assert.equal(glyphe.width, 'var(--rpg-plaque-taille, 18px)', 'le pictogramme remplit la pierre');
+  assert.equal(glyphe.height, 'var(--rpg-plaque-taille, 18px)', 'le pictogramme reste carré');
 });
 
 test('sur bureau, les badges de la main passent à 24 px', () => {
   const { colonne, badge } = mesurerMain(false);
-  assert.equal(colonne.width, 'var(--rpg-plaque-taille)', 'la colonne épouse la pierre');
-  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille)', 'la pierre prend un cinquième de la carte');
-  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille)', 'la hauteur suit');
+  assert.equal(colonne.width, 'var(--rpg-plaque-taille, 20px)', 'la colonne épouse la pierre');
+  assert.equal(badge.minWidth, 'var(--rpg-plaque-taille, 20px)', 'la pierre prend un cinquième de la carte');
+  assert.equal(badge.minHeight, 'var(--rpg-plaque-taille, 20px)', 'la hauteur suit');
   assert.equal(badge.padding, '0px', 'sur bureau aussi, la pierre est le badge');
 });

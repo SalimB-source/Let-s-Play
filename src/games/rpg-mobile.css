@@ -1460,8 +1460,14 @@
    reste, mais le disque de coût ne s'imprime plus (voir plus haut) : la
    pastille de couleur y est le seul repère rond, en 27cqw proportionnels. */
 .rpg-battle--touch .rpg-card--img,
-.rpg-battle--touch .rpg-hand__card--img { --rpg-card-marker-size: 22px; }
-.rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge { width: 16px; border-width: 1.5px; font-size: 10px; }
+.rpg-battle--touch .rpg-hand__card--img { --rpg-card-marker-size: 22px; --rpg-plaque-taille: 18px; }
+.rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge {
+  /* L'hexagone de couleur fait exactement la taille des pierres d'effets : la
+     mesure vient de la carte, pas de la surface. */
+  width: var(--rpg-plaque-taille, 16px);
+  border-width: 1.5px;
+  font-size: calc(var(--rpg-plaque-taille, 16px) * .52);
+}
 .rpg-battle--touch .rpg-hand__card--img .rpg-card-element-badge__pip { border-width: 1.5px; }
 
 /* Toutes les faces, y compris aperçus, mulligan, paquets, annonces et
@@ -1499,7 +1505,9 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card > * { --rpg-card-marker-size: 27cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge,
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-mana-cost.is-compact {
-  font-size: 14cqw;
+  /* Le chiffre suit la pierre taillée — `--rpg-plaque-taille`, posée par la
+     carte — et non plus un diamètre rond en `cqw`. */
+  font-size: calc(var(--rpg-plaque-taille, 19cqw) * .52);
   border-width: 1.5cqw;
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge__pip {
@@ -1512,22 +1520,24 @@
    la pastille, remontent d'autant et restent centrés sur elle. La main, le
    mulligan, les aperçus et le catalogue gardent leurs pastilles. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge {
-  width: 19cqw;
-  font-size: 10cqw;
+  /* Plus de 19cqw propre aux pastilles rondes : l'hexagone prend la mesure des
+     pierres d'effets et du losange de coût — les trois repères font un. */
+  width: var(--rpg-plaque-taille, 19cqw);
+  font-size: calc(var(--rpg-plaque-taille, 19cqw) * .52);
   border-width: 1.1cqw;
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge__pip { border-width: 1.1cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-element-badge--hybride { gap: 1.5cqw; border: 0; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__compteurs:not(.rpg-card__compteurs--hybride) {
-  top: calc(5% + 19cqw + var(--rpg-card-counter-size) * .21 + 4px);
-  left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
+  top: calc(5% + var(--rpg-plaque-taille, 19cqw) + var(--rpg-card-counter-size) * .21 + 4px);
+  left: calc(6% + (var(--rpg-plaque-taille, 19cqw) - var(--rpg-card-counter-size)) / 2);
 }
 /* La cale d'une hybride : son losange se range sous les DEUX pastilles
    empilées (19cqw chacune, 1.5cqw d'écart), pas sous le repère commun de
    27cqw. Spécificité égale à la règle ci-dessus, qui l'attraperait sinon
    comme un compteur de carte mono — celle-ci vient après, elle gagne. */
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__compteurs.rpg-card__compteurs--cale {
-  top: calc(5% + 19cqw * 2 + 1.5cqw + var(--rpg-card-counter-size) * .21 + 4px);
+  top: calc(5% + var(--rpg-plaque-taille, 19cqw) * 2 + 1.5cqw + var(--rpg-card-counter-size) * .21 + 4px);
   left: calc(6% + (19cqw - var(--rpg-card-counter-size)) / 2);
 }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__stat--atk,
@@ -1542,10 +1552,13 @@
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icones { left: 6cqw; bottom: 30cqw; gap: 3cqw; max-width: 88cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone { padding: 0; gap: 1cqw; border: 0; font-size: 12cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone small { font-size: 9cqw; }
-/* La pierre de la table suit `--rpg-plaque-taille` de `rpg-mana-essai.css` :
-   17 % de la carte, entre 16 et 30 px — soit deux fois l'ancienne icône sur
-   certaines cartes. La rangée intérieure (hors colonne) garde la même mesure. */
-.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone .rpg-effet-icone { width: clamp(16px, 17cqw, 30px); height: clamp(16px, 17cqw, 30px); }
+/* La pierre de la table suit `--rpg-plaque-taille`, posée par la carte : 17 %
+   de sa largeur, entre 16 et 30 px — la même mesure que l'hexagone de couleur
+   et le losange de coût. La rangée intérieure (hors colonne) garde la même. */
+.rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card-icone .rpg-effet-icone {
+  width: var(--rpg-plaque-taille, clamp(16px, 17cqw, 30px));
+  height: var(--rpg-plaque-taille, clamp(16px, 17cqw, 30px));
+}
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-card__activation { top: 6cqw; right: 6cqw; padding: 3cqw 7cqw; border-width: 1cqw; }
 .rpg-battle :is(.card-row, .moba__slots) .rpg-card .rpg-mana-cost i { width: 11cqw; height: 11cqw; font-size: 7cqw; }
 
@@ -1556,9 +1569,8 @@
    redonner les 24 px du bureau après ces règles (voir son commentaire). */
 @media (max-width: 620px), (hover: none) and (pointer: coarse) and (max-device-width: 600px) {
   .rpg-battle .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
-    --rpg-plaque-taille: 18px;
     top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
-    width: var(--rpg-plaque-taille);
+    width: var(--rpg-plaque-taille, 18px);
     gap: 2px;
     /* 18 px de pierre dans un interstice de 4 px (`--rpg-field-gap`) : le
        débord sur le bord droit se limite à ~22 % de la pierre, soit 4 px —
@@ -1568,15 +1580,15 @@
     --rpg-plaque-bord: 22%;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-    min-width: var(--rpg-plaque-taille);
-    min-height: var(--rpg-plaque-taille);
+    min-width: var(--rpg-plaque-taille, 18px);
+    min-height: var(--rpg-plaque-taille, 18px);
     padding: 0;
     border: 0;
     box-shadow: none;
   }
   .rpg-battle .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-    width: var(--rpg-plaque-taille);
-    height: var(--rpg-plaque-taille);
+    width: var(--rpg-plaque-taille, 18px);
+    height: var(--rpg-plaque-taille, 18px);
     /* Une main de sept cartes porte une trentaine de pierres : le contour
        sombre suffit à les détacher, l'ombre portée coûterait un filtre par
        icône sur le GPU du téléphone. */
@@ -1585,22 +1597,21 @@
 }
 
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones.rpg-card-icones--colonne {
-  --rpg-plaque-taille: 18px;
   --rpg-plaque-bord: 22%;
   top: calc(5% + var(--rpg-card-marker-size, 22px) + 2px);
-  width: var(--rpg-plaque-taille);
+  width: var(--rpg-plaque-taille, 18px);
   gap: 2px;
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone {
-  min-width: var(--rpg-plaque-taille);
-  min-height: var(--rpg-plaque-taille);
+  min-width: var(--rpg-plaque-taille, 18px);
+  min-height: var(--rpg-plaque-taille, 18px);
   padding: 0;
   border: 0;
   box-shadow: none;
 }
 .rpg-battle--touch .rpg-hand__card .rpg-card-icones--colonne .rpg-card-icone .rpg-effet-icone {
-  width: var(--rpg-plaque-taille);
-  height: var(--rpg-plaque-taille);
+  width: var(--rpg-plaque-taille, 18px);
+  height: var(--rpg-plaque-taille, 18px);
   filter: none;
 }
 
