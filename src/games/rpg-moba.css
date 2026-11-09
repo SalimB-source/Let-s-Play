@@ -931,18 +931,24 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba__sacrifice-hint { position: absolute; z-index: 9; top: 10%; left: 22%; right: 22%; padding: 7px 12px; color: #fff0ce; background: #48301de8; font-size: 13px; text-align: center; }
 .moba__sacrifice-hint button { margin-left: 12px; padding: 4px 8px; color: #fff0ce; background: #292019; border: 1px solid #e7c88e; border-radius: 4px; cursor: pointer; }
 .moba__slot.is-sacrifice, .moba__real-slot .moba__slot.is-sacrifice { outline: 3px solid #e5aa5a; outline-offset: -3px; }
+/* Les groupes latéraux restent décalés vers l'extérieur (voir les règles des
+   voies ci-dessus) : les ramener vers la rivière les détachait des deux chemins
+   de sable peints sur la carte. La colonne centrale ne bouge pas. */
 .moba__lanes { grid-template-columns: 2fr 1fr 2fr; }
-.moba__lane:first-child .moba__slots { transform: translateX(clamp(4px, 1.2vw, 18px)); }
-.moba__lane:last-child .moba__slots { transform: translateX(calc(-1 * clamp(4px, 1.2vw, 18px))); }
 
 @media (max-width: 700px) and (orientation: portrait) { .moba__sacrifice-hint { top: 16%; left: 2%; right: 2%; padding: 3px 5px; font-size: 10px; } }
 @media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) { .moba__sacrifice-hint { top: 23%; } }
 
-/* Les emblèmes d'effets des créatures posées en MOBA sont plus discrets que
-   ceux de la main et de l'aperçu. Ne pas redimensionner la plaque de couleur,
-   le coût ou les autres marqueurs : seule la colonne d'effets hérite ici de
-   cette taille locale. */
+/* Sur les créatures posées en MOBA, coût et couleur étaient trop grands tandis
+   que les effets étaient minuscules. Les mesures vivent sur les enfants de la
+   carte (le cqw se rapporte à la face) ; la colonne d'effets les agrandit seule.
+   Main, aperçu, cartes des autres modes et cases vides restent inchangés. */
+.rpg-battle--moba .moba .moba__slots .rpg-card--img > * {
+  --rpg-card-marker-size: clamp(16px, 18cqw, 26px);
+  --rpg-plaque-taille: clamp(16px, 18cqw, 26px);
+  --rpg-cout-taille: calc(var(--rpg-plaque-taille) * 1.12);
+}
 .rpg-battle--moba .moba .moba__slots .rpg-card--img .rpg-card-icones.rpg-card-icones--colonne {
-  --rpg-plaque-taille: clamp(11px, 12cqw, 19px);
+  --rpg-plaque-taille: clamp(18px, 22cqw, 30px);
   gap: clamp(2px, 1cqw, 3px);
 }
