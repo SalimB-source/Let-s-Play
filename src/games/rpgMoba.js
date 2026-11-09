@@ -32,11 +32,27 @@ export function mobaNouveau() {
     // A creature's identity remains bound to its first lane, even off-board.
     assignments: [],
     winner: null,
+    centerChoice: null, // vainqueur du centre en attente de son choix latéral
+    centerJoined: null, // { side, laneId } ; les cartes gardent leur case centrale
   };
 }
 
 export function mobaVoie(state, laneId) {
   return state?.lanes?.find((lane) => lane.id === laneId) ?? null;
+}
+
+/** Combat lane of a card occupying a physical slot (the opponent never inherits the center). */
+export function mobaVoieCombat(state, side, laneId) {
+  return laneId === 'center' && state?.centerJoined?.side === side
+    ? state.centerJoined.laneId : laneId;
+}
+
+export function mobaRattacherCentre(state, side, laneId) {
+  if (!state || state.winner || state.centerChoice !== side || !validSide(side)
+    || !['left', 'right'].includes(laneId) || !mobaVoie(state, laneId)?.active) return fail('choix-voie');
+  state.centerJoined = { side, laneId };
+  state.centerChoice = null;
+  return { ok: true };
 }
 
 export function mobaEmplacementsLibres(state, side, laneId) {
@@ -87,14 +103,15 @@ export function mobaValiderBlocages(state, attackingSide, attackerIds, blocks = 
     for (const id of lane.slots[attackingSide]) if (id !== null) locations.set(id, lane);
   }
   for (const id of attackerIds) {
-    if (!locations.get(id)?.active) return fail('attaquant');
+    if (!mobaVoie(state, mobaVoieCombat(state, attackingSide, locations.get(id)?.id))?.active || state.centerChoice) return fail('attaquant');
   }
   const used = new Set();
   for (const [attackerId, blockers] of Object.entries(blocks)) {
     if (!locations.has(attackerId) || !attackerIds.includes(attackerId) || !Array.isArray(blockers)) return fail('blocage');
-    const lane = locations.get(attackerId);
+    const lane = mobaVoie(state, mobaVoieCombat(state, attackingSide, locations.get(attackerId).id));
     for (const blocker of blockers) {
-      if (!validId(blocker) || used.has(blocker) || !lane.slots[defender].includes(blocker)) return fail('blocage');
+      if (!validId(blocker) || used.has(blocker) || !state.lanes.some((origin) => origin.slots[defender].includes(blocker)
+        && mobaVoieCombat(state, defender, origin.id) === lane.id)) return fail('blocage');
       used.add(blocker);
     }
   }
@@ -115,8 +132,20 @@ export function mobaInfliger(state, attackingSide, laneId, amount) {
   const result = { ok: true, damage: before - lane.hp[defendingSide], conquered: false, removed: null, winner: null };
   if (lane.hp[defendingSide] === 0) {
     result.conquered = true;
-    result.removed = Object.fromEntries(MOBA_SIDES.map((side) => [side, lane.slots[side].filter((id) => id !== null)]));
-    for (const side of MOBA_SIDES) lane.slots[side].fill(null);
+    const retainCenter = laneId === 'center' && !state.lanes.some((l) => l.conqueredBy === attackingSide);
+    result.removed = Object.fromEntries(MOBA_SIDES.map((side) =>
+      [side, retainCenter && side === attackingSide ? [] : lane.slots[side].filter((id) => id !== null)]));
+    for (const side of MOBA_SIDES) if (!retainCenter || side !== attackingSide) lane.slots[side].fill(null);
+    if (retainCenter) state.centerChoice = attackingSide;
+    // The joined central slot is an extra slot of its chosen flank: it falls
+    // with that flank, never survives on a closed battlefield.
+    if (state.centerJoined?.laneId === laneId) {
+      const center = mobaVoie(state, 'center');
+      const joinedSide = state.centerJoined.side;
+      result.removed[joinedSide].push(...center.slots[joinedSide].filter(Boolean));
+      center.slots[joinedSide].fill(null);
+      state.centerJoined = null;
+    }
     lane.active = false;
     lane.conqueredBy = attackingSide;
     if (state.lanes.filter((l) => l.conqueredBy === attackingSide).length >= 2) {
