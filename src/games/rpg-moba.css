@@ -911,6 +911,11 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 .moba .moba__side--joueur.is-joined-flank { padding-bottom: 28px; }
 .moba .moba__side--joueur.is-joined-flank .moba__health { top: auto; bottom: 0; }
 
+/* La barre de PV doit rester lisible quand une créature adverse vole près
+   d'elle. Les jauges rattachées conservent leur position absolue (règle plus
+   spécifique ci-dessus), et les autres passent devant les cartes. */
+.moba .moba__side > .moba__health { position: relative; z-index: 3; }
+
 /* Le conteneur remplace le bouton « i » pour l'accès clavier à la fiche. */
 .moba .moba__real-slot:focus-visible,
 .moba .moba__hand-item:focus-visible,
@@ -938,6 +943,32 @@ button.moba__pending-art:focus-visible { outline: 2px solid #ffe3a4; outline-off
 
 @media (max-width: 700px) and (orientation: portrait) { .moba__sacrifice-hint { top: 16%; left: 2%; right: 2%; padding: 3px 5px; font-size: 10px; } }
 @media (max-width: 700px) and (max-height: 650px) and (orientation: portrait) { .moba__sacrifice-hint { top: 23%; } }
+
+/* La pose est visible sur les trois voies : la carte descend de la main de
+   l'IA, ou monte depuis celle du joueur, puis se cale sans dépasser les PV.
+   TableCard porte fx-enter pendant 620ms ; sa clé suit l'entité pour que le
+   remplacement d'une créature (ou la fin d'un rituel) rejoue bien la pose. */
+.rpg-battle--moba .moba .moba__side--sorcier { --moba-pose-depart: -64px; }
+.rpg-battle--moba .moba .moba__side--joueur { --moba-pose-depart: 64px; }
+.rpg-battle--moba .moba .moba__real-slot .rpg-card.fx-enter {
+  animation: moba-creature-pose .6s cubic-bezier(.2, .72, .26, 1) both;
+}
+@keyframes moba-creature-pose {
+  0% { opacity: 0; translate: 0 var(--moba-pose-depart); scale: .78; filter: brightness(1.35); }
+  65% { opacity: 1; translate: 0 0; scale: 1.035; }
+  85% { translate: 0 -2px; scale: .99; }
+  100% { opacity: 1; translate: 0 var(--rpg-envol-repos, 0px); scale: 1; filter: none; }
+}
+
+/* La lévitation des cartes de table reste visible sans remonter jusqu'aux PV
+   de la voie adverse (4px au sommet, contre 23px dans le duel classique).
+   Le repos s'applique aussi aux cartes gelées et au mouvement réduit. */
+.rpg-battle--moba .moba .moba__slots .rpg-card.is-envol {
+  --rpg-envol-repos: -2px;
+  --rpg-envol-montee: -3px;
+  --rpg-envol-sommet: -4px;
+  --rpg-envol-descente: -3px;
+}
 
 /* Sur les créatures posées en MOBA, coût et couleur étaient trop grands tandis
    que les effets étaient minuscules. Les mesures vivent sur les enfants de la
