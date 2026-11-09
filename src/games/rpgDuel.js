@@ -5801,8 +5801,17 @@ function campsDePortee(cote, portee) {
   return [autre(cote)];
 }
 
+/** Seule une annonce adverse encore en main peut être contrecarrée : une
+ *  créature déjà arrivée, créée comme jeton ou réanimée n'est pas une carte jouée. */
+function annonceCreatureDepuisMain(duel, cote, annonce) {
+  if (!annonce || annonce.cote !== autre(cote)) return false;
+  const cible = duelCardById(annonce.carteId);
+  return Boolean(cible && !jetonById(annonce.carteId) && (cible.kind ?? 'creature') !== 'site'
+    && duel[annonce.cote].main.includes(annonce.carteId));
+}
+
 /** Une Embuscade exige son déclencheur seulement pendant le tour adverse. */
-export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
+export function rpgConditionEmbuscadeRemplie(duel, cote, carte, annonce = duel.annonce) {
   // La condition n'interdit jamais la pose pendant son propre tour.
   if (!carte?.reactionTourAdverse || duel.tour === cote) return true;
   const adversaires = duel[autre(cote)].creatures;
@@ -5820,6 +5829,7 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
   const vampiresVises = allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire')
     && ciblesAttaque.includes(entite.id));
   switch (carte.conditionEmbuscade) {
+    case 'creature-jouee-main': return annonceCreatureDepuisMain(duel, cote, annonce);
     case 'adversaire-blesse': return adversaires.some((entite) => entite.pv < entite.pvMax);
     case 'attaquant': return attaquants.length > 0;
     case 'autre-vampire': return allies.some((entite) => cardHasPrintedType(entite.carteId, 'Vampire'));
@@ -6016,7 +6026,7 @@ function attaquesInterceptables(duel, cote, veilleur) {
   });
 }
 
-export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false } = {}) {
+export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDifferee = false, sacrificeId = null, sacrificeIds = null, emplacement = null, attaquants = null, attendreReponseEffet = false, resoudreSoinSorcier = null, resoudreDegatsSorcier = null, onEntitePlacee = null, annoncerCreatureMoba = null, resoudreCreatureMoba = false, annonceContree = null } = {}) {
   const camp = duel[cote];
   // Le sceau du Pilote se lit **avant** la pose : il arme cette créature-ci,
   // et le Pilote lui-même ne peut pas profiter du sceau qu’il va poser.
@@ -6029,8 +6039,15 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   const dejaPayee = Boolean(attenteMoba && attenteMoba.cote === cote && attenteMoba.carteId === carteId
     && emplacement === attenteMoba.emplacement);
   if (!dejaPayee && !camp.main.includes(carteId)) return { ok: false, raison: 'pas-en-main' };
-  if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || duel.pvp)) return { ok: false, raison: 'timing' };
-  if (!rpgConditionEmbuscadeRemplie(duel, cote, carte)) return { ok: false, raison: 'condition-embuscade' };
+  // L'IA répond directement à la pose du joueur (sans annonce stockée). Cette
+  // voie interne est réservée à sa réponse PvE, et ne crée pas de fenêtre PvP.
+  const reponseIA = carte.contreAnnonceCreature && annonceContree && !duel.pvp && !duel.moba
+    && cote === 'sorcier' && duel.tour === 'joueur' && !duel.annonce
+    && annonceContree.cote === 'joueur' && duel.joueur.main.includes(annonceContree.carteId);
+  if (annonceContree && !reponseIA) return { ok: false, raison: 'timing' };
+  const annonceReponse = reponseIA ? annonceContree : duel.annonce;
+  if (carte.reactionTourAdverse && duel.tour !== cote && !(duel.fenetreReponse || duel.pvp || reponseIA)) return { ok: false, raison: 'timing' };
+  if (!rpgConditionEmbuscadeRemplie(duel, cote, carte, annonceReponse)) return { ok: false, raison: 'condition-embuscade' };
   const attaquantsArrivee = duel.combatDeclare?.cote === autre(cote) ? duel.combatDeclare.attaquants : (attaquants ?? []);
   if (carte.arrivee?.attaquanteSeulement && cibleId && !attaquantsArrivee.includes(cibleId)) return { ok: false, raison: 'cible' };
   const nombreSacrifices = sacrificesInvocation(carte, duel);
@@ -6195,7 +6212,31 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   // `contrerAnnonce` paie la créature lancée ainsi que le contresort adverse.
   if (!dejaPayee && cote === 'joueur' && !duel.annonce && !duel.pvp) {
     const contreIA = choisirContreIA(duel, carte);
-    if (contreIA) return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+    if (contreIA) {
+      if (contreIA.contreAnnonceCreature) {
+        const reponse = rpgJouerCreature(duel, 'sorcier', contreIA.id, null,
+          { annonceContree: { cote: 'joueur', carteId } });
+        if (reponse.ok) return reponse;
+      } else return contrerAnnonce(duel, 'sorcier', contreIA, { cote: 'joueur', carteId });
+    }
+  }
+  // Contre par une créature : la carte annoncée paie son coût et va au
+  // cimetière AVANT l'arrivée du Vampire. Le Vampire, lui, reste sur le champ.
+  // Toutes les validations de pose, de cible et de mana ont déjà eu lieu.
+  let carteContree = null;
+  if (carte.contreAnnonceCreature && duel.tour !== cote) {
+    const cible = duelCardById(annonceReponse.carteId);
+    if (!rpgPeutPayer(duel[annonceReponse.cote], cible)) return { ok: false, raison: 'mana' };
+    payer(duel, annonceReponse.cote, cible);
+    const mainAdverse = duel[annonceReponse.cote].main;
+    mainAdverse.splice(mainAdverse.indexOf(cible.id), 1);
+    duel[annonceReponse.cote].cimetiere.push(cible.id);
+    carteContree = cible.id;
+    if (annonceReponse === duel.annonce) {
+      duel.annonce = null;
+      duel.fenetreReponse = false;
+    }
+    duel.log.push(`${carte.name} contre ${cible.name} avant son arrivée.`);
   }
   // Rien n’a été annulé : les sacrifices d’invocation ont lieu maintenant,
   // juste avant le paiement — la créature entre ensuite sur le champ vidé.
@@ -6349,7 +6390,8 @@ export function rpgJouerCreature(duel, cote, carteId, cibleId = null, { cibleDif
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
-  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null };
+  return { ok: true, entite, sacrificeId: sacrifice?.id ?? null, sacrificeIds: sacrifices.map(e => e.id), emplacement: entite.emplacement ?? null,
+    ...(carteContree ? { contre: true, parIA: cote === 'sorcier', carteContree, carteContre: carte.id } : {}) };
 }
 
 /**
@@ -7049,6 +7091,8 @@ function contreCorrespond(effet, carte) {
  *   annonce adverse légale à contrer maintenant.
  */
 export function rpgContreJouable(duel, cote, carte) {
+  if (carte?.contreAnnonceCreature) return duel.tour === cote
+    || (duel.fenetreReponse && annonceCreatureDepuisMain(duel, cote, duel.annonce));
   if (carte?.effet?.type !== 'contresort') return true;
   const annonce = duel.annonce;
   if (!annonce || annonce.cote === cote) return false;
@@ -7214,8 +7258,9 @@ function choisirContreIA(duel, carte) {
   if (!carte || (carte.cost ?? 0) < 2) return null;
   const candidats = duel.sorcier.main
     .map((id) => cardById(id))
-    .filter((c) => c?.effet?.type === 'contresort'
-      && contreCorrespond(c.effet, carte)
+    .filter((c) => ((c?.effet?.type === 'contresort' && contreCorrespond(c.effet, carte))
+      || (c?.contreAnnonceCreature && duelCardById(carte.id) && !jetonById(carte.id)
+        && carte.kind !== 'site' && invocationPossible(duel, 'sorcier', c)))
       && rpgPeutPayer(duel.sorcier, c))
     .sort((a, b) => (a.cost ?? 0) - (b.cost ?? 0));
   return candidats[0] ?? null;
@@ -8747,6 +8792,7 @@ export function rpgPeutRepondre(duel, cote) {
     const carte = magieById(id) ?? duelCardById(id);
     if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte)
       && invocationPossible(duel, cote, carte)
+      && rpgContreJouable(duel, cote, carte)
       && rpgConditionEmbuscadeRemplie(duel, cote, carte);
     const prixMoba = Boolean(duel.moba && (carte?.prixPv ?? 0) > 0);
     const prixPayable = !prixMoba || duel.moba.lanes.some((lane) => lane.active && lane.hp[cote] > carte.prixPv);
