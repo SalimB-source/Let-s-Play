@@ -6,7 +6,11 @@ export function rpgMobaCombatFeedback(resume, entities, token) {
   const critiques = {};
   const phrases = [];
   for (const shot of resume?.coupsRapides ?? []) {
-    if (shot.annule) phrases.push(`${shot.attaquant} : attaque ciblée annulée, cible absente`);
+    if (shot.annule) phrases.push(shot.annulationSphere === 'attaquant'
+      ? `${shot.attaquant} : attaque ciblée annulée, attaquant renvoyé par la Sphère`
+      : shot.annulationSphere === 'cible'
+        ? `${shot.attaquant} : attaque ciblée annulée, cible renvoyée par la Sphère`
+        : `${shot.attaquant} : attaque ciblée annulée, cible absente`);
     else if (shot.rate) {
       miss[shot.attaquantId] = { token };
       phrases.push(`${shot.attaquant} : attaque ciblée manquée`);

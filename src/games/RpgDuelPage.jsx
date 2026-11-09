@@ -4195,7 +4195,7 @@ function SpellAnnouncement({ annonce, camp = 'joueur', nomLanceur = null }) {
             contre garde son or : sa règle est plus spécifique (voir
             `rpg-battle.css`). Une vague reprend la teinte du sort : elle est
             le même sort qui retombe, pas une nouvelle magie. */}
-        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? 'CONTRE DU SORCIER' : vague ? 'SECONDE VAGUE' : nomLanceur ? `MAGIE · ${nomLanceur.toUpperCase()}` : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
+        <span className={`rpg-spell-played__eyebrow${contre ? '' : classeLigneFamille(carte)}`}>{contre ? (nomLanceur ? `CONTRE · ${nomLanceur.toUpperCase()}` : 'CONTRE DU SORCIER') : vague ? 'SECONDE VAGUE' : nomLanceur ? `MAGIE · ${nomLanceur.toUpperCase()}` : sorcier ? 'SORT DU SORCIER' : 'MAGIE JOUÉE'}</span>
         <strong>{carte.name}</strong>
         <p>{regleCarteLongue(carte) ? resumeCarte(carte, 92) : carte.text}</p>
         <div className="rpg-spell-played__target">

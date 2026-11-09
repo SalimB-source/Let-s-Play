@@ -2,6 +2,7 @@ import { sacrificesInvocation, victimesInvocation, invocationPossible } from './
 import { ciblesDefenseur } from './rpgDefenseur.js';
 import { armurePrototype, defenseSansArmure, plafondSoinCreature, absorberDegatsArmure } from './rpgArmure.js';
 import { mobaInfliger, mobaPlacer, mobaRetirer, mobaSoigner, mobaVoie } from './rpgMoba.js';
+import { CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 /**
  * Le duel de sorciers — moteur « façon Magic » des règles v3.
  *
@@ -700,6 +701,12 @@ export function rpgGagnerVie(duel, cote, montant) {
 }
 // Creature healing (Vol de vie and death triggers) belongs to the source's
 // MOBA lane, not the unused wizard HP. The feed is outside serialized state.
+const piochesRetourExilMoba = new WeakMap();
+export function rpgConsommerPiochesRetourExilMoba(duel) {
+  const events = piochesRetourExilMoba.get(duel) ?? [];
+  piochesRetourExilMoba.delete(duel);
+  return events;
+}
 const soinsCreatureMoba = new WeakMap();
 export function rpgConsommerSoinsCreatureMoba(duel) {
   const events = soinsCreatureMoba.get(duel) ?? [];
@@ -2800,7 +2807,7 @@ function ripostesDeZone(duel, coteLanceur, sauf, sourceType, touchees) {
  *  Rend les Esquives réussies contre des ATTAQUES (hors Attaque ciblée, traitée
  *  par l'appelant) : l'appelant y lit les Contre-attaques à déclencher une
  *  fois l'échange terminé. */
-function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}) {
+function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort, onBlessure } = {}) {
   const blessures = new Map();
   // Les Esquives réussies contre une attaque : l'appelant en tire les
   // Contre-attaques (Tojiro riposte même quand le coup n'a pas porté).
@@ -2857,6 +2864,7 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
     }
     const degats = Math.max(0, Number(coup.amount) || 0);
     if (degats <= 0) continue;
+    onBlessure?.(coup, degats);
     const cle = `${coup.cote}:${entite.id}`;
     const blessure = blessures.get(cle) ?? {
       cote: coup.cote,
@@ -2997,7 +3005,9 @@ function appliquerDegatsDeCombatSimultanes(duel, coups, { onFurie, onMort } = {}
   for (const mort of mortes) {
     if (duel.moba?.winner) break;
     declencherMortAlliee(duel, mort.cote, mort.entite);
+    if (duel.moba?.winner) break;
     mort.declencherArme?.();
+    if (duel.moba?.winner) break;
     const carte = duelCardById(mort.entite.carteId);
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, mort.cote, carte, mort.entite.carteId, mort.entite);
@@ -4870,9 +4880,33 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
         duel.log.push('Réanimation : aucune créature au cimetière.');
         return;
       }
+      // A MOBA arrival may only revive an audited card. Never skip an
+      // unsupported latest creature to revive an older one instead.
+      if (duel.moba && !CARTES_COMBAT_AUDITEES.has(camp.cimetiere[index])) {
+        duel.log.push('Réanimation : la dernière créature du cimetière n’est pas adaptée au MOBA.');
+        return;
+      }
+      // Le Passeur choisit automatiquement une case libre : sa voie d'abord,
+      // puis les autres voies actives. La magie Réanimation garde son choix
+      // explicite ; un appel MOBA sans aucun des deux chemins échoue fermé.
+      let placementAuto = null;
+      if (duel.moba && typeof options?.placerReanimationMoba !== 'function') {
+        const source = sourceCarteId === 'passeur-au-masque-de-chacal'
+          ? camp.creatures.find((entite) => entite.id === sauf) : null;
+        if (!source || !mobaVoie(duel.moba, source.mobaLane)?.active) return;
+        for (const side of ['joueur', 'sorcier']) {
+          const vivantes = new Set(duel[side].creatures.map((entite) => entite.id));
+          for (const voie of duel.moba.lanes) for (const id of [...voie.slots[side]]) {
+            if (id && !vivantes.has(id)) mobaRetirer(duel.moba, side, id);
+          }
+        }
+        const voies = [...duel.moba.lanes].sort((a, b) => Number(b.id === source.mobaLane) - Number(a.id === source.mobaLane));
+        const voie = voies.find((v) => v.active && v.slots[cote].includes(null));
+        if (voie) placementAuto = { voie, slot: voie.slots[cote].indexOf(null) };
+      }
       // Pas de place libre : la créature reste au cimetière, la carte n'est
       // pas consommée. Un mort ne revient pas « à côté » des cinq cases.
-      if (!placesLibresChamp(duel, cote)) {
+      if (!placesLibresChamp(duel, cote) || (duel.moba && !options?.placerReanimationMoba && !placementAuto)) {
         const carteEnAttente = duelCardById(camp.cimetiere[index]);
         duel.log.push(`Réanimation : aucune place libre — ${carteEnAttente?.name ?? 'la créature'} reste au cimetière.`);
         return;
@@ -4881,8 +4915,14 @@ function appliquerEffet(duel, cote, effet, cibleId, sauf = null, sourceElement =
       const carte = duelCardById(carteRevivee);
       const entite = creerEntiteCreature(carte);
       camp.creatures.push(entite);
-      if (duel.moba && typeof options?.placerReanimationMoba === 'function') {
-        options.placerReanimationMoba(entite);
+      if (duel.moba) {
+        if (typeof options?.placerReanimationMoba === 'function') options.placerReanimationMoba(entite);
+        else {
+          const { voie, slot } = placementAuto;
+          entite.mobaLane = voie.id;
+          placerDansEmplacement(duel, cote, entite, { left: 0, center: 2, right: 3 }[voie.id] + slot);
+          if (!mobaPlacer(duel.moba, cote, voie.id, slot, entite.id).ok) throw new Error('Réanimation automatique MOBA incohérente');
+        }
         journaliserArriveeCreature(duel, cote, entite, 'reanimation');
       } else placerDansEmplacement(duel, cote, entite);
       duel.log.push(`Réanimation : ${carte.name} revient en jeu.`);
@@ -5357,30 +5397,60 @@ export function rpgRetirerEntitesConquete(duel, idsParCote, laneId = null) {
 // L'exil temporaire garde seulement l'identité de la carte : équipements et
 // modifications quittent la table, le retour est une nouvelle arrivée en jeu.
 function exilerPourFinDeTour(duel, cote, entite, sourceCarteId) {
+  const voie = duel.moba && mobaVoie(duel.moba, entite.mobaLane);
+  const slot = voie ? voie.slots[cote].indexOf(entite.id) : -1;
+  // Ne pas programmer un retour MOBA sans emplacement d'origine vérifiable.
+  if (duel.moba && (!voie?.active || slot < 0)) return;
   if (!exilerEntite(duel, cote, entite, sourceCarteId)) return;
-  if (!entite.jeton) (duel.retoursExilFinTour ??= []).push({ cote, carteId: entite.carteId });
+  if (duel.moba) mobaRetirer(duel.moba, cote, entite.id);
+  if (!entite.jeton) (duel.retoursExilFinTour ??= []).push({ cote, carteId: entite.carteId,
+    ...(voie ? { mobaLane: voie.id, mobaSlot: slot } : {}) });
 }
 
 function resoudreExilsFinTour(duel) {
   const retours = duel.retoursExilFinTour ?? [];
   duel.retoursExilFinTour = [];
   for (const retour of retours) {
+    if (duel.moba?.winner) break;
     const camp = duel[retour.cote];
     const carte = duelCardById(retour.carteId);
     const index = (camp.exil ?? []).lastIndexOf(retour.carteId);
     if (!carte || index < 0) continue;
-    if (!placesLibresChamp(duel, retour.cote)) {
+    const voie = duel.moba ? mobaVoie(duel.moba, retour.mobaLane) : null;
+    // Une conquête annule le retour ; l'exilé reste hors partie.
+    if (duel.moba && !voie?.active) continue;
+    if (voie) {
+      const vivantes = new Set(camp.creatures.map((entite) => entite.id));
+      for (const id of [...voie.slots[retour.cote]]) if (id && !vivantes.has(id)) mobaRetirer(duel.moba, retour.cote, id);
+    }
+    const slot = voie ? (voie.slots[retour.cote][retour.mobaSlot] === null
+      ? retour.mobaSlot : voie.slots[retour.cote].indexOf(null)) : -1;
+    if (!placesLibresChamp(duel, retour.cote) || (voie && slot < 0)) {
       duel.retoursExilFinTour.push(retour);
       duel.log.push(`${carte.name} attend une place libre pour revenir.`);
       continue;
     }
     camp.exil.splice(index, 1);
     const entite = creerEntiteCreature(carte);
+    if (voie) entite.mobaLane = voie.id;
     camp.creatures.push(entite);
-    placerDansEmplacement(duel, retour.cote, entite);
+    if (voie) {
+      const offset = { left: 0, center: 2, right: 3 }[voie.id];
+      placerDansEmplacement(duel, retour.cote, entite, offset + slot);
+      if (!mobaPlacer(duel.moba, retour.cote, voie.id, slot, entite.id).ok) throw new Error('Retour d’exil MOBA incohérent');
+    } else placerDansEmplacement(duel, retour.cote, entite);
     journaliserArriveeCreature(duel, retour.cote, entite, 'retour-exil');
     duel.log.push(`${carte.name} revient en jeu à la fin du tour.`);
+    const decksAvant = duel.moba ? ['joueur', 'sorcier'].map((side) => duel[side].deck.length) : null;
     appliquerArriveeDeRetour(duel, retour.cote, carte, entite);
+    if (decksAvant) for (const [i, side] of ['joueur', 'sorcier'].entries()) {
+      const count = Math.max(0, decksAvant[i] - duel[side].deck.length);
+      if (count) {
+        const events = piochesRetourExilMoba.get(duel) ?? [];
+        events.push({ side, cardId: carte.id, entityId: entite.id, count });
+        piochesRetourExilMoba.set(duel, events);
+      }
+    }
   }
   rafraichirAuras(duel);
   rpgActionsEtat(duel);
@@ -5481,13 +5551,18 @@ function declencherCapaciteDestruction(duel, cote, carte, carteId, entite = null
  * fin de tour). Ni l'exil ni la capture ne passent par ce déclencheur. */
 function declencherMortAlliee(duel, cote, victime) {
   for (const source of [...duel[cote].creatures]) {
-    if (source.id === victime.id || !(source.pv > 0)) continue;
+    if (duel.moba?.winner) break;
+    if (source.id === victime.id || !(source.pv > 0) || !duel[cote].creatures.includes(source)) continue;
     const carte = duelCardById(source.carteId);
     const effet = carte?.mortAlliee;
     if (effet?.type !== 'degats-sorcier') continue;
     const montant = Math.max(0, Number(effet.amount) || 0);
     if (!montant) continue;
-    rpgInfligerSorcier(duel, autre(cote), montant);
+    if (duel.moba) {
+      const impact = mobaPerdreVieAdverse(duel, cote, source.mobaLane, montant);
+      if (!impact.ok) continue;
+      journaliserDegatsCapaciteMoba(duel, { ...impact, laneId: source.mobaLane, targetSide: autre(cote), cardId: source.carteId, entityId: source.id, mortAlliee: true });
+    } else rpgInfligerSorcier(duel, autre(cote), montant);
     duel.log.push(`${source.name} : la mort de ${victime.name} inflige ${montant} dégât${montant > 1 ? 's' : ''} à son adversaire.`);
   }
 }
@@ -5514,7 +5589,9 @@ function rejoindreCimetiere(duel, cote, entite, sourceElements, libelle, declenc
   programmerRetourTenacite(duel, cote, entite);
   const declencher = () => {
     declencherMortAlliee(duel, cote, entite);
+    if (duel.moba?.winner) return;
     declencherArme?.();
+    if (duel.moba?.winner) return;
     const carte = duelCardById(entite.carteId);
     if (carte?.destruction) {
       declencherCapaciteDestruction(duel, cote, carte, entite.carteId, entite);
@@ -5806,6 +5883,11 @@ export function rpgConditionEmbuscadeRemplie(duel, cote, carte) {
     case 'attaquant-force-3': return attaquants.some((entite) => entite.atk >= 3);
     case 'allie-cible': return allies.some((entite) =>
       (duel.annonce?.cote === autre(cote) && duel.annonce.cibleId === entite.id)
+      // L'adaptateur MOBA réserve ses sorts séparément de `duel.annonce`.
+      // Un sort à deux cibles (Feux de kitsune) vise chacune individuellement ;
+      // une vague, dont cibleId est null, ne devient pas une cible par défaut.
+      || (duel.moba && duel.fenetreReponse && duel.mobaSortEnAttente?.cote === autre(cote)
+        && [duel.mobaSortEnAttente.cibleId, duel.mobaSortEnAttente.cibleSecondaireId].includes(entite.id))
       || (duel.effetCreatureEnAttente?.cote === autre(cote)
         && duel.effetCreatureEnAttente.cibleId === entite.id)
       || ciblesAttaque.includes(entite.id));
@@ -5869,10 +5951,21 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
   if (duel.moba && ['faiseur-de-passage', 'veilleuse-des-citernes'].includes(carte.id) && cible === entite.id) {
     cible = duel[cote].creatures.find((candidate) => candidate.id !== entite.id && !rpgEstProtegee(candidate, cardColors(carte)))?.id ?? null;
   }
+  const signalerRetourMoba = (event) => {
+    if (options?.surEvenementRetourMoba) { options.surEvenementRetourMoba(event); return; }
+    if (event.type === 'degats' || event.type === 'transfert') journaliserDegatsCapaciteMoba(duel, {
+      ...event, targetSide: autre(event.cote ?? cote), cardId: event.carteId ?? carte.id, entityId: event.entityId ?? entite.id,
+    });
+    if (event.type === 'soin' || event.type === 'transfert') {
+      const events = soinsCreatureMoba.get(duel) ?? [];
+      events.push({ ...event, side: event.cote ?? cote, cardId: event.carteId ?? carte.id, entityId: event.entityId ?? entite.id });
+      soinsCreatureMoba.set(duel, events);
+    }
+  };
   const optionsMoba = duel.moba && entite.mobaLane && ['porteuse-de-cruches', 'yamina', 'dame-des-neuf-mondes', 'tour-des-flots'].includes(carte.id)
     ? { resoudreSoinSorcier: ({ amount }) => {
       const soin = mobaSoigner(duel.moba, cote, entite.mobaLane, amount);
-      options?.surEvenementRetourMoba?.({ type: 'soin', laneId: entite.mobaLane, cote, carteId: carte.id, ...soin });
+      signalerRetourMoba({ type: 'soin', laneId: entite.mobaLane, cote, carteId: carte.id, ...soin });
       return soin;
     } }
     : duel.moba && entite.mobaLane && carte.id === 'maitre-du-marteau'
@@ -5880,17 +5973,19 @@ function appliquerArriveeDeRetour(duel, cote, carte, entite, options = null) {
         const damage = mobaInfliger(duel.moba, cote, entite.mobaLane, amount);
         if (damage.conquered) rpgRetirerEntitesConquete(duel, damage.removed, entite.mobaLane);
         if (damage.winner) duel.fin = { gagnant: damage.winner, raison: 'conquete-moba' };
-        options?.surEvenementRetourMoba?.({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
+        signalerRetourMoba({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
         return { recus: damage.damage ?? 0 };
       } }
-      : duel.moba && entite.mobaLane && carte.id === 'braisier-du-souk' && options?.surEvenementRetourMoba
+      : duel.moba && entite.mobaLane && carte.id === 'braisier-du-souk'
         ? { resoudreDegatsSorcier: ({ amount }) => {
           const damage = mobaPerdreVieAdverse(duel, cote, entite.mobaLane, amount);
-          options.surEvenementRetourMoba({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
+          signalerRetourMoba({ type: 'degats', laneId: entite.mobaLane, cote, carteId: carte.id, ...damage });
           return { recus: damage.damage ?? 0 };
         } }
-        : duel.moba && entite.mobaLane && carte.id === 'pretre-de-la-bouche' && options?.surEvenementRetourMoba
-          ? { mobaLane: entite.mobaLane, surTransfertMoba: (event) => options.surEvenementRetourMoba({ type: 'transfert', laneId: entite.mobaLane, cote, carteId: carte.id, ...event }) } : {};
+        : duel.moba && entite.mobaLane && carte.id === 'pretre-de-la-bouche'
+          ? { mobaLane: entite.mobaLane, surTransfertMoba: (event) => signalerRetourMoba({ type: 'transfert', laneId: entite.mobaLane, cote, carteId: carte.id, ...event }) }
+          : duel.moba && carte.id === 'passeur-au-masque-de-chacal'
+            ? { surEvenementRetourMoba: signalerRetourMoba } : {};
   if (duel.moba && carte.id === 'oni-de-la-fournaise') {
     const adversaire = autre(cote);
     const cibles = duel[adversaire].creatures.filter((candidate) => !rpgEstProtegee(candidate, cardColors(carte))
@@ -7573,6 +7668,7 @@ function declencherArmesAttaquants(duel, cote, bilans) {
   let declenche = false;
   const adv = autre(cote);
   for (const bilan of bilans) {
+    if (duel.moba?.winner) break;
     const brut = bilan.armeId ? armeById(bilan.armeId) : null;
     if (!brut) continue;
     // Le Lien d'une arme se lit ici aussi : le Masque du guetteur pioche
@@ -7615,7 +7711,8 @@ function declencherArmesAttaquants(duel, cote, bilans) {
         }
         if (declencheUn) declenche = true;
       } else {
-        appliquer(duel, cote, effet, null, bilan.id, cardColors(carte), null, carte.id);
+        appliquer(duel, cote, effet, null, bilan.id, cardColors(carte), null, carte.id, null,
+          duel.moba ? { mobaLane: bilan.mobaLane } : undefined);
         declenche = true;
       }
     }
@@ -7800,6 +7897,7 @@ export function rpgLancerAttaque(
   const porteursDeclencheurs = attaquants.map((entite) => ({
     id: entite.id,
     armeId: entite.arme?.carteId ?? null,
+    mobaLane: entite.mobaLane,
   }));
   const avantBanniere = attaquants.map((entite) => ({
     entite, atk: entite.atk, def: entite.def, pv: entite.pv, pvMax: entite.pvMax, journal: duel.log.length,
@@ -7822,7 +7920,7 @@ export function rpgLancerAttaque(
   // Les capacités déclenchées par les blocages précèdent même le partage des
   // blessures. Prévoir aussi les destructions en chaîne, boucliers et protections
   // sur une copie pour qu'une répartition invalide ne modifie jamais la partie.
-  const degatsAvantCombat = [];
+  let degatsAvantCombat = [];
   // L’Attaque ciblée frappe AVANT les blessures de combat : la créature désignée à
   // la déclaration encaisse les dégâts d'attaque, sans riposte, avec 30 % de
   // chances de rater sa cible (alors qu'attaquer l'adversaire normalement touche
@@ -7904,8 +8002,39 @@ export function rpgLancerAttaque(
       if (bloqueur && !estGelee(bloqueur)) ajouterDegatsCapaciteAvantCombat(degatsAvantCombat, adv, duelCardById(bloqueur.carteId), attaquant, bloqueur, 'blocage');
     }
   }
-  const apresCapacites = degatsAvantCombat.length ? JSON.parse(JSON.stringify(duel)) : duel;
-  if (degatsAvantCombat.length) {
+  // Une Attaque ciblée est aussi un combat contre une créature : la Sphère
+  // peut y renvoyer l'un des deux protagonistes avant la frappe, même ratée.
+  // Cette étape doit être jouée sur la copie de validation puis rejouée avec
+  // les mêmes jets, afin que les blocages et leur partage voient le bon état.
+  const sphereCibleeMoba = duel.moba && frappesRapides.some((frappe) => {
+    const attaquant = duel[cote].creatures.find((entite) => entite.id === frappe.attaquantId);
+    const cible = duel[adv].creatures.find((entite) => entite.id === frappe.cibleId);
+    return armeCarteDe(attaquant)?.id === 'sphere-de-rotation' || armeCarteDe(cible)?.id === 'sphere-de-rotation';
+  });
+  const resoudreSpheresCiblees = (etat, frappes, coups) => {
+    const disparus = new Set();
+    for (const frappe of frappes) {
+      if (frappe.annule) continue;
+      const attaquant = etat[cote].creatures.find((entite) => entite.id === frappe.attaquantId);
+      const cible = etat[adv].creatures.find((entite) => entite.id === frappe.cibleId);
+      if (!attaquant || !cible) {
+        frappe.annule = true; frappe.degats = 0;
+        if (disparus.has(frappe.attaquantId)) frappe.annulationSphere = 'attaquant';
+        else if (disparus.has(frappe.cibleId)) frappe.annulationSphere = 'cible';
+        continue;
+      }
+      if (tenterRenvoiSphere(etat, cote, attaquant, adv, cible)) disparus.add(cible.id);
+      else if (tenterRenvoiSphere(etat, adv, cible, cote, attaquant)) disparus.add(attaquant.id);
+      if (disparus.has(attaquant.id) || disparus.has(cible.id)) {
+        frappe.annule = true; frappe.degats = 0;
+        frappe.annulationSphere = disparus.has(attaquant.id) ? 'attaquant' : 'cible';
+      }
+    }
+    return { disparus, coups: coups.filter((coup) => !disparus.has(coup.sourceId) && !disparus.has(coup.entiteId)
+      && (!coup.rapide || !frappes.some((frappe) => frappe.attaquantId === coup.sourceId && frappe.annule))) };
+  };
+  const apresCapacites = degatsAvantCombat.length || sphereCibleeMoba ? JSON.parse(JSON.stringify(duel)) : duel;
+  if (degatsAvantCombat.length || sphereCibleeMoba) {
     // La copie sert à valider la répartition, la partie réelle à la résoudre.
     // Enregistrer puis rejouer les jets évite qu’une Esquive réussie sur la
     // copie soit différente sur la table (ce qui ferait disparaître une
@@ -7917,7 +8046,10 @@ export function rpgLancerAttaque(
       jets.push(jet);
       return jet;
     });
-    appliquerDegatsDeCombatSimultanes(apresCapacites, degatsAvantCombat);
+    const coupsSimules = sphereCibleeMoba
+      ? resoudreSpheresCiblees(apresCapacites, frappesRapides.map((frappe) => ({ ...frappe })), degatsAvantCombat).coups
+      : degatsAvantCombat;
+    appliquerDegatsDeCombatSimultanes(apresCapacites, coupsSimules);
     for (const attaquant of attaquants) {
       for (const bloqueurId of affectations[attaquant.id] ?? []) {
         resoudreCapaciteBlocage(apresCapacites, adv, bloqueurId, attaquant.id);
@@ -7960,6 +8092,18 @@ export function rpgLancerAttaque(
       const prioritaire = prioritesRepartition?.[attaquant.id];
       if (prioritaire && idsBloqueurs.includes(prioritaire)) {
         for (const bloqueurId of idsBloqueurs) distribution[bloqueurId] = bloqueurId === prioritaire ? forceAttaquant : 0;
+      } else if (duel.moba && attaquant.overkill) {
+        // MOBA has no allocation UI. Assign enough to each blocker before
+        // routing the remainder to the lane; an even split can otherwise
+        // leave a blocker alive while simultaneously claiming excess damage.
+        let reste = forceAttaquant;
+        for (const bloqueurId of idsBloqueurs) {
+          const bloqueur = bloqueursDisponiblesPourValidation.find((entite) => entite.id === bloqueurId);
+          const requis = Math.max(0, bloqueur?.pv ?? 0);
+          distribution[bloqueurId] = Math.min(reste, requis);
+          reste -= distribution[bloqueurId];
+        }
+        distribution[idsBloqueurs[0]] += reste;
       } else {
         const quotient = Math.floor(forceAttaquant / idsBloqueurs.length);
         let reste = forceAttaquant - quotient * idsBloqueurs.length;
@@ -8040,6 +8184,14 @@ export function rpgLancerAttaque(
   // La déclaration passe à l'histoire : la phase d'attaque de ce camp est jouée,
   // aucun second combat ne s'ouvrira avant le tour suivant (`rpgFinDeTour`).
   duel.attaqueJouee = cote;
+  let renvoisCiblesSphere = new Set();
+  if (sphereCibleeMoba) {
+    const resolution = resoudreSpheresCiblees(duel, frappesRapides, degatsAvantCombat);
+    degatsAvantCombat = resolution.coups;
+    renvoisCiblesSphere = resolution.disparus;
+    const annules = new Set(frappesRapides.filter((frappe) => frappe.annule).map((frappe) => frappe.attaquantId));
+    resume.critiques = resume.critiques.filter((critique) => !annules.has(critique.entiteId));
+  }
   // Les jets de gel sont résolus seulement après validation de la répartition,
   // pour qu'une déclaration invalide ne modifie jamais le duel.
   for (const frappe of frappesRapides) {
@@ -8059,7 +8211,16 @@ export function rpgLancerAttaque(
   }
   // Appliquer réellement cette étape une seule fois, avant les blessures normales.
   const bloqueursDetruitsParFrappeCiblee = new Set();
+  // Seules les blessures réellement reçues déclenchent les armes en MOBA :
+  // l'esquive, la protection, la lumière et le brouillard les empêchent.
+  const blessuresArmesMoba = new Map();
+  const noterBlessureArmeMoba = (coup, degats) => {
+    if (duel.moba && coup.sourceType === 'attaque' && coup.sourceCote === cote && coup.cote === adv) {
+      blessuresArmesMoba.set(coup.sourceId, (blessuresArmesMoba.get(coup.sourceId) ?? 0) + degats);
+    }
+  };
   appliquerDegatsDeCombatSimultanes(duel, degatsAvantCombat, {
+    onBlessure: noterBlessureArmeMoba,
     onMort: (entite, blessure) => {
       // Les capacités et frappes sont simultanées : ne pas attribuer à la
       // frappe une mort qu'elle n'aurait pas causée sans ces capacités.
@@ -8074,6 +8235,60 @@ export function rpgLancerAttaque(
   for (const attaquant of attaquants) {
     for (const bloqueurId of affectations[attaquant.id] ?? []) {
       resoudreCapaciteBlocage(duel, adv, bloqueurId, attaquant.id);
+    }
+  }
+  // MOBA : résoudre les Sphères des combats bloqués avant la répartition et
+  // les dégâts de voie. Un bloqueur peut aussi renvoyer l'attaquant : aucune
+  // de ses autres frappes, y compris l'Overkill, ne doit alors partir. Les
+  // Attaques ciblées sont résolues plus haut.
+  const bloqueursRenvoyesParSphere = new Set();
+  let renvoiSphereMoba = false;
+  if (duel.moba) {
+    for (const attaquant of attaquants) {
+      if (attaquantsArretes.has(attaquant.id)) continue;
+      for (const bloqueurId of blocagesApresCapacites[attaquant.id] ?? []) {
+        const bloqueur = duel[adv].creatures.find((entite) => entite.id === bloqueurId);
+        if (!bloqueur || !duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
+        if (tenterRenvoiSphere(duel, cote, attaquant, adv, bloqueur)) {
+          bloqueursRenvoyesParSphere.add(bloqueurId);
+          renvoiSphereMoba = true;
+        } else if (tenterRenvoiSphere(duel, adv, bloqueur, cote, attaquant)) {
+          renvoiSphereMoba = true;
+        }
+      }
+    }
+    if (renvoiSphereMoba) for (const attaquant of attaquants) {
+      if (!duel[cote].creatures.some((entite) => entite.id === attaquant.id)) continue;
+      // Le renvoi peut retirer une aura ou une Résonance à n'importe quel
+      // attaquant. Relire sa force après tous les renvois sans rejeter le dé
+      // de critique déjà lancé pour ce combat.
+      const force = forceCombat(attaquant) * (critiquesAttaquant.get(attaquant.id)?.fois ?? 1);
+      forcesAttaquant.set(attaquant.id, force);
+      const restants = (blocagesApresCapacites[attaquant.id] ?? [])
+        .filter((id) => duel[adv].creatures.some((entite) => entite.id === id));
+      blocagesApresCapacites[attaquant.id] = restants;
+      // L'interface MOBA ne permet pas de répartition manuelle. Refaire le
+      // partage automatique sur les bloqueurs encore présents.
+      if (restants.length && repartitions?.[attaquant.id] == null) {
+        const distribution = {};
+        if (attaquant.overkill) {
+          let reste = force;
+          for (const id of restants) {
+            const bloqueur = duel[adv].creatures.find((entite) => entite.id === id);
+            distribution[id] = Math.min(reste, Math.max(0, bloqueur?.pv ?? 0));
+            reste -= distribution[id];
+          }
+          distribution[restants[0]] += reste;
+        } else {
+          const quotient = Math.floor(force / restants.length);
+          let reste = force % restants.length;
+          for (const id of restants) {
+            distribution[id] = quotient + (reste > 0 ? 1 : 0);
+            if (reste > 0) reste -= 1;
+          }
+        }
+        repartitionFinale[attaquant.id] = distribution;
+      }
     }
   }
   // La Traque du Chasseur, côté combat bloqué : ses frappes contre les proies
@@ -8093,7 +8308,9 @@ export function rpgLancerAttaque(
       const bloqueursDeclares = affectations[attaquant.id] ?? [];
       const libreParFrappe = bloqueursDeclares.length > 0
         && bloqueursDeclares.every((id) => bloqueursDetruitsParFrappeCiblee.has(id));
-      if (!attaquantsDejaBloques.has(attaquant.id) || libreParFrappe) {
+      const overkillSphere = duel.moba && attaquant.overkill && bloqueursDeclares.length > 0
+        && bloqueursDeclares.every((id) => bloqueursRenvoyesParSphere.has(id) || renvoisCiblesSphere.has(id) || bloqueursDetruitsParFrappeCiblee.has(id));
+      if (!attaquantsDejaBloques.has(attaquant.id) || libreParFrappe || overkillSphere) {
         if (libreParFrappe) {
           resume.attaquantsLiberes.push(attaquant.id);
           duel.log.push(`${attaquant.name} poursuit son attaque : son bloqueur a été détruit par une Attaque ciblée.`);
@@ -8247,6 +8464,8 @@ export function rpgLancerAttaque(
   // son propriétaire. La créature renvoyée ne subit ni n'inflige de dégâts.
   const boulesRenvoies = new Set();
   for (const [attaquantId, cibles] of ciblesParAttaquant) {
+    // The MOBA blocked-fight pass above already resolved these triggers.
+    if (duel.moba) continue;
     const attaquant = duel[cote].creatures.find((e) => e.id === attaquantId);
     if (!attaquant || !attaquant.arme || attaquant.arme.carteId !== 'sphere-de-rotation') continue;
     for (const cible of cibles) {
@@ -8285,6 +8504,7 @@ export function rpgLancerAttaque(
     }
   }
   const esquivesCombat = appliquerDegatsDeCombatSimultanes(duel, coupsNormaux, {
+    onBlessure: noterBlessureArmeMoba,
     onFurie: (entite, coteBlessure) => resume.furies.push({
       entiteId: entite.id,
       carteId: entite.carteId,
@@ -8357,10 +8577,12 @@ export function rpgLancerAttaque(
   if (!duel.brouillardCombat) {
     for (const coup of (duel.moba && resoudreDegatsDirects ? coupsMobaEffectifs : coupsSorcier)) ajouterBlessure(blessuresSorcier, coup.attaquantId, coup.amount);
   }
-  declencherArmesAttaquants(duel, cote, porteursDeclencheurs.map(({ id, armeId }) => ({
+  if (duel.moba?.winner) return { ok: true, resume };
+  declencherArmesAttaquants(duel, cote, porteursDeclencheurs.map(({ id, armeId, mobaLane }) => ({
     id,
     armeId,
-    creature: blessuresCreatures.get(id) ?? 0,
+    mobaLane,
+    creature: (duel.moba ? blessuresArmesMoba : blessuresCreatures).get(id) ?? 0,
     sorcier: blessuresSorcier.get(id) ?? 0,
     cibles: ciblesParAttaquant.get(id) ?? [],
   })));
@@ -8718,9 +8940,15 @@ export function rpgOuvrirFinDeTour(duel) {
 export function rpgPeutRepondre(duel, cote) {
   return duel[cote].main.some((id) => {
     const carte = magieById(id) ?? duelCardById(id);
-    if (carte?.reactionTourAdverse && duel.tour !== cote) return rpgPeutPayer(duel[cote], carte)
-      && invocationPossible(duel, cote, carte)
-      && rpgConditionEmbuscadeRemplie(duel, cote, carte);
+    if (carte?.reactionTourAdverse && duel.tour !== cote) {
+      // Aucune invocation hors tour n'est encore prise en charge en MOBA.
+      // Ne pas ouvrir une réponse à un effet pour une carte injouable, même
+      // si une main construite hors du validateur contient une Embuscade.
+      if (duel.moba) return false;
+      return rpgPeutPayer(duel[cote], carte)
+        && invocationPossible(duel, cote, carte)
+        && rpgConditionEmbuscadeRemplie(duel, cote, carte);
+    }
     const prixMoba = Boolean(duel.moba && (carte?.prixPv ?? 0) > 0);
     const prixPayable = !prixMoba || duel.moba.lanes.some((lane) => lane.active && lane.hp[cote] > carte.prixPv);
     return Boolean(carte?.instant
@@ -8764,6 +8992,10 @@ function detruireEphemeres(duel) {
  *  nouvelle créature du même nom n'hérite jamais de l'ancienne morsure. */
 function resoudrePoisons(duel, cote) {
   for (const entite of [...duel[cote].creatures]) {
+    // A death trigger can win a MOBA match or remove another poisoned entity.
+    // Neither a finished match nor a departed creature should consume a dose.
+    if (duel.moba?.winner) break;
+    if (!duel[cote].creatures.includes(entite)) continue;
     const poison = entite.poison;
     if (!(poison?.toursRestants > 0)) continue;
     poison.toursRestants -= 1;

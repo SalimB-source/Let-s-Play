@@ -5,9 +5,10 @@
  */
 import { armeById, cardColors, cardHasPrintedType, duelCardById, lienSatisfait, magieById } from './rpgCards.js';
 import { ciblesDefenseur } from './rpgDefenseur.js';
+import { MOBA_ABORDAGE_IMPRIME, MOBA_TOURS_AUDITEES, CARTES_COMBAT_AUDITEES } from './rpgMobaAudit.js';
 import {
   rpgAppliquerBannieresAttaque, rpgDefausserCarte, rpgDemarrerManaEssai, rpgFinDeTour, rpgJouerCreature, rpgJouerArme,
-  rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
+  rpgEstProtegee, rpgEstProtegeeDesSorts, rpgPeutAttaquer, rpgPeutPayer, rpgConsommerSoinsCreatureMoba, rpgConsommerDegatsCapaciteMoba, rpgConsommerPiochesRetourExilMoba, rpgPriseEnCaleLegale, arriveeACibleLegale,
   rpgLancerAttaque, rpgLancerMagie, rpgMulligan, rpgNouveauDuel, rpgPiocher,
   rpgOuvrirFinDeTour, rpgPreparerDefausseFinDeTour, rpgResoudreSiteCible, rpgDissiperSiteSansCibleMoba, rpgResoudreDestructionCiblee, rpgDissiperDestructionsSansCible, rpgResoudreArriveeCiblee, rpgResoudreEffetCreatureEnAttente, rpgRetirerEntitesConquete,
 } from './rpgDuel.js';
@@ -18,34 +19,14 @@ const OFFSETS = Object.freeze({ left: 0, center: 2, right: 3 });
 const NOMS_VOIES = Object.freeze({ left: 'la voie gauche', center: 'la voie centrale', right: 'la voie droite' });
 // Audited for the experimental combat bridge and the supported arrival and
 // scheduled-return paths. Expand with tests as more abilities are adapted.
-const MOBA_ABORDAGE_IMPRIME = Object.freeze(['rais-de-la-galiote', 'cotre-de-course', 'galion-de-la-flotte', 'la-vengeance-de-la-reine-anne', 'la-barbe-noire', 'la-barbe-rousse']);
-const MOBA_SITES_AUDITES = Object.freeze(['le-tresor-de-lima', 'source-de-bimini']);
-const MOBA_TOURS_AUDITEES = Object.freeze(['tour-de-braise', 'tour-des-flots', 'tour-de-sable', 'tour-de-neige', 'tour-des-tenebres']);
-const CARTES_COMBAT_AUDITEES = new Set([
-  ...MOBA_TOURS_AUDITEES, ...MOBA_SITES_AUDITES, 'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges', 'eirik-du-premier-serment', 'pourfendeur-des-djinns', 'ghul-des-cendres', 'chercheuse-des-armes-ensevelies', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or',
-  'gardienne-des-portes-de-sable', 'gardien-viking-du-fjord',
-  'loup-des-neiges', 'berserk-des-trois-hivers', 'jarl-au-marteau-de-guerre',
-  'anqa-des-braises', 'porteuse-de-cruches', 'sahir-des-braises', 'guerrier-au-bouclier-rond', 'lionne-du-midi-ardent', 'maitre-du-marteau',
-  'ifrit-des-ergs', 'djinn-des-braises-voilees', 'djinn-du-dernier-brasier', 'djinn-de-la-premiere-etincelle', 'djinn-des-ailes-de-cendre',
-  'djinn-de-la-flamme-mourante', 'veilleuse-des-citernes', 'scalde-des-runes', 'valkyrie-au-corbeau', 'scribe-des-feuillets', 'drakkar-a-tete-de-dragon',
-  'volva-soigneuse', 'faiseur-de-passage', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'geant-des-banquises', 'leviathan',
-  'gardien-de-la-porte-ardente', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'ifrit-al-ahmar', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'yamina', 'dame-des-neuf-mondes', 'la-devoreuse', 'valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'kraken', 'fennec-des-decombres', 'chien-du-guet', 'le-renegat', 'tiziri-du-djurdjura', 'pilote-de-la-carreira',
-  ...MOBA_ABORDAGE_IMPRIME, 'le-brulot', 'negociant-des-ranscons', 'le-chasseur-d-ocracoke', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert',
-  'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'le-cavalier-du-cimetiere', 'le-cavalier-du-bucher',
-  'chacal-du-seuil', 'veilleuse-au-corbeau-noir', 'berserk-du-crepuscule', 'seigneur-des-machoires', 'faucon-du-zenith', 'celui-qui-juge', 'pretre-de-la-bouche', 'ouvrier-du-natron', 'gardienne-de-la-balance',
-  'orochi', 'momie-de-lin', 'daimyo-du-soleil-rouge', 'tarek',
-  'braisier-du-souk', 'valkyrie-des-glaces', 'maitre-des-corbeaux', 'guetteur-du-beffroi', 'dune-marchante', 'faussoyeur-des-dunes', 'scribe-de-la-liste',
-  'amani-des-ksour', 'susanoo', 'ronin-du-soleil-rouge', 'hatamoto-des-cendres', 'cavalier-des-deux-sabres', 'samourai-du-torii', 'onna-musha-des-cendres', 'tengu-du-mont-ardent', 'kenshi-de-la-forge',
-  'tislit-des-aures', 'ureus-du-seuil', 'feriel', 'djinn-de-la-fleche-ardente', 'djinn-de-foudre', 'bouchra-guerriere-des-cretes', 'kagutsuchi-flamme-originelle', 'maitre-des-hieroglyphes', 'tercio-de-cuivre', 'archere-viking-du-givre',
-]);
 const JETONS_COMBAT_AUDITES = new Set(['petit-orochi', 'shabti', 'samourai-du-daimyo', 'chien-de-sable', 'corsaire', 'guepard', 'serpent-des-citernes']);
 const combatAudite = (entite) => CARTES_COMBAT_AUDITEES.has(entite.carteId)
   || (entite.jeton === true && JETONS_COMBAT_AUDITES.has(entite.carteId));
 // Only the explicitly audited printed weapons and Sabre's spell-weapon may
-// enter. Sabre's Vol de vie is lane-adapted; other variants stay gated.
-export const MOBA_ARMES = Object.freeze(['javelot-du-beffroi', 'cuirasse-de-sel', 'braise-et-sable', 'takouba-des-pistes', 'armure-de-cendres', 'sabre-du-croissant-noir', 'hache-de-la-banquise', 'lance-de-givre', 'khopesh-d-or', 'licou-du-chien-de-sable', 'harnais-du-mehari', 'masque-du-guetteur', 'jitte-d-amayas', 'lance-de-la-lune-givree', 'sandales-de-tislit', 'grappin-d-abordage', 'baton-des-citernes', 'lame-des-ergs']);
+// enter. Printed Vol de vie and the audited sabres are lane-adapted; arbitrary grants stay gated.
+export const MOBA_ARMES = Object.freeze(['javelot-du-beffroi', 'cuirasse-de-sel', 'braise-et-sable', 'takouba-des-pistes', 'armure-de-cendres', 'sabre-du-croissant-noir', 'hache-de-la-banquise', 'lance-de-givre', 'khopesh-d-or', 'licou-du-chien-de-sable', 'harnais-du-mehari', 'masque-du-guetteur', 'jitte-d-amayas', 'lance-de-la-lune-givree', 'sandales-de-tislit', 'grappin-d-abordage', 'baton-des-citernes', 'lame-des-ergs', 'takouba-de-tin-hinan', 'sphere-de-rotation']);
 const equipementAudite = (entite) => (!entite.arme || MOBA_ARMES.includes(entite.arme.carteId)) && (entite.armes ?? []).every((id) => id === 'sabre-maudit')
-  && (!entite.volDeVie || (entite.armes ?? []).includes('sabre-maudit') || entite.arme?.carteId === 'sabre-du-croissant-noir');
+  && (!entite.volDeVie || Boolean(duelCardById(entite.carteId)?.volDeVie) || (entite.armes ?? []).includes('sabre-maudit') || entite.arme?.carteId === 'sabre-du-croissant-noir');
 
 // Only captures of audited presences, made by the lane-aware bridge, are
 // accepted. The held entity keeps its original assignment but occupies no slot.
@@ -59,13 +40,13 @@ const caleAuditee = (duel, cote, entite) => {
     && !MOBA_SIDES.some((s) => duel[s].creatures.some((e) => e.id === prisonniere.id)));
 };
 const fail = (raison) => ({ ok: false, raison });
-export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable']);
-export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'tour-de-braise', 'tour-de-neige']);
+export const MOBA_ARRIVEES_ALLIEES = Object.freeze(['guerrier-au-bouclier-rond', 'veilleuse-des-citernes', 'volva-soigneuse', 'faiseur-de-passage', 'tour-de-sable', 'guetteuse-des-marees']);
+export const MOBA_ARRIVEES_HOSTILES = Object.freeze(['lionne-du-midi-ardent', 'maitre-du-marteau', 'vipere-de-verre', 'sonneur-fele', 'corbeau-de-givre', 'la-devoreuse', 'kraken', 'le-cavalier-sans-nom', 'le-cavalier-de-vapeur', 'oni-de-la-fournaise', 'bakunawa', 'cavalier-amazigh-du-desert', 'souverain-de-la-lune-noire', 'tour-de-braise', 'tour-de-neige']);
 export const MOBA_ARRIVEES_NEUTRES = Object.freeze(['valkyrie-des-neuf-nuits', 'pere-des-corbeaux', 'maitre-des-corbeaux', 'susanoo']);
 // Chercheuse keeps the classic random search for kind === 'arme'.
 // Sabre maudit is a magic, not a candidate; only audited printed weapons are.
 // Re-audit the search and its UX before enabling further printed weapons.
-const MOBA_ARRIVEES_GLOBALES = Object.freeze(['geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres']);
+const MOBA_ARRIVEES_GLOBALES = Object.freeze(['passeur-au-masque-de-chacal', 'lecteur-du-dernier-nom', 'archonte-du-sablier-noir', 'geant-des-banquises', 'leviathan', 'rempart-des-sables-eternels', 'tin-hinan', 'serpent-du-monde', 'celle-qui-pese', 'ibis-des-comptes', 'amayas-du-hoggar', 'jormungandr', 'celui-qui-juge', 'daimyo-du-soleil-rouge', 'tarek', 'guetteur-du-beffroi', 'faussoyeur-des-dunes', 'chercheuse-des-armes-ensevelies', 'braisier-du-souk', 'valkyrie-des-glaces', 'le-cavalier-du-ressac-gele', 'le-cavalier-des-dunes-gelees', 'la-barbe-rousse', 'salem', 'kusayla-roi-des-imazighen', 'dame-aux-ailes-d-or', 'tour-des-tenebres']);
 // Keep the original starter list independent of additions to the editor pool.
 export const MOBA_CARTES_ESSAI = Object.freeze([
   'ashigaru-des-braises', 'mousse-des-galiotes', 'viking-des-neiges',
@@ -264,12 +245,14 @@ export function rpgMobaPasserFinDeTour(duel, side) {
   const avant = duel.tour;
   rpgConsommerSoinsCreatureMoba(duel);
   rpgConsommerDegatsCapaciteMoba(duel);
+  rpgConsommerPiochesRetourExilMoba(duel);
   rpgFinDeTour(duel);
   const healingEvents = rpgConsommerSoinsCreatureMoba(duel);
   const damageEvents = rpgConsommerDegatsCapaciteMoba(duel);
+  const drawEvents = rpgConsommerPiochesRetourExilMoba(duel);
   // Une capacité de retour peut détruire des créatures d'autres voies.
   synchroniserSorties(duel);
-  return duel.tour !== avant || duel.moba.winner ? { ok: true, tour: duel.tour, ...(healingEvents.length ? { healingEvents } : {}), ...(damageEvents.length ? { damageEvents } : {}) } : fail('timing');
+  return duel.tour !== avant || duel.moba.winner ? { ok: true, tour: duel.tour, ...(healingEvents.length ? { healingEvents } : {}), ...(damageEvents.length ? { damageEvents } : {}), ...(drawEvents.length ? { drawEvents } : {}) } : fail('timing');
 }
 
 export function rpgMobaDefausser(duel, side, index) {
@@ -366,7 +349,10 @@ export function rpgMobaJouerCreature(duel, side, cardId, laneId, slot, { ouvrirR
   if (!carte) return fail('carte');
   // A card with unaudited combat or leave-play abilities must never enter the
   // local game: accepting it could later deadlock the only combat phase.
-  if (!CARTES_COMBAT_AUDITEES.has(cardId)) return fail('effet-non-pris-en-charge');
+  if (!CARTES_COMBAT_AUDITEES.has(cardId) || carte.reactionTourAdverse) return fail('effet-non-pris-en-charge');
+  // Une créature Embuscade ne doit pas être admise uniquement parce que son
+  // combat est audité : sa pose hors tour et toutes ses fenêtres restent à
+  // adapter, même si l'on essaie de la poser pendant son propre tour.
   // Porteuse heals her own lane; audited shields and damage use the engine's
   // deferred arrival choices. Other arrivals remain gated until audited.
   const soinArrivee = ['porteuse-de-cruches', 'yamina', 'dame-des-neuf-mondes', 'tour-des-flots'].includes(cardId);

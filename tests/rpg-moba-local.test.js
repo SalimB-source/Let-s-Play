@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { rpgChoisirCouleurMana, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgJouerArme, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
+import { rpgChoisirCouleurMana, rpgConditionEmbuscadeRemplie, rpgDemarrerManaEssai, rpgFinDeTour, rpgMulligan, rpgNouveauDuel, rpgPeutRepondre, rpgJouerCreature, rpgJouerArme, rpgLancerAttaque, rpgPeutAttaquer, rpgPeutBloquerAttaquant, rpgReglerHasard, rpgVainqueur } from '../src/games/rpgDuel.js';
 import { cardById, magieById, RPG_MAGIE_CARDS } from '../src/games/rpgCards.js';
 import { rpgMobaNouveauDuel, rpgMobaCiblesDestruction, rpgMobaCiblesPrise, rpgMobaResoudreDestruction, rpgMobaCiblesSite, rpgMobaResoudreSite, rpgMobaCandidatsRecherche, rpgMobaResoudreRecherche, rpgMobaPlacementCoherent, rpgMobaJouerCreature, rpgMobaJouerArme, rpgMobaResoudreArrivee, rpgMobaDeclarerAttaque, rpgMobaCiblesAttaque, rpgMobaLancerAttaque, rpgMobaLancerMagie, rpgMobaMulligan, rpgMobaTerminerTour, rpgMobaPasserFinDeTour, rpgMobaPasserEffetCreature, rpgMobaPasserSort, rpgMobaPasserCreature, rpgMobaPeutPayer, rpgMobaDefausser, rpgMobaValiderDeck, rpgMobaCreerPartie, MOBA_CARTES_AUTORISEES, MOBA_DECK_ESSAI, MOBA_DECKS } from '../src/games/rpgMobaLocal.js';
 import { rpgMobaChoisirMagieIA } from '../src/games/rpgMobaAI.js';
+import { CARTES_COMBAT_AUDITEES } from '../src/games/rpgMobaAudit.js';
 import { validerDeckManaEssai } from '../src/games/rpgManaEssai.js';
 import { mobaInfliger, mobaRetirer, mobaVoie } from '../src/games/rpgMoba.js';
 
@@ -71,10 +72,10 @@ test('local turn changes give the second seat control of its own slots', () => {
 
 test('inactive lanes, finished games and unsupported arrival effects are gated', () => {
   const duel = partie();
-  duel.joueur.main.push('guetteuse-des-marees');
+  duel.joueur.main.push('tojiro-le-pourfendeur');
   duel.joueur.mana.sable = 8;
   let before = JSON.stringify(duel);
-  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).raison, 'effet-non-pris-en-charge');
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'tojiro-le-pourfendeur', 'left', 0).raison, 'effet-non-pris-en-charge');
   assert.equal(JSON.stringify(duel), before);
   mobaInfliger(duel.moba, 'joueur', 'center', 10);
   before = JSON.stringify(duel);
@@ -188,12 +189,12 @@ test('real engine direct damage conquers, removes both sides, and triggers secon
 test('unaudited creatures are rejected before placement and combat fails closed for an out-of-band entity', () => {
   const duel = partie();
   duel.joueur.mana.sable = 3;
-  duel.joueur.main.push('guetteuse-des-marees');
+  duel.joueur.main.push('tojiro-le-pourfendeur');
   const before = JSON.stringify(duel);
-  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).raison, 'effet-non-pris-en-charge');
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'tojiro-le-pourfendeur', 'left', 0).raison, 'effet-non-pris-en-charge');
   assert.equal(JSON.stringify(duel), before);
   const { entite } = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0);
-  entite.carteId = 'guetteuse-des-marees'; // emulate a mutation outside the adapter
+  entite.carteId = 'tojiro-le-pourfendeur'; // emulate a mutation outside the adapter
   entite.ready = true;
   const corrupted = JSON.stringify(duel);
   assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [entite.id], {}).raison, 'effet-non-pris-en-charge');
@@ -1232,9 +1233,9 @@ test('custom deck validation enforces normal deck rules and the MOBA audit gate'
   const fourColors = { ...base, elements: ['neige', 'braise', 'sable', 'eau'] };
   assert.match(rpgMobaValiderDeck(fourColors).raison, /1 à 3 couleurs/);
   const unsupported = { ...base, cardIds: [...base.cardIds] };
-  unsupported.cardIds[unsupported.cardIds.indexOf('viking-des-neiges')] = 'vampire-des-braises';
+  unsupported.cardIds[unsupported.cardIds.indexOf('viking-des-neiges')] = 'tojiro-le-pourfendeur';
   assert.match(rpgMobaValiderDeck(unsupported).raison, /carte non adaptée/);
-  assert.deepEqual(rpgMobaCreerPartie(base, unsupported), { ok: false, side: 'sorcier', raison: 'carte non adaptée au MOBA : vampire-des-braises' });
+  assert.deepEqual(rpgMobaCreerPartie(base, unsupported), { ok: false, side: 'sorcier', raison: 'carte non adaptée au MOBA : tojiro-le-pourfendeur' });
 });
 
 test('a validated custom deck starts an independent match with its own colours and cards', () => {
@@ -5563,7 +5564,7 @@ test('Réanimation : arrivée de la Porteuse soigne la voie choisie et conserve 
 
 test('Réanimation : refus sans créature, case libre ou carte auditée, sans aucun paiement', () => {
   const duel = reanimationFixture();
-  for (const [grave, lane, slot] of [[[], 'left',0], [['guetteuse-des-marees'], 'left',0], [['gardienne-des-portes-de-sable'], 'center',1], [['gardienne-des-portes-de-sable'], 'unknown',0]]) {
+  for (const [grave, lane, slot] of [[[], 'left',0], [['tojiro-le-pourfendeur'], 'left',0], [['gardienne-des-portes-de-sable'], 'center',1], [['gardienne-des-portes-de-sable'], 'unknown',0]]) {
     duel.joueur.cimetiere = grave; const avant = JSON.stringify(duel);
     assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, lane, null, {emplacementReanimation:slot}).raison, 'cible');
     assert.equal(JSON.stringify(duel), avant);
@@ -6686,7 +6687,7 @@ test('Oni : Écueil contre l’annonce avant la pose et aucun choix ne reste ouv
 
 function fixtureDuelArrivee(side='joueur', targetId='jarl-au-marteau-de-guerre') {
   const duel=partie(),enemy=side==='joueur'?'sorcier':'joueur';if(enemy==='sorcier')rpgFinDeTour(duel);
-  duel[enemy].main=[targetId];duel[enemy].mana.neige=30;duel[enemy].mana.sable=30;duel[enemy].mana.eau=30;
+  duel[enemy].main=[targetId];duel[enemy].mana.neige=30;duel[enemy].mana.sable=30;duel[enemy].mana.eau=30;duel[enemy].mana.braise=30;
   const adversaire=rpgMobaJouerCreature(duel,enemy,targetId,'right',0).entite;rpgFinDeTour(duel);
   for(const color of ['sable','eau','neige','braise','tenebres'])duel[side].mana[color]=30;
   return {duel,side,enemy,adversaire};
@@ -7134,9 +7135,9 @@ test('Barbe-Rousse MOBA : un Corsaire surnuméraire ne prend aucune case et ne b
   const result=rpgMobaJouerCreature(duel,'joueur','la-barbe-rousse','right',1);assert.equal(result.ok,true,JSON.stringify(result));assert.equal(duel.joueur.creatures.length,5);assert.ok(!duel.joueur.creatures.some(e=>e.carteId==='corsaire'));assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-for(const id of ['eirik-du-premier-serment','pourfendeur-des-djinns'])for(const side of ['joueur','sorcier'])test(`Contre-attaque MOBA : ${id}, sort fatal et voie de ${side}`, () => {
+for(const id of ['eirik-du-premier-serment','pourfendeur-des-djinns','veilleur-du-dernier-crepuscule'])for(const side of ['joueur','sorcier'])test(`Contre-attaque MOBA : ${id}, sort fatal et voie de ${side}`, () => {
   const duel=partie(),enemy=side==='joueur'?'sorcier':'joueur';if(side==='sorcier')rpgFinDeTour(duel);
-  duel[side].main=[id];duel[side].mana.neige=30;duel[side].mana.sable=30;const creature=rpgMobaJouerCreature(duel,side,id,'center',0).entite;assert.ok(creature);
+  duel[side].main=[id];duel[side].mana.neige=30;duel[side].mana.sable=30;duel[side].mana.tenebres=30;const creature=rpgMobaJouerCreature(duel,side,id,'center',0).entite;assert.ok(creature);
   rpgFinDeTour(duel);duel[enemy].main=['trait-de-braise'];duel[enemy].mana.braise=30;creature.pv=1;
   const result=rpgMobaLancerMagie(duel,enemy,'trait-de-braise',creature.id);assert.equal(result.ok,true,JSON.stringify(result));const force=id==='eirik-du-premier-serment'?1:3;
   assert.equal(mobaVoie(duel.moba,'center').hp[enemy],10-force);assert.equal(result.damageEvents[0].cardId,id);assert.ok(duel[side].cimetiere.includes(id));assert.equal(rpgMobaPlacementCoherent(duel),true);
@@ -7467,7 +7468,7 @@ test('Ghul MOBA : sa prise en cale ne déclenche pas sa mort', () => {
 
 test('Chercheuse MOBA : recherche classique sans arme imprimée, même en présence du Sabre maudit', () => {
   assert.ok(MOBA_CARTES_AUTORISEES.includes('chercheuse-des-armes-ensevelies'));
-  assert.deepEqual(MOBA_CARTES_AUTORISEES.filter((id) => cardById(id)?.kind === 'arme'), ['javelot-du-beffroi', 'cuirasse-de-sel', 'braise-et-sable', 'takouba-des-pistes', 'armure-de-cendres', 'sabre-du-croissant-noir', 'hache-de-la-banquise', 'lance-de-givre', 'khopesh-d-or', 'licou-du-chien-de-sable', 'harnais-du-mehari', 'masque-du-guetteur', 'jitte-d-amayas', 'lance-de-la-lune-givree', 'sandales-de-tislit', 'grappin-d-abordage', 'baton-des-citernes', 'lame-des-ergs'], 'réauditer la recherche quand une autre arme imprimée est autorisée');
+  assert.deepEqual(MOBA_CARTES_AUTORISEES.filter((id) => cardById(id)?.kind === 'arme'), ['javelot-du-beffroi', 'cuirasse-de-sel', 'braise-et-sable', 'takouba-des-pistes', 'armure-de-cendres', 'sabre-du-croissant-noir', 'hache-de-la-banquise', 'lance-de-givre', 'khopesh-d-or', 'licou-du-chien-de-sable', 'harnais-du-mehari', 'masque-du-guetteur', 'jitte-d-amayas', 'lance-de-la-lune-givree', 'sandales-de-tislit', 'grappin-d-abordage', 'baton-des-citernes', 'lame-des-ergs', 'takouba-de-tin-hinan', 'sphere-de-rotation'], 'réauditer la recherche quand une autre arme imprimée est autorisée');
   assert.equal(cardById('sabre-maudit').kind, 'magie');
   for (const side of ['joueur','sorcier']) {
     const duel=partie();if(side==='sorcier')rpgFinDeTour(duel);
@@ -7539,8 +7540,8 @@ test('Javelot MOBA : la réanimation ignore l’arme au sommet du cimetière', (
 
 test('Javelot MOBA : le bouclier anti-sort ne bloque pas l’arme alliée, les autres armes restent interdites', () => {
   const duel=partie();duel.joueur.main=['gardienne-des-portes-de-sable'];duel.joueur.mana.sable=30;const porteur=rpgMobaJouerCreature(duel,'joueur','gardienne-des-portes-de-sable','center',0).entite;
-  porteur.bouclier=1;porteur.protection={contre:['sable']};duel.joueur.main=['javelot-du-beffroi','sphere-de-rotation'];const before=JSON.stringify(duel);
-  assert.equal(rpgMobaJouerArme(duel,'joueur','sphere-de-rotation',porteur.id).raison,'effet-non-pris-en-charge');assert.equal(rpgMobaJouerArme(duel,'joueur','javelot-du-beffroi','intrus').raison,'cible');assert.equal(JSON.stringify(duel),before);
+  porteur.bouclier=1;porteur.protection={contre:['sable']};duel.joueur.main=['javelot-du-beffroi','pilon-du-fossoyeur'];const before=JSON.stringify(duel);
+  assert.equal(rpgMobaJouerArme(duel,'joueur','pilon-du-fossoyeur',porteur.id).raison,'effet-non-pris-en-charge');assert.equal(rpgMobaJouerArme(duel,'joueur','javelot-du-beffroi','intrus').raison,'cible');assert.equal(JSON.stringify(duel),before);
   const result=rpgMobaJouerArme(duel,'joueur','javelot-du-beffroi',porteur.id,{ouvrirReponse:true});assert.equal(result.ok,true,JSON.stringify(result));assert.equal(rpgMobaPasserSort(duel,'sorcier').ok,true);assert.equal(porteur.arme.carteId,'javelot-du-beffroi');assert.equal(porteur.bouclier,1);assert.deepEqual(porteur.protection,{contre:['sable']});assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
@@ -7694,8 +7695,8 @@ test('Lance de givre MOBA : gel avant blessure ciblée et rupture, sans gel hors
   let jets=0;rpgReglerHasard(duel,()=>jets++ === 0 ? .9 : .1);assert.equal(rpgMobaDeclarerAttaque(duel,'joueur',[porteur.id],{[porteur.id]:cible.id}).ok,true);const result=rpgMobaLancerAttaque(duel,'joueur',[porteur.id],{},{declaree:true});assert.equal(result.ok,true,JSON.stringify(result));assert.ok(cible.gelToursRestants>0);assert.equal(autre.gelToursRestants,0);assert.equal(cible.pv,2);assert.equal(porteur.arme,null);assert.equal(porteur.coupRapide,false);assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Chercheuse MOBA : chacune des seize armes auditées est recherchée sans inclure le Sabre maudit', () => {
-  const armes=['javelot-du-beffroi','cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','grappin-d-abordage','baton-des-citernes','lame-des-ergs'];
+test('Chercheuse MOBA : chacune des armes auditées est recherchée sans inclure le Sabre maudit', () => {
+  const armes=['javelot-du-beffroi','cuirasse-de-sel','braise-et-sable','takouba-des-pistes','armure-de-cendres','sabre-du-croissant-noir','hache-de-la-banquise','lance-de-givre','khopesh-d-or','licou-du-chien-de-sable','harnais-du-mehari','masque-du-guetteur','jitte-d-amayas','lance-de-la-lune-givree','sandales-de-tislit','grappin-d-abordage','baton-des-citernes','lame-des-ergs','takouba-de-tin-hinan','sphere-de-rotation'];
   for(let i=0;i<armes.length;i++){
     const duel=partie();duel.joueur.main=['chercheuse-des-armes-ensevelies'];duel.joueur.mana.sable=30;duel.joueur.mana.braise=30;duel.joueur.deck=['sabre-maudit',...armes];let appels=0;rpgReglerHasard(duel,()=>{appels++;return (i+.5)/armes.length;});
     assert.equal(rpgMobaJouerCreature(duel,'joueur','chercheuse-des-armes-ensevelies','center',0).ok,true);assert.deepEqual(duel.joueur.main,[armes[i]]);assert.equal(appels,1);assert.ok(duel.joueur.deck.includes('sabre-maudit'));assert.equal(rpgMobaPlacementCoherent(duel),true);
@@ -8215,17 +8216,1305 @@ test('Source de Bimini MOBA : une destruction prioritaire conquiert sa voie et d
   const r=rpgMobaResoudreDestruction(duel,'joueur',brulot.id);assert.equal(r.ok,true,JSON.stringify(r));assert.ok(!duel.joueur.creatures.includes(source));assert.equal(duel.siteEnAttente,null);assert.equal(duel.mobaDebutTourEnAttente,null);assert.equal(duel.phase,'principale');assert.equal(cible.atk,1);assert.equal(mobaVoie(duel.moba,'left').conqueredBy,'sorcier');assert.equal(rpgMobaPlacementCoherent(duel),true);
 });
 
-test('Sphère hors pool : le renvoi pendant un duel d’arrivée libère la voie MOBA', () => {
-  assert.equal(MOBA_CARTES_AUTORISEES.includes('sphere-de-rotation'),false);
+test('Sphère injectée : le renvoi pendant un duel d’arrivée libère la voie MOBA', () => {
+  assert.equal(MOBA_CARTES_AUTORISEES.includes('sphere-de-rotation'),true);
   for(const side of ['joueur','sorcier']) {
     const {duel,enemy,adversaire}=fixtureDuelArrivee(side);duel[side].main=['bakunawa'];
     assert.equal(rpgMobaJouerCreature(duel,side,'bakunawa','left',0,{ouvrirReponse:true}).creatureEnAttente,true);
     const source=rpgMobaPasserCreature(duel,enemy).entite;
-    // Injection par le moteur commun pour tester cette branche encore exclue du pool.
+    // Injection par le moteur commun pour tester un duel d'arrivée directement.
     duel[enemy].main.push('sphere-de-rotation');duel[enemy].mana.sable=30;
     assert.equal(rpgJouerArme(duel,enemy,'sphere-de-rotation',adversaire.id).ok,true);
     adversaire.bouclier=0;rpgReglerHasard(duel,()=>.14);const pv=adversaire.pv;
     assert.equal(rpgMobaResoudreArrivee(duel,side,adversaire.id).ok,true);
     assert.equal(adversaire.pv,pv);assert.ok(duel[side].main.includes('bakunawa'));assert.ok(!duel[side].creatures.includes(source));assert.equal(mobaVoie(duel.moba,'left').slots[side][0],null);assert.equal(rpgMobaPlacementCoherent(duel),true);
   }
+});
+
+// Additional catalogue creatures reuse audited mechanics, exercised through the
+// actual lane adapter rather than by inserting entities into the battlefield.
+for (const side of ['joueur', 'sorcier']) {
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  function nouvellePartie() {
+    const duel = partieCombat();
+    duel.tour = side;
+    Object.assign(duel[side].mana, { braise: 30, sable: 30, tenebres: 30 });
+    Object.assign(duel[enemy].mana, { braise: 30, sable: 30, tenebres: 30 });
+    return duel;
+  }
+  function pose(duel, camp, id, lane, slot = 0) {
+    duel.tour = camp; duel[camp].main.push(id);
+    const r = rpgMobaJouerCreature(duel, camp, id, lane, slot);
+    assert.equal(r.ok, true, `${id}: ${JSON.stringify(r)}`);
+    return r.entite;
+  }
+  function combat(duel, attaquant, blocks = {}) {
+    duel.tour = side; attaquant.ready = true;
+    assert.equal(rpgMobaDeclarerAttaque(duel, side, [attaquant.id]).ok, true);
+    const r = rpgMobaLancerAttaque(duel, side, [attaquant.id], blocks, { declaree: true });
+    assert.equal(r.ok, true, JSON.stringify(r)); return r;
+  }
+  test(`Nouveau catalogue MOBA : Rapidité, Infiltration et Défenseur (${side})`, () => {
+    for (const id of ['messagere-des-cendres', 'gerboise-des-ruines', 'danseuse-des-ombres-de-dune']) {
+      const duel = nouvellePartie(), a = pose(duel, side, id, 'left');
+      assert.equal(rpgPeutAttaquer(a), true, id);
+    }
+    for (const id of ['rodeuse-des-tombes', 'danseuse-des-ombres-de-dune']) {
+      const duel = nouvellePartie(), a = pose(duel, side, id, 'left'), b = pose(duel, enemy, 'chien-du-guet', 'left');
+      assert.equal(rpgPeutBloquerAttaquant(b, a), false, id);
+      combat(duel, a); assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 10 - a.atk);
+    }
+    for (const id of ['garde-du-voile', 'gardien-des-sept-sceaux', 'sentinelle-du-brasier']) {
+      const duel = nouvellePartie(); const d = pose(duel, enemy, id, 'left');
+      const autre = pose(duel, enemy, 'chien-du-guet', 'left', 1);
+      const a = pose(duel, side, 'gardienne-des-portes-de-sable', 'left'); a.coupRapide = true; a.ready = true;
+      assert.ok(rpgMobaCiblesAttaque(duel, side, a.id).cibles.includes(d.id), id);
+      assert.ok(!rpgMobaCiblesAttaque(duel, side, a.id).cibles.includes(autre.id), id);
+    }
+  });
+  test(`Nouveau catalogue MOBA : Vol de vie imprimé et équipement (${side})`, () => {
+    for (const id of ['novice-des-cendres', 'chasseuse-de-braise', 'sentinelle-du-brasier', 'danseuse-des-ombres-de-dune']) {
+      const duel = nouvellePartie(); const a = pose(duel, side, id, 'left');
+      mobaInfliger(duel.moba, enemy, 'left', 4);
+      const r = combat(duel, a);
+      assert.equal(mobaVoie(duel.moba, 'left').hp[side], 6 + Math.ceil(a.atk / 2), id);
+      assert.ok(r.healingEvents.some(e => e.volDeVie && e.laneId === 'left'), id);
+      assert.equal(mobaVoie(duel.moba, 'right').hp[side], 10);
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+    const duel = nouvellePartie(), a = pose(duel, side, 'chasseuse-de-braise', 'left');
+    duel[side].main.push('sabre-du-croissant-noir');
+    assert.equal(rpgMobaJouerArme(duel, side, 'sabre-du-croissant-noir', a.id).ok, true);
+    combat(duel, a); assert.equal(a.arme, null); assert.equal(a.volDeVie, true);
+    // An arbitrary flag on a card without printed lifesteal remains rejected.
+    const d = nouvellePartie(), fake = pose(d, side, 'chien-du-guet', 'left'); fake.volDeVie = true;
+    assert.equal(rpgMobaDeclarerAttaque(d, side, [fake.id]).raison, 'effet-non-pris-en-charge');
+  });
+  test(`Nouveau catalogue MOBA : mort, pioche et Tribut (${side})`, () => {
+    const duel = nouvellePartie();
+    const p = pose(duel, side, 'porteur-de-la-plume', 'right');
+    const s = pose(duel, side, 'scarabee-des-sceaux', 'left');
+    mobaInfliger(duel.moba, enemy, 'right', 4); duel[side].deck = ['chien-du-guet'];
+    duel[side].main.push('effacement-des-faibles');
+    const r = rpgMobaLancerMagie(duel, side, 'effacement-des-faibles', p.id);
+    assert.equal(r.ok, true); assert.equal(mobaVoie(duel.moba, 'right').hp[side], 7);
+    assert.ok(r.healingEvents.some(e => e.laneId === 'right' && e.healing === 1));
+    duel[side].main.push('effacement-des-faibles');
+    assert.equal(rpgMobaLancerMagie(duel, side, 'effacement-des-faibles', s.id).ok, true);
+    assert.deepEqual(duel[side].deck, []); assert.ok(duel[side].main.includes('chien-du-guet'));
+    const d = nouvellePartie(), v = pose(d, side, 'veuve-des-urnes', 'right');
+    mobaInfliger(d.moba, enemy, 'right', 2); const hit = combat(d, v);
+    assert.equal(mobaVoie(d.moba, 'right').hp[enemy], 7); assert.equal(mobaVoie(d.moba, 'right').hp[side], 9);
+    assert.ok(hit.damageEvents.some(e => e.tribut)); assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+  test(`Nouveau catalogue MOBA : Poison en combat puis aux tours de la victime (${side})`, () => {
+    for (const id of ['scorpion-du-seuil', 'manticore-des-dunes']) {
+      const duel = nouvellePartie(), a = pose(duel, side, id, 'left');
+      const b = pose(duel, enemy, 'dune-marchante', 'left'); b.pv = b.def = 10; b.pvMax = 10;
+      combat(duel, a, { [a.id]: [b.id] });
+      assert.equal(b.poison?.toursRestants, 2, id);
+      const pv = b.pv; rpgFinDeTour(duel); assert.equal(b.pv, pv - 1); assert.equal(b.poison.toursRestants, 1);
+      rpgFinDeTour(duel); rpgFinDeTour(duel); assert.equal(b.pv, pv - 2); assert.equal(b.poison, null);
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+  test(`Nouveau catalogue MOBA : Vampire des braises et Archonte (${side})`, () => {
+    const duel = nouvellePartie(), v = pose(duel, side, 'vampire-des-braises', 'left');
+    const b = pose(duel, enemy, 'ashigaru-des-braises', 'left'); combat(duel, v, { [v.id]: [b.id] });
+    assert.ok(!duel[enemy].creatures.includes(b)); assert.equal(v.pv, 2); assert.equal(rpgMobaPlacementCoherent(duel), true);
+    const d = nouvellePartie(), danseuse = pose(d, side, 'danseuse-des-ombres-de-dune', 'left');
+    const chien = pose(d, side, 'chien-du-guet', 'right'); const foe = pose(d, enemy, 'novice-des-cendres', 'center');
+    const archonte = pose(d, side, 'archonte-du-sablier-noir', 'center');
+    assert.deepEqual([danseuse.atk, chien.atk, foe.atk, archonte.atk], [4, 2, 1, 6]);
+    rpgFinDeTour(d); assert.deepEqual([danseuse.atk, archonte.atk], [2, 4]); assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+}
+
+for (const side of ['joueur', 'sorcier']) test(`Poison MOBA : mort au début du tour, pioche et libération de voie (${side})`, () => {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  duel.tour = side; Object.assign(duel[side].mana, { sable: 30 });
+  duel[side].main = ['scorpion-du-seuil'];
+  const scorpion = rpgMobaJouerCreature(duel, side, 'scorpion-du-seuil', 'left', 0).entite;
+  duel.tour = enemy; duel[enemy].mana.sable = 30; duel[enemy].main = ['scarabee-des-sceaux'];
+  const scarabee = rpgMobaJouerCreature(duel, enemy, 'scarabee-des-sceaux', 'left', 0).entite;
+  duel.tour = side; scorpion.ready = true;
+  assert.equal(rpgMobaDeclarerAttaque(duel, side, [scorpion.id]).ok, true);
+  assert.equal(rpgMobaLancerAttaque(duel, side, [scorpion.id], { [scorpion.id]: [scarabee.id] }, { declaree: true }).ok, true);
+  assert.equal(scarabee.pv, 1); assert.equal(scarabee.poison.toursRestants, 2);
+  duel[enemy].deck = ['chien-du-guet', 'gardienne-des-portes-de-sable'];
+  assert.equal(rpgMobaTerminerTour(duel, side).ok, true);
+  const result = rpgMobaPasserFinDeTour(duel, enemy);
+  assert.equal(result.ok, true); assert.ok(!duel[enemy].creatures.includes(scarabee));
+  assert.deepEqual(duel[enemy].deck, []); assert.ok(duel[enemy].cimetiere.includes('scarabee-des-sceaux'));
+  assert.equal(mobaVoie(duel.moba, 'left').slots[enemy][0], null); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Nouveaux Vampires MOBA : blocage, soin de combat et immunité au Ressac (${side})`, () => {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  for (const camp of [side, enemy]) Object.assign(duel[camp].mana, { braise: 30, sable: 30, eau: 30, tenebres: 30 });
+  duel.tour = side; duel[side].main = ['vampire-des-braises', 'chasseuse-de-braise'];
+  const vampire = rpgMobaJouerCreature(duel, side, 'vampire-des-braises', 'left', 0).entite;
+  const chasseuse = rpgMobaJouerCreature(duel, side, 'chasseuse-de-braise', 'right', 0).entite;
+  mobaInfliger(duel.moba, enemy, 'right', 3);
+  duel.tour = enemy; duel[enemy].main = ['ashigaru-des-braises', 'dune-marchante'];
+  const faible = rpgMobaJouerCreature(duel, enemy, 'ashigaru-des-braises', 'left', 0).entite;
+  const dune = rpgMobaJouerCreature(duel, enemy, 'dune-marchante', 'right', 0).entite;
+  faible.ready = dune.ready = true;
+  assert.equal(rpgMobaDeclarerAttaque(duel, enemy, [faible.id, dune.id]).ok, true);
+  const res = rpgMobaLancerAttaque(duel, enemy, [faible.id, dune.id], { [faible.id]: [vampire.id], [dune.id]: [chasseuse.id] }, { declaree: true });
+  assert.equal(res.ok, true, JSON.stringify(res)); assert.equal(vampire.pv, 2);
+  assert.ok(!duel[enemy].creatures.includes(faible)); assert.equal(mobaVoie(duel.moba, 'right').hp[side], 8);
+  assert.ok(res.healingEvents.some(e => e.volDeVie && e.laneId === 'right'));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+  // A fresh vampire survives the global return, unlike a non-Vampire.
+  const d = partieCombat(); d.tour = side; Object.assign(d[side].mana, { braise: 30, sable: 30, eau: 30, tenebres: 30 });
+  d[side].main = ['novice-des-cendres', 'chien-du-guet', 'ressac-de-la-lune-noire'];
+  const novice = rpgMobaJouerCreature(d, side, 'novice-des-cendres', 'left', 0).entite;
+  const chien = rpgMobaJouerCreature(d, side, 'chien-du-guet', 'right', 0).entite;
+  assert.equal(rpgMobaLancerMagie(d, side, 'ressac-de-la-lune-noire').ok, true);
+  assert.ok(d[side].creatures.includes(novice)); assert.ok(!d[side].creatures.includes(chien));
+  assert.equal(rpgMobaPlacementCoherent(d), true);
+});
+
+test('Poison MOBA : une victoire à la mort arrête les doses suivantes du début de tour', () => {
+  const duel = partieCombat();
+  mobaInfliger(duel.moba, 'joueur', 'left', 10);
+  mobaInfliger(duel.moba, 'joueur', 'right', 8);
+  duel.joueur.main = ['le-brulot', 'chien-du-guet']; duel.joueur.mana.braise = 30; duel.joueur.mana.sable = 30;
+  const brulot = rpgMobaJouerCreature(duel, 'joueur', 'le-brulot', 'right', 0).entite;
+  const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'center', 0).entite;
+  brulot.pv = 1; brulot.poison = { degats: 1, toursRestants: 2, sourceCarteId: 'scorpion-du-seuil' };
+  chien.poison = { degats: 1, toursRestants: 2, sourceCarteId: 'scorpion-du-seuil' };
+  rpgFinDeTour(duel); duel.sorcier.main = [];
+  const pv = chien.pv;
+  assert.equal(rpgMobaTerminerTour(duel, 'sorcier').ok, true);
+  assert.equal(rpgMobaPasserFinDeTour(duel, 'joueur').ok, true);
+  assert.equal(duel.moba.winner, 'joueur');
+  assert.equal(chien.pv, pv); assert.equal(chien.poison.toursRestants, 2);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) {
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  const prep = () => {
+    const d = partieCombat(); d.tour = side;
+    for (const camp of [side, enemy]) Object.assign(d[camp].mana, { sable: 30, tenebres: 30, braise: 30, neige: 30, eau: 30 });
+    return d;
+  };
+  const pose = (d, camp, id, lane, slot = 0) => {
+    d.tour = camp; d[camp].main.push(id);
+    const r = rpgMobaJouerCreature(d, camp, id, lane, slot);
+    assert.equal(r.ok, true, `${id}: ${JSON.stringify(r)}`); return r.entite;
+  };
+  test(`Nécropole MOBA : le Scarabée du natron crée un Shabti à sa mort, pas à son renvoi (${side})`, () => {
+    for (const mode of ['mort', 'renvoi']) {
+      const d = prep(), scarabee = pose(d, side, 'scarabee-du-natron', 'right');
+      d.tour = enemy; d[enemy].main = [mode === 'mort' ? 'trait-de-braise' : 'ressac'];
+      const r = rpgMobaLancerMagie(d, enemy, d[enemy].main[0], scarabee.id);
+      assert.equal(r.ok, true, JSON.stringify(r));
+      const shabti = d[side].creatures.find(e => e.carteId === 'shabti');
+      if (mode === 'mort') { assert.ok(shabti?.jeton); assert.equal(shabti.mobaLane, 'right'); assert.equal(mobaVoie(d.moba, 'right').slots[side][0], shabti.id); }
+      else { assert.equal(shabti, undefined); assert.ok(d[side].main.includes('scarabee-du-natron')); }
+      assert.equal(rpgMobaPlacementCoherent(d), true);
+    }
+  });
+  test(`Nécropole MOBA : Lecteur pioche deux cartes puis défausse (${side})`, () => {
+    const d = prep(); d[side].main = ['lecteur-du-dernier-nom']; d[side].deck = ['chien-du-guet', 'porteur-de-la-plume'];
+    const annonce = rpgMobaJouerCreature(d, side, 'lecteur-du-dernier-nom', 'center', 0, { ouvrirReponse: true });
+    assert.equal(annonce.creatureEnAttente, true); assert.equal(d[side].deck.length, 2);
+    const entree = rpgMobaPasserCreature(d, enemy); assert.equal(entree.ok, true); assert.equal(d[side].deck.length, 0);
+    if (side === 'joueur') {
+      assert.equal(d.defausseEnAttente?.restant, 1); assert.equal(rpgMobaTerminerTour(d, side).raison, 'timing');
+      assert.equal(rpgMobaDefausser(d, side, 0).ok, true); assert.equal(d.defausseEnAttente, null);
+    } else assert.equal(d.defausseEnAttente, null);
+    assert.equal(d[side].main.length, 1); assert.equal(d[side].cimetiere.length, 1);
+    assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+  test(`Lune MOBA : Résonance vampire partagée entre voies et camps, cumul puis départ (${side})`, () => {
+    const d = prep(), a = pose(d, side, 'novice-des-cendres', 'left');
+    const b = pose(d, enemy, 'danseuse-des-ombres-de-dune', 'right');
+    const chien = pose(d, enemy, 'chien-du-guet', 'left');
+    const general = pose(d, side, 'general-du-croissant-noir', 'center');
+    assert.deepEqual([a.atk, a.pv, b.atk, b.pv, chien.atk, general.atk], [2, 2, 3, 3, 2, 4]);
+    const fleau = pose(d, side, 'fleau-de-la-lune-noire', 'right');
+    assert.deepEqual([a.atk, b.atk, general.atk, fleau.atk, fleau.pv], [3, 4, 5, 9, 9]);
+    d.tour = enemy; d[enemy].main = ['effacement-des-faibles'];
+    // Effacement ne peut pas cibler le Général coût 4 ; la foudre suffit après blessure.
+    general.pv = 1; d[enemy].main = ['trait-de-braise'];
+    assert.equal(rpgMobaLancerMagie(d, enemy, 'trait-de-braise', general.id).ok, true);
+    assert.deepEqual([a.atk, b.atk, fleau.atk], [2, 3, 8]);
+    assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+  test(`Lune MOBA : Overkill et Vol de vie du Fléau en combat (${side})`, () => {
+    const d = prep(), fleau = pose(d, side, 'fleau-de-la-lune-noire', 'left');
+    const chien = pose(d, enemy, 'chien-du-guet', 'left');
+    mobaInfliger(d.moba, enemy, 'left', 6); d.tour = side; fleau.ready = true;
+    assert.equal(rpgMobaDeclarerAttaque(d, side, [fleau.id]).ok, true);
+    const r = rpgMobaLancerAttaque(d, side, [fleau.id], { [fleau.id]: [chien.id] }, { declaree: true });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(mobaVoie(d.moba, 'left').hp[enemy], 4); // 8 force - 2 PV du bloqueur
+    assert.equal(mobaVoie(d.moba, 'left').hp[side], 8); // 6/2 + 2/2
+    assert.ok(!d[enemy].creatures.includes(chien)); assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+  test(`Lune MOBA : duel d'arrivée du Souverain soigne sa voie même s'il meurt (${side})`, () => {
+    const d = prep(), cible = pose(d, enemy, 'dune-marchante', 'right'); cible.atk = 7;
+    mobaInfliger(d.moba, enemy, 'left', 5); d.tour = side; d[side].main = ['souverain-de-la-lune-noire'];
+    assert.equal(rpgMobaJouerCreature(d, side, 'souverain-de-la-lune-noire', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+    const entree = rpgMobaPasserCreature(d, enemy); assert.equal(entree.arriveeEnAttente, true); const heros = entree.entite;
+    const r = rpgMobaResoudreArrivee(d, side, cible.id); assert.equal(r.ok, true, JSON.stringify(r));
+    assert.ok(!d[enemy].creatures.includes(cible)); assert.ok(!d[side].creatures.includes(heros));
+    assert.equal(mobaVoie(d.moba, 'left').hp[side], 8); assert.ok(r.healingEvents.some(e => e.volDeVie && e.laneId === 'left' && e.healing === 3));
+    assert.equal(mobaVoie(d.moba, 'right').hp[side], 10); assert.equal(rpgMobaPlacementCoherent(d), true);
+  });
+}
+
+for (const side of ['joueur', 'sorcier']) test(`Souverain MOBA : deux Vols de vie simultanés et bouclier adverse (${side})`, () => {
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  for (const shield of [false, true]) {
+    const { duel, adversaire } = fixtureDuelArrivee(side, 'chasseuse-de-braise');
+    mobaInfliger(duel.moba, enemy, 'left', 4); mobaInfliger(duel.moba, side, 'right', 4);
+    adversaire.bouclier = shield ? 1 : 0; duel[side].main = ['souverain-de-la-lune-noire'];
+    assert.equal(rpgMobaJouerCreature(duel, side, 'souverain-de-la-lune-noire', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+    const hero = rpgMobaPasserCreature(duel, enemy).entite;
+    const r = rpgMobaResoudreArrivee(duel, side, adversaire.id); assert.equal(r.ok, true, JSON.stringify(r));
+    if (shield) {
+      assert.equal(hero.pv, 5); assert.equal(adversaire.pv, 2); assert.equal(adversaire.bouclier, 0);
+      assert.equal(mobaVoie(duel.moba, 'left').hp[side], 6); assert.equal(mobaVoie(duel.moba, 'right').hp[enemy], 6);
+      assert.equal(r.healingEvents.length, 0);
+    } else {
+      assert.equal(hero.pv, 3); assert.ok(!duel[enemy].creatures.includes(adversaire));
+      assert.equal(mobaVoie(duel.moba, 'left').hp[side], 9); assert.equal(mobaVoie(duel.moba, 'right').hp[enemy], 7);
+      assert.deepEqual(new Set(r.healingEvents.map(e => e.laneId)), new Set(['left', 'right']));
+    }
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Souverain MOBA : réanimation choisit un duel et transmet le soin de la voie de retour', () => {
+  const duel = partieCombat(); duel.joueur.cimetiere = ['souverain-de-la-lune-noire'];
+  rpgFinDeTour(duel); duel.sorcier.main = ['dune-marchante']; duel.sorcier.mana.sable = 30;
+  const cible = rpgMobaJouerCreature(duel, 'sorcier', 'dune-marchante', 'right', 0).entite;
+  rpgFinDeTour(duel); duel.joueur.main = ['reanimation']; duel.joueur.mana.sable = 30;
+  mobaInfliger(duel.moba, 'sorcier', 'center', 4);
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'center', null, { emplacementReanimation: 0 });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  const heros = duel.joueur.creatures.find(e => e.carteId === 'souverain-de-la-lune-noire');
+  assert.ok(heros); assert.equal(heros.mobaLane, 'center'); assert.ok(!duel.sorcier.creatures.includes(cible));
+  assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 9);
+  assert.ok(result.healingEvents.some(e => e.volDeVie && e.laneId === 'center'));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Résonance vampire MOBA disparaît après conquête, sans déclencher une mort', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30, neige: 30 });
+  duel.joueur.main = ['general-du-croissant-noir', 'danseuse-des-ombres-de-dune', 'eclair-du-marteau'];
+  const general = rpgMobaJouerCreature(duel, 'joueur', 'general-du-croissant-noir', 'right', 0).entite;
+  const danseuse = rpgMobaJouerCreature(duel, 'joueur', 'danseuse-des-ombres-de-dune', 'left', 0).entite;
+  assert.equal(danseuse.atk, 3); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'right').ok, true);
+  assert.ok(!duel.joueur.creatures.includes(general)); assert.ok(duel.joueur.exil.includes(general.carteId));
+  assert.equal(danseuse.atk, 2); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Djinn des cendres vengeresses MOBA : mort alliée frappe la voie de chaque source (${side})`, () => {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  duel.tour = side; Object.assign(duel[side].mana, { braise: 30, sable: 30 });
+  duel[side].main = ['djinn-des-cendres-vengeresses', 'djinn-des-cendres-vengeresses', 'chien-du-guet'];
+  const first = rpgMobaJouerCreature(duel, side, 'djinn-des-cendres-vengeresses', 'left', 0).entite;
+  const second = rpgMobaJouerCreature(duel, side, 'djinn-des-cendres-vengeresses', 'right', 0).entite;
+  const ally = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'center', 0).entite;
+  duel.tour = enemy; duel[enemy].main = ['trait-de-braise']; duel[enemy].mana.braise = 30;
+  const wizard = duel[enemy].pv, result = rpgMobaLancerMagie(duel, enemy, 'trait-de-braise', ally.id);
+  assert.equal(result.ok, true); assert.equal(duel[enemy].pv, wizard);
+  assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 9); assert.equal(mobaVoie(duel.moba, 'right').hp[enemy], 9);
+  assert.deepEqual(new Set(result.damageEvents.filter(e => e.mortAlliee).map(e => e.entityId)), new Set([first.id, second.id]));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Djinn vengeur MOBA : victoire interrompt les autres sources et le déclenchement de la victime', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { braise: 30, tenebres: 30 });
+  mobaInfliger(duel.moba, 'joueur', 'left', 10); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  mobaInfliger(duel.moba, 'sorcier', 'center', 3);
+  duel.joueur.main = ['djinn-des-cendres-vengeresses', 'djinn-des-cendres-vengeresses', 'porteur-de-la-plume', 'effacement-des-faibles'];
+  const first = rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 0).entite;
+  const second = rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 1).entite;
+  const victime = rpgMobaJouerCreature(duel, 'joueur', 'porteur-de-la-plume', 'center', 0).entite;
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'effacement-des-faibles', victime.id);
+  assert.equal(result.ok, true); assert.equal(duel.moba.winner, 'joueur');
+  assert.deepEqual(result.damageEvents.filter(e => e.mortAlliee).map(e => e.entityId), [first.id]);
+  assert.ok(!duel.joueur.creatures.includes(second)); assert.equal(mobaVoie(duel.moba, 'center').hp.joueur, 7);
+  assert.equal(result.healingEvents.length, 0); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Djinn vengeur MOBA : vague simultanée, il ne venge que les alliés s’il survit', () => {
+  for (const survit of [false, true]) {
+    const duel = partieCombat(); Object.assign(duel.joueur.mana, { braise: 30, sable: 30, neige: 30 });
+    duel.joueur.main = ['djinn-des-cendres-vengeresses', 'chien-du-guet', 'fennec-des-decombres', 'grand-hiver'];
+    const djinn = rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 0).entite;
+    const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'left', 0).entite; chien.pv = 1;
+    rpgMobaJouerCreature(duel, 'joueur', 'fennec-des-decombres', 'center', 0);
+    if (survit) djinn.pv = djinn.pvMax = 10; else djinn.pv = 1;
+    const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver');
+    assert.equal(result.ok, true); assert.equal(result.damageEvents.filter(e => e.mortAlliee).length, survit ? 2 : 0);
+    assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, survit ? 8 : 10);
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Djinn vengeur MOBA : renvoi ou conquête ne sont pas des morts', () => {
+  for (const mode of ['renvoi', 'conquete']) {
+    const duel = partieCombat(); duel.joueur.mana.braise = 30; duel.joueur.mana.sable = 30;
+    duel.joueur.main = ['djinn-des-cendres-vengeresses', 'chien-du-guet'];
+    rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 0);
+    const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'left', 0).entite;
+    if (mode === 'renvoi') {
+      rpgFinDeTour(duel); duel.sorcier.main = ['ressac']; duel.sorcier.mana.eau = 30;
+      assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'ressac', allie.id).ok, true);
+    } else {
+      duel.joueur.main = ['eclair-du-marteau']; duel.joueur.mana.neige = 30; mobaInfliger(duel.moba, 'joueur', 'left', 9);
+      assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'left').ok, true);
+    }
+    assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10); assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Souverain MOBA : réponse au duel avant le soin et disparition de cible (${side})`, () => {
+  for (const renvoi of [false, true]) {
+    const { duel, enemy, adversaire } = fixtureDuelArrivee(side, 'dune-marchante');
+    duel[side].main = ['souverain-de-la-lune-noire']; duel[enemy].main = ['ressac']; duel[enemy].mana.eau = 30;
+    mobaInfliger(duel.moba, enemy, 'left', 4);
+    assert.equal(rpgMobaJouerCreature(duel, side, 'souverain-de-la-lune-noire', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+    const hero = rpgMobaPasserCreature(duel, enemy).entite;
+    assert.equal(rpgMobaResoudreArrivee(duel, side, adversaire.id).effetEnAttente, true);
+    assert.equal(adversaire.pv, 4); assert.equal(mobaVoie(duel.moba, 'left').hp[side], 6);
+    if (renvoi) assert.equal(rpgMobaLancerMagie(duel, enemy, 'ressac', hero.id).ok, true);
+    const passage = rpgMobaPasserEffetCreature(duel, enemy); assert.equal(passage.ok, true, JSON.stringify(passage));
+    if (renvoi) { assert.equal(adversaire.pv, 4); assert.equal(mobaVoie(duel.moba, 'left').hp[side], 6); }
+    else { assert.ok(!duel[enemy].creatures.includes(adversaire)); assert.equal(mobaVoie(duel.moba, 'left').hp[side], 9); assert.ok(passage.healingEvents.some(e => e.volDeVie)); }
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Djinn vengeur MOBA : une victoire pendant une vague empêche les jetons des morts suivants', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { braise: 30, tenebres: 30, neige: 30, sable: 30 });
+  mobaInfliger(duel.moba, 'joueur', 'left', 10); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  duel.joueur.main = ['djinn-des-cendres-vengeresses', 'fennec-des-decombres', 'scarabee-du-natron', 'grand-hiver'];
+  const djinn = rpgMobaJouerCreature(duel, 'joueur', 'djinn-des-cendres-vengeresses', 'right', 0).entite;
+  rpgMobaJouerCreature(duel, 'joueur', 'fennec-des-decombres', 'center', 0);
+  const scarabee = rpgMobaJouerCreature(duel, 'joueur', 'scarabee-du-natron', 'right', 1).entite; scarabee.pv = 1;
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'grand-hiver');
+  assert.equal(result.ok, true); assert.equal(duel.moba.winner, 'joueur');
+  assert.equal(result.damageEvents.filter(e => e.mortAlliee).length, 1); assert.equal(result.damageEvents[0].entityId, djinn.id);
+  assert.ok(!duel.joueur.creatures.some(e => e.carteId === 'shabti')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Fléau MOBA : Overkill répartit les blessures nécessaires avant de dépasser deux bloqueurs', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { braise: 30, tenebres: 30 });
+  duel.joueur.main = ['fleau-de-la-lune-noire']; const fleau = rpgMobaJouerCreature(duel, 'joueur', 'fleau-de-la-lune-noire', 'left', 0).entite;
+  rpgFinDeTour(duel); duel.sorcier.main = ['fennec-des-decombres', 'gardienne-des-portes-de-sable']; duel.sorcier.mana.sable = 30;
+  const faible = rpgMobaJouerCreature(duel, 'sorcier', 'fennec-des-decombres', 'left', 0).entite;
+  const solide = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'left', 1).entite; solide.pv = solide.pvMax = solide.def = 5;
+  rpgFinDeTour(duel); mobaInfliger(duel.moba, 'sorcier', 'left', 8);
+  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [fleau.id]).ok, true);
+  const result = rpgMobaLancerAttaque(duel, 'joueur', [fleau.id], { [fleau.id]: [faible.id, solide.id] }, { declaree: true });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.ok(!duel.sorcier.creatures.includes(faible));
+  assert.ok(!duel.sorcier.creatures.includes(solide)); assert.equal(mobaVoie(duel.moba, 'left').hp.sorcier, 8);
+  assert.equal(mobaVoie(duel.moba, 'left').hp.joueur, 7); // ceil(1/2) + ceil(5/2) + ceil(2/2)
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Fléau MOBA : aucun Overkill quand les PV des bloqueurs dépassent sa force', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { braise: 30, tenebres: 30 });
+  duel.joueur.main = ['fleau-de-la-lune-noire']; const fleau = rpgMobaJouerCreature(duel, 'joueur', 'fleau-de-la-lune-noire', 'right', 0).entite;
+  rpgFinDeTour(duel); duel.sorcier.main = ['chien-du-guet', 'gardienne-des-portes-de-sable']; duel.sorcier.mana.sable = 30;
+  const faible = rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'right', 0).entite;
+  const solide = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'right', 1).entite; solide.pv = solide.pvMax = solide.def = 8;
+  rpgFinDeTour(duel); assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [fleau.id]).ok, true);
+  const result = rpgMobaLancerAttaque(duel, 'joueur', [fleau.id], { [fleau.id]: [faible.id, solide.id] }, { declaree: true });
+  assert.equal(result.ok, true); assert.ok(!duel.sorcier.creatures.includes(faible)); assert.equal(solide.pv, 2);
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, 10); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) {
+  test(`Takouba de Tin Hinan MOBA : contact avec voie, espace et conquête (${side})`, () => {
+    for (const situation of ['libre', 'pleine', 'conquete', 'victoire']) {
+      const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+      const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+      duel[side].main = ['gardienne-des-portes-de-sable', 'takouba-de-tin-hinan', 'chien-du-guet']; duel[side].mana.sable = 30;
+      const porteur = rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', 'right', 0).entite;
+      if (situation === 'pleine') assert.equal(rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'right', 1).ok, true);
+      assert.equal(rpgMobaJouerArme(duel, side, 'takouba-de-tin-hinan', porteur.id, { ouvrirReponse: true }).sortEnAttente, true);
+      assert.equal(rpgMobaPasserSort(duel, enemy).ok, true);
+      if (situation === 'conquete' || situation === 'victoire') mobaInfliger(duel.moba, side, 'right', 9);
+      if (situation === 'victoire') mobaInfliger(duel.moba, side, 'left', 10);
+      porteur.ready = true;
+      assert.equal(rpgMobaDeclarerAttaque(duel, side, [porteur.id]).ok, true);
+      const result = rpgMobaLancerAttaque(duel, side, [porteur.id], {}, { declaree: true });
+      assert.equal(result.ok, true, JSON.stringify(result));
+      const chiens = duel[side].creatures.filter(e => e.carteId === 'chien-de-sable');
+      assert.equal(chiens.length, situation === 'victoire' ? 0 : 1, situation);
+      if (chiens.length) assert.equal(chiens[0].mobaLane, situation === 'libre' ? 'right' : 'left');
+      if (situation === 'victoire') assert.equal(duel.moba.winner, side);
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+
+  test(`Takouba de Tin Hinan MOBA : pioche seulement sur une blessure effective (${side})`, () => {
+    for (const mode of ['normal', 'esquive', 'lumiere', 'brouillard', 'ciblee']) {
+      const duel = partieCombat();
+      // Create the defender on its own turn, then hand initiative to the attacker.
+      const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+      if (enemy === 'sorcier') rpgFinDeTour(duel);
+      duel[enemy].main = ['gardienne-des-portes-de-sable']; duel[enemy].mana.sable = 30;
+      const cible = rpgMobaJouerCreature(duel, enemy, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+      rpgFinDeTour(duel);
+      duel[side].main = ['gardienne-des-portes-de-sable', 'takouba-de-tin-hinan']; duel[side].mana.sable = 30;
+      duel[side].deck = ['mousse-des-galiotes'];
+      const porteur = rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+      assert.equal(rpgMobaJouerArme(duel, side, 'takouba-de-tin-hinan', porteur.id).ok, true);
+      if (mode === 'esquive') { cible.esquive = true; cible.esquiveChance = 1; }
+      if (mode === 'lumiere' || mode === 'ciblee') cible.bouclierLumiere = true;
+      if (mode === 'brouillard') duel.brouillardCombat = true;
+      porteur.ready = true;
+      if (mode === 'ciblee') porteur.coupRapide = true;
+      const choix = mode === 'ciblee' ? { [porteur.id]: cible.id } : {};
+      assert.equal(rpgMobaDeclarerAttaque(duel, side, [porteur.id], choix).ok, true);
+      const result = rpgMobaLancerAttaque(duel, side, [porteur.id], mode === 'ciblee' ? {} : { [porteur.id]: [cible.id] }, { declaree: true });
+      assert.equal(result.ok, true, JSON.stringify(result));
+      assert.equal(duel[side].deck.length, mode === 'normal' ? 0 : 1, mode);
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+}
+
+test('Takouba MOBA : pioche malgré la mort simultanée du porteur et frappe ciblée effective', () => {
+  for (const rapide of [false, true]) {
+    const duel = partieCombat(); rpgFinDeTour(duel);
+    duel.sorcier.main = ['gardienne-des-portes-de-sable']; duel.sorcier.mana.sable = 30;
+    const cible = rpgMobaJouerCreature(duel, 'sorcier', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+    cible.atk = 20; cible.pv = cible.def = cible.pvMax = 20;
+    rpgFinDeTour(duel); duel.joueur.main = ['gardienne-des-portes-de-sable', 'takouba-de-tin-hinan']; duel.joueur.mana.sable = 30; duel.joueur.deck = ['verglas'];
+    const p = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+    assert.equal(rpgMobaJouerArme(duel, 'joueur', 'takouba-de-tin-hinan', p.id).ok, true);
+    p.ready = true; if (rapide) p.coupRapide = true;
+    assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [p.id], rapide ? { [p.id]: cible.id } : {}).ok, true);
+    assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [p.id], rapide ? {} : { [p.id]: [cible.id] }, { declaree: true }).ok, true);
+    if (!rapide) assert.ok(!duel.joueur.creatures.includes(p));
+    assert.equal(duel.joueur.deck.length, 0); assert.ok(duel.joueur.main.includes('verglas'));
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Takouba MOBA : aucun jeton quand tous les emplacements actifs sont occupés', () => {
+  const duel = partieCombat(); duel.joueur.mana.sable = 30;
+  duel.joueur.main = Array(5).fill('gardienne-des-portes-de-sable').concat('takouba-de-tin-hinan');
+  let p;
+  for (const [lane, slot] of [['left',0],['left',1],['center',0],['right',0],['right',1]]) {
+    const entite = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', lane, slot).entite;
+    if (lane === 'center') p = entite;
+  }
+  assert.equal(rpgMobaJouerArme(duel, 'joueur', 'takouba-de-tin-hinan', p.id).ok, true); p.ready = true;
+  assert.equal(rpgMobaDeclarerAttaque(duel, 'joueur', [p.id]).ok, true);
+  assert.equal(rpgMobaLancerAttaque(duel, 'joueur', [p.id], {}, { declaree: true }).ok, true);
+  assert.equal(duel.joueur.creatures.length, 5); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Takouba de Tin Hinan MOBA : un contresort de carte empêche l’attachement payé', () => {
+  const duel = partieCombat(); duel.joueur.main = ['gardienne-des-portes-de-sable', 'takouba-de-tin-hinan']; duel.joueur.mana.sable = 30;
+  const p = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  assert.equal(rpgMobaJouerArme(duel, 'joueur', 'takouba-de-tin-hinan', p.id, { ouvrirReponse: true }).sortEnAttente, true);
+  duel.sorcier.main = ['contresort-des-abimes']; duel.sorcier.mana.eau = 30;
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'contresort-des-abimes').contre, true);
+  assert.equal(p.arme, null); assert.ok(duel.joueur.cimetiere.includes('takouba-de-tin-hinan'));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Guetteuse MOBA : exil allié et retour neuf dans la voie d’origine (${side})`, () => {
+  const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  duel[side].mana.sable = 30; duel[side].mana.eau = 30;
+  duel[side].main = ['chien-du-guet', 'jitte-d-amayas', 'guetteuse-des-marees'];
+  const allie = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'right', 1).entite;
+  assert.equal(rpgMobaJouerArme(duel, side, 'jitte-d-amayas', allie.id).ok, true);
+  allie.pv = 1; allie.poison = { degats: 1, toursRestants: 2 };
+  const g = rpgMobaJouerCreature(duel, side, 'guetteuse-des-marees', 'left', 0, { ouvrirReponse: true });
+  assert.equal(g.creatureEnAttente, true); const entree = rpgMobaPasserCreature(duel, enemy); assert.equal(entree.arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, side, entree.entite.id).ok, false);
+  assert.equal(rpgMobaResoudreArrivee(duel, side, allie.id).ok, true);
+  assert.ok(!duel[side].creatures.includes(allie)); assert.ok(duel[side].exil.includes('chien-du-guet'));
+  assert.ok(duel[side].cimetiere.includes('jitte-d-amayas')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+  const resultat = terminerEtPasser(duel, side); assert.equal(resultat.ok, true, JSON.stringify(resultat));
+  const retour = duel[side].creatures.find(e => e.carteId === 'chien-du-guet');
+  assert.ok(retour && retour.id !== allie.id); assert.equal(retour.mobaLane, 'right');
+  assert.equal(mobaVoie(duel.moba, 'right').slots[side][1], retour.id);
+  assert.equal(retour.pv, retour.pvMax); assert.ok(!retour.poison); assert.equal(retour.arme, null);
+  assert.ok(!duel[side].exil.includes('chien-du-guet')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : voie pleine attend et retour occupe une autre case de sa voie', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30 });
+  duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees', 'gardienne-des-portes-de-sable', 'gardienne-des-portes-de-sable'];
+  const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true);
+  const premier = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  const second = rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 1).entite;
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  assert.equal(duel.retoursExilFinTour.length, 1); assert.ok(duel.joueur.exil.includes('chien-du-guet'));
+  duel.sorcier.main = ['ressac']; duel.sorcier.mana.eau = 30;
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'ressac', second.id).ok, true);
+  assert.equal(terminerEtPasser(duel, 'sorcier').ok, true);
+  const retour = duel.joueur.creatures.find(e => e.carteId === 'chien-du-guet');
+  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[0], premier.id);
+  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[1], retour.id); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : conquête de la voie annule le retour sans déclencher de mort', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, neige: 30 });
+  duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees', 'eclair-du-marteau'];
+  const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true);
+  mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'right').ok, true);
+  assert.deepEqual(duel.retoursExilFinTour, []); assert.ok(duel.joueur.exil.includes('chien-du-guet'));
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  assert.ok(!duel.joueur.creatures.some(e => e.carteId === 'chien-du-guet')); assert.ok(!duel.joueur.cimetiere.includes('chien-du-guet'));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : pas de cible seule ou avec un Site, protection alliée ignorée', () => {
+  for (const cible of ['aucune', 'site', 'protegee']) {
+    const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30 });
+    duel.joueur.main = ['le-tresor-de-lima', 'chien-du-guet', 'guetteuse-des-marees'];
+    let allie;
+    if (cible !== 'aucune') allie = rpgMobaJouerCreature(duel, 'joueur', cible === 'site' ? 'le-tresor-de-lima' : 'chien-du-guet', 'right', 0).entite;
+    if (cible === 'protegee') { allie.protection = { contre: ['eau'] }; allie.bouclierLumiere = true; }
+    const g = rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
+    assert.equal(Boolean(g.arriveeEnAttente), cible === 'protegee');
+    if (cible === 'protegee') { assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true); assert.ok(duel.joueur.exil.includes(allie.carteId)); }
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Guetteuse MOBA : jeton exilé cesse d’exister', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30 });
+  duel.joueur.main = ['tarek', 'guetteuse-des-marees'];
+  rpgMobaJouerCreature(duel, 'joueur', 'tarek', 'right', 0);
+  const token = duel.joueur.creatures.find(e => e.carteId === 'chien-de-sable');
+  assert.ok(token);
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 1).arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', token.id).ok, true);
+  assert.ok(!duel.joueur.creatures.includes(token)); assert.ok(!(duel.joueur.exil ?? []).includes(token.carteId));
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  assert.equal(duel.joueur.creatures.filter(e => e.carteId === 'chien-de-sable').length, 1); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const id of ['porteuse-de-cruches', 'pretre-de-la-bouche', 'braisier-du-souk', 'maitre-des-hieroglyphes']) test(`Guetteuse MOBA : arrivée rejouée et événements au retour de ${id}`, () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, braise: 30, tenebres: 30 });
+  duel.joueur.main = [id, 'guetteuse-des-marees'];
+  const allie = rpgMobaJouerCreature(duel, 'joueur', id, 'right', 0).entite;
+  const guetteuse = rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0);
+  assert.equal(guetteuse.arriveeEnAttente, true); assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', allie.id).ok, true);
+  mobaInfliger(duel.moba, 'sorcier', 'right', 3);
+  const hpA = mobaVoie(duel.moba, 'right').hp.joueur, hpB = mobaVoie(duel.moba, 'right').hp.sorcier;
+  duel.joueur.deck = ['verglas', 'verglas', 'verglas'];
+  const result = terminerEtPasser(duel, 'joueur'); assert.equal(result.ok, true, JSON.stringify(result));
+  if (id === 'porteuse-de-cruches' || id === 'pretre-de-la-bouche') {
+    assert.ok(mobaVoie(duel.moba, 'right').hp.joueur > hpA);
+    assert.ok(result.healingEvents?.some(e => e.cardId === id && e.laneId === 'right' && e.healing > 0));
+  }
+  if (id === 'pretre-de-la-bouche' || id === 'braisier-du-souk') {
+    assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, hpB - 1);
+    assert.ok(result.damageEvents?.some(e => e.cardId === id && e.laneId === 'right' && e.damage === 1));
+  }
+  if (id === 'maitre-des-hieroglyphes') assert.equal(result.drawEvents?.find(e => e.cardId === id)?.count, 2);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : réanimation rejoue automatiquement l’exil dans la voie de l’alliée', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30 });
+  duel.joueur.main = ['chien-du-guet', 'reanimation']; duel.joueur.cimetiere = ['guetteuse-des-marees'];
+  const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'center', null, { emplacementReanimation: 0 });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.ok(!duel.joueur.creatures.includes(allie));
+  assert.equal(duel.retoursExilFinTour[0].mobaLane, 'right'); assert.equal(rpgMobaPlacementCoherent(duel), true);
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  assert.equal(duel.joueur.creatures.find(e => e.carteId === 'chien-du-guet').mobaLane, 'right');
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : une arrivée gagnante annule les retours suivants', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, eau: 30, braise: 30, neige: 30 });
+  duel.joueur.main = ['braisier-du-souk', 'chien-du-guet', 'guetteuse-des-marees', 'guetteuse-des-marees', 'eclair-du-marteau'];
+  const braisier = rpgMobaJouerCreature(duel, 'joueur', 'braisier-du-souk', 'right', 0).entite;
+  const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'center', 0).entite;
+  rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0); rpgMobaResoudreArrivee(duel, 'joueur', braisier.id);
+  rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 1); rpgMobaResoudreArrivee(duel, 'joueur', chien.id);
+  mobaInfliger(duel.moba, 'joueur', 'left', 9); assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'eclair-du-marteau', 'sorcier', 'left').ok, true); mobaInfliger(duel.moba, 'joueur', 'right', 8);
+  const result = terminerEtPasser(duel, 'joueur'); assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(duel.moba.winner, 'joueur'); assert.ok(duel.joueur.exil.includes('chien-du-guet'));
+  assert.ok(!duel.joueur.creatures.some(e => e.carteId === 'chien-du-guet'));
+  assert.ok(result.damageEvents?.some(e => e.cardId === 'braisier-du-souk')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : le Lecteur revenu déclenche une défausse humaine après le changement de tour', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { eau: 30, tenebres: 30 });
+  duel.joueur.main = ['lecteur-du-dernier-nom', 'guetteuse-des-marees']; duel.joueur.deck = [];
+  const lecteur = rpgMobaJouerCreature(duel, 'joueur', 'lecteur-du-dernier-nom', 'right', 0).entite;
+  if (duel.defausseEnAttente) assert.equal(rpgMobaDefausser(duel, 'joueur', 0).ok, true);
+  duel.joueur.main = ['guetteuse-des-marees'];
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', lecteur.id).ok, true);
+  duel.joueur.deck = ['verglas', 'verglas'];
+  const result = terminerEtPasser(duel, 'joueur'); assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(result.drawEvents[0].count, 2); assert.equal(duel.tour, 'sorcier');
+  assert.equal(duel.defausseEnAttente?.cote, 'joueur');
+  assert.equal(rpgMobaDefausser(duel, 'joueur', 0).ok, true); assert.equal(duel.defausseEnAttente, null);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : son retour rejoue l’arrivée et programme le nouvel exil pour une fin de tour ultérieure', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { eau: 30, sable: 30 });
+  duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees', 'guetteuse-des-marees'];
+  const chien = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  const premiere = rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).entite;
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', chien.id).ok, true);
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'center', 0).arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', premiere.id).ok, true);
+  assert.equal(terminerEtPasser(duel, 'joueur').ok, true);
+  assert.ok(duel.joueur.creatures.some(e => e.carteId === 'guetteuse-des-marees' && e.mobaLane === 'left'));
+  assert.equal(duel.retoursExilFinTour.length, 1); assert.equal(duel.retoursExilFinTour[0].mobaLane, 'center');
+  assert.equal(duel.retoursExilFinTour[0].carteId, 'guetteuse-des-marees');
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Guetteuse MOBA : une réponse contre la créature empêche son arrivée et son exil', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { eau: 30, sable: 30 });
+  duel.joueur.main = ['chien-du-guet', 'guetteuse-des-marees'];
+  const allie = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'right', 0).entite;
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  duel.sorcier.main = ['contresort-des-abimes']; duel.sorcier.mana.eau = 30;
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'contresort-des-abimes').contre, true);
+  assert.ok(duel.joueur.creatures.includes(allie)); assert.ok(!duel.arriveeEnAttente); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Passeur MOBA : réanimation, priorité à sa voie et effets d’arrivée (${side})`, () => {
+  for (const voiePleine of [false, true]) {
+    const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+    const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+    Object.assign(duel[side].mana, { sable: 30, tenebres: 30 });
+    duel[side].main = ['passeur-au-masque-de-chacal', 'gardienne-des-portes-de-sable'];
+    if (voiePleine) rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', 'right', 1);
+    duel[side].cimetiere = ['porteuse-de-cruches', 'javelot-du-beffroi'];
+    mobaInfliger(duel.moba, enemy, voiePleine ? 'left' : 'right', 4);
+    const result = rpgMobaJouerCreature(duel, side, 'passeur-au-masque-de-chacal', 'right', 0, { ouvrirReponse: true });
+    assert.equal(result.creatureEnAttente, true); assert.deepEqual(duel[side].cimetiere, ['porteuse-de-cruches', 'javelot-du-beffroi']);
+    const entree = rpgMobaPasserCreature(duel, enemy); assert.equal(entree.ok, true, JSON.stringify(entree));
+    const retour = duel[side].creatures.find(e => e.carteId === 'porteuse-de-cruches');
+    assert.ok(retour); assert.equal(retour.mobaLane, voiePleine ? 'left' : 'right');
+    assert.ok(entree.healingEvents.some(e => e.cardId === 'porteuse-de-cruches' && e.laneId === retour.mobaLane && e.healing > 0));
+    assert.deepEqual(duel[side].cimetiere, ['javelot-du-beffroi']); assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Passeur MOBA : champ plein ou dernière créature non auditée restent au cimetière', () => {
+  for (const mode of ['plein', 'non-auditee']) {
+    const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30 });
+    duel.joueur.main = Array(4).fill('gardienne-des-portes-de-sable').concat('passeur-au-masque-de-chacal');
+    if (mode === 'plein') for (const [lane, slot] of [['left',0], ['left',1], ['right',0], ['right',1]]) assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', lane, slot).ok, true);
+    duel.joueur.cimetiere = mode === 'plein' ? ['chien-du-guet'] : ['chien-du-guet', 'tojiro-le-pourfendeur'];
+    const avant = [...duel.joueur.cimetiere];
+    assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'center', 0).ok, true);
+    assert.deepEqual(duel.joueur.cimetiere, avant); assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Passeur MOBA : une Réanimation qui le ramène enchaîne sans réutiliser sa case', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30 });
+  duel.joueur.main = ['reanimation']; duel.joueur.cimetiere = ['chien-du-guet', 'passeur-au-masque-de-chacal'];
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 0 });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(duel.joueur.creatures.find(e => e.carteId === 'passeur-au-masque-de-chacal').mobaLane, 'right');
+  assert.equal(mobaVoie(duel.moba, 'right').slots.joueur[1], duel.joueur.creatures.find(e => e.carteId === 'chien-du-guet').id);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Passeur et Masque MOBA : Lien entre voies, pioche sans défausse et disparition (${side})`, () => {
+  const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  Object.assign(duel[side].mana, { sable: 30, tenebres: 30 });
+  duel[side].main = ['gardienne-des-portes-de-sable', 'masque-du-guetteur', 'passeur-au-masque-de-chacal'];
+  const p = rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  assert.equal(rpgMobaJouerArme(duel, side, 'masque-du-guetteur', p.id).ok, true); assert.equal(p.atk, 2);
+  const passeur = rpgMobaJouerCreature(duel, side, 'passeur-au-masque-de-chacal', 'right', 0).entite;
+  assert.deepEqual([p.atk, p.pvMax], [3, 6]); duel[side].deck = ['verglas']; p.ready = true;
+  assert.equal(rpgMobaDeclarerAttaque(duel, side, [p.id]).ok, true);
+  assert.equal(rpgMobaLancerAttaque(duel, side, [p.id], {}, { declaree: true }).ok, true);
+  assert.ok(duel[side].main.includes('verglas')); assert.ok(!duel.defausseEnAttente);
+  rpgFinDeTour(duel); duel[enemy].main = ['ressac']; duel[enemy].mana.eau = 30;
+  assert.equal(rpgMobaLancerMagie(duel, enemy, 'ressac', passeur.id).ok, true);
+  assert.deepEqual([p.atk, p.pvMax], [2, 5]); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : chaînes de Passeur puis arrivée avec soin, une seule notification', () => {
+  const duel = partieCombat(); duel.joueur.mana.sable = 30;
+  duel.joueur.main = ['reanimation']; duel.joueur.cimetiere = ['porteuse-de-cruches', 'passeur-au-masque-de-chacal', 'passeur-au-masque-de-chacal'];
+  mobaInfliger(duel.moba, 'sorcier', 'left', 4);
+  const result = rpgMobaLancerMagie(duel, 'joueur', 'reanimation', null, 'right', null, { emplacementReanimation: 0 });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(duel.joueur.creatures.filter(e => e.carteId === 'passeur-au-masque-de-chacal').length, 2);
+  const retour = duel.joueur.creatures.find(e => e.carteId === 'porteuse-de-cruches'); assert.equal(retour.mobaLane, 'left');
+  assert.equal(result.healingEvents.filter(e => e.cardId === 'porteuse-de-cruches').length, 1);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : retour depuis exil relance la réanimation et transmet les dégâts', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { eau: 30, tenebres: 30 });
+  duel.joueur.main = ['passeur-au-masque-de-chacal', 'guetteuse-des-marees'];
+  const passeur = rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'right', 0).entite;
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'guetteuse-des-marees', 'left', 0).arriveeEnAttente, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', passeur.id).ok, true);
+  duel.joueur.cimetiere = ['braisier-du-souk'];
+  const hp = mobaVoie(duel.moba, 'right').hp.sorcier;
+  const result = terminerEtPasser(duel, 'joueur'); assert.equal(result.ok, true, JSON.stringify(result));
+  assert.ok(duel.joueur.creatures.some(e => e.carteId === 'braisier-du-souk' && e.mobaLane === 'right'));
+  assert.equal(mobaVoie(duel.moba, 'right').hp.sorcier, hp - 1);
+  assert.equal(result.damageEvents.filter(e => e.cardId === 'braisier-du-souk').length, 1);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Passeur MOBA : le cimetière est relu après la réponse à la pose (${side})`, () => {
+  const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+  const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  Object.assign(duel[side].mana, { sable: 30, tenebres: 30 });
+  duel[side].main = ['chien-du-guet', 'passeur-au-masque-de-chacal'];
+  const chien = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'left', 0).entite; chien.pv = 1;
+  duel[side].cimetiere = ['gardienne-des-portes-de-sable'];
+  assert.equal(rpgMobaJouerCreature(duel, side, 'passeur-au-masque-de-chacal', 'right', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  duel[enemy].main = ['trait-de-braise']; duel[enemy].mana.braise = 30;
+  assert.equal(rpgMobaLancerMagie(duel, enemy, 'trait-de-braise', chien.id).ok, true);
+  assert.equal(rpgMobaPasserCreature(duel, enemy).ok, true);
+  assert.ok(duel[side].creatures.some(e => e.id !== chien.id && e.carteId === 'chien-du-guet' && e.mobaLane === 'right'));
+  assert.deepEqual(duel[side].cimetiere, ['gardienne-des-portes-de-sable']); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : contresort empêche la pose et la résurrection', () => {
+  const duel = partieCombat(); duel.joueur.mana.tenebres = 30; duel.joueur.main = ['passeur-au-masque-de-chacal']; duel.joueur.cimetiere = ['chien-du-guet'];
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'right', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  duel.sorcier.main = ['contresort-des-abimes']; duel.sorcier.mana.eau = 30;
+  assert.equal(rpgMobaLancerMagie(duel, 'sorcier', 'contresort-des-abimes').contre, true);
+  assert.ok(!duel.joueur.creatures.length); assert.ok(duel.joueur.cimetiere.includes('chien-du-guet'));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : victoire sur l’arrivée réanimée stoppe la partie immédiatement', () => {
+  const duel = partieCombat(); duel.joueur.mana.tenebres = 30; duel.joueur.main = ['passeur-au-masque-de-chacal']; duel.joueur.cimetiere = ['braisier-du-souk'];
+  mobaInfliger(duel.moba, 'joueur', 'left', 10); mobaInfliger(duel.moba, 'joueur', 'right', 9);
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'right', 0);
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(duel.moba.winner, 'joueur');
+  assert.ok(result.damageEvents.some(e => e.cardId === 'braisier-du-souk' && e.damage === 1));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : une Lettre de marque permet encore sa prise après la réanimation', () => {
+  const duel = partieCombat(); rpgFinDeTour(duel); duel.sorcier.main = ['chien-du-guet']; duel.sorcier.mana.sable = 30;
+  const prise = rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'left', 0).entite;
+  rpgFinDeTour(duel); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30, eau: 30 });
+  duel.joueur.main = ['lettre-de-marque', 'passeur-au-masque-de-chacal']; duel.joueur.cimetiere = ['gardienne-des-portes-de-sable'];
+  assert.equal(rpgMobaLancerMagie(duel, 'joueur', 'lettre-de-marque').ok, true);
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'right', 0, { ouvrirReponse: true });
+  assert.equal(result.creatureEnAttente, true);
+  const entree = rpgMobaPasserCreature(duel, 'sorcier'); assert.equal(entree.arriveeEnAttente, true);
+  assert.ok(duel.joueur.creatures.some(e => e.carteId === 'gardienne-des-portes-de-sable'));
+  assert.equal(rpgMobaResoudreArrivee(duel, 'joueur', prise.id).ok, true);
+  assert.equal(entree.entite.enCale.entite.id, prise.id); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Passeur MOBA : ne réanime jamais dans une voie conquise et déclenche la pioche', () => {
+  const duel = partieCombat(); Object.assign(duel.joueur.mana, { sable: 30, tenebres: 30 });
+  duel.joueur.main = ['gardienne-des-portes-de-sable', 'passeur-au-masque-de-chacal'];
+  mobaInfliger(duel.moba, 'sorcier', 'left', 20);
+  assert.equal(rpgMobaJouerCreature(duel, 'joueur', 'gardienne-des-portes-de-sable', 'right', 1).ok, true);
+  duel.joueur.cimetiere = ['lecteur-du-dernier-nom']; duel.joueur.deck = ['verglas', 'chien-du-guet'];
+  const result = rpgMobaJouerCreature(duel, 'joueur', 'passeur-au-masque-de-chacal', 'right', 0);
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(duel.joueur.creatures.find(e => e.carteId === 'lecteur-du-dernier-nom').mobaLane, 'center');
+  assert.ok(duel.joueur.main.includes('verglas')); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+// Ces tests injectent l'arme directement pour isoler le moteur du combat.
+function fixtureSphereBloquee(side, attaquantId = 'gardienne-des-portes-de-sable', deuxBloqueurs = false, voieAttaquant = 'left') {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  if (enemy === 'sorcier') rpgFinDeTour(duel);
+  duel[enemy].main = ['gardienne-des-portes-de-sable', 'gardienne-des-portes-de-sable']; duel[enemy].mana.sable = 30;
+  const bloqueurs = [rpgMobaJouerCreature(duel, enemy, 'gardienne-des-portes-de-sable', 'left', 0).entite];
+  if (deuxBloqueurs) bloqueurs.push(rpgMobaJouerCreature(duel, enemy, 'gardienne-des-portes-de-sable', 'left', 1).entite);
+  rpgFinDeTour(duel); Object.assign(duel[side].mana, { sable: 30, eau: 30, braise: 30, tenebres: 30 });
+  duel[side].main = [attaquantId];
+  const attaquant = rpgMobaJouerCreature(duel, side, attaquantId, voieAttaquant, 0).entite;
+  attaquant.ready = true;
+  return { duel, side, enemy, attaquant, bloqueurs };
+}
+function injecterSphere(duel, side, entite) {
+  duel[side].main.push('sphere-de-rotation'); Object.assign(duel[side].mana, { sable: 30, eau: 30 });
+  assert.equal(rpgJouerArme(duel, side, 'sphere-de-rotation', entite.id).ok, true);
+}
+function resoudreSphereBloquee({ duel, side, attaquant, bloqueurs }) {
+  const result = rpgLancerAttaque(duel, side, [attaquant.id], { [attaquant.id]: bloqueurs.map(e => e.id) }, null, null, {}, {
+    resoudreDegatsDirects: ({ amount }) => ({ recus: mobaInfliger(duel.moba, side, attaquant.mobaLane, amount).damage }),
+  });
+  // Comme l'adaptateur, retirer des voies les combattants morts après résolution.
+  for (const cote of ['joueur', 'sorcier']) for (const voie of duel.moba.lanes) {
+    for (const id of [...voie.slots[cote]]) if (id && !duel[cote].creatures.some(e => e.id === id)) mobaRetirer(duel.moba, cote, id);
+  }
+  return result;
+}
+for (const side of ['joueur', 'sorcier']) for (const porteur of ['attaquant', 'bloqueur']) {
+  test(`Sphère injectée : renvoi avant blessures d'un combat bloqué (${side}, ${porteur})`, () => {
+    for (const jet of [.14, .15]) {
+      const f = fixtureSphereBloquee(side); const { duel, enemy, attaquant, bloqueurs } = f; const bloqueur = bloqueurs[0];
+      const arme = porteur === 'attaquant' ? attaquant : bloqueur, cible = porteur === 'attaquant' ? bloqueur : attaquant;
+      injecterSphere(duel, porteur === 'attaquant' ? side : enemy, arme); rpgReglerHasard(duel, () => jet);
+      const pv = arme.pv, hp = mobaVoie(duel.moba, 'left').hp[enemy];
+      const result = resoudreSphereBloquee(f); assert.equal(result.ok, true, JSON.stringify(result));
+      if (jet < .15) {
+        assert.ok(!duel[porteur === 'attaquant' ? enemy : side].creatures.includes(cible));
+        assert.equal(arme.pv, pv); assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], hp);
+      } else assert.ok(arme.pv < pv);
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+}
+
+for (const side of ['joueur', 'sorcier']) {
+  test(`Sphère injectée : le bouclier intercepte le renvoi sans annuler l'échange (${side})`, () => {
+    for (const porteur of ['attaquant', 'bloqueur']) {
+      const f = fixtureSphereBloquee(side); const { duel, enemy, attaquant, bloqueurs } = f; const bloqueur = bloqueurs[0];
+      const arme = porteur === 'attaquant' ? attaquant : bloqueur, cible = porteur === 'attaquant' ? bloqueur : attaquant;
+      injecterSphere(duel, porteur === 'attaquant' ? side : enemy, arme); cible.bouclier = 1;
+      rpgReglerHasard(duel, () => .14); const pv = arme.pv;
+      assert.equal(resoudreSphereBloquee(f).ok, true); assert.equal(cible.bouclier, 0); assert.ok(arme.pv < pv);
+      assert.ok(duel[porteur === 'attaquant' ? enemy : side].creatures.includes(cible));
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+  test(`Sphère injectée : partage et Overkill relus après le renvoi d'un bloqueur (${side})`, () => {
+    for (const deux of [false, true]) {
+      const f = fixtureSphereBloquee(side, 'fleau-de-la-lune-noire', deux); const { duel, enemy, attaquant, bloqueurs } = f;
+      injecterSphere(duel, side, attaquant); const force = attaquant.atk;
+      if (deux) bloqueurs[1].pv = bloqueurs[1].pvMax = bloqueurs[1].def = 5;
+      let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .14 : .15);
+      const result = resoudreSphereBloquee(f); assert.equal(result.ok, true, JSON.stringify(result));
+      assert.ok(duel[enemy].main.includes('gardienne-des-portes-de-sable'));
+      assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 10 - force + (deux ? 5 : 0));
+      if (deux) assert.ok(!duel[enemy].creatures.includes(bloqueurs[1]));
+      assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+  test(`Sphère injectée : un bloqueur renvoie l'Overkill avant tout dégât de voie (${side})`, () => {
+    const f = fixtureSphereBloquee(side, 'fleau-de-la-lune-noire', true); const { duel, enemy, attaquant, bloqueurs } = f;
+    injecterSphere(duel, enemy, bloqueurs[0]); rpgReglerHasard(duel, () => .14);
+    const result = resoudreSphereBloquee(f); assert.equal(result.ok, true, JSON.stringify(result));
+    assert.ok(duel[side].main.includes('fleau-de-la-lune-noire')); assert.ok(!duel[side].creatures.includes(attaquant));
+    assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 10);
+    assert.equal(bloqueurs[0].pv, bloqueurs[0].pvMax); assert.equal(bloqueurs[1].pv, bloqueurs[1].pvMax);
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  });
+}
+
+test('Sphère injectée : partage ordinaire recalculé et un jet par bloqueur', () => {
+  const f = fixtureSphereBloquee('joueur', 'gardienne-des-portes-de-sable', true); const { duel, enemy, attaquant, bloqueurs } = f;
+  injecterSphere(duel, 'joueur', attaquant); bloqueurs[1].pv = bloqueurs[1].pvMax = bloqueurs[1].def = 10;
+  let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .14 : .15);
+  const result = resoudreSphereBloquee(f); assert.equal(result.ok, true, JSON.stringify(result));
+  assert.equal(jets, 2); assert.ok(duel[enemy].main.includes('gardienne-des-portes-de-sable'));
+  assert.equal(bloqueurs[1].pv, 10 - attaquant.atk); assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 10);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Sphère injectée : renvoi du bloqueur enlève son équipement et efface un jeton', () => {
+  for (const jeton of [false, true]) {
+    const f = fixtureSphereBloquee('joueur'); const { duel, enemy, attaquant, bloqueurs } = f;
+    injecterSphere(duel, 'joueur', attaquant); const cible = bloqueurs[0]; cible.jeton = jeton;
+    duel[enemy].main = ['jitte-d-amayas']; duel[enemy].mana.tenebres = 30;
+    assert.equal(rpgJouerArme(duel, enemy, 'jitte-d-amayas', cible.id).ok, true);
+    rpgReglerHasard(duel, () => .14);
+    assert.equal(resoudreSphereBloquee(f).ok, true);
+    assert.equal(duel[enemy].main.includes(cible.carteId), !jeton);
+    assert.ok(duel[enemy].cimetiere.includes('jitte-d-amayas')); assert.equal(mobaVoie(duel.moba, 'left').slots[enemy][0], null);
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Sphère injectée : les forces et répartitions relisent la Résonance disparue (${side})`, () => {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  if (enemy === 'sorcier') rpgFinDeTour(duel);
+  duel[enemy].main = ['general-du-croissant-noir']; Object.assign(duel[enemy].mana, { sable: 30, tenebres: 30 });
+  const general = rpgMobaJouerCreature(duel, enemy, 'general-du-croissant-noir', 'left', 0).entite;
+  rpgFinDeTour(duel); duel[side].main = ['fleau-de-la-lune-noire', 'novice-des-cendres'];
+  Object.assign(duel[side].mana, { braise: 30, tenebres: 30, sable: 30, eau: 30 });
+  const fleau = rpgMobaJouerCreature(duel, side, 'fleau-de-la-lune-noire', 'left', 0).entite;
+  const novice = rpgMobaJouerCreature(duel, side, 'novice-des-cendres', 'left', 1).entite;
+  injecterSphere(duel, side, fleau); fleau.ready = novice.ready = true;
+  const forceAvant = [fleau.atk, novice.atk];
+  const lane = mobaVoie(duel.moba, 'left'); lane.hp[enemy] = 20; rpgReglerHasard(duel, () => .14);
+  const result = rpgLancerAttaque(duel, side, [fleau.id, novice.id], { [fleau.id]: [general.id], [novice.id]: [] }, null, null, {}, {
+    resoudreDegatsDirects: ({ amount }) => ({ recus: mobaInfliger(duel.moba, side, 'left', amount).damage }),
+  });
+  assert.equal(result.ok, true, JSON.stringify(result));
+  assert.ok(duel[enemy].main.includes('general-du-croissant-noir'));
+  assert.deepEqual([fleau.atk, novice.atk], forceAvant.map(atk => atk - 1));
+  assert.equal(lane.hp[enemy], 20 - fleau.atk - novice.atk);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+function resoudreSphereCiblee({ duel, side, attaquant, cible }, autres = [], blocks = {}) {
+  const result = rpgLancerAttaque(duel, side, [attaquant.id, ...autres.map(e => e.id)], blocks, null, null, { [attaquant.id]: cible.id }, {
+    resoudreDegatsDirects: ({ amount, attaquantId }) => ({ recus: mobaInfliger(duel.moba, side, duel[side].creatures.find(e => e.id === attaquantId).mobaLane, amount).damage }),
+  });
+  for (const cote of ['joueur', 'sorcier']) for (const voie of duel.moba.lanes) {
+    for (const id of [...voie.slots[cote]]) if (id && !duel[cote].creatures.some(e => e.id === id)) mobaRetirer(duel.moba, cote, id);
+  }
+  return result;
+}
+for (const side of ['joueur', 'sorcier']) for (const porteur of ['attaquant', 'cible']) {
+  test(`Sphère injectée : attaque ciblée, renvoi avant frappe ou jet manqué (${side}, ${porteur})`, () => {
+    for (const reussite of [true, false]) {
+      const f = fixtureSphereBloquee(side), { duel, enemy, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+      attaquant.coupRapide = true; injecterSphere(duel, porteur === 'attaquant' ? side : enemy, porteur === 'attaquant' ? attaquant : cible);
+      const pvCible = cible.pv, hp = mobaVoie(duel.moba, 'left').hp[enemy]; let jets = 0;
+      rpgReglerHasard(duel, () => jets++ === 0 ? .5 : (reussite ? .14 : .15));
+      const result = resoudreSphereCiblee({ duel, side, attaquant, cible }); assert.equal(result.ok, true, JSON.stringify(result));
+      if (reussite) {
+        assert.equal(result.resume.coupsRapides[0].annule, true);
+        assert.ok(!duel[porteur === 'attaquant' ? enemy : side].creatures.includes(porteur === 'attaquant' ? cible : attaquant));
+        assert.equal(cible.pv, pvCible);
+      } else { assert.equal(result.resume.coupsRapides[0].annule, undefined); assert.ok(cible.pv < pvCible); }
+      assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], hp); assert.equal(rpgMobaPlacementCoherent(duel), true);
+    }
+  });
+}
+
+test('Sphère injectée : attaque ciblée ratée combat tout de même, un bouclier intercepte la Sphère', () => {
+  for (const bouclier of [false, true]) {
+    const f = fixtureSphereBloquee('joueur'), { duel, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+    attaquant.coupRapide = true; injecterSphere(duel, 'joueur', attaquant); cible.bouclier = bouclier ? 1 : 0;
+    let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .1 : .14);
+    const result = resoudreSphereCiblee({ duel, side: 'joueur', attaquant, cible }); assert.equal(result.ok, true);
+    assert.equal(cible.bouclier, 0); assert.equal(duel.sorcier.creatures.includes(cible), bouclier);
+    assert.equal(Boolean(result.resume.coupsRapides[0].annule), !bouclier);
+    if (bouclier) assert.equal(result.resume.coupsRapides[0].rate, true);
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Sphère injectée : ciblage d'un bloqueur retiré avant le partage (${side})`, () => {
+  const f = fixtureSphereBloquee(side); const { duel, enemy, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+  duel[side].main = ['chien-du-guet']; duel[side].mana.sable = 30;
+  const autre = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'left', 1).entite; autre.ready = true;
+  attaquant.coupRapide = true; injecterSphere(duel, side, attaquant);
+  const hp = mobaVoie(duel.moba, 'left').hp[enemy], pv = autre.pv; let jets = 0;
+  rpgReglerHasard(duel, () => jets++ === 0 ? .5 : .14);
+  const result = resoudreSphereCiblee({ duel, side, attaquant, cible }, [autre], { [autre.id]: [cible.id] });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.ok(duel[enemy].main.includes(cible.carteId));
+  assert.equal(autre.pv, pv); assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], hp);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+test('Sphère injectée : une répartition illégale ne renvoie aucune créature', () => {
+  const f = fixtureSphereBloquee('joueur', 'gardienne-des-portes-de-sable', true, 'center');
+  const { duel, attaquant, bloqueurs } = f;
+  duel.joueur.main = ['chien-du-guet']; duel.joueur.mana.sable = 30;
+  const autre = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'left', 1).entite;
+  rpgFinDeTour(duel); duel.sorcier.main = ['chien-du-guet']; duel.sorcier.mana.sable = 30;
+  const cible = rpgMobaJouerCreature(duel, 'sorcier', 'chien-du-guet', 'center', 0).entite;
+  bloqueurs.forEach((bloqueur) => { bloqueur.defenseur = false; });
+  rpgFinDeTour(duel); attaquant.ready = autre.ready = true;
+  attaquant.coupRapide = true; injecterSphere(duel, 'joueur', attaquant);
+  let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .5 : .14);
+  const avant = JSON.stringify(duel);
+  const result = rpgLancerAttaque(duel, 'joueur', [attaquant.id, autre.id], { [autre.id]: bloqueurs.map(e => e.id) }, { [autre.id]: { [bloqueurs[0].id]: 999 } }, null, { [attaquant.id]: cible.id });
+  assert.equal(result.raison, 'repartition'); assert.equal(JSON.stringify(duel), avant); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Sphère injectée : l'Overkill traverse un bloqueur renvoyé par une attaque ciblée (${side})`, () => {
+  const f = fixtureSphereBloquee(side); const { duel, enemy, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+  duel[side].main = ['fleau-de-la-lune-noire']; Object.assign(duel[side].mana, { braise: 30, tenebres: 30 });
+  const fleau = rpgMobaJouerCreature(duel, side, 'fleau-de-la-lune-noire', 'left', 1).entite; fleau.ready = true;
+  attaquant.coupRapide = true; injecterSphere(duel, side, attaquant);
+  let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .5 : .14);
+  const result = resoudreSphereCiblee({ duel, side, attaquant, cible }, [fleau], { [fleau.id]: [cible.id] });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.ok(duel[enemy].main.includes(cible.carteId));
+  assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], 10 - fleau.atk); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Sphère injectée : deux Sphères en combat ciblé respectent les boucliers et l'ordre (${side})`, () => {
+  for (const boucliers of [false, true]) {
+    const f = fixtureSphereBloquee(side), { duel, enemy, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+    attaquant.coupRapide = true; injecterSphere(duel, side, attaquant); injecterSphere(duel, enemy, cible);
+    attaquant.bouclier = cible.bouclier = boucliers ? 1 : 0;
+    let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .5 : .14);
+    const result = resoudreSphereCiblee({ duel, side, attaquant, cible }); assert.equal(result.ok, true);
+    if (boucliers) {
+      assert.equal(attaquant.bouclier, 0); assert.equal(cible.bouclier, 0); assert.ok(cible.pv < cible.pvMax);
+      assert.equal(duel[enemy].creatures.includes(cible), true);
+    } else {
+      assert.equal(result.resume.coupsRapides[0].annule, true); assert.ok(duel[enemy].main.includes(cible.carteId));
+      assert.ok(duel[side].creatures.includes(attaquant));
+    }
+    assert.equal(jets, boucliers ? 3 : 2, 'la copie de validation ne consomme pas de jets supplémentaires');
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+test('Sphère injectée : une cible renvoyée annule les autres attaques ciblées sans les rediriger', () => {
+  const f = fixtureSphereBloquee('joueur'); const { duel, attaquant, bloqueurs } = f, cible = bloqueurs[0];
+  duel.joueur.main = ['chien-du-guet']; duel.joueur.mana.sable = 30;
+  const autre = rpgMobaJouerCreature(duel, 'joueur', 'chien-du-guet', 'left', 1).entite; autre.ready = true;
+  attaquant.coupRapide = autre.coupRapide = true; injecterSphere(duel, 'joueur', attaquant);
+  let jets = 0; rpgReglerHasard(duel, () => [0.5, 0.5, 0.14][jets++] ?? .5);
+  const result = rpgLancerAttaque(duel, 'joueur', [attaquant.id, autre.id], {}, null, null, { [attaquant.id]: cible.id, [autre.id]: cible.id });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(result.resume.coupsRapides.filter(coup => coup.annule).length, 2);
+  assert.equal(result.resume.frappeSorcier, 0); assert.ok(duel.sorcier.main.includes(cible.carteId));
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+for (const side of ['joueur', 'sorcier']) test(`Sphère injectée : le critique garde son jet quand le renvoi retire une Résonance (${side})`, () => {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  if (enemy === 'sorcier') rpgFinDeTour(duel);
+  duel[enemy].main = ['general-du-croissant-noir']; Object.assign(duel[enemy].mana, { sable: 30, tenebres: 30 });
+  const cible = rpgMobaJouerCreature(duel, enemy, 'general-du-croissant-noir', 'left', 0).entite;
+  rpgFinDeTour(duel); duel[side].main = ['fleau-de-la-lune-noire']; Object.assign(duel[side].mana, { braise: 30, tenebres: 30 });
+  const attaquant = rpgMobaJouerCreature(duel, side, 'fleau-de-la-lune-noire', 'left', 0).entite;
+  injecterSphere(duel, side, attaquant); attaquant.ready = true; attaquant.coupCritique = { chance: 1, fois: 2 };
+  const lane = mobaVoie(duel.moba, 'left'); lane.hp[enemy] = 20;
+  let jets = 0; rpgReglerHasard(duel, () => { jets++; return .1; });
+  const result = resoudreSphereBloquee({ duel, side, attaquant, bloqueurs: [cible] });
+  assert.equal(result.ok, true, JSON.stringify(result)); assert.equal(lane.hp[enemy], 20 - 2 * attaquant.atk);
+  assert.equal(result.resume.critiques[0].fois, 2); assert.equal(jets, 2); assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+function fixtureSphereAdaptee(side, porteur = 'attaquant') {
+  const duel = partieCombat(), enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+  if (enemy === 'sorcier') rpgFinDeTour(duel);
+  Object.assign(duel[enemy].mana, { sable: 30, eau: 30 }); duel[enemy].main = ['gardienne-des-portes-de-sable', 'sphere-de-rotation'];
+  const cible = rpgMobaJouerCreature(duel, enemy, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+  if (porteur === 'bloqueur') assert.equal(rpgMobaJouerArme(duel, enemy, 'sphere-de-rotation', cible.id).ok, true);
+  rpgFinDeTour(duel); Object.assign(duel[side].mana, { sable: 30, eau: 30 }); duel[side].main = ['chien-du-guet', 'sphere-de-rotation'];
+  const attaquant = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'left', 0).entite;
+  if (porteur === 'attaquant') assert.equal(rpgMobaJouerArme(duel, side, 'sphere-de-rotation', attaquant.id).ok, true);
+  attaquant.ready = true;
+  return { duel, side, enemy, attaquant, cible };
+}
+for (const side of ['joueur', 'sorcier']) for (const porteur of ['attaquant', 'bloqueur']) {
+  test(`Sphère adaptateur MOBA : combat bloqué et retrait synchronisé (${side}, ${porteur})`, () => {
+    const { duel, enemy, attaquant, cible } = fixtureSphereAdaptee(side, porteur);
+    rpgReglerHasard(duel, () => .14); const hp = mobaVoie(duel.moba, 'left').hp[enemy];
+    assert.equal(rpgMobaDeclarerAttaque(duel, side, [attaquant.id]).ok, true);
+    const result = rpgMobaLancerAttaque(duel, side, [attaquant.id], { [attaquant.id]: [cible.id] }, { declaree: true });
+    assert.equal(result.ok, true, JSON.stringify(result));
+    const renvoye = porteur === 'attaquant' ? cible : attaquant, cote = porteur === 'attaquant' ? enemy : side;
+    assert.ok(duel[cote].main.includes(renvoye.carteId)); assert.equal(mobaVoie(duel.moba, 'left').slots[cote][0], null);
+    assert.equal(mobaVoie(duel.moba, 'left').hp[enemy], hp); assert.equal(rpgMobaPlacementCoherent(duel), true);
+    const arme = porteur === 'attaquant' ? attaquant : cible; assert.equal(arme.arme.durabilite, 1);
+  });
+  test(`Sphère adaptateur MOBA : attaque ciblée et rapport d'annulation (${side}, ${porteur})`, () => {
+    const { duel, enemy, attaquant, cible } = fixtureSphereAdaptee(side, porteur); attaquant.coupRapide = true;
+    let jets = 0; rpgReglerHasard(duel, () => jets++ === 0 ? .5 : .14);
+    assert.equal(rpgMobaDeclarerAttaque(duel, side, [attaquant.id], { [attaquant.id]: cible.id }).ok, true);
+    const result = rpgMobaLancerAttaque(duel, side, [attaquant.id], {}, { declaree: true });
+    assert.equal(result.ok, true, JSON.stringify(result));
+    assert.equal(result.resume.coupsRapides[0].annulationSphere, porteur === 'attaquant' ? 'cible' : 'attaquant');
+    assert.equal(rpgMobaPlacementCoherent(duel), true); assert.equal(result.resume.frappeSorcier, 0);
+    assert.equal(duel[porteur === 'attaquant' ? enemy : side].main.includes(porteur === 'attaquant' ? cible.carteId : attaquant.carteId), true);
+  });
+}
+for (const side of ['joueur', 'sorcier']) test(`Sphère adaptateur MOBA : contresort ou disparition du porteur en réponse (${side})`, () => {
+  for (const mode of ['contre', 'renvoi']) {
+    const duel = partieCombat(); if (side === 'sorcier') rpgFinDeTour(duel);
+    const enemy = side === 'joueur' ? 'sorcier' : 'joueur';
+    Object.assign(duel[side].mana, { sable: 30, eau: 30 }); duel[side].main = ['chien-du-guet', 'sphere-de-rotation'];
+    const porteur = rpgMobaJouerCreature(duel, side, 'chien-du-guet', 'right', 0).entite;
+    assert.equal(rpgMobaJouerArme(duel, side, 'sphere-de-rotation', porteur.id, { ouvrirReponse: true }).sortEnAttente, true);
+    duel[enemy].main = [mode === 'contre' ? 'contresort-des-abimes' : 'ressac']; duel[enemy].mana.eau = 30;
+    if (mode === 'contre') assert.equal(rpgMobaLancerMagie(duel, enemy, 'contresort-des-abimes').contre, true);
+    else {
+      assert.equal(rpgMobaLancerMagie(duel, enemy, 'ressac', porteur.id).ok, true);
+      assert.equal(rpgMobaPasserSort(duel, enemy).dissipe, true);
+    }
+    assert.equal(porteur.arme, null); assert.ok(duel[side].cimetiere.includes('sphere-de-rotation'));
+    assert.equal(rpgMobaPlacementCoherent(duel), true);
+  }
+});
+
+
+for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: announced spells detect each targeted ally for ${caster}'s opponent`, () => {
+  const defender = caster === 'joueur' ? 'sorcier' : 'joueur';
+  const duel = partie();
+  const guardians = {};
+  for (const side of ['joueur', 'sorcier']) {
+    if (duel.tour !== side) rpgFinDeTour(duel);
+    duel[side].mana.sable = 20;
+    duel[side].main = Array(3).fill('gardienne-des-portes-de-sable');
+    guardians[side] = ['left', 'center', 'right'].map((lane) =>
+      rpgMobaJouerCreature(duel, side, 'gardienne-des-portes-de-sable', lane, 0).entite);
+    assert.ok(guardians[side].every(Boolean));
+  }
+  if (duel.tour !== caster) rpgFinDeTour(duel);
+  const [a, b, unrelated] = guardians[defender];
+  const gardien = cardById('gardienne-du-croissant');
+  duel[caster].mana.braise = 20;
+  duel[caster].main = ['feux-de-kitsune'];
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+  assert.equal(rpgMobaLancerMagie(duel, caster, 'feux-de-kitsune', a.id, null, null,
+    { ouvrirReponse: true, cibleSecondaireId: b.id }).sortEnAttente, true);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), true);
+  // Either individual target is sufficient, but an unrelated ally is not.
+  const original = duel[defender].creatures;
+  for (const [creatures, expected] of [[[a], true], [[b], true], [[unrelated], false]]) {
+    duel[defender].creatures = creatures;
+    assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), expected);
+  }
+  duel[defender].creatures = original;
+  duel.fenetreReponse = false;
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+  duel.fenetreReponse = true;
+  assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+  assert.equal(MOBA_CARTES_AUTORISEES.includes(gardien.id), false);
+});
+
+for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster}'s untargeted wave is not a targeted spell`, () => {
+  const defender = caster === 'joueur' ? 'sorcier' : 'joueur';
+  const duel = partie();
+  if (duel.tour !== defender) rpgFinDeTour(duel);
+  duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
+  assert.equal(rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'left', 0).ok, true);
+  if (duel.tour !== caster) rpgFinDeTour(duel);
+  duel[caster].main = ['tempete-de-sable']; duel[caster].mana.sable = 20;
+  assert.equal(rpgMobaLancerMagie(duel, caster, 'tempete-de-sable', null, null, null, { ouvrirReponse: true }).sortEnAttente, true);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, cardById('gardienne-du-croissant')), false);
+  assert.equal(rpgMobaPasserSort(duel, defender).ok, true);
+});
+
+test('the ten unaudited creatures remain gated and cannot be summoned during their own turn', () => {
+  const ids = ['sentinelle-des-sables', 'tojiro-le-pourfendeur', 'garde-du-trone-givre',
+    'eclipse-silencieuse', 'gardienne-du-croissant', 'traqueur-des-nuits-sans-lune',
+    'sanguinaire-des-dunes', 'porte-etendard-de-leclipse', 'veilleuse-de-la-lune-givree', 'boualem'];
+  for (const side of ['joueur', 'sorcier']) {
+    const duel = partie();
+    if (side === 'sorcier') rpgFinDeTour(duel);
+    for (const id of ids) {
+      assert.ok(cardById(id), id);
+      assert.equal(MOBA_CARTES_AUTORISEES.includes(id), false, id);
+      duel[side].main = [id];
+      const before = JSON.stringify(duel);
+      assert.equal(rpgMobaJouerCreature(duel, side, id, 'left', 0).raison, 'effet-non-pris-en-charge', id);
+      assert.equal(JSON.stringify(duel), before, id);
+    }
+  }
+});
+
+for (const caster of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${caster}'s announced creature effect targets an ally`, () => {
+  const defender = caster === 'joueur' ? 'sorcier' : 'joueur';
+  const duel = partie();
+  if (duel.tour !== defender) rpgFinDeTour(duel);
+  duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
+  const target = rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  if (duel.tour !== caster) rpgFinDeTour(duel);
+  duel[caster].main = ['maitre-du-marteau']; duel[caster].mana.neige = 20;
+  duel[defender].main = ['parade-du-verre']; duel[defender].mana.eau = 20;
+  const gardien = cardById('gardienne-du-croissant');
+  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+  assert.equal(rpgMobaPasserCreature(duel, defender).ok, true);
+  assert.equal(rpgMobaResoudreArrivee(duel, caster, target.id).ok, true);
+  assert.ok(duel.effetCreatureEnAttente);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), true);
+  assert.equal(rpgMobaPasserEffetCreature(duel, defender).ok, true);
+  assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+});
+
+for (const attackerSide of ['joueur', 'sorcier']) test(`Embuscade groundwork: ${attackerSide}'s targeted attack is distinct from a lane attack`, () => {
+  for (const targeted of [false, true]) {
+    const defender = attackerSide === 'joueur' ? 'sorcier' : 'joueur';
+    const duel = partie();
+    if (duel.tour !== defender) rpgFinDeTour(duel);
+    duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
+    const target = rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'left', 0).entite;
+    if (duel.tour !== attackerSide) rpgFinDeTour(duel);
+    duel[attackerSide].main = [targeted ? 'feriel' : 'gardienne-des-portes-de-sable'];
+    duel[attackerSide].mana.braise = 20; duel[attackerSide].mana.sable = 20;
+    const attacker = rpgMobaJouerCreature(duel, attackerSide, duel[attackerSide].main[0], 'left', 0).entite;
+    assert.ok(attacker); attacker.ready = true;
+    const gardien = cardById('gardienne-du-croissant');
+    assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+    assert.equal(rpgMobaDeclarerAttaque(duel, attackerSide, [attacker.id], targeted ? { [attacker.id]: target.id } : {}).ok, true);
+    assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), targeted);
+    assert.equal(rpgMobaLancerAttaque(duel, attackerSide, [attacker.id], {}, { declaree: true }).ok, true);
+    assert.equal(rpgConditionEmbuscadeRemplie(duel, defender, gardien), false);
+  }
+});
+
+for (const caster of ['joueur', 'sorcier']) for (const instant of [false, true]) test(`Embuscade gate: ${caster}'s targeted arrival ${instant ? 'opens for an audited instant' : 'does not open for a gated creature alone'}`, () => {
+  const defender = caster === 'joueur' ? 'sorcier' : 'joueur';
+  const duel = partie();
+  if (duel.tour !== defender) rpgFinDeTour(duel);
+  duel[defender].main = ['gardienne-des-portes-de-sable']; duel[defender].mana.sable = 20;
+  const target = rpgMobaJouerCreature(duel, defender, 'gardienne-des-portes-de-sable', 'right', 0).entite;
+  if (duel.tour !== caster) rpgFinDeTour(duel);
+  duel[caster].main = ['maitre-du-marteau']; duel[caster].mana.neige = 20;
+  duel[defender].main = ['gardienne-du-croissant', ...(instant ? ['parade-du-verre'] : [])];
+  duel[defender].mana.sable = 20; duel[defender].mana.tenebres = 20; duel[defender].mana.eau = 20;
+  assert.equal(rpgMobaJouerCreature(duel, caster, 'maitre-du-marteau', 'left', 0, { ouvrirReponse: true }).creatureEnAttente, true);
+  assert.equal(rpgMobaPasserCreature(duel, defender).ok, true);
+  const life = target.pv;
+  const result = rpgMobaResoudreArrivee(duel, caster, target.id);
+  assert.equal(result.ok, true);
+  if (instant) {
+    assert.ok(duel.effetCreatureEnAttente);
+    assert.equal(target.pv, life);
+    assert.equal(rpgMobaLancerMagie(duel, defender, 'parade-du-verre', target.id).ok, true);
+    assert.equal(rpgMobaPasserEffetCreature(duel, defender).ok, true);
+    assert.equal(target.pv, life);
+  } else {
+    assert.equal(duel.effetCreatureEnAttente, null);
+    assert.equal(duel.fenetreReponse, false);
+    assert.ok(!duel[defender].creatures.includes(target) || target.pv < life);
+  }
+  assert.deepEqual(duel[defender].main, ['gardienne-du-croissant']);
+  assert.equal(rpgMobaPlacementCoherent(duel), true);
+});
+
+
+test('an Embuscade is not admitted on its own turn by the combat audit alone', () => {
+  const id = 'garde-du-trone-givre';
+  assert.equal(CARTES_COMBAT_AUDITEES.has(id), false);
+  CARTES_COMBAT_AUDITEES.add(id);
+  try {
+    for (const side of ['joueur', 'sorcier']) {
+      const duel = partie();
+      if (side === 'sorcier') rpgFinDeTour(duel);
+      duel[side].main = [id]; duel[side].mana.neige = 20; duel[side].mana.tenebres = 20;
+      const before = JSON.stringify(duel);
+      assert.equal(rpgMobaJouerCreature(duel, side, id, 'left', 0).raison, 'effet-non-pris-en-charge');
+      assert.equal(JSON.stringify(duel), before);
+    }
+  } finally {
+    CARTES_COMBAT_AUDITEES.delete(id);
+  }
+});
+
+test('classic Embuscade response eligibility is unchanged', () => {
+  const duel = rpgNouveauDuel({ joueurDeck: [], sorcierDeck: [], rng: () => 0.5, pvp: true });
+  duel.sorcier.main = ['chien-du-guet']; duel.sorcier.mana.sable = 20;
+  const attacker = rpgJouerCreature(duel, 'sorcier', 'chien-du-guet').entite;
+  assert.ok(attacker);
+  duel.tour = 'sorcier'; duel.phase = 'blocage'; duel.fenetreReponse = true;
+  duel.combatDeclare = { cote: 'sorcier', attaquants: [attacker.id], ciblesAttaque: {} };
+  duel.joueur.main = ['garde-du-trone-givre']; duel.joueur.mana.neige = 20; duel.joueur.mana.tenebres = 20;
+  assert.equal(rpgPeutRepondre(duel, 'joueur'), true);
+  duel.combatDeclare.attaquants = [];
+  assert.equal(rpgPeutRepondre(duel, 'joueur'), false);
 });

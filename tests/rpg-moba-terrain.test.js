@@ -40,3 +40,60 @@ test('le terrain MOBA continu garde ses trois voies et ses commandes', async () 
     delete globalThis.IS_REACT_ACT_ENVIRONMENT;
   }
 });
+
+test('une voie conquise affiche le sceau du bon camp sans désactiver les autres voies', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'http://localhost/' });
+  const oldWindow = globalThis.window, oldDocument = globalThis.document;
+  globalThis.window = dom.window; globalThis.document = dom.window.document;
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+  let root;
+  try {
+    const { default: Board } = await server.ssrLoadModule('/src/games/RpgMobaBoard.jsx');
+    const { rpgMobaNouveauDuel } = await server.ssrLoadModule('/src/games/rpgMobaLocal.js');
+    const { mobaInfliger } = await server.ssrLoadModule('/src/games/rpgMoba.js');
+    let duel;
+    const initialiser = () => (duel = rpgMobaNouveauDuel({ joueurDeck: Array(30).fill('gardienne-des-portes-de-sable'), sorcierDeck: Array(30).fill('gardienne-des-portes-de-sable'), joueurCouleurs: ['sable'], sorcierCouleurs: ['sable'], rng: () => .5 }));
+    const props = { onQuitter: () => {}, initialiser };
+    root = createRoot(document.getElementById('root'));
+    await act(async () => root.render(React.createElement(Board, props)));
+    await act(async () => document.querySelector('.moba__mulligan .moba__primary').click());
+    assert.equal(document.querySelectorAll('.moba__conquest').length, 0);
+    mobaInfliger(duel.moba, 'joueur', 'left', 20);
+    await act(async () => root.render(React.createElement(Board, props)));
+    const [left, center, right] = document.querySelectorAll('.moba__lane');
+    assert.ok(left.classList.contains('is-conquered--joueur'));
+    assert.match(left.querySelector('.moba__conquest').textContent, /Voie conquise.*VOUS.*Voie fermée/);
+    assert.match(left.querySelector('.moba__conquest img').getAttribute('src'), /icons\/sablier\/conquete\.svg$/);
+    assert.ok([...left.querySelectorAll('.moba__side')].every((side) => side.hasAttribute('inert') && side.getAttribute('aria-hidden') === 'true'));
+    assert.ok([...left.querySelectorAll('button')].every((button) => button.disabled));
+    assert.ok(!center.querySelector('.moba__conquest'));
+    assert.ok(!center.querySelector('.moba__side').hasAttribute('inert'));
+    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie gauche conquise par Vous ; voie fermée/);
+    assert.equal(duel.moba.winner, null);
+    mobaInfliger(duel.moba, 'sorcier', 'center', 10);
+    await act(async () => root.render(React.createElement(Board, props)));
+    assert.ok(center.classList.contains('is-conquered--sorcier'));
+    assert.match(center.querySelector('.moba__conquest').textContent, /Voie conquise.*L’IA.*Voie fermée/);
+    assert.match(document.querySelector('[role="status"].moba__sr-only:not(.moba__combat-result)').textContent, /Voie centrale conquise par IA ; voie fermée/);
+    assert.ok(!right.querySelector('.moba__conquest'));
+    assert.equal(duel.moba.winner, null, 'une voie par camp ne termine pas la partie');
+  } finally {
+    if (root) await act(async () => root.unmount());
+    await server.close(); dom.window.close(); globalThis.window = oldWindow; globalThis.document = oldDocument;
+    delete globalThis.IS_REACT_ACT_ENVIRONMENT;
+  }
+});
+
+test('la fiche de contre classique nomme correctement le camp MOBA', async () => {
+  const server = await createServer({ server: { middlewareMode: true, hmr: false }, appType: 'custom' });
+  try {
+    const { RPG_RENDU_MOBA } = await server.ssrLoadModule('/src/games/RpgDuelPage.jsx');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const annonce = { carteId: 'contresort-des-abimes', contre: true, cible: { nom: 'Javelot du beffroi' } };
+    const vue = (camp, nomLanceur) => renderToStaticMarkup(React.createElement(RPG_RENDU_MOBA.SpellAnnouncement, { annonce, camp, nomLanceur }));
+    assert.match(vue('joueur', 'Vous'), /CONTRE · VOUS/);
+    assert.match(vue('sorcier', 'IA'), /CONTRE · IA/);
+    assert.match(vue('sorcier'), /CONTRE DU SORCIER/, 'le libellé classique reste inchangé');
+  } finally { await server.close(); }
+});
